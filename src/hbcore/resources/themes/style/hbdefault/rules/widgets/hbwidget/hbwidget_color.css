@@ -1,0 +1,6 @@
+
+/* Only for AutoTest Purpose*/
+HbWidget#AutoTestWidget::text, testtext
+{
+ color:var(testforeground_focused);
+}

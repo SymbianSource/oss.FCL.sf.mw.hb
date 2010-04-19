@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="none" height="30" width="30"/>
+<path d="M20.625,2.813h-6.563c-1.033,0-1.875,0.844-1.875,1.875v13.594c0,1.813,1.468,3.281,3.281,3.281 c1.811,0,3.281-1.469,3.281-3.281V7.5h-1.875v10.781c0,0.775-0.632,1.406-1.406,1.406c-0.776,0-1.406-0.631-1.406-1.406V4.688h6.563 v16.308l-2.878,4.317H13.19l-2.878-4.317V10.313H8.438v11.25l3.75,5.625h6.563l3.75-5.625V4.688 C22.5,3.656,21.656,2.813,20.625,2.813z"/>
+</svg>

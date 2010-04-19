@@ -1,0 +1,31 @@
+HbDataGroupHeadingWidget
+{
+    layout:default;
+}
+
+HbDataGroupHeadingWidget::dataGroup_Icon
+{  
+    right:var(hb-param-margin-gene-right);
+    fixed-width:var(hb-param-graphic-size-secondary);
+    fixed-height:var(hb-param-graphic-size-secondary);
+}
+
+HbDataGroupHeadingWidget::dataGroup_HeadingLabel
+{
+    left:-var(hb-param-margin-gene-left);
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    right:var(hb-param-margin-gene-middle-horizontal);
+    text-height:var(hb-param-text-height-primary);
+    font-variant:primary;
+    text-align:left;
+    text-line-count-max:1;
+}
+
+HbDataGroupHeadingWidget::dataGroup_Background
+{
+    left:0.0un;
+    right:0.0un;
+    top:0.0un;
+    bottom:0.0un;
+}

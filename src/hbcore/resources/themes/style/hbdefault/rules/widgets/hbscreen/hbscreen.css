@@ -1,0 +1,145 @@
+
+
+HbScreen[screenOrientation="2"][contentUnderTitleBar="false"]
+{
+	layout:portrait_horizontaltoolbar;
+}
+
+HbScreen[screenOrientation="2"][toolBarOrientation="2"][contentUnderTitleBar="false"]
+{
+	layout:portrait_verticaltoolbar;
+}
+
+HbScreen[screenOrientation="1"][contentUnderTitleBar="false"]
+{
+	layout:landscape_horizontaltoolbar;
+}
+
+HbScreen[screenOrientation="1"][toolBarOrientation="2"][contentUnderTitleBar="false"]
+{
+	layout:landscape_verticaltoolbar;
+}
+
+HbScreen[screenOrientation="2"][contentUnderTitleBar="true"]
+{
+	layout:portrait_horizontaltoolbar_undertitlebar;
+}
+
+HbScreen[screenOrientation="2"][toolBarOrientation="2"][contentUnderTitleBar="true"]
+{
+	layout:portrait_verticaltoolbar_undertitlebar;
+}
+
+HbScreen[screenOrientation="1"][contentUnderTitleBar="true"]
+{
+	layout:landscape_horizontaltoolbar_undertitlebar;
+}
+
+HbScreen[screenOrientation="1"][toolBarOrientation="2"][contentUnderTitleBar="true"]
+{
+	layout:landscape_verticaltoolbar_undertitlebar;
+}
+
+HbScreen[screenOrientation="2"][contentUnderStatusBar="true"]
+{
+	layout:portrait_horizontaltoolbar_understatusbar;
+}
+
+HbScreen[screenOrientation="2"][toolBarOrientation="2"][contentUnderStatusBar="true"]
+{
+	layout:portrait_verticaltoolbar_understatusbar;
+}
+
+HbScreen[screenOrientation="1"][contentUnderStatusBar="true"]
+{
+	layout:landscape_horizontaltoolbar_understatusbar;
+}
+
+HbScreen[screenOrientation="1"][toolBarOrientation="2"][contentUnderStatusBar="true"]
+{
+	layout:landscape_verticaltoolbar_understatusbar;
+}
+
+HbScreen::statusbar{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    fixed-height: expr((1/3)*var(hb-param-widget-chrome-height));
+    fixed-width: var(hb-param-screen-width);
+}
+
+HbScreen::titlebar[titleBarMinimizable="true"]{
+    left: expr((1/3)*var(hb-param-widget-chrome-height));
+    right: 0un;
+    top: 0un;
+    fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));
+}
+
+HbScreen::titlebar[titleBarMinimizable="false"]{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));
+}
+
+HbScreen::navi{
+	fixed-height: 7.5un;
+	size-policy-horizontal:preferred;
+}
+
+HbScreen[screenOrientation="1"]::navi
+{
+	fixed-width: 45.0un;
+}
+
+HbScreen[toolBarOrientation="1"]::toolbar
+{
+	fixed-height: var(hb-param-widget-toolbar-height);
+	size-policy-horizontal:preferred;
+}
+
+HbScreen[toolBarOrientation="2"]::toolbar
+{
+	fixed-width: var(hb-param-widget-chrome-height);
+	size-policy-vertical:preferred;
+}
+
+HbScreen::dock
+{
+	size-policy-vertical:preferred;
+	size-policy-horizontal:preferred;
+}
+
+HbScreen[screenOrientation="1"]::main
+{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    bottom: 0un;
+}
+
+HbScreen[screenOrientation="2"]::main
+{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    bottom: 0un;
+}
+
+HbScreen[screenOrientation="1"]::mainfull
+{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    bottom: 0un;
+}
+
+HbScreen[screenOrientation="2"]::mainfull
+{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    bottom: 0un;
+}
+
+

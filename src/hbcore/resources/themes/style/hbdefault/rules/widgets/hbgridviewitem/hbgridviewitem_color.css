@@ -1,0 +1,29 @@
+/*
+    Grid item default color definitions.
+*/
+HbGridViewItem::text{
+    color: var(qtc_grid_normal);
+}
+
+HbGridViewItem::text[state="pressed"]{
+    color: var(qtc_grid_pressed);
+}
+
+HbGridViewItem::text[state="disabled"]{
+    color: var(qtc_grid_disabled);
+}
+
+/*
+    Grid item inside popup color definitions.
+*/
+HbGridViewItem::text[insidePopup]{
+    color: var(qtc_popup_grid_normal);
+}
+
+HbGridViewItem::text[insidePopup][state="pressed"]{
+    color: var(qtc_popup_grid_pressed);
+}
+
+HbGridViewItem::text[insidePopup][state="disabled"]{
+    color: var(qtc_popup_grid_disabled);
+}

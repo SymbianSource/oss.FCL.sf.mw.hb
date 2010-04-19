@@ -1,0 +1,36 @@
+<hbwidget version="0.1" type="HbNotificationDialogContent">
+    <layout name="dialog_notification_window_title_icon" type="mesh">
+        <meshitem src="title" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="LEFT" dst="icon" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="CENTERV" dst="icon" dstEdge="CENTERV"/>
+        <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+        <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+        <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    </layout>
+    <layout name="dialog_notification_window_title_only" type="mesh">
+        <meshitem src="title" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+        <meshitem src="title" srcEdge="TOP" dst="" dstEdge="TOP"/>
+        <meshitem src="title" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+    </layout>
+    <layout name="dialog_notification_window_title_text" type="mesh">
+        <meshitem src="title" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+        <meshitem src="title" srcEdge="TOP" dst="" dstEdge="TOP"/>
+        <meshitem src="text" srcEdge="TOP" dst="title" dstEdge="BOTTOM"/>
+        <meshitem src="text" srcEdge="LEFT" dst="title" dstEdge="LEFT"/>
+        <meshitem src="text" srcEdge="RIGHT" dst="title" dstEdge="RIGHT"/>
+        <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+    </layout>
+    <layout name="dialog_notification_window_title_text_icon" type="mesh">
+        <meshitem src="title" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="LEFT" dst="icon" dstEdge="RIGHT"/>
+        <meshitem src="title" srcEdge="TOP" dst="" dstEdge="TOP"/>
+        <meshitem src="text" srcEdge="TOP" dst="title" dstEdge="BOTTOM"/>
+        <meshitem src="text" srcEdge="LEFT" dst="title" dstEdge="LEFT"/>
+        <meshitem src="text" srcEdge="RIGHT" dst="title" dstEdge="RIGHT"/>
+        <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+        <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+        <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    </layout>
+</hbwidget>

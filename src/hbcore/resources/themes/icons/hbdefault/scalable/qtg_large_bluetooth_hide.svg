@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="60" width="60"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="30" x2="30" y1="7.35" y2="52.71">
+<stop offset="0" stop-color="#F2F2F2"/>
+<stop offset="0.25" stop-color="#4F88BD"/>
+<stop offset="0.73" stop-color="#0055A3"/>
+<stop offset="1" stop-color="#64AEFB"/>
+</linearGradient>
+<path d="M29.998,7.346c-9.593,0-16.224,4.832-16.224,22.653c0,17.82,6.631,22.65,16.224,22.65 c9.592,0,16.223-4.83,16.223-22.65C46.221,12.178,39.59,7.346,29.998,7.346z" fill="url(#SVGID_1)"/>
+<radialGradient cx="31.02" cy="5.34" gradientUnits="userSpaceOnUse" id="SVGID_2" r="45.26">
+<stop offset="0" stop-color="#36B5FF"/>
+<stop offset="0.16" stop-color="#36B5FF"/>
+<stop offset="0.82" stop-color="#1B66D8"/>
+<stop offset="1" stop-color="#2183E0"/>
+</radialGradient>
+<path d="M29.998,51.895c-7.658,0-15.485-2.6-15.485-21.896S22.34,8.101,29.998,8.101 c7.657,0,15.485,2.602,15.485,21.898C45.482,49.295,37.654,51.895,29.998,51.895L29.998,51.895z" fill="url(#SVGID_2)"/>
+<path d="M39.953,22.475L28.574,10.828v15.348l-6.25-6.401l-2.283,2.331l7.857,8.059l-7.856,8.057l2.277,2.329 l6.256-6.399V49.5l11.378-11.645l-7.514-7.69L39.953,22.475z M35.409,22.501l-3.633,3.713l-0.005-7.432L35.409,22.501z M35.409,37.834l-3.638,3.709l0.006-7.431L35.409,37.834z" fill="#FFFFFF"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3" x1="30" x2="30" y1="10.83" y2="49.55">
+<stop offset="0" stop-color="#0B81FA"/>
+<stop offset="1" stop-color="#47DAFA"/>
+</linearGradient>
+<path d="M28.884,11.593l10.629,10.882l-7.293,7.465l-0.219,0.225l0.219,0.225l7.293,7.464 L28.884,48.734V34.151v-0.765l-0.53,0.54l-6.036,6.175l-1.84-1.879l7.639-7.833l0.219-0.224l-0.219-0.224l-7.638-7.835l1.844-1.883 l6.031,6.177l0.53,0.542v-0.767V11.593 M31.469,26.979l0.527-0.541l3.633-3.714l0.219-0.223l-0.219-0.225l-3.638-3.719l-0.528-0.542 v0.766l0.004,7.432L31.469,26.979 M31.463,42.307l0.527-0.54l3.637-3.709l0.221-0.226l-0.221-0.223l-3.63-3.723l-0.529-0.541 l-0.001,0.766l-0.004,7.432V42.307 M28.574,10.828v15.348l-6.25-6.401l-2.283,2.331l7.857,8.059l-7.856,8.057l2.277,2.329 l6.256-6.399V49.5l11.378-11.645l-7.514-7.69l7.514-7.69L28.574,10.828L28.574,10.828z M31.777,26.214l-0.006-7.432l3.638,3.719 L31.777,26.214L31.777,26.214z M31.771,41.542l0.006-7.431l3.633,3.721L31.771,41.542L31.771,41.542z" fill="url(#SVGID_3)"/>
+<rect fill="none" height="59.997" width="59.996" y="0"/>
+</g>
+</svg>

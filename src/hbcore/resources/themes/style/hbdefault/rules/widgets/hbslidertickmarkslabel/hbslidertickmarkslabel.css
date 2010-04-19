@@ -1,0 +1,47 @@
+/*Horizontal orientation major and minor label*/
+HbSliderTickmarksLabel::tickmark-majorlabel
+{
+    font-variant: secondary;
+    fixed-width: 7.5un;
+    text-height: var(hb-param-text-height-tiny);
+    text-line-count-max:1;
+}
+
+HbSliderTickmarksLabel::tickmark-minorlabel
+{
+    font-variant: secondary;
+    fixed-width: 7.5un;
+    text-height: var(hb-param-text-height-tiny);
+    text-line-count-max:1;
+}
+
+HbSliderTickmarksLabel[orientation="1"]::tickmark-majorlabel
+{
+    text-align: center center;
+}
+
+HbSliderTickmarksLabel[orientation="1"]::tickmark-minorlabel
+{
+    text-align: center center;
+}
+/*Vertical orientation major and minor label*/
+HbSliderTickmarksLabel[orientation="2"][TicksLeft="true"]::tickmark-majorlabel
+{
+    text-align: right center;
+}
+
+HbSliderTickmarksLabel[orientation="2"][TicksRight="true"]::tickmark-majorlabel
+{
+    text-align: left center;
+}
+
+
+HbSliderTickmarksLabel[orientation="2"][TicksLeft="true"]::tickmark-minorlabel
+{
+    text-align: right center;
+}
+
+HbSliderTickmarksLabel[orientation="2"][TicksRight="true"]::tickmark-minorlabel
+{
+    text-align: left center;
+}

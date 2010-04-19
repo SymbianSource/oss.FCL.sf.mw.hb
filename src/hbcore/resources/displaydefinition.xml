@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<displayDefinition>
+
+    <display name="NHD landscape"
+    styleName="NHD"
+    resolutionWidth="640"
+    resolutionHeight="360"
+    ppiValue="229"
+    orientation="landscape"
+    orientationAngle="270"
+    alternateProfileName="NHD portrait"
+    unitValue="6.7" />
+    
+    <display name="NHD portrait" 
+    defaultMode="true"
+    styleName="NHD"   
+    resolutionWidth="360" 
+    resolutionHeight="640"
+    ppiValue="229"
+    orientation="portrait"
+    orientationAngle="270"
+    alternateProfileName="NHD landscape"
+    unitValue="6.7" />
+
+    <display name="VGA landscape"
+    styleName="VGA"
+    resolutionWidth="640"
+    resolutionHeight="480"
+    ppiValue="250"
+    orientation="landscape"
+    orientationAngle="90"
+    alternateProfileName="VGA portrait"
+    unitValue="6.2" />
+    
+    <display name="VGA portrait" 
+    styleName="VGA"   
+    resolutionWidth="480" 
+    resolutionHeight="640"
+    ppiValue="250"
+    orientation="portrait"
+    orientationAngle="90"
+    alternateProfileName="VGA landscape"
+    unitValue="6.2" />
+
+    <display name="HVGA landscape"
+    styleName="HVGA"
+    resolutionWidth="480"
+    resolutionHeight="320"
+    ppiValue="180"
+    orientation="landscape"
+    orientationAngle="90"
+    alternateProfileName="HVGA portrait"
+    unitValue="5.3" />
+    
+    <display name="HVGA portrait" 
+    styleName="HVGA"   
+    resolutionWidth="320" 
+    resolutionHeight="480"
+    ppiValue="180"
+    orientation="portrait"
+    orientationAngle="90"
+    alternateProfileName="HVGA landscape"
+    unitValue="5.3" />
+    
+    <display name="NHD 4_0 landscape"
+    styleName="NHD 4_0"
+    resolutionWidth="640"
+    resolutionHeight="360"
+    ppiValue="183.6"
+    orientation="landscape"
+    orientationAngle="90"
+    alternateProfileName="NHD 4_0 portrait"
+    unitValue="5.42" />
+    
+    <display name="NHD 4_0 portrait" 
+    styleName="NHD 4_0"   
+    resolutionWidth="360" 
+    resolutionHeight="640"
+    ppiValue="183.6"
+    orientation="portrait"
+    orientationAngle="90"
+    alternateProfileName="NHD 4_0 landscape"
+    unitValue="5.42" />
+    
+    <display name="WVGA landscape"
+    styleName="WVGA"
+    resolutionWidth="864"
+    resolutionHeight="480"
+    ppiValue="247.1"
+    orientation="landscape"
+    orientationAngle="90"
+    alternateProfileName="WVGA portrait"
+    unitValue="7.27" />
+    
+    <display name="WVGA portrait" 
+    styleName="WVGA"   
+    resolutionWidth="480" 
+    resolutionHeight="864"
+    ppiValue="247.1"
+    orientation="portrait"
+    orientationAngle="90"
+    alternateProfileName="WVGA landscape"
+    unitValue="7.27" />
+    
+</displayDefinition>
+

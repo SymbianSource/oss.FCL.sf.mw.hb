@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30" viewBox="0 0 30 30">
+<rect fill="none" height="30" width="30"/>
+<circle cx="15" cy="15" r="13.5"/>
+<radialGradient id="SVGID_1" gradientUnits="userSpaceOnUse" cx="14.77" cy="9.23" r="16.13">
+<stop stop-color="#FFF000" offset="0"/>
+<stop stop-color="#FFBF00" offset="1"/>
+</radialGradient>
+<circle cx="15" cy="15" fill="url(#SVGID_1)" r="12.536"/>
+<path d="M27.984,7.288c0,0-12.255,1.618-13.005,1.62c-0.765,0-12.964-1.62-12.964-1.62c-0.941,3.373,1.03,6.873,4.398,7.812 c3.232,0.903,6.556-0.88,7.657-3.995c0.299-0.128,0.607-0.194,0.911-0.194c0.324,0.001,0.648,0.071,0.96,0.224 c1.111,3.095,4.426,4.864,7.647,3.965C26.956,14.161,28.93,10.661,27.984,7.288z"/>
+<linearGradient id="SVGID_2" gradientUnits="userSpaceOnUse" x1="9.62" y1="8.68" x2="8.39" y2="14.58">
+<stop stop-color="#FFFFFF" offset="0"/>
+<stop stop-color="#000000" offset="1"/>
+</linearGradient>
+<path d="M9.609,8.279L6.07,14.973c0.116,0.04,0.218,0.101,0.336,0.133 c0.349,0.098,0.698,0.148,1.047,0.187c0.241,0.02,0.48,0.024,0.72,0.02c0.046,0,0.094,0,0.141-0.002l3.564-6.744L9.609,8.279z" fill="url(#SVGID_2)" fill-opacity="0.8"/>
+<linearGradient id="SVGID_3" gradientUnits="userSpaceOnUse" x1="7.26" y1="8.56" x2="6.09" y2="14.15">
+<stop stop-color="#FFFFFF" offset="0"/>
+<stop stop-color="#000000" offset="1"/>
+</linearGradient>
+<path d="M7.941,8.069l-3.265,6.224c0.157,0.103,0.305,0.215,0.472,0.304 c0.024,0.015,0.048,0.032,0.076,0.046c0.028,0.014,0.057,0.022,0.086,0.034l3.412-6.508L7.941,8.069z" fill="url(#SVGID_3)" fill-opacity="0.8"/>
+<linearGradient id="SVGID_4" gradientUnits="userSpaceOnUse" x1="22.38" y1="8.48" x2="20.5" y2="13.98">
+<stop stop-color="#FFFFFF" offset="0"/>
+<stop stop-color="#000000" offset="1"/>
+</linearGradient>
+<path d="M21.84,8.091l-3.273,6.271c0.102,0.063,0.202,0.139,0.306,0.198 c0.089,0.046,0.181,0.091,0.271,0.133c0.208,0.101,0.42,0.186,0.634,0.263c0.201,0.068,0.403,0.129,0.609,0.18 c0.057,0.016,0.117,0.024,0.177,0.038l3.869-7.415L21.84,8.091z" fill="url(#SVGID_4)" fill-opacity="0.8"/>
+<path d="M5.679,17.128c0.974,4.288,4.739,7.515,9.321,7.515c4.583,0,8.349-3.227,9.32-7.515H5.679z" fill="#FFFFFF"/>
+<path d="M5.679,17.128c0.974,4.288,4.739,7.515,9.321,7.515c4.583,0,8.349-3.227,9.32-7.515H5.679z M15,23.004 c-3.035,0-5.621-1.72-6.962-4.215h13.923C20.621,21.287,18.032,23.004,15,23.004z"/>
+</svg>

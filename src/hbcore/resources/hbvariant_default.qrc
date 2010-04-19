@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+    <file alias="typefaces.xml">variant/typefaces_default.xml</file>
+    <file alias="typeface_metrics_nokia_sans.xml">variant/typeface_metrics_nokia_sans.xml</file>
+    <file alias="typeface_metrics_nokia_sans_title_semibold.xml">variant/typeface_metrics_nokia_sans_title_semibold.xml</file>
+    <file alias="typeface_metrics_ocr_a_extended.xml">variant/typeface_metrics_ocr_a_extended.xml</file>
+    </qresource>
+</RCC>

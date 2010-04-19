@@ -1,0 +1,16 @@
+<hbwidget version="0.1" type="statusbar">
+
+  <layout name="default" type="mesh">
+    <meshitem src="signal" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="signal" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="notificationindicators" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="notificationindicators" srcEdge="LEFT" dst="signal" dstEdge="RIGHT" />
+    <meshitem src="timetext" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="timetext" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="settingsindicators" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="settingsindicators" srcEdge="RIGHT" dst="battery" dstEdge="LEFT" />
+    <meshitem src="battery" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="battery" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+</hbwidget>

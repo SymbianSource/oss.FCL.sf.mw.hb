@@ -1,0 +1,87 @@
+/*
+    List item default color definitions.
+*/
+HbListViewItem::text-1{
+    color: var(qtc_list_item_title_normal);
+}
+
+HbListViewItem::text-1[state="pressed"]{
+    color: var(qtc_list_item_pressed);
+}
+
+HbListViewItem::text-1[state="disabled"]{
+    color: var(qtc_list_item_disabled);
+}
+
+HbListViewItem::text-1[modelItemType="SeparatorItem"]{
+    color: var(qtc_list_item_separator);
+}
+
+HbListViewItem::text-2{
+    color: var(qtc_list_item_content_normal);
+}
+
+HbListViewItem::text-2[state="pressed"]{
+    color: var(qtc_list_item_pressed);
+}
+
+HbListViewItem::text-2[state="disabled"]{
+    color: var(qtc_list_item_disabled);
+}
+
+HbListViewItem::text-3{
+    color: var(qtc_list_item_content_normal);
+}
+
+HbListViewItem::text-3[state="pressed"]{
+    color: var(qtc_list_item_pressed);
+}
+
+HbListViewItem::text-3[state="disabled"]{
+    color: var(qtc_list_item_disabled);
+}
+
+
+/*
+    List item inside popup color definitions.
+*/
+HbListViewItem::text-1[insidePopup]{
+    color: var(qtc_popup_list_title_normal);
+}
+
+HbListViewItem::text-1[insidePopup][state="pressed"]{
+    color: var(qtc_popup_list_item_pressed);
+}
+
+HbListViewItem::text-1[insidePopup][state="disabled"]{
+    color: var(qtc_popup_list_item_disabled);
+}
+
+HbListViewItem::text-1[modelItemType="SeparatorItem"][insidePopup]{
+    color: var(qtc_list_item_separator);
+}
+
+HbListViewItem::text-2[insidePopup]{
+    color: var(qtc_popup_list_item_content_normal);
+}
+
+HbListViewItem::text-2[insidePopup][state="pressed"]{
+    color: var(qtc_popup_list_item_pressed);
+}
+
+HbListViewItem::text-2[insidePopup][state="disabled"]{
+    color: var(qtc_popup_list_item_disabled);
+}
+
+HbListViewItem::text-3[insidePopup]{
+    color: var(qtc_popup_list_item_content_normal);
+}
+
+HbListViewItem::text-3[insidePopup][state="pressed"]{
+    color: var(qtc_popup_list_item_pressed);
+}
+
+HbListViewItem::text-3[insidePopup][state="disabled"]{
+    color: var(qtc_popup_list_item_disabled);
+}
+

@@ -1,0 +1,9 @@
+HbSliderTickmarksLabel[state= "normal"]::tickmark-majorlabel
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbSliderTickmarksLabel[state= "normal"]::tickmark-minorlabel
+{
+    color: var(qtc_popup_trans_normal);
+}

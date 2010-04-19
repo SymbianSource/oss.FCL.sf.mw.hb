@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="30" width="29.999"/>
+<rect height="2" width="2" x="9" y="13"/>
+<rect height="2" width="8.94" x="12.059" y="13"/>
+<rect height="2" width="2" x="9" y="8"/>
+<rect height="2" width="8.94" x="12.059" y="8"/>
+<rect height="5" width="9.999" x="10"/>
+<polygon points="23.999,21 26.999,21 26.999,2 21.999,2 21.999,5 23.999,5 "/>
+<polygon points="17.999,27 6,27 6,5 8,5 8,2 3,2 3,30 17.999,30 "/>
+<polygon points="19.999,30 19.999,23 26.999,23 "/>
+</svg>

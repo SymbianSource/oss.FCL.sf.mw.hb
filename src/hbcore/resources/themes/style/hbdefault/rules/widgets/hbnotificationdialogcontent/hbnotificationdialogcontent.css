@@ -1,0 +1,113 @@
+HbNotificationDialogContent[icon="true"][textFields="2"]
+{
+	layout:dialog_notification_window_title_text_icon;
+}
+
+HbNotificationDialogContent[icon="false"][textFields="2"]
+{
+        layout:dialog_notification_window_title_text
+}
+
+HbNotificationDialogContent[icon="false"][textFields="1"]
+{
+    layout:dialog_notification_window_title_only;
+}
+
+HbNotificationDialogContent[icon="true"][textFields="1"]
+{
+	layout:dialog_notification_window_title_icon;
+}
+
+HbNotificationDialogContent[textFields="1"]::icon
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-popup);
+    right: var(hb-param-margin-gene-middle-horizontal);
+    bottom: var(hb-param-margin-gene-popup);
+    fixed-width: var(hb-param-graphic-size-primary-medium); 
+    fixed-height: var(hb-param-graphic-size-primary-medium);
+}
+
+HbNotificationDialogContent[textFields="2"]::icon
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-popup);
+    fixed-width: var(hb-param-graphic-size-primary-medium); 
+    fixed-height: var(hb-param-graphic-size-primary-medium);
+}
+
+HbNotificationDialogContent[titleWrapping="false"][icon="false"][textFields="1"]::title
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-popup);
+    right: var(hb-param-margin-gene-popup);
+    bottom: var(hb-param-margin-gene-popup);
+    font-variant:primary;
+    pref-height: var(hb-param-text-height-primary);
+    text-align: left;
+}
+
+HbNotificationDialogContent[titleWrapping="false"][icon="true"][textFields="1"]::title
+{
+    right: var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-middle-horizontal);
+    font-variant:primary;
+    pref-height: var(hb-param-text-height-primary);
+    text-align: left;
+}
+
+HbNotificationDialogContent[titleWrapping="true"][icon="false"][textFields="1"]::title
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-popup);
+    right: var(hb-param-margin-gene-popup);
+    bottom: var(hb-param-margin-gene-popup);
+    font-variant:primary;
+    fixed-height: expr(var(hb-param-text-height-primary)*2);
+    text-height: var(hb-param-text-height-primary);
+    text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 2;
+}
+
+HbNotificationDialogContent[titleWrapping="true"][icon="true"][textFields="1"]::title
+{
+    right: var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-middle-horizontal);
+    font-variant:primary;
+    fixed-height: expr(var(hb-param-text-height-primary)*2);
+    text-height: var(hb-param-text-height-primary);
+    text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 2;
+}
+
+HbNotificationDialogContent[icon="false"][textFields="2"]::title
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-popup);
+    right: var(hb-param-margin-gene-popup);
+    font-variant:primary;
+    pref-height: var(hb-param-text-height-primary);
+    text-align: left;
+}
+
+HbNotificationDialogContent[icon="true"][textFields="2"]::title
+{
+    top: -var(hb-param-margin-gene-popup);
+    left: -var(hb-param-margin-gene-middle-horizontal);
+    right: var(hb-param-margin-gene-popup);
+    font-variant:primary;
+    pref-height: var(hb-param-text-height-primary);
+    text-align: left;
+}
+
+HbNotificationDialogContent::text
+{
+    top: -var(hb-param-margin-gene-middle-vertical);
+    bottom: var(hb-param-margin-gene-popup);
+    font-variant:secondary;
+    pref-height: var(hb-param-text-height-secondary);
+    text-align: left;
+}
+

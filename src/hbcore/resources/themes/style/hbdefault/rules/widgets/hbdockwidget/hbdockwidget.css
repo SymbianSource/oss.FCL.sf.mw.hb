@@ -1,0 +1,12 @@
+HbDockWidget{
+	layout:dock_layout;
+}
+
+HbDockWidget::content{
+    left:0un;
+    right:0un;
+    top:0un;
+    bottom:0un;
+    min-height:7.5un;
+    max-height:17.5un;
+}

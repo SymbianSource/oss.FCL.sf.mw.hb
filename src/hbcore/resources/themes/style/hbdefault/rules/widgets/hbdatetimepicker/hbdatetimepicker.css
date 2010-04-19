@@ -1,0 +1,17 @@
+
+/*
+    Layout selection
+*/
+
+HbDateTimePicker
+{	
+	layout:datetimepicker-layout;
+}
+
+HbDateTimePicker::separator{
+    pref-width: 0.5un;
+}
+
+HbDateTimePicker::frame{
+    border-width: var(hb-param-background-tumbler);
+}

@@ -1,0 +1,33 @@
+HbIndicatorGroup[layout="0"]
+{
+    layout:notificationlayout;
+}
+
+HbIndicatorGroup[layout="1"]
+{
+    layout:settinglayout;
+}
+
+HbIndicatorGroup::icon1
+{
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}
+
+HbIndicatorGroup::icon2
+{
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}
+
+HbIndicatorGroup::icon3
+{
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}
+
+HbIndicatorGroup::icon4
+{
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}

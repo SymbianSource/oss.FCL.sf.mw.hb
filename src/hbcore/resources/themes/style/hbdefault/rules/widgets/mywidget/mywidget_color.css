@@ -1,0 +1,14 @@
+MyWidget::text_1
+{
+color:var(testforeground_focused);
+}
+
+MyWidget[pressed]
+{
+background:var(my_widget_background_pressed);
+}
+
+MyWidget[!pressed]
+{
+background:var(my_widget_background_notpressed);
+}

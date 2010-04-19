@@ -1,0 +1,21 @@
+
+HbCombinedQueryContentWidget
+{
+	layout:combinedquery_layout;
+}
+
+HbCombinedQueryContentWidget::text{
+	left:-0.5un;
+	right:0.5un;
+	top:0.5un;
+	bottom:-1.0un;
+	font:bold;
+	min-height:3.0un;
+}
+
+HbCombinedQueryContentWidget::list{
+	left:-0.5un;
+	right:0.5un;
+	bottom:0.5un;
+
+}

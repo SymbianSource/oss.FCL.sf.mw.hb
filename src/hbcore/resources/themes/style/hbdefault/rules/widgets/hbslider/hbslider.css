@@ -1,0 +1,190 @@
+HbSlider[orientation="Horizontal"][TickLabelPresent]
+{
+    layout:slider_horizontal_withticklabel;
+}
+
+HbSlider[orientation="Horizontal"][!TickLabelPresent]
+{
+    layout:slider_horizontal_withoutticklabel;
+    min-height:4.0un;
+}
+/*HbVolumeSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
+{
+    min-height:25un;
+    min-width:0.0un;
+    size-policy-horizontal:fixed;
+    size-policy-vertical:minimum-expanding;
+}
+
+HbZoomSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
+{
+    min-height:25un;
+    min-width:0.0un;
+    size-policy-horizontal:fixed;
+    size-policy-vertical:minimum-expanding;
+}*/
+
+HbSlider[orientation="Vertical"]::control
+{   
+    min-height:15un;
+    min-width:0.0un;
+    size-policy-horizontal:fixed;
+    size-policy-vertical:minimum-expanding;
+}
+
+
+HbSlider[orientation="Horizontal"]::control
+{   
+    min-width:15un;
+    min-height:0.0un;
+    size-policy-vertical:fixed;
+    size-policy-horizontal:minimum-expanding;
+}
+
+HbSlider[orientation="Vertical"][TickLabelPresent]
+{
+    layout:slider_vertical_withticklabel;
+}
+
+HbSlider[orientation="Vertical"][!TickLabelPresent]
+{
+    layout:slider_vertical_withoutticklabel;
+    min-width:4.0un;
+}
+
+
+HbSlider::increment-icon
+{   
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height:var(hb-param-graphic-size-primary-small);
+}
+
+HbSlider::decrement-icon
+{
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small);
+}
+
+HbSlider::icon-icon
+{
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small);
+}
+
+HbSlider::text_item_element
+{
+    font-variant:secondary;
+    fixed-width: 9un;
+    text-height: var(hb-param-text-height-secondary);
+    text-align:center center;
+    text-line-count-max:1;
+}
+
+HbSlider::text_element
+{
+    fixed-width: 9un;
+    fixed-height: var(hb-param-text-height-secondary);
+}
+
+/* margins*/
+
+HbSlider[orientation="Vertical"]::text_item_element
+{
+    top:-var(hb-param-margin-gene-popup);
+    
+}
+
+HbSlider[orientation="Horizontal"]::text_item_element
+{
+    right:var(hb-param-margin-gene-popup);
+    
+}
+
+HbSlider[orientation="Vertical"]::icon-icon
+{
+    bottom:var(hb-param-margin-gene-popup);
+    
+}
+
+HbSlider[orientation="Horizontal"]::icon-icon
+{
+    left:-var(hb-param-margin-gene-popup);
+    
+}
+
+HbSlider[orientation="Vertical"]::increment-icon
+{
+    top:-var(hb-param-margin-gene-top);
+    
+}
+HbSlider[orientation="Horizontal"]::increment-icon
+{
+    right:var(hb-param-margin-gene-right);
+}
+HbSlider[orientation="Vertical"]::control
+{
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+}
+HbSlider[orientation="Horizontal"]::control
+{
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+}
+HbSlider[orientation="Vertical"]::decrement-icon
+{
+    bottom:var(hb-param-margin-gene-bottom);
+}
+HbSlider[orientation="Horizontal"]::decrement-icon
+{
+    left:-var(hb-param-margin-gene-left);
+}
+
+/*touch area*/
+HbSlider[orientation="Vertical"]::decrement-icon-toucharea
+{ 
+    fixed-width: var(hb-param-touch-area-gene-primary-medium);
+    fixed-height: var(hb-param-touch-area-gene-primary-small);    
+}
+
+HbSlider[orientation="Vertical"]::increment-icon-toucharea
+{       
+    fixed-width: var(hb-param-touch-area-gene-primary-medium);
+    fixed-height: var(hb-param-touch-area-gene-primary-small);
+}
+
+HbSlider[orientation="Vertical"]::icon
+{
+    fixed-width: var(hb-param-touch-area-gene-primary-medium);
+    fixed-height: var(hb-param-touch-area-gene-primary-small);
+}
+
+HbSlider[orientation="Horizontal"]::decrement-icon-toucharea
+{   
+    fixed-width: var(hb-param-touch-area-gene-primary-small);
+    fixed-height: var(hb-param-touch-area-gene-primary-medium);
+}
+
+HbSlider[orientation="Horizontal"]::increment-icon-toucharea
+{       
+    fixed-width: var(hb-param-touch-area-gene-primary-small);
+    fixed-height: var(hb-param-touch-area-gene-primary-medium);
+}
+
+HbSlider[orientation="Horizontal"]::icon
+{
+    fixed-width: var(hb-param-touch-area-gene-primary-small);
+    fixed-height: var(hb-param-touch-area-gene-primary-medium);  
+}
+HbSlider::spacerRight{ 
+  size-policy-horizontal: expanding; 
+} 
+HbSlider::spacerLeft{ 
+  size-policy-horizontal: expanding; 
+} 
+HbSlider::spacerTop{ 
+  size-policy-vertical: expanding; 
+} 
+HbSlider::spacerBottom{ 
+  size-policy-vertical: expanding; 
+} 

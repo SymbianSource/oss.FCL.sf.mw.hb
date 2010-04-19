@@ -1,0 +1,24 @@
+<hbwidget version="0.1" type="HbMenuItem">
+	<layout name="menuitem" type="mesh">      
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="text" srcEdge="LEFT" dst="check-indicator" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="submenu-indicator" dstEdge="LEFT" />
+
+    <meshitem src="check-indicator" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="check-indicator" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+
+    <meshitem src="submenu-indicator" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="submenu-indicator" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    
+    <meshitem src="separator" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="separator" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="separator" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout> 
+   
+</hbwidget>
+

@@ -1,0 +1,22 @@
+
+HbRatingSlider
+{
+    layout:default;
+}
+
+HbRatingSlider::frame
+{
+	left:0.0un;
+	right:0.0un;
+	top:0.0un;
+	bottom: 0.0un;
+	fixed-height: var(hb-param-graphic-size-primary-small);	
+}
+
+HbRatingSlider::toucharea{
+    left: var(hb-param-margin-gene-left);
+    right: -var(hb-param-margin-gene-right);
+    top: var(hb-param-margin-gene-top);
+    bottom: -var(hb-param-margin-gene-bottom);
+}
+

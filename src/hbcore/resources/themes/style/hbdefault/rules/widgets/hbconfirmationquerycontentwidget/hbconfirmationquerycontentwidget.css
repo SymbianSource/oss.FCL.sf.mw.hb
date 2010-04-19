@@ -1,0 +1,51 @@
+
+HbConfirmationQueryContentWidget:portrait{
+	layout:confirmationquery_layout;
+}
+HbConfirmationQueryContentWidget::this:portrait
+{
+	fixed-width:40.0un;
+	fixed-height:10.0un;	
+}
+
+HbConfirmationQueryContentWidget::text:portrait
+{
+	left:0un;
+	top:0un;
+	fixed-width:30.0un;
+	fixed-height:10.0un;	
+}
+
+HbConfirmationQueryContentWidget::icon:portrait
+{
+	left:0un;
+	top:0un;
+	fixed-width:10.0un;
+	fixed-height:10.0un;	
+}
+
+
+HbConfirmationQueryContentWidget:landscape{
+	layout:confirmationquery_layout;
+}
+HbConfirmationQueryContentWidget::this:landscape
+{
+	fixed-width:60.0un;
+	fixed-height:10.0un;	
+}
+
+HbConfirmationQueryContentWidget::text:landscape
+{
+	left:0un;
+	top:0un;
+	fixed-width:50.0un;
+	fixed-height:10.0un;	
+}
+
+HbConfirmationQueryContentWidget::icon:landscape
+{
+	left:0un;
+	top:0un;
+	fixed-width:10.0un;
+	fixed-height:10.0un;	
+}

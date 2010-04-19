@@ -1,0 +1,50 @@
+HbMenuItem
+{
+	layout: menuitem;
+	min-width: expr((var(hb-param-screen-short-edge)-9un)/2);
+	max-width: expr(var(hb-param-screen-short-edge)-9un);
+}
+
+HbMenu[menuType="1"] HbMenuItem
+{
+	min-width: expr(var(hb-param-screen-short-edge)-9un);
+}
+
+
+
+HbMenuItem[!separator_exists]::text
+{
+	left: -var(hb-param-margin-gene-middle-horizontal);
+	right: var(hb-param-margin-gene-middle-horizontal);
+	top: -var(hb-param-margin-gene-top);
+	bottom: var(hb-param-margin-gene-bottom);
+	font-variant: primary;
+	text-height: var(hb-param-text-height-primary);	
+	text-line-count-max: 1;
+}
+
+HbMenuItem[separator_exists]::text
+{	
+	fixed-height: 0.75un;
+}
+
+HbMenuItem::check-indicator
+{
+	left: -var(hb-param-margin-gene-left);
+	fixed-width: var(hb-param-graphic-size-secondary);
+	fixed-height: var(hb-param-graphic-size-secondary);
+}
+
+HbMenuItem::submenu-indicator
+{
+	right: var(hb-param-margin-gene-right);
+	fixed-width: var(hb-param-graphic-size-secondary);
+	fixed-height: var(hb-param-graphic-size-secondary);
+}
+
+HbMenuItem::separator
+{	
+	fixed-height: 0.75un;
+}
+
+

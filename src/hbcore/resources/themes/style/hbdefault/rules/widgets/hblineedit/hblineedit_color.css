@@ -1,0 +1,4 @@
+HbLineEdit::text
+{
+    color:var(foreground);
+}

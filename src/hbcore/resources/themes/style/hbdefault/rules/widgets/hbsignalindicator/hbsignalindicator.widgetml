@@ -1,0 +1,12 @@
+<hbwidget version="0.1" type="signal">
+
+  <layout name="default" type="mesh">
+    <meshitem src="icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="background" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+    <meshitem src="levelicon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="levelicon" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+  </layout>
+
+</hbwidget>

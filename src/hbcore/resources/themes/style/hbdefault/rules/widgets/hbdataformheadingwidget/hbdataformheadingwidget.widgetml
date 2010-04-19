@@ -1,0 +1,24 @@
+<hbwidget version="0.1" type="HbDataFormHeadingWidget">
+
+  <layout name="default" type="mesh">
+    <meshitem src="dataForm_Heading" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataForm_Heading" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataForm_Heading" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataForm_Heading" srcEdge="BOTTOM" dst="dataForm_Desc" dstEdge="TOP" />
+ 
+    <meshitem src="dataForm_Desc" srcEdge="BOTTOM" dst="dataForm_Combo" dstEdge="TOP" />
+    <meshitem src="dataForm_Desc" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataForm_Desc" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    
+    <meshitem src="dataForm_Combo" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataForm_Combo" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataForm_Combo" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+   
+    <meshitem src="dataFormHeading_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataFormHeading_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataFormHeading_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataFormHeading_Background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+  </layout>
+
+</hbwidget>

@@ -1,0 +1,121 @@
+<hbwidget version="0.1" type="hbinputdialogcontentwidget">
+  <!-- layout : dataquery_primary_layout_prt -->
+  <!--
+        Required items: 
+            label-1 & text-1
+            
+        Items from left to right:
+        
+                label-1
+            <-  text-1   ->
+                                         
+        Other:
+            label-1: connected from item TOP to TOP
+            text-1: connected from item TOP to label-1 BOTTOM and item BOTTOM to BOTTOM
+    -->
+  <layout name="dataquery_primary_layout_prt" type="mesh">
+    <meshitem src="label-1" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    <meshitem src="label-1" srcEdge="LEFT" dst="text-1" dstEdge="LEFT"/>
+    <meshitem src="label-1" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT"/>
+
+    <meshitem src="text-1" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+    <meshitem src="text-1" srcEdge="TOP" dst="label-1" dstEdge="BOTTOM"/>
+    <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+  </layout>
+
+  <!-- layout : dataquery_secondary_layout_prt -->
+  <!--
+        Required items: 
+            label-1 ,text-1 , label-2 & text-2
+            
+        Items from left to right:
+        
+                label-1
+            <-  text-1   ->
+                label-2
+                text-2
+                                         
+        Other:
+            label-1: connected from item TOP to TOP
+            text-1: connected from item TOP to label-1 BOTTOM and item BOTTOM to label-2 TOP
+            
+            text-2: connected from item TOP to label-2 BOTTOM and item BOTTOM to BOTTOM
+    -->
+  <layout name="dataquery_secondary_layout_prt" type="mesh">
+    <meshitem src="label-1" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    <meshitem src="label-1" srcEdge="LEFT" dst="text-1" dstEdge="LEFT"/>
+    <meshitem src="label-1" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT"/>
+
+    <meshitem src="text-1" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+    <meshitem src="text-1" srcEdge="TOP" dst="label-1" dstEdge="BOTTOM"/>
+    <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="BOTTOM" dst="label-2" dstEdge="TOP"/>
+
+    <meshitem src="label-2" srcEdge="LEFT" dst="text-1" dstEdge="LEFT"/>
+    <meshitem src="label-2" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT"/>
+
+    <meshitem src="text-2" srcEdge="LEFT" dst="label-2" dstEdge="LEFT"/>
+    <meshitem src="text-2" srcEdge="TOP" dst="label-2" dstEdge="BOTTOM"/>
+    <meshitem src="text-2" srcEdge="RIGHT" dst="label-2" dstEdge="RIGHT"/>
+    <meshitem src="text-2" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+  </layout>
+
+  <!-- layout : dataquery_primary_layout_lsc -->
+  <!--
+        Required items: 
+            label-1 & text-1
+            
+        Items from left to right:
+            <-  label-1  <-  text-1   ->
+                                         
+        Other:
+            label-1: center aligned with text-1 center
+            text-1: connected from item TOP to TOP and item BOTTOM to BOTTOM
+    -->
+  <layout name="dataquery_primary_layout_lsc" type="mesh">
+    <meshitem src="label-1" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+    <meshitem src="label-1" srcEdge="CENTERV" dst="text-1" dstEdge="CENTERV"/>
+
+    <meshitem src="text-1" srcEdge="LEFT" dst="label-1" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+  </layout>
+
+  <!-- layout : dataquery_secondary_layout_lsc -->
+  <!--
+        Required items: 
+            label-1, text-1, label-2 & text-2
+            
+        Items from left to right:
+            <-  label-1  <-  text-1   ->
+                label-2      text-2
+                                         
+        Other:
+            label-1: center aligned with text-1 center
+            text-1: connected from item TOP to TOP and item BOTTOM to text-2 TOP
+            
+            label-2: center aligned with text-2 center
+            text-2: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="dataquery_secondary_layout_lsc" type="mesh">
+    <meshitem src="label-1" srcEdge="LEFT" dst="" dstEdge="LEFT"/>
+    <meshitem src="label-1" srcEdge="CENTERV" dst="text-1" dstEdge="CENTERV"/>
+
+    <meshitem src="text-1" srcEdge="LEFT" dst="label-1" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP"/>
+    <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+    <meshitem src="text-1" srcEdge="BOTTOM" dst="text-2" dstEdge="TOP"/>
+
+    <meshitem src="label-2" srcEdge="LEFT" dst="label-1" dstEdge="LEFT"/>
+    <meshitem src="label-2" srcEdge="RIGHT" dst="label-1" dstEdge="RIGHT"/>
+    <meshitem src="label-2" srcEdge="CENTERV" dst="text-2" dstEdge="CENTERV"/>
+
+    <meshitem src="text-2" srcEdge="LEFT" dst="text-1" dstEdge="LEFT"/>
+    <meshitem src="text-2" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT"/>
+    <meshitem src="text-2" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM"/>
+  </layout>
+
+</hbwidget>
+

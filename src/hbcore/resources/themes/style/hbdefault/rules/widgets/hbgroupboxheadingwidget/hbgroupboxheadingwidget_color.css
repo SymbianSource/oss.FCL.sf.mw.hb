@@ -1,0 +1,17 @@
+/* Simple Label groupBox */
+HbGroupBoxHeadingWidget[groupBoxType="1"]::text
+{
+    color: var(qtc_viewtitle_normal);
+}
+
+/* Collapsing container groupBox */
+HbGroupBoxHeadingWidget[groupBoxType="3"][state="normal"]::text
+{
+    color: var(qtc_groupbox_normal);
+}
+
+HbGroupBoxHeadingWidget[groupBoxType="3"][state="pressed"]::text
+{
+    color: var(qtc_groupbox_pressed);
+}
+

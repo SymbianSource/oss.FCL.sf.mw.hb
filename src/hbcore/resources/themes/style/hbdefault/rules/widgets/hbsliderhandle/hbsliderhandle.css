@@ -1,0 +1,26 @@
+
+HbSliderHandle
+{
+    layout:sliderhandle;
+}
+
+HbSliderHandle::icon
+{
+    top:0.0un;
+    left:0.0un;
+    right:0.0un;
+    bottom:0.0un;
+}
+
+/*touch area*/
+HbSliderControl[orientation="Horizontal"] > HbSliderHandle::toucharea
+{
+    fixed-width:4.0un;
+    fixed-height:var(hb-param-touch-area-gene-primary-medium);
+}
+
+HbSliderControl[orientation="Vertical"] > HbSliderHandle::toucharea
+{
+    fixed-width:var(hb-param-touch-area-gene-primary-medium);
+    fixed-height:4.0un;
+}

@@ -1,0 +1,9 @@
+<hbwidget version="0.1" type="HbConfirmationQueryContentWidget">
+  <layout name="confirmationquery_layout" type="mesh">
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="icon" srcEdge="LEFT" dst="text" dstEdge="RIGHT" />
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+  </layout>
+</hbwidget>
+

@@ -1,0 +1,37 @@
+HbStatusBar
+{
+    layout:default;
+}
+
+HbStatusBar::timetext
+{
+    font-variant: secondary;
+    fixed-width: 11un;
+    fixed-height: 2.5un;
+}
+
+HbStatusBar::signal
+{
+    fixed-width: var(hb-param-widget-chrome-height);
+    fixed-height: 2.5un;
+}
+
+HbStatusBar::battery
+{
+    fixed-width: var(hb-param-widget-chrome-height);
+    fixed-height: 2.5un;
+}
+
+HbStatusBar::notificationindicators
+{
+    fixed-width: 11.5un;
+    fixed-height: 2.5un;
+}
+
+HbStatusBar::settingsindicators
+{
+    fixed-width: 11.5un;
+    fixed-height: 2.5un;
+}
+
+

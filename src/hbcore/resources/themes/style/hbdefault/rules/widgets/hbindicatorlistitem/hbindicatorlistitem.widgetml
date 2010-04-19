@@ -1,0 +1,24 @@
+<hbwidget version="0.1" type="HbIndicatorListItem">
+    <layout name="item_icon_tworows" type="mesh">
+      <meshitem src="icon-1" srcEdge="LEFT" dst="" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-popup)" />
+      <meshitem src="icon-1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+      
+      <meshitem src="text-1" srcEdge="LEFT" dst="icon-1" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)" />
+      <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP" spacing="-var(hb-param-margin-gene-middle-vertical)"/>
+      <meshitem src="text-1" srcEdge="BOTTOM" dst="text-2" dstEdge="TOP" spacing="var(hb-param-margin-gene-middle-vertical)"/>
+      
+      <meshitem src="text-2" srcEdge="LEFT" dst="text-1" dstEdge="LEFT" />
+      <meshitem src="text-2" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT" />
+      <meshitem src="text-2" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacing="var(hb-param-margin-middle-vertical)" />
+      
+      <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  
+      <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    </layout>
+</hbwidget>

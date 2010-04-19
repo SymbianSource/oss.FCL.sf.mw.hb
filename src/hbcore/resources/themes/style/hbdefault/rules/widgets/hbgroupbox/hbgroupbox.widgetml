@@ -1,0 +1,48 @@
+<hbwidget version="0.1" type="HbGroupBox">
+  <!-- layout- default [ simpleLabel & collapsingContainer groupBox] -->
+  <!--
+       Required items: 
+           headingwidget: if groupBox type is simpleLabel
+           headingwidget & contentwidget: if groupBox type is collapsingContainer
+                                          
+       Items from left to right: if groupBox type is simpleLabel
+           <- headingwidget -> 
+           
+       Items from left to right: if groupBox type is collapsingContainer
+           <- headingwidget -> 
+           <- contentwidget ->
+                                         
+       Other:
+           headingwidget: connected from item TOP to TOP and item BOTTOM to contentwidget TOP
+           contentwidget: connected from item BOTTOM to BOTTOM
+    -->
+    <layout name="default" type="mesh">
+        <meshitem src="headingwidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="headingwidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="headingwidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="headingwidget" srcEdge="BOTTOM" dst="contentwidget" dstEdge="TOP" />
+        
+        <meshitem src="contentwidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="contentwidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="contentwidget" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    </layout>
+
+  <!-- layout- only_content [ richLabel groupBox]-->
+  <!--
+       Required items: 
+           contentwidget
+                                          
+       Items from left to right:
+           <- contentwidget  -> 
+                                         
+       Other:
+           contentwidget: [ TOP,LEFT,BOTTOM,RIGHT ]anhored w.r.t to layout
+    -->
+    <layout name="only_content" type="mesh">
+        <meshitem src="contentwidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="contentwidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="contentwidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="contentwidget" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    </layout>
+
+</hbwidget>

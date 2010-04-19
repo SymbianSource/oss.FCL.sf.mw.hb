@@ -1,0 +1,10 @@
+HbColorDialogContentWidget
+{
+	layout:colordialog_layout;
+}
+
+HbColorDialogContentWidget::color_grid_view
+{
+	fixed-width:expr(4*var(hb-param-graphic-size-primary-small)+8*var(hb-param-margin-gene-popup));
+	fixed-height:expr(4*var(hb-param-graphic-size-primary-small)+8*var(hb-param-margin-gene-popup));
+}

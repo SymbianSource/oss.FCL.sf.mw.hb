@@ -1,0 +1,4 @@
+HbLabel::text
+{
+    color:var(qtc_default_main_pane_normal);
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="31px" version="1.1" viewBox="-0.334 -0.66 31 31" width="31px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<polygon fill="none" points="10.966,3.739 13.867,6.188 13.867,3.154 10.966,3.154 "/>
+<polygon fill="none" points="16.053,3.154 16.053,6.222 19.027,3.759 19.027,3.154 "/>
+<path d="M8.787,0.971v3.785l5.08,4.292v5.93h2.186V9.056l5.16-4.266V0.971H8.787z M16.053,6.222V3.154h2.975v0.604L16.053,6.222z   M13.867,6.188l-2.901-2.449V3.154h2.899v3.034H13.867z"/>
+<polygon points="16.968,22.301 18.484,24.736 22.629,24.736 21.115,22.301 "/>
+<polygon points="10.493,22.302 12.005,24.736 16.13,24.736 14.616,22.301 "/>
+<polygon points="23.467,22.301 24.721,24.32 24.721,22.301 "/>
+<polygon points="9.648,24.736 9.655,24.736 8.139,22.302 5.279,22.302 9.479,29.029 11.527,27.748 10.818,26.608 "/>
+<polygon points="20.301,17.285 21.813,19.719 24.719,19.719 20.519,12.993 18.452,14.284 20.321,17.285 "/>
+<polygon points="19.46,19.719 17.948,17.285 13.86,17.288 15.374,19.719 "/>
+<polygon points="5.279,17.689 5.279,19.721 6.543,19.721 "/>
+<polygon points="13.022,19.719 11.511,17.288 7.378,17.288 8.893,19.721 "/>
+<rect fill="none" height="30" width="30"/>
+<rect fill="none" height="30" width="30"/>
+</svg>

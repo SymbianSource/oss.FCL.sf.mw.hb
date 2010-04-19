@@ -1,0 +1,15 @@
+HbIndicatorGroup::icon1 {
+    color: var(qtc_status_pane);
+}
+
+HbIndicatorGroup::icon2 {
+    color: var(qtc_status_pane);
+}
+
+HbIndicatorGroup::icon3 {
+    color: var(qtc_status_pane);
+}
+
+HbIndicatorGroup::icon4 {
+    color: var(qtc_status_pane);
+}

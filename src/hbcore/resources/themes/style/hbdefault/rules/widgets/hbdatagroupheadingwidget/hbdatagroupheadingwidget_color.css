@@ -1,0 +1,4 @@
+HbDataGroupHeadingWidget::dataGroup_HeadingLabel
+{
+	color:var(qtc_list_item_title_normal);
+}

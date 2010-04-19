@@ -1,0 +1,23 @@
+<hbwidget version="0.1" type="HbGroupBoxContentWidget">
+  <!-- layout-rich_Heading -->
+  <!--
+        Required items: 
+            content
+
+        Other:
+            contentwidget: [ TOP,LEFT,BOTTOM,RIGHT ]anhored w.r.t to layout
+            background: [ TOP,LEFT,BOTTOM,RIGHT ]anhored w.r.t to layout
+    -->
+    <layout name="rich_Heading" type="mesh">
+        <meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        
+        <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    </layout>
+
+</hbwidget>

@@ -1,0 +1,9 @@
+HbDataFormViewItem::dataItem_Label
+{
+	color:var(qtc_list_item_title_normal);
+}
+
+HbDataFormViewItem::dataItem_Description
+{
+	color:var(qtc_list_item_content_normal);
+}

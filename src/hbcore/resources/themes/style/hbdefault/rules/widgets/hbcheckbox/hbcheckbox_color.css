@@ -1,0 +1,9 @@
+HbCheckBox::text[enabled]
+{
+    /*color:var(qtc_checkbox_normal);*/
+}
+
+HbCheckBox::text[!enabled]
+{
+    /*color:var(qtc_checkbox_disabled);*/
+}

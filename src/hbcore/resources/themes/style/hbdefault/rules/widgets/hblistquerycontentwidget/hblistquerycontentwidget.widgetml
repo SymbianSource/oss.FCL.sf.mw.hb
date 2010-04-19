@@ -1,0 +1,8 @@
+<hbwidget version="0.1" type="HbListQueryContentWidget">
+  <layout name="list_query_layout" type="mesh">
+    <meshitem src="list" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="list" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="list" srcEdge="TOP" dst="" dstEdge="TOP" /> 
+    <meshitem src="list" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" /> 
+  </layout>
+</hbwidget>

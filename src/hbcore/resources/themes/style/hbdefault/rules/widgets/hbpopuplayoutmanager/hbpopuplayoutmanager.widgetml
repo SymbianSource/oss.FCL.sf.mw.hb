@@ -1,0 +1,42 @@
+<hbwidget version="0.1" type="HbPopupLayoutManager">
+  <layout name="default" type="mesh">
+
+    <meshitem src="menu" srcEdge="LEFT" dst="spacerLeft" dstEdge="RIGHT" />
+    <meshitem src="spacerLeft" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="menu" srcEdge="RIGHT" dst="spacerRight" dstEdge="LEFT" />
+    <meshitem src="spacerRight" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="menu" srcEdge="TOP" dst="spacerTop" dstEdge="BOTTOM" />
+    <meshitem src="spacerTop" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="menu" srcEdge="BOTTOM" dst="spacerBottom" dstEdge="TOP" />
+    <meshitem src="spacerBottom" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="popup" srcEdge="LEFT" dst="spacerLeft" dstEdge="RIGHT" />
+    <meshitem src="toolbar-extension" srcEdge="LEFT" dst="spacerLeft" dstEdge="RIGHT" />
+    <meshitem src="spacerLeft" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="popup" srcEdge="RIGHT" dst="spacerRight" dstEdge="LEFT" />
+    <meshitem src="toolbar-extension" srcEdge="RIGHT" dst="spacerRight" dstEdge="LEFT" />
+    <meshitem src="spacerRight" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="popup" srcEdge="TOP" dst="spacerTop" dstEdge="BOTTOM" />
+    <meshitem src="toolbar-extension" srcEdge="TOP" dst="spacerTop" dstEdge="BOTTOM" />
+    <meshitem src="spacerTop" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="popup" srcEdge="BOTTOM" dst="spacerBottom" dstEdge="TOP" />
+    <meshitem src="toolbar-extension" srcEdge="BOTTOM" dst="spacerBottom" dstEdge="TOP" />
+    <meshitem src="spacerBottom" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="options-menu" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="options-menu" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="options-menu" srcEdge="RIGHT" dst="spacerRight" dstEdge="LEFT" />
+    <meshitem src="spacerRight" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="options-menu" srcEdge="BOTTOM" dst="spacerBottom" dstEdge="TOP" />
+    <meshitem src="spacerBottom" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+
+    <meshitem src="volumesliderpopup" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="volumesliderpopup" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="zoomsliderpopup" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="zoomsliderpopup" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+  </layout>        
+  
+</hbwidget>

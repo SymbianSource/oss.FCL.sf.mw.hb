@@ -1,0 +1,24 @@
+HbToolBarExtension {
+	content-margins: var(hb-param-margin-gene-popup-list);
+	max-rows-portrait: 4;
+	max-rows-landscape: 3;
+	max-columns-portrait: 3;
+	max-columns-landscape: 4;
+        max-width:var(hb-param-screen-width);
+        max-height:var(hb-param-screen-height);
+        min-width:0un;
+}
+
+HbToolBarExtension::heading {
+    left:-var(hb-param-margin-gene-popup);
+    right:var(hb-param-margin-gene-popup);
+    top:-var(hb-param-margin-gene-popup);
+    bottom:var(hb-param-margin-gene-popup);
+}
+
+HbToolBarExtension::heading::text {
+    text-height:var(hb-param-text-height-primary);
+    text-align:left;
+    text-line-count-max: 1;
+    font-variant:primary;
+}

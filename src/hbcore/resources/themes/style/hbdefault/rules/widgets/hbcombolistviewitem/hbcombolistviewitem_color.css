@@ -1,0 +1,8 @@
+HbComboListViewItem::text-1{
+    color:var(qtc_popup_list_title_normal);
+}
+
+HbComboListViewItem::selection-icon
+{
+    color:var(qtc_popup_list_item_pressed);
+}

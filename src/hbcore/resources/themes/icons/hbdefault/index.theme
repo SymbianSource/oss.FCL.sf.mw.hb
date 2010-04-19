@@ -1,0 +1,5 @@
+[Icon Theme]
+Name=hbdefault
+Comment=Fallback icon theme
+Hidden=true
+Directories=scalable,pixmap

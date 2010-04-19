@@ -1,0 +1,26 @@
+/* MenuItem selector */
+
+HbMenuItem
+{
+background:var(menubackground);
+}
+
+HbMenuItem::text[enabled]
+{
+color:var(qtc_popup_list_title_normal);
+}
+
+HbMenuItem::text[!enabled]
+{
+color:var(qtc_popup_list_item_disabled);
+}
+
+HbMenuItem::submenu-indicator[!enabled]
+{
+color:var(qtc_popup_list_item_disabled);
+}
+
+HbMenuItem::submenu-indicator[enabled]
+{
+color:var(qtc_popup_list_title_normal);
+} 

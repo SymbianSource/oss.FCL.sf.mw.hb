@@ -1,0 +1,51 @@
+HbPopupLayoutManager
+{
+	layout:default;
+}
+
+HbPopupLayoutManager::popup
+{
+	left:-var(hb-param-margin-gene-screen);
+	right:var(hb-param-margin-gene-screen);
+	top:-var(hb-param-margin-gene-screen);
+	bottom:var(hb-param-margin-gene-screen);
+	min-width:1un;
+	min-height:1un;
+	max-width: 200un;
+	max-height: 200un;
+	size-policy: maximum;
+}
+
+HbPopupLayoutManager::toolbar-extension
+{
+	min-width:1un;
+	min-height:1un;
+	max-width: 200un;
+	max-height: 200un;
+	size-policy: maximum;
+}
+
+HbPopupLayoutManager::menu
+{
+	left:-5un;
+	right:5un;
+	top:-5un;
+	bottom: 5un;
+	size-policy: maximum;
+}
+
+HbPopupLayoutManager::options-menu
+{	
+	left:-4.5un;	
+	top: -var(hb-param-widget-chrome-height);		
+}
+
+HbPopupLayoutManager::volumesliderpopup
+{	
+	right:var(hb-param-margin-gene-screen);
+}
+
+HbPopupLayoutManager::zoomsliderpopup
+{	
+	right:var(hb-param-margin-gene-screen);
+}

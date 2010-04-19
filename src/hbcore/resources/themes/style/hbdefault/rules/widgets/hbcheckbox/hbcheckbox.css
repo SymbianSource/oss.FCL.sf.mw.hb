@@ -1,0 +1,30 @@
+HbCheckBox{
+    layout:default;
+}
+
+HbCheckBox::icon
+{
+    left:-var(hb-param-margin-gene-left);
+    top: -0.25un;
+    fixed-width:var(hb-param-graphic-size-secondary);
+    fixed-height:var(hb-param-graphic-size-secondary);
+}
+HbCheckBox::text
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-right);
+    top: -var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    text-height:var(hb-param-text-height-secondary);
+    font-variant:secondary;
+    text-line-count-max:3;
+    text-align:left center;
+}
+
+HbCheckBox::toucharea{
+    left: 0.0un;
+    right: 0.0un;
+    top: 0.0un;
+    bottom: 0.0un;
+}
+

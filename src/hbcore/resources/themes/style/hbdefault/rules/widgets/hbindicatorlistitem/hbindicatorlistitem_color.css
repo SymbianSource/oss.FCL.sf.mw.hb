@@ -1,0 +1,8 @@
+HbListViewItem::text-1 {
+	color: var(qtc_popup_list_item_content_normal);
+}
+
+HbListViewItem::text-2 {
+	color: var(qtc_popup_list_item_content_normal);
+}
+ 

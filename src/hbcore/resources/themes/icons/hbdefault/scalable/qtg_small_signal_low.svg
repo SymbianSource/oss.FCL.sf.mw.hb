@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="none" height="30" width="30"/>
+<rect fill-opacity="0.6" height="10.589" stroke-opacity="0.6" width="7.06" x="2.647" y="15.001"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="6.18" x2="6.18" y1="15.88" y2="24.83">
+<stop offset="0" stop-color="#DE8029"/>
+<stop offset="1" stop-color="#D82E09"/>
+</linearGradient>
+<rect fill="url(#SVGID_1)" height="8.824" width="5.294" x="3.53" y="15.883"/>
+<rect fill-opacity="0.6" height="15.883" stroke-opacity="0.6" width="7.059" x="11.471" y="9.707"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="15" x2="15" y1="5.29" y2="24.71">
+<stop offset="0" stop-color="#C4C4C4"/>
+<stop offset="1" stop-color="#4F4F4F"/>
+</linearGradient>
+<rect fill="url(#SVGID_2)" height="14.118" width="5.295" x="12.354" y="10.589"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="17.648,12.698 17.648,10.589 15.539,10.589 " stroke-opacity="0.3"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="12.354,17.386 17.648,22.68 17.648,17.689 12.354,12.395 " stroke-opacity="0.3"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="12.354,22.377 12.354,24.707 14.683,24.707 " stroke-opacity="0.3"/>
+<rect fill-opacity="0.6" height="21.178" stroke-opacity="0.6" width="7.06" x="20.295" y="4.412"/>
+<rect fill="url(#SVGID_2)" height="19.413" width="5.295" x="21.178" y="5.294"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="26.473,10.271 26.473,5.294 21.495,5.294 " stroke-opacity="0.3"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="21.178,14.959 26.473,20.254 26.473,15.263 21.178,9.968 " stroke-opacity="0.3"/>
+<polygon fill="#FFFFFF" fill-opacity="0.3" points="21.178,19.951 21.178,24.707 25.934,24.707 " stroke-opacity="0.3"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.883" stroke-opacity="0.4" width="5.294" x="3.53" y="15.883"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.882" stroke-opacity="0.4" width="5.295" x="12.354" y="10.589"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.882" stroke-opacity="0.4" width="5.295" x="21.178" y="5.294"/>
+<rect fill="none" height="30.002" width="30.002"/>
+</svg>

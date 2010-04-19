@@ -1,0 +1,126 @@
+<hbwidget version="0.1" type="HbSlider">
+
+  <layout name="slider_vertical_withticklabel" type="mesh">
+
+
+    <meshitem src="control" srcEdge="TOP" dst="increment-icon" dstEdge="BOTTOM" />
+    <meshitem src="control" srcEdge="BOTTOM" dst="decrement-icon" dstEdge="TOP" />
+    <meshitem src="control" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="control" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="text_item_element" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text_item_element" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="text_element" srcEdge="CENTERH" dst="text_item_element" dstEdge="CENTERH" />
+    <meshitem src="text_element" srcEdge="CENTERV" dst="text_item_element" dstEdge="CENTERV" />
+
+    <meshitem src="increment-icon" srcEdge="TOP" dst="text_item_element" dstEdge="BOTTOM" />
+    <meshitem src="increment-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERV" dst="increment-icon" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERH" dst="increment-icon" dstEdge="CENTERH" />
+
+
+    <meshitem src="decrement-icon" srcEdge="BOTTOM" dst="icon-icon" dstEdge="TOP" />
+    <meshitem src="decrement-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERV" dst="decrement-icon" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERH" dst="decrement-icon" dstEdge="CENTERH" />
+
+    <meshitem src="icon-icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="icon-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="icon" srcEdge="CENTERV" dst="icon-icon" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="icon-icon" dstEdge="CENTERH" />
+
+  </layout>
+
+
+  <layout name="slider_vertical_withoutticklabel" type="mesh">
+
+    <meshitem src="text_item_element" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="text_item_element" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text_element" srcEdge="CENTERH" dst="text_item_element" dstEdge="CENTERH" />
+    <meshitem src="text_element" srcEdge="CENTERV" dst="text_item_element" dstEdge="CENTERV" />
+
+    <meshitem src="increment-icon" srcEdge="TOP" dst="text_item_element" dstEdge="BOTTOM" />
+    <meshitem src="increment-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERV" dst="increment-icon" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERH" dst="increment-icon" dstEdge="CENTERH" />
+
+    <meshitem src="icon-icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="icon-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="icon" srcEdge="CENTERV" dst="icon-icon" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="icon-icon" dstEdge="CENTERH" />
+    
+    <meshitem src="decrement-icon" srcEdge="BOTTOM" dst="icon-icon" dstEdge="TOP" />
+    <meshitem src="decrement-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERV" dst="decrement-icon" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERH" dst="decrement-icon" dstEdge="CENTERH" />
+
+    <meshitem src="control" srcEdge="LEFT" dst="" dstEdge="LEFT" spacer="spacerLeft" />
+    <meshitem src="control" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacer="spacerRight" />
+
+    <meshitem src="control" srcEdge="TOP" dst="increment-icon" dstEdge="BOTTOM" />
+    <meshitem src="control" srcEdge="BOTTOM" dst="decrement-icon" dstEdge="TOP" />
+    <meshitem src="control" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+
+  
+  </layout>
+
+  <layout name="slider_horizontal_withticklabel" type="mesh">
+
+    <meshitem src="control" srcEdge="LEFT" dst="decrement-icon" dstEdge="RIGHT" />
+    <meshitem src="control" srcEdge="RIGHT" dst="increment-icon" dstEdge="LEFT" />
+    <meshitem src="control" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="control" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    
+    <meshitem src="icon-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERV" dst="icon-icon" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="icon-icon" dstEdge="CENTERH" />
+    
+    <meshitem src="decrement-icon" srcEdge="LEFT" dst="icon-icon" dstEdge="RIGHT" />
+    <meshitem src="decrement-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERV" dst="decrement-icon" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERH" dst="decrement-icon" dstEdge="CENTERH" />
+  
+    <meshitem src="increment-icon" srcEdge="RIGHT" dst="text_item_element" dstEdge="LEFT" />
+    <meshitem src="increment-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERV" dst="increment-icon" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERH" dst="increment-icon" dstEdge="CENTERH" />
+  
+    <meshitem src="text_item_element" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text_item_element" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="text_element" srcEdge="CENTERH" dst="text_item_element" dstEdge="CENTERH" />
+    <meshitem src="text_element" srcEdge="CENTERV" dst="text_item_element" dstEdge="CENTERV" />
+  </layout>
+
+  <layout name="slider_horizontal_withoutticklabel" type="mesh">
+
+    <meshitem src="icon-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERV" dst="icon-icon" dstEdge="CENTERV" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="icon-icon" dstEdge="CENTERH" />
+
+    <meshitem src="increment-icon" srcEdge="RIGHT" dst="text_item_element" dstEdge="LEFT" />
+    <meshitem src="increment-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERV" dst="increment-icon" dstEdge="CENTERV" />
+    <meshitem src="increment-icon-toucharea" srcEdge="CENTERH" dst="increment-icon" dstEdge="CENTERH" />
+
+    <meshitem src="decrement-icon" srcEdge="LEFT" dst="icon-icon" dstEdge="RIGHT" />
+    <meshitem src="decrement-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERV" dst="decrement-icon" dstEdge="CENTERV" />
+    <meshitem src="decrement-icon-toucharea" srcEdge="CENTERH" dst="decrement-icon" dstEdge="CENTERH" />
+
+    <meshitem src="control" srcEdge="TOP" dst="" dstEdge="TOP" spacer="spacerTop" />
+    <meshitem src="control" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacer="spacerBottom" />
+
+    <meshitem src="control" srcEdge="LEFT" dst="decrement-icon" dstEdge="RIGHT" />
+    <meshitem src="control" srcEdge="RIGHT" dst="increment-icon" dstEdge="LEFT" />
+    <meshitem src="control" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="text_item_element" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text_item_element" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="text_element" srcEdge="CENTERH" dst="text_item_element" dstEdge="CENTERH" />
+    <meshitem src="text_element" srcEdge="CENTERV" dst="text_item_element" dstEdge="CENTERV" />
+  </layout>
+
+</hbwidget>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<rect fill="none" height="60" width="60"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="30" x2="30" y1="11.32" y2="46.87">
+<stop offset="0" stop-color="#E3E3E3"/>
+<stop offset="1" stop-color="#9B9B9B"/>
+</linearGradient>
+<path d="M8.571,47.14c-1.351,0-2.449-1.099-2.449-2.449v-30.61c0-1.351,1.098-2.449,2.449-2.449 h42.854c1.351,0,2.448,1.098,2.448,2.449v30.61c0,1.351-1.098,2.449-2.448,2.449H8.571z" fill="url(#SVGID_1)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="30" x2="30" y1="11.94" y2="46.27">
+<stop offset="0" stop-color="#F5F5F5"/>
+<stop offset="0.78" stop-color="#CCCCCC"/>
+<stop offset="1" stop-color="#D1D1D1"/>
+</linearGradient>
+<path d="M53.262,44.69c0,1.015-0.823,1.837-1.837,1.837H8.571c-1.014,0-1.836-0.822-1.836-1.837 v-30.61c0-1.014,0.823-1.836,1.836-1.836h42.854c1.014,0,1.837,0.822,1.837,1.836V44.69z" fill="url(#SVGID_2)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3" x1="30" x2="30" y1="12.79" y2="45.85">
+<stop offset="0" stop-color="#FFFFFF"/>
+<stop offset="1" stop-color="#DEDEDE"/>
+</linearGradient>
+<path d="M51.425,13.468c0.338,0,0.612,0.274,0.612,0.612v30.61c0,0.338-0.274,0.612-0.612,0.612H8.571 c-0.338,0-0.612-0.274-0.612-0.612v-30.61c0-0.338,0.274-0.612,0.612-0.612H51.425 M51.425,12.856H8.571 c-0.675,0-1.225,0.549-1.225,1.224v30.61c0,0.675,0.549,1.225,1.225,1.225h42.854c0.675,0,1.225-0.55,1.225-1.225v-30.61 C52.649,13.405,52.1,12.856,51.425,12.856L51.425,12.856z" fill="url(#SVGID_3)"/>
+<rect fill="#020202" fill-opacity="0.1" height="20.203" stroke-opacity="0.1" width="18.366" x="11.02" y="20.04"/>
+<rect fill="#FFFFFF" height="20.202" width="18.366" x="11.02" y="18.815"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4" x1="20.2" x2="20.2" y1="38.48" y2="19.5">
+<stop offset="0" stop-color="#3FA8F4"/>
+<stop offset="1" stop-color="#8DC8E1"/>
+</linearGradient>
+<rect fill="url(#SVGID_4)" height="18.979" width="17.142" x="11.632" y="19.428"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5" x1="12.86" x2="26.33" y1="29.18" y2="29.18">
+<stop offset="0" stop-color="#146BAF"/>
+<stop offset="1" stop-color="#013B77"/>
+</linearGradient>
+<path d="M25.682,33.236c-0.398-0.207-1.947-0.768-2.775-1.079l-0.037-0.015l-0.001,0.001 c-0.008-0.003-0.016-0.006-0.023-0.009l-0.469-0.189c-0.329-0.375-0.293-1.24-0.109-1.53c0.039-0.059,0.071-0.116,0.109-0.175H22.37 c0.268-0.437,0.497-0.871,0.679-1.277c0.332,0.115,0.758-0.194,0.969-0.716c0.219-0.541,0.125-1.102-0.212-1.252 c-0.018-0.009-0.039-0.01-0.058-0.016c0,0,0,0,0,0c0.043-0.17,0.064-0.271,0.064-0.271c0.58-2.604-0.683-4.668-3.744-4.771 c-1.257,0-1.862,0.573-2.33,1.17c-0.76,0.117-1.963,0.813-1.114,3.861c-0.032,0.006-0.063,0.011-0.094,0.023 c-0.34,0.143-0.446,0.699-0.238,1.242c0.208,0.542,0.651,0.868,0.991,0.725c0.02-0.01,0.039-0.024,0.058-0.036 c0.187,0.419,0.417,0.868,0.693,1.319h-0.003c0.013,0.021,0.026,0.042,0.039,0.063c0.002,0.004,0.003,0.007,0.006,0.011 c0.001,0,0.001,0.001,0.002,0.002c0.02,0.033,0.04,0.066,0.061,0.099c0.176,0.275,0.214,1.07-0.068,1.469l-0.488,0.213 c-0.82,0.32-2.399,0.896-2.856,1.139c-0.71,0.377-1.867,1.242-1.867,3.192h14.692C27.549,34.479,26.228,33.521,25.682,33.236z M23.705,26.971c-0.018-0.004-0.036-0.009-0.054-0.011c-0.024-0.004-0.047-0.01-0.071-0.014c-0.004-0.001-0.006-0.001-0.011-0.002 C23.614,26.952,23.659,26.961,23.705,26.971z M16.628,26.966c0.006-0.006,0.014-0.014,0.021-0.02 c0.001,0.005,0.002,0.008,0.003,0.013C16.645,26.961,16.637,26.965,16.628,26.966z" fill="url(#SVGID_5)"/>
+<rect fill="#020202" fill-opacity="0.2" height="0.612" stroke-opacity="0.2" width="15.918" x="33.059" y="22.489"/>
+<rect fill="#020202" fill-opacity="0.5" height="1.071" stroke-opacity="0.5" width="15.918" x="33.059" y="23.101"/>
+<rect fill="#020202" fill-opacity="0.2" height="0.612" stroke-opacity="0.2" width="15.918" x="33.059" y="27.999"/>
+<rect fill="#020202" fill-opacity="0.5" height="1.072" stroke-opacity="0.5" width="15.918" x="33.059" y="28.61"/>
+<rect fill="#020202" fill-opacity="0.2" height="0.612" stroke-opacity="0.2" width="15.918" x="33.059" y="33.508"/>
+<rect fill="#020202" fill-opacity="0.5" height="1.071" stroke-opacity="0.5" width="15.918" x="33.059" y="34.12"/>
+<rect fill="none" height="59.996" width="59.996"/>
+</g>
+</svg>

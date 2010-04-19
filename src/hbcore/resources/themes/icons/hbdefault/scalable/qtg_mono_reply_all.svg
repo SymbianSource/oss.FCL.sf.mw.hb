@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="none" height="30" width="30"/>
+<rect fill="none" height="30" width="30"/>
+<path d="M15.723,21.75H2.25v-0.141l5.237-5.565L12,19.994l4.513-3.95l2.587,2.749l0.848-0.74l-2.587-2.75l4.39-3.842v5.013 L24,14.506V9.493V7.5H0v1.993v12.866V24h18.294L15.723,21.75z M21.428,9.75l-5.803,5.078l-0.141,0.124L12,18l-3.484-3.048 l-0.141-0.124L2.572,9.75H21.428z M2.25,11.461l4.391,3.842L2.25,19.968V11.461z"/>
+<polygon points="25.5,13.194 25.5,17.25 27.75,17.25 27.75,3.75 3.75,3.75 3.75,6 25.5,6 "/>
+<polygon points="30,18.75 24,18.75 24,16.5 18,21.75 24,27 24,24.75 30,24.75 "/>
+</svg>

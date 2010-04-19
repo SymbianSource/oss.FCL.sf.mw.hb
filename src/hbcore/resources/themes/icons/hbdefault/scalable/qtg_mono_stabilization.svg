@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="none" height="30" width="30"/>
+<rect fill="none" height="30" width="30"/>
+<rect height="12" width="1.5" x="2.25" y="13.781"/>
+<rect height="1.5" width="7.5" x="2.25" y="24.281"/>
+<rect height="12" width="1.5" x="26.25" y="13.781"/>
+<rect height="1.5" width="7.5" x="20.25" y="24.281"/>
+<path d="M6,6.094v13.5h18v-13.5H6z M22.5,18.094h-15v-10.5h15V18.094z"/>
+<circle cx="9.612" cy="9.74" r="1.143"/>
+<path d="M15.145,16.594c2.068,0,3.75-1.683,3.75-3.75c0-2.068-1.682-3.75-3.75-3.75c-2.066,0-3.75,1.682-3.75,3.75 C11.395,14.911,13.079,16.594,15.145,16.594z M15.145,10.594c1.241,0,2.25,1.009,2.25,2.25c0,1.239-1.01,2.25-2.25,2.25 s-2.25-1.011-2.25-2.25C12.895,11.603,13.904,10.594,15.145,10.594z"/>
+<rect height="1.125" width="3" x="18.75" y="4.219"/>
+</svg>

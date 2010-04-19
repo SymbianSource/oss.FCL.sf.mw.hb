@@ -1,0 +1,5 @@
+HbBatteryIndicator::icon
+{
+    color: var(qtc_status_pane);
+}
+

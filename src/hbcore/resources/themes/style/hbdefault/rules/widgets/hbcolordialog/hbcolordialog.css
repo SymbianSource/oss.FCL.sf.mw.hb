@@ -1,0 +1,25 @@
+HbColorDialog {
+    /* unfortunately, #ffffff notation is not supported. Have a nice day
+       with hex->dec conversions */
+
+    color0:  16777215; /* white */
+    color1:  0;        /* black */ 
+    color2:  5592405;  /* dark gray */
+    
+    color3:  170;      /* blue */
+    color4:  43520;    /* green */
+    color5:  43690;    /* cyan */
+    color6:  11141120; /* red */
+    
+    color7:  11141290; /* magenta */
+    color8:  11162880; /* brown */
+    color9:  5592575;  /* bright blue */
+    color10: 5635925;  /* bright green */
+    
+    color11: 5636095;  /* bright cyan */
+    color12: 16733525; /* bright red */
+    color13: 16733695; /* bright magenta */
+    color14: 16776960; /* yellow */
+
+    color15: 11031552; /* orange - only used when none block is not visible*/
+}

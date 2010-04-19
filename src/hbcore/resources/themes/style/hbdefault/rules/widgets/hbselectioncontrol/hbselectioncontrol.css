@@ -1,0 +1,14 @@
+HbSelectionControl::handle-icon
+{
+    fixed-width:2.4un;
+    fixed-height:2.4un;
+}
+
+HbSelectionControl::handle-toucharea
+{
+   fixed-height:9.0un;
+   fixed-width:9.0un;
+}
+
+
+

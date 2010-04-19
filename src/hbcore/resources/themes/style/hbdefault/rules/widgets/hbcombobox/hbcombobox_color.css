@@ -1,0 +1,21 @@
+/* Colors for different comboBox states for text */
+HbComboBox[!editable][state = "normal"]::combobox_labelfield
+{
+    color:var(qtc_combobox_normal);
+}
+
+HbComboBox[!editable][state = "pressed"]::combobox_labelfield
+{
+    color:var(qtc_combobox_pressed);
+}
+
+HbComboBox[!enabled]::combobox_labelfield
+{
+    color:var(qtc_combobox_disabled);
+}
+
+HbComboBox[editable]::combobox_labelfield
+{
+    color:var(qtc_combobox_edit);
+}
+

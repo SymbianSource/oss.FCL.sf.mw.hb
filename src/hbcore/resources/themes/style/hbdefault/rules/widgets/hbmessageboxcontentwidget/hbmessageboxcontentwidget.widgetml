@@ -1,0 +1,19 @@
+<hbwidget version="0.1" type="HbMessageBoxContentWidget">
+
+  <layout name="default" type="mesh">
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+  </layout>
+
+  <layout name="text_layout" type="mesh">
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+</hbwidget>

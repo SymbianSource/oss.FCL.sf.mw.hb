@@ -1,0 +1,43 @@
+<hbwidget version="0.1" type="HbTreeViewItem">
+<!-- parentitemlayout-1 -->
+  <!--
+        Required items: 
+            text-1
+            
+        Items from left to right:
+            <- selection icon <- subitem-indicator <- text-1 ->
+                                         
+        Other:
+            selection icon: center aligned with text-1 center
+            subitem-indicator: center aligned with text-1 center
+            
+            text-1: connected from TOP to item TOP and BOTTOM to item BOTTOM
+    -->
+
+  <layout name="parentitemlayout-1" type="mesh">
+    <meshitem src="selection-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-left)" />
+    <meshitem src="selection-icon" srcEdge="CENTERV" dst="text-1" dstEdge="CENTERV" />
+
+    <meshitem src="subitem-indicator" srcEdge="LEFT" dst="selection-icon" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-left)"/>
+    <meshitem src="subitem-indicator" srcEdge="CENTERV" dst="text-1" dstEdge="CENTERV" />
+    
+    <meshitem src="text-1" srcEdge="LEFT" dst="subitem-indicator" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)" />
+    <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP" spacing="-var(hb-param-margin-gene-top)" />
+    <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-right)" />
+    <meshitem src="text-1" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacing="var(hb-param-margin-gene-bottom)" />
+
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="multiselection-toucharea" srcEdge="CENTERH" dst="selection-icon" dstEdge="CENTERH" />
+    <meshitem src="multiselection-toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="multiselection-toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+</hbwidget>

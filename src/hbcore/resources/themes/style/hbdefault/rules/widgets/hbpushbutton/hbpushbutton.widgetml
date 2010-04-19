@@ -1,0 +1,148 @@
+<hbwidget version="0.1" type="HbPushButton">
+
+  <layout name="icon_button" type="mesh">
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" spacer="spacerTop" />
+    <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacer="spacerBottom" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+  <layout name="text_button" type="mesh">
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" spacer="spacerTop" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacer="spacerBottom" />
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <!--meshitem src="text" srcEdge="CENTERV" dst="" dstEdge="CENTERV" /-->
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+  <layout name="icon_text_additionalText_vertical" type="mesh">
+    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="icon" srcEdge="RIGHT" dst="text" dstEdge="LEFT" />
+
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="additional-text" srcEdge="TOP" dst="text" dstEdge="BOTTOM" />
+    <meshitem src="additional-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="additional-text" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+    <meshitem src="additional-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+  <layout name="icon_text_additionalText_horizontal" type="mesh">
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="text" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="additional-text" srcEdge="LEFT" dst="text" dstEdge="RIGHT" />
+    <meshitem src="additional-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="additional-text" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+  <layout name="icon_text_Horizontal" type="mesh">
+    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="icon" srcEdge="RIGHT" dst="text" dstEdge="LEFT" />
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="CENTERV" dst="icon" dstEdge="CENTERV" />
+    
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+
+  <layout name="icon_text_Vertical" type="mesh">
+    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" spacer="spacerTop" />
+    <meshitem src="icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+    <meshitem src="text" srcEdge="TOP" dst="icon" dstEdge="BOTTOM" />
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacer="spacerBottom" />
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+
+  <layout name="text_additionalText_vertical" type="mesh">
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" spacer="spacerTop" />
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="additional-text" srcEdge="TOP" dst="text" dstEdge="BOTTOM" />
+    <meshitem src="additional-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="additional-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="additional-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacer="spacerBottom" />
+   
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+  
+  
+</hbwidget>

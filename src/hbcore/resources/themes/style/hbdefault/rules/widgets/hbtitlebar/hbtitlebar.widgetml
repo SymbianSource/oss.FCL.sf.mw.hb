@@ -1,0 +1,20 @@
+<hbwidget version="0.1" type="HbTitleBar">
+
+  <layout name="default" type="mesh">
+    <meshitem src="handle" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="handle" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="handle" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+    <meshitem src="status" srcEdge="LEFT" dst="handle" dstEdge="RIGHT" />
+    <meshitem src="status" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+    <meshitem src="back" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="back" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+    <meshitem src="title" srcEdge="LEFT" dst="status" dstEdge="RIGHT" />
+    <meshitem src="title" srcEdge="RIGHT" dst="back" dstEdge="LEFT" />
+  </layout>
+
+</hbwidget>

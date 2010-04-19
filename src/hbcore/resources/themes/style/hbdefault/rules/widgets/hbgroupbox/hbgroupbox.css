@@ -1,0 +1,34 @@
+HbGroupBox
+{
+    layout:default;
+}
+
+HbGroupBox[groupBoxType="2"]
+{
+    layout:only_content;
+}
+
+/*Simple label & collapsing container groupBox*/
+HbGroupBox::headingWidget
+{
+    top:0.0un;
+    left:0.0un;
+    bottom:0.0un;
+    right:0.0un;
+}
+
+HbGroupBox::contentwidget
+{
+    left:0.0un;
+    bottom:0.0un;
+    right:0.0un;
+}
+
+/*Rich label groupBox*/
+HbGroupBox[groupBoxType="2"]::contentwidget
+{
+    top:0.0un;
+    left:0.0un;
+    bottom:0.0un;
+    right:0.0un;
+}

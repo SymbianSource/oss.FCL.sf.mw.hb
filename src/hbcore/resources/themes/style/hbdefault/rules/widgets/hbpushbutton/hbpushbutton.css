@@ -1,0 +1,191 @@
+HbPushButton{
+    layout:icon_button;
+}
+
+HbPushButton[icon][!text][!additionalText]{
+    layout:icon_button;
+}
+
+HbPushButton[text][!icon][!additionalText]{
+    layout:text_button;
+}
+
+HbPushButton[!stretched][icon][text][additionalText]{
+    layout:icon_text_additionalText_vertical;  
+}
+
+HbPushButton[stretched][icon][text][additionalText]{
+    layout:icon_text_additionalText_horizontal;
+}
+
+HbPushButton[stretched][icon][text][!additionalText]{
+    layout:icon_text_Horizontal;
+}
+
+HbPushButton[!stretched][icon][text][!additionalText]{
+    layout:icon_text_Vertical;
+}
+
+HbPushButton[!stretched][additionalText][text][!icon]{
+    layout:text_additionalText_vertical;    
+}
+
+HbPushButton::icon{
+    top: -var(hb-param-margin-gene-center-align) ;
+    bottom: var(hb-param-margin-gene-center-align) ; 
+    pref-width: var(hb-param-graphic-size-function);
+    pref-height: var(hb-param-graphic-size-function);
+    size-policy: preferred preferred;    
+}
+
+HbPushButton::text
+{
+    top: -var(hb-param-margin-gene-center-align) ;
+    bottom: var(hb-param-margin-gene-center-align) ;
+    left: -var(hb-param-margin-gene-left);
+    right: var(hb-param-margin-gene-right);
+    font-variant:primary;
+    text-height: var(hb-param-text-height-tiny);
+    text-align:center;
+    text-line-count-max:2;
+}
+
+/* icon_text_Horizontal */
+HbPushButton[stretched][icon][text][!additionalText]::text{
+    right: var(hb-param-margin-gene-right);
+    font-variant: primary;
+    text-height: var(hb-param-text-height-tiny);
+    text-align:left;
+    text-line-count-max:2;    
+}
+
+HbPushButton[stretched][icon][text][!additionalText]::icon{
+    top: -var(hb-param-margin-gene-top);
+    left: -var(hb-param-margin-gene-left);
+    bottom: var(hb-param-margin-gene-bottom);
+    right: var(hb-param-margin-gene-middle-horizontal);
+    fixed-width: var(hb-param-graphic-size-function);
+    fixed-height: var(hb-param-graphic-size-function);
+    size-policy: fixed fixed;
+}
+
+/* icon text vertical */
+HbPushButton[!stretched][icon][text][!additionalText]::text{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom: var(hb-param-margin-gene-center-align) ;
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+    text-height:var(hb-param-text-height-tiny);
+    font-variant:primary;
+    text-line-count-max:1;
+}
+
+HbPushButton[!stretched][icon][text][!additionalText]::icon
+{
+    top: -var(hb-param-margin-gene-center-align) ;
+    /*fixed-width: var(hb-param-graphic-size-function);
+    fixed-height: var(hb-param-graphic-size-function);*/
+}
+
+/* text_additionalText_vertical */
+HbPushButton[!stretched][additionalText][text][!icon]::text
+{   
+    top: -var(hb-param-margin-gene-center-align) ;
+    left: -var(hb-param-margin-gene-left);
+    right: var(hb-param-margin-gene-right);
+    text-height: var(hb-param-text-height-title);
+    font-variant: primary;
+    text-align:center;
+    text-line-count-max:1;  
+}
+
+HbPushButton[!stretched][additionalText][text][!icon]::additional-text
+{
+    top: -var(hb-param-margin-gene-middle-vertical);
+    bottom: var(hb-param-margin-gene-center-align) ;
+    left: -var(hb-param-margin-gene-left);
+    right: var(hb-param-margin-gene-right);
+    text-height: var(hb-param-text-height-tiny);
+    font-variant: secondary;
+    text-align:center;
+    text-line-count-max:1;    
+}
+
+
+/* prt n lsc :icon_text_additionalText_horizontal & icon_text_additionalText_vertical */ 
+
+/* vertical alignment info for icon _text_additionaltext*/
+HbPushButton[!stretched][icon][text][additionalText]::icon
+{
+    top: -var(hb-param-margin-gene-top);    
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-middle-horizontal);
+    fixed-width: var(hb-param-graphic-size-primary-large); /*in pdf mentioned size is : hb-param-graphic-size-large*/
+    fixed-height:var(hb-param-graphic-size-primary-large);
+    size-policy : fixed fixed;
+}
+
+HbPushButton[!stretched][icon][text][additionalText]::text
+{
+    top: -var(hb-param-margin-gene-top);    
+    right:var(hb-param-margin-gene-right);
+    font-variant:primary;
+    text-height:var(hb-param-text-height-primary);
+    text-align:left;
+    text-line-count-max:1;
+}
+
+HbPushButton[!stretched][icon][text][additionalText]::additional-text
+{
+    top: -var(hb-param-margin-gene-middle-vertical);
+    left: -var(hb-param-margin-gene-middle-horizontal);
+    bottom: var(hb-param-margin-gene-bottom);
+    right:var(hb-param-margin-gene-right);
+    font-variant:secondary;
+    text-height:var(hb-param-text-height-secondary);
+    text-align:left;
+    text-line-count-max:1;
+}
+
+/* horizontal alignment info for icon _text_additionaltext */
+HbPushButton[stretched][icon][text][additionalText]::icon
+{
+    top:-var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-left);    
+    bottom:var(hb-param-margin-gene-bottom);
+    fixed-width: var(hb-param-graphic-size-function);
+    fixed-height:var(hb-param-graphic-size-function);
+    size-policy: fixed fixed;
+}
+
+HbPushButton[stretched][icon][text][additionalText]::text
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    font-variant:primary;
+    text-height:var(hb-param-text-height-primary);
+    text-align:left;
+    text-line-count-max:1;
+}
+
+HbPushButton[stretched][icon][text][additionalText]::additional-text
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-right);
+    font-variant:secondary;
+    text-height:var(hb-param-text-height-secondary);
+    text-align:left;
+    text-line-count-max:1;    
+}
+
+/* backgroud param */
+HbPushButton::background
+{
+    border-width: var(hb-param-background-button);
+}
+HbPushButton::spacerTop{ 
+  size-policy-vertical: expanding; 
+} 
+HbPushButton::spacerBottom{ 
+  size-policy-vertical: expanding; 
+} 
+

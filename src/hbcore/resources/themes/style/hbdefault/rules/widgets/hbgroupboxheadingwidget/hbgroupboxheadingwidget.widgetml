@@ -1,0 +1,52 @@
+<hbwidget version="0.1" type="HbGroupBoxHeadingWidget">
+  <!-- layout-simple_label -->
+  <!--
+        Required items: 
+            text
+                                          
+        Other:
+            text: [ TOP,LEFT,BOTTOM,RIGHT ]anchored w.r.t to layout
+            background: [ TOP,LEFT,BOTTOM,RIGHT ]anchored w.r.t to layout
+    -->
+    <layout name="simple_label" type="mesh">
+        <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+        <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    </layout>
+  
+  <!-- layout-collapsing_container -->
+  <!--
+       Required items: 
+           text
+                                          
+       Items from left to right:
+           <- text  -> icon ->
+                                         
+        Other:
+            text: center  vertically aligned 
+            icon: connected from item TOP to TOP and item BOTTOM to BOTTOM
+            background: [ TOP,LEFT,BOTTOM,RIGHT ]anchored w.r.t to layout
+    -->
+    <layout name="collapsing_container" type="mesh">
+      <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="icon" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+      <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="text" srcEdge="RIGHT" dst="icon" dstEdge="LEFT" />
+      <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+      <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+      <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    </layout>
+
+</hbwidget>

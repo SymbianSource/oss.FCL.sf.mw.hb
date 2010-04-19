@@ -1,0 +1,5 @@
+HbStatusBar::timetext
+{
+    color: var(qtc_status_pane);
+}
+

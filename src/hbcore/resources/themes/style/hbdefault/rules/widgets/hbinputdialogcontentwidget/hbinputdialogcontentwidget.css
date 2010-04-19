@@ -1,0 +1,103 @@
+/* Layout selection*/
+HbInputDialogContentWidget[additionalRowVisible="false"]:portrait{
+	layout:dataquery_primary_layout_prt;
+}
+
+HbInputDialogContentWidget[additionalRowVisible="true"]:portrait{
+	layout:dataquery_secondary_layout_prt;
+}
+
+HbInputDialogContentWidget[additionalRowVisible="false"]:landscape{
+	layout:dataquery_primary_layout_lsc;
+}
+
+HbInputDialogContentWidget[additionalRowVisible="true"]:landscape{
+	layout:dataquery_secondary_layout_lsc;
+}
+
+/* Primitve properties*/
+HbInputDialogContentWidget::label-1:portrait {
+	top:-var(hb-param-margin-gene-popup);
+	
+	text-line-count-max: 1;
+	font-variant:secondary;
+	text-height:var(hb-param-text-height-secondary);
+	text-align:left;
+}
+
+HbInputDialogContentWidget::text-1:portrait {
+	top:-var(hb-param-margin-gene-middle-vertical);
+	left:-var(hb-param-margin-gene-popup);
+	right:var(hb-param-margin-gene-popup);
+	bottom:var(hb-param-margin-gene-popup);
+	
+	size-policy-horizontal: preferred;	
+	font-variant:secondary;
+	alignment:left;
+}
+
+HbInputDialogContentWidget::label-2:portrait 
+{
+    text-line-count-max: 1;
+    
+	font-variant:secondary;
+	text-height:var(hb-param-text-height-secondary);
+	text-align:left;
+}
+
+HbInputDialogContentWidget::text-2:portrait {
+	top:-var(hb-param-margin-gene-middle-vertical);
+	bottom:var(hb-param-margin-gene-popup);
+	
+	size-policy-horizontal: preferred;	
+	font-variant:secondary;
+	alignment: left;
+}
+
+HbInputDialogContentWidget::label-1:landscape {
+	left:-var(hb-param-margin-gene-popup);
+	min-width: expr((((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)))/2)); 
+	
+	size-policy-horizontal: preferred;	
+    	text-line-count-max: 1;
+    
+	font-variant:secondary;
+	text-height:var(hb-param-text-height-secondary);
+	text-align:left;
+}
+
+HbInputDialogContentWidget::text-1:landscape {
+	left:-var(hb-param-margin-gene-middle-horizontal);
+	top:-var(hb-param-margin-gene-popup);
+	right:var(hb-param-margin-gene-popup);
+	bottom:var(hb-param-margin-gene-popup);
+	
+	/*pref-width: expr((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)));*/
+	fixed-width: expr((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)));
+	        
+	font-variant:secondary;
+	alignment:left;
+}
+
+HbInputDialogContentWidget::label-2:landscape {
+    	size-policy-horizontal: expanding;	
+	text-line-count-max: 1;
+    
+    	min-width: expr((((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)))/2)); 
+		
+	font-variant:secondary;
+	text-height:var(hb-param-text-height-secondary);
+	text-align:left;
+}
+
+HbInputDialogContentWidget::text-2:landscape {
+	bottom:var(hb-param-margin-gene-popup);
+	
+	/*pref-width: expr((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)));*/
+	fixed-width: expr((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)));
+	
+	font-variant:secondary;
+	alignment:left;
+}
+
+

@@ -1,0 +1,14 @@
+HbToolTipLabel
+{	
+	layout:default;
+}
+
+HbToolTipLabel::label
+{
+	max-width: 40.0un;	
+        left:-1.0un;
+	right:1.0un;
+	top:-1.0un;
+	bottom:1.0un;
+        text-line-count-max: 1;
+}

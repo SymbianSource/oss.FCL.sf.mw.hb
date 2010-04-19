@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<rect fill="none" height="60" width="60"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="30.0542" x2="30.0542" y1="8.5713" y2="30.7411">
+<stop offset="0" style="stop-color:#CCCCCC"/>
+<stop offset="1" style="stop-color:#919191"/>
+</linearGradient>
+<path d="M48.367,8.571H11.633v0.043l-3.131,3.131l19.045,19.045l2.507-2.507l2.507,2.507l19.046-19.045  l-3.174-3.174 M17.798,14.694h24.512L30.055,26.95L17.798,14.694z" fill="url(#SVGID_1_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="30.0542" x2="30.0542" y1="9.3936" y2="29.5542">
+<stop offset="0" style="stop-color:#DBDBDB"/>
+<stop offset="0.3152" style="stop-color:#DBDBDB"/>
+<stop offset="0.6848" style="stop-color:#B3B3B3"/>
+<stop offset="1" style="stop-color:#B8B8B8"/>
+</linearGradient>
+<polygon fill="url(#SVGID_2_)" points="9.555,11.607 11.768,9.394 48.342,9.394 50.555,11.607 32.607,29.554 30.815,27.763   44.988,13.59 15.121,13.59 29.294,27.763 27.502,29.554 "/>
+<polygon fill="#FFFFFF" fill-opacity="0.5" points="45.006,13.572 30.815,27.763 31.322,28.27 46.021,13.572 " stroke-opacity="0.5"/>
+<polygon fill="#FFFFFF" fill-opacity="0.8" points="11.768,10.408 48.342,10.408 50.047,12.114 50.555,11.607 48.342,9.394 11.768,9.394   9.555,11.607 10.062,12.114 " stroke-opacity="0.8"/>
+<polygon fill="#FFFFFF" fill-opacity="0.5" points="14.139,13.623 28.787,28.27 29.294,27.763 15.153,13.623 " stroke-opacity="0.5"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="26.939" x2="33.0605" y1="32.2148" y2="32.2148">
+<stop offset="0" style="stop-color:#B8B8B8"/>
+<stop offset="0.3697" style="stop-color:#E6E6E6"/>
+<stop offset="0.7212" style="stop-color:#919191"/>
+<stop offset="1" style="stop-color:#E6E6E6"/>
+</linearGradient>
+<path d="M33.061,50.204c0,0.677-0.547,1.225-1.224,1.225h-3.674c-0.676,0-1.224-0.548-1.224-1.225V14.225  c0-0.676,0.548-1.225,1.224-1.225h3.674c0.677,0,1.224,0.548,1.224,1.225V50.204z" fill="url(#SVGID_3_)"/>
+</g>
+</svg>

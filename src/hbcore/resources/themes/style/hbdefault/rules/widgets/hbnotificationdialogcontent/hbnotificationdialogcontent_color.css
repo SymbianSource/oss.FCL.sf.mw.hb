@@ -1,0 +1,11 @@
+HbNotificationDialogContent::title
+{
+    color: var(qtc_popup_preview_normal);
+}
+
+HbNotificationDialogContent::text
+{
+    color: var(qtc_popup_preview_normal);
+}
+
+

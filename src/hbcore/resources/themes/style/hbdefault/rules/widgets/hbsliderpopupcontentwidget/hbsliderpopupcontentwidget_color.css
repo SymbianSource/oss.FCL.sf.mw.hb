@@ -1,0 +1,4 @@
+HbSliderPopupContentWidget > HbSlider::text_item_element
+{   
+    color: var(qtc_popup_normal);
+}

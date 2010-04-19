@@ -1,0 +1,22 @@
+<hbwidget version="0.1" type="HbScrollBar">
+  <layout name="scrollbar_vertical" type="mesh">
+    <meshitem src="groove" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="groove" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="groove" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="handle" srcEdge="RIGHT" dst="groove" dstEdge="RIGHT" />
+    <meshitem src="handle" srcEdge="LEFT" dst="groove" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>  
+  <layout name="scrollbar_horizontal" type="mesh">
+    <meshitem src="groove" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="groove" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="groove" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="handle" srcEdge="TOP" dst="groove" dstEdge="TOP" />
+    <meshitem src="handle" srcEdge="BOTTOM" dst="groove" dstEdge="BOTTOM" /> 
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+  </layout>
+</hbwidget>

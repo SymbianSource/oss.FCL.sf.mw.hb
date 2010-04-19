@@ -1,0 +1,26 @@
+HbBatteryIndicator
+{
+    layout:default;
+}
+
+HbBatteryIndicator::icon
+{
+    right: 0.75un;
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}
+
+HbBatteryIndicator::background
+{
+    right: 0.5un;
+    fixed-width: 5un;
+    fixed-height: 2.5un;
+}
+
+HbBatteryIndicator::levelicon
+{
+    right: 0.5un;
+    fixed-width: 5un;
+    fixed-height: 2.5un;
+}
+

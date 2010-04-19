@@ -1,0 +1,11 @@
+<hbwidget version="0.1" type="HbColorDialogContentWidget">
+
+  <layout name="colordialog_layout" type="mesh">
+    <meshitem src="color_grid_view" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="color_grid_view" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="color_grid_view" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="color_grid_view" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+</hbwidget>
+  

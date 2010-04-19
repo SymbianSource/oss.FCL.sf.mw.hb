@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="55px" version="1.1" viewBox="0 0 55 55" width="55px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="55" width="55"/>
+<path d="M54.495,54.975C54.805,54.997,55,55,55,55C54.83,55,54.663,54.984,54.495,54.975z" fill="#DCDCDC"/>
+<path d="M53.818,54.903c0.223,0.033,0.448,0.057,0.677,0.071C54.312,54.961,54.082,54.938,53.818,54.903z" fill="#DCDCDC"/>
+<g>
+<path d="M55,55c-4.418,0-8-3.582-8-8V8c0-4.4-3.6-8-8-8H0v55H55z" fill="url(#SVGID_1_)"/>
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="27.5" x2="27.5" y1="55" y2="4.882813e-004">
+<stop offset="0" style="stop-color:#FAFAFA"/>
+<stop offset="0.8" style="stop-color:#FAFAFA"/>
+<stop offset="1" style="stop-color:#EBEBF5"/>
+</linearGradient>
+</defs>
+</g>
+<path d="M47,47V8c0-4.4-3.6-8-8-8H0v1h39c3.859,0,7,3.141,7,7v39c0,6.195,5.384,7.588,7.818,7.903  C49.962,54.331,47,51.016,47,47z" fill="#DCDCDC"/>
+<rect fill="none" height="55" width="55"/>
+</svg>

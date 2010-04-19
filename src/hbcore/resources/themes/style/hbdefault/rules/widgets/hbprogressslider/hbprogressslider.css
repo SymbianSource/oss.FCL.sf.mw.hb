@@ -1,0 +1,16 @@
+HbProgressSlider[orientation="Horizontal"]::frame_element
+{
+   pref-height: var(hb-param-widget-progress-slider-height);
+   size-policy-vertical: fixed;
+   size-policy-horizontal: preferred;
+  
+}
+
+HbProgressSlider[orientation="Vertical"]::frame_element
+{
+   pref-width: var(hb-param-widget-progress-slider-height);
+   size-policy-vertical: preferred;
+   size-policy-horizontal: fixed;
+  
+}
+

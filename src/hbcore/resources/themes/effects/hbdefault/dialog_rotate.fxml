@@ -1,0 +1,12 @@
+<layers>
+	<visual>
+   	    <param name="opacity" type="anim">
+	        <duration>0.3</duration>
+	        <style>inoutquad</style>
+	        <keyframe at="0.0">1.0</keyframe>
+	        <keyframe at="0.2">0.0</keyframe>
+	        <keyframe at="0.8">0.0</keyframe>
+	        <keyframe at="1.0">1.0</keyframe>
+	    		</param>
+	</visual>
+</layers>

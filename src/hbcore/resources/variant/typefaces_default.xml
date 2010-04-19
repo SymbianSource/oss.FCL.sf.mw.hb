@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<typeface_information>
+    <typeface_set>
+        <typeface_mapping role="Primary" family="Nokia Sans" weight="bold"></typeface_mapping>
+        <typeface_mapping role="Secondary" family="Nokia Sans"></typeface_mapping>
+        <typeface_mapping role="Title" family="Nokia Sans Title SemiBold"></typeface_mapping>
+        <typeface_mapping role="PrimarySmall" family="Nokia Sans" weight="bold"></typeface_mapping>
+        <typeface_mapping role="Digital" family="OCR A Extended"></typeface_mapping>
+    </typeface_set>
+</typeface_information>

@@ -1,0 +1,127 @@
+/*Layout options for data formview item*/
+HbDataFormViewItem[!hasIcon]:portrait
+{
+    layout:layout_portrait_without_icon;
+}
+
+HbDataFormViewItem[hasIcon]:portrait
+{
+    layout:layout_portrait_with_icon;
+}
+
+HbDataFormViewItem[!hasIcon]:landscape
+{
+    layout:layout_landscape_without_icon;
+}
+
+HbDataFormViewItem[hasIcon]:landscape
+{
+    layout:layout_landscape_with_icon;
+}
+
+/* Common properties for different layout*/
+HbDataFormViewItem::dataItem_Icon
+{
+    fixed-height:var(hb-param-graphic-size-primary-small);
+    fixed-width:var(hb-param-graphic-size-primary-small);
+}
+
+HbDataFormViewItem::dataItem_Label
+{
+    text-height: var(hb-param-text-height-primary);
+    font-variant:primary;
+    text-align:left;
+    text-line-count-max:1;
+}
+
+HbDataFormViewItem::dataItem_Description
+{
+    text-height: var(hb-param-text-height-secondary);
+    font-variant:secondary;
+    text-align:left;
+    text-line-count-max:3;
+}
+
+HbDataFormViewItem::dataItem_Label:portrait
+{
+    size-policy-horizontal:preferred;
+}
+
+
+HbDataFormViewItem::dataItem_Background
+{
+    border-width:var(hb-param-background-list-main);    
+}
+
+HbDataFormViewItem::dataItem_Icon
+{
+    left:-var(hb-param-margin-gene-left);
+}
+
+/*Portrait mode margins*/
+HbDataFormViewItem::dataItem_Label[!hasIcon]:portrait
+{
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-form-label-right);
+    top:-var(hb-param-margin-gene-top);
+}
+
+HbDataFormViewItem::dataItem_ContentWidget:portrait
+{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    left:-var(hb-param-margin-indentation);
+    right:var(hb-param-margin-gene-right);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+}
+
+HbDataFormViewItem::dataItem_Description:portrait
+{
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+}
+
+HbDataFormViewItem::dataItem_Description:portrait
+{
+	bottom:var(hb-param-margin-gene-bottom);
+}
+
+HbDataFormViewItem::dataItem_Label[hasIcon]:portrait
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    top:-var(hb-param-margin-gene-top);
+    right:var(hb-param-margin-form-label-right);
+}
+
+/*Landscape mode margins*/
+HbDataFormViewItem::dataItem_Label[hasIcon]:landscape
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    fixed-width:expr(var(hb-param-screen-height)-var(hb-param-margin-form-label-right)-var(hb-param-margin-gene-left)-var(hb-param-graphic-size-primary-small)-var(hb-param-margin-gene-middle-horizontal));
+}
+
+HbDataFormViewItem::dataItem_Label[!hasIcon]:landscape
+{	
+    left:-var(hb-param-margin-gene-left);
+    fixed-width:expr(var(hb-param-screen-height)-var(hb-param-margin-form-label-right)-var(hb-param-margin-gene-left));
+}
+
+HbDataFormViewItem::dataItem_ContentWidget:landscape
+{
+    top:-var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-right);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+}
+
+HbDataFormViewItem::dataItem_Description:landscape
+{
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+}
+
+HbDataFormViewItem::dataItem_Description:landscape
+{
+	bottom:var(hb-param-margin-gene-bottom);
+}
+
+

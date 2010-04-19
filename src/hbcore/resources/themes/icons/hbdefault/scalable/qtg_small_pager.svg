@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<rect fill="none" height="30" width="30"/>
+<path d="M5,25c-1.654,0-3-1.346-3-3V8c0-1.654,1.346-3,3-3h20c1.654,0,3,1.346,3,3v14c0,1.654-1.346,3-3,3H5z" fill-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="15" x2="15" y1="6.2" y2="23.82">
+<stop offset="0" stop-color="#808080"/>
+<stop offset="0.5" stop-color="#636363"/>
+<stop offset="1" stop-color="#1C1C1C"/>
+</linearGradient>
+<path d="M27,22c0,1.1-0.9,2-2,2H5c-1.1,0-2-0.9-2-2V8c0-1.1,0.9-2,2-2h20c1.1,0,2,0.9,2,2V22z" fill="url(#SVGID_1)"/>
+<path d="M25,6H5C3.9,6,3,6.9,3,8v1c0-1.1,0.9-2,2-2h20c1.1,0,2,0.9,2,2V8C27,6.9,26.1,6,25,6z" fill="#FFFFFF" fill-opacity="0.2"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="15" x2="15" y1="8.11" y2="17.9">
+<stop offset="0" stop-color="#4F4F4F"/>
+<stop offset="1" stop-color="#9E9E9E"/>
+</linearGradient>
+<path d="M5,18c-0.55,0-1-0.45-1-1V9c0-0.55,0.45-1,1-1h20c0.55,0,1,0.45,1,1v8c0,0.55-0.45,1-1,1H5z" fill="url(#SVGID_2)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3" x1="15" x2="15" y1="9.09" y2="16.92">
+<stop offset="0" stop-color="#3BC8EB"/>
+<stop offset="1" stop-color="#1E6BC4"/>
+</linearGradient>
+<rect fill="url(#SVGID_3)" height="8" width="20" x="5" y="9"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4" x1="23.5" x2="23.5" y1="20.02" y2="21.98">
+<stop offset="0" stop-color="#96D12A"/>
+<stop offset="0.39" stop-color="#96D12A"/>
+<stop offset="1" stop-color="#4B8B00"/>
+</linearGradient>
+<rect fill="url(#SVGID_4)" height="2" width="3" x="22" y="20"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5" x1="18.5" x2="18.5" y1="20.02" y2="21.98">
+<stop offset="0" stop-color="#C0C0C0"/>
+<stop offset="1" stop-color="#4F4F4F"/>
+</linearGradient>
+<rect fill="url(#SVGID_5)" height="2" width="3" x="17" y="20"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6" x1="13.5" x2="13.5" y1="20.02" y2="21.98">
+<stop offset="0" stop-color="#DE6F00"/>
+<stop offset="1" stop-color="#AB0000"/>
+</linearGradient>
+<rect fill="url(#SVGID_6)" height="2" width="3" x="12" y="20"/>
+<polygon fill="#FFFFFF" fill-opacity="0.2" points="25,12 5,13 5,9 25,9 "/>
+</svg>

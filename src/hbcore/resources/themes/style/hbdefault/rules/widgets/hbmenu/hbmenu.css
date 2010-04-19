@@ -1,0 +1,18 @@
+HbMenu
+{	
+	layout:default;
+	submenu-right-offset: 2.25un;
+	submenu-bottom-margin: var(hb-param-margin-gene-screen); 
+}
+
+HbMenu::content
+{
+	max-width: expr(var(hb-param-screen-short-edge)-9un);
+	min-width: expr((var(hb-param-screen-short-edge)-9un)/2);
+	max-height: 43un;
+}
+
+HbMenu[menuType="1"]::content
+{
+	min-width: expr(var(hb-param-screen-short-edge)-9un);
+}

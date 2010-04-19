@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<linearGradient gradientTransform="matrix(1 0 0 1 16.7998 -811.9199)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="13.1997" x2="13.1997" y1="835.4805" y2="847.4325">
+<stop offset="0" style="stop-color:#96E9FA"/>
+<stop offset="0.5515" style="stop-color:#005BCC"/>
+<stop offset="1" style="stop-color:#0087D9"/>
+</linearGradient>
+<rect fill="url(#SVGID_1_)" height="12" width="49" x="5.5" y="23.5"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 16.7998 -811.9199)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="13.1997" x2="13.1997" y1="837.4648" y2="846.4293">
+<stop offset="0" style="stop-color:#005BCC"/>
+<stop offset="0.5515" style="stop-color:#0087D9"/>
+<stop offset="1" style="stop-color:#96E9FA"/>
+</linearGradient>
+<rect fill="url(#SVGID_2_)" height="9" width="41" x="9.5" y="25.5"/>
+<rect fill="#231F20" fill-opacity="0.2" height="9" stroke-opacity="0.2" width="1" x="49.5" y="25.5"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 16.7998 -811.9199)" gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="13.1997" x2="13.1997" y1="835.4844" y2="848.4324">
+<stop offset="0" style="stop-color:#F2F2F2"/>
+<stop offset="0.2545" style="stop-color:#4F88BD"/>
+<stop offset="0.7333" style="stop-color:#0055A3"/>
+<stop offset="1" style="stop-color:#2979C7"/>
+</linearGradient>
+<path d="M5.5,23.5v13h49v-13H5.5z M53.5,35.5h-47v-11h47V35.5z" fill="url(#SVGID_3_)"/>
+<polygon fill="#FFFFFF" points="48.5,29.718 45.867,29.718 47.184,27.438 46.316,26.938 45,29.218 43.684,26.938 42.816,27.438   44.133,29.718 41.5,29.718 41.5,30.718 44.133,30.718 42.816,33 43.684,33.5 45,31.219 46.316,33.5 47.184,33 45.867,30.718   48.5,30.718 "/>
+<polygon fill="#FFFFFF" points="38.5,29.718 35.867,29.718 37.184,27.438 36.316,26.938 35,29.218 33.684,26.938 32.816,27.438   34.133,29.718 31.5,29.718 31.5,30.718 34.133,30.718 32.816,33 33.684,33.5 35,31.219 36.316,33.5 37.184,33 35.867,30.718   38.5,30.718 "/>
+<polygon fill="#FFFFFF" points="28.5,29.718 25.866,29.718 27.184,27.438 26.316,26.938 25,29.218 23.684,26.938 22.816,27.438   24.134,29.718 21.5,29.718 21.5,30.718 24.134,30.718 22.816,33 23.684,33.5 25,31.219 26.316,33.5 27.184,33 25.868,30.718   28.5,30.718 "/>
+<polygon fill="#FFFFFF" points="18.5,29.718 15.866,29.718 17.184,27.438 16.316,26.938 15,29.218 13.684,26.938 12.816,27.438   14.134,29.718 11.5,29.718 11.5,30.718 14.134,30.718 12.816,33 13.684,33.5 15,31.219 16.316,33.5 17.184,33 15.868,30.718   18.5,30.718 "/>
+<rect fill="none" height="60" width="60"/>
+</g>
+</svg>

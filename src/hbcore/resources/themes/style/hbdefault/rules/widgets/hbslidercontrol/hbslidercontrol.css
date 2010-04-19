@@ -1,0 +1,125 @@
+HbSliderControl[orientation="Vertical"]
+{
+    layout:slidercontrol_vertical;
+}
+
+HbSliderControl[orientation="Horizontal"]
+{
+    layout:slidercontrol_horizontal;
+}
+
+HbSliderControl[orientation="Horizontal"]::groove
+{
+    fixed-height:2un;
+    size-policy-horizontal:preferred;
+}
+
+HbSliderControl[orientation="Horizontal"]::groovetoucharea
+{
+    fixed-height:var(hb-param-touch-area-gene-primary-medium);
+    size-policy-horizontal:preferred;
+}
+
+HbSliderControl[orientation="Vertical"]::groove
+{
+    fixed-width:2un;
+    size-policy-vertical:preferred;
+}
+
+HbSliderControl[orientation="Vertical"]::groovetoucharea
+{
+    fixed-width:var(hb-param-touch-area-gene-primary-medium);
+    size-policy-vertical:preferred;
+}
+
+HbSliderControl[orientation="Horizontal"]::progressgroove
+{
+    fixed-height:2un;
+    size-policy-horizontal:preferred;    
+}
+
+HbSliderControl[orientation="Vertical"]::progressgroove
+{
+    fixed-width:2un;
+    size-policy-vertical:preferred;
+}
+HbSliderControl[orientation="Horizontal"]::handle
+{
+    fixed-width:2un;
+    fixed-height:4un;    
+}
+
+HbSliderControl[orientation="Vertical"]::handle
+{
+   fixed-width:4un;
+   fixed-height:2un;
+}
+
+/*Ticks left vertical*/
+HbSliderControl::tick-marksleft
+{
+    right:var(hb-param-margin-gene-middle-horizontal);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    top:0.0un;
+    bottom:0.0un;
+    fixed-width:1.0un;
+    size-policy-vertical:preferred;
+
+}
+
+HbSliderControl::tick-textsleft
+{
+    top:0.0un;
+    bottom:0.0un;
+    fixed-width:7.5un;
+    size-policy-vertical:preferred;
+    
+}
+/*Ticks right vertical*/
+HbSliderControl::tick-marksright
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);
+    fixed-width:1.0un;
+    size-policy-vertical:preferred;
+
+}
+
+HbSliderControl::tick-textsright
+{
+    fixed-width:7.5un;
+    size-policy-vertical:preferred;
+
+}
+/*Ticks above horizontal*/
+HbSliderControl::tick-marksabove
+{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+    fixed-height:1.0un;
+    size-policy-horizontal:preferred;
+
+}
+
+HbSliderControl::tick-textsabove
+{
+    fixed-height:var(hb-param-text-height-tiny);
+    size-policy-horizontal:preferred;
+	
+}
+/*Ticks below horizontal*/
+HbSliderControl::tick-marksbelow
+{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+    fixed-height:1.0un;
+    size-policy-horizontal:preferred;
+    
+}
+
+HbSliderControl::tick-textsbelow
+{
+    fixed-height:var(hb-param-text-height-tiny);
+    size-policy-horizontal:preferred;
+}
+

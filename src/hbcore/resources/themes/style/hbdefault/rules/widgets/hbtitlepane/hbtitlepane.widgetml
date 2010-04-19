@@ -1,0 +1,11 @@
+<hbwidget version="0.1" type="HbTitlePane">
+
+  <layout name="title_graphic" type="mesh">
+    <meshitem dst="" dstEdge="CENTERV" src="text" srcEdge="CENTERV"/>
+    <meshitem dst="" dstEdge="LEFT" src="text" srcEdge="LEFT"/>
+    <meshitem dst="icon" dstEdge="LEFT" src="text" srcEdge="RIGHT"/>
+    <meshitem dst="" dstEdge="RIGHT" src="icon" srcEdge="RIGHT"/>
+    <meshitem dst="" dstEdge="CENTERV" src="icon" srcEdge="CENTERV"/>
+  </layout>
+ 
+</hbwidget>

@@ -1,0 +1,9 @@
+<hbwidget version="0.1" type="HbMenu">
+  <layout name="default" type="mesh">	
+	<meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+	<meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+	<meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
+	<meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+  
+</hbwidget>

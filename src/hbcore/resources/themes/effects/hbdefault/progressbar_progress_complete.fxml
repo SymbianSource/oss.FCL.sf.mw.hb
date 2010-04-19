@@ -1,0 +1,14 @@
+<layers>
+	<visual>
+	    <param name="scale_y" type="anim">
+                <duration>0.2</duration>
+                <keyframe at="1.0">1.0</keyframe>
+                <keyframe at="1.0">1.0</keyframe>
+                <keyframe at="1.0">1.0</keyframe>
+	    </param>
+
+	    <param name="scale_origin_y" ref="visual.height">0.0</param>
+      
+	</visual>
+</layers>
+

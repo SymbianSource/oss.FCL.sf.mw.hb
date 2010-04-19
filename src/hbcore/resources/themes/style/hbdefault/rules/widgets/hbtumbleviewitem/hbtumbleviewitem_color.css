@@ -1,0 +1,11 @@
+
+HbTumbleViewItem[state = "normal"]::text-1
+{
+    color: var(qtc_tumbler_normal);
+}
+
+HbTumbleViewItem[state = "pressed"]::text-1
+{
+    color: var(qtc_tumbler_selected);
+}
+

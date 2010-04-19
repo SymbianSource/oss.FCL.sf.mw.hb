@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE SystemDefinition SYSTEM "sysdef_1_5_1.dtd" [
+  <!ENTITY layer_real_source_path "sf/mw/hb" >
+]>
+
+<SystemDefinition name="hb" schema="1.5.1">
+    <systemModel>
+        <layer name="mw_layer">
+            <module name="qtdo.hb">
+                <unit name="qtdo.hb" unitID="qtdo.hb" bldFile="&layer_real_source_path;" mrp=""/>
+            </module>
+        </layer>
+        <layer name="app_layer">
+            <module name="qtdo.hb.test_resources">
+                <unit name="qtdo.hb.test_resources" unitID="qtdo.hb.test_resources" bldFile="&layer_real_source_path;/tsrc/resources" mrp="" proFile="resources.pro" qmakeArgs="-r MMP_RULES+=EXPORTUNFROZEN" filter="hb_test_resources"/>
+            </module>
+            <module name="qtdo.hb.fute_app">
+                <unit name="qtdo.hb.fute_app" unitID="qtdo.hb.fute_app" bldFile="&layer_real_source_path;/tsrc/fute" mrp="" proFile="fute.pro" qmakeArgs="-r MMP_RULES+=EXPORTUNFROZEN" filter="hb_fute_app"/>
+            </module>
+        </layer>
+        <layer name="unit_test_layer">
+            <module name="qtdo.hb.unit_test">
+                <unit name="qtdo.hb.unit_test" unitID="qtdo.hb.unit_test" bldFile="&layer_real_source_path;/tsrc/unit" mrp="" proFile="unit.pro" qmakeArgs="-r MMP_RULES+=EXPORTUNFROZEN" filter="hb_unit_test"/>
+            </module>
+        </layer>
+    </systemModel>
+</SystemDefinition>

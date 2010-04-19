@@ -1,0 +1,5 @@
+/* HbWidget can have a default text color (and other color attributes)*/
+HbWidgetBase::text
+{
+color:var(foreground);
+}

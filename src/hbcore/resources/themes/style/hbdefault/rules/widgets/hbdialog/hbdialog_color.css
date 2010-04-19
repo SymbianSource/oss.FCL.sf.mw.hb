@@ -1,0 +1,18 @@
+/* Popup selector */
+
+HbDialog
+{
+background:var(popupbackground);
+foreground:var(popupforeground);
+}
+
+HbDialog::heading > HbLabel::text
+{
+color:var(qtc_popup_heading_normal);
+}
+
+HbDialog#TestPopup
+{
+ background:var(testforeground);
+ foreground:var(popupforeground);
+}

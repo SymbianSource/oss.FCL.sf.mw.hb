@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<polygon fill-opacity="0.6" points="28.125,8.438 28.125,2.813 1.875,2.813 1.875,8.438 2.813,8.438   2.813,23.438 1.875,23.438 1.875,27.188 28.125,27.188 28.125,23.438 27.188,23.438 27.188,8.438 " stroke-opacity="0.6"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-199.52" x2="-199.52" y1="-11.7695" y2="-15.5195">
+<stop offset="0" style="stop-color:#B2B2B2"/>
+<stop offset="1" style="stop-color:#666666"/>
+</linearGradient>
+<rect fill="url(#SVGID_1_)" height="3.75" width="24.375" x="2.813" y="3.75"/>
+<rect fill="#FFFFFF" height="16.875" width="22.5" x="3.75" y="7.5"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-199.52" x2="-199.52" y1="-16.457" y2="-31.457">
+<stop offset="0" style="stop-color:#E6E7E7"/>
+<stop offset="1" style="stop-color:#999999"/>
+</linearGradient>
+<rect fill="url(#SVGID_2_)" height="15" width="20.625" x="4.688" y="8.438"/>
+<polygon fill="#FFFFFF" fill-opacity="0.7" points="19.688,10.313 19.688,13.125 15,13.125 15,16.875   10.313,16.875 10.313,15 5.625,15 5.625,22.5 24.375,22.5 24.375,10.313 " stroke-opacity="0.7"/>
+<rect fill="#808080" height="1.875" width="24.375" x="2.813" y="24.375"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.938" stroke-opacity="0.4" width="24.375" x="2.813" y="3.75"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="0.938" stroke-opacity="0.2" width="24.375" x="2.813" y="24.375"/>
+<rect fill-opacity="0.2" height="0.938" stroke-opacity="0.2" width="24.375" x="2.813" y="6.563"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="-206.5508" x2="-206.5508" y1="-19.2695" y2="-29.4774">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="1" style="stop-color:#319E00"/>
+</linearGradient>
+<rect fill="url(#SVGID_3_)" height="5.625" width="2.813" x="6.563" y="15.938"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="-201.8633" x2="-201.8633" y1="-19.2715" y2="-29.4785">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="1" style="stop-color:#319E00"/>
+</linearGradient>
+<rect fill="url(#SVGID_4_)" height="3.75" width="2.813" x="11.25" y="17.813"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="-197.1763" x2="-197.1763" y1="-19.2705" y2="-29.4782">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="1" style="stop-color:#319E00"/>
+</linearGradient>
+<rect fill="url(#SVGID_5_)" height="7.5" width="2.812" x="15.938" y="14.063"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 214.52 -8.0195)" gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="-192.4888" x2="-192.4888" y1="-19.2695" y2="-29.477">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="1" style="stop-color:#319E00"/>
+</linearGradient>
+<rect fill="url(#SVGID_6_)" height="10.313" width="2.813" x="20.625" y="11.25"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.938" stroke-opacity="0.4" width="2.813" x="6.563" y="15.938"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.938" stroke-opacity="0.4" width="2.813" x="11.25" y="17.813"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.938" stroke-opacity="0.4" width="2.812" x="15.938" y="14.063"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.938" stroke-opacity="0.4" width="2.813" x="20.625" y="11.25"/>
+<rect fill="none" height="30" width="30"/>
+</g>
+</svg>

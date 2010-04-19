@@ -1,0 +1,26 @@
+HbSignalIndicator
+{
+    layout:default;
+}
+
+HbSignalIndicator::icon
+{
+    left: -0.75un;
+    fixed-width: 2.5un;
+    fixed-height: 2.5un;
+}
+
+HbSignalIndicator::background
+{
+    left: -0.5un;
+    fixed-width: 5un;
+    fixed-height: 2.5un;
+}
+
+HbSignalIndicator::levelicon
+{
+    left: -0.5un;
+    fixed-width: 5un;
+    fixed-height: 2.5un;
+}
+

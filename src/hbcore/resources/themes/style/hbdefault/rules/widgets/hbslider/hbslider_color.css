@@ -1,0 +1,10 @@
+
+HbSlider[state= "normal"]::text_item_element
+{
+    color: var(qtc_popup_trans_normal);
+}
+HbSlider[state = "pressed"]::text_item_element
+{
+    color: var(qtc_popup_trans_normal);
+}
+

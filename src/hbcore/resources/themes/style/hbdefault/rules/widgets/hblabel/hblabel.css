@@ -1,0 +1,18 @@
+HbLabel{
+    layout:default;
+}
+
+HbLabel::text{
+    left:-var(hb-param-margin-label);
+    right:var(hb-param-margin-label);
+    top:-var(hb-param-margin-label);
+    bottom:var(hb-param-margin-label);
+    size-policy-vertical: preferred;
+}
+
+HbLabel::icon{
+    left:-var(hb-param-margin-label);
+    right:var(hb-param-margin-label);
+    top:-var(hb-param-margin-label);
+    bottom:var(hb-param-margin-label);
+}

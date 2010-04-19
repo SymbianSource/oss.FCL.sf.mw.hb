@@ -1,0 +1,9 @@
+HbIndicatorButton
+{
+    layout:indicatorbuttonlayout;
+}
+
+HbIndicatorButton::handleindication
+{
+    fixed-width: expr(var(hb-param-widget-chrome-height)/6); 
+}

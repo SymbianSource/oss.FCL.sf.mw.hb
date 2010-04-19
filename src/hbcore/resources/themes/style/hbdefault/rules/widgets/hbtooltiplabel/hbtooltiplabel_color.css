@@ -1,0 +1,5 @@
+HbToolTipLabel::label
+{
+    color:var(qtc_popup_preview_normal);
+}
+

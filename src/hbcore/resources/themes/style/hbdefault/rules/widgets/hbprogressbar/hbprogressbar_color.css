@@ -1,0 +1,8 @@
+HbProgressBar::min_text_element{
+	color: var(qtc_default_main_pane_normal);
+}
+
+HbProgressBar::max_text_element{
+	color: var(qtc_default_main_pane_normal);
+}
+

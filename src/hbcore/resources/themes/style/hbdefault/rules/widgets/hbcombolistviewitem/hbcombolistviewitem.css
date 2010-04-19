@@ -1,0 +1,28 @@
+/*
+    Layout selection
+*/
+
+HbComboListViewItem{
+	layout:layout-1;
+}
+
+/*
+    Standard primitive properties
+*/
+HbComboListViewItem::selection-icon{
+	fixed-height: var(hb-param-graphic-size-secondary);
+	fixed-width: var(hb-param-graphic-size-secondary);
+}
+
+HbComboListViewItem::text-1{
+	text-height: var(hb-param-text-height-secondary);
+	font-variant: primary;
+	pref-width:-1;
+	text-align: left;
+}
+
+HbComboListViewItem::frame{
+	border-width: var(hb-param-background-popup-secondary);
+}
+
+

@@ -1,0 +1,9 @@
+HbInputDialogContentWidget::label-1
+{
+    color:var(qtc_lineedit_normal);
+}
+
+HbInputDialogContentWidget::label-2
+{
+    color:var(qtc_lineedit_normal);
+}

@@ -1,0 +1,14 @@
+<layers>
+    <visual src="Item"> 
+    <filter name="glow" type="glow">
+    	<param name="blur_x">3.0</param>
+    	<param name="blur_y">3.0</param>
+    	<param name="opacity" type="anim">
+        <duration>0.3</duration>
+        <style>outquad</style>
+        <keyframe at="0.0">0.0</keyframe>
+        <keyframe at="1.0">1.0</keyframe>
+      </param>
+      </filter>
+    </visual>
+</layers>

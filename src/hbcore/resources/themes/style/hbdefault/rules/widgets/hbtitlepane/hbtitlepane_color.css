@@ -1,0 +1,9 @@
+HbTitlePane::text
+{
+    color:var(qtc_title_pane_normal);
+}
+
+HbTitlePane::icon
+{
+    color:var(qtc_title_pane_normal);
+}

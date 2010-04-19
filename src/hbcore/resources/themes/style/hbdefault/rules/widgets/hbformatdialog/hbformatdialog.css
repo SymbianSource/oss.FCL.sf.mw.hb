@@ -1,0 +1,8 @@
+HbFormatDialog
+{	
+popup-margin: var(hb-param-margin-gene-popup);
+horizontal-middle-margin: var(hb-param-margin-gene-middle-horizontal);
+vertical-middle-margin: var(hb-param-margin-gene-middle-vertical);
+button-width:9un;
+button-height:7.5un;
+}

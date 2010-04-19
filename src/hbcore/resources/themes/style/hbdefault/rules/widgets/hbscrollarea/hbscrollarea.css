@@ -1,0 +1,73 @@
+*{
+	speed-factor:0.0004;
+        inertia-speed-factor:2.5;
+        max-scroll-speed:3.0;
+        spring-strength:0.0013;
+        spring-damping-factor:0.33;
+        friction:0.003;
+}
+
+HbScrollArea[scrollDirections="Horizontal"]
+{
+	layout:single_scrollbar;
+}
+HbScrollArea[scrollDirections="Vertical"]
+{
+	layout:single_scrollbar;
+}
+HbScrollArea
+{
+	layout:dual_scrollbars;
+}
+
+HbScrollArea[scrollDirections="Vertical"]::scrollbar-vertical
+{
+	left:0un;
+	right:0un;
+	top:-0.8un;
+	bottom:0.8un;
+}
+
+HbScrollArea::scrollbar-vertical
+{
+	left:0un;
+	right:0un;
+	top:-0.8un;
+	bottom:expr(var(hb-param-widget-scroll-bar-interactive-width)+0.8un);
+}
+
+HbScrollArea[scrollDirections="Horizontal"]::scrollbar-horizontal
+{
+	left:0un;
+	right:0un;
+	top:0un;
+	bottom:0un;
+}
+
+HbScrollArea::scrollbar-horizontal
+{
+	left:0un;
+	right:var(hb-param-widget-scroll-bar-interactive-width);
+	top:0un;
+	bottom:0un;
+}
+
+HbScrollArea::continuation-indicator-bottom
+{
+	fixed-height:2.0un;
+}
+
+HbScrollArea::continuation-indicator-top
+{
+	fixed-height:2.0un;
+}
+
+HbScrollArea::continuation-indicator-left
+{
+	fixed-width:2.0un;
+}
+
+HbScrollArea::continuation-indicator-right
+{
+	fixed-width:2.0un;
+}

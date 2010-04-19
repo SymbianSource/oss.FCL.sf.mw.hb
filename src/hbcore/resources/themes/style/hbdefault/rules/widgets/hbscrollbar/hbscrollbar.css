@@ -1,0 +1,73 @@
+HbScrollBar[orientation="Horizontal"]
+{
+        layout:scrollbar_horizontal;
+}
+
+HbScrollBar[orientation="Vertical"]
+{
+        layout:scrollbar_vertical;
+}
+
+HbScrollBar[orientation="Horizontal"][interactive="true"]
+{
+        fixed-height:var(hb-param-widget-scroll-bar-interactive-width);
+}
+HbScrollBar[orientation="Vertical"][interactive="true"]
+{
+        fixed-width:var(hb-param-widget-scroll-bar-interactive-width);
+}
+HbScrollBar[orientation="Horizontal"][interactive="false"]
+{
+        fixed-height:var(hb-param-widget-scroll-bar-indicative-width);
+}
+HbScrollBar[orientation="Vertical"][interactive="false"]
+{
+        fixed-width:var(hb-param-widget-scroll-bar-indicative-width);
+}
+
+HbScrollBar[orientation="Horizontal"][interactive="true"]::groove
+{
+        fixed-height:var(hb-param-widget-scroll-bar-interactive-width);
+}
+HbScrollBar[orientation="Vertical"][interactive="true"]::groove
+{
+        fixed-width:var(hb-param-widget-scroll-bar-interactive-width);
+}
+HbScrollBar[orientation="Horizontal"][interactive="false"]::groove
+{
+        fixed-height:var(hb-param-widget-scroll-bar-indicative-width);
+}
+HbScrollBar[orientation="Vertical"][interactive="false"]::groove
+{
+        fixed-width:var(hb-param-widget-scroll-bar-indicative-width);
+}
+
+HbScrollBar[orientation="Horizontal"][interactive="true"]::handle
+{
+        fixed-height:var(hb-param-widget-scroll-bar-interactive-width);
+        min-width: 6un;
+}
+HbScrollBar[orientation="Vertical"][interactive="true"]::handle
+{
+        fixed-width:var(hb-param-widget-scroll-bar-interactive-width);
+        min-height: 6un;
+}
+HbScrollBar[orientation="Horizontal"][interactive="false"]::handle
+{
+        fixed-height:var(hb-param-widget-scroll-bar-indicative-width);
+        min-width: 6un;
+}
+HbScrollBar[orientation="Vertical"][interactive="false"]::handle
+{
+        fixed-width:var(hb-param-widget-scroll-bar-indicative-width);
+        min-height: 6un;
+}
+HbScrollBar[orientation="Horizontal"][interactive="true"]::toucharea
+{
+        fixed-height: var(hb-param-touch-area-gene-primary-small);        
+}
+HbScrollBar[orientation="Vertical"][interactive="true"]::toucharea
+{
+        fixed-width: var(hb-param-touch-area-gene-primary-small);        
+}
+

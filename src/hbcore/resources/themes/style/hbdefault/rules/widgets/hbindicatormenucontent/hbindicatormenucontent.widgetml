@@ -1,0 +1,17 @@
+<hbwidget version="0.1" type="HbIndicatorMenuContent">
+
+<layout name="menucontent" type="mesh">
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="list" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="date" srcEdge="RIGHT" dst="background" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-popup)" />
+    <meshitem src="date" srcEdge="CENTERV" dst="background" dstEdge="CENTERV" />
+    <meshitem src="clock" srcEdge="LEFT" dst="background" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-popup)" />
+    <meshitem src="clock" srcEdge="CENTERV" dst="background" dstEdge="CENTERV" />
+    <meshitem src="list" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="list" srcEdge="LEFT" dst="background" dstEdge="LEFT" />
+    <meshitem src="list" srcEdge="RIGHT" dst="background" dstEdge="RIGHT" />
+</layout>
+
+</hbwidget>

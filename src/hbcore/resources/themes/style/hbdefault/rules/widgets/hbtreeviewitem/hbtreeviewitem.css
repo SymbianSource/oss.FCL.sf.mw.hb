@@ -1,0 +1,21 @@
+/*
+    Layout selection
+*/
+
+HbTreeViewItem[layoutName="default"][modelItemType="ParentItem"]{
+	layout:parentitemlayout-1;
+}
+
+/*
+    Standard primitive properties
+*/
+
+HbTreeViewItem::subitem-indicator{
+	fixed-height: var(hb-param-graphic-size-secondary);
+	fixed-width: var(hb-param-graphic-size-secondary);
+}
+
+HbTreeViewItem::text-1[modelItemType="ParentItem"]{
+	pref-height: var(hb-param-text-height-secondary);
+	font-variant: secondary;
+}

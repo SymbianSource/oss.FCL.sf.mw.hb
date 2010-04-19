@@ -1,0 +1,8 @@
+HbView
+{
+    layout:default;
+    left: -var(hb-param-margin-view-left);
+    right: var(hb-param-margin-view-right);
+    top: -var(hb-param-margin-view-top);
+    bottom: var(hb-param-margin-view-bottom);
+}

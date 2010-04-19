@@ -1,0 +1,39 @@
+
+HbVolumeSlider[!changeincrementState]::increment-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbVolumeSlider[changeincrementState][state = "normal"]::increment-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+
+HbVolumeSlider[changeincrementState][state = "pressed"]::increment-icon
+{
+    color: var(qtc_popup_trans_pressed);
+}
+
+HbVolumeSlider[!changedecrementState]::decrement-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbVolumeSlider[changedecrementState][state = "normal"]::decrement-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbVolumeSlider[changedecrementState][state = "pressed"]::decrement-icon
+{
+    color: var(qtc_popup_trans_pressed);
+}
+
+HbVolumeSlider::icon-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+
+

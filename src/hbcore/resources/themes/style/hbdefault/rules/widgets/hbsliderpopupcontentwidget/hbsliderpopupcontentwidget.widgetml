@@ -1,0 +1,8 @@
+<hbwidget version="0.1" type="HbSliderPopupContentWidget">
+  <layout name="slider_popup" type="mesh"> 
+    <meshitem src="slider" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="slider" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="slider" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="slider" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+  </layout>
+</hbwidget>

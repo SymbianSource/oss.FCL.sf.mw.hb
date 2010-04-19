@@ -1,0 +1,69 @@
+<hbwidget version="0.1" type="HbSliderControl">
+
+  <layout name="slidercontrol_vertical" type="mesh">
+    
+    <meshitem src="tick-textsleft" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="tick-textsleft" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="tick-textsleft" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+
+    <meshitem src="tick-marksleft" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="tick-marksleft" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="tick-marksleft" srcEdge="LEFT" dst="tick-textsleft" dstEdge="RIGHT" />
+ 
+    <meshitem src="groove" srcEdge="LEFT" dst="tick-marksleft" dstEdge="RIGHT" />
+    <meshitem src="groove" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="groove" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="groove" srcEdge="RIGHT" dst="tick-marksright" dstEdge="LEFT" />
+
+    <meshitem src="groovetoucharea" srcEdge="CENTERH" dst="groove" dstEdge="CENTERH" />
+    <meshitem src="groovetoucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="groovetoucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="progressgroove" srcEdge="LEFT" dst="tick-marksleft" dstEdge="RIGHT" />
+    <meshitem src="progressgroove" srcEdge="TOP" dst="groove" dstEdge="TOP" />
+    <meshitem src="progressgroove" srcEdge="BOTTOM" dst="groove" dstEdge="BOTTOM" />
+    <meshitem src="progressgroove" srcEdge="RIGHT" dst="tick-marksright" dstEdge="LEFT" />
+
+    <meshitem src="tick-marksright" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="tick-marksright" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="tick-marksright" srcEdge="RIGHT" dst="tick-textsright" dstEdge="LEFT" />
+
+    <meshitem src="tick-textsright" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="tick-textsright" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="tick-textsright" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+ 
+  <layout name="slidercontrol_horizontal" type="mesh">
+    
+    <meshitem src="tick-textsabove" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="tick-textsabove" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="tick-textsabove" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="tick-marksabove" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="tick-marksabove" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="tick-marksabove" srcEdge="TOP" dst="tick-textsabove" dstEdge="BOTTOM" />
+
+    <meshitem src="groove" srcEdge="TOP" dst="tick-marksabove" dstEdge="BOTTOM" />
+    <meshitem src="groove" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="groove" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="groove" srcEdge="BOTTOM" dst="tick-marksbelow" dstEdge="TOP" />
+
+    <meshitem src="progressgroove" srcEdge="CENTERV" dst="groove" dstEdge="CENTERV" />
+    <meshitem src="progressgroove" srcEdge="LEFT" dst="groove" dstEdge="LEFT" />
+    <meshitem src="progressgroove" srcEdge="RIGHT" dst="groove" dstEdge="RIGHT" />
+
+    <meshitem src="groovetoucharea" srcEdge="CENTERV" dst="groove" dstEdge="CENTERV" />
+    <meshitem src="groovetoucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="groovetoucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="tick-marksbelow" srcEdge="BOTTOM" dst="tick-textsbelow" dstEdge="TOP" />
+    <meshitem src="tick-marksbelow" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="tick-marksbelow" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="tick-textsbelow" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="tick-textsbelow" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="tick-textsbelow" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  </layout>
+
+</hbwidget>

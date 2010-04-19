@@ -1,0 +1,30 @@
+<hbwidget version="0.1" type="HbDataGroup">
+
+  <layout name="default" type="mesh">
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+  <layout name="heading_with_combo" type="mesh">
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataGroup_HeadingWidget" srcEdge="BOTTOM" dst="dataGroup_Combo" dstEdge="TOP" />
+
+    <meshitem src="dataGroup_Combo" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_Combo" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataGroup_Combo" srcEdge="BOTTOM" dst="dataGroup_Description" dstEdge="TOP" />
+
+    <meshitem src="dataGroup_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataGroup_ComboBackground" srcEdge="TOP" dst="dataGroup_HeadingWidget" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_ComboBackground" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_ComboBackground" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_ComboBackground" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />    
+  </layout>
+
+</hbwidget>

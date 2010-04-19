@@ -1,0 +1,52 @@
+<hbwidget version="0.1" type="HbScrollArea">
+    <layout name="dual_scrollbars" type="mesh">
+	    <meshitem src="scrollbar-horizontal" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="scrollbar-horizontal" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="scrollbar-horizontal" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />   
+		
+        <meshitem src="scrollbar-vertical" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="scrollbar-vertical" srcEdge="TOP" dst="" dstEdge="TOP" />
+		<meshitem src="scrollbar-vertical" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />     
+
+        <meshitem src="continuation-indicator-top" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="continuation-indicator-top" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-top" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+        <meshitem src="continuation-indicator-bottom" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-bottom" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-bottom" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+        <meshitem src="continuation-indicator-left" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-left" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-left" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+        <meshitem src="continuation-indicator-right" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-right" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="continuation-indicator-right" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    </layout>
+    <layout name="single_scrollbar" type="mesh">
+        <meshitem src="scrollbar-vertical" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="scrollbar-vertical" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="scrollbar-vertical" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+        <meshitem src="scrollbar-horizontal" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="scrollbar-horizontal" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="scrollbar-horizontal" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+        <meshitem src="continuation-indicator-top" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="continuation-indicator-top" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-top" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+        <meshitem src="continuation-indicator-bottom" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-bottom" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-bottom" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+        <meshitem src="continuation-indicator-left" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-left" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="continuation-indicator-left" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+        <meshitem src="continuation-indicator-right" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="continuation-indicator-right" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="continuation-indicator-right" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    </layout>
+</hbwidget>

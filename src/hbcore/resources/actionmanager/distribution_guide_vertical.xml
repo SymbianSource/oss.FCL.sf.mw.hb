@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<distributionguide>
+  <toolbar maxcount="4"/>
+  <default container="OptionsMenu"/>
+  <distributionitem>
+    <action commandrole="OptionsRole"/>
+    <placement container="ToolBar"/>
+  </distributionitem>
+  <distributionitem>
+    <action commandrole="ExitRole"/>
+    <placement container="ToolBar"/>
+  </distributionitem>
+</distributionguide>

@@ -1,0 +1,88 @@
+<hbwidget version="0.1" type="HbDataFormViewItem">
+  
+  <layout name="layout_portrait_without_icon" type="mesh">
+    <meshitem src="dataItem_Label" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Label" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Label" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataItem_ContentWidget" srcEdge="TOP" dst="dataItem_Label" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="BOTTOM" dst="dataItem_Description" dstEdge="TOP" />
+
+  
+    <meshitem src="dataItem_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    
+    <meshitem src="dataItem_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+  <layout name="layout_portrait_with_icon" type="mesh">
+    <meshitem src="dataItem_Icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Icon" srcEdge="CENTERV" dst="dataItem_Label" dstEdge="CENTERV" />
+
+    <meshitem src="dataItem_Label" srcEdge="LEFT" dst="dataItem_Icon" dstEdge="RIGHT" />
+    <meshitem src="dataItem_Label" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Label" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataItem_ContentWidget" srcEdge="TOP" dst="dataItem_Label" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="BOTTOM" dst="dataItem_Description" dstEdge="TOP" />
+
+    <meshitem src="dataItem_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataItem_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+  <layout name="layout_landscape_without_icon" type="mesh">
+    <meshitem src="dataItem_Label" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Label" srcEdge="CENTERV" dst="dataItem_ContentWidget" dstEdge="CENTERV" />
+
+    <meshitem src="dataItem_ContentWidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="LEFT" dst="dataItem_Label" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="BOTTOM" dst="dataItem_Description" dstEdge="TOP" />
+
+    <meshitem src="dataItem_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataItem_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+  <layout name="layout_landscape_with_icon" type="mesh">
+    <meshitem src="dataItem_Icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Icon" srcEdge="CENTERV" dst="dataItem_ContentWidget" dstEdge="CENTERV" />
+
+    <meshitem src="dataItem_Label" srcEdge="LEFT" dst="dataItem_Icon" dstEdge="RIGHT" />
+    <meshitem src="dataItem_Label" srcEdge="CENTERV" dst="dataItem_ContentWidget" dstEdge="CENTERV" />
+
+    <meshitem src="dataItem_ContentWidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="LEFT" dst="dataItem_Label" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataItem_ContentWidget" srcEdge="BOTTOM" dst="dataItem_Description" dstEdge="TOP" />
+
+    <meshitem src="dataItem_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="dataItem_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="dataItem_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataItem_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataItem_Background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+  </layout>
+
+</hbwidget>

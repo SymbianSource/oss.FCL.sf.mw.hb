@@ -1,0 +1,7 @@
+HbIndicatorMenuClock::time{
+    color: var(qtc_popup_normal);
+}
+
+HbIndicatorMenuClock::ampmSymbol{
+    color: var(qtc_popup_normal);
+}

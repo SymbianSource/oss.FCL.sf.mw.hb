@@ -1,0 +1,24 @@
+HbTitlePane
+{
+	layout: title_graphic;
+}
+
+HbTitlePane::frame
+{
+}
+
+HbTitlePane::text
+{
+	left: -var(hb-param-margin-gene-left);
+	fixed-height: var(hb-param-text-height-title);
+	text-align: left;
+	font-variant: title;
+}
+
+HbTitlePane::icon
+{
+	left: -var(hb-param-margin-gene-middle-horizontal);
+	right: var(hb-param-margin-gene-right);
+	fixed-width: var(hb-param-graphic-size-secondary);
+	fixed-height: var(hb-param-graphic-size-secondary);
+}

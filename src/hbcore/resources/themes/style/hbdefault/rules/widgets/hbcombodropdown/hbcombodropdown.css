@@ -1,0 +1,12 @@
+
+HbComboDropDown
+{
+    layout:combodropdown_layout
+}
+
+HbComboDropDown::dropdown_background
+{	
+	border-width:var( hb-param-background-popup-secondary);
+}
+
+

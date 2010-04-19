@@ -1,0 +1,15 @@
+<hbwidget version="0.1" type="HbRatingSlider">
+
+  <layout name="default" type="mesh">
+
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="TOP" dst="frame" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="BOTTOM" dst="frame" dstEdge="BOTTOM" />
+  </layout>
+
+</hbwidget>

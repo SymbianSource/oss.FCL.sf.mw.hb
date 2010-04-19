@@ -1,0 +1,47 @@
+<hbwidget version="0.1" type="HbComboBox">
+
+  <layout name="combobox_layout_noneditable" type="mesh">
+    
+    <meshitem src="combobox_button" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="combobox_button" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="combobox_button" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" /> 
+      
+    <meshitem src="text_background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text_background" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />
+    <meshitem src="text_background" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="combobox_labelfield" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="combobox_labelfield" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />
+    <meshitem src="combobox_labelfield" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="combobox_button_toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="combobox_button_toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="combobox_button_toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="combobox_button_toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+
+  </layout>
+
+  <layout name="combobox_layout_editable" type="mesh">
+
+    <meshitem src="combobox_button" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="combobox_button" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="combobox_button" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="text_background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text_background" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />
+    <meshitem src="text_background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text_background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="combobox_labelfield" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="combobox_labelfield" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />
+    <meshitem src="combobox_labelfield" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    <meshitem src="combobox_button_toucharea" srcEdge="LEFT" dst="combobox_button" dstEdge="LEFT" />
+    <meshitem src="combobox_button_toucharea" srcEdge="RIGHT" dst="combobox_button" dstEdge="RIGHT" />
+    <meshitem src="combobox_button_toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="combobox_button_toucharea" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+  </layout>
+  
+ </hbwidget>

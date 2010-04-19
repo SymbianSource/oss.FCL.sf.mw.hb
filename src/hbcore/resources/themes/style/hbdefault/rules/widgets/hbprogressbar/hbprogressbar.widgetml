@@ -1,0 +1,261 @@
+<hbwidget version="0.1" type="HbProgressBar">
+
+  <!--  layout : progressbar_top_text -->
+  <!--
+        Required items: 
+            frame
+            
+        Items from left to right:
+            <-         frame          ->
+                                         
+        Other:
+            frame: connected from item TOP to TOP 
+            frame: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="progressbar_no_text" type="mesh">
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+
+  <!--  layout : horizontal_progressbar_top_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:
+            <-min-text       max-text ->
+            <-         frame          ->
+                                         
+        Other:
+            min-text: connected from item TOP to TOP 
+            min-text: connected from item BOTTOM to frame BOTTOM 
+            
+            max-text: connected from item TOP to frame BOTTOM 
+            max-text: connected from item BOTTOM to frame BOTTOM 
+            
+            frame: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="horizontal_progressbar_top_text" type="mesh">
+    <meshitem src="min-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="min-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="frame" dstEdge="TOP" spacing="var(hb-param-margin-gene-middle-vertical)"/>
+
+    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="max-text" srcEdge="BOTTOM" dst="frame" dstEdge="TOP" spacing="var(hb-param-margin-gene-middle-vertical)" />
+
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+  
+  <!--  layout : horizontal_progressbar_bottom_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:
+            <-         frame          ->
+            <-min-text       max-text ->
+                                         
+        Other:
+            frame: connected from item TOP to TOP
+            
+            min-text: connected from item TOP to frame BOTTOM 
+            min-text: connected from item BOTTOM to BOTTOM 
+            
+            max-text: connected from item TOP to frame BOTTOM 
+            max-text: connected from item BOTTOM to BOTTOM 
+    -->
+  <layout name="horizontal_progressbar_bottom_text" type="mesh">
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+   
+    <meshitem src="min-text" srcEdge="TOP" dst="frame" dstEdge="BOTTOM" spacing ="-var(hb-param-margin-gene-middle-vertical)"/>
+    <meshitem src="min-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="max-text" srcEdge="TOP" dst="frame" dstEdge="BOTTOM" spacing ="-var(hb-param-margin-gene-middle-vertical)"/>    
+    <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="max-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+
+  <!--  layout : horizontal_progressbar_center_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:
+            <- min-text  ->    frame     <-  max-text ->
+                                         
+        Other:
+            min-text: connected from item TOP to TOP 
+            min-text: connected from item BOTTOM to BOTTOM
+        
+            frame: connected from item TOP to TOP
+            frame: connected from item BOTTOM to BOTTOM
+            
+            max-text: connected from item TOP to TOP 
+            max-text: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="horizontal_progressbar_center_text" type="mesh">
+    <meshitem src="min-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="min-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="min-text" srcEdge="RIGHT" dst="frame" dstEdge="LEFT" spacing="var(hb-param-margin-gene-middle-horizontal)"/>
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    
+    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="max-text" srcEdge="LEFT" dst="frame" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)"/>
+    <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="max-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+
+  <!--  layout : vertical_progressbar_left_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:
+            <-  max-text  ->  f
+                              r    
+                              a   ->
+                              m
+            <-  min-text  ->  e
+                                         
+        Other:
+            max-text: connected from item TOP to TOP 
+            
+            frame: connected from item TOP to TOP
+            frame: connected from item BOTTOM to BOTTOM
+            
+            min-text: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="vertical_progressbar_left_text" type="mesh">
+    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="max-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="max-text" srcEdge="RIGHT" dst="frame" dstEdge="LEFT" spacing="var(hb-param-margin-gene-middle-horizontal)"/>
+    
+    <meshitem src="min-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="min-text" srcEdge="RIGHT" dst="frame" dstEdge="LEFT" spacing="var(hb-param-margin-gene-middle-horizontal)"/>
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+
+  <!--  layout: vertical_progressbar_right_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:            
+            f   <-  max-text  ->
+            r    
+        <-  a   
+            m
+            e   <-  min-text  ->
+            
+        Other:
+            max-text: connected from item TOP to TOP 
+            
+            frame: connected from item TOP to TOP
+            frame: connected from item BOTTOM to BOTTOM
+            
+            min-text: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="vertical_progressbar_right_text" type="mesh">
+    <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="max-text" srcEdge="LEFT" dst="frame" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)"/>
+    <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />    
+    
+    <meshitem src="min-text" srcEdge="LEFT" dst="frame" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)"/>
+    <meshitem src="min-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+  </layout>
+
+  <!--  layout : vertical_progressbar_center_text -->
+  <!--
+        Required items: 
+            frame, min-text & max-text
+            
+        Items from left to right:
+              <-  max-text  ->
+              <-  frame     ->
+              <-  min-text  ->
+            
+        Other:
+            max-text: connected from item TOP to TOP 
+            max-text: connected from item BOTTOM to frame TOP
+            
+            min-text: connected from item TOP to frame BOTTOM
+            min-text: connected from item BOTTOM to BOTTOM
+    -->
+  <layout name="vertical_progressbar_center_text" type="mesh">
+    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="max-text" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="max-text" srcEdge="BOTTOM" dst="frame" dstEdge="TOP" spacing="var(hb-param-margin-gene-middle-vertical)"/>
+    
+    <meshitem src="frame" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    
+    <meshitem src="min-text" srcEdge="TOP" dst="frame" dstEdge="BOTTOM" spacing="-var(hb-param-margin-gene-middle-vertical)"/>
+    <meshitem src="min-text" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
+    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+
+
+  </layout>
+  
+</hbwidget>
+
+

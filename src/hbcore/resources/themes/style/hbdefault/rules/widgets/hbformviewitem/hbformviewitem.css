@@ -1,0 +1,36 @@
+HbFormViewItem:portrait{
+	layout:portrait;
+}
+
+HbFormViewItem:landscape{
+	layout:landscape;
+}
+
+HbFormViewItem::title:portrait{
+	top:-0.5un;
+	left:-0.5un;
+	right:0.5un;
+	bottom:0.5un;
+	size-policy-vertical:fixed;
+}
+
+HbFormViewItem::value:portrait{
+	left:-0.5un;
+	right:0.5un;
+	bottom:0.5un;
+	size-policy-vertical:expanding;
+}
+
+HbFormViewItem::title:landscape{
+	fixed-width: 35.0un;
+	top:-0.5un;
+	left:-0.5un;
+	right:0.5un;
+}
+
+HbFormViewItem::value:landscape{
+	top:-0.5un;
+	right:0.5un;
+	bottom:0.5un;
+	size-policy-vertical:expanding;
+}

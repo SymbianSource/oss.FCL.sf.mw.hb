@@ -1,0 +1,131 @@
+/* Colors for different keypad button states for text */
+HbTouchKeypadButton[state = "normal"]::text
+{
+    color:var(qtc_input_button_normal);
+}
+
+HbTouchKeypadButton[state = "pressed"]::text
+{
+    color:var(qtc_input_button_pressed);
+}
+
+HbTouchKeypadButton[state = "latched"]::text
+{
+    color:var(qtc_input_button_latched);
+}
+
+HbTouchKeypadButton::text[!enabled]
+{
+    color:var(qtc_input_button_disabled);
+}
+
+
+/* Colors for different keypad button states for additional-text */
+
+HbTouchKeypadButton[state = "normal"]::additional-text
+{
+    color:var(qtc_input_button_normal);
+}
+
+HbTouchKeypadButton[state = "pressed"]::additional-text
+{
+    color:var(qtc_input_button_pressed);
+}
+
+HbTouchKeypadButton[state = "latched"]::additional-text
+{
+    color:var(qtc_input_button_latched);
+}
+
+HbTouchKeypadButton::additional-text[!enabled]
+{
+    color:var(qtc_input_button_disabled);
+}
+
+/* Colors for different keypad button states for icon */
+
+HbTouchKeypadButton[state = "normal"]::icon
+{
+    color:var(qtc_input_button_normal);
+}
+
+HbTouchKeypadButton[state = "pressed"]::icon
+{
+    color:var(qtc_input_button_pressed);
+}
+
+HbTouchKeypadButton[state = "latched"]::icon
+{
+    color:var(qtc_input_button_latched);
+}
+
+HbTouchKeypadButton::icon[!enabled]
+{
+    color:var(qtc_input_button_disabled);
+}
+
+/* Colors for different function button states for text */
+HbTouchKeypadButton[buttonType = "function"][state = "normal"]::text
+{
+    color:var(qtc_input_function_normal);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "pressed"]::text
+{
+    color:var(qtc_input_function_pressed);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "latched"]::text
+{
+    color:var(qtc_input_function_latched);
+}
+
+HbTouchKeypadButton[buttonType = "function"]::text[!enabled]
+{
+    color:var(qtc_input_function_disabled);
+}
+
+
+/* Colors for different function button states for additional-text */
+
+HbTouchKeypadButton[buttonType = "function"][state = "normal"]::additional-text
+{
+    color:var(qtc_input_function_normal);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "pressed"]::additional-text
+{
+    color:var(qtc_input_function_pressed);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "latched"]::additional-text
+{
+    color:var(qtc_input_function_latched);
+}
+
+HbTouchKeypadButton[buttonType = "function"]::additional-text[!enabled]
+{
+    color:var(qtc_input_function_disabled);
+}
+
+
+/* Colors for different function button states for icon */
+HbTouchKeypadButton[buttonType = "function"][state = "normal"]::icon
+{
+    color:var(qtc_input_function_normal);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "pressed"]::icon
+{
+    color:var(qtc_input_function_pressed);
+}
+
+HbTouchKeypadButton[buttonType = "function"][state = "latched"]::icon
+{
+    color:var(qtc_input_function_latched);
+}
+
+HbTouchKeypadButton[buttonType = "function"]::icon[!enabled]
+{
+    color:var(qtc_input_function_disabled);
+}

@@ -1,0 +1,676 @@
+<!-- Values in this file based on the Unicode 5.0 release -->
+<!-- http://cldr.unicode.org/index/downloads -->
+<!-- http://en.wikipedia.org/wiki/ISO_3166-1 -->
+
+<hbnumbergrouping>
+    <C1> <!-- QLocale::Afghanistan -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C1>
+    <C2> <!-- QLocale::Albania -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C2>
+    <C3> <!-- QLocale::Algeria -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C3>
+    <C4> <!-- QLocale::AmericanSamoa -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,##,###.#</pattern>
+    </C4>
+    <C10> <!-- QLocale::Argentina -->
+		<decimal>,</decimal>
+		<group>.</group>
+        <pattern>#,###.#</pattern>
+    </C10>
+    <C11> <!-- QLocale::Armenia -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C11>
+    <C13> <!-- QLocale::Australia -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C13>
+    <C14> <!-- QLocale::Austria -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C14>    	
+    <C15> <!-- QLocale::Azerbaijan -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C15>    
+    <C17> <!-- QLocale::Bahrain -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C17>
+    <C18> <!-- QLocale::Bangladesh -->
+		<decimal>.</decimal>
+		<group>,</group>
+        <pattern>#,##,###.#</pattern>
+    </C18>    	
+    <C20> <!-- QLocale::Belarus -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C20>  
+    <C21> <!-- QLocale::Belgium -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C21>  
+    <C22> <!-- QLocale::Belize -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C22>  
+    <C26> <!-- QLocale::Bolivia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C26>
+    <C27> <!-- QLocale::BosniaAndHerzegowina -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C27>
+    <C28> <!-- QLocale::Botswana -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C28>
+    <C30> <!-- QLocale::Brazil -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C30>
+    <C32> <!-- QLocale::BruneiDarussalam -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C32>      
+    <C33> <!-- QLocale::Bulgaria -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C33>     
+    <C36> <!-- QLocale::Cambodia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C36>  
+    <C38> <!-- QLocale::Canada -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C38>   
+    <C43> <!-- QLocale::Chile  -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C43>       	
+    <C44> <!-- QLocale::China  -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,####.#</pattern>
+    </C44>   
+    <C47> <!-- QLocale::Colombia  -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C47> 
+    <C52> <!-- QLocale::CostaRica  -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C52> 
+    <C54> <!-- QLocale::Croatia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C54>   
+    <C56> <!-- QLocale::Cybrus -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C56>   
+    <C57> <!-- QLocale::CzechRepublic -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C57>  
+    <C58> <!-- QLocale::Denmark -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C58>   
+    <C59> <!-- QLocale::Djibouti -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C59>            	
+    <C61> <!-- QLocale::DominicRepublic -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C61> 
+    <C63> <!-- QLocale::Ecuador -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C63> 
+    <C64> <!-- QLocale::Egypt -->
+			<decimal>,</decimal>
+			<group>.</group>
+        <pattern>#,###.#</pattern>
+    </C64> 
+    <C65> <!-- QLocale::ElSalvador -->
+        <decimal>,</decimal>  
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C65>   
+    <C68> <!-- QLocale::Estonia -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C68>   
+    <C69> <!-- QLocale::Ethiopia -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C69>   
+    <C71> <!-- QLocale::FaroeIslands -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C71> 
+    <C73> <!-- QLocale::Finland -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C73>
+    <C74> <!-- QLocale::France -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C74>
+    <C75> <!-- QLocale::MetropolitanFrance -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C75>
+    <C81> <!-- QLocale::Georgia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C81>
+    <C82> <!-- QLocale::Germany -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C82>
+    <C83> <!-- QLocale::Ghana -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C83>
+    <C85> <!-- QLocale::Greece -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C85> 
+    <C86> <!-- QLocale::Greenland -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C86>    
+    <C89> <!-- QLocale::Guam -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C89>    
+    <C90> <!-- QLocale::Guatemala -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C90>    
+    <C96> <!-- QLocale::Honduras -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C96>  
+    <C97> <!-- QLocale::HongKong -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C97>  
+    <C98> <!-- QLocale::Hungary -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C98>    
+    <C99> <!-- QLocale::Iceland -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C99>     
+    <C100> <!-- QLocale::India -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,##,###.#</pattern>
+    </C100>
+    <C101> <!-- QLocale::Indonesia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C101> 
+    <C102> <!-- QLocale::Iran -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C102> 
+    <C103> <!-- QLocale::Iraq -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C103> 
+    <C104> <!-- QLocale::Ireland -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C104>
+    <C105> <!-- QLocale::Israel -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C105>
+    <C106> <!-- QLocale::Italy -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C106>    
+    <C107> <!-- QLocale::Jamaica -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C107>
+    <C108> <!-- QLocale::Japan -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C108>
+    <C109> <!-- QLocale::Jordan -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C109>    
+    <C110> <!-- QLocale::Kazakhstan -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C110>    
+    <C111> <!-- QLocale::Kenya -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C111>
+    <C114> <!-- QLocale::RepublicOfKorea -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C114>
+    <C115> <!-- QLocale::Kuwait -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C115>
+    <C116> <!-- QLocale::Kyrgyzstan -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C116>    
+    <C118> <!-- QLocale::Latvia -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C118> 
+    <C119> <!-- QLocale::Lebanon -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C119>
+    <C120> <!-- QLocale::Lesotho -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C120> 
+    <C122> <!-- QLocale::LibyanArabJamahiriya -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C122>
+    <C123> <!-- QLocale::Liechtenstein -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C123>
+    <C124> <!-- QLocale::Lithuania -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C124>       
+    <C127> <!-- QLocale::Macedonia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C127>       
+    <C133> <!-- QLocale::Malta -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C133>
+    <C134> <!-- QLocale::MarshallIslands -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C134>
+    <C139> <!-- QLocale::Mexico -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C139>
+    <C141> <!-- QLocale::Moldova -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C141>       
+    <C142> <!-- QLocale::Monaco -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C142>
+    <C145> <!-- QLocale::Morocco -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C145>       
+    <C147> <!-- QLocale::Myanmar -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C147>
+    <C148> <!-- QLocale::Namibia -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C148>
+    <C151> <!-- QLocale::Netherlands -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C151> 
+    <C154> <!-- QLocale::NewZealand -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C154>
+    <C155> <!-- QLocale::Nicaragua -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C155>
+    <C156> <!-- QLocale::Niger -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C156>
+    <C157> <!-- QLocale::Nigeria -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C157>
+    <C160> <!-- QLocale::NorthernMarianaIslands -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C160>
+    <C161> <!-- QLocale::Norway -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C161>
+    <C162> <!-- QLocale::Oman -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C162> 
+    <C163> <!-- QLocale::Pakistan -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,##,###.#</pattern>
+    </C163>
+    <C166> <!-- QLocale::Panama -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C166>
+    <C168> <!-- QLocale::Paraguay -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C168> 
+    <C169> <!-- QLocale::Peru -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C169>
+    <C170> <!-- QLocale::Philippines -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C170>
+    <C172> <!-- QLocale::Poland -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C172>
+    <C173> <!-- QLocale::Portugal -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C173> 
+    <C174> <!-- QLocale::PuertoRico -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C174>
+    <C175> <!-- QLocale::Qatar -->
+        <decimal>,</decimal>
+        <pattern>###.#</pattern>
+    </C175> 
+    <C177> <!-- QLocale::Romania -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C177> 
+    <C178> <!-- QLocale::RussianFederation -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C178>
+    <C186> <!-- QLocale::SaudiArabia -->
+        <decimal>,</decimal>
+        <pattern>###.#</pattern>
+    </C186>                
+    <C187> <!-- QLocale::Senegal -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C187>
+    <C190> <!-- QLocale::Singapore -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C190>
+    <C191> <!-- QLocale::Slovakia -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C191>        
+    <C192> <!-- QLocale::Slovenia -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C192>
+    <C194> <!-- QLocale::Somalia -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C194>
+    <C195> <!-- QLocale::SouthAfrica -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C195>        
+    <C197> <!-- QLocale::Spain -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C197>    
+    <C201> <!-- QLocale::Sudan -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C201>    
+    <C204> <!-- QLocale::Swaziland -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C204>      
+    <C205> <!-- QLocale::Sweden -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C205>      
+    <C206> <!-- QLocale::Switzerland -->
+        <decimal>.</decimal>
+        <group>'</group>
+        <pattern>#,###.#</pattern>
+    </C206>
+    <C207> <!-- QLocale::SyrianArabRepublic -->
+        <decimal>,</decimal>
+        <pattern>###.#</pattern>
+    </C207>    
+    <C208> <!-- QLocale::Taiwan -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C208>
+    <C211> <!-- QLocale::Thailand -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C211>
+    <C214> <!-- QLocale::TongaCountry -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C214>
+    <C215> <!-- QLocale::TrinidadAndTobago -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C215>
+    <C216> <!-- QLocale::Tunisia -->
+        <decimal>,</decimal>
+        <pattern>###.#</pattern>
+    </C216>   
+    <C217> <!-- QLocale::Turkey -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C217>  
+    <C222> <!-- QLocale::Ukraine -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C222>      
+    <C223> <!-- QLocale::UnitedArabEmirates -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C223>  
+    <C224> <!-- QLocale::UnitedKingdom -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C224>
+    <C225> <!-- QLocale::UnitedStates -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C225>
+    <C226> <!-- QLocale::UnitedStatesMinorOutlyingIslands -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C226>
+    <C227> <!-- QLocale::Uruguay -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C227>  
+    <C228> <!-- QLocale::Uzbekistan -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C228>      
+    <C231> <!-- QLocale::Venezuela -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C231>
+    <C232> <!-- QLocale::VietNam -->
+        <decimal>,</decimal>
+        <group>.</group>
+        <pattern>#,###.#</pattern>
+    </C232>
+    <C233> <!-- QLocale::BritishVirginIslands -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C233>
+    <C234> <!-- QLocale::USVirginIslands -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C234>
+    <C237> <!-- QLocale::Yemen -->
+        <decimal>,</decimal>
+        <pattern>###.#</pattern>
+    </C237>
+    <C238> <!-- QLocale::Yugoslavia -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C238>
+    <C240> <!-- QLocale::Zimbabwe -->
+        <decimal>.</decimal>
+        <group>,</group>
+        <pattern>#,###.#</pattern>
+    </C240>
+    <C241> <!-- QLocale::SerbiaAndMontenegro -->
+        <decimal>,</decimal>
+        <group> </group>
+        <pattern>#,###.#</pattern>
+    </C241>
+</hbnumbergrouping>

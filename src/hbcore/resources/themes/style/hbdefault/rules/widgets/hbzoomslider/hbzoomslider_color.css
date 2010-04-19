@@ -1,0 +1,32 @@
+
+
+HbZoomSlider[!changeincrementState]::increment-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbZoomSlider[changeincrementState][state = "normal"]::increment-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbZoomSlider[changeincrementState][state = "pressed"]::increment-icon
+{
+    color: var(qtc_popup_trans_pressed);
+}
+
+HbZoomSlider[!changedecrementState]::decrement-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+
+HbZoomSlider[changedecrementState][state = "normal"]::decrement-icon
+{
+    color: var(qtc_popup_trans_normal);
+}
+
+HbZoomSlider[changedecrementState][state = "pressed"]::decrement-icon
+{
+    color: var(qtc_popup_trans_pressed);
+}

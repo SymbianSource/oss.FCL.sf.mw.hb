@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g transform="matrix(1 0 0 1 0 0.001)">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.8711" x2="45.1289" y1="30" y2="30">
+<stop offset="0" style="stop-color:#B4BDBF"/>
+<stop offset="0.2667" style="stop-color:#E5EBED"/>
+<stop offset="0.703" style="stop-color:#8D9699"/>
+<stop offset="1" style="stop-color:#B7BDBF"/>
+</linearGradient>
+<path d="M43.963,12.2H16.039c-0.644,0-1.168,0.52-1.168,1.156V47.8h30.258V13.356  C45.129,12.72,44.604,12.2,43.963,12.2z" fill="url(#SVGID_1_)"/>
+<path d="M43.963,12.2c0.642,0,1.166,0.52,1.166,1.156V47.8H14.871V13.356c0-0.637,0.524-1.156,1.168-1.156H43.963   M43.963,13.116H16.039c-0.137,0-0.252,0.11-0.252,0.24v33.525h28.426V13.356C44.213,13.227,44.099,13.116,43.963,13.116  L43.963,13.116z" fill="#FFFFFF"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="13.0371" x2="46.7814" y1="45.3711" y2="45.3711">
+<stop offset="0" style="stop-color:#3C94DE"/>
+<stop offset="0.2545" style="stop-color:#96E9FA"/>
+<stop offset="0.7091" style="stop-color:#005BCC"/>
+<stop offset="1" style="stop-color:#0087D9"/>
+</linearGradient>
+<rect fill="url(#SVGID_2_)" height="4.857" width="33.926" x="13.037" y="42.942"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="0.912" stroke-opacity="0.4" width="33.926" x="13.037" y="42.942"/>
+<rect fill-opacity="0.15" height="0.912" stroke-opacity="0.15" width="30.258" x="14.871" y="42.03"/>
+<path d="M35.593,24.372l-6.515-6.671v8.788l-3.58-3.664l-1.308,1.334l4.5,4.615l-4.5,4.613  l1.305,1.332l3.583-3.662v8.787l6.515-6.667l-4.303-4.403L35.593,24.372z M32.991,24.386l-2.08,2.127l-0.003-4.256L32.991,24.386z   M32.991,33.165l-2.083,2.124l0.003-4.255L32.991,33.165z" fill="#FFFFFF" fill-opacity="0.75" stroke-opacity="0.75"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="29.8921" x2="29.8921" y1="38.79" y2="17.9985">
+<stop offset="0" style="stop-color:#2183E0"/>
+<stop offset="1" style="stop-color:#1B66D8"/>
+</linearGradient>
+<path d="M35.593,23.317l-6.515-6.671v8.788l-3.58-3.664l-1.308,1.334l4.5,4.615l-4.5,4.613l1.305,1.332  l3.583-3.662v8.787l6.515-6.667L31.29,27.72L35.593,23.317z M32.991,23.331l-2.08,2.127l-0.003-4.256L32.991,23.331z M32.991,32.11  l-2.083,2.124l0.003-4.255L32.991,32.11z" fill="url(#SVGID_3_)"/>
+<rect fill="none" height="59.999" width="60"/>
+</g>
+</svg>

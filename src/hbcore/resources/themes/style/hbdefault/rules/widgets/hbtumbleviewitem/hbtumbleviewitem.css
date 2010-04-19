@@ -1,0 +1,38 @@
+
+
+HbTumbleViewItem[layoutName="default"][modelItemType="StandardItem"][!icon-1][!text-2]{
+    layout:tumble-layout;
+}
+
+/*
+    Standard primitive properties
+*/
+
+HbTumbleViewItem::text-1{
+	fixed-height: var(hb-param-text-height-primary);
+	top: -var(hb-param-margin-gene-top);
+	bottom : var(hb-param-margin-gene-bottom);
+	font-variant: primary;
+	pref-width:-1;
+	text-align: center center;
+}
+
+HbTumbleViewItem::selection-icon{
+	fixed-height: 0;
+	fixed-width: 0;
+}
+
+/* all params same currently need to implement normal, selected, highlighted modes for text
+HbTumbleViewItem[textMode="selected"]::text-1{
+	fixed-height: var(hb-param-text-height-secondary);
+	font-variant: primary;
+	pref-width:-1;
+	text-align: left;
+}
+
+HbTumbleViewItem[textMode="highlighted"]::text-1{
+	fixed-height: var(hb-param-text-height-secondary);
+	font-variant: primary;
+	pref-width:-1;
+	text-align: center center;
+}*/

@@ -1,0 +1,28 @@
+
+HbIndicatorListItem {
+	layout:item_icon_tworows;
+}
+
+HbIndicatorListItem::icon-1{
+	fixed-height: var(hb-param-graphic-size-primary-medium);
+	fixed-width: var(hb-param-graphic-size-primary-medium);
+}
+
+HbIndicatorListItem::text-1{
+        pref-width: -1;
+	fixed-height: var(hb-param-text-height-primary);
+	font-variant: primary;
+	text-align: left;
+}
+
+HbIndicatorListItem::text-2{
+    fixed-height: var(hb-param-text-height-secondary);
+    font-variant: secondary;
+    pref-width: -1;
+    text-align: left;
+}
+
+HbIndicatorListItem::frame{
+	border-width: var(hb-param-background-list-popup);
+}
+

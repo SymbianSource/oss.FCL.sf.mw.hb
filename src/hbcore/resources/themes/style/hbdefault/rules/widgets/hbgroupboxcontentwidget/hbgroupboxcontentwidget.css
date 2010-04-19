@@ -1,0 +1,36 @@
+HbGroupBoxContentWidget
+{
+    layout:rich_Heading;
+}
+
+/*Rich heading groupBox background*/
+HbGroupBoxContentWidget[groupBoxType="2"]::background
+{ 
+    border-width: var(hb-param-background-groupbox);
+}
+
+HbGroupBoxContentWidget[groupBoxType="2"]::content
+{ 
+    top:-var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-left);
+    bottom:var(hb-param-margin-gene-bottom);
+    right:var(hb-param-margin-gene-right);
+}
+
+/*collapsingContainer custom content*/
+HbGroupBoxContentWidget[groupBoxType="3"][scrollableContent="false"]::content
+{ 
+    top:-var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-left);
+    bottom:var(hb-param-margin-gene-bottom);
+    right:var(hb-param-margin-gene-right);
+}
+
+/*collapsingContainer list content*/
+HbGroupBoxContentWidget[groupBoxType="3"][scrollableContent="true"]::content
+{ 
+    top:0.0un;
+    left:0.0un;
+    bottom:0.0un;
+    right:0.0un;
+}

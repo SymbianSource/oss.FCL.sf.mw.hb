@@ -1,0 +1,37 @@
+HbListQueryContentWidget:portrait{
+	layout:list_query_layout;
+}
+
+
+
+HbListQueryContentWidget::this:portrait
+{
+
+	pref-height:35.0un;
+	pref-width:30.0un;	
+}
+
+HbListQueryContentWidget::list:portrait{
+	left:0.5un;
+	right:0.5un;
+	top:0.0un;
+	bottom:0.0un;
+}
+
+HbListQueryContentWidget::list:landscape{
+	left:0.5un;
+	right:0.5un;
+	top:0.0un;
+	bottom:0.0un;
+}
+
+HbListQueryContentWidget:landscape{
+	layout:list_query_layout;
+}
+
+
+HbListQueryContentWidget::this:landscape
+{
+
+	pref-height:25.0un;
+}
