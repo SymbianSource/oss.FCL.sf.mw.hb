@@ -39,7 +39,7 @@ class HB_INPUT_EXPORT HbCharPreviewPane : public HbDialog
 public:
     explicit HbCharPreviewPane(QGraphicsItem* parent = NULL);
     virtual ~HbCharPreviewPane();
-    
+
     void showCharacters(const QStringList& characterList, const QRectF &itemSceneBoundingRect);
 
     enum { Type = Hb::ItemType_InputCharPreviewPane };
@@ -47,9 +47,6 @@ public:
 
 signals:
     void charFromPreviewSelected(QString character);
-
-public slots:
-   void updatePrimitives();
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbCharPreviewPane)

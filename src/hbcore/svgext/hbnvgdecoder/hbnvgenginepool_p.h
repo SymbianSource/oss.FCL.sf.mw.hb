@@ -22,132 +22,122 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
- 
+
 #ifndef HB_NVGNEGINE_POOL_H_
 #define HB_NVGNEGINE_POOL_H_
- 
+
 #include "hbnvg_p.h"
 
-class HB_CORE_PRIVATE_EXPORT HbNVGEngineInstance
+class HB_CORE_PRIVATE_EXPORT HbNvgEngineInstance
 {
 public:
-    HbNVGEngineInstance() : refCount(0), nvgEngine(0) {}
-        
-    void deref()
-    {
+    HbNvgEngineInstance() : refCount(0), nvgEngine(0) {}
+
+    void deref() {
         if (--refCount == 0) {
             delete nvgEngine;
             nvgEngine = 0;
         }
     }
-    
-    void ref()
-    {
+
+    void ref() {
         if (!nvgEngine) {
-            nvgEngine = new HbNvgEngine; 
+            nvgEngine = new HbNvgEngine;
         }
         ++refCount;
     }
-    
-    ~HbNVGEngineInstance()
-    {
+
+    ~HbNvgEngineInstance() {
         if (nvgEngine) {
             delete nvgEngine;
         }
     }
-    
-    HbNvgEngine * engine()
-    {
+
+    HbNvgEngine * engine() {
         if (!nvgEngine) {
             nvgEngine = new HbNvgEngine;
         }
         return nvgEngine;
     }
-            
-    void resetNVGEngine() {
+
+    void resetNvgEngine() {
         if (nvgEngine) {
             delete nvgEngine;
             nvgEngine = 0;
         }
     }
-    
+
 private:
-    int refCount;
+    qint32 refCount;
     HbNvgEngine * nvgEngine;
 };
 
 class HB_CORE_PRIVATE_EXPORT HbPooledNVGEngine
 {
 public:
-    HbPooledNVGEngine(HbNVGEngineInstance & instance)
-     : engineInstance(instance)
-    {
+    HbPooledNVGEngine(HbNvgEngineInstance & instance)
+            : engineInstance(instance) {
         engineInstance.ref();
     }
-    
-    ~HbPooledNVGEngine()
-    {
+
+    ~HbPooledNVGEngine() {
         engineInstance.deref();
     }
-    
-    HbNvgEngine& operator*() const
-    {
-        return *(engineInstance.engine());
-    }
-    
-    HbNvgEngine& operator*()
-    {
+
+    HbNvgEngine& operator*() const {
         return *(engineInstance.engine());
     }
 
-    HbNvgEngine * operator->()
-    {
+    HbNvgEngine& operator*() {
+        return *(engineInstance.engine());
+    }
+
+    HbNvgEngine * operator->() {
         return engineInstance.engine();
     }
 
-    HbNvgEngine * operator->() const
-    {
+    HbNvgEngine * operator->() const {
         return engineInstance.engine();
     }
 
-    HbNvgEngine * engine()
-    {
+    HbNvgEngine * engine() {
         return engineInstance.engine();
     }
-    
+
 private:
-    HbNVGEngineInstance & engineInstance;
+    HbNvgEngineInstance & engineInstance;
 };
 
-class HB_CORE_PRIVATE_EXPORT HbNVGEnginePool
+class HB_CORE_PRIVATE_EXPORT HbNvgEnginePool
 {
 public:
-    
-    ~HbNVGEnginePool() {delete pooledEngine;}
-    
-    static HbNVGEnginePool * instance()
-    {
+
+    ~HbNvgEnginePool() {
+        delete pooledEngine;
+    }
+
+    static HbNvgEnginePool * instance() {
         if (!pool) {
-            pool = new HbNVGEnginePool;
+            pool = new HbNvgEnginePool;
         }
         return pool;
     }
-    
- 	HbPooledNVGEngine * getNVGEngine();
- 	
- 	void resetNVGEngine() {
- 	    if (pooledEngine) {
-            pooledEngine->resetNVGEngine();
- 	    }
- 	}
- 	
+
+    HbPooledNVGEngine * getNvgEngine();
+
+    void resetNvgEngine() {
+        if (pooledEngine) {
+            pooledEngine->resetNvgEngine();
+        }
+    }
+
 private:
-    HbNVGEnginePool() : pooledEngine(0) {}
-    
- 	HbNVGEngineInstance * pooledEngine;
- 	static HbNVGEnginePool * pool;
+    HbNvgEnginePool() : pooledEngine(0) {}
+
+    HbNvgEngineInstance * pooledEngine;
+    static HbNvgEnginePool * pool;
 };
 
 #endif
- 
-  
+
+

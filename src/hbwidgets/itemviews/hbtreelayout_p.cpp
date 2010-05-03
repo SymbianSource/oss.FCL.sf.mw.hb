@@ -24,92 +24,21 @@
 ****************************************************************************/
 
 #include "hbtreelayout_p.h"
+#include "hbtreelayout_p_p.h"
 #include "hblayoututils_p.h"
 
 #include "hbabstractitemcontainer.h"
-#include "hbapplication.h"
-
-#include <QWidget> // for QWIDGETSIZE_MAX
-
-namespace
-{
-static const qreal INVALID_ITEM_HEIGHT = -1.0;
-}
-
-
-/*
-    \private
-    \class HbTreeLayout
-    \brief HbTreeLayout manages geometries of hierarchical tree view contents.
-*/
-
-class HbTreeLayoutPrivate
-{
-public:
-
-    struct TreeItem 
-    {
-        QGraphicsLayoutItem* mItem;
-        int mLevel;
-    };
-
-    HbTreeLayoutPrivate(HbTreeLayout *q_ptr);
-    bool uniformSizedItems() const;
-    qreal calculateSmallestItemHeight() const;
-
-    QList<TreeItem> mItems;
-    HbTreeLayout *q;
-    qreal mIndentation;
-    qreal mSmallestItemHeight;
-};
-
-HbTreeLayoutPrivate::HbTreeLayoutPrivate(HbTreeLayout *q_ptr) :
-    q(q_ptr),
-    mIndentation(15.0),
-    mSmallestItemHeight(INVALID_ITEM_HEIGHT)
-{
-}
-
-bool HbTreeLayoutPrivate::uniformSizedItems() const
-{
-    if (q->parentLayoutItem() && (static_cast<HbAbstractItemContainer *>(q->parentLayoutItem()))->uniformItemSizes() ) {
-        return true;
-    } else {
-        return false;
-    }      
-}
-
-/*!
-    Calculates the smallest item height from all items.
-*/
-qreal HbTreeLayoutPrivate::calculateSmallestItemHeight() const
-{
-    qreal smallestHeight(0);
-    if (uniformSizedItems()) {
-        QGraphicsLayoutItem *firstItem = mItems.value(0).mItem;
-        if (firstItem) {
-            smallestHeight = firstItem->preferredHeight();  
-        } 
-    } else {  
-        int itemCount = mItems.count();
-        if (itemCount > 0) {
-            smallestHeight = mItems.first().mItem->preferredHeight();
-        }
-        for (int i = 1; i < itemCount; ++i) {       
-            smallestHeight = qMin(smallestHeight, mItems.at(i).mItem->preferredHeight());
-        }
-    }
-    return smallestHeight;
-}
-
+#include <hbapplication.h>
+#include <QDebug>
 
 /*!
     Constructor.
     \param parent parent layout item.
  */
 HbTreeLayout::HbTreeLayout(QGraphicsLayoutItem *parent)
-    : QGraphicsLayout(parent), d(new HbTreeLayoutPrivate(this))
+    : QGraphicsLayout(parent), d(new HbTreeLayoutPrivate())
 {
+    d->q_ptr = this;
 }
 
 /*!
@@ -130,9 +59,9 @@ HbTreeLayout::~HbTreeLayout()
 
     \param item layout item to be added to list.
  */
-void HbTreeLayout::addItem(QGraphicsLayoutItem *item, int level)
+void HbTreeLayout::addItem(QGraphicsLayoutItem *item, int level, bool animate)
 {
-    insertItem( -1, item, level );
+    d->insertItem(-1, item, level, animate);
 }
 
 /*!
@@ -146,20 +75,9 @@ void HbTreeLayout::addItem(QGraphicsLayoutItem *item, int level)
     \param  index position where to insert the layout.
     \param  item layout item to be inserted to stack.
  */
-void HbTreeLayout::insertItem(int index, QGraphicsLayoutItem *item, int level)
+void HbTreeLayout::insertItem(int index, QGraphicsLayoutItem *item, int level, bool animate)
 {
-    index = qMin(index, d->mItems.count());
-    if (index < 0) {
-        index = d->mItems.count();
-    }
-    HbLayoutUtils::addChildItem(this, item);
-
-    HbTreeLayoutPrivate::TreeItem listItem;
-    listItem.mItem = item;
-    listItem.mLevel = level;
-
-    d->mItems.insert( index, listItem);
-    invalidate();
+    d->insertItem(index, item, level, animate);
 }
 
 /*!
@@ -167,10 +85,10 @@ void HbTreeLayout::insertItem(int index, QGraphicsLayoutItem *item, int level)
     \param item item to look for.
     \return position of layout item, or -1 if not found.
  */
-int HbTreeLayout::indexOf( QGraphicsLayoutItem *item ) const
+int HbTreeLayout::indexOf(QGraphicsLayoutItem *item) const
 {
-    for ( int i = 0; i < count(); ++i ) {
-        if ( itemAt( i ) == item ) {
+    for (int i = 0; i < count(); ++i) {
+        if (itemAt( i ) == item) {
             return i;
         }
     }
@@ -185,9 +103,13 @@ int HbTreeLayout::indexOf( QGraphicsLayoutItem *item ) const
     \param item item to be removed.
     \sa removeAt
  */
-void HbTreeLayout::removeItem( QGraphicsLayoutItem *item )
+void HbTreeLayout::removeItem(QGraphicsLayoutItem *item, bool animate)
 {
-    removeAt(indexOf(item));
+    if (animate) {
+        invalidate();
+    } else {
+        removeAt(indexOf(item));
+    }
 }
 
 /*!
@@ -241,9 +163,10 @@ void HbTreeLayout::setGeometry( const QRectF &rect )
     int itemCount = count();
     for (int i = 0; i < itemCount; ++i) {
         HbTreeLayoutPrivate::TreeItem listItem = d->mItems.at(i);
+        QGraphicsLayoutItem *item = listItem.mItem;
 
-        qreal itemHeight = listItem.mItem->preferredHeight();
-        qreal itemWidth = listItem.mItem->preferredWidth();
+        qreal itemHeight = item->preferredHeight();
+        qreal itemWidth = item->preferredWidth();
 
         qreal viewWidth = minimumWidth();
         if (viewWidth > 0.0) {
@@ -261,7 +184,11 @@ void HbTreeLayout::setGeometry( const QRectF &rect )
             x = d->mIndentation * listItem.mLevel + effectiveRect.left();
         }
 
-        listItem.mItem->setGeometry( QRectF(x, y, itemWidth, itemHeight ) );
+        if (item->graphicsItem()->transform().isScaling()) {
+            itemHeight *= item->graphicsItem()->transform().m22();
+        }
+
+        item->setGeometry( QRectF(x, y, itemWidth, itemHeight ) );
         y += itemHeight;
     }
 }
@@ -381,7 +308,7 @@ void HbTreeLayout::setIndentation(qreal indentation)
 */
 qreal HbTreeLayout::smallestItemHeight() const
 {
-    if (d->mSmallestItemHeight == INVALID_ITEM_HEIGHT) {
+    if (d->mSmallestItemHeight == d->INVALID_ITEM_HEIGHT) {
         d->mSmallestItemHeight = d->calculateSmallestItemHeight();
     }
     return d->mSmallestItemHeight;
@@ -396,7 +323,7 @@ void HbTreeLayout::invalidate()
 {
     QGraphicsLayout::invalidate();
 
-    d->mSmallestItemHeight = INVALID_ITEM_HEIGHT;
+    d->mSmallestItemHeight = d->INVALID_ITEM_HEIGHT;
 }
 
 

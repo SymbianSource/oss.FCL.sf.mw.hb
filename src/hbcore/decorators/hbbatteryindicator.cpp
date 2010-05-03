@@ -56,12 +56,6 @@ HbBatteryIndicatorPrivate::~HbBatteryIndicatorPrivate()
     delete mSystemDeviceInfo;
 }
 
-void HbBatteryIndicatorPrivate::init()
-{
-    Q_Q(HbBatteryIndicator);
-    q->createPrimitives();
-}
-
 /*
     Handles signal for changing the power state.
 */
@@ -91,13 +85,7 @@ void HbBatteryIndicatorPrivate::_q_setPowerState(HbSystemDeviceInfo::PowerState 
 HbBatteryIndicator::HbBatteryIndicator(QGraphicsItem *parent)
     : HbWidget(*new HbBatteryIndicatorPrivate, parent)
 {
-    Q_D(HbBatteryIndicator);
-
-    d->init();
-
-    connect(d->mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)), this, SLOT(setLevel(int)));
-    connect(d->mSystemDeviceInfo, SIGNAL(powerStateChanged(HbSystemDeviceInfo::PowerState)), this, 
-        SLOT(_q_setPowerState(HbSystemDeviceInfo::PowerState)));
+    createPrimitives();
 }
 
 /*
@@ -105,8 +93,19 @@ HbBatteryIndicator::HbBatteryIndicator(QGraphicsItem *parent)
  */
 HbBatteryIndicator::~HbBatteryIndicator()
 {
+
 }
 
+/*
+    Delayed constructor.
+ */
+void HbBatteryIndicator::delayedConstruction()
+{
+    Q_D(HbBatteryIndicator);
+    connect(d->mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)), this, SLOT(setLevel(int)));
+    connect(d->mSystemDeviceInfo, SIGNAL(powerStateChanged(HbSystemDeviceInfo::PowerState)), this, 
+        SLOT(_q_setPowerState(HbSystemDeviceInfo::PowerState))); 
+}
 
 void HbBatteryIndicator::createPrimitives()
 {

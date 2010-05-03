@@ -31,6 +31,12 @@
 */
 
 
+/*!
+
+    \deprecated HbStyleOptionDecorator::HbStyleOptionDecorator()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionDecorator::HbStyleOptionDecorator() :
     mode(QIcon::Normal), transparent(false)
 {
@@ -38,6 +44,12 @@ HbStyleOptionDecorator::HbStyleOptionDecorator() :
     version = Version;
 }
 
+/*!
+
+    \deprecated  HbStyleOptionDecorator::HbStyleOptionDecorator(const HbStyleOptionDecorator&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionDecorator::HbStyleOptionDecorator(const HbStyleOptionDecorator &other) :
     HbStyleOption(other),
     mode(other.mode), transparent(other.transparent)

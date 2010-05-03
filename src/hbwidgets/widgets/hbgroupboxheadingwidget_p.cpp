@@ -33,6 +33,10 @@
 #include "hbeffectinternal_p.h"
 #define HB_GROUPBOX_HEADING_TYPE "HB_GROUPBOX_HEADING"
 #endif
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <QGesture>
+#endif 
 
 #include <QGraphicsSceneMouseEvent>
 
@@ -75,11 +79,15 @@ HbGroupBoxHeadingWidget::~HbGroupBoxHeadingWidget()
 */
 void HbGroupBoxHeadingWidget::init()
 {
+
     createPrimitives();
 	
     if(groupBoxType == GroupBoxCollapsingContainer){
         createConnection();    
     }
+#ifdef HB_GESTURE_FW
+    grabGesture(Qt::TapGesture);
+#endif 
 }
 
 /*
@@ -224,6 +232,10 @@ void HbGroupBoxHeadingWidget::setMarqueeHeading( bool marquee )
 }
 
 /*!
+
+    \deprecated HbGroupBoxHeadingWidget::primitive(HbStyle::Primitive)
+        is deprecated.
+
     Returns the pointer for \a primitive passed.
     Will return NULL if \a primitive passed is invalid
 */
@@ -306,13 +318,16 @@ QVariant HbGroupBoxHeadingWidget::itemChange(GraphicsItemChange change, const QV
  */
 void HbGroupBoxHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+#ifdef HB_GESTURE_FW
+    Q_UNUSED(event)
+#else 
     HbWidget::mousePressEvent( event );
     if ( !collapsable ){
         event->ignore();
         return;
     }
 
-    if (collapsable) {
+    if (groupBoxType == GroupBoxCollapsingContainer) {
         HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierCollapsedItem);
     }
     else {
@@ -328,6 +343,7 @@ void HbGroupBoxHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
     style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxHeading_background , &groupBoxOption );
 
     setProperty("state", "pressed");
+#endif  
 }
 
 /*!
@@ -335,9 +351,12 @@ void HbGroupBoxHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
  */
 void HbGroupBoxHeadingWidget::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifdef HB_GESTURE_FW
+    Q_UNUSED(event)
+#else 
     HbWidget::mouseReleaseEvent( event );
 
-    if (collapsable) {
+    if (groupBoxType == GroupBoxCollapsingContainer) {
         HbWidgetFeedback::triggered(this, Hb::InstantReleased, Hb::ModifierCollapsedItem);
     }
     else {
@@ -360,5 +379,80 @@ void HbGroupBoxHeadingWidget::mouseReleaseEvent( QGraphicsSceneMouseEvent *event
     style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxHeading_background , &groupBoxOption );
 
     setProperty("state", "normal");
+#endif 
 }
+
+#ifdef HB_GESTURE_FW
+void HbGroupBoxHeadingWidget::gestureEvent(QGestureEvent *event)
+{
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted:  //
+            {
+                if ( !collapsable ){
+                    event->ignore(tap);
+                    return;
+                }
+                if (collapsable) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierCollapsedItem);
+                }
+                else {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                }
+
+                // background primitive updation, upon mouse press
+                headingPressed = true;
+
+                HbStyleOptionGroupBox groupBoxOption;
+                initStyleOption(&groupBoxOption);
+                style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxHeading_background , &groupBoxOption );
+
+                setProperty("state", "pressed");
+            }
+
+            break;
+        case Qt::GestureCanceled: // Reset state
+            {
+                headingPressed = false;
+
+                HbStyleOptionGroupBox groupBoxOption;
+                initStyleOption(&groupBoxOption);
+                style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxHeading_background , &groupBoxOption );
+
+                setProperty("state", "normal");
+                break;
+            }
+        case Qt::GestureFinished: // emit clicked
+            {
+                if (collapsable) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased, Hb::ModifierCollapsedItem);
+                } else {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                }
+
+                if ( this->isUnderMouse() ) {
+                    if ( mIconItem && mIconItem->isUnderMouse() ) {
+#ifdef HB_EFFECTS
+                        HbEffect::start( mIconItem, HB_GROUPBOX_HEADING_TYPE, "iconclick");
+#endif
+                    }
+                    emit clicked(!collapsed);
+                }
+                // background primitive updation, upon mouse release
+                headingPressed = false;
+
+                HbStyleOptionGroupBox groupBoxOption;
+                initStyleOption(&groupBoxOption);
+                style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxHeading_background , &groupBoxOption );
+
+                setProperty("state", "normal");
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+#endif 
+
 

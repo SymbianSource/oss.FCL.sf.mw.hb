@@ -464,7 +464,9 @@ void HbSliderPopup::setMinorTickLabels(const QStringList &minorTickLabels)
 }
 
 /*!
-    \deprecated
+    \deprecated HbSliderPopup::icon(HbSlider::SliderElement)
+        is deprecated.Please use elementIcons() instead.
+
     Returns the icon of the \a element.
 
     returns NULL if element does not exist or icon was not set for this element
@@ -479,7 +481,9 @@ HbIcon HbSliderPopup::icon(HbSlider::SliderElement element) const
 }
 
 /*!
-    \deprecated
+    \deprecated HbSliderPopup::setIcon(HbSlider::SliderElement, const HbIcon&)
+        is deprecated.Please use setElementIcons() instead.
+
     Sets the \a icon if the \a element.
 
     Supported elements:
@@ -607,7 +611,9 @@ void HbSliderPopup::setInvertedAppearance(bool inverted)
  }
 
 /*!
-    \deprecated
+    \deprecated HbSliderPopup::elements() const
+        is deprecated.Please use sliderElements() instead.
+
     Returns the elements of the slider.
 
     The slider contains only track element by default.
@@ -622,7 +628,9 @@ QList<HbSlider::SliderElement> HbSliderPopup::elements() const
 }
 
 /*!
-    \deprecated
+    \deprecated HbSliderPopup::setElements(const QList<HbSlider::SliderElement>&)
+        is deprecated.Please use setSliderElements instead.
+
     Sets the elements of the slider.
 
     \note Duplicate elements will be ignored.
@@ -1060,6 +1068,10 @@ bool HbSliderPopup::isTrackFilled() const
 
 
 /*!
+
+    \deprecated HbSliderPopup::primitive(HbStyle::Primitive)
+        is deprecated.
+
     \reimp
  */
 QGraphicsItem * HbSliderPopup::primitive(HbStyle::Primitive primitive) const

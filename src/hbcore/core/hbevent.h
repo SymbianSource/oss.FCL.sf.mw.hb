@@ -45,6 +45,7 @@ public:
     static const int DeviceProfileChanged;
     static const int SleepModeEnter;
     static const int SleepModeExit;
+    static const int WindowLayoutDirectionChanged;
     HbEvent(int eventType);
 };
 

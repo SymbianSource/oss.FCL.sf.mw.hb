@@ -31,6 +31,18 @@
 #include <hbscrollbar.h>
 #include <hbwidget_p.h>
 
+class HbScrollBarPrivateCore : public QObject
+{
+    Q_OBJECT
+
+    signals:
+        void handlePressed();
+        void handleReleased();
+
+    friend class HbScrollBar;
+    friend class HbScrollAreaPrivate;    
+};
+
 class HbScrollBarPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbScrollBar)
@@ -67,6 +79,7 @@ public:
     bool hasEffects;
     QPointF lastEmittedPos;
     bool emittedPos;
+    HbScrollBarPrivateCore core;
     static bool effectsLoaded;
 
     inline bool isPressed() {

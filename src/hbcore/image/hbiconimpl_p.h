@@ -31,7 +31,7 @@
 
 #include "hbthemecommon_p.h"
 
-typedef void * IconMaskedData ;
+typedef void HbIconMaskedData ;
 
 class HbMaskableIconImpl;
 
@@ -69,7 +69,8 @@ public:
     virtual void paint(QPainter* painter,
                         const QRectF &childRect,
                         Qt::Alignment alignment,
-                        HbMaskableIconImpl * maskIconData = 0) = 0;
+                        const QPainterPath &clipPath = QPainterPath(),
+						HbMaskableIconImpl * maskIconData = 0) = 0;
     virtual QSize defaultSize() const = 0;
     virtual QSize size() = 0;
     void setColor(const QColor &color)
@@ -149,7 +150,7 @@ public:
         }
     }
 
-    virtual void destroyMaskedData(IconMaskedData data)
+    virtual void destroyMaskedData(HbIconMaskedData *data)
     {
         Q_UNUSED(data);
     }

@@ -50,8 +50,20 @@ Sets current word. Given word will be the active word.
 */
 
 /*!
+\deprecated HbPredictionBase::updateCandidates(int&, bool&)
+    is deprecated. Use bool updateCandidates(int&) instead.
 \fn virtual void HbPredictionBase::updateCandidates(int& bestGuessLocation, bool& noMoreCandidates)
+*/
 
+/*!
+\fn bool HbPredictionBase::updateCandidates(int& bestGuessLocation)
+Updates the candidate list to match active input sequence. Typically appendKeyPress and deleteKeyPress
+do that automatically but in same cases it may be required to update the situation explicitly.
+Paramter bestGuessLocation specifies the best match index in the candidate list. Typically it is
+the first location but with some engines it may vary.
+Returns true if active input sequence produces valid candidates. Otherwise returns false and
+doesn not update the existing candidate list (in other words HbPredictionEngine::candidates() will
+still return same set of candidates as it did before calling this method unsuccesfully).
 */
 
 /*!
@@ -63,7 +75,7 @@ Handles a key press event.
 
 /*!
 \fn virtual void HbPredictionBase::deleteKeyPress(HbPredictionCallback* callback = 0)
-Handles delete key press.
+Deletes one key press from the active input sequence.
 */
 
 /*!
@@ -107,20 +119,10 @@ engine.
 Returns true if the engine supports given combination of language and keyboard type.
 */
 
-// ---------------------------------------------------------------------------
-// HbPredictionBase::HbPredictionBase
-//
-// ---------------------------------------------------------------------------
-//
 HbPredictionBase::HbPredictionBase()
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbPredictionBase::~HbPredictionBase
-//
-// ---------------------------------------------------------------------------
-//
 HbPredictionBase::~HbPredictionBase()
 {
 }
@@ -208,7 +210,14 @@ latin-based languages use this API. Those are for example Arabic and Hebrew.
 */
 
 /*!
+\deprecated HbPredictionEngine::candidateList()
+    is deprecated. use QStringList candidates() instead.
 \fn virtual QStringList HbPredictionEngine::candidateList()
+Returns the list of prediction candidates for current input sequence.
+*/
+
+/*!
+\fn virtual QStringList HbPredictionEngine::candidates()
 Returns the list of prediction candidates for current input sequence.
 */
 
@@ -347,6 +356,16 @@ QStringList HbPredictionEngine::nextWordCandidateList(HbPredictionCallback* call
 This interface extends predictiv einput abstraction layer with methods specific
 to predictive Chinese input. Those are mainly related to spelling candidates and candidate
 page handling.
+*/
+
+/*!
+\deprecated HbPredictionEngineChinese::pressKey(const int keycode, const Qt::KeyboardModifiers modifiers, const int textCase)
+    is deprecated. use base class AppendkeyPress instead.
+*/
+
+/*!
+\deprecated HbPredictionEngineChinese::HbPredictionEngineChinese::getCandidates(int, int)
+    is deprecated. Use base class candidates() instead.
 */
 
 // End of file

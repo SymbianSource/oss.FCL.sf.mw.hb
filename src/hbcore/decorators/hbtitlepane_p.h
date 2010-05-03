@@ -31,6 +31,7 @@
 
 class HbTitlePanePrivate;
 class HbStyleOptionTitlePane;
+class QGestureEvent;
 
 class HB_AUTOTEST_EXPORT HbTitlePane : public HbWidget
 {
@@ -39,6 +40,8 @@ class HB_AUTOTEST_EXPORT HbTitlePane : public HbWidget
 public:
     HbTitlePane(QGraphicsItem *parent = 0);
     virtual ~HbTitlePane();
+
+    void delayedConstruction();
 
     QString text() const;
 
@@ -50,6 +53,8 @@ public:
 signals:
     void launchPopup(const QPointF &pos);
     void visibilityChanged();
+    void panLeft();
+    void panRight();
 
 public slots:
     void setText(const QString &text);
@@ -60,9 +65,7 @@ protected:
 
     void initStyleOption(HbStyleOptionTitlePane *option) const;
 	
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);	
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void gestureEvent(QGestureEvent *event);
     void polish(HbStyleParameters &params);
     bool eventFilter(QObject *object, QEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);

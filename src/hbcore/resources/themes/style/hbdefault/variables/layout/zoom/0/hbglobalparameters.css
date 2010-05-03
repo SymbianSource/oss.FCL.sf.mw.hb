@@ -18,7 +18,7 @@
  */
  
 
-/* Hb parameters version 0.16 */ 
+/* Hb parameters version 0.17 */ 
 
 /* special variables that can be used e.g. in expressions:
 hb-param-screen-width
@@ -81,9 +81,9 @@ hb-param-background-button-input-itut: 1.5un;
 hb-param-background-button-input-vkb: 1.5un;
 hb-param-background-bubble: 2.25un;
 
-hb-param-widget-slider-thumb-width: 2un;
-hb-param-widget-scroll-bar-indicative-width: 1.5un;
-hb-param-widget-scroll-bar-interactive-width: 1.5un;
+hb-param-widget-slider-thumb-width: 3un;
+hb-param-widget-scroll-bar-indicative-width: 2un;
+hb-param-widget-scroll-bar-interactive-width: 2un;
 hb-param-widget-chrome-height: 9.5un;
 hb-param-widget-toolbar-height: 9un;
 hb-param-widget-progress-bar-height: 3un;

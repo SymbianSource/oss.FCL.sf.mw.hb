@@ -33,6 +33,7 @@
 
 class HbGestureSceneFilter;
 class HbGesture;
+class QGestureEvent;
 
 class HB_AUTOTEST_EXPORT HbGroupBoxContentWidget : public HbWidget
 {
@@ -56,6 +57,7 @@ public:
 
 signals:
     void clicked();
+    void longPress(QPointF point);
 
 protected:
     void initStyleOption( HbStyleOption *option ) const;
@@ -63,6 +65,9 @@ protected:
     void mousePressEvent( QGraphicsSceneMouseEvent *event );
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
     void polish( HbStyleParameters& params );
+#ifdef HB_GESTURE_FW
+    void gestureEvent(QGestureEvent *event);
+#endif 
 
 public:
     HbWidget *mContent;
@@ -70,8 +75,6 @@ public:
 
     GroupBoxType groupBoxType;
     bool contentPressed;            
-    HbGestureSceneFilter *gestureFilter;
-    HbGesture *gestureLongpressed;
     HbGroupBox *groupBox;
 };
 

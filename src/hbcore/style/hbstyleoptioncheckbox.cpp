@@ -32,12 +32,21 @@
 */
 
 
+/*!
+    \deprecated HbStyleOptionCheckBox::HbStyleOptionCheckBox()
+    is deprecated. Styleoptions will not be public.
+*/
+
 HbStyleOptionCheckBox::HbStyleOptionCheckBox()
 {
     type = Type;
     version = Version;
 }
 
+/*!
+    \deprecated HbStyleOptionCheckBox::HbStyleOptionCheckBox(const HbStyleOptionCheckBox&)
+    is deprecated. Styleoptions will not be public.
+*/
 HbStyleOptionCheckBox::HbStyleOptionCheckBox(const HbStyleOptionCheckBox &other) 
     : HbStyleOption(other), 
     text(other.text)

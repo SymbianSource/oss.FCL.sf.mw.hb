@@ -449,9 +449,8 @@ EXPORT_C const TPtrC CHbDeviceNotificationDialogSymbian::Title() const
     }
     
 /*!
-    \deprecated void CHbDeviceNotificationDialogSymbian::EnableTouchActivationL(TBool aEnable)
-    is deprecated. Use CHbDeviceNotificationDialogSymbian::EnableTouchActivation(TBool aEnable)
-    instead.
+    \deprecated CHbDeviceNotificationDialogSymbian::EnableTouchActivationL(int)
+        is deprecated. Use CHbDeviceNotificationDialogSymbian::EnableTouchActivation(TBool aEnable) instead.
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::EnableTouchActivationL(TBool aEnable)
     {
@@ -482,9 +481,8 @@ EXPORT_C TBool CHbDeviceNotificationDialogSymbian::IsTouchActivating() const
     }
 
 /*!
-    \deprecated void CHbDeviceNotificationDialogSymbian::SetTimeoutL(TInt aTimeout)
-    is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTimeout(TInt aTimeout)
-    instead.
+    \deprecated CHbDeviceNotificationDialogSymbian::SetTimeoutL(int)
+        is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTimeout(TInt aTimeout) instead.
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTimeoutL(TInt aTimeout)
     {
@@ -515,10 +513,9 @@ EXPORT_C TInt CHbDeviceNotificationDialogSymbian::Timeout() const
     }
 
 /*!
-    \deprecated void CHbDeviceNotificationDialogSymbian::SetTitleTextWrappingL(
-    TextWrapping aWrapping) is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTitleTextWrapping(
-    TextWrapping aWrapping) instead.
-    instead.
+    \deprecated CHbDeviceNotificationDialogSymbian::SetTitleTextWrappingL(CHbDeviceNotificationDialogSymbian::TextWrapping)
+        is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTitleTextWrapping(TextWrapping aWrapping) instead.
+
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTitleTextWrappingL(
     TextWrapping aWrapping)

@@ -28,6 +28,7 @@
 #include "hbicon.h"
 #include "hbiconloader_p.h"
 #include "hbtheme.h"
+#include "hbtheme_p.h"
 #include "hblayoutdirectionnotifier_p.h"
 #include "hbiconanimation_p.h"
 #include "hbimagetraces_p.h"
@@ -63,7 +64,7 @@ public:
     void externalize(QDataStream &stream);
     void appendLoadFail(QIcon::Mode mode, QIcon::State state);
     void removeLoadFail(QIcon::Mode mode, QIcon::State state);
-    void unLoadIcon();
+    void unLoadIcon(bool unloadedByServer = false);
 
     void addBadge(Qt::Alignment alignment,
                       const HbIcon& badge,
@@ -125,6 +126,10 @@ public:
 
     // Icons decorating this engine
     HbBadgeIcon *badgeInfo;
+
+    bool signalConnectionsSet;
+    // Icon FormatType
+    HbIconFormatType iconType;
 };
 
 // Class HbIconEnginePrivate
@@ -145,7 +150,9 @@ HbIconEnginePrivate::HbIconEnginePrivate(const QString &iconName) :
     animator(0),
     color(QColor()),
     icon(0),
-    badgeInfo(0)
+    badgeInfo(0),
+    signalConnectionsSet(false),
+    iconType(INVALID_FORMAT)
 {
     if (!iconName.isEmpty()) {
         HbIconEnginePrivate::IconName newName = {QIcon::Normal, QIcon::Off, iconName};
@@ -172,7 +179,9 @@ HbIconEnginePrivate::HbIconEnginePrivate(const HbIconEnginePrivate &other) :
     color(other.color),
     // HbIconImpl is instance specific, it is recreated when icon is painted
     icon(0),
-    badgeInfo(0)
+    badgeInfo(0),
+    signalConnectionsSet(false),
+    iconType(INVALID_FORMAT)
 {
     if (other.badgeInfo) {
         badgeInfo = new HbBadgeIcon();
@@ -196,7 +205,9 @@ HbIconEnginePrivate::HbIconEnginePrivate(QDataStream &stream) :
     animator(0),
     color(QColor()),
     icon(0),
-    badgeInfo(new HbBadgeIcon())
+    badgeInfo(new HbBadgeIcon),
+    signalConnectionsSet(false),
+    iconType(INVALID_FORMAT)
 {
     // Internalize the icon from the stream
     stream >> size;
@@ -276,11 +287,11 @@ HbIconEnginePrivate::~HbIconEnginePrivate()
   the icon if created on server side.
  
  */
-void HbIconEnginePrivate::unLoadIcon()
+void HbIconEnginePrivate::unLoadIcon(bool unloadedByServer)
 {
     if (icon) {
         HbIconLoader *loader = HbIconLoader::global();
-        loader->unLoadIcon(icon);
+        loader->unLoadIcon(icon, unloadedByServer);
         icon->dispose();
         icon = 0;
     }
@@ -464,7 +475,9 @@ HbIconEngine::HbIconEngine() :
     QIconEngineV2(),
     d(new HbIconEnginePrivate(QString()))
 {
-    init();
+    // Register the HbIconEngine Instance to HbIconLoader
+    HbIconLoader *loader = HbIconLoader::global();
+    loader->storeIconEngineInfo(this);    
 }
 
 HbIconEngine::HbIconEngine(const QString &iconName) :
@@ -472,7 +485,9 @@ HbIconEngine::HbIconEngine(const QString &iconName) :
     QIconEngineV2(),
     d(new HbIconEnginePrivate(iconName))
 {
-    init();
+    // Register the HbIconEngine Instance to HbIconLoader
+    HbIconLoader *loader = HbIconLoader::global();    
+    loader->storeIconEngineInfo(this);
 }
 
 HbIconEngine::HbIconEngine(const HbIconEngine &other) :
@@ -480,23 +495,30 @@ HbIconEngine::HbIconEngine(const HbIconEngine &other) :
     QIconEngineV2(other),
     d(new HbIconEnginePrivate(*other.d))
 {
-    init();
     HbIcon::Flags newFlags = d->flags;
     d->flags = 0;
     setFlags(newFlags);
+    // Register the HbIconEngine Instance to HbIconLoader
+    HbIconLoader *loader = HbIconLoader::global();
+    loader->storeIconEngineInfo(this);
 }
 
 HbIconEngine::HbIconEngine(QDataStream &stream) :
     d(new HbIconEnginePrivate(stream))
 {
-    init();
     HbIcon::Flags newFlags = d->flags;
     d->flags = 0;
     setFlags(newFlags);
+    // Register the HbIconEngine Instance to HbIconLoader
+    HbIconLoader *loader = HbIconLoader::global();
+    loader->storeIconEngineInfo(this);
 }
 
 HbIconEngine::~HbIconEngine()
 {
+    // Unregister the HbIconEngine Instance to HbIconLoader
+    HbIconLoader *loader = HbIconLoader::global();
+    loader->removeIconEngineInfo(this);
     delete d;
 }
 
@@ -716,7 +738,6 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
     return QPixmap();
 }
 
-
 void HbIconEngine::setColor(const QColor &color)
 {
     // Store the color. Note that we won't pass it later to the loader
@@ -792,7 +813,7 @@ void HbIconEngine::paint( QPainter *painter,
                           Qt::AspectRatioMode aspectRatioMode,
                           Qt::Alignment alignment,
                           QIcon::Mode mode,
-                          QIcon::State state) const
+                          QIcon::State state)
 {
     // If loading the pixmap has failed, do not retry forever
     if (loadFailed(mode, state)) {
@@ -835,6 +856,9 @@ void HbIconEngine::paint( QPainter *painter,
         // If icon parameters changed unload the icon first, and get the new icon
         d->unLoadIcon();
         d->icon = paintHelper(s, aspectRatioMode, mode, state);
+        if ( d->icon && d->icon->isCreatedOnServer() ) {
+            d->iconType = d->icon->iconData().type;
+        }
     }
 
     // Adjust the alignment and draw the icon.
@@ -872,8 +896,13 @@ HbIconImpl* HbIconEngine::paintHelper(
     const QSizeF &size,
     Qt::AspectRatioMode aspectRatioMode,
     QIcon::Mode mode,
-    QIcon::State state) const
+    QIcon::State state)
 {
+    // Set up signal connections if not yet done. This cannot be done during construction
+    // because it would then consume time unnecessarily in case the NonThemeable flag is
+    // set afterwards (after construction but before the first paint).
+    ensureSignalConnections();
+
     QString name = iconName(mode, state);
     QIcon::Mode modeForLoader = mode;
     HbIconImpl *icon = NULL;
@@ -953,14 +982,14 @@ HbIconImpl* HbIconEngine::paintHelper(
     The data will be reloaded (well, at least tried to be reloaded) when the icon is
     painted the next time.
  */
-void HbIconEngine::clearStoredIconContent(bool resetIconSize)
+void HbIconEngine::clearStoredIconContent(bool resetIconSize, bool unloadedByServer)
 {
 #ifdef HB_ICON_TRACES
     qDebug("HbIconEngine %x: clearStoredIconContent", (int) this);
 #endif
 
     d->pixmap = QPixmap();
-    d->unLoadIcon();
+    d->unLoadIcon(unloadedByServer);
     d->defaultSize = QSizeF();
     if (resetIconSize) {
         d->size = QSizeF();
@@ -989,18 +1018,27 @@ void HbIconEngine::clearStoredNonAnimIconContent()
     }
 }
 
-void HbIconEngine::init()
+void HbIconEngine::ensureSignalConnections()
 {
-    connect(hbInstance->theme(), SIGNAL(changed()), this, SLOT(updateTheme()));
-
-    connect(HbLayoutDirectionNotifier::instance(), SIGNAL(layoutDirectionChanged()),
-        this, SLOT(handleLayoutDirectionChanged()));
+    if (!d->signalConnectionsSet) {
+        d->signalConnectionsSet = true;
+        if (!d->flags.testFlag(HbIcon::NonThemeable)) {
+            connect(&hbInstance->theme()->d_ptr->iconTheme, SIGNAL(iconsUpdated(const QStringList &)), this, SLOT(themeChange(const QStringList &)));
+            connect(HbLayoutDirectionNotifier::instance(), SIGNAL(layoutDirectionChanged()),
+                    this, SLOT(handleLayoutDirectionChanged()));
+            // No need to worry about missed notifications because if the icon was not
+            // painted before then there is nothing to clear.
+        }
+    }
 }
 
-void HbIconEngine::updateTheme()
+void HbIconEngine::themeChange(const QStringList &updatedFiles)
 {
     // Theme has changed, clear stored icon content
-    clearStoredIconContent();
+    // Server side icon cache is already cleared when theme is changed
+    if (updatedFiles.count() == 0 || (d->icon && updatedFiles.contains(d->icon->iconFileName())) ) {
+        clearStoredIconContent(false, true);
+    }
 }
 
 void HbIconEngine::handleLayoutDirectionChanged()
@@ -1081,6 +1119,27 @@ QPixmap HbIconEngine::getPixmapFromAnimation() const
     }
 }
 
+/*!
+ * Removes the item in the cache if the ref. count is 0 and does delete on
+ * HbIconImpl and Resets the IconImpl. 
+ */
+void HbIconEngine::resetIconImpl() const
+ {  
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    if ( (d->iconType == SGIMAGE) || (d->iconType == NVG) ) {
+        if ( d->icon ) {
+            d->icon->decrementRefCount();
+            if ( d->icon->refCount() == 0 && d->icon->isCreatedOnServer() ) {
+                HbIconLoader *loader = HbIconLoader::global();
+                loader->removeItemInCache(d->icon);
+                d->icon->dispose();
+            }
+            d->icon = 0;
+        }
+    }
+#endif
+ }
+
 void HbIconEngine::addBadge(Qt::Alignment align,
                       const HbIcon& icon,
                       int z)
@@ -1106,6 +1165,14 @@ const QList<HbBadgeIconInfo> HbIconEngine::badges() const
 bool HbIconEngine::isBadged() const
 {
     return d->isBadged();
+}
+
+/*!
+ * Returns the IconFormat Type
+ */
+HbIconFormatType HbIconEngine::iconFormatType() const
+{
+    return d->iconType;
 }
 
 // End of File

@@ -39,6 +39,14 @@
         is deprecated.
 
 */
+
+
+/*!
+
+    \deprecated HbStyleOptionToolBarExtension::HbStyleOptionToolBarExtension()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionToolBarExtension::HbStyleOptionToolBarExtension() :
     HbStyleOptionPopup(),
     opacity(1.0)
@@ -48,6 +56,12 @@ HbStyleOptionToolBarExtension::HbStyleOptionToolBarExtension() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionToolBarExtension::HbStyleOptionToolBarExtension(const HbStyleOptionToolBarExtension&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionToolBarExtension::HbStyleOptionToolBarExtension(
     const HbStyleOptionToolBarExtension &other) :
     HbStyleOptionPopup(other),

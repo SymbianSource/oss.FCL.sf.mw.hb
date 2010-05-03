@@ -32,20 +32,23 @@
 #include "hbwidget.h"
 #include "hbscrollarea.h"
 #include "hbevent.h"
-#include <hbwidgetfeedback.h>
+#include "hbwidgetfeedback.h"
 #include "hbmenu.h"
 #include "hbaction.h"
 #include "hbselectioncontrol_p.h"
 #include "hbmeshlayout_p.h"
-#include "hbsmileyengine.h"
+#include "hbsmileyengine_p.h"
 #include "hbinputeditorinterface.h"
+#include "hbfeaturemanager_p.h"
+#include "hbtextmeasurementutility_p.h"
+#include "hbtapgesture.h"
+#include "hbpangesture.h"
 
 #include <QApplication>
 #include "hbpopup.h"
 #include "hbformatdialog.h"
 #include <QTextList>
 #include <QFontMetrics>
-#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QTextBlock>
 #include <QAbstractTextDocumentLayout>
@@ -171,6 +174,10 @@ HbAbstractEdit::HbAbstractEdit(HbAbstractEditPrivate &dd, QGraphicsItem *parent)
 */
 HbAbstractEdit::~HbAbstractEdit()
 {
+    Q_D(HbAbstractEdit);
+    if (d->selectionControl) {
+        d->selectionControl->detachEditor();
+    }
 }
 
 /*!
@@ -211,30 +218,6 @@ bool HbAbstractEdit::event(QEvent* event)
         }
     }
     return HbWidget::event(event);
-}
-
-/*!
-    \reimp
-*/
-bool HbAbstractEdit::eventFilter(QObject *obj, QEvent *e)
-{
-    Q_D(HbAbstractEdit);
-
-    if (obj == d->scrollArea
-        && (e->type() == QEvent::GraphicsSceneMousePress
-        || e->type() == QEvent::GraphicsSceneMouseMove
-        || e->type() == QEvent::GraphicsSceneMouseRelease)) {
-
-        // map e->pos to the editor's coordinate system
-        QGraphicsSceneMouseEvent *event = static_cast<QGraphicsSceneMouseEvent*>(e);
-        QPointF oldPos = event->pos();
-        event->setPos(mapFromItem(d->scrollArea,oldPos));
-        bool ret = sceneEvent(e);
-        event->setPos(oldPos);
-        return ret;
-    }
-
-    return false;
 }
 
 QVariant HbAbstractEdit::inputMethodQuery (Qt::InputMethodQuery query) const
@@ -479,106 +462,13 @@ void HbAbstractEdit::keyReleaseEvent (QKeyEvent *event)
 /*!
     \reimp
 */
-void HbAbstractEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbAbstractEdit);
-
-    if (d->selectionControl) {
-        d->selectionControl->panStarted();
-    }
-
-    if (d->interactionFlags & Qt::NoTextInteraction)
-        return;
-
-    if (!(event->button() & Qt::LeftButton))
-        return;
-
-    if (!((d->interactionFlags & Qt::TextSelectableByMouse) || (d->interactionFlags & Qt::TextEditable)))
-        return;
-
-    d->mousePressPos = event->pos();
-    d->wasGesture = false;
-
-    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-
-//    d->minimizeInputPanel();
-
-    event->accept();
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractEdit::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_UNUSED(event)
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractEdit::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbAbstractEdit);
-
-    if (d->selectionControl) {
-        d->selectionControl->panFinished();
-    }
-    if (d->wasGesture) return;
-
-    if (d->interactionFlags & Qt::NoTextInteraction)
-        return;
-
-    if (d->mousePressPos != Hb_Invalid_Position) {
-        d->mousePressPos = Hb_Invalid_Position;
-
-        bool removeSelection = (d->hitTest(event->pos(), Qt::ExactHit) == -1);
-
-        if (removeSelection && d->cursor.hasSelection()) {
-            const QTextCursor oldCursor = d->cursor;
-            d->cursor.clearSelection();
-            d->repaintOldAndNewSelection(oldCursor);
-            emit selectionChanged(oldCursor, d->cursor);
-        }
-
-        int newCursorPos = d->hitTest(event->pos(), Qt::FuzzyHit);
-
-        if (d->cursor.hasSelection() &&
-            newCursorPos >= d->cursor.selectionStart() &&
-            newCursorPos <= d->cursor.selectionEnd()){
-            // we have a selection under mouse click
-            if (d->contextMenuShownOn.testFlag(Hb::ShowTextContextMenuOnSelectionClicked)) {
-                showContextMenu(mapToScene(event->pos()));
-            }
-        } else {
-
-            // Currently focused widget to listen to InputContext before updating the cursor position
-            d->sendMouseEventToInputContext(event);
-            setCursorPosition(newCursorPos);
-
-            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-
-            if (d->interactionFlags & Qt::TextEditable) {
-                d->updateCurrentCharFormat();
-            }
-            d->cursorChanged(HbValidator::CursorChangeFromMouse);
-        }
-    }
-
-    d->openInputPanel();
-
-    event->accept();
-}
-
-
-/*!
-    \reimp
-*/
 void HbAbstractEdit::focusInEvent(QFocusEvent *event)
 {
+    Q_D(HbAbstractEdit);
+
     HbWidget::focusInEvent(event);
 
-    Q_D(HbAbstractEdit);
+    d->selectionControl = HbSelectionControl::attachEditor(this);
 
     if (d->interactionFlags & Qt::NoTextInteraction)
         return;
@@ -591,7 +481,7 @@ void HbAbstractEdit::focusInEvent(QFocusEvent *event)
         d->cursorOn = (d->interactionFlags & Qt::TextSelectableByKeyboard);
     }
 
-    d->openInputPanel();
+    d->openInputPanel();        
 
     event->accept();
 }
@@ -624,7 +514,7 @@ void HbAbstractEdit::changeEvent (QEvent *event)
 
     switch (event->type()) {
         case QEvent::FontChange: {
-            d->doc->setDefaultFont(font());
+            d->updatePlaceholderDocProperties();
             updateGeometry();
             break;
         }
@@ -635,6 +525,7 @@ void HbAbstractEdit::changeEvent (QEvent *event)
             if (d->selectionControl) {
                 d->selectionControl->updatePrimitives();
             }
+            d->updatePlaceholderDocProperties();
             break;
         }
         default: {
@@ -655,19 +546,14 @@ void HbAbstractEdit::changeEvent (QEvent *event)
  */
 void HbAbstractEdit::hideEvent(QHideEvent *event)
 {
+    Q_D(HbAbstractEdit);
     HbWidget::hideEvent(event);
 
     deselect();
 
-#if QT_VERSION >= 0x040600
-    // Send close input panel event.
-    QInputContext *ic = qApp->inputContext();
-    if (ic && !panel()) {
-        QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
-        ic->filterEvent(closeEvent);
-        delete closeEvent;
+    if(hasFocus() && !isReadOnly() && !panel()) {
+        d->closeInputPanel();
     }
-#endif
 }
 
 
@@ -769,6 +655,10 @@ void HbAbstractEdit::setReadOnly (bool value)
 }
 
 /*!
+
+    \deprecated HbAbstractEdit::primitive(HbStyle::Primitive)
+         is deprecated.
+
     Returns pointer to a \a primitive of HbAbstractEdit.
 
     Available primitive is HbStyle::P_Edit_text.
@@ -797,16 +687,22 @@ void HbAbstractEdit::updatePrimitives()
 
     if (d->scrollArea) {
         d->doc->setTextWidth(d->scrollArea->size().width());
+        if(d->placeholderDoc) {
+            d->placeholderDoc->setTextWidth(d->scrollArea->size().width());
+        }
     }
     QRectF canvasGeom(QRectF(QPointF(0,0),d->doc->size()));
-    if(d->scrollArea && canvasGeom.height()<d->scrollArea->size().height()) {
-        canvasGeom.setHeight(d->scrollArea->size().height());
+    if(d->scrollArea) {
+        canvasGeom.setHeight(qMax(d->scrollArea->size().height(), d->doc->size().height()));
     }
-    d->canvas->setGeometry(canvasGeom);
-    if (d->scrollArea) {
-        d->scrollArea->updateScrollMetrics();
-    }
+    //Changed from setGeometry() to setPreferredSize() because it causes
+    //weird input behavior otherwise.
+    d->canvas->setPreferredSize(canvasGeom.size());
     d->ensureCursorVisible();
+    if (d->selectionControl) {
+        d->selectionControl->updatePrimitives();
+    }
+
 }
 
 /*!
@@ -1017,7 +913,7 @@ void HbAbstractEdit::selectClickedWord()
 {
     Q_D(HbAbstractEdit);
 
-    int cursorPos = d->hitTest(d->mousePressPos, Qt::FuzzyHit);
+    int cursorPos = d->hitTest(d->tapPosition, Qt::FuzzyHit);
 
     if (cursorPos == -1)
         return;
@@ -1308,12 +1204,38 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
     painter->setOpacity(1.0);
 #endif
 
+    QRectF viewRect = d->viewPortRect();
+    QRectF intersected = option.exposedRect.intersected(mapRectToItem(d->canvas, viewRect));
+
+
     QAbstractTextDocumentLayout::PaintContext ctx = d->getPaintContext();
-    if (option.exposedRect.isValid())
-        painter->setClipRect(option.exposedRect, Qt::IntersectClip);
-    ctx.clip = option.exposedRect;
+    // Save painter state that will be modified
+    QRegion clipRegion = painter->clipRegion();
+
+    if (option.exposedRect.isValid()){
+        painter->setClipRect(intersected, Qt::IntersectClip);
+    }
+    ctx.clip = intersected;
 
     d->drawContentBackground(painter, option);
+
+    if(document()->isEmpty() && d->placeholderDoc && !d->placeholderDoc->isEmpty()) {
+        QTextBlock block = d->cursor.block();
+        QTextLayout *layout = block.layout();
+
+        if(!layout->preeditAreaText().length()) {
+            QColor textColor(ctx.palette.color(QPalette::Text));
+            QColor hintText(ctx.palette.color(QPalette::NoRole));
+            int cursorPos = ctx.cursorPosition;
+            ctx.cursorPosition = -1;
+            ctx.palette.setColor(QPalette::Text, hintText);
+
+            d->placeholderDoc->documentLayout()->draw(painter, ctx);
+
+            ctx.palette.setColor(QPalette::Text, textColor);
+            ctx.cursorPosition = cursorPos;
+        }
+    }
     document()->documentLayout()->draw(painter, ctx);
     // Draw the pins for the selection handle
     d->drawSelectionEdges(painter, ctx);
@@ -1329,6 +1251,8 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
     painter->setPen(Qt::red);
     painter->drawRect(d->cursorRect());
 #endif
+    // Restore state
+    painter->setClipRegion(clipRegion);
 }
 
 /*!
@@ -1367,15 +1291,17 @@ void HbAbstractEdit::showContextMenu(QPointF position)
 
     menu->setAttribute(Hb::InputMethodNeutral);
 
-    if (d->cursor.hasSelection() && d->canCopy()) {
+    if (d->cursor.hasSelection() && d->canCut()) {
         connect(
             menu->addAction("Cut"), SIGNAL(triggered()),
-            this, SLOT(cut()));
+            this, SLOT(cut()));       
+    }
+    if (d->cursor.hasSelection() && d->canCopy()) {
         connect(
             menu->addAction("Copy"), SIGNAL(triggered()),
             this, SLOT(copy()));
     }
-    else if (!d->doc->isEmpty() && d->canCopy()){
+    if (!d->cursor.hasSelection() && !d->doc->isEmpty() && d->canCopy()){
         connect(
             menu->addAction("Select"), SIGNAL(triggered()),
             this, SLOT(selectClickedWord()));
@@ -1399,7 +1325,7 @@ void HbAbstractEdit::showContextMenu(QPointF position)
             this, SLOT(format()));
     }
 
-    emit aboutToShowContextMenu(menu, d->mousePressPos);
+    emit aboutToShowContextMenu(menu, d->tapPosition);
 
     d->minimizeInputPanel();
 
@@ -1437,34 +1363,40 @@ void HbAbstractEdit::updateGeometry()
     d->updateEditingSize();
     HbWidget::updateGeometry();
 }
-/*!
-    Sets text alignment to \a alignment to the current text cursor.
 
-    \sa alignment textCursor setTextCursor
+/*!
+    Sets text default alignment to \a alignment.
+
+    \note This has impact only on those paragraphs (text blocks) for which
+    alignment was not set. This sets only a default value.
+
+    If Qt::AlingAbsolute flag is not used then layoutDirection is
+    taken into account.
+
+    \sa alignment
 */
 void HbAbstractEdit::setAlignment(Qt::Alignment alignment)
 {
     Q_D(HbAbstractEdit);
     d->acceptSignalContentsChanged = false; // no text content changes.
-    QTextBlockFormat fmt;
-    fmt.setAlignment(alignment);
-    QTextCursor cursor = d->cursor;
-    cursor.mergeBlockFormat(fmt);
+    QTextOption option = document()->defaultTextOption();
+    option.setAlignment(alignment);
+    document()->setDefaultTextOption(option);
+    if (d->selectionControl) {
+        d->selectionControl->updatePrimitives();
+    }
     d->acceptSignalContentsChanged = true;
-    setTextCursor(cursor);
     d->mApiProtectionFlags |= HbWidgetBasePrivate::AC_TextAlign;
 }
 
 /*!
-    Returns text alignment at the current text cursor.
+    Returns text default alignment.
 
     \sa setAlignment()
 */
 Qt::Alignment HbAbstractEdit::alignment() const
 {
-    Q_D(const HbAbstractEdit);
-    return d->cursor.blockFormat().alignment();
-
+    return document()->defaultTextOption().alignment();
 }
 
 /*!
@@ -1509,6 +1441,60 @@ void HbAbstractEdit::clearContextMenuFlag(Hb::TextContextMenuFlag flag)
 {
     Q_D(HbAbstractEdit);
     d->contextMenuShownOn&=~flag;
+}
+
+
+/*!
+    \property HbAbstractEdit::placeholderText
+    \brief the editor's placeholder text
+
+    Setting this property makes the editor display a grayed-out
+    placeholder text as long as the text is empty.
+    By default, this property contains an empty string.
+*/
+QString HbAbstractEdit::placeholderText() const
+{
+    Q_D(const HbAbstractEdit);
+    if(d->placeholderDoc){
+        return d->placeholderDoc->toPlainText();
+    } else {
+        return QString();
+    }
+}
+
+/*!
+    \sa placeholderText()
+*/
+void HbAbstractEdit::setPlaceholderText(const QString& placeholderText)
+{
+    Q_D(HbAbstractEdit);
+
+    if(!d->placeholderDoc) {
+        d->placeholderDoc = new QTextDocument(this);
+        d->updatePlaceholderDocProperties();
+    }
+
+    QString txt( placeholderText );
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+        if (placeholderText.endsWith(QChar(LOC_TEST_END))) {
+            int index = placeholderText.indexOf(QChar(LOC_TEST_START));
+            setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  placeholderText.mid(index + 1, placeholderText.indexOf(QChar(LOC_TEST_END)) - index - 1) );
+            setProperty( HbTextMeasurementUtilityNameSpace::textMaxLines, -1 );
+            txt = placeholderText.left(index);
+        } else {
+            setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  QVariant::Invalid );
+        }
+    }
+#endif //HB_TEXT_MEASUREMENT_UTILITY
+
+
+    if (d->placeholderDoc->toPlainText() != txt) {
+        d->placeholderDoc->setPlainText(txt);
+        if (d->doc->isEmpty()) {
+            update();
+        }
+    }
 }
 
 /*!
@@ -1625,37 +1611,42 @@ void HbAbstractEdit::setFormatDialog(HbFormatDialogPointer dialog)
 void HbAbstractEdit::polish( HbStyleParameters& params )
 {
     Q_D(HbAbstractEdit);
-    const QString KTextAlignmentCSSName = "text-align";
-    const QString KTextColorCSSName = "color";
 
-    // ------ adding css parameters ------
-    params.addParameter(KTextAlignmentCSSName);
+    if (isVisible()) {
+        const QString KTextAlignmentCSSName = "text-align";
+        const QString KTextColorCSSName = "color";
 
-    QPalette cssPalette = palette();
-    params.addParameter(KTextColorCSSName, cssPalette.color(QPalette::Text));
+        // ------ adding css parameters ------
+        params.addParameter(KTextAlignmentCSSName);
 
-    HbWidget::polish(params);
+        QPalette cssPalette = palette();
+        params.addParameter(KTextColorCSSName, cssPalette.color(QPalette::Text));
 
-    // ------ interpreting css parameters ------
-    QVariant param = params.value(KTextAlignmentCSSName);
-    if(param.canConvert(QVariant::String)) {
-        Qt::Alignment align = HbAbstractEditPrivate::alignmentFromString(param.toString());
-        if( align != 0 ) {
-            if (!(d->mApiProtectionFlags & HbWidgetBasePrivate::AC_TextAlign)) {
-                setAlignment(align);
-                d->mApiProtectionFlags &= ~HbWidgetBasePrivate::AC_TextAlign;
+        HbWidget::polish(params);
+
+        // ------ interpreting css parameters ------
+        QVariant param = params.value(KTextAlignmentCSSName);
+        if(param.canConvert(QVariant::String)) {
+            Qt::Alignment align = HbAbstractEditPrivate::alignmentFromString(param.toString());
+            if( align != 0 ) {
+                if (!(d->mApiProtectionFlags & HbWidgetBasePrivate::AC_TextAlign)) {
+                    setAlignment(align);
+                    d->mApiProtectionFlags &= ~HbWidgetBasePrivate::AC_TextAlign;
+                }
+            } else {
+                qWarning("Unable to read CSS parameter \"text-alignment\" in editor");
             }
-        } else {
-            qWarning("Unable to read CSS parameter \"text-alignment\" in editor");
         }
-    }
 
-    param = params.value(KTextColorCSSName);
-    if(param.canConvert(QVariant::Color)) {
-        cssPalette.setColor(QPalette::Text, param.value<QColor>());
-    }
+        param = params.value(KTextColorCSSName);
+        if(param.canConvert(QVariant::Color)) {
+            cssPalette.setColor(QPalette::Text, param.value<QColor>());
+        }
 
-    setPalette(cssPalette);
+        setPalette(cssPalette);
+    } else {
+        HbWidget::polish(params);
+    }
 }
 
 /*!
@@ -1678,4 +1669,45 @@ QVariant HbAbstractEdit::itemChange(GraphicsItemChange change, const QVariant &v
 QChar HbAbstractEdit::characterAt(int pos) const
 {
     return document()->characterAt(pos);
+}
+
+void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
+    Q_D(HbAbstractEdit);
+
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+        // QTapGesture::position() is in screen coordinates and thus
+        // needs to be transformed into items own coordinate system.
+        // The QGestureEvent knows the viewport through which the gesture
+        // was triggered.
+        QPointF pos = mapFromScene(event->mapToGraphicsScene(tap->position()));
+        switch(tap->state()) {
+        case Qt::GestureStarted:
+            d->tapPosition = pos;
+            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+            break;
+        case Qt::GestureUpdated:
+            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
+                d->longTapGesture(pos);
+            }
+            break;
+      case Qt::GestureFinished:
+            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
+            } else {
+                d->tapGesture(pos);
+            }
+
+            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+
+            d->openInputPanel();
+            
+            break;
+      case Qt::GestureCanceled:
+            break;
+      default:
+            break;
+        }
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }

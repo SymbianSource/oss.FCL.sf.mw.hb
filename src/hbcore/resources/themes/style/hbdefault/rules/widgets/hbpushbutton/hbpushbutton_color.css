@@ -9,6 +9,11 @@ HbPushButton[state = "pressed"]::text
     color:var(qtc_button_pressed);
 }
 
+HbPushButton[state = "latched"]::text
+{
+    color:var(qtc_button_latched);
+}
+
 HbPushButton::text[!enabled]
 {
     color:var(qtc_button_disabled);
@@ -27,13 +32,18 @@ HbPushButton[state = "pressed"]::additional-text
     color:var(qtc_button_pressed);
 }
 
+HbPushButton[state = "latched"]::additional-text
+{
+    color:var(qtc_button_latched);
+}
+
 HbPushButton::additional-text[!enabled]
 {
     color:var(qtc_button_disabled);
 }
 
 /* Colors for different pushbutton states for mono icon */
-/*HbPushButton[state = "normal"]::icon
+HbPushButton[state = "normal"]::icon
 {
     color:var(qtc_button_normal);
 }
@@ -43,7 +53,12 @@ HbPushButton[state = "pressed"]::icon
     color:var(qtc_button_pressed);
 }
 
+HbPushButton[state = "latched"]::icon
+{ 
+    color:var(qtc_button_latched);
+}
+
 HbPushButton::icon[!enabled]
 {
     color:var(qtc_button_disabled);
-}*/
+}

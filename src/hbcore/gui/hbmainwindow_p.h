@@ -63,6 +63,12 @@ class HB_CORE_PRIVATE_EXPORT HbMainWindowPrivate : public QObject
 
 public:
 
+    enum Element {
+        RootItem,
+        ViewportItem,
+        BackgroundItem
+    };
+
     HbMainWindowPrivate();
     virtual ~HbMainWindowPrivate();
 
@@ -90,7 +96,6 @@ public:
     void updateRotationEffects();
     void addBackgroundItem();
     void removeBackgroundItem();
-    void initGestures();
 
     void postIdleEvent(int eventId);
 
@@ -98,6 +103,8 @@ public:
     void unfadeScreen();
 
     void _q_viewReady();
+        
+    QGraphicsWidget *element(HbMainWindowPrivate::Element element) const;
 
     HbGraphicsScene *mScene;
     HbBackgroundItem *mBgItem;
@@ -115,10 +122,12 @@ public:
     QList<QGraphicsItem*> mOrientationChangeEffectItems;
 
     bool mAutomaticOrientationSwitch;
+    bool mUserOrientationSwitch;
     bool mOrientationChangeOngoing;
     bool mAnimateOrientationSwitch;
     bool mGVOrientationChangeEffectEnabled;
     Qt::Orientation mOrientation;
+    Qt::Orientation mRequestedOrientation;
 
     HbToolBar *mCurrentToolbar;
     HbDockWidget *mCurrentDockWidget;
@@ -141,17 +150,20 @@ public:
     HbGVWrapperItem mGVWrapperItem;
 
     bool mIdleEventHandled;
+	QRectF mLayoutRect;
     
     mutable HbDeviceProfile mAlternateProfile;
+	
 
 #ifdef Q_OS_SYMBIAN
     HbNativeWindow *mNativeWindow;
 #endif
+    QPointer<HbView> mMenuView;
 
     void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status);
     void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status);
     void orientationEffectFinished(const HbEffect::EffectStatus& status);
-        
+
     void addOrientationChangeEffects();
     void addViewEffects();
     void _q_viewChanged(int);
@@ -176,6 +188,9 @@ public:
 
 signals:
     void idleEventDispatched();
+
+public slots:
+    void menuClosed();
 
 private:
     static HbMainWindowPrivate *d_ptr(HbMainWindow *mainWindow) {

@@ -47,13 +47,14 @@ public:
     HbDocumentLoader(const HbMainWindow *window);
     virtual ~HbDocumentLoader();
 
-
     QObjectList load( const QString &fileName, const QString &section , bool *ok = 0 );
     QObjectList load( QIODevice *device, const QString &section, bool *ok = 0 );
 
     QObjectList load( const QString &fileName, bool *ok = 0 );
     QObjectList load( QIODevice *device, bool *ok = 0 );
     
+    bool createBinary( QIODevice *srcDevice, QIODevice *dstDevice );
+
     QGraphicsWidget *findWidget(const QString &name) const;
     QObject *findObject(const QString &name) const;
     

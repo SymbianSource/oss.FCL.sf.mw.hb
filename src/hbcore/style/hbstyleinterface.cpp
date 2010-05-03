@@ -28,6 +28,14 @@
 
 
 /*!
+    \deprecated HbStyleInterface::deprecated()
+    is deprecated. Style plugins are deprecated, stop using style plugins.  
+*/
+void HbStyleInterface::deprecated()
+{
+}
+
+/*!
     \fn virtual int primitiveCount() const = 0;
 
     Return the count of primitives created / supported by this plugin.

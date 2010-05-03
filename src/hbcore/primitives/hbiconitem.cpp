@@ -48,7 +48,7 @@
   (the HbIconItem is not added to a layout in this case):
   \code
   //Create new icon, set position and size for it
-  HbIconItem *icon = new HbIconItem("qgn_menu_phob", this);
+  HbIconItem *icon = new HbIconItem("qtg_large_phonebook", this);
   icon->setPos(10,150);
   icon->setSize(QSizeF(200,20));
   \endcode
@@ -57,7 +57,7 @@
   (the HbIconItem is not added to a layout in this case):
   \code
   //Create new icon, set position and size for it
-  HbIconItem *icon = new HbIconItem("qgn_menu_phob", this);
+  HbIconItem *icon = new HbIconItem("qtg_large_phonebook", this);
   icon->setPos(10,150);
   icon->setSize(icon->defaultSize());
   \endcode
@@ -65,7 +65,7 @@
   Example of how to add HbIconItem to a layout.
   \code
   HbButton *button = new HbButton("Button 1");
-  HbIconItem *icon = new HbIconItem("qgn_menu_phob");
+  HbIconItem *icon = new HbIconItem("qtg_large_phonebook");
   QGraphicsGridLayout *layout = new QGraphicsGridLayout();
 
   //No need of setting the position and size. In this case
@@ -359,7 +359,8 @@ void HbIconItem::setFlags(HbIcon::Flags flags)
     Q_D(HbIconItem);
     if (d->mIcon.flags() != flags) {
         d->mIcon.setFlags(flags);
-        d->mAnimator.setIcon(d->mIcon);
+        if (d->mIconRect.isValid())
+            d->mAnimator.setIcon(d->mIcon);
         update();
     }
 }
@@ -377,7 +378,8 @@ void HbIconItem::setMirroringMode(HbIcon::MirroringMode mode)
     Q_D(HbIconItem);
     if (d->mIcon.mirroringMode() != mode) {
         d->mIcon.setMirroringMode(mode);
-        d->mAnimator.setIcon(d->mIcon);
+        if (d->mIconRect.isValid())
+            d->mAnimator.setIcon(d->mIcon);
         update();
     }
 }
@@ -429,7 +431,8 @@ void HbIconItem::setColor(const QColor &color)
     Q_D( HbIconItem );
     if (d->mIcon.color() != color) {
         d->mIcon.setColor(color);
-        d->mAnimator.setIcon(d->mIcon);
+        if (d->mIconRect.isValid())
+            d->mAnimator.setIcon(d->mIcon);
         update();
     }
 }
@@ -446,6 +449,8 @@ QColor HbIconItem::color() const
 
 /*!
  Returns the default size of the icon.
+ 
+ For raster images this is the original size of the image.
 
  \sa HbIcon::defaultSize()
  */

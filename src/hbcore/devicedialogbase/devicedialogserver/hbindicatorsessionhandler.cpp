@@ -124,6 +124,10 @@ void HbIndicatorSessionHandler::HandleMessageL( const RMessage2 &aMessage )
         aMessage.Complete( KErrNone );
         break;
     }
+    case EHbSrvActivatedIndicatorData: {
+		WriteIndicatorDataL(aMessage);
+		break;		
+    }
     default: {
         break;
     }
@@ -167,6 +171,16 @@ void HbIndicatorSessionHandler::IndicatorsDeactivated(
     TRACE_EXIT
 }
 
+void HbIndicatorSessionHandler::IndicatorUserActivated(const QVariantMap& data)
+{
+	QString type = data.value("type").toString();
+		
+	if (indicatorTypes.contains(type) && iIndicatorChannelOpen) {
+		indicatorDataMap = data;
+		TRAP_IGNORE(WriteIndicatorDataL(iIndicatorChannel));
+	}
+}
+
 HbDeviceDialogServerPrivate& HbIndicatorSessionHandler::Server()
 {
     return iSession->Server();
@@ -181,6 +195,9 @@ void HbIndicatorSessionHandler::ActivateIndicatorL( const RMessage2 &aMessage )
     TRACE_ENTRY
     QVariant parameter;
     QString type = indicatorTypeFromMessageL(aMessage, parameter);
+    if (!indicatorTypes.contains(type)) {
+        indicatorTypes.append(type);
+    }
     HbDeviceDialogServer::IndicatorParameters indicatorParameters(type, aMessage, parameter);
     TInt result = Server().activateIndicator(indicatorParameters);
     aMessage.Complete(result);
@@ -196,6 +213,14 @@ void HbIndicatorSessionHandler::DeactivateIndicatorL( const RMessage2 &aMessage 
     TRACE_ENTRY
     QVariant parameter;
     QString type = indicatorTypeFromMessageL(aMessage, parameter);
+    indicatorTypes.removeAll(type);
+    
+    if (indicatorTypes.isEmpty() && iIndicatorChannelOpen) {
+		indicatorDataMap.clear();
+		iIndicatorChannelOpen = false;
+		iIndicatorChannel.Complete(KErrCancel);
+    }    
+    
     HbDeviceDialogServer::IndicatorParameters indicatorParameters(type, aMessage, parameter);
     TInt result = Server().deactivateIndicator(indicatorParameters);
     aMessage.Complete(result);
@@ -218,6 +243,11 @@ void HbIndicatorSessionHandler::IndicatorChannelRequestL(
     }
 
     WriteIndicatorInfoL();
+    
+    // check whether there is buffered indicator data also present.
+    if (iIndicatorChannelOpen && !indicatorDataMap.isEmpty()) {
+        WriteIndicatorDataL(iIndicatorChannel);
+    }
     TRACE_EXIT
 }
 
@@ -332,6 +362,31 @@ TInt HbIndicatorSessionHandler::DoWriteIndicatorInfoL(TInt &error)
     return clientInfoCount - clientInfoStoreCount;
 }
 
+void HbIndicatorSessionHandler::WriteIndicatorDataL(const RMessage2& aMessage)
+{    
+	iIndicatorChannelOpen = EFalse;
+	QByteArray array;
+    QDataStream stream( &array, QIODevice::WriteOnly );
+
+    QVariant var(indicatorDataMap);
+    stream << var;
+      
+    // Get client data buffer size
+    TInt size = aMessage.GetDesMaxLength( KSlot0 );
+    
+	TPckgBuf<TInt> buf( EHbIndicatorUserActivated );	
+	User::LeaveIfError(aMessage.Write(KSlot1, buf));
+
+    if (size >= array.size()) {
+		// Buffer ok. Write data.
+		TPtr8 ptr( reinterpret_cast<TUint8*>(array.data()), array.size(), array.size());
+		TInt error = aMessage.Write( KSlot0, ptr );		
+		aMessage.Complete(error);
+		indicatorDataMap.clear();
+    } else {
+		aMessage.Complete(array.size());
+    }    
+}
 /*!
     \internal
     get the indicator type and parameter from the message.

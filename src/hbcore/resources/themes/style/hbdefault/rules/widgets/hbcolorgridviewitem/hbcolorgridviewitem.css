@@ -6,22 +6,23 @@ HbColorGridViewItem::cg-border-icon
 {
     left:   -var(hb-param-margin-gene-popup);
     top:    -var(hb-param-margin-gene-popup);
-    fixed-width: var(hb-param-graphic-size-primary-small);
-    fixed-height: var(hb-param-graphic-size-primary-small);
+    bottom:  var(hb-param-margin-gene-popup);
+    right:   var(hb-param-margin-gene-popup);
+/*    fixed-width: var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small); */
 }
 
 HbColorGridViewItem::cg-color-icon
 {
     left:   -var(hb-param-margin-gene-popup);
     top:    -var(hb-param-margin-gene-popup);
-    fixed-width: var(hb-param-graphic-size-primary-small);
-    fixed-height: var(hb-param-graphic-size-primary-small);
+    bottom:  var(hb-param-margin-gene-popup);
+    right:   var(hb-param-margin-gene-popup);
+/*    fixed-width:   var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small); */
 }
 
 HbColorGridViewItem::cg-selection-icon
 {
-    left:   -var(hb-param-margin-gene-popup);
-    top:    -var(hb-param-margin-gene-popup);
-    fixed-width: var(hb-param-graphic-size-secondary);
-    fixed-height: var(hb-param-graphic-size-secondary);
+    fixed-width:   var(hb-param-graphic-size-secondary);
 }

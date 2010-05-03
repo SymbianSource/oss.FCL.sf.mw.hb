@@ -26,8 +26,7 @@
 #ifndef HBDOCUMENTLOADERSYNTAX_P_H
 #define HBDOCUMENTLOADERSYNTAX_P_H
 
-#include "hbxmlloaderabstractsyntax_p.h"
-#include "hbxmlloaderabstractactions_p.h"
+#include <hbxmlloaderbasesyntax_p.h>
 
 #include <hbglobal.h>
 #include <hbfontspec.h> // Needed for the Role enum
@@ -36,23 +35,27 @@
 #include <QList>
 #include <QXmlStreamReader>
 #include <QPointer>
+#include <QByteArray>
 
 class HbDocumentLoaderActions;
 class HbMainWindow;
 
-class HbDocumentLoaderSyntax : public HbXmlLoaderAbstractSyntax
-{ 
+class HbDocumentLoaderSyntax : public HbXmlLoaderBaseSyntax
+{
 public:
 
-    HbDocumentLoaderSyntax( HbDocumentLoaderActions *actions,
-                            const HbMainWindow *window );
+    HbDocumentLoaderSyntax( HbXmlLoaderAbstractActions *actions );
     virtual ~HbDocumentLoaderSyntax();
+
+    void setParseOnly( bool parseOnly );
 
     bool load( QIODevice *device, const QString &section );
 
+    bool scanForSections( QIODevice *device, QList<QString> &sectionsList );
+
     static QString version();
-    
-private:    
+
+private:
     Q_DISABLE_COPY(HbDocumentLoaderSyntax)
 
     bool processDocument();
@@ -67,29 +70,24 @@ private:
     bool processRef();
     bool processVariable();
     bool processContentsMargins();
-    bool processRowHeights( const QString &row );
-    bool processColumnWidths( const QString &column );
-        
-    ElementType elementType( QStringRef name ) const;    
-    
-    QVariant decodeValue();
-    
-    
+    bool processRowHeights( int row );
+    bool processColumnWidths( int column );
+    bool checkEndElementCorrectness();
+
+    HbXml::ElementType elementType( QStringRef name ) const;
+
+    bool createVariable( HbXmlVariable& variable );
+
     static bool convertSizeHintType(
         const QString &type, Qt::SizeHint &resultHint, bool &resultFixed);
-        
-    
+
     bool readGeneralStartItem();
-    bool readLayoutStartItem();    
+    bool readLayoutStartItem();
     bool readContainerStartItem();
     bool readContainerEndItem();
-    
+
     static bool toFontSpecRole(const QString &roleString, HbFontSpec::Role &role);
 
-private:
-
-    HbDocumentLoaderActions *mRealActions;
-    const HbMainWindow *mMainWindow;
 };
 
 #endif // HBDOCUMENTLOADERSYNTAX_P_H

@@ -28,6 +28,7 @@
 
 #include <hbnamespace.h>
 #include <hbglobal.h>
+#include <hbeffectinternal_p.h>
 #include <QList>
 #include <QString>
 #include <QObject>
@@ -71,7 +72,6 @@ public:
     void fixEffectOrder();
     
     void setObserver(QObject *observer, const QString &effectFinishedSlotName);
-
     void updateItemTransform();
 
     bool dirty() const;
@@ -79,7 +79,6 @@ public:
     int effectCount() const;
 
     bool isRunning() const;
-
     void setLooping(bool looping);
     bool isLooping() const;
     void pause();
@@ -94,7 +93,7 @@ public:
     HbView *view() const;
     void setView(HbView *view);
 
-    void setHideWhenFinished(bool hideWhenFinished);
+    void setEffectFlags(HbEffectInternal::EffectFlags flags);
 
 #ifdef HB_FILTER_EFFECTS
     HbVgChainedEffect *vgEffect();
@@ -109,12 +108,13 @@ public:
 
 private:
     void resolveView();
-    void doHideEffect(const QTransform *transform, bool opacityEffectUsed);
+    void doClearEffect(const QTransform *transform, bool opacityEffectUsed);
 
 public slots:
     void startAll();
-    void cancelAll(bool sendCallback, bool itemIsValid = true, bool hideEffect = false, const QTransform &initialItemTransform = QTransform());
+    void cancelAll(bool sendCallback, bool itemIsValid = true, bool clearEffect = false, const QTransform &initialItemTransform = QTransform());
     void effectFinished(Hb::EffectEvent reason = Hb::EffectFinished);
+
 private slots:
     void clearEffectRunning();
     void invokeObserver(Hb::EffectEvent reason = Hb::EffectFinished);
@@ -148,7 +148,9 @@ private:
     bool mLooping;
 
     HbView *mView;
-    bool mHideWhenFinished;
+    HbEffectInternal::EffectFlags mEffectFlags;
+    bool mRegItemHidden;
+    bool mTargetItemHidden;
 };
 
 #endif // HB_EFFECT_GROUP_P_H

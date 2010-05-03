@@ -40,7 +40,8 @@
 #define THEME_SERVER_NAME "hbthemeserver"
 #define HB_THEME_SHARED_PIXMAP_CHUNK "themeserver_chunk"
 #define ORGANIZATION "Nokia"
-#define THEME_COMPONENT "ThemeFramework"
+#define THEME_COMPONENT "Hb Themes"
+#define CURRENT_THEME_KEY "CurrentTheme"
 
 // To enable/disable debug messages for theme server functionality
 // this is master trace switch that enables all theme server related traces
@@ -242,6 +243,7 @@ typedef HbVector<HbSharedCacheItem> HbSharedCache;
 // Function codes (opcodes) used in message passing between client and server
 enum HbThemeServerRequest
     {
+     EInvalidServerRequest = 0,
      EIconLookup = 1,
      EIconDefaultSize,
      EStyleSheetLookup,
@@ -251,6 +253,7 @@ enum HbThemeServerRequest
      EWidgetMLLookup,
      EDeviceProfileOffset,
      ESecondaryCacheOffset,
+     ENotifyForegroundLost,
  #ifdef HB_ICON_CACHE_DEBUG
      EIconCleanUp,
      ECacheIconCount,
@@ -288,7 +291,10 @@ enum HbThemeServerRequest
      EMemoryGood,
      EFreeRam,
      EThemeServerStop,
-     EThemeIndex	 
+     EThemeIndex,
+     EFreeSharedMem,
+     EAllocatedSharedMem,
+     EAllocatedHeapMem
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
      ,ECreateMemoryReport
 #endif

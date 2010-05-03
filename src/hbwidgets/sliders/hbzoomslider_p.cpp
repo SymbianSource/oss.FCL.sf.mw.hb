@@ -33,8 +33,8 @@
 #include <QGraphicsScene>
 
 /*!
-    \depricated
-    This class will be depricated
+    \deprecated
+    This class will be deprecated
     Use HbSlider instead
     Example usage:
     \code
@@ -176,7 +176,7 @@ void HbZoomSliderPrivate::_q_resetToDefault( )
 
 
 /*!
-    \deprecated HbZoomSlider::HbZoomSlider( QGraphicsItem *parent )
+    \deprecated HbZoomSlider::HbZoomSlider(QGraphicsItem*)
         is deprecated. Please use HbSlider instead
     
     Constructs a zoom slider with \a parent.
@@ -225,7 +225,7 @@ int HbZoomSlider::defaultZoomLevel( ) const
 
 
 /*!
-    \deprecated HbZoomSlider::setDefaultZoomLevel( int value )
+    \deprecated HbZoomSlider::setDefaultZoomLevel(int)
         is deprecated. Please use HbSlider instead
     
     sets the default Zoom Level of the zoom slider with \a value.
@@ -245,7 +245,7 @@ void HbZoomSlider::setDefaultZoomLevel( int value )
 
 
 /*!
-    \deprecated HbZoomSlider::setToolTipVisible( bool b )
+    \deprecated HbZoomSlider::setToolTipVisible(bool)
         is deprecated. Please use HbSlider instead
     
     \reimp

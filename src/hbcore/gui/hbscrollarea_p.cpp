@@ -26,26 +26,20 @@
 #include "hbscrollarea_p.h"
 #include "hbscrollarea.h"
 #include "hbstyleoption.h"
+#include "hbinstance.h"
+#include "hbpangesture.h"
 #include <hbscrollbar_p.h>
 
 #include <hbgesture.h>
-#include <hbgesturefilter.h>
 #include <hbscrollbar.h>
 #include <hbwidgetfeedback.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <qmath.h>
 #include <QVariantAnimation>
+#include <QGesture>
 
 #include <QDebug>
-
-#if 0
-
-#include <QGraphicsSceneMouseEvent>
-#include <QApplication>
-#include <math.h>
-
-#endif // HB_NEW_GESTURE_FW
 
 // These constants control parameters of the inertia and bounce back animations and
 // have been selected heuristically to produce good results.  They
@@ -53,10 +47,6 @@
 // here.
 namespace
 {
-static const int FLICKMINDISTANCE = 50;
-/*  PANMINDISTANCE is also the threshold for longpress.
- Value of 50pixels roughly translates to 5mm/5mm area on 3.2inch nHD screen. */
-static const int PANMINDISTANCE = 40;
 
 // Factor that is used to convert flick to pixels per ms
 static const qreal SCROLLSPEED_FACTOR = 0.0004;
@@ -86,8 +76,7 @@ static const int ANIMATION_INTERVAL = 10;
 HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mScrollFeedbackOngoing(false),
         mBoundaryReached(false),
-        mContents(0), mScrollDirections(Qt::Vertical),
-        mGestureFilter(0),
+        mContents(0), mScrollDirections(Qt::Vertical),        
         mHorizontalScrollBar(0),
         mVerticalScrollBar(0),
         mVerticalScrollBarPolicy(HbScrollArea::ScrollBarAutoHide),
@@ -108,10 +97,9 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mAnimationShape (0),
         mScrollBarHideTimer(0),
         mFrictionEnabled(true),
+        mResetAlignment(true),
         mClampingStyle(HbScrollArea::BounceBackClamping),
-        mScrollingStyle(HbScrollArea::PanOrFlick),
-        mHandleLongPress(false),
-        mOrientationChanged(false),
+        mScrollingStyle(HbScrollArea::PanWithFollowOn),
         mEventPositionQueueSize(10),
         mEventPositionQueueLastIndex(0),
         mEventPositionQueueIsFull(false),
@@ -135,16 +123,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
 }
 
 HbScrollAreaPrivate::~HbScrollAreaPrivate()
-{
-    Q_Q( HbScrollArea );
-
-    if (mGestureFilter) {
-        q->removeSceneEventFilter(mGestureFilter);
-
-        delete mGestureFilter;
-
-        mGestureFilter = 0;
-    }
+{    
 }
 
 void HbScrollAreaPrivate::init()
@@ -178,19 +157,20 @@ void HbScrollAreaPrivate::init()
 void HbScrollAreaPrivate::doLazyInit()
 {
     Q_Q( HbScrollArea );
-    updateGestures();
     QObject::connect(mVerticalScrollBar, SIGNAL(valueChanged(qreal, Qt::Orientation)), q, SLOT(_q_thumbPositionChanged(qreal, Qt::Orientation)));
     QObject::connect(mVerticalScrollBar, SIGNAL(valueChangeRequested(qreal, Qt::Orientation)), q, SLOT(_q_groovePressed(qreal, Qt::Orientation)));
+    QObject::connect(&HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->core, SIGNAL(handlePressed()), q, SLOT(_q_thumbPressed()));
+    QObject::connect(&HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->core, SIGNAL(handleReleased()), q, SLOT(_q_thumbReleased()));
+    QObject::connect(&HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->core, SIGNAL(handlePressed()), q, SLOT(_q_thumbPressed()));
+    QObject::connect(&HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->core, SIGNAL(handleReleased()), q, SLOT(_q_thumbReleased()));
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChanged(qreal, Qt::Orientation)), q, SLOT(_q_thumbPositionChanged(qreal, Qt::Orientation)));
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChangeRequested(qreal, Qt::Orientation)), q, SLOT(_q_groovePressed(qreal, Qt::Orientation)));
-#if 0
-    QApplication::setAttribute(Qt::AA_EnableGestures);
-    grabGesture(Qt::PanGesture);
-    mFlickTimer = new QTime();
-    mPanDirection = Qt::NoDirection;
-#endif // HB_NEW_GESTURE_FW
+
     QObject::connect(&(mScrollTimer), SIGNAL(timeout()), q, SLOT(_q_animateScrollTimeout()));
     QObject::connect(&(mScrollBarHideTimer), SIGNAL(timeout()), q, SLOT(_q_hideScrollBars()));
+
+    q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures);
+    q->grabGesture(Qt::TapGesture);
 }
 
 void HbScrollAreaPrivate::replaceScrollBar(Qt::Orientation orientation, HbScrollBar *scrollBar)
@@ -219,69 +199,14 @@ void HbScrollAreaPrivate::replaceScrollBar(Qt::Orientation orientation, HbScroll
 void HbScrollAreaPrivate::changeLayoutDirection(
         Qt::LayoutDirection aNewDirection)
 {
+    Q_Q(HbScrollArea);
     mLayoutDirection = aNewDirection;
-}
-
-void HbScrollAreaPrivate::updateGestures()
-{
-    Q_Q( HbScrollArea );
-
-    // Gestures are scene events, if we don't have the scene, no need to take action
-    if (q->scene() == 0) {
-        return;
+    Qt::Alignment currentAlignment = mAlignment;
+    if ((mAlignment & Qt::AlignLeft) | (mAlignment & Qt::AlignRight)) {
+        currentAlignment ^= Qt::AlignLeft;
+        currentAlignment ^= Qt::AlignRight;        
     }
-
-    if (mGestureFilter != 0) {
-        q->removeSceneEventFilter(mGestureFilter);
-
-        // ??? need to delete the filter ???
-        delete mGestureFilter;
-
-        mGestureFilter = 0;
-    }
-
-    mGestureFilter = new HbGestureSceneFilter(Qt::LeftButton, q);
-
-    HbGesture* gesture = 0;
-
-    // add flick gestures only for PanOrFlick scrolling style
-    if (mScrollingStyle == HbScrollArea::PanOrFlick) {
-        if (mScrollDirections & Qt::Vertical) {
-            gesture = new HbGesture(HbGesture::up, FLICKMINDISTANCE);
-            mGestureFilter->addGesture(gesture);
-            QObject::connect(gesture, SIGNAL(triggered(int)), q, SLOT(upGesture(int)));
-
-            gesture = new HbGesture(HbGesture::down, FLICKMINDISTANCE);
-            mGestureFilter->addGesture(gesture);
-            QObject::connect(gesture, SIGNAL(triggered(int)), q, SLOT(downGesture(int)));
-        }
-
-        if (mScrollDirections & Qt::Horizontal) {
-            gesture = new HbGesture(HbGesture::left, FLICKMINDISTANCE);
-            mGestureFilter->addGesture(gesture);
-            QObject::connect(gesture, SIGNAL(triggered(int)), q, SLOT(leftGesture(int)));
-
-            gesture = new HbGesture(HbGesture::right, FLICKMINDISTANCE);
-            mGestureFilter->addGesture(gesture);
-            QObject::connect(gesture, SIGNAL(triggered(int)), q, SLOT(rightGesture(int)));
-        }
-    }
-
-    gesture = new HbGesture(HbGesture::pan, PANMINDISTANCE);
-    mGestureFilter->addGesture(gesture);
-    QObject::connect(gesture, SIGNAL(panned(QPointF)), q, SLOT(panGesture(QPointF)));
-
-    if (mHandleLongPress) {
-        gesture = new HbGesture(HbGesture::longpress, 0);
-        mGestureFilter->addGesture(gesture);
-        QObject::connect(gesture, SIGNAL(longPress(QPointF)), q, SLOT(longPressGesture(QPointF)));
-        mGestureFilter->setLongpressAnimation(true);
-    }
-
-#if 1
-    q->installSceneEventFilter(mGestureFilter);
-#endif //HB_NEW_GESTURE_FW
-
+    q->setAlignment(currentAlignment);
 }
 
 bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
@@ -296,10 +221,6 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
     QPointF newPosition = currentPosition;
     qreal newXPosition;
     qreal newYPosition;
-
-#if 0
-    mAbleToScrollY = true;
-#endif //HB_NEW_GESTURE_FW
 
     bool scrollingHitBoundary(false);
     if (mAbleToScrollX) {
@@ -348,9 +269,10 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
                 HbWidgetFeedback::triggered(q, Hb::InstantBoundaryReached);
             }
         }
+    } else {
+        mBoundaryReached = false;
     }
 
-    setContentPosition(-newPosition);
 
     if (!mIsScrolling) {
         mIsScrolling = true;
@@ -364,6 +286,9 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
             displayScrollBar(Qt::Vertical);
         }
     }  
+
+    setContentPosition(-newPosition);
+
     if (mAbleToScrollX && mHorizontalScrollBar->isVisible()) {
         updateScrollBar(Qt::Horizontal);
     }
@@ -644,152 +569,56 @@ bool HbScrollAreaPrivate::positionOutOfBounds () {
 
 }
 
-void HbScrollAreaPrivate::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
 
-    if (mIsAnimating && !positionOutOfBounds() && !mMultiFlickEnabled) {
-        stopAnimating();
-        stopScrolling();
-    }
-
-    if (mScrollingStyle == HbScrollArea::PanWithFollowOn) {
-        mDragElapsedTime.restart();
-        mEventPositionQueueLastIndex = 0;
-        mEventPositionQueueIsFull = false;
-        addPositionToQueue(event->pos(), 0, false);
-    }
-    event->accept();
-}
-
-const int VELOCITY_SAMPLE_PERIOD=250;
-void HbScrollAreaPrivate::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+/*!
+ * Pans the scroll area
+ */
+bool HbScrollAreaPrivate::pan(QPanGesture* panGesture)
 {
     Q_Q ( HbScrollArea );
 
-    bool hasFollowOn = false;
-    int  currIndex = 0;
+    HbPanGesture *hbPanGesture = qobject_cast<HbPanGesture *>(panGesture);
 
-    // Q: Could there be following classes, which takes some responsibilities
-    // away from the HbScrollArea/HbScrollAreaPrivate. Such as:
-    // A) A circular buffer class
-    // B) A average time keeper class, where one can change the VELOCITY_SAMPLE_PERIOD and/or
-    // the method to calculate the average time.
-    // Time keeper class would use the circular buffer object.
-    // Then, HbScrollArea/HbScrollAreaPrivate would hand the position/time of the events over to
-    // the Time keeper and ask the average in the end.
-    if ( mScrollingStyle == HbScrollArea::PanWithFollowOn ) {
-        // queue the release position
-        addPositionToQueue(event->pos(), mDragElapsedTime.elapsed(), false);
+    if (hbPanGesture) {
+        if(hbPanGesture->state() == Qt::GestureUpdated) {
 
-        // there has to be at least one value in the queue since we just added one
+            if (mIsAnimating) stopAnimating();
 
-        /* UNCOMMENT TO PRINT QUEUE VALUES */
-        /*
-                currIndex = d->mEventPositionQueueFirstIndex;
-                int ii = 0;
-                do {
-                        qDebug() << "POSITION QUEUE" << ii++ << d->mEventPositionQueue[currIndex] << " TIME " << d->mEventTimeQueue[currIndex];
-                        currIndex = (currIndex + 1) % d->mEventPositionQueueSize;
-                } while (currIndex != d->mEventPositionQueueLastIndex);
-                */
+            QPointF delta(hbPanGesture->sceneDelta());
 
-        // go through the data and compute the average speed in pixels per second over the
-        // last VELOCITY_SAMPLE_PERIOD ms
-        int lastIndex = (mEventPositionQueueLastIndex + mEventPositionQueueSize - 1) % mEventPositionQueueSize;
-        qreal lastTime = mEventTimeQueue[lastIndex];
-        QPointF lastPoint = mEventPositionQueue[lastIndex];
-
-        qreal startAvgTime(lastTime);
-        QPointF startAvgPoint(lastPoint);
-
-        if (mEventPositionQueueIsFull) {
-            // go backward through the queue to average the velocity over the last N milliseconds
-            currIndex = (lastIndex + mEventPositionQueueSize - 1) % mEventPositionQueueSize;
-            while (currIndex != lastIndex) {
-                if ((lastTime - mEventTimeQueue[currIndex]) > VELOCITY_SAMPLE_PERIOD)
-                    break;
-
-                startAvgTime = mEventTimeQueue[currIndex];
-                startAvgPoint = mEventPositionQueue[currIndex];
-
-                currIndex = (currIndex + mEventPositionQueueSize - 1) % mEventPositionQueueSize;
-            }
-        } else {
-            currIndex = (lastIndex - 1);
-            while (currIndex >= 0) {
-                if ((lastTime - mEventTimeQueue[currIndex]) > VELOCITY_SAMPLE_PERIOD)
-                    break;
-
-                startAvgTime = mEventTimeQueue[currIndex];
-                startAvgPoint = mEventPositionQueue[currIndex];
-
-                currIndex -= 1;
-            }
-        }
-
-        //		qDebug() << "TIME DIFF" << (lastTime - startAvgTime) << "POS DIFF" << (lastPoint - startAvgPoint);
-
-        // ??? need to handle both directions at once
-        qreal timeDiff(lastTime - startAvgTime);
-        QPointF posDiff(lastPoint - startAvgPoint);
-
-        if (timeDiff > 0.0) {
-            QPointF speed = posDiff / timeDiff;
-
-            if (!mScrollDirections.testFlag(Qt::Horizontal)) {
-                speed.setX(0.0f);
-            }
-
-            if (!mScrollDirections.testFlag(Qt::Vertical)) {
-                speed.setY(0.0f);
-            }
-
-            QRectF contentRect = mContents->boundingRect();
-            if (contentRect.width() < q->size().width()) {
-                speed.setX(0.0);
-            }
-
-            if (contentRect.height() < q->size().height()) {
-                speed.setY(0.0);
-            }
-
-            if (!qIsNull(speed.x()) || !qIsNull(speed.y())) {
-                hasFollowOn = true;
-                animateScroll(speed);
-            }
-        }
-
-        // may need to bounce back if not animating the scrolling
-        if (!hasFollowOn &&
-            mClampingStyle == HbScrollArea::BounceBackClamping &&
-            positionOutOfBounds () ) {
-                if (!mBoundaryReached) {
-                    HbWidgetFeedback::triggered(q, Hb::InstantBoundaryReached);
-                    mBoundaryReached = true;
+            // Panning against the bounceback spring
+            if (mClampingStyle == HbScrollArea::BounceBackClamping) {
+                if (-mContents->pos().y() < topBoundary() && delta.y() > 0.0f) {
+                    delta.setY(delta.y() / 2);
+                } else if (-mContents->pos().y() > bottomBoundary() && delta.y() < 0.0f) {
+                    delta.setY(delta.y() / 2);
                 }
-            // display return animation if necessary
-            animateScroll( QPointF(0,0) );
-        } else if ( !hasFollowOn && mIsScrolling ){
-            stopAnimating();
-            stopScrolling();
-        }
-    } else if (mClampingStyle == HbScrollArea::BounceBackClamping &&
-               positionOutOfBounds() ) {
-        // display return animation if necessary
-        if (!mBoundaryReached) {
-            HbWidgetFeedback::triggered(q, Hb::InstantBoundaryReached);
-            mBoundaryReached = true;
-        }
-        animateScroll( QPointF(0,0) );
-    } else {
-        if ( mIsAnimating && !positionOutOfBounds() && !mTargetAnimationInProgress ) {
-            stopAnimating();
-        } else if (mIsScrolling && !mTargetAnimationInProgress ) {
-            stopScrolling ();
+                if (-mContents->pos().x() < leftBoundary() && delta.x() > 0.0f) {
+                    delta.setX(delta.x() / 2);
+                } else if (-mContents->pos().x() > rightBoundary() && delta.x() < 0.0f) {
+                    delta.setX(delta.x() / 2);
+                }
+            }
+            QPointF oldPos = mContents->pos();
+            q->scrollByAmount(-delta);
+            if (mContents->pos() == oldPos) {
+                return false;
+            }
+
+        } else if (panGesture->state() == Qt::GestureFinished) {
+            if ((!mAbleToScrollX && !mAbleToScrollY) || mBoundaryReached)
+                return false;
+
+            if (mScrollingStyle == HbScrollArea::PanWithFollowOn && hbPanGesture) {
+                animateScroll(hbPanGesture->sceneVelocity());
+            } else if (mScrollingStyle == HbScrollArea::Pan && positionOutOfBounds()) {
+                animateScroll(QPointF(0,0));
+            } else {
+                stopAnimating();
+            }
         }
     }
-
-    event->accept();
+    return true;
 }
 
 void HbScrollAreaPrivate::adjustContent()
@@ -806,24 +635,26 @@ void HbScrollAreaPrivate::adjustContent()
 
     QRectF contentsBoundingRect = mContents->boundingRect();
     QPointF alignedPosition = mContents->pos();
-    // Set the content alignment if content size is smaller than the area
-    if (!mAbleToScrollX && mAlignment & Qt::AlignHCenter) {
-        alignedPosition.setX((scrollAreaBoundingRect.width() - contentsBoundingRect.width()) / 2.0);
-    } else if (!mAbleToScrollX && mAlignment & Qt::AlignRight) {
-         alignedPosition.setX(scrollAreaBoundingRect.width() - mContents->size().width());
-    } else if ((!mAbleToScrollX && mAlignment & Qt::AlignLeft) ||
-               mContents->pos().x() + contentsBoundingRect.x() > 0.0) {
-        alignedPosition.setX(-contentsBoundingRect.x());
-    }
+    if (mResetAlignment) {
+        if (mAlignment & Qt::AlignHCenter) {
+            alignedPosition.setX((scrollAreaBoundingRect.width() - contentsBoundingRect.width()) / 2.0);
+        } else if (mAlignment & Qt::AlignRight) {
+            alignedPosition.setX(scrollAreaBoundingRect.width() - mContents->size().width());
+        } else if ((mAlignment & Qt::AlignLeft) ||
+                   mContents->pos().x() + contentsBoundingRect.x() > 0.0) {
+            alignedPosition.setX(-contentsBoundingRect.x());
+        }
 
-    if (!mAbleToScrollY && mAlignment & Qt::AlignVCenter) {
-        alignedPosition.setY((scrollAreaBoundingRect.height() - contentsBoundingRect.height()) / 2.0);
-    } else if (!mAbleToScrollY && mAlignment & Qt::AlignBottom) {
-        alignedPosition.setY(scrollAreaBoundingRect.height() - mContents->size().height());
-    } else if ((!mAbleToScrollY && mAlignment & Qt::AlignTop) ||
-               mContents->pos().y() + contentsBoundingRect.y() > 0.0) {
-        alignedPosition.setY(-contentsBoundingRect.y());
+        if (mAlignment & Qt::AlignVCenter) {
+            alignedPosition.setY((scrollAreaBoundingRect.height() - contentsBoundingRect.height()) / 2.0);
+        } else if (mAlignment & Qt::AlignBottom) {
+            alignedPosition.setY(scrollAreaBoundingRect.height() - mContents->size().height());
+        } else if ((mAlignment & Qt::AlignTop) ||
+                   mContents->pos().y() + contentsBoundingRect.y() > 0.0) {
+            alignedPosition.setY(-contentsBoundingRect.y());
+        }
     }
+    mResetAlignment = false;
     if (mAbleToScrollX && (-alignedPosition.x() < leftBoundary())) {
        alignedPosition.setX(-leftBoundary());
     } else if (mAbleToScrollX && (-alignedPosition.x() > rightBoundary())) {
@@ -840,56 +671,7 @@ void HbScrollAreaPrivate::adjustContent()
     if (mContinuationIndicators) {
         updateIndicators(-mContents->pos());
     }
- }
-
-#if 0
-bool HbScrollAreaPrivate::sceneEvent(QEvent *event)
-{
-    Q_Q(HbScrollArea);
-      if (event->type() == QEvent::GraphicsSceneGesture) {
-        QGraphicsSceneGestureEvent *gestureEvent = static_cast<QGraphicsSceneGestureEvent*>(event);
-        if (const QGesture *gesture = gestureEvent->gesture(Qt::PanGesture)) {
-            const QPanningGesture *pannningGesture = static_cast<const QPanningGesture*>(gesture);
-
-            if (gesture->state() == Qt::GestureStarted){
-                qDebug()  << "HbScrollArea::sceneEvent: PAN EVENT -> GestureStarted";
-                panDirection = pannningGesture->direction();
-                mFlickTimer->restart();
-            }
-
-            if (gesture->state() == Qt::GestureUpdated){
-                if (panDirection != pannningGesture->direction() ){
-                    qDebug()  << "PAN EVENT -> GestureUpdated: Flick timer restart";
-                    panDirection = pannningGesture->direction();
-                    mFlickTimer->restart();
-                }
-            }
-
-            if (gesture->state() == Qt::GestureFinished){
-                if (flickTimer->elapsed() < 400 ){
-                    double trueLength = sqrt(pow(gesture->pos().x(), 2) + pow(gesture->pos().y(), 2));
-                    int speed  = trueLength *1000 / flickTimer->elapsed();
-
-                    if (pannningGesture->direction() == Qt::UpDirection ){
-                        qDebug() << "UP_FLICK -> Speed: " << speed;
-                        q->upGesture(speed);
-                    } else if (pannningGesture->direction() == Qt::DownDirection ){
-                        qDebug() << "DOWN_FLICK -> Speed: " << speed;
-                       q->downGesture(speed);
-                    }
-                    panDirection = Qt::NoDirection;
-                    event->accept();
-                    return true;
-                }
-            }
-            q->panGesture(gesture->pos() - gesture->lastPos());
-            event->accept();
-            return true;
-            }
-        }
-      return false;
 }
-#endif // HB_NEW_GESTURE_FW
 
 void HbScrollAreaPrivate::ensureVisible(QPointF position, qreal xMargin, qreal yMargin)
 {
@@ -1078,29 +860,23 @@ void HbScrollAreaPrivate::displayScrollBar(Qt::Orientation orientation)
 {
     Q_Q(HbScrollArea);
     if (orientation == Qt::Horizontal) {
-        
-        // Layout the scrollbar
-        setScrollBarMetrics(orientation);
-        
-        // Activate the scrollbar
-        if ( (!mHorizontalScrollBar->isVisible() || mOrientationChanged )&& q->isVisible()) {
-            mHorizontalScrollBar->setVisible(true);
-            if (mOrientationChanged ) {
-                HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->startShowEffect();
-            }
-        }
-    }
-    else if (orientation == Qt::Vertical) {
-        
+
         // Layout the scrollbar
         setScrollBarMetrics(orientation);
 
         // Activate the scrollbar
-        if ( (!mVerticalScrollBar->isVisible() || mOrientationChanged )&& q->isVisible()) {
+        if ( !mHorizontalScrollBar->isVisible() && q->isVisible()) {
+            mHorizontalScrollBar->setVisible(true);
+        }
+    }
+    else if (orientation == Qt::Vertical) {
+
+        // Layout the scrollbar
+        setScrollBarMetrics(orientation);
+
+        // Activate the scrollbar
+        if ( !mVerticalScrollBar->isVisible() && q->isVisible()) {
             mVerticalScrollBar->setVisible(true);
-            if (mOrientationChanged ) {
-                HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->startShowEffect();
-            }
         }
     }
 }
@@ -1210,6 +986,21 @@ void HbScrollAreaPrivate::_q_groovePressed(qreal value, Qt::Orientation orientat
     }
 }
 
+void HbScrollAreaPrivate::_q_thumbPressed()
+{
+    Q_Q(HbScrollArea);
+    mIsScrolling = true;
+    emit q->scrollingStarted();
+}
+
+void HbScrollAreaPrivate::_q_thumbReleased()
+{
+    Q_Q(HbScrollArea);
+    mIsScrolling = false;
+    emit q->scrollingEnded();
+}
+
+
 void HbScrollAreaPrivate::setContentPosition( qreal value, Qt::Orientation orientation, bool animate )
 {
     Q_Q(HbScrollArea);
@@ -1223,9 +1014,9 @@ void HbScrollAreaPrivate::setContentPosition( qreal value, Qt::Orientation orien
         mScrollSpeed.setY(0.0);
     }
 
-	if (animate) {
-	    q->scrollContentsTo (-newPosition, PAGE_CHANGE_DURATION);
-	} else {
+    if (animate) {
+        q->scrollContentsTo(-newPosition, PAGE_CHANGE_DURATION);
+    } else {
     	setContentPosition(newPosition);	
     }
 }
@@ -1347,11 +1138,4 @@ void HbScrollAreaPrivate::hideChildComponents()
     if(mVerticalScrollBar) {
         mVerticalScrollBar->setVisible(false);
     }
-}
-
-void HbScrollAreaPrivate::orientationChanged()
-{
-    mOrientationChanged = true;
-    adjustContent();
-    mOrientationChanged = false;
 }

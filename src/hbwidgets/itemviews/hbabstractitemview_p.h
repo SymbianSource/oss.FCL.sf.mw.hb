@@ -49,6 +49,7 @@ QT_BEGIN_NAMESPACE
 class QModelIndex;
 class QEvent;
 class QTimer;
+class QGestureEvent;
 QT_END_NAMESPACE
 
 class HbAbstractItemContainer;
@@ -89,8 +90,6 @@ public:
 
     void saveIndexMadeVisibleAfterMetricsChange();
 
-    QItemSelectionModel::SelectionFlags  contiguousSelectionCommand(
-            const HbAbstractViewItem *item, const QEvent *event );
     QItemSelectionModel::SelectionFlags multiSelectionCommand(
             const HbAbstractViewItem *item, const QEvent *event );
     QItemSelectionModel::SelectionFlags singleSelectionCommand(
@@ -103,8 +102,6 @@ public:
     HbAbstractViewItem* currentItem() const;
     
     HbAbstractViewItem* viewItem(QGraphicsItem *item) const;
-    
-    void updateScrollBar(Qt::Orientation orientation);
 
     void refreshContainerGeometry();
 
@@ -116,10 +113,9 @@ public:
     void revealItem(const HbAbstractViewItem *item, HbAbstractItemView::ScrollHint hint);
     void checkBoundaries(QPointF &newPos);
 
-    void updateScrollBarForUniformSizedItems();
-    void updateScrollBarForVariableSizedItems();
     void setScrollBarMetrics(Qt::Orientation orientation);
-    bool handleScrollBar(Qt::Orientation orientation);
+    virtual bool handleScrollBar(Qt::Orientation orientation);
+    void updateScrollBar(Qt::Orientation orientation);
 
     void rowsRemoved(const QModelIndex &parent, int start, int end);
 
@@ -127,13 +123,22 @@ public:
                                                     const HbAbstractViewItem *item, 
                                                     const QEvent *event);
     void resetContainer();
-    void startAppearEffect(const QModelIndex &parent, int start, int end);
+    void startAppearEffect(const QString &itemType, const QString &effectEvent, const QModelIndex &parent, int start, int end);
+
+    virtual bool animationEnabled(bool insertOperation);
+
     virtual void ensureVisible(QPointF position, qreal xMargin, qreal yMargin);
 
     void _q_modelDestroyed();
-    void _q_layoutChanged();
     void _q_animationEnabled();
     void _q_animationFinished(const HbEffect::EffectStatus &status);
+    void _q_scrolling(QPointF newPosition);
+    void _q_scrollingEnded();
+    void _q_scrollingStarted();
+
+    void setContentPosition(qreal value, Qt::Orientation orientation, bool animate);
+
+    virtual bool panTriggered(QGestureEvent *event);
 
 public:
     QPersistentModelIndex mCurrentIndex;
@@ -144,8 +149,6 @@ public:
 
     SelectionSettings mSelectionSettings;
 
-    QPointer<HbAbstractViewItem> mHitItem;
-
     // mContainer can always be assumed to be valid in the code
     HbAbstractItemContainer *mContainer;
 
@@ -154,9 +157,7 @@ public:
     QItemSelectionModel *mSelectionModel;
     QItemSelectionModel::SelectionFlag mContSelectionAction;
 
-    bool mWasScrolling;
     QString mLayoutOptionName;
-    bool mFilterRemoved;
     bool mClearingSelection;
 
     bool mAnimateItems;
@@ -167,13 +168,18 @@ public:
     HbAbstractItemView::ScrollHint mPostponedScrollHint;
     QModelIndex mPreviousSelectedIndex;
     QItemSelectionModel::SelectionFlags mPreviousSelectedCommand;
-    Hb::InteractionModifiers mInstantClickedModifiers;
 
     QTimer *mAnimationTimer;
     QList< QPersistentModelIndex > mAppearAnimationIndexes;
 
     HbModelIterator *mModelIterator;
     HbAbstractItemView::ItemAnimations mEnabledAnimations;
+
+    bool mLongPressEnabled;
+
+    bool mOrigFriction;
+    bool mDoingContiguousSelection;
+    QPointF mPositionInContiguousSelection;
 
 private:
     static HbAbstractItemViewPrivate *d_ptr(HbAbstractItemView *abstractItemView) {

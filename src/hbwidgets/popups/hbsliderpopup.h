@@ -53,8 +53,8 @@ class HB_WIDGETS_EXPORT HbSliderPopup : public HbDialog
     Q_PROPERTY(bool toolTipVisible READ isToolTipVisible WRITE setToolTipVisible)
     Q_PROPERTY(Qt::Alignment toolTipAlignment READ toolTipAlignment WRITE setToolTipAlignment)
     Q_PROPERTY(bool trackFilled READ isTrackFilled WRITE setTrackFilled)
-    Q_PROPERTY(QList<QVariant> sliderElements READ sliderElements WRITE setSliderElements);
-    Q_PROPERTY(QMap elementIcons READ elementIcons WRITE setElementIcons);
+    Q_PROPERTY(QList<QVariant> sliderElements READ sliderElements WRITE setSliderElements)
+    Q_PROPERTY(QMap elementIcons READ elementIcons WRITE setElementIcons)
  
  public:
     explicit HbSliderPopup(QGraphicsItem *parent = 0);

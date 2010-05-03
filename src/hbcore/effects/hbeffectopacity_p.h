@@ -46,9 +46,6 @@ public:
 private:
     void handleAnimationUpdate(const QVariant &value);
     void handleAnimationFinish();
-
-public:
-    HbEffectGroup *group;
 };
 
 class HB_AUTOTEST_EXPORT HbEffectOpacity : public HbEffectAbstract
@@ -77,4 +74,3 @@ private:
 };
 
 #endif // HB_EFFECT_OPACITY_P_H
-

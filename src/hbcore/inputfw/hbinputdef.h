@@ -65,17 +65,19 @@ bit HbTouchInputMask set.
 */
 enum HbKeyboardTypeFlag
 {
-    HbKeyboardNone          = 0x00000000,
+    HbKeyboardNone          				= 0x00000000,
 
-    HbKeyboard12Key         = 0x00000001,                                          /**< Conventional phone keypad */
+    HbKeyboard12Key         				= 0x00000001,                                          /**< Conventional phone keypad */
 
-    HbKeyboardQwerty        = 0x00000001 | HbQwertyKeyboardMask,                   /**< Qwerty keyboard */
+    HbKeyboardQwerty        				= 0x00000001 | HbQwertyKeyboardMask,                   /**< Qwerty keyboard */
  
-    HbKeyboardVirtual12Key  = 0x00000001 | HbTouchInputMask,                       /**< Touchscreen version of conventional phone keypad */
-    HbKeyboardVirtualQwerty = 0x00000002 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
-    HbKeyboardSctPortrait   = 0x00000003 | HbTouchInputMask,                       /**< Special character selection keypad for portrait view */
-    HbKeyboardSctLandscape  = 0x00000004 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
-    HbKeyboardHwr           = 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask     /**< Hand writing recognition keypad */
+    HbKeyboardVirtual12Key  				= 0x00000001 | HbTouchInputMask,                       /**< Touchscreen version of conventional phone keypad */
+    HbKeyboardVirtualQwerty 				= 0x00000002 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
+    HbKeyboardSctPortrait   				= 0x00000003 | HbTouchInputMask,                       /**< Special character selection keypad for portrait view */
+    HbKeyboardSctLandscape  				= 0x00000004 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
+    HbKeyboardHwr           				= 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask,     /**< Hand writing recognition keypad */
+	HbKeyboardThaiStarSctPortrait   		= 0x00000006 | HbTouchInputMask, 					   /**< Special character selection keypad for star key in Thai portrait view */
+	HbKeyboardThaiHashSctPortrait   		= 0x00000007 | HbTouchInputMask 					   /**< Special character selection keypad for hash key in Thai portrait view */
 };
 
 Q_DECLARE_FLAGS(HbKeyboardType, HbKeyboardTypeFlag)
@@ -145,6 +147,19 @@ enum HbModifier
 Q_DECLARE_FLAGS(HbModifiers, HbModifier)
 
 /*!
+\enum HbKeyboardSettingFlags
+
+Enumerates keyboard setting flags.
+*/
+enum HbKeyboardSettingFlag
+{
+    HbKeyboardSettingNone         = 0x00000000,
+    HbKeyboardSetting12key        = 0x00000001,
+    HbKeyboardSettingQwerty       = 0x00000010
+};
+Q_DECLARE_FLAGS(HbKeyboardSettingFlags, HbKeyboardSettingFlag)
+
+/*!
 \enum HbTextCase
 
 Enumerates supported text case states. HbTextCaseAutomatic is a state
@@ -183,8 +198,8 @@ bits are set through editor interface class.
 enum HbEditorConstraint
 {
     HbEditorConstraintNone                 = 0,
-    HbEditorConstraintsNoSecondaryChannel  = 0x01,   /**< Editor doesn't allow input from secondary channel. */
-    HbEditorConstraintOnlySecondaryChannel = 0x02,   /**< Editor allows input only from secondary channel. */
+    HbEditorConstraintsNoSecondaryChannel  = 0x01,   /**< DEPRECATED */
+    HbEditorConstraintOnlySecondaryChannel = 0x02,   /**< DEPRECATED */
     HbEditorConstraintAutoCompletingField  = 0x04,   /**< This is auto-completing editor. It remeber what has been typed previously to same editor class. */
     HbEditorConstraintIgnoreFocus          = 0x08,   /**< Editor rejects input framework focus. */
     HbEditorConstraintFixedInputMode       = 0x10,   /**< Editor doesn't allow initial input mode to be changed. */
@@ -241,6 +256,26 @@ enum HbInputEditorClass {
 
      HbInputEditorClassLastItem          // Keep this last, but never use.
 };
+
+/*!
+Enumerates primary candidate modes.
+*/
+enum HbPrimaryCandidateMode{
+    HbPrimaryCandidateModeBestPrediction,        /**< Display best prediction as the primary candidate */
+    HbPrimaryCandidateModeExactTyping            /**< Display exact typing as the primary candidate */
+};
+
+/*!
+Enumerates typing correction levels.
+*/
+enum HbTypingCorrectionLevel{
+    HbTypingCorrectionLevelLow,
+    HbTypingCorrectionLevelMedium,
+    HbTypingCorrectionLevelHigh
+};
+
+const int HbInputMinKeypressTimeout = 400;
+const int HbInputMaxKeypressTimeout = 3000;
 
 #define CUSTOM_INPUT_MASK 0xffff0000
 #define CUSTOM_INPUT_ID_MASK 0x0000ffff

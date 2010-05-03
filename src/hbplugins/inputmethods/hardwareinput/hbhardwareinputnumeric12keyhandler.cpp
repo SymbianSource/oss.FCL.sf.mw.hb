@@ -185,21 +185,4 @@ default: {
 	return ret;
 }
 
-/*!
-list different input modes.
-*/
-void HbHardwareInputNumeric12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-	HbInputModeProperties binding;
-	binding.iMode = HbInputModeNumeric;
-	binding.iKeyboard = HbKeyboard12Key;
-
-	QVector<int> languages;
-	HbKeyMapFactory::instance()->listLanguages(languages);
-	for (int i = 0; i < languages.count(); i++) {
-		binding.iLanguage = (QLocale::Language)languages.at(i);
-		modes.push_back(binding);
-	}
-}
-
 // EOF

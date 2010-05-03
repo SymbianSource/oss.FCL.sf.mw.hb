@@ -37,7 +37,10 @@
 #include "hbeffectinternal_p.h"
 #define HB_SLIDERHANDLE_TYPE "HB_SLIDERHANDLE"
 #endif
-
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+#endif
 /*!
     This is internal class for HbSlider
     this created slider handle
@@ -66,8 +69,17 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
     HbStyle::setItemName(touchItem , "toucharea");
 
     setZValue(slider->zValue() + 1);
-    
-
+#ifdef HB_GESTURE_FW    
+    grabGesture(Qt::TapGesture);
+    grabGesture(Qt::PanGesture);
+    if(touchItem) {
+        if(QGraphicsObject *touchArea = touchItem->toGraphicsObject()) {
+            Q_UNUSED(touchArea);
+               touchArea->grabGesture(Qt::PanGesture);
+               touchArea->grabGesture(Qt::TapGesture);
+        }
+    }
+#endif 
 #ifdef HB_EFFECTS
     // horizontal thumb press
    // HbEffectInternal::add(HB_SLIDERHANDLE_TYPE,"sliderhandle_h_press", "h_thumbpress");
@@ -300,6 +312,16 @@ void HbSliderHandle::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         sliderPos, static_cast<int>(span),opt.upsideDown);
     sliderControl->setSliderPosition(pressValue);
     sliderControl->showToolTip();
+}
+
+/*!
+  reimp
+
+*/
+void HbSliderHandle::gestureEvent(QGestureEvent *event)
+{
+    Q_UNUSED(event);
+    // HbWidgetBase::gestureEvent() ignores, overriding to accept
 }
 
 /*!

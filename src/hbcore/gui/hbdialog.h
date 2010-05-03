@@ -66,6 +66,7 @@ public slots:
 protected:
     HbDialog( HbDialogPrivate &dd, QGraphicsItem *parent );
 
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     void focusInEvent( QFocusEvent *event );
     void closeEvent( QCloseEvent * event );
     void changeEvent(QEvent *event );

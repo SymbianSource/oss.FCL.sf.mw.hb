@@ -1,9 +1,9 @@
 HbTextEdit{
     layout:default;
     text-align: left; 
-    line-color: var(qtc_view_normal);
     line-width: 0;
-    line-enabled: 0;
+    line-style: Solid;
+    smiley-scale: 1.5;
 }
 
 HbTextEdit::text{

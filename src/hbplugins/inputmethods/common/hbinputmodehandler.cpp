@@ -176,14 +176,10 @@ bool HbInputModeHandler::filterEvent(const QEvent * event)
 {
     if (event) {
         if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
-            const QKeyEvent *keyEvent = 0;
-            keyEvent = static_cast<const QKeyEvent *>(event);
-            if (keyEvent) {
-                return filterEvent(keyEvent);
-            }
-        }
-    }
-
+            const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
+            return filterEvent(keyEvent);
+		}
+	}
     return false;
 }
 
@@ -280,12 +276,22 @@ void HbInputModeHandler::cursorPositionChanged(int oldPos, int newPos)
 void HbInputModeHandler::commitFirstMappedNumber(int key)
 {
     Q_D(HbInputModeHandler);
+
+    HbInputLanguage language = d->mInputMethod->inputState().language();
     // This is long key press number shortcut functionality.
     if (!d->mKeymap) {
-        d->mKeymap = HbKeymapFactory::instance()->keymap(d->mInputMethod->inputState().language());
+        d->mKeymap = HbKeymapFactory::instance()->keymap(language);
     }
-    QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), key),
-                                                                    d->mKeymap->language());
+	bool isNumericEditor = d->mInputMethod->focusObject()->editorInterface().isNumericEditor();
+	HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
+	if (isNumericEditor) {
+        QLocale::Language systemLanguage = QLocale::system().language();		 
+		if (language.language() != systemLanguage) {
+            digitType = HbDigitTypeLatin;
+	 	}
+	}	
+    QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(
+		d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), key),language, digitType);
 	// when a number is to be entered, it should commit 
     // the previous string and then append the number to the string
     if (numChr != 0) {
@@ -305,23 +311,30 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key)
     if (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic) {
         modifiers |= HbModifierShiftPressed;
     }
+    HbInputLanguage language = d->mInputMethod->inputState().language();
+	
     if (!d->mKeymap) {
-        d->mKeymap = HbKeymapFactory::instance()->keymap(d->mInputMethod->inputState().language());
+        d->mKeymap = HbKeymapFactory::instance()->keymap(language);
     }
     const HbMappedKey* mappedKey = d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), key);
     if (!mappedKey) {
         return 0;
     }
+    QString chars = mappedKey->characters(modifiers);
+	// check whether current input language supports native digits. if yes, replace latin digits with native digits    
+    for (int i = 0; i < chars.length(); i++) {
+        if (chars.at(i) >= '0' && chars.at(i) <= '9') {
+            chars = chars.replace(chars.at(i), HbInputUtils::findFirstNumberCharacterBoundToKey(mappedKey,
+				language, HbInputUtils::inputDigitType(language)));
+        }		
+    }		
     // We need to see which of the characters in keyData are allowed to the editor.
     // this looks like expensive operation, need to find out a better way/place to do it.
-    QString allowedChars;
+    QString allowedChars = chars;
     HbInputFocusObject *focusedObject = d->mInputMethod->focusObject();
     if(focusedObject) {
-        focusedObject->filterStringWithEditorFilter(mappedKey->characters(modifiers),allowedChars);
-    } else {
-        // we should not come here. Just for saftey.
-         allowedChars =  mappedKey->characters(modifiers);
-    }
+        focusedObject->filterStringWithEditorFilter(chars,allowedChars);
+    } 
     QChar character = 0;
     if (!allowedChars.isNull()) {
         if (index >= allowedChars.length() || index < 0) {
@@ -423,6 +436,23 @@ void HbInputModeHandler::setKeymap(const HbKeymap* keymap)
 void HbInputModeHandler::characterPreviewAvailable(bool available)
 {
     Q_UNUSED(available);
+}
+
+/*!
+Toggles prediction after doing a check if the editor allows it.
+*/
+void HbInputModeHandler::togglePrediction()
+{
+    Q_D(HbInputModeHandler);
+    int currentStatus = HbInputSettingProxy::instance()->predictiveInputStatus();
+    HbInputFocusObject* focusedObject = 0;
+    focusedObject = d->mInputMethod->focusObject();
+    bool isPredictionAllowed = focusedObject->editorInterface().isPredictionAllowed();
+    if (currentStatus) {
+        HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
+    } else if (isPredictionAllowed) {
+        HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
+    }
 }
 
 #include "moc_hbinputmodehandler.cpp"

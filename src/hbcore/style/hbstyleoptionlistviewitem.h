@@ -30,6 +30,7 @@
 #include <hbglobal.h>
 #include <QVariant>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionListViewItem : public HbStyleOptionAbstractViewItem
 {
 public:

@@ -40,6 +40,7 @@ class HbStatusBarPrivate : public HbWidgetPrivate
 public:
     HbStatusBarPrivate();
 
+    void delayedConstruction();
 	void init();
     void updateTime();
 

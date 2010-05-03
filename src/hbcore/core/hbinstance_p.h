@@ -28,7 +28,6 @@
 
 #include <hbinstance.h>
 #include "hbdeviceprofile.h"
-#include <hbcssinspector_p.h>
 
 class HbTypefaceInfo;
 
@@ -42,6 +41,8 @@ const TUid HBTESTABILITY_CREPO_ID  = {0x2002C3AE};
 const TUint32 HbTestabilityKey  = 0x1;  
 #endif
 
+class HbLocaleChangeNotifier;
+
 class HbInstancePrivate : public QObject
 {
     Q_OBJECT
@@ -51,9 +52,6 @@ public:
     ~HbInstancePrivate();
     void addWindow(HbMainWindow *window);
     bool removeWindow(HbMainWindow *window);
-
-    Qt::Orientation orientation() const;
-    void setOrientation(Qt::Orientation orientation, bool animate);
     void select(const HbDeviceProfile &display);
     HbDeviceProfile profile();
 
@@ -64,7 +62,7 @@ public slots:
 #ifdef HB_SETTINGS_WINDOW
     void showHideSettingsWindow();
 #endif
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
     void showHideCssWindow();
 #endif
 
@@ -92,7 +90,9 @@ private:
      bool testabilityEnabled;
 #endif //Q_OS_SYMBIAN
 #endif //HB_TESTABILITY
-    
+
+     HbLocaleChangeNotifier* mLocaleChangeNotifier;
+     
     // Provided for HbMainWindow & friends who have to access
     // HbInstancePrivate in order to add/remove windows.
     // NOTE: Still kept as private to track dependencies...

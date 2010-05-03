@@ -155,16 +155,7 @@ qtg_fr_status_pressed
 qtg_fr_status_latched
 qtg_indi_status_options
 
-#Battery/signal
 
-qtg_graf_battery_bg
-qtg_graf_battery_full
-qtg_graf_battery_medium
-qtg_graf_battery_low
-qtg_graf_signal_bg
-qtg_graf_signal_full
-qtg_graf_signal_medium
-qtg_graf_signal_low
 
 
 

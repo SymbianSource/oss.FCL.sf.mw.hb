@@ -153,14 +153,13 @@ HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
 
     connect(d->mLanguageButton, SIGNAL(clicked(bool)), this, SLOT(languageButtonClicked()));
     connect(d->mPredictionButton, SIGNAL(clicked(bool)), this, SLOT(predictionButtonClicked()));
-    connect(d->mOptionList, SIGNAL(activated(HbListWidgetItem *)), this, SLOT(listItemActivated(HbListWidgetItem *)));
+    connect(d->mOptionList, SIGNAL(activated(HbListWidgetItem*)), this, SLOT(listItemActivated(HbListWidgetItem*)));
+    connect(d->mOptionList, SIGNAL(longPressed(HbListWidgetItem*, const QPointF&)), this, SLOT(listItemActivated(HbListWidgetItem*)));
 
     HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     connect(settings, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), this, SLOT(primaryLanguageChanged(const HbInputLanguage &)));
     connect(settings, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), this, SLOT(secondaryLanguageChanged(const HbInputLanguage &)));
-    connect(settings, SIGNAL(predictiveInputStateChanged(int)), this, SLOT(predictionStatusChanged(int)));
-
-    connect(this, SIGNAL(aboutToClose()), this, SLOT(saveSettings()));
+    connect(settings, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(predictionStatusChanged(HbKeyboardSettingFlags, bool)));
 }
 
 /*!
@@ -171,9 +170,17 @@ HbInputSettingList::~HbInputSettingList()
 }
 
 /*!
-Opens the setting list
+\deprecated HbInputSettingList::showSettingList()
+    is deprecated. Use updateSettingList and open functions instead.
 */
 void HbInputSettingList::showSettingList()
+{
+}
+
+/*!
+Updates settings list with current values
+*/
+void HbInputSettingList::updateSettingList()
 {
     Q_D(HbInputSettingList);
 
@@ -182,7 +189,7 @@ void HbInputSettingList::showSettingList()
     d->mSecondaryLanguage = settings->globalSecondaryInputLanguage();
 
     d->mLanguageButton->setText(d->mPrimaryLanguage.localisedName());
-    d->mPredictionButton->setText(d->mPredictionValues.at(settings->predictiveInputStatus()));
+    d->mPredictionButton->setText(d->mPredictionValues.at(settings->predictiveInputStatusForActiveKeyboard()));
 
     QList<HbInputMethodDescriptor> customList = HbInputMethod::listCustomInputMethods();
     bool showInputMethod = true;
@@ -195,8 +202,6 @@ void HbInputSettingList::showSettingList()
     } else if (d->mOptionList->count() == 2 && !showInputMethod) {
         delete d->mOptionList->takeItem(0);
     }
-
-    exec();
 }
 
 /*!
@@ -233,7 +238,12 @@ void HbInputSettingList::languageButtonClicked()
         d->mPrimaryLanguage = d->mSecondaryLanguage;
         d->mSecondaryLanguage = language;
 
-        primaryLanguageChanged(d->mPrimaryLanguage);
+        HbInputSettingProxy::instance()->setGlobalInputLanguage(d->mPrimaryLanguage);
+        HbInputSettingProxy::instance()->setGlobalSecondaryInputLanguage(d->mSecondaryLanguage);
+        
+        if (!HbPredictionFactory::instance()->predictionEngineForLanguage(d->mPrimaryLanguage)) {
+            HbInputSettingProxy::instance()->setPredictiveInputStatus(false);
+        }
     }
 
     close();
@@ -244,8 +254,7 @@ Toggles prediction state
 */
 void HbInputSettingList::predictionButtonClicked()
 {
-    HbInputSettingProxy *settings = HbInputSettingProxy::instance();
-    settings->setPredictiveInputStatus(!settings->predictiveInputStatus());
+    HbInputSettingProxy::instance()->togglePrediction();
 
     close();
 }
@@ -288,34 +297,35 @@ void HbInputSettingList::secondaryLanguageChanged(const HbInputLanguage &newLang
 }
 
 /*!
+\deprecated HbInputSettingList::predictionStatusChanged(int)
+    is deprecated. Use predictionStatusChanged(bool) instead.
+
 Updates prediction button text
 */
 void HbInputSettingList::predictionStatusChanged(int newStatus)
 {
-    Q_D(HbInputSettingList);
-
-    d->mPredictionButton->setText(d->mPredictionValues.at(newStatus));
+    Q_UNUSED(newStatus);
 }
 
 /*!
-Stores the current language selection
+Updates prediction button text
+*/
+void HbInputSettingList::predictionStatusChanged(HbKeyboardSettingFlags keyboardType, bool newStatus)
+{
+    Q_D(HbInputSettingList);
+    Q_UNUSED(keyboardType);
+    Q_UNUSED(newStatus);
+
+    bool status = HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard();
+    d->mPredictionButton->setText(d->mPredictionValues.at(status));
+}
+
+/*!
+\deprecated HbInputSettingList::saveSettings()
+    is deprecated. Will be removed.
 */
 void HbInputSettingList::saveSettings()
 {
-    Q_D(HbInputSettingList);
-
-    HbInputSettingProxy *settings = HbInputSettingProxy::instance();
-    HbPredictionFactory *predFactory = HbPredictionFactory::instance();		
-
-    if (d->mPrimaryLanguage != settings->globalInputLanguage()) {
-        settings->setGlobalInputLanguage(d->mPrimaryLanguage);
-        settings->setGlobalSecondaryInputLanguage(d->mSecondaryLanguage);
-        if(!predFactory->predictionEngineForLanguage(d->mPrimaryLanguage)) {
-            predictionStatusChanged(false);
-            settings->setPredictiveInputStatus(false);
-        }
-    }
 }
 
 // End of file
-

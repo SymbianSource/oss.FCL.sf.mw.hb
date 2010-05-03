@@ -43,7 +43,7 @@ HbIndicatorPluginManager *HbIndicatorPrivate::pluginManager()
 // Indicators are implemented only for Symbian/S60 OS. All others use a stub which shows
 // indicators in the calling process.
 HbIndicatorPrivate::HbIndicatorPrivate()
-: iLastError( HbDeviceDialogNoError ), iListening(false)
+: q_ptr(0), iLastError( HbDeviceDialogNoError ), iListening(false)
 {
 }
 
@@ -64,6 +64,11 @@ bool HbIndicatorPrivate::activate(const QString &indicatorType, const QVariant &
         HbIndicatorPrivate::pluginManager();
     QVariantMap securityCredentials;
     pluginManager->addIndicator(indicatorType, securityCredentials, &result);
+    if (q_ptr && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0) {
+        connect(pluginManager, SIGNAL(indicatorUserActivated(QVariantMap)), 
+				this, SLOT(indicatorUserActivated(QVariantMap)));
+    }
+
     if (result == 0) {
         pluginManager->activateIndicator(indicatorType, parameter, securityCredentials);
     } else {
@@ -76,7 +81,13 @@ bool HbIndicatorPrivate::activate(const QString &indicatorType, const QVariant &
 bool HbIndicatorPrivate::deactivate(const QString &indicatorType, const QVariant &parameter)
 {
     pluginManager()->deactivateIndicator(indicatorType, parameter, QVariantMap());
+    pluginManager()->disconnect(this, SLOT(indicatorUserActivated(QVariantMap)));
     return true;
+}
+
+void HbIndicatorPrivate::indicatorUserActivated(const QVariantMap& data)
+{    
+    emit q_ptr->userActivated(data.value("type").toString(), data.value("data").toMap());
 }
 
 bool HbIndicatorPrivate::startListen()

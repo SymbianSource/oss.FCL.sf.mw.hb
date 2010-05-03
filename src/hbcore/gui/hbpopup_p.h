@@ -107,6 +107,7 @@ public:
     bool mStartEffect;
     QPointer<QObject> receiverToDisconnectOnClose;
     QByteArray memberToDisconnectOnClose;
+    qreal mScreenMargin;
 
 public:
 #ifdef HB_EFFECTS
@@ -115,10 +116,10 @@ public:
 #endif // HB_EFFECTS
     void _q_timeoutFinished();
 
-    void handleKeyEvent(QKeyEvent *event);
     bool addPopupToScene();
     void handleBackgroundMousePressEvent();
     void handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void calculateShape();
 
     static int timeoutValue(HbPopup::DefaultTimeout timeout);
 
@@ -130,6 +131,7 @@ public:
     QTimer *timeoutTimer();
     void doSetModal( bool modal );
     QString effectType;
+    QPainterPath *mPath;
 private:
     static bool popupEffectsLoaded;
     static HbPopupPrivate *d_ptr(HbPopup *popup) {

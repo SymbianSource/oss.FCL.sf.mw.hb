@@ -31,39 +31,46 @@ PUBLIC_HEADERS += $$PWD/hbfontspec.h
 PUBLIC_HEADERS += $$PWD/hbdeviceprofile.h
 PUBLIC_HEADERS += $$PWD/hbsmileytheme.h
 
-INTERNAL_HEADERS += $$PWD/hbdeviceprofile_p.h
-INTERNAL_HEADERS += $$PWD/hbtypefaceinfo_p.h
-INTERNAL_HEADERS += $$PWD/hbdeviceprofiledatabase_p.h
-INTERNAL_HEADERS += $$PWD/hbdeviceprofilemanager_p.h
-INTERNAL_HEADERS += $$PWD/hbdeviceprofilereader_p.h
-INTERNAL_HEADERS += $$PWD/hbextendeddeviceprofile_p.h
-INTERNAL_HEADERS += $$PWD/hbiniparser_p.h
-INTERNAL_HEADERS += $$PWD/hbtextmeasurementutility_p.h
-INTERNAL_HEADERS += $$PWD/hbthetestwidget_p.h
-INTERNAL_HEADERS += $$PWD/hbthetestutility_p.h
-INTERNAL_HEADERS += $$PWD/hbtextutils_p.h
-INTERNAL_HEADERS += $$PWD/hbtypefacexmlparser_p.h
-INTERNAL_HEADERS += $$PWD/hbscreenmode_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicemodeinfo_p.h
-INTERNAL_HEADERS += $$PWD/hbwsiniparser_p.h
-INTERNAL_HEADERS += $$PWD/hbwidgetloader_p.h
-INTERNAL_HEADERS += $$PWD/hbforegroundwatcher_p.h
-INTERNAL_HEADERS += $$PWD/hboogmwatcher_p.h
-INTERNAL_HEADERS += $$PWD/hbfeaturemanager_p.h
+PRIVATE_HEADERS += $$PWD/hbdeviceprofile_p.h
+PRIVATE_HEADERS += $$PWD/hbtypefaceinfo_p.h
+PRIVATE_HEADERS += $$PWD/hbdeviceprofiledatabase_p.h
+PRIVATE_HEADERS += $$PWD/hbdeviceprofilemanager_p.h
+PRIVATE_HEADERS += $$PWD/hbdeviceprofilereader_p.h
+PRIVATE_HEADERS += $$PWD/hbextendeddeviceprofile_p.h
+PRIVATE_HEADERS += $$PWD/hbiniparser_p.h
+PRIVATE_HEADERS += $$PWD/hbtextmeasurementutility_p.h
+PRIVATE_HEADERS += $$PWD/hbthetestwidget_p.h
+PRIVATE_HEADERS += $$PWD/hbthetestutility_p.h
+PRIVATE_HEADERS += $$PWD/hbtextutils_p.h
+PRIVATE_HEADERS += $$PWD/hbtypefacexmlparser_p.h
+PRIVATE_HEADERS += $$PWD/hbscreenmode_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicemodeinfo_p.h
+PRIVATE_HEADERS += $$PWD/hbwsiniparser_p.h
+PRIVATE_HEADERS += $$PWD/hbwidgetloader_p.h
+PRIVATE_HEADERS += $$PWD/hbforegroundwatcher_p.h
+PRIVATE_HEADERS += $$PWD/hboogmwatcher_p.h
+PRIVATE_HEADERS += $$PWD/hbfeaturemanager_p.h
+PRIVATE_HEADERS += $$PWD/hbsleepmodelistener_p.h
+PRIVATE_HEADERS += $$PWD/hbsleepmodelistener_p_p.h
+
 
 symbian {
-  INTERNAL_HEADERS += $$PWD/hboogmwatcher_sym_p.h
+  PRIVATE_HEADERS += $$PWD/hboogmwatcher_sym_p.h
 } else {
-  INTERNAL_HEADERS += $$PWD/hboogmwatcher_dummy_p.h
+  PRIVATE_HEADERS += $$PWD/hboogmwatcher_dummy_p.h
 }
 
-INTERNAL_HEADERS += $$PWD/hbxmlloaderabstractsyntax_p.h
-INTERNAL_HEADERS += $$PWD/hbxmlloaderabstractactions_p.h
-INTERNAL_HEADERS += $$PWD/hbwidgetloadersyntax_p.h
-INTERNAL_HEADERS += $$PWD/hbwidgetloaderactions_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderabstractsyntax_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderabstractactions_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderbasesyntax_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderbaseactions_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderbinarysyntax_p.h
+PRIVATE_HEADERS += $$PWD/hbxmlloaderbinaryactions_p.h
+PRIVATE_HEADERS += $$PWD/hbwidgetloadersyntax_p.h
+PRIVATE_HEADERS += $$PWD/hbwidgetloaderactions_p.h
 
-INTERNAL_HEADERS += $$PWD/hbtimer_p.h
-INTERNAL_HEADERS += $$PWD/hbsmileythemeparser_p.h
+PRIVATE_HEADERS += $$PWD/hbtimer_p.h
+PRIVATE_HEADERS += $$PWD/hbsmileythemeparser_p.h
 
 SOURCES += $$PWD/hbdeviceprofile.cpp
 SOURCES += $$PWD/hbdeviceprofiledatabase_p.cpp
@@ -89,6 +96,10 @@ symbian: SOURCES += $$PWD/hboogmwatcher_sym_p.cpp
 
 SOURCES += $$PWD/hbxmlloaderabstractsyntax_p.cpp
 SOURCES += $$PWD/hbxmlloaderabstractactions_p.cpp
+SOURCES += $$PWD/hbxmlloaderbasesyntax_p.cpp
+SOURCES += $$PWD/hbxmlloaderbaseactions_p.cpp
+SOURCES += $$PWD/hbxmlloaderbinarysyntax_p.cpp
+SOURCES += $$PWD/hbxmlloaderbinaryactions_p.cpp
 SOURCES += $$PWD/hbwidgetloadersyntax_p.cpp
 SOURCES += $$PWD/hbwidgetloaderactions_p.cpp
 
@@ -96,4 +107,5 @@ SOURCES += $$PWD/hbtimer.cpp
 SOURCES += $$PWD/hbsmileytheme.cpp
 SOURCES += $$PWD/hbsmileythemeparser_p.cpp
 SOURCES += $$PWD/hbfeaturemanager_p.cpp
+SOURCES += $$PWD/hbsleepmodelistener_p.cpp
 

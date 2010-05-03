@@ -55,6 +55,8 @@ public:
     explicit HbTitleBar(HbMainWindow *mainWindow, QGraphicsItem *parent = 0);
     virtual ~HbTitleBar();
 
+    void delayedConstruction();
+
     enum { Type = HbPrivate::ItemType_TitleBar };
     int type() const { return Type; }
 
@@ -75,8 +77,8 @@ signals:
     void notificationCountChanged(int count);
 
 public slots:
-    void gestureRight(int speed);
-    void gestureLeft(int speed);
+    void gestureRight();
+    void gestureLeft();
     void currentViewChanged(HbView *view);
 #ifdef HB_EFFECTS
     void effectFinished(const HbEffect::EffectStatus &status);

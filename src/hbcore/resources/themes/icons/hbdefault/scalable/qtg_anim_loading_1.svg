@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="60px" version="1.1" viewBox="45 45 60 60" width="60px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<g>
-<rect fill="none" height="52" width="52" x="49" y="49"/>
-<path d="M74.999,50.733c-0.031,0-0.065,0.001-0.096,0.001v5.71c0.03,0,0.064,0,0.096,0   c10.233,0,18.558,8.325,18.558,18.556c0,10.234-8.324,18.557-18.558,18.557c-10.105,0-18.351-8.117-18.555-18.176h-5.711   c0.204,13.207,11.011,23.887,24.266,23.887c13.38,0,24.269-10.885,24.269-24.268C99.268,61.62,88.379,50.733,74.999,50.733z" fill="url(#SVGID_1_)"/>
+<svg baseProfile="tiny" height="52px" version="1.1" viewBox="0 0 52 52" width="52px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="52" width="52"/>
+<path d="M25.999,1.732c-0.031,0-0.065,0.002-0.097,0.002v5.709c0.031,0,0.064,0,0.097,0  c10.233,0,18.558,8.326,18.558,18.557c0,10.234-8.324,18.557-18.558,18.557c-10.104,0-18.351-8.117-18.556-18.176H1.732  c0.205,13.207,11.012,23.887,24.267,23.887c13.38,0,24.269-10.885,24.269-24.268C50.268,12.62,39.379,1.732,25.999,1.732z" fill="url(#SVGID_1_)"/>
 <defs>
-<linearGradient gradientTransform="matrix(1 0 0 -1 -342.4805 -316.0195)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="419.2471" x2="413.2628" y1="-400.5405" y2="-368.3206">
-<stop offset="0" style="stop-color:#3B87C0"/>
-<stop offset="1" style="stop-color:#0069B2;stop-opacity:0"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 -603.5 -638.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="631.2676" x2="625.2834" y1="674.0195" y2="641.8002">
+<stop offset="0" style="stop-color:#0067B1"/>
+<stop offset="1" style="stop-color:#0069B1;stop-opacity:0.25"/>
 </linearGradient>
 </defs>
-</g>
 </svg>

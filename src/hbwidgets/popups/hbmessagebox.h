@@ -67,23 +67,6 @@ public:
     int type() const { return Type; }
 
 public:
-    static bool launchQuestionMessageBox(const QString &questionText,
-                                         const QString &primaryButtonText = tr("Yes"),
-                                         const QString &secondaryButtonText = tr("No"),
-                                         QGraphicsWidget *headWidget = 0,
-                                         QGraphicsScene *scene = 0,
-                                         QGraphicsItem *parent = 0 );
-	 
-    static void launchInformationMessageBox(const QString &informationText,
-                                            QGraphicsWidget *headWidget = 0,
-                                            QGraphicsScene *scene = 0,
-                                            QGraphicsItem *parent = 0 );
-
-    static void launchWarningMessageBox(const QString &warningText,
-                                        QGraphicsWidget *headWidget = 0,
-                                        QGraphicsScene *scene = 0,
-                                        QGraphicsItem *parent = 0 );
-
 	static bool question(const QString &questionText,
                                          const QString &primaryButtonText = tr("Yes"),
                                          const QString &secondaryButtonText = tr("No"),

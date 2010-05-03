@@ -52,7 +52,6 @@ public:
     ~HbQwertyKeyboardPrivate();
     void handleStandardButtonPress(int buttonId);
     void handleStandardButtonRelease(int buttonId);
-    void handleStandardButtonClick(int aButtonId);
 
     void setLayoutDimensions(QSizeF dimensions);
     QSizeF calculateDimensions(QSizeF size);
@@ -73,7 +72,7 @@ public:
     int keyCode(int buttonId);
     int keyCode(HbTouchKeypadButton *button);
     void getAllowedSctCharcters(QString & allowedSctCharacters);
-    void updateButtonsText();
+    void updateButtonsTextAndMappers();
 public:
     QList<HbTouchKeypadButton*> mButtons;
     QList<HbStyleOptionLabel*> mKeypadButtonOption;

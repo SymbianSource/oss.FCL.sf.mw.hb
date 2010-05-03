@@ -33,8 +33,10 @@
 #include <QGraphicsItem>
 #include <QtDebug>
 
-HbEffectFilterAnimation::HbEffectFilterAnimation(HbEffectFilter *effect, int duration) :
-    HbEffectAnimation(),
+HbEffectFilterAnimation::HbEffectFilterAnimation(HbEffectFilter *effect,
+                                                 int duration,
+                                                 HbEffectGroup *group)
+    : HbEffectAnimation(group),
     mEffect(effect)
 {
     setDuration(duration);
@@ -49,7 +51,6 @@ void HbEffectFilterAnimation::handleAnimationUpdate(const QVariant &value)
     Q_UNUSED(value);
 
     // Effect instance updates the vgEffect for all the filter animations
-    //qDebug() << "Updating filter with current time" << currentTime();
     mEffect->updateFilterEffect();
 }
 
@@ -59,8 +60,8 @@ void HbEffectFilterAnimation::handleAnimationFinish()
     mEffect->handleAnimationFinished();
 }
 
-HbEffectColorAnimation::HbEffectColorAnimation(HbEffectFilter *effect, int duration) :
-    HbEffectFilterAnimation(effect, duration)
+HbEffectColorAnimation::HbEffectColorAnimation(HbEffectFilter *effect, int duration, HbEffectGroup *group)
+    : HbEffectFilterAnimation(effect, duration, group)
 {
 }
     
@@ -213,7 +214,7 @@ HbEffectFilterAnimation *HbEffectFilter::createAnimation(
     // Create animation if the duration was defined
     if (duration > 0) {
         mEffectDefined = true;
-        anim = new HbEffectFilterAnimation(this, duration);
+        anim = new HbEffectFilterAnimation(this, duration, group);
         mAnimations.append(anim);
         // Go through keyframes
         foreach(const HbKeyFrame &kf, keyFrameList) {
@@ -234,7 +235,7 @@ HbEffectFilterAnimation *HbEffectFilter::createAnimation(
         anim->mCurve = curve;
 
         // Get loop parameters
-        anim->addLooping(&param, group);
+        anim->addLooping(&param);
     }
 
     // Return animation instance or NULL if not created
@@ -269,7 +270,7 @@ HbEffectColorAnimation *HbEffectFilter::createAnimation(
     // Create animation if the duration was defined
     if (duration > 0) {
         mEffectDefined = true;
-        anim = new HbEffectColorAnimation(this, duration);
+        anim = new HbEffectColorAnimation(this, duration, group);
         mAnimations.append(anim);
         // Go through keyframes
         foreach(const HbKeyFrame &kf, keyFrameList) {
@@ -291,7 +292,7 @@ HbEffectColorAnimation *HbEffectFilter::createAnimation(
         anim->mCurve = curve;
 
         // Get loop parameters
-        anim->addLooping(&param, group);
+        anim->addLooping(&param);
     }
 
     // Return animation instance or NULL if not created
@@ -317,8 +318,6 @@ void HbEffectFilter::handleAnimationFinished()
             anim->stop();
             anim->setCurrentTime(anim->duration());
         }
-
-        //qDebug() << "HbEffectFilter::HandleAnimationFinished";
 
         Hb::EffectEvent reason = mAnimations.count() ? Hb::EffectFinished : Hb::EffectNotStarted;
         group()->effectFinished(reason);

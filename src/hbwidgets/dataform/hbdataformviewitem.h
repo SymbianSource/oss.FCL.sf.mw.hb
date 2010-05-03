@@ -37,6 +37,7 @@ class HbDataFormViewItemPrivate;
 class HB_WIDGETS_EXPORT HbDataFormViewItem : public HbAbstractViewItem
 {
     Q_OBJECT
+    Q_PROPERTY(bool expanded READ isExpanded WRITE setExpanded)
     
 public:
 
@@ -88,6 +89,7 @@ protected:
     void initStyleOption(HbStyleOptionDataFormViewItem *option) const;
 
     void showEvent(QShowEvent * event);
+
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataFormViewItem)
 };

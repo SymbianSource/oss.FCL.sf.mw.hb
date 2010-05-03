@@ -38,8 +38,6 @@ public:
     HbSignalIndicatorPrivate();
     virtual ~HbSignalIndicatorPrivate();
 
-    void init();
-
     void _q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode mode, int strength);
     void _q_setNetworkMode(HbSystemNetworkInfo::NetworkMode mode);
 

@@ -1,5 +1,11 @@
+HbDataFormHeadingWidget[!hasHeading][!hasDescription]{
+    layout:layout_combo;
+}
+HbDataFormHeadingWidget[!hasHeading]{
+    layout:layout_description_combo;
+}
 HbDataFormHeadingWidget{
-    layout:default;
+    layout:layout_heading_description_combo;
 }
 
 HbDataFormHeadingWidget::dataForm_Heading
@@ -14,7 +20,18 @@ HbDataFormHeadingWidget::dataForm_Heading
     text-align:left;
     text-line-count-max:1;
 }
-
+HbDataFormHeadingWidget[!hasHeading]::dataForm_Desc
+{
+	top:-var(hb-param-margin-gene-top);
+    bottom :var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+    /*bottom:var(hb-param-margin-gene-middle-vertical);*/
+    font-variant:secondary;
+    text-height:var(hb-param-text-height-secondary);
+    text-align:left;
+    text-line-count-max:3;
+}
 HbDataFormHeadingWidget::dataForm_Desc
 {
     bottom :var(hb-param-margin-gene-top);
@@ -27,9 +44,17 @@ HbDataFormHeadingWidget::dataForm_Desc
     text-line-count-max:3;
 }
 
+HbDataFormHeadingWidget[!hasHeading][!hasDescription]::dataForm_Combo
+{
+    top:-var(hb-param-margin-gene-top);
+    left:-var(hb-param-margin-gene-left);
+    right:var(hb-param-margin-gene-right);
+    bottom:var(hb-param-margin-gene-bottom);
+}
+
 HbDataFormHeadingWidget::dataForm_Combo
 {
-    /*top:-var(hb-param-margin-gene-middle-vertical);*/
+
     left:-var(hb-param-margin-gene-left);
     right:var(hb-param-margin-gene-right);
     bottom:var(hb-param-margin-gene-bottom);

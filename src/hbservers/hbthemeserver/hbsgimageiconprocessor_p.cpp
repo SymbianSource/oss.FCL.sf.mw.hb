@@ -104,7 +104,11 @@ bool HbSgimageIconProcessor::createSgimage(const QString &iconPath)
     data.type = INVALID_FORMAT;
 
     HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
-    byteArray = *(source->byteArray());
+    QByteArray *sourceByteArray = source->byteArray();
+    if( !sourceByteArray ) {
+        return false;
+    }
+    byteArray = *sourceByteArray;
     QSizeF size = source->defaultSize();
     defaultSize = size.toSize();
     QSizeF renderSize(defaultSize);
@@ -285,7 +289,11 @@ bool HbSgimageIconProcessor::createMultiPieceIconData(const QVector<HbSharedIcon
 
 
             HbIconSource *source = HbThemeServerUtils::getIconSource(multiPieceIconParams.multiPartIconList[i]);
-            byteArray = *(source->byteArray());
+            QByteArray *sourceByteArray = source->byteArray();
+            if( !sourceByteArray ) {
+                return false;
+            }
+            byteArray = *sourceByteArray;
             success = renderNvg(byteArray, QRect(position,
                                                  multiPieceIconParams.multiPartIconData.pixmapSizes[i]), (Qt::AspectRatioMode)multiPieceIconParams.aspectRatioMode,
                                 mirrored);
@@ -320,9 +328,9 @@ bool HbSgimageIconProcessor::renderNvg(const QByteArray& byteArray, const QRect&
 
     NvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(aspectRatioMode);
     nvgEngine.setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
-    nvgEngine.setMirroringMode(mirrored);
+    nvgEngine.enableMirroring(mirrored);
 
-    HbNvgEngine::NvgErrorType errorType = nvgEngine.drawNvg(byteArray, size);
+    HbNvgEngine::HbNvgErrorType errorType = nvgEngine.drawNvg(byteArray, size);
     return errorType == HbNvgEngine::NvgErrNone;
-
 }
+

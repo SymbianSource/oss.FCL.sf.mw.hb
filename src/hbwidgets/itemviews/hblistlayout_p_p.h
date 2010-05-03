@@ -27,11 +27,8 @@
 
 #include "hblistlayout_p.h"
 
-#include <QTimer>
-
-class HbListLayoutPrivate : public QObject
+class HbListLayoutPrivate
 {
-    Q_OBJECT
 public:
     HbListLayoutPrivate(HbListLayout *q_ptr);
 
@@ -43,13 +40,8 @@ public:
 
     QList<QGraphicsLayoutItem*> mItems;
     HbListLayout *q;
-    QMap<QGraphicsLayoutItem*, bool> mGrowingItems;
-    QMap<QGraphicsLayoutItem*, bool> mShrinkingItems;
-    QTimer *mTimer;
-    mutable qreal mSmallestItemHeight;
 
-public slots: 
-    void update();
+    mutable qreal mSmallestItemHeight;
 };
 
 #endif /* HBLISTLAYOUT_P_P_H */

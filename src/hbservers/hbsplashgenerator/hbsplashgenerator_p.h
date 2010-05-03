@@ -36,12 +36,15 @@
 #include <QSettings>
 #include <QDebug>
 #include <QXmlStreamReader>
+#include <QFileSystemWatcher>
+#include "hbframedrawer.h"
 
 QT_BEGIN_NAMESPACE
 class QTranslator;
 QT_END_NAMESPACE
 
 class HbMainWindow;
+class HbDocumentLoader;
 
 class HbSplashGenerator : public QObject
 {
@@ -62,6 +65,7 @@ public slots:
 private slots:
     void processQueue();
     void processWindow();
+    void onDirectoryChanged(const QString &path);
 
 public:
     struct QueueItem {
@@ -70,6 +74,7 @@ public:
         QString mThemeName;
         Qt::Orientation mOrientation;
         QString mAppId;
+        QString mScreenId;
         QString mDocmlFileName;
         QString mDocmlWidgetName;
         QString mTsAppName;
@@ -83,6 +88,14 @@ public:
         QList<QString> mForcedSections;
         QHash<QString, QString> mCustomWidgetSubsts;
         QString mFixedOrientation;
+        struct ItemBgGraphicsRequest {
+            QString mTargetWidgetName;
+            HbFrameDrawer::FrameType mFrameGraphicsType;
+            QString mFrameGraphicsName;
+            qreal mZValue;
+            QString mOrientation;
+        };
+        QList<ItemBgGraphicsRequest> mItemBgGraphics;
     };
 
 private:
@@ -95,6 +108,7 @@ private:
     void queueAppSpecificItems(const QString &themeName, Qt::Orientation orientation);
     void processSplashml(QXmlStreamReader &xml, QueueItem &item);
     void setupAppSpecificWindow();
+    void setupNameBasedWidgetProps(HbDocumentLoader &loader);
     void finishWindow();
     void addTranslator(const QString &name);
     void clearTranslators();
@@ -109,6 +123,7 @@ private:
     bool mFirstRegenerate;
     QHash<QString, QueueItem> mParsedSplashmls;
     QSettings mSettings;
+    QFileSystemWatcher mFsWatcher;
 };
 
 QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem& item);

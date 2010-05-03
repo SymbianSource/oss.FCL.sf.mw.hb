@@ -47,9 +47,11 @@ public:
     HbCss::Value findVariable( const QString& variableName )const;
 
     void flush();
+    void flushVariableCache();
 
 private:
    QMap<int,HbLayeredStyleLoader::LayerPriority> handles;
+   mutable QHash<QString, HbCss::Declaration> mVariables;
         
 };
 #endif //HBCSSTHEMEINTERFACE_P_H

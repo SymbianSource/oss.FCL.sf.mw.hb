@@ -2,13 +2,12 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="10px" version="1.1" viewBox="0 0 10 10" width="10px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <rect fill="none" height="10" width="10"/>
-<path d="M6,0C2.7,0,0,2.7,0,6v4h10V0H6z" fill="#14141E" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M6,1C3.243,1,1,3.243,1,6v4h9V1H6z" fill="url(#SVGID_1_)"/>
-<path d="M6,2C3.795,2,2,3.795,2,6v4h1V6c0-1.654,1.346-3,3-3h4V2H6z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M6,1C3.243,1,1,3.243,1,6v4h1V6c0-2.205,1.794-4,4-4h4V1H6z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M7,1C3.7,1,1,3.7,1,7v3h2V7c0-2.206,1.794-4,4-4h3V1H7z" fill="#141414" fill-opacity="0.4" stroke-opacity="0.4"/>
+<path d="M7,2C4.243,2,2,4.243,2,7v3h8V2H7z" fill="url(#SVGID_1_)"/>
+<path d="M7,2C4.243,2,2,4.243,2,7v3h1V7c0-2.205,1.794-4,4-4h3V2H7z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
 <rect fill="none" height="10" width="10"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="5.5" x2="5.5" y1="48" y2="1.2473">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="6" x2="6" y1="47" y2="2.4858">
 <stop offset="0" style="stop-color:#65B8CC"/>
 <stop offset="1" style="stop-color:#306D8C"/>
 </linearGradient>

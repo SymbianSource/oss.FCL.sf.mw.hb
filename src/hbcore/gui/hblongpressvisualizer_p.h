@@ -23,40 +23,31 @@
 **
 ****************************************************************************/
 
-#ifndef HB_LONG_PRESS_VISUALIZER_P_H
-#define HB_LONG_PRESS_VISUALIZER_P_H
-
-#include <QPointF>
-#include <QRectF>
 #include <hbglobal.h>
-#include <hbwidget.h>
+#include <QPointF>
+#include <QTimer>
 
-QT_BEGIN_NAMESPACE
-class QGraphicsItem;
-class QPainter;
-class QStyleOptionGraphicsItem;
-class QWidget;
-QT_END_NAMESPACE
+class HbWidget;
+class HbIconItem;
 
-class HbLongPressVisualizer : public HbWidget
+class HbLongPressVisualizerPrivate : public QObject
 {
-
     Q_OBJECT
 
 public:
-    HbLongPressVisualizer(QGraphicsItem *parent);
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget=0);
-    QRectF boundingRect() const;
-
-public slots:
-    void start(QPointF scenePos);
+    HbLongPressVisualizerPrivate();
+    void start(const QPointF &pos, int delayMs, const HbWidget *widget);
     void stop();
-    void setFrame(int frame);
+
+private slots:
+    void showIcon();
 
 private:
-    bool active;
-    QRectF rect;
-    int spanAngle;
-};
+    void prepareIcon(const QPointF &pos);
 
-#endif // HB_LONG_PRESS_VISUALIZER_P_H
+    bool mInited;
+    const HbWidget *mWidget;
+    HbIconItem *mIconItem;
+    QTimer mTimer;
+    QPointF mPos;
+};

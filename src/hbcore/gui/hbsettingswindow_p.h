@@ -27,7 +27,6 @@
 #define HBSETTINGSWINDOW_P_H
 
 #include <QWidget>
-#include "hbcssinspector_p.h"
 #include "hbmainwindoworientation_p.h"
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
@@ -47,7 +46,6 @@ public slots:
 private slots:
     void changeWindow(int index);
     void changeResolution(int index);
-    void changeOrientation(int index);
     void changeDirection(int index);
     void changeTouchArea(int index);
     void changeTextBoxes(int index);
@@ -57,6 +55,8 @@ private slots:
     void changeSensorValue(int index);
     void changeGSettingsForSensors(int index);
     void unsetOrientation();
+    void toggleLights();
+    void toggleAnimation();
 
 private:
     void initStartUpValues();
@@ -75,8 +75,12 @@ private:
     QComboBox *mSensorComboBox;
     QComboBox *mGeneralSettingsForSensorsComboBox;
     QPushButton *mUnsetOrientationButton;
+    QPushButton *mLightsButton;
+    QPushButton *mAnimationButton;
+    bool mLights;
+    bool mAnimation;
 
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
     QPushButton *cssWindowButton;
 #endif
 };

@@ -48,7 +48,7 @@ public:
 private:
     QString mPluginNameAndPath;
     QString mKey;
-    QString mDisplayName;   
+    QString mDisplayName;
 };
 
 #endif // HB_INPUT_METHOD_DESCRIPTOR_H

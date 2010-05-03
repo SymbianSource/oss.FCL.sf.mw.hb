@@ -25,24 +25,37 @@
 #ifndef HBTAPGESTURE_H
 #define HBTAPGESTURE_H
 
-#ifdef HB_GESTURE_FW
-
 #include <hbglobal.h>
-#include <QTapGesture>
+#include <QGesture>
 
 class HbTapGesturePrivate;
 class HB_CORE_EXPORT HbTapGesture : public QTapGesture
 {
     Q_OBJECT
 
+    Q_ENUMS(TapStyleHint)
     Q_PROPERTY(QPointF startPos READ startPos WRITE setStartPos)
+    Q_PROPERTY(QPointF sceneStartPos READ sceneStartPos WRITE setSceneStartPos)
+    Q_PROPERTY(QPointF scenePosition READ scenePosition WRITE setScenePosition)
+    Q_PROPERTY(TapStyleHint tapStyleHint READ tapStyleHint)
 
 public:
+    enum TapStyleHint {
+        Tap,
+        TapAndHold
+    };
+
     explicit HbTapGesture(QObject *parent = 0);
     virtual ~HbTapGesture();
 
     QPointF startPos() const;
     void setStartPos(const QPointF &startPos);
+    QPointF sceneStartPos() const;
+    void setSceneStartPos(const QPointF &startPos);
+    QPointF scenePosition() const;
+    void setScenePosition(const QPointF &pos);
+
+    TapStyleHint tapStyleHint() const;
 
 protected:
     HbTapGesturePrivate * const d_ptr;
@@ -51,8 +64,7 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbTapGesture)
     Q_DISABLE_COPY(HbTapGesture)
+    friend class HbTapGestureLogic;
 };
-
-#endif // HB_GESTURE_FW
 
 #endif // HBTAPGESTURE_H

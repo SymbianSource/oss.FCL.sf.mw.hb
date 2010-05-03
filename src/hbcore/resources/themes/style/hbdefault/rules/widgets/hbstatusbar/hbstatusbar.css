@@ -1,6 +1,7 @@
 HbStatusBar
 {
     layout:default;
+    mirroring: disabled;
 }
 
 HbStatusBar::timetext
@@ -13,13 +14,13 @@ HbStatusBar::timetext
 HbStatusBar::signal
 {
     fixed-width: var(hb-param-widget-chrome-height);
-    fixed-height: 2.5un;
+    fixed-height: 2.5un;	
 }
 
 HbStatusBar::battery
 {
     fixed-width: var(hb-param-widget-chrome-height);
-    fixed-height: 2.5un;
+    fixed-height: 2.5un;	
 }
 
 HbStatusBar::notificationindicators

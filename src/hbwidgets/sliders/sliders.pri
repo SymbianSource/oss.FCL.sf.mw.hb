@@ -36,21 +36,21 @@ PUBLIC_HEADERS += $$PWD/hbslider.h
 PUBLIC_HEADERS += $$PWD/hbratingslider.h
 
 
-INTERNAL_HEADERS += $$PWD/hbabstractslidercontrol_p.h
-INTERNAL_HEADERS += $$PWD/hbprogresssliderhandle_p.h
-INTERNAL_HEADERS += $$PWD/hbprogressbar_p.h
-INTERNAL_HEADERS += $$PWD/hbprogressslider_p.h
-INTERNAL_HEADERS += $$PWD/hbprogressiveslider_p.h
-INTERNAL_HEADERS += $$PWD/hbslider_p.h
-INTERNAL_HEADERS += $$PWD/hbslidercontrol_p.h
-INTERNAL_HEADERS += $$PWD/hbprogressslidercontrol_p.h
-INTERNAL_HEADERS += $$PWD/hbslidercontrol_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsliderhandle_p.h
-INTERNAL_HEADERS += $$PWD/hbratingslider_p.h
-INTERNAL_HEADERS += $$PWD/hbslidertickmarks_p.h
-INTERNAL_HEADERS += $$PWD/hbslidertickmarkslabel_p.h
-INTERNAL_HEADERS += $$PWD/hbvolumeslider_p.h
-INTERNAL_HEADERS += $$PWD/hbzoomslider_p.h
+PRIVATE_HEADERS += $$PWD/hbabstractslidercontrol_p.h
+PRIVATE_HEADERS += $$PWD/hbprogresssliderhandle_p.h
+PRIVATE_HEADERS += $$PWD/hbprogressbar_p.h
+PRIVATE_HEADERS += $$PWD/hbprogressslider_p.h
+PRIVATE_HEADERS += $$PWD/hbprogressiveslider_p.h
+PRIVATE_HEADERS += $$PWD/hbslider_p.h
+PRIVATE_HEADERS += $$PWD/hbslidercontrol_p.h
+PRIVATE_HEADERS += $$PWD/hbprogressslidercontrol_p.h
+PRIVATE_HEADERS += $$PWD/hbslidercontrol_p_p.h
+PRIVATE_HEADERS += $$PWD/hbsliderhandle_p.h
+PRIVATE_HEADERS += $$PWD/hbratingslider_p.h
+PRIVATE_HEADERS += $$PWD/hbslidertickmarks_p.h
+PRIVATE_HEADERS += $$PWD/hbslidertickmarkslabel_p.h
+PRIVATE_HEADERS += $$PWD/hbvolumeslider_p.h
+PRIVATE_HEADERS += $$PWD/hbzoomslider_p.h
 
 
 SOURCES += $$PWD/hbabstractslidercontrol.cpp

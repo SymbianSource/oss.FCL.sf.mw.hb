@@ -494,6 +494,10 @@ bool HbLabel::isEmpty() const
 }
 
 /*!
+
+    \deprecated HbLabel::primitive(HbStyle::Primitive)
+        is deprecated.
+
     Returns a pointer to the QGraphicsItem primitive used by this label.
     \param primitive - the type of graphics primitive required.
     HbLabel supports HbStyle::P_Label_text and HbStyle::P_Label_icon.

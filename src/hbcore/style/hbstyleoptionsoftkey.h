@@ -30,6 +30,7 @@
 #include <hbnamespace.h>
 #include <QIcon>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionSoftKey : public HbStyleOptionDecorator
 {
 public:

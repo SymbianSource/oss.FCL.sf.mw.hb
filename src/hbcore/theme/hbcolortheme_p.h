@@ -42,19 +42,21 @@ class HB_AUTOTEST_EXPORT HbColorTheme
     friend class TestHbColorTheme;
 public:
 
+    HbColorTheme();
     ~HbColorTheme();
 
-    static HbColorTheme *global ();
-    void setCurrentTheme( const QString& currentTheme );
+    void setCurrentTheme(const QString& currentTheme);
+    static HbColorTheme *instance();
 
     QColor color(const QGraphicsWidget * wid, const QString &prop) const;
     QColor color(const QString &colorRole) const;
     void reloadCss();
+    void flushVariableCache();
 
 private:
     HbColorThemePrivate * const d_ptr;
+    static HbColorTheme *self;
     Q_DISABLE_COPY (HbColorTheme)
-    HbColorTheme ();
     Q_DECLARE_PRIVATE_D(d_ptr, HbColorTheme)
 };
 

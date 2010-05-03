@@ -139,6 +139,13 @@
          theme this flag can be left unset because they will still be colorized properly
          if the logical icon name indicates that the icon is a mono icon. Therefore this
          flag is only relevant for icons loaded from regular files.
+
+  \b NonThemeable \b (0x10) This flag indicates that the icon is not themeable and thus
+         there is no need to handle theme and layout direction changes for this icon.
+         This is merely an optimization flag and must be set directly after creating the
+         HbIcon instance (before the first paint of the icon) to have any performance
+         benefits.
+
 */
 
 /*!
@@ -377,6 +384,9 @@ HbIcon::HbIcon( const QString &iconName )
 * \note If this constructor is used, there are the following limitations in the HbIcon methods.
 * - HbIcon::defaultSize() always returns QSizeF().
 * - HbIcon::paint() ignores the parameter aspectRatioMode and converts the given QRectF to QRect.
+* - HbIcon::iconName() returns empty string by default.
+* - HbIcon::pixmap() returns null pixmap.
+* - Colorization and mirroring support are not available.
 * This method should only be used if absolute necessary, as this is not ideal for hardware accelerated environment.
 */
 HbIcon::HbIcon( const QIcon &icon )

@@ -55,6 +55,7 @@ class HB_WIDGETS_EXPORT HbAbstractEdit: public HbWidget {
     Q_PROPERTY(Hb::TextContextMenuFlags contextMenuFlags
                READ contextMenuFlags
                WRITE setContextMenuFlags)
+    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
 
 public:
     virtual ~HbAbstractEdit();
@@ -74,7 +75,6 @@ public:
     QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
     bool event(QEvent* event);
-    bool eventFilter(QObject *obj, QEvent *event);
 
     enum { Type = Hb::ItemType_AbstractEdit };
     int type() const;
@@ -86,6 +86,9 @@ public:
     void setContextMenuFlags(Hb::TextContextMenuFlags flags);
     void setContextMenuFlag(Hb::TextContextMenuFlag flag);
     void clearContextMenuFlag(Hb::TextContextMenuFlag flag);
+
+    QString placeholderText() const;
+    void setPlaceholderText(const QString &text);
 
     QString anchorAt(const QPointF &pos) const;
     QString anchorAt(int pos) const;
@@ -133,10 +136,6 @@ protected:
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
 
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-
     void focusInEvent(QFocusEvent *event);
     void focusOutEvent(QFocusEvent *event);
 
@@ -173,6 +172,7 @@ protected:
 
     void polish( HbStyleParameters& params );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void gestureEvent(QGestureEvent* e);
 
 protected slots:
     void setPlainText(const QString &text);
@@ -193,6 +193,9 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_contentsChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_contentsChange(int, int, int))
     Q_PRIVATE_SLOT(d_func(), void _q_selectionChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_scrollStarted())
+    Q_PRIVATE_SLOT(d_func(), void _q_scrollEnded())
+
 
     friend class HbEditItem;
     friend class HbEditorFocusObject;

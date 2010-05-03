@@ -41,7 +41,7 @@ class HB_AUTOTEST_EXPORT HbGridLayout : public QObject, public QGraphicsLayout
     Q_ENUMS(layoutDirection)
     Q_INTERFACES(QGraphicsLayout)
 
-    Q_PROPERTY(int spacing READ spacing WRITE setSpacing)
+    Q_PROPERTY(qreal spacing READ spacing WRITE setSpacing)
 
 public:
 

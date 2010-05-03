@@ -1,0 +1,13 @@
+/*  
+    Color of text item depends on parent,so using default-color 
+*/
+
+HbProgressSlider[!enabled]::min-text{
+    color: var(qtc_default_main_pane_disabled);
+}
+
+HbProgressSlider[!enabled]::max-text{
+    color: var(qtc_default_main_pane_disabled);
+}
+
+

@@ -635,7 +635,7 @@ void HbView::setContentFullScreen(bool enable)
 }
 
 /*!
-    \deprecated HbView::titleBarFlags()
+    \deprecated HbView::titleBarFlags() const
         is deprecated. Use HbView::viewFlags() instead.
 
     Returns titlebar flags bit vector.
@@ -697,24 +697,37 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
     HbView::HbViewFlags originalFlags(d->mViewFlags);
     d->mViewFlags = flags;
     if (mainWindow()) {
+
+        // Statusbar-animation
         bool statusBarAnimating = false;
-        HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;
+        HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;        
         if ((d->mViewFlags & HbView::ViewStatusBarHidden) && statusBar->isVisible()) {
-             HbEffect::start(statusBar, "statusbar", "disappear", this, "statusBarEffectFinished"); 
-             statusBarAnimating = true;
+#ifdef HB_EFFECTS
+            HbEffect::start(statusBar, "statusbar", "disappear", this, "statusBarEffectFinished");
+#endif // HB_EFFECTS
+            statusBarAnimating = true;
         } else if (!(d->mViewFlags & HbView::ViewStatusBarHidden) && !statusBar->isVisible()) {
-             HbEffect::start(statusBar, "statusbar", "appear", this, "statusBarEffectFinished");
-             statusBarAnimating = true;
+#ifdef HB_EFFECTS
+            HbEffect::start(statusBar, "statusbar", "appear", this, "statusBarEffectFinished");
+#endif // HB_EFFECTS
+            statusBarAnimating = true;
         }
+
+        // Titlebar-animation
         bool titleBarAnimating = false;
         HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar;
         if ((d->mViewFlags & HbView::ViewTitleBarHidden) && titleBar->isVisible()) {
-             HbEffect::start(titleBar, "titleBar", "disappear", this, "titleBarEffectFinished");
-             titleBarAnimating = true;
+#ifdef HB_EFFECTS
+            HbEffect::start(titleBar, "titleBar", "disappear", this, "titleBarEffectFinished");
+#endif // HB_EFFECTS
+            titleBarAnimating = true;
         } else if (!(d->mViewFlags & HbView::ViewTitleBarHidden) && !titleBar->isVisible()) {
-             HbEffect::start(titleBar, "titleBar", "appear", this, "titleBarEffectFinished");
-             titleBarAnimating = true;
+#ifdef HB_EFFECTS
+            HbEffect::start(titleBar, "titleBar", "appear", this, "titleBarEffectFinished");
+#endif // HB_EFFECTS
+            titleBarAnimating = true;
         }
+
         if (!statusBarAnimating) {
             statusBar->setVisible(!(d->mViewFlags & HbView::ViewStatusBarHidden));
             statusBar->propertiesChanged();
@@ -728,7 +741,28 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
             }
             titleBar->propertiesChanged();
         }
-       
+        if (d->toolBar) {
+            d->toolBar->updatePrimitives();
+        }
+
+        // Statusbar-visibility
+        if ( statusBar->isVisible() ){
+            d->mVisibleItems |= Hb::StatusBarItem;
+            d->mVisibleItemsSet = true;
+        } else {
+            d->mVisibleItems &= ~Hb::StatusBarItem;
+            d->mVisibleItemsSet = true;
+        }
+
+        // Titlebar-visibility
+        if (titleBar->isVisible()){
+            d->mVisibleItems |= Hb::TitleBarItem;
+            d->mVisibleItemsSet = true;
+        }else{
+            d->mVisibleItems &= ~Hb::TitleBarItem;
+            d->mVisibleItemsSet = true;
+        }
+
         // Repolish the screen if needed
         int visibilityFlags = HbView::ViewTitleBarMinimized | HbView::ViewTitleBarFloating 
             | HbView::ViewTitleBarMinimizable | HbView::ViewStatusBarHidden | HbView::ViewStatusBarFloating;
@@ -746,12 +780,8 @@ void HbView::setTitleBarVisible(bool visible)
     Q_D(HbView);
     if (visible) {
         setViewFlags(d->mViewFlags &~ HbView::ViewTitleBarHidden);
-        d->mVisibleItems |= Hb::TitleBarItem;
-        d->mVisibleItemsSet = true;
     } else {
         setViewFlags(d->mViewFlags | HbView::ViewTitleBarHidden);
-        d->mVisibleItems &= ~Hb::TitleBarItem;
-        d->mVisibleItemsSet = true;
     }  
 }
 
@@ -763,12 +793,8 @@ void HbView::setStatusBarVisible(bool visible)
     Q_D(HbView);
     if (visible) {
         setViewFlags(d->mViewFlags &~ HbView::ViewStatusBarHidden);
-        d->mVisibleItems |= Hb::StatusBarItem;
-        d->mVisibleItemsSet = true;
     } else {
         setViewFlags(d->mViewFlags | HbView::ViewStatusBarHidden);
-        d->mVisibleItems &= ~Hb::StatusBarItem;
-        d->mVisibleItemsSet = true;
     }
 }
 
@@ -845,6 +871,7 @@ HbMenu* HbView::takeMenu()
     return menu;
 }
 
+#ifdef HB_EFFECTS
 /*
     Handles effect finished event for title bar animation    
  */
@@ -890,6 +917,7 @@ void HbView::statusBarEffectFinished(const HbEffect::EffectStatus &status)
         }
     }
 }
+#endif // HB_EFFECTS
 
 /*!
   Returns the currently set navigation action or 0 if there is none.

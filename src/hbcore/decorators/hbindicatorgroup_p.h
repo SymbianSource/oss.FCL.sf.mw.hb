@@ -29,6 +29,9 @@
 #include "hbnamespace_p.h"
 
 #include <hbwidget.h>
+#ifdef HB_EFFECTS
+#include <hbeffect.h>
+#endif // HB_EFFECTS
 
 class HbIndicatorGroupPrivate;
 class HbStyleOptionIndicatorGroup;
@@ -51,6 +54,8 @@ public:
     explicit HbIndicatorGroup(IndicatorType indicatorType, QGraphicsItem *parent = 0);
     virtual ~HbIndicatorGroup();
 
+    void delayedConstruction();
+
 public slots:
     virtual void createPrimitives();
     virtual void updatePrimitives();
@@ -67,6 +72,12 @@ signals:
 
 protected:
     virtual void initStyleOption(HbStyleOptionIndicatorGroup *option) const;
+
+private slots:
+#ifdef HB_EFFECTS
+    void moveEffectFinnished(const HbEffect::EffectStatus &status);
+    void disappearEffectFinnished(const HbEffect::EffectStatus &status);
+#endif // HB_EFFECTS
 
 private:  
     Q_DECLARE_PRIVATE_D(d_ptr, HbIndicatorGroup)

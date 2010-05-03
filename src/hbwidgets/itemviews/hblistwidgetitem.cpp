@@ -93,7 +93,7 @@ HbListWidgetItem::HbListWidgetItem(int type) :
         }
     }
 
-    setText(QString());
+    setText(QString(""));
 }
 
 /*!

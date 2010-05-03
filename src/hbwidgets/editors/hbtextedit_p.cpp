@@ -37,11 +37,11 @@
 #include "hbtextedit_p.h"
 #include "hbtextedit.h"
 #include "hbcolorscheme.h"
-#include <QtDebug>
 
 HbTextEditPrivate::HbTextEditPrivate () :
     HbAbstractEditPrivate(),
-    mShowTextBaseLine(true)
+    mShowTextBaseLine(false),
+    mShowTextBaseLineApiProtectionFlag(false)
 {
 }
 
@@ -53,13 +53,13 @@ void HbTextEditPrivate::init()
 {
     Q_Q(HbTextEdit);
 
-    mTextBaseLinePen.setColor(Qt::magenta);
+//    mTextBaseLinePen.setColor(Qt::magenta);
     mTextBaseLinePen.setCapStyle(Qt::RoundCap);
     mTextBaseLinePen.setWidthF((qreal)1.0);
 
     q->setScrollable(true);
-    doc->documentLayout()->document()->setDocumentMargin(0);
     q->setBackgroundItem(HbStyle::P_TextEdit_frame_normal);
+    q->setFocusHighlight(HbStyle::P_TextEdit_frame_highlight,HbWidget::FocusHighlightActive);
 }
 
 void HbTextEditPrivate::updatePaletteFromTheme()
@@ -70,6 +70,8 @@ void HbTextEditPrivate::updatePaletteFromTheme()
     QColor textColor = HbColorScheme::color("qtc_textedit_normal");
     QColor selectedColor = HbColorScheme::color("qtc_textedit_selected");
     QColor selectedBackground = HbColorScheme::color("qtc_textedit_marker_normal");
+    QColor hintText = HbColorScheme::color("qtc_textedit_hint_normal");
+    mTextBaseLinePen.setColor(HbColorScheme::color("qtc_textedit_normal"));
     QPalette pal = q->palette();
 
     if (textColor.isValid()) {
@@ -83,6 +85,11 @@ void HbTextEditPrivate::updatePaletteFromTheme()
     if (selectedBackground.isValid()) {
         pal.setColor(QPalette::Highlight, selectedBackground);
     }
+
+    if (hintText.isValid()) {
+        pal.setColor(QPalette::NoRole, hintText);
+    }
+
     q->setPalette(pal);
 }
 
@@ -90,7 +97,7 @@ void HbTextEditPrivate::updateEditingSize()
 {
     Q_Q(HbTextEdit);
     if (scrollArea) {
-        scrollArea->setMinimumHeight(QFontMetrics(q->font()).height());
+        scrollArea->setMinimumHeight(QFontMetrics(q->font()).height() + 2 * doc->documentMargin());
         scrollArea->setPreferredHeight(doc->documentLayout()->documentSize().height());
         scrollArea->setMaximumHeight(QWIDGETSIZE_MAX);
     }
@@ -114,6 +121,9 @@ void HbTextEditPrivate::drawContentBackground(QPainter *painter,
  */
 void HbTextEditPrivate::drawTextBaseLines(QPainter *painter) const
 {
+    // Save painter's state
+    QPen oldPen = painter->pen();
+
     const QRegion clipReg = painter->clipRegion();
 
     painter->setPen(mTextBaseLinePen);
@@ -152,6 +162,9 @@ void HbTextEditPrivate::drawTextBaseLines(QPainter *painter) const
             lineRect.translate(0,lineRect.height());
         }
     }
+
+    // Restore painter's state
+    painter->setPen(oldPen);
 }
 
 /*
@@ -162,4 +175,31 @@ void HbTextEditPrivate::drawBaseLineAt(QPainter *painter,
                                            qreal x1, qreal x2, qreal y) const
 {
     painter->drawLine(QPointF(x1,y), QPointF(x2,y));
+}
+
+void HbTextEditPrivate::setBaseLineStyleFromString(const QString &str)
+{
+    // if parsing is failed then set solid line
+    mTextBaseLinePen.setStyle(Qt::SolidLine);
+
+    if(!str.isEmpty()) {
+        static const char *const suportedLineStyles[] = {
+            "Solid",
+            "Dash",
+            "Dot",
+            "DashDot",
+            "DashDotDot"
+        };
+
+        static const int LineStyleCount = sizeof(suportedLineStyles)
+                                          /sizeof(suportedLineStyles[0]);
+
+        for (int i=0;i<LineStyleCount; ++i) {
+            if (str==suportedLineStyles[i]) {
+                mTextBaseLinePen.setStyle(
+                        static_cast<Qt::PenStyle>(Qt::SolidLine+i));
+                break;
+            }
+        }
+    }
 }

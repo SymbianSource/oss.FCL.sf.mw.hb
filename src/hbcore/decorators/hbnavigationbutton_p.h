@@ -40,6 +40,8 @@ public:
     explicit HbNavigationButton(QGraphicsItem *parent = 0);
     virtual ~HbNavigationButton();
 
+    void delayedConstruction();
+
     enum { Type = HbPrivate::ItemType_NavigationButton };
     int type() const { return Type; }
 

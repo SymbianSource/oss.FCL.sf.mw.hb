@@ -41,13 +41,17 @@ public:
     HbGridItemContainerPrivate();
     virtual ~HbGridItemContainerPrivate();
     void init();
+    qreal getDiffWithoutScrollareaCompensation(const QPointF &delta) const;
+    qreal recycling(qreal diff);
+    qreal farRecycling(const QPointF &delta);
     HbAbstractViewItem *shiftDownItem(bool doEvenBadIndex, bool animate);
     bool shiftDownItem(int pos, bool animate);
     HbAbstractViewItem *shiftDown(bool animate);
     HbAbstractViewItem *shiftUpItem(bool animate);
     HbAbstractViewItem *shiftUp(bool animate);
-    qreal recycling(qreal diff);
+
     void resetBuffer();
+    inline qreal getScrollDirectionItemSize();
     void removeItem(const QModelIndex &index, bool animate);
     void scrollToEnsureVisible(const QModelIndex &index);
     void scrollToPositionAtTop(const QModelIndex &index);
@@ -64,12 +68,10 @@ public:
     int mapToLayoutIndex(int index) const;
 
     HbGridLayout *mLayout;
-    QSizeF mViewSize;
     mutable int mMinCount;
     mutable int mRowCount;
     mutable int mColumnCount;
     mutable int mItemsPerRow;
-    qreal mCachedItemHeight;
     Qt::Orientations mScrollDirection;
     // used by updateItemBuffer to obtain what change and what kind of update is needed
     int mOldItemsPerRow;
@@ -77,4 +79,11 @@ public:
     QList< QPair<HbAbstractViewItem *, int> > mAnimatedItems;
 };
 
+qreal HbGridItemContainerPrivate::getScrollDirectionItemSize()
+{
+    // return item size depending on scrolling direction
+    return (mScrollDirection == Qt::Vertical) ?
+        mLayout->effectiveSizeHint(Qt::MinimumSize).height() 
+        : mLayout->effectiveSizeHint(Qt::MinimumSize).width();
+}
 #endif /*HBGRIDITEMCONTAINER_P_P_H*/

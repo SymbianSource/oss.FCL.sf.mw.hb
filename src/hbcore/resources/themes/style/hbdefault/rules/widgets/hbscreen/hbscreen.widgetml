@@ -131,7 +131,7 @@
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -149,7 +149,7 @@
     <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
 
     <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="main" dstEdge="TOP" />
+    <meshitem src="toolbar" srcEdge="TOP" dst="titlebar" dstEdge="BOTTOM" />
     <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
@@ -157,9 +157,9 @@
     <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
+    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -185,9 +185,9 @@
     <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
+    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -215,119 +215,7 @@
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="portrait_horizontaltoolbar_undertitlebar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="toolbar" dstEdge="TOP" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="portrait_verticaltoolbar_undertitlebar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="main" dstEdge="TOP" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="landscape_verticaltoolbar_undertitlebar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="titlebar" dstEdge="BOTTOM" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="landscape_horizontaltoolbar_undertitlebar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="toolbar" dstEdge="TOP" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="main" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -355,7 +243,7 @@
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -373,7 +261,7 @@
     <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
 
     <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="main" dstEdge="TOP" />
+    <meshitem src="toolbar" srcEdge="TOP" dst="titlebar" dstEdge="BOTTOM" />
     <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
@@ -381,9 +269,9 @@
     <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
+    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -409,9 +297,9 @@
     <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
+    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -439,119 +327,7 @@
     <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="portrait_horizontaltoolbar_understatusbar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="toolbar" dstEdge="TOP" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="portrait_verticaltoolbar_understatusbar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="main" dstEdge="TOP" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="landscape_verticaltoolbar_understatusbar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="TOP" dst="titlebar" dstEdge="BOTTOM" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="toolbar" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
-
-    <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="mainfull" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="mainfull" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-  </layout>
-
-  <layout name="landscape_horizontaltoolbar_understatusbar" type="mesh">
-    <meshitem src="statusbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="statusbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="statusbar" srcEdge="TOP" dst="" dstEdge="TOP" />
-
-    <meshitem src="titlebar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="titlebar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="titlebar" srcEdge="TOP" dst="statusbar" dstEdge="BOTTOM" />
-
-    <meshitem src="toolbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toolbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toolbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="dock" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dock" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="dock" srcEdge="BOTTOM" dst="toolbar" dstEdge="TOP" />
-
-    <meshitem src="main" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="main" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="main" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="main" srcEdge="BOTTOM" dst="dock" dstEdge="TOP" />
+    <meshitem src="main" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="mainfull" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="mainfull" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />

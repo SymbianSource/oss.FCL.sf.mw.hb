@@ -109,6 +109,11 @@ void HbFeedbackPlayerPrivate::feedbackTypeDisabled(HbFeedback::Type type)
     more information on the design of the player.
 
     \sa HbInstantFeedback, HbContinuousFeedback, HbTacticonFeedback, HbHitAreaFeedback, HbFeedbackSettings.
+    
+    \deprecated HbFeedbackPlayer
+        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
+        
+    \sa HbInstantFeedback, HbContinuousFeedback
 */
 
 
@@ -116,6 +121,12 @@ Q_GLOBAL_STATIC(HbFeedbackPlayer, feedbackPlayerGlobal);
 
 /*!
     Constructor.
+    
+    \deprecated HbFeedbackPlayer::HbFeedbackPlayer()
+        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
+        
+    \sa HbInstantFeedback, HbContinuousFeedback
+    
 */
 HbFeedbackPlayer::HbFeedbackPlayer() : d(new HbFeedbackPlayerPrivate(this))
 {
@@ -124,6 +135,11 @@ HbFeedbackPlayer::HbFeedbackPlayer() : d(new HbFeedbackPlayerPrivate(this))
 
 /*!
     Destructor.
+    
+    \deprecated HbFeedbackPlayer::~HbFeedbackPlayer()
+        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
+        
+    \sa HbInstantFeedback, HbContinuousFeedback
 */
 HbFeedbackPlayer::~HbFeedbackPlayer()
 {
@@ -132,6 +148,11 @@ HbFeedbackPlayer::~HbFeedbackPlayer()
 
 /*!
     Returns the handle to the global instance.
+    
+    \deprecated HbFeedbackPlayer::instance()
+        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
+        
+    \sa HbInstantFeedback, HbContinuousFeedback
 */
 HbFeedbackPlayer* HbFeedbackPlayer::instance()
 {
@@ -140,6 +161,12 @@ HbFeedbackPlayer* HbFeedbackPlayer::instance()
 
 /*!
     Returns a reference to the feedback settings interface.
+    
+    \deprecated HbFeedbackPlayer::settings()
+        is deprecated. Use HbFeedbackSettings::instance() to access feedback settings.
+        
+    \sa HbFeedbackSettings
+
 */
 HbFeedbackSettings& HbFeedbackPlayer::settings()
 {
@@ -151,13 +178,18 @@ HbFeedbackSettings& HbFeedbackPlayer::settings()
 
     \param feedback instant feedback object
     \sa HbInstantFeedback
+    
+    \deprecated HbFeedbackPlayer::playInstantFeedback(const HbInstantFeedback&)
+        is deprecated. Use HbInstantFeedback::play() instead.
+        
+    \sa HbInstantFeedback
 */
 void HbFeedbackPlayer::playInstantFeedback(const HbInstantFeedback& feedback)
 {
     if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeInstant)) {
         if (d->basePlayer)  {
-            d->basePlayer->playInstantFeedback(feedback);
-        }
+                d->basePlayer->playInstantFeedback(feedback);
+            }
 #ifdef FEEDBACK_TEST_EVENT
         HbFeedbackTestEvent te(feedback);
         qApp->sendEvent(this, &te);
@@ -196,6 +228,11 @@ void HbFeedbackPlayer::playTacticonFeedback(const HbTacticonFeedback& feedback)
     \return identifier The identifier for the started effect.
 
     \sa HbContinuousFeedback
+    
+    \deprecated HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback&)
+        is deprecated. Use HbContinuousFeedback::play instead.
+        
+    \sa HbContinuousFeedback
 */
 int HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback& feedback)
 {
@@ -223,6 +260,11 @@ int HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback& feedba
     \param feedback continuous feedback object
 
     \sa HbContinuousFeedback
+    
+    \deprecated HbFeedbackPlayer::updateContinuousFeedback(int, const HbContinuousFeedback&)
+        is deprecated.
+        
+    \sa HbContinuousFeedback
 */
 void HbFeedbackPlayer::updateContinuousFeedback(int identifier, const HbContinuousFeedback& feedback)
 {
@@ -244,6 +286,11 @@ void HbFeedbackPlayer::updateContinuousFeedback(int identifier, const HbContinuo
     Cancels an ongoing continuous feedback effect.
 
     \param identifier The identifier for the ongoing effect.
+    
+    \deprecated HbFeedbackPlayer::cancelContinuousFeedback(int)
+        is deprecated. Use HbContinuousFeedback::stop() instead.
+        
+    \sa HbContinuousFeedback
 */
 void HbFeedbackPlayer::cancelContinuousFeedback(int identifier)
 {
@@ -261,6 +308,11 @@ void HbFeedbackPlayer::cancelContinuousFeedback(int identifier)
 
 /*!
     Cancels all ongoing continuous feedback effects.
+    
+    \deprecated HbFeedbackPlayer::cancelContinuousFeedbacks()
+        is deprecated.
+        
+    \sa HbContinuousFeedback
 */
 void HbFeedbackPlayer::cancelContinuousFeedbacks()
 {
@@ -275,6 +327,11 @@ void HbFeedbackPlayer::cancelContinuousFeedbacks()
     \param identifier The identifier for the ongoing effect.
 
     \return true, if the effect is ongoing.
+    
+    \deprecated HbFeedbackPlayer::continuousFeedbackOngoing(int)
+        is deprecated. Use HbContinuousFeedback::isPlaying() instead.
+        
+    \sa HbContinuousFeedback
 */
 bool HbFeedbackPlayer::continuousFeedbackOngoing(int identifier)
 {

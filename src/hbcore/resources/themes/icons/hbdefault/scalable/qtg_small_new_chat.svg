@@ -1,40 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<path d="M6.303,28c-0.457,0-1.23-0.326-1.23-1.552v-4.097  C1.842,20.145,0,16.986,0,13.628C0,7.216,6.729,2,15,2c8.271,0,15,5.216,15,11.628c0,6.411-6.729,11.628-15,11.628  c-1.668,0-3.305-0.211-4.873-0.627l-2.625,2.762C7.125,27.789,6.709,28,6.303,28L6.303,28z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<linearGradient gradientTransform="matrix(1 0 0 -1 -76 -96)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="91" x2="91" y1="-99.166" y2="-122.8481">
+<rect fill="none" height="30" width="30"/>
+<path d="M6.924,27.143c-0.451,0-1.213-0.318-1.213-1.512v-3.766C2.71,19.804,1,16.859,1,13.726  C1,7.732,7.28,2.857,15,2.857s14,4.875,14,10.868s-6.28,10.869-14,10.869c-1.54,0-3.052-0.192-4.501-0.574L8.09,26.555  C7.725,26.939,7.321,27.143,6.924,27.143L6.924,27.143z" fill-opacity="0.6"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 -367 -507)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="382" x2="382" y1="511.0117" y2="533.0017">
 <stop offset="0" style="stop-color:#4EDEFF"/>
 <stop offset="1" style="stop-color:#048CC6"/>
 </linearGradient>
-<path d="M6.303,27c-0.141,0-0.23-0.216-0.23-0.552v-4.636L5.99,21.761C2.818,19.732,1,16.77,1,13.628  C1,7.769,7.28,3,15,3c7.719,0,14,4.769,14,10.628c0,5.861-6.281,10.628-14,10.628c-1.742,0-3.447-0.242-5.068-0.721l-0.113-0.033  l-3.041,3.199C6.6,26.889,6.422,27,6.303,27L6.303,27z" fill="url(#SVGID_1_)"/>
-<path d="M15,4c7.496,0,13.619,4.501,13.967,10.128  c0.01-0.167,0.033-0.331,0.033-0.5C29,7.769,22.719,3,15,3C7.28,3,1,7.769,1,13.628c0,0.161,0.025,0.319,0.035,0.48  C1.396,8.491,7.512,4,15,4z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
-<rect fill="#FFFFFF" height="1.083" width="13" x="8.5" y="8.688"/>
-<rect fill-opacity="0.2" height="0.542" stroke-opacity="0.2" width="13" x="8.5" y="9.771"/>
-<rect fill="#FFFFFF" height="1.083" width="13" x="8.5" y="12.688"/>
-<rect fill-opacity="0.2" height="0.542" stroke-opacity="0.2" width="13" x="8.5" y="13.771"/>
+<path d="M6.924,26.143c-0.131,0-0.213-0.2-0.213-0.512v-4.305l-0.077-0.049C3.688,19.395,2,16.643,2,13.726  c0-5.44,5.831-9.868,13-9.868c7.168,0,13,4.428,13,9.868c0,5.442-5.832,9.869-13,9.869c-1.618,0-3.201-0.226-4.706-0.669  l-0.105-0.031l-2.824,2.971C7.2,26.039,7.035,26.143,6.924,26.143L6.924,26.143z" fill="url(#SVGID_1_)"/>
+<path d="M15,4.785c6.961,0,12.646,4.18,12.969,9.405  C27.979,14.035,28,13.883,28,13.726c0-5.44-5.832-9.868-13-9.868c-7.169,0-13,4.428-13,9.868c0,0.149,0.023,0.296,0.033,0.446  C2.368,8.956,8.047,4.785,15,4.785z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
+<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="8.688"/>
+<rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="9.771"/>
+<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="12.688"/>
+<rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="13.771"/>
 <rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="16.688"/>
 <rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="17.771"/>
 <rect fill="none" height="30" width="30"/>
 </g>
 <g>
-<g>
-<rect height="15" style="fill:none;" width="15" x="15"/>
-<rect height="4.412" style="opacity:0.6;enable-background:new    ;" transform="matrix(-0.2587 0.9659 -0.9659 -0.2587 29.2728 -12.3701)" width="7.941" x="15.412" y="2.841"/>
-<linearGradient gradientTransform="matrix(1 0 0 -1 90.98 116.5195)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="-70.1851" x2="-73.1451" y1="114.9482" y2="107.6632">
-<stop offset="0" style="stop-color:#DE8029"/>
-<stop offset="0.26" style="stop-color:#DE4E29"/>
-<stop offset="1" style="stop-color:#D82E09"/>
+<rect fill="none" height="15" width="15" x="15"/>
+<rect fill-opacity="0.6" height="4.412" stroke-opacity="0.6" style="enable-background:new;" transform="matrix(-0.2587 0.9659 -0.9659 -0.2587 29.2728 -12.3701)" width="7.941" x="15.41" y="2.841"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 90.98 116.5195)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="-70.19" x2="-73.15" y1="114.9" y2="107.7">
+<stop offset="0" stop-color="#DE8029"/>
+<stop offset="0.26" stop-color="#DE4E29"/>
+<stop offset="1" stop-color="#D82E09"/>
 </linearGradient>
-<polygon points="20.174,8.913 16.765,8 18.592,1.181 22.001,2.094  " style="fill:url(#SVGID_1__);"/>
-<rect height="4.411" style="opacity:0.6;enable-background:new    ;" transform="matrix(-0.7072 0.7071 -0.7071 -0.7072 48.0833 -1.2961)" width="9.707" x="19.457" y="7.104"/>
-<linearGradient gradientTransform="matrix(1 0 0 -1 90.98 116.5195)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-63.0112" x2="-70.6762" y1="110.0527" y2="104.0977">
-<stop offset="0" style="stop-color:#DE8029"/>
-<stop offset="0.26" style="stop-color:#DE4E29"/>
-<stop offset="1" style="stop-color:#D82E09"/>
+<polygon fill="url(#SVGID_1__)" points="20.17,8.913,16.76,8,18.59,1.181,22,2.094"/>
+<rect fill-opacity="0.6" height="4.411" stroke-opacity="0.6" style="enable-background:new;" transform="matrix(-0.7072 0.7071 -0.7071 -0.7072 48.0833 -1.2961)" width="9.707" x="19.46" y="7.104"/>
+<linearGradient gradientTransform="matrix(1 0 0 -1 90.98 116.5195)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-63.01" x2="-70.68" y1="110.1" y2="104.1">
+<stop offset="0" stop-color="#DE8029"/>
+<stop offset="0.26" stop-color="#DE4E29"/>
+<stop offset="1" stop-color="#D82E09"/>
 </linearGradient>
-<polygon points="22.438,13.677 19.941,11.182 26.182,4.942 28.677,7.438  " style="fill:url(#SVGID_2_);"/>
-</g>
-<rect height="30.002" style="fill:none;" width="30.002"/>
+<polygon fill="url(#SVGID_2_)" points="22.44,13.68,19.94,11.18,26.18,4.942,28.68,7.438"/>
+<rect fill="none" height="30" width="30"/>
 </g>
 </svg>

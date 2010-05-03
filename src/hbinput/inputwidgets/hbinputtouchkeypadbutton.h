@@ -84,6 +84,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void resizeEvent(QGraphicsSceneResizeEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void gestureEvent(QGestureEvent *event);
     void setBackground(const QString& backgroundFrameFilename);
     virtual void changeEvent( QEvent *event );
     virtual void updatePrimitives();

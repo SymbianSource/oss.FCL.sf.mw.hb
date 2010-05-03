@@ -159,6 +159,8 @@ public:
     HbQwertyKeyboardSize mKeyboardSize;
     int mCloseHandleHeight;
     QGraphicsWidget *mCloseHandle; 
+    HbView *mSettingView;
+    HbView *mCurrentView;
     bool mKeyboardDimmed;
 };
 

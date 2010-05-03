@@ -317,6 +317,8 @@ HbDateTimePickerPrivate::HbDateTimePickerPrivate()
     ,mBackground(0)
     ,mFrame(0)
     ,mContent(0)
+    ,mIntervals()
+    ,mHighlight(0)
 {
     mMinimumDate = HBDATETIMEPICKER_DATETIME_MIN;
     mMaximumDate = HBDATETIMEPICKER_DATETIME_MAX;
@@ -325,12 +327,6 @@ HbDateTimePickerPrivate::HbDateTimePickerPrivate()
 
 HbDateTimePickerPrivate::~HbDateTimePickerPrivate()
 {
-    QGraphicsLayoutItem *item;
-    foreach(item,mDividers)
-    {
-        mLayout->removeItem(item);
-        delete item;
-    }
 }
 
 /*
@@ -344,7 +340,7 @@ void HbDateTimePickerPrivate::init(QVariant::Type dateTimeMode)
     //create base content widget which contains the tumble views
     mContent=new HbWidget(q);
     mLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    mLayout->setSpacing(0);
+    mLayout->setSpacing(1);
     mLayout->setContentsMargins(0,0,0,0);
     mContent->setLayout(mLayout);
     q->style()->setItemName(mContent,"content");
@@ -357,9 +353,7 @@ void HbDateTimePickerPrivate::init(QVariant::Type dateTimeMode)
     //parse the format and set the sections in order
     parseDisplayFormat(mFormat);
 
-    mDividers.clear();
-
-    //create the dividers used in rearrangeTumbleViews
+    //create primitives
     createPrimitives();
 
     //recreate and rearrange depending on the format
@@ -475,85 +469,104 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
     mMinuteOffset = -1;
     mSecondOffset = -1;
 
-    createDividers();
-
-    //divider stuff
-    //TODO: improve the divider addition and removal
-    foreach(QGraphicsItem *item, mDividers) {
-        HbFrameItem *fame = qgraphicsitem_cast<HbFrameItem *>(item);
-        Q_ASSERT(fame); // WRONG USE OF PRIMITIVES - Please fix it
-        mLayout->removeItem(fame);
-        fame->setVisible(false);
-    }
-
-
-    //TODO: improve the divider addition and removal
-    bool hasSeparator = mParser.mSectionNodes.count() > 1;
+    QPointer<HbTumbleView> lastAdded;
 
     for(int i=0;i<mParser.mSectionNodes.count();i++) {
-
-        if(hasSeparator && (mLayout->count()>0)) {
-            //TODO: improve the divider addition and removal
-            HbFrameItem *f=static_cast<HbFrameItem*>(mDividers.at(i - 1));
-            if(f) {
-                f->setVisible(true);
-            }
-            mLayout->addItem(mDividers.at(i - 1));
-        }
-
         switch(mParser.mSectionNodes[i].type) {
             case HbDateTimeParser::AmPmSection:
                 mAmPmPicker = new HbTumbleView(q);
                 mAmPmModel = new QStringListModel(q);
                 mAmPmPicker->setModel(mAmPmModel);
+                //mAmPmPicker->setLoopingEnabled(true);
                 mLayout->addItem(mAmPmPicker);
+                mAmPmPicker->primitive("highlight")->hide();
+                mAmPmPicker->primitive("separator")->show();
+                lastAdded = mAmPmPicker;
                 break;
+
             case HbDateTimeParser::DaySection:
             case HbDateTimeParser::DayOfWeekSection:
                 mDayPicker = new HbTumbleView(q);
                 mDayModel = new QStringListModel(q);
                 mDayPicker->setModel(mDayModel);
+                //mDayPicker->setLoopingEnabled(true);
                 mLayout->addItem(mDayPicker);
+                mDayPicker->primitive("highlight")->hide();
+                mDayPicker->primitive("separator")->show();
+                lastAdded = mDayPicker;
                 break;
+
             case HbDateTimeParser::MonthSection:
                 mMonthPicker = new HbTumbleView(q);
                 mMonthModel = new QStringListModel(q);
                 mMonthPicker->setModel(mMonthModel);
+                //mMonthPicker->setLoopingEnabled(true);
                 mLayout->addItem(mMonthPicker);
+                mMonthPicker->primitive("highlight")->hide();
+                mMonthPicker->primitive("separator")->show();
+                lastAdded = mMonthPicker;
                 break;
+
             case HbDateTimeParser::YearSection:
             case HbDateTimeParser::YearSection2Digits:
                 mYearPicker = new HbTumbleView(q);
                 mYearModel = new QStringListModel(q);
                 mYearPicker->setModel(mYearModel);
+                //mYearPicker->setLoopingEnabled(true);
                 mLayout->addItem(mYearPicker);
+                mYearPicker->primitive("highlight")->hide();
+                mYearPicker->primitive("separator")->show();
+                lastAdded = mYearPicker;
                 break;
+
             case HbDateTimeParser::SecondSection:
                 mSecondPicker = new HbTumbleView(q);
                 mSecondModel = new QStringListModel(q);
                 mSecondPicker->setModel(mSecondModel);
+                //mSecondPicker->setLoopingEnabled(false);
                 mLayout->addItem(mSecondPicker);
+                mSecondPicker->primitive("highlight")->hide();
+                mSecondPicker->primitive("separator")->show();
+                lastAdded = mSecondPicker;
                 break;
+
             case HbDateTimeParser::MinuteSection:
                 mMinutePicker = new HbTumbleView(q);
                 mMinuteModel = new QStringListModel(q);
                 mMinutePicker->setModel(mMinuteModel);
+                //mMinutePicker->setLoopingEnabled(false);
                 mLayout->addItem(mMinutePicker);
+                mMinutePicker->primitive("highlight")->hide();
+                mMinutePicker->primitive("separator")->show();
+                lastAdded = mMinutePicker;
                 break;
+
             case HbDateTimeParser::Hour12Section:
             case HbDateTimeParser::Hour24Section:
                 mHourPicker = new HbTumbleView(q);
                 mHourModel = new QStringListModel(q);
                 mHourPicker->setModel(mHourModel);
+                //mHourPicker->setLoopingEnabled(true);
                 mLayout->addItem(mHourPicker);
+                mHourPicker->primitive("highlight")->hide();
+                mHourPicker->primitive("separator")->show();
+                lastAdded = mHourPicker;
                 break;
-            default:break;
+
+            default:
+                break;
         }
     }
+
+    //For the last added tumble view, hide the separator.
+    if(lastAdded){
+        lastAdded->primitive("separator")->hide();
+    }
+
     setRanges();
     makeConnections();
     syncVisualDate();
- //TODO:what to do with current date, should reset ?
+    //TODO:what to do with current date, should reset ?
 }
 
 void HbDateTimePickerPrivate::makeConnections()
@@ -817,6 +830,15 @@ void HbDateTimePickerPrivate::setDateTime(const QDateTime &newDate)
             qDebug() << "setDateTime after: secondOffset=" << mSecondOffset << " time=" << newDateTime.time();
 #endif
         }
+        if(mAmPmPicker){
+            if(newDate.time().hour() >= 12){
+                mAmPmPicker->setSelected(1);
+            }
+            else{
+                mAmPmPicker->setSelected(0);
+            }
+        }
+
         mDateTime = newDateTime;
 
     }
@@ -994,7 +1016,7 @@ void HbDateTimePickerPrivate::setMinuteRange(int start,int end)
     resizeModel(mMinuteModel,
             mMinuteOffset,mMinuteOffset+mMinuteModel->rowCount()-1,
             start,end,
-            &HbDateTimePickerPrivate::localeMinute);
+            &HbDateTimePickerPrivate::localeMinute, mIntervals[QDateTimeEdit::MinuteSection]);
     mMinuteOffset = start;
 
     mMinutePicker->setSelected(newIndex);
@@ -1121,27 +1143,46 @@ QString HbDateTimePickerPrivate::localeAmPm(bool isAm)
 void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
             int oldStart, int oldEnd,
             int newStart, int newEnd,
-            QString (HbDateTimePickerPrivate::*localeFunc)(int))
+            QString (HbDateTimePickerPrivate::*localeFunc)(int), int interval)
 {
-    //if row count is zero, then insert from newEnd to newStart
+    if(interval > 1){
+        model->removeRows(0, model->rowCount());
+    }
+
     if((model->rowCount() == 0) && (newEnd-newStart>=0)) {
         //initialize condition
-        model->insertRows(0,newEnd-newStart+1);
+
         for(int i=0;i<=newEnd-newStart;i++) {
-            QModelIndex index=model->index(i,0);
-            if(index.isValid()) {
-                //model->setData(index,(this->*localeFunc)(i+newStart));//TODO:add a readable typedef
-                QString text = (this->*localeFunc)(i+newStart);
+            //model->setData(index,(this->*localeFunc)(i+newStart));//TODO:add a readable typedef
+            QString text;
+
+            if(interval > 1){
+                if(((newStart + interval) * i) <= newEnd){
+                    model->insertRow(i);
+                    text = (this->*localeFunc)(!((newStart + interval)*i) ? newStart : (newStart + interval)*i);
+                }
+                else{
+                    break;
+                }
+            }
+            else{
+                model->insertRow(i);
+                text = (this->*localeFunc)(i+newStart);
+            }
+
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-                if ( localeFunc == &HbDateTimePickerPrivate::localeMonth &&
-                    HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+            if ( localeFunc == &HbDateTimePickerPrivate::localeMonth &&
+                HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
                     text.append(QChar(LOC_TEST_START));
                     text.append("qtl_datetimepicker_popup_month_sec");
                     text.append(QChar(LOC_TEST_END));
-                }
+            }
 #endif
+            QModelIndex index=model->index(i,0);
+            if(index.isValid()) {
                 model->setData(index,text);//TODO:add a readable typedef
             }
+
         }
         return;
     }
@@ -1186,51 +1227,11 @@ void HbDateTimePickerPrivate::createPrimitives()
         mFrame = q->style()->createPrimitive(HbStyle::P_DateTimePicker_frame,q);
         q->style()->setItemName(mFrame,"frame");
     }
-    createDividers();
-}
 
-void HbDateTimePickerPrivate::createDividers()
-{
-    Q_Q(HbDateTimePicker);
-    
-    if( mParser.mSectionNodes.count() == mDividers.count() ){
-        return;
+    if(!mHighlight){
+        mHighlight = q->style()->createPrimitive(HbStyle::P_TumbleView_highlight,q);
+        q->style()->setItemName(mHighlight,"highlight");
     }
-
-    if( mParser.mSectionNodes.count() < mDividers.count() ){
-        for( int i = mParser.mSectionNodes.count() - 1; i > mDividers.count(); i--)
-        {
-            QPointer<QGraphicsWidget> item = mDividers.at(i);
-            mDividers.removeAt(i);
-            delete item;
-        }
-
-        return;
-    }
-    else if( mParser.mSectionNodes.count() > mDividers.count() ){
-
-        for(int i = mDividers.count();i < mParser.mSectionNodes.count(); i++) { //TODO: optimally create when required
-            QGraphicsItem *item=q->style()->createPrimitive(HbStyle::P_DateTimePicker_separator, mContent);
-            Q_ASSERT(item->isWidget());
-            q->style()->setItemName(item,"separator");
-            mDividers.append(static_cast<QGraphicsWidget *>(item));
-        }
-    }
-}
-
-void HbDateTimePickerPrivate::updateDividers()
-{
-    /*Q_Q(HbDateTimePicker);
-    HbStyleOption option;
-    q->initStyleOption(&option);
-    for(int i=0;i<qMin(mDividers.count(),mDividerIndex);i++) {
-        q->style()->updatePrimitive((QGraphicsItem*)mDividers.at(i),HbStyle::P_DateTimePicker_separator,&option);
-    }*/
-
-    //TODO: improve the divider addition and removal
-
-    //using the style update primitive crashes. need to investigate why
-
 }
 
 void HbDateTimePickerPrivate::_q_dayChanged(int index)
@@ -1484,7 +1485,7 @@ void HbDateTimePickerPrivate::_q_minutesChanged(int index)
 #ifdef HBDATETIMEPICKER_DEBUG
     qDebug() << "_q_minutesChanged:" << index;
 #endif
-    QTime newTime(mDateTime.time().hour(),mMinuteOffset+index,mDateTime.time().second());
+	QTime newTime(mDateTime.time().hour(),mLocale.toInt(mMinuteModel->index(mMinuteOffset+index,0).data().toString()),mDateTime.time().second());
     if(newTime.isValid()) {
         mDateTime.setTime(newTime);
     }

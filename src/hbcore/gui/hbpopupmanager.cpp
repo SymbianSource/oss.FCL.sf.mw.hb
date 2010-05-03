@@ -40,7 +40,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLayout>
 #include <QDebug>
-
+#include <QEvent>
 
 HbPopupLayoutSpacer::HbPopupLayoutSpacer( QGraphicsItem *parent )
 : HbWidgetBase( parent )
@@ -101,9 +101,10 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
         mPreferredPos = ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->preferredPos;
         mPlacement = ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->placement;
         mPreferredPosSet = ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->preferredPosSet;
+        qreal screenMargin = ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mScreenMargin;
         if ( mPreferredPosSet ) { // user set preferred pos, ignore css
-            const qreal pw(parentItem()->boundingRect().width());
-            const qreal ph(parentItem()->boundingRect().height());
+            const qreal pw(parentItem()->boundingRect().width() - screenMargin);
+            const qreal ph(parentItem()->boundingRect().height() - screenMargin);
             const qreal uw(usedSize.width());
             const qreal uh(usedSize.height());
             const qreal x(mPreferredPos.x());
@@ -151,8 +152,8 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
                 //should not happen
                 break;
             }
-            if ( usedx < 0 ) usedx = 0;
-            if ( usedy < 0 ) usedy = 0;
+            if ( usedx < screenMargin ) usedx = screenMargin;
+            if ( usedy < screenMargin ) usedy = screenMargin;
 
             usedPos = QPointF(usedx, usedy);
         }
@@ -203,7 +204,7 @@ void HbPopupLayoutProxy::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 HbPopupLayoutManager::HbPopupLayoutManager( HbPopup *popup, QGraphicsScene *scene ) 
 : HbWidget()
-{
+{        
 #if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemHasNoContents, true);
 #endif
@@ -227,13 +228,12 @@ HbPopupLayoutManager::HbPopupLayoutManager( HbPopup *popup, QGraphicsScene *scen
         } else {
             HbStyle::setItemName( childItem, "menu" );
         }
-    } else if ( metaObject->className() == QLatin1String("HbToolTipLabel") ) {
-        HbStyle::setItemName( childItem, "" );
     } else if ( metaObject->className() == QLatin1String("HbToolBarExtension" ) ) {
         HbStyle::setItemName( childItem, "toolbar-extension" );
     } else {
-        HbStyle::setItemName( childItem, "popup" );
+        HbStyle::setItemName( childItem, "popup" );        
     }
+    setZValue(popup->zValue() - 1);
     if ( metaObject->className() == QLatin1String("HbVolumeSliderPopup") ) {
         HbStyle::setItemName( childItem, "volumesliderpopup" );
         connect(scene,SIGNAL(sceneRectChanged(QRectF)),this,SLOT(orientationChanged(QRectF)));
@@ -249,7 +249,6 @@ void  HbPopupLayoutManager::orientationChanged(const QRectF& rect)
     Q_UNUSED(rect);
     repolish();
 }
-
 
 /*!
     \reimp
@@ -270,6 +269,7 @@ void HbPopupLayoutManager::changeEvent(QEvent *event)
     if (event && event->type() == QEvent::LayoutDirectionChange) {
         repolish();
     }
+
 }
 
 /*
@@ -410,13 +410,13 @@ void HbPopupManagerPrivate::addPopup(HbPopup *popup)
         }
 
         if ( !popup->parentItem() ) {
-            if ( popup->metaObject()->className() != QLatin1String("HbToolTipLabel") &&
-                 popup->metaObject()->className() != QLatin1String("HbInputCustomButtonList") &&
+            if ( popup->metaObject()->className() != QLatin1String("HbInputCustomButtonList") &&
                  popup->metaObject()->className() != QLatin1String("HbCharPreviewPane") &&
                  popup->metaObject()->className() != QLatin1String("HbCandidateList") &&
                  popup->metaObject()->className() != QLatin1String("HbExactWordPopup") &&
                  popup->metaObject()->className() != QLatin1String("HbInputSmileyPicker") &&
                  popup->metaObject()->className() != QLatin1String("Hb12KeyCustomKeypad") &&
+				 popup->metaObject()->className() != QLatin1String("HbInputThaiSpecialPopup") &&
                  !popup->inherits("HbInputVkbWidget")) {
                 setGeometryForPopup( popup );
             }
@@ -485,7 +485,7 @@ void HbPopupManagerPrivate::removePopup(HbPopup *popup)
 
             // Move the focus to the initial focus item if there is no current focus item or
             // the ancestor of the current fucus item is popup
-            if( !scene->focusItem() || popup->isAncestorOf(scene->focusItem())) {
+            if( !scene->focusItem() || popup->hasFocus() || popup->isAncestorOf(scene->focusItem())) {
                 initialFocusedItem->setFocus();
                 initialFocusedItem = 0;
             }
@@ -553,11 +553,12 @@ void HbPopupManagerPrivate::setGeometryForPopup(HbPopup *popup)
     parentItem = 0;
     childItem = 0;
     if ( parentItems.contains( popup ) ) {
-        parentItem = parentItems[popup];
+        parentItem = parentItems[popup];        
     } else {
         parentItem = new HbPopupLayoutManager( popup, scene );
         parentItems.insert( popup, parentItem );
-    }
+    }    
+
     childItem = static_cast<HbPopupLayoutProxy*>(parentItem->childItems().at(0));
     childItem->setSizePolicy( popup->sizePolicy() );
 }

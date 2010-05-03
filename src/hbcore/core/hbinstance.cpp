@@ -35,6 +35,7 @@
 #include "hbmainwindow_p.h"
 #include "hbdeviceprofile.h"
 #include "hbglobal_p.h"
+#include "hblocalechangenotifier_p.h"
 
 #include <hbfeedbackmanager.h>
 
@@ -47,23 +48,34 @@
 #endif //HB_TESTABILITY
 // end testability
 
-#if defined(Q_WS_S60)
-#include <QDesktopWidget> // For orientation checking in HbInstance constructor
-#include <aknappui.h> // For forcing orientation to change on setOrientation
-#endif
-
 #ifdef HB_SETTINGS_WINDOW
 #include <hbsettingswindow_p.h>
 #include <QShortcut>
 #endif
 
+#ifdef HB_GESTURE_FW
+#include "hbgesturerecognizers_p.h"
+#endif
+
+#ifdef HB_CSS_INSPECTOR
+#include "hbcssinspector_p.h"
+#endif
+
 /*!
     @beta
     @hbcore
-	\class HbInstance
-    \brief HbInstance is the application process' global instance.
+    \class HbInstance
+    \brief HbInstance manages global settings and objects in the application.
 
-    HbInstance can be used to access objects such as style, theme or interaction manager.
+    HbInstance can be used to access objects such as style, theme or interaction
+    manager.  It can be used both with and without HbApplication,
+    i.e. applications instantiating QApplication instead of HbApplication can
+    still use HbInstance to access various Hb-specific features.
+
+    Note however that instantiating either QApplication or HbApplication is
+    still mandatory before calling HbInstance::instance() (or using
+    hbInstance).
+
     The example below shows how hbInstance global pointer can be used to access theme name:
     
     \dontinclude ultimatecodesnippet/main.cpp
@@ -82,10 +94,9 @@
     \relates HbInstance
 
     A global pointer referring to the unique application object. It is
-    equivalent to the pointer returned by the QCoreApplication::instance().
+    equivalent to the pointer returned by the HbInstance::instance().
 
-    \sa QCoreApplication::instance()
-
+    \sa HbInstance::instance()
 */
 
 /*!
@@ -100,6 +111,7 @@ HbInstancePrivate::HbInstancePrivate() :
 #ifdef Q_OS_SYMBIAN    
     ,testabilityEnabled(false)
 #endif //Q_OS_SYMBIAN
+    ,mLocaleChangeNotifier(0)
 {
     // initialization of dynamics parts of feedback manager
     HbFeedbackManager::instance();
@@ -184,6 +196,21 @@ HbInstancePrivate::HbInstancePrivate() :
       } 
     }
 #endif //end testability
+    mLocaleChangeNotifier = q_check_ptr(new HbLocaleChangeNotifier());
+
+#ifdef HB_GESTURE_FW
+    QGestureRecognizer::unregisterRecognizer(Qt::TapGesture);
+    QGestureRecognizer::unregisterRecognizer(Qt::TapAndHoldGesture);
+    QGestureRecognizer::unregisterRecognizer(Qt::PanGesture);
+    QGestureRecognizer::unregisterRecognizer(Qt::SwipeGesture);
+    QGestureRecognizer::unregisterRecognizer(Qt::PinchGesture);
+
+    QGestureRecognizer::registerRecognizer(new HbTapGestureRecognizer);
+    QGestureRecognizer::registerRecognizer(new HbTapAndHoldGestureRecognizer);
+    QGestureRecognizer::registerRecognizer(new HbPanGestureRecognizer);
+    QGestureRecognizer::registerRecognizer(new HbSwipeGestureRecognizer);
+    QGestureRecognizer::registerRecognizer(new HbPinchGestureRecognizer);
+#endif
 }
 
 /*!
@@ -194,6 +221,9 @@ HbInstancePrivate::~HbInstancePrivate()
 	delete mTypefaceInfo;
 	delete mStyle;
     delete mLibraryPaths;
+    
+    delete mLocaleChangeNotifier;
+    mLocaleChangeNotifier = 0;
     
 #ifdef HB_TESTABILITY
     //remove the testability plugin if it exists
@@ -224,7 +254,7 @@ void HbInstancePrivate::addWindow(HbMainWindow *window)
     QShortcut *shortcut = new QShortcut(QKeySequence("Ctrl+Alt+Shift+S"), window);
     connect(shortcut, SIGNAL(activated()), this, SLOT(showHideSettingsWindow()));
     HbSettingsWindow::instance()->refresh();
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
     QShortcut *cssShortcut = new QShortcut(QKeySequence("Ctrl+Alt+Shift+C"), window);
     connect(cssShortcut, SIGNAL(activated()), this, SLOT(showHideCssWindow()));
     HbCssInspectorWindow::instance()->refresh();
@@ -243,7 +273,7 @@ bool HbInstancePrivate::removeWindow(HbMainWindow *window)
 #ifdef HB_SETTINGS_WINDOW
     if (result && mWindows.isEmpty()) {
         HbSettingsWindow::instance()->close();
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
         HbCssInspectorWindow::instance()->close();
 #endif
     } else {
@@ -254,35 +284,6 @@ bool HbInstancePrivate::removeWindow(HbMainWindow *window)
         emit windowRemoved(window);
     }
     return result;
-}
-
-/*!
-\internal
-*/
-Qt::Orientation HbInstancePrivate::orientation() const
-{
-    return mCurrentProfile.orientation();
-}
-
-/*!
-\internal
-*/
-void HbInstancePrivate::setOrientation(Qt::Orientation orientation, bool animate)
-{
-    if(HbDeviceProfile(mCurrentProfile.alternateProfileName()).isNull()) {
-        qWarning("HbInstancePrivate::setOrientation the alternate profile is NULL");
-    }
-
-    if (mCurrentProfile.orientation() != orientation) {
-        mCurrentProfile = HbDeviceProfile(mCurrentProfile.alternateProfileName());
-    }
-
-    foreach (HbMainWindow *window, mWindows) {
-        // Call directly the private part of the HbMainWindow, since if calling
-        // public API's setOrientation it will disable automatic orientation
-        // switching.
-        HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(orientation, animate);
-    }
 }
 
 /*!
@@ -335,7 +336,7 @@ void HbInstancePrivate::showHideSettingsWindow()
 }
 #endif
 
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
 void HbInstancePrivate::showHideCssWindow()
 {
     if (HbCssInspectorWindow::instance()->isVisible()) {
@@ -410,6 +411,9 @@ HbInstance::~HbInstance()
  */
 HbInstance* HbInstance::instance()
 {
+    if (!QCoreApplication::instance()) {
+        qWarning("HbInstance: No application instance present.");
+    }
     static HbInstance theInstance;
     return &theInstance;
 }
@@ -428,36 +432,6 @@ QList<HbMainWindow*> HbInstance::allMainWindows() const
     return d->mWindows;
 }
 
-/*!
-    \deprecated HbInstance::orientation() const
-        is deprecated. Use HbMainWindow orientation API.
-    
-    Returns the application's current orientation.
-
-    \sa setOrientation() HbWidget::mainWindow() HbMainWindow::orientation()
- */
-Qt::Orientation HbInstance::orientation() const
-{
-    HB_DEPRECATED(" HbInstance::orientation() is deprecated, use HbMainWindow orientation API!");
-    return d->orientation();
-}
-
-/*!
-    \deprecated HbInstance::setOrientation(Qt::Orientation, bool)
-    is deprecated. Use HbMainWindow orientation API.
-
-    Sets the \a orientation of the application. It affects all windows in
-    the application, which have automatic orientation enabled 
-    (no explicitly set orientation). Orientation switch animation can be
-    skipped by using the boolean parameter.
-
-    \sa orientation() HbMainWindow::setOrientation()
- */
-void HbInstance::setOrientation(Qt::Orientation orientation, bool animate)
-{
-    HB_DEPRECATED(" HbInstance::setOrientation() is deprecated, use HbMainWindow orientation API!");
-    d->setOrientation(orientation, animate);
-}
 
 /*!
 	Returns the platform style object. Note that widgets can use HbWidget's style()-method to get the 

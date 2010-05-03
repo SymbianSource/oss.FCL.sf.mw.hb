@@ -338,23 +338,6 @@ bool HbHardwareInputBasic12KeyHandler::isComposing() const
 }
 
 /*!
-list different input modes.
-*/
-void HbHardwareInputBasic12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-	HbInputModeProperties binding;
-	binding.iMode = HbInputModeDefault;
-	binding.iKeyboard = HbKeyboard12Key;
-
-	QVector<int> languages;
-	HbKeyMapFactory::instance()->listLanguages(languages);
-	for (int i = 0; i < languages.count(); i++) {
-		binding.iLanguage = (QLocale::Language)languages.at(i);
-		modes.push_back(binding);
-	}
-}
-
-/*!
 Action Handler
 */
 bool HbHardwareInputBasic12KeyHandler::actionHandler(HbInputModeAction action)

@@ -160,6 +160,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "indent", HbIndent },
     { "large-icon-size", HbLargeIconSize },
     { "layout", HbLayout },
+    { "layout-direction", HbLayoutDirection },
     { "left", Left },
     { "list-style", ListStyle },
     { "list-style-type", ListStyleType },
@@ -173,7 +174,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "max-width", MaximumWidth },
     { "min-height", MinimumHeight },
     { "min-width", MinimumWidth },
-    { "mirroring", Mirroring },
+    { "mirroring", Mirroring }, // deprecated
     { "outline", Outline },
     { "outline-bottom-left-radius", OutlineBottomLeftRadius },
     { "outline-bottom-right-radius", OutlineBottomRightRadius },
@@ -260,6 +261,7 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "keep-expand", Value_KeepExpand },
     { "large", Value_Large },
     { "left", Value_Left },
+    { "left-to-right", Value_LeftToRight },
     { "light", Value_Light },
     { "line-through", Value_LineThrough },
     { "link", Value_Link },
@@ -273,7 +275,7 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "midlight", Value_Midlight },
     { "minimum", Value_Minimum },
     { "minimum-expanding", Value_MinimumExpanding },
-    { "mirrored", Value_Mirrored },
+    { "mirrored", Value_Mirrored },  // deprecated
     { "native", Value_Native },
     { "no-wrap", Value_NoWrap },
     { "none", Value_None },
@@ -283,12 +285,14 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "on", Value_On },
     { "outset", Value_Outset },
     { "overline", Value_Overline },
+    { "parent", Value_Parent },
     { "pre", Value_Pre },
     { "preferred", Value_Preferred },
     { "primary", Value_Primary },
     { "primary-small", Value_PrimarySmall },
     { "ridge", Value_Ridge },
     { "right", Value_Right },
+    { "right-to-left", Value_RightToLeft },
     { "secondary", Value_Secondary },
     { "selected", Value_Selected },
     { "shadow", Value_Shadow },
@@ -340,6 +344,7 @@ static const HbCssKnownValue pseudos[NumPseudos - 1] = {
     { "landscape", PseudoClass_Landscape },
     { "last", PseudoClass_Last },
     { "left", PseudoClass_Left },
+    { "left-to-right", PseudoClass_LeftToRight },
     { "maximized", PseudoClass_Maximized },
     { "middle", PseudoClass_Middle },
     { "minimized", PseudoClass_Minimized },
@@ -356,6 +361,7 @@ static const HbCssKnownValue pseudos[NumPseudos - 1] = {
     { "previous-selected", PseudoClass_PreviousSelected },
     { "read-only", PseudoClass_ReadOnly },
     { "right", PseudoClass_Right },
+    { "right-to-left", PseudoClass_RightToLeft },
     { "selected", PseudoClass_Selected },
     { "top", PseudoClass_Top },
     { "unchecked" , PseudoClass_Unchecked },
@@ -426,10 +432,9 @@ ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbDevic
 : declarations(decls), adjustment(0), fontExtracted(false), pal(pal), currentProfile(profile)
 {
 }
-
-ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbVector<Declaration> &varDeclarations,
+ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const QHash<QString, HbCss::Declaration> &varDeclarations,
                                const HbDeviceProfile &profile, const QPalette &pal)
-: declarations(decls), variableDeclarations(varDeclarations), adjustment(0), 
+: declarations(decls), variableDeclarationsHash(varDeclarations), adjustment(0), 
   fontExtracted(false), pal(pal), currentProfile(profile)
 {
 }
@@ -439,8 +444,19 @@ ValueExtractor::ValueExtractor(const HbVector<Declaration> &varDecls, bool isVar
 {
     Q_UNUSED(isVariable)
     // Initialize to some profile.
-    if ( currentProfile.isNull() )
+    if ( currentProfile.isNull() ) {
         currentProfile = HbDeviceProfile::current();
+    }
+}
+
+ValueExtractor::ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile)
+: variableDeclarationsHash(varDecls), adjustment(0), fontExtracted(false), currentProfile(profile)
+{
+    Q_UNUSED(isVariable)
+    // Initialize to some profile.
+    if ( currentProfile.isNull() ) {
+        currentProfile = HbDeviceProfile::current();
+    }
 }
 
 int ValueExtractor::lengthValue(const Value& v)
@@ -657,19 +673,25 @@ bool ValueExtractor::extractGeometry(GeometryValues &geomValues)
     return hit;
 }
 
-static bool parseMirroringValue(const Value v)
+static HbCss::LayoutDirection parseLayoutDirectionValue(const Value v)
 {
+    HbCss::LayoutDirection retVal(HbCss::LayoutDirection_Parent); // Parent as default
     if(v.type == Value::KnownIdentifier) {
         switch(v.variant.toInt()) {
-        case Value_Mirrored:
-            return true;
-        case Value_Disabled:
-            return false;
+        case Value_RightToLeft:
+            retVal = HbCss::LayoutDirection_RightToLeft;
+            break;
+        case Value_LeftToRight:
+        case Value_Disabled: // legacy support
+            retVal = HbCss::LayoutDirection_LeftToRight;
+            break;
+        case Value_Parent:
+        case Value_Mirrored: // legacy support
         default:
             break;
         }
     }
-    return true; // Enabled as default
+    return retVal;
 }
 
 bool ValueExtractor::extractPosition(PositionValues &posValues)
@@ -690,7 +712,11 @@ bool ValueExtractor::extractPosition(PositionValues &posValues)
         case QtPosition: posValues.mPosition = decl.alignmentValue(); flags|=ExtractedAlign; break;
         case TextAlignment: posValues.mTextAlignment = decl.alignmentValue(); flags|=ExtractedTextAlign; break;
         case Position: posValues.mPositionMode = decl.positionValue(); flags|=ExtractedMode; break;
-        case Mirroring: posValues.mMirroring = parseMirroringValue(decl.values.at(0)); flags|=ExtractedMirroring; break;
+        case HbLayoutDirection:
+        case Mirroring: 
+            posValues.mLayoutDirection = parseLayoutDirectionValue(decl.values.at(0)); 
+            flags|=ExtractedLayoutDirection;
+            break;
         case ZValue: posValues.mZ = asReal(decl); flags|=ExtractedZValue; break;
         case HbTextWrapMode: posValues.mTextWrapMode = decl.wrapModeValue(); flags|=ExtractedWrapMode; break;
         default: continue;
@@ -1366,15 +1392,25 @@ static void setTextTransformFromValue(const Value &value, QFont *font)
         }
     }
 }
+
+
 bool ValueExtractor::extractValue(const QString& variableName, HbVector<HbCss::Value>& values) const
 {
     bool variableFound = false;
-    for (int i=variableDeclarations.count()-1; i>=0;i--) {
-        if (variableDeclarations[i].property == variableName ) {
-            values = variableDeclarations[i].values;
+    if ( !variableDeclarationsHash.isEmpty() ) {
+        values = variableDeclarationsHash.value(variableName).values;
+        if ( !values.isEmpty() ) {
             variableFound = true;
-            break;
         }
+    } else {
+        const int variableCount = variableDeclarations.count();
+        for (int i=variableCount-1; i>=0; i--) {
+            if (variableDeclarations.at(i).property == variableName ) {
+                values = variableDeclarations.at(i).values;
+                variableFound = true;
+                break;
+            }
+        }    
     }
     return variableFound;
 }
@@ -1382,7 +1418,7 @@ bool ValueExtractor::extractValue(const QString& variableName, HbVector<HbCss::V
 bool ValueExtractor::extractValue(const QString& variableName, qreal& value)
 {
     bool variableFound = false;
-    HbVector<Value> values;
+    HbVector<HbCss::Value> values;
     if (extractValue(variableName, values)) {
         value = asReal(values.first());
         variableFound = true;
@@ -1392,15 +1428,9 @@ bool ValueExtractor::extractValue(const QString& variableName, qreal& value)
 
 bool ValueExtractor::extractValue( const QString& variableName, HbCss::Value &val ) const
 {
-    bool variableFound = false;
     HbVector<HbCss::Value> values;
-    for ( int i=variableDeclarations.count()-1; i>=0;i-- ) {
-        if ( variableDeclarations[i].property == variableName ) {
-            values = variableDeclarations[i].values;
-            variableFound = true;
-            break;
-        }
-    }
+    bool variableFound = extractValue( variableName, values );
+
     //for variable cascading support
     if ( variableFound ) {
         val = values.first();
@@ -2314,6 +2344,9 @@ void StyleSelector::matchRules(NodePtr node, const HbVector<StyleRule> &rules, S
                     + (origin == StyleSheetOrigin_Inline)*0x10000*depth;
                 wRule.second.selectors.append(selector);
                 wRule.second.declarations = rule.declarations;
+#ifdef HB_CSS_INSPECTOR
+                wRule.second.owningStyleSheet = rule.owningStyleSheet;
+#endif
                 weightedRules->append(wRule);
             }
         }
@@ -2484,23 +2517,21 @@ HbVector<Declaration> StyleSelector::declarationsForNode(NodePtr node, const Qt:
     return decls;
 }
 
-
-
-HbVector<Declaration> StyleSelector::variableRuleSets() const
+void StyleSelector::variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const 
 {
- HbVector<Declaration> decls;
-    if ( styleSheets.count() != 0) {
-        for (int i=0;i<styleSheets.count();i++) {
-            const StyleSheet *styleSheet = styleSheets.at(i);
-            //check if any variable rule exists or not
-            if (styleSheet->variableRules.count() != 0) {
-                for (int j=0;j<styleSheet->variableRules.count();j++) {
-                    decls +=styleSheet->variableRules[j].declarations;
-                }
+    HbVector<Declaration> decls;
+    const int styleSheetsCount = styleSheets.count();
+    for (int i=0; i<styleSheetsCount; i++) {
+        const StyleSheet *styleSheet = styleSheets.at(i);
+        const int variableRuleCount = styleSheet->variableRules.count();
+        for (int j=0; j<variableRuleCount; j++) {
+            decls = styleSheet->variableRules.at(j).declarations;
+            const int declsCount = decls.count();
+            for (int k=0; k<declsCount; k++) {
+                variables->insert(decls.at(k).property, decls.at(k));
             }
         }
     }
-    return decls;
 }
 
 void StyleSelector::addStyleSheet( StyleSheet* styleSheet )
@@ -2638,6 +2669,7 @@ void Parser::init(const QString &css, bool isFile)
         QFile file(css);
         if (file.open(QFile::ReadOnly)) {
             sourcePath = QFileInfo(styleSheet).absolutePath() + QLatin1String("/");
+            sourceFile = css;
             QTextStream stream(&file);
             styleSheet = stream.readAll();
         } else {
@@ -2646,6 +2678,7 @@ void Parser::init(const QString &css, bool isFile)
         }
     } else {
         sourcePath.clear();
+        sourceFile.clear();
     }
 
     hasEscapeSequences = false;
@@ -2660,6 +2693,9 @@ void Parser::init(const QString &css, bool isFile)
 bool Parser::parse(StyleSheet *styleSheet)
 {
     errorCode = Parser::UnknownError;
+#ifdef HB_CSS_INSPECTOR
+    styleSheet->fileName = sourceFile;
+#endif
     try {
         if (testTokenAndEndsWith(ATKEYWORD_SYM, QLatin1String("charset"))) {
             if (!next(STRING)) return false;
@@ -2701,6 +2737,9 @@ bool Parser::parse(StyleSheet *styleSheet)
 #ifdef CSS_PARSER_TRACES
                 rule.print();
 #endif
+#ifdef HB_CSS_INSPECTOR
+                rule.owningStyleSheet = styleSheet;
+#endif
                 if(rule.selectors.count() > 1){
                     foreach(const HbCss::Selector &selector, rule.selectors){
                         QString stackName = selector.basicSelectors.last().elementName;
@@ -2710,6 +2749,9 @@ bool Parser::parse(StyleSheet *styleSheet)
                         StyleRule newRule(rule.memoryType);
                         newRule.declarations = rule.declarations;
                         newRule.selectors.append(selector);
+#ifdef HB_CSS_INSPECTOR
+                        newRule.owningStyleSheet = styleSheet;
+#endif
                         addRuleToWidgetStack(styleSheet, stackName, newRule);
                     }
                 } else {

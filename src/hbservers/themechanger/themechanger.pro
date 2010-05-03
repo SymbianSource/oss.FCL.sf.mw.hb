@@ -44,11 +44,10 @@ SOURCES += themeselectionlist.cpp
 SOURCES += themechangermain.cpp
 
 symbian {
+    TARGET.CAPABILITY += WriteDeviceData
     HEADERS += themeclientsymbian.h
     SOURCES += themeclientsymbian.cpp
-}
-
-win32|linux-*|macx-* {
+} else {
     HEADERS += themeclientqt.h
     SOURCES += themeclientqt.cpp
 }

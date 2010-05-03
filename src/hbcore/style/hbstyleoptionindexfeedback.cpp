@@ -50,6 +50,14 @@
     \brief The bounding rect for the popup background when displaying index feedback.
 */
 
+
+
+/*!
+
+    \deprecated HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback() : 
     fontSpec(HbFontSpec::Primary)
 {
@@ -57,6 +65,12 @@ HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback(const HbStyleOptionIndexFeedback&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback(const HbStyleOptionIndexFeedback &other) :
     HbStyleOption(other),
     text(other.text),

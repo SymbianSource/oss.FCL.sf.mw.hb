@@ -234,32 +234,6 @@ HbHardwareInputPredictionQwertyHandler::~HbHardwareInputPredictionQwertyHandler(
 }
 
 /*!
-lists different input mode bindings..
-*/
-void HbHardwareInputPredictionQwertyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-	Q_UNUSED(modes);
-    /*HbInputModeProperties binding;
-    binding.iMode = HbInputModeLatinPredictive;
-    QList<HbKeyboardType> availableKeyBoards;
-    HbInputSettingProxy::instance()->availableHwKeyboard(availableKeyBoards);
-    foreach(HbKeyboardType keyboardType, availableKeyBoards) {
-        (keyboardType&HbQwertyKeyboardMask) ? binding.iKeyboard = keyboardType : binding.iKeyboard = HbKeyboardNone;
-        if (binding.iKeyboard != HbKeyboardNone) {
-            QVector<int> languages;
-            HbKeyMapFactory::instance()->listLanguages(languages);
-
-            foreach(int lang, languages) {
-                if(HbKeyMapFactory::instance()->isKeyboardDataAvailableForLanguage(lang,binding.iKeyboard)){
-                    binding.iLanguage = (QLocale::Language)lang;        
-                    modes.push_front(binding);
-                }
-            }
-        }
-    }*/
-}
-
-/*!
 Action Handler.
 */
 bool HbHardwareInputPredictionQwertyHandler::actionHandler(HbInputModeAction action)

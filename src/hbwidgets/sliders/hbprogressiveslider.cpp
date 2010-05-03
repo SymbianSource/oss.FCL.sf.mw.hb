@@ -27,6 +27,7 @@
 #include "hbprogressiveslider_p.h"
 #include "hbprogressslidercontrol_p.h"
 #include "hbstyleoption.h"
+#include "hbglobal_p.h"
 
 HbProgressiveSliderPrivate::HbProgressiveSliderPrivate()
     :mControl(0)
@@ -49,26 +50,42 @@ void HbProgressiveSliderPrivate::setOrientation(Qt::Orientation orientation)
     HbProgressBarPrivate::setOrientation(orientation);
 }
 
+/*!
+    \deprecated 
+	
+	This class is deprecated and please use HbProgressSlider instead.
+
+*/
+
+/*!
+    \deprecated HbProgressiveSlider::HbProgressiveSlider(QGraphicsItem *)
+        is deprecated.
+
+    Constructs a progressslider  of a given \a parent.
+    
+    \sa HbRatingSlider
+*/
 HbProgressiveSlider::HbProgressiveSlider(QGraphicsItem *parent) :
     HbProgressBar(*new HbProgressiveSliderPrivate,HbProgressBar::SimpleProgressBar,parent)
 {
+    HB_DEPRECATED("HbProgressiveSlider(QGraphicsItem *parent) is deprecated.");
     Q_D( HbProgressiveSlider );
     d->q_ptr = this;
     d->init();
 }
 
 /*!
-    @deprecated
-    \class HbProgressiveSlider
-    \sa HbRatingSlider
-*/
+    \deprecated HbProgressiveSlider::HbProgressiveSlider(HbProgressiveSliderPrivate &,QGraphicsItem *)
+        is deprecated.
 
-/*!
     Constructs a progressslider  of a given \a parent.
+
+    \sa HbRatingSlider
 */
 HbProgressiveSlider::HbProgressiveSlider(HbProgressiveSliderPrivate &dd,QGraphicsItem *parent) : 
     HbProgressBar( dd,HbProgressBar::SimpleProgressBar,parent)
 {
+    HB_DEPRECATED("HbProgressiveSlider(HbProgressiveSliderPrivate &,QGraphicsItem *) is deprecated.");
     Q_D( HbProgressiveSlider );
     d->init();
 }

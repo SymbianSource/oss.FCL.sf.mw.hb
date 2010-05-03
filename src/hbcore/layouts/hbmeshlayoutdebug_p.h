@@ -34,7 +34,7 @@ class HbAnchor;
 class HB_AUTOTEST_EXPORT HbMeshLayoutDebug
 {
 public:
-    static QList<HbAnchor> getAnchors( HbMeshLayout* layout );
+    static QList<HbAnchor*> getAnchors( HbMeshLayout* layout );
 };
 
 #endif

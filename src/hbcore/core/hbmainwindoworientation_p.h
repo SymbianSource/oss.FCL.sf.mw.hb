@@ -32,6 +32,7 @@
 
 class HbMainWindow;
 class HbForegroundWatcher;
+class HbSleepModeListener;
 
 class HB_AUTOTEST_EXPORT HbMainWindowOrientation : public QObject, 
     public HbSensorListenerObserver
@@ -65,6 +66,7 @@ private:
     HbForegroundWatcher *mForegroundWatcher;
     bool mForeground;
     HbSensorListener *mSensorListener;
+    bool mFixedOrientation;
     Qt::Orientation mOrientation;
     Qt::Orientation mDefaultOrientation;
     QList<HbMainWindow *> mWindowList;
@@ -73,6 +75,7 @@ private:
     friend class HbSettingsWindow;
     friend class TestHbSensorOrientation;
 #endif
+    friend class HbForegroundWatcher;
 };
 
 #endif //HBMAINWINDOWORIENTATION_P_H

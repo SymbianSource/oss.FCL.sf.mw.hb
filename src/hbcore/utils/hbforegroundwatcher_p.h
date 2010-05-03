@@ -35,6 +35,9 @@
 class CCoeEnv;
 #endif
 
+class HbMainWindowOrientation;
+class HbSensorListener;
+
 class HB_CORE_PRIVATE_EXPORT HbForegroundWatcher : public QObject
 #ifdef Q_OS_SYMBIAN
 , public MCoeForegroundObserver
@@ -44,7 +47,8 @@ class HB_CORE_PRIVATE_EXPORT HbForegroundWatcher : public QObject
 
 public:
     static HbForegroundWatcher *instance();
-
+    void setSensorListener(HbSensorListener *sensorListener);
+        
 signals:
     void foregroundGained();
     void foregroundLost();
@@ -64,6 +68,7 @@ private:
 
     bool mForeground;
     bool mLights;
+    HbSensorListener *mSensorListener;
     CCoeEnv *mStaticEnv;
 };
 

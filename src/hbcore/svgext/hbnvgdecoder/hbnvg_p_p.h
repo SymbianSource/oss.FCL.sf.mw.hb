@@ -34,23 +34,23 @@
 class HbNvgIcon;
 class HbVgImageBinder;
 
-class NVGIconList
+class HbNvgIconList
 {
 public:
-    NVGIconList()
-    {
-        icons[HbNvgIconFactory::NVGCS] = 0;
-        icons[HbNvgIconFactory::NVGTLV] = 0;
+    HbNvgIconList() 
+	{
+        icons[HbNvgIconFactory::NvgCs] = 0;
+        icons[HbNvgIconFactory::NvgTlv] = 0;
     }
 
-    void addNVGIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgICon);
-    
+    void addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgIcon);
+
     HbNvgIcon * getIcon(HbNvgIconFactory::HbNvgIconType type);
-    
-    ~NVGIconList();
-    
+
+    ~HbNvgIconList();
+
 private:
-    HbNvgIcon * icons[HbNvgIconFactory::NVGTLV + 1];
+    HbNvgIcon * icons[HbNvgIconFactory::NvgTlv + 1];
 };
 
 class HbNvgEnginePrivate
@@ -61,71 +61,68 @@ public :
     ~HbNvgEnginePrivate();
 
     void rotate(float angle, float xval, float yval) ;
-    
-    void setPreserveAspectRatio(HbNvgEngine::NvgAlignStatusType preserveAspectSetting,
-            HbNvgEngine::NvgMeetOrSliceType smilFitSetting);
+
+    void setPreserveAspectRatio(HbNvgEngine::HbNvgAlignType preserveAspectSetting,
+                                HbNvgEngine::HbNvgMeetType smilFitSetting);
 
     QSize contentDimensions(const QByteArray &buffer) const;
 
-    HbNvgEngine::NvgErrorType drawNvg(const QByteArray &buffer, const QSize &size);
+    HbNvgEngine::HbNvgErrorType drawNvg(const QByteArray &buffer, const QSize &size);
 
     HbNvgIcon * createNvgIcon(const QByteArray &buffer, const QSize &size);
 
-    void setVgImageBinder(HbVgImageBinder *imageBinder) 
-    {
+    void setVgImageBinder(HbVgImageBinder *imageBinder) {
         mVgImageBinder = imageBinder;
     }
 
-    HbNvgEngine::NvgErrorType error()const 
-    {
+    HbNvgEngine::HbNvgErrorType error()const {
         return mLastError;
     }
-    
-    void setMirroringMode(bool mirroringMode )
-    {
-        mMirroringMode = mirroringMode;
+
+    void enableMirroring(bool mirroringMode) {
+        mMirrored = mirroringMode;
     }
-    
+
     void setBackgroundColor(const QColor &rgba8888Color);
-      
+
     void clearBackground();
 
 private :
     void doDrawNvg(const QByteArray &buffer, const QSize &size);
 
-    int drawTlv(const QByteArray &buffer, const QSize &targetSize);
+    qint32 drawTlv(const QByteArray &buffer, const QSize &targetSize);
 
-    int drawCsIcon(const QByteArray &buffer, const QSize &targetSize);
+    qint32 drawCsIcon(const QByteArray &buffer, const QSize &targetSize);
 
     void updateClientMatrices();
-    
+
     void restoreClientMatrices();
 
 private :
 
     QSize mCurrentBufferSize;
-    
+
     VGfloat mRotateAngle;
     float   mCentreX;
-    float   mCentreY;   
-    
-    HbNvgEngine::NvgAlignStatusType  mPreserveAspectSetting;
-    HbNvgEngine::NvgMeetOrSliceType  mSmilFitSetting;
-    
+    float   mCentreY;
+
+    HbNvgEngine::HbNvgAlignType  mPreserveAspectSetting;
+    HbNvgEngine::HbNvgMeetType  mSmilFitSetting;
+
     QColor              mBackgroundColor;
     HbVgImageBinder *   mVgImageBinder;
-    
+
     bool         mCreatingNvgIcon;
     HbNvgIcon * mCurrentNvgIcon;
-    
-    HbNvgEngine::NvgErrorType mLastError;
-    
-    bool        mMirroringMode;
+
+    HbNvgEngine::HbNvgErrorType mLastError;
+
+    bool        mMirrored;
     VGint       mMatrixMode;
     VGfloat     mImageMatrix[9];
     VGfloat     mPathMatrix[9];
-    NVGIconList mIconList;
+    HbNvgIconList mIconList;
 };
 
 #endif
-//-------------------------------End Of File-------------------------
+

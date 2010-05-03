@@ -30,12 +30,26 @@
     \brief HbStyleOptionIndicatorMenu has the style component for indicator menu and content widget.
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionIndicatorMenu::HbStyleOptionIndicatorMenu()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionIndicatorMenu::HbStyleOptionIndicatorMenu() 
 {
     type = Type;
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionIndicatorMenu::HbStyleOptionIndicatorMenu(const HbStyleOptionIndicatorMenu&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionIndicatorMenu::HbStyleOptionIndicatorMenu(const HbStyleOptionIndicatorMenu &other) :
     HbStyleOptionPopup(other), timeString(other.timeString)
 {

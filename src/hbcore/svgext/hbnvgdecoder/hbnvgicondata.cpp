@@ -25,12 +25,12 @@
 
 #include "hbnvgicondata_p.h"
 
-HbNvgIconData::HbNvgIconData(uint length)
+HbNvgIconData::HbNvgIconData(quint32 length)
         : mNvgData(0),
         totalRead(0),
         readStream(0)
 {
-    mNvgData = new QByteArray(NULL , length);
+    mNvgData = new QByteArray(0, length);
     Q_CHECK_PTR(mNvgData);
 }
 
@@ -42,7 +42,7 @@ HbNvgIconData::HbNvgIconData(const QByteArray &buffer)
     mNvgData = new QByteArray(buffer);
     Q_CHECK_PTR(mNvgData);
     dataSize = mNvgData->length();
-    
+
     //set the reading pointers
     beginRead();
 }
@@ -52,10 +52,10 @@ HbNvgIconData::~HbNvgIconData()
     delete mNvgData;
 }
 
-int HbNvgIconData::encodeData(const void *data, quint32 length)
-{    
+qint32 HbNvgIconData::encodeData(const void *data, quint32 length)
+{
     mNvgData->append((const char*)data , length);
-    return (int)HbNvgEngine::NvgErrNone; //in error case, exception will be thrown 
+    return (qint32)HbNvgEngine::NvgErrNone; //in error case, exception will be thrown
 }
 
 void HbNvgIconData::beginRead()
@@ -70,34 +70,34 @@ void HbNvgIconData::endRead()
 }
 
 #define STR_TO_OTHER_DIR(TOTYPE) do {\
-                                TOTYPE data = *(TOTYPE *)&readStream[totalRead];\
-                                totalRead += sizeof(TOTYPE);\
-                                return data;\
-                           } while (0)
+        TOTYPE data = *(TOTYPE *)&readStream[totalRead];\
+        totalRead += sizeof(TOTYPE);\
+        return data;\
+    } while (0)
 
 
 #define STR_TO_OTHER_IDIR(TOTYPE) do {\
-                                TOTYPE data;\
-                                quint8 * dataPtr = (quint8 *)&data;\
-                                for (int i = 0; i < sizeof(TOTYPE); ++i)\
-                                    {\
-                                    dataPtr[i] = readStream[totalRead+i];\
-                                    }\
-                                totalRead += sizeof(TOTYPE);\
-                                return data;\
-                            } while (0)
+        TOTYPE data;\
+        quint8 * dataPtr = (quint8 *)&data;\
+        for (qint32 i = 0; i < sizeof(TOTYPE); ++i)\
+        {\
+            dataPtr[i] = readStream[totalRead+i];\
+        }\
+        totalRead += sizeof(TOTYPE);\
+        return data;\
+    } while (0)
 
 #define STR_TO_OTHER(TOTYPE) do {\
-                                checkOutOfBound(sizeof(TOTYPE));\
-                                if (reinterpret_cast<int>(&readStream[totalRead]) & (sizeof(TOTYPE) - 1))\
-                                    {\
-                                    STR_TO_OTHER_IDIR(TOTYPE);\
-                                    }\
-                                else\
-                                    {\
-                                    STR_TO_OTHER_DIR(TOTYPE);\
-                                    }\
-                            } while (0)
+        checkOutOfBound(sizeof(TOTYPE));\
+        if (reinterpret_cast<qint32>(&readStream[totalRead]) & (sizeof(TOTYPE) - 1))\
+        {\
+            STR_TO_OTHER_IDIR(TOTYPE);\
+        }\
+        else\
+        {\
+            STR_TO_OTHER_DIR(TOTYPE);\
+        }\
+    } while (0)
 
 qint16 HbNvgIconData::readInt16()
 {
@@ -125,14 +125,14 @@ qreal HbNvgIconData::readReal64()
     STR_TO_OTHER(qreal);
 }
 
-void HbNvgIconData::read(quint8 *ptr, int length)
+void HbNvgIconData::read(quint8 *ptr, qint32 length)
 {
-	checkOutOfBound(length);
+    checkOutOfBound(length);
     memcpy(ptr, &readStream[totalRead], length);
     totalRead += length;
 }
 
-void HbNvgIconData::skip(int length)
+void HbNvgIconData::skip(qint32 length)
 {
     checkOutOfBound(length);
     totalRead += length;

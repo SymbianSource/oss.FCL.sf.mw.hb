@@ -26,6 +26,7 @@
 #include "hbprogressslidercontrol_p.h"
 #include "hbslidercontrol_p.h"
 #include "hbslidercontrol_p_p.h"
+#include "hbglobal_p.h"
 //#include "hbstyleoptionslider.h"
 
 
@@ -62,20 +63,34 @@ QGraphicsItem *HbProgressSliderControlPrivate::createGroove()
 }
 
 /*!
-    @deprecated
+    \this is a deprecated class.
     \class HbProgressSliderControl
+*/
+/*!
+    \deprecated HbProgressSliderControl::HbProgressSliderControl(QGraphicsItem *)
+        is deprecated.
+
+    Constructor for HbProgressSliderControl.
 */
 HbProgressSliderControl::HbProgressSliderControl(QGraphicsItem *parent)
 	:HbSliderControl(*new HbProgressSliderControlPrivate,parent)
 {
+    HB_DEPRECATED("HbProgressSliderControl::HbProgressSliderControl(QGraphicsItem *) is deprecated as part of HbProgressSliderControl class deprecation.");
 	Q_D(HbProgressSliderControl);
 	d->q_ptr = this;
 	d->init();
 }
 
+/*!
+    \deprecated HbProgressSliderControl::HbProgressSliderControl(Qt::Orientation, QGraphicsItem *)
+        is deprecated.
+
+    Constructor for HbProgressSliderControl.
+*/
 HbProgressSliderControl::HbProgressSliderControl(Qt::Orientation orientation, QGraphicsItem *parent)
 	:HbSliderControl(*new HbProgressSliderControlPrivate,parent)
 {
+    HB_DEPRECATED("HbProgressSliderControl::HbProgressSliderControl(Qt::Orientation,QGraphicsItem *) is deprecated as part of HbProgressSliderControl class deprecation.");
 	Q_D(HbProgressSliderControl);
 	d->q_ptr = this;
 	d->init();      

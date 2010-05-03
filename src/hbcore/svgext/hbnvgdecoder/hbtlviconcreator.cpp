@@ -35,7 +35,7 @@
  Length of each encoded OpenVG API in bytes. -1 if not pre known.
  The order here and in the enum TOpenVGAPI should be same.
  */
-const int apiCommandLength[] = {
+const qint32 apiCommandLength[] = {
     16, //VgClear
     4, //VgSeti
     6, //VgSetf
@@ -75,51 +75,51 @@ const int apiCommandLength[] = {
     0  //VgFlush
 };
 
-HbTlvIconCreator::HbTlvIconCreator(const QByteArray &ptr, int width, int height, HbNvgTlvIcon * nvgTlvIcon)
+HbTlvIconCreator::HbTlvIconCreator(const QByteArray &ptr, qint32 width, qint32 height, HbNvgTlvIcon * nvgTlvIcon)
 {
-    vgapi[VgSeti]              = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetf]              = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetParameteri]     = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetParameterf]     = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetParameterfv]    = &HbTlvIconCreator::dVgSetParameterfv;
-    vgapi[VgSetColor]          = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetPaint]          = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgLoadMatrix]        = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgMultMatrix]        = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgLoadIdentity]      = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgScale]             = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgTranslate]         = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgAppendPathData]    = &HbTlvIconCreator::dVgAppendPathData;
-    vgapi[VgDrawPath]          = &HbTlvIconCreator::dVgDrawPath;
-    vgapi[VgClearPath]         = &HbTlvIconCreator::dVgClearPath;
-    vgapi[VguRect]             = &HbTlvIconCreator::dVguRect;
-    vgapi[VguEllipse]          = &HbTlvIconCreator::dVguEllipse;
-    vgapi[VguRoundRect]        = &HbTlvIconCreator::dVguRoundRect;
-    vgapi[VguLine]             = &HbTlvIconCreator::dVguLine;
-    vgapi[VgCreatePaint]       = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetiv]             = &HbTlvIconCreator::dVgSetiv;
-    vgapi[VgClear]             = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgSetfv]             = &HbTlvIconCreator::dVgSetfv;
-    vgapi[VgRotate]            = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgCreatePath]        = &HbTlvIconCreator::dVgCreatePath;
-    vgapi[VgCreateImage]       = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgGetPixels]         = &HbTlvIconCreator::dVgGetPixels;
-    vgapi[VgDrawImage]         = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgClearImage]        = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgImageSubData]      = &HbTlvIconCreator::dVgImageSubData;
-    vgapi[VgDestroyImage]      = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgDestroyPaint]      = &HbTlvIconCreator::dVgDestroyPaint;
-    vgapi[VgDestroyPath]       = &HbTlvIconCreator::dVgDestroyPath;
-    vgapi[VgPrepareToBindImage] = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgBindImage]         = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgUnBindImage]       = &HbTlvIconCreator::dVgAddCommand;
-    vgapi[VgFlush]             = &HbTlvIconCreator::dVgAddCommand;
+    vgapi[VgSeti]              = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetf]              = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetParameteri]     = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetParameterf]     = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetParameterfv]    = &HbTlvIconCreator::tlvVgSetParameterfv;
+    vgapi[VgSetColor]          = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetPaint]          = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgLoadMatrix]        = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgMultMatrix]        = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgLoadIdentity]      = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgScale]             = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgTranslate]         = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgAppendPathData]    = &HbTlvIconCreator::tlvVgAppendPathData;
+    vgapi[VgDrawPath]          = &HbTlvIconCreator::tlvVgDrawPath;
+    vgapi[VgClearPath]         = &HbTlvIconCreator::tlvVgClearPath;
+    vgapi[VguRect]             = &HbTlvIconCreator::tlvVguRect;
+    vgapi[VguEllipse]          = &HbTlvIconCreator::tlvVguEllipse;
+    vgapi[VguRoundRect]        = &HbTlvIconCreator::tlvVguRoundRect;
+    vgapi[VguLine]             = &HbTlvIconCreator::tlvVguLine;
+    vgapi[VgCreatePaint]       = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetiv]             = &HbTlvIconCreator::tlvVgSetiv;
+    vgapi[VgClear]             = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgSetfv]             = &HbTlvIconCreator::tlvVgSetfv;
+    vgapi[VgRotate]            = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgCreatePath]        = &HbTlvIconCreator::tlvVgCreatePath;
+    vgapi[VgCreateImage]       = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgGetPixels]         = &HbTlvIconCreator::tlvVgGetPixels;
+    vgapi[VgDrawImage]         = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgClearImage]        = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgImageSubData]      = &HbTlvIconCreator::tlvVgImageSubData;
+    vgapi[VgDestroyImage]      = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgDestroyPaint]      = &HbTlvIconCreator::tlvVgDestroyPaint;
+    vgapi[VgDestroyPath]       = &HbTlvIconCreator::tlvVgDestroyPath;
+    vgapi[VgPrepareToBindImage] = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgBindImage]         = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgUnBindImage]       = &HbTlvIconCreator::tlvVgAddCommand;
+    vgapi[VgFlush]             = &HbTlvIconCreator::tlvVgAddCommand;
 
     mTargetWidth        = width;
     mTargetHeight       = height;
     mPrepareToBindImage = 0;
     mNvgTlvIcon         = nvgTlvIcon;
-    mLastVGPath         = 0;
+    mLastVgPath         = 0;
 
     vgGetMatrix(mUserMatrix);
 
@@ -139,52 +139,52 @@ void HbTlvIconCreator::initialize()
 
 HbTlvIconCreator::~HbTlvIconCreator()
 {
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
     }
 
     delete mNvgIconData;
 }
 
-void HbTlvIconCreator::dVgAddCommand(int length, int pos)
+void HbTlvIconCreator::tlvVgAddCommand(qint32 length, qint32 pos)
 {
     mNvgTlvIcon->addCommand(mCurrentCommand, mCommandBuffer + pos, length);
 }
 
-void HbTlvIconCreator::dVgAddCommand()
+void HbTlvIconCreator::tlvVgAddCommand()
 {
     mNvgTlvIcon->addCommand(mCurrentCommand, mCommandBuffer + mNvgIconData->readPos(),
                             apiCommandLength[mCurrentCommand]);
     mNvgIconData->skip(apiCommandLength[mCurrentCommand]);
 }
 
-void HbTlvIconCreator::dVgSetParameterfv()
+void HbTlvIconCreator::tlvVgSetParameterfv()
 {
-	int length = 0;
-    int cpos = mNvgIconData->readPos();
+    qint32 length = 0;
+    qint32 cpos = mNvgIconData->readPos();
 
     mNvgIconData->readInt32();
     mNvgIconData->readInt16();
     quint32 countt = mNvgIconData->readInt32();
-	length = length + sizeof(quint32) + sizeof(quint16) + sizeof(quint32) + countt * sizeof(float);
+    length = length + sizeof(quint32) + sizeof(quint16) + sizeof(quint32) + countt * sizeof(float);
     mNvgIconData->skip(countt * sizeof(float));
 
-    dVgAddCommand(length, cpos);
+    tlvVgAddCommand(length, cpos);
 }
 
-void HbTlvIconCreator::dVgSetiv()
+void HbTlvIconCreator::tlvVgSetiv()
 {
-	int length   = 0;
-    int cpos     = mNvgIconData->readPos();
+    qint32 length   = 0;
+    qint32 cpos     = mNvgIconData->readPos();
     mNvgIconData->readInt16();
     quint16 count = mNvgIconData->readInt16();
-	
-	length = sizeof(qint16) + sizeof(qint16);
+
+    length = sizeof(qint16) + sizeof(qint16);
     length += count * sizeof(qint32);
-    
+
     mNvgIconData->skip(count * sizeof(qint32));
 
-    dVgAddCommand(length, cpos);
+    tlvVgAddCommand(length, cpos);
 }
 
 VGPath  HbTlvIconCreator::createPath()
@@ -194,65 +194,64 @@ VGPath  HbTlvIconCreator::createPath()
     VGPath pathH = vgCreatePath(VG_PATH_FORMAT_STANDARD,
                                 VG_PATH_DATATYPE_S_32, scale, 0.0f, 0, 0,
                                 VG_PATH_CAPABILITY_APPEND_TO);
-	
-    if (pathH == VG_INVALID_HANDLE)
-        {
+
+    if (pathH == VG_INVALID_HANDLE) {
         throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-        }
+    }
     return pathH;
 }
 
-void HbTlvIconCreator::dVgClearPath()
+void HbTlvIconCreator::tlvVgClearPath()
 {
     mNvgIconData->readInt8();
     mNvgIconData->readInt16();
 }
 
-void HbTlvIconCreator::dVgAppendPathData()
+void HbTlvIconCreator::tlvVgAppendPathData()
 {
     quint16         numSegments;
-    quint16         coordinatecount;
-    
-	mNvgIconData->readInt32();
+    quint16         coordinateCount;
+
+    mNvgIconData->readInt32();
     numSegments = mNvgIconData->readInt16();
 
     VGubyte *pSegArry = new VGubyte[numSegments];
     Q_CHECK_PTR(pSegArry);
     QScopedArrayPointer<quint8> pathSegments(pSegArry);
 
-    for (int j = 0; j < numSegments; j++ ) {
+    for (qint32 j = 0; j < numSegments; j++) {
         pathSegments[j] = mNvgIconData->readInt8();
     }
 
-    coordinatecount = mNvgIconData->readInt16();
+    coordinateCount = mNvgIconData->readInt16();
 
-    qint32 *pDataArry = new qint32[coordinatecount];
+    qint32 *pDataArry = new qint32[coordinateCount];
     Q_CHECK_PTR(pDataArry);
     QScopedArrayPointer<qint32> pathData(pDataArry);
-    
-    for (int i = 0; i < coordinatecount; i++) {
+
+    for (qint32 i = 0; i < coordinateCount; i++) {
         pathData[i] = mNvgIconData->readInt32();
     }
 
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
-        mLastVGPath = 0;
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
+        mLastVgPath = 0;
     }
-    mLastVGPath = createPath();
-    
-    vgAppendPathData(mLastVGPath, numSegments, pathSegments.data(), pathData.data());    
+    mLastVgPath = createPath();
+
+    vgAppendPathData(mLastVgPath, numSegments, pathSegments.data(), pathData.data());
 }
 
-void HbTlvIconCreator::dVgDrawPath()
+void HbTlvIconCreator::tlvVgDrawPath()
 {
     mNvgIconData->readInt32();
     quint16 value = mNvgIconData->readInt16();
 
-    mNvgTlvIcon->addDrawPathCommand(mLastVGPath, (VGPaintMode)value);
-    mLastVGPath = 0;
+    mNvgTlvIcon->addDrawPathCommand(mLastVgPath, (VGPaintMode)value);
+    mLastVgPath = 0;
 }
 
-void HbTlvIconCreator::dVguRect()
+void HbTlvIconCreator::tlvVguRect()
 {
     mNvgIconData->readInt32();
 
@@ -262,17 +261,17 @@ void HbTlvIconCreator::dVguRect()
     float width   = mNvgIconData->readReal32();
     float height  = mNvgIconData->readReal32();
 
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
-        mLastVGPath = 0;
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
+        mLastVgPath = 0;
     }
-    mLastVGPath = createPath();
+    mLastVgPath = createPath();
 
-    vguRect(mLastVGPath, x, y, width, height);
+    vguRect(mLastVgPath, x, y, width, height);
 
 }
 
-void HbTlvIconCreator::dVguEllipse()
+void HbTlvIconCreator::tlvVguEllipse()
 {
     float cx;
     float cy;
@@ -287,16 +286,16 @@ void HbTlvIconCreator::dVguEllipse()
     width  = mNvgIconData->readReal32();
     height = mNvgIconData->readReal32();
 
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
-        mLastVGPath = 0;
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
+        mLastVgPath = 0;
     }
-    mLastVGPath = createPath();
+    mLastVgPath = createPath();
 
-    vguEllipse(mLastVGPath, cx, cy, width, height);
+    vguEllipse(mLastVgPath, cx, cy, width, height);
 }
 
-void HbTlvIconCreator::dVguRoundRect()
+void HbTlvIconCreator::tlvVguRoundRect()
 {
     float x;
     float y;
@@ -316,16 +315,16 @@ void HbTlvIconCreator::dVguRoundRect()
     arcWidth = mNvgIconData->readReal32();
     arcHeight = mNvgIconData->readReal32();
 
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
-        mLastVGPath = 0;
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
+        mLastVgPath = 0;
     }
-    mLastVGPath = createPath();
+    mLastVgPath = createPath();
 
-    vguRoundRect(mLastVGPath, x, y, width, height, arcWidth, arcHeight);
+    vguRoundRect(mLastVgPath, x, y, width, height, arcWidth, arcHeight);
 }
 
-void HbTlvIconCreator::dVguLine()
+void HbTlvIconCreator::tlvVguLine()
 {
     float x0;
     float y0;
@@ -340,44 +339,44 @@ void HbTlvIconCreator::dVguLine()
     x1 = mNvgIconData->readReal32();
     y1 = mNvgIconData->readReal32();
 
-    if (mLastVGPath) {
-        vgDestroyPath(mLastVGPath);
-        mLastVGPath = 0;
+    if (mLastVgPath) {
+        vgDestroyPath(mLastVgPath);
+        mLastVgPath = 0;
     }
-    mLastVGPath = createPath();
+    mLastVgPath = createPath();
 
-    vguLine(mLastVGPath, x0, y0, x1, y1);
- }
+    vguLine(mLastVgPath, x0, y0, x1, y1);
+}
 
-void HbTlvIconCreator::dVgSetfv()
+void HbTlvIconCreator::tlvVgSetfv()
 {
-	int length = 0;
+    qint32 length = 0;
     quint16 type;
     quint16 count;
-    int cpos   = mNvgIconData->readPos();
+    qint32 cpos   = mNvgIconData->readPos();
 
-    type  = mNvgIconData->readInt16();
-    Q_UNUSED(type);
+    mNvgIconData->readInt16();
+    
     count = mNvgIconData->readInt16();
 
     mNvgIconData->skip(sizeof(float) * count);
-    
-    length = length + 2 * sizeof(quint16) + count * sizeof(VGfloat);
-    
-    dVgAddCommand(length, cpos);
-    }
 
-void HbTlvIconCreator::dVgCreatePath()
+    length = length + 2 * sizeof(quint16) + count * sizeof(VGfloat);
+
+    tlvVgAddCommand(length, cpos);
+}
+
+void HbTlvIconCreator::tlvVgCreatePath()
 {
     mNvgIconData->skip(apiCommandLength[VgCreatePath]);
 }
 
-void HbTlvIconCreator::dVgImageSubData()
+void HbTlvIconCreator::tlvVgImageSubData()
 {
-    int cpos   = mNvgIconData->readPos();
-	
-	mNvgIconData->readInt32();
-    int dataLength         = 0;
+    qint32 cpos   = mNvgIconData->readPos();
+
+    mNvgIconData->readInt32();
+    qint32 dataLength         = 0;
 
     mNvgIconData->readInt32();
     mNvgIconData->readInt32();
@@ -388,30 +387,30 @@ void HbTlvIconCreator::dVgImageSubData()
     dataLength = mNvgIconData->readInt32();
     mNvgIconData->skip(dataLength);
 
-    dVgAddCommand(mNvgIconData->readPos() - cpos, cpos);
+    tlvVgAddCommand(mNvgIconData->readPos() - cpos, cpos);
 }
 
-void HbTlvIconCreator::dVgGetPixels()
+void HbTlvIconCreator::tlvVgGetPixels()
 {
 }
 
-void HbTlvIconCreator::dVgDestroyPaint()
+void HbTlvIconCreator::tlvVgDestroyPaint()
 {
 }
 
-void HbTlvIconCreator::dVgDestroyPath()
+void HbTlvIconCreator::tlvVgDestroyPath()
 {
 }
 
-void HbTlvIconCreator::dVgFlush()
+void HbTlvIconCreator::tlvVgFlush()
 {
 }
 
-HbNvgEngine::NvgErrorType HbTlvIconCreator::execute(int index)
+HbNvgEngine::HbNvgErrorType HbTlvIconCreator::execute(qint32 index)
 {
-    HbNvgEngine::NvgErrorType ret = HbNvgEngine::NvgErrNone;
+    HbNvgEngine::HbNvgErrorType ret = HbNvgEngine::NvgErrNone;
     mCurrentCommand = index;
-    if (0 <= index && index < VgFlush + 1) {
+    if ((0 <= index) && (index < VgFlush + 1)) {
         (this->*(vgapi[index]))();
     } else {
         throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
@@ -419,14 +418,14 @@ HbNvgEngine::NvgErrorType HbTlvIconCreator::execute(int index)
     return ret;
 }
 
-HbNvgEngine::NvgErrorType HbTlvIconCreator::execute()
+HbNvgEngine::HbNvgErrorType HbTlvIconCreator::execute()
 {
-HbNvgEngine::NvgErrorType error = HbNvgEngine::NvgErrNone;
+    HbNvgEngine::HbNvgErrorType error = HbNvgEngine::NvgErrNone;
 
     while (!mNvgIconData->eof()) {
-    	execute(mNvgIconData->readInt8());
+        execute(mNvgIconData->readInt8());
     }
-    
+
     return error;
 }
 

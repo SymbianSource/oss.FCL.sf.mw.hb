@@ -26,6 +26,7 @@
 
 #ifdef Q_OS_SYMBIAN
 #include "hbcorepskeys_p.h"
+#include "hbforegroundwatcher_p.h"
 
 // UID for process checking (write orientation value only when in theme server)
 const TUid KWriterServerUid = KHbPsOrientationCategoryUid;
@@ -98,6 +99,7 @@ HbOrientationStatus::HbOrientationStatus(QObject *parent, Qt::Orientation defaul
 #endif
 {
 #ifdef Q_OS_SYMBIAN
+    HbForegroundWatcher::instance()->setSensorListener(mSensorListener);
     // Create orientation property
     RProperty::Define(
             KHbPsOrientationCategoryUid, KHbPsOrientationKey, RProperty::EInt, KRdPolicy, KWrPolicy);

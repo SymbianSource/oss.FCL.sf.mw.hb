@@ -32,7 +32,12 @@
 #include "hbapplication.h"
 #include "hbmodeliterator.h"
 
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
+
 #include <qmath.h>
+
+#include <QDebug>
 
 const int Hb_Recycle_Buffer_Shrink_Threshold = 2;
 
@@ -89,15 +94,15 @@ HbAbstractViewItem *HbTreeItemContainerPrivate::shiftDownItem(QPointF& delta)
     if (nextIndex.isValid()) {
         item = mItems.takeFirst();
 
-        q->itemRemoved(item);
-
         delta.setY(delta.y() - item->size().height());
+
+        q->itemRemoved(item);
 
         mItems.append(item);
 
-        q->setItemModelIndex(item, nextIndex);
-
         q->itemAdded(mItems.count() - 1, item);
+
+        q->setItemModelIndex(item, nextIndex);
     }
 
     return item;
@@ -123,6 +128,8 @@ HbAbstractViewItem *HbTreeItemContainerPrivate::shiftUpItem(QPointF& delta)
 
         mItems.insert(0, item);
 
+        q->itemAdded(0, item);
+
         q->setItemModelIndex(item, previousIndex);
 
         qreal itemHeight=0;
@@ -133,11 +140,9 @@ HbAbstractViewItem *HbTreeItemContainerPrivate::shiftUpItem(QPointF& delta)
             //The sizehint of the item is dirty.
             itemHeight = item->preferredHeight();
         }
-        
         delta.setY(delta.y() + itemHeight);
-
-        q->itemAdded(0, item);
     }
+
     return item;
 }
 
@@ -156,16 +161,33 @@ void HbTreeItemContainerPrivate::resolveIndentation()
     mLayout->setIndentation(indentation);
 }
 
+/*
+    Calculates avarage item height
+*/
+qreal HbTreeItemContainerPrivate::itemHeight() const
+{
+    qreal minHeight = 0.0;
+    if (mItems.count() > 0) {
+        minHeight = mLayout->sizeHint(Qt::PreferredSize).height() / mItems.count();
+    }
+
+    if (minHeight == 0.0) {
+        minHeight = getSmallestItemHeight();
+    }
+
+    return minHeight;
+}
+
 qreal HbTreeItemContainerPrivate::getSmallestItemHeight() const
 {
     Q_Q(const HbTreeItemContainer);
 
-    qreal minHeight = 0;
+    qreal minHeight = 0.0;
     if (mItems.count() > 0) {
         minHeight = mLayout->smallestItemHeight();
     }
 
-    if (minHeight == 0) {
+    if (minHeight == 0.0) {
         QModelIndex index;
         while (mItems.isEmpty()) {
             // in practise following conditions must apply: itemview is empty and scrollTo() has been called.
@@ -188,6 +210,22 @@ qreal HbTreeItemContainerPrivate::getSmallestItemHeight() const
     }
     return minHeight;
 }
+
+int HbTreeItemContainerPrivate::mapToLayoutIndex(int index) const
+{
+    int layoutIndex = index;
+
+    int itemCount = mAnimatedItems.count();
+    for (int i = 0; i < itemCount; ++i) {
+        QPair<HbAbstractViewItem *, int> animatedItem = mAnimatedItems.at(i);
+        if (animatedItem.second <= index) {
+            layoutIndex++;
+        }
+    }
+
+    return layoutIndex;
+}
+
 
 
 HbTreeItemContainer::HbTreeItemContainer(QGraphicsItem *parent) :
@@ -215,15 +253,46 @@ HbTreeItemContainer::~HbTreeItemContainer()
 {
 }
 
+void HbTreeItemContainer::addItem(const QModelIndex &index, bool animate)
+{
+    Q_D(HbTreeItemContainer);
+   
+    // Cancel the collapse & disappear effect if such is ongoing for the given index.
+    int itemCount = d->mAnimatedItems.count();
+    for (int i = 0; i < itemCount; ++i) {
+        QPair<HbAbstractViewItem *, int> animatedItem = d->mAnimatedItems.at(i);
+        if (animatedItem.first->modelIndex() == index) {
+            HbEffect::cancel(animatedItem.first, "collapse");
+            HbEffect::cancel(animatedItem.first, "disappear");
+            break;
+        }
+    }
+
+    HbAbstractItemContainer::addItem(index, animate);
+}
+
+/*!
+    \reimp
+*/
+void HbTreeItemContainer::removeItem(int pos, bool animate)
+{
+    if (animate) {
+        Q_D(HbTreeItemContainer);
+
+        QPair<HbAbstractViewItem *, int> pair(d->mItems.at(pos), pos);
+        d->mAnimatedItems.append(pair);
+    }
+
+    HbAbstractItemContainer::removeItem(pos, animate);
+}
+
 /*!
     \reimp
 */
 void HbTreeItemContainer::itemRemoved(HbAbstractViewItem *item, bool animate)
 {
-    Q_UNUSED(animate);
     Q_D(HbTreeItemContainer);
-
-    d->mLayout->removeItem(item);
+    d->mLayout->removeItem(item, animate);
 }
 
 /*!
@@ -231,10 +300,9 @@ void HbTreeItemContainer::itemRemoved(HbAbstractViewItem *item, bool animate)
 */
 void HbTreeItemContainer::itemAdded(int index, HbAbstractViewItem *item, bool animate)
 {
-    Q_UNUSED(animate);
     Q_D(HbTreeItemContainer);
 
-    d->mLayout->insertItem(index, item, d->levelForItem(item));
+    d->mLayout->insertItem(d->mapToLayoutIndex(index), item, d->levelForItem(item), animate);
 }
 
 /*!
@@ -256,11 +324,135 @@ void HbTreeItemContainer::setItemModelIndex(HbAbstractViewItem *item, const QMod
     }
 }
 
-
 qreal HbTreeItemContainer::indentation() const
 {
     Q_D(const HbTreeItemContainer);
     return d->mUserIndentation;
+}
+
+QPointF HbTreeItemContainer::recycleItems(const QPointF &delta)
+{
+    Q_D(HbTreeItemContainer);
+
+    if (d->mPrototypes.count() != 1) {
+        return delta;
+    }
+
+    // current invisible area can be scrolled by base class
+    // calculation for that need to be done
+    const qreal diff = d->getDiffWithoutScrollareaCompensation(delta);
+
+    if (diff != 0.0) {
+        HbModelIterator *modelIterator = d->mItemView->modelIterator();
+        qreal result = 0.0;
+        bool doFarJump = false;
+        if (qAbs(diff) > size().height()) {
+            // if huge diff - current buffer does not containt any item that should
+            // be there after jump - because of that use setModelIndexes instead of
+            // recycling items - faster
+            // but it is possible that even if far jump was requested (huge delta)
+            // it can't be done because of model size and current position (at the end)
+            if (diff > 0) {
+                // scrolling down
+                int indexPos = modelIterator->indexPosition(d->mItems.last()->modelIndex())
+                                + d->mItems.count();
+                doFarJump = (indexPos < modelIterator->indexCount());
+            } else {
+                // scrolling up
+                int indexPos = modelIterator->indexPosition(d->mItems.first()->modelIndex())
+                                - d->mItems.count();
+                doFarJump = (indexPos >= 0);
+            }
+        }
+        if (doFarJump) {
+            // start calculations for far jump
+            // take back into account real delta (do jump as far as possible
+            // without leaving it for scroll area) - use delta.y() instead
+            // of calculated diff
+            qreal itemHeight = d->itemHeight();
+            int rowDiff = (int)(delta.y() / itemHeight);
+            QPointF deltaAfterJump(delta.x(), delta.y() - (qreal)rowDiff * itemHeight);
+            // after setModelIndexes will be used it will still be some delta - deltaAfterJump
+            // bottom lines check if those delta can be consumed by scrollArea, if not then
+            // corrections to new index need to be done (otherwise it is possible that scrollArea
+            // will do the rest of scrolling but leave some empty space)
+            qreal diffAfterJump = d->getDiffWithoutScrollareaCompensation(deltaAfterJump);
+            if (diffAfterJump != 0.0) {
+                // this mean that rest of delta can not be handled by scroll area
+                // so jump one item more
+                if (rowDiff < 0.0) {
+                    rowDiff--;
+                } else {
+                    rowDiff++;
+                }
+            }
+            int firstIndexPos = modelIterator->indexPosition(d->mItems.first()->modelIndex());
+            int jumpIndexPos = firstIndexPos + rowDiff;
+            QModelIndex jumpIndex = modelIterator->index(jumpIndexPos);
+            if (!jumpIndex.isValid()) {
+                // get first or last valid index depending on scroll directions
+                if (rowDiff < 0) {// first index
+                    jumpIndex = modelIterator->nextIndex(jumpIndex);
+                } else {// last index
+                    jumpIndex = modelIterator->previousIndex(jumpIndex);
+                }
+            }
+            setModelIndexes(jumpIndex);
+
+            result = -(qreal)rowDiff * itemHeight;
+        }
+        else {
+            QPointF newDelta(0.0, 0.0);
+            HbAbstractViewItem *item = 0;
+            if (diff < 0.0) {
+                while (-newDelta.y() > diff) {
+                    item = d->shiftUpItem(newDelta);
+                    if (!item) {
+                        break;
+                    }
+                }
+            }
+            else {
+                while (-newDelta.y() < diff) {
+                    item = d->shiftDownItem(newDelta);
+                    if (!item) {
+                        break;
+                    }
+                }
+            }
+            qreal layoutPreferredHeight = layout()->preferredHeight();
+            if (layoutPreferredHeight < size().height()) {
+                // in non uniform item list container can change size
+                // while recycling, to catch that layoutPreferredHeight
+                // need to be checked - important case is only when new
+                // containerHeight is smaller than old containerHeight
+                // because only then container can go out of bounds
+                qreal viewSize = itemView()->boundingRect().size().height();
+                if (layoutPreferredHeight + pos().y() < viewSize) {
+                    // position is allways negative
+                    // view out of bounds
+                    if (diff > 0.0) {
+                        QPointF posDiff(pos().x(), 0.0);
+                        while (item
+                               && layoutPreferredHeight - d->mItems.at(0)->size().height() > viewSize
+                               && layoutPreferredHeight + pos().y() - posDiff.y() < viewSize) {
+                            // try to shiftDownMoreItems
+                            item = d->shiftDownItem(posDiff);
+                            layoutPreferredHeight = layout()->preferredHeight();
+                        }
+                        setPos(pos() - posDiff);
+                    }
+                }
+            }
+
+            result = newDelta.y();
+        }
+        QPointF newDelta(delta.x(), delta.y() + result);
+
+        return newDelta;
+    }
+
+    return delta;
 }
 
 void HbTreeItemContainer::setIndentation(qreal indentation)
@@ -271,91 +463,6 @@ void HbTreeItemContainer::setIndentation(qreal indentation)
         d->resolveIndentation();
     }
 }
-
-/*!
-    \reimp
-*/
-QPointF HbTreeItemContainer::recycleItems(const QPointF &delta)
-{
-    Q_D(HbTreeItemContainer);
-
-    if (d->mPrototypes.count() != 1) {
-        return delta;
-    }
-
-    QRectF viewRect(d->itemBoundingRect(d->mItemView));
-    viewRect.moveTopLeft(viewRect.topLeft() + delta);
-
-    int firstVisibleBufferIndex = -1;
-    int lastVisibleBufferIndex = -1;
-    d->firstAndLastVisibleBufferIndex(firstVisibleBufferIndex, lastVisibleBufferIndex, viewRect, false);
-
-    int hiddenAbove = firstVisibleBufferIndex;
-    int hiddenBelow = d->mItems.count() - lastVisibleBufferIndex - 1;
-
-    if (d->mItems.count()
-        && (firstVisibleBufferIndex == -1 || lastVisibleBufferIndex == -1)) {
-        // All items out of sight.
-        if (d->itemBoundingRect(d->mItems.first()).top() < 0) {
-            // All items above view.
-            hiddenAbove = d->mItems.count();
-            hiddenBelow = 0;
-        } else {
-            // All items below view.
-            hiddenAbove = 0;
-            hiddenBelow = d->mItems.count();
-        }
-    }
-
-    QPointF newDelta(delta);
-
-    while (hiddenAbove > hiddenBelow + 1) {
-        HbAbstractViewItem *item = d->shiftDownItem(newDelta);
-        if (!item){
-            break;
-        }
-
-        if (!d->visible(item, viewRect)) {
-            hiddenBelow++;
-        }
-        hiddenAbove--;
-    }
-
-    while (hiddenBelow > hiddenAbove + 1) {
-        HbAbstractViewItem *item = d->shiftUpItem(newDelta);
-        if (!item) {
-            break;
-        }
-
-        if (!d->visible( item, viewRect)) {
-            hiddenAbove++;
-        }
-        hiddenBelow--;
-    }
-
-    // during scrolling the x-coordinate of the container is moved to match the 
-    // indentation level of the visible items. 
-    if (!itemView()->isDragging() ) {
-        int minIndent = d->levelForItem(d->mItems[hiddenAbove]);
-        for (int i = hiddenAbove + 1; i < d->mItems.count() - hiddenBelow - 1; i++) {
-            minIndent = qMin(minIndent,d->levelForItem(d->mItems[i]));
-        }
-        // if the indentation level is bigger than the current position, container is moved to right.
-        // pixel amount of one indentation is added to the current position, in deep indentation 
-        // levels this will make the container to show some empty on the left side to indicate that 
-        // the items are not on the root level. This is just a visual trick
-        if (HbApplication::layoutDirection() == Qt::LeftToRight) {
-            if ( minIndent * d->mLayout->indentation() > -pos().x() + d->mLayout->indentation() + 1) {
-                newDelta.setX( newDelta.x() + 1 );
-            } else if ( minIndent * d->mLayout->indentation() < -pos().x() + d->mLayout->indentation()){
-                newDelta.setX( newDelta.x() - 1 );
-            }
-        } 
-    }
-
-    return newDelta;
-}
-
 
 /*!
     Calculates the optimal view item buffer size. When recycling is turned off
@@ -387,6 +494,10 @@ int HbTreeItemContainer::maxItemCount() const
                 }
             }
 
+            if (!d->mAnimatedItems.isEmpty()) {
+                targetCount = currentCount;
+            }
+
             // This limits the targetCount not to be larger
             // than row count inside model.
             targetCount = qMin(targetCount, countEstimate);
@@ -413,28 +524,54 @@ HbAbstractViewItem *HbTreeItemContainer::createDefaultPrototype() const
     return new HbTreeViewItem();
 }
 
-bool HbTreeItemContainer::isExpanded(const QModelIndex &index) const
-{
-    QVariant flags = itemState(index).value(HbTreeViewItem::ExpansionKey);
-    if (flags.isValid() && flags.toBool() == true) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void HbTreeItemContainer::setExpanded(const QModelIndex &index, bool expanded) 
+void HbTreeItemContainer::animationFinished(const HbEffect::EffectStatus &status)
 {
     Q_D(HbTreeItemContainer);
 
-    HbTreeViewItem *item = qobject_cast<HbTreeViewItem *>(itemByIndex(index));
-    if (item) {
-        item->setExpanded(expanded);
-    } 
+    HbAbstractViewItem *item = static_cast<HbAbstractViewItem *>(status.item);
+    item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, false);
+   
+    // Remove item from mAnimatedItems list.
+    int itemCount = d->mAnimatedItems.count();
+    for (int i = 0; i < itemCount; ++i) {
+        QPair<HbAbstractViewItem *, int> animatedItem = d->mAnimatedItems.at(i);
+        if (animatedItem.first == item) {
+            d->mAnimatedItems.removeAt(i);
+            break;
+        }
+    }
+    
+    d->mItems.removeOne(item);
+    d->mLayout->removeAt(d->mLayout->indexOf(item));
 
-    setItemStateValue(index, HbTreeViewItem::ExpansionKey, expanded);
-    setModelIndexes();
-    d->updateItemBuffer(); // Expanding/Collapsing might resize the buffer.
+    item->resetTransform();
+    item->setOpacity(1.0);
+
+    QModelIndex index;
+    int bufferIndex;
+    if (d->mItems.isEmpty()) {
+        index = d->mItemView->modelIterator()->nextIndex(QModelIndex());
+        bufferIndex = 0;
+    } else {
+        index = d->mItemView->modelIterator()->nextIndex(d->mItems.last()->modelIndex());
+        bufferIndex = d->mItems.count();
+        if (!index.isValid()) {
+            index = d->mItemView->modelIterator()->previousIndex(d->mItems.first()->modelIndex());
+            bufferIndex = 0;
+        } 
+    }
+
+    if (index.isValid()) {
+        d->insertItem(item, bufferIndex, index, false);
+
+        if (bufferIndex == 0) {
+            QPointF newPos = pos();
+            newPos.setY(newPos.y() - item->preferredHeight());
+            setPos(newPos);
+        }
+    } else {
+        item->deleteLater();
+    }
 }
 
 #include "moc_hbtreeitemcontainer_p.cpp"

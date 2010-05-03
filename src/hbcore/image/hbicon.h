@@ -90,7 +90,8 @@ public:
         DoNotCache = 0x01,
         ResolutionCorrected = 0x02,
         NoAutoStartAnimation = 0x04,
-        Colorized = 0x08
+        Colorized = 0x08,
+        NonThemeable = 0x10
     };
 
     Q_DECLARE_FLAGS(Flags, Flag)

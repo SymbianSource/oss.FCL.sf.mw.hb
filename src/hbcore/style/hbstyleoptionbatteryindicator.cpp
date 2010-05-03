@@ -26,6 +26,10 @@
 #include "hbstyleoptionbatteryindicator_p.h"
 
 /*!
+	
+	  \deprecated HbStyleOptionBatteryIndicator::HbStyleOptionBatteryIndicator()
+    is deprecated. Styleoptions will not be public.
+    
     \class HbStyleOptionBatteryIndicator
     \brief HbStyleOptionBatteryIndicator has the style component for battery indicator
 */
@@ -39,6 +43,12 @@ HbStyleOptionBatteryIndicator::HbStyleOptionBatteryIndicator() :
     version = Version;
 }
 
+/*!
+	
+	  \deprecated HbStyleOptionBatteryIndicator::HbStyleOptionBatteryIndicator(const HbStyleOptionBatteryIndicator&)
+    is deprecated. Styleoptions will not be public.
+    
+*/
 HbStyleOptionBatteryIndicator::HbStyleOptionBatteryIndicator(const HbStyleOptionBatteryIndicator &other) :
     HbStyleOption(other),
     batteryLevel(other.batteryLevel),

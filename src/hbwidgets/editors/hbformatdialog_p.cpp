@@ -45,7 +45,8 @@
 #include <QTextCursor>
 #include <QPainter>
 
-HbFormatDialogPrivate::HbFormatDialogPrivate()
+HbFormatDialogPrivate::HbFormatDialogPrivate() :
+    editor(0)
 {}
 
 HbFormatDialogPrivate::~HbFormatDialogPrivate()

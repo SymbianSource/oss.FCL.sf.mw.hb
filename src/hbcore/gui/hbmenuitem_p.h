@@ -67,6 +67,9 @@ protected:
 
     void initStyleOption(HbStyleOptionMenuItem *option) const;
     void changeEvent(QEvent *event);    
+#ifdef HB_GESTURE_FW
+    void gestureEvent(QGestureEvent *event);
+#endif
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbMenuItem)
     Q_PRIVATE_SLOT(d_func(), void _q_updateItem())

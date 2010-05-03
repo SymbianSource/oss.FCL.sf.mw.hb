@@ -47,10 +47,10 @@ public:
     QString imageName(Qt::Orientation orientation) const;
     QString defaultImageName(Qt::Orientation orientation) const;
 
+    void updateBackgroundImage();
+
 private:
     void resizeEvent(QGraphicsSceneResizeEvent *event);
-
-    void updateBackgroundImage();
 
     HbIcon mBackground;
     QRectF mBoundingRect;

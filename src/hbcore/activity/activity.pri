@@ -28,9 +28,11 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-PUBLIC_HEADERS += $$PWD/hbactivitymanager.h 
+PUBLIC_HEADERS += $$PWD/hbactivitymanager.h
 
 INTERNAL_HEADERS += $$PWD/hbactivitymanager_p.h \
-                  $$PWD/hbactivityplugininterface_p.h
+                    $$PWD/hbactivityplugininterface_p.h \
+                    $$PWD/hbactivitycommandlineparser_p.h \
 
-SOURCES += $$PWD/hbactivitymanager.cpp
+SOURCES +=  $$PWD/hbactivitymanager.cpp \
+            $$PWD/hbactivitycommandlineparser_p.cpp \

@@ -42,8 +42,8 @@
 \brief An interface for accessing editor specific input attributes.
 
 This class is an interface for accessing and manipulating editor attributes, such as input mode, text case,
-constraints, etc. It also contains some useful convenience and utility methods. This interface is meant to be used
-by both client application and input method sides.
+constraints, input filter and so on. It also contains some useful convenience and utility methods.
+This interface is meant to be used from both client application and input method code.
 
 Following example shows how to create editor interface, attach editor to it and use some attributes.
 
@@ -59,9 +59,9 @@ When any of the values is changed, signal modified() is emited.
 /*!
 Constructs the object and attaches given editor.
 */
-HbEditorInterface::HbEditorInterface(QObject* aEditor)
+HbEditorInterface::HbEditorInterface(QObject* editor)
 {
-    mPrivate = HbEditorInterfacePrivateCache::instance()->attachEditor(aEditor, this);
+    mPrivate = HbEditorInterfacePrivateCache::instance()->attachEditor(editor, this);
     connect(mPrivate, SIGNAL(destroyed(QObject*)), this, SLOT(backendDestroyed(QObject*)));
 }
 
@@ -96,24 +96,48 @@ Sets text case.
 \sa textCase
 \sa HbTextCase
 */
-void HbEditorInterface::setTextCase(HbTextCase aTextCase)
+void HbEditorInterface::setTextCase(HbTextCase textCase)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mTextCase = aTextCase;
+        mPrivate->mTextCase = textCase;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
 }
 
 /*!
+\deprecated HbEditorInterface::inputMode() const
+  is deprecated. Use mode() instead.
 Returns active editor input mode. Returned value is HbInputMethodType.
 
 \sa setInputMode
 */
 int HbEditorInterface::inputMode() const
 {
-    int ret = HbInputModeNone;
+    return mode();
+}
+
+/*!
+\deprecated HbEditorInterface::setInputMode(int)
+  is deprecated. Use setMode() instead.
+Sets active editor input mode.
+
+\sa inputMode
+*/
+void HbEditorInterface::setInputMode(int inputMode)
+{
+    setMode(static_cast<HbInputModeType>(inputMode));
+}
+
+/*!
+Returns active editor input mode.
+
+\sa setInputMode
+*/
+HbInputModeType HbEditorInterface::mode() const
+{
+    HbInputModeType ret = HbInputModeNone;
     if (mPrivate) {
         mPrivate->lock();
         ret = mPrivate->mInputMode;
@@ -128,17 +152,19 @@ Sets active editor input mode.
 
 \sa inputMode
 */
-void HbEditorInterface::setInputMode(int aInputMode)
+void HbEditorInterface::setMode(HbInputModeType inputMode)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mInputMode = aInputMode;
+        mPrivate->mInputMode = inputMode;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
 }
 
 /*!
+\deprecated HbEditorInterface::constraints() const
+  is deprecated. Use inputConstraints() instead.
 Returns editor constraints. Returned value is a bit vector consisting of
 HbEditorConstraint bits.
 
@@ -146,7 +172,29 @@ HbEditorConstraint bits.
 */
 int HbEditorInterface::constraints() const
 {
-    int ret = 0;
+    return inputConstraints();
+}
+
+/*!
+\deprecated HbEditorInterface::setConstraints(int)
+  is deprecated. Use setInputConstraints() instead.
+Sets editor constraints.
+
+\sa constraints
+*/
+void HbEditorInterface::setConstraints(int constraints)
+{
+    setInputConstraints(static_cast<HbEditorConstraints>(constraints));
+}
+
+/*!
+Returns editor constraints. The returned value is a combination of HbEditorConstraint flags.
+
+\sa setEditorConstraints
+*/
+HbEditorConstraints HbEditorInterface::inputConstraints() const
+{
+    HbEditorConstraints ret = 0;
     if (mPrivate) {
         mPrivate->lock();
         ret = mPrivate->mConstraints;
@@ -159,21 +207,24 @@ int HbEditorInterface::constraints() const
 /*!
 Sets editor constraints.
 
-\sa constraints
+\sa editorConstraints
 */
-void HbEditorInterface::setConstraints(int aConstraints)
+void HbEditorInterface::setInputConstraints(HbEditorConstraints constraints)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mConstraints = aConstraints;
+        mPrivate->mConstraints = constraints;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
 }
 
 /*!
-Returns custom filter id. If this value is set, then corresponding filter
-in HbEditorCharacterFilter is used as part of edit operations for this editor.
+Returns active input filter. The input framework will always run any text it produces
+through the active filter before it is commited into editor buffer.
+
+In some cases, the input framework also automatically sets the filter to match
+input method hints. The default filter can still be overridden.
 
 \sa setFilter
 */
@@ -190,21 +241,23 @@ HbInputFilter *HbEditorInterface::filter() const
 }
 
 /*!
-Sets custom filter id.
+Sets active input filter. The ownership is not transferred.
 
 \sa filter
 */
-void HbEditorInterface::setFilter(HbInputFilter *aFilter)
+void HbEditorInterface::setFilter(HbInputFilter *filter)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mFilter = aFilter;
+        mPrivate->mFilter = filter;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
 }
 
 /*!
+\deprecated HbEditorInterface::localDigitType() const
+  is deprecated. Use digitType() instead.
 Returns local digit type setting. If this value is set, it will override device wide
 digit type setting. Returned value is HbInputDigitType.
 
@@ -212,7 +265,30 @@ digit type setting. Returned value is HbInputDigitType.
 */
 int HbEditorInterface::localDigitType() const
 {
-    int ret = HbDigitTypeNone;
+    return digitType();
+}
+
+/*!
+\deprecated HbEditorInterface::setLocalDigitType(int)
+  is deprecated. Use setDigitType() instead.
+Sets local digit type.
+
+\sa localDigitType
+*/
+void HbEditorInterface::setLocalDigitType(int digitType)
+{
+    setDigitType(static_cast<HbInputDigitType>(digitType));
+}
+
+/*!
+Returns local digit type setting. If this value is set, it will override device wide
+digit type setting.
+
+\sa setDigitType
+*/
+HbInputDigitType HbEditorInterface::digitType() const
+{
+    HbInputDigitType ret = HbDigitTypeNone;
 
     if (mPrivate) {
         mPrivate->lock();
@@ -226,13 +302,13 @@ int HbEditorInterface::localDigitType() const
 /*!
 Sets local digit type.
 
-\sa localDigitType
+\sa digitType
 */
-void HbEditorInterface::setLocalDigitType(int aDigitType)
+void HbEditorInterface::setDigitType(HbInputDigitType digitType)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mLocalDigitType = aDigitType;
+        mPrivate->mLocalDigitType = digitType;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -249,6 +325,11 @@ If the action is already in the list, it will be removed before adding it again.
 
 Hb input methods currently use only the first action in the list.
 Different input methods may display 0 or more than one button.
+
+Note that the custom button action is only a request to show it. Whether or not the
+virtual keyboard widget actually shows it depends on the situation and
+the active input method. That's why a function asigned to custom button should never
+be the only way to use a feature but only a shortcut.
 
 \sa insertAction
 \sa removeAction
@@ -280,7 +361,7 @@ void HbEditorInterface::insertAction(HbAction *before, HbAction *action)
         int index = mPrivate->mActions.indexOf(action);
         if (index >= 0)
             mPrivate->mActions.removeAt(index);
-    
+
         int pos = mPrivate->mActions.indexOf(before);
         if (pos < 0) {
             pos = mPrivate->mActions.size();
@@ -353,18 +434,18 @@ int HbEditorInterface::extraDictionaryId() const
 
 /*!
 Sets extra user dictionary id value. After setting this value those prediction
-implementations that support extra user dictionaries attach given user additional dictionary
-in case it is available.
+engines that support extra dictionaries attach given dictionary to be
+part of prediction vocabulary.
 
 \sa extraDictionaryId
 \sa HbUserDictionary
 \sa HbExtraUserDictionary
 */
-void HbEditorInterface::setExtraDictionaryId(int aId)
+void HbEditorInterface::setExtraDictionaryId(int id)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mExtraDictionaryId = aId;
+        mPrivate->mExtraDictionaryId = id;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -389,11 +470,11 @@ HbInputEditorClass HbEditorInterface::editorClass() const
 /*!
 Sets editor class.
 */
-void HbEditorInterface::setEditorClass(HbInputEditorClass aClass)
+void HbEditorInterface::setEditorClass(HbInputEditorClass editorClass)
 {
     if (mPrivate) {
         mPrivate->lock();
-        mPrivate->mClass = aClass;
+        mPrivate->mClass = editorClass;
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -489,17 +570,17 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 /*!
 Returns true if this instance is attached to same editor as given instance.
 */
-bool HbEditorInterface::operator==(const HbEditorInterface& aInterface) const
+bool HbEditorInterface::operator==(const HbEditorInterface& interface) const
 {
-    return (mPrivate == aInterface.mPrivate);
+    return (mPrivate == interface.mPrivate);
 }
 
 /*!
 Returns true if this instance is not attached to same editor as given instance.
 */
-bool HbEditorInterface::operator!=(const HbEditorInterface& aInterface) const
+bool HbEditorInterface::operator!=(const HbEditorInterface& interface) const
 {
-    return (mPrivate != aInterface.mPrivate);
+    return (mPrivate != interface.mPrivate);
 }
 
 /*!
@@ -546,20 +627,19 @@ void HbEditorInterface::setLastFocusedState(const HbInputState &state)
 }
 
 /*!
-A convenience method for setting up the editor as number only editor. Sets input mode
-to HbInputModeNumeric, activates phone number filter and sets fixed input mode
-constraint. In Qt 4.6 sets Qt::ImhDigitsOnly and Qt::ImhDialableCharactersOnly hints.
+\deprecated void HbEditorInterface::setUpAsPhoneNumberEditor()
+        is deprecated. Instead use setInputMethodHints() of QGraphicsItem(HbAbstractEdit) to setup editor.
 */
 void HbEditorInterface::setUpAsPhoneNumberEditor()
 {
     setInputMode(HbInputModeNumeric);
-    mPrivate->setInputMethodHints(Qt::ImhDialableCharactersOnly);
+    mPrivate->setInputMethodHints(Qt::ImhDialableCharactersOnly | Qt::ImhNoPredictiveText);
     setConstraints(HbEditorConstraintFixedInputMode);
     setFilter(HbPhoneNumberFilter::instance());
 }
 
 /*!
-A convinience method for setting up the editor as completing email field. 
+A convinience method for setting up the editor as completing email field.
 */
 void HbEditorInterface::setUpAsCompletingEmailField()
 {
@@ -589,7 +669,7 @@ void HbEditorInterface::setUpAsCompletingUrlField()
 /*!
 A convinience method for setting up the editor as latin alphabet editor. In this mode, the input framework
 will use global input language if it is naturally capable of producing latin aplhabets. Otherwise
-it will switch locally to english language (is is assumed that english is alwasy available).
+it will switch locally to english language (is is assumed that english is always available).
 It is also recommended that prediction is disabled in latin only editors. That's because predictive mode in
 latin alphabet editor is controversial (which prediction database should be used if global language doesn't
 apply and we locally to switch to english? If we used english database, that would lead to situation
@@ -600,7 +680,7 @@ void HbEditorInterface::setUpAsLatinAlphabetOnlyEditor()
 {
     setInputMode(HbInputModeNone);
     setConstraints(HbEditorConstraintLatinAlphabetOnly);
-    mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText); 
+    mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText);
 }
 
 /*!

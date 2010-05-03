@@ -68,23 +68,32 @@ public:
     bool setItemPrototype(HbAbstractViewItem *prototype);
     bool setItemPrototypes(const QList<HbAbstractViewItem *> &prototypes);
 
+    void setItemTransientState(const QModelIndex &index, QHash<QString,QVariant> state);
+    void setItemTransientStateValue(const QModelIndex &index, const QString &key, const QVariant &value);
+
     void setItemState(const QModelIndex &index, QMap<int,QVariant> state);
     void setItemStateValue(const QModelIndex &index, int key, QVariant value);
 
     QMap<int,QVariant> itemState(const QModelIndex &index) const;
+    QHash<QString, QVariant> itemTransientState(const QModelIndex &index) const;
 
     void removeItemStates();
+    void removeItemTransientStates();
 
     void setItemRecycling(bool enabled);
     bool itemRecycling() const;
 
-    void setUniformItemSizes(bool enable);
+    virtual void setUniformItemSizes(bool enable);
     bool uniformItemSizes() const;
 
     virtual bool eventFilter(QObject *obj, QEvent *event);
 
     enum { Type = Hb::ItemType_AbstractItemContainer };
     int type() const;
+
+signals:
+
+    void itemCreated(HbAbstractViewItem *item);
 
 protected:
 

@@ -29,6 +29,7 @@
 #include <hbstyleoption.h>
 #include <hbicon.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionDataGroupHeadingWidget : public HbStyleOption
 {
 public:
@@ -40,6 +41,7 @@ public:
     enum StyleOptionVersion { Version = 1 };
 
     QString heading;
+    QString description;
     bool expanded;
     bool pressed;
 };

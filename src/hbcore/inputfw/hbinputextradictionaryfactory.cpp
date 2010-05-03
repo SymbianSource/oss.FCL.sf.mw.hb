@@ -34,7 +34,7 @@
 \class HbExtraDictionaryFactory
 \brief A factory class for creating and accessing instances of HbExtraDictionary database.
 
-This is a singleton factory class for instances of HbExtraDictionary class by id number. 
+This is a singleton factory class for creating instances of HbExtraDictionary class by id number.
 It knows where the databases are stored in the system, loads and maintains them in the memory.
 
 \sa HbExtraUserDictionary

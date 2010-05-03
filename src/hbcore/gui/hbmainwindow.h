@@ -42,25 +42,19 @@ class HbView;
 class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
 {
     Q_OBJECT
+
     //Deprecated
     Q_PROPERTY(int currentViewIndex READ currentViewIndex WRITE setCurrentViewIndex)
     //Deprecated
     Q_PROPERTY(int viewCount READ viewCount)
+
     Q_PROPERTY(Qt::Orientation orientation 
                READ orientation
                WRITE setOrientation
                RESET unsetOrientation
-               NOTIFY orientationChanged )
+               NOTIFY orientationChanged)
 
 public:
-
-    //deprecated
-    enum Element {
-        RootItem,
-        ViewportItem,
-        BackgroundItem
-    };
-
     explicit HbMainWindow(QWidget *parent = 0, Hb::WindowFlags windowFlags = Hb::WindowFlagNone);
     ~HbMainWindow();
 
@@ -81,9 +75,6 @@ public:
     QList<HbView *> views() const;
     HbView *currentView() const;
     void setCurrentView(HbView *view, bool animate = true, Hb::ViewSwitchFlags flags = Hb::ViewSwitchDefault);
-
-    // Deprecated
-    QGraphicsWidget *element(HbMainWindow::Element element) const;
 
     Qt::Orientation orientation() const;
     void setOrientation(Qt::Orientation orientation, bool animate = true);
@@ -118,13 +109,12 @@ public slots:
 
     void broadcastEvent( int eventType );
 
-    // Deprecated
-    void toggleOrientation();
-
 signals:
     // deprecated
     void currentViewIndexChanged(int index);
+
     void viewReady();
+    void aboutToChangeView(HbView *oldView, HbView *newView);
     void currentViewChanged(HbView *view);
     void aboutToChangeOrientation();
     void aboutToChangeOrientation(Qt::Orientation newOrientation, bool animated);
@@ -161,7 +151,6 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_restoreTitlePane())
     Q_PRIVATE_SLOT(d_func(), void _q_delayedConstruction())
     Q_PRIVATE_SLOT(d_func(), void _q_viewReady())
-
 };
 
 #endif // HBMAINWINDOW_H

@@ -28,20 +28,33 @@
 #include <hbstyleoptiondatagroupheadingwidget_p.h>
 #include <hbdatagroup_p.h>
 #include <QGraphicsItem>
+#include <hbwidgetfeedback.h>
+
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+#endif
 
 HbDataGroupHeadingWidget::HbDataGroupHeadingWidget(QGraphicsItem *parent ) :
     HbWidget(parent),
     mBackgroundItem(0),
     mHeadingItem(0),
     mIconItem(0),
+    mDescriptionItem(0),
     mParent(0),
     mExpanded(false),
     mDown(false)
 {
+#ifdef HB_GESTURE_FW
+    grabGesture( Qt::TapGesture );
+#endif
 }
 
 HbDataGroupHeadingWidget::~HbDataGroupHeadingWidget()
 {
+#ifdef HB_GESTURE_FW
+    ungrabGesture( Qt::TapGesture );
+#endif
 }
 
 void HbDataGroupHeadingWidget::createPrimitives()
@@ -53,11 +66,23 @@ void HbDataGroupHeadingWidget::createPrimitives()
     if(!mHeading.isEmpty()) {
         if(!mHeadingItem) {
             mHeadingItem = style()->createPrimitive(HbStyle::P_DataGroup_heading, this);
+            setProperty("state","normal");
         }
     } else {
         if(mHeadingItem) {
             delete mHeadingItem;
             mHeadingItem = 0;
+        }
+    }
+    if(!mDescription.isEmpty()) {
+        if(!mDescriptionItem) {
+            mDescriptionItem = style()->createPrimitive(HbStyle::P_DataGroup_description, this);
+            setProperty("state","normal");
+        }
+    } else {
+        if(mDescriptionItem) {
+            delete mDescriptionItem;
+            mDescriptionItem = 0;
         }
     }
 
@@ -77,7 +102,11 @@ void HbDataGroupHeadingWidget::updatePrimitives()
         style()->updatePrimitive( 
             mHeadingItem, HbStyle::P_DataGroup_heading, &settingGroupOption);
     }
-
+    
+    if(mDescriptionItem) {
+        style()->updatePrimitive( 
+            mDescriptionItem, HbStyle::P_DataGroup_description, &settingGroupOption);
+    }
     if(mIconItem) {
         style()->updatePrimitive( mIconItem, HbStyle::P_DataGroup_icon, &settingGroupOption);
     }
@@ -92,11 +121,12 @@ void HbDataGroupHeadingWidget::initStyleOption(HbStyleOptionDataGroupHeadingWidg
 {
     HbWidget::initStyleOption(option);
     option->heading = mHeading;
+    option->description = mDescription;
     option->expanded = mExpanded;
     option->pressed = mDown;
 }
 
-
+#ifndef HB_GESTURE_FW
 void HbDataGroupHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) {
@@ -111,18 +141,24 @@ void HbDataGroupHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
         style()->updatePrimitive(
             mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
     }
- }
+
+    Hb::InteractionModifiers modifiers = Hb::ModifierExpandedItem;
+    HbWidgetFeedback::triggered(this, Hb::InstantPressed, modifiers);
+}
 
 void HbDataGroupHeadingWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+    Hb::InteractionModifiers modifiers = 0;
+
     if (event->button() != Qt::LeftButton) {
         event->ignore();
         return;
     }
     
-    if(mDown && rect().contains(event->pos())) {        
+    if(mDown && rect().contains(event->pos())) {
         static_cast<HbDataGroup*>(mParent)->setExpanded(
                 !static_cast<HbDataGroup*>(mParent)->isExpanded());
+        modifiers |= Hb::ModifierExpandedItem;
     }
     mDown = false;
 
@@ -132,5 +168,72 @@ void HbDataGroupHeadingWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event
         style()->updatePrimitive(
             mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
     }
-}
 
+    HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
+}
+#endif
+
+#ifdef HB_GESTURE_FW
+void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
+{
+    Hb::InteractionModifiers modifiers = 0;
+
+    if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+
+        case Qt::GestureStarted:
+            {
+                mDown = true;
+                HbStyleOptionDataGroupHeadingWidget settingGroupOption;
+                initStyleOption(&settingGroupOption);
+                if(mBackgroundItem) {
+                style()->updatePrimitive(
+                mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+            }
+                modifiers = Hb::ModifierExpandedItem;
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed, modifiers);
+                break;
+            }
+
+        case Qt::GestureFinished:
+            {
+                modifiers = 0;
+
+                if(mDown && rect().contains(mapFromScene(event->mapToGraphicsScene(tap->position())))) {        
+                static_cast<HbDataGroup*>(mParent)->setExpanded(
+                    !static_cast<HbDataGroup*>(mParent)->isExpanded());
+                    modifiers |= Hb::ModifierExpandedItem;
+                    mDown = false;
+                }
+                HbStyleOptionDataGroupHeadingWidget settingGroupOption;
+                initStyleOption(&settingGroupOption);
+                if(mBackgroundItem) {
+                    style()->updatePrimitive(
+                    mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+                }
+
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
+                break;
+            }
+        case Qt::GestureCanceled:
+        {
+            modifiers = 0;
+            mDown = false;
+            HbStyleOptionDataGroupHeadingWidget settingGroupOption;
+            initStyleOption(&settingGroupOption);
+            if(mBackgroundItem) {
+                style()->updatePrimitive(
+                mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+            }
+
+            HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
+            break;
+
+         }
+            
+        default:
+            break;
+        }
+    }
+}
+#endif

@@ -42,7 +42,7 @@ public:
         return HbFeedback::TypeContinuous;
     }
 
-    bool isValid() const;
+    bool isValid() const; // deprecated
 
     HbFeedback::ContinuousEffect continuousEffect() const;
     int intensity() const;
@@ -51,6 +51,10 @@ public:
     void setContinuousEffect(HbFeedback::ContinuousEffect effect);
     void setIntensity(int intensity);
     void setTimeout(int msecTimeout);
+
+    void play();
+    void stop();
+    bool isPlaying();
 
     HbContinuousFeedback &operator=(const HbContinuousFeedback &feedback);
     bool operator==(const HbContinuousFeedback &feedback) const;

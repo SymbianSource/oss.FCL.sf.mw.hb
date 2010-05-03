@@ -262,22 +262,6 @@ HbInputBasicQwertyHandler::HbInputBasicQwertyHandler(HbInputAbstractMethod* inpu
 }
 
 
-/*!
-This function lists different input modes.
-*/
-void HbInputBasicQwertyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    HbInputModeProperties binding;
-    binding.iMode = HbInputModeDefault;
-    binding.iKeyboard = HbKeyboardVirtualQwerty;
-
-    QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-    foreach (HbInputLanguage language, languages) {
-        binding.iLanguage = language;
-        modes.push_back(binding);
-    }
-}
-
 HbInputBasicQwertyHandler::~HbInputBasicQwertyHandler()
 {
 }

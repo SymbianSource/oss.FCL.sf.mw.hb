@@ -49,11 +49,10 @@
 
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
-#define HB_TOOLBAR_ITEM_TYPE "HB_TOOLBAR"
 #endif
 
 /*!
-    @stable
+    @beta
     @hbcore
     \class HbToolBar
     \brief HbToolBar is a toolbar decorator.
@@ -91,6 +90,8 @@ HbToolBar::HbToolBar( QGraphicsItem *parent )
     Q_D(HbToolBar);
     d->q_ptr = this;
     d->init();
+    setFlag(QGraphicsItem::ItemIsPanel);
+
 }
 
 /*!
@@ -233,7 +234,8 @@ void HbToolBar::setOrientation( Qt::Orientation orientation )
 }
 
 /*!
-    \deprecated HbToolBar::unsetOrientation()is deprecated.
+    \deprecated HbToolBar::unsetOrientation()
+            is deprecated.
  */
 void HbToolBar::unsetOrientation()
 {
@@ -312,6 +314,11 @@ void HbToolBar::changeEvent( QEvent *event )
         d->updateButtonsLayoutDirection();
     }
 
+    if (event->type() == QEvent::ParentChange && parentItem()) {
+        setPos(-1000, -1000);   // Not very nice workaround to toolbar flicker problem.
+                                // We will find a better solution later.
+    }
+
     QGraphicsWidget::changeEvent(event);
 }
 
@@ -371,79 +378,19 @@ bool HbToolBar::event(QEvent *event)
 /*!
     \reimp
  */
-void HbToolBar::gestureEvent(QGestureEvent *event)
+void HbToolBar::gestureEvent(QGestureEvent *)
 {
-    Q_D(HbToolBar);    
-    if (QPanGesture *panGesture = qobject_cast<QPanGesture*>(event->gesture(Qt::PanGesture))) {
-        QPointF scenePoint = event->mapToGraphicsScene(panGesture->hotSpot());
-        if (panGesture->state() == Qt::GestureStarted) {
-            foreach (HbToolButton *button, d->mVisibleToolButtons) {
-                if (button->isDown()) {
-                    d->mPressedDownButton = button;
-                    break;
-                }
-            }
-            if (d->moreExtensionButton && d->moreExtensionButton->isDown()) {
-                d->mPressedDownButton = d->moreExtensionButton;
-            }
-        } else if (panGesture->state() == Qt::GestureUpdated) {
-            if (mapRectToScene(boundingRect()).contains(scenePoint)) {
-                // moving inside the tool bar
-                if (!d->mPressedDownButton ||
-                    !mapRectToScene(d->mPressedDownButton->geometry()).contains(scenePoint)) {
-                    if (d->mPressedDownButton) {
-                        // lift it up and try to find some other button
-                        d->mPressedDownButton->setDown(false);
-                        d->mPreviouslyPressedDownButton = d->mPressedDownButton;
-                        d->mPressedDownButton = 0;
-                    }
 
-                    // Find the pressed button
-                    foreach (HbToolButton *button, d->mVisibleToolButtons) {
-                        if (button->action()->isEnabled() &&
-                            mapRectToScene(button->geometry()).contains(scenePoint)) {
-                            d->mPressedDownButton = button;
-                            HbWidgetFeedback::triggered(button, Hb::InstantDraggedOver);
-                            button->setDown(true);
-                            break;
-                        }
-                    }
-                    if (d->moreExtensionButton && d->moreExtensionButton->isVisible() &&
-                        mapRectToScene(d->moreExtensionButton->geometry()).contains(scenePoint)) {
-                        d->mPressedDownButton = d->moreExtensionButton;
-                        HbWidgetFeedback::triggered(d->moreExtensionButton, Hb::InstantDraggedOver);
-                        d->moreExtensionButton->setDown(true);
-                    }
-                }
-            } else {
-                // moving outside the tool bar
+}
 
-                // if a button is pressed down, lift it.
-                if (d->mPressedDownButton) {
-                    d->mPressedDownButton->setDown(false);
-                    d->mPressedDownButton = 0;
-                    d->mPreviouslyPressedDownButton = d->mPressedDownButton;
-                }
-            }
-        } else if (panGesture->state() == Qt::GestureFinished) {
-            if (d->mPressedDownButton && !d->mPreviouslyPressedDownButton) {
-                // Generate tap gesture to the button
-                QGesture *gesture = new QTapGesture();
-                gesture->setHotSpot(panGesture->hotSpot());
-                QList<QGesture *> list;
-                list.append(gesture);
-                QGestureEvent *event = new QGestureEvent(list);
-                QCoreApplication::sendEvent(d->mPressedDownButton, event);                
-                d->mPressedDownButton = 0;
-            } else if (d->mPressedDownButton) {
-                d->mPressedDownButton->setDown(false);
-                HbWidgetFeedback::triggered( d->mPressedDownButton, Hb::InstantClicked );
-            }
-            d->mPreviouslyPressedDownButton = 0;
-        }
-        event->accept(panGesture);
-    } else {
-        event->ignore();
+void HbToolBar::updatePrimitives()
+{
+    Q_D(HbToolBar);
+    for (int i = 0; i < d->mVisibleToolButtons.count(); i++) {
+        d->mVisibleToolButtons.at(i)->updatePrimitives();
+    }
+    if (d->moreExtensionButton) {
+        d->moreExtensionButton->updatePrimitives();
     }
 }
 

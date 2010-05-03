@@ -25,7 +25,7 @@
 
 #include "hbcssinspector_p.h"
 
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
 #include <hbanchor_p.h>
 #include <hbanchorarrowdrawer_p.h>
 #include <hbcolorscheme.h>
@@ -37,6 +37,8 @@
 #include <hbnamespace_p.h>
 #include <hbwidgetloadersyntax_p.h>
 #include <hbxmlloaderabstractsyntax_p.h>
+#include <hbwidgetbase_p.h>
+#include <hbwidget_p.h>
 
 #include <QBrush>
 #include <QCheckBox>
@@ -58,7 +60,8 @@
 
 const QString CSS_HTML_HEADER = "<style type=\"text/css\"> \
                                 .overridden {color:#999; text-decoration:line-through;} \
-                                .selectors {background-color: #e0e0e0; margin:0;} \
+                                .filename {background-color: #e0e0e0; margin:0;} \
+                                .selectors {margin:0;} \
                                 .selector {color:#000;} \
                                 .pseudo {font-weight:bold;} \
                                 .attr {font-style:italic;} \
@@ -74,6 +77,7 @@ const QString WIDGETML_HTML_FOOTER = "</pre>";
 
 const int ITEMNAME = 0xfffe; // Copied from hbstyle.cpp!!
 const qreal HOVER_BOX_PEN_WIDTH = 2.0;
+const qreal GUIDE_LINE_WIDTH = 1.0;
 const QChar BIG_NUMBER_CHAR = 0x221E;
 const QString TEXT_COLOR = "qtc_default_main_pane_normal";
 const QString LINE_COLOR = "qtc_view_visited_normal";
@@ -106,7 +110,7 @@ static QString cssItemText(const QGraphicsItem *item)
 }
 
 
-static QString convertHintToHintText(const QGraphicsItem *item, qreal hint)
+static QString convertMeasurementToText(const QGraphicsItem *item, qreal hint)
 {
     QString hintText;
     qreal unit = HbDeviceProfile::profile(item).unitValue();
@@ -125,23 +129,37 @@ static QString convertHintToHintText(const QGraphicsItem *item, qreal hint)
     return hintText;
 }
 
-
 static QString cssItemHintText(const QGraphicsItem *item)
 {
     QString sizeHint;
     if (item->isWidget()) {
         const QGraphicsLayout *layout = (static_cast<const QGraphicsWidget *>(item))->layout();
         if(layout) {
-            sizeHint += "(" + convertHintToHintText( item, layout->minimumWidth() ) + "," + convertHintToHintText( item, layout->minimumHeight() ) + ")|";
-            sizeHint += "(" + convertHintToHintText( item, layout->preferredWidth() ) + "," + convertHintToHintText( item, layout->preferredHeight() ) +")|";
-            sizeHint += "(" + convertHintToHintText( item, layout->maximumWidth() ) + "," +convertHintToHintText( item, layout->maximumHeight() ) + ")";
+            sizeHint += "(" + convertMeasurementToText( item, layout->minimumWidth() ) + "," + convertMeasurementToText( item, layout->minimumHeight() ) + ")|";
+            sizeHint += "(" + convertMeasurementToText( item, layout->preferredWidth() ) + "," + convertMeasurementToText( item, layout->preferredHeight() ) +")|";
+            sizeHint += "(" + convertMeasurementToText( item, layout->maximumWidth() ) + "," +convertMeasurementToText( item, layout->maximumHeight() ) + ")";
         }
     }
     return sizeHint;
 }
 
+static QRectF cssItemHintRect(const QGraphicsItem *item)
+{
+    QRectF hintRect;
+    if (item->isWidget()) {
+            if (item->isWidget()) {
+                const QGraphicsLayout *layout = (static_cast<const QGraphicsWidget *>(item))->layout();
+                if(layout) {
+                    hintRect.setWidth(layout->preferredWidth());
+                    hintRect.setHeight(layout->preferredHeight());
+                }
+            }
+    }
+    return hintRect;
+}
 
-static QString anchorEdgeName(HbAnchorLayout::Edge edge) 
+
+static QString anchorEdgeName(Hb::Edge edge)
 {
     QString name;
     switch (edge) {
@@ -157,7 +175,7 @@ static QString anchorEdgeName(HbAnchorLayout::Edge edge)
 }
 
 
-static QString meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, const QString layoutName)
+QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, const QString layoutName)
 {
     QString html;
     QString widgetML;
@@ -170,40 +188,61 @@ static QString meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, c
     xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::TYPE_HBWIDGET));
     xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_VERSION), HbWidgetLoaderSyntax::version());
     xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_TYPE), itemName);
-    
+
     xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::TYPE_LAYOUT));
     xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_NAME), layoutName);
-    xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_TYPE), "mesh");
+    xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_TYPE), syntax.lexemValue(HbXmlLoaderAbstractSyntax::LAYOUT_MESH));
 
     if (mesh) {
-        QList<HbAnchor> anchors = HbMeshLayoutDebug::getAnchors(mesh);
+        QList<HbAnchor*> anchors = HbMeshLayoutDebug::getAnchors(mesh);
         for (int i=0; i<anchors.count(); i++) {
-            HbAnchor anchor(anchors.at(i));
-    
+            HbAnchor* anchor = anchors.at(i);
+
+            QString startName = HbStyle::itemName(anchor->mStartItem->graphicsItem());
+            QString endName = HbStyle::itemName(anchor->mEndItem->graphicsItem());
+            QString spacingText;
+
+            QGraphicsItem *asGraphicsItem = mesh->parentLayoutItem()->graphicsItem();
+            if ( asGraphicsItem && asGraphicsItem->isWidget() ){
+                HbWidget *asWidget = qobject_cast<HbWidget*>( static_cast<QGraphicsWidget*>(asGraphicsItem) );
+                if( asWidget ) {
+                    HbWidgetPrivate*priv = static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(asWidget));
+
+                    if (startName.isEmpty()) {
+                        startName = priv->mSpacers.key(anchor->mStartItem);
+                    } 
+                    if (endName.isEmpty()) {
+                        endName = priv->mSpacers.key(anchor->mEndItem);
+                    }
+
+                    if(qAbs<qreal>(anchor->mValue) > 0.01)
+                        spacingText = convertMeasurementToText(asWidget, anchor->mValue);
+                }
+            }
+
             xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_MESHITEM));
 
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_NAME), 
-                HbStyle::itemName(anchor.mStartItem->graphicsItem()));
+                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_NAME), startName);
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_EDGE), 
-                anchorEdgeName(anchor.mStartEdge));
+                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_EDGE), anchorEdgeName(anchor->mStartEdge));
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_NAME), 
-                HbStyle::itemName(anchor.mEndItem->graphicsItem()));
+                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_NAME), endName);
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_EDGE), 
-                anchorEdgeName(anchor.mEndEdge));
-
+                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_EDGE), anchorEdgeName(anchor->mEndEdge));
+            if ( !spacingText.isEmpty() ) {
+                xmlWriter.writeAttribute(
+                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SPACING), spacingText);
+            }
             xmlWriter.writeEndElement(); // meshitem
         }
 
-    }   
+    }
     xmlWriter.writeEndElement(); // layout
     xmlWriter.writeEndElement(); // widgetml
 
     html = widgetML;
-    html.remove(0, html.indexOf("<")); // trim whitespace 
+    html.remove(0, html.indexOf("<")); // trim whitespace
     html.replace("<", "&lt;");
     html.replace(">", "&gt;");
     html.replace(QRegExp("\"([^\"]*)\""), "\"<span>\\1</span>\""); // Add span elements around things in quotes
@@ -224,10 +263,16 @@ static QString meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, c
 
 
 HbCssInfoDrawer::HbCssInfoDrawer(QGraphicsItem *parent)
-    : HbWidgetBase(parent), mShowItemText(true), mShowHintText(true), mShowBox(true)
+    : HbWidgetBase(parent), 
+    mShowItemText(true),
+    mShowHintText(true), 
+    mShowBox(true),
+    mShowHintBox(true),
+    mDrawGuideLines(true), 
+    mItemRect(0,0,0,0)
 {
-    updateColors();
-    setVisible(false);
+	updateColors();
+	setVisible(false);
 }
 
 
@@ -256,16 +301,28 @@ void HbCssInfoDrawer::updateFocusItem(const QGraphicsItem *item)
     // update text and geometry
     if (item) {
         this->setVisible(true);
-        this->setGeometry(item->sceneBoundingRect());
+        mItemRect = item->sceneBoundingRect();
         mItemText = cssItemText(item);
         mHintText = cssItemHintText(item);
+        mHintRect = cssItemHintRect(item);
+        // Make sure this is in the same place in the scene as the window
+        if (item->isWidget()) {
+            const HbWidget *obj = static_cast<const HbWidget*>(item);
+            this->setGeometry(obj->mainWindow()->rect());
+        }
     } else {
         this->setVisible(false);
-        mItemText = "";
-        mHintText = "";
     }
+    this->update();
 }
 
+void HbCssInfoDrawer::paintRect(QPainter *painter, QRectF rect)
+{
+        rect.adjust(
+            HOVER_BOX_PEN_WIDTH/2, HOVER_BOX_PEN_WIDTH/2,
+            -HOVER_BOX_PEN_WIDTH/2, -HOVER_BOX_PEN_WIDTH/2);
+        painter->drawRect(rect);
+}
 
 void HbCssInfoDrawer::paint(QPainter *painter, 
     const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -273,20 +330,27 @@ void HbCssInfoDrawer::paint(QPainter *painter,
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
+    const QPen prevPen = painter->pen();
+    const Qt::LayoutDirection prevDirection = painter->layoutDirection();
+    painter->setLayoutDirection(Qt::LeftToRight);
+
     if (mShowBox) {
         painter->setPen(QPen(mBoxColor, HOVER_BOX_PEN_WIDTH));
-        QRectF boxRect = this->boundingRect();
-        boxRect.adjust(HOVER_BOX_PEN_WIDTH/2, HOVER_BOX_PEN_WIDTH/2,
-                            -HOVER_BOX_PEN_WIDTH/2, -HOVER_BOX_PEN_WIDTH/2);
-        painter->drawRect(boxRect);
+        paintRect(painter, mItemRect);
+    }
+    if (mShowHintBox) {
+        painter->setPen(QPen(Qt::green, HOVER_BOX_PEN_WIDTH));
+        QRectF prefRect = mHintRect;
+        prefRect.moveCenter(mItemRect.center());
+        paintRect(painter, prefRect);
     }
 
     painter->setPen(mTextColor);
     int fontSize = painter->fontInfo().pixelSize();
-    int boxHeight = (int)(this->boundingRect().height());
+    int boxHeight = (int)(mItemRect.height());
 
     if (mShowItemText && boxHeight - fontSize > 0) {
-        QPointF pos = this->boundingRect().topLeft();
+        QPointF pos = mItemRect.topLeft();
         pos += QPointF(HOVER_BOX_PEN_WIDTH, fontSize);
         painter->drawText(pos, mItemText);
     }
@@ -294,10 +358,26 @@ void HbCssInfoDrawer::paint(QPainter *painter,
     bool roomForSizeHint = (boxHeight - (2*fontSize) > 0 )
             || (!mShowItemText && (boxHeight - fontSize) > 0);
     if (mShowHintText && roomForSizeHint) {
-        QPointF pos = this->boundingRect().bottomLeft();
+        QPointF pos = mItemRect.bottomLeft();
         pos += QPointF(HOVER_BOX_PEN_WIDTH, -HOVER_BOX_PEN_WIDTH);
         painter->drawText(pos, mHintText);
     }
+
+    if (mDrawGuideLines) {
+        const QRectF &br = this->boundingRect();
+        painter->setPen(QPen(mTextColor, GUIDE_LINE_WIDTH, Qt::DashLine));
+        // Line down left hand side
+        painter->drawLine((int)mItemRect.left(), 0, (int)mItemRect.left(), (int)br.height());
+        // Line down right hand side
+        painter->drawLine((int)mItemRect.right(), 0, (int)mItemRect.right(), (int)br.height());
+        // Line across top
+        painter->drawLine(0, (int)mItemRect.top(), (int)br.width(), (int)mItemRect.top());
+        // Line across bottom
+        painter->drawLine(0, (int)mItemRect.bottom(), (int)br.width(), (int)mItemRect.bottom());
+    }
+
+    painter->setLayoutDirection(prevDirection);
+    painter->setPen(prevPen);
 }
 
 
@@ -342,6 +422,8 @@ void HbCssInspectorWindow::addFilters()
         connect(filter, SIGNAL(newItemHovered(const QGraphicsItem*)), SLOT(updateFocusItem(const QGraphicsItem*)));
         connect(mNameCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setItemTextVisible(bool)));
         connect(mSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setHintTextVisible(bool)));
+		connect(mHintOutlinesCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setHintBoxVisible(bool)));
+        connect(mGuideLinesCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setGuideLinesVisible(bool)));
         connect(mArrowsCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawArrows(bool)));
         connect(mOutlinesCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawOutlines(bool)));
         connect(mSpacersCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawSpacers(bool)));
@@ -358,25 +440,31 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     QGridLayout *settingLayout = new QGridLayout(settings);
     mArrowsCheck = new QCheckBox(tr("Draw arrows"), this);
     mOutlinesCheck = new QCheckBox(tr("Draw subitem outlines"), this);
+	mHintOutlinesCheck = new QCheckBox(tr("Draw sizehint outlines"), this);
     mSpacersCheck = new QCheckBox(tr("Draw spacers"), this);
     mNameCheck = new QCheckBox(tr("Show object name"), this);
     mSizeHintCheck = new QCheckBox(tr("Show size hint"), this);
+    mGuideLinesCheck = new QCheckBox(tr("Draw guide lines"), this);
     mLiveRadio = new QRadioButton(tr("Live mode"), this);
     mClickRadio = new QRadioButton(tr("Click locking mode"), this);
     mBlockRadio = new QRadioButton(tr("Click locking mode (block events)"), this);
     settingLayout->addWidget(mArrowsCheck, 0, 0);
     settingLayout->addWidget(mOutlinesCheck, 1, 0);
-    settingLayout->addWidget(mSpacersCheck, 2, 0);
+	settingLayout->addWidget(mHintOutlinesCheck, 2, 0);
+    settingLayout->addWidget(mSpacersCheck, 3, 0);
     settingLayout->addWidget(mNameCheck, 0, 1);
     settingLayout->addWidget(mSizeHintCheck, 1, 1);
+    settingLayout->addWidget(mGuideLinesCheck, 2, 1);
     settingLayout->addWidget(mLiveRadio, 0, 2);
     settingLayout->addWidget(mClickRadio, 1, 2);
     settingLayout->addWidget(mBlockRadio, 2, 2);
     mArrowsCheck->setChecked(true);
     mOutlinesCheck->setChecked(true);
+	mHintOutlinesCheck->setChecked(true);
     mSpacersCheck->setChecked(true);
     mNameCheck->setChecked(true);
     mSizeHintCheck->setChecked(true);
+    mGuideLinesCheck->setChecked(true);
     mLiveRadio->setChecked(true);
 
     QLabel *lblWidgetML = new QLabel(tr("WidgetML"), this);
@@ -407,6 +495,14 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     layout->addWidget(mSizeHintLabel, 5, 3, 1, 1);
     layout->setRowStretch(2, 2);
     layout->setRowStretch(4, 3);
+
+    // Lock in left-to-right mode
+    mSizeHintLabel->setLayoutDirection(Qt::LeftToRight);
+    lblColors->setLayoutDirection(Qt::LeftToRight);
+    lblLayout->setLayoutDirection(Qt::LeftToRight);
+    mLayoutCssBox->setLayoutDirection(Qt::LeftToRight);
+    mColorsCssBox->setLayoutDirection(Qt::LeftToRight);
+    mLayoutWidgetMLBox->setLayoutDirection(Qt::LeftToRight);
 
     setLayout(layout);
 }
@@ -526,7 +622,9 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
                     || itemText == "HbWidgetBase" 
                     || itemText == "HbTextItem" 
                     || itemText == "HbIconItem" 
-                    || itemText == "HbFrameItem") {
+                    || itemText == "HbFrameItem"
+                    || itemText == "HbMarqueeItem"
+                    || itemText == "HbSpacerItem") {
                 item = item->parentItem();
                 widget = static_cast<const QGraphicsWidget *>(item);
                 itemText = widget ? widget->metaObject()->className() : "";
@@ -544,6 +642,14 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
     } else if(event->type() == QEvent::Leave && mLiveMode) {
         emit newItemHovered(0);
         mCurrentItem = 0;
+#ifdef HB_GESTURE_FW
+    } else if(mBlockingMode && event->type() == QEvent::Gesture) {
+        QGestureEvent *gesEvent = static_cast<QGestureEvent*>(event);
+        QGesture *tap = gesEvent->gesture(Qt::TapGesture);
+        if (tap) {
+            return true;
+        }
+#endif
     }
 
     return QObject::eventFilter(obj, event);

@@ -64,7 +64,10 @@ void HbInputModeIndicatorPrivate::updatePrediction()
     const QString predictionOnIcon("qtg_mono_predictive_text_on");
     const QString predictionOffIcon("qtg_mono_predictive_text_off");
 
-    if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
+    //Do not update the indicator if prediction is not allowed in the editor  even though
+    //prediction is active.
+    if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard() &&  mFocusObject && 
+                                     mFocusObject->editorInterface().isPredictionAllowed()) {
         mButton.setIcon(HbIcon(predictionOnIcon));
     } else {
         mButton.setIcon(HbIcon(predictionOffIcon));
@@ -85,9 +88,8 @@ Implements automatic mechanism which updates the prediction icon of keypad butto
 */
 
 /*!
-Constructor.
-@param button the keypad button which shows input mode icon
-@param parent parent of the widget.
+\deprecated HbInputModeIndicator::HbInputModeIndicator(HbTouchKeypadButton&, QGraphicsWidget*)
+    is deprecated. Use (upcoming) version without HbTouchKeypadButton parameter.
 */
 HbInputModeIndicator::HbInputModeIndicator(HbTouchKeypadButton& button, QGraphicsWidget* parent)
     : QObject(parent)
@@ -96,7 +98,7 @@ HbInputModeIndicator::HbInputModeIndicator(HbTouchKeypadButton& button, QGraphic
     if (mPrivate->mFocusObject) {
         connect( &mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
     }
-    connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(int)), this, SLOT(udpdatePredictionStatus(int)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(updatePredictionStatus(HbKeyboardSettingFlags, bool)));
     updateIndicator(); // check mode of current editor
 }
 
@@ -130,12 +132,25 @@ void HbInputModeIndicator::updateIndicator()
 }
 
 /*!
+\deprecated HbInputModeIndicator::udpdatePredictionStatus(int)
+    is deprecated. Use updatePredictionStatus(bool) instead.
+
 Updates prediction status.
 */
 void HbInputModeIndicator::udpdatePredictionStatus(int newStatus)
 {
-   Q_UNUSED(newStatus);
-   mPrivate->updatePrediction();
+    Q_UNUSED(newStatus);
+}
+
+/*!
+Updates prediction status.
+*/
+void HbInputModeIndicator::updatePredictionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus)
+{
+    Q_UNUSED(keyboardType);
+    Q_UNUSED(newStatus);
+    mPrivate->updatePrediction();
 }
 
 // End of file
+

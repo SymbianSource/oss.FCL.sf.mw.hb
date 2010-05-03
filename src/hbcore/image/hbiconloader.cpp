@@ -38,6 +38,7 @@
 #include <QImageReader>
 #include <QHash>
 
+#include "hbframedrawer_p.h"
 #include "hbicontheme_p.h"
 #include "hbstandarddirs_p.h"
 #include "hblayoutdirectionnotifier_p.h"
@@ -58,6 +59,10 @@
 #include "hbthemeindex_p.h"
 #include "hbthemecommon_p.h"
 #include "hbiconimplcreator_p.h"
+
+#ifdef HB_NVG_CS_ICON
+#include "hbeglstate_p.h"
+#endif
 
 #define HB_ICONIMPL_CACHE
 /*
@@ -167,7 +172,7 @@ private: // data
 };
 
 HbIconLoaderPrivate::HbIconLoaderPrivate() :
-        storedTheme(HbIconTheme::global()->currentTheme()),
+        storedTheme(HbTheme::instance()->name()),
         mirroredListCreated(false),
         sourceResolution(144), // This is about the resolution of a Nokia N95 8GB
         resolution(144),
@@ -291,7 +296,7 @@ QString HbIconLoaderPrivate::findIconHelper(const QString &iconName, bool mirror
 
         // If there was no theme index, search the icon in theme icon dirs (slow)
         if (!themeIndexUsed) {
-        foreach( const QString &dir, HbIconTheme::global()->dirList() ) {
+        foreach (const QString &dir, HbThemePrivate::instance()->iconDirectories()) {
                 if (mirrored) {
                     // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
                     iconPath =  HbStandardDirs::findResource( dir + "mirrored" + '/' + iconName, Hb::IconResource );
@@ -509,6 +514,7 @@ void HbIconLoaderPrivate::setLayoutMirrored(bool mirrored)
 
 void HbIconLoaderPrivate::createMirroredList()
 {
+    /* Todo: mirrored.txt will be refactored
     // Find mirrored.txt file
     QString filename = HbStandardDirs::findResource("themes/themes/mirrored.txt", Hb::ThemeResource);
     if (filename.endsWith("mirrored.txt")) {
@@ -531,6 +537,53 @@ void HbIconLoaderPrivate::createMirroredList()
         qSort(mirroredList.begin(), mirroredList.end());
         }
     }
+    */
+    // button
+    mirroredList << "qtg_fr_btn_normal" << "qtg_fr_btn_pressed" << "qtg_fr_btn_latched" << "qtg_fr_btn_highlight";
+    mirroredList << "qtg_fr_btn_latched_highlight" << "qtg_fr_btn_disabled";
+
+    // form
+    mirroredList << "qtg_fr_form_value";
+
+    // grid
+    mirroredList << "qtg_fr_grid_normal" << "qtg_fr_grid_highlight" << "qtg_fr_grid_pressed";
+
+    // list
+    mirroredList << "qtg_fr_list_normal" << "qtg_fr_list_highlight" << "qtg_fr_list_pressed" << "qtg_fr_list_parent_normal";
+    mirroredList << "qtg_fr_convlist_sent_normal" << "qtg_fr_convlist_sent_highlight" << "qtg_fr_convlist_sent_pressed";
+    mirroredList << "qtg_fr_convlist_received_normal" << "qtg_fr_convlist_received_highlight" << "qtg_fr_convlist_received_pressed";
+
+    // popup
+    mirroredList << "qtg_fr_popup_list_normal" << "qtg_fr_popup_list_pressed" << "qtg_fr_popup_list_highlight" << "qtg_fr_popup_list_parent_normal";
+    mirroredList << "qtg_fr_popup_grid_normal" << "qtg_fr_popup_grid_pressed" << "qtg_fr_popup_grid_highlight" << "qtg_graf_dimming_image";
+    mirroredList << "qtg_fr_popup" << "qtg_fr_popup_secondary" << "qtg_fr_popup_preview";
+
+    // progressive slider
+    mirroredList << "qtg_fr_progslider_frame" << "qtg_fr_progslider_pressed" << "qtg_fr_progslider_loaded";
+    mirroredList << "qtg_fr_progslider_played" << "qtg_graf_progslider_handle_normal" << "qtg_graf_progslider_handle_pressed";
+
+    // slider
+    mirroredList << "qtg_fr_slider_v_frame" << "qtg_fr_slider_v_filled" << "qtg_graf_slider_v_handle_normal" << "qtg_graf_slider_v_tick_minor";
+    mirroredList << "qtg_graf_slider_v_tick_major" << "qtg_fr_slider_h_frame" << "qtg_fr_slider_h_filled" << "qtg_graf_slider_h_handle_normal";
+    mirroredList << "qtg_graf_slider_h_tick_minor" << "qtg_graf_slider_h_tick_major";
+
+    // tabs
+    mirroredList << "qtg_fr_tab_active" << "qtg_fr_tab_passive_normal" << "qtg_fr_tab_passive_pressed" << "qtg_fr_tab_mask";
+
+    // toolbar
+    mirroredList << "qtg_fr_tb_h_normal" << "qtg_fr_tb_h_pressed" << "qtg_fr_tb_h_latched" << "qtg_fr_tb_h_disabled";
+    mirroredList << "qtg_fr_tb_v_normal" << "qtg_fr_tb_v_pressed" << "qtg_fr_tb_v_latched" << "qtg_fr_tb_v_disabled";
+
+    // toolbar extension
+    mirroredList << "qtg_fr_tb_ext";
+
+    // scrollbar
+    mirroredList << "qtg_fr_scroll_v_handle" << "qtg_fr_scroll_v_frame" << "qtg_fr_scroll_h_handle" << "qtg_fr_scroll_h_frame";
+
+    // status pane
+    mirroredList << "qtg_fr_status_normal" << "qtg_fr_status_pressed" << "qtg_fr_status_latched" << "qtg_indi_status_options";
+
+    qSort(mirroredList.begin(), mirroredList.end());
 }
 
 #ifdef HB_ICONIMPL_CACHE
@@ -675,7 +728,7 @@ QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName
 
 // Theme server on desktop was found very slow (probably due to IPC with QLocalServer/QLocalSocket).
 // disabling icon sharing via theme server until theme server performance on desktop is improved
-#ifdef  Q_OS_SYMBIAN
+#ifdef Q_OS_SYMBIAN
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
     // Try to take data from server if parameters don't prevent it
     if (manager && format != "MNG" && format != "GIF" &&
@@ -794,6 +847,53 @@ void HbIconLoader::updateLayoutDirection()
     d->setLayoutMirrored(primaryWindow->layoutDirection() == Qt::RightToLeft);
 }
 
+void HbIconLoader::handleForegroundLost()
+{
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    // Remove SGImage /NVG type of icons 
+    freeGpuIconData();
+    // delete the VGImage
+    HbEglStates *eglStateInstance = HbEglStates::global();
+    eglStateInstance->handleForegroundLost();
+    // notify the server to clear the SGImage and NVG type of icons from the client's session
+    HbThemeClient::global()->notifyForegroundLostToServer();
+#endif
+}
+
+/*!
+ * Removes the  IconImpl entry from the client side cache
+ */
+void HbIconLoader::removeItemInCache(HbIconImpl *iconImpl)
+{
+#ifdef HB_ICONIMPL_CACHE  
+    if ( iconImpl ) {
+        iconImplCache.remove(iconImplCache.key(iconImpl));
+    }
+#else
+    Q_UNUSED(iconImpl);
+#endif
+}
+
+/*!
+ *  Cleans up (deletes) the HbIconImpl instances at the client side
+ *  It also resets the engine's iconImpl and MaskableIcon's iconImpl
+ */
+void HbIconLoader::freeGpuIconData()
+{
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+	for( int i = 0; i < iconEngineList.count(); i++ ) {	    
+        HbIconEngine *engine = iconEngineList.at(i);
+	    engine->resetIconImpl();
+	}	
+	for(int i = 0; i< frameDrawerInstanceList.count(); i++) {
+	    HbFrameDrawerPrivate * fd = frameDrawerInstanceList.at(i);
+	    if ( (fd->iconFormatType() == SGIMAGE) || (fd->iconFormatType() == NVG) ) {
+	        fd->resetMaskableIcon();            
+	    }    
+	}    
+#endif
+}
+
 /*!
   \internal
 
@@ -814,12 +914,11 @@ QString HbIconLoader::findSharedResource(const QString &name, Hb::ResourceType r
     bool temp;
     if (resType == Hb::EffectResource) {
         QMap<int, QString> effectHier = HbThemeUtils::constructHierarchyListWithPathInfo(
-            name, HbIconTheme::global()->currentTheme(), Hb::EffectResource);
-        QMap<int, QString> effectFiles =
-            HbStandardDirs::findResourceList(effectHier, Hb::EffectResource);
+            name, HbTheme::instance()->name(), Hb::EffectResource);
+        HbStandardDirs::findResourceList(effectHier, Hb::EffectResource);
 
         // Just take the first value from the map. (note that maps are sorted by the key)
-        foreach (const QString &file, effectFiles) {
+        foreach (const QString &file, effectHier) {
             return file;
         }
 
@@ -831,6 +930,38 @@ QString HbIconLoader::findSharedResource(const QString &name, Hb::ResourceType r
         // TODO: theme index does not support currently axmls, so setting 'useThemeIndex' parameter to false
         return HbIconLoaderPrivate::findIconHelper(name, false, temp, false);
     }
+}
+
+/*!
+  This function is used to register the IconEngine instance to IconLoader
+ */
+void HbIconLoader::storeIconEngineInfo(HbIconEngine *iconEngine)
+{    
+    iconEngineList.append( iconEngine );
+}
+
+/*!
+  This function is used to unregister the Iconengine instance from Iconloader
+ */
+void HbIconLoader::removeIconEngineInfo(HbIconEngine *iconEngine)
+{
+   iconEngineList.removeOne(iconEngine); 
+}
+
+/*!
+  This function is used to register the FrameDrawerPrivate instance to IconLoader
+ */
+void HbIconLoader::storeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer )
+{
+    frameDrawerInstanceList.append(frameDrawer);
+}
+
+/*!
+  This function is used to unregister the FrameDrawerPrivate instance from IconLoader
+ */
+void HbIconLoader::removeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer )
+{
+    frameDrawerInstanceList.removeOne(frameDrawer);    
 }
 
 void HbIconLoader::resolveCleanIconName(HbIconLoadingParams &params) const
@@ -1375,7 +1506,7 @@ HbIconImpl *HbIconLoader::loadIcon(
 
 // Theme server on desktop was found very slow (probably due to IPC with QLocalServer/QLocalSocket).
 // disabling icon sharing via theme server until theme server performance on desktop is improved
-#ifdef  Q_OS_SYMBIAN
+#ifdef Q_OS_SYMBIAN
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
         // Try to take data from server if parameters don't prevent it
         if (!options.testFlag(DoNotCache) 
@@ -1446,7 +1577,7 @@ HbIconImpl *HbIconLoader::loadIcon(
     qDebug() << "HbIconLoader::loadIcon END";
 #endif
 
-    icon = new HbPixmapIconImpl(params.canvasPixmap);
+    icon = new HbPixmapIconImpl(params.canvasPixmap, params.iconFileName);
     return icon;
 }
 
@@ -1570,7 +1701,8 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
         getMultiIconImplFromServer(iconPathList, sizeList,
                                    aspectRatioMode,
                                    mode,
-                                   (mirrored && !mirroredIconFound),
+                                   mirrored, 
+                                   mirroredIconFound,
                                    options,
                                    color,
                                    HbIconLoader::AnyType,
@@ -1598,7 +1730,7 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
 }
 
 // Initiates an IPC call to the ThemeServer to unload ( decrement ref count ) the icon
-void HbIconLoader::unLoadIcon(HbIconImpl * icon)
+void HbIconLoader::unLoadIcon(HbIconImpl * icon, bool unloadedByServer)
 {
     if (!icon) {
         return;
@@ -1607,13 +1739,15 @@ void HbIconLoader::unLoadIcon(HbIconImpl * icon)
     icon->decrementRefCount();
 
     if (icon->refCount() == 0 && icon->isCreatedOnServer()) {
-        HbThemeClient::global()->unloadIcon(icon->iconFileName(),
-                                            icon->keySize(),
-                                            icon->iconAspectRatioMode(),
-                                            icon->iconMode(),
-                                            icon->isMirrored(),
-                                            icon->color()
-                                           );
+        if (!unloadedByServer) {
+           HbThemeClient::global()->unloadIcon(icon->iconFileName(),
+                                               icon->keySize(),
+                                               icon->iconAspectRatioMode(),
+                                               icon->iconMode(),
+                                               icon->isMirrored(),
+                                               icon->color()
+                                              );
+        }
 #ifdef HB_ICONIMPL_CACHE
         int rem = iconImplCache.remove(iconImplCache.key(icon));
         if (rem > 0) {
@@ -1659,6 +1793,7 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
                                 Qt::AspectRatioMode aspectRatioMode,
                                 QIcon::Mode mode,
                                 bool mirrored,
+                                bool mirroredIconFound,
                                 HbIconLoader::IconLoaderOptions options,
                                 const QColor &color,
                                 HbIconLoader::IconDataType type,
@@ -1712,7 +1847,7 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
         params.aspectRatioMode = aspectRatioMode;
         params.mode = mode;
         params.mirrored = mirrored;
-        //params.mirroredIconFound = mirroredIconFound;
+        params.mirroredIconFound = mirroredIconFound;
 
 
         for (int i = 0; i < count;  i++) {
@@ -1776,7 +1911,7 @@ void HbIconLoader::unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls)
             int rem = iconImplCache.remove(iconImplCache.key(impl));
             if (rem > 0) {
 #ifdef HB_ICON_TRACES
-            qDebug()<<"HbIconLoader::unLoadMultiIcon :Removed from HbIconImpl Cache "<<rem<< impl->iconFileName()<< icon->keySize().height()<<"X"<<icon->keySize().width() ;
+            qDebug()<<"HbIconLoader::unLoadMultiIcon :Removed from HbIconImpl Cache "<<rem<< impl->iconFileName()<< impl->keySize().height()<<"X"<<impl->keySize().width() ;
 #endif 
             }
 #endif      

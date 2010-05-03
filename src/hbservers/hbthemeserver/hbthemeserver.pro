@@ -25,7 +25,7 @@
 
 TEMPLATE = app
 TARGET = hbthemeserver
-developer:DEFINES += BUILD_HB_INTERNAL
+CONFIG -= app_bundle
 DEFINES += HB_BUILD_DIR=\"\\\"$${HB_BUILD_DIR}\\\"\"
 
 # directories
@@ -69,13 +69,13 @@ symbian {
                 HEADERS += $$PWD/hbnvgiconprocessor_p.h
                 LIBS += -llibopenvg -llibopenvgu -llibegl
         }
-        LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore
+        LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli
         sgimage {
         	HEADERS += $$PWD/hbsgimageiconprocessor_p.h
                 HEADERS += $$PWD/hbsgimagerenderer_p.h
                 SOURCES  += $$PWD/hbsgimageiconprocessor_p.cpp
                 SOURCES  += $$PWD/hbsgimagerenderer.cpp
-                INCLUDEPATH += /epoc32/include/platform #For SGImage Support
+                INCLUDEPATH += $${EPOCROOT}epoc32/include/platform #For SGImage Support
                 LIBS += -lsgresource #For SGImage Support
                 LIBS += -llibopenvg #For SGImage Support
                 LIBS += -llibopenvgu #For SGImage Support
@@ -85,9 +85,9 @@ symbian {
     myrssrules = \
     "hidden = KAppIsHidden;"
     RSS_RULES += myrssrules
-    MMP_RULES += "SYSTEMINCLUDE /epoc32/include/middleware"
+    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/middleware"
     # FOR 9.2 FOR INCLUDING aknappui.h
-    MMP_RULES += "SYSTEMINCLUDE /epoc32/include/mw"
+    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/mw"
     TARGET.UID3 = 0x20022E82
     TARGET.EPOCHEAPSIZE = 0x20000 0xA00000
     

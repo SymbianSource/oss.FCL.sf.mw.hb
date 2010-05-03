@@ -1,4 +1,4 @@
-HbProgressSlider[orientation="Horizontal"]::frame_element
+HbProgressSlider[orientation="Horizontal"]::frame
 {
    pref-height: var(hb-param-widget-progress-slider-height);
    size-policy-vertical: fixed;
@@ -6,7 +6,7 @@ HbProgressSlider[orientation="Horizontal"]::frame_element
   
 }
 
-HbProgressSlider[orientation="Vertical"]::frame_element
+HbProgressSlider[orientation="Vertical"]::frame
 {
    pref-width: var(hb-param-widget-progress-slider-height);
    size-policy-vertical: preferred;

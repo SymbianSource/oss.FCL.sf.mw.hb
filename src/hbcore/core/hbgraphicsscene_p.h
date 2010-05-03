@@ -54,8 +54,6 @@ public:
 
     HbPopupManager* popupManager();
 
-    bool hasAlreadyInputFrameworkFocus(HbInputMethod *activeMethod, QObject *editorWidget) const;
-
 public:
     HbGraphicsScene *q_ptr;
     HbPopupManager *mPopupManager;

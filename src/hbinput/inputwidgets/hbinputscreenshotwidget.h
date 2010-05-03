@@ -45,8 +45,8 @@ public:
 
 protected: // From QGraphicsItem
     virtual QPainterPath shape () const;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent* aEvent); 
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* aEvent);
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
     virtual int type() const { return Hb::ItemType_InputVkbWidget; }
 

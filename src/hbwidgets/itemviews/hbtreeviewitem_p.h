@@ -31,6 +31,20 @@
 
 class QGraphicsItem;
 
+class HbTreeViewItemShared : public HbListViewItemShared
+{
+    public:
+
+        HbTreeViewItemShared() :
+            HbListViewItemShared(),
+            mUserExpandable(true)
+        {
+        }
+
+        bool mUserExpandable;
+};
+
+
 class HbTreeViewItemPrivate : public HbListViewItemPrivate
 {
     Q_DECLARE_PUBLIC(HbTreeViewItem)
@@ -45,11 +59,17 @@ public:
 
     virtual ~HbTreeViewItemPrivate();
 
+    void init();
+
     virtual int modelItemType() const;
 
-    QGraphicsItem *updateExpandItem();
+    void updateExpandItem();
 
+    virtual void tapTriggered(QGestureEvent *event);
     QGraphicsItem *mExpandItem;
+
+public:
+
     bool mExpanded;
 };
 

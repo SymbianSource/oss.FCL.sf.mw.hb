@@ -56,8 +56,8 @@ contains(TEMPLATE, .*lib$) {
     for(pubheader, $$list($$lower($$unique(PUBLIC_HEADERS)))) {
         contains(pubheader, .*_p.h$):warning($$basename(pubheader) is listed in PUBLIC_HEADERS but has a \"_p.h\" suffix.)
     }
-    for(privheader, $$list($$lower($$unique(INTERNAL_HEADERS)))) {
-        !contains(privheader, .*_p.h$):warning($$basename(privheader) is listed in INTERNAL_HEADERS but has no \"_p.h\" suffix.)
+    for(privheader, $$list($$lower($$unique(PRIVATE_HEADERS)))) {
+        !contains(privheader, .*_p.h$):warning($$basename(privheader) is listed in PRIVATE_HEADERS but has no \"_p.h\" suffix.)
     }
 }
 

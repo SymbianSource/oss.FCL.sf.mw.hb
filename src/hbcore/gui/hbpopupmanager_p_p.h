@@ -128,6 +128,7 @@ public:
     virtual ~HbPopupLayoutManager() {}
 public slots:
       void  orientationChanged(const QRectF& rect);
+
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
     void changeEvent(QEvent *event);

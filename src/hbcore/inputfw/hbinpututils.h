@@ -62,6 +62,7 @@ public:
 
     static QWidget* createWrapperWidget(QGraphicsWidget* graphicsWidget);
     static QGraphicsWidget* createGraphicsProxyWidget(QWidget* widget);
+    static HbInputDigitType inputDigitType(HbInputLanguage language);	
 };
 
 /*!

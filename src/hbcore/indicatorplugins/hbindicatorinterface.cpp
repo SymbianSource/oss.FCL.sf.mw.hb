@@ -59,11 +59,12 @@
 */
 
 /*!
-    \deprecated HbIndicatorInterface::GroupPriority
-        is deprecated. Please use HbIndicatorInterface::Category instead.
     \enum HbIndicatorInterface::GroupPriority
     Defines indicator group priority. This determines where the indicator is shown: in indicator area or only
     in indicator menu etc.
+
+    \deprecated HbIndicatorInterface::GroupPriority
+        is deprecated. Please use HbIndicatorInterface::Category instead.
 */
 /*!
     \var HbIndicatorInterface::GroupPriority HbIndicatorInterface::GroupPriorityHigh
@@ -148,6 +149,7 @@
 /*!
     \var HbIndicatorInterface::DataRole HbIndicatorInterface::TextRole
     Indicator text shown in universal indicator popup.
+
     \deprecated HbIndicatorInterface::TextRole
         is deprecated. Please use HbIndicatorInterface::PrimaryTextRole instead.
 */
@@ -270,8 +272,9 @@ HbIndicatorInterface::Category HbIndicatorInterface::category() const
 }
 
 /*!
-    \deprecated HbIndicatorInterface::groupPriority()
+    \deprecated HbIndicatorInterface::groupPriority() const
         is deprecated. Please use HbIndicatorInterface::category() instead.
+
     returns the priority group the indicator belongs to.
    */
 HbIndicatorInterface::GroupPriority HbIndicatorInterface::groupPriority() const
@@ -340,8 +343,11 @@ HbIndicatorInterface::HbIndicatorInterface(const QString &indicatorType,
     \a indicatorGroup indicator group priority the object belongs to,
     \a interactionTypes interaction type flags for the object
 
-    \deprecated HbIndicatorInterface::HbIndicatorInterface(const QString&, GroupPriority, InteractionTypes)
+    \deprecated HbIndicatorInterface::HbIndicatorInterface(const QString&, HbIndicatorInterface::GroupPriority, HbIndicatorInterface::InteractionTypes)
         is deprecated, use the other constructor.
+
+    \deprecated HbIndicatorInterface::HbIndicatorInterface__sub_object(const QString&, HbIndicatorInterface::GroupPriority, QFlags<HbIndicatorInterface::InteractionType>)
+
 */
 HbIndicatorInterface::HbIndicatorInterface(const QString &indicatorType,
     GroupPriority indicatorGroup, InteractionTypes interactionTypes) :

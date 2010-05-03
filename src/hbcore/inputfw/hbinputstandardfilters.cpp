@@ -24,6 +24,7 @@
 ****************************************************************************/
 #include "hbinputstandardfilters.h"
 
+#include "hbinputsettingproxy.h"
 /*!
 @alpha
 @hbcore
@@ -36,6 +37,30 @@ Can be used with editors that have Qt::ImhDialableCharactersOnly set.
 
 \sa HbEditorInterface
 */
+
+/* Returns true if the character is a valid number in the current input language
+*/
+ 
+static bool isValidNumber(QChar aChar)
+{
+    bool ret = false;
+
+    QLocale::Language language = HbInputSettingProxy::instance()->globalInputLanguage().language();
+	QLocale::Language systemLanguage = QLocale::system().language();
+
+	if (language != systemLanguage) {
+        if (aChar >= '0' && aChar <= '9') {
+            ret = true;
+        }	
+	} else if (language == QLocale::Arabic) {
+        if (aChar >= 0x0660 && aChar <= 0x0669) {
+            ret = true;
+        }
+    } else if (aChar >= '0' && aChar <= '9') {
+        ret = true;
+    }         
+    return ret;	
+}
 HbPhoneNumberFilter* HbPhoneNumberFilter::instance()
 {
     static HbPhoneNumberFilter myInstance;
@@ -53,17 +78,15 @@ HbPhoneNumberFilter::~HbPhoneNumberFilter()
 /*!
 Returns true if given character is valid.
 */
-bool HbPhoneNumberFilter::filter(QChar aChar)
+bool HbPhoneNumberFilter::filter(QChar character)
 {
-    if (aChar >= '0' && aChar <= '9') {
+    if (character == '+' || character == '*'
+        || character == '#' || character == 'p'
+        || character == 'w') {
         return true;
-    }
-    if (aChar == '+' || aChar == '*'
-        || aChar == '#' || aChar == 'p'
-        || aChar == 'w') {
+    }  else if (isValidNumber(character)) {
         return true;
-    }
-
+    }	
     return false;
 }
 
@@ -97,15 +120,13 @@ HbFormattedNumbersFilter::~HbFormattedNumbersFilter()
 /*!
 Returns true if given character is valid.
 */
-bool HbFormattedNumbersFilter::filter(QChar aChar)
+bool HbFormattedNumbersFilter::filter(QChar character)
 {
-    if (aChar >= '0' && aChar <= '9') {
+    if (character == '.' || character == ',' || character == '-') {
+        return true;
+    } else if (isValidNumber(character)) {
         return true;
     }
-    if (aChar == '.' || aChar == ',' || aChar == '-') {
-        return true;
-    }
-
     return false;
 }
 
@@ -138,12 +159,11 @@ HbDigitsOnlyFilter::~HbDigitsOnlyFilter()
 /*!
 Returns true if given character is valid.
 */
-bool HbDigitsOnlyFilter::filter(QChar aChar)
+bool HbDigitsOnlyFilter::filter(QChar character)
 {
-    if (aChar >= '0' && aChar <= '9') {
+    if (isValidNumber(character)) {
         return true;
     }
-
     return false;
 }
 
@@ -176,9 +196,9 @@ HbUrlFilter::~HbUrlFilter()
 /*!
 Returns true if given character is valid.
 */
-bool HbUrlFilter::filter(QChar aChar)
+bool HbUrlFilter::filter(QChar character)
 {
-    if (aChar > 0x20 && aChar < 0x7f) {
+    if (character > 0x20 && character < 0x7f) {
         return true;
     }
 
@@ -215,17 +235,17 @@ HbEmailAddressFilter::~HbEmailAddressFilter()
 /*!
 Returns true if given character is valid.
 */
-bool HbEmailAddressFilter::filter(QChar aChar)
+bool HbEmailAddressFilter::filter(QChar character)
 {
-    if ((aChar >= 'a' && aChar <= 'z') ||
-        (aChar >= 'A' && aChar <= 'Z') ||
-        (aChar >= '0' && aChar <= '9')) {
+    if ((character >= 'a' && character <= 'z') ||
+        (character >= 'A' && character <= 'Z') ||
+        (character >= '0' && character <= '9')) {
     return true;
     }
 
     const QString others(".@,;?'-_&/~*+="); 
     for (int i = 0; i < others.size(); i++) {
-        if (others[i] == aChar) {
+        if (others[i] == character) {
             return true;
         }
     }
@@ -257,10 +277,10 @@ HbInputLowerCaseFilter* HbInputLowerCaseFilter::instance()
 /*!
 Returns true if the given character is in lower case or the case cannot be determined.
 */
-bool HbInputLowerCaseFilter::filter(QChar aChar)
+bool HbInputLowerCaseFilter::filter(QChar character)
 {
-    QChar lowerCase = aChar.toLower();
-    if (lowerCase != aChar) {
+    QChar lowerCase = character.toLower();
+    if (lowerCase != character) {
         return false;
     }
 
@@ -291,10 +311,10 @@ HbInputUpperCaseFilter* HbInputUpperCaseFilter::instance()
 /*!
 Returns true if the given character is in upper case or the case cannot be determined.
 */
-bool HbInputUpperCaseFilter::filter(QChar aChar)
+bool HbInputUpperCaseFilter::filter(QChar character)
 {
-    QChar upperCase = aChar.toUpper();
-    if (upperCase != aChar) {
+    QChar upperCase = character.toUpper();
+    if (upperCase != character) {
         return false;
     }
 

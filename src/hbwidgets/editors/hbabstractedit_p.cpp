@@ -43,7 +43,7 @@
 #include "hbmenu.h"
 #include "hbselectioncontrol_p.h"
 #include "hbcolorscheme.h"
-#include "hbsmileyengine.h"
+#include "hbsmileyengine_p.h"
 #include "hbtextmeasurementutility_p.h"
 #include "hbfeaturemanager_p.h"
 #include "hbinputeditorinterface.h"
@@ -113,7 +113,20 @@ public:
         }
 
         painter->restore();
-    };
+    }
+
+    void changeEvent(QEvent *event)
+    {
+        HbWidget::changeEvent(event);
+
+        switch (event->type()) {
+        case QEvent::FontChange:
+            edit->document()->setDefaultFont(font());
+            break;
+        default:
+            ;
+        }
+    }
 
     HbAbstractEdit *edit;
 };
@@ -133,72 +146,6 @@ static QTextLine currentTextLine(const QTextCursor &cursor)
 }
 
 
-/*
- * HbEditScrollArea
- */
-
-HbEditScrollArea::HbEditScrollArea(HbAbstractEdit* edit, QGraphicsItem* parent)
-    : HbScrollArea(parent),
-      mEdit(edit)
-{
-    setFlag(QGraphicsItem::ItemIsFocusable, false);
-}
-
-void HbEditScrollArea::updateScrollMetrics() {
-    Q_D(HbScrollArea);
-    d->updateScrollMetrics();
-}
-
-void HbEditScrollArea::resizeEvent(QGraphicsSceneResizeEvent *event) {
-    HbScrollArea::resizeEvent(event);
-    emit scrollAreaSizeChanged();
-}
-
-#ifdef HB_DEBUG_EDITOR_DRAW_RECTS
-void HbEditScrollArea::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0)
-{
-    Q_UNUSED(widget);
-    Q_UNUSED(option);
-
-    painter->save();
-    painter->setPen(Qt::red);
-    painter->drawRect(boundingRect().adjusted(1,1,-1,-1));
-
-    painter->restore();
-}
-#endif//HB_DEBUG_EDITOR_DRAW_RECTS
-
-
-void HbEditScrollArea::longPressGesture(const QPointF &point)
-{
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-    HbAbstractEditPrivate::d_ptr(mEdit)->longPressGesture(point);
-}
-
-void HbEditScrollArea::upGesture(int value){
-    HbScrollArea::upGesture(value);
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-}
-
-void HbEditScrollArea::downGesture(int value){
-    HbScrollArea::downGesture(value);
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-}
-
-void HbEditScrollArea::leftGesture(int value){
-    HbScrollArea::leftGesture(value);
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-}
-
-void HbEditScrollArea::rightGesture(int value){
-    HbScrollArea::rightGesture(value);
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-}
-
-void HbEditScrollArea::panGesture(const QPointF &point){
-    HbScrollArea::panGesture(point);
-    HbAbstractEditPrivate::d_ptr(mEdit)->gestureReceived();
-}
 
 QStringList HbAbstractEditMimeData::formats() const
 {
@@ -228,13 +175,14 @@ void HbAbstractEditMimeData::setup() const
 HbAbstractEditPrivate::HbAbstractEditPrivate () :
     HbWidgetPrivate(),
     doc(0),
+    placeholderDoc(0),
     validator(0),
     imEditInProgress(false),
     imPosition(0),
     imAdded(0),
     imRemoved(0),
     interactionFlags(Qt::TextEditorInteraction),
-    mousePressPos(-1, -1),
+    tapPosition(-1, -1),
     cursorOn(false),
     preeditCursor(0),
     preeditCursorVisible(true),
@@ -273,17 +221,15 @@ void HbAbstractEditPrivate::init()
 
     updatePaletteFromTheme();
 
-    scrollArea = new HbEditScrollArea(q, q);
-    //scrollArea->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    scrollArea = new HbScrollArea(q);
     scrollArea->setClampingStyle(HbScrollArea::StrictClamping);
     scrollArea->setFrictionEnabled(true);
     scrollArea->setScrollDirections(Qt::Vertical);
     scrollArea->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     scrollArea->setContentWidget(canvas);
-    scrollArea->installEventFilter(q);
-    scrollArea->setLongPressEnabled(true);
     scrollArea->setFlag(QGraphicsItem::ItemIsFocusable, false);
-    QObject::connect(scrollArea, SIGNAL(scrollAreaSizeChanged()), q, SLOT(updatePrimitives()));
+    QObject::connect(scrollArea, SIGNAL(scrollingStarted()), q, SLOT(_q_scrollStarted()));
+    QObject::connect(scrollArea, SIGNAL(scrollingEnded()), q, SLOT(_q_scrollEnded()));
     QObject::connect(q, SIGNAL(selectionChanged(QTextCursor,QTextCursor)), q, SLOT(_q_selectionChanged()));
     HbStyle::setItemName(scrollArea, QString("text"));
 
@@ -297,6 +243,7 @@ void HbAbstractEditPrivate::init()
 
     contextMenuShownOn = Hb::ShowTextContextMenuOnSelectionClicked | Hb::ShowTextContextMenuOnLongPress;
 
+    q->grabGesture(Qt::TapGesture);
 }
 
 void HbAbstractEditPrivate::updatePaletteFromTheme()
@@ -358,8 +305,6 @@ void HbAbstractEditPrivate::setContent(Qt::TextFormat format, const QString &tex
     // for use when called from setPlainText. we may want to re-use the currently
     // set char format then.
     const QTextCharFormat charFormatForInsertion = cursor.charFormat();
-
-    const QTextCursor oldSelection = cursor;
 
     bool clearDocument = true;
     if (!doc) {
@@ -578,7 +523,6 @@ bool HbAbstractEditPrivate::cursorMoveKeyEvent(QKeyEvent *e)
 
 void HbAbstractEditPrivate::repaintOldAndNewSelection(const QTextCursor &oldSelection)
 {
-    //Q_Q(HbAbstractEdit);
     if (cursor.hasSelection()
         && oldSelection.hasSelection()
         && cursor.currentFrame() == oldSelection.currentFrame()
@@ -633,6 +577,7 @@ void HbAbstractEditPrivate::ensurePositionVisible(int position)
 {
     if (scrollArea && scrollable) {
         QRectF rect = rectForPositionInCanvasCoords(position, QTextLine::Leading);
+        rect.adjust(0, -doc->documentMargin(), 0, doc->documentMargin());
         // TODO: it seems that scrollArea->ensureVisible() expects the point
         //       in its content coordinates. Probably it should use viewport
         //       coordinates i.e. its own item coordinate system
@@ -644,6 +589,9 @@ void HbAbstractEditPrivate::ensurePositionVisible(int position)
 void HbAbstractEditPrivate::ensureCursorVisible()
 {
     ensurePositionVisible(cursor.position());
+    if(selectionControl) {
+        selectionControl->updatePrimitives();
+    }
 }
 
 void HbAbstractEditPrivate::setTextInteractionFlags(Qt::TextInteractionFlags flags)
@@ -700,17 +648,32 @@ void HbAbstractEditPrivate::_q_selectionChanged()
 {
     Q_Q(HbAbstractEdit);
 
-    if (cursor.hasSelection()) {
-        if (!selectionControl) {
-            selectionControl = new HbSelectionControl(q);
-        }
-        selectionControl->showHandles();
-        q->update();
+    if (cursor.hasSelection()) {   
+        if (selectionControl) {
+            selectionControl->showHandles();
+            q->update();
+        }      
     } else if (selectionControl){
         selectionControl->hideHandles();
         q->update();
     }
 }
+
+void HbAbstractEditPrivate::_q_scrollStarted()
+{
+    if (selectionControl) {
+        selectionControl->scrollStarted();
+    }
+}
+
+
+void HbAbstractEditPrivate::_q_scrollEnded()
+{
+    if (selectionControl) {
+        selectionControl->scrollFinished();
+    }
+}
+
 
 void HbAbstractEditPrivate::validateAndCorrect()
 {
@@ -953,7 +916,22 @@ QRectF HbAbstractEditPrivate::rectForPositionInCanvasCoords(int position, QTextL
         r = QRectF(layoutPos.x(), layoutPos.y(), cursorWidth, 10); // #### correct height
     }
 
+    if(layout->preeditAreaText().length()) {
+        r.adjust(0,0,q->blockBoundingRect(block).width()/2,0);
+    }
+
     return r;
+}
+
+/*
+  Returns the viewport rectangle in editor coordinate system.
+*/
+QRectF HbAbstractEditPrivate::viewPortRect() const
+{
+    QRectF viewRect = scrollArea->geometry();
+    qreal margin = doc->documentMargin();
+    viewRect.adjust(0,margin,0,-margin);
+    return viewRect;
 }
 
 int HbAbstractEditPrivate::contentLength() const
@@ -993,6 +971,13 @@ bool HbAbstractEditPrivate::canCopy() const
 #endif//QT_NO_CLIPBOARD
 }
 
+
+bool HbAbstractEditPrivate::canCut() const
+{
+    return (canCopy() && (interactionFlags & Qt::TextEditable));
+}
+
+
 bool HbAbstractEditPrivate::canFormat() const
 {
     return formatDialog != 0;
@@ -1003,24 +988,26 @@ bool HbAbstractEditPrivate::isCursorVisible() const
     return preeditCursorVisible && apiCursorVisible;
 }
 
-void HbAbstractEditPrivate::sendMouseEventToInputContext(const QGraphicsSceneMouseEvent *e) const
+void HbAbstractEditPrivate::sendMouseEventToInputContext(const QPointF &tapPos) const
 {
-    QPointF pos = e->pos();
-    int cursorPos = hitTest(pos, Qt::FuzzyHit);
-    if (cursorPos == -1)
-        return;
+    Q_Q(const HbAbstractEdit);
 
     QTextLayout *layout = cursor.block().layout();
+    int cursorPos = hitTest(tapPos, Qt::ExactHit);
+
+    if (cursorPos == -1) {
+            cursorPos = cursor.position() + layout->preeditAreaText().length();
+    }
+
     if (layout && !layout->preeditAreaText().isEmpty()) {
         QInputContext *ctx = qApp->inputContext();
         if (ctx) {
-            QMouseEvent ev(QEvent::MouseButtonPress, pos.toPoint(), e->scenePos().toPoint(),
-                           e->button(), e->buttons(), e->modifiers());
+            QMouseEvent ev(QEvent::MouseButtonPress, tapPos.toPoint(), q->mapToScene(tapPos).toPoint(),
+                           Qt::NoButton, Qt::NoButton, Qt::NoModifier);
             ctx->mouseHandler(cursorPos - cursor.position(), &ev);
         }
     }
 }
-
 void HbAbstractEditPrivate::updateEditingSize()
 {
 }
@@ -1051,10 +1038,7 @@ void HbAbstractEditPrivate::connectToNewDocument(QTextDocument *newDoc)
 
     QObject::connect(doc, SIGNAL(contentsChanged()), q, SLOT(_q_contentsChanged()));
     QObject::connect(doc, SIGNAL(contentsChange(int, int, int)), q, SLOT(_q_contentsChange(int, int, int)));
-
-    //QObject::connect(doc, SIGNAL(cursorPositionChanged(QTextCursor)), q, SLOT(emitCursorPosChanged(QTextCursor)));
     QObject::connect(doc, SIGNAL(documentLayoutChanged()), q, SLOT(documentLayoutChanged()));
-
     QObject::connect(doc, SIGNAL(blockCountChanged(int)), q, SLOT(blockCountChanged(int)));
 
     doc->setModified(false);
@@ -1062,14 +1046,13 @@ void HbAbstractEditPrivate::connectToNewDocument(QTextDocument *newDoc)
     q->documentLayoutChanged();
 }
 
-void HbAbstractEditPrivate::longPressGesture(const QPointF &point)
+void HbAbstractEditPrivate::longTapGesture(const QPointF &point)
 {
     Q_Q(HbAbstractEdit);
 
     if(contextMenuShownOn.testFlag(Hb::ShowTextContextMenuOnLongPress)) {
-        mousePressPos = q->mapFromScene(point);
 
-        int cursorPos = hitTest(mousePressPos, Qt::FuzzyHit);
+        int cursorPos = hitTest(point, Qt::FuzzyHit);
         if (cursorPos == -1)
             return;
 
@@ -1079,31 +1062,54 @@ void HbAbstractEditPrivate::longPressGesture(const QPointF &point)
             && cursorPos <= cursor.selectionEnd()){
             return;
         }
-        q->showContextMenu(point);
-    }
-
-    //TODO:
-    // this call is needed because now the panStarted is called in mousePressEvent
-    // and panFinished is called in mouseReleaseEvent, but in longPress case the mouseRelease is not called
-    // Once the this gesture bug is fixed this needs to be removed!
-    if (selectionControl) {
-        selectionControl->panFinished();
+        q->showContextMenu(q->mapToScene(point));
     }
 }
+
+void HbAbstractEditPrivate::tapGesture(const QPointF &point)
+{
+    Q_Q(HbAbstractEdit);
+
+    if (interactionFlags & Qt::NoTextInteraction)
+        return;
+
+    bool removeSelection = (hitTest(point, Qt::ExactHit) == -1);
+
+    if (removeSelection && cursor.hasSelection()) {
+        const QTextCursor oldCursor = cursor;
+        cursor.clearSelection();
+        repaintOldAndNewSelection(oldCursor);
+        emit q->selectionChanged(oldCursor, cursor);
+    }
+
+    int newCursorPos = hitTest(point, Qt::FuzzyHit);
+
+    if (cursor.hasSelection() &&
+        newCursorPos >= cursor.selectionStart() &&
+        newCursorPos <= cursor.selectionEnd()){
+        // we have a selection under mouse click
+        if (contextMenuShownOn.testFlag(Hb::ShowTextContextMenuOnSelectionClicked)) {
+            q->showContextMenu(q->mapToScene(point));
+        }
+    } else {
+        // Currently focused widget to listen to InputContext before updating the cursor position
+        sendMouseEventToInputContext(point);
+        // need to get the cursor position again since input context can change the document
+        newCursorPos = hitTest(point, Qt::FuzzyHit);
+        setCursorPosition(newCursorPos);
+
+        if (interactionFlags & Qt::TextEditable) {
+            updateCurrentCharFormat();
+        }
+        cursorChanged(HbValidator::CursorChangeFromMouse);
+    }
+}
+
+
 
 void HbAbstractEditPrivate::gestureReceived()
 {
     wasGesture = true;
-}
-
-
-void HbAbstractEditPrivate::hideSelectionHandles()
-{
-    Q_Q(HbAbstractEdit);
-    if (selectionControl){
-        selectionControl->hideHandles();
-    }
-    q->update();
 }
 
 
@@ -1153,6 +1159,17 @@ HbSmileyEngine* HbAbstractEditPrivate::smileyEngineInstance() const
         }
     }
     return smileyEngine;
+}
+
+void HbAbstractEditPrivate::updatePlaceholderDocProperties()
+{
+
+    if(placeholderDoc) {
+        placeholderDoc->setDocumentMargin(doc->documentMargin());
+        placeholderDoc->setDefaultTextOption(doc->defaultTextOption());
+        placeholderDoc->setDefaultFont(doc->defaultFont());
+        placeholderDoc->setTextWidth(doc->textWidth());
+    }
 }
 
 Qt::Alignment HbAbstractEditPrivate::alignmentFromString(const QString &text)

@@ -36,6 +36,11 @@
 
 #include <hbwidgetfeedback.h>
 
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+#endif
+
 namespace {
     static const int AUTO_REPEAT_DELAY = 300;
     static const int AUTO_REPEAT_INTERVAL = 100;
@@ -289,6 +294,10 @@ void HbAbstractButtonPrivate::init()
     Q_Q( HbAbstractButton );
 
 	q->setFocusPolicy(Qt::FocusPolicy(qApp->style()->styleHint(QStyle::SH_Button_FocusPolicy)));
+
+#ifdef HB_GESTURE_FW
+    q->grabGesture(Qt::TapGesture);
+#endif
 
     // FIXME: size policy is commented out b/c of a bug in Qt #236689, also in our bugtracker.
     //q->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum, controlType));
@@ -810,6 +819,7 @@ bool HbAbstractButton::event(QEvent *event)
 #ifndef QT_NO_WHEELEVENT
         case QEvent::Wheel:
 #endif
+        case QEvent::Gesture:
             return true;
         default:
             break;
@@ -838,6 +848,7 @@ bool HbAbstractButton::event(QEvent *event)
     return HbWidget::event(event);
 }
 
+#ifndef HB_GESTURE_FW
 /*!
     \reimp
  */
@@ -934,6 +945,53 @@ void HbAbstractButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         event->ignore();
     }
 }
+#endif
+
+#ifdef HB_GESTURE_FW
+void HbAbstractButton::gestureEvent(QGestureEvent *event)
+{
+    Q_D(HbAbstractButton);
+    
+    if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        bool hit = hitButton(mapFromScene(event->mapToGraphicsScene(tap->position())));
+
+        switch(tap->state()) {
+        case Qt::GestureStarted:
+            setDown(true);
+            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+            updatePrimitives();
+            d->emitPressed();
+            break;
+        case Qt::GestureCanceled:
+            if(d->down) {
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                setDown(false);
+                d->longPress = false;
+                d->emitReleased(); 
+            }
+            break;
+        case Qt::GestureFinished:
+            if (!d->down) {
+                return;
+            }
+            if ( hit  && !d->longPress) {
+                HbWidgetFeedback::triggered(this, Hb::InstantClicked);
+            }
+            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+            if ( hit ) {
+                d->repeatTimer.stop();
+                d->click();
+            } else {
+                setDown(false);
+            }
+            d->longPress = false;
+            break;
+        default:
+            break;
+        }
+    }
+}
+#endif
 
 /*!
     \reimp

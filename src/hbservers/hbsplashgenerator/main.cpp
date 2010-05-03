@@ -27,30 +27,37 @@
 #include <QPushButton>
 #include <hbapplication.h>
 #include "hbsplashgenerator_p.h"
+#include "hbsplashdefs_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbsplashgen_server_symbian_p.h"
+#include <e32std.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
+CApaApplication *appFactory()
+{
+    return new HbSplashGenApplication;
+}
 #endif
 
 int main(int argc, char **argv)
 {
-    HbApplication app(argc, argv, Hb::NoSplash);
-
 #if defined(Q_OS_SYMBIAN)
+    HbApplication app(appFactory, argc, argv, Hb::NoSplash);
     CEikonEnv *env = CEikonEnv::Static();
     if (env) {
         CApaWindowGroupName *wgName = CApaWindowGroupName::NewLC(env->WsSession());
         env->RootWin().SetOrdinalPosition(0, ECoeWinPriorityNeverAtFront); // avoid coming to foreground
         wgName->SetHidden(ETrue); // hide from FSW, OOM fw, GOOM fw, etc.
         wgName->SetSystem(ETrue); // allow only apps with PowerManagement cap to shut us down
-        _LIT(KCaption, "HbSplashGenerator");
-        wgName->SetCaptionL(KCaption);
+        wgName->SetCaptionL(hbsplash_server_name);
         wgName->SetAppUid(KNullUid);
         wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
+        RThread::RenameMe(hbsplash_server_name);
     }
+#else
+    HbApplication app(argc, argv, Hb::NoSplash);
 #endif
 
     qDebug("[hbsplashgenerator] initializing generator");

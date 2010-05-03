@@ -68,7 +68,6 @@ public:
     mutable struct CachedIndexCount mCachedPosition;
 
     HbAbstractItemContainer *mItemContainer;
-    int mExpansionKey;
     bool mUseCache;
 };
 

@@ -49,16 +49,14 @@ public:
     QModelIndex nextIndex(const QModelIndex &index) const;
     QModelIndex previousIndex(const QModelIndex &index) const;
 
-    void setItemContainer(HbAbstractItemContainer *itemContainer, int expansionKey);
-
     bool lessThan(const QModelIndex &index1, const QModelIndex &index2) const;
+
+    void setItemContainer(HbAbstractItemContainer *itemContainer);
+    void itemExpansionChanged(const QModelIndex &index);
 
 private:
     void setModel(QAbstractItemModel *model, QModelIndex rootIndex = QModelIndex());
     void setRootIndex(QModelIndex rootIndex);
-
-public slots:
-    void itemStateChanged(const QModelIndex &index, int stateKey);
 
 private slots:
     void rowsInserted(const QModelIndex &parent, int start, int end);

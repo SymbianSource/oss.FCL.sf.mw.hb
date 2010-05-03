@@ -29,6 +29,7 @@
 
 #include "hbinstance.h"
 #include "hbtheme_p.h"
+#include "hbthemeclient_p.h"
 
 #include <QtDebug>
 #include <QFile>
@@ -53,13 +54,20 @@ class HbThemeClient;
 // cache at the client side to store the mesh items.
 // key used here is the filename+layoutname+sectionname.
 
-typedef QHash<QString,LayoutDefinition*> ClientHashForLayoutDefs;
-Q_GLOBAL_STATIC(ClientHashForLayoutDefs,clientLayoutDefsCache)
+typedef QHash<QString,HbWidgetLoader::LayoutDefinition*> ClientHashForLayoutDefs;
+Q_GLOBAL_STATIC(ClientHashForLayoutDefs, clientLayoutDefsCache)
 
 // List of files that doesn't exist.
 // This reduces the check QFile::exists() at client side as well as the server side.
 // also no unnecessary IPC calls.
-Q_GLOBAL_STATIC(QStringList,filesNotPresent)
+Q_GLOBAL_STATIC(QStringList, filesNotPresent)
+
+// Layout caching
+static HbWidgetLoader::LayoutDefinition *staticCacheLayout = NULL;
+static QString staticCacheFileName = QString();
+static QString staticCacheName = QString();
+static QString staticCacheSection = QString();
+static QDateTime staticCacheModified = QDateTime();
 
 class HbWidgetLoaderPrivate
 {
@@ -72,9 +80,18 @@ public:
     
     void setWidget( HbWidget* widget );
     
-    bool updateCacheIfNeeded(const QString &fileName, const QString &name, const QString &section);
+    bool getSharedLayoutDefinition(
+        const QString &fileName,
+        const QString &name,
+        const QString &section,
+        HbWidgetLoader::LayoutDefinition *&layoutDef );
+
+    bool getCachedLayoutDefinition(
+        const QString &fileName,
+        const QString &name,
+        const QString &section,
+        HbWidgetLoader::LayoutDefinition *&layoutDef );
     
-    static QString version();
 private:
     Q_DISABLE_COPY(HbWidgetLoaderPrivate)
 
@@ -82,7 +99,9 @@ public:
     HbWidgetLoader* q_ptr;
     
     HbWidgetLoaderActions* mActions;
-    HbWidgetLoaderSyntax* mSyntax;    
+    HbWidgetLoaderSyntax* mSyntax;
+    HbWidgetLoaderMemoryActions* mMemActions;
+    HbWidgetLoaderMemorySyntax* mMemSyntax;
 };
 
 
@@ -91,11 +110,6 @@ public:
     \internal
     \proto
 */
-LayoutDefinition *HbWidgetLoaderActions::mCacheLayout = NULL;
-QString HbWidgetLoaderActions::mCacheFileName = QString();
-QString HbWidgetLoaderActions::mCacheName = QString();
-QString HbWidgetLoaderActions::mCacheSection = QString();
-QDateTime HbWidgetLoaderActions::mCacheModified = QDateTime();
 
 /*!
     Constructor.
@@ -116,34 +130,20 @@ HbWidgetLoader::~HbWidgetLoader()
 }
 
 /*!
-    Set widget. Temporary solution for time being.
-    \param widget 
-*/
-void HbWidgetLoader::setWidget( HbWidget* widget )
-{
-    Q_D(HbWidgetLoader);
-    
-    d->mActions->reset();       
-    d->mActions->mWidget = widget;
-}
-
-/*!
     Prints current version of widget loader and minimum version of supported WidgetML in brackets
     For example "3.2 (1.4)" means that current version is 3.2 and WidgetML versions from 1.4 to 3.2 are supported   
 */
 QString HbWidgetLoader::version()
 {
-    return HbWidgetLoaderPrivate::version();       
+    return HbWidgetLoaderSyntax::version();       
 }
 
 /*!
     Loads and processes a WidgetML file.
 
-    Proto:
-    - Assumes that a widget is set with setWidget.
-    - If the widget already has a layout assumes it's HbMeshLayout.
-    - If the widget doesn't have a layout creates HbMeshLayout and sets it to widget.
-    - Creates the anchor edge attachments for existing child items of the widget.
+    If the widget already has a layout assumes it's HbMeshLayout.
+    If the widget doesn't have a layout creates HbMeshLayout and sets it to widget.
+    Creates the anchor edge attachments based on WidgetML.
 
     \param fileName file to be processed.
     \param name the name of the layout to be loaded.
@@ -151,56 +151,32 @@ QString HbWidgetLoader::version()
     \param storage specifies where to store the mesh items.
     \return true if file was loaded and processed successfully.
 */
-bool HbWidgetLoader::load( const QString &fileName, const QString &name, const QString &section,const HbMemoryManager::MemoryType storage )
+bool HbWidgetLoader::load(
+    HbWidget* widget,
+    const QString &fileName,
+    const QString &name,
+    const QString &section,
+    HbMemoryManager::MemoryType storage)
 {
     Q_D(HbWidgetLoader);
-    bool result = false;
+    bool result(true);
 
-    LayoutDefinition* sharedLayoutDef = NULL;
+    d->setWidget(widget);
 
-    // if the storage is SharedMemory
+    LayoutDefinition* layoutDef(0);
+
     if (storage == HbMemoryManager::SharedMemory) {
-        // check in the client side cache if the vector of meshitems is present.
-        QString key (fileName + name + section);
-        if(clientLayoutDefsCache()->contains(key)){
-            // present in the client cache.
-            sharedLayoutDef = clientLayoutDefsCache()->value(key);
-            //update the widget layout.
-            d->mActions->updateWidget(sharedLayoutDef);
-            return true;
-        }
-
-        // Not found in the client cache.
-        if (filesNotPresent()->contains(fileName)){
-            return false;
-        } 
-        // Check for the availability of the file, as QFile::Exists takes more time this 
-        // method is used
-        QFile file(fileName);        
-        bool fileExists = file.open(QIODevice::ReadOnly);
-        file.close();
-        if (!fileExists) {
-            // file doesn't exist save the info in the filesNotPresent list.
-            filesNotPresent()->append(fileName);
-            return false;
-        }
-
-        // get the shared layout definition address.
-        sharedLayoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section);
-
-        if (sharedLayoutDef){
-            // This will update the widgets layout anchors.
-            d->mActions->updateWidget(sharedLayoutDef);
-
-            // Insert in to the client side cache.
-            clientLayoutDefsCache()->insert(key, sharedLayoutDef);
-            return true;
-        }
+        result = d->getSharedLayoutDefinition(fileName, name, section, layoutDef);
     }
-    //fall back
-    result = d->updateCacheIfNeeded(fileName, name, section);
-    if (result){
-        d->mActions->updateWidget(0);
+    if (result) {
+        if (!layoutDef) {
+            //fall back
+            result = d->getCachedLayoutDefinition(fileName, name, section, layoutDef);
+        }
+        if (result){
+            Q_ASSERT(layoutDef);
+            result = d->mMemSyntax->load(layoutDef);
+        }
     }
     return result;
 }
@@ -212,79 +188,165 @@ bool HbWidgetLoader::load( const QString &fileName, const QString &name, const Q
     \param section space separated route to section, that you want to load.
     \return true if input was loaded and processed successfully.
 */
-bool HbWidgetLoader::load( QIODevice *device, const QString &name, const QString &section,const HbMemoryManager::MemoryType storage  )
+bool HbWidgetLoader::load(
+    HbWidget* widget,
+    QIODevice *device,
+    const QString &name,
+    const QString &section)
 {
-    Q_D(HbWidgetLoader);    
-    Q_UNUSED(storage);
-	
-    bool result = d->mSyntax->load(device, name, section);
-    if (result){
-    	HbWidgetLoaderActions::mCacheName = name;
-        HbWidgetLoaderActions::mCacheSection = section;
-        HbWidgetLoaderActions::mCacheFileName = QString();
-        HbWidgetLoaderActions::mCacheModified = QDateTime();
-		d->mActions->updateWidget(0);
-    }
-    
-    return result;
+    Q_D(HbWidgetLoader);
+    d->setWidget(widget);
+    d->mSyntax->setActions(d->mActions);
+    return d->mSyntax->load(device, name, section);
 }
 
+/*!
+    Loads WidgetML to given memory structure.
+*/
+bool HbWidgetLoader::loadLayoutDefinition(
+    LayoutDefinition *targetLayoutDef,
+    QIODevice *device,
+    const QString &name,
+    const QString &section )
+{
+    Q_D(HbWidgetLoader);
+    d->mMemActions->mLayoutDef = targetLayoutDef;
+    d->mSyntax->setActions(d->mMemActions);
+    return d->mSyntax->load(device, name, section);
+}
 
+/*!
+    \internal
+*/
 HbWidgetLoaderPrivate::HbWidgetLoaderPrivate() : q_ptr(0)
 {
     mActions = new HbWidgetLoaderActions();
-    mSyntax = new HbWidgetLoaderSyntax(mActions);
+    mMemActions = new HbWidgetLoaderMemoryActions();
+    mSyntax = new HbWidgetLoaderSyntax(mMemActions);
+    mMemSyntax = new HbWidgetLoaderMemorySyntax(mActions);
 }
 
+/*!
+    \internal
+*/
 HbWidgetLoaderPrivate::~HbWidgetLoaderPrivate()
 {
-    delete mActions;
+    delete mMemSyntax;
     delete mSyntax;
+    delete mMemActions;
+    delete mActions;
 }
 
-bool HbWidgetLoaderPrivate::updateCacheIfNeeded(const QString &fileName, const QString &name, const QString &section)
+/*!
+    \internal
+*/
+void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
+{
+    mActions->reset();       
+    mActions->mWidget = widget;
+    mActions->mCurrentProfile = HbDeviceProfile::profile(widget);
+}
+
+/*!
+    \internal
+*/
+bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
+    const QString &fileName,
+    const QString &name,
+    const QString &section,
+    HbWidgetLoader::LayoutDefinition *&layoutDef )
+{
+    // check in the client side cache if the vector of meshitems is present.
+    QString key (fileName + name + section);
+    if (clientLayoutDefsCache()->contains(key)){
+        // present in the client cache.
+        layoutDef = clientLayoutDefsCache()->value(key);
+        return true;
+    }
+
+    // Not found in the client cache.
+    if (filesNotPresent()->contains(fileName)){
+        return false;
+    } 
+    // Check for the availability of the file, as QFile::Exists takes more time this 
+    // method is used
+    QFile file(fileName);        
+    bool fileExists = file.open(QIODevice::ReadOnly);
+    file.close();
+    if (!fileExists) {
+        // file doesn't exist save the info in the filesNotPresent list.
+        filesNotPresent()->append(fileName);
+        return false;
+    }
+
+    // get the shared layout definition address.
+    layoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section);
+    if (layoutDef) {
+        clientLayoutDefsCache()->insert(key, layoutDef);
+    }
+    return true;
+}
+
+/*!
+    \internal
+*/
+bool HbWidgetLoaderPrivate::getCachedLayoutDefinition(
+    const QString &fileName,
+    const QString &name,
+    const QString &section,
+    HbWidgetLoader::LayoutDefinition *&layoutDef )
 {
     QFileInfo info(fileName);
     
 #ifdef HB_WIDGETLOADER_DEBUG
     qDebug() << "Cached layout currently contains" << HbWidgetLoaderActions::mCacheLayout.count() << "items";
 #endif
-    bool cacheHit = (name == HbWidgetLoaderActions::mCacheName
-		&& section == HbWidgetLoaderActions::mCacheSection
-		&& fileName == HbWidgetLoaderActions::mCacheFileName 
-		&& info.lastModified() == HbWidgetLoaderActions::mCacheModified);
+    bool cacheHit = (name == staticCacheName
+		&& section == staticCacheSection
+		&& fileName == staticCacheFileName 
+		&& info.lastModified() == staticCacheModified);
 		
-    if(cacheHit){
+    if (cacheHit){
 #ifdef HB_WIDGETLOADER_DEBUG
         qDebug() << "Cache hit.";
 #endif
+        layoutDef = staticCacheLayout;
     	return true;
     }
-    
     
 #ifdef HB_WIDGETLOADER_DEBUG
 	qDebug() << "Cache miss, reloading cache data";
 #endif
 		
+    // Not found in the client cache.
+    if (filesNotPresent()->contains(fileName)){
+        return false;
+    } 
 	QFile file(fileName);
-	if( !file.open( QFile::ReadOnly | QFile::Text ) ) {
+	if ( !file.open( QFile::ReadOnly | QFile::Text ) ) {
 	    qWarning( "Unable to open file ");
+        filesNotPresent()->append(fileName);
 	    return false;
 	}
-	    
+
+    if (!staticCacheLayout) {
+        staticCacheLayout = new HbWidgetLoader::LayoutDefinition(HbMemoryManager::HeapMemory);
+    } else {
+        Q_ASSERT(staticCacheLayout->type == HbMemoryManager::HeapMemory);
+    }
+
+    mMemActions->mLayoutDef = staticCacheLayout;
+    mSyntax->setActions(mMemActions);
     bool result = mSyntax->load(&file, name, section);
-    if(result){
-    	HbWidgetLoaderActions::mCacheName = name;
-        HbWidgetLoaderActions::mCacheSection = section;
-        HbWidgetLoaderActions::mCacheFileName = fileName;
-        HbWidgetLoaderActions::mCacheModified = info.lastModified();
+    if (result){
+        layoutDef = staticCacheLayout;
+    	staticCacheName = name;
+        staticCacheSection = section;
+        staticCacheFileName = fileName;
+        staticCacheModified = info.lastModified();
     }
     
     return result;
 }
 
-QString HbWidgetLoaderPrivate::version()
-{
-    return HbWidgetLoaderSyntax::version();
-}
 

@@ -34,8 +34,7 @@ HbEffectTranslateAnimation::HbEffectTranslateAnimation(
     HbEffectGroup *group,
     HbEffectTranslate *effect,
     int duration) :
-        HbEffectAnimation(),
-        group(group),
+        HbEffectAnimation(group),
         effect(effect)
 {
     setDuration(duration);
@@ -48,9 +47,9 @@ void HbEffectTranslateAnimation::setOriginalPos(qreal pos)
 
 void HbEffectTranslateAnimation::handleAnimationUpdate(const QVariant &value)
 {
-    if (group->isRunning()) {
+    if (mGroup->isRunning()) {
         currentPos = qVariantValue<qreal>(value);
-        group->updateItemTransform();
+        mGroup->updateItemTransform();
     }
 }
 
@@ -118,14 +117,14 @@ HbEffectTranslate::HbEffectTranslate(
 
     if (durationX > 0) {
         mAnimationX = new HbEffectTranslateAnimation(group, this, durationX);
-        mAnimationX->addLooping(paramX, group);
+        mAnimationX->addLooping(paramX);
         mAnimationX->mCurve = curveShapeX;
     }
 
     // Create at least one animation even if both durations are zero for handling animation finish easily.
     if (durationY > 0 || !mAnimationX) {
         mAnimationY = new HbEffectTranslateAnimation(group, this, durationY);
-        mAnimationY->addLooping(paramY, group);
+        mAnimationY->addLooping(paramY);
         mAnimationY->mCurve = curveShapeY;
     }
 }

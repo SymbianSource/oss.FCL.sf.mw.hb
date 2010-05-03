@@ -15,11 +15,7 @@
 
     <meshitem src="dataGroup_Combo" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="dataGroup_Combo" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="dataGroup_Combo" srcEdge="BOTTOM" dst="dataGroup_Description" dstEdge="TOP" />
-
-    <meshitem src="dataGroup_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="dataGroup_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-    <meshitem src="dataGroup_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="dataGroup_Combo" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="dataGroup_ComboBackground" srcEdge="TOP" dst="dataGroup_HeadingWidget" dstEdge="BOTTOM" />
     <meshitem src="dataGroup_ComboBackground" srcEdge="LEFT" dst="" dstEdge="LEFT" />

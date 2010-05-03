@@ -53,7 +53,7 @@ public:
     QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
     virtual QRectF contiguousSelectionArea() const;
-    virtual bool selectionAreaContains(const QPointF &scenePosition) const;
+    virtual bool selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const;
 
 public slots:
     void updatePrimitives();

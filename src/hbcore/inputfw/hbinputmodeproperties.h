@@ -35,9 +35,11 @@
 \class HbInputModeProperties
 \brief Binds together all the properties that define an input mode.
 
-Input mode properties structure is needed when the freworks resolves which input method should
-serve the active input state. This class is mostly used inside the input framework. The only exception is
-HbInputMethod::listInputModes method, which is something each HbInputMethod instance must implement. 
+This class is needed when the framework resolves input state handler. An input method
+plugin reports a set of implemented input modes as an array of HbInputModeProperties
+coverted to strings.
+
+This class is not needed in application code.
 
 \sa HbInputState
 \sa HbInputMethod
@@ -49,31 +51,31 @@ public:
     {
     }
 
-    HbInputModeProperties(HbInputModeType aMode, const HbInputLanguage &aLanguage, HbKeyboardType aKeyboard)
-        : iMode(aMode), iLanguage(aLanguage), iKeyboard(aKeyboard)
+    HbInputModeProperties(HbInputModeType mode, const HbInputLanguage &language, HbKeyboardType keyboard)
+        : iMode(mode), iLanguage(language), iKeyboard(keyboard)
     {
     }
 
-    HbInputModeProperties& operator=(const HbInputModeProperties& aMode) {
-        iMode = aMode.iMode;
-        iLanguage = aMode.iLanguage;
-        iKeyboard = aMode.iKeyboard;
+    HbInputModeProperties& operator=(const HbInputModeProperties& other) {
+        iMode = other.iMode;
+        iLanguage = other.iLanguage;
+        iKeyboard = other.iKeyboard;
         return *this;
     }
 
-    bool operator==(const HbInputModeProperties& aMode) const {
-        if (iMode == aMode.iMode
-            && iLanguage == aMode.iLanguage
-            && iKeyboard == aMode.iKeyboard) {
+    bool operator==(const HbInputModeProperties& other) const {
+        if (iMode == other.iMode
+            && iLanguage == other.iLanguage
+            && iKeyboard == other.iKeyboard) {
                 return true;
         }
         return false;
     }
 
-    bool operator!=(const HbInputModeProperties& aMode) const {
-        if (iMode != aMode.iMode
-            || iLanguage != aMode.iLanguage
-            || iKeyboard != aMode.iKeyboard) {
+    bool operator!=(const HbInputModeProperties& other) const {
+        if (iMode != other.iMode
+            || iLanguage != other.iLanguage
+            || iKeyboard != other.iKeyboard) {
                 return true;
         }
         return false;
@@ -122,6 +124,21 @@ public:
     HbInputLanguage iLanguage;
     HbKeyboardType iKeyboard;
 };
+
+/*!
+\deprecated HbInputModeProperties::iMode
+    is deprecated. It will become private.
+*/
+
+/*!
+\deprecated HbInputModeProperties::iLanguage
+    is deprecated. It will become private.
+*/
+
+/*!
+\deprecated HbInputModeProperties::iKeyboard
+    is deprecated. It will become private.
+*/
 
 #endif // HB_INPUT_MODE_PROPERTIES_H
 

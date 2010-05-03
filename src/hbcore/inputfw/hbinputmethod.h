@@ -37,7 +37,6 @@
 
 class QAction;
 class HbInputMethodPrivate;
-class HbInputStateMachine;
 
 class HB_CORE_EXPORT HbInputMethod : public QInputContext
 {
@@ -68,37 +67,38 @@ public:
     void setFocusWidget(QWidget* widget);
 
     void focusObjectDestroyed(const HbInputFocusObject* focusObject);
-    HbInputState inputState() const; 
+    HbInputState inputState() const;
 
-    bool activateState(const HbInputState& state); 
+    bool activateState(const HbInputState& state);
     void updateState();
-    void editorRootState(HbInputState &result) const;  
+    void editorRootState(HbInputState &result) const;
     bool automaticTextCaseNeeded() const;
     bool activateInputMethod(const HbInputMethodDescriptor &inputMethod);
-      
+
 protected:
     virtual void inputStateActivated(const HbInputState& newState);
     virtual void inputLanguageChanged(const HbInputLanguage &newLanguage);
-    virtual void secondaryInputLanguageChanged(const HbInputLanguage &aNewLanguage);
+    virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
     virtual void predictiveInputStatusChanged(int newStatus);
     bool stateChangeInProgress() const;
     bool orientationContextSwitchInProgress();
-       
-    void releaseFocus();    
+
+    void releaseFocus();
     HbInputLanguage activeLanguage() const;
 
-    bool modeAllowedInEditor(HbInputModeType mode) const;  
+    bool modeAllowedInEditor(HbInputModeType mode) const;
     void inputStateToEditor(const HbInputState& source);
-  
+
     void constructLatinState(HbInputState &result) const;
 
 public slots:
-    void globalInputLanguageChanged(const HbInputLanguage &aNewLanguage);
-    void globalSecondaryInputLanguageChanged(const HbInputLanguage &aNewLanguage);
+    void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
+    void globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
     void activeHwKeyboardChanged(HbKeyboardType newKeyboard);
     void activeTouchKeyboardChanged(HbKeyboardType newKeyboard);
     void activeKeyboardChanged(HbKeyboardType newKeyboard);
     void predictiveInputStateChanged(int newState);
+    virtual void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void receiveText(const QString& string);
     virtual void candidatePopupClosed(int closingKey = 0);
     void orientationChanged(Qt::Orientation orientation);

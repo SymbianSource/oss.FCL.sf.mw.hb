@@ -107,7 +107,8 @@ HbAction::HbAction(const HbIcon &icon, const QString &text, QObject *parent)
 /*!
     Constructs a new HbAction with softkey \a action and \a parent.
 
-    \deprecated HbAction::HbAction(Hb::SoftKeyAction, QObject *) is deprecated.
+    \deprecated HbAction::HbAction(Hb::SoftKeyAction, QObject *)
+    is deprecated.
     Use HbAction::HbAction(Hb::NavigationAction, QObject *) instead.
 */
 HbAction::HbAction(Hb::SoftKeyAction action, QObject* parent)

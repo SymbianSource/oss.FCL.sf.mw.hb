@@ -129,19 +129,6 @@ void HbEffectBlur::updateFilterEffect()
         if (mAnimationO) {
             mVgBlur->setOpacity(qVariantValue<qreal>(mAnimationO->currentValue()));
         }
-
-#if 0 // Enable for debugging parameters given to the openVG filter
-        QString opacityString;
-        if (mAnimationO) {
-            opacityString.setNum(qVariantValue<qreal>(mAnimationO->currentValue()));
-        }
-        else {
-            opacityString = "N/A";
-        }
-
-        qDebug() << "HbEffectBlur: Updating filter with radius = (" << blurRadius.x() << "," << blurRadius.y()
-                 << ") - Opacity =" << opacityString;
-#endif
     }
 }
 

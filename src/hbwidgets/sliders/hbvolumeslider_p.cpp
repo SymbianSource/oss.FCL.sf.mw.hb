@@ -36,8 +36,8 @@
 #include <hbwidgetfeedback.h>
 
 /*!
-    \depricated
-    This class will be depricated
+    \deprecated
+    This class will be deprecated
     Use HbSlider instead
     Example usage:
     \code
@@ -252,7 +252,7 @@ void HbVolumeSliderPrivate::_q_muteToggled( bool state )
 
 
 /*!
-    \deprecated HbVolumeSlider::HbVolumeSlider( bool currentValueVisible,QGraphicsItem *parent )
+    \deprecated HbVolumeSlider::HbVolumeSlider(bool, QGraphicsItem*)
         is deprecated. Please use HbSlider instead
 
     The orientation is \b Qt::Vertical and the slider contains increase, track,
@@ -288,7 +288,7 @@ HbVolumeSlider::~HbVolumeSlider( )
 
 
 /*!
-    \deprecated HbVolumeSlider::setCurrentValueVisible( bool visible )
+    \deprecated HbVolumeSlider::setCurrentValueVisible(bool)
         is deprecated. Please use HbSlider instead
     Sets whether the text element is visible.
 
@@ -336,7 +336,7 @@ bool HbVolumeSlider::isCurrentValueVisible( ) const
 }
 
 /*!
-    \deprecated HbVolumeSlider::setToolTipVisible( bool b )
+    \deprecated HbVolumeSlider::setToolTipVisible(bool)
         is deprecated. Please use HbSlider instead
     \reimp
 

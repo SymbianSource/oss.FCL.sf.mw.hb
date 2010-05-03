@@ -45,11 +45,11 @@
 
 const qint64 image_bytes_limit = 1024 * 1024 * 4;
 
-static QString orientationId(HbSplash::Flags flags)
+static QString orientationId(HbSplashScreen::Flags flags)
 {
-    if (flags & HbSplash::FixedVertical) {
+    if (flags & HbSplashScreen::FixedVertical) {
         return QString("prt");
-    } else if (flags & HbSplash::FixedHorizontal) {
+    } else if (flags & HbSplashScreen::FixedHorizontal) {
         return QString("lsc");
     }
 #ifdef Q_OS_SYMBIAN
@@ -67,8 +67,9 @@ struct Params
     int *h;
     int *bpl;
     QImage::Format *fmt;
-    HbSplash::Flags flags;
+    HbSplashScreen::Flags flags;
     QString appId;
+    QString screenId;
     HbSplash::AllocFunc allocFunc;
     void *allocFuncParam;
 };
@@ -143,26 +144,64 @@ class HbSplashSrvClient : public RSessionBase
 {
 public:
     bool Connect();
-    bool getSplash(RFile &f, const QString &ori, const QString &appId);
+    bool getSplash(RFile &f, const QString &ori, const QString &appId, const QString &screenId);
 };
 
 bool HbSplashSrvClient::Connect()
 {
     TVersion ver(hbsplash_version_major, hbsplash_version_minor, hbsplash_version_build);
-    if (CreateSession(hbsplash_server_name, ver) != KErrNone) {
-        qWarning("[hbsplash] cannot connect to splashgen server");
-        return false;
+    int maxTries = 3;
+    while (maxTries--) {
+        TInt err = CreateSession(hbsplash_server_name, ver);
+        qDebug("[hbsplash] CreateSession result: %d", err);
+        if (err == KErrNone) {
+            return true;
+/*
+        } else if (err == KErrNotFound || err == KErrServerTerminated) {
+            qDebug("[hbsplash] Server not running");
+            TFindServer findServer(hbsplash_server_name);
+            TFullName name;
+            if (findServer.Next(name) != KErrNone) {
+                RProcess server;
+                const TUidType uid(KNullUid, KNullUid, hbsplash_server_uid3);
+                err = server.Create(hbsplash_server_exe, KNullDesC, uid);
+                if (err != KErrNone) {
+                    qWarning("[hbsplash] RProcess::Create failed (%d)", err);
+                    break;
+                }
+                TRequestStatus status;
+                server.Rendezvous(status);
+                if (status != KRequestPending) {
+                    server.Kill(0);
+                } else {
+                    server.Resume();
+                }
+                User::WaitForRequest(status);
+                server.Close();
+                if (status.Int() != KErrNone) {
+                    qWarning("[hbsplash] Rendezvous failed (%d)", status.Int());
+                    break;
+                }
+                qDebug("[hbsplash] Server started");
+            }
+*/
+        } else {
+            break;
+        }
     }
-    return true;
+    qWarning("[hbsplash] cannot connect to splashgen server");
+    return false;
 }
 
-bool HbSplashSrvClient::getSplash(RFile &f, const QString &ori, const QString &appId)
+bool HbSplashSrvClient::getSplash(RFile &f, const QString &ori,
+                                  const QString &appId, const QString &screenId)
 {
     TPtrC oriDes(static_cast<const TUint16 *>(ori.utf16()), ori.length());
     TPtrC appIdDes(static_cast<const TUint16 *>(appId.utf16()), appId.length());
+    TPtrC screenIdDes(static_cast<const TUint16 *>(screenId.utf16()), screenId.length());
     TInt fileHandle;
     TPckg<TInt> fileHandlePckg(fileHandle);
-    TIpcArgs args(&oriDes, &appIdDes, &fileHandlePckg);
+    TIpcArgs args(&oriDes, &appIdDes, &screenIdDes, &fileHandlePckg);
     TInt fsHandle = SendReceive(HbSplashSrvGetSplash, args);
     return f.AdoptFromServer(fsHandle, fileHandle) == KErrNone;
 }
@@ -184,7 +223,7 @@ static uchar *load_symbian(const Params &params)
     uchar *data = 0;
     File f;
     f.mFullName = "[unavailable]";
-    if (client.getSplash(f.mFile, oriStr, appIdStr)) {
+    if (client.getSplash(f.mFile, oriStr, appIdStr, params.screenId)) {
         qDebug("[hbsplash] got handle from server");
         data = readSpl(f, params);
         f.mFile.Close();
@@ -212,13 +251,20 @@ static uchar *read_file_generic(const QString &name, const Params &params)
 static uchar *load_generic(const Params &params)
 {
     QString appSpecificName("splash_%1_%2.spl");
+    QString appAndScreenSpecificName("splash_%1_%2_%3.spl");
     QString genericName("splash_%1.spl");
     QDir dir("splashscreens"); // see hbsplashgenerator
     QString oriStr(orientationId(params.flags));
     uchar *data = 0;
     // Try to read the app-specific screen.
     if (!params.appId.isEmpty()) {
-        data = read_file_generic(dir.filePath(appSpecificName.arg(oriStr).arg(params.appId)), params);
+        QString name;
+        if (!params.screenId.isEmpty()) {
+            name = appAndScreenSpecificName.arg(oriStr).arg(params.appId).arg(params.screenId);
+        } else {
+            name = appSpecificName.arg(oriStr).arg(params.appId);
+        }
+        data = read_file_generic(dir.filePath(name), params);
     }
     // If failed then use the common one.
     if (!data) {
@@ -262,12 +308,13 @@ static uchar *load_generic(const Params &params)
   load() is either 0 (if there was an error) or the return value of allocFunc
   (in case of success).
 
-  \sa HbSplash::Flags
+  \sa HbSplashScreen::Flags
 
   \internal
 */
 uchar *HbSplash::load(int &w, int &h, int &bpl, QImage::Format &fmt,
-                      Flags flags, const QString &appId,
+                      HbSplashScreen::Flags flags,
+                      const QString &appId, const QString &screenId,
                       AllocFunc allocFunc, void *allocFuncParam)
 {
     Params params;
@@ -277,6 +324,7 @@ uchar *HbSplash::load(int &w, int &h, int &bpl, QImage::Format &fmt,
     params.fmt = &fmt;
     params.flags = flags;
     params.appId = appId;
+    params.screenId = screenId;
     params.allocFunc = allocFunc;
     params.allocFuncParam = allocFuncParam;
 #ifdef Q_OS_SYMBIAN

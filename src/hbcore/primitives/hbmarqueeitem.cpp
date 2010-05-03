@@ -96,9 +96,10 @@ void HbMarqueeContent::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
+    painter->save();
+
     painter->setPen(pen());
 
-    Qt::LayoutDirection direction = painter->layoutDirection();
     painter->setLayoutDirection ( mTextDirection );
     painter->setFont(parent->font());
     painter->drawText(boundingRect(), Qt::TextDontClip, mText);
@@ -108,7 +109,8 @@ void HbMarqueeContent::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     painter->drawRect(boundingRect());
     painter->setOpacity(0.3);
 #endif
-    painter->setLayoutDirection ( direction );
+
+    painter->restore();
 }
 
 

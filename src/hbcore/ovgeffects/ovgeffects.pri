@@ -36,35 +36,34 @@ contains(DEFINES, HB_EFFECTS_OPENVG) {
         LIBS += $$QMAKE_LIBS_OPENVG
     } else {
         symbian: LIBS += -llibopenvg -llibopenvgu
-        win32-g++: LIBS += -lopenvg
-        win32-msvc*: LIBS += -llibopenvg
-        linux-*: LIBS += -lopenvg
+        else:win32-msvc*: LIBS += -llibopenvg
+        else: LIBS += -lopenvg
     }
 }
 
-INTERNAL_HEADERS += $$PWD/hbvgbceffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgbceffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgblureffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgblureffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgchainedeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgchainedeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgcolorizeeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgcolorizeeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvggloweffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvghsleffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvghsleffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgoutlineeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgoutlineeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgshadoweffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgframeeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgframeeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgreflectioneffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgreflectioneffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgmaskeffect_p.h
-INTERNAL_HEADERS += $$PWD/hbvgmaskeffect_p_p.h
-INTERNAL_HEADERS += $$PWD/hbvgeffecttraces_p.h
+PRIVATE_HEADERS += $$PWD/hbvgbceffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgbceffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgblureffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgblureffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgchainedeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgchainedeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgcolorizeeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgcolorizeeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvggloweffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvghsleffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvghsleffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgoutlineeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgoutlineeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgshadoweffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgframeeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgframeeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgreflectioneffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgreflectioneffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgmaskeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbvgmaskeffect_p_p.h
+PRIVATE_HEADERS += $$PWD/hbvgeffecttraces_p.h
 
 SOURCES += $$PWD/hbvgbceffect.cpp
 SOURCES += $$PWD/hbvgblureffect.cpp

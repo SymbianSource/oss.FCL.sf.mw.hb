@@ -35,7 +35,7 @@ PUBLIC_HEADERS += $$PWD/hbdevicenotificationdialogsymbian.h
 PUBLIC_HEADERS += $$PWD/hbdevicemessageboxsymbian.h
 PUBLIC_HEADERS += $$PWD/hbdeviceprogressdialogsymbian.h
 
-INTERNAL_HEADERS += $$PWD/hbdevicenotificationdialog_p.h $$PWD/hbdeviceprogressdialog_p.h $$PWD/hbdevicemessagebox_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicenotificationdialog_p.h $$PWD/hbdeviceprogressdialog_p.h $$PWD/hbdevicemessagebox_p.h
 
 SOURCES += $$PWD/hbdevicenotificationdialog.cpp
 SOURCES += $$PWD/hbdeviceprogressdialog.cpp

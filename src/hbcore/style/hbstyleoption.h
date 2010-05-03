@@ -29,6 +29,7 @@
 #include <hbglobal.h>
 #include <QStyleOptionGraphicsItem>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOption : public QStyleOptionGraphicsItem
 {
 public:
@@ -48,6 +49,8 @@ public:
         HbSO_Slider,
         HbSO_SliderElement,
         HbSO_ProgressBar,
+        HbSO_ProgressSlider,
+        HbSO_ProgressSliderHandle,
         HbSO_ListViewItem,
         HbSO_Popup,
         HbSO_MessageBox,
@@ -79,8 +82,8 @@ public:
         HbSO_DataGroupHeadingWidget,
         HbSO_GroupBox,
         HbSO_IndexFeedback,
-		HbSO_StatusBar,
-		HbSO_InputDialog,
+        HbSO_StatusBar,
+        HbSO_InputDialog,
         // ...
         HbSO_CustomBase = 0xf0000000
     };

@@ -37,6 +37,9 @@ class HB_WIDGETS_EXPORT HbTextEdit: public HbAbstractEdit
     Q_OBJECT
 
     Q_PROPERTY(QString plainText READ toPlainText WRITE setPlainText USER true)
+    Q_PROPERTY(bool lined
+               READ isLined
+               WRITE setLined)
 
 public:
 
@@ -58,6 +61,9 @@ public:
     QString toPlainText() const;
     QString toHtml() const;
 
+    void setLined(bool visible=true);
+    bool isLined() const;
+
 public slots:
     void setPlainText(const QString &text);
     void setHtml(const QString &text);
@@ -66,8 +72,6 @@ protected:
     HbTextEdit (HbTextEditPrivate &dd, QGraphicsItem *parent);
     void resizeEvent(QGraphicsSceneResizeEvent *event);
     void polish( HbStyleParameters& params );
-    void focusOutEvent ( QFocusEvent * event );
-    void focusInEvent ( QFocusEvent * event );
 
 private:
     Q_DISABLE_COPY(HbTextEdit)

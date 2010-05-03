@@ -25,17 +25,17 @@
 
 #include "hbnvgenginepool_p.h"
 
-HbPooledNVGEngine * HbNVGEnginePool::getNVGEngine()
+HbPooledNVGEngine * HbNvgEnginePool::getNvgEngine()
 {
     HbPooledNVGEngine* pNvgEngine;
     if (!pooledEngine) {
-        pooledEngine = new HbNVGEngineInstance;
+        pooledEngine = new HbNvgEngineInstance;
         Q_CHECK_PTR(pooledEngine);
     }
-    pNvgEngine = new HbPooledNVGEngine(*pooledEngine); 
+    pNvgEngine = new HbPooledNVGEngine(*pooledEngine);
     Q_CHECK_PTR(pNvgEngine);
-    return pNvgEngine; 
+    return pNvgEngine;
 }
 
-HbNVGEnginePool * HbNVGEnginePool::pool = 0;
+HbNvgEnginePool * HbNvgEnginePool::pool = 0;
 

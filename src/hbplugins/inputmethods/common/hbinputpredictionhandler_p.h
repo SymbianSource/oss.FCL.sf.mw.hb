@@ -68,7 +68,6 @@ public:
     Qt::KeyboardModifiers mModifiers;
 
 public:
-    bool selectWord(bool selectFromLeft = true);
     void updateEditor();
 };
 

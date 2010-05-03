@@ -35,6 +35,10 @@
 #include "hbcolorscheme.h"
 #include "hbtextitem.h"
 #include "hbiconitem.h"
+#include "hbview.h"
+#include "hbmainwindow.h"
+
+#include "hbglobal_p.h" // remove when removing HB_DEPRECATED
 
 #include <QGraphicsSceneHelpEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -77,6 +81,7 @@
 
 /*!
     \enum HbToolButton::ToolButtonStyle
+    \deprecated HbToolButton::ToolButtonStyle
 
     This enum defines available tool button styles.
 
@@ -85,18 +90,21 @@
 
 /*!
     \var HbToolButton::ToolButtonIcon
+    \deprecated HbToolButton::ToolButtonIcon
 
     Only display the icon.
  */
 
 /*!
     \var HbToolButton::ToolButtonText
+    \deprecated HbToolButton::ToolButtonText
 
     Only display the text.
  */
 
 /*!
     \var HbToolButton::ToolButtonTextAndIcon
+    \deprecated HbToolButton::ToolButtonTextAndIcon
 
     Display both text and icon.
  */
@@ -123,6 +131,7 @@ HbToolButtonPrivate::HbToolButtonPrivate() :
     toolBarPosition(HbStyleOptionToolButton::TB_None),
     orientation(Qt::Vertical),
     mDialogToolBar(false),
+    toolbarExtensionFrame(false),
     mButtonSize(QSizeF())
 {    
 }
@@ -134,9 +143,8 @@ HbToolButtonPrivate::~HbToolButtonPrivate()
 void HbToolButtonPrivate::createPrimitives()
 {
     Q_Q(HbToolButton);
-    
     if (backgroundVisible) {
-        if (!frameItem) {
+        if (!frameItem){
             frameItem = q->style()->createPrimitive(HbStyle::P_ToolButton_frame, q);
         }
     } else if (frameItem) {
@@ -187,6 +195,18 @@ void HbToolButtonPrivate::setToolBarPosition(HbStyleOptionToolButton::ToolBarPos
             q->updatePrimitives();
         }
     }    
+}
+
+void HbToolButtonPrivate::setExtensionBackgroundVisible(bool visible)
+{
+    Q_Q(HbToolButton);
+    if (toolbarExtensionFrame != visible) {
+        toolbarExtensionFrame = visible;
+        // required to make extension orientation switch from
+        // landscape to portrait work correctly with automatic more
+        // extension.
+        q->repolish();
+    }
 }
 
 void HbToolButtonPrivate::setBackgroundVisible(bool visible)
@@ -244,7 +264,7 @@ void HbToolButtonPrivate::_q_actionChanged()
         buttonStyle = HbToolButton::ToolButtonText;
     }
     // action text/icon may have changed,            
-    if (q->isVisible() && polished) {
+    if (polished) {
         q->repolish();
     }
 }
@@ -356,6 +376,9 @@ void HbToolButton::setBackground(const HbIcon &background)
 }
 
 /*!
+ \deprecated HbToolButton::toolButtonStyle() const
+         is deprecated.
+
     @beta
     Returns the tool button style.
 
@@ -365,11 +388,16 @@ void HbToolButton::setBackground(const HbIcon &background)
  */
 HbToolButton::ToolButtonStyle HbToolButton::toolButtonStyle() const
 {
+    HB_DEPRECATED("HbToolButton::toolButtonStyle() is deprecated.");
+
     Q_D(const HbToolButton);
     return d->buttonStyle;
 }
 
 /*!
+ \deprecated HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle)
+         is deprecated.
+
     @beta
     Sets the tool button style.
 
@@ -377,6 +405,8 @@ HbToolButton::ToolButtonStyle HbToolButton::toolButtonStyle() const
  */
 void HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle style)
 {    
+    HB_DEPRECATED("HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle style) is deprecated.");
+
     Q_D(HbToolButton);
     if (d->buttonStyle != style) {
         d->buttonStyle = style;
@@ -390,6 +420,10 @@ void HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle style)
 }
 
 /*!
+
+    \deprecated HbToolButton::primitive(HbStyle::Primitive)
+         is deprecated.
+
     \reimp
  */
 QGraphicsItem *HbToolButton::primitive(HbStyle::Primitive primitive) const
@@ -449,9 +483,9 @@ void HbToolButton::updatePrimitives()
     subclasses when they need a HbStyleOptionToolButton, but don't want to fill in all the
     information themselves.
  */
-void HbToolButton::initStyleOption(HbStyleOptionToolButton *option) const
+void HbToolButton::initStyleOption(HbStyleOptionToolButton *option)
 {
-    Q_D(const HbToolButton);
+    Q_D(HbToolButton);
     HbAbstractButton::initStyleOption(option);
 
     Q_ASSERT(option);
@@ -461,10 +495,17 @@ void HbToolButton::initStyleOption(HbStyleOptionToolButton *option) const
     option->orientation = d->orientation;
     option->isCheckable = d->checkable;
     option->useSecondaryGraphics = d->mDialogToolBar;
+    option->useTransparentGraphics = false;
+    if (mainWindow() && mainWindow()->currentView()) {
+        if (mainWindow()->currentView()->viewFlags() & HbView::ViewTitleBarTransparent) {
+            option->useTransparentGraphics = true;
+        }
+    }
 
     if (d->action) {
         option->text = d->action->text();
-        option->icon = d->action->icon();
+        option->icon = d->action->icon();        
+        option->isToolBarExtension = d->toolbarExtensionFrame;
     }
 }
 
@@ -494,26 +535,6 @@ void HbToolButton::resizeEvent(QGraphicsSceneResizeEvent *event)
 /*!
     \reimp
  */
-void HbToolButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    HbAbstractButton::mousePressEvent(event);
-    setProperty("state", "pressed");
-    updatePrimitives();
-}
-
-/*!
-    \reimp
- */
-void HbToolButton::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    HbAbstractButton::mouseReleaseEvent(event);
-    setProperty("state", "normal");
-    updatePrimitives();
-}
-
-/*!
-    \reimp
- */
 void HbToolButton::nextCheckState()
 {
     Q_D(HbToolButton);
@@ -532,27 +553,28 @@ void HbToolButton::nextCheckState()
 /*!
     \reimp
  */
+bool HbToolButton::sceneEvent(QEvent *event)
+{
+    if (event->type() == QEvent::GraphicsSceneHelp) {
+        Q_D(HbToolButton);
+        // Check whether toolbutton is inside a toolbar.
+        if (d->toolBarPosition != HbStyleOptionToolButton::TB_None) {
+            d->showToolTip();
+            event->accept();
+            return true;
+        }
+    }
+    return HbAbstractButton::sceneEvent(event);
+}
+
+/*!
+    \reimp
+ */
 bool HbToolButton::event(QEvent *event)
 {
-    if (event) {
-        switch (event->type()) {
-            case QEvent::GraphicsSceneMouseRelease: {
-                mouseReleaseEvent(static_cast<QGraphicsSceneMouseEvent*>(event));
-                return true;
-            }
-            case QEvent::GraphicsSceneHelp: {
-                    Q_D(HbToolButton);                    
-                    // Check whether toolbutton is inside a toolbar.
-                    if (d->toolBarPosition != HbStyleOptionToolButton::TB_None) {
-                        d->showToolTip();
-                        event->accept();
-                        return true;
-                    }
-                }
-                break;
-
-        default: break;
-        }
+    if (event->type() == QEvent::GraphicsSceneMouseRelease) {
+        mouseReleaseEvent(static_cast<QGraphicsSceneMouseEvent*>(event));
+        return true;
     }
 
     return HbAbstractButton::event(event);

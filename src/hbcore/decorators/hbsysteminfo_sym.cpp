@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "hbsysteminfo_sym_p_p.h"
+#include <QDebug>
 
 Q_GLOBAL_STATIC(HbSystemNetworkInfoPrivate, hbSystemNetworkInfoPrivate)
 

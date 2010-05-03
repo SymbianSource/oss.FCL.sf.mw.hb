@@ -26,7 +26,7 @@
 #ifndef HBWIDGETLOADERSYNTAX_P_H
 #define HBWIDGETLOADERSYNTAX_P_H
 
-#include "hbxmlloaderabstractsyntax_p.h"
+#include "hbxmlloaderbasesyntax_p.h"
 #include "hbxmlloaderabstractactions_p.h"
 #include "hbwidgetloaderactions_p.h"
 #include <hbglobal.h>
@@ -37,12 +37,12 @@ QT_END_NAMESPACE
 class HbWidget;
 class HbWidgetLoaderPrivate;
 
-class HB_CORE_PRIVATE_EXPORT HbWidgetLoaderSyntax : public HbXmlLoaderAbstractSyntax
+class HbWidgetLoaderSyntax : public HbXmlLoaderBaseSyntax
 {
 
 public:
 
-    HbWidgetLoaderSyntax( HbWidgetLoaderActions *actions );
+    HbWidgetLoaderSyntax( HbXmlLoaderAbstractActions *actions );
 
     virtual ~HbWidgetLoaderSyntax();
     
@@ -54,18 +54,30 @@ public:
 public:
     Q_DISABLE_COPY(HbWidgetLoaderSyntax)
 
-    ElementType elementType( QStringRef name ) const;
+    HbXml::ElementType elementType( QStringRef name ) const;
     bool processLayout();
     bool processDocument();
     bool readLayoutStartItem();
     
-public:
+private:
     
-    HbWidgetLoaderActions *mRealActions;
-
     QString mLayoutName;
-
     bool mLayoutFound;
+};
+
+class HbWidgetLoaderMemorySyntax : public HbXmlLoaderAbstractSyntax
+{
+public:
+
+    HbWidgetLoaderMemorySyntax( HbXmlLoaderAbstractActions *actions );
+
+    virtual ~HbWidgetLoaderMemorySyntax();
+    
+    bool load( HbWidgetLoader::LayoutDefinition* layoutDef );
+        
+public:
+    Q_DISABLE_COPY(HbWidgetLoaderMemorySyntax)
+
 };
 
 #endif // HBWIDGETLOADERSYNTAX_P_H

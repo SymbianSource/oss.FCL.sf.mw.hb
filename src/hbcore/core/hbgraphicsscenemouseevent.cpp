@@ -42,7 +42,6 @@
 const int HbGraphicsSceneMouseEvent::LongPress = registerEventType();
 
 /*!
-    @deprecated,
     @hbcore
 	\class HbGraphicsSceneMouseEvent
     \brief HbGraphicsSceneMouseEvent is a class having support for Hb specific events.
@@ -79,6 +78,9 @@ const int HbGraphicsSceneMouseEvent::LongPress = registerEventType();
 /*!
     Constructs a HbGraphicsSceneMouseEvent with \a type.
     \a eventType - type of event
+
+    \deprecated HbGraphicsSceneMouseEvent::HbGraphicsSceneMouseEvent(int)
+    is deprecated.
 */
 
 HbGraphicsSceneMouseEvent::HbGraphicsSceneMouseEvent(int eventType)

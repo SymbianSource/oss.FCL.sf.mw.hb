@@ -44,36 +44,36 @@ public:
     ~HbProgressDialogPrivate();
 
     void init(HbProgressDialog::ProgressDialogType noteType);
+    void createPrimitives();
     void _q_finished();
     void _q_progressValueChanged(int);
-	void _q_userCancel();
+    void _q_userCancel();
 
-	enum StateFlag {
-         Autoreset = 0x1,
-         Autoclose = 0x2,
-		 Showtimer = 0x4,
-		 Closetimer = 0x8,
-		 Closepending = 0x10
+    enum StateFlag {
+        Autoreset = 0x1,
+        Autoclose = 0x2,
+        Showtimer = 0x4,
+        Closetimer = 0x8,
+        Closepending = 0x10
      };
+
      Q_DECLARE_FLAGS(StateFlags, StateFlag)
      StateFlags flags;
-
 
     static HbProgressDialogPrivate *d_ptr(HbProgressDialog *note) {
         Q_ASSERT(note);
         return note->d_func();
     }
-	HbAction *mAction;
+    HbAction *mAction;
     QTimeLine *mTimer;
     HbIcon mIcon;
-	HbProgressDialogContentWidget* mContentWidget;
-	Qt::Alignment mIconAlignment;
-    bool mTextWrapping;
-	int mMinDuration;
-	int mDelayTime;
-	HbProgressDialog::ProgressDialogType mNoteType;
-	QString mTextString;
-	Qt::Alignment mAlign;
+    HbProgressDialogContentWidget* mContentWidget;
+    Qt::Alignment mIconAlignment;
+    int mMinDuration;
+    int mDelayTime;
+    HbProgressDialog::ProgressDialogType mNoteType;
+    QString mTextString;
+    Qt::Alignment mAlign;
 };
 
 #endif

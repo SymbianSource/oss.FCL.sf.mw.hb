@@ -114,6 +114,8 @@ public:
     void setPreferredPos(const QPointF& position,
                           HbPopup::Placement placement = HbPopup::TopLeftCorner);
 
+    QPainterPath shape() const;
+
 public slots:
     void open( QObject *receiver = 0, const char *member = 0);
     void exec();
@@ -130,7 +132,6 @@ protected:
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event );
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event );
-    void keyPressEvent(QKeyEvent *event);
 
     void showEvent(QShowEvent *event);
     void hideEvent(QHideEvent *event);

@@ -26,7 +26,13 @@
 #ifndef HBTAPANDHOLDGESTURE_P_P_H
 #define HBTAPANDHOLDGESTURE_P_P_H
 
+#include "hbtapandholdgesture.h"
+
 #include <hbglobal.h>
+#include <QMouseEvent>
+#include <QPoint>
+#include <QLine>
+#include <QVariant>
 
 const qreal DELTA_TOLERANCE = 1.0;
 const int HOLDTAP_ACTIVATION_USECS = 150; // usecs
@@ -35,6 +41,16 @@ const int HOLDTAP_DURATION_USECS = 500-HOLDTAP_ACTIVATION_USECS; // usecs
 class HB_CORE_PRIVATE_EXPORT HbTapAndHoldGesturePrivate
 {
 public:
+    HbTapAndHoldGesturePrivate(HbTapAndHoldGesture* owner = NULL)
+        :
+        q_ptr(owner),
+        mScenePos(QPointF(0,0)),
+        mRunningTime(0),
+        mTimerID(0) {};
+    HbTapAndHoldGesture* q_ptr;    
+
+    QPointF mScenePos;
+
     int mRunningTime;
     int mTimerID;
 };

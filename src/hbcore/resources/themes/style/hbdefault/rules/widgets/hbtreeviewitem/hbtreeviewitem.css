@@ -16,6 +16,34 @@ HbTreeViewItem::subitem-indicator{
 }
 
 HbTreeViewItem::text-1[modelItemType="ParentItem"]{
-	pref-height: var(hb-param-text-height-secondary);
+	text-height: var(hb-param-text-height-secondary);
 	font-variant: secondary;
+}
+
+HbListViewItem::text-2[modelItemType="ParentItem"]{
+	minimum-height: 0.0un;
+	minimum-width: 0.0un;
+	fixed-height: 0.0un;
+	fixed-width: 0.0un;
+}
+
+HbListViewItem::text-3[modelItemType="ParentItem"]{
+	minimum-height: 0.0un;
+	minimum-width: 0.0un;
+	fixed-height: 0.0un;
+	fixed-width: 0.0un;
+}
+
+HbListViewItem::icon-1[modelItemType="ParentItem"]{
+	minimum-height: 0.0un;
+	minimum-width: 0.0un;
+	fixed-height: 0.0un;
+	fixed-width: 0.0un;
+}
+
+HbListViewItem::icon-2[modelItemType="ParentItem"]{
+	minimum-height: 0.0un;
+	minimum-width: 0.0un;
+	fixed-height: 0.0un;
+	fixed-width: 0.0un;
 }

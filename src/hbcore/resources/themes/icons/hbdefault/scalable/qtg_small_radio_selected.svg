@@ -1,29 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <rect fill="none" fill-opacity="0.5" height="30" stroke-opacity="0.5" width="30"/>
-<path d="M15,30C6.729,30,0,23.271,0,15S6.729,0,15,0s15,6.729,15,15S23.271,30,15,30L15,30z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="1.2188" y2="29.4379">
-<stop offset="0" style="stop-color:#B9BCBD"/>
-<stop offset="0.3394" style="stop-color:#E0E1E2"/>
-<stop offset="1" style="stop-color:#FFFFFF"/>
+<path d="M15,30c-8.271,0-15-6.73-15-15s6.729-15,15-15,15,6.729,15,15-6.73,15-15,15z" fill-opacity="0.6" stroke-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15" x2="15" y1="1.219" y2="29.44">
+<stop offset="0" stop-color="#B9BCBD"/>
+<stop offset="0.3394" stop-color="#E0E1E2"/>
+<stop offset="1" stop-color="#FFFFFF"/>
 </linearGradient>
-<path d="M15,29C7.279,29,1,22.72,1,15S7.279,1,15,1s14,6.28,14,14S22.721,29,15,29L15,29z" fill="url(#SVGID_1_)"/>
-<path d="M15,1C7.279,1,1,7.28,1,15s6.279,14,14,14C7.831,29,2,23.168,2,16S7.831,3,15,3s13,5.832,13,13  s-5.831,13-13,13c7.721,0,14-6.28,14-14S22.721,1,15,1z" fill-opacity="0.1" stroke-opacity="0.1"/>
-<path d="M15,2c7.551,0,13.709,6.013,13.975,13.5C28.98,15.333,29,15.169,29,15c0-7.72-6.279-14-14-14S1,7.28,1,15  c0,0.169,0.02,0.333,0.025,0.5C1.291,8.013,7.449,2,15,2z" fill-opacity="0.1" stroke-opacity="0.1"/>
-<path d="M15,24c-4.963,0-9-4.038-9-9s4.037-9,9-9s9,4.038,9,9S19.963,24,15,24L15,24z" fill-opacity="0.4" stroke-opacity="0.4"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="7.125" y2="23.2505">
-<stop offset="0" style="stop-color:#A0F800"/>
-<stop offset="1" style="stop-color:#319E00"/>
+<path d="M15,29c-7.721,0-14-6.28-14-14s6.279-14,14-14,14,6.28,14,14-6.28,14-14,14z" fill="url(#SVGID_1_)"/>
+<path d="M15,1c-7.721,0-14,6.28-14,14s6.279,14,14,14c-7.169,0-13-5.83-13-13s5.831-13,13-13,13,5.832,13,13-5.831,13-13,13c7.721,0,14-6.28,14-14s-6.28-14-14-14z" fill-opacity="0.1" stroke-opacity="0.1"/>
+<path d="M15,2c7.551,0,13.71,6.013,13.98,13.5,0-0.17,0.02-0.33,0.02-0.5,0-7.72-6.279-14-14-14s-14,6.28-14,14c0,0.169,0.02,0.333,0.025,0.5,0.266-7.487,6.424-13.5,13.98-13.5z" fill-opacity="0.1" stroke-opacity="0.1"/>
+<path d="M15,24c-4.963,0-9-4.038-9-9s4.037-9,9-9,9,4.038,9,9-4.04,9-9,9z" fill-opacity="0.4" stroke-opacity="0.4"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="15" x2="15" y1="7.125" y2="23.25">
+<stop offset="0" stop-color="#A0F800"/>
+<stop offset="1" stop-color="#319E00"/>
 </linearGradient>
-<path d="M15,23c-4.411,0-8-3.59-8-8s3.589-8,8-8s8,3.59,8,8S19.411,23,15,23L15,23z" fill="url(#SVGID_2_)"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="14.9995" x2="14.9995" y1="7" y2="23.0005">
-<stop offset="0" style="stop-color:#D6FF8C"/>
-<stop offset="0.3394" style="stop-color:#7AD900"/>
-<stop offset="0.6182" style="stop-color:#5BC000"/>
-<stop offset="1" style="stop-color:#96DB00"/>
+<path d="M15,23c-4.411,0-8-3.59-8-8s3.589-8,8-8,8,3.59,8,8-3.59,8-8,8z" fill="url(#SVGID_2_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="15" x2="15" y1="7" y2="23">
+<stop offset="0" stop-color="#D6FF8C"/>
+<stop offset="0.3394" stop-color="#7AD900"/>
+<stop offset="0.6182" stop-color="#5BC000"/>
+<stop offset="1" stop-color="#96DB00"/>
 </linearGradient>
-<path d="M15,8c3.859,0,7,3.141,7,7s-3.141,7-7,7s-7-3.141-7-7S11.141,8,15,8 M15,7c-4.411,0-8,3.59-8,8  s3.589,8,8,8s8-3.59,8-8S19.411,7,15,7L15,7z" fill="url(#SVGID_3_)"/>
-</g>
+<path d="M15,8c3.859,0,7,3.141,7,7s-3.141,7-7,7-7-3.141-7-7,3.14-7,7-7m0-1c-4.411,0-8,3.59-8,8s3.589,8,8,8,8-3.59,8-8-3.59-8-8-8z" fill="url(#SVGID_3_)"/>
 </svg>

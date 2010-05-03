@@ -322,11 +322,15 @@ void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button,bool handleP
         bool movingFromExtension = moreExtension && (button->parentItem() == moreExtension->contentWidget());
         setExtensionLayout(button, false);
         // tool buttons should eat all the space in the toolbar
-        button->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+        if (mOrientation == Qt::Horizontal)
+            button->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred));
+        else
+            button->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Ignored));
+
         if (movingFromExtension){
             QObject::disconnect(button->action(), SIGNAL(triggered(bool) ),
                                 moreExtension, SLOT(close()));
-            HbToolButtonPrivate::d_ptr(button)->setBackgroundVisible(true);
+            HbToolButtonPrivate::d_ptr(button)->setExtensionBackgroundVisible(false);
             polishButtons = true;
         }
         button->setParentItem(q);
@@ -345,6 +349,7 @@ void HbToolBarPrivate::resetVisibleButtonsList()
     foreach(HbToolButton *button, mToolButtons) {
         if (button->action()->isVisible()) {
             mVisibleToolButtons.append(button);
+            button->setVisible(true);
         } else {
             button->setVisible(false);
         }
@@ -411,8 +416,8 @@ void HbToolBarPrivate::updateExtension(bool moreButtonNeeded)
     if (moreExtension) {
         HbToolBarExtensionPrivate::d_ptr(moreExtension)->mToolButtons.clear();
         HbToolBarExtensionPrivate::d_ptr(moreExtension)->contentWidget->setLayout(0);
-        moreExtensionButton->setVisible(moreButtonNeeded);
         moreExtensionButton->action()->setVisible(moreButtonNeeded);
+        moreExtensionButton->setVisible(moreButtonNeeded);
     }
     else if (moreButtonNeeded && !moreExtension)  {
         moreExtension = new HbToolBarExtension();
@@ -420,7 +425,6 @@ void HbToolBarPrivate::updateExtension(bool moreButtonNeeded)
         moreExtensionButton->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
 
         HbIcon extensionIcon("qtg_mono_more");
-        extensionIcon.setColor(HbColorScheme::color("foreground"));
         moreExtension->extensionAction()->setIcon(extensionIcon);
         initToolBarExtension(moreExtension);
         HbToolButtonPrivate::d_ptr(moreExtensionButton)->setToolBarPosition(
@@ -498,6 +502,7 @@ void HbToolBarPrivate::doLayout()
         mDoLayoutPending = false;
         return;
     }
+
     if (mDoLayoutPending){
         if (!mToolButtons.count()){
             foreach(QAction *action, q->actions()) {
@@ -512,7 +517,16 @@ void HbToolBarPrivate::doLayout()
         return;
     }
     //Saving minimumSize for the more button calculations
-    if (!minimumToolButtonSize.isValid()) {
+    bool firstButton =  mToolButtons.count() == 1 ? true : false;
+
+    // Recalculate minimum button size when adding first button.
+    // minimumToolButtonSize might have wrong value incase it has been
+    // calculated earlier using button which have been deleted.
+    if (!minimumToolButtonSize.isValid() || firstButton ) {
+        if (mVisibleToolButtons.count() > 0)
+            q->setVisible(true); // The toolbar must be set visible in order to correctly
+                                 // calculate minimum button size in all situations (also when
+                                 // the toolbar was hidden).
         calculateButtonMinimumSize();
     }
 
@@ -520,11 +534,11 @@ void HbToolBarPrivate::doLayout()
     calculateMaximumButtons();
     int visibleItemsCount = mVisibleToolButtons.count();
     bool moreButtonNeeded = visibleItemsCount > maxToolBarButtons;
+
     if (moreButtonNeeded ||
         (moreExtensionButton && moreExtensionButton->action()->isVisible() != moreButtonNeeded)) {
         updateExtension(moreButtonNeeded);
     }
-
 
     mLayout = new QGraphicsLinearLayout( q->orientation() );
     mLayout->setSpacing(0);
@@ -603,15 +617,20 @@ void HbToolBarPrivate::actionRemoved( QActionEvent *event )
     for (int i = 0; i < mToolButtons.count(); i++) {
         button = mToolButtons.at(i);
         if (button->action() == event->action()) {         
-            mToolButtons.removeAt(i);
+            mToolButtons.removeAt(i);            
             // Emit signal when the only action is removed
             if (mToolButtons.count() == 0) {
                 if (moreExtensionButton)
                     moreExtensionButton->setVisible(false);
+                mVisibleToolButtons.clear();
+                delete button;
+                q->setLayout(0);
+                mLayout = 0;
                 //reset toolbar size
                 q->resize(0, 0);
                 if (q->isVisible())
                     QMetaObject::invokeMethod(&core, "visibilityChanged", Qt::QueuedConnection);
+                return;
             }
             break;
         }
@@ -818,7 +837,7 @@ void HbToolBarPrivate::startDisappearEffect()
                              QVariant(), extRect)) {
             delayedHide = false;
         }
-    } else {
+    } else if (parentItem) {
         QRectF extRect(-q->boundingRect().width(),
                        parentItem->boundingRect().height() - q->boundingRect().height(),
                        q->boundingRect().width(),

@@ -7,6 +7,7 @@ HbGroupBoxHeadingWidget[groupBoxType="1"]
 HbGroupBoxHeadingWidget[groupBoxType="3"] 
 {
     layout:collapsing_container;
+    size-policy-vertical:fixed;
 }
 
 /* Simple Label groupBox */

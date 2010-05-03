@@ -70,8 +70,7 @@ HbAutoComplete::~HbAutoComplete()
 }
 
 /*!
-Reuturns list of supported languages. This engine can be used with any input language so it just returns
-a list containing HbInputLanguageAny.
+\reimp
 */
 QList<HbInputLanguage> HbAutoComplete::languages() const
 {
@@ -80,7 +79,7 @@ QList<HbInputLanguage> HbAutoComplete::languages() const
 }
 
 /*!
-Handles delete key press. 
+\reimp
 */
 void HbAutoComplete::deleteKeyPress(HbPredictionCallback* callback)
 {
@@ -92,9 +91,7 @@ void HbAutoComplete::deleteKeyPress(HbPredictionCallback* callback)
 }
 
 /*!
-Commits active word. Word is added to the dictionry (unless it isn't there already)
-and the use count is increased. In case of collection, the word is added to the first 
-dictionary in the collection unless it already exits in at least one of them.
+\reimp
 */
 void HbAutoComplete::commit(const QString &word)
 {
@@ -109,7 +106,7 @@ void HbAutoComplete::commit(const QString &word)
 }
 
 /*!
-Clears active word.
+\reimp
 */
 void HbAutoComplete::clear()
 {
@@ -120,8 +117,7 @@ void HbAutoComplete::clear()
 }
 
 /*!
-Adds word to active dictionary or collection if it doesn't already exits theer and increases the 
-use frequency counter. In case of a collection, word is added to the first enabled dictionary.
+\reimp
 */
 void HbAutoComplete::addUsedWord(const QString& word)
 {
@@ -150,7 +146,7 @@ void HbAutoComplete::addUsedWord(const QString& word)
 }
 
 /*!
-Handles key presses. Empty implementation, isn't used at the moment. 
+\reimp
 */
 void HbAutoComplete::appendKeyPress(const int keycode, const Qt::KeyboardModifiers modifiers, const HbTextCase textCase, HbPredictionCallback* callback)
 {
@@ -161,7 +157,7 @@ void HbAutoComplete::appendKeyPress(const int keycode, const Qt::KeyboardModifie
 }
 
 /*!
-Sets active word.
+\reimp
 */
 void HbAutoComplete::setWord(const QString& word, HbPredictionCallback* callback)
 {
@@ -174,6 +170,9 @@ void HbAutoComplete::setWord(const QString& word, HbPredictionCallback* callback
     }
 }
 
+/*!
+\reimp
+*/
 void HbAutoComplete::updateCandidates(int& bestGuessLocation, bool& noMoreCandidates)
 {
     Q_D(HbAutoComplete);
@@ -192,15 +191,26 @@ void HbAutoComplete::updateCandidates(int& bestGuessLocation, bool& noMoreCandid
 }
 
 /*!
-returns a bit vector of supported prediction features.
-*/ 
+\reimp
+*/
+bool HbAutoComplete::updateCandidates(int& bestGuessLocation)
+{
+    // The real implementation will be moved into this method after the deprecation period.
+    bool tmp = false;
+    updateCandidates(bestGuessLocation, tmp);
+    return tmp;
+}
+
+/*!
+\reimp
+*/
 HbInputPredictionFeature HbAutoComplete::features() const
 {
     return (HbInputPredictionFeature)(HbPredFeatureExtraDictionaries | HbPredFeatureWordCompletion);
 }
 
 /*!
-Returns vendor id string. 
+\reimp
 */
 QString HbAutoComplete::vendorIdString() const
 {
@@ -208,7 +218,7 @@ QString HbAutoComplete::vendorIdString() const
 }
 
 /*!
-Returns engine version string.
+\reimp
 */
 QString HbAutoComplete::engineVersion() const
 {
@@ -216,8 +226,7 @@ QString HbAutoComplete::engineVersion() const
 }
 
 /*!
-Returns true if the engine supports given language / keyboard combination. In case of HbAutoCompletion,
-this method always returns true because the keyboard doesn't matter.
+\reimp
 */
 bool HbAutoComplete::supportsKeyboardType(const HbInputLanguage &language, HbKeyboardType keyboard) const
 {
@@ -229,9 +238,8 @@ bool HbAutoComplete::supportsKeyboardType(const HbInputLanguage &language, HbKey
     return true;
 }
 
-
 /*!
-Sets active dictionary. Previous active dictionary or collection is disabled.
+\reimp
 */
 void HbAutoComplete::setExtraUserDictionary(int aId)
 {
@@ -249,7 +257,7 @@ void HbAutoComplete::setExtraUserDictionary(int aId)
 }
 
 /*!
-Sets active dictionary collection. Previous active dictionary or collection is disabled.
+\reimp
 */
 void HbAutoComplete::setExtraUserDictionaries(const QList<int>& idList)
 {
@@ -264,7 +272,7 @@ void HbAutoComplete::setExtraUserDictionaries(const QList<int>& idList)
 }
 
 /*!
-Returns the length of current input sequence.
+\reimp
 */
 int HbAutoComplete::inputLength()
 {
@@ -274,7 +282,7 @@ int HbAutoComplete::inputLength()
 }
 
 /*!
-An empty implementation. Not needed in HbAutoCompletion.
+\reimp
 */
 void HbAutoComplete::setCandidateList(QStringList* candidateList)
 {
@@ -282,7 +290,7 @@ void HbAutoComplete::setCandidateList(QStringList* candidateList)
 }
 
 /*!
-Returns current candidate list. Reconstructs the list only when it is out of date.
+\reimp
 */
 QStringList HbAutoComplete::candidateList()
 {
@@ -303,7 +311,16 @@ QStringList HbAutoComplete::candidateList()
 }
 
 /*!
-Sets keyboard type. This method is not needed in HbAutoCompletion.
+\reimp
+*/
+QStringList HbAutoComplete::candidates()
+{
+    // Move the implementation here after the deprecation period.
+    return candidateList();
+}
+
+/*!
+\reimp
 */
 void HbAutoComplete::setKeyboard(HbKeyboardType aKeyboardType)
 {
@@ -311,8 +328,7 @@ void HbAutoComplete::setKeyboard(HbKeyboardType aKeyboardType)
 }
 
 /*!
-Appends new character to be used as part of the input sequence. The candidate list is flagged to be
-out of date.
+\reimp
 */
 void HbAutoComplete::appendCharacter(const QChar aChar, const HbTextCase textCase, HbPredictionCallback* callback)
 {

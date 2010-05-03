@@ -65,7 +65,7 @@ public:
     void calculateAndSetSize(qreal maxWidth);
     void initFrameIcon();
 
-public: 
+public:
     HbListWidget* mList;
     HbInputMethod* mInput;
     int numRows;
@@ -79,16 +79,16 @@ HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
       numRows(HbCandListDefaultNumRows),
       numCandidates(0),
       longestStringWidth(0),
-      mFrameBackground( 0 )
+      mFrameBackground(0)
 {
     Q_Q(HbCandidateList);
 
     mList = new HbListWidget(q);
+    mList->setEnabledAnimations(HbAbstractItemView::None);
 }
 
 HbCandidateListPrivate::~HbCandidateListPrivate()
 {
-//    delete mBackground;
 }
 
 void HbCandidateListPrivate::initFrameIcon()
@@ -105,22 +105,12 @@ void HbCandidateListPrivate::initFrameIcon()
 
 void HbCandidateListPrivate::calculateAndSetSize(qreal maxWidth)
 {
-    Q_Q(HbCandidateList); 
+    Q_Q(HbCandidateList);
 
     const qreal oneLineHeight = 40.0;  // temporarily as a constant, eventually we'll need to calculate this.
 
     QRectF geom = q->geometry();
     qreal finalWidth = 30 + longestStringWidth * 2;    // Use magic numbers for now until we can calculate this from font.
-
-    // Font has not been set yet at this point...
-    /*QList<HbAbstractViewItem *>  items = mList->itemPrototypes();
-    mList->adjustSize();
-    HbAbstractViewItem * firstItem = items.at(0);
-
-    if(firstItem){
-    QFontMetrics fontMetrics(firstItem->fontSpec().font());
-    finalWidth = fontMetrics.boundingRect(longestString).width();	
-    }*/
 
     if (finalWidth > maxWidth) {
         finalWidth = maxWidth;
@@ -136,8 +126,9 @@ void HbCandidateListPrivate::calculateAndSetSize(qreal maxWidth)
     finalWidth = finalWidth + l + r ;
     finalHeight = (qreal)numLines * oneLineHeight + 5.0 + t + b;
 
-    if(finalHeight > HbDeviceProfile::current().logicalSize().height() - 30)
+    if(finalHeight > HbDeviceProfile::current().logicalSize().height() - 30) {
         finalHeight = HbDeviceProfile::current().logicalSize().height() - 30;
+    }
 
     geom.setHeight(finalHeight);
     geom.setWidth(finalWidth);
@@ -167,9 +158,9 @@ Constructor.
 */
 HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
     : HbDialog(*new HbCandidateListPrivate(input), parent)
-{ 
+{
     Q_D(HbCandidateList);
-    
+
     d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.
     d->initFrameIcon();
 
@@ -187,8 +178,9 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
     setTimeout(NoTimeout);
     setAttribute(Qt::WA_InputMethodEnabled, false);
     connect(d->mList, SIGNAL(activated(HbListWidgetItem*)), this, SLOT(itemActivated(HbListWidgetItem*)));
- 
-    setBackgroundFaded(false);        
+    connect(d->mList, SIGNAL(longPressed(HbListWidgetItem*, const QPointF&)), this, SLOT(itemActivated(HbListWidgetItem*)));
+
+    setBackgroundFaded(false);
 }
 
 /*!
@@ -201,7 +193,7 @@ HbCandidateList::~HbCandidateList()
 /*!
 Populates the candidate list with text strings given as parameter.
 
-@param 
+@param
 */
 void HbCandidateList::populateList(const QStringList& candidates)
 {
@@ -259,9 +251,9 @@ void HbCandidateList::keyPressEvent(QKeyEvent* event)
 Inherited from HbDialog.
 */
 void HbCandidateList::closeEvent(QCloseEvent* /*event*/)
-{   
+{
     hide();
-	emit candidatePopupCancelled();    
+    emit candidatePopupCancelled();
 }
 
 /*!
@@ -272,7 +264,7 @@ void HbCandidateList::itemActivated(HbListWidgetItem *item)
     Q_UNUSED(item);
     Q_D(HbCandidateList);
 
-    d->mInput->candidatePopupClosed();    
+    d->mInput->candidatePopupClosed();
     hide();
 }
 
@@ -295,6 +287,7 @@ void HbCandidateList::setNumberOfVisibleLines(int numLines)
     d->numRows = numLines;
     update();
 }
+
 /*!
 this event handler is called, for Hide events, is delivered after the widget has been hidden.
 */

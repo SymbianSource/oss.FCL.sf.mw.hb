@@ -25,6 +25,14 @@
 
 #include <hbstyleoptiondatagroupheadingwidget_p.h>
 
+
+
+/*!
+
+    \deprecated HbStyleOptionDataGroupHeadingWidget::HbStyleOptionDataGroupHeadingWidget()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionDataGroupHeadingWidget::HbStyleOptionDataGroupHeadingWidget() :
     expanded(false),
     pressed(false)
@@ -33,9 +41,16 @@ HbStyleOptionDataGroupHeadingWidget::HbStyleOptionDataGroupHeadingWidget() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionDataGroupHeadingWidget::HbStyleOptionDataGroupHeadingWidget(const HbStyleOptionDataGroupHeadingWidget&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionDataGroupHeadingWidget::HbStyleOptionDataGroupHeadingWidget(const HbStyleOptionDataGroupHeadingWidget &other) :
     HbStyleOption(other),
     heading(other.heading),
+    description(other.description),
     expanded(other.expanded),
     pressed(other.pressed)
 {

@@ -28,7 +28,7 @@
 #include "hbwidgetstyleloader_p.h"
 
 /*!
-	@beta
+	@stable
     @hbcore
     \class HbStyleLoader
     \brief allows an application to override platform layout and stylesheet definitions

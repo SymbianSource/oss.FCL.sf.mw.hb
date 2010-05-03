@@ -210,7 +210,12 @@ void HbIconAnimationManagerPrivate::handleThemeChangeFinished()
     // animation definitions (or at least try to reload; some defs may now be
     // missing if they were present in the previous theme but not in the new
     // one).
-    animations.clear();
+    foreach (const QString &iconName, animations.keys()) {
+        // Do not remove animations that were not created from files.
+        if (animations.value(iconName).definitionFileName) {
+            animations.remove(iconName);
+        }
+    }
     definitionFileNames.clear();
     //
     // Cannot use definitionFileNames here because it is cleared upon every

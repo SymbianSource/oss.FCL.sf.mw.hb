@@ -56,12 +56,14 @@ public:
     void setKeyMappingTitleNumeric(int aKey, HbTouchKeypadButton* aButton, HbModifiers aModifiers);
 
     void applyEditorConstraints();
+	void getAllowedSctCharcters(QString& allowedSctCharacters);
 
     void createKeypad();
     void createLayout();
     QString textForKey(int key);
     QString additionalTextForKey(int key);
     int keyCode(HbTouchKeypadButton *button);
+    QChar findFirstNumberCharacterBoundToKey(int key);	
 public:
     HbTouchKeypadButton* mButtons[HbNum12KeypadBaseButtons];
     bool mKeypadCreated;

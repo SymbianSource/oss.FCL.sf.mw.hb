@@ -172,15 +172,13 @@ Returns true if the language is undefined (language() returns 0).
 /*!
 \fn bool defined() 
 
-Returns true if this structure is initialised to contain a valid language / variant .
+Returns true if this structure is initialised to contain a valid language/variant pair.
 */
 
 /*!
-Returns localized language name for given language. Language variant parameter
-identifies sub-language in those cases where QLocale::Language does not provide
-enough information (for example in case of Chinese). See setting proxy's
-input language variant for more information. Chinese requires languageVariant
-parameter, otherwise null string will be returned. Valid variants are
+Returns localized language name for given language.
+Chinese requires valid value in language's variant field,
+otherwise null string will be returned. Valid variants are
 QLocale::China, QLocale::Taiwan and QLocale::HongKong.
 
 \sa HbInputSettingProxy
@@ -216,7 +214,7 @@ QString HbInputLanguage::localisedName()
 }
 
 /*!
-Returns true if the language is case sensitive else returns false.
+Returns true if the language is case sensitive.
 */
 bool HbInputLanguage::isCaseSensitiveLanguage() const
 {

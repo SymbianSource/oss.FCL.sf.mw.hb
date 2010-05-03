@@ -39,11 +39,8 @@
 #include "hbnvgenginepool_p.h"
 #include "hbeglstate_p.h"
 #include "hbmaskableiconimpl_p.h"
-
-struct HbNvgMaskedIcon
-{
-    QPixmap currentPixmap;
-};
+#include "hbvgimageiconrenderer_p.h"
+#include "hbpixmapiconrenderer_p.h"
 
 // Constants
 static const int HB_BITS_PER_COLOR =    8;
@@ -62,12 +59,10 @@ HbNvgIconImpl::HbNvgIconImpl(const HbSharedIconInfo &iconData,
                    mirrored),
         readyToRender(false),
         specialCaseApplied(false),
-        vgimage(0),
-        opacityPaint(VG_INVALID_HANDLE),
-        lastOpacity(1.0),
-        nvgEngine(0),
-        eglStates(HbEglStates::global())
-
+        nvgEngine(NULL),
+        eglStates(HbEglStates::global()),
+        vgImageRenderer(0),
+        pixmapIconRenderer(0)
 {
     eglStates->ref();
     retrieveNvgData();
@@ -77,13 +72,13 @@ HbNvgIconImpl::~HbNvgIconImpl()
 {
     delete nvgEngine;
     if (eglStates) {
-        if (vgimage) {
-            eglStates->removeVGImage(&vgimage);
-        }
-        if (opacityPaint) {
-            vgDestroyPaint(opacityPaint);
-        }
         eglStates->deref(eglStates);
+    }
+    if (vgImageRenderer) {
+        delete vgImageRenderer;
+    }
+    if (pixmapIconRenderer) {
+        delete pixmapIconRenderer;
     }
 }
 
@@ -188,7 +183,7 @@ VGImage HbNvgIconImpl::createVGImageFromNVG(EGLDisplay display,
 
     vgSeti(VG_RENDERING_QUALITY, VG_RENDERING_QUALITY_BETTER);
 
-    HbNvgEngine::NvgErrorType errorType = drawNVGIcon(iconSize, *nvgEngine);
+    HbNvgEngine::HbNvgErrorType errorType = drawNVGIcon(iconSize, *nvgEngine);
 
     if (!useGivenContext) {
         vgFinish();
@@ -214,21 +209,6 @@ QPixmap HbNvgIconImpl::pixmap()
 
     int width = renderSize.width();
     int height = renderSize.height();
-
-    if (vgimage != VG_INVALID_HANDLE) {
-        QImage image(width, height, QImage::Format_ARGB32_Premultiplied);
-        vgGetImageSubData(vgimage,
-                          image.bits(),
-                          image.bytesPerLine(),
-                          VG_sARGB_8888_PRE,
-                          0,
-                          0,
-                          width,
-                          height);
-
-        currentPixmap = QPixmap::fromImage(image);
-        return currentPixmap;
-    }
 
     EGLDisplay display      = eglGetCurrentDisplay();
     EGLSurface currentReadSurface  = eglGetCurrentSurface(EGL_READ);
@@ -330,7 +310,7 @@ QPixmap HbNvgIconImpl::pixmap()
     return currentPixmap;
 }
 
-HbNvgEngine::NvgErrorType HbNvgIconImpl::drawNVGIcon(const QSize & size, HbNvgEngine & nvgEngine)
+HbNvgEngine::HbNvgErrorType HbNvgIconImpl::drawNVGIcon(const QSize & size, HbNvgEngine & nvgEngine)
 {
 
     VGint                   mMatrixMode;
@@ -356,9 +336,9 @@ HbNvgEngine::NvgErrorType HbNvgIconImpl::drawNVGIcon(const QSize & size, HbNvgEn
 
     NvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(aspectRatioMode);
     nvgEngine.setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
-    nvgEngine.setMirroringMode(mirrored);
+    nvgEngine.enableMirroring(mirrored);
 
-    HbNvgEngine::NvgErrorType errorType = nvgEngine.drawNvg(nvgData, size);
+    HbNvgEngine::HbNvgErrorType errorType = nvgEngine.drawNvg(nvgData, size);
 
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     vgLoadMatrix(mPathMatrix);
@@ -418,9 +398,29 @@ void HbNvgIconImpl::retrieveNvgData()
 
 }
 
+VGImage HbNvgIconImpl::getVgImage(HbIconImpl * impl, QPainter * painter)
+{
+    HbNvgIconImpl * nvgImpl = (HbNvgIconImpl*)impl;
+
+    painter->beginNativePainting();
+
+    VGImage vgimage = nvgImpl->createVGImageFromNVG(nvgImpl->eglStates->display,
+                      nvgImpl->eglStates->currentReadSurface,
+                      nvgImpl->eglStates->currentWriteSurface,
+                      nvgImpl->eglStates->eglContext,
+                      nvgImpl->contentSize.width(),
+                      nvgImpl->contentSize.height(),
+                      true,
+                      nvgImpl->nvgEngine->engine());
+
+    painter->endNativePainting();
+
+    return vgimage;
+}
 void HbNvgIconImpl::paint(QPainter* painter,
                           const QRectF& rect,
                           Qt::Alignment alignment,
+                          const QPainterPath &clipPath,
                           HbMaskableIconImpl * maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
@@ -432,91 +432,49 @@ void HbNvgIconImpl::paint(QPainter* painter,
 
     QPointF topLeft = setAlignment(rect, renderSize, alignment);
     if (!nvgEngine) {
-        nvgEngine = HbNVGEnginePool::instance()->getNVGEngine();
+        nvgEngine = HbNvgEnginePool::instance()->getNvgEngine();
     }
 
     bool maskApplied = false;
-    if (maskIconData && maskIconData->maskChanged()) {
+    if (maskIconData && (maskIconData->maskChanged() ||  maskIconData->implData())) {
         maskApplied = true;
     }
 
-    if (readyToRender && !maskApplied) {
-        if (maskIconData) {
-            HbNvgMaskedIcon * mi = (HbNvgMaskedIcon *) maskIconData->implData();
-            if (mi) {
-                painter->drawPixmap(topLeft, mi->currentPixmap, mi->currentPixmap.rect());
-                return;
-            }
+    if ((painter->paintEngine()->type() != QPaintEngine::OpenVG) || maskApplied) {
+
+        painter->beginNativePainting();
+        pixmap();
+        painter->endNativePainting();
+
+        if (!pixmapIconRenderer) {
+            pixmapIconRenderer = new HbPixmapIconRenderer(currentPixmap, this);
+            pixmapIconRenderer->setColor(iconColor);
+            pixmapIconRenderer->setMode(mode);
         }
-        painter->drawPixmap(topLeft, currentPixmap, currentPixmap.rect());
+
+        pixmapIconRenderer->draw(painter, topLeft, clipPath, maskIconData);
         return;
+    }
+
+    QPainterPath intersect;
+    if (!clipPath.isEmpty()) {
+        QPainterPath piecePath;
+        piecePath.addRect(rect);
+        intersect = clipPath.intersected(piecePath);
+        QRectF intRect = intersect.boundingRect();
+        if (intersect.isEmpty()) {
+            return;
+        }
     }
 
     if ((iconColor.isValid()) || (mode != QIcon::Normal) ||
-            (painter->paintEngine()->type() != QPaintEngine::OpenVG) ||
-            (maskApplied)) {
-
-        applySpecialCases(painter, topLeft, maskIconData);
-        return;
-    }
-
-    if (multiPieceIcon || painter->opacity() != 1.0) {
-        if (drawRasterizedIcon(painter, topLeft, renderSize)) {
+            multiPieceIcon || painter->opacity() != 1.0) {
+        if (drawRasterizedIcon(painter, topLeft, renderSize, intersect)) {
             return;
         }
     }
 
     drawNVGIcon(painter, topLeft, renderSize, settings);
-}
-
-void HbNvgIconImpl::applySpecialCases(QPainter * painter,
-                                      const QPointF & topLeft,
-                                      HbMaskableIconImpl *maskIconData)
-{
-    painter->beginNativePainting();
-    pixmap();
-    painter->endNativePainting();
-
-    if (!specialCaseApplied) {
-
-        if ((iconColor.isValid()) && (mode != QIcon::Disabled)) {
-            if (!currentPixmap.isNull()) {
-                QPixmap mask = currentPixmap.alphaChannel();
-                currentPixmap.fill(iconColor);
-                currentPixmap.setAlphaChannel(mask);
-            }
-        }
-
-        // Apply the mode
-        if (mode != QIcon::Normal) {
-            QStyleOption opt(0);
-            opt.palette = QApplication::palette();
-            currentPixmap = QApplication::style()->generatedIconPixmap(mode, currentPixmap, &opt);
-        }
-        specialCaseApplied = true;
-    }
-
-    if (maskIconData) {
-        HbNvgMaskedIcon * mi = (HbNvgMaskedIcon *)maskIconData->implData();
-        if (maskIconData->maskChanged()) {
-            if (!mi) {
-                mi = new HbNvgMaskedIcon();
-            }
-
-            mi->currentPixmap = currentPixmap;
-            mi->currentPixmap.setMask(maskIconData->mask());
-            maskIconData->setImplData(mi);
-        }
-
-        if (mi) {
-            painter->drawPixmap(topLeft, mi->currentPixmap, mi->currentPixmap.rect());
-            readyToRender = true;
-            return;
-        }
-    }
-
-    painter->drawPixmap(topLeft, currentPixmap, currentPixmap.rect());
-    readyToRender = true;
 }
 
 void HbNvgIconImpl::drawNVGIcon(QPainter * painter,
@@ -526,7 +484,7 @@ void HbNvgIconImpl::drawNVGIcon(QPainter * painter,
 {
     nvgEngine->engine()->setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio,
         settings.type);
-    nvgEngine->engine()->setMirroringMode(mirrored);
+    nvgEngine->engine()->enableMirroring(mirrored);
 
     painter->beginNativePainting();
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
@@ -603,8 +561,10 @@ void HbNvgIconImpl::drawNVGIcon(QPainter * painter,
 
 bool HbNvgIconImpl::drawRasterizedIcon(QPainter * painter,
                                        const QPointF & topLeft,
-                                       const QSizeF & renderSize)
+                                       const QSizeF & renderSize,
+                                       const QPainterPath &clipPath)
 {
+    bool ret = false;
     // need to do a reset if EGL contexts changes/recreated
     if (!eglStates->initialized()) {
         eglStates->set(eglGetCurrentDisplay(),
@@ -613,102 +573,31 @@ bool HbNvgIconImpl::drawRasterizedIcon(QPainter * painter,
                        eglGetCurrentContext());
     }
 
-    if (vgimage == VG_INVALID_HANDLE) {
+    if (!vgImageRenderer) {
         painter->beginNativePainting();
 
-        vgimage = createVGImageFromNVG(eglStates->display,
-                                       eglStates->currentReadSurface,
-                                       eglStates->currentWriteSurface,
-                                       eglStates->eglContext,
-                                       renderSize.width(),
-                                       renderSize.height(),
-                                       true,
-                                       nvgEngine->engine());
-        if (vgimage) {
-            eglStates->addVGImage(&vgimage);
+        VGImage vgimage = createVGImageFromNVG(eglStates->display,
+                                               eglStates->currentReadSurface,
+                                               eglStates->currentWriteSurface,
+                                               eglStates->eglContext,
+                                               renderSize.width(),
+                                               renderSize.height(),
+                                               true,
+                                               nvgEngine->engine());
+
+        if (vgimage != VG_INVALID_HANDLE) {
+            vgImageRenderer = new HbVgImageIconRenderer(vgimage, renderSize.toSize(), this);
+            vgImageRenderer->setVgImageCreator(getVgImage);
+            vgImageRenderer->setColor(iconColor);
+            vgImageRenderer->setMode(mode);
         }
         painter->endNativePainting();
-        opacityPaint = VG_INVALID_HANDLE;
     }
 
-    if (vgimage != VG_INVALID_HANDLE) {
-
-        VGint imageMode      = vgGeti(VG_IMAGE_MODE);
-        VGint matrixMode     = vgGeti(VG_MATRIX_MODE);
-        VGPaint oldFillPaint = VG_INVALID_HANDLE;
-        VGPaint oldStrkPaint = VG_INVALID_HANDLE;
-        VGint   blendMode    = 0;
-
-        qreal opacity = painter->opacity();
-
-        if (opacity != lastOpacity) {
-            lastOpacity = opacity;
-            if (opacityPaint == VG_INVALID_HANDLE) {
-                opacityPaint = vgCreatePaint();
-            }
-            if (opacity != 1.0) {
-                VGfloat opaquePaint[] = {1.0f, 1.0f, 1.0f, opacity};
-                if (opacityPaint != VG_INVALID_HANDLE) {
-                    vgSetParameteri(opacityPaint, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-                    vgSetParameterfv(opacityPaint, VG_PAINT_COLOR, 4, opaquePaint);
-                }
-            }
-
-        }
-
-        if (opacity != 1.0 && opacityPaint != VG_INVALID_HANDLE) {
-            oldFillPaint = vgGetPaint(VG_FILL_PATH);
-            oldStrkPaint = vgGetPaint(VG_STROKE_PATH);
-            blendMode = vgGeti(VG_BLEND_MODE);
-            vgSeti(VG_BLEND_MODE, VG_BLEND_SRC_OVER);
-            vgSetPaint(opacityPaint, VG_FILL_PATH | VG_STROKE_PATH);
-        }
-
-        VGfloat devh = painter->device()->height() - 1;
-        QTransform viewport(1.0f, 0.0f, 0.0f,
-                            0.0f, -1.0f, 0.0f,
-                            0.5f, devh + 0.5f, 1.0f);
-        QTransform imageTransform = painter->transform() * viewport;
-        imageTransform.translate(topLeft.x(), topLeft.y());
-
-        VGfloat mat[9];
-
-        if (opacity == 1.0) {
-            vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
-        } else {
-            vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_MULTIPLY);
-        }
-
-        vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-
-        mat[0] = imageTransform.m11();
-        mat[1] = imageTransform.m12();
-        mat[2] = imageTransform.m13();
-        mat[3] = imageTransform.m21();
-        mat[4] = imageTransform.m22();
-        mat[5] = imageTransform.m23();
-        mat[6] = imageTransform.m31();
-        mat[7] = imageTransform.m32();
-        mat[8] = imageTransform.m33();
-        vgLoadMatrix(mat);
-
-        vgDrawImage(vgimage);
-        vgSeti(VG_MATRIX_MODE, matrixMode);
-        vgSeti(VG_IMAGE_MODE, imageMode);
-
-        if (oldFillPaint) {
-            vgSetPaint(oldFillPaint, VG_FILL_PATH);
-        }
-        if (oldStrkPaint) {
-            vgSetPaint(oldStrkPaint, VG_STROKE_PATH);
-        }
-
-        if (blendMode) {
-            vgSeti(VG_BLEND_MODE, blendMode);
-        }
-        return true;
+    if (vgImageRenderer) {
+        ret = vgImageRenderer->draw(painter, topLeft, clipPath);
     }
-    return false;
+    return ret;
 }
 
 QPointF HbNvgIconImpl::setAlignment(const QRectF& rect,
@@ -735,8 +624,8 @@ QSize HbNvgIconImpl::size()
     return contentSize;
 }
 
-void HbNvgIconImpl::destroyMaskedData(IconMaskedData data)
+void HbNvgIconImpl::destroyMaskedData(HbIconMaskedData *data)
 {
-    delete((HbNvgMaskedIcon *)data);
+    pixmapIconRenderer->destroyMaskedData(data);
 }
 

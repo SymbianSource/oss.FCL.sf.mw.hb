@@ -32,8 +32,6 @@
 #include "hbstring_p.h"
 #include "hbsmartoffset_p.h"
 
-
-
 /**
  * detach
  * used to support implicit sharing
@@ -46,32 +44,27 @@ void HbVariant::detach()
             data->mRef.deref();
         }
         GET_MEMORY_MANAGER(mMemoryType);
-        try{
-            mDataOffset = manager->alloc( sizeof(HbVariantData) );
+        HbSmartOffset offset(manager->alloc(sizeof(HbVariantData)), mMemoryType);
 
-            HbVariantData *newData = new( (char*)manager->base() + mDataOffset ) HbVariantData();
-            newData->mData = data->mData;
-            newData->mDataType = data->mDataType;
+        HbVariantData *newData = new((char*)manager->base() + offset.get()) HbVariantData();
+        newData->mData = data->mData;
+        newData->mDataType = data->mDataType;
 
-            if ( data->mDataType == String ) {
-                newData->mData.offset = manager->alloc( data->stringSize*sizeof(QChar) );
-
-				::memcpy(HbMemoryUtils::getAddress<char>( mMemoryType, newData->mData.offset ),
-                    getAddress<char>( mMemoryType, data->mData.offset, mShared ),
-                    data->stringSize * sizeof( QChar) );
-                newData->stringSize = data->stringSize;
-            } else if( data->mDataType == Color ) {
-                newData->mData.offset = manager->alloc( sizeof(QColor) );
-                new (HbMemoryUtils::getAddress<QColor>( mMemoryType, newData->mData.offset) ) 
-                        QColor(*getAddress<QColor>( mMemoryType, data->mData.offset, mShared) );
-            }
-            mShared = false;
-    }
-        catch(std::bad_alloc &badAlloc){
-            Q_UNUSED(badAlloc)
-            qCritical("HbVariant::detach() failed!");
-            throw;
+        if ( data->mDataType == String ) {
+            HbSmartOffset dataOffset(manager->alloc( data->stringSize*sizeof(QChar)));
+            ::memcpy(HbMemoryUtils::getAddress<char>(mMemoryType, dataOffset.get()),
+                getAddress<char>(mMemoryType, data->mData.offset, mShared),
+                data->stringSize * sizeof(QChar));
+            newData->stringSize = data->stringSize;
+            newData->mData.offset = dataOffset.release();
+        } else if(data->mDataType == Color) {
+            HbSmartOffset dataOffset(manager->alloc(sizeof(QColor)));
+            new (HbMemoryUtils::getAddress<QColor>(mMemoryType, dataOffset.get()))
+                    QColor(*getAddress<QColor>(mMemoryType, data->mData.offset, mShared));
+            newData->mData.offset = dataOffset.release();
         }
+        mDataOffset = offset.release();
+        mShared = false;
     }
 }
 
@@ -118,7 +111,7 @@ HbVariant::HbVariant( const QString &str, HbMemoryManager::MemoryType type )
     : mMemoryType( type ), mShared( false )
 {
     initializeData();
-    fillStringData(str);
+    fillStringData(str.constData(), str.length());
 }
 
 /*
@@ -129,7 +122,7 @@ HbVariant::HbVariant( const char *val, HbMemoryManager::MemoryType type )
 {
     initializeData();
     QString str = QString::fromAscii(val);
-    fillStringData(str);
+    fillStringData(str.constData(), str.length());
 }
 
 
@@ -314,53 +307,36 @@ double HbVariant::toDouble() const
 HbVariant::HbVariantData * HbVariant::initializeData()
 {
     GET_MEMORY_MANAGER(mMemoryType);
-    try{
-        mDataOffset = manager->alloc( sizeof(HbVariantData) );
-        //Q_ASSERT(mDataOffset != -1);
-        HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
-        return new(data) HbVariantData();
-    }
-    catch(std::bad_alloc &badAlloc){        
-              Q_UNUSED(badAlloc)
-        qCritical("HbVariant::initializeData() failed!");
-        return NULL;
-    }
+    mDataOffset = -1;
+    mDataOffset = manager->alloc(sizeof(HbVariantData));
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    return new(data) HbVariantData();
 }
 
 /*
 * fillStringData 
 */
-void HbVariant::fillStringData(const QString &str)
+void HbVariant::fillStringData(const QChar *str, int size)
 {
     GET_MEMORY_MANAGER(mMemoryType);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    if (data->mDataType==HbVariant::String 
-            && data->mData.offset != -1) {
-        //clean old string data when assigend with a new string value
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-    }
+    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
 
-    data->stringSize = str.length();
-    // If the string is not null.. alocate memory for it and copy data
-    if (data->stringSize) {
-        try{
-        data->mData.offset = manager->alloc(data->stringSize*sizeof(QChar));
-
-        memcpy(getAddress<char>(mMemoryType, data->mData.offset, mShared),
-            str.constData(),
-            data->stringSize*sizeof(QChar));
-        }
-        catch(std::bad_alloc &badAlloc){
-            Q_UNUSED(badAlloc)
-            qCritical("HbVariant::fillStringData() failed!");
-            data->mData.offset = -1;
-            throw;
-        }
-    } else {
+    if (size == 0) {
         data->mData.offset = -1;
+    } else {
+        // allocate memory and copy data.
+        int allocBytes = size * sizeof(QChar);
+        data->mData.offset = manager->alloc(allocBytes);
+        memcpy(getAddress<char>(mMemoryType, data->mData.offset, mShared),
+                                str, allocBytes);
     }
-
+    data->stringSize = size;
     data->mDataType = String;
+    if (oldOffset != -1) {
+        //clean old string data when assigned with a new string value
+        HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
+    }
 }
 
 /*
@@ -370,22 +346,18 @@ void HbVariant::fillColorData( const QColor &col )
 {
     GET_MEMORY_MANAGER(mMemoryType);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    
-    int colDataSize = sizeof(col);
-    try{
+    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
 
-        if(data->mDataType!=HbVariant::Color) {
-            data->mData.offset = manager->alloc(colDataSize);
-        }
-        new(getAddress<char>(mMemoryType, data->mData.offset, mShared)) QColor(col);
-        data->mDataType = Color;
+    if(data->mDataType == HbVariant::Color && data->mData.offset != -1) {
+        oldOffset = -1; //use the preallocated memory.
+    } else {
+        data->mData.offset = manager->alloc(sizeof(QColor));
     }
-    catch(std::bad_alloc &badAlloc){
-              Q_UNUSED(badAlloc)
-        qCritical("HbVariant::fillColorData failed!");
-        throw;
+    new (getAddress<char>(mMemoryType, data->mData.offset, mShared)) QColor(col);
+    data->mDataType = Color;
+    if (oldOffset != -1) {
+        HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
     }
-
 }
 
 /*
@@ -396,12 +368,7 @@ HbVariant& HbVariant::operator=(int val)
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-
-    if(data->mDataType==HbVariant::String || data->mDataType==HbVariant::Color) {
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-        data->stringSize=0;
-    }
-
+    freeMemory(data);
     data->mData.i = val;
     data->mDataType = Int;
     return *this;
@@ -415,12 +382,7 @@ HbVariant& HbVariant::operator=(double val)
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-
-    if(data->mDataType==HbVariant::String || data->mDataType==HbVariant::Color) {
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-        data->stringSize=0;
-    }
-
+    freeMemory(data);
     data->mData.d = val;
     data->mDataType = Double;
     return *this;
@@ -432,13 +394,7 @@ HbVariant& HbVariant::operator=(double val)
 HbVariant& HbVariant::operator=(const QString& val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
-    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    if(data->mDataType == String || data->mDataType == Color) {
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-        data->stringSize=0;
-    }
-    fillStringData(val);
-    data->mDataType = String;
+    fillStringData(val.constData(), val.length());
     return *this;
 }
 
@@ -448,34 +404,7 @@ HbVariant& HbVariant::operator=(const QString& val)
 HbVariant& HbVariant::operator=(const HbString& val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
-    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    if(data->mDataType == String || data->mDataType == Color) {
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-        data->stringSize=0;
-    }
-
-    data->stringSize = val.length();
-    // If the string is not null.. alocate memory for it and copy data
-    if (data->stringSize) {
-        try{
-            GET_MEMORY_MANAGER(mMemoryType)
-            data->mData.offset = manager->alloc(data->stringSize*sizeof(QChar));
-            //Q_ASSERT(data->mData.offset != -1);
-            memcpy(getAddress<char>(mMemoryType,data->mData.offset,mShared),
-                   val.constData(),
-            data->stringSize*sizeof(QChar));
-    } 
-        catch(std::bad_alloc &badAlloc){
-            Q_UNUSED(badAlloc)
-            qCritical("HbVariant::operator= failed!");
-            data->mData.offset = -1;
-            throw;
-        }
-    } else {
-        data->mData.offset = -1;
-    }
-
-    data->mDataType = String;
+    fillStringData(val.constData(), val.length());
     return *this;
 }
 
@@ -485,14 +414,7 @@ HbVariant& HbVariant::operator=(const HbString& val)
 HbVariant& HbVariant::operator=(const QColor& col)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
-    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    if(data->mDataType==String) {
-        HbMemoryUtils::freeMemory(mMemoryType,data->mData.offset);
-        data->stringSize=0;
-    }
-
     fillColorData(col);
-    data->mDataType = Color;
     return *this;
 }
 
@@ -510,13 +432,12 @@ HbVariant& HbVariant::operator=(const QStringList& /*strList*/)
 */
 HbVariant& HbVariant::operator=(const HbVariant &other)
 {
-
     GET_MEMORY_MANAGER(mMemoryType)
-
-    if(!manager->isWritable())
+    if(!manager->isWritable()) {
         Q_ASSERT(false);
+    }
 
-	HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset, other.mShared);
+    HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset, other.mShared);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
     if(other.mMemoryType != mMemoryType || other.mShared == true) {
@@ -531,18 +452,15 @@ HbVariant& HbVariant::operator=(const HbVariant &other)
         mShared = true;
         mMemoryType = HbMemoryManager::HeapMemory;
     } else {
-        
         otherData->mRef.ref();
-
         if(mShared != true && !data->mRef.deref() ) {
             clear();
             HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
         }
-		mShared = other.mShared;
+        mShared = other.mShared;
         mMemoryType = other.mMemoryType;
     }
     mDataOffset = other.mDataOffset;
-
     Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
     return *this;
 }
@@ -587,7 +505,7 @@ bool HbVariant::convert (HbVariant::Type t)
 
     bool ok = true;
     int tempOffset = -1;
-    QColor col; // Removing the Linux build error;
+    QColor col;
     QString str;
     if(data->mDataType == t) {
         return true;
@@ -634,23 +552,27 @@ bool HbVariant::convert (HbVariant::Type t)
 
     case HbVariant::String: 
         switch(data->mDataType) {
-        case HbVariant::Int : 
-            fillStringData(QString::number(data->mData.i));
+        case HbVariant::Int : {
+            QString num = QString::number(data->mData.i);
+            fillStringData(num.constData(), num.length());
             data->mDataType = HbVariant::String;
             return true;
-        case HbVariant::Double: 
-            fillStringData(QString::number(data->mData.d));
+        }
+        case HbVariant::Double: {
+            QString num = QString::number(data->mData.d);
+            fillStringData(num.constData(), num.length());
             data->mDataType = HbVariant::String;
             return true;
+        }
         case HbVariant::StringList:
             // ToDo: Handle it
             return false;
-        case HbVariant::Color: 
-            col = getColor();
-            HbMemoryUtils::freeMemory(mMemoryType,data->mData.offset);
-            fillStringData(col.name()); 
+        case HbVariant::Color: {
+            QString colName = getColor().name();
+            fillStringData(colName.constData(), colName.length());
             data->mDataType = HbVariant::String;
             return true;
+        }
         default:
             return false;
         }
@@ -659,13 +581,11 @@ bool HbVariant::convert (HbVariant::Type t)
         switch(data->mDataType) {
         case HbVariant::String: 
             col.setNamedColor(getString());
-            HbMemoryUtils::freeMemory(mMemoryType,data->mData.offset);
-            data->stringSize = 0;
+            if (!col.isValid()) {
+                return false;
+            }
             fillColorData(col);
-            data->mDataType = HbVariant::Color;
-            // ToDo: should it return true as type is converted to Color
-            // for invalid color also.
-            return col.isValid();
+            return true;
         default:
             return false;
         }

@@ -37,6 +37,7 @@
 #include <QDateTime>
 #include <QGraphicsWidget>
 #include <QList>
+#include <QHash>
 
 
 #define HBDATETIMEPICKER_TIME_MIN QTime(0, 0, 0, 0)
@@ -160,12 +161,10 @@ public:
     void resizeModel(QStringListModel *model,
         int oldStart, int oldEnd,
         int newStart, int newEnd,
-        QString (HbDateTimePickerPrivate::*localeFuncPtr)(int));
+        QString (HbDateTimePickerPrivate::*localeFuncPtr)(int), int interval = 1);
 
 
     void createPrimitives();
-    void createDividers();
-    void updateDividers();
     void deleteAndNull(HbTumbleView*& t) {
         delete t;t=0;
     }
@@ -231,7 +230,8 @@ public:
     QGraphicsItem *mBackground;
     QGraphicsItem *mFrame;
     HbWidget *mContent;
-    QList<QGraphicsWidget *> mDividers;
+    QHash<QDateTimeEdit::Section, int> mIntervals;
+    QGraphicsItem   *mHighlight;
 };
 
 #endif //HBDATETIMEPICKER_P_H

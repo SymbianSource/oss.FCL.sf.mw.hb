@@ -40,6 +40,16 @@ HbColorThemePrivate::HbColorThemePrivate()
     
 }
 
+void HbColorThemePrivate::setCurrentTheme(const QString& themeName)
+{
+    // If new theme is different from earlier set theme
+    if (currentTheme != themeName) {
+        bool reloadAll = currentTheme.isEmpty();
+        currentTheme = themeName;
+        reloadColorFiles( reloadAll );
+    }
+}
+
 /*!
  *  HbColorThemePrivate::reloadColorFiles
  *
@@ -47,16 +57,17 @@ HbColorThemePrivate::HbColorThemePrivate()
  */
 void HbColorThemePrivate::reloadColorFiles(bool sender)
 {
-    QMap<int,QString> hierarchyVariableListWithPathInfo = HbThemeUtils::constructHierarchyListWithPathInfo("variables/color/hbcolorgroup.css", currentTheme, Hb::StyleSheetResource);
-    QMap<int,QString> variableFileListWithInfo = HbStandardDirs::findResourceList(hierarchyVariableListWithPathInfo,Hb::StyleSheetResource);
+    QMap<int,QString> hierarchyVariableListWithPathInfo =
+            HbThemeUtils::constructHierarchyListWithPathInfo("variables/color/hbcolorgroup.css", currentTheme, Hb::StyleSheetResource);
+    HbStandardDirs::findResourceList(hierarchyVariableListWithPathInfo,Hb::StyleSheetResource, true);
 
 #ifdef THEME_SERVER_TRACES    
     qDebug() << "CSS files:";
-    foreach ( const QString& file, variableFileListWithInfo )
+    foreach ( const QString& file, hierarchyVariableListWithPathInfo )
         qDebug() << file;
 #endif // THEME_SERVER_TRACES
 
-    cssif.initialise( variableFileListWithInfo, sender );
+    cssif.initialise(hierarchyVariableListWithPathInfo, sender);
 
 }
 
@@ -78,80 +89,12 @@ HbColorThemePrivate::~HbColorThemePrivate()
     
 }
 
+Q_GLOBAL_STATIC(HbColorTheme, globalColorTheme)
+HbColorTheme *HbColorTheme::self = 0;
 
-/*!
-    @proto
-    @hbcore
-    \class HbColorTheme
-    \brief HbColorTheme class is used to query colors from theme.
-
-    HbColorTheme is a singleton class which should be used to query colors
-    from theme. Colors can be queried in two ways:
-    
-    - By passing widget pointer and one of its supported color attribute names.
-    - By passing some predefined standard attribute name.
-    
-    First method makes it possible for theme developer to specify instance specific colors.
-    For example, a theme developer can specify that a button with "ok" id (object-name) should use
-    different colors than normal buttons. This method is appropriate for the widgets which comes as
-    a part of Hb library, so that those widgets allow theme developer to write any complex theme.
-    Following example shows how a color for textitem of popup can be queried from theme:
-    \code
-    // textItem is child of HbDialog widget here
-    QColor col = HbColorTheme::global()->color(textItem->parentWidget(), "foreground");
-    if (col.isValid()) {
-        textItem->setTextColor(col);
-    }
-    \endcode
-    Attribute name can include state name also (<attribute_name>.<state_name>). There are four
-    supported states "enabled", "disabled", "focused" or "nonfocused". If no state is defined
-    color for "enabled" state is returned.
-    
-    \warning  The list of states and default state may change in the future depending on the
-    requirements. Also list of attributes may grow and change as more widgets come in future.
- 
-    Second method is more appropriate for custom widgets which want to be consistent with standard
-    look and feel and  be themable. For example, a custom widget may want to have background color
-    same as that of HbDialog. In such scenario the widget can query standard "popupbackground" color
-    from theme.
-    Following code queries color of popoup forground and applies it to a text item.
-    \code
-    QColor col = HbColorTheme::global()->color("popupforeground");
-    if (col.isValid()) {
-       mytextitem->setTextColor(col);
-    }
-    \endcode
-    
-    Note: It is custom widgets responsibility to query color again from theme when theme changes.
-    This can be done by handing HbEvent::ThemeChanged event. Theming framework makes sure that this
-    event is sent to all HbWidgets.
-    
-    \warning List of standard color roles is not yet finalyzed
-*/
-
-/*!
- * \fn HbColorTheme::global ()
- * This function returns singleton instanace of the class.
- */
-
-/*!
- * \fn QColor HbColorTheme::color(const QGraphicsWidget * widget, const QString &colorAttribute,int state) const
- * This function returns value of some \a colorAttribute for a particular \a widget with particular \a state.
- *
- * See class level document for detailed example
- * 
- */
-
-/*!
- * \fn HbColorTheme::color(const QString &colorRole,int state) const
- * This function returns value of some predefined \a colorRole with particular \a state.
- *
- * See class level document for detailed example.
- */
-HbColorTheme *HbColorTheme::global ()
+HbColorTheme *HbColorTheme::instance ()
 {
-    static HbColorTheme instance;
-    return &instance;
+    return globalColorTheme();
 }
 
 /*!
@@ -188,7 +131,7 @@ QColor HbColorTheme::color( const QString &colorRole ) const
  */
 HbColorTheme::HbColorTheme (): d_ptr( new HbColorThemePrivate )
 {
-    
+    self = this;
 }
 
 /*!
@@ -209,12 +152,7 @@ HbColorTheme::~HbColorTheme ()
 void HbColorTheme::setCurrentTheme ( const QString& themeName )
 {
     Q_D(HbColorTheme);
-    // If new theme is different from earlier set theme
-    if ( d->currentTheme != themeName ) {
-        bool reloadAll = d->currentTheme.isEmpty();
-        d->currentTheme = themeName;
-        d->reloadColorFiles( reloadAll );
-    }
+    d->setCurrentTheme(themeName);
 }
 
 /*!
@@ -227,4 +165,10 @@ void HbColorTheme::reloadCss()
     Q_D(HbColorTheme);
     d->cssif.flush();
     d->reloadColorFiles( true );
+}
+
+void HbColorTheme::flushVariableCache()
+{
+    Q_D(HbColorTheme);
+    d->cssif.flushVariableCache();
 }

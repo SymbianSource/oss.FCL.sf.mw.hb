@@ -53,6 +53,10 @@ private:
     void applyEditorConstraints();
 
 public slots:
+	void mappedKeyPress(int buttonid);
+	void mappedKeyRelease(int buttonid);
+
+public slots:
     void sctModeListClosed();
 
 private:

@@ -34,18 +34,18 @@
 struct DeviceProfile
 {
     HbString mName;
-    QSize mLogicalSize;
-    QSizeF mPhysicalSize;
-    Qt::Orientation mOrientation;
-    qreal mUnitValue;
     HbString mAltName;
+	
+    QSize mLogicalSize;
+    qreal mUnitValue;
+    qreal mPpiValue;
     bool mTouch;
     HbString mUiMetricsFile;
     qreal mOrientationAngle;
 
-    DeviceProfile(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory):mName(type),
-    mOrientation(Qt::Vertical),mUnitValue(1),mAltName(type),mTouch(true),mUiMetricsFile(type),
-    mOrientationAngle(0)
+    DeviceProfile(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+        : mName(type), mAltName(type), mUnitValue(1), mPpiValue(1),
+          mTouch(true), mUiMetricsFile(type), mOrientationAngle(0)
     {
     }
 };

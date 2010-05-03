@@ -23,109 +23,129 @@
 **
 ****************************************************************************/
 
-/*!
-//
-//  W A R N I N G
-//  -------------
-//
-// This implementation of longpress visualizer is most probably removed in later releases.
-// It exists purely as an implementation detail.
-// This implementation may change from version to
-// version without notice, or even be removed.
-//
-// We mean it.
-//
-*/
-
+#include "hblongpressvisualizer.h"
 #include "hblongpressvisualizer_p.h"
+#include <hbiconitem.h>
+#include <hbmainwindow.h>
+#include <hbwidget.h>
+#include <hbinstance.h>
+#include <hbiconanimationmanager.h>
+#include <hbiconanimator.h>
+#include <hbwidgetfeedback.h>
+#include <QGraphicsScene>
 
-#include <QPen>
-#include <QPainter>
+/*!
+  \class HbLongPressVisualizer
 
-/* 
-	HbLongPressVisualizer
-	HbLongPressVisualizer is part of the internal implementation. It is not supposed to be in public API.
-	
-	
-	HbLongPressVisualizer is a visualizer for the long-press gesture.
+  \brief Displays the long press animation, that is, the small animated icon
+  indicating that the tap being held may potentially become a long press.
 
-	HbGestureFilter
+  Widgets or applications should use the functions of this class to show and
+  hide the standard, themed long press animation.
 */
 
+Q_GLOBAL_STATIC(HbLongPressVisualizerPrivate, visualizer)
 
-/*
-	Constructs sample long-press visualization widget with a parent.
-*/
+/*!
+  Shows the animated icon at (or near) position \a pos. If \a delayMs is non-zero then
+  the animation is only shown after the specified number of milliseconds.
 
-HbLongPressVisualizer::HbLongPressVisualizer( QGraphicsItem *parent ) : HbWidget(parent), active(false), spanAngle(0)
+  \a pos is treated to be a scene position. In typical usage scenarios the scene
+  position will be retrieved from a gesture event and passed as it is in \a
+  pos. Do not make any assumptions about the exact position of the icon, the
+  visualizer may decide to position it a bit differently in order to make it
+  more visible to the user (e.g. to prevent being obscured by the user's
+  finger).
+
+  If \a widget is not 0 then the icon is added to the scene of the widget's
+  mainwindow.  Otherwise the first main window is used. If no main windows were
+  instantiated before calling start() then it will return immediately.
+
+  The widget is also used for tactile feedback, if it is 0 then no feedback
+  effect will be started. If the widget is given then the instant LongPressed
+  feedback effect will be started automatically.
+ */
+void HbLongPressVisualizer::start(const QPointF &pos, int delayMs, const HbWidget *widget)
 {
+    visualizer()->start(pos, delayMs, widget);
 }
 
-/*
-	Reimplemented from QGraphicsItem::paint().
-*/
-void HbLongPressVisualizer::paint( QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
-    
-    if (active) {
-        QPen pen( Qt::lightGray );
-        pen.setWidth(5);
-        painter->setPen(pen);
-        painter->drawArc(rect, 90*16, -spanAngle*16);
-    }
-}
-
-/*
-	Start HbLongPressVisualizer.
-
-	Currently position is hardcoded.
-*/
-void HbLongPressVisualizer::start(QPointF scenePos)
-{
-    prepareGeometryChange();
-    rect = QRect( 0, 0, 30, 30);
-
-    if (scenePos.y() < 60 ) {
-        //Draw the animation below of the touch point
-        rect.moveCenter( QPointF(scenePos.x(), scenePos.y()+50));
-    }
-    else {
-        //Draw the animation above of the touch point
-        rect.moveCenter( QPointF(scenePos.x(), scenePos.y()-50));
-    }
-
-    setFrame(0);
-    active = true;
-}
-
-/*
-	Stop HbLongPressVisualizer.
-*/
+/*!
+  Hides the animated icon if it is visible. Has no effect if the animation is
+  not currently visible.
+ */
 void HbLongPressVisualizer::stop()
 {
-    active = false;
-    update();
+    visualizer()->stop();
 }
 
-
-/*
-	Set frame for HbLongPressVisualizer
-*/
-void HbLongPressVisualizer::setFrame(int frame)
+HbLongPressVisualizerPrivate::HbLongPressVisualizerPrivate()
+    : mInited(false), mWidget(0), mIconItem(0)
 {
-    spanAngle = frame*360/100;
-    update();
 }
 
-/*
-	Reimplemented from QGraphicsItem::boundingRect().
-
-	Currently returns the default bounding rect.
-
-*/
-QRectF HbLongPressVisualizer::boundingRect() const 
+void HbLongPressVisualizerPrivate::start(const QPointF &pos, int delayMs, const HbWidget *widget)
 {
-    return rect;
+    // Multiple mainwindow support is in place below, however currently there is
+    // only one icon item so the icon is only shown in one mainwindow at a time.
+    stop();
+    mWidget = widget;
+    HbMainWindow *mainWindow = widget ? widget->mainWindow() : 0;
+    if (!mainWindow) {
+        QList<HbMainWindow *> mainWindows(hbInstance->allMainWindows());
+        if (!mainWindows.isEmpty()) {
+            mainWindow = mainWindows.at(0);
+        } else {
+            return;
+        }
+    }
+    if (!mInited) {
+        mInited = true;
+        mTimer.setSingleShot(true);
+        connect(&mTimer, SIGNAL(timeout()), SLOT(showIcon()));
+        HbIconAnimationManager::global()->addDefinitionFile("qtg_anim_longtap.axml");
+        mIconItem = new HbIconItem("qtg_anim_longtap");
+        mIconItem->hide();
+        mIconItem->setSize(mIconItem->defaultSize());
+    }
+    QGraphicsScene *targetScene = mainWindow->scene();
+    QGraphicsScene *oldScene = mIconItem->scene();
+    if (targetScene != oldScene) {
+        if (oldScene) {
+            oldScene->removeItem(mIconItem);
+        }
+        targetScene->addItem(mIconItem); // takes ownership
+    }
+    prepareIcon(pos);
+    if (delayMs > 0) {
+        mTimer.start(delayMs);
+    } else {
+        showIcon();
+    }
+}
+
+void HbLongPressVisualizerPrivate::stop()
+{
+    mTimer.stop();
+    if (mIconItem) {
+        mIconItem->animator().stopAnimation();
+        mIconItem->hide();
+    }
+}
+
+void HbLongPressVisualizerPrivate::prepareIcon(const QPointF &pos)
+{
+    mPos = pos;
+    QSizeF iconSize = mIconItem->size();
+    mPos -= QPointF(iconSize.width() / 2, iconSize.height());
+    mIconItem->setPos(mPos);
+}
+
+void HbLongPressVisualizerPrivate::showIcon()
+{
+    mIconItem->animator().startAnimation();
+    mIconItem->show();
+    if (mWidget) {
+        HbWidgetFeedback::triggered(mWidget, Hb::InstantLongPressed);
+    }
 }

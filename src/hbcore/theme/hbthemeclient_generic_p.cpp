@@ -200,7 +200,7 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
  * Returns the layout definition for the given file name,layout name,section name
 */
 
-LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
 {
     if ( !clientConnected ) {
         return 0;
@@ -255,7 +255,7 @@ LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileN
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
 
     if (sharedMLOffset >= 0) {
-        return HbMemoryUtils::getAddress<LayoutDefinition>(
+        return HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(
                 HbMemoryManager::SharedMemory, sharedMLOffset);
     } else {
         return 0;
@@ -664,7 +664,9 @@ void HbThemeClientPrivate::changeTheme()
         handleThemeChange(themeName);
     }
     if(EThemeContentUpdate == request) {
-        hbInstance->theme()->d_ptr->clearCache();
+        QStringList updatedFiles;
+        inputDataStream >> updatedFiles;
+        hbInstance->theme()->d_ptr->updateTheme(updatedFiles);
     }
 }
 
@@ -714,7 +716,7 @@ void HbThemeClientPrivate::handleThemeChange(const QString &themeName)
 #ifdef THEME_SERVER_TRACES
         qDebug() << Q_FUNC_INFO <<"themeChanged(): called";
 #endif
-        hbInstance->theme()->d_ptr->handleThemeChange();
+        hbInstance->theme()->d_ptr->handleThemeChange(themeName);
     }
 }
 
@@ -1025,7 +1027,7 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
     localSocket->flush();
     localSocket->waitForReadyRead();
 #ifdef THEME_SERVER_TRACES
-    qDebug() <<"image req : " <<iconPath;
+    qDebug() <<"image req : " <<multiPartIconList;
 #endif
     QByteArray inputByteArray = localSocket->readAll();
     QDataStream inputDataStream(inputByteArray);
@@ -1072,3 +1074,133 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
     return sharedIconInfoList;
 }
 
+/**
+ * HbThemeClientPrivate::notifyForegroundLostToServer()
+ */
+void HbThemeClientPrivate::notifyForegroundLostToServer()
+{
+}
+
+/**
+ * HbThemeClientPrivate::freeSharedMemory()
+ */
+int HbThemeClientPrivate::freeSharedMemory()
+{
+#ifdef THEME_SERVER_TRACES
+        qDebug() << Q_FUNC_INFO;
+#endif
+
+    QByteArray outputByteArray;
+    QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
+    HbThemeServerRequest requestType = EFreeSharedMem;
+
+    outputDataStream << (int)requestType;
+
+    disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
+    localSocket->write(outputByteArray);
+    localSocket->flush();
+    localSocket->waitForReadyRead();
+
+    QByteArray inputByteArray = localSocket->readAll();
+    QDataStream inputDataStream(inputByteArray);
+    HbThemeServerRequest request;
+    int temp;
+
+    int freeSharedMem = 0;
+
+    inputDataStream >> temp;
+    request = (HbThemeServerRequest)temp;
+
+    if (EFreeSharedMem == request) {
+        inputDataStream >> freeSharedMem;
+        if (!inputDataStream.atEnd()) {
+            inputDataStream >> temp;
+            request = (HbThemeServerRequest)temp;
+            if (EThemeSelection==request) {
+                QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
+            }
+        }
+    }else if (EThemeSelection == request){
+        QString themeName;
+        inputDataStream >> themeName;
+        QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
+        if (!inputDataStream.atEnd()) {
+            inputDataStream >> temp;
+            request = (HbThemeServerRequest)temp;
+            if (EFreeSharedMem== request) {
+                inputDataStream >> freeSharedMem;
+            }
+        }
+    }
+    // connecting again to handle theme change request from server
+    connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
+    return freeSharedMem;
+}
+
+/**
+ * HbThemeClientPrivate::allocatedSharedMemory()
+ */
+int HbThemeClientPrivate::allocatedSharedMemory()
+{
+#ifdef THEME_SERVER_TRACES
+        qDebug() << Q_FUNC_INFO;
+#endif
+
+    QByteArray outputByteArray;
+    QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
+    HbThemeServerRequest requestType = EAllocatedSharedMem;
+
+    outputDataStream << (int)requestType;
+
+    disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
+    localSocket->write(outputByteArray);
+    localSocket->flush();
+    localSocket->waitForReadyRead();
+
+    QByteArray inputByteArray = localSocket->readAll();
+    QDataStream inputDataStream(inputByteArray);
+    HbThemeServerRequest request;
+    int temp;
+
+    int allocatedSharedMem = 0;
+
+    inputDataStream >> temp;
+    request = (HbThemeServerRequest)temp;
+
+    if (EAllocatedSharedMem == request) {
+        inputDataStream >> allocatedSharedMem;
+        if (!inputDataStream.atEnd()) {
+            inputDataStream >> temp;
+            request = (HbThemeServerRequest)temp;
+            if (EThemeSelection==request) {
+                QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
+            }
+        }
+    }else if (EThemeSelection == request){
+        QString themeName;
+        inputDataStream >> themeName;
+        QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
+        if (!inputDataStream.atEnd()) {
+            inputDataStream >> temp;
+            request = (HbThemeServerRequest)temp;
+            if (EAllocatedSharedMem== request) {
+                inputDataStream >> allocatedSharedMem;
+            }
+        }
+    }
+    // connecting again to handle theme change request from server
+    connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
+    return allocatedSharedMem;
+}
+
+/**
+ * HbThemeClientPrivate::allocatedHeapMemory()
+ */
+int HbThemeClientPrivate::allocatedHeapMemory()
+{
+#ifdef THEME_SERVER_TRACES
+        qDebug() << Q_FUNC_INFO;
+#endif
+    // currently only supported in Symbian
+    return -1;
+}

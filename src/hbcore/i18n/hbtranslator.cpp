@@ -45,7 +45,7 @@ const QString defaultpath = "/resource/qt/translations/";
 */
 
 /*!
-    Default case: searches translation file from default location with default name, which is <executablename>.qm
+    Default case: searches translation file from default location (/resource/qt/translations/) with default name, which is <executablename>.qm
 */
 HbTranslator::HbTranslator(): d(new HbTranslatorPrivate())
 {

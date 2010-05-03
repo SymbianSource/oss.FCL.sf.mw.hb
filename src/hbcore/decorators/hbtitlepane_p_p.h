@@ -33,7 +33,8 @@ class HbTitlePanePrivate : public HbWidgetPrivate
     Q_DECLARE_PUBLIC(HbTitlePane)
 
 public:
-    HbTitlePanePrivate( );
+    HbTitlePanePrivate();
+    void delayedConstruction();
 
     void createPrimitives();
     void updatePrimitives();

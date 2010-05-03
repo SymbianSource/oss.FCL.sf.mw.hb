@@ -48,12 +48,14 @@ PUBLIC_HEADERS += $$PWD/hbinputhwtoolcluster.h
 PUBLIC_HEADERS += $$PWD/hbinputsmileypicker.h
 PUBLIC_HEADERS += $$PWD/hbinputscreenshotwidget.h
 PUBLIC_HEADERS += $$PWD/hbinputsettinglist.h
+PUBLIC_HEADERS += $$PWD/hbinputsettingwidget.h
 # hb input widget private headers
-INTERNAL_HEADERS += $$PWD/hbinputvkbwidget_p.h
-INTERNAL_HEADERS += $$PWD/hbinput12keytouchkeypad_p.h
-INTERNAL_HEADERS += $$PWD/hbinputqwertytouchkeyboard_p.h
-INTERNAL_HEADERS += $$PWD/hbinputsctlandscape_p.h
-INTERNAL_HEADERS += $$PWD/hbinputsctportrait_p.h
+PRIVATE_HEADERS += $$PWD/hbinputvkbwidget_p.h
+PRIVATE_HEADERS += $$PWD/hbinput12keytouchkeypad_p.h
+PRIVATE_HEADERS += $$PWD/hbinputqwertytouchkeyboard_p.h
+PRIVATE_HEADERS += $$PWD/hbinputsctlandscape_p.h
+PRIVATE_HEADERS += $$PWD/hbinputsctportrait_p.h
+PRIVATE_HEADERS += $$PWD/hbinputcheckboxlist_p.h
 
 # hb input widget sources
 SOURCES += $$PWD/hbinputvkbwidget.cpp
@@ -76,3 +78,5 @@ SOURCES += $$PWD/hbinputhwtoolcluster.cpp
 SOURCES += $$PWD/hbinputsmileypicker.cpp
 SOURCES += $$PWD/hbinputscreenshotwidget.cpp
 SOURCES += $$PWD/hbinputsettinglist.cpp
+SOURCES += $$PWD/hbinputsettingwidget.cpp
+SOURCES += $$PWD/hbinputcheckboxlist.cpp

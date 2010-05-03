@@ -37,7 +37,8 @@
 #include "hbdocumentloaderfactory_p.h"
 #include "hbdocumentloader_p.h"
 
-#include <hbxmlloaderabstractactions_p.h>
+#include <hbxmlloaderbaseactions_p.h>
+#include <hbxmlloaderabstractsyntax_p.h>
 
 // Uncomment the following in order to get additional debug prints
 //#define HB_DOCUMENTLOADER_DEBUG
@@ -51,84 +52,93 @@
 
 class HbDocumentLoaderPrivate;
 
-class HbDocumentLoaderActions : public HbXmlLoaderAbstractActions
+class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
 {
     public:    
-    
-        enum PropertyAvailableFlag {
-            propertyMin     = 0x01,
-            propertyMax     = 0x02,
-            propertyPref    = 0x04,
-            propertyFixed   = 0x08,
-            propertySpacing = 0x10
-        };
 
-        HbDocumentLoaderActions( HbDocumentLoaderPrivate *ref );
+        HbDocumentLoaderActions( HbDocumentLoaderPrivate *ref, const HbMainWindow *window );
         virtual ~HbDocumentLoaderActions();
-                
-        
+
         QObject *createObject(const QString &type, const QString &name, const QString &plugin);
         QObject *createObjectWithFactory(const QString& type, const QString &name);
-        
+
         bool pushObject( const QString& type, const QString &name );
         bool pushWidget( const QString& type, const QString &name, const QString &role, const QString &plugin );
         bool pushSpacerItem( const QString &name, const QString &widget );
         bool pushConnect( const QString &srcName, const QString &signalName, const QString &dstName, const QString &slotName );
-        bool pushProperty( const QString &propertyName, const QVariant &value );
+        bool pushProperty( const char *propertyName, const HbXmlVariable &variable );
         bool pushRef( const QString &name, const QString &role );
+        bool pushContainer( const char *propertyName,
+                            HbXmlLoaderAbstractSyntax::DocumentLexems type,
+                            const QList<HbXmlVariable*> &container );
         
-        bool setContentsMargins( qreal left, qreal top, qreal right, qreal bottom );
+        bool setContentsMargins( const HbXmlLengthValue &left,
+                                 const HbXmlLengthValue &top,
+                                 const HbXmlLengthValue &right,
+                                 const HbXmlLengthValue &bottom );
 
-        bool setSizePolicy( const QSizePolicy::Policy *horizontalPolicy, 
-                            const QSizePolicy::Policy *verticalPolicy, 
-                            const int *horizontalStretch,
-                            const int *verticalStretch );
+        bool setSizePolicy( QSizePolicy::Policy *horizontalPolicy, 
+                            QSizePolicy::Policy *verticalPolicy, 
+                            int *horizontalStretch,
+                            int *verticalStretch );
     
-        bool setSizeHint(Qt::SizeHint hint, qreal *hintWidth, qreal *hintHeight, bool fixed);
-        bool setZValue( qreal zValue );
-        bool setToolTip( const QString &tooltip );
+        bool setSizeHint(Qt::SizeHint hint, const HbXmlLengthValue &hintWidth, const HbXmlLengthValue &hintHeight, bool fixed);
+        bool setToolTip( const HbXmlVariable &tooltip );
 
         bool createAnchorLayout( const QString &widget );
-        bool addAnchorLayoutEdge( const QString &src, const QString &srcEdge, 
-                                    const QString &dst, const QString &dstEdge, qreal spacing, const QString &spacer = QString() );
+        bool addAnchorLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+                                  const QString &dst, Hb::Edge dstEdge,
+                                  const HbXmlLengthValue &spacing, const QString &spacer = QString() );
         
-        bool createGridLayout( const QString &widget, qreal *spacing );
-        bool addGridLayoutCell( const QString &src, const QString &row, 
-                                const QString &column, const QString &rowspan, const QString &columnspan,
-                                const QString &alignment );
-        bool setGridLayoutRowProperties( const QString &row, const QString &rowStretchFactor, const QString &alignment );
-        bool setGridLayoutColumnProperties( const QString &column, const QString &columnStretchFactor, const QString &alignment );
-        bool setGridLayoutRowHeights( const QString &row, const qreal minHeight, const qreal maxHeight, 
-                                      const qreal prefHeight, const qreal fixedHeight, 
-                                      const qreal rowSpacing,  const int flagsPropertyAvailable);
-        bool setGridLayoutColumnWidths( const QString &column, const qreal minWidth, const qreal maxWidth, 
-                                        const qreal prefWidth, const qreal fixedWidth,
-                                        const qreal columnSpacing, const int flagsPropertyAvailable);
+        bool createGridLayout( const QString &widget, const HbXmlLengthValue &spacing );
+        bool addGridLayoutCell( const QString &src, int row, int column,
+                                int *rowspan, int *columnspan, Qt::Alignment *alignment );
+        bool setGridLayoutRowProperties( int row, int *rowStretchFactor, Qt::Alignment *alignment );
+        bool setGridLayoutColumnProperties( int column, int *columnStretchFactor, Qt::Alignment *alignment );
+        bool setGridLayoutRowHeights( int row,
+                                      const HbXmlLengthValue &minHeight,
+                                      const HbXmlLengthValue &maxHeight, 
+                                      const HbXmlLengthValue &prefHeight,
+                                      const HbXmlLengthValue &fixedHeight, 
+                                      const HbXmlLengthValue &rowSpacing );
+        bool setGridLayoutColumnWidths( int column,
+                                        const HbXmlLengthValue &minWidth,
+                                        const HbXmlLengthValue &maxWidth,
+                                        const HbXmlLengthValue &prefWidth,
+                                        const HbXmlLengthValue &fixedWidth,
+                                        const HbXmlLengthValue &columnSpacing );
 
-        bool createLinearLayout( const QString &widget, const QString &orientation, qreal *spacing );
-        bool addLinearLayoutItem( const QString &itemname, const QString &index, const QString &stretchfactor, 
-                                  const QString &alignment, qreal *spacing );
-        bool addLinearLayoutStretch( const QString &index, const QString &stretchfactor );
-        bool setLayoutContentsMargins( qreal left, qreal top, qreal right, qreal bottom );
+        bool createLinearLayout( const QString &widget,
+                                 Qt::Orientation *orientation, 
+                                 const HbXmlLengthValue &spacing );
+        bool addLinearLayoutItem( const QString &itemname,
+                                  int *index,
+                                  int *stretchfactor, 
+                                  Qt::Alignment *alignment,
+                                  const HbXmlLengthValue &spacing );
+        bool addLinearLayoutStretch( int *index,
+                                     int *stretchfactor );
+        bool setLayoutContentsMargins( const HbXmlLengthValue &left,
+                                       const HbXmlLengthValue &top,
+                                       const HbXmlLengthValue &right,
+                                       const HbXmlLengthValue &bottom );
 
         bool createStackedLayout( const QString &widget );
-        bool addStackedLayoutItem( const QString &itemname, const QString &index );
+        bool addStackedLayoutItem( const QString &itemname, int *index );
                                 
         bool createNullLayout( const QString &widget );
-
-        bool createContainer();
-        bool appendPropertyToContainer( const QVariant &value );
     
     private:
         Q_DISABLE_COPY(HbDocumentLoaderActions)
         bool setWidgetRole(QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role);
         bool setObjectRole(QObject *parent, QObject *child, const QString &role);
         
+        bool variableToQVariant( const HbXmlVariable &variable, QVariant &variant );
 
     private:
 
         HbDocumentLoaderPrivate *d;
-        HbDocumentLoaderFactory factory;
+        HbDocumentLoaderFactory mFactory;
 };
 
 #endif // HBDOCUMENTLOADERACTIONS_P_H

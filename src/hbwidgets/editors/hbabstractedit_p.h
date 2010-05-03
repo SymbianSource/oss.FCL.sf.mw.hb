@@ -66,38 +66,6 @@ class HbSelectionControl;
 class HbSmileyEngine;
 class HbFormatDialog;
 
-class HbEditScrollArea: public HbScrollArea
-{
-    Q_OBJECT
-
-public:
-    explicit HbEditScrollArea(HbAbstractEdit* edit, QGraphicsItem* parent = 0);
-    virtual ~HbEditScrollArea() {};
-
-    void updateScrollMetrics();
-    void resizeEvent(QGraphicsSceneResizeEvent *event);
-
-#ifdef HB_DEBUG_EDITOR_DRAW_RECTS
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-#endif//HB_DEBUG_EDITOR_DRAW_RECTS
-
-signals:
-    void scrollAreaSizeChanged();
-
-public slots:
-    void longPressGesture(const QPointF &point);
-
-    void upGesture(int value);
-    void downGesture(int value);
-    void leftGesture(int value);
-    void rightGesture(int value);
-    void panGesture(const QPointF &point);
-
-private:
-    Q_DECLARE_PRIVATE_D( d_ptr, HbScrollArea )
-    HbAbstractEdit* mEdit;
-};
-
 class HbAbstractEditMimeData : public QMimeData
 {
 public:
@@ -151,16 +119,19 @@ public:
     QRectF selectionRect(const QTextCursor &cursor) const;
     QRectF selectionRect() const;
     QRectF rectForPositionInCanvasCoords(int position, QTextLine::Edge edge) const;
+    QRectF viewPortRect() const;
     QValidator::State validateContent(int position, int charsRemoved, int charsAdded);
     void initValidator();
     bool undo();
     virtual bool canPaste() const;
     virtual bool canCopy() const;
+    virtual bool canCut() const;
     virtual void prepDocForPaste();
     bool canFormat() const;
     virtual bool isCursorVisible() const;
 
-    void longPressGesture(const QPointF &point);
+    void longTapGesture(const QPointF &point);
+    void tapGesture(const QPointF &point);
     void gestureReceived();
 
     void sendInputPanelEvent(QEvent::Type type);
@@ -170,25 +141,30 @@ public:
 
     int contentLength() const;
     bool hasAcceptableInput() const;
-    void sendMouseEventToInputContext(const QGraphicsSceneMouseEvent *e) const;
+    void sendMouseEventToInputContext(const QPointF &tapPos) const;
     virtual void updateEditingSize();
-    void hideSelectionHandles();
     void drawSelectionEdges(QPainter *painter, QAbstractTextDocumentLayout::PaintContext);
     HbSmileyEngine* smileyEngineInstance() const;
 
     virtual void drawContentBackground(QPainter *painter,
                                        const QStyleOptionGraphicsItem &option) const;
 
+    void updatePlaceholderDocProperties();
+
     void _q_updateRequest(QRectF rect);
     void _q_updateBlock(QTextBlock block);
     void _q_contentsChanged();
     void _q_contentsChange(int position, int charsRemoved, int charsAdded);
     void _q_selectionChanged();
+    void _q_scrollStarted();
+    void _q_scrollEnded();
     static Qt::Alignment alignmentFromString(const QString &text);
 
     void validateAndCorrect();
 
     QTextDocument *doc;
+    QTextDocument *placeholderDoc;
+
     int previousCursorAnchor;
     int previousCursorPosition;
     QTextCursor cursor;
@@ -201,7 +177,7 @@ public:
     int imRemoved;
 
     Qt::TextInteractionFlags interactionFlags;
-    QPointF mousePressPos;
+    QPointF tapPosition;
     bool cursorOn;
 
     QTextCharFormat lastCharFormat;
@@ -212,7 +188,7 @@ public:
     bool apiCursorVisible;
 
     HbWidget *canvas;
-    HbEditScrollArea *scrollArea;
+    HbScrollArea *scrollArea;
 
     bool scrollable;
     bool hadSelectionOnMousePress;
@@ -232,6 +208,7 @@ public:
 
     HbFormatDialogPointer formatDialog;
     QTextCursor nextCharCursor;
+
 
 private:
     static HbAbstractEditPrivate *d_ptr(HbAbstractEdit *edit) {

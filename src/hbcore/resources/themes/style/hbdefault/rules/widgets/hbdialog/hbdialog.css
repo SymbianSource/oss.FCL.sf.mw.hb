@@ -1,22 +1,10 @@
 HbDialog {
     max-width:expr(var(hb-param-screen-width)-2*var(hb-param-margin-gene-screen));
     max-height:expr(var(hb-param-screen-height)-2*var(hb-param-margin-gene-screen));
-    min-width:10un;
 }
 
 HbDialog::heading {
-    pref-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));
-}
-
-HbDialog::heading > HbLabel::text {
-    left:-var(hb-param-margin-gene-popup);
-    right:var(hb-param-margin-gene-popup);
-    top:-var(hb-param-margin-gene-popup);
-    bottom:var(hb-param-margin-gene-popup);
-    text-height:var(hb-param-text-height-primary);
-    text-align:left;
-    text-line-count-max: 1;
-    font-variant:primary;
+    max-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));
 }
 
 HbDialog::controls {

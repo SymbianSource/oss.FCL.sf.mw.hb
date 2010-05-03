@@ -29,11 +29,11 @@
 #include "hbabstractitemcontainer.h"
 #include "hbmodeliterator.h"
 
-#include <hbgesturefilter.h>
 #include <hbinstance.h>
 #include <hbscrollbar.h>
 #include <hbapplication.h>
 #include <hbeffect.h>
+#include <hbpangesture.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QEvent>
@@ -41,26 +41,28 @@
 #include <QGraphicsScene>
 #include <QGraphicsLayout>
 #include <QTimer>
+#include <QGestureEvent>
 #include <QDebug>
+
+static const qreal CONTIGUOUS_SELECTION_SCROLL_SPEED = 0.2;
+static const qreal CONTIGUOUS_SELECTION_AREA_THRESHOLD = 0.2;
 
 HbAbstractItemViewPrivate::HbAbstractItemViewPrivate() :
     mSelectionMode(HbAbstractItemView::NoSelection),
     mOptions(NoOptions),
     mSelectionSettings(None),
-    mHitItem(0),
     mContainer(0),
     mSelectionModel(0),
     mContSelectionAction(QItemSelectionModel::NoUpdate),
-    mWasScrolling(false),
-    mFilterRemoved(false),
     mClearingSelection(false),
     mAnimateItems(false),
     mPostponedScrollHint(HbAbstractItemView::PositionAtTop),
     mPreviousSelectedCommand(QItemSelectionModel::NoUpdate),
-    mInstantClickedModifiers(0),
     mAnimationTimer(0),
 	mModelIterator(0),
-    mEnabledAnimations(HbAbstractItemView::All)
+    mEnabledAnimations(HbAbstractItemView::All),
+    mLongPressEnabled(true),
+	mDoingContiguousSelection(false)
 {
 }
 
@@ -85,10 +87,17 @@ void HbAbstractItemViewPrivate::init(HbAbstractItemContainer *container, HbModel
     
     q->setContentWidget(container);
 
+    q->grabGesture(Qt::PanGesture);
+
+    //mAlignment = 0; // no alignment - there is no sense with recycling
+
     mContainer = container;
     mContainer->setItemView(q);
 
     mModelIterator = modelIterator;
+
+    q->connect(mContainer, SIGNAL(itemCreated(HbAbstractViewItem *)),
+            q, SLOT(itemCreated(HbAbstractViewItem *)));
 
     HbMainWindow *window = q->mainWindow();
     if (window
@@ -166,7 +175,7 @@ void HbAbstractItemViewPrivate::clearCurrentModel()
         q->disconnect(model, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)),
                         q, SLOT(columnsAboutToBeRemoved(QModelIndex,int,int)));
         q->disconnect(model, SIGNAL(modelReset()), q, SLOT(reset()));
-        q->disconnect(model, SIGNAL(layoutChanged()), q, SLOT(_q_layoutChanged()));
+        q->disconnect(model, SIGNAL(layoutChanged()), q, SLOT(modelLayoutChanged()));
 
         mModelIterator->setModel(0);
     }
@@ -252,7 +261,7 @@ void HbAbstractItemViewPrivate::initializeNewModel()
         q->connect(model, SIGNAL(columnsAboutToBeRemoved(QModelIndex,int,int)),
                    q, SLOT(columnsAboutToBeRemoved(QModelIndex,int,int)));
         q->connect(model, SIGNAL(modelReset()), q, SLOT(reset()));
-        q->connect(model, SIGNAL(layoutChanged()), q, SLOT(_q_layoutChanged()));
+        q->connect(model, SIGNAL(layoutChanged()), q, SLOT(modelLayoutChanged()));
 
         setSelectionModel(new QItemSelectionModel(model, q));
     }   
@@ -274,16 +283,6 @@ void HbAbstractItemViewPrivate::_q_modelDestroyed()
     q->reset();
 }
 
-/*!
-    \private
-
-    Slot is called whenever the model layout changes. This resets the container.
-*/
-void HbAbstractItemViewPrivate::_q_layoutChanged()
-{
-    mContainer->setModelIndexes(mModelIterator->nextIndex(QModelIndex()));
-}
-
 void HbAbstractItemViewPrivate::_q_animationEnabled()
 {
     mAnimateItems = true;
@@ -292,7 +291,7 @@ void HbAbstractItemViewPrivate::_q_animationEnabled()
 void HbAbstractItemViewPrivate::_q_animationFinished(const HbEffect::EffectStatus &status)
 {
     Q_UNUSED(status);
-    if ( status.effectEvent == "appear") {
+    if (status.effectEvent == "appear") {
         if (mPostponedScrollIndex.isValid()) { 
             int count = mAppearAnimationIndexes.count();
             for (int i=0; i<count; i++) {
@@ -302,17 +301,199 @@ void HbAbstractItemViewPrivate::_q_animationFinished(const HbEffect::EffectStatu
                 }
             }
         } 
+
+        status.item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, false);
         mAppearAnimationIndexes.clear();
     }
+}
+
+/*!
+    \reimp
+*/
+void HbAbstractItemViewPrivate::setContentPosition(qreal value, Qt::Orientation orientation, bool animate)
+{
+    Q_Q(HbAbstractItemView);
+
+    if (handleScrollBar(orientation)) {
+        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
+            mContainer->layout()->activate();
+        }
+
+        HbAbstractViewItem *firstItem = mContainer->items().first();
+        qreal itemHeight;
+        if (mContainer->uniformItemSizes()) {
+            itemHeight = firstItem->size().height();
+        } else {
+            // avarrage height based on container content
+            itemHeight = mContainer->size().height() / mContainer->items().size();
+        }
+        qreal visiblePos = -mContainer->pos().y()
+                           + mModelIterator->indexPosition(firstItem->modelIndex()) * itemHeight;
+        qreal viewHeight = q->boundingRect().height();
+        qreal modelHeight = itemHeight * mModelIterator->indexCount() - viewHeight;
+        qreal thumbPos = visiblePos / modelHeight;
+
+        qreal diff = (value - thumbPos) * modelHeight;
+
+        q->scrollByAmount(QPointF(0, diff));
+    } else {
+        HbScrollAreaPrivate::setContentPosition(value, orientation, animate);
+    }
+
+    if (animate) {
+        updateScrollBar(orientation);
+    }
+}
+
+bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
+{
+    Q_Q(HbAbstractItemView);
+
+    HbPanGesture *gesture = static_cast<HbPanGesture *>(event->gesture(Qt::PanGesture));
+
+    switch (gesture->state()) {
+        case Qt::GestureStarted:
+            mOptions |= PanningActive;
+            // Fallthrough
+        case Qt::GestureUpdated: {
+            QPointF scenePos = event->mapToGraphicsScene(gesture->hotSpot());
+            if (mDoingContiguousSelection) {
+                int retVal = false;
+
+                // loop through the items in the scene
+                qreal scenePosY = scenePos.y();
+                QPointF lastScenePos = scenePos + gesture->lastOffset() - gesture->offset();
+                qreal lastScenePosY = lastScenePos.y();
+                QPolygonF polygon;
+                polygon << lastScenePos << scenePos;
+                QList<QGraphicsItem *> items = q->scene()->items(polygon);
+                int itemCount = items.count();
+                for (int current = 0; current < itemCount ; ++current) {
+                    HbAbstractViewItem *item = viewItem(items.at(current));
+                    if (item && item->itemView() == q) {
+                        QModelIndex itemIndex(item->modelIndex());
+                        QGraphicsSceneMouseEvent mouseMoveEvent(QEvent::GraphicsSceneMouseMove);
+                        QPointF scenePosInItemCoordinates = item->mapFromScene(scenePos);
+                        QPointF position(qBound((qreal)0.0, scenePosInItemCoordinates.x(), item->size().width()), 
+                                         qBound((qreal)0.0, scenePosInItemCoordinates.y(), item->size().height()));
+                        mouseMoveEvent.setPos(position);
+                        QItemSelectionModel::SelectionFlags command = q->selectionCommand(item, &mouseMoveEvent);
+
+						// in contiguousselectionarea there shall be no panning from HbScrollArea, thus return true
+                        if (command != QItemSelectionModel::NoUpdate) {
+                            retVal = true;
+                        }
+
+                        if ( itemIndex != mPreviousSelectedIndex
+                          || command != mPreviousSelectedCommand) {
+                            mPreviousSelectedIndex = itemIndex;
+                            mPreviousSelectedCommand = command;
+                            mSelectionModel->select(itemIndex, command);
+                        }
+
+                        // check if we need to start or keep on scrolling
+                        int scrollDirection = 0;
+                        QPointF pos = q->mapFromScene(scenePos);
+                        if (pos.y() < (q->size().height() * CONTIGUOUS_SELECTION_AREA_THRESHOLD)) {
+                             if (q->isScrolling()
+                                 || (!q->isScrolling()
+                                     && lastScenePosY >= scenePosY)) {                                
+                                 scrollDirection = 1;
+                             }
+                        } else if (pos.y() > (q->size().height() * (1 - CONTIGUOUS_SELECTION_AREA_THRESHOLD))) {
+                             if (q->isScrolling()
+                                 || (!q->isScrolling()
+                                     && lastScenePosY <= scenePosY)) {
+                                 scrollDirection = -1;
+                             }                        
+                        }
+
+                        // Start scrolling if needed. 
+                        if (scrollDirection != 0) {
+                            if (!mIsAnimating) {
+                                mPositionInContiguousSelection = scenePos;
+                                QObject::connect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(_q_scrolling(QPointF)));    
+                                QObject::connect(q, SIGNAL(scrollingEnded()), q, SLOT(_q_scrollingEnded()));    
+                                QObject::connect(q, SIGNAL(scrollingStarted()), q, SLOT(_q_scrollingStarted()));    
+                                animateScroll(QPointF (0.0f, scrollDirection * CONTIGUOUS_SELECTION_SCROLL_SPEED));
+                                retVal = true;
+                            }
+                        } else if (q->isScrolling()) {
+                            stopAnimating();
+                            retVal = true;
+                        }
+                        break;
+                    }
+                }
+                return retVal;
+            }
+            break;
+        }
+        case Qt::GestureFinished: 
+        case Qt::GestureCanceled: {
+            mOptions &= ~PanningActive;
+            if (mDoingContiguousSelection) {
+                stopAnimating();
+                mDoingContiguousSelection = false;
+                return true;
+            }               
+            break;
+        }
+        default:
+            break;
+    }
+
+    return false;
+}
+
+/*!
+    This slot is called when the view is scrolling doing countinuousselection. It does the item 
+    selection/deselection 
+*/
+void HbAbstractItemViewPrivate::_q_scrolling(QPointF newPosition)
+{
+    Q_UNUSED(newPosition);
+
+    HbAbstractViewItem* hitItem = itemAt(mPositionInContiguousSelection);
+    if (hitItem) {
+        QModelIndex itemIndex(hitItem->modelIndex());
+        if ( itemIndex != mPreviousSelectedIndex) {
+            mPreviousSelectedIndex = itemIndex;
+            mSelectionModel->select(itemIndex, mPreviousSelectedCommand);
+        }
+    }
+}
+
+/*!
+    This slot is called when scrolling during continuousselction ends. It restores the original scrolling parameters 
+*/
+void HbAbstractItemViewPrivate::_q_scrollingEnded()
+{
+    Q_Q(HbAbstractItemView);
+
+    mFrictionEnabled = mOrigFriction;
+
+    QObject::disconnect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(_q_scrollingI(QPointF)));    
+    QObject::disconnect(q, SIGNAL(scrollingEnded()), q, SLOT(_q_scrollingEnded()));    
+    QObject::disconnect(q, SIGNAL(scrollingStarted()), q, SLOT(_q_scrollingStarted()));    
+}
+
+/*!
+    This slot is called when scrolling during continuousselction starts. It saves the original scrolling parameters 
+*/
+void HbAbstractItemViewPrivate::_q_scrollingStarted()
+{
+    mOrigFriction = mFrictionEnabled;
+    mFrictionEnabled = false;
 }
 
 /*!
     \private
 
     When orientation switch occurs, 1) or 2) is applied to view after layout switch:
-          1) if current item is wholly visible, it will be visible
-          2) if current item is not wholly visible, first visible item before layout switch is made visible
-          In either case the visible item is at top of the view or as near as possible
+          1) if last item is wholly visible, it will be visible
+          2) if last item is not fully visible, the first fully visible item before layout switch is made the 
+		     first fully visible item
  */
 void HbAbstractItemViewPrivate::saveIndexMadeVisibleAfterMetricsChange()
 {
@@ -320,18 +501,12 @@ void HbAbstractItemViewPrivate::saveIndexMadeVisibleAfterMetricsChange()
     QModelIndex lastVisibleModelIndex;
     mContainer->firstAndLastVisibleModelIndex(firstVisibleModelIndex, lastVisibleModelIndex);
 
-    int firstVisibleRow = firstVisibleModelIndex.isValid() ? firstVisibleModelIndex.row() : 0;
-    int lastVisibleRow = lastVisibleModelIndex.isValid() ? lastVisibleModelIndex.row() : 0;
-
-    // save current, if it is visible
-    firstVisibleRow = qMax(0, firstVisibleRow);
-    lastVisibleRow = qMax(0, lastVisibleRow);
-
-    if (mCurrentIndex.row() >= firstVisibleRow 
-        && mCurrentIndex.row() <= lastVisibleRow) {
-        mVisibleIndex = mCurrentIndex;
-    } else if (mModelIterator->model()) {
-        mVisibleIndex = mModelIterator->index(firstVisibleRow);
+    if (mModelIterator->model()) {
+        if (lastVisibleModelIndex == mModelIterator->index(mModelIterator->indexCount() - 1)) {
+            mVisibleIndex = lastVisibleModelIndex;
+        } else {
+            mVisibleIndex = firstVisibleModelIndex;
+        }
     }
 }
 
@@ -406,8 +581,7 @@ QPointF HbAbstractItemViewPrivate::pixelsToScroll(const HbAbstractViewItem *item
                     result.setX(itemRect.right() - viewRect.right());
                 }
             }
-        }
-        else if (mScrollDirections & Qt::Horizontal) {
+        } else if (mScrollDirections & Qt::Horizontal) {
             switch (hint) {
                 case HbAbstractItemView::PositionAtTop: {    // left
                     result.setX(itemRect.right() - viewRect.left() - sizeOffset.width());
@@ -452,14 +626,12 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::singleSelectionCo
         switch (event->type())  {
         case QEvent::GraphicsSceneMousePress: 
         case QEvent::GraphicsSceneMouseDoubleClick:
-            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->scenePos())) {
+            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->pos(), HbAbstractViewItem::SingleSelection)) {
                 mSelectionSettings |= Selection;
             }
             break;
         case QEvent::GraphicsSceneMouseRelease:
-            if (    mHitItem
-                &&  item->modelIndex() == mHitItem->modelIndex()
-                &&  mSelectionSettings.testFlag(Selection)) {
+            if (mSelectionSettings.testFlag(Selection)) {
                 mSelectionSettings &= ~Selection;
                 return QItemSelectionModel::ClearAndSelect;
             }
@@ -477,53 +649,32 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::multiSelectionCom
         const HbAbstractViewItem *item,
         const QEvent *event)
 {
-    if (item) {
-        switch (event->type())  {
-        case QEvent::GraphicsSceneMousePress: 
-        case QEvent::GraphicsSceneMouseDoubleClick:
-            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->scenePos())) {
-                mSelectionSettings |= Selection;
-            }
-            break;
-        case QEvent::GraphicsSceneMouseRelease:
-            if (mHitItem
-                && item->modelIndex() == mHitItem->modelIndex() 
-                && mSelectionSettings.testFlag(Selection)) {
-                mSelectionSettings &= ~Selection;
-                return QItemSelectionModel::Toggle;
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    return QItemSelectionModel::NoUpdate;
-}
-
-QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::contiguousSelectionCommand(
-        const HbAbstractViewItem *item,
-        const QEvent *event )
-{
     Q_Q(HbAbstractItemView);
     if (item) {
         switch (event->type()) {
         case QEvent::GraphicsSceneMousePress: 
         case QEvent::GraphicsSceneMouseDoubleClick: {
-            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->scenePos())) {
-                mSelectionSettings |= Selection;
 
+            // check if the mouse click is in the multiselectionarea
+		    if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->pos(), HbAbstractViewItem::MultiSelection)) {
+		        mSelectionSettings |= Selection;
                 if (mSelectionModel && mSelectionModel->isSelected(item->modelIndex())) {
                     mContSelectionAction = QItemSelectionModel::Deselect;
                 } else {
                     mContSelectionAction = QItemSelectionModel::Select;
                 }
-
-                // TODO: This should be changed to changing the gesture area of effect when that is possible...
-                // Gesture filter does not reset all of its internals: workaround is to delete and create the filter
-                q->setLongPressEnabled(false);
-                q->removeSceneEventFilter(mGestureFilter);
-                mFilterRemoved = true;
             }
+
+            // check if the mouse click is in the "contiguousselectionarea"
+            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->pos(), 
+                                            HbAbstractViewItem::ContiguousSelection)) {
+                // it is assumed that the "contiguousselectionarea" is in the multiselectionarea
+                q->setLongPressEnabled(false);
+                mDoingContiguousSelection = true;
+            } else {
+                mDoingContiguousSelection = false;
+            }
+
             break;
             }
         case QEvent::GraphicsSceneMouseRelease: {
@@ -534,15 +685,15 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::contiguousSelecti
                 mContSelectionAction = QItemSelectionModel::NoUpdate;
             } 
             
-            if (mFilterRemoved) {
-                // setLongPressEnabled installs filter
-                q->setLongPressEnabled(true);
-                mFilterRemoved = false;
-            }
+            q->setLongPressEnabled(true);
             return flags;
             }
         case QEvent::GraphicsSceneMouseMove:
-            return mContSelectionAction;
+            if (mDoingContiguousSelection) {
+                return mContSelectionAction;
+            } else {
+                return QItemSelectionModel::NoUpdate;
+            }
         default:
             break;
         }
@@ -550,27 +701,6 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::contiguousSelecti
     return QItemSelectionModel::NoUpdate;
 }
 
-/*!
-    Overwrites the default scroll area scrollbar updating algorithm when
-    recycling is used. On recycling the scrollbar position & size is calculated
-    using rows and their pixel size is not used.
-*/
-void HbAbstractItemViewPrivate::updateScrollBar(Qt::Orientation orientation)
-{
-    if (!handleScrollBar(orientation)) {
-        HbScrollAreaPrivate::updateScrollBar(orientation);
-    } else {
-        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
-            mContainer->layout()->activate();
-        }
-
-        if (mContainer->uniformItemSizes()) {
-            updateScrollBarForUniformSizedItems();
-        } else {
-            updateScrollBarForVariableSizedItems();
-        }
-    } 
-}
 
 /*!
     Returns the abstract view item from given scene position, if there is any.
@@ -623,18 +753,18 @@ void HbAbstractItemViewPrivate::refreshContainerGeometry()
 
 
 QRectF HbAbstractItemViewPrivate::itemBoundingRect(const QGraphicsItem *item) const
-    {
-        Q_Q(const HbAbstractItemView);
+{
+    Q_Q(const HbAbstractItemView);
 
-        if (mContainer) {
-            QGraphicsLayout *containerLayout = mContainer->layout();
-            if (containerLayout) {
-                containerLayout->activate();
-            }
+    if (mContainer) {
+        QGraphicsLayout *containerLayout = mContainer->layout();
+        if (containerLayout) {
+            containerLayout->activate();
         }
-
-        return item->mapToItem(q, item->boundingRect()).boundingRect();
     }
+
+    return item->mapToItem(q, item->boundingRect()).boundingRect();
+}
 
 /*!
     Returns true if given item is located within viewport (i.e.  view), otherwise
@@ -720,7 +850,8 @@ void HbAbstractItemViewPrivate::revealItem(const HbAbstractViewItem *item,
     if (delta != QPointF()) {
         QPointF newPos = -mContainer->pos() + delta;
         checkBoundaries(newPos);
-        // scroll area logic is oposite to real position
+
+        // scroll area logic is opposite to real position.
         q->scrollContentsTo(newPos);
     }
 }
@@ -752,45 +883,28 @@ void HbAbstractItemViewPrivate::checkBoundaries(QPointF &newPos)
     }
 }
 
-void HbAbstractItemViewPrivate::updateScrollBarForUniformSizedItems()
-{
-    Q_Q(const HbAbstractItemView);
-    
-    HbAbstractViewItem *firstItem = mContainer->items().first();
-    qreal uniformItemHeight = firstItem->size().height();
-    qreal containerVirtualHeight = uniformItemHeight *  (mModelIterator->indexCount());
-    qreal thumbPosition(0);
-    int firstBufferItemRowNumber = mModelIterator->indexPosition(firstItem->modelIndex());
-     
-    QRectF itemRect = itemBoundingRect(firstItem);
-    qreal realTopBoundary = itemRect.top();   
-    qreal virtualTopBoundary = realTopBoundary - (firstBufferItemRowNumber*uniformItemHeight); 
-   
-    if ((containerVirtualHeight - q->boundingRect().height()) != 0) {
-        thumbPosition = 
-            (-virtualTopBoundary) / (containerVirtualHeight - q->boundingRect().height());
-    }  
- 
-    thumbPosition = qBound((qreal)0.0, thumbPosition, (qreal)1.0);
- 
-    if (mVerticalScrollBar) {
-        if (containerVirtualHeight!=0) {
-            mVerticalScrollBar->setPageSize(qBound ( (qreal)0.0,
-                                     q->boundingRect().height() / containerVirtualHeight,
-                                      (qreal)1.0));
-        }
-        mVerticalScrollBar->setValue(thumbPosition); 
-    }    
-}
-
 void HbAbstractItemViewPrivate::setScrollBarMetrics(Qt::Orientation orientation)
-{   
+{
     if (!handleScrollBar(orientation) ) {
         HbScrollAreaPrivate::setScrollBarMetrics(orientation);
     } else {
-        //We just make sure that the base clas is not called
-        //It set the page size wrongly
-        updateScrollBar(orientation); 
+        Q_Q(HbAbstractItemView);
+
+        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
+            mContainer->layout()->activate();
+        }
+
+        qreal itemHeight;
+        if (mContainer->uniformItemSizes()) {
+            itemHeight = mContainer->items().first()->size().height();
+        } else {
+            // avarrage height based on container content
+            itemHeight = mContainer->size().height() / mContainer->items().size();
+        }
+        qreal rowCount = q->boundingRect().height() / itemHeight;
+        qreal modelRowCount = mModelIterator->indexCount();
+        qreal thumbSize = rowCount / modelRowCount;
+        mVerticalScrollBar->setPageSize(thumbSize);
     }
 }
 
@@ -798,86 +912,56 @@ void HbAbstractItemViewPrivate::setScrollBarMetrics(Qt::Orientation orientation)
     This function combines the conditions to solve whether the scroll bar calcultion should be handled in
     this class or is the base class calculation sufficient
 */
-bool  HbAbstractItemViewPrivate::handleScrollBar(Qt::Orientation orientation)
+bool HbAbstractItemViewPrivate::handleScrollBar(Qt::Orientation orientation)
 {
     if (!mContainer->itemRecycling()
-        || mContainer->itemPrototypes().count() != 1 
-        || orientation == Qt::Horizontal
-        || mContainer->items().count() == 0) {
-            return false;
+        || !(orientation & mScrollDirections)
+        || mContainer->itemPrototypes().count() != 1
+        || mContainer->items().isEmpty()
+        || (!mVerticalScrollBar && orientation == Qt::Vertical)
+        || (!mHorizontalScrollBar && orientation == Qt::Horizontal)) {
+        return false;
     } else {
         return true;
     }
 }
 
-void HbAbstractItemViewPrivate::updateScrollBarForVariableSizedItems()
+/*!
+    Overwrites the default scroll area scrollbar updating algorithm when
+    recycling is used. While recycling is on scrollbar position & size 
+    are calculated using rows and their pixel sizes are not used (in fact only 
+    container position is interesting to determine partially visible items
+    - when container contain small amount of items it is important).
+*/
+void HbAbstractItemViewPrivate::updateScrollBar(Qt::Orientation orientation)
 {
-    Q_Q(const HbAbstractItemView);
-    HbAbstractViewItem *firstItem = mContainer->items().first();
- 
-    // View position is the amount of hidden (fully or partially)
-    // rows above the view area.
-    int position = mModelIterator->indexPosition(firstItem->modelIndex());
-    if (position == -1) {
-        return; 
-    }
-    qreal viewY = (qreal)(position);
+    if (!handleScrollBar(orientation)) {
+        HbScrollAreaPrivate::updateScrollBar(orientation);
+    } else {
+        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
+            mContainer->layout()->activate();
+        }
 
-    // View area height is the amount of rows within the view area.
-    qreal viewH = 0;
+        Q_Q(const HbAbstractItemView);
 
-    //Index count calculation is time consuming with tree
-    int indexCount = mModelIterator->indexCount();
-
-    // Total height is the amount of rows in the model.
-    qreal totalH = indexCount;
-
-    qreal itemTop = firstItem->mapToItem(q, firstItem->pos()).y();
-    qreal viewHeight = q->size().height();
-    int itemCount = mContainer->items().count();
-    
-    for (int i=0; i < itemCount; ++i) {
-        qreal itemHeight = mContainer->items().at(i)->size().height();
-        qreal itemBottom = itemTop + itemHeight;
-        if (itemTop < 0) {
-            // Some part of the item is above the view area.
-            if (itemBottom < 0) {
-                // Fully above the view area
-                viewY += 1;
-            } else {
-                // Partially at the view area and partially above the view area.
-                viewY += (1.0 - itemBottom / itemHeight);
-                viewH += itemBottom / itemHeight;
-            }
-        } else if (itemTop < viewHeight) {
-            // So part of the item is at the view area.
-            if (itemBottom < viewHeight) {
-                // Fully at the view area
-                viewH += 1;
-            } else {
-                // Partially at the view area and partially below the view area.
-                viewH += (viewHeight - itemTop) / itemHeight;
-            }
+        qreal containerPos = mContainer->pos().y();
+        qreal itemHeight;
+        if (mContainer->uniformItemSizes()) {
+            itemHeight = mContainer->items().first()->size().height();
         } else {
-            break;
+            // avarrage height based on container content
+            itemHeight = mContainer->size().height() / mContainer->items().size();
         }
-
-        itemTop += itemHeight;
+        qreal rowCount = q->boundingRect().height() / itemHeight;
+        qreal modelRowCount = mModelIterator->indexCount() - rowCount;
+        qreal firstVisibleRow = mModelIterator->indexPosition(mContainer->items().first()->modelIndex());
+        firstVisibleRow += -containerPos / itemHeight;
+        qreal thumbPos = firstVisibleRow / (qreal)modelRowCount;
+        mVerticalScrollBar->setValue(thumbPos);
     }
-
-    // Shifting the values to scrollbar range that is from 0.0-1.0. 
-    qreal pos = viewY / (totalH - viewH);
-    pos = qBound((qreal)0.0, pos, (qreal)1.0);
-
-    if (mVerticalScrollBar) {
-        if (indexCount!=0) {
-            mVerticalScrollBar->setPageSize(viewH / (qreal)(indexCount));
-        }
-        mVerticalScrollBar->setValue(pos);
-    }    
 }
 
-void HbAbstractItemViewPrivate::rowsRemoved(const QModelIndex &parent,int start,int end)
+void HbAbstractItemViewPrivate::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     if (mModelIterator->model()->columnCount(parent) == 0) {
         return;
@@ -900,8 +984,7 @@ void HbAbstractItemViewPrivate::rowsRemoved(const QModelIndex &parent,int start,
     for (int current = end; current >= start; --current) {
         //The items are already removed from the model. That's why their indexes are already invalid.
         //Here we loop the items in container and call removeItem() with QModelIndex().
-        bool animate = mEnabledAnimations & HbAbstractItemView::Disappear ? mAnimateItems : false;
-        mContainer->removeItem(QModelIndex(), animate);
+        mContainer->removeItem(QModelIndex(), animationEnabled(false));
     }
 }
 
@@ -913,16 +996,14 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::selectionFlags(
         return QItemSelectionModel::NoUpdate;
 
     QItemSelectionModel::SelectionFlags flags = QItemSelectionModel::NoUpdate;
-    if (item && mHitItem && event){
+    if (item && event){
         switch (mSelectionMode) {
         case HbAbstractItemView::SingleSelection: 
             flags =  singleSelectionCommand(item, event);
             break;
         case HbAbstractItemView::MultiSelection:
-            flags =  multiSelectionCommand(item, event);
-            break;
         case HbAbstractItemView::ContiguousSelection: {
-            flags = contiguousSelectionCommand(item, event);
+            flags = multiSelectionCommand(item, event);
             break;
         }
         case HbAbstractItemView::NoSelection: // Never update selection model
@@ -939,7 +1020,7 @@ void HbAbstractItemViewPrivate::resetContainer()
     mContainer->reset();
 }
 
-void HbAbstractItemViewPrivate::startAppearEffect(const QModelIndex &parent, int start, int end)
+void HbAbstractItemViewPrivate::startAppearEffect(const QString &itemType, const QString &effectEvent, const QModelIndex &parent, int start, int end)
 {
     Q_Q(HbAbstractItemView);
     if( mAppearAnimationIndexes.count()) {
@@ -951,13 +1032,15 @@ void HbAbstractItemViewPrivate::startAppearEffect(const QModelIndex &parent, int
         HbAbstractViewItem *item = q->itemByIndex(index);
         if (item) {
             items.append(item);
+            item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+
             mAppearAnimationIndexes.append(index);
         }
     }
 
     refreshContainerGeometry();
 
-    HbEffect::start(items, "viewitem", "appear", q, "_q_animationFinished");
+    HbEffect::start(items, itemType, effectEvent, q, "_q_animationFinished");
 }
 
 void HbAbstractItemViewPrivate::ensureVisible(QPointF position, qreal xMargin, qreal yMargin)
@@ -966,4 +1049,11 @@ void HbAbstractItemViewPrivate::ensureVisible(QPointF position, qreal xMargin, q
     HbScrollAreaPrivate::ensureVisible(position, xMargin, yMargin);
 }
 
-
+bool HbAbstractItemViewPrivate::animationEnabled(bool insertOperation)
+{
+    if (insertOperation) {
+        return mEnabledAnimations & HbAbstractItemView::Appear ? mAnimateItems : false;
+    } else {
+        return mEnabledAnimations & HbAbstractItemView::Disappear ? mAnimateItems : false;
+    }
+}

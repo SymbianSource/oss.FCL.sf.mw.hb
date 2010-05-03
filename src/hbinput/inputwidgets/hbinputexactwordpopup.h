@@ -41,19 +41,19 @@ public:
         HbIndicatorArrow
     };
 
-    static HbExactWordPopup* instance( HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow );
+    static HbExactWordPopup* instance(HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow);
 
     QString text();
-    int type() const { return Type; }
+    int type() const {return Type;}
 
 public slots:
     void setText(const QString &text);
     void showText(QPointF pos);
     void hideText();
-    void setIndicatorArrow( HbExactWordPopupIndicator indicatorArrow );
+    void setIndicatorArrow(HbExactWordPopupIndicator indicatorArrow);
 
 protected:
-    HbExactWordPopup( QGraphicsWidget *parent=0, HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow );
+    HbExactWordPopup(QGraphicsWidget *parent = 0, HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void updatePrimitives();
 

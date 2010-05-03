@@ -89,6 +89,13 @@
 */
 
 
+
+/*!
+
+    \deprecated HbStyleOptionListViewItem::HbStyleOptionListViewItem()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionListViewItem::HbStyleOptionListViewItem() :
     HbStyleOptionAbstractViewItem(),
     role(Qt::DisplayRole),
@@ -101,6 +108,13 @@ HbStyleOptionListViewItem::HbStyleOptionListViewItem() :
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionListViewItem::HbStyleOptionListViewItem(const HbStyleOptionListViewItem&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionListViewItem::HbStyleOptionListViewItem(const HbStyleOptionListViewItem &other) :
     HbStyleOptionAbstractViewItem(other),
     content(other.content),

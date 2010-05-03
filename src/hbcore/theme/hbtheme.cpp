@@ -24,7 +24,9 @@
 ****************************************************************************/
 #include "hbtheme.h"
 #include "hbtheme_p.h"
+#include "hbthemeclient_p.h"
 #include <qglobal.h>
+#include <QSettings>
 #include "hbstandarddirs_p.h"
 #include "hbicontheme_p.h"
 #include "hbcolortheme_p.h"
@@ -33,15 +35,15 @@
 #include "hbcolortheme_p_p.h"
 #include "hbcolortheme_p.h"
 #include "hbeffecttheme_p.h"
+#include "hbeffectinternal_p.h"
 /*!
-    @proto
+    @stable
     @hbcore
     \class HbTheme
 
-    \brief HbTheme provides an interface for changing the active theme.
+    \brief HbTheme provides means for retrieving information of the currently active theme.
 
     HbTheme is a part of hbinstance, which is accessed with the method hbinstance->theme().
-    It provides means for retrieving information of the currently active theme.
 
     In addition, it provides two signals for handling a theme change event.
 
@@ -92,7 +94,7 @@ QString HbTheme::name() const
 */
 QString HbTheme::description() const
 {
-    return HbIconTheme::global()->description();
+    return d_ptr->iconTheme.description();
 }
 
 /*!
@@ -102,6 +104,7 @@ HbTheme::HbTheme() : d_ptr(new HbThemePrivate)
 {
     d_ptr->q_ptr = this;
     d_ptr->fetchCurrentThemeFromSettings();
+    HbThemeUtils::initSettings();
     d_ptr->handleThemeChange();
 }
 
@@ -143,23 +146,10 @@ HbThemePrivate::~HbThemePrivate()
 */
 void HbThemePrivate::fetchCurrentThemeFromSettings()
 {
-    QSettings&  settings = HbThemeUtils::getThemeSettings();
-    currentTheme = settings.value("currenttheme").toString();
-    
-    QString cleanCurrentTheme = currentTheme.trimmed();
-    
-    if (cleanCurrentTheme.isEmpty()) {
-        //cleanCurrentTheme = HbThemeUtils::defaultTheme();
-        // TEMP CHANGE: Use "sfblacktheme" as default theme,
-        // theme.theme still contains "hbdefault" as default theme, so that is used as parent theme in lookups
-        cleanCurrentTheme = "sfblacktheme";
-    }
-    
-    // If QSettings itself does not have clean name
-    if (cleanCurrentTheme != currentTheme) {
-        currentTheme = cleanCurrentTheme;
-        settings.setValue("currenttheme", currentTheme) ;
-        settings.sync();
+    currentTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+    if (currentTheme.trimmed().isEmpty()){
+        currentTheme = HbThemeUtils::defaultTheme().name;
+        HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, currentTheme);
     }
 }
 
@@ -171,28 +161,30 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     Q_Q(HbTheme);
     QString newTheme;
     if (str.isEmpty()) {
-    QSettings&  settings = HbThemeUtils::getThemeSettings();
-    settings.sync();
-    newTheme = settings.value("currenttheme").toString();
+        newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
     } else {
         newTheme = str;
+        // Update the new currentTheme setting in HbThemeUtils.
+        HbThemeUtils::updateThemeSetting(HbThemeUtils::CurrentThemeSetting, newTheme);
     }
 
     // Clear the theme index table offsets as the theme has changed.
     // New offsets will be retrieved from server when the index is accessed.
     themeIndex.clear();
 
-    HbIconTheme::global()->setCurrentTheme(newTheme);
-    HbColorTheme::global()->setCurrentTheme(newTheme);
-    HbEffectTheme::global()->setCurrentTheme(newTheme);
+    iconTheme.setCurrentTheme(newTheme);
+    HbColorTheme::instance()->setCurrentTheme(newTheme);
+    HbEffectTheme::instance()->setCurrentTheme(newTheme);
     
     // The server sends the signal only if the theme is changed from the previous theme
     // Hence here, we need not check whether the theme differs from currentTheme or not.
     if(currentTheme != newTheme) {
         currentTheme = newTheme;
-        // This signal should be used to replace pixmaps from the old theme with the pixmaps from the new theme
+        // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
         // In application side this is needed only when icon size can be different in different theme.
-        emit q->changed ();
+        iconTheme.emitUpdateIcons();
+
+        emit q->changed();
         // This signal should be used to update the screen after the theme change - it's handled by HbInstance.
         emit q->changeFinished();
     }
@@ -201,16 +193,20 @@ void HbThemePrivate::handleThemeChange(const QString &str)
 /*!
     Clears the contents to reload new css files
 */
-void HbThemePrivate::clearCache()
+void HbThemePrivate::updateTheme(const QStringList &updatedFiles)
 {
-    // Clear the icon directory list 
-    HbIconTheme::global()->clearDirList();
-
     // Reload the CSS
-    HbColorTheme::global()->reloadCss();
+    HbColorTheme::instance()->reloadCss();
     
+    // Reload effects
+    HbEffectInternal::reloadFxmlFiles();
+
+    iconTheme.emitUpdateIcons(updatedFiles);
+
     Q_Q(HbTheme);
     // Emit the theme changed signals so that the UI is refreshed.
-    emit q->changed ();
+    // Icons will updated if needed
+    emit q->changed();
+
     emit q->changeFinished();
 }

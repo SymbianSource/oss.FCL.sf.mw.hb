@@ -574,7 +574,7 @@ void HbDeviceMessageBox::close()
     asynchronous show().
 
     \deprecated HbDeviceMessageBox::exec()
-    is deprecated. Replaced by const QAction *HbDeviceMessageBox::exec() const.
+        is deprecated. Replaced by const QAction *HbDeviceMessageBox::exec() const.
 
 */
 HbAction *HbDeviceMessageBox::exec()
@@ -762,8 +762,8 @@ void HbDeviceMessageBox::warning(const QString &text)
 
     \sa setPrimaryAction()
 
-    \deprecated HbDeviceMessageBox::primaryAction()
-    is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
+    \deprecated HbDeviceMessageBox::primaryAction() const
+        is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
 
 */
 HbAction* HbDeviceMessageBox::primaryAction() const
@@ -788,8 +788,8 @@ HbAction* HbDeviceMessageBox::primaryAction() const
 
     \sa primaryAction()
 
-    \deprecated HbDeviceMessageBox::setPrimaryAction(HbAction *action)
-    is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
+    \deprecated HbDeviceMessageBox::setPrimaryAction(HbAction*)
+        is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
 
 */
 void HbDeviceMessageBox::setPrimaryAction(HbAction *action)
@@ -806,8 +806,8 @@ void HbDeviceMessageBox::setPrimaryAction(HbAction *action)
 
     \sa setSecondaryAction()
 
-    \deprecated HbDeviceMessageBox::secondaryAction()
-    is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
+    \deprecated HbDeviceMessageBox::secondaryAction() const
+        is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
 
 */
 HbAction* HbDeviceMessageBox::secondaryAction() const
@@ -833,8 +833,8 @@ HbAction* HbDeviceMessageBox::secondaryAction() const
 
     \sa secondaryAction()
 
-    \deprecated HbDeviceMessageBox::setSecondaryAction(HbAction *action)
-    is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
+    \deprecated HbDeviceMessageBox::setSecondaryAction(HbAction*)
+        is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
 */
 void HbDeviceMessageBox::setSecondaryAction(HbAction *action)
 {

@@ -73,8 +73,6 @@ public slots:
 protected:
     HbTreeView(HbTreeViewPrivate &dd, HbAbstractItemContainer *container, QGraphicsItem *parent);
 
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-
     virtual void currentSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
     virtual void rowsInserted(const QModelIndex &parent, int start, int end);

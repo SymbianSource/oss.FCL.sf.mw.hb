@@ -30,6 +30,13 @@
     \brief HbStyleOptionDataFormViewItem has the style component for data item primitives
 */
 
+/*!
+
+    \deprecated HbStyleOptionDataFormViewItem::HbStyleOptionDataFormViewItem()
+    is deprecated. Styleoptions will not be public.
+
+*/
+
 HbStyleOptionDataFormViewItem::HbStyleOptionDataFormViewItem()  :
     HbStyleOption()
 {
@@ -37,6 +44,12 @@ HbStyleOptionDataFormViewItem::HbStyleOptionDataFormViewItem()  :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionDataFormViewItem::HbStyleOptionDataFormViewItem(const HbStyleOptionDataFormViewItem&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionDataFormViewItem::HbStyleOptionDataFormViewItem(const HbStyleOptionDataFormViewItem &other)  :
     HbStyleOption(other)
 {

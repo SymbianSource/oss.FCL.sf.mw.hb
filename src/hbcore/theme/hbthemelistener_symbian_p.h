@@ -29,12 +29,12 @@
 #include <e32base.h>
 #include <e32property.h> 
 
-class CThemeListenerPrivate:public CActive
+class CHbThemeListenerPrivate:public CActive
 {
 public:
     //themeClient is notified, when the theme changes.
-    CThemeListenerPrivate(HbThemeClientPrivate *themeClient);
-    ~CThemeListenerPrivate();
+    CHbThemeListenerPrivate(HbThemeClientPrivate *themeClient);
+    ~CHbThemeListenerPrivate();
 private:
     void RunL();
     void DoCancel();

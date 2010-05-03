@@ -38,6 +38,8 @@ public:
     explicit HbListItemContainer(QGraphicsItem *parent=0);
     virtual ~HbListItemContainer();
 
+    void removeItem(const QModelIndex &index, bool animate);
+
 protected:
 
     HbListItemContainer(HbListItemContainerPrivate &dd, QGraphicsItem *parent);

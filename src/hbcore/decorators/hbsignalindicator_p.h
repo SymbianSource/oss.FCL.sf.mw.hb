@@ -44,6 +44,8 @@ public:
     explicit HbSignalIndicator(QGraphicsItem *parent = 0);
     virtual ~HbSignalIndicator();
 
+    void delayedConstruction();
+
     inline int type() const { return Type; }
     void setLevel(int levelPercent);
     int level() const;

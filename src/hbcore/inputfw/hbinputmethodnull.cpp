@@ -26,83 +26,63 @@
 #include "hbinputmethodnull_p.h"
 #include "hbinputeditorinterface.h"
 
-//
-// HbInputMethodNull
-//
-
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::Instance
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 HbInputMethodNull* HbInputMethodNull::Instance()
 {
     static HbInputMethodNull myInstance;
     return &myInstance;
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::HbInputMethodNull
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 HbInputMethodNull::HbInputMethodNull()
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::~HbInputMethodNull
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 HbInputMethodNull::~HbInputMethodNull()
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::identifierName
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 QString HbInputMethodNull::identifierName()
 {
     return QString();
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::isComposing
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 bool HbInputMethodNull::isComposing() const
 {
     return false;
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::language
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 QString HbInputMethodNull::language()
 {
     return QString();
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::reset
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 void HbInputMethodNull::reset()
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::filterEvent
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 bool HbInputMethodNull::filterEvent(const QEvent* event)
 {
     if (!event || event->type() != QEvent::KeyPress) {
@@ -117,12 +97,9 @@ bool HbInputMethodNull::filterEvent(const QEvent* event)
     return false;
 }
 
-
-// ---------------------------------------------------------------------------
-// HbInputMethodNull::mouseHandler
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\internal
+*/
 void HbInputMethodNull::mouseHandler(int x, QMouseEvent* event)
 {
     Q_UNUSED(x);

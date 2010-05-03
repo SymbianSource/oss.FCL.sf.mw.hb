@@ -29,6 +29,8 @@
 #include <hbglobal.h>
 #include <hbstyle.h>
 class HbWidgetBase;
+
+// DEPRECATED API (style plugins are deprecated)
 // Interface used with HbStyle plugins, see HbStyle documentation for more information
 class HbStyleInterface
 {
@@ -39,6 +41,7 @@ public:
     virtual QGraphicsItem *createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent = 0 ) const = 0;
     virtual void updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive, const QStyleOption *option ) const  = 0;
 	virtual QString layoutPath() const = 0;
+    void deprecated();
 };
 
 Q_DECLARE_INTERFACE(HbStyleInterface, "com.nokia.Hb.StyleInterface")

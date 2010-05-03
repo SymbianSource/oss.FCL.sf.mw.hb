@@ -30,20 +30,46 @@
 
 #ifdef Q_OS_SYMBIAN
 #include <driveinfo.h>
+#include <coemain.h>
 #endif
 
 inline QString hbsplash_output_dir()
 {
 #if defined(Q_OS_SYMBIAN)
     QString path("c:/private/2002E68B");
-/*
-#ifndef __WINSCW__
+    TInt driveType = DriveInfo::EDefaultMassStorage;
+    TInt drive;
     TChar driveLetter;
-    if (DriveInfo::GetDefaultDrive(DriveInfo::EDefaultMassStorage, driveLetter) == KErrNone) {
-        path[0] = driveLetter;
+    if (DriveInfo::GetDefaultDrive(driveType, drive) == KErrNone
+        && DriveInfo::GetDefaultDrive(driveType, driveLetter) == KErrNone)
+    {
+        bool driveUsable = true;
+        CCoeEnv *env = CCoeEnv::Static();
+        if (env) {
+            TUint driveStatus;
+            qDebug("[hbsplash] dir selection: trying drive %d %c", drive, (char) driveLetter);
+            if (DriveInfo::GetDriveStatus(env->FsSession(), drive, driveStatus) == KErrNone) {
+                qDebug("[hbsplash] drive status is %x", driveStatus);
+                // Check if the drive is really internal (devices without internal mass
+                // storage will return the memory card which is not what we want here).
+                if (!(driveStatus & DriveInfo::EDriveInternal)
+                    || !(driveStatus & DriveInfo::EDrivePresent)
+                    || !(driveStatus & DriveInfo::EDriveFormatted)
+                    || (driveStatus & DriveInfo::EDriveCorrupt)
+                    || (driveStatus & DriveInfo::EDriveInUse))
+                {
+                    qDebug("[hbsplash] drive not usable, skipping");
+                    driveUsable = false;
+                }
+            } else {
+                qDebug("[hbsplash] GetDriveStatus failed, skipping");
+                driveUsable = false;
+            }
+        }
+        if (driveUsable) {
+            path[0] = driveLetter;
+        }
     }
-#endif
-*/
     return path;
 #else
     return QString("splashscreens");
@@ -62,6 +88,7 @@ inline QStringList hbsplash_splashml_dirs()
     dirs.append("c:/resource/hb/splashml");
     dirs.append("e:/resource/hb/splashml");
     dirs.append("f:/resource/hb/splashml");
+    dirs.append("g:/resource/hb/splashml");
     dirs.append("z:/resource/hb/splashml");
 #else
     dirs.append("splashml");
@@ -76,6 +103,7 @@ inline QStringList hbsplash_translation_dirs()
     dirs.append("c:/resource/qt/translations");
     dirs.append("e:/resource/qt/translations");
     dirs.append("f:/resource/qt/translations");
+    dirs.append("g:/resource/qt/translations");
     dirs.append("z:/resource/qt/translations");
 #else
     dirs.append("splashml");

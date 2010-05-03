@@ -52,6 +52,9 @@ public:
     static void createDeviceProfileDatabase();
     static HbSharedCache *createSharedCache();
     static int sharedCacheOffset();
+    static bool removeSharedEffect(const QString &fileName);
+    static void clearSharedEffects();
+
 private:
     static int sharedCacheItemOffset(const QString &key);
     static int serverSecondaryCacheOffset;

@@ -36,6 +36,12 @@
     This variable holds whether tree item is expanded or collapsed.
 */
 
+/*!
+
+    \deprecated HbStyleOptionTreeViewItem::HbStyleOptionTreeViewItem()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionTreeViewItem::HbStyleOptionTreeViewItem() :
     HbStyleOptionListViewItem(),
     expanded(false)
@@ -44,6 +50,12 @@ HbStyleOptionTreeViewItem::HbStyleOptionTreeViewItem() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionTreeViewItem::HbStyleOptionTreeViewItem(const HbStyleOptionTreeViewItem&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionTreeViewItem::HbStyleOptionTreeViewItem(const HbStyleOptionTreeViewItem &other) :
     HbStyleOptionListViewItem(other),
         expanded(other.expanded)

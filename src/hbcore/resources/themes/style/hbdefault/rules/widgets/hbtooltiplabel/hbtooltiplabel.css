@@ -1,14 +1,19 @@
 HbToolTipLabel
-{	
-	layout:default;
+{
+    horizontal-margin:var(hb-param-margin-gene-middle-vertical);
+    vertical-margin:var(hb-param-margin-gene-middle-horizontal);	
+    screen-margin:var(hb-param-margin-gene-screen);	
+    layout:default;
 }
 
 HbToolTipLabel::label
 {
-	max-width: 40.0un;	
-        left:-1.0un;
-	right:1.0un;
-	top:-1.0un;
-	bottom:1.0un;
-        text-line-count-max: 1;
+    max-width: 40.0un;	
+    left:-var(hb-param-margin-gene-middle-horizontal);		
+    right:var(hb-param-margin-gene-middle-horizontal);	
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+    text-line-count-max: 1;
+    font-variant:secondary;
+    text-height:var(hb-param-text-height-tiny);
 }

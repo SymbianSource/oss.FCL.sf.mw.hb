@@ -30,14 +30,17 @@
 #include <hbicon.h>
 
 class HbProgressSliderPrivate;
+class HbStyleOptionProgressSlider;
 
 class HB_WIDGETS_EXPORT HbProgressSlider : public HbProgressBar
 {
     Q_OBJECT
     Q_PROPERTY(int sliderValue READ sliderValue WRITE setSliderValue)
+     /* Deprecated */
     Q_PROPERTY(HbIcon thumbIcon READ thumbIcon WRITE setThumbIcon)
     Q_PROPERTY(QString sliderToolTip READ sliderToolTip WRITE setSliderToolTip)
     Q_PROPERTY(SliderState state READ sliderState WRITE setSliderState)
+    Q_PROPERTY(QString handleIcon READ handleIcon WRITE setHandleIcon)
     Q_ENUMS(SliderState)
 
     /* Deprecated */
@@ -55,6 +58,7 @@ public:
         PausePressed
     };
 
+    /* Deprecated */
     enum SliderState
     {
         SliderStatePlayNormal,
@@ -66,7 +70,9 @@ public:
     HbProgressSlider(QGraphicsItem *parent = 0);
     ~HbProgressSlider();
 
+    /* Deprecated */
     void setThumbIcon(const HbIcon &icon);
+    /* Deprecated */
     HbIcon thumbIcon() const;
 
     enum { Type = Hb::ItemType_ProgressSlider };
@@ -81,10 +87,12 @@ public:
 
     /* Deprecated*/
     void setHandleToolTip(const QString &text);
+    /* Deprecated*/
     QString handleToolTip() const;
 
     /* Deprecated*/
     void setHandleState(HbProgressSlider::HandleState state);
+    /* Deprecated*/
     HbProgressSlider::HandleState handleState() const;
 
     void setSliderToolTip(const QString &text);
@@ -92,6 +100,9 @@ public:
 
     void setSliderState(HbProgressSlider::SliderState state);
     HbProgressSlider::SliderState sliderState() const;
+
+    void setHandleIcon(const QString& handlePath );
+    QString handleIcon() const;
 
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const; 
 
@@ -109,9 +120,10 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void showEvent( QShowEvent * event );
-    virtual void initStyleOption(HbStyleOption *option) const;
+
     QVariant itemChange(GraphicsItemChange change,const QVariant & value);
     bool sceneEventFilter(QGraphicsItem *obj,QEvent *event);
+    void initStyleOption( HbStyleOptionProgressSlider *option ) const;
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbProgressSlider)

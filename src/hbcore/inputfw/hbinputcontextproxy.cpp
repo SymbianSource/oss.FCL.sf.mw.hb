@@ -34,17 +34,16 @@
 @alpha
 @hbcore
 \class HbInputContextProxy
-\brief A proxy class forwarding class from QInputContext to HbInputMethod
+\brief A proxy class forwarding calls from QInputContext to HbInputMethod
 
 This class is needed because Qt's input context system assumes the ownership
 of the installed context and deletes the old one when a new context is installed.
-HbInput framework wants to cache active input context entities to its local
-memory structures and keep the ownership of those objects. That's why a proxy object
-is installed between QInputContext and HbInputMehod classes. When Qt's
-input context system deletes old context, it will delete the proxy instead of
+HbInput framework wants to cache active input methods and keep the ownership of those
+objects. The proxy sits between QInputContext and HbInputMethod and is the one that
+is deleted when Qt level input context is switched.
 real implementation.
 
-We also handle certain common events (such as Qt's input panel events) on this level.
+Also a set of common events (such as Qt's input panel events) are handled on this level.
 This class is not needed outside of framework code.
 
 \sa QInputContext
@@ -113,9 +112,9 @@ bool HbInputContextProxy::filterEvent(const QEvent* event)
 #if QT_VERSION >= 0x040600
         if (event->type() == QEvent::CloseSoftwareInputPanel) {
             setInputFrameworkFocus(0);
-            return true;
-        } else if (event->type() == QEvent::RequestSoftwareInputPanel) {
-            if(QWidget * focusedWidget =  qApp->focusWidget()) {
+            return true;            
+        } else if (event->type() == QEvent::RequestSoftwareInputPanel) {           
+            if(QWidget * focusedWidget =  qApp->focusWidget()) {              
                 // see if the focused widget is graphics view, if so get the focused graphics item in the view
                 // and acivate inputmethod for the focused graphics item
                 if(QGraphicsView * graphicsView = qobject_cast<QGraphicsView*>(focusedWidget)) {
@@ -148,14 +147,19 @@ bool HbInputContextProxy::filterEvent(const QEvent* event)
                     mTarget->reset();
                 }
                 return false;
-            }
-        } 
+			}
+		} 
 #endif
+		if(event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+			const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
+			if (Qt::Key_unknown == keyEvent->key()) {
+				return false;
+			}
+		}
+		return mTarget->filterEvent(event);
+	}
 
-        return mTarget->filterEvent(event);
-    }
-
-    return false;
+	return false;
 }
 
 /*!

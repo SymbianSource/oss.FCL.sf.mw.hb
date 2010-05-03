@@ -28,7 +28,7 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbabstractvkbhost_p.h
+PRIVATE_HEADERS += $$PWD/hbabstractvkbhost_p.h
 
 PUBLIC_HEADERS += $$PWD/hbstaticvkbhost.h
 PUBLIC_HEADERS += $$PWD/hbabstractvkbhost.h

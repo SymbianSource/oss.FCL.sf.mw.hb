@@ -28,6 +28,7 @@
 #include <hbabstractitemview_p.h>
 #include <hbgriditemcontainer_p.h>
 #include <hbgridview.h>
+#include <hbgridviewitem_p.h>
 
 class HbGridViewParams;
 class HbGridViewPrivate: public HbAbstractItemViewPrivate
@@ -43,17 +44,20 @@ public:
 
     bool visible(HbAbstractViewItem* item, bool fullyVisible = true) const;
 
-    inline HbGridItemContainer *itemContainer() const
-    {
-        return static_cast<HbGridItemContainer *> (mContainer);
-    }
+    inline HbGridItemContainer *itemContainer() const;
 
+    qreal calculateScrollBarPos() const;
+    qreal calculateScrollBarThumbSize() const;
     void updateScrollBar(Qt::Orientation orientation);
-    void updateVerticalScrollBar();
-    void updateHorizontalScrollBar();
     void setScrollBarMetrics(Qt::Orientation orientation);
 
-    void setContentPosition( qreal value, Qt::Orientation orientation, bool animate );
+    void setContentPosition(qreal value, Qt::Orientation orientation, bool animate);
+
+    inline int getScrollDirectionColumnCount() const;
+    inline int getScrollDirectionRowCount() const;
+    inline HbScrollBar *getScrollDirectionScrollBar() const;
+    inline qreal getScrollDirectionContainerPos() const;
+    inline qreal getScrollDirectionItemSize() const;
 
     inline QModelIndex indexInTheCenter() const;
     QModelIndex indexInTheCenter(Qt::Orientations scrollDirection) const;
@@ -75,8 +79,44 @@ private:
     }
 
     friend class HbGridViewItem;
-
 };
+
+inline HbGridItemContainer *HbGridViewPrivate::itemContainer() const
+{
+    return qobject_cast<HbGridItemContainer *> (mContainer);
+}
+
+inline int HbGridViewPrivate::getScrollDirectionColumnCount() const
+{
+    return (mScrollDirections == Qt::Vertical) ?
+        itemContainer()->columnCount() : itemContainer()->rowCount();
+}
+
+inline int HbGridViewPrivate::getScrollDirectionRowCount() const
+{
+    return (mScrollDirections == Qt::Vertical) ?
+        itemContainer()->rowCount() : itemContainer()->columnCount();
+}
+
+inline HbScrollBar *HbGridViewPrivate::getScrollDirectionScrollBar() const
+{
+    return (mScrollDirections == Qt::Vertical) ?
+        mVerticalScrollBar : mHorizontalScrollBar;
+}
+
+inline qreal HbGridViewPrivate::getScrollDirectionContainerPos() const
+{
+    return (mScrollDirections == Qt::Vertical) ?
+        mContainer->pos().y() : mContainer->pos().x();
+}
+
+inline qreal HbGridViewPrivate::getScrollDirectionItemSize() const
+{
+    // caller responsibility to check if container has any item
+    return (mScrollDirections == Qt::Vertical) ?
+        mContainer->items().first()->size().height()
+        : mContainer->items().first()->size().width();
+}
 
 QModelIndex HbGridViewPrivate::indexInTheCenter() const
 {

@@ -113,6 +113,9 @@ protected:
     virtual void changeEvent(QEvent *event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+#ifdef HB_GESTURE_FW
+    virtual void gestureEvent(QGestureEvent *event);
+#endif 
     bool sceneEventFilter(QGraphicsItem *obj,QEvent *event);
     virtual void resizeEvent(QGraphicsSceneResizeEvent *event);
     virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;

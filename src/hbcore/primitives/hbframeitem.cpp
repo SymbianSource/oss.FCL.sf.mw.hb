@@ -101,6 +101,8 @@ HbFrameItemPrivate::~HbFrameItemPrivate()
 
 void HbFrameItemPrivate::init()
 {
+    item->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+
     if ( QGraphicsWidget *parent = item->parentWidget() ) {
         frameDrawer->setLayoutDirection(parent->layoutDirection());
     }
@@ -225,5 +227,18 @@ void HbFrameItem::changeEvent(QEvent *event)
         break;
     }
 }
+
+
+QSizeF HbFrameItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    if (which == Qt::MinimumSize) {
+        return QSizeF( 0, 0 );
+    } else if (which == Qt::PreferredSize ) {
+        return QSizeF( 0, 0 );
+    } else {
+        return HbWidgetBase::sizeHint( which, constraint );
+    }
+}
+
 
 // End of File

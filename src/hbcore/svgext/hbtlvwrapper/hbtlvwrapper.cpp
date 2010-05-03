@@ -35,10 +35,10 @@
     \class HbTlvWrapper
 
     \brief HbTlvWrapper provides the NVG-TLV data when run on s60 baseport.
-    The TLV data is constructed using the TLV Encoder in s60 SVGEngine.    
-    HbTlvWrapper is a singleton class. The NVG-TLV is used in the scenarios where the svg 
+    The TLV data is constructed using the TLV Encoder in s60 SVGEngine.
+    HbTlvWrapper is a singleton class. The NVG-TLV is used in the scenarios where the svg
     file can not be converted to nvg, e.g.: svg file containging group-opacity. Since the
-    TLV is vector data the rendering would be faster using the sgimage when compared to 
+    TLV is vector data the rendering would be faster using the sgimage when compared to
     rendering via QPixmap or QPicture.
 
 */
@@ -46,19 +46,20 @@
 /*!
     \fn QByteArray HbTlvWrapper::getTLVEncodedData(QString& filename,QSizeF& size, Qt::AspectRatioMode aspectRatioM)
 
-    This function returns the NVG-TLV data in the form of a bytearray. it accepts the 
+    This function returns the NVG-TLV data in the form of a bytearray. it accepts the
     svg filename, rendersize, aspect ratio as a parameter. This data later can be rendered using the HbNvgEngine's
-    drawNvg(). 
+    drawNvg().
 */
 
 /*!
     \fn QByteArray HbTlvWrapper::getTLVEncodedDataFromDom(quint32 domhandle,QSizeF& size, Qt::AspectRatioMode aspectRatioM)
 
-    This function returns the NVG-TLV data in the form of a bytearray. it accepts the 
+    This function returns the NVG-TLV data in the form of a bytearray. it accepts the
     handle to dom prepared previously by calling contentDimensions(). Also takes in
     rendersize, aspect ratio as a parameter. This data later can be rendered using the HbNvgEngine's
-    drawNvg(). 
+    drawNvg().
 */
+const QString unicodeFormat("fffe");
 
 HbTlvWrapper::HbTlvWrapper(): d_ptr(new HbTlvWrapperPrivate)
 {
@@ -74,14 +75,14 @@ HbTlvWrapper *HbTlvWrapper::instance()
     return &instance;
 }
 
-const QByteArray HbTlvWrapper::getTLVEncodedData(QString& filename,QSizeF& size, Qt::AspectRatioMode aspectRatioM)
+const QByteArray HbTlvWrapper::getTlvEncodedData(const QString& filename, const QSizeF& size, Qt::AspectRatioMode aspectRatioMode)
 {
-    return(d_ptr->getTLVEncodedData(filename, size, aspectRatioM));
+    return(d_ptr->getTlvEncodedData(filename, size, aspectRatioMode));
 }
 
-const QByteArray HbTlvWrapper::getTLVEncodedDataFromDom(quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioM)
+const QByteArray HbTlvWrapper::getTlvEncodedDataFromDom(const quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioMode)
 {
-    return (d_ptr->getTLVEncodedDataFromDom(domhandle,size,aspectRatioM));
+    return (d_ptr->getTlvEncodedDataFromDom(domhandle, size, aspectRatioMode));
 }
 
 const QSize HbTlvWrapper::contentDimensions(QString& filename, quint32& domhandle)
@@ -92,24 +93,20 @@ const QSize HbTlvWrapper::contentDimensions(QString& filename, quint32& domhandl
 HbTlvWrapperPrivate::HbTlvWrapperPrivate()
 {
     // Dummy bitmap for  s60 engine's constructl.
-    bitmap = new (ELeave) CFbsBitmap();
+    bitmap = new CFbsBitmap;
     TFontSpec spec;
-    s60SvgEngine = CSvgEngineInterfaceImpl::NewL(bitmap,NULL, spec, ESVGRendererTLV);
+    TRAPD(err, s60SvgEngine = CSvgEngineInterfaceImpl::NewL(bitmap, 0, spec, ESVGRendererTLV));
 }
 HbTlvWrapperPrivate::~HbTlvWrapperPrivate()
 {
-    if (bitmap) {
-        delete bitmap;
-        bitmap=NULL;
-    }
-    if (s60SvgEngine) {
-        delete s60SvgEngine;
-        s60SvgEngine=NULL;    
-    }
+    delete bitmap;
+    bitmap = 0;
     
+    delete s60SvgEngine;
+    s60SvgEngine = 0;
 }
 
-const QByteArray HbTlvWrapperPrivate::getTLVEncodedData(QString& filename,QSizeF& size, Qt::AspectRatioMode aspectRatioM)
+const QByteArray HbTlvWrapperPrivate::getTlvEncodedData(const QString& filename, const QSizeF& size, Qt::AspectRatioMode aspectRatioMode)
 {
 #ifdef __TLV_
     TInt domhandle;
@@ -117,106 +114,91 @@ const QByteArray HbTlvWrapperPrivate::getTLVEncodedData(QString& filename,QSizeF
     if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
         return QByteArray();
     }
-    QFile temp(filename);
-    if (!temp.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
-            return QByteArray();
-        }
     
-    QByteArray isUniCoded = temp.read(2).toHex();
+    QByteArray isUniCoded = file.read(2).toHex();
+    file.seek(0);
     QByteArray byteArray;
-    if(isUniCoded=="fffe") {
+    if (isUniCoded == unicodeFormat) {
         QTextStream in(&file);
         QString data = in.readAll();
-        byteArray = data.toUtf8 ();
-    }
-    else {
+        byteArray = data.toUtf8();
+    } else {
         byteArray = file.readAll();
     }
-    TPtrC8 ptr8((TUint8 *)(byteArray.constData()));
-    s60SvgEngine->PrepareDom(ptr8,domhandle);
     
-    TSize bitmapsize(size.width(),size.height());
-    s60SvgEngine->UseDom(domhandle,bitmap,NULL,bitmapsize,ENone,ENone);
-    // Aspect ratio setting
-    TSvgPreserveAspectAlignType preserveAspectSetting;
-    TSvgMeetOrSliceType smilFitSetting;
-    switch(aspectRatioM) {    
+    file.close();
         
-        case Qt::IgnoreAspectRatio: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_None;
-            smilFitSetting = ESvgMeetOrSlice_Meet; 
-            break;
-        }
-        case Qt::KeepAspectRatio: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Meet;
-            break;
-        }
-        case Qt::KeepAspectRatioByExpanding: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Slice;
-            break;
-        } 
-        default: {
-            preserveAspectSetting= ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Meet;
-            break;
-            }        
-        }
-    s60SvgEngine->SetPreserveAspectRatio((CSvgDocumentImpl*)domhandle,preserveAspectSetting,smilFitSetting,ETrue);
+    TPtrC8 fileDataPtr8((TUint8 *)(byteArray.constData()));
+    s60SvgEngine->PrepareDom(fileDataPtr8, domhandle);
+
+    TSize bitmapsize(size.width(), size.height());
+    s60SvgEngine->UseDom(domhandle, bitmap, 0, bitmapsize, ENone, ENone);
+    // Aspect ratio setting
+    TSvgPreserveAspectAlignType preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
+    TSvgMeetOrSliceType smilFitSetting = ESvgMeetOrSlice_Meet;;
+    switch (aspectRatioMode) {
+
+    case Qt::IgnoreAspectRatio: {
+        preserveAspectSetting = ESvgPreserveAspectRatio_None;
+        break;
+    }
+    case Qt::KeepAspectRatio: {
+        break;
+    }
+    case Qt::KeepAspectRatioByExpanding: {
+        smilFitSetting = ESvgMeetOrSlice_Slice;
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+    s60SvgEngine->SetPreserveAspectRatio((CSvgDocumentImpl*)domhandle, preserveAspectSetting, smilFitSetting, ETrue);
     s60SvgEngine->Start();
     const TPtrC8 des = s60SvgEngine->TLVEncodedData();
-    
+
     s60SvgEngine->DeleteDom(domhandle);
-    temp.close();
-    file.close();
-    
+
     return (QByteArray((const char *)des.Ptr(), des.Length()));
 #else
-	return QByteArray();
-#endif	    
+    return QByteArray();
+#endif
 }
 
-const QByteArray HbTlvWrapperPrivate::getTLVEncodedDataFromDom(quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioM)
+const QByteArray HbTlvWrapperPrivate::getTlvEncodedDataFromDom(const quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioMode)
 {
 #ifdef __TLV_
-    TSize bitmapsize(size.width(),size.height());
-    s60SvgEngine->UseDom(domhandle,bitmap,NULL,bitmapsize,ENone,ENone);
+    TSize bitmapsize(size.width(), size.height());
+    s60SvgEngine->UseDom(domhandle, bitmap, 0, bitmapsize, ENone, ENone);
     // Aspect ratio setting
-    TSvgPreserveAspectAlignType preserveAspectSetting;
-    TSvgMeetOrSliceType smilFitSetting;
-    switch(aspectRatioM) {    
-        
-        case Qt::IgnoreAspectRatio: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_None;
-            smilFitSetting = ESvgMeetOrSlice_Meet; 
-            break;
-        }
-        case Qt::KeepAspectRatio: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Meet;
-            break;
-        }
-        case Qt::KeepAspectRatioByExpanding: {
-            preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Slice;
-            break;
-        } 
-        default: {
-            preserveAspectSetting= ESvgPreserveAspectRatio_XmidYmid;
-            smilFitSetting = ESvgMeetOrSlice_Meet;
-            break;
-            }        
-        }
-    s60SvgEngine->SetPreserveAspectRatio((CSvgDocumentImpl*)domhandle,preserveAspectSetting,smilFitSetting,EFalse);
+    TSvgPreserveAspectAlignType preserveAspectSetting = ESvgPreserveAspectRatio_XmidYmid;
+    TSvgMeetOrSliceType smilFitSetting = ESvgMeetOrSlice_Meet;
+    switch (aspectRatioMode) {
+
+    case Qt::IgnoreAspectRatio: {
+        preserveAspectSetting = ESvgPreserveAspectRatio_None;
+        break;
+    }
+    case Qt::KeepAspectRatio: {
+        break;
+    }
+    case Qt::KeepAspectRatioByExpanding: {
+        smilFitSetting = ESvgMeetOrSlice_Slice;
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+    s60SvgEngine->SetPreserveAspectRatio((CSvgDocumentImpl*)domhandle, preserveAspectSetting, smilFitSetting, EFalse);
     s60SvgEngine->Start();
     const TPtrC8 des = s60SvgEngine->TLVEncodedData();
-    
+
     s60SvgEngine->DeleteDom(domhandle);
     return (QByteArray((const char *)des.Ptr(), des.Length()));
 #else
     return QByteArray();
-#endif      
+#endif
 }
 const QSize HbTlvWrapperPrivate::contentDimensions(QString& filename, quint32& domhandle)
 {
@@ -226,35 +208,31 @@ const QSize HbTlvWrapperPrivate::contentDimensions(QString& filename, quint32& d
     if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
         return QSize();
     }
-    QFile temp(filename);
-    if (!temp.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
-            return QSize();
-        }
     
-    QByteArray isUniCoded = temp.read(2).toHex();
+    QByteArray isUniCoded = file.read(2).toHex();
+    file.seek(0);
     QByteArray byteArray;
-    if(isUniCoded=="fffe") {
+    if (isUniCoded == unicodeFormat) {
         QTextStream in(&file);
         QString data = in.readAll();
-        byteArray = data.toUtf8 ();
-    }
-    else {
+        byteArray = data.toUtf8();
+    } else {
         byteArray = file.readAll();
     }
-    TPtrC8 ptr8((TUint8 *)(byteArray.constData()));
-    s60SvgEngine->PrepareDom(ptr8,handle);
-    TSize dummysize;
-    s60SvgEngine->UseDom(handle,bitmap,NULL,dummysize,ENone,ENone);
-    s60SvgEngine->ChooseViewBoxIfNotSet(handle);
-    contentsize=s60SvgEngine->ContentDimensions(); 
-    domhandle = handle; 
     
-    temp.close();
     file.close();
     
-    return(QSize (contentsize.iWidth,contentsize.iHeight));
+    TPtrC8 ptr8((TUint8 *)(byteArray.constData()));
+    s60SvgEngine->PrepareDom(ptr8, handle);
+    TSize dummysize;
+    s60SvgEngine->UseDom(handle, bitmap, 0, dummysize, ENone, ENone);
+    s60SvgEngine->ChooseViewBoxIfNotSet(handle);
+    contentsize = s60SvgEngine->ContentDimensions();
+    domhandle = handle;
+   
+    return(QSize(contentsize.iWidth, contentsize.iHeight));
 #else
     return QSize();
-#endif      
+#endif
 }
 

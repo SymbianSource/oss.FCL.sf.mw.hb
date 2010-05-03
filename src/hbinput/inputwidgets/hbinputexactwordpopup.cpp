@@ -270,6 +270,6 @@ void HbExactWordPopup::setIndicatorArrow( HbExactWordPopupIndicator indicatorArr
     if (indicatorArrow == HbNoIndicatorArrow) {
         d->mOption->icon = (QString(""));
     } else {
-        d->mOption->icon = (QString("qtg_mono_input_down"));
+        d->mOption->icon = (QString("qtg_graf_inpu_swipe"));
    }
 }

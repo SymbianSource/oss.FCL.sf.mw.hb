@@ -40,7 +40,9 @@
 
  CHbDeviceDialog displays dialogs on top of applications. It is a client interface for Symbian applications to
  Hb device dialogs.
- \deprecated this class is deprecated, use CHbDeviceDialogSymbian instead.
+
+ \deprecated CHbDeviceDialog
+     is deprecated. Replaced by a class CHbDeviceDialogSymbian.
 
  \sa HbDeviceDialog
 

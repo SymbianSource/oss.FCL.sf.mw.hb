@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <QtGui>
+#include <QGraphicsGridLayout>
 #include <hbinputmethod.h>
 #include <hbinputkeymap.h>
 #include <hbinpututils.h>
@@ -70,6 +70,7 @@ const QString Hb12KeyButtonNumberLayout = "_hb_12key_button_number_layout";
 @proto
 @hbinput
 \class Hb12KeyTouchKeypad
+\deprecated class Hb12KeyTouchKeypad
 \brief Touch keypad for 12 key ITU-T layout
 
 Implements touch key pad for 12 key ITU-T keypad. The key pad know how to operate
@@ -106,7 +107,7 @@ void Hb12KeyTouchKeypadPrivate::setKeyMappingTitle(int key, HbTouchKeypadButton*
 
     QString keydata = mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.at(key)->characters(modifiers);
 
-    QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.at(key), mKeymap->language());
+    QChar numChr = findFirstNumberCharacterBoundToKey(key);
 
     if(mOwner && mOwner->focusObject()) {
         // First we filter all the data that is mapped to the button, then get the firt 3/4 allowed characters and set that string
@@ -127,7 +128,7 @@ void Hb12KeyTouchKeypadPrivate::setKeyMappingTitle(int key, HbTouchKeypadButton*
 void Hb12KeyTouchKeypadPrivate::setKeyMappingTitleNumeric(int key, HbTouchKeypadButton* button, HbModifiers modifiers)
 {
     Q_UNUSED(modifiers);
-    QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.at(key), mKeymap->language());
+    QChar numChr = findFirstNumberCharacterBoundToKey(key);
 
     if (numChr > 0) {
         button->setText(numChr);
@@ -186,7 +187,7 @@ QString Hb12KeyTouchKeypadPrivate::textForKey(int key)
     if (key >= mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.count()) {
         return QString();
     }
-    QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.at(key), mKeymap->language());
+    QChar numChr = findFirstNumberCharacterBoundToKey(key);
     if (!numChr.isNull()) {
         return QString(numChr);
     } else {
@@ -335,9 +336,96 @@ void Hb12KeyTouchKeypadPrivate::applyEditorConstraints()
             mButtons[i]->setFade(disableButton);
         }
     }
+
+	QString allowedSctCharacters;
+	getAllowedSctCharcters(allowedSctCharacters);
+	if (allowedSctCharacters.isNull() && (Qt::ImhDigitsOnly & focusedObject->inputMethodHints())) {
+		mButtons[9]->setFade(true);
+		mButtons[11]->setFade(true);
+		mButtons[13]->setFade(true);
+	}
+	else if (Qt::ImhDialableCharactersOnly & focusedObject->inputMethodHints()) {
+		mButtons[9]->setFade(false);
+		mButtons[11]->setFade(false);
+		mButtons[13]->setFade(true);
+	}
+	else {
+		mButtons[9]->setFade(false);
+		mButtons[11]->setFade(false);
+		mButtons[13]->setFade(false);
+	}
+}
+/*! returns first number character mapped bound to the key
+*/
+
+QChar Hb12KeyTouchKeypadPrivate::findFirstNumberCharacterBoundToKey(int key)
+{
+    QChar numChr = 0;
+    if (!mKeymap) {
+        return numChr;
+    }
+	
+    HbInputLanguage language = mKeymap->language();
+	HbInputFocusObject *focusObject = 0;
+
+	if (mOwner) {
+        focusObject = mOwner->focusObject();
+	}
+	bool isNumericEditor = false;
+
+	if (focusObject) {
+        isNumericEditor = focusObject->editorInterface().isNumericEditor();
+	}
+	
+    HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
+
+    if (language.language()  != (QLocale::Language)0) {
+        if (isNumericEditor) {
+            QLocale::Language systemLanguage = QLocale::system().language();
+            // show native digits only when the device language and writing language are same, 
+            // else show latin digits
+            if (language.language() != systemLanguage) {
+                digitType = HbDigitTypeLatin;
+            }	
+        }	
+        numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(mKeymap->keyboard(HbKeyboardVirtual12Key)->keys.at(key),
+            language, digitType);
+    }
+    return numChr;
 }
 
 /*!
+Get the allowed sct Characters
+*/
+void Hb12KeyTouchKeypadPrivate::getAllowedSctCharcters(QString& allowedSctCharacters)
+{
+	QString sctCharacters;
+	if (mKeymap) {
+		const HbKeyboardMap* keymap = mKeymap->keyboard(HbKeyboardSctPortrait);
+		if (keymap == 0) {
+			return;
+		}
+		foreach (const HbMappedKey* mappedKey, keymap->keys) {
+			sctCharacters.append(mappedKey->characters(HbModifierNone));
+		}
+	}
+	HbInputFocusObject* focusObject = mOwner->focusObject();
+	QString tempAllowedSctCharacters;
+	if (focusObject) {
+		focusObject->filterStringWithEditorFilter(sctCharacters,tempAllowedSctCharacters);
+	}
+	allowedSctCharacters.clear();
+	for(int i=0; i<tempAllowedSctCharacters.length() ;i++) {
+		// dont add duplicates to the list
+		if(!allowedSctCharacters.contains(tempAllowedSctCharacters[i])) {
+			allowedSctCharacters.append(tempAllowedSctCharacters[i]);
+		}
+	}
+}
+
+/*!
+\deprecated Hb12KeyTouchKeypad::Hb12KeyTouchKeypad(HbInputMethod*, QGraphicsItem*)
+     is deprecated.
 Constructs the object.
 */
 Hb12KeyTouchKeypad::Hb12KeyTouchKeypad(HbInputMethod* aOwner,
@@ -353,6 +441,8 @@ Hb12KeyTouchKeypad::Hb12KeyTouchKeypad(HbInputMethod* aOwner,
 }
 
 /*!
+\deprecated Hb12KeyTouchKeypad::keyboardType() const
+    is deprecated.
 Returns keyboard type.
 */
 HbKeyboardType Hb12KeyTouchKeypad::keyboardType() const
@@ -361,6 +451,8 @@ HbKeyboardType Hb12KeyTouchKeypad::keyboardType() const
 }
 
 /*!
+\deprecated Hb12KeyTouchKeypad::~Hb12KeyTouchKeypad()
+    is deprecated.
 Destructs the object.
 */
 Hb12KeyTouchKeypad::~Hb12KeyTouchKeypad()
@@ -368,6 +460,33 @@ Hb12KeyTouchKeypad::~Hb12KeyTouchKeypad()
 }
 
 /*!
+\deprecated Hb12KeyTouchKeypad::mappedKeyPress(int)
+    is deprecated.
+Handles virtual key press
+*/
+void Hb12KeyTouchKeypad::mappedKeyPress(int buttonid)
+{
+    Q_D(Hb12KeyTouchKeypad);
+	if(buttonid >= 0 && d->mButtons[buttonid] && !d->mButtons[buttonid]->isFaded()) {
+        HbInputVkbWidget::mappedKeyPress(buttonid);
+    }
+}
+
+/*!
+\deprecated Hb12KeyTouchKeypad::mappedKeyRelease(int)
+    is deprecated.
+Handles virtual key release
+*/
+void Hb12KeyTouchKeypad::mappedKeyRelease(int buttonid)
+{
+    Q_D(Hb12KeyTouchKeypad);
+    if(buttonid >= 0 && d->mButtons[buttonid] && !d->mButtons[buttonid]->isFaded()) {
+        HbInputVkbWidget::mappedKeyRelease(buttonid);
+    }
+}
+/*!
+\deprecated Hb12KeyTouchKeypad::setMode(HbKeypadMode, QFlags<HbModifier>)
+    is deprecated.
 Sets the keypad to given mode. Possible values are EModeAbc, EModeNumeric and EModeSct.
 */
 void Hb12KeyTouchKeypad::setMode(HbKeypadMode mode, HbModifiers modifiers)
@@ -426,8 +545,9 @@ void Hb12KeyTouchKeypad::setMode(HbKeypadMode mode, HbModifiers modifiers)
 }
 
 /*!
-Sets key map data object. Given key map data will be used as a source for button titles.
-Usually the key map data for active input language is used.
+\reimp
+\deprecated Hb12KeyTouchKeypad::setKeymap(const HbKeymap*)
+    is deprecated.
 */
 void Hb12KeyTouchKeypad::setKeymap(const HbKeymap* keymap)
 {
@@ -446,6 +566,11 @@ void Hb12KeyTouchKeypad::setKeymap(const HbKeymap* keymap)
     }
 }
 
+/*!
+\reimp
+\deprecated Hb12KeyTouchKeypad::aboutToOpen(HbVkbHost*)
+    is deprecated.
+*/
 void Hb12KeyTouchKeypad::aboutToOpen(HbVkbHost *host)
 {
     Q_D(Hb12KeyTouchKeypad);

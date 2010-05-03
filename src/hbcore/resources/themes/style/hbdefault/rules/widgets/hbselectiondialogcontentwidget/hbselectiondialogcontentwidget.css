@@ -1,0 +1,29 @@
+HbSelectionDialogContentWidget[!multiSelection]{
+	layout:default;
+}
+
+HbSelectionDialogContentWidget[multiSelection]{
+	layout:list_with_markall;
+	
+}
+
+HbSelectionDialogContentWidget[multiSelection]::counter
+{
+	fixed-width: 14un;
+	text-align: right;
+	text-height: var(hb-param-text-height-tiny);
+    text-line-count-max: 1;
+    text-line-count-min: 1;
+	font-variant:secondary;
+	right:var(hb-param-margin-gene-popup);	
+}
+
+
+
+HbSelectionDialogContentWidget[multiSelection]::checkbox
+{
+	left:-var(hb-param-margin-gene-popup);	
+	top:-var(hb-param-margin-gene-popup);	
+	bottom:var(hb-param-margin-gene-popup);	
+	right:var(hb-param-margin-gene-popup);	
+}    

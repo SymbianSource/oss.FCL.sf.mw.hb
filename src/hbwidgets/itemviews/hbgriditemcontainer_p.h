@@ -59,6 +59,7 @@ public:
     virtual int maxItemCount() const;
     void scrollTo(const QModelIndex &index, HbAbstractItemView::ScrollHint hint = HbAbstractItemView::EnsureVisible);
     QModelIndex lastValidItemIndex() const;
+    void setUniformItemSizes(bool enable);
 
 protected:
     HbGridItemContainer( HbGridItemContainerPrivate &dd, QGraphicsItem *parent = 0 );

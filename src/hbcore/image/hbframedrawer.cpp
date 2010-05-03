@@ -165,12 +165,15 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate() :
     graphicsItem(0),
     color(),
     icon(0),
-    maskChanged(false)
+    maskChanged(false),
+    clipPath(QPainterPath())
 {
     borderWidths[0]=0.0;
     borderWidths[1]=0.0;
     borderWidths[2]=0.0;
     borderWidths[3]=0.0;
+    //Register the HbFrameDrawerPrivate Instance to HbIconLoader
+    HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
 
 /*!
@@ -189,7 +192,8 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const QString &frameGraphicsName, HbF
     graphicsItem(0),
     color(),
     icon(0),
-    maskChanged(false)
+    maskChanged(false),
+    clipPath(QPainterPath())
 {
     borderWidths[0]=0.0;
     borderWidths[1]=0.0;
@@ -201,6 +205,8 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const QString &frameGraphicsName, HbF
     if (index>0) {
         this->frameGraphicsName.resize(index);
     }
+    //Register the HbFrameDrawerPrivate Instance to HbIconLoader
+    HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
 
 /*!
@@ -220,12 +226,15 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const HbFrameDrawerPrivate &other) :
     graphicsItem( other.graphicsItem ),
     color(other.color),
     icon(0),
-    maskChanged(false)
+    maskChanged(false),
+    clipPath(QPainterPath())
 {
     borderWidths[0]=other.borderWidths[0];
     borderWidths[1]=other.borderWidths[1];
     borderWidths[2]=other.borderWidths[2];
     borderWidths[3]=other.borderWidths[3];
+    //Register the HbFrameDrawerPrivate Instance to HbIconLoader
+    HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
 
 /*!
@@ -234,6 +243,8 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const HbFrameDrawerPrivate &other) :
 HbFrameDrawerPrivate::~HbFrameDrawerPrivate()
 {
     unLoadIcon();
+    //Unregister the HbFrameDrawerPrivate Instance to HbIconLoader
+    HbIconLoader::global()->removeFrameDrawerInfo(this);
 }
 
 /*!
@@ -427,7 +438,10 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
             icon->setMask(mask);
         } 
         //paint the stitched icon
-        icon->paint(painter, centeredRect, Qt::AlignHCenter);
+        icon->paint(painter, centeredRect, Qt::AlignHCenter, clipPath);
+        if ( icon->isCreatedOnServer() ) {
+            iconType = icon->iconImpl()->iconData().type;
+        }
 
         #ifdef HB_FRAME_DRAWER_TRACES
         qDebug() << "FRAMENAME: " << frameGraphicsName << "Drawn at: "
@@ -452,10 +466,19 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
                     QRect maskRect(position.x(), position.y(), multiPartSizeData.targets[i].width(), multiPartSizeData.targets[i].height());
                     pieceMask = mask.copy(maskRect);
                     fallbackMaskableIconList[i]->setMask(pieceMask);
-                } 
-                if(!multiPartSizeData.targets[i].isEmpty()) {
-                    fallbackMaskableIconList[i]->paint(painter, QRect(position,multiPartSizeData.pixmapSizes[i]), Qt::AlignHCenter);
                 }
+                if (!multiPartSizeData.targets[i].isEmpty()) {
+                    fallbackMaskableIconList[i]->paint(painter,
+                            QRect(position, multiPartSizeData.pixmapSizes[i]),
+                            Qt::AlignHCenter, clipPath);
+                }
+            }
+        }
+        if ( fallbackMaskableIconList[0]->iconImpl()
+             && fallbackMaskableIconList[0]->iconImpl()->isCreatedOnServer() ) {
+            if ( fallbackMaskableIconList[0]->iconImpl()->iconData().type != INVALID_FORMAT ) {
+                // store the icon type
+                iconType = fallbackMaskableIconList[0]->iconImpl()->iconData().type;
             }
         }
     }
@@ -907,6 +930,41 @@ void HbFrameDrawerPrivate::reset( bool resetFrameCount )
     }
 }
 
+/*!
+*	Resets the MaskableIcon 
+*/
+void HbFrameDrawerPrivate::resetMaskableIcon()
+{
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
+    HbIconLoader *loader = HbIconLoader::global();
+    if ( icon ) {  
+      //consolidated icon case 
+      icon->decrementRefCount();    
+      if ( icon->refCount() == 0 && icon->isCreatedOnServer() ) {
+          // remove the item from cache and delete the icon
+          loader->removeItemInCache( icon->iconImpl() );
+          icon->dispose();
+      }
+      icon = 0;              
+    } else {            
+        int count = fallbackMaskableIconList.count();
+        if ( count ) {
+            // for each item in fallbackMaskableIconList - decrement the reference count and
+            // remove the item in cache, dispose if needed.
+            foreach ( HbMaskableIconImpl* impl, fallbackMaskableIconList ) {
+                   impl->decrementRefCount();
+                   if ( impl->refCount() == 0 && impl->isCreatedOnServer() ) {
+                       loader->removeItemInCache( impl->iconImpl() );     
+                       impl->dispose();
+                   } 
+            }                                   
+            fallbackMaskableIconList.clear(); 
+        }
+    }
+    frameParts = 0;
+#endif
+}
+
 HbIconLoader::IconLoaderOptions HbFrameDrawerPrivate::iconLoaderOptions()
 {
     HbIconLoader::IconLoaderOptions options = DEFAULT_OPTIONS;
@@ -977,8 +1035,8 @@ void HbFrameDrawerPrivate::unLoadIcon()
     QVector<HbIconImpl *> fallbackIconList;
     int count = fallbackMaskableIconList.count();
     for (int i = 0; i < count ; i++) {
-        if (fallbackMaskableIconList[i]) {
-            fallbackIconList.append(fallbackMaskableIconList[i]->iconImpl());
+        if ( fallbackMaskableIconList.at(i) ) {
+            fallbackIconList.append(fallbackMaskableIconList.at(i)->iconImpl());
         }
     }
     count = fallbackIconList.count();
@@ -987,8 +1045,8 @@ void HbFrameDrawerPrivate::unLoadIcon()
         //frame-items are batched together in a single IPC, which is initiated in HbIconLoader::unLoadMultiIcon().
         loader->unLoadMultiIcon(fallbackIconList);
         for (int i=0; i < count ; i++) {
-            if (fallbackMaskableIconList[i]) {
-                fallbackMaskableIconList[i]->dispose();
+            if ( fallbackMaskableIconList.at(i) ) {
+                fallbackMaskableIconList.at(i)->dispose();
             }
         }
      }
@@ -1380,6 +1438,26 @@ void HbFrameDrawer::setMask(const QPixmap &mask)
 }
 
 /*! 
+* Sets the \a clipPath to be applied with the entire frame icon.
+* 
+*/
+void HbFrameDrawer::setClipPath(const QPainterPath &clipPath)
+{
+    d->clipPath = clipPath;
+}
+
+/*!
+* Returns the clippath set on the frame drawer.
+* As default, returns a empty QPainterPath.
+* \sa setClipPath()
+*/
+
+QPainterPath HbFrameDrawer::clipPath() const
+{
+    return d->clipPath;
+}
+
+/*! 
 * Sets the mask to be applied with the the entire frame icon.
 * If the mask is also a frame item, use another frame drawer to draw it.
 * Mask should be of the same size as returned by frameSize().
@@ -1485,5 +1563,11 @@ void HbFrameDrawer::setGraphicsItem( QGraphicsItem *item )
     d->graphicsItem = item;
 }
 
-
+/*!
+* Returns the iconType
+*/
+HbIconFormatType HbFrameDrawerPrivate::iconFormatType() const
+{
+    return iconType;
+}
 // End of File

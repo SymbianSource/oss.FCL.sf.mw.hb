@@ -77,8 +77,22 @@ bool MousePressCatcher::sceneEventFilter( QGraphicsItem * /*watched*/, QEvent * 
     }
     return false;
 }
-#endif
 
+bool RegionUpdateFilter::eventFilter(QObject* obj, QEvent *event)
+	{
+	if (event->type() ==  QEvent::QEvent::GraphicsSceneResize) {
+		HbPopup *popup = qobject_cast<HbPopup*>(obj);
+		if (popup) {			
+			QRectF rect = popup->rect();
+			rect.moveTo(popup->pos());
+			HbDeviceDialogsContainer::Dialog & dialog = mDeviceDialogManger->mDialogs.find(popup);
+			mDeviceDialogManger->addRegionRect(dialog.id(), rect);
+		}
+	}	
+	return false;
+	}
+#endif
+	
 /*!
     \internal
     Constructor.
@@ -94,6 +108,7 @@ HbDeviceDialogManagerPrivate::HbDeviceDialogManagerPrivate(HbDeviceDialogManager
     mHousekeeperTimerId(0)
 #if defined(Q_OS_SYMBIAN)
     ,mMousePressCatcher(this)
+    ,mRegionUpdateFilter(this)
     ,mWindowRegion()
 #endif
 {
@@ -106,7 +121,8 @@ HbDeviceDialogManagerPrivate::HbDeviceDialogManagerPrivate(HbDeviceDialogManager
             this, SLOT(indicatorRemoved(const IndicatorClientInfo)));
     connect(mIndicatorPluginManager, SIGNAL( indicatorUpdated(const IndicatorClientInfo) ),
             this, SLOT(indicatorUpdated(const IndicatorClientInfo)));
-
+    connect(mIndicatorPluginManager, SIGNAL(indicatorUserActivated(QVariantMap)), 
+    		q, SIGNAL(indicatorUserActivated(QVariantMap)));
     // Server publishes it's status. Applications use it to delay showing of notification
     // dialogs when server is showing.
     mServerStatus.setStatus(HbDeviceDialogServerStatus::NoFlags);
@@ -306,9 +322,7 @@ void HbDeviceDialogManagerPrivate::updateWindowRegion() const
     RWindowBase *win =
         static_cast<RWindowBase*>(mMainWindow->effectiveWinId()->DrawableWindow());
     if (win) {
-        RRegionBuf<1> windowRegion(QRectToTRect(mMainWindow->sceneRect()));
-        win->SetShape(windowRegion);
-        //win->SetShape(mWindowRegion);
+        win->SetShape(mWindowRegion);
     }
 }
 
@@ -377,19 +391,15 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
                 popup->show();
                 newDialogs |= current->flags();
 #if defined(Q_OS_SYMBIAN)
-                //send polish event to get the size and position of the popup.
-                QEvent polishEvent(QEvent::Polish);
-                QCoreApplication::sendEvent(popup, &polishEvent);
-                QRectF rect = popup->rect();
-                //rect.moveTo(popup->pos());
-                addRegionRect(current->id(), rect);
                 popup->installSceneEventFilter(&mMousePressCatcher);
+                popup->installEventFilter(&mRegionUpdateFilter);               
 #endif //Q_OS_SYMBIAN
             }
         } else { // generic dialog
             current->setFlags(showing);
             current->widget()->deviceDialogWidget()->show();
             newDialogs |= current->flags();
+            setupWindowRegion();
         }
         // Find next one that is not showing
         current = &mDialogs.next(*current, noFlags, showing | closeCalled);
@@ -409,9 +419,27 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
     if (newDialogs & lightsMask) {
         refreshDisplayLightsTime();
     }
+    
+    const HbDeviceDialogsContainer::Dialog &nonNotificationDialog =
+        mDialogs.next(start, showing, notificationGroup|showing);
+    bool dialogsShowing = showingNotification || nonNotificationDialog.isValid();
+    
+    return dialogsShowing;
+}
 
+void HbDeviceDialogManagerPrivate::setupWindowRegion()
+{
     // RWindow region control.
     // Check if any non-notification dialogs are showing.
+    // Shorthands for flags
+    const HbDeviceDialogsContainer::Dialog::Flags notificationGroup(
+        HbDeviceDialogsContainer::Dialog::NotificationGroup);
+    const HbDeviceDialogsContainer::Dialog::Flags showing(
+        HbDeviceDialogsContainer::Dialog::Showing);
+    
+    const HbDeviceDialogsContainer::Dialog start;
+    bool showingNotification = mDialogs.next(start, notificationGroup|showing,
+        notificationGroup|showing).isValid();
     const HbDeviceDialogsContainer::Dialog &nonNotificationDialog =
         mDialogs.next(start, showing, notificationGroup|showing);
     bool dialogsShowing = showingNotification || nonNotificationDialog.isValid();
@@ -431,8 +459,6 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
         enableReceiptOfFocus(true);
     }
     moveToForeground(dialogsShowing);
-
-    return dialogsShowing;
 }
 
 /*!
@@ -647,6 +673,7 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
         removeRegionRect(id);
     }
     showDialogs();
+    setupWindowRegion();
     updateStatus();
     TRACE_EXIT
 }
@@ -698,6 +725,7 @@ void HbDeviceDialogManagerPrivate::addRegionRect(int widgetId,
     TRect trect(QRectToTRect(rect));
     mWindowRegion.AddRect(trect);
     mRegionList.append(RegionMapping(widgetId, trect));
+    setupWindowRegion();
 }
 
 void HbDeviceDialogManagerPrivate::removeRegionRect(int widgetId)

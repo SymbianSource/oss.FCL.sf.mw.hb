@@ -32,6 +32,10 @@ class HbScrollAreaPrivate;
 class HbGestureSceneFilter;
 class HbScrollBar;
 
+#ifdef HB_GESTURE_FW
+class QPanGesture;
+#endif
+
 
 class HB_CORE_EXPORT HbScrollArea : public HbWidget
 {
@@ -116,9 +120,8 @@ public:
     void scrollContentsTo (const QPointF &newPosition, int time = 0);
 
 protected:
-    HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent);
+    HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent);    
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     virtual bool event(QEvent *event);
@@ -126,12 +129,14 @@ protected:
     virtual bool scrollByAmount(const QPointF &delta);
     virtual void polish(HbStyleParameters &params);
     virtual bool eventFilter(QObject *obj, QEvent *event);
+#ifdef HB_GESTURE_FW
+    virtual void gestureEvent(QGestureEvent *event);    
+#endif
 
 signals:
     void scrollingStarted();
     void scrollingEnded();
     void scrollDirectionsChanged(Qt::Orientations newValue);
-    void gestureSceneFilterChanged(HbGestureSceneFilter *newFilter);
     void scrollPositionChanged(const QPointF &newPosition);
 
 protected slots:
@@ -148,8 +153,8 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_hideScrollBars())
     Q_PRIVATE_SLOT(d_func(), void _q_thumbPositionChanged(qreal value, Qt::Orientation orientation))
     Q_PRIVATE_SLOT(d_func(), void _q_groovePressed(qreal value, Qt::Orientation orientation))
-
-
+    Q_PRIVATE_SLOT(d_func(), void _q_thumbPressed())
+    Q_PRIVATE_SLOT(d_func(), void _q_thumbReleased())
 };
 
 #endif // HBSCROLLAREA_H

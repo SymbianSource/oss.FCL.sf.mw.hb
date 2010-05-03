@@ -77,6 +77,7 @@ public:
     HbDeviceDialogServer();
     virtual ~HbDeviceDialogServer();
 
+    int error() const {return mError;}
     void setMainWindow(HbMainWindow *mainWindow);
     int showDeviceDialog(DialogParameters &parameters);
     int updateDeviceDialog(int identifier, const QVariantMap &data);
@@ -92,10 +93,11 @@ public slots:
     void indicatorActivated(const QList<IndicatorClientInfo> &indicatorInfoList);
     void indicatorUpdated(const QList<IndicatorClientInfo> &indicatorInfoList);
     void indicatorRemoved(const QList<IndicatorClientInfo> &indicatorInfoList);
-
+    void indicatorUserActivated(const QVariantMap &data);
 private:
     HbDeviceDialogManager *iManager;
     HbDeviceDialogServerPrivate *d_ptr;
+    int mError;
     Q_DECLARE_PRIVATE_D( d_ptr, HbDeviceDialogServer )
 
 };

@@ -71,6 +71,7 @@ public slots:
     void flickEvent(HbInputVkbWidget::HbFlickDirection direction);
     void mouseMovedOutOfButton();
     void smileySelected(QString smiley);
+    void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
 
 public: // From HbInputMethod
     void focusReceived();

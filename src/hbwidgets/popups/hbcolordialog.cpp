@@ -408,8 +408,7 @@ void HbColorDialog::getColor( const QList<QColor> &colorList,
 }
 
 /*!
-  \deprecated HbColorDialog::getColor(const QList<QColor> &colorList, const QColor &initialColor,
-  bool isNoneBlockVisible, bool *isNoneSelected, QGraphicsScene *scene, QGraphicsItem *parent) 
+  \deprecated HbColorDialog::getColor(const QList<QColor>&, const QColor&, bool, bool*, QGraphicsScene*, QGraphicsItem*)
   is deprecated. Please use void HbColorDialog::getColor( const QList<QColor> &colorList, 
   const QColor &initialColor, QObject* receiver, const char* member, bool isNoneBlockVisible, 
   QGraphicsScene *scene, QGraphicsItem *parent ) instead.
@@ -451,8 +450,8 @@ QColor HbColorDialog::getColor(const QList<QColor> &colorList, const QColor &ini
 }
 
 /*!
-  \deprecated QColor HbColorDialog::getColor(bool isNoneBlockVisible, bool *isNoneSelected, QGraphicsScene *scene, QGraphicsItem *parent)
-  is deprecated. Please use 
+  \deprecated HbColorDialog::getColor(bool, bool*, QGraphicsScene*, QGraphicsItem*)
+        is deprecated. Please use
     
   void HbColorDialog::getColor( const QList<QColor> &colorList, 
   const QColor &initialColor,

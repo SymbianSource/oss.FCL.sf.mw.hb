@@ -33,9 +33,8 @@ class HbHardwareInputNumericQwertyHandler: public HbInputNumericHandler
     Q_OBJECT
 public:
     HbHardwareInputNumericQwertyHandler(HbInputAbstractMethod* inputMethod);
-    ~HbHardwareInputNumericQwertyHandler();
-    
-    void listInputModes(QVector<HbInputModeProperties>& modes) const;
+    ~HbHardwareInputNumericQwertyHandler();    
+   
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
    

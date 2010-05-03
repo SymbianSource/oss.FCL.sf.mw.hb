@@ -43,7 +43,7 @@ const TInt KThemeName = 0;
 /**
  * Constructor
  */
-CThemeListenerPrivate::CThemeListenerPrivate(HbThemeClientPrivate *themeClient)
+CHbThemeListenerPrivate::CHbThemeListenerPrivate(HbThemeClientPrivate *themeClient)
                       : CActive(EPriorityNormal), themeClient(themeClient)
 {
     User::LeaveIfError(themeState.Attach(KServerUid3,KThemeName));
@@ -56,7 +56,7 @@ CThemeListenerPrivate::CThemeListenerPrivate(HbThemeClientPrivate *themeClient)
 /**
  * Destructor
  */
-CThemeListenerPrivate::~CThemeListenerPrivate()
+CHbThemeListenerPrivate::~CHbThemeListenerPrivate()
 {
     Cancel();
     themeState.Close();
@@ -65,10 +65,10 @@ CThemeListenerPrivate::~CThemeListenerPrivate()
 /**
  * RunL
  */
-void CThemeListenerPrivate::RunL()
+void CHbThemeListenerPrivate::RunL()
 {
 #ifdef THEME_LISTENER_TRACES
-    qDebug() << "CThemeListenerPrivate::RunL: start\n appname"<<HbMemoryUtils::getCleanAppName();
+    qDebug() << "CHbThemeListenerPrivate::RunL: start\n appname"<<HbMemoryUtils::getCleanAppName();
 #endif
     themeState.Subscribe(iStatus);
     SetActive();    
@@ -80,9 +80,9 @@ void CThemeListenerPrivate::RunL()
     QString str((QChar*)name.Ptr(),name.Length());
 #ifdef THEME_LISTENER_TRACES
     if (r==KErrNone) {
-        qDebug() << "CThemeListenerPrivate::RunL: Get() Themename" <<str; 
+        qDebug() << "CHbThemeListenerPrivate::RunL: Get() Themename" <<str; 
     } else {
-        qDebug() << "CThemeListenerPrivate::RunL: Get() Error!!!!!!!!";
+        qDebug() << "CHbThemeListenerPrivate::RunL: Get() Error!!!!!!!!";
     }
 #endif
     themeClient->handleThemeChange(str);
@@ -92,7 +92,7 @@ void CThemeListenerPrivate::RunL()
 /**
  * DoCancel
  */
-void CThemeListenerPrivate::DoCancel()
+void CHbThemeListenerPrivate::DoCancel()
 {
     themeState.Cancel();
 }

@@ -83,6 +83,9 @@ public:
     void writeReport(QTextStream &reportWriter);
 #endif
 
+    int freeBytes();
+    int allocatedBytes();
+
 private:
     struct TreeNode
     {

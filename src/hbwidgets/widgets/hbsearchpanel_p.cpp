@@ -47,6 +47,7 @@ HbSearchPanelPrivate::HbSearchPanelPrivate( ):
     HbWidgetPrivate (  ),
     mProgressive ( true ),
     mSearchOptions ( false ),
+    mCancelEnabled(true),
     mSearchOptionsButton(0),
     mLineEdit(0),
     mProgressButton(0),
@@ -68,7 +69,6 @@ void HbSearchPanelPrivate::init( )
     q->setFlag(QGraphicsItem::ItemIsFocusable);
 
     // connect initial state signals
-    QObject::connect(mCancelButton, SIGNAL(clicked()), q, SLOT(_q_hideClicked()));
     QObject::connect(mLineEdit, SIGNAL(textChanged(QString)), q, SIGNAL(criteriaChanged(QString)));
 
 }
@@ -127,6 +127,31 @@ void HbSearchPanelPrivate::removeProgressButton()
     q->repolish();
 }
 
+void HbSearchPanelPrivate::addCancelButton()
+{
+    Q_Q( HbSearchPanel );
+    mCancelEnabled = true;
+    mCancelButton = new HbPushButton(q);
+    mCancelButton->setObjectName("cancelbutton");
+    mCancelButton->setIcon(HbIcon(cancelIcon));
+    mCancelButton->setFlag(QGraphicsItem::ItemIsPanel, true);
+    mCancelButton->setActive(false);
+    HbStyle::setItemName( mCancelButton, "cancelbutton" );
+    QObject::connect(mCancelButton, SIGNAL(clicked()), q, SLOT(_q_hideClicked()));
+    q->repolish();
+}
+
+void HbSearchPanelPrivate::removeCancelButton()
+{
+    Q_Q( HbSearchPanel );
+    mCancelEnabled = false;
+    HbStyle::setItemName( mCancelButton, "" );
+    mCancelButton->deleteLater();
+    mCancelButton = 0;
+    q->repolish();
+}
+
+
 void HbSearchPanelPrivate::constructUi()
 {
     Q_Q( HbSearchPanel );
@@ -134,17 +159,10 @@ void HbSearchPanelPrivate::constructUi()
     //construct default ui.
     mLineEdit = new HbLineEdit(q);
     mLineEdit->setObjectName("lineedit");
-    mLineEdit->setFontSpec(HbFontSpec(HbFontSpec::Secondary));
     HbStyle::setItemName( mLineEdit, "lineedit" );
-	
-    mCancelButton = new HbPushButton(q);
-    mCancelButton->setObjectName("cancelbutton");
-    mCancelButton->setIcon(cancelIcon);
-#if QT_VERSION >= 0x040600
-    mCancelButton->setFlag(QGraphicsItem::ItemIsPanel, true);
-    mCancelButton->setActive(false);
-#endif
-    HbStyle::setItemName( mCancelButton, "cancelbutton" );
+    if(mCancelEnabled) {
+        addCancelButton();
+    }
 }
 
 void HbSearchPanelPrivate::_q_hideClicked()

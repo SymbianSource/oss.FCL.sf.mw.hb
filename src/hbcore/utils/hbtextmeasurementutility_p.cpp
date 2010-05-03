@@ -360,20 +360,7 @@ bool HbTextMeasurementUtility::writeReport(HbDeviceProfile &profile, const QStri
     return false;
 #else
 
-    int w = (int)profile.physicalSize().width();
-    int h = (int)profile.physicalSize().height();
-    qreal diag = qSqrt((qreal)(w*w+h*h));
-    qreal ppi = profile.ppmValue() * 2.54;
-    QString inchSize = QString::number((qreal)(qRound(10*(diag / ppi)))/10);
-
-    QString styleName;
-    int separator = profile.name().indexOf(' ');
-    styleName.append(profile.name().left(separator));
-    styleName.append('_');
-    styleName.append(inchSize);
-    styleName.append("_inch_");
-    styleName.append(profile.name().mid(separator+1));
-
+    qDebug() << "HbTextMeasurementUtility::writeReport: Using profile" << profile.name();
 
 #ifdef Q_OS_SYMBIAN
     QString filePath("C:\\data\\log\\qtestcase\\loc\\");
@@ -382,7 +369,7 @@ bool HbTextMeasurementUtility::writeReport(HbDeviceProfile &profile, const QStri
     filePath.append(QDir::separator());
     filePath.append("loc");
     filePath.append(QDir::separator());
-    filePath.append(styleName);
+    filePath.append(profile.name());
     filePath.append(QDir::separator());
 #endif
     filePath = QDir::toNativeSeparators(filePath);
@@ -394,7 +381,7 @@ bool HbTextMeasurementUtility::writeReport(HbDeviceProfile &profile, const QStri
 
     filePath.append(domainName);
     filePath.append('_');
-    filePath.append(styleName);
+    filePath.append(profile.name());
     filePath.append('_');
     filePath.append(QString::number(QDate::currentDate().year()));
     filePath.append("wk");

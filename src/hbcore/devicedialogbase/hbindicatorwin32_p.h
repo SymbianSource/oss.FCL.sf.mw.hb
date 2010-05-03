@@ -76,6 +76,7 @@ private slots:
     void indicatorActivated(const IndicatorClientInfo &clientInfo);
     void indicatorUpdated(const IndicatorClientInfo &clientInfo);
     void indicatorRemoved(const IndicatorClientInfo &clientInfo);
+    void indicatorUserActivated(const QVariantMap& data);
 private:
     void timerEvent(QTimerEvent *event);
     

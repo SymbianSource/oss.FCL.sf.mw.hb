@@ -34,7 +34,6 @@ class HbInputBasicQwertyHandler: public HbInputBasicHandler
 public:
     HbInputBasicQwertyHandler(HbInputAbstractMethod* inputMethod);
     ~HbInputBasicQwertyHandler();
-    void listInputModes(QVector<HbInputModeProperties>& modes) const;
     bool isComposing() const;
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);

@@ -33,6 +33,7 @@
 
 #include "hbmemoryutils_p.h"
 #include "hbmaskableiconimpl_p.h"
+#include "hbpixmapiconrenderer_p.h"
 
 struct HbPixmapMaskedIcon
 {
@@ -49,21 +50,30 @@ HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString& name,
                    keySize,
                    aspectRatioMode,
                    mode,
-                   mirrored)
+                   mirrored),
+        pixmapIconRenderer(0)
 {
     retrievePixmapData();
+    pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
 }
 
-HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap& pixmap):pixmapData(pixmap)
+HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap& pixmap, const QString& name):
+        pixmapData(pixmap),
+        pixmapIconRenderer(0)
 {
+    pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
     aspectRatioMode = Qt::KeepAspectRatio;
     mode = QIcon::Normal;
     mirrored = false;
     createdOnServer = false;
+    fileName = name;
 }
 
 HbPixmapIconImpl::~HbPixmapIconImpl()
 {
+    if (pixmapIconRenderer) {
+        delete pixmapIconRenderer;
+    }
 }
 
 QPixmap HbPixmapIconImpl::pixmap()
@@ -97,6 +107,7 @@ void HbPixmapIconImpl::retrievePixmapData()
 void HbPixmapIconImpl::paint(QPainter* painter,
                              const QRectF &rect,
                              Qt::Alignment alignment,
+                             const QPainterPath &clipPath,
                              HbMaskableIconImpl * maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
@@ -106,37 +117,18 @@ void HbPixmapIconImpl::paint(QPainter* painter,
     QSizeF pixmapSize = pixmapData.size();
 
     if (alignment & Qt::AlignRight) {
-        topLeft.setX( rect.right() - pixmapSize.width() );
+        topLeft.setX(rect.right() - pixmapSize.width());
     } else if (alignment & Qt::AlignHCenter) {
-        topLeft.setX( topLeft.x() + (rect.width() - pixmapSize.width()) / 2 );
+        topLeft.setX(topLeft.x() + (rect.width() - pixmapSize.width()) / 2);
     }
 
     if (alignment & Qt::AlignBottom) {
-        topLeft.setY( rect.bottom() - pixmapSize.height() );
+        topLeft.setY(rect.bottom() - pixmapSize.height());
     } else if (alignment & Qt::AlignVCenter) {
-        topLeft.setY( topLeft.y() + (rect.height() - pixmapSize.height()) / 2 );
+        topLeft.setY(topLeft.y() + (rect.height() - pixmapSize.height()) / 2);
     }
 
-    if (maskIconData) {
-    
-        HbPixmapMaskedIcon * maskedImage = (HbPixmapMaskedIcon *) maskIconData->implData();
-        if (maskIconData->maskChanged()) {        
-            if (!maskedImage) {
-                maskedImage = new HbPixmapMaskedIcon();
-            }
-            
-            maskedImage->currentPixmap = pixmapData;
-            maskedImage->currentPixmap.setMask(maskIconData->mask());
-            maskIconData->setImplData(maskedImage);
-        }
-
-        if (maskedImage) {
-            painter->drawPixmap(topLeft, maskedImage->currentPixmap, maskedImage->currentPixmap.rect());
-            return;
-        }
-    }
-    
-    painter->drawPixmap(topLeft, pixmapData, pixmapData.rect());
+    pixmapIconRenderer->draw(painter, topLeft, clipPath, maskIconData);
 }
 
 QSize HbPixmapIconImpl::size()
@@ -145,8 +137,8 @@ QSize HbPixmapIconImpl::size()
 
 }
 
-void HbPixmapIconImpl::destroyMaskedData(IconMaskedData data)
+void HbPixmapIconImpl::destroyMaskedData(HbIconMaskedData *data)
 {
-    delete ((HbPixmapMaskedIcon *) data);
+    delete((HbPixmapMaskedIcon *) data);
 }
 

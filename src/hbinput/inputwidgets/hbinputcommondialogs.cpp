@@ -23,6 +23,8 @@
 **
 ****************************************************************************/
 #include <QDir>
+#include <QtAlgorithms>
+
 #include <hbinputdef.h>
 #include <hblistdialog.h>
 #include <hblistwidgetitem.h>
@@ -31,6 +33,18 @@
 #include <hbinputmethod.h>
 
 #include "hbinputcommondialogs.h"
+
+/// @cond
+
+bool caseInsensitiveLessThanForHbInputLanguage(const HbInputLanguage &s1, const HbInputLanguage &s2)
+{
+    //Temporaries because localisedName() is a non-const function
+    HbInputLanguage t1 = s1;
+    HbInputLanguage t2 = s2;
+    return t1.localisedName().toLower() < t2.localisedName().toLower();
+}
+
+/// @endcond
 
 /*!
 Displays language selection dialog and returns selected language.
@@ -54,7 +68,8 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
     } else {
         languages=languageList;
     }
-
+	
+	qStableSort(languages.begin(), languages.end(), caseInsensitiveLessThanForHbInputLanguage);
     QList<HbListWidgetItem*> listItems;
     HbListWidgetItem* item = 0;
     foreach( HbInputLanguage language, languages ) {

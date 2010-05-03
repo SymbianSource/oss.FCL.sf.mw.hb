@@ -40,6 +40,7 @@ public:
     void loadCommon();
 private:
     HbTranslatorPrivate* const d;
+    Q_DISABLE_COPY(HbTranslator)
 };
 
 #endif // HBTRANSLATOR_H

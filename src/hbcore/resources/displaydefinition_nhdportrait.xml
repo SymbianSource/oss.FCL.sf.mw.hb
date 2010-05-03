@@ -1,26 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <displayDefinition>
 
-
-    <display name="NHD portrait" 
+    <display
     defaultMode="true"
-    styleName="NHD"   
+    resolutionName="NHD"   
     resolutionWidth="360" 
     resolutionHeight="640"
     ppiValue="229"
-    orientation="portrait"
     orientationAngle="0"
-    alternateProfileName="NHD landscape"
     unitValue="6.7" />
     
-    <display name="NHD landscape"
-    styleName="NHD"
+    <display
+    resolutionName="NHD"
     resolutionWidth="640"
     resolutionHeight="360"
     ppiValue="229"
-    orientation="landscape"
     orientationAngle="90"
-    alternateProfileName="NHD portrait"
     unitValue="6.7" />
     
 </displayDefinition>

@@ -24,6 +24,21 @@
 ****************************************************************************/
 
 /*!
+    \class MHbIndicatorSymbianObserver
+    \brief MHbIndicatorSymbianObserver is an observer interface for observing CHbIndicatorSymbian.
+*/
+
+/*!
+    \fn void MHbIndicatorSymbianObserver::IndicatorUserActivated(const TDesC& aType, CHbSymbianVariantMap& aData)
+
+    This callback is called when user has interacted with an indicator on the indicator
+    menu.
+    
+    \a aType - Type of the indicator that user interacted with.
+    \a aData - Data sent by the indicator.
+*/
+
+/*!
     \class CHbIndicatorSymbian
     \brief CHbIndicatorSymbian can be used to activate and deactivate indicators. It is a client 
     interface for Symbian applications to Hb indicators.
@@ -37,6 +52,11 @@
     Depending on the indicator implementation, activated indicator may also show up with
     a notification dialog and some indicators can be interacted by the user in universal indicator menu.
 
+    User can interact with an indicator from the indicator menu. Client is notified about
+    the user interaction via MHbIndicatorSymbianObserver observer interface. Interaction 
+    notification and data sent by the indicator is a contract between HbIndicator class 
+    and indicator.
+    
     When deactivated, icons are removed from the status
     indicator area and in universal indicator menu.
 
@@ -64,6 +84,7 @@
     Mask for error type part of the error code.
 */
 
+#include <e32base.h>
 #include <QVariant>
 
 #include "hbindicatorsymbian.h"
@@ -73,10 +94,13 @@
 #include "hbdevicedialogerrors_p.h"
 #include "hbdevicedialogserverdefs_p.h"
 
-class CHbIndicatorSymbianPrivate {
+class CHbIndicatorSymbianPrivate : public CActive {
 public:
-    CHbIndicatorSymbianPrivate() : iInitialized(EFalse), iLastError(HbDeviceDialogNoError) {}
+    CHbIndicatorSymbianPrivate() : CActive(EPriorityStandard), iInitialized(EFalse), iLastError(HbDeviceDialogNoError),   iMsgTypePtr(NULL,0,0),
+    		  iBuffer(NULL),
+    		  iDataPtr(NULL,0,0) { CActiveScheduler::Add(this); }
     ~CHbIndicatorSymbianPrivate() {
+    	Cancel();
         if (iInitialized) {
             iHbSession.Close();
             iInitialized = EFalse;
@@ -89,10 +113,26 @@ public:
     }
     bool sendActivateMessage(const TDesC& aIndicatorType,
             TBool activate, const CHbSymbianVariant* aParameter);
+
+    void Start();
+	    
+protected:	
+    // CActive
+    void RunL();
+    void DoCancel();
+    TInt RunError( TInt aError );
+
 public:
     RHbDeviceDialogClientSession iHbSession;
     TBool iInitialized;
     TInt iLastError;
+    MHbIndicatorSymbianObserver* iObserver;
+    
+    TInt iMsgType;
+    TPtr8 iMsgTypePtr;
+    HBufC8* iBuffer;
+    TPtr8 iDataPtr;
+    TBool iRequesting;
 };
 
 TBool CHbIndicatorSymbianPrivate::Initialize()
@@ -141,8 +181,89 @@ bool CHbIndicatorSymbianPrivate::sendActivateMessage(const TDesC& aIndicatorType
         SetError( error );
         result = false;
     }
+    
+    if (activate && result && iObserver) {
+		Start();
+    }
+       
     return result;
 }
+
+void CHbIndicatorSymbianPrivate::Start()
+	{
+	if (!IsActive() && !iRequesting) {
+		SetActive();
+		if (!iBuffer) {
+			iBuffer = HBufC8::NewL( 256 );		
+			iDataPtr.Set( iBuffer->Des() );
+		}
+		iDataPtr.Zero();
+        TPckg<TInt> pckg( iMsgType );
+        iMsgTypePtr.Set( pckg );
+        iRequesting = ETrue;
+		iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorsStart, iDataPtr, iMsgTypePtr, iStatus);
+    }       
+       
+}
+
+void CHbIndicatorSymbianPrivate::RunL()
+{
+	TInt result = iStatus.Int();
+		
+	if (result < KErrNone) {
+		SetError(result);
+		iRequesting = EFalse;
+	} else if (iMsgType == EHbIndicatorUserActivated && result >= 0) {
+		iMsgType = -1;
+		if (result > 0) {		
+			delete iBuffer;
+			iBuffer = NULL;
+			iBuffer = HBufC8::NewL(result);
+			iDataPtr.Set(iBuffer->Des());
+			TInt error = iHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData, iDataPtr, &iMsgTypePtr);							                
+		}
+	
+		QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
+		QDataStream stream(&resArray, QIODevice::ReadOnly);		
+	
+		QVariant var;
+		stream >> var;
+		QVariantMap varMap = var.toMap();
+	
+		if (iObserver) {
+			QString type = varMap.value("type").toString();
+			TPtrC descriptor(static_cast<const TUint16*>(type.utf16()),
+								type.length());
+			QVariantMap data = varMap.value("data").toMap();
+			
+			CHbSymbianVariantMap* symbianMap =
+				HbSymbianVariantConverter::fromQVariantMapL(data);
+			
+			iObserver->IndicatorUserActivated(descriptor, *symbianMap);
+			delete symbianMap;
+			symbianMap = 0;
+		}
+	}
+    // Make a new request if there were no errors.
+    if ( result != KErrServerTerminated && result != KErrCancel && iRequesting) {        
+		SetActive();
+		iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorContinue, iDataPtr, iMsgTypePtr, iStatus);
+    }
+}
+
+void CHbIndicatorSymbianPrivate::DoCancel()
+{
+	if (iRequesting) {
+		iHbSession.SendSyncRequest(EhbSrvGetActivatedIndicatorsClose);
+		iRequesting = EFalse;    
+	}
+}
+
+TInt CHbIndicatorSymbianPrivate::RunError( TInt aError )
+	{
+	SetError(aError);
+	return KErrNone;
+	}
 
 EXPORT_C CHbIndicatorSymbian* CHbIndicatorSymbian::NewL()
     {
@@ -187,6 +308,11 @@ EXPORT_C TBool CHbIndicatorSymbian::Deactivate(const TDesC& aIndicatorType, cons
 EXPORT_C TInt CHbIndicatorSymbian::Error() const
 {
     return d->iLastError;
+}
+
+EXPORT_C void CHbIndicatorSymbian::SetObserver(MHbIndicatorSymbianObserver* aObserver)
+{
+	d->iObserver = aObserver;
 }
 
 CHbIndicatorSymbian::CHbIndicatorSymbian()

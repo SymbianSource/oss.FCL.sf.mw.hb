@@ -30,11 +30,13 @@
 #include <hbicon.h>
 #include <hbstyleoptionpopup.h>
 
+
+//Deprecated
 class HB_CORE_EXPORT HbStyleOptionNotificationDialog : public HbStyleOptionPopup
 {
 public:
-	HbStyleOptionNotificationDialog();
-	HbStyleOptionNotificationDialog(const HbStyleOptionNotificationDialog &other);
+    HbStyleOptionNotificationDialog();
+    HbStyleOptionNotificationDialog(const HbStyleOptionNotificationDialog &other);
     ~HbStyleOptionNotificationDialog();
 
     enum StyleOptionType { Type = HbSO_NotificationDialog };

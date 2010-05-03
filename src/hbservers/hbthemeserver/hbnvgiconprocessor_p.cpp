@@ -89,12 +89,16 @@ bool HbNvgIconProcessor::createIconData(const QString& iconPath)
             renderSize.scale(iconKey.size, iconKey.aspectRatioMode);
         }
         if (domhandle) {
-            byteArray = (HbTlvWrapper::instance())->getTLVEncodedDataFromDom(domhandle, renderSize, iconKey.aspectRatioMode);
+            byteArray = (HbTlvWrapper::instance())->getTlvEncodedDataFromDom(domhandle, renderSize, iconKey.aspectRatioMode);
             size = renderSize.toSize();
         }
     } else {
         HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
-        byteArray = *(source->byteArray());
+        QByteArray *sourceByteArray = source->byteArray();
+        if( !sourceByteArray ) {
+            return false;
+        }
+        byteArray = *sourceByteArray;
         QSizeF renderSize = source->defaultSize();
         defaultSize = renderSize.toSize();
         if (!isDefaultSize) {

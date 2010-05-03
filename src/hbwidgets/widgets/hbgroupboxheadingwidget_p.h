@@ -32,6 +32,8 @@
 #include "hbgroupbox_p.h"
 
 class HbStyleOptionGroupBox;
+class QGestureEvent;
+
 
 class HB_AUTOTEST_EXPORT HbGroupBoxHeadingWidget : public HbWidget
 {
@@ -76,6 +78,9 @@ protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+#ifdef HB_GESTURE_FW
+    void gestureEvent(QGestureEvent *event);
+#endif 
 };
 
 #endif // HBGROUPBOXHEADINGWIDGET_H

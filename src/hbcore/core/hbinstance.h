@@ -48,9 +48,6 @@ public:
     
     QList<HbMainWindow *> allMainWindows() const;
 
-    Qt::Orientation orientation() const;    // deprecated
-    void setOrientation(Qt::Orientation orientation, bool animate = true); // deprecated
-
     HbStyle *style() const;
     HbTheme *theme() const;
     HbTypefaceInfo *typefaceInfo() const;

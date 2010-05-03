@@ -50,7 +50,10 @@ public:
     bool activate(const QString &indicatorType, const QVariant &parameter = QVariant());
     bool deactivate(const QString &indicatorType, const QVariant &parameter = QVariant());
 
-    int error() const; 
+    int error() const;
+	
+signals:
+    void userActivated(const QString &type, const QVariantMap &data);
 
 protected:
     HbIndicator(HbIndicatorPrivate &dd, QObject *parent = 0);

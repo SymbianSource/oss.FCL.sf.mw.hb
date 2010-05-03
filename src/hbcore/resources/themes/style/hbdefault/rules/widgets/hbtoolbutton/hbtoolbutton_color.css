@@ -83,3 +83,10 @@ HbToolButton[dialogtoolbar][!enabled]::text
 color:var(qtc_popup_sk_disabled);
 }
 
+HbTitleBar > HbIndicatorButton::icon {
+    color:var(qtc_title_pane_normal);
+}
+
+HbTitleBar > HbNavigationButton::icon {
+    color:(qtc_title_pane_normal);
+}

@@ -36,6 +36,10 @@
 class HbDocumentLoader;
 class HbDocumentLoaderSyntax;
 class HbDocumentLoaderActions;
+class HbXmlLoaderBinaryActions;
+class HbXmlLoaderBinarySyntax;
+class HbXmlLoaderAbstractActions;
+
 class QPluginLoader;
 class HbDocumentLoaderPluginManager;
 class HbMainWindow;
@@ -55,6 +59,7 @@ public:
     virtual ~HbDocumentLoaderPrivate();
     
     bool load( QIODevice *device, const QString &section );
+    bool createBinary( QIODevice *srcDevice, QIODevice *dstDevice );
     QList<QObject *> takeAll();
 
     QGraphicsWidget *findWidget(const QString &name) const;
@@ -75,12 +80,14 @@ public:
     HbDocumentLoader *q_ptr;
     HbDocumentLoaderActions *actions;
     HbDocumentLoaderSyntax *syntax;
+    HbXmlLoaderBinaryActions *binaryactions;
+    HbXmlLoaderBinarySyntax *binarysyntax;
     HbDocumentLoaderPluginManager *pluginManager;
 };
 
 
 
-
+#ifndef HB_BOOTSTRAPPED
 
 class HbDocumentLoaderPluginManager
 {
@@ -99,5 +106,7 @@ private:
 private:
     QList<QPluginLoader*> mPlugins;
 };
+
+#endif //HB_BOOTSTRAPPED
 
 #endif // HBDOCUMENTLOADER_P_H

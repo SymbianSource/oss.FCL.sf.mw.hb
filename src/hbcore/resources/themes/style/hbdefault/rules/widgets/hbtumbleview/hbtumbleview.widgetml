@@ -4,5 +4,11 @@
     <meshitem src="highlight" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="highlight" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="highlight" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+
+    
+    <meshitem src="separator" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="separator" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="separator" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
   </layout>
 </hbwidget>

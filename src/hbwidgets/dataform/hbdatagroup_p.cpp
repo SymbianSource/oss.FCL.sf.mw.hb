@@ -32,6 +32,9 @@
 #include "hbdataform_p.h"
 #include "hbdatagroup_p_p.h"
 
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
+
 #include <QStringListModel>
 #include <QCoreApplication>
 
@@ -39,7 +42,6 @@
 HbDataGroupPrivate::HbDataGroupPrivate( HbDataGroup* item ):
     HbDataFormViewItemPrivate( item ),
     mPageCombo( 0 ),
-    mGroupDescriptionItem( 0 ),
     mGroupHeading( 0 ),
     mPageComboBackgroundItem( 0 )
 {
@@ -47,7 +49,6 @@ HbDataGroupPrivate::HbDataGroupPrivate( HbDataGroup* item ):
 HbDataGroupPrivate::HbDataGroupPrivate( const HbDataGroupPrivate &source ):
     HbDataFormViewItemPrivate( source ),
     mPageCombo( source.mPageCombo ),
-    mGroupDescriptionItem( source.mGroupDescriptionItem ),
     mGroupHeading( source.mGroupHeading ),
     mPageComboBackgroundItem( source.mPageComboBackgroundItem )
 {
@@ -67,8 +68,7 @@ void HbDataGroupPrivate::expand( bool expanded )
     HbDataFormModelItem::DataItemType itemType = static_cast<HbDataFormModelItem::DataItemType>(
             ( mIndex.operator const QModelIndex & ( )).data( HbDataFormModelItem::ItemTypeRole).toInt( ) );
 
-    if(container->itemState(
-            mIndex.operator const QModelIndex & ( )).value( HbDataFormViewItem::ExpansionKey ) == expanded ) {
+    if(container->itemTransientState(mIndex).value( "expanded" ) == expanded ) {
         return;
     }
 
@@ -118,7 +118,10 @@ void HbDataGroupPrivate::expand( bool expanded )
                 //get the group page index
                 QModelIndex groupPageIndex = mIndex.child(activePage,0);
                 if(groupPageIndex.isValid()) {                    
-                    container->setItemStateValue(groupPageIndex, HbDataFormViewItem::ExpansionKey, true);
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+                   container->setItemStateValue(groupPageIndex, HbDataFormViewItem::ExpansionKey, true);
+#endif
+                    container->setItemTransientStateValue(groupPageIndex, "expanded", true);
                 }
             }
             if (mGroupHeading )  {
@@ -127,7 +130,10 @@ void HbDataGroupPrivate::expand( bool expanded )
         }
     }
 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
     container->setItemStateValue(mIndex.operator const QModelIndex & (), HbDataFormViewItem::ExpansionKey, expanded);
+#endif
+    container->setItemTransientStateValue(mIndex, "expanded", expanded);
 }
 
 
@@ -152,13 +158,6 @@ void HbDataGroupPrivate::setGroupPage( const QString &page )
             HbStyle::setItemName(mPageComboBackgroundItem,"dataGroup_ComboBackground");
         }
 
-        if( !mGroupDescription.isEmpty() ) {
-            if( !mGroupDescriptionItem ) {
-                mGroupDescriptionItem = q->style()->createPrimitive(HbStyle::P_DataGroup_description, q);
-                HbStyle::setItemName(mGroupDescriptionItem, "dataGroup_Description");
-            }
-        }
-        
         QEvent polishEvent(QEvent::Polish);
         QCoreApplication::sendEvent(q, &polishEvent);
     }
@@ -210,7 +209,6 @@ void HbDataGroupPrivate::setActivePage(int pageindex)
     QObject::disconnect( mSharedData->mItemView->model(), SIGNAL( dataChanged( QModelIndex,QModelIndex ) ),
         mSharedData->mItemView, SLOT( dataChanged( QModelIndex,QModelIndex ) ) );
 
-    // CRC : Is it reqired here to disconnect and connect signals. ( done)
     modelItem->setContentWidgetData(QString("currentPage"),pageindex);
 
     QObject::connect( mSharedData->mItemView->model(), SIGNAL( dataChanged( QModelIndex,QModelIndex ) ),
@@ -250,32 +248,24 @@ HbDataGroup::~HbDataGroup()
 
 void HbDataGroup::initStyleOption(HbStyleOptionDataGroup *option)
 {
-    Q_D(HbDataGroup);
+    //Q_D(HbDataGroup);
     HbWidget::initStyleOption(option);
-    option->description = d->mGroupDescription;
 }
 
 void HbDataGroup::setDescription( const QString &description )
 {
-    Q_D(HbDataGroup);
-    d->mGroupDescription = description;
-    if( !d->mGroupDescription.isEmpty() ) {
-        if( !d->mGroupDescriptionItem ) {
-            d->mGroupDescriptionItem = style()->createPrimitive(HbStyle::P_DataGroup_description, this);
-        }
-    } else {
-        if( d->mGroupDescriptionItem ) {
-            delete d->mGroupDescriptionItem;
-            d->mGroupDescriptionItem = 0;
-        }
-    }
+     
+    Q_D( HbDataGroup );
+    d->mGroupHeading->mDescription = description;
+    d->mGroupHeading->createPrimitives( );    
+    d->mGroupHeading->updatePrimitives( );
 }
 
 
 QString HbDataGroup::description() const
 {
     Q_D(const HbDataGroup);
-    return d->mGroupDescription;
+    return d->mGroupHeading->mDescription;
 }
 
 bool HbDataGroup::setExpanded( bool expanded )
@@ -287,8 +277,7 @@ bool HbDataGroup::setExpanded( bool expanded )
     if(d->mSharedData->mItemView) {
         container = qobject_cast<HbAbstractItemContainer *>(
             static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
-        if(container->itemState(d->mIndex).value(HbDataFormViewItem::ExpansionKey) 
-                == expanded || !sd->mItemView) {
+        if(container->itemTransientState(d->mIndex).value("expanded")  == expanded || !sd->mItemView) {
             return true;
         }    
         d->expand(expanded);
@@ -305,21 +294,21 @@ bool HbDataGroup::setExpanded( bool expanded )
 
                     HbStyle::setItemName(d->mPageCombo,"dataGroup_Combo");
                     HbStyle::setItemName(d->mPageComboBackgroundItem,"dataGroup_ComboBackground");
-                    HbStyle::setItemName(d->mGroupDescriptionItem, "dataGroup_Description");
+                    //HbStyle::setItemName(d->mGroupDescriptionItem, "dataGroup_Description");
 
                 } else {
 
                     HbStyle::setItemName(d->mPageCombo,"");
                     HbStyle::setItemName(d->mPageComboBackgroundItem,"");
-                    HbStyle::setItemName(d->mGroupDescriptionItem, "");
+                    //HbStyle::setItemName(d->mGroupDescriptionItem, "");
                     setProperty("groupPage", "");
                     d->mPageString.clear();
                     delete d->mPageCombo;
                     d->mPageCombo = 0;
                     delete d->mPageComboBackgroundItem;
                     d->mPageComboBackgroundItem = 0;
-                    delete d->mGroupDescriptionItem;
-                    d->mGroupDescriptionItem = 0;
+                    //delete d->mGroupDescriptionItem;
+                    //d->mGroupDescriptionItem = 0;
 
                     QEvent polishEvent(QEvent::Polish);
                     QCoreApplication::sendEvent(this, &polishEvent);
@@ -370,10 +359,10 @@ void HbDataGroup::updatePrimitives()
             }
 
             //update the data group description
-            if(d->mGroupDescriptionItem) {
+            /*if(d->mGroupDescriptionItem) {
                 style()->updatePrimitive( 
                     d->mGroupDescriptionItem, HbStyle::P_DataGroup_description, &opt);
-            }
+            }*/
         }
     }
 }
@@ -448,7 +437,9 @@ void HbDataGroup::updateChildItems()
         //set the heading of data group
         QString groupDescription = d->mIndex.data(
             HbDataFormModelItem::DescriptionRole).toString();
-        setDescription(groupDescription);
+        if(!groupDescription.isEmpty()) {
+            setDescription(groupDescription);
+        }
   
     } 
     else if( contentWidgetType == HbDataFormModelItem::GroupPageItem){

@@ -63,6 +63,7 @@ public:
      void indicatorActivated(const QList<IndicatorClientInfo> &indicatorInfoList);
      void indicatorUpdated(const QList<IndicatorClientInfo> &clientInfo);
      void indicatorRemoved(const QList<IndicatorClientInfo> &indicatorInfoList);
+     void indicatorUserActivated(const QVariantMap &data);
 
 private:
 

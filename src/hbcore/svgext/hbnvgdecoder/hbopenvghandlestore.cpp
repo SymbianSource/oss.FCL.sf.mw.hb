@@ -28,19 +28,22 @@
 
 QT_USE_NAMESPACE
 
-struct QVGImageDeleter
-{
-    static inline void cleanup(void *pointer) { if (pointer) vgDestroyImage(*(VGImage*)pointer); }
+struct HbVgImageDeleter {
+    static inline void cleanup(void *pointer) {
+        if (pointer) vgDestroyImage(*(VGImage*)pointer);
+    }
 };
 
-struct QVGPaintDeleter
-{
-    static inline void cleanup(void *pointer) { if (pointer) vgDestroyPaint(*(VGPaint*)pointer); }
+struct HbVgPaintDeleter {
+    static inline void cleanup(void *pointer) {
+        if (pointer) vgDestroyPaint(*(VGPaint*)pointer);
+    }
 };
 
-struct QVGPathDeleter
-{
-    static inline void cleanup(void *pointer) { if (pointer) vgDestroyPath(*(VGPath*)pointer); }
+struct HbVgPathDeleter {
+    static inline void cleanup(void *pointer) {
+        if (pointer) vgDestroyPath(*(VGPath*)pointer);
+    }
 };
 
 HbOpenVgHandleStore::HbOpenVgHandleStore()
@@ -49,8 +52,8 @@ HbOpenVgHandleStore::HbOpenVgHandleStore()
 
 HbOpenVgHandleStore::~HbOpenVgHandleStore()
 {
-    int handleListCount    = mHandles.count();
-    for (int i = 0; i < handleListCount; i++) {
+    qint32 handleListCount    = mHandles.count();
+    for (qint32 i = 0; i < handleListCount; i++) {
         if (mHandles[i].mVgHandle) {
             switch (mHandles[i].mHandleType) {
             case HbTlvVgHandlePair::VgPath:
@@ -68,25 +71,25 @@ HbOpenVgHandleStore::~HbOpenVgHandleStore()
 }
 
 
-void HbOpenVgHandleStore::addPath(VGPath handle) 
-    {
-    QScopedPointer<VGPath, QVGPathDeleter> scHandle(&handle);        
+void HbOpenVgHandleStore::addPath(VGPath handle)
+{
+    QScopedPointer<VGPath, HbVgPathDeleter> scHandle(&handle);
     mHandles.append(HbTlvVgHandlePair(handle, HbTlvVgHandlePair::VgPath));
     scHandle.take();
-    }
+}
 
-void HbOpenVgHandleStore::addPaint(VGPaint handle) 
-    {
-    QScopedPointer<VGPath, QVGPaintDeleter> scHandle(&handle);        
+void HbOpenVgHandleStore::addPaint(VGPaint handle)
+{
+    QScopedPointer<VGPath, HbVgPaintDeleter> scHandle(&handle);
     mHandles.append(HbTlvVgHandlePair(handle, HbTlvVgHandlePair::VgPaint));
     scHandle.take();
-    }
+}
 
-void HbOpenVgHandleStore::addImage(VGImage handle) 
-    {
-    QScopedPointer<VGPath, QVGImageDeleter> scHandle(&handle);        
+void HbOpenVgHandleStore::addImage(VGImage handle)
+{
+    QScopedPointer<VGPath, HbVgImageDeleter> scHandle(&handle);
     mHandles.append(HbTlvVgHandlePair(handle, HbTlvVgHandlePair::VgImage));
     scHandle.take();
-    }
-  
-  
+}
+
+

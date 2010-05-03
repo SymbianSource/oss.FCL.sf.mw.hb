@@ -28,7 +28,6 @@
 
 #include <hbabstractitemview.h>
 #include <hbabstractviewitem.h>
-#include <hbgesturefilter.h>
 #include <hbevent.h>
 #include <hbabstractitemcontainer.h>
 #include <hbwidgetfeedback.h>
@@ -39,6 +38,13 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QDebug>
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
+
+#include <QGesture>
+#include <QGestureEvent>
+#include <QPanGesture>
+
 
 /*!
     @alpha
@@ -168,6 +174,18 @@
     \var HbAbstractItemView::TouchDown
 
     Animation related to item press and release.
+*/
+
+/*!
+    \var HbAbstractItemView::Expand
+
+    Animation related to setting item expand.
+*/
+
+/*!
+    \var HbAbstractItemView::Collapse
+
+    Animation related to setting item collapsed.
 */
 
 /*!
@@ -499,14 +517,7 @@ bool HbAbstractItemView::event(QEvent *e)
 {
     Q_D(HbAbstractItemView);
 
-    bool result = false;
-
-    if (e->type() == HbEvent::ChildFocusOut) {
-        d->mWasScrolling = isScrolling();
-        result = true;
-    }
-
-    result |= HbScrollArea::event(e);
+    bool result = HbScrollArea::event(e);
 
     // The two above statements have to be executed before these
     if (e->type() == HbEvent::ChildFocusIn) {
@@ -540,190 +551,7 @@ bool HbAbstractItemView::event(QEvent *e)
 
 /*!
     \reimp
-*/
-void HbAbstractItemView::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbAbstractItemView);
-    d->mPostponedScrollIndex = QPersistentModelIndex();
-    d->mPreviousSelectedIndex = QModelIndex();
-    d->mPreviousSelectedCommand = QItemSelectionModel::NoUpdate;
-    d->mInstantClickedModifiers = 0;
 
-    d->mHitItem = d->itemAt(event->scenePos());
-
-    if (d->mHitItem && d->mHitItem->modelIndex().isValid()) {
-        QGraphicsItem::GraphicsItemFlags flags = d->mHitItem->flags();
-        if (!flags.testFlag(QGraphicsItem::ItemIsFocusable)){
-            d->mHitItem = 0;
-        }
-    }
-
-    if (d->mHitItem) {
-        if (d->mHitItem->modelIndex().isValid()) {
-            Hb::InteractionModifiers modifiers = 0;
-            if (d->mWasScrolling) {
-                modifiers |= Hb::ModifierScrolling;
-            }
-            HbWidgetFeedback::triggered(d->mHitItem, Hb::InstantPressed, modifiers);
-
-            if (!d->mWasScrolling) {
-                d->mHitItem->setPressed(true);
-            }
-        }
-    }
-
-    if (isScrolling()) {
-        // Needed when focus does not change. Otherwise mWasScrolling updating is done on 
-        // focusOutEvent or event function.
-        d->mWasScrolling = true;
-    }
-
-    HbScrollArea::mousePressEvent(event);
-    
-    if (d->mHitItem) {
-        emitPressed(d->mHitItem->modelIndex());
-        if (d->mSelectionModel) {
-            QItemSelectionModel::SelectionFlags flags = selectionCommand(d->mHitItem, event);
-            d->mSelectionModel->select(d->mHitItem->modelIndex(), flags);
-        }
-    } else if (d->mGestureFilter) {
-        d->mGestureFilter->setLongpressAnimation(false);
-    }
-
-    event->accept();
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractItemView::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbAbstractItemView);
-
-    HbScrollArea::mouseReleaseEvent(event);
-
-    if (d->mGestureFilter) {
-        d->mGestureFilter->setLongpressAnimation(true);
-    }
-
-    HbAbstractViewItem* hitItem = d->itemAt(event->scenePos());
-    if (hitItem) {
-        QGraphicsItem::GraphicsItemFlags flags = hitItem->flags();
-        if (!flags.testFlag(QGraphicsItem::ItemIsFocusable)){
-            hitItem = 0;
-        }
-    }
-
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false);
-    }
-
-    if (hitItem) {
-        if (hitItem->modelIndex().isValid()) {
-            Hb::InteractionModifiers modifiers = 0;
-            if (d->mWasScrolling) {
-                modifiers |= Hb::ModifierScrolling;
-            }
-            HbWidgetFeedback::triggered(hitItem, Hb::InstantReleased, modifiers);
-        }
-        emitReleased(hitItem->modelIndex());
-    }
-
-    if (d->mWasScrolling || d->mOptions.testFlag(HbAbstractItemViewPrivate::PanningActive)) {
-        d->mOptions &= ~HbAbstractItemViewPrivate::PanningActive;
-        if (d->mSelectionSettings.testFlag(HbAbstractItemViewPrivate::Selection)) {
-            d->mSelectionSettings &= ~HbAbstractItemViewPrivate::Selection;
-            d->mContSelectionAction = QItemSelectionModel::NoUpdate;
-        }
-    } else if (hitItem) {
-        if (d->mSelectionModel) {
-            d->mSelectionModel->setCurrentIndex(hitItem->modelIndex(), QItemSelectionModel::NoUpdate);
-
-            QItemSelectionModel::SelectionFlags flags = selectionCommand(hitItem, event);
-            d->mSelectionModel->select(hitItem->modelIndex(), flags);
-        }
-
-        if (    d->mHitItem == hitItem
-            &&  hitItem->modelIndex().isValid()){
-            HbWidgetFeedback::triggered(hitItem, Hb::InstantClicked, d->mInstantClickedModifiers);
-            emitActivated(hitItem->modelIndex());
-        }
-
-        HbAbstractViewItem *item = d->currentItem();
-        if (item) {
-            d->revealItem(item, EnsureVisible);
-        }
-    } 
-    d->mWasScrolling = false;
-    event->accept(); 
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractItemView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    HbScrollArea::mouseMoveEvent( event );
-
-    Q_D(HbAbstractItemView);
-
-    // contiguous selection handling.
-    if (d->mSelectionSettings.testFlag(HbAbstractItemViewPrivate::Selection)
-        && d->mSelectionModel
-        && d->mSelectionMode == HbAbstractItemView::ContiguousSelection
-        && geometry().contains(event->pos())) {
-
-        QModelIndex firstIndex;
-        QModelIndex lastIndex;
-        d->mContainer->firstAndLastVisibleModelIndex(firstIndex, lastIndex);
-        qreal scenePosY = event->scenePos().y();
-        qreal lastScenePosY = event->lastScenePos().y();
-        QPolygonF polygon;
-        polygon << event->lastScenePos() << event->scenePos();
-
-        QList<QGraphicsItem *> items = scene()->items(polygon);
-        int itemCount = items.count();
-
-        // loop through the items in the scene
-        for (int current = 0; current < itemCount ; ++current) {
-            HbAbstractViewItem *item = d->viewItem(items.at(current));
-            if (item) {
-                if (d->mHitItem && item != d->mHitItem) {
-                    d->mHitItem->setPressed(false);
-                }
-
-                QModelIndex itemIndex(item->modelIndex());
-                QItemSelectionModel::SelectionFlags command = selectionCommand(item, event);
-                if (    itemIndex != d->mPreviousSelectedIndex
-                    ||  command != d->mPreviousSelectedCommand) {
-                    d->mPreviousSelectedIndex = itemIndex;
-                    d->mPreviousSelectedCommand = command;
-                    d->mSelectionModel->select(itemIndex, command);
-
-                    // Scroll up/down when needed
-                    HbAbstractViewItem *scrollItem = 0;
-                    if (itemIndex == firstIndex
-                        && lastScenePosY > scenePosY) {
-                        scrollItem = d->mContainer->itemByIndex(d->mModelIterator->previousIndex(itemIndex));
-                    } else if (itemIndex == lastIndex
-                        && lastScenePosY < scenePosY) {
-                        scrollItem = d->mContainer->itemByIndex(d->mModelIterator->nextIndex(itemIndex));
-                    }
-
-                    if (scrollItem) {
-                        QPointF delta = d->pixelsToScroll(scrollItem, EnsureVisible);
-                        d->scrollByAmount(delta);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    event->accept();
-}
-
-/*!
     This slot is called when orientation is changed.
     \a newOrientation has the currentOrientation mode.
     Note: Currently platform dependent orientation support is not available
@@ -734,6 +562,7 @@ void HbAbstractItemView::orientationChanged(Qt::Orientation newOrientation)
 
     Q_D(HbAbstractItemView);
 
+
     //Setting the uniform ites sizes to container again resets size caches.
     d->mContainer->setUniformItemSizes(d->mContainer->uniformItemSizes());
     d->mContainer->setPos(0,0);
@@ -741,6 +570,7 @@ void HbAbstractItemView::orientationChanged(Qt::Orientation newOrientation)
 
     d->updateScrollMetrics();
 
+    d->stopAnimating();
     scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtTop);
 
     d->mVisibleIndex = QModelIndex();
@@ -884,9 +714,12 @@ HbAbstractViewItem *HbAbstractItemView::itemAtPosition(const QPointF& position) 
     Returns SelectionFlags to be used when updating selection of a item.
     The event is a user input event, such as a mouse or keyboard event.
     contiguousArea is true, if selectiontype is not single or no selection and
-    user has pressed on contiguousArea of viewItemi.e CheckBox.
+    user has pressed on contiguousArea of viewItem i.e CheckBox.
     By default this is false.
     Subclasses should overide this function to define their own selection behavior.
+
+    Note: The \a event parameter is not necessary a full event. For mouse events
+    it is quaranteed to contain the event type and position.
 
     \sa HbAbstractViewItem::selectionAreaContains(const QPointF &scenePosition) const
 */
@@ -972,7 +805,10 @@ void HbAbstractItemView::currentIndexChanged(const QModelIndex &current, const Q
         } 
         
         if (previous.isValid()) {
-            d->mContainer->setItemStateValue(previous, HbAbstractViewItem::FocusKey, false);
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+           d->mContainer->setItemStateValue(previous, HbAbstractViewItem::FocusKey, false);
+#endif
+           d->mContainer->setItemTransientStateValue(previous, "focused", false);
         }
 
         if (newItem) {
@@ -980,7 +816,10 @@ void HbAbstractItemView::currentIndexChanged(const QModelIndex &current, const Q
         } 
         
         if (d->mCurrentIndex.isValid()) {
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
             d->mContainer->setItemStateValue(d->mCurrentIndex, HbAbstractViewItem::FocusKey, true);
+#endif
+            d->mContainer->setItemTransientStateValue(d->mCurrentIndex, "focused", true);
         }
 
     }
@@ -1002,11 +841,20 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         if (item) {
             item->setCheckState(Qt::Checked);
             if (!d->mClearingSelection) {
-                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged);
+                Hb::InteractionModifiers modifiers = 0;
+                if (d->mIsScrolling) {
+                    modifiers |= Hb::ModifierScrolling;
+                }
+                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged, modifiers); 
             }
         } 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
         d->mContainer->setItemStateValue(selectedIndexes.at(i),
                                          HbAbstractViewItem::CheckStateKey,
+                                         Qt::Checked);
+#endif
+        d->mContainer->setItemTransientStateValue(selectedIndexes.at(i),
+                                         "checkState",
                                          Qt::Checked);
     }
 
@@ -1020,8 +868,13 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged);
             }
         } 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
         d->mContainer->setItemStateValue(deselectedIndexes.at(i),
                                          HbAbstractViewItem::CheckStateKey,
+                                         Qt::Unchecked);
+#endif
+        d->mContainer->setItemTransientStateValue(deselectedIndexes.at(i),
+                                         "checkState",
                                          Qt::Unchecked);
     }
 }
@@ -1040,8 +893,7 @@ void HbAbstractItemView::rowsInserted(const QModelIndex &parent, int start, int 
 
     for (int current = start; current <= end; current++) {
         QModelIndex index = model()->index(current, 0, parent);
-        bool animate = d->mEnabledAnimations & HbAbstractItemView::Appear ? d->mAnimateItems : false;
-        d->mContainer->addItem(index, animate);
+        d->mContainer->addItem(index, d->animationEnabled(true));
     }
     
 
@@ -1147,57 +999,6 @@ void HbAbstractItemView::columnsAboutToBeInserted(const QModelIndex &index, int 
     Q_UNUSED(end);
 }
 
-
-/*!
-    \reimp
-*/
-void HbAbstractItemView::panGesture(const QPointF &point)
-{
-    Q_D( HbAbstractItemView );
-    d->mPostponedScrollIndex = QPersistentModelIndex();
-    d->mOptions |= d->PanningActive;
-    
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false, false);
-    }
-
-    HbScrollArea::panGesture(point);
-    
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractItemView::longPressGesture(const QPointF &point)
-{
-    Q_D( HbAbstractItemView );
-    d->mPostponedScrollIndex = QPersistentModelIndex();
-    HbScrollArea::longPressGesture(point);
-
-    if (d->mHitItem) {
-        if (d->mHitItem->modelIndex().isValid()) {
-            HbWidgetFeedback::triggered(d->mHitItem, Hb::InstantLongPressed);
-        }
-        if (d->mHitItem) {
-            d->mHitItem->setPressed(false);
-        }
-        emit longPressed(d->mHitItem, point);
-    }
-}
-
-/*!
-    \reimp
-*/
-void HbAbstractItemView::focusOutEvent(QFocusEvent *event)
-{
-    HbScrollArea::focusOutEvent(event);
-
-    Q_D( HbAbstractItemView );
-
-    d->mWasScrolling = isScrolling();
-    d->stopScrolling();
-}
-
 /*!
     Emits the activated signal.
 */
@@ -1293,7 +1094,8 @@ bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
 
     QPointF newDelta(delta);
 
-    if (d->mContainer->itemRecycling()) {
+    if (d->mContainer->itemRecycling()
+        && !d->mContainer->items().isEmpty()) {
         newDelta = d->mContainer->recycleItems(delta);
         d->mAnimationInitialPosition = d->mAnimationInitialPosition + newDelta - delta; 
         d->refreshContainerGeometry();
@@ -1303,10 +1105,14 @@ bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
 }
 
 /*!
+    \deprecated HbAbstractItemView::container() const
+        is deprecated, because class HbAbstractItemContainer will be made private.
+
     Returns the container widget.
 */
 HbAbstractItemContainer *HbAbstractItemView::container() const
 {
+    qWarning("HbAbstractItemView::container() const is deprecated, because class HbAbstractItemContainer will be made private.");
     Q_D(const HbAbstractItemView);
     return d->mContainer;
 }
@@ -1450,74 +1256,81 @@ HbAbstractItemView::ItemAnimations HbAbstractItemView::enabledAnimations() const
 
 /*!
     \reimp
-
-    Sets the pressed item non-pressed.
 */
-void HbAbstractItemView::upGesture(int value)
+void HbAbstractItemView::gestureEvent(QGestureEvent *event)
 {
-    Q_D(HbAbstractItemView);
-
-    d->mPostponedScrollIndex = QPersistentModelIndex();
-
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false, false);
+    if (event->gesture(Qt::PanGesture)) {
+        Q_D(HbAbstractItemView);
+        if (d->panTriggered(event)) {
+            event->accept();
+        } else {
+            HbScrollArea::gestureEvent(event);
+        }
+    } else {
+        HbScrollArea::gestureEvent(event);
     }
-
-    HbScrollArea::upGesture(value);
 }
 
-/*!
-    \reimp
-
-    Sets the pressed item non-pressed.
-*/
-void HbAbstractItemView::downGesture(int value)
+void HbAbstractItemView::itemPressed(const QPointF &pos)
 {
     Q_D(HbAbstractItemView);
 
     d->mPostponedScrollIndex = QPersistentModelIndex();
+    d->mPreviousSelectedIndex = QModelIndex();
+    d->mPreviousSelectedCommand = QItemSelectionModel::NoUpdate;
+    d->mSelectionSettings &= ~HbAbstractItemViewPrivate::Selection;
+    d->mContSelectionAction = QItemSelectionModel::NoUpdate;
 
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false, false);
+    HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
+    QModelIndex index = item->modelIndex();
+
+    if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
+        QGraphicsSceneMouseEvent mousePressEvent(QEvent::GraphicsSceneMousePress);
+        mousePressEvent.setPos(pos);
+        d->mSelectionModel->select(index, selectionCommand(item, &mousePressEvent));
     }
 
-    HbScrollArea::downGesture(value);
+    emitPressed(item->modelIndex());
 }
 
-/*!
-    \reimp
-
-    Sets the pressed item non-pressed.
-*/
-void HbAbstractItemView::leftGesture(int value)
+void HbAbstractItemView::itemReleased(const QPointF &pos)
 {
-    Q_D(HbAbstractItemView);
+    Q_UNUSED(pos);
 
-    d->mPostponedScrollIndex = QPersistentModelIndex();
-
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false, false);
-    }
-
-    HbScrollArea::leftGesture(value);
+    HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
+    emitReleased(item->modelIndex());
 }
 
-/*!
-    \reimp
-
-    Sets the pressed item non-pressed.
-*/
-void HbAbstractItemView::rightGesture(int value)
+void HbAbstractItemView::itemActivated(const QPointF &pos)
 {
     Q_D(HbAbstractItemView);
 
-    d->mPostponedScrollIndex = QPersistentModelIndex();
+    HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
+    QModelIndex index = item->modelIndex();
 
-    if (d->mHitItem) {
-        d->mHitItem->setPressed(false, false);
+    d->mSelectionModel->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
+
+    if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
+        QGraphicsSceneMouseEvent mouseReleaseEvent(QEvent::GraphicsSceneMouseRelease);
+        mouseReleaseEvent.setPos(pos);
+        d->mSelectionModel->select(index, selectionCommand(item, &mouseReleaseEvent));
     }
 
-    HbScrollArea::rightGesture(value);
+    emitActivated(index);
+}
+
+void HbAbstractItemView::itemLongPressed(const QPointF &pos)
+{
+    HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
+    emit longPressed(item, item->mapToScene(pos));
+}
+
+void HbAbstractItemView::itemCreated(HbAbstractViewItem *item)
+{
+    QObject::connect(item, SIGNAL(pressed(QPointF)), this, SLOT(itemPressed(QPointF)));
+    QObject::connect(item, SIGNAL(released(QPointF)), this, SLOT(itemReleased(QPointF)));
+    QObject::connect(item, SIGNAL(activated(QPointF)), this, SLOT(itemActivated(QPointF)));
+    QObject::connect(item, SIGNAL(longPressed(QPointF)), this, SLOT(itemLongPressed(QPointF))); 
 }
 
 /*!
@@ -1533,6 +1346,45 @@ bool HbAbstractItemView::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
         d->mPostponedScrollIndex = QPersistentModelIndex();
     }
     return false;
+}
+
+/*!
+ * Sets the value of the longPressEnabled property.  This value is set
+ * to true if the widget is to respond to long press gestures, false otherwise.
+ *
+ * The default value is true.
+ *
+ * \sa HbAbstractItemView::longPressEnabled()
+ */
+void HbAbstractItemView::setLongPressEnabled(bool enabled)
+{
+    Q_D(HbAbstractItemView);
+    d->mLongPressEnabled = enabled;
+}
+
+/*!
+    Returns true if the item view handles long press gestures, false otherwise
+ 
+    \sa HbAbstractItemView::setLongPressEnabled()
+ */
+bool HbAbstractItemView::longPressEnabled() const
+{
+    Q_D(const HbAbstractItemView);
+    return d->mLongPressEnabled;
+}
+
+/*!
+    Slot handles QAbstractItemModel::layoutChanged() signal. 
+    Default implementation sets first model item visible as first view item. 
+*/
+void HbAbstractItemView::modelLayoutChanged()
+{
+    Q_D(HbAbstractItemView);
+    d->mContainer->d_func()->updateItemBuffer();
+    d->mContainer->setModelIndexes(d->mModelIterator->nextIndex(QModelIndex()));
+    if (d->mContainer->items().count() > 0) {
+        scrollTo(d->mContainer->items().at(0)->modelIndex(), PositionAtTop);
+    }
 }
 
 #include "moc_hbabstractitemview.cpp"

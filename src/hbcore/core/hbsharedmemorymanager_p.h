@@ -50,9 +50,9 @@ public:
     }
     static HbMemoryManager *instance();
     static void releaseInstance();
-#ifdef HB_PERF_MEM
-    unsigned int memoryConsumed();
-#endif
+
+    int freeSharedMemory();
+    int allocatedSharedMemory();
 
 protected:
     HbSharedMemoryManager();

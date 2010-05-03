@@ -168,18 +168,6 @@ HbPopupManager* HbGraphicsScenePrivate::popupManager()
     return mPopupManager;
 }
 
-bool HbGraphicsScenePrivate::hasAlreadyInputFrameworkFocus(HbInputMethod *activeMethod, QObject *editorWidget) const
-{
-    if (activeMethod) {
-         HbInputFocusObject *focusObject = activeMethod->focusObject();
-         if (focusObject) {
-             return focusObject->object() == editorWidget;
-         } 
-    }
-
-    return false;
-}
-
 /*!
     Constructor
 */
@@ -195,6 +183,7 @@ d_ptr(new HbGraphicsScenePrivate)
         view->setOptimizationFlag( QGraphicsView::IndirectPainting, true );
     } 
 #endif
+    setStickyFocus(true);
 }
 
 /*!
@@ -232,15 +221,15 @@ void HbGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent* mouseEvent)
 {
     QGraphicsScene::mousePressEvent(mouseEvent);
 
-    // If focused item is not HbWidget then we send event to close the input panel
+    // If the focused item is not HbWidget (and not an editor) then we send an event to close the input panel
     QGraphicsItem* focusedItem = focusItem();
     if(focusedItem) {
         QGraphicsObject* focusedObject = focusedItem->toGraphicsObject();
-        if(!(focusedObject && focusedObject->inherits("HbWidget"))) {
+        if(focusedObject && !focusedObject->inherits("HbWidget") &&
+           ((focusedObject->flags() & QGraphicsItem::ItemAcceptsInputMethod) == 0)) {
             QInputContext *ic = qApp->inputContext();
             if (ic) {
-                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
-                qDebug() << "focus HbGraphicsScene::mousePressEvent CloseSoftwareInputPanel";
+                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);             
                 ic->filterEvent(closeEvent);
                 delete closeEvent;
             }
@@ -292,13 +281,13 @@ void HbGraphicsScene::drawBackground(QPainter *painter, const QRectF &rect)
         // mPolishWidgets is set to true in HbWidget when a widget's scene has
         // changed. We invoke polish slot of qgraphicsscene here so that layout
         // requests resulting from polish can be handled before drawing the
-        // widget.  This is done twice, as most widgets try to create their
+        // widget. This is done more than once because most widgets try to create their
         // primitives in polish event. It will also make sure that we do not
         // have any pending layout requests in event loop.
-        QMetaObject::invokeMethod(this, "_q_polishItems");
-        QApplication::sendPostedEvents(0, QEvent::LayoutRequest);
-        QMetaObject::invokeMethod(this, "_q_polishItems");
-        QApplication::sendPostedEvents(0, QEvent::LayoutRequest);
+        for (int i = 0; i < 3; ++i) {
+            QMetaObject::invokeMethod(this, "_q_polishItems");
+            QApplication::sendPostedEvents(0, QEvent::LayoutRequest);
+        }
         d->mPolishWidgets = false;
     }
     QGraphicsScene::drawBackground(painter,rect);

@@ -30,6 +30,11 @@
     \brief HbStyleOptionColorGridViewItem has the style component for color grid view item primitives
 */
 
+/*!
+
+    \deprecated HbStyleOptionColorGridViewItem::HbStyleOptionColorGridViewItem()
+    is deprecated. Styleoptions will not be public.
+*/
 HbStyleOptionColorGridViewItem::HbStyleOptionColorGridViewItem() :
     HbStyleOptionGridViewItem(),
     color(Qt::black),
@@ -39,7 +44,11 @@ HbStyleOptionColorGridViewItem::HbStyleOptionColorGridViewItem() :
     type = Type;
     version = Version;
 }
+/*!
 
+    \deprecated HbStyleOptionColorGridViewItem::HbStyleOptionColorGridViewItem(const HbStyleOptionColorGridViewItem&)
+    is deprecated. Styleoptions will not be public.
+*/
 HbStyleOptionColorGridViewItem::HbStyleOptionColorGridViewItem(const HbStyleOptionColorGridViewItem &other) :
     HbStyleOptionGridViewItem(other),
     color(other.color),

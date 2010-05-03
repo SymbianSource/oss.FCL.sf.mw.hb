@@ -29,6 +29,12 @@
 #include <hbgesturefilter.h>
 #include <hbgesture.h>
 #include <QGraphicsSceneMouseEvent>
+#include <hbwidgetfeedback.h>
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbtapandholdgesture.h>
+#include <QGesture>
+#endif 
 
 /*
     internal
@@ -44,14 +50,16 @@ HbGroupBoxContentWidget::HbGroupBoxContentWidget(QGraphicsItem *parent ) :
     HbWidget(parent),
     mContent(0),
     mBackgroundItem(0),
-    contentPressed(false),
-    gestureFilter(0),
-    gestureLongpressed(0)
+    contentPressed(false)
+  
 {
     groupBox = qgraphicsitem_cast<HbGroupBox*>( parent );
 
     createPrimitives();
-    createConnection();    
+    createConnection();   
+#ifdef HB_GESTURE_FW
+    grabGesture(Qt::TapGesture);
+#endif 
 }
 
 /*
@@ -61,9 +69,6 @@ HbGroupBoxContentWidget::HbGroupBoxContentWidget(QGraphicsItem *parent ) :
 */
 HbGroupBoxContentWidget::~HbGroupBoxContentWidget()
 {
-    if( gestureFilter ) {
-        removeSceneEventFilter( gestureFilter );
-    }
 }
 
 /*
@@ -101,20 +106,12 @@ void HbGroupBoxContentWidget::updatePrimitives()
 */
 void HbGroupBoxContentWidget::createConnection()
 {
-    // Create gesture filter
-    gestureFilter = new HbGestureSceneFilter( Qt::LeftButton, this );
-    // Add gestures for longpress
-    gestureLongpressed = new HbGesture( HbGesture::longpress,5 );
-    gestureFilter->addGesture( gestureLongpressed );
-
-    installSceneEventFilter( gestureFilter );
-
     // to avoid duplicate signals getting emitted from groupBox contentWidget
     disconnect( this , SIGNAL ( clicked() ) , groupBox , SIGNAL ( clicked() ));
-    disconnect ( gestureLongpressed , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
+    disconnect ( this , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
 
     connect ( this , SIGNAL ( clicked() ) , groupBox , SIGNAL ( clicked() ));
-    connect ( gestureLongpressed , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
+    connect ( this , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
 }
 
 /*!
@@ -216,24 +213,37 @@ QVariant HbGroupBoxContentWidget::itemChange( GraphicsItemChange change, const Q
  */
 void HbGroupBoxContentWidget::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifdef HB_GESTURE_FW
+    Q_UNUSED(event)
+#else 
     HbWidget::mousePressEvent(event);
+
+    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
 
     contentPressed=!contentPressed;
     updatePrimitives();
     event->accept(); 
+#endif 
 }
-
 /*!
     \reimp
  */
 void HbGroupBoxContentWidget::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifdef HB_GESTURE_FW
+    Q_UNUSED(event)
+#else 
+
     HbWidget::mouseReleaseEvent(event);
+
+    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
 
     contentPressed=!contentPressed;    
     updatePrimitives();
     
     emit clicked();
+#endif 
+
 }
 
 /*!
@@ -253,5 +263,40 @@ void HbGroupBoxContentWidget::polish( HbStyleParameters& params )
         }
     HbWidget::polish(params);
 }
+
+
+
+#ifdef HB_GESTURE_FW
+void HbGroupBoxContentWidget::gestureEvent(QGestureEvent *event)
+{
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted:  //
+            contentPressed=true;
+            updatePrimitives();
+            break;
+        case Qt::GestureCanceled: // Reset state
+            contentPressed=false;
+            updatePrimitives();
+            break;
+        case Qt::GestureUpdated:
+            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
+                emit longPress(event->mapToGraphicsScene(tap->position()));
+            }
+            break;
+        case Qt::GestureFinished: // emit clicked
+            contentPressed=false;
+            updatePrimitives();
+            if(tap->tapStyleHint() == HbTapGesture::Tap) {
+                emit clicked();
+            }
+            break;
+        default:
+            break;
+        }
+    } 
+}
+#endif 
+
 
 

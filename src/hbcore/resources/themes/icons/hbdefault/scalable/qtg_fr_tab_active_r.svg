@@ -2,18 +2,13 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="55px" version="1.1" viewBox="0 0 55 55" width="55px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <rect fill="none" height="55" width="55"/>
-<path d="M54.495,54.975C54.805,54.997,55,55,55,55C54.83,55,54.663,54.984,54.495,54.975z" fill="#DCDCDC"/>
-<path d="M53.818,54.903c0.223,0.033,0.448,0.057,0.677,0.071C54.312,54.961,54.082,54.938,53.818,54.903z" fill="#DCDCDC"/>
-<g>
-<path d="M55,55c-4.418,0-8-3.582-8-8V8c0-4.4-3.6-8-8-8H0v55H55z" fill="url(#SVGID_1_)"/>
+<path d="M0,0h25c6.627,0,11.016,4.881,11.999,12  l6.002,32C44.723,50.381,48.377,55,55,55H0V0z" fill="url(#SVGID_1_)" fill-opacity="0.5" fill-rule="evenodd" stroke-opacity="0.5"/>
+<path d="M53.797,54.914c0.389,0.035,0.79,0.053,1.203,0.053  C55,54.967,54.521,54.962,53.797,54.914z M25,0c6.627,0,11.016,4.877,11.999,11.992l6.002,31.98  c1.614,5.978,4.926,10.409,10.79,10.94c-1.552-0.104-4.217-0.411-5.697-1.313c-2.984-1.82-4.949-4.822-6.172-9.365l-6.02-32.057  C34.947,5.264,30.727,1,24.886,1H0V0H25z" fill="#FFFFFF" fill-opacity="0.4" fill-rule="evenodd" stroke-opacity="0.4"/>
+<rect fill="none" height="55" width="55"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="27.5" x2="27.5" y1="55" y2="4.882813e-004">
-<stop offset="0" style="stop-color:#FAFAFA"/>
-<stop offset="0.8" style="stop-color:#FAFAFA"/>
-<stop offset="1" style="stop-color:#EBEBF5"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="27.5" x2="27.5" y1="0" y2="55.0005">
+<stop offset="0" style="stop-color:#1E1E1E"/>
+<stop offset="1" style="stop-color:#000000"/>
 </linearGradient>
 </defs>
-</g>
-<path d="M47,47V8c0-4.4-3.6-8-8-8H0v1h39c3.859,0,7,3.141,7,7v39c0,6.195,5.384,7.588,7.818,7.903  C49.962,54.331,47,51.016,47,47z" fill="#DCDCDC"/>
-<rect fill="none" height="55" width="55"/>
 </svg>

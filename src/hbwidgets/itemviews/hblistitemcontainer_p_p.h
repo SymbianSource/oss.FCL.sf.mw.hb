@@ -47,8 +47,15 @@ public:
     virtual bool intoContainerBuffer(const QModelIndex &index) const; 
     virtual int containerBufferIndexForModelIndex(const QModelIndex &index) const;
 
-    qreal getSmallestItemHeight() const; 
+    qreal itemHeight() const; 
+    qreal getSmallestItemHeight() const;
+
+    int mapToLayoutIndex(int index) const;
+
+public:
 
     HbListLayout *mLayout;
+
+    QList< QPair<HbAbstractViewItem *, int> > mAnimatedItems;
 };
 #endif /* HBLISTITEMCONTAINER_P_P_H */

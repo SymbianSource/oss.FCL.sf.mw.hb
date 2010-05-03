@@ -39,6 +39,8 @@ public:
     HbIndicatorGroupPrivate();
     virtual ~HbIndicatorGroupPrivate();
 
+    void delayedConstruction();
+
     void init();
     int setIconName(HbStyleOptionIndicatorGroup &option, int index);
 
@@ -52,12 +54,21 @@ public:
     bool canAddIndicator(const IndicatorClientInfo &indicator) const;
 
     void emitNotificationCount();
+
+    void startAddingEffect();
+    void startRemovingEffect();
+
+    int findIndicatorIcon(const QString &iconPath) const;
+
 private:
     HbIndicatorGroup::IndicatorType mIndicatorType;
     QList<QGraphicsItem*> mIcons;   
     HbIndicatorPrivate *mIndicatorPrivate;
     QList<IndicatorClientInfo> mIndicators;
     bool mProgressAdded;
+    bool mIndicatorAdded;
+    QList<QPointF> mOriginalPos;
+    QStringList mRemovedIndicators;    
 };
 
 #endif // HBINDICATORGROUP_P_P_H

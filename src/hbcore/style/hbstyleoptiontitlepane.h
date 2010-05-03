@@ -29,6 +29,7 @@
 #include <hbstyleoptiondecorator.h>
 #include <QIcon>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionTitlePane : public HbStyleOption
 {
 public:

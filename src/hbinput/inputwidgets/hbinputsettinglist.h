@@ -27,6 +27,7 @@
 #define HB_INPUT_SETTING_LIST_H
 
 #include <hbdialog.h>
+#include <hbinputdef.h>
 
 class HbInputSettingListPrivate;
 class HbListWidgetItem;
@@ -42,6 +43,7 @@ public:
 
 public:
     void showSettingList();
+    void updateSettingList();
     void setLanguageSelectionEnabled(bool disabled);
     void setPredictionSelectionEnabled(bool disabled);
 
@@ -52,6 +54,7 @@ public slots:
     void primaryLanguageChanged(const HbInputLanguage &newLanguage);
     void secondaryLanguageChanged(const HbInputLanguage &newLanguage);
     void predictionStatusChanged(int newStatus);
+    void predictionStatusChanged(HbKeyboardSettingFlags keyboardType, bool newStatus);
     void saveSettings();
 
 signals:

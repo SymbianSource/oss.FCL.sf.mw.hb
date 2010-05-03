@@ -36,8 +36,7 @@ HbEffectScaleAnimation::HbEffectScaleAnimation(
     HbEffectGroup *group,
     HbEffectScale *effect,
     int duration ) :
-        HbEffectAnimation(),
-        mGroup(group),
+        HbEffectAnimation(group),
         mEffect(effect),
         mCenter(0),
         mCurrentScaling(1.0)
@@ -175,13 +174,13 @@ HbEffectScale::HbEffectScale(
 
     if (durationX > 0) {
         mAnimationX = new HbEffectScaleAnimation(group, this, durationX);
-        mAnimationX->addLooping(paramX, group);
+        mAnimationX->addLooping(paramX);
         mAnimationX->mCurve = curveX;
     }
     // Create at least one animation even if both durations are zero for handling animation finish easily.
     if (durationY > 0 || !mAnimationX) {
         mAnimationY = new HbEffectScaleAnimation(group, this, durationY);
-        mAnimationY->addLooping(paramY, group);
+        mAnimationY->addLooping(paramY);
         mAnimationY->mCurve = curveY;
     }
 }

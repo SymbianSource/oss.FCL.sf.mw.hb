@@ -45,7 +45,6 @@ public:
     };
     Q_DECLARE_FLAGS(Options, Option)
     
-    static int collationMethods(); // Will be deprecated 
     static int matchC( const QString &strFrom, const QString &strToMatch, 
                        int maxLevel = 0, Options flags = Default, 
                        int wildChar = '?', int wildSequenceChar = '*', int escapeChar = '\\' );
@@ -57,9 +56,7 @@ public:
     static int matchF( const QString &strFrom, const QString &strToMatch );
     static int compareF( const QString &string1, const QString &string2 );    
     static int findF( const QString &strFrom, const QString &strToFind );
-    
-    static uint collate( const uint chr ); // Will be deprecated
-    
+        
     static QString convertDigits( const QString str );
     static QString convertDigitsTo( const QString str, const DigitType digitType ); 
     static void sort( QStringList &strList );   

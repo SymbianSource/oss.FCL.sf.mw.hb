@@ -39,6 +39,10 @@
     When deactivated, icons are removed from the status
     indicator area and in universal indicator popup.
 
+    User can interact with indicator from the indicator menu. Client is notified about
+    the user interaction via userActivated signal. Interaction notification and data 
+    sent by the indicator is a contract between HbIndicator class and indicator.
+    
     \sa HbIndicatorPluginInterface
 
     \alpha
@@ -61,6 +65,15 @@
 /*!
     \var HbIndicator::ErrorRange HbIndicator::ErrorTypeMask
     Mask for error type part of the error code.
+*/
+
+/*!
+    \fn void userActivated(const QString &type, const QVariantMap &data)
+
+    The class should emit this signal, when client needs to be notified of the
+    user interaction.
+    @param type Type of the indicator that user interacted with.
+    @param data Data sent by indicator.
 */
 
 #include "hbindicator.h"

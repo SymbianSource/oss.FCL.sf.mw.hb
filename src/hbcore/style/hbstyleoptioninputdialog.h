@@ -29,7 +29,7 @@
 #include <hbstyleoption.h>
 #include <hbstyleoptionpopup.h>
 
-
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionInputDialog : public HbStyleOptionPopup
 {
 public:

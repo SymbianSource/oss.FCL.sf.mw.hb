@@ -153,15 +153,6 @@ void HbListDialogPrivate::init()
     q->setTimeout(0);
     q->setModal(true);
 
-    createPrimitives();
-}
-
-void HbListDialogPrivate::createPrimitives()
-{
-}
-
-void HbListDialogPrivate::updatePrimitives()
-{
 }
 
 

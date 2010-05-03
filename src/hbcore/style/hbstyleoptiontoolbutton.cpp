@@ -30,6 +30,12 @@
     \brief HbStyleOptionToolButton has the style component for tool button primitives
 */
 
+/*!
+
+    \deprecated HbStyleOptionToolButton::HbStyleOptionToolButton()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionToolButton::HbStyleOptionToolButton() : HbStyleOption(HbSO_ToolButton),
     icon(),
     customBackground(),
@@ -37,12 +43,19 @@ HbStyleOptionToolButton::HbStyleOptionToolButton() : HbStyleOption(HbSO_ToolButt
     toolBarPosition(HbStyleOptionToolButton::TB_None),
     orientation(Qt::Vertical),
     isCheckable(false),
-    useSecondaryGraphics(false)
+    useSecondaryGraphics(false),
+    isToolBarExtension(false)
 {
     type = Type;
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionToolButton::HbStyleOptionToolButton(const HbStyleOptionToolButton&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionToolButton::HbStyleOptionToolButton(const HbStyleOptionToolButton &other) :
     HbStyleOption(other),
     icon(other.icon),

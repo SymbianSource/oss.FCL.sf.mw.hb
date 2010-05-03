@@ -36,10 +36,10 @@ class HbTlvWrapperPrivate
 public:
     HbTlvWrapperPrivate();
     ~HbTlvWrapperPrivate();
-    const QByteArray getTLVEncodedData(QString& filename, QSizeF& size, Qt::AspectRatioMode aspectRatioM);
-    const QByteArray getTLVEncodedDataFromDom(quint32& domhandle,QSizeF& size, Qt::AspectRatioMode aspectRatioM);
-    const QSize contentDimensions(QString& filename, quint32& domhandle); 
-public:
+    const QByteArray getTlvEncodedData(const QString& filename, const QSizeF& size, Qt::AspectRatioMode aspectRatioMode);
+    const QByteArray getTlvEncodedDataFromDom(const quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioMode);
+    const QSize contentDimensions(QString& filename, quint32& domhandle);
+private:
     CSvgEngineInterfaceImpl *s60SvgEngine;
     CFbsBitmap *bitmap;
     TSize contentsize;

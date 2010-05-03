@@ -36,13 +36,15 @@ PUBLIC_HEADERS += $$PWD/hbnumbergrouping.h
 PUBLIC_HEADERS += $$PWD/hbparameterlengthlimiter.h
 PUBLIC_HEADERS += $$PWD/hbfindfile.h
 PUBLIC_HEADERS += $$PWD/hbtranslator.h
-INTERNAL_HEADERS += $$PWD/hbdntxmlreader_p.h
-INTERNAL_HEADERS += $$PWD/hbngnormalnumber_p.h
-INTERNAL_HEADERS += $$PWD/hbnumbergrpxmlreader_p.h
-INTERNAL_HEADERS += $$PWD/hbdirectorynamelocalizer_p.h
-INTERNAL_HEADERS += $$PWD/hbstringutil_p.h
-INTERNAL_HEADERS += $$PWD/hbparameterlengthlimiter_p.h
-INTERNAL_HEADERS += $$PWD/hbtranslator_p.h
+PUBLIC_HEADERS += $$PWD/hblanguageutil.h
+
+PRIVATE_HEADERS += $$PWD/hbdntxmlreader_p.h
+PRIVATE_HEADERS += $$PWD/hbngnormalnumber_p.h
+PRIVATE_HEADERS += $$PWD/hbnumbergrpxmlreader_p.h
+PRIVATE_HEADERS += $$PWD/hbdirectorynamelocalizer_p.h
+PRIVATE_HEADERS += $$PWD/hbstringutil_p.h
+PRIVATE_HEADERS += $$PWD/hbparameterlengthlimiter_p.h
+PRIVATE_HEADERS += $$PWD/hbtranslator_p.h
 
 SOURCES += $$PWD/hbextendedlocale.cpp
 SOURCES += $$PWD/hbstringutil.cpp
@@ -54,3 +56,8 @@ SOURCES += $$PWD/hbnumbergrpxmlreader.cpp
 SOURCES += $$PWD/hbparameterlengthlimiter.cpp
 SOURCES += $$PWD/hbfindfile.cpp
 SOURCES += $$PWD/hbtranslator.cpp
+SOURCES += $$PWD/hblanguageutil.cpp
+
+symbian:LIBS += -leuser -lhal -lcentralrepository -lptiengine -lSysLangUtil
+symbian:TARGET.CAPABILITY += WriteDeviceData
+

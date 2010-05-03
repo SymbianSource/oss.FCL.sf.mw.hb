@@ -27,9 +27,12 @@
 #define HBWIDGETLOADER_P_H
 
 #include <hbglobal.h>
+#include <hbnamespace.h>
 #include <QString>
+#include "hbstring_p.h"
+#include "hbvector_p.h"
 #include "hbmemorymanager_p.h"
-
+#include "hbxmlloaderabstractsyntax_p.h"
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
@@ -37,22 +40,56 @@ QT_END_NAMESPACE
 class HbWidget;
 class HbWidgetLoaderPrivate;
 
-class HB_AUTOTEST_EXPORT HbWidgetLoader
+class HB_CORE_PRIVATE_EXPORT HbWidgetLoader
 {
 public:
+
+    struct MeshItem
+    {
+        HbString src;
+        HbString dst;
+        Hb::Edge srcEdge;
+        Hb::Edge dstEdge;
+        HbXmlLengthValue::Type spacingType;
+        qreal spacingVal;
+        HbString spacingText;
+        HbString spacer;
+        MeshItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+            : src(type), dst(type), spacingText(type), spacer(type) {}
+    };
+
+    struct LayoutDefinition {
+        HbMemoryManager::MemoryType type;
+        HbVector<MeshItem> meshItems;
+        LayoutDefinition(HbMemoryManager::MemoryType memtype)
+            : type(memtype), meshItems(memtype)
+        {
+        }
+    };
 
     HbWidgetLoader();
     virtual ~HbWidgetLoader();
 
-    void setWidget( HbWidget* widget );
+    bool load(
+        HbWidget* widget,
+        const QString &fileName,
+        const QString &name,
+        const QString &section = QString(),
+        HbMemoryManager::MemoryType storage = HbMemoryManager::HeapMemory);
 
-    bool load( const QString &fileName, const QString &name, const QString &section = QString(),
-               HbMemoryManager::MemoryType storage = HbMemoryManager::HeapMemory);
-    bool load( QIODevice *device, const QString &name, const QString &section = QString(),
-               HbMemoryManager::MemoryType storage = HbMemoryManager::HeapMemory);
+    bool load(
+        HbWidget* widget,
+        QIODevice *device,
+        const QString &name,
+        const QString &section = QString());
+    
+    bool loadLayoutDefinition(
+        LayoutDefinition *targetLayoutDef,
+        QIODevice *device,
+        const QString &name,
+        const QString &section );
     
     static QString version();
-    
 
 private:
     HbWidgetLoaderPrivate * const d_ptr;

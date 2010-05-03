@@ -33,9 +33,9 @@
 class HbSliderControl;
 class QGraphicsItem;
 
-QT_BEGIN_NAMESPACE;
+QT_BEGIN_NAMESPACE
 class QGraphicsWidget;
-QT_END_NAMESPACE;
+QT_END_NAMESPACE
 
 
 class HB_AUTOTEST_EXPORT HbSliderHandle : public HbWidget
@@ -70,6 +70,7 @@ protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    virtual void gestureEvent(QGestureEvent *event);
     //void updatePrimitive();
     //virtual void polish( HbStyleParameters& params );
 

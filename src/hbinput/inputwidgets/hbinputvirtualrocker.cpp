@@ -28,7 +28,6 @@
 #include <QPainter>
 #include <QCoreApplication>
 #include <QDir>
-#include <QDebug>
 #include <hbicon.h>
 #include <hbinputsettingproxy.h>
 #include <hbwidgetfeedback.h>
@@ -76,9 +75,13 @@ HbInputVirtualRockerPrivate::HbInputVirtualRockerPrivate(HbInputVirtualRocker *r
           mMousePressPoint(0.0,0.0),
           mKeyboard(parent),
           mPressed(false)
-{
+{    
     mIconNormal = new HbIcon("qtg_graf_trackpoint_normal" );
     mIconNormal->setSize( QSizeF( HbIconWidth, HbIconWidth ));
+
+    q_ptr->grabGesture(Qt::SwipeGesture);    
+    q_ptr->grabGesture(Qt::TapGesture);
+    q_ptr->grabGesture(Qt::PanGesture);
 }
 
 HbInputVirtualRockerPrivate::~HbInputVirtualRockerPrivate()
@@ -327,6 +330,11 @@ HbInputVirtualRocker::RockerSelectionMode HbInputVirtualRocker::selectionMode() 
 {
     Q_D(const HbInputVirtualRocker);
     return d->mShifted;
+}
+
+void HbInputVirtualRocker::gestureEvent(QGestureEvent *event)
+{
+    Q_UNUSED (event);
 }
 
 // End of file

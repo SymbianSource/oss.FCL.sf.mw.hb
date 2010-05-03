@@ -32,6 +32,11 @@
 #include <hbmainwindow.h>
 #include <hbview.h>
 #include <hbmenu.h>
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+
+#include <QGestureEvent>
+#include <QGesture>
 
 #include <QGraphicsSceneMouseEvent>
 
@@ -45,7 +50,7 @@
     setting text, font alignment and options menu.
 */
 
-HbTitlePanePrivate::HbTitlePanePrivate( ) :
+HbTitlePanePrivate::HbTitlePanePrivate() :
     mText(),
     mTextItem(0),
     mToggled(false),
@@ -55,15 +60,22 @@ HbTitlePanePrivate::HbTitlePanePrivate( ) :
 
 }
 
+void HbTitlePanePrivate::delayedConstruction()
+{
+    Q_Q(HbTitlePane);
+    q->grabGesture(Qt::TapGesture);
+    q->grabGesture(Qt::PanGesture);
+    updatePrimitives();
+}
+
 void HbTitlePanePrivate::init()
 {
     Q_Q(HbTitlePane);
 
-    q->setAcceptedMouseButtons( Qt::LeftButton );
-    q->setText( HbApplication::applicationName() );
+    q->setAcceptedMouseButtons(Qt::LeftButton);
+    q->setText(HbApplication::applicationName());
 
     createPrimitives();
-    updatePrimitives();
 }
 
 void HbTitlePanePrivate::toggle(bool on)
@@ -121,6 +133,16 @@ HbTitlePane::HbTitlePane(HbTitlePanePrivate &dd, QGraphicsItem *parent)
  */
 HbTitlePane::~HbTitlePane()
 {
+
+}
+
+/*
+    Delayed constructor.
+ */
+void HbTitlePane::delayedConstruction()
+{
+       Q_D(HbTitlePane);
+       d->delayedConstruction();
 }
 
 /*
@@ -195,84 +217,99 @@ void HbTitlePane::initStyleOption(HbStyleOptionTitlePane *option) const
     }
 }
 
-/*
-    \reimp
- */
-void HbTitlePane::mousePressEvent(QGraphicsSceneMouseEvent *event)
+void HbTitlePane::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbTitlePane);
 
-    d->mMode = QIcon::Active;
-    updatePrimitives();
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted: {
+                d->mMode = QIcon::Active;
+                updatePrimitives();
 #ifdef HB_EFFECTS
-    if (boundingRect().contains(event->pos())) {
-        HbEffect::start(this, "decorator", "pressed");
-    }
+                HbEffect::start(this, "decorator", "pressed");
 #endif
-    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-    d->toggle(true);    
-}
-
-/*
-    \reimp
- */
-void HbTitlePane::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbTitlePane);
-
-    if (boundingRect().contains(event->pos())) {
-        if (d->mMode != QIcon::Active) {
-            d->mMode = QIcon::Active;
-            updatePrimitives();
-        }
-    } else {
-        if (d->mMode != QIcon::Normal) {
-            d->mMode = QIcon::Normal;
-            updatePrimitives();
-        }
-    }
-    if (boundingRect().contains(event->pos()) && !d->mToggled) {
-        HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-        d->toggle(true);
-    } else if (!boundingRect().contains(event->pos()) && d->mToggled) {
-        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-        d->toggle(false);
-    }
-}
-
-/*
-    \reimp
- */
-void HbTitlePane::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbTitlePane);
-
-    if (boundingRect().contains(event->pos())) {
-        d->mMode = QIcon::Selected;
-        updatePrimitives();
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                d->toggle(true);
+                break;
+            }
+        case Qt::GestureFinished: {
+                d->mMode = QIcon::Selected;
+                updatePrimitives();
 #ifdef HB_EFFECTS
-        if (boundingRect().contains(event->pos())) {
-            HbEffect::start(this, "decorator", "latched");
-        }
+                HbEffect::start(this, "decorator", "latched");
 #endif
-    } else {
-        d->mMode = QIcon::Normal;
-        updatePrimitives();
-#ifdef HB_EFFECTS
-        if (boundingRect().contains(event->pos())) {
-            HbEffect::start(this, "decorator", "released");
-        }
-#endif
-    }
-    if (d->mToggled) {
-        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-    }
-    if (boundingRect().contains(event->pos())) {
-        QPointF pos(scenePos().x() + boundingRect().width() / 2 + 3,
-                    scenePos().y() + boundingRect().height());
+                if (d->mToggled) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                }
+                HbWidgetFeedback::triggered(this, Hb::InstantClicked);
+                QPointF launchPos(scenePos().x() + boundingRect().width() / 2 + 3, scenePos().y() + boundingRect().height());
+                emit launchPopup(launchPos);
+                break;
+            }
+        default:
+            break;
+        }        
+    } else if (HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
+        QPointF pointerPos = mapFromScene(event->mapToGraphicsScene(pan->startPos() + pan->offset()));
+        switch(pan->state()) {
+        case Qt::GestureUpdated: {
+                if (boundingRect().contains(pointerPos)) {
+                    if (d->mMode != QIcon::Active) {
+                        d->mMode = QIcon::Active;
+                        updatePrimitives();
+                    }
+                } else {
+                    if (d->mMode != QIcon::Normal) {
+                        d->mMode = QIcon::Normal;
+                        updatePrimitives();
+                    }
+                }
+                if (boundingRect().contains(pointerPos) && !d->mToggled) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                    d->toggle(true);
+                } else if (!boundingRect().contains(pointerPos) && d->mToggled) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                    d->toggle(false);
+                }
 
-        HbWidgetFeedback::triggered(this, Hb::InstantClicked);
-        emit launchPopup(pos);
+                if(pan->sceneDelta().x() > 0) {
+                    emit panRight();
+                }
+                else if(pan->sceneDelta().x() < 0) {
+                    emit panLeft();
+                }
+
+                break;
+            }
+        case Qt::GestureFinished: {
+                if (boundingRect().contains(pointerPos) && !d->mToggled) {
+                    d->mMode = QIcon::Selected;
+                    updatePrimitives();
+#ifdef HB_EFFECTS
+                    HbEffect::start(this, "decorator", "latched");
+#endif
+                    if (d->mToggled) {
+                        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                    }
+
+                    HbWidgetFeedback::triggered(this, Hb::InstantClicked);
+                    QPointF launchPos(scenePos().x() + boundingRect().width() / 2 + 3, scenePos().y() + boundingRect().height());
+                    emit launchPopup(launchPos);
+                }
+                else {
+                    if (d->mMode != QIcon::Normal) {
+                        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                        d->toggle(false);
+                        d->mMode = QIcon::Normal;
+                        updatePrimitives();
+                    }
+                }
+                break;
+            }
+        default:
+            break;
+        }
     }
 }
 

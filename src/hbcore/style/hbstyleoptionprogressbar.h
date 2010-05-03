@@ -30,6 +30,7 @@
 #include <hbicon.h>
 #include <hbstyleoption.h>
 
+//Deprecated
 class HB_CORE_EXPORT HbStyleOptionProgressBar : public  HbStyleOption
 {
 public:
@@ -41,15 +42,14 @@ public:
     enum StyleOptionType { Type = HbSO_ProgressBar };
     enum StyleOptionVersion { Version = 1 };
     
-    // deprecated
-    enum HandleState {
+    enum HandleState {          // deprecated
         PlayNormal,
         PlayPressed,
         PauseNormal,
         PausePressed
     };
 
-    enum SliderState
+    enum SliderState            // deprecated
     {
         SliderStatePlayNormal,
         SliderStatePlayPressed,
@@ -60,19 +60,19 @@ public:
     int progressValue;
     int minimum;
     int maximum;
-    uint inverted : 1;//mirrored
-    QString text; // deprecated
+    uint inverted : 1;  //mirrored
+    QString text;               // deprecated
     bool isSlider;
     uint stopWaitAnimation : 1;
     QString minText;
     QString maxText;
     Qt::Orientation orientation;
 
-    int sliderValue;    
-    QRectF handleRect;  
-    HbIcon thumbIcon;   // deprecated
-    qreal maskWidth;    
-    bool secondoryType;
+    int sliderValue;            // deprecated  
+    QRectF handleRect;          // deprecated
+    HbIcon thumbIcon;           // deprecated
+    qreal maskWidth;            // deprecated
+    bool secondaryType;         // deprecated
     HandleState handleState;    // deprecated
     SliderState sliderState;    // deprecated
     Qt::Alignment minMaxTextAlignment;

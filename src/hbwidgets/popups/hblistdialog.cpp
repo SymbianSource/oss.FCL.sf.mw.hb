@@ -29,20 +29,29 @@
 #include "hbaction.h"
 #include "hbabstractviewitem.h"
 #include <hbinstance.h>
+#include "hbglobal_p.h"
 
-#include <QtGui>
 #include <QtDebug>
 #include <QGraphicsScene>
 #include <hblistwidgetitem.h>
 #include <hblistwidget.h>
 #include <hbradiobuttonlist.h>
 /*!
-  @beta
+  \this class is deprecated. Use HbSelectionDialog.
+*/
+
+/*!
+  \deprecated HbListDialog(QGraphicsItem*)
+	is deprecated. \this is deprecated, use HbSelectionDialog.
+
   Constructor	
 */
+
 HbListDialog::HbListDialog(QGraphicsItem* parent): 
                                 HbDialog(*new HbListDialogPrivate, parent)
 {
+	HB_DEPRECATED("HbListDialog class is deprecated. Use HbSelectionDialog");
+
     Q_D(HbListDialog);
     d->init();
     setDismissPolicy(NoDismiss);
@@ -195,8 +204,7 @@ QAbstractItemModel* HbListDialog::model() const
 	Q_D(const HbListDialog);
 	return d->model();
 }
-/*!
-    @beta
+/*!                                  
     Static convenience function to let the user select item(s) from a
     string list. \a label is the text which is shown to the user (it
     should say what should be entered). \a list is the string list which 
@@ -239,8 +247,7 @@ void HbListDialog::getStringItems(const QString &label,
 }
 
 /*!
-    @beta
-    Static convenience function to let the user select item(s) from a
+   Static convenience function to let the user select item(s) from a
     list of user defined items. \a label is the text which is shown to the 
     user (it should say what should be entered). \a list is the list 
     of user defined items shown to the user.Ownership is not transferred.
@@ -282,7 +289,6 @@ void HbListDialog::getWidgetItems(const QString &label,
 }
 
 /*!
-    @beta
     Static convenience function to let the user select item(s) from a
     list of items defined by a user set model.\a label is the text which 
     is shown to the user (it should say what should be entered). \a model 
@@ -318,8 +324,10 @@ void HbListDialog::getModelIndexes(const QString &label, QAbstractItemModel* mod
 
 
 /*!
-    @deprecated HbListDialog::getStringItems(const QString&,const QStringList,int,bool*,HbAbstractItemView::SelectionMode,QGraphicsScene*,QGraphicsItem*)
-    Static convenience function to let the user select item(s) from a
+    \deprecated HbListDialog::getStringItems(const QString&,const QStringList,int,bool*,HbAbstractItemView::SelectionMode,QGraphicsScene*,QGraphicsItem*)
+        is deprecated. Please use the other available HbListDialog::getStringItems(...) API.
+    
+	Static convenience function to let the user select item(s) from a
     string list. \a label is the text which is shown to the user (it
     should say what should be entered). \a list is the string list which 
     is inserted into the list and \a current is 
@@ -338,6 +346,8 @@ void HbListDialog::getModelIndexes(const QString &label, QAbstractItemModel* mod
 QStringList HbListDialog::getStringItems(const QString &label, const QStringList &list,int current,
                                                 bool *ok,HbAbstractItemView::SelectionMode mode, QGraphicsScene *scene, QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbListDialog::getStringItems is deprecated. Use HbListDialog::getStringItems(const QString &,const QStringList &,QObject *receiver,const char *,int,HbAbstractItemView::SelectionMode, QGraphicsScene *, QGraphicsItem *)");
+
 	Q_UNUSED(parent)
 	
 	HbListDialog *dlg = new HbListDialog();
@@ -370,7 +380,9 @@ QStringList HbListDialog::getStringItems(const QString &label, const QStringList
 }
 
 /*!
-    @deprecated HbListDialog::getWidgetItems(const QString &, QList<HbListWidgetItem*> &,int,bool *,HbAbstractItemView::SelectionMode, QGraphicsScene *, QGraphicsItem *)
+    \deprecated HbListDialog::getWidgetItems(const QString &, QList<HbListWidgetItem*> &,int,bool *,HbAbstractItemView::SelectionMode, QGraphicsScene *, QGraphicsItem *)
+        is deprecated. Use the other available HbListDialog::getWidgetItems(...) API.
+
     Static convenience function to let the user select item(s) from a
     list of user defined items. \a label is the text which is shown to the 
     user (it should say what should be entered). \a list is the list 
@@ -390,6 +402,8 @@ QStringList HbListDialog::getStringItems(const QString &label, const QStringList
 QList<HbListWidgetItem*> HbListDialog::getWidgetItems(const QString &label, QList<HbListWidgetItem*> &list,int current,
                                                         bool *ok,HbAbstractItemView::SelectionMode mode, QGraphicsScene *scene, QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbListDialog::getWidgetItems is deprecated. Use HbListDialog::getWidgetItems(const QString &, QList<HbListWidgetItem*> &list,QObject *,const char *,int,HbAbstractItemView::SelectionMode, QGraphicsScene *, QGraphicsItem *)");
+
     Q_UNUSED(parent)
     HbListDialog *dlg = new HbListDialog();
     if (scene) {
@@ -423,7 +437,9 @@ QList<HbListWidgetItem*> HbListDialog::getWidgetItems(const QString &label, QLis
 }
 
 /*!
-    @deprecated HbListDialog::getModelIndexes(const QString &, QAbstractItemModel* ,bool *,HbAbstractItemView::SelectionMode , QGraphicsScene *, QGraphicsItem *)
+    \deprecated HbListDialog::getModelIndexes(const QString &, QAbstractItemModel* ,bool *,HbAbstractItemView::SelectionMode , QGraphicsScene *, QGraphicsItem *)
+        is deprecated. Use the other available HbListDialog::getModexIndexes(...) API.
+
     Static convenience function to let the user select item(s) from a
     list of items defined by a user set model.\a label is the text which 
     is shown to the user (it should say what should be entered). \a model 
@@ -441,6 +457,8 @@ QList<HbListWidgetItem*> HbListDialog::getWidgetItems(const QString &label, QLis
 */
 QModelIndexList HbListDialog::getModelIndexes(const QString &label, QAbstractItemModel* model,bool *ok,HbAbstractItemView::SelectionMode mode, QGraphicsScene *scene, QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbListDialog::getModelIndexes is deprecated. Use HbListDialog::getModelIndexes(const QString &, QAbstractItemModel*,QObject *,const char *,HbAbstractItemView::SelectionMode, QGraphicsScene *, QGraphicsItem *)");
+
     Q_UNUSED(parent)
     HbListDialog *dlg = new HbListDialog();
     if (scene) {

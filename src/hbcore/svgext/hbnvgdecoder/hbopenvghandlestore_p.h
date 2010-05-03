@@ -33,21 +33,20 @@ class HbOpenVgHandleStore
 {
 public:
     struct HbTlvVgHandlePair {
-        enum HandleType {
+        enum HbHandleType {
             VgPath,
             VgPaint,
             VgImage
         };
         VGHandle    mVgHandle;
-        HandleType  mHandleType;
+        HbHandleType  mHandleType;
 
-        explicit HbTlvVgHandlePair(VGHandle vgHandle,  HandleType handleType = VgPath)
+        explicit HbTlvVgHandlePair(VGHandle vgHandle,  HbHandleType handleType = VgPath)
                 : mVgHandle(vgHandle),
-                mHandleType(handleType) 
-        {
+                mHandleType(handleType) {
         }
     };
-        
+
     HbOpenVgHandleStore();
 
     ~HbOpenVgHandleStore();
@@ -57,7 +56,7 @@ public:
     void addPaint(VGPaint handle);
 
     void addImage(VGImage handle);
-    
+
 private:
 
     QList<HbTlvVgHandlePair> mHandles;

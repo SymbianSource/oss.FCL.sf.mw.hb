@@ -237,6 +237,10 @@ HbAbstractItemView* HbIndexFeedback::itemView() const
 }
 
 /*!
+
+    \deprecated HbIndexFeedback::primitive(HbStyle::Primitive)
+        is deprecated.
+
     Returns the primitives used in HbIndexFeedback.
 
     \param primitive The primitive type requested.
@@ -351,23 +355,23 @@ void HbIndexFeedback::initStyleOption(HbStyleOptionIndexFeedback *option) const
         case IndexFeedbackSingleCharacter:
             {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
-                fontSpec.setTextPaneHeight(d->textHeight());
+                fontSpec.setTextHeight(d->textHeight());
             }
             break;
             
         case IndexFeedbackThreeCharacter:
             {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
-                fontSpec.setTextPaneHeight(d->textHeight());
+                fontSpec.setTextHeight(d->textHeight());
             }
             break;
 
         case IndexFeedbackString:
             {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
-                qreal textPaneHeight = 0;
-                style()->parameter(QLatin1String("hb-param-text-height-primary"), textPaneHeight);
-                fontSpec.setTextPaneHeight( textPaneHeight );
+                qreal textHeight = 0;
+                style()->parameter(QLatin1String("hb-param-text-height-primary"), textHeight);
+                fontSpec.setTextHeight( textHeight );
             }
             break;
 

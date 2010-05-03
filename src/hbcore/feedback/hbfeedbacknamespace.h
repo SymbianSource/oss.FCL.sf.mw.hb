@@ -40,7 +40,8 @@
 class HB_CORE_EXPORT HbFeedback
 {
     Q_GADGET
-    Q_ENUMS(Type InstantEffect ContinuousEffect TacticonEffect HitAreaType IntensityLevel)
+    Q_ENUMS(Type InstantEffect ContinuousEffect TacticonEffect HitAreaType IntensityLevel Modality)
+    Q_FLAGS(Types Modalities)
 
 public:
 #else
@@ -102,6 +103,7 @@ namespace HbFeedback
         StopFlick,
         MultitouchActivate,
         RotateStep,
+        LongPress,
         PositiveTacticon,
         NeutralTacticon,
         NegativeTacticon,
@@ -185,6 +187,19 @@ namespace HbFeedback
     };
 
     /*!
+      \enum Modality
+      The available modalities for feedback effects.
+      Effects can be synthesized using one or several of the available modalities.
+    */
+    enum Modality {
+        All     = 0xFFFF,
+        Audio   = 0x0001,
+        Tactile = 0x0002
+    };
+
+    Q_DECLARE_FLAGS(Modalities, Modality)
+
+    /*!
         Timeout value has to be defined for each continuous feedback
         to avoid situations where continuous feedback is never cancelled
         and accidentally continues to play infinitely.
@@ -197,6 +212,7 @@ namespace HbFeedback
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbFeedback::Types)
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbFeedback::Modalities)
 
 #endif // HBFEEDBACKNAMESPACE_H
 

@@ -52,34 +52,47 @@ class HB_CORE_PRIVATE_EXPORT HbEffectInternal
 {
 
 public:
+    enum EffectFlag {
+        Normal = 0,
+        ClearEffectWhenFinished = 1,
+        ShowItemOnFirstUpdate = 2,
+        HideRegItemBeforeClearingEffect = 4,
+        HideTargetItemBeforeClearingEffect = 8
+    };
+    Q_DECLARE_FLAGS(EffectFlags, EffectFlag)
+
     static bool start(QGraphicsItem *registrationItem,
                       QGraphicsItem *targetItem,
-                      bool hideWhenFinished,
+                      EffectFlags flags,
                       const QString &itemType,
                       const QString &effectEvent,
                       QObject *receiver = 0,
                       const char *member = 0,
                       const QVariant &userData = QVariant(),
                       const QRectF &extRect = QRectF());
+
     static bool start(QGraphicsItem *registrationItem,
                       QGraphicsItem *targetItem,
-                      bool hideWhenFinished,
+                      EffectFlags flags,
                       const QString &effectEvent,
                       QObject *receiver = 0,
                       const char *member = 0,
                       const QVariant &userData = QVariant(),
                       const QRectF &extRect = QRectF());
+
     static bool add(const QString &itemType, const QString &filePath, const QString &effectEvent = QString());
     static bool add(const QStringList &itemType, const QStringList &filePath, const QStringList &effectEvent = QStringList());
     static bool add(QGraphicsItem *item, const QString &filePath, const QString &effectEvent = QString());
     static bool add(QGraphicsItem *item, const QStringList &filePath, const QStringList &effectEvent = QStringList());
+
     static void remove(const QString &itemType, const QString &filePath, const QString &effectEvent);
     static void remove(QGraphicsItem *item, const QString &filePath, const QString &effectEvent);
     static void remove(QGraphicsItem *item);
+
     static void reloadFxmlFiles();
 
     static void cancelAll(const QList<QGraphicsItem*> *exceptionList = 0, bool ignoreLooping = false);
-    static void safeCancelAll();
+    static void safeCancelAll(bool clear = false);
 
     static void stopEffects();
     static void resumeEffects();
@@ -90,5 +103,7 @@ private:
     HbEffectInternal();
     HbGVWrapperItem mGVWrapper;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbEffectInternal::EffectFlags)
 
 #endif // HBEFFECTINTERNAL_P_H

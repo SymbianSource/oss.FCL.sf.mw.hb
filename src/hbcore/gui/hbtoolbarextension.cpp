@@ -83,6 +83,7 @@ HbToolBarExtensionPrivate::HbToolBarExtensionPrivate() :
         mColsPortrait(3),
         mColsLandscape(4),
         lazyInitDone(false),
+        orientationConnectDone(false),
         //
         mExtendedButton(0),
         mToolBar(0)
@@ -147,7 +148,6 @@ void HbToolBarExtensionPrivate::doLayout()
     int column (0);
     int row(0);
     initialiseContent();
-
     if (!mDefaultContentWidget)
         return;
 
@@ -167,7 +167,7 @@ void HbToolBarExtensionPrivate::doLayout()
             if ( row >= maxRow ) {
                 qWarning() << "Too many items in extension!";
             }
-            HbToolButtonPrivate::d_ptr(button)->setBackgroundVisible(false);
+            HbToolButtonPrivate::d_ptr(button)->setExtensionBackgroundVisible(true);
             mLayout->addItem( button, row, column );
             ++j;
         }
@@ -294,6 +294,7 @@ void HbToolBarExtensionPrivate::_q_orientationChanged()
             HbToolBarExtensionPrivate::d_ptr(q)->setAlignment(Qt::AlignRight);
         }
     }
+    q->repolish();
     doLayout();
 }
 
@@ -327,6 +328,7 @@ HbToolBarExtension::HbToolBarExtension( QGraphicsItem *parent ) :
  */
 HbToolBarExtension::~HbToolBarExtension()
 {
+    disconnect();
 }
 
 /*!
@@ -484,7 +486,13 @@ QVariant HbToolBarExtension::itemChange(GraphicsItemChange change,
 {
     Q_D(HbToolBarExtension);
     if (change == QGraphicsItem::ItemVisibleHasChanged) {
-        if (value.toBool() == true) {
+        if (value.toBool()) {
+            HbMainWindow* w(mainWindow());
+            if(w && !d->orientationConnectDone) {
+                QObject::connect(w,SIGNAL(orientationChanged(Qt::Orientation)),
+                                 this, SLOT(_q_orientationChanged()));
+                d->orientationConnectDone = true;
+            }
             d->placeToolBarExtension();
         }
     }

@@ -1,8 +1,0 @@
-HbProgressSliderHandle[state= "normal"]::icon
-{
-    color: var(qtc_input_function_latched);
-}
-HbProgressSliderHandle[state = "pressed"]::icon
-{
-    color: var(qtc_view_normal);
-}

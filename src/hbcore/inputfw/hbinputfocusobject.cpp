@@ -45,19 +45,18 @@ const qreal HbInputVkbZPlaneEpsilon = 0.5;
 \brief A helper class for accessing editor widget in abstract way.
 
 This class is input method side API for accessing editor widgets. It was added because
-in some cases Qt's QInputMethodEvent/inputMethodQuery system is not enough for our purposes
-and direct access via type casting between QWidget and QGraphiscWidget based editors is needed.
+in some cases Qt's QInputMethodEvent/inputMethodQuery system is not enough and direct
+access via type casting between QWidget and QGraphiscWidget based editors is needed.
+Focus object hides those cases behind a convinience API.
 
 This class is purely a convenience or helper type of class in nature. Everything
 it does, can be done directly in input method code as well. It just wraps
-most commonly used operations behind one API to avoid duplicate code in input method implementations.
+most commonly used operations behind one API to avoid duplicate code.
 
 Application developers should never need to use this class, it is for input method developers only.
 
 \sa HbEditorInterface
 */
-
-
 
 /// @cond
 
@@ -235,20 +234,40 @@ HbEditorInterface& HbInputFocusObject::editorInterface() const
 }
 
 /*!
+\deprecated HbInputFocusObject::cursorLeft(int)
+  is deprecated. Use HbInputFocusObject::cursorLeft(Qt::KeyboardModifiers modifiers) instead.
 Sends left arrow key press to focused editor.
 */
 void HbInputFocusObject::cursorLeft(int modifiers)
 {
-    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Left, (Qt::KeyboardModifiers)modifiers);
+    cursorLeft(static_cast<Qt::KeyboardModifiers>(modifiers));
+}
+
+/*!
+\deprecated HbInputFocusObject::cursorRight(int)
+  is deprecated. Use HbInputFocusObject::cursorRight(Qt::KeyboardModifiers modifiers) instead.
+Sends right arrow key press to focused editor.
+*/
+void HbInputFocusObject::cursorRight(int modifiers)
+{
+    cursorRight(static_cast<Qt::KeyboardModifiers>(modifiers));
+}
+
+/*!
+Sends left arrow key press to focused editor.
+*/
+void HbInputFocusObject::cursorLeft(Qt::KeyboardModifiers modifiers)
+{
+    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Left, modifiers);
     sendEvent(keyEvent);
 }
 
 /*!
 Sends right arrow key press to focused editor.
 */
-void HbInputFocusObject::cursorRight(int modifiers)
+void HbInputFocusObject::cursorRight(Qt::KeyboardModifiers modifiers)
 {
-    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Right, (Qt::KeyboardModifiers)modifiers);
+    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Right, modifiers);
     sendEvent(keyEvent);
 }
 
@@ -280,30 +299,30 @@ void HbInputFocusObject::releaseFocus()
 Runs the given character through active input filter and commits it if it was accepted.
 Returns true if the character was accepted.
 */
-bool HbInputFocusObject::filterAndCommitCharacter(QChar aChar)
+bool HbInputFocusObject::filterAndCommitCharacter(QChar character)
 {
     // Two pass filtering because this may be a case constrained editor
     // with a filter.
     Qt::InputMethodHints hints = inputMethodHints();
     if (hints & Qt::ImhLowercaseOnly) {
-        if (!HbInputLowerCaseFilter::instance()->filter(aChar)) {
+        if (!HbInputLowerCaseFilter::instance()->filter(character)) {
             return false;
         }
     } else if (hints & Qt::ImhUppercaseOnly) {
-        if (!HbInputUpperCaseFilter::instance()->filter(aChar)) {
+        if (!HbInputUpperCaseFilter::instance()->filter(character)) {
             return false;
         }
     }
 
     HbInputFilter *filter = editorInterface().filter();
     if (filter) {
-        if (!filter->filter(aChar)) {
+        if (!filter->filter(character)) {
             return false;
         }
     }
 
     QString cString;
-    cString.append(aChar);
+    cString.append(character);
     sendCommitString(cString);
 
     return true;
@@ -340,7 +359,7 @@ Returns cursor micro focus by sending Qt::ImMicroFocus to focused editor.
 In case of QGraphicsWidget, the returned rectangle is in scene coordinates.
 */
 QRectF HbInputFocusObject::microFocus() const
-{  
+{
     return inputMethodQuery(Qt::ImMicroFocus).toRectF();
 }
 
@@ -530,7 +549,7 @@ bool HbInputFocusObject::stringAllowedInEditor(const QString& string) const
 Commits given smiley.
 */
 void HbInputFocusObject::commitSmiley(QString smiley)
-{    
+{
      Q_D(HbInputFocusObject);
 
      if (d->mFocusedObject) {
@@ -591,8 +610,9 @@ Returns true if the input framework recognizes given object as editor.
 */
 bool HbInputFocusObject::isEditor(QObject *object)
 {
-    if (object && object->inherits("HbAbstractEdit")) {
-         return true;
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(object);
+    if (graphicsObject) {
+        return ((graphicsObject->flags() & QGraphicsItem::ItemAcceptsInputMethod) != 0);
     }
 
     if (qobject_cast<QLineEdit*>(object)) {

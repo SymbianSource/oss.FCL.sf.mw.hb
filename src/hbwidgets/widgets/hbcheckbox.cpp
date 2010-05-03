@@ -36,6 +36,11 @@
 #include "hbeffectinternal_p.h"
 #endif
 
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#endif
+
+
 /*
     Spacer class.
 */
@@ -121,6 +126,9 @@ void HbCheckBoxPrivate::createPrimitives()
     Q_Q(HbCheckBox);
     if(!mTouchArea) {
         mTouchArea = q->style()->createPrimitive(HbStyle::P_CheckBox_toucharea, q);
+        if(QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>(mTouchArea)) {
+            ta->grabGesture(Qt::TapGesture);
+        }
     }
     if (!mTextItem) {
         mTextItem = q->style()->createPrimitive(HbStyle::P_CheckBox_text, q);
@@ -196,6 +204,9 @@ HbCheckBox::HbCheckBox(QGraphicsItem *parent)
     // creattion of top and bottom spacer.
     HbStyle::setItemName( new HbCheckBoxSpacer(this), "topSpacer" );
     HbStyle::setItemName( new HbCheckBoxSpacer(this), "bottomSpacer" );
+#ifdef HB_GESTURE_FW
+    grabGesture(Qt::TapGesture);
+#endif
 
 }
 
@@ -294,6 +305,10 @@ Qt::CheckState HbCheckBox::checkState() const
 }
 
 /*!
+
+    \deprecated HbCheckBox::primitive(HbStyle::Primitive)
+        is deprecated.
+
     Returns the pointer for \a primitive passed.
     Will return NULL if \a primitive passed is icon because user cannot
     configure the check and unchecked icons. Style needs to be changed if
@@ -429,6 +444,7 @@ void HbCheckBox::nextCheckState( )
     HbCheckBox::checkStateSet();
 }
 
+#ifndef HB_GESTURE_FW
 /*!
     \reimp.
 */
@@ -451,7 +467,14 @@ void HbCheckBox::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         HbToolTip::showText(toolTip(), this);
     }   
 }
+#endif
 
+#ifdef HB_GESTURE_FW
+void HbCheckBox::gestureEvent(QGestureEvent *event)
+{
+    HbAbstractButton::gestureEvent( event );
+}
+#endif
 /*!
     \reimp.
 */

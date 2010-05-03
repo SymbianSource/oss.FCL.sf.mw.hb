@@ -33,9 +33,21 @@
 
 #include "hbinputsettingproxy.h"
 #include "hbinputsettingproxy_p.h"
-#include "hbinputmodecache_p.h" 
-#include "hbinputbasepaths_p.h"
+#include "hbinputmodecache_p.h"
 #include "hbinputfilter.h"
+
+#ifdef Q_OS_SYMBIAN
+
+#define HBI_BASE_PATH QString("\\resource\\plugins")
+#define HBI_BASE_WRITABLE_PATH QString("c:\\data\\hbinputs")
+
+#else
+
+#ifndef Q_OS_UNIX
+#define HBI_BASE_WRITABLE_PATH QString("c:\\Hb\\lib")
+#endif
+
+#endif
 
 /*!
 @alpha
@@ -160,11 +172,15 @@ void HbInputSettingProxyPrivate::initializeDataArea()
             prData->iHwKeyboard = HbKeyboardQwerty;
             prData->iActiveCustomMethodName[0] = 0;
             prData->iActiveCustomMethodKey[0] = 0;
-            prData->iPredictiveInputState = 0;
+            prData->iPredictiveInputState = HbKeyboardSettingNone;
             prData->iDigitType = HbDigitTypeLatin;
             prData->iQwertyTextCasing = true;
             prData->iQwertyCharacterPreview = true;
             prData->iRegionalCorrectionStatus = true;
+            prData->iKeypressTimeout = 1000;
+            prData->iAutocompletion = (HbKeyboardSettingFlags)(HbKeyboardSetting12key | HbKeyboardSettingQwerty);
+            prData->iTypingCorrectionLevel = HbTypingCorrectionLevelHigh;
+            prData->iPrimaryCandidateMode = HbPrimaryCandidateModeBestPrediction;
         }
     }
     unlock();
@@ -338,10 +354,10 @@ Toggles prediction mode
 */
 void HbInputSettingProxy::togglePrediction()
 {
-    if (predictiveInputStatus()) {
-        setPredictiveInputStatus(0);
+    if (activeKeyboard() & HbQwertyKeyboardMask) {
+        setPredictiveInputStatus(HbKeyboardSettingQwerty, !predictiveInputStatus(HbKeyboardSettingQwerty));
     } else {
-        setPredictiveInputStatus(1);
+        setPredictiveInputStatus(HbKeyboardSetting12key, !predictiveInputStatus(HbKeyboardSetting12key));
     }
 }
 
@@ -355,6 +371,11 @@ method connects those signals to given object.
 \sa predictiveInputStateChanged
 \sa orientationAboutToChange
 \sa orientationChanged
+\sa characterPreviewStateForQwertyChanged
+\sa keypressTimeoutChanged
+\sa autocompletionStateChanged
+\sa typingCorrectionLevelChanged
+\sa primaryCandidateModeChanged
 */
 void HbInputSettingProxy::connectObservingObject(QObject* aObserver)
 {
@@ -364,9 +385,16 @@ void HbInputSettingProxy::connectObservingObject(QObject* aObserver)
         connect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
         connect(this, SIGNAL(activeHwKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeHwKeyboardChanged(HbKeyboardType)));
         connect(this, SIGNAL(activeTouchKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeTouchKeyboardChanged(HbKeyboardType)));
-        connect(this, SIGNAL(predictiveInputStateChanged(int)), aObserver, SLOT(predictiveInputStateChanged(int)));
+        connect(this, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)));
         connect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
         connect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
+/* Setting listeners not implemented yet
+        connect(this, SIGNAL(characterPreviewStateForQwertyChanged(bool)), aObserver, SLOT(characterPreviewStateForQwertyChanged(bool)));
+        connect(this, SIGNAL(keypressTimeoutChanged(int)), aObserver, SLOT(keypressTimeoutChanged(int)));
+        connect(this, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags, bool)));
+        connect(this, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), aObserver, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
+        connect(this, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), aObserver, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
+*/
     }
 }
 
@@ -380,12 +408,19 @@ void HbInputSettingProxy::disconnectObservingObject(QObject* aObserver)
     if (aObserver) {
         disconnect(this, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalInputLanguageChanged(const HbInputLanguage &)));
         disconnect(this, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalSecondaryInputLanguageChanged(const HbInputLanguage &)));
-        disconnect(this, SIGNAL(predictiveInputStateChanged(int)), aObserver, SLOT(predictiveInputStateChanged(int)));
+        disconnect(this, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)));
         disconnect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
         disconnect(this, SIGNAL(activeHwKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeHwKeyboardChanged(HbKeyboardType)));
         disconnect(this, SIGNAL(activeTouchKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeTouchKeyboardChanged(HbKeyboardType)));
         disconnect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
         disconnect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
+/* Setting listeners not implemented yet
+        disconnect(this, SIGNAL(characterPreviewStateForQwertyChanged(bool)), aObserver, SLOT(characterPreviewStateForQwertyChanged(bool)));
+        disconnect(this, SIGNAL(keypressTimeoutChanged(int)), aObserver, SLOT(keypressTimeoutChanged(int)));
+        disconnect(this, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags, bool)));
+        disconnect(this, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), aObserver, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
+        disconnect(this, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), aObserver, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
+*/
     }
 }
 
@@ -500,7 +535,7 @@ HbKeyboardType HbInputSettingProxy::activeKeyboard() const
 }
 
 /*!
-Sets system wide input language. Will emit signal globalInputLanguageChanged.
+Sets system wide input language. Will emit signal globalInputLanguageChanged if language is changed.
 
 \sa globalInputLanguage
 */
@@ -509,15 +544,21 @@ void HbInputSettingProxy::setGlobalInputLanguage(const HbInputLanguage& language
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iGlobalPrimaryInputLanguage = language;
+        if (prData->iGlobalPrimaryInputLanguage != language) {
+            prData->iGlobalPrimaryInputLanguage = language;
+            notify = true;
+        }
         d->unlock();
-        emit globalInputLanguageChanged(language);
+        if (notify) {
+            emit globalInputLanguageChanged(language);
+        }
     }
 }
 
 /*!
-Sets system wide secondary input language. Will emit signal globalSecondaryInputLanguageChanged.
+Sets system wide secondary input language. Will emit signal globalSecondaryInputLanguageChanged if language is changed.
 
 \sa globalSecondaryInputLanguage
 */
@@ -526,15 +567,21 @@ void HbInputSettingProxy::setGlobalSecondaryInputLanguage(const HbInputLanguage 
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iGlobalSecondaryInputLanguage = language;
+        if (prData->iGlobalSecondaryInputLanguage != language) {
+            prData->iGlobalSecondaryInputLanguage = language;
+            notify = true;
+        }
         d->unlock();
-        emit globalSecondaryInputLanguageChanged(language);
+        if (notify) {
+            emit globalSecondaryInputLanguageChanged(language);
+        }
     }
 }
 
 /*!
-Sets active hardware keyboard type. Will emit signal activeHwKeyboardChanged.
+Sets active hardware keyboard type. Will emit signal activeHwKeyboardChanged if keyboard is changed.
 
 \sa activeHwKeyboard
 \sa activeTouchKeyboard
@@ -546,15 +593,21 @@ void HbInputSettingProxy::setActiveHwKeyboard(HbKeyboardType keyboard)
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iHwKeyboard = keyboard;
+        if (prData->iHwKeyboard != keyboard) {
+            prData->iHwKeyboard = keyboard;
+            notify = true;
+        }
         d->unlock();
-        emit activeHwKeyboardChanged(keyboard);
+        if (notify) {
+            emit activeHwKeyboardChanged(keyboard);
+        }
     }
 }
 
 /*!
-Sets active touch keyboard type. Will emit signal activeTouchKeyboardChanged.
+Sets active touch keyboard type. Will emit signal activeTouchKeyboardChanged keyboard is changed.
 
 \sa activeTouchKeyboard
 \sa activeHwKeyboard
@@ -566,15 +619,21 @@ void HbInputSettingProxy::setActiveTouchKeyboard(HbKeyboardType keyboard)
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iTouchKeyboard = keyboard;
+        if (prData->iTouchKeyboard != keyboard) {
+            prData->iTouchKeyboard = keyboard;
+            notify = true;
+        }
         d->unlock();
-        emit activeTouchKeyboardChanged(keyboard);
+        if (notify) {
+            emit activeTouchKeyboardChanged(keyboard);
+        }
     }
 }
 
 /*!
-Sets active keyboard type. Will emit signal activeKeyboardChanged.
+Sets active keyboard type. Will emit signal activeKeyboardChanged if keyboard is changed.
 
 \sa activeKeyboard
 \sa activeHwKeyboard
@@ -586,51 +645,121 @@ void HbInputSettingProxy::setActiveKeyboard(HbKeyboardType keyboard)
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iActiveKeyboard = keyboard;
+        if (prData->iActiveKeyboard != keyboard) {
+            prData->iActiveKeyboard = keyboard;
+            notify = true;
+        }
         d->unlock();
-        emit activeKeyboardChanged(keyboard);
+        if (notify) {
+            emit activeKeyboardChanged(keyboard);
+        }
     }
 }
 
 /*!
-Returns the status of predictive input feature. An editor instance
-may still forbid predictive input feature, even if the device wide status allows it.
-
-\sa setPredictiveInputStatus.
+\deprecated HbInputSettingProxy::predictiveInputStatus()
+    is deprecated. Use predictiveInputStatusForITUT or predictiveInputStatusForQwerty instead.
 */
 int HbInputSettingProxy::predictiveInputStatus() const
 {
+    return predictiveInputStatusForActiveKeyboard();
+}
+
+/*!
+\deprecated HbInputSettingProxy::setPredictiveInputStatus(int newStatus)
+    is deprecated. Use setPredictiveInputStatusForITUT or setPredictiveInputStatusForQwerty instead.
+*/
+void HbInputSettingProxy::setPredictiveInputStatus(int newStatus)
+{
+    setPredictiveInputStatusForActiveKeyboard(newStatus);
+}
+
+/*!
+Returns the status of predictive input feature. Returns true if any one of given
+keyboard types has the prediction enabled. An editor instance may still forbid
+predictive input feature, even if the device wide status allows it.
+
+\sa setPredictiveInputStatus.
+*/
+bool HbInputSettingProxy::predictiveInputStatus(HbKeyboardSettingFlags keyboardType) const
+{
     Q_D(const HbInputSettingProxy);
-    int res = 0;
+    bool res = false;
 
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
-        res = prData->iPredictiveInputState;
+        res = prData->iPredictiveInputState & keyboardType;
     }
 
     return res;
 }
 
 /*!
-Sets the status of predictive text input feature.
+Sets the status of predictive text input feature. Will emit signal predictiveInputStateChanged if status is changed.
 
 \sa predictiveInputStatus
 */
-void HbInputSettingProxy::setPredictiveInputStatus(int newStatus)
+void HbInputSettingProxy::setPredictiveInputStatus(HbKeyboardSettingFlags keyboardType, bool newStatus)
 {
     Q_D(HbInputSettingProxy);
-
-    if (newStatus != 0) {
-        newStatus = 1;
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        
+        HbKeyboardSettingFlags newValue = prData->iPredictiveInputState;
+        if (newStatus) {
+            newValue |= keyboardType;
+        } else {
+            newValue &= ~keyboardType;
+        }
+        if (prData->iPredictiveInputState != newValue) {
+            prData->iPredictiveInputState = newValue;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit predictiveInputStateChanged(keyboardType, newStatus);
+        }
     }
+}
+
+/*!
+Returns the status of predictive input feature for active keyboard. An editor instance
+may still forbid predictive input feature, even if the device wide status allows it.
+
+\sa setPredictiveInputStatusForActiveKeyboard.
+*/
+bool HbInputSettingProxy::predictiveInputStatusForActiveKeyboard() const
+{
+    Q_D(const HbInputSettingProxy);
+    bool res = false;
 
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
-        d->lock();
-        prData->iPredictiveInputState = newStatus;
-        d->unlock();
-        emit predictiveInputStateChanged(newStatus);
+        if (activeKeyboard() & HbQwertyKeyboardMask) {
+            res = prData->iPredictiveInputState & HbKeyboardSettingQwerty;
+        } else {
+            res = prData->iPredictiveInputState & HbKeyboardSetting12key;
+        }
+    }
+
+    return res;
+}
+
+/*!
+Sets the status of predictive text input feature for active keyboard.
+
+\sa predictiveInputStatusForActiveKeyboard
+*/
+void HbInputSettingProxy::setPredictiveInputStatusForActiveKeyboard(bool newStatus)
+{
+    if (activeKeyboard() & HbQwertyKeyboardMask) {
+        setPredictiveInputStatus(HbKeyboardSettingQwerty, newStatus);
+    } else {
+        setPredictiveInputStatus(HbKeyboardSetting12key, newStatus);
     }
 }
 
@@ -769,12 +898,14 @@ Sets system wide digit type setting.
 void HbInputSettingProxy::setGlobalDigitType(HbInputDigitType digitType)
 {
     Q_D(HbInputSettingProxy);
-    d->lock();
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
-        prData->iDigitType = digitType;
+        d->lock();
+        if (prData->iDigitType != digitType) {
+            prData->iDigitType = digitType;
+        }
+        d->unlock();
     }
-    d->unlock();
 }
 
 /*!
@@ -796,36 +927,51 @@ bool HbInputSettingProxy::automaticTextCasingForQwerty()
 }
 
 /*!
-Sets automatic text casing for qwerty keyboards.
+Sets automatic text casing for qwerty keyboards. Will emit signal automaticTextCasingStateForQwertyChanged if status is changed.
 
 \sa automaticTextCasingForQwerty
 */
 void HbInputSettingProxy::setAutomaticTextCasingForQwerty(bool status)
 {
     Q_D(HbInputSettingProxy);
-    d->lock();
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
-        prData->iQwertyTextCasing = status;
+        bool notify = false;
+        d->lock();
+        if (prData->iQwertyTextCasing != status) {
+            prData->iQwertyTextCasing = status;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit automaticTextCasingStateForQwertyChanged(status);
+        }
     }
-    d->unlock();
+    
 }
 
 /*!
-Enables/Disables character preview in Qwerty keypad.
+Enables/Disables character preview in Qwerty keypad. Will emit signal characterPreviewStateForQwertyChanged if status is changed.
 
 \sa characterPreviewForQwerty
 */
 void HbInputSettingProxy::setCharacterPreviewForQwerty(bool previewEnabled)
 {
     Q_D(HbInputSettingProxy);
-
-    d->lock();
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
-        prData->iQwertyCharacterPreview = previewEnabled;
+        bool notify = false;
+        d->lock();
+        if (prData->iQwertyCharacterPreview != previewEnabled) {
+            prData->iQwertyCharacterPreview = previewEnabled;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit characterPreviewStateForQwertyChanged(previewEnabled);
+        }
     }
-    d->unlock();
+    
 }
 
 /*!
@@ -1007,7 +1153,7 @@ bool HbInputSettingProxy::regionalCorrectionEnabled()
 }
 
 /*!
-Sets the status of regional input correction feature. 
+Sets the status of regional input correction feature. Will emit signal regionalCorretionStatusChanged if status is changed.
 
 \sa regionalCorrectionEnabled.
 */
@@ -1016,11 +1162,181 @@ void HbInputSettingProxy::enableRegionalCorrection(bool newStatus)
     Q_D(HbInputSettingProxy);
     HbSettingProxyInternalData* prData = d->proxyData();
     if (prData) {
+        bool notify = false;
         d->lock();
-        prData->iRegionalCorrectionStatus = newStatus;
+        if (prData->iRegionalCorrectionStatus != newStatus) {
+            prData->iRegionalCorrectionStatus = newStatus;
+            notify = true;
+        }
         d->unlock();
-        emit regionalCorretionStatusChanged(newStatus);
+        if (notify) {
+            emit regionalCorretionStatusChanged(newStatus);
+        }
     }
+}
+
+/*!
+Sets the keypress timeout value. Will emit signal keypressTimeoutChanged if timeout is changed.
+
+\sa keypressTimeout.
+*/
+void HbInputSettingProxy::setKeypressTimeout(int timeout)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if (prData->iKeypressTimeout != timeout) {
+            prData->iKeypressTimeout = timeout;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit keypressTimeoutChanged(timeout);
+        }
+    }
+}
+
+/*!
+Returns the keypress timeout value. 
+
+\sa setKeypressTimeout.
+*/
+int HbInputSettingProxy::keypressTimeout() const
+{
+    Q_D(const HbInputSettingProxy);
+    int res = 0;
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        res = prData->iKeypressTimeout;
+    }
+    return res;
+}
+
+/*!
+Sets the autocompletion status. Will emit signal autocompletionStateChanged if status is changed.
+
+\sa isAutocompletionEnabled.
+*/
+void HbInputSettingProxy::setAutocompletionStatus(HbKeyboardSettingFlags keyboardType, bool state)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        HbKeyboardSettingFlags newValue = prData->iAutocompletion;
+        if (state) {
+            newValue |= keyboardType;
+        } else {
+            newValue &= ~keyboardType;
+        }
+        if (prData->iAutocompletion != newValue) {
+            prData->iAutocompletion = newValue;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit autocompletionStateChanged(keyboardType, state);
+        }
+    }
+}
+
+/*!
+Returns the autocompletion status for ITUT. Returns true if any of given
+keyboards have autocompletion enabled.
+
+\sa setAutocompletionStatus.
+*/
+bool HbInputSettingProxy::isAutocompletionEnabled(HbKeyboardSettingFlags keyboardType) const
+{
+    Q_D(const HbInputSettingProxy);
+    bool res = false;
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        res = prData->iAutocompletion & keyboardType;
+    }
+    return res;
+}
+
+/*!
+Sets the typing correction level. Will emit signal typingCorrectionLevelChanged if level is changed.
+
+\sa typingCorrectionLevel.
+*/
+void HbInputSettingProxy::setTypingCorrectionLevel(HbTypingCorrectionLevel level)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if (prData->iTypingCorrectionLevel != level) {
+            prData->iTypingCorrectionLevel = level;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit typingCorrectionLevelChanged(level);
+        }
+        enableRegionalCorrection(level == HbTypingCorrectionLevelHigh);
+    }
+}
+
+/*!
+Returns the typing correction level
+
+\sa setTypingCorrectionLevel.
+*/
+HbTypingCorrectionLevel HbInputSettingProxy::typingCorrectionLevel() const
+{
+    Q_D(const HbInputSettingProxy);
+    HbTypingCorrectionLevel res = HbTypingCorrectionLevelHigh;
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        res = prData->iTypingCorrectionLevel;
+    }
+    return res;
+}
+
+/*!
+Sets the primary candidate mode. Will emit signal primaryCandidateModeChanged if mode is changed.
+
+\sa primaryCandidateMode.
+*/
+void HbInputSettingProxy::setPrimaryCandidateMode(HbPrimaryCandidateMode mode)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if (prData->iPrimaryCandidateMode != mode) {
+            prData->iPrimaryCandidateMode = mode;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit primaryCandidateModeChanged(mode);
+        }
+    }
+}
+
+/*!
+Returns the primary candidate mode
+
+\sa setPrimaryCandidateMode.
+*/
+HbPrimaryCandidateMode HbInputSettingProxy::primaryCandidateMode() const
+{
+    Q_D(const HbInputSettingProxy);
+    HbPrimaryCandidateMode res = HbPrimaryCandidateModeExactTyping;
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        res = prData->iPrimaryCandidateMode;
+    }
+    return res;
 }
 
 // End of file

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 60 30" width="60px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="30" width="60" y="0"/>
-<rect fill="url(#SVGID_1_)" fill-opacity="0.6" height="30" stroke-opacity="0.6" width="60"/>
-<rect fill="#FFFFFF" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1" x="59"/>
-<rect fill="#FFFFFF" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1"/>
+<rect fill="url(#SVGID_1_)" fill-opacity="0.7" height="30" stroke-opacity="0.7" width="60"/>
+<rect fill="#282828" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1" x="59"/>
+<rect fill="#282828" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1"/>
+<rect fill="#C8C8C8" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1" x="1"/>
 <defs>
-<linearGradient gradientTransform="matrix(-4.371139e-008 -1 1 -4.371139e-008 2394.4988 -2653.5002)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2668.501" x2="-2668.501" y1="-2394.9995" y2="-2334.7295">
-<stop offset="0" style="stop-color:#4D4D4D"/>
+<linearGradient gradientTransform="matrix(0 -1 1 0 2843.5 -3102.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-3117.5" x2="-3117.5" y1="-2844" y2="-2783.73">
+<stop offset="0" style="stop-color:#3C3C3C"/>
 <stop offset="1" style="stop-color:#000000"/>
 </linearGradient>
 </defs>

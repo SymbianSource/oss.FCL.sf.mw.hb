@@ -6,13 +6,20 @@
 HbTumbleView[scrollDirections="Horizontal"]
 {	
 	layout:tumble-layout;
+	min-width: 1un;
 }
 HbTumbleView[scrollDirections="Vertical"]
 {	
 	layout:tumble-layout;
+	min-width: 1un;
 }
 
 HbTumbleView::highlight {
     fixed-height: expr(var(hb-param-text-height-secondary)+2*var(hb-param-margin-gene-middle-vertical));
     
 }
+
+HbTumbleView::separator{
+    fixed-width: 0.5un;
+}
+

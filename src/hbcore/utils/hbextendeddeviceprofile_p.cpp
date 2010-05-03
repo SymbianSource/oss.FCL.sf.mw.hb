@@ -107,24 +107,6 @@ void HbExtendedDeviceProfile::setLogicalSize(const QSize &size)
 }
 
 /*!
-    Sets physical screen size in mm.
-    \param size physical screen size.
-*/
-void HbExtendedDeviceProfile::setPhysicalSize(const QSizeF &size)
-{
-     d_ptr->mProfile.mPhysicalSize = size;
-}
-
-/*!
-    Sets orientation.
-    \param orientation desired orientation.
-*/
-void HbExtendedDeviceProfile::setOrientation(Qt::Orientation orientation)
-{
-    d_ptr->mProfile.mOrientation = orientation;
-}
-
-/*!
     Sets name of alternate profile.
     Typically, orientation of alternative profile is opposite of this profile.
     \param name name of alternate profile.
@@ -141,6 +123,15 @@ void HbExtendedDeviceProfile::setAlternateProfileName(const QString &name)
 void HbExtendedDeviceProfile::setUnitValue(qreal value)
 {
      d_ptr->mProfile.mUnitValue = value;
+}
+
+/*!
+    Sets ppi (points per inc) value.
+    \param value desired new value.
+*/
+void HbExtendedDeviceProfile::setPpiValue(qreal value)
+{
+     d_ptr->mProfile.mPpiValue = value;
 }
 
 // end of file

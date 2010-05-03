@@ -29,6 +29,7 @@
 #include <hbwidget.h>
 
 #include <QString>
+#include <QDateTimeEdit>
 
 class HbDateTimePickerPrivate;
 
@@ -85,6 +86,9 @@ public:
     void setMaximumTime(const QTime &date);
 
     void setTimeRange(const QTime &minTime, const QTime &maxTime);
+
+    void setInterval(QDateTimeEdit::Section section,int difference);
+    int interval(QDateTimeEdit::Section section) const;
 
     enum { Type = Hb::ItemType_DateTimePicker };
     int type() const { return Type; }

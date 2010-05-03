@@ -52,6 +52,9 @@ symbian {
     LIBS += -lefsrv
     LIBS += -lws32
     LIBS += -lcone
+    LIBS += -lavkon
+    LIBS += -leikcore
+    LIBS += -lapparc
 }
 
 hbAddLibrary(hbcore/HbCore)

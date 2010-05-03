@@ -97,7 +97,6 @@ protected:
         QGraphicsItem * parent);
 
     void initStyleOption(HbStyleOptionDataForm *option);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataForm)

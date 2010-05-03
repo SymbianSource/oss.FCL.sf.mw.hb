@@ -4,7 +4,7 @@ HbTitleBar
 }
 
 HbTitleBar::status{
-    fixed-width: expr(2/3*var(hb-param-widget-chrome-height));
+    fixed-width: expr(var(hb-param-widget-chrome-height));
     fixed-height: expr(2/3*var(hb-param-widget-chrome-height));
 }
 
@@ -13,7 +13,7 @@ HbTitleBar::title{
 }
 
 HbTitleBar::back{
-    fixed-width: expr(2/3*var(hb-param-widget-chrome-height));
+    fixed-width: expr(var(hb-param-widget-chrome-height));
     fixed-height: expr(2/3*var(hb-param-widget-chrome-height));
 }
 

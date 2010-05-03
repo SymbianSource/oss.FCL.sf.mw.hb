@@ -36,6 +36,11 @@
 #include "hbiconsource_p.h"
 #include "hbthemeserverutils_p.h"
 
+#if defined (Q_OS_SYMBIAN)
+#include <VG/openvg.h>
+#include <VG/vgcontext_symbian.h>
+#endif //Q_OS_SYMBIAN
+
 /*!
     @hbserver
     \class HbPixmapIconProcessor
@@ -126,7 +131,9 @@ bool HbPixmapIconProcessor::createIconData(const QString& iconPath)
     } else if (iconType == "PIC") {
         isIconCreated = renderPicToPixmap(iconPath);
     } else if (iconType == "NVG") {
-        isIconCreated = storeNvgData(iconPath);
+#if defined (Q_OS_SYMBIAN)    
+		isIconCreated = renderNvgToPixmap(iconPath);
+#endif //Q_OS_SYMBIAN
     } else {
         isIconCreated = renderOtherFormatsToPixmap(iconPath);
     }
@@ -254,37 +261,6 @@ bool HbPixmapIconProcessor::renderPicToPixmap(const QString& iconPath)
 }
 
 /*!
-    \fn HbPixmapIconProcessor::storeNvgData()
-    \a iconpath
- */
-bool HbPixmapIconProcessor::storeNvgData(const QString& iconPath)
-{
-    bool isIconCreated = false;
-    if (iconKey.size.isNull()) {
-        QSize dummySize(50, 50);
-        pixmap = QPixmap(dummySize);
-        pixmap.fill(Qt::transparent);
-        isIconCreated = true;
-        return isIconCreated;
-    }
-
-    QFile file(iconPath);
-    if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly))
-        return isIconCreated;
-    else {
-        // @ToDo
-        // QByteArray byteArray = file.readAll() ;
-
-        // Draw the nvg file on the offscreen eglsurface
-        // copy content from surface to pixmap
-        // createPixmapFromEglSurface(byteArray);
-        return isIconCreated;
-    }
-
-
-}
-
-/*!
     \fn HbPixmapIconProcessor::renderOtherFormatsToPixmap()
     \a iconpath
  */
@@ -390,4 +366,104 @@ bool HbPixmapIconProcessor::createMultiPieceIconData(const QVector<HbSharedIconI
     setPixmap(finalPixmap);
     return true;
 }
+
+#if defined (Q_OS_SYMBIAN)
+/**
+ * HbNvgIconProcessor::renderNvgToPixmap()
+ * This is used to render NVG data to a pixmap using the Software OpenVG
+ * \a iconPath
+ */
+bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
+{
+    bool isIconCreated = false;
+    bool isDefaultSize =  iconKey.size.isNull();
+    HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
+    QByteArray *sourceByteArray = source->byteArray();
+    if( !sourceByteArray ) {
+        return false;
+    }
+    QByteArray byteArray = *sourceByteArray;
+    QSizeF renderSize = source->defaultSize();
+    defaultSize = renderSize.toSize();
+    if (!isDefaultSize) {
+        renderSize.scale(iconKey.size,iconKey.aspectRatioMode);
+    }
+    size = renderSize.toSize();          
+    TSize surfaceSize(TSize(size.width(), size.height()));
+
+    QScopedPointer<CFbsBitmap> bitmapData(new CFbsBitmap());    
+    
+    TInt err = bitmapData.data()->Create(surfaceSize, EColor16MA);    
+    if(err != KErrNone) {      
+        return isIconCreated;
+    }
+    
+    //Reset the surface incase already present
+    VGISymbianTerminate();
+    
+    // Surface creation
+    err =  VGISymbianInitialize( surfaceSize, VGI_COLORSPACE_SRGB );
+    if( err != KErrNone) {
+        return isIconCreated;
+    }
+    
+    QScopedPointer<CNvgEngine> nvgEngine(CNvgEngine::NewL());
+    //CNvgEngine* nvgEngine = CNvgEngine::NewL();
+    HbNvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(iconKey.aspectRatioMode);
+    nvgEngine.data()->SetPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
+    // Rendering onto active surface
+    TPtr8 data ((unsigned char*)byteArray.data(), byteArray.length(), byteArray.length());
+    err = nvgEngine.data()->DrawNvg(data, surfaceSize, bitmapData.data(), 0);    
+    if(err !=KErrNone) {  
+        return isIconCreated;
+    }
+    
+    //Copy the data from the surface
+    err = VGISymbianCopyToBitmap(bitmapData.data(), 0, VGI_COPY_TRANSPARENT_PIXELS);
+    if(err !=KErrNone) { 
+        return isIconCreated;
+    }
+    //Get Pixmap from the Symbian Native format.
+    pixmap = QPixmap::fromSymbianCFbsBitmap(bitmapData.data());
+    isIconCreated = true;    
+        
+    //Clean Up
+    VGISymbianTerminate();
+    return isIconCreated;
+}
+
+/*!
+    \fn HbPixmapIconProcessor::mapKeyAspectRatioToNvgAspectRatio()
+    \a aspectRatio
+ */
+HbNvgAspectRatioSettings HbPixmapIconProcessor::mapKeyAspectRatioToNvgAspectRatio(
+                                                Qt::AspectRatioMode aspectRatio) const
+{
+    HbNvgAspectRatioSettings settings;
+    switch(aspectRatio) {  
+    
+    case Qt::IgnoreAspectRatio: {
+        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_None;
+        settings.type = ENvgMeet; 
+        break;
+    }
+    case Qt::KeepAspectRatio: {
+        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
+        settings.type = ENvgMeet;
+        break;
+        }
+    case Qt::KeepAspectRatioByExpanding: {
+        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
+        settings.type = ENvgSlice;
+        break;
+        } 
+    default: {
+        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
+        settings.type = ENvgMeet;
+        break;
+        }        
+    }
+    return settings;
+}
+#endif //Q_OS_SYMBIAN
 

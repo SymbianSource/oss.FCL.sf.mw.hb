@@ -48,6 +48,7 @@ public:
     ~HbStyle();
 
 
+    // HbStyle::Primitive enums are DEPRECATED
     enum Primitive {
         P_None,
         P_PushButton_icon,
@@ -97,7 +98,6 @@ public:
         P_Popup_background_weak,
         P_Popup_heading_frame,
         P_ToolTip_background,
-        P_MessageBox_text,
         P_MessageBox_icon,
         P_ItemViewItem_background,
         P_ListViewItem_text,
@@ -105,14 +105,6 @@ public:
         P_ListViewItem_icon,        
         P_ItemHighlight_background,
         P_ToolBarExtension_background,
-        P_ProgressBar_frame,
-        P_ProgressBar_track,
-        P_ProgressBar_waittrack,
-        P_ProgressBar_slidertrack,
-        P_ProgressSlider_handleicon,
-		P_ProgressSlider_handle,
-        P_ProgressBar_text,
-        P_ProgressBar_toucharea,
         P_GridViewItem_text,
         P_GridViewItem_icon,
         P_CheckBox_text,
@@ -136,6 +128,9 @@ public:
         P_IndicatorGroup_icon2,
         P_IndicatorGroup_icon3,
         P_IndicatorGroup_icon4,
+        P_ProgressBar_frame,
+        P_ProgressBar_track,
+        P_ProgressBar_waittrack,       
         P_ProgressBar_mintext,
         P_ProgressBar_maxtext,
         P_Softkey_background, // deprecated
@@ -150,7 +145,13 @@ public:
         P_RatingSlider_track,
         P_RatingSlider_frame,
         P_RatingSlider_toucharea,
-		P_ProgressSliderHandle_toucharea,
+		P_ProgressSlider_frame,
+		P_ProgressSlider_track,
+        P_ProgressSlider_slidertrack,
+        P_ProgressSlider_toucharea,
+        P_ProgressSliderHandle_background, // deprecated
+        P_ProgressSliderHandle_icon,
+        P_ProgressSliderHandle_toucharea,
         P_RatingSlider_layout,
         P_ScrollArea_continuationbottom,
         P_ScrollArea_continuationtop,
@@ -200,16 +201,24 @@ public:
         P_IndexFeedback_popup_text,
         P_IndexFeedback_popup_background,
         P_SliderPopup_background,
-		P_StatusBar_background,
-		P_StatusBar_timetext,
+        P_StatusBar_background,
+        P_StatusBar_timetext,
         P_InputDialog_text,
-        P_InputDialog_additional_text,
+        P_InputDialog_additionaltext,
         P_Last,   // Keep this always as the LAST item in the active primitives list!
 
         P_Deprecated = 0x000f0000,
         // Deprecated enumerations
+        // These are DEPRECATED, replace or remove from widget/app sources !!
+        P_ProgressBar_toucharea = P_ProgressSlider_toucharea,           // DEPRECATED
+        P_ProgressBar_slidertrack = P_ProgressSlider_track,             // DEPRECATED        
+        P_ProgressSlider_handleicon = P_ProgressSliderHandle_icon,      // DEPRECATED     
+        P_InputDialog_additional_text = P_InputDialog_additionaltext,    //deprecated
                
         P_NotUsed = 0x00f00000,
+        P_MessageBox_text,    //deprecated ,not used.
+        P_ProgressSlider_handle,    // DEPRECATED, NOT USED
+        P_ProgressBar_text,          // DEPRECATED, NOT USED
                 
         P_CustomBase = 0x0f000000
     };

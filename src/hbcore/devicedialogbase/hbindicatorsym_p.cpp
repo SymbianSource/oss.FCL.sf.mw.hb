@@ -130,7 +130,7 @@ void HbIndicatorPrivate::initializeL(bool forListening)
         error = mHbSession.Connect();
     }
 
-    if ( error != KErrNone ) {
+    if ( error != KErrNone && error != KErrAlreadyExists) {
         TRACE("initialize error: " << error);
         setError( HbDeviceDialogConnectError );
         User::LeaveIfError( error );
@@ -230,8 +230,27 @@ void HbIndicatorPrivate::RunL()
     iLastError = HbDeviceDialogNoError;
     TInt status = iStatus.Int();
     iRequesting = EFalse;
-
-    if (status >= 0) {
+    
+    if (status >= 0 && iMsgType == EHbIndicatorUserActivated) {
+		iMsgType = -1;
+		if (status > 0) {
+			delete iBuffer;
+			iBuffer = NULL;
+			iBuffer = HBufC8::NewL(status);
+			iDataPtr.Set(iBuffer->Des());
+			TInt error = mHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData, iDataPtr, &iMsgTypePtr);							                
+		}
+		
+		QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
+		QDataStream stream(&resArray, QIODevice::ReadOnly);
+		QVariant var;
+		stream >> var;
+		
+		if (q_ptr && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0) {
+			QVariantMap map = var.toMap();
+			emit q_func()->userActivated(map.value("type").toString(), map.value("data").toMap());
+		} 			
+    } else if (status >= 0) {
         QByteArray resArray( (const char*) iDataPtr.Ptr(), iDataPtr.Size() );
         QDataStream stream( &resArray, QIODevice::ReadOnly);
 
@@ -292,7 +311,7 @@ void HbIndicatorPrivate::RunL()
         setError(status);
     }
 
-    if ( status != KErrServerTerminated ) {
+    if ( status != KErrServerTerminated && status != KErrCancel ) {
         Continue();
     }
     TRACE_EXIT
@@ -329,6 +348,11 @@ void HbIndicatorPrivate::Start()
     TRACE_ENTRY
 
     if ( !iRequesting && iInitialized && !IsActive() ) {
+		if (!iBuffer) {
+			iBuffer = HBufC8::NewL( 256 );
+			iDataPtr.Set( iBuffer->Des() );
+		}
+		iDataPtr.Zero();
         TPckg<TInt> pckg( iMsgType );
         iMsgTypePtr.Set( pckg ); //iMsgTypePtr is ignored in server side.
     
@@ -372,15 +396,20 @@ int HbIndicatorPrivate::sendActivateMessage(const QString &indicatorType,
 {
     TRACE_ENTRY
     iLastError = HbDeviceDialogNoError;
-
+    
+    TBool listening = (activate && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0);
+    
     if (!iInitialized) {
-        TRAPD( error, initializeL() );
+						 	
+        TRAPD( error, initializeL(listening) );
 
         if ( error != KErrNone ){
             setError( HbDeviceDialogConnectError );
             TRACE_EXIT_ARGS("error " << error)
             return false;
         }
+    } else if (listening) {
+		Start();
     }
     QByteArray array;
     QDataStream stream( &array, QIODevice::WriteOnly );

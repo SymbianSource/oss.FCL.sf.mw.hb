@@ -37,7 +37,7 @@ class HbMeshLayoutDebug;
 class HB_AUTOTEST_EXPORT HbMeshLayout : public QGraphicsLayout
 {
     friend class HbMeshLayoutDebug;
-    
+
 public:
     typedef Hb::Edge Edge;
 
@@ -57,18 +57,18 @@ public:
 
     void setItemId(QGraphicsLayoutItem *item, const QString& id);
     void clearItemIds();
-    
+
     QString nodeId( QGraphicsLayoutItem *item ) const;
     QStringList nodeIds() const;
     QGraphicsLayoutItem *itemById( const QString& id ) const;
-    
+
     qreal spacing( const QString& startId, Edge startEdge ) const;
 
     void removeItem(QGraphicsLayoutItem *item);
     int indexOf(const QGraphicsLayoutItem *item) const;
 
     bool isValid() const;
-    
+
     virtual void removeAt(int index);
     virtual void setGeometry(const QRectF &rect);
     virtual int count() const;
@@ -84,7 +84,7 @@ protected:
 
 private:
     Q_DISABLE_COPY(HbMeshLayout)
-    Q_DECLARE_PRIVATE_D(d_ptr, HbMeshLayout)    
+    Q_DECLARE_PRIVATE_D(d_ptr, HbMeshLayout)
 };
 
 #endif // HBMESHLAYOUT_H

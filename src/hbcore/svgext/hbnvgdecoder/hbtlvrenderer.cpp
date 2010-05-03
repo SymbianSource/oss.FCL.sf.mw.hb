@@ -34,46 +34,46 @@
 
 #include <QtDebug>
 
-HbTlvRenderer::HbTlvRenderer(const QByteArray &buffer, int width, int height)
+HbTlvRenderer::HbTlvRenderer(const QByteArray &buffer, qint32 width, qint32 height)
         : mVgImageBinder(0)
 {
-    vgapi[VgSeti]              = &HbTlvRenderer::dVgSeti;
-    vgapi[VgSetf]              = &HbTlvRenderer::dVgSetf;
-    vgapi[VgSetParameteri]     = &HbTlvRenderer::dVgSetParameteri;
-    vgapi[VgSetParameterf]     = &HbTlvRenderer::dVgSetParameterf;
-    vgapi[VgSetParameterfv]    = &HbTlvRenderer::dVgSetParameterfv;
-    vgapi[VgSetColor]          = &HbTlvRenderer::dVgSetColor;
-    vgapi[VgSetPaint]          = &HbTlvRenderer::dVgSetPaint;
-    vgapi[VgLoadMatrix]        = &HbTlvRenderer::dVgLoadMatrix;
-    vgapi[VgMultMatrix]        = &HbTlvRenderer::dVgMultMatrix;
-    vgapi[VgLoadIdentity]      = &HbTlvRenderer::dVgLoadIdentity;
-    vgapi[VgScale]             = &HbTlvRenderer::dVgScale;
-    vgapi[VgTranslate]         = &HbTlvRenderer::dVgTranslate;
-    vgapi[VgAppendPathData]    = &HbTlvRenderer::dVgAppendPathData;
-    vgapi[VgDrawPath]          = &HbTlvRenderer::dVgDrawPath;
-    vgapi[VgClearPath]         = &HbTlvRenderer::dVgClearPath;
-    vgapi[VguRect]             = &HbTlvRenderer::dVguRect;
-    vgapi[VguEllipse]          = &HbTlvRenderer::dVguEllipse;
-    vgapi[VguRoundRect]        = &HbTlvRenderer::dVguRoundRect;
-    vgapi[VguLine]             = &HbTlvRenderer::dVguLine;
-    vgapi[VgCreatePaint]       = &HbTlvRenderer::dVgCreatePaint;
-    vgapi[VgSetiv]             = &HbTlvRenderer::dVgSetiv;
-    vgapi[VgClear]             = &HbTlvRenderer::dVgClear;
-    vgapi[VgSetfv]             = &HbTlvRenderer::dVgSetfv;
-    vgapi[VgRotate]            = &HbTlvRenderer::dVgRotate;
-    vgapi[VgCreatePath]        = &HbTlvRenderer::dVgCreatePath;
-    vgapi[VgCreateImage]       = &HbTlvRenderer::dVgCreateImage;
-    vgapi[VgGetPixels]         = &HbTlvRenderer::dVgGetPixels;
-    vgapi[VgDrawImage]         = &HbTlvRenderer::dVgDrawImage;
-    vgapi[VgClearImage]        = &HbTlvRenderer::dVgClearImage;
-    vgapi[VgImageSubData]      = &HbTlvRenderer::dVgImageSubData;
-    vgapi[VgDestroyImage]      = &HbTlvRenderer::dVgDestroyImage;
-    vgapi[VgDestroyPaint]      = &HbTlvRenderer::dVgDestroyPaint;
-    vgapi[VgDestroyPath]       = &HbTlvRenderer::dVgDestroyPath;
-    vgapi[VgPrepareToBindImage] = &HbTlvRenderer::dVgPrepareToBindImage;
-    vgapi[VgBindImage]         = &HbTlvRenderer::dVgBindImage;
-    vgapi[VgUnBindImage]       = &HbTlvRenderer::dVgUnBindImage;
-    vgapi[VgFlush]             = &HbTlvRenderer::dVgFlush;
+    vgapi[VgSeti]              = &HbTlvRenderer::tlvVgSeti;
+    vgapi[VgSetf]              = &HbTlvRenderer::tlvVgSetf;
+    vgapi[VgSetParameteri]     = &HbTlvRenderer::tlvVgSetParameteri;
+    vgapi[VgSetParameterf]     = &HbTlvRenderer::tlvVgSetParameterf;
+    vgapi[VgSetParameterfv]    = &HbTlvRenderer::tlvVgSetParameterfv;
+    vgapi[VgSetColor]          = &HbTlvRenderer::tlvVgSetColor;
+    vgapi[VgSetPaint]          = &HbTlvRenderer::tlvVgSetPaint;
+    vgapi[VgLoadMatrix]        = &HbTlvRenderer::tlvVgLoadMatrix;
+    vgapi[VgMultMatrix]        = &HbTlvRenderer::tlvVgMultMatrix;
+    vgapi[VgLoadIdentity]      = &HbTlvRenderer::tlvVgLoadIdentity;
+    vgapi[VgScale]             = &HbTlvRenderer::tlvVgScale;
+    vgapi[VgTranslate]         = &HbTlvRenderer::tlvVgTranslate;
+    vgapi[VgAppendPathData]    = &HbTlvRenderer::tlvVgAppendPathData;
+    vgapi[VgDrawPath]          = &HbTlvRenderer::tlvVgDrawPath;
+    vgapi[VgClearPath]         = &HbTlvRenderer::tlvVgClearPath;
+    vgapi[VguRect]             = &HbTlvRenderer::tlvVguRect;
+    vgapi[VguEllipse]          = &HbTlvRenderer::tlvVguEllipse;
+    vgapi[VguRoundRect]        = &HbTlvRenderer::tlvVguRoundRect;
+    vgapi[VguLine]             = &HbTlvRenderer::tlvVguLine;
+    vgapi[VgCreatePaint]       = &HbTlvRenderer::tlvVgCreatePaint;
+    vgapi[VgSetiv]             = &HbTlvRenderer::tlvVgSetiv;
+    vgapi[VgClear]             = &HbTlvRenderer::tlvVgClear;
+    vgapi[VgSetfv]             = &HbTlvRenderer::tlvVgSetfv;
+    vgapi[VgRotate]            = &HbTlvRenderer::tlvVgRotate;
+    vgapi[VgCreatePath]        = &HbTlvRenderer::tlvVgCreatePath;
+    vgapi[VgCreateImage]       = &HbTlvRenderer::tlvVgCreateImage;
+    vgapi[VgGetPixels]         = &HbTlvRenderer::tlvVgGetPixels;
+    vgapi[VgDrawImage]         = &HbTlvRenderer::tlvVgDrawImage;
+    vgapi[VgClearImage]        = &HbTlvRenderer::tlvVgClearImage;
+    vgapi[VgImageSubData]      = &HbTlvRenderer::tlvVgImageSubData;
+    vgapi[VgDestroyImage]      = &HbTlvRenderer::tlvVgDestroyImage;
+    vgapi[VgDestroyPaint]      = &HbTlvRenderer::tlvVgDestroyPaint;
+    vgapi[VgDestroyPath]       = &HbTlvRenderer::tlvVgDestroyPath;
+    vgapi[VgPrepareToBindImage] = &HbTlvRenderer::tlvVgPrepareToBindImage;
+    vgapi[VgBindImage]         = &HbTlvRenderer::tlvVgBindImage;
+    vgapi[VgUnBindImage]       = &HbTlvRenderer::tlvVgUnBindImage;
+    vgapi[VgFlush]             = &HbTlvRenderer::tlvVgFlush;
 
     mTargetWidth        = width;
     mTargetHeight       = height;
@@ -84,33 +84,32 @@ HbTlvRenderer::HbTlvRenderer(const QByteArray &buffer, int width, int height)
 
     mNvgIconData = new HbNvgIconData(buffer);
     Q_CHECK_PTR(mNvgIconData);
-    
+
     mDataLength  = buffer.size();
 
-	INIT_HANDLECHECKER()
+    INIT_HANDLECHECKER()
 }
 
 void HbTlvRenderer::initialize()
-{    
+{
     mNvgIconData->beginRead();
     mNvgIconData->read(mNvgHeader, sizeof(mNvgHeader));
 }
 
 HbTlvRenderer::~HbTlvRenderer()
 {
-	if (mPathHandle != VG_INVALID_HANDLE){
+    if (mPathHandle != VG_INVALID_HANDLE) {
         VGDESTROYPATH(mPathHandle);
     }
 
-    int handleListCount    = mTlvVgHandleList.count();
+    qint32 handleListCount    = mTlvVgHandleList.count();
 
-    if (handleListCount > 0)
-        {
+    if (handleListCount > 0) {
         vgSetPaint(VG_INVALID_HANDLE, VG_FILL_PATH);
         vgSetPaint(VG_INVALID_HANDLE, VG_STROKE_PATH);
-        }
-        
-    for (int i = 0; i < handleListCount; i++) {
+    }
+
+    for (qint32 i = 0; i < handleListCount; i++) {
         if (mTlvVgHandleList[i].mVgHandle) {
             switch (mTlvVgHandleList[i].mHandleType) {
             case HbTlvVgHandlePair::VgPath:
@@ -126,15 +125,15 @@ HbTlvRenderer::~HbTlvRenderer()
         }
     }
 
-	mTlvVgHandleList.clear();
-	if (mNvgIconData){
-		mNvgIconData->endRead();
-    	delete mNvgIconData;
+    mTlvVgHandleList.clear();
+    if (mNvgIconData) {
+        mNvgIconData->endRead();
+        delete mNvgIconData;
     }
-        ASSERT_HANDLE_COUNT()
+    ASSERT_HANDLE_COUNT()
 }
 
-void HbTlvRenderer::dVgSeti()
+void HbTlvRenderer::tlvVgSeti()
 {
     quint16 type;
     quint16 value;
@@ -146,7 +145,7 @@ void HbTlvRenderer::dVgSeti()
     NVG_DEBUGSTMT(logVgSeti((VGParamType)type, value));
 }
 
-void HbTlvRenderer::dVgSetf()
+void HbTlvRenderer::tlvVgSetf()
 {
     quint16 type   = mNvgIconData->readInt16();
     VGfloat value     = mNvgIconData->readReal32();
@@ -156,7 +155,7 @@ void HbTlvRenderer::dVgSetf()
     NVG_DEBUGSTMT(logVgSetf((VGParamType)type, value));
 }
 
-void HbTlvRenderer::dVgSetParameteri()
+void HbTlvRenderer::tlvVgSetParameteri()
 {
     quint8  handle;
     quint16 type;
@@ -171,7 +170,7 @@ void HbTlvRenderer::dVgSetParameteri()
     NVG_DEBUGSTMT(logVgSetParameteri(getHandle(handle), type, value, handle));
 }
 
-void HbTlvRenderer::dVgSetParameterf()
+void HbTlvRenderer::tlvVgSetParameterf()
 {
     quint32 handle = mNvgIconData->readInt32();
     quint16 type = mNvgIconData->readInt16();
@@ -182,7 +181,7 @@ void HbTlvRenderer::dVgSetParameterf()
     NVG_DEBUGP4("vgSetParameterf(%d, %d, %d)\n", handle, type, value);
 }
 
-void HbTlvRenderer::dVgSetParameterfv()
+void HbTlvRenderer::tlvVgSetParameterfv()
 {
     quint32 handle = mNvgIconData->readInt32();
     quint16 type = mNvgIconData->readInt16();
@@ -192,27 +191,27 @@ void HbTlvRenderer::dVgSetParameterfv()
     Q_CHECK_PTR(fArr);
     QScopedArrayPointer<float> value(fArr);
 
-    for (uint i = 0; i < countt; i++ ) {
+    for (quint32 i = 0; i < countt; i++) {
         value[i] = mNvgIconData->readReal32();
     }
 
     vgSetParameterfv(getHandle(handle), type, countt, value.data());
-    
+
     NVG_DEBUGSTMT(logVgSetParameterfv(getHandle(handle), type, countt, value.data()));
 }
 
-void HbTlvRenderer::dVgSetColor()
+void HbTlvRenderer::tlvVgSetColor()
 {
     quint32 paintvalue = mNvgIconData->readInt32();
     quint32 rgba = mNvgIconData->readInt32();
 
     vgSetColor(getHandle(paintvalue), rgba);
 
-	NVG_DEBUGP6("vgSetColor(%d, ((%d << 24) | (%d << 16) | (%d << 8) | %d));\n", getHandle(paintvalue),
-	 (rgba & 0xFF000000) >> 24, (rgba & 0x00FF0000) >> 16,(rgba & 0x0000FF00) >> 8, (rgba & 0x000000FF));
+    NVG_DEBUGP6("vgSetColor(%d, ((%d << 24) | (%d << 16) | (%d << 8) | %d));\n", getHandle(paintvalue),
+                (rgba & 0xFF000000) >> 24, (rgba & 0x00FF0000) >> 16, (rgba & 0x0000FF00) >> 8, (rgba & 0x000000FF));
 }
 
-void HbTlvRenderer::dVgSetPaint()
+void HbTlvRenderer::tlvVgSetPaint()
 {
     quint32 paintvalue = mNvgIconData->readInt32();
     quint8 value = mNvgIconData->readInt8();
@@ -266,16 +265,16 @@ VGfloat HbTlvRenderer::maxVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4)
     return max;
 }
 
-void HbTlvRenderer::dVgSetiv()
+void HbTlvRenderer::tlvVgSetiv()
 {
     quint16 type = mNvgIconData->readInt16();
     quint16 count = mNvgIconData->readInt16();
-    
+
     VGint *intArr = new VGint[count];
     Q_CHECK_PTR(intArr);
     QScopedArrayPointer<VGint> value(intArr);
 
-    for (int i = 0; i < count; i++) {
+    for (qint32 i = 0; i < count; i++) {
         value[i] = mNvgIconData->readInt32();
     }
 
@@ -283,11 +282,11 @@ void HbTlvRenderer::dVgSetiv()
         VGfloat * matrix = mUserMatrix;
 
         // calculate the rectangle with respect to the transformation applied
-        for (int i = 0; i < count; i += 4) {
-            int sx = i + 0;
-            int sy = i + 1;
-            int sw = i + 2;
-            int sh = i + 3;
+        for (qint32 i = 0; i < count; i += 4) {
+            qint32 sx = i + 0;
+            qint32 sy = i + 1;
+            qint32 sw = i + 2;
+            qint32 sh = i + 3;
 
             QPoint leftBottom  = getTranslatedPoint(matrix,
                                                     QPoint(value[sx], value[sy]));
@@ -320,20 +319,21 @@ void HbTlvRenderer::dVgSetiv()
         }
     }
 
-    vgSetiv((VGParamType)type, count, value.data());
+    if (type != VG_SCISSOR_RECTS)
+        vgSetiv((VGParamType)type, count, value.data());
 
     NVG_DEBUGSTMT(logvgSetXv((VGParamType)type, count, 'i', value.data()));
 }
 
-void HbTlvRenderer::dVgLoadMatrix()
+void HbTlvRenderer::tlvVgLoadMatrix()
 {
     VGfloat matrix[9];
-    for (int i = 0; i < 9; i++) {
+    for (qint32 i = 0; i < 9; i++) {
         matrix[i] = mNvgIconData->readReal32();
     }
-    
+
     // keep the caller's matrix as base
-    int matrixMode = vgGeti(VG_MATRIX_MODE);
+    qint32 matrixMode = vgGeti(VG_MATRIX_MODE);
 
     if (matrixMode == VG_MATRIX_PATH_USER_TO_SURFACE ||
             matrixMode == VG_MATRIX_IMAGE_USER_TO_SURFACE /* need to check?*/) {
@@ -344,48 +344,48 @@ void HbTlvRenderer::dVgLoadMatrix()
     }
 
 #ifdef HB_NVG_DEBUG
-	int matrixCount = clock() % 1000;
-	NVG_DEBUGP2("VGfloat ldMatrix%d[] = {", matrixCount);
-    
+    qint32 matrixCount = clock() % 1000;
+    NVG_DEBUGP2("VGfloat ldMatrix%d[] = {", matrixCount);
+
     NVG_DEBUGP4("    %f, %f, %f, ", matrix[0], matrix[1], matrix[2]);
     NVG_DEBUGP4("    %f, %f, %f, ", matrix[3], matrix[4], matrix[5]);
     NVG_DEBUGP4("    %f, %f, %f)", matrix[6], matrix[7], matrix[8]);
-    
-	NVG_DEBUGP2("vgLoadMatrix(ldMatrix%d);\n", matrixCount);
+
+    NVG_DEBUGP2("vgLoadMatrix(ldMatrix%d);\n", matrixCount);
 #endif
 }
 
-void HbTlvRenderer::dVgMultMatrix()
+void HbTlvRenderer::tlvVgMultMatrix()
 {
     VGfloat matrix[9];
-    for (int i = 0; i < 9; i++) {
+    for (qint32 i = 0; i < 9; i++) {
         matrix[i] = mNvgIconData->readReal32();
     }
 
     vgMultMatrix(matrix);
-    
+
 #ifdef HB_NVG_DEBUG
-    int matrixCount = clock() % 1000;
+    qint32 matrixCount = clock() % 1000;
     NVG_DEBUGP2("VGfloat mlMatrix%d[] = {", ++matrixCount);
 
     NVG_DEBUGP4("    %f, %f, %f, ", matrix[0], matrix[1], matrix[2]);
     NVG_DEBUGP4("    %f, %f, %f, ", matrix[3], matrix[4], matrix[5]);
     NVG_DEBUGP4("    %f, %f, %f)", matrix[6], matrix[7], matrix[8]);
-	NVG_DEBUGP2("vgMultMatrix(mlMatrix%d);\n", matrixCount);
+    NVG_DEBUGP2("vgMultMatrix(mlMatrix%d);\n", matrixCount);
 #endif
 }
 
-void HbTlvRenderer::dVgLoadIdentity()
+void HbTlvRenderer::tlvVgLoadIdentity()
 {
     if (vgGeti(VG_MATRIX_MODE) == (VGint)VG_MATRIX_PATH_USER_TO_SURFACE) {
-        vgLoadMatrix(mUserMatrix);     
-    }else{
+        vgLoadMatrix(mUserMatrix);
+    } else {
         vgLoadIdentity();
     }
     NVG_DEBUGP1("vgLoadIdentity();\n");
 }
 
-void HbTlvRenderer::dVgScale()
+void HbTlvRenderer::tlvVgScale()
 {
     VGfloat sx = mNvgIconData->readReal32();
     VGfloat sy = mNvgIconData->readReal32();
@@ -394,7 +394,7 @@ void HbTlvRenderer::dVgScale()
     NVG_DEBUGP3("vgScale(%f, %f)\n", sx, sy);
 }
 
-void HbTlvRenderer::dVgTranslate()
+void HbTlvRenderer::tlvVgTranslate()
 {
     VGfloat tx = mNvgIconData->readReal32();
     VGfloat ty = mNvgIconData->readReal32();
@@ -404,29 +404,29 @@ void HbTlvRenderer::dVgTranslate()
     NVG_DEBUGP3("vgTranslate(%f, %f)\n", tx, ty);
 }
 
-void HbTlvRenderer::dVgAppendPathData()
+void HbTlvRenderer::tlvVgAppendPathData()
 {
     quint16         numSegments;
-    quint16         coordinatecount;
-    
+    quint16         coordinateCount;
+
     mNvgIconData->readInt32();
     numSegments = mNvgIconData->readInt16();
-    
+
     VGubyte *pSegArr = new VGubyte[numSegments];
     Q_CHECK_PTR(pSegArr);
     QScopedArrayPointer<VGubyte>pathSegments(pSegArr);
 
-    for (int j = 0; j < numSegments; j++) {
+    for (qint32 j = 0; j < numSegments; j++) {
         pathSegments[j] = mNvgIconData->readInt8();
     }
 
-    coordinatecount = mNvgIconData->readInt16();
-    
-    qint32 *pDataArr = new qint32[coordinatecount];
+    coordinateCount = mNvgIconData->readInt16();
+
+    qint32 *pDataArr = new qint32[coordinateCount];
     Q_CHECK_PTR(pDataArr);
-    QScopedArrayPointer<qint32>pathData(pDataArr );
-    
-    for (int i = 0; i < coordinatecount; i++ ) {
+    QScopedArrayPointer<qint32>pathData(pDataArr);
+
+    for (qint32 i = 0; i < coordinateCount; i++) {
         pathData[i] = mNvgIconData->readInt32();
     }
 
@@ -435,7 +435,7 @@ void HbTlvRenderer::dVgAppendPathData()
     NVG_DEBUGP3("vgappendPathData((VGPath)%d, (SENGMENTS)%d)\n", mPathHandle, numSegments);
 }
 
-void HbTlvRenderer::dVgDrawPath()
+void HbTlvRenderer::tlvVgDrawPath()
 {
     quint16 value;
 
@@ -443,11 +443,11 @@ void HbTlvRenderer::dVgDrawPath()
     value = mNvgIconData->readInt16();
 
     vgDrawPath(mPathHandle, value);
-    
+
     NVG_DEBUGSTMT(logVgDrawPath(mPathHandle, value));
 }
 
-void HbTlvRenderer::dVgClearPath()
+void HbTlvRenderer::tlvVgClearPath()
 {
     quint16 value;
 
@@ -458,21 +458,21 @@ void HbTlvRenderer::dVgClearPath()
     NVG_DEBUGP1("vgClearPath()\n");
 }
 
-void HbTlvRenderer::dVgCreatePaint()
+void HbTlvRenderer::tlvVgCreatePaint()
 {
     quint32  encodedHandle = mNvgIconData->readInt32();
-    
+
     VGPaint paintH = VGCREATEPAINT();
     if (paintH == VG_INVALID_HANDLE) {
         throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-        }
+    }
 
     mTlvVgHandleList.append(HbTlvVgHandlePair(paintH, encodedHandle, HbTlvVgHandlePair::VgPaint));
 
     NVG_DEBUGP2("%d = vgCreatePaint()\n", getHandle(encodedHandle));
 }
 
-void HbTlvRenderer::dVguRect()
+void HbTlvRenderer::tlvVguRect()
 {
     float x;
     float y;
@@ -489,10 +489,10 @@ void HbTlvRenderer::dVguRect()
 
     vguRect(mPathHandle, x, y, width, height);
 
-    NVG_DEBUGP6("vguRect(%d, %f, %f, %f, %f)\n",mPathHandle, x, y, width, height);
+    NVG_DEBUGP6("vguRect(%d, %f, %f, %f, %f)\n", mPathHandle, x, y, width, height);
 }
 
-void HbTlvRenderer::dVguEllipse()
+void HbTlvRenderer::tlvVguEllipse()
 {
     float cx;
     float cy;
@@ -512,7 +512,7 @@ void HbTlvRenderer::dVguEllipse()
     NVG_DEBUGP6("vguEllipse( %d ,%f, %f, %f, %f)\n", mPathHandle, cx, cy, width, height);
 }
 
-void HbTlvRenderer::dVguRoundRect()
+void HbTlvRenderer::tlvVguRoundRect()
 {
     float x;
     float y;
@@ -531,14 +531,14 @@ void HbTlvRenderer::dVguRoundRect()
 
     arcWidth = mNvgIconData->readReal32();
     arcHeight = mNvgIconData->readReal32();
-    
+
     //uncomment in qt
     vguRoundRect(mPathHandle, x, y, width, height, arcWidth, arcHeight);
 
-    NVG_DEBUGP8("vguRoundRect(%d %f, %f, %f, %f, %f, %f )\n", mPathHandle, x, y, width, height, arcWidth, arcHeight);   
+    NVG_DEBUGP8("vguRoundRect(%d %f, %f, %f, %f, %f, %f )\n", mPathHandle, x, y, width, height, arcWidth, arcHeight);
 }
 
-void HbTlvRenderer::dVguLine()
+void HbTlvRenderer::tlvVguLine()
 {
     float x0;
     float y0;
@@ -555,10 +555,10 @@ void HbTlvRenderer::dVguLine()
 
     vguLine(mPathHandle, x0, y0, x1, y1);
 
-    NVG_DEBUGP6("vguLine(%d, %f, %f, %f, %f)\n",mPathHandle, x0, y0, x1, y1);
+    NVG_DEBUGP6("vguLine(%d, %f, %f, %f, %f)\n", mPathHandle, x0, y0, x1, y1);
 }
 
-void HbTlvRenderer::dVgClear()
+void HbTlvRenderer::tlvVgClear()
 {
     float width;
     float height;
@@ -569,12 +569,12 @@ void HbTlvRenderer::dVgClear()
     height = mNvgIconData->readReal32();
 
     if (!mScaled) {
-        VGfloat scaleX = mTargetWidth  / width;
-        VGfloat scaleY = mTargetHeight / height;
+        VGfloat scaleX = (VGfloat) mTargetWidth  / width;
+        VGfloat scaleY = (VGfloat) mTargetHeight / height;
         vgLoadMatrix(mUserMatrix);
-        vgTranslate(mTargetWidth / 2, mTargetHeight / 2);
+        vgTranslate((VGfloat) mTargetWidth / 2, (VGfloat) mTargetHeight / 2);
         vgScale(scaleX, scaleY);
-        vgTranslate(- width / 2, - height / 2);
+        vgTranslate(- width / 2.0, - height / 2.0);
 
         vgGetMatrix(mUserMatrix);
         mScaled = true;
@@ -583,9 +583,9 @@ void HbTlvRenderer::dVgClear()
     NVG_DEBUGP1("vgClear()\n");
 }
 
-void HbTlvRenderer::dVgSetfv()
+void HbTlvRenderer::tlvVgSetfv()
 {
-    int innerpos = 1;
+    qint32 innerpos = 1;
     quint16 type;
     quint16 count;
 
@@ -596,18 +596,18 @@ void HbTlvRenderer::dVgSetfv()
     Q_CHECK_PTR(vgfArr);
     QScopedArrayPointer<VGfloat> value(vgfArr);
 
-    for (int i = 0; i < count; i++ ) {
+    for (qint32 i = 0; i < count; i++) {
         value[i] = mNvgIconData->readReal32();
     }
-    
+
     innerpos = innerpos + 2 * sizeof(quint16) + count * sizeof(VGfloat);
 
     vgSetfv((VGParamType)type, count, value.data());
-    
+
     NVG_DEBUGSTMT(logvgSetXv((VGParamType)type, count, 'f', (VGint *)value.data()));
 }
 
-void HbTlvRenderer::dVgRotate()
+void HbTlvRenderer::tlvVgRotate()
 {
     float angle;
 
@@ -618,7 +618,7 @@ void HbTlvRenderer::dVgRotate()
     NVG_DEBUGP2("vgRotate(%f)\n", angle);
 }
 
-void HbTlvRenderer::dVgCreatePath()
+void HbTlvRenderer::tlvVgCreatePath()
 {
     quint32 pathFormat;
     quint8  datatype;
@@ -641,21 +641,21 @@ void HbTlvRenderer::dVgCreatePath()
 
     mPathHandle = VGCREATEPATH(pathFormat, (VGPathDatatype)datatype, scale, bias, segmentCapacityHint, coordCapacityHint,
                                (VGbitfield)capabilities);
-    if (mPathHandle == VG_INVALID_HANDLE){
+    if (mPathHandle == VG_INVALID_HANDLE) {
         throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-    	}
+    }
     NVG_DEBUGP9("%d = vgCreatePath(%d, (VGPathDatatype)%d, %f, %f, %d, %d,(VGPathDatatype)%d)\n",
-    	 mPathHandle, pathFormat, datatype, scale, bias, segmentCapacityHint, coordCapacityHint, capabilities);
+                mPathHandle, pathFormat, datatype, scale, bias, segmentCapacityHint, coordCapacityHint, capabilities);
 }
 
-void HbTlvRenderer::dVgCreateImage()
+void HbTlvRenderer::tlvVgCreateImage()
 {
     qint32 format   = (VGImageFormat)mNvgIconData->readInt32();
-    int width      = (VGImageFormat)mNvgIconData->readInt32();
-    int height     = (VGImageFormat)mNvgIconData->readInt32();
-    quint8 aq       = (VGImageFormat)mNvgIconData->readInt8();
+    qint32 width      = (VGImageFormat)mNvgIconData->readInt32();
+    qint32 height     = (VGImageFormat)mNvgIconData->readInt32();
+    quint8 allowedQuality       = (VGImageFormat)mNvgIconData->readInt8();
 
-    int    encodedHandle = mNvgIconData->readInt32();
+    qint32    encodedHandle = mNvgIconData->readInt32();
     VGImage image = 0;
 
     if (mPrepareToBindImage) {
@@ -677,59 +677,59 @@ void HbTlvRenderer::dVgCreateImage()
     }
 
     image = VGCREATEIMAGE((VGImageFormat)format,
-                          width, height, aq);
-	if (image == VG_INVALID_HANDLE) {
-            throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-        }
+                          width, height, allowedQuality);
+    if (image == VG_INVALID_HANDLE) {
+        throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
+    }
 
-    mTlvVgHandleList.append(HbTlvVgHandlePair(image, encodedHandle, HbTlvVgHandlePair::VgImage, aq));
+    mTlvVgHandleList.append(HbTlvVgHandlePair(image, encodedHandle, HbTlvVgHandlePair::VgImage, allowedQuality));
 
-    NVG_DEBUGP6("%d = vgCreateImage(%d, %d, %d, %d)\n",getHandle(encodedHandle), format, width, height, (quint32)aq);
+    NVG_DEBUGP6("%d = vgCreateImage(%d, %d, %d, %d)\n", getHandle(encodedHandle), format, width, height, (quint32)allowedQuality);
 }
 
-void HbTlvRenderer::dVgClearImage()
+void HbTlvRenderer::tlvVgClearImage()
 {
-    int encodedImageHandle = mNvgIconData->readInt32();
+    qint32 encodedImageHandle = mNvgIconData->readInt32();
     VGImage imageHandle     = getHandle(encodedImageHandle);
 
-    int x      = mNvgIconData->readInt32();
-    int y      = mNvgIconData->readInt32();
-    int width  = mNvgIconData->readInt32();
-    int height = mNvgIconData->readInt32();
+    qint32 x      = mNvgIconData->readInt32();
+    qint32 y      = mNvgIconData->readInt32();
+    qint32 width  = mNvgIconData->readInt32();
+    qint32 height = mNvgIconData->readInt32();
     vgClearImage(imageHandle, x, y, width, height);
 
     NVG_DEBUGP6("vgClearImage(%d, %d, %d, %d, %d)\n", imageHandle, x, y, width, height);
 }
 
-void HbTlvRenderer::dVgDrawImage()
+void HbTlvRenderer::tlvVgDrawImage()
 {
-    int encodedImageHandle = mNvgIconData->readInt32();
+    qint32 encodedImageHandle = mNvgIconData->readInt32();
     VGImage imageHandle     = getHandle(encodedImageHandle);
 
     vgDrawImage(imageHandle);
     NVG_DEBUGP2("vgDrawImage(%d)\n", imageHandle);
 }
 
-void HbTlvRenderer::dVgImageSubData()
+void HbTlvRenderer::tlvVgImageSubData()
 {
-    int encodedImageHandle = mNvgIconData->readInt32();
+    qint32 encodedImageHandle = mNvgIconData->readInt32();
     VGImage imageHandle     = getHandle(encodedImageHandle);
-    int dataLength         = 0;
+    qint32 dataLength         = 0;
 
-    int dataStride = mNvgIconData->readInt32();
-    int dataFormat = mNvgIconData->readInt32();
-    int x          = mNvgIconData->readInt32();
-    int y          = mNvgIconData->readInt32();
-    int width      = mNvgIconData->readInt32();
-    int height     = mNvgIconData->readInt32();
+    qint32 dataStride = mNvgIconData->readInt32();
+    qint32 dataFormat = mNvgIconData->readInt32();
+    qint32 x          = mNvgIconData->readInt32();
+    qint32 y          = mNvgIconData->readInt32();
+    qint32 width      = mNvgIconData->readInt32();
+    qint32 height     = mNvgIconData->readInt32();
 
-	dataLength      = mNvgIconData->readInt32();
+    dataLength      = mNvgIconData->readInt32();
     if (dataLength) {
         quint8* uIntArry = new quint8[dataLength];
         Q_CHECK_PTR(uIntArry);
         QScopedArrayPointer<quint8> data(uIntArry);
-       	mNvgIconData->read(data.data(), dataLength);
-		quint8 * dataPtr;
+        mNvgIconData->read(data.data(), dataLength);
+        quint8 * dataPtr;
         if (dataStride < 0) {
             dataPtr = data.data() + (height - 1) * (-dataStride);
         } else {
@@ -737,48 +737,47 @@ void HbTlvRenderer::dVgImageSubData()
         }
         vgImageSubData(imageHandle, dataPtr, dataStride, (VGImageFormat)dataFormat, x, y, width, height);
 
-		NVG_DEBUGSTMT(logvgImageSubData(imageHandle, dataPtr, dataLength, dataStride,
-		        (VGImageFormat)dataFormat, x, y, width, height));
-        }
-    else {
+        NVG_DEBUGSTMT(logvgImageSubData(imageHandle, dataPtr, dataLength, dataStride,
+                                        (VGImageFormat)dataFormat, x, y, width, height));
+    } else {
         throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
     }
 }
 
-void HbTlvRenderer::dVgGetPixels()
+void HbTlvRenderer::tlvVgGetPixels()
 {
     NVG_DEBUGP1("vgGetPixels()\n");
 }
 
-void HbTlvRenderer::dVgDestroyImage()
+void HbTlvRenderer::tlvVgDestroyImage()
 {
     VGImage imageHandle = removeHandle(mNvgIconData->readInt32());
     VGDESTROYIMAGE(imageHandle);
     NVG_DEBUGP2("vgDestroyImage(%d)\n", imageHandle);
 }
 
-void HbTlvRenderer::dVgDestroyPaint()
+void HbTlvRenderer::tlvVgDestroyPaint()
 {
-    int paint = mNvgIconData->readInt32();
-	VGDESTROYPAINT(removeHandle(paint));
+    qint32 paint = mNvgIconData->readInt32();
+    VGDESTROYPAINT(removeHandle(paint));
     NVG_DEBUGP1("vgDestroyPaint()\n");
 }
 
-void HbTlvRenderer::dVgDestroyPath()
+void HbTlvRenderer::tlvVgDestroyPath()
 {
     // only one path handle is maintained, which is a member variable
     NVG_DEBUGP2("vgDestroyPath(%d);\n", mPathHandle);
 }
 
-void HbTlvRenderer::dVgFlush()
+void HbTlvRenderer::tlvVgFlush()
 {
     //no need to implement?
     NVG_DEBUGP1("vgFlush()\n");
 }
 
-void HbTlvRenderer::execute(int index)
+void HbTlvRenderer::execute(qint32 index)
 {
-    if (0 <= index && index < VgFlush + 1) {
+    if ((0 <= index) && (index < VgFlush + 1)) {
         (this->*(vgapi[index]))();
     } else {
         throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
@@ -795,11 +794,11 @@ void HbTlvRenderer::execute()
     NVG_DEBUGP1("TLV rendering ends");
 }
 
-void HbTlvRenderer::getHandlePair(int index, HbTlvVgHandlePair & pair)
+void HbTlvRenderer::getHandlePair(qint32 index, HbTlvVgHandlePair & pair)
 {
-    int handleListCount    = mTlvVgHandleList.count();
+    qint32 handleListCount    = mTlvVgHandleList.count();
 
-    for (int i = 0; i < handleListCount; i++) {
+    for (qint32 i = 0; i < handleListCount; i++) {
         if (mTlvVgHandleList[i].mTlvHandle == index) {
             pair = mTlvVgHandleList[i];
             break;
@@ -807,33 +806,31 @@ void HbTlvRenderer::getHandlePair(int index, HbTlvVgHandlePair & pair)
     }
 }
 
-VGHandle HbTlvRenderer::removeHandle(int index)
+VGHandle HbTlvRenderer::removeHandle(qint32 index)
 {
-	int handleListCount    = mTlvVgHandleList.count();
-	VGHandle handle         = 0;
-	
-	for (int i = 0; i < handleListCount; i++)
-	    {
-	    if (mTlvVgHandleList[i].mTlvHandle == index)
-	        {
-	        handle = mTlvVgHandleList[i].mVgHandle;
-	        mTlvVgHandleList.removeAt(i);
-	        break;
-	        }
-	    }
-	
-	if (!handle) {
+    qint32 handleListCount    = mTlvVgHandleList.count();
+    VGHandle handle         = 0;
+
+    for (qint32 i = 0; i < handleListCount; i++) {
+        if (mTlvVgHandleList[i].mTlvHandle == index) {
+            handle = mTlvVgHandleList[i].mVgHandle;
+            mTlvVgHandleList.removeAt(i);
+            break;
+        }
+    }
+
+    if (!handle) {
         throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
-	    }
-	return handle;
+    }
+    return handle;
 }
 
-VGHandle HbTlvRenderer::getHandle(int index)
+VGHandle HbTlvRenderer::getHandle(qint32 index)
 {
-    int handleListCount    = mTlvVgHandleList.count();
+    qint32 handleListCount    = mTlvVgHandleList.count();
     VGHandle handle = 0;
 
-    for (int i = 0; i < handleListCount; i++) {
+    for (qint32 i = 0; i < handleListCount; i++) {
         if (mTlvVgHandleList[i].mTlvHandle == index) {
             handle = mTlvVgHandleList[i].mVgHandle;
             break;
@@ -841,15 +838,15 @@ VGHandle HbTlvRenderer::getHandle(int index)
     }
     if (!handle) {
         throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
-        }
+    }
     return handle;
 }
 
-void HbTlvRenderer::setHandle(int index, VGHandle handle)
+void HbTlvRenderer::setHandle(qint32 index, VGHandle handle)
 {
-    int handleListCount    = mTlvVgHandleList.count();
+    qint32 handleListCount    = mTlvVgHandleList.count();
 
-    for (int i = 0; i < handleListCount; i++) {
+    for (qint32 i = 0; i < handleListCount; i++) {
         if (mTlvVgHandleList[i].mTlvHandle == index) {
             mTlvVgHandleList[i].mVgHandle = handle;
             break;
@@ -857,28 +854,28 @@ void HbTlvRenderer::setHandle(int index, VGHandle handle)
     }
 }
 
-void HbTlvRenderer::dVgPrepareToBindImage()
+void HbTlvRenderer::tlvVgPrepareToBindImage()
 {
     mPrepareToBindImage = 1;
     NVG_DEBUGP1("vgPrepareToBindImage()\n");
 }
 
-void HbTlvRenderer::dVgBindImage()
+void HbTlvRenderer::tlvVgBindImage()
 {
     mPrepareToBindImage = 0;
 
-    int imageHandle = mNvgIconData->readInt32();
+    qint32 imageHandle = mNvgIconData->readInt32();
 
     if (mVgImageBinder) {
-		mVgImageBinder->bindClientBuffer((VGHandle)getHandle(imageHandle));
-		}
+        mVgImageBinder->bindClientBuffer((VGHandle)getHandle(imageHandle));
+    }
     NVG_DEBUGP2("vgBindImage(%d)\n", imageHandle);
 }
 
-void HbTlvRenderer::dVgUnBindImage()
+void HbTlvRenderer::tlvVgUnBindImage()
 {
     if (mVgImageBinder) {
-        mVgImageBinder->unBindClientBuffer();
+        mVgImageBinder->unbindClientBuffer();
     }
     NVG_DEBUGP1("vgUnBindImage()\n");
 }
@@ -1021,7 +1018,7 @@ void HbTlvRenderer::logVgSetf(VGParamType type, VGfloat value)
     };
 
     logptr.append(", ");
-    logptr.setNum((int)value,10);
+    logptr.setNum((qint32)value, 10);
     logptr.append(")");
     qDebug() << logptr.data();
     return;
@@ -1161,7 +1158,7 @@ void HbTlvRenderer::logVgSeti(VGParamType type, VGint value)
     }
     break;
     };
-    
+
     logptr.append(", ");
     switch (value) {
     case VG_RENDERING_QUALITY_NONANTIALIASED: {
@@ -1449,7 +1446,7 @@ void HbTlvRenderer::logvgSetXv(VGParamType type, VGint count, qint8 vtype, VGint
     };
 
     logptr.append(", ");
-    logptr.setNum((int)count,(int)10);
+    logptr.setNum((qint32)count, (qint32)10);
     logptr.append(")");
     qDebug() << logptr.data();
     return;
@@ -1524,7 +1521,7 @@ void HbTlvRenderer::logVgSetParameteri(VGHandle handle, VGint paramType, VGint v
     }
     break;
     default: {
-        logptr.setNum((int)value,10);
+        logptr.setNum((qint32)value, 10);
     }
     break;
     };
@@ -1533,7 +1530,7 @@ void HbTlvRenderer::logVgSetParameteri(VGHandle handle, VGint paramType, VGint v
     return;
 }
 
-void HbTlvRenderer::logVgSetPaint(VGPaint paint, VGbitfield paintModes, int /*Lpvalue*/)
+void HbTlvRenderer::logVgSetPaint(VGPaint paint, VGbitfield paintModes, qint32 /*Lpvalue*/)
 {
     QByteArray logptr;
     logptr.append("vgSetPaint(");
@@ -1550,7 +1547,7 @@ void HbTlvRenderer::logVgSetPaint(VGPaint paint, VGbitfield paintModes, int /*Lp
     }
     break;
     default: {
-        logptr.setNum((int)paintModes,10);
+        logptr.setNum((qint32)paintModes, 10);
     }
     break;
     };
@@ -1563,7 +1560,7 @@ void HbTlvRenderer::logVgDrawPath(VGuint path, VGbitfield paintModes)
 {
     QByteArray logptr;
     logptr.append("vgDrawPath(");
-    logptr.setNum((int)path,10);
+    logptr.setNum((qint32)path, 10);
     logptr.append(", ");
     switch (paintModes) {
     case VG_STROKE_PATH: {
@@ -1579,7 +1576,7 @@ void HbTlvRenderer::logVgDrawPath(VGuint path, VGbitfield paintModes)
     }
     break;
     default: {
-        logptr.setNum((int)paintModes,10);
+        logptr.setNum((qint32)paintModes, 10);
     }
     break;
     };
@@ -1588,13 +1585,13 @@ void HbTlvRenderer::logVgDrawPath(VGuint path, VGbitfield paintModes)
     return;
 }
 
-void HbTlvRenderer::logVgSetParameterfv(VGPaint handle, VGint paramtype, int count, float* handlenum)
+void HbTlvRenderer::logVgSetParameterfv(VGPaint handle, VGint paramtype, qint32 count, float* handlenum)
 {
     QByteArray logptr;
     logptr.append("vgSetParameterfv(");
-    logptr.setNum((int)handle,10);
+    logptr.setNum((qint32)handle, 10);
     logptr.append(", ");
-    logptr.setNum((int)handlenum,10);
+    logptr.setNum((qint32)handlenum, 10);
     logptr.append(", ");
     switch (paramtype) {
     case VG_PAINT_TYPE: {
@@ -1630,20 +1627,20 @@ void HbTlvRenderer::logVgSetParameterfv(VGPaint handle, VGint paramtype, int cou
     }
     break;
     default: {
-        logptr.setNum((int)paramtype,10);
+        logptr.setNum((qint32)paramtype, 10);
     }
     break;
     };
     logptr.append(", ");
-    logptr.setNum((int)count,10);
+    logptr.setNum((qint32)count, 10);
     logptr.append(")");
     qDebug() << logptr.data();
     return;
 }
 
-void HbTlvRenderer::logvgImageSubData(VGImage imageHandle, const void* /* dataPtr*/, int dataLength, VGint dataStride,
-                VGImageFormat dataFormat, VGint x, VGint y, VGint width, VGint height)
-    {
+void HbTlvRenderer::logvgImageSubData(VGImage imageHandle, const void* /* dataPtr*/, qint32 dataLength, VGint dataStride,
+                                      VGImageFormat dataFormat, VGint x, VGint y, VGint width, VGint height)
+{
     QByteArray logPtr;
     logPtr.append("vgImageSubData(");
     logPtr.append(imageHandle);
@@ -1657,8 +1654,6 @@ void HbTlvRenderer::logvgImageSubData(VGImage imageHandle, const void* /* dataPt
     logPtr.append(height);
     logPtr.append(")");
     qDebug() << logPtr.data();
-    }
+}
 #endif
-    
-
 

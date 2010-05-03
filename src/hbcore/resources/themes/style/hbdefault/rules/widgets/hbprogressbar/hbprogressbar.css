@@ -1,133 +1,134 @@
 /* Layout selection*/
 HbProgressBar[!minMaxTextVisible]
-{	
-	layout:progressbar_no_text;
+{   
+    layout:progressbar_no_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Horizontal"][minMaxTextAlignment="AlignTop"]
-{	
-	layout:horizontal_progressbar_top_text;
+{   
+    layout:horizontal_progressbar_top_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Horizontal"][minMaxTextAlignment="AlignBottom"]
-{	
-	layout:horizontal_progressbar_bottom_text;
+{   
+    layout:horizontal_progressbar_bottom_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Horizontal"][minMaxTextAlignment="AlignCenter"]
-{	
-	layout:horizontal_progressbar_center_text;
+{   
+    layout:horizontal_progressbar_center_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Vertical"][minMaxTextAlignment="AlignTop"]
-{	
-	layout:vertical_progressbar_left_text;
+{   
+    layout:vertical_progressbar_left_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Vertical"][minMaxTextAlignment="AlignBottom"]
-{	
-	layout:vertical_progressbar_right_text;
+{   
+    layout:vertical_progressbar_right_text;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Vertical"][minMaxTextAlignment="AlignCenter"]
-{	
-	layout:vertical_progressbar_center_text;
+{   
+    layout:vertical_progressbar_center_text;
 }
 
 /* Progressbar Elements : frame, min-text & max-text */
 HbProgressBar[orientation="Horizontal"]::frame
 {
-   pref-height: var(hb-param-widget-progress-bar-height);
-   size-policy-vertical: fixed;
-   size-policy-horizontal: preferred;
+    pref-height: var(hb-param-widget-progress-bar-height);
+    size-policy-vertical: fixed;
+    size-policy-horizontal: preferred;
   
 }
 
 HbProgressBar[orientation="Vertical"]::frame
 {
-   pref-width: var(hb-param-widget-progress-bar-height);
-   size-policy-vertical: preferred;
-   size-policy-horizontal: fixed;
-  
+    pref-width: var(hb-param-widget-progress-bar-height);
+    size-policy-vertical: preferred;
+    size-policy-horizontal: fixed;
 }
 
-HbProgressBar[orientation="Horizontal"]::toucharea1
+HbProgressBar[orientation="Horizontal"]::toucharea
 {
-   pref-height: var(hb-param-touch-area-gene-primary-medium);
-   size-policy-vertical: fixed;
-   size-policy-horizontal: preferred;  
+    pref-height: var(hb-param-touch-area-gene-primary-medium);
+    size-policy-vertical: fixed;
+    size-policy-horizontal: preferred;  
 }
 
-HbProgressBar[orientation="Vertical"]::toucharea1
+HbProgressBar[orientation="Vertical"]::toucharea
 {
-   pref-width: var(hb-param-touch-area-gene-primary-medium);
-   size-policy-vertical: preferred;
-   size-policy-horizontal: fixed;
+    pref-width: var(hb-param-touch-area-gene-primary-medium);
+    size-policy-vertical: preferred;
+    size-policy-horizontal: fixed;
   
 }
 
 HbProgressBar::min-text
 {
-	fixed-width: 10.0un;
-	fixed-height: var(hb-param-text-height-tiny);
-	font-variant:secondary;
+    fixed-width: 10.0un;
+    text-line-count-max:1;
+    text-height: var(hb-param-text-height-tiny);
+    font-variant:secondary;
 }
 
 HbProgressBar::max-text
 {
-	fixed-width: 10.0un;
-	fixed-height: var(hb-param-text-height-tiny);
-	font-variant:secondary;
+    fixed-width: 10.0un;
+    text-line-count-max:1;
+    text-height: var(hb-param-text-height-tiny);
+    font-variant:secondary;
 }
 
 /* Alignment */
 /* Alignment  - Horizontal progressbar*/
 HbProgressBar[orientation="Horizontal"]::min-text
 {
-	text-align: left;
+    text-align: left;
 }
 
 HbProgressBar[orientation="Horizontal"]::max-text
 {
-	text-align: right;
+    text-align: right;
 }
 
 HbProgressBar[orientation="Horizontal"][minMaxTextAlignment="AlignCenter"]::min-text
 {
-	text-align: right;
+    text-align: right;
 }
 
 HbProgressBar[orientation="Horizontal"][minMaxTextAlignment="AlignCenter"]::max-text
 {
-	text-align: left;
+    text-align: left;
 }
 /* Alignment  - Vertical progressbar*/
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignTop"]::min-text
 {
-	text-align: right;
+    text-align: right;
 }
 
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignTop"]::max-text
 {
-	text-align: right;
+    text-align: right;
 }
 
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignBottom"]::min-text
 {
-	text-align: left;
+    text-align: left;
 }
 
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignBottom"]::max-text
 {
-	text-align: left;
+    text-align: left;
 }
 
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignCenter"]::min-text
 {
-	text-align: center;
+    text-align: center;
 }
 
 HbProgressBar[orientation="Vertical"][minMaxTextAlignment="AlignCenter"]::max-text
 {
-	text-align: center;
+    text-align: center;
 }

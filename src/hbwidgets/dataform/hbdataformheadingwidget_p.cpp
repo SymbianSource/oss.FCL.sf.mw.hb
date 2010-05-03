@@ -54,9 +54,11 @@ void HbDataFormHeadingWidget::createPrimitives()
     }
     if(!mHeading.isEmpty()) {
         if(!mHeadingItem){
+            setProperty( "hasHeading", true );
             mHeadingItem = style()->createPrimitive(HbStyle::P_DataForm_heading, this);
         }
     } else {
+        setProperty( "hasHeading", false );
         if(mHeadingItem){
             delete mHeadingItem;
             mHeadingItem = 0;
@@ -64,10 +66,12 @@ void HbDataFormHeadingWidget::createPrimitives()
     }
 
     if(!mDescription.isEmpty()) {
-        if(!mDescriptionItem) {
+        if(!mDescriptionItem) {            
+            setProperty( "hasDescription", true );
             mDescriptionItem = style()->createPrimitive(HbStyle::P_DataForm_description, this);
         }
-    } else {
+    } else {                  
+        setProperty( "hasDescription", false );
         if(mDescriptionItem) {
             delete mDescriptionItem;
             mDescriptionItem = 0;

@@ -27,9 +27,10 @@
 #define HBPROGRESSSLIDERHANDLE_P_H
 
 #include "hbnamespace_p.h"
-#include "hbstyleoptionprogressbar.h"
 #include <hbwidget.h>
 #include <hbprogressslider.h>
+
+class HbStyleOptionProgressSliderHandle;
 
 class HbHandleParent
 {
@@ -75,7 +76,7 @@ public:
     QPointF valueToHandlePos(int value) const;
     enum { Type = HbPrivate::ItemType_ProgressSliderHandle };
     int type() const { return Type; }
-    void setThumbIcon(const HbIcon &icon);
+    void setHandleIcon(const HbIcon &icon);
     HbIcon thumbIcon() const;
     void handleTrackRelease(QGraphicsSceneMouseEvent * event);
     void handleTrackPress(QGraphicsSceneMouseEvent * event);
@@ -84,8 +85,9 @@ public:
     QPointF normalizedPos(const QPointF&  pos,bool inverted) const;
     bool isHandlePressed() const;
     bool isHandleMoving() const;
-    //HbProgressSlider::HandleState mHandleState;
-    HbProgressSlider::SliderState mSliderState;
+    HbProgressSlider::SliderState mSliderHandleState;
+
+    QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 
 public slots:
     void updatePrimitives();
@@ -94,6 +96,8 @@ protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseMoveEvent ( QGraphicsSceneMouseEvent * event );
+    virtual void gestureEvent(QGestureEvent *event);
+    void initStyleOption( HbStyleOptionProgressSliderHandle *option ) const;
 
 private:
     StateFlags mFlags;
@@ -102,10 +106,9 @@ private:
     QPointF mItemPosAtPress;
     QPointF mItemCurPos;
     QSizeF mHandleSize;
-    QGraphicsItem *mHandleItem; 
     QGraphicsItem *mHandleIconItem; 
     QGraphicsItem *mTouchItem;
-    HbIcon mThumbIcon;
+    HbIcon mHandleIcon;
     uint mPlayThumb : 1;
     uint mThumbEnabled;
 };

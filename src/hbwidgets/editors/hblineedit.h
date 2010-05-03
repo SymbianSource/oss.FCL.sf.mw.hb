@@ -49,6 +49,7 @@ class HB_WIDGETS_EXPORT HbLineEdit: public HbAbstractEdit
     Q_PROPERTY(int minRows READ minRows WRITE setMinRows)
     Q_PROPERTY(bool expandable READ isExpandable)
     Q_PROPERTY(EchoMode echoMode READ echoMode WRITE setEchoMode)
+    Q_PROPERTY(bool adjustFontSizeToFitHeight READ adjustFontSizeToFitHeight WRITE setAdjustFontSizeToFitHeight)
 
 public:
 
@@ -90,6 +91,9 @@ public:
     void setCapitalization ( QFont::Capitalization caps );
     QFont::Capitalization capitalization () const;
 
+    bool adjustFontSizeToFitHeight() const;
+    void setAdjustFontSizeToFitHeight(bool active);
+
 public slots:
     void setText(const QString &text);
 
@@ -105,13 +109,14 @@ protected:
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
 
-    void resizeEvent(QGraphicsSceneResizeEvent *event);
-
     bool canInsertFromMimeData(const QMimeData *source) const;
     void insertFromMimeData(const QMimeData *source);
 
     void focusOutEvent ( QFocusEvent * event );
     void focusInEvent ( QFocusEvent * event );
+
+    bool eventFilter(QObject *, QEvent *);
+
 private:
     Q_DISABLE_COPY(HbLineEdit)
     Q_DECLARE_PRIVATE_D(d_ptr, HbLineEdit)

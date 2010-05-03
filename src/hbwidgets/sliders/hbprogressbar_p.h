@@ -47,9 +47,12 @@ public:
     void createTextPrimitives();
     virtual void setRange(int minimum, int maximum);
     virtual void setOrientation(Qt::Orientation orientation);
+	virtual void setProgressValue(int value);
+	virtual void setEnableFlag(bool flag);
 
 #ifdef HB_EFFECTS
     void _q_delayedHide(HbEffect::EffectStatus status);
+    void _q_delayedShow(HbEffect::EffectStatus status);
 #endif
 
 public:
@@ -77,6 +80,7 @@ public:
     Qt::Orientation mOrientation;
 
     uint mDelayHideInProgress : 1;
+    uint mShowEffectInProgress : 1;
 };
 
 #endif  //HBPROGRESSBARPRIVATE_H

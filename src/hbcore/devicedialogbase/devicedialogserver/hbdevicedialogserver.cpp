@@ -47,13 +47,19 @@
     \internal
     Constructor for HbDeviceDialogServer class.
 */
-HbDeviceDialogServer::HbDeviceDialogServer()
-: iManager(new HbDeviceDialogManager), d_ptr(new HbDeviceDialogServerPrivate)
+HbDeviceDialogServer::HbDeviceDialogServer() : iManager(0), d_ptr(0), mError(0)
 {
     TRACE_ENTRY
+    d_ptr = new HbDeviceDialogServerPrivate;
     Q_D( HbDeviceDialogServer );
     d->q_ptr = this;
-    d->Init();
+    mError = d->Init();
+    // Error creating a server
+    if (mError != 0) {
+        return;
+    }
+
+    iManager = new HbDeviceDialogManager;
 
     connect( iManager, SIGNAL(deviceDialogUpdate(int, QVariantMap)),
              this, SLOT(deviceDialogUpdate(int, QVariantMap)));
@@ -66,6 +72,8 @@ HbDeviceDialogServer::HbDeviceDialogServer()
              this, SLOT( indicatorUpdated(QList<IndicatorClientInfo>) ) );
     connect( iManager, SIGNAL( indicatorRemoved(QList<IndicatorClientInfo>) ),
              this, SLOT( indicatorRemoved(QList<IndicatorClientInfo>) ) );
+    connect( iManager, SIGNAL( indicatorUserActivated(const QVariantMap) ),
+             this, SLOT( indicatorUserActivated(const QVariantMap) ) );
     TRACE_EXIT
 }
 
@@ -198,3 +206,7 @@ void HbDeviceDialogServer::indicatorRemoved(
     d_func()->IndicatorsDeactivated(indicatorInfoList);
 }
 
+void HbDeviceDialogServer::indicatorUserActivated(const QVariantMap &data)
+{
+	d_func()->IndicatorUserActivated(data);
+}

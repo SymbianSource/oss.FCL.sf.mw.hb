@@ -123,7 +123,8 @@ public:
     bool setZeroDigit( const DigitType type );
 
     static QString symbianLangToISO( const int code );
-    
+    static QString symbianLangToRfc3066( const int code );
+    static int ISOToSymbianLang( const QString &langAndCountry );
     QString symbianDateTimeToQt( const QString &sys_fmt );
 
     WeekDay startOfWeek() const;

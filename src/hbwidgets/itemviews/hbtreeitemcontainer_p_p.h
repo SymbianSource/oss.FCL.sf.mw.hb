@@ -46,10 +46,15 @@ public:
     HbAbstractViewItem *shiftDownItem(QPointF& delta);
     void resolveIndentation();
 
-    qreal getSmallestItemHeight() const; 
+    qreal itemHeight() const;
+    qreal getSmallestItemHeight() const;
+
+    int mapToLayoutIndex(int index) const;
 
     HbTreeLayout *mLayout;
     qreal mUserIndentation;
     qreal mStyleIndentation;
+
+    QList< QPair<HbAbstractViewItem *, int> > mAnimatedItems;
 };
 #endif /* HBTREEITEMCONTAINER_H */

@@ -40,7 +40,6 @@
 #include "hbgesturefilter.h"
 #include "hbgesturefilter_p.h"
 #include "hbgesture.h"
-#include "hblongpressvisualizer_p.h"
 #include "hbgraphicsscenemouseevent.h"
 #include "hbinstance.h"
 
@@ -109,7 +108,6 @@ HbGestureFilterPrivate::HbGestureFilterPrivate(Qt::MouseButton button) :
     panLastScenePos(),
     gestureTimer(),
     allGestures(HbGesture::none),
-    longPressAnimation(0),
     longPressTimer(0),
     longPressDelayTimer(0)
 {
@@ -121,7 +119,6 @@ HbGestureFilterPrivate::~HbGestureFilterPrivate()
     gestures.clear();
     delete longPressTimer;
     delete longPressDelayTimer;
-    delete longPressAnimation;
 }
 
 
@@ -330,12 +327,6 @@ void HbGestureSceneFilter::startLongPressCounter()
 {
     if (!d->longPressDelayCancelled) {
 
-        if(d->p.longPressAnimation)
-        {
-            delete d->p.longPressAnimation;
-            d->p.longPressAnimation = 0;
-        }
-
         //Delay timer has exceeded, start the long press.
         if ( !d->p.longPressTimer )
         {
@@ -343,21 +334,6 @@ void HbGestureSceneFilter::startLongPressCounter()
             connect( d->p.longPressTimer, SIGNAL(finished()), this, SLOT(completeLongPress()) );
         }
 
-        if (showLongpressAnimation) {
-            Q_ASSERT( d->p.longPressAnimation == 0 ); // Is deleted and nulled if finished or stopped!
-
-            if(scene()) {
-                d->p.longPressAnimation = new HbLongPressVisualizer(0);
-                d->p.longPressAnimation->setZValue(200000);
-
-                d->p.longPressTimer->setFrameRange(0, 100);
-                connect( d->p.longPressTimer, SIGNAL(frameChanged(int)),
-                         d->p.longPressAnimation, SLOT(setFrame(int)) );
-
-                scene()->addItem(d->p.longPressAnimation);
-                d->p.longPressAnimation->start(d->p.touchDownScenePos);
-            }
-        }
         d->p.longPressTimer->setCurrentTime(0);
         d->p.longPressTimer->start();
 
@@ -384,11 +360,8 @@ void HbGestureSceneFilter::completeLongPress()
                 // If gesture matches, do a callback, which emits the signal.
                 if ( gesture->direction() == HbGesture::longpress ) {
                     //Delete the long press animation before the callback.
-                    delete d->p.longPressAnimation;
-                    d->p.longPressAnimation=0;
                     d->longPressCompleted = true;
 
-                    //Start of snippet 1
                     // Create custom Hb Event and add position data
                     HbGraphicsSceneMouseEvent longPressEvent(HbGraphicsSceneMouseEvent::LongPress);
                     longPressEvent.setAccepted(false);
@@ -409,7 +382,6 @@ void HbGestureSceneFilter::completeLongPress()
                             }
                         }
                     }
-                    //End of snippet 1
 
                     gesture->longPressCallback( d->p.touchDownScenePos );
                 }
@@ -420,9 +392,6 @@ void HbGestureSceneFilter::completeLongPress()
 	else {
             d->longPressCompleted = false;
 	}
-	
-    delete d->p.longPressAnimation;
-    d->p.longPressAnimation=0;
 }
 
 /*!
@@ -434,9 +403,6 @@ void HbGestureSceneFilter::cancelLongPress()
 {
     d->longPressCompleted = false;
     d->longPressDelayCancelled = true;
-
-    delete d->p.longPressAnimation;
-    d->p.longPressAnimation=0;
 
     if (d->p.longPressDelayTimer)
         d->p.longPressDelayTimer->stop();
@@ -531,10 +497,6 @@ bool HbGestureSceneFilter::sceneEventFilter(QGraphicsItem *watched, QEvent *even
 
         //Mouse panning
         if (d->panning && !d->mouseReleased && timestamp > HB_FLICK_MAX_DURATION) {
-            if (d->p.longPressAnimation != 0 && !d->withinThreshold) {
-                cancelLongPress();
-            }
-
             QPointF lastPanPos(scenePos);
 
             // Exit if panning outside widget

@@ -42,7 +42,6 @@ class HbFeedbackEffectEngine : public HbFeedbackEngine
 public:
     HbFeedbackEffectEngine();
     ~HbFeedbackEffectEngine();
-
     void triggered(const HbWidget* widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers);
     void pressed(const HbWidget *widget);
     void released(const HbWidget *widget);
@@ -59,17 +58,41 @@ public:
     void multitouchActivated(const HbWidget *widget);
     void continuousTriggered(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta);
     void continuousStopped(const HbWidget *widget, Hb::ContinuousInteraction interaction);
-        
+
 protected:
-    void playInstantFeedback(const HbWidget* widget, HbFeedback::InstantEffect effect);
-    void playContinuousFeedback(const HbWidget* widget, HbFeedback::ContinuousEffect effect, int intensity);
+    void playInstantFeedback(const HbWidget* widget, HbFeedback::InstantEffect effect, HbFeedback::Modalities modalities = HbFeedback::All);
+    void playContinuousFeedback(const HbWidget* widget, HbFeedback::ContinuousEffect effect, int intensity, HbFeedback::Modalities modalities = HbFeedback::All);
     void cancelContinuousFeedback(const HbWidget* HbWidget);
+    inline bool widgetOverridesEffect(const HbWidget *widget, Hb::InstantInteraction interaction);
+    inline bool widgetOverridesEffect(const HbWidget *widget, Hb::ContinuousInteraction interaction);
+    inline bool widgetOverridesModalities(const HbWidget *widget,Hb::InstantInteraction interaction);
+    inline bool widgetOverridesModalities(const HbWidget *widget,Hb::ContinuousInteraction interaction);
+
+    QString effectOverrideProperty(Hb::InstantInteraction interaction);
+    QString effectOverrideProperty(Hb::ContinuousInteraction interaction);
+    QString modalitiesOverrideProperty(Hb::InstantInteraction interaction);
+    QString modalitiesOverrideProperty(Hb::ContinuousInteraction interaction);
 
 private:
     QMap<const HbWidget*, int> continuousFeedbacks;
     QList<int> oldVisibleIndexes;
     const HbWidget* activelyScrollingItemView;
     QList<const HbWidget*> boundaryWidgets;
+
+    struct Override {
+        const HbWidget* widget;
+        Hb::InstantInteraction instantInteraction;
+        Hb::ContinuousInteraction continuousInteraction;
+
+        bool overridesEffect;
+        HbFeedback::InstantEffect newInstantEffect;
+        HbFeedback::ContinuousEffect newContinuousEffect;
+
+        bool overridesModalities;
+        HbFeedback::Modalities newModalities;
+    };
+    Override overrider;
+
 
     int previousCursorPosition;
 };

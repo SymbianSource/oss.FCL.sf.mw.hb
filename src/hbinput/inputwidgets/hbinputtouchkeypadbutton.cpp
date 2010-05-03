@@ -35,6 +35,7 @@
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
 #endif
+#include <hbtapgesture.h>
 
 #include "hbinputtouchkeypadbutton.h"
 #include "hbinputvkbwidget.h"
@@ -44,6 +45,7 @@
 @proto
 @hbinput
 \class HbTouchKeypadButton
+\deprecated class HbTouchKeypadButton
 \brief A button widget to be used in touch keypads.
 
 Expands HbPushButton functionality to suit touch keypad purposes. It handles virtual keyboard closing gesture
@@ -97,7 +99,8 @@ public:
 /// @endcond
 
 /*!
-Constructs the object. aOwner is the owning touch keypad widget.
+\deprecated HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *, const QString &, QGraphicsWidget *)
+    is deprecated.
 */
 HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *owner,
                                          const QString &text,
@@ -114,7 +117,7 @@ HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *owner,
 }
 
 /*!
-Constructs the object. aOwner is the owning touch keypad widget.
+\deprecated HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *, const HbIcon &, const QString &, QGraphicsItem *)
 */
 HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *owner,
                                          const HbIcon &icon,
@@ -132,7 +135,7 @@ HbTouchKeypadButton::HbTouchKeypadButton(HbInputVkbWidget *owner,
 }
 
 /*!
-Destructs the object.
+\deprecated HbTouchKeypadButton::~HbTouchKeypadButton()
 */
 HbTouchKeypadButton::~HbTouchKeypadButton()
 {
@@ -140,189 +143,79 @@ HbTouchKeypadButton::~HbTouchKeypadButton()
 }
 
 /*!
-Handles mouse press event. The event is first directed to owner keypad and then
-handled normally.
+\reimp
+\deprecated HbTouchKeypadButton::mousePressEvent(QGraphicsSceneMouseEvent *)
+    is deprecated.
 */
 void HbTouchKeypadButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    Q_D(HbTouchKeypadButton);
-    //Since this is a virtual keypress, it is ambiguous. Update the probable
-    //keys from the this particular key press. It is required very much for 
-    //QWERTY keypad but for ITU-T it may not be. Since it does not add too much 
-    //of performance overhead, let it be there.
-    if(d->mOwner && d->mOwner->d_func()) { 
-        d->mOwner->d_func()->updateMouseHitItem(this, mapToScene(event->pos()));
-    }
-
-    /* If the Normal button is InActive(i.e. Faded) and there is no text mapped to that button and for Inactive Function buttons
-    we should not handle MousePressEvent.However, we need to redirect MousePressEvent to the VKB Widget 
-    because we need to handle keypad closegesture i.e.   the keypad should close when flick veritically on Faded Buttons
-    Note: We have to handle MousePressEvent for Normal Inactive Buttons which have text mapped to it, because we need to handle long key press */
-    if(!(d->mButtonType == HbTouchButtonNormalInActive && text().isEmpty())) {
-        HbPushButton::mousePressEvent(event);
-        if(event->isAccepted()) {
-            setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonPressed);
-        }
-    }
-    if(event->isAccepted()) {
-        d->mOwner->d_func()->redirectMousePressEvent(event);
-    }
+    Q_UNUSED(event)
 }
 
 /*!
-Handles mouse release event. The event is first directed to owner keypad
-and then handled normally.
+\reimp
+\deprecated HbTouchKeypadButton::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
+    is deprecated.
 */
 void HbTouchKeypadButton::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    Q_D(HbTouchKeypadButton);
-	//Since this is a virtual keypress, it is ambiguous. Update the probable
-    //keys from the this partucular key press. It is required very much for 
-    //QWERTY keypad but for ITU-T it may not be. Since it does not add too much 
-    //of performance overhead, let it be there.
-    //This updation happens on both press and release of the key. This is 
-    //because press and release events may not happen on the same button.
-	// should be updated before the release signal is emitted here
-    d->mOwner->d_func()->updateMouseHitItem(this, mapToScene(event->pos()));
-
-    d->mOwner->d_func()->redirectMouseReleaseEvent(event);
-
-    /* If the Normal button is InActive(i.e. Faded) and there is no text mapped to that button and for Inactive Function buttons
-    we should not handle MousePressEvent.However, we need to redirect MousePressEvent to the VKB Widget 
-    because we need to handle keypad closegesture i.e.   the keypad should close when flick veritically on Faded Buttons
-    Note: We have to handle MousePressEvent for Normal Inactive Buttons which have text mapped to it, because we need to handle long key press */
-    if(!(d->mButtonType == HbTouchButtonNormalInActive && text().isEmpty())) {
-        if (d->mLatch) {
-            setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonLatched);
-        } else {
-            setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-        }
-        
-        // redirectMouseReleaseEvent() is called first so that the mouserelease is handled first and checked for
-        // any flick events, and based on that handle the necessary mouse release actions
-        // else it would give rise to a situation that after a flick, the selected button where release happens
-        // will additionally handle, and give rise to undesired results.
-        HbPushButton::mouseReleaseEvent(event);
-    }
-
-
-    ungrabMouse();
+    Q_UNUSED(event)
 }
 
 /*!
-Handles mouse move event. In case this is a sticky key movement will activate a mousePressEvent on another button
-and the next button is set as the grabber item.
+\reimp
+\deprecated HbTouchKeypadButton::mouseMoveEvent(QGraphicsSceneMouseEvent *)
+    is deprecated.
 */
 void HbTouchKeypadButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
+    Q_UNUSED(event)
+}
+
+/*!
+\reimp
+\deprecated HbTouchKeypadButton::gestureEvent(QGestureEvent *)
+    is deprecated.
+*/
+void HbTouchKeypadButton::gestureEvent(QGestureEvent *event)
+{
     Q_D(HbTouchKeypadButton);
-
-    bool transfered = false;
-    bool hasHitButton = hitButton(event->pos());
-    // if it is a sticky key and the mouse pointer moved out of the current button's boundary
-    // that means we need to activate and pass the grabber to the button which is having the mouse pointer
-    if (d->mStickyKey && !hasHitButton) {
-        // get the list of item's at current mouse position
-        QList<QGraphicsItem *> list = scene()->items(event->scenePos());
-        for (int i =0; i < list.count(); i++) {
-            // let's check if we have HbTouchKeypadButton
-            HbTouchKeypadButton *button  = hbtouchkeypadbutton_cast(list.at(i));
-            if (button  && button->isEnabled() && (button->parent() == parent())) {
-                // we found a button which contains the current mouse pointer position
-                // now we will be making the found button as mouse grabber if it is a 
-                // sticky button.
-                if (button->isStickyButton()) {
-                    // release old button
-                    ungrabMouse();
-                    event->setButton(Qt::LeftButton);
-                    HbPushButton::mouseReleaseEvent(event);
-                    if (d->mLatch) {
-                        setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonLatched);
-                    } else {
-                        setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-                    }
-                    updatePrimitives();
-                    // now call the mousepressEvent function of the button under mouse
-                    QGraphicsSceneMouseEvent pressEvent;
-                    pressEvent.setButton(Qt::LeftButton);
-                    button->mousePressEvent(&pressEvent);
-
-                    // now to make button under cursor to get mouse events we have to manually make that button
-                    // a mouse grabber item. after this button will start recieving the button movements.
-                    button->grabMouse();
-                    transfered = true;
-                }
-                break;
+    if (HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted:
+            if (d->mOwner && d->mOwner->d_func()) {
+                d->mOwner->d_func()->updateMouseHitItem(this, tap->scenePosition());
             }
-        }
-
-        if (!transfered) {
-            emit enteredInNonStickyRegion();
-        }
-    }
-    // handling for non-sticy buttons
-    if(!(d->mStickyKey)) {
-        if (!hasHitButton && isDown()) {
-            // the mouse moved out of the button pressed
-            emit d->mOwner->mouseMovedOutOfButton();
-            HbAbstractButton::setDown(false);
-            // if we move out of a button, the released attribute should be reflected
-            setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-            return;
-        }   
-        else if (hasHitButton && !isDown()) {   
-            // makes sure that press event is regenerated
-            HbPushButton::mouseMoveEvent(event);
-            // if we return back to this button, the attribute should be pressed
-            setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonPressed);
-        return;
-        }
-
-    }
-
-    if (!transfered) {
-        if (isDown()) {
-            // If mouse pointer moved away from the button, button needs to be updated
-            if (!hasHitButton && d->mStickyKey) {
+            if (!(d->mButtonType == HbTouchButtonNormalInActive && text().isEmpty())) {
+                setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonPressed);
+            }
+            break;
+        case Qt::GestureUpdated:
+            // Handle tap-and-hold?
+            break;
+        case Qt::GestureFinished:
+            if (!(d->mButtonType == HbTouchButtonNormalInActive && text().isEmpty())) {
                 if (d->mLatch) {
                     setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonLatched);
                 } else {
                     setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
                 }
+                break;
+        case Qt::GestureCanceled:
+                setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
+                break;
+        default:
+                break;
             }
-            if ( d->mStickyKey ) {
-                HbPushButton::mouseMoveEvent(event);
-                // Button is no longer pressed down so the button should be released
-                if (!isDown() ) {
-                        // setting button to down so that clicked and pressed signals are not emitted 
-                    // by the button.
-                    setDown(true);
-                    event->setButton(Qt::LeftButton);
-                    // we should not redirect this event to vkb at this point.
-                    // as this was a mouse move event and we dont want vkb to be closed
-                    // during the mouse move event.
-                    HbPushButton::mouseReleaseEvent(event);
-                }
-            }
-        } else if (d->mStickyKey) {
-            // this condition satisfies when we are coming back to 
-            // sticky button after moved out of its geometry. 
-            // In this case button_down == false
-            if (hasHitButton) {
-                if (d->mLatch) {
-                    setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonLatched);
-                } else {
-                    setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonPressed);
-                }
-            }
-            // now passing to base class will emit a pressed signal().
-            HbPushButton::mouseMoveEvent(event);
         }
     }
+    HbPushButton::gestureEvent(event);
 }
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::resizeEvent(QGraphicsSceneResizeEvent *)
+    is deprecated.
 */
 void HbTouchKeypadButton::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
@@ -340,7 +233,8 @@ void HbTouchKeypadButton::resizeEvent(QGraphicsSceneResizeEvent *event)
 }
 
 /*!
-Returns true if button is Faded
+\deprecated HbTouchKeypadButton::isFaded()
+    is deprecated.
 */
 bool HbTouchKeypadButton::isFaded()
 {
@@ -349,8 +243,8 @@ bool HbTouchKeypadButton::isFaded()
 }
 
 /*!
-Sets the button fade status. Fading does not mean disabling the button.
-It just fades the button and does not change the Enabling properties of the button.
+\deprecated HbTouchKeypadButton::setFade(bool)
+    is deprecated.
 */
 void HbTouchKeypadButton::setFade(bool fade)
 {
@@ -385,9 +279,8 @@ void HbTouchKeypadButton::setFade(bool fade)
 }
 
 /*!
-Sets button type.
-
-\sa type
+\deprecated  HbTouchKeypadButton::setButtonType(HbTouchButtonType)
+    is deprecated.
 */
 void HbTouchKeypadButton::setButtonType(HbTouchButtonType buttonType)
 {
@@ -403,10 +296,8 @@ void HbTouchKeypadButton::setButtonType(HbTouchButtonType buttonType)
 }
 
 /*!
-Gets button type.
-This function will be removed once the long press on qwerty buttons give accented char
-functionality is removed
-\sa type
+\deprecated HbTouchKeypadButton::getButtonType()
+    is deprecated.
 */
 int HbTouchKeypadButton::getButtonType()
 {
@@ -415,8 +306,8 @@ int HbTouchKeypadButton::getButtonType()
 }
 
 /*!
-This function will be removed once the long press on qwerty buttons give accented char
-functionality is removed
+\deprecated HbTouchKeypadButton::getFrameIcon()
+    is deprecated.
 */
 HbFrameItem * HbTouchKeypadButton::getFrameIcon()
 {
@@ -425,9 +316,8 @@ HbFrameItem * HbTouchKeypadButton::getFrameIcon()
 }
 
 /*!
-Sets button's background attributes.
-
-\sa HbTouchButtonState
+\deprecated HbTouchKeypadButton::setBackgroundAttributes(HbTouchButtonState)
+    is deprecated.
 */
 void HbTouchKeypadButton::setBackgroundAttributes(HbTouchButtonState buttonState)
 {
@@ -459,7 +349,8 @@ void HbTouchKeypadButton::setBackgroundAttributes(HbTouchButtonState buttonState
 }
 
 /*!
-Sets button's background graphics. Parameter string is a resource name.
+\deprecated HbTouchKeypadButton::setBackground(const QString&)
+    is deprecated.
 */
 void HbTouchKeypadButton::setBackground(const QString& backgroundFrameFilename)
 {
@@ -470,9 +361,9 @@ void HbTouchKeypadButton::setBackground(const QString& backgroundFrameFilename)
     }
 }
 
-/*
-Currently HbPushButton is not capable of being skinned with multiple images (using HbFrameDraw)
-hence maintaining a separate frame item per button, that will set the multi piece image and use it
+/*!
+\deprecated HbTouchKeypadButton::setFrameIcon(const QString&)
+    is deprecated.
 */
 void HbTouchKeypadButton::setFrameIcon(const QString& frameIconFileName )
 {
@@ -489,6 +380,8 @@ void HbTouchKeypadButton::setFrameIcon(const QString& frameIconFileName )
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::type() const
+    is deprecated.
 */
 int HbTouchKeypadButton::type() const
 {
@@ -506,9 +399,8 @@ int HbTouchKeypadButton::type() const
 }
 
 /*!
-Sets button's stickyness state.
-
-\sa isStickyButton
+\deprecated  HbTouchKeypadButton::setAsStickyButton(bool)
+    is deprecated.
 */
 void HbTouchKeypadButton::setAsStickyButton(bool isSticky)
 {
@@ -517,12 +409,8 @@ void HbTouchKeypadButton::setAsStickyButton(bool isSticky)
 }
 
 /*!
-Returns true if button is sticky button. Sticky buttons propagates press state to neighboring button
-as a result of a drag event that crosses button border. Original button get release event and the neighbour
-target button receives press event. This feature is needed for implementing slides where finger moves
-across several buttons. 
-
-\sa setAsStickyButton
+\deprecated HbTouchKeypadButton::isStickyButton() const
+    is deprecated.
 */
 bool HbTouchKeypadButton::isStickyButton() const
 {
@@ -531,7 +419,8 @@ bool HbTouchKeypadButton::isStickyButton() const
 }
 
 /*!
-Sets button's latched state.
+\deprecated HbTouchKeypadButton::setLatch(bool)
+    is deprecated
 */
 void HbTouchKeypadButton::setLatch(bool enable)
 {
@@ -548,7 +437,8 @@ void HbTouchKeypadButton::setLatch(bool enable)
 }
 
 /*!
-Returns true if button is in latched state.
+\deprecated HbTouchKeypadButton::isLatched() const
+    is deprecated.
 */
 bool HbTouchKeypadButton::isLatched() const
 {
@@ -557,7 +447,8 @@ bool HbTouchKeypadButton::isLatched() const
 }
 
 /*!
-Returns the keycode that the button is mapped to.
+\deprecated HbTouchKeypadButton::keyCode() const
+    is deprecated.
 */
 int HbTouchKeypadButton::keyCode() const
 {
@@ -566,7 +457,8 @@ int HbTouchKeypadButton::keyCode() const
 }
 
 /*!
-Sets the keycode that the button is mapped to.
+\deprecated HbTouchKeypadButton::setKeyCode(int)
+    is deprecated.
 */
 void HbTouchKeypadButton::setKeyCode(int code)
 {
@@ -576,6 +468,8 @@ void HbTouchKeypadButton::setKeyCode(int code)
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::setText(const QString &)
+    is deprecated.
 */
 void HbTouchKeypadButton::setText(const QString &text)
 {
@@ -589,6 +483,8 @@ void HbTouchKeypadButton::setText(const QString &text)
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::setAdditionalText(const QString &)
+    is deprecated.
 */
 void HbTouchKeypadButton::setAdditionalText(const QString &additionalText)
 {
@@ -601,6 +497,8 @@ void HbTouchKeypadButton::setAdditionalText(const QString &additionalText)
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::changeEvent(QEvent *)
+    is deprecated.
 */
 void HbTouchKeypadButton::changeEvent( QEvent *event )
 {
@@ -613,6 +511,8 @@ void HbTouchKeypadButton::changeEvent( QEvent *event )
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::updatePrimitives()
+    is deprecated.
 */
 void HbTouchKeypadButton::updatePrimitives()
 {
@@ -626,6 +526,8 @@ void HbTouchKeypadButton::updatePrimitives()
 
 /*!
 \reimp
+\deprecated HbTouchKeypadButton::sizeHint(Qt::SizeHint, const QSizeF &) const
+    is deprecated.
 */
 QSizeF HbTouchKeypadButton::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
@@ -648,7 +550,8 @@ QSizeF HbTouchKeypadButton::sizeHint(Qt::SizeHint which, const QSizeF &constrain
 }
 
 /*!
-Notification for state change.
+\deprecated HbTouchKeypadButton::itemChange(GraphicsItemChange, const QVariant &)
+    is deprecated.
 */
 QVariant HbTouchKeypadButton::itemChange( GraphicsItemChange change, const QVariant & value )
 {
@@ -665,7 +568,8 @@ QVariant HbTouchKeypadButton::itemChange( GraphicsItemChange change, const QVari
 }
 
 /*!
-Sets initial keypad button size to make vkb layouting faster. Calls setPreferredSize internally.
+\deprecated HbTouchKeypadButton::setInitialSize(const QSizeF&)
+    is deprecated.
 */
 void HbTouchKeypadButton::setInitialSize(const QSizeF& initialSize)
 {

@@ -26,11 +26,15 @@
 
 #include "hbtreeviewitem.h"
 #include "hbtreeview.h"
-#include "hbnamespace.h"
 #include "hbabstractitemview.h"
-#include "hbstyle.h"
-#include "hbstyleoptiontreeviewitem.h"
 #include "hbabstractitemcontainer.h"
+
+#include <hbnamespace.h>
+#include <hbstyle.h>
+#include <hbstyleoptiontreeviewitem.h>
+#include <hbwidgetfeedback.h>
+#include <hbtapgesture.h>
+#include <hbeffect.h>
 
 #include <QPersistentModelIndex>
 #include <QVariant>
@@ -54,11 +58,33 @@
 
 */
 
+/*!
+    \deprecated HbTreeViewItem::StateKey
+        is deprecated. Please use string based state keys.
+
+    \enum HbTreeViewItem::StateKey
+
+    HbTreeViewItem's user defined state keys.
+
+    \sa HbAbstractViewItem::transientState()
+*/
+
+/*!
+    \deprecated HbTreeViewItem::ExpansionKey
+        is deprecated. Please use string based state keys. This key is replaced by "expanded".
+
+    \var HbTreeViewItem::ExpansionKey
+    Predefined key for expansion/collapsion state of a view item. Default state is collapsed. 
+*/
+
+
+
 HbTreeViewItemPrivate::HbTreeViewItemPrivate(HbTreeViewItem *prototype) :
-    HbListViewItemPrivate(prototype),
+    HbListViewItemPrivate(prototype, new HbTreeViewItemShared),
     mExpandItem(0),
     mExpanded(false)
 {
+
 }
 
 HbTreeViewItemPrivate::HbTreeViewItemPrivate(const HbTreeViewItemPrivate &source) :
@@ -80,6 +106,14 @@ HbTreeViewItemPrivate::~HbTreeViewItemPrivate()
 {
 }
 
+void HbTreeViewItemPrivate::init()
+{
+    if (isPrototype()) {
+        HbEffect::add("treeviewitem", "treeviewitem_expand", "expand");
+        HbEffect::add("treeviewitem", "treeviewitem_collapse", "collapse");
+    }
+}
+
 int HbTreeViewItemPrivate::modelItemType() const
 {
     const QAbstractItemModel *model = mIndex.model();
@@ -91,24 +125,63 @@ int HbTreeViewItemPrivate::modelItemType() const
     }
 }
 
-QGraphicsItem *HbTreeViewItemPrivate::updateExpandItem()
+void HbTreeViewItemPrivate::updateExpandItem()
 {
     Q_Q(HbTreeViewItem);
-    QGraphicsItem *item = mExpandItem;
-
-    if (!item) {
-        mItemsChanged = true;
-        item = q->style()->createPrimitive(HbStyle::P_TreeViewItem_expandicon, q);
-    }
 
     HbStyleOptionTreeViewItem styleOption;
     q->initStyleOption(&styleOption);
 
-    q->style()->updatePrimitive(item, HbStyle::P_TreeViewItem_expandicon, &styleOption);
-
-    return item;
+    q->style()->updatePrimitive(mExpandItem, HbStyle::P_TreeViewItem_expandicon, &styleOption);
 }
 
+void HbTreeViewItemPrivate::tapTriggered(QGestureEvent *event)
+{
+    Q_Q(HbTreeViewItem);
+
+    HbTapGesture *gesture = static_cast<HbTapGesture *>(event->gesture(Qt::TapGesture));
+
+    if (gesture->state() == Qt::GestureFinished 
+        && gesture->tapStyleHint() == HbTapGesture::Tap) {
+
+        QPointF position = event->mapToGraphicsScene(gesture->hotSpot());
+        position = q->mapFromScene(position);
+
+        bool inSelectionArea = false;
+        if (mSharedData->mItemView->selectionMode() == HbAbstractItemView::SingleSelection) {
+            inSelectionArea = q->selectionAreaContains(position, HbAbstractViewItem::SingleSelection);
+        } else if (   mSharedData->mItemView->selectionMode() == HbAbstractItemView::MultiSelection
+                   || mSharedData->mItemView->selectionMode() == HbAbstractItemView::ContiguousSelection) {
+            inSelectionArea = q->selectionAreaContains(position, HbAbstractViewItem::MultiSelection);
+        }
+
+        Hb::InteractionModifiers modifiers = 0;
+        if (mExpandItem 
+            && mSharedData->mItemView
+            && (mSharedData->mItemView->selectionMode() == HbAbstractItemView::SingleSelection
+                || !inSelectionArea)) {
+            if (q->isExpanded()) {
+                modifiers |= Hb::ModifierExpandedItem;
+                q->setExpanded(false);
+            } else {
+                modifiers |= Hb::ModifierCollapsedItem;
+                q->setExpanded(true);
+            }
+        }
+
+        HbWidgetFeedback::triggered(q, Hb::InstantReleased, modifiers);
+        q->setPressed(false);
+
+        emit q->activated(position);
+        emit q->released(position);
+        revealItem();
+
+        event->accept();
+    } else {
+        HbListViewItemPrivate::tapTriggered(event);
+    }
+
+}
 
 /*!
     Constructs an tree view item with the given parent.
@@ -118,6 +191,8 @@ HbTreeViewItem::HbTreeViewItem(QGraphicsItem *parent) :
 {
     Q_D( HbTreeViewItem );
     d->q_ptr = this;
+
+    d->init();
 }
 
 /*!
@@ -128,6 +203,8 @@ HbTreeViewItem::HbTreeViewItem(const HbTreeViewItem &source) :
 {
     Q_D( HbTreeViewItem );
     d->q_ptr = this;
+
+    d->init();
 }
 
 /*!
@@ -138,6 +215,8 @@ HbTreeViewItem::HbTreeViewItem(HbTreeViewItemPrivate &dd, QGraphicsItem * parent
 {
     Q_D( HbTreeViewItem );
     d->q_ptr = this;
+
+    d->init();
 }
 
 /*!
@@ -171,16 +250,21 @@ HbAbstractViewItem *HbTreeViewItem::createItem()
 */
 void HbTreeViewItem::updateChildItems()
 {
-    Q_D(HbTreeViewItem);
+    HB_SDD(HbTreeViewItem);
 
     const QAbstractItemModel *model = d->mIndex.model();
 
-    if (model && model->hasChildren(d->mIndex)) {
-        d->mExpandItem = d->updateExpandItem();
-    } else if (d->mExpandItem) {
-        d->mItemsChanged = true;
-        delete d->mExpandItem;
-        d->mExpandItem = 0;
+    if (model && model->hasChildren(d->mIndex) && sd->mUserExpandable) {
+        if (!d->mExpandItem) {
+            d->mExpandItem = style()->createPrimitive(HbStyle::P_TreeViewItem_expandicon, this);
+            d->mItemsChanged = true;
+        }
+    } else {
+        if (d->mExpandItem) {
+            d->mItemsChanged = true;
+            delete d->mExpandItem;
+            d->mExpandItem = 0;
+        }
     }
 
     HbListViewItem::updateChildItems();
@@ -192,7 +276,7 @@ void HbTreeViewItem::updateChildItems()
 void HbTreeViewItem::updatePrimitives()
 {
     Q_D(HbTreeViewItem);
-    if(d->mExpandItem) {
+    if (d->mExpandItem) {
         d->updateExpandItem();
     }
     HbListViewItem::updatePrimitives();
@@ -245,6 +329,9 @@ bool HbTreeViewItem::isExpanded() const
 }
 
 /*!
+     \deprecated HbTreeViewItem::state() const
+        is deprecated. Please use HbTreeViewItem::transientState() instead. 
+
     \reimp
 */
 QMap<int,QVariant> HbTreeViewItem::state() const
@@ -258,6 +345,34 @@ QMap<int,QVariant> HbTreeViewItem::state() const
 }
 
 /*!
+    \reimp
+*/
+QHash<QString, QVariant> HbTreeViewItem::transientState() const
+{
+    Q_D(const HbTreeViewItem);
+    QHash<QString, QVariant> state = HbListViewItem::transientState();
+    if (d->mExpanded) {
+        state.insert("expanded", d->mExpanded);
+    }
+    return state;
+}
+
+
+/*!
+    \reimp
+*/
+void HbTreeViewItem::setTransientState(const QHash<QString, QVariant> &state)
+{
+    Q_D(HbTreeViewItem);
+
+    HbListViewItem::setTransientState(state);
+    d->mExpanded = state.value("expanded").toBool();
+}
+
+/*!
+     \deprecated HbTreeViewItem::setState(const QMap<int,QVariant> &)
+        is deprecated. Please use HbTreeViewItem::setState(const QHash<QString, QVariant> &state) instead. 
+
     \reimp
 */
 void HbTreeViewItem::setState(const QMap<int,QVariant> &state)
@@ -289,9 +404,13 @@ void HbTreeViewItem::initStyleOption(HbStyleOptionTreeViewItem *option) const
 }
 
 /*!
-  Provides access to primitives of HbTreeViewItem.
-  \param primitive is the type of the requested primitive. The available primitives are 
-  \c P_TreeViewItem_expandicon
+
+    \deprecated HbTreeViewItem::primitive(HbStyle::Primitive)
+        is deprecated.
+
+    Provides access to primitives of HbTreeViewItem.
+    \param primitive is the type of the requested primitive. The available primitives are 
+    \c P_TreeViewItem_expandicon
  */
 QGraphicsItem *HbTreeViewItem::primitive(HbStyle::Primitive primitive) const
 {
@@ -301,6 +420,58 @@ QGraphicsItem *HbTreeViewItem::primitive(HbStyle::Primitive primitive) const
     } else {
         return HbListViewItem::primitive(primitive);
     }
+}
+
+/*!
+    Sets items either expandable or non-expandable by the user, depending on the value of \a expandable.
+
+    This method will change the user expandable value for all view items.
+
+    \sa isUserExpandable
+*/
+void HbTreeViewItem::setUserExpandable(bool expandable)
+{
+    HB_SDD(HbTreeViewItem);
+    if (sd->mUserExpandable != expandable) {
+        sd->mUserExpandable = expandable;
+        d->updateCloneItems(true);
+    }
+}
+
+/*!
+    Returns true if the items are expandable by the user; otherwise returns false.
+
+    \sa setUserExpandable
+*/
+bool HbTreeViewItem::isUserExpandable() const
+{
+    HB_SDD(const HbTreeViewItem);
+    return sd->mUserExpandable;
+}
+
+/*!
+    \reimp
+    
+    In the base class the multiselection mode selection area is the whole item. In HbTreeView this is not
+    possible because of the expansion icon. For the HbTreeView the selection area in multiselection mode is 
+    defined by the primitive HbStyle::P_ItemViewItem_touchmultiselection
+*/
+bool HbTreeViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+{
+    Q_D(const HbTreeViewItem);
+    if (   selectionAreaType == HbAbstractViewItem::MultiSelection 
+        || selectionAreaType == HbAbstractViewItem::ContiguousSelection) {
+
+        if(     d->mMultiSelectionTouchArea 
+            &&  !d->mMultiSelectionTouchArea->boundingRect().isEmpty()) {
+            return d->mMultiSelectionTouchArea->boundingRect().contains(mapToItem(d->mMultiSelectionTouchArea,position));
+        } else if (d->mSelectionItem) {
+            return d->mSelectionItem->boundingRect().contains(mapToItem(d->mSelectionItem, position));
+        } else {
+            return false;
+        }
+    }
+    return HbAbstractViewItem::selectionAreaContains(position, selectionAreaType);
 }
 
 #include "moc_hbtreeviewitem.cpp"

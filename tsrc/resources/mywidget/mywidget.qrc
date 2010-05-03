@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/themes/style/hbdefault/rules/widgets/mywidget/">
+        <file>mywidget_color.css</file>
+    </qresource>
+</RCC>

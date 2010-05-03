@@ -46,7 +46,7 @@ private:
 
 public:
     static HbExtraDictionaryFactory *instance();
-        
+
     HbExtraUserDictionary *existingDictionary(int dictionaryId);
     HbExtraUserDictionary *createDictionary(int dictionaryId, const QStringList& initialContent = QStringList());
 

@@ -1,14 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<path d="M15,30C6.729,30,0,23.271,0,15C0,6.729,6.729,0,15,0s15,6.729,15,15C30,23.271,23.271,30,15,30L15,30z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<radialGradient cx="14.8057" cy="9.2969" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="19.5366">
+<g>
+<rect fill="none" height="30" width="30"/>
+</g>
+<circle cx="15" cy="15" fill-opacity="0.6" r="14" stroke-opacity="0.6"/>
+<radialGradient cx="14.8193" cy="9.7041" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="18.1413">
 <stop offset="0" style="stop-color:#FF6855"/>
 <stop offset="1" style="stop-color:#CC0E06"/>
 </radialGradient>
-<circle cx="15" cy="15" fill="url(#SVGID_1_)" r="14"/>
-<path d="M15,2c7.563,0,13.709,6.002,13.975,13.5C28.98,15.332,29,15.169,29,15c0-7.732-6.268-14-14-14  S1,7.268,1,15c0,0.169,0.02,0.332,0.025,0.5C1.291,8.002,7.438,2,15,2z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
+<path d="M15,28C7.832,28,2,22.168,2,15C2,7.832,7.832,2,15,2s13,5.832,13,13C28,22.168,22.168,28,15,28L15,28  z" fill="url(#SVGID_1_)"/>
+<path d="M15,3c6.999,0,12.709,5.564,12.975,12.5C27.981,15.333,28,15.169,28,15  c0-7.168-5.832-13-13-13S2,7.832,2,15c0,0.169,0.019,0.333,0.025,0.5C2.291,8.564,8.001,3,15,3z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="8.5" x2="8.5" y1="10.3823" y2="16.7968">
 <stop offset="0" style="stop-color:#D82E09"/>
 <stop offset="1" style="stop-color:#FACCB9"/>
@@ -31,10 +34,10 @@
 <stop offset="1" style="stop-color:#6D93B3"/>
 </linearGradient>
 <path d="M20.166,14.623C20.414,15.437,20.915,16,21.5,16c0.828,0,1.5-1.119,1.5-2.5  c0-0.155-0.012-0.305-0.027-0.452C22.819,13.018,22.662,13,22.5,13C21.43,13,20.522,13.677,20.166,14.623z" fill="url(#SVGID_5_)"/>
-<ellipse cx="8.258" cy="11.352" fill-opacity="0.2" rx="4.361" ry="1.542" stroke-opacity="0.2" transform="matrix(0.9259 0.3777 -0.3777 0.9259 4.8993 -2.2783)"/>
-<ellipse cx="8.26" cy="10.89" fill="#3B2314" rx="4.361" ry="1" transform="matrix(0.9259 0.3777 -0.3777 0.9259 4.725 -2.3132)"/>
+<ellipse cx="8.258" cy="11.352" fill-opacity="0.2" rx="4.361" ry="1.541" stroke-opacity="0.2" transform="matrix(0.9259 0.3777 -0.3777 0.9259 4.8993 -2.2783)"/>
+<ellipse cx="8.26" cy="10.89" fill="#3B2314" rx="4.361" ry="1" transform="matrix(0.9259 0.3777 -0.3777 0.9259 4.7258 -2.3134)"/>
 <ellipse cx="21.92" cy="11.352" fill-opacity="0.2" rx="4.36" ry="1.541" stroke-opacity="0.2" transform="matrix(-0.9259 0.3777 -0.3777 -0.9259 46.5039 13.5832)"/>
-<ellipse cx="21.918" cy="10.89" fill="#3B2314" rx="4.36" ry="1" transform="matrix(-0.9259 0.3777 -0.3777 -0.9259 46.3257 12.6943)"/>
+<ellipse cx="21.918" cy="10.89" fill="#3B2314" rx="4.36" ry="1" transform="matrix(-0.9259 0.3778 -0.3778 -0.9259 46.3259 12.6935)"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="14.9995" x2="14.9995" y1="18.0986" y2="25.1188">
 <stop offset="0" style="stop-color:#942006"/>
 <stop offset="1" style="stop-color:#FFAA5C"/>

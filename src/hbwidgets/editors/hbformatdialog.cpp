@@ -139,53 +139,53 @@ void HbFormatDialog::setContent(QTextCursor cursor)
         d->layout->addItem(d->buttonColor, 0, 3, 1, 1);
 
         d->buttonAlignLeft = new HbPushButton(container);
-        d->buttonAlignLeft->setIcon(HbIcon("qtg_mono_text_align_left.svg"));
+        d->buttonAlignLeft->setIcon(HbIcon("qtg_mono_text_align_left"));
         d->buttonAlignLeft->setCheckable(true);
         connect(d->buttonAlignLeft, SIGNAL(toggled(bool)), SLOT(setAlignmentLeft(bool))); 
         connect(d->buttonAlignLeft, SIGNAL(toggled(bool)), SLOT(_q_setAlignment(bool))); 
         d->layout->addItem(d->buttonAlignLeft, 1, 0);
 
         d->buttonAlignCenter = new HbPushButton(container);
-        d->buttonAlignCenter->setIcon(HbIcon("qtg_mono_text_align_center.svg"));
+        d->buttonAlignCenter->setIcon(HbIcon("qtg_mono_text_align_center"));
         d->buttonAlignCenter->setCheckable(true);
         connect(d->buttonAlignCenter, SIGNAL(toggled(bool)), SLOT(setAlignmentCenter(bool)));
         connect(d->buttonAlignCenter, SIGNAL(toggled(bool)), SLOT(_q_setAlignment(bool)));
         d->layout->addItem(d->buttonAlignCenter, 1, 1);
 
         d->buttonAlignRight = new HbPushButton(container);
-        d->buttonAlignRight->setIcon(HbIcon("qtg_mono_text_align_right.svg"));
+        d->buttonAlignRight->setIcon(HbIcon("qtg_mono_text_align_right"));
         d->buttonAlignRight->setCheckable(true);
         connect(d->buttonAlignRight, SIGNAL(toggled(bool)), SLOT(setAlignmentRight(bool)));
         connect(d->buttonAlignRight, SIGNAL(toggled(bool)), SLOT(_q_setAlignment(bool)));
         d->layout->addItem(d->buttonAlignRight, 1, 2);
 
         d->buttonAlignJustify = new HbPushButton(container);
-        d->buttonAlignJustify->setIcon(HbIcon("qtg_mono_text_align_justify.svg"));
+        d->buttonAlignJustify->setIcon(HbIcon("qtg_mono_text_align_justify"));
         d->buttonAlignJustify->setCheckable(true);
         connect(d->buttonAlignJustify, SIGNAL(toggled(bool)), SLOT(setAlignmentJustify(bool)));
         connect(d->buttonAlignJustify, SIGNAL(toggled(bool)), SLOT(_q_setAlignment(bool)));
         d->layout->addItem(d->buttonAlignJustify, 1, 3);
 
         d->buttonBold = new HbPushButton(container);
-        d->buttonBold->setIcon(HbIcon("qtg_mono_bold.svg")); 
+        d->buttonBold->setIcon(HbIcon("qtg_mono_bold"));
         d->buttonBold->setCheckable(true);
         connect(d->buttonBold, SIGNAL(toggled(bool)), SLOT(setStyleBold(bool)));
         d->layout->addItem(d->buttonBold, 2, 0);
 
         d->buttonItalic = new HbPushButton(container);
-        d->buttonItalic->setIcon(HbIcon("qtg_mono_italic.svg"));
+        d->buttonItalic->setIcon(HbIcon("qtg_mono_italic"));
         d->buttonItalic->setCheckable(true);
         connect(d->buttonItalic, SIGNAL(toggled(bool)), SLOT(setStyleItalic(bool)));
         d->layout->addItem(d->buttonItalic, 2, 1);
 
         d->buttonUnderline = new HbPushButton(container);
-        d->buttonUnderline->setIcon(HbIcon("qtg_mono_underline.svg"));
+        d->buttonUnderline->setIcon(HbIcon("qtg_mono_underline"));
         d->buttonUnderline->setCheckable(true);
         connect(d->buttonUnderline, SIGNAL(toggled(bool)), SLOT(setStyleUnderline(bool)));
         d->layout->addItem(d->buttonUnderline, 2, 2);
 
         d->buttonBullet = new HbPushButton(container);
-        d->buttonBullet->setIcon(HbIcon("qtg_mono_bullet.svg"));
+        d->buttonBullet->setIcon(HbIcon("qtg_mono_bullet"));
         d->buttonBullet->setCheckable(true);
         connect(d->buttonBullet, SIGNAL(toggled(bool)), SLOT(setStyleBullet(bool)));
         d->layout->addItem(d->buttonBullet, 2, 3);
@@ -197,8 +197,7 @@ void HbFormatDialog::setContent(QTextCursor cursor)
 
     // Update content
     d->comboSize->setCurrentIndex(d->comboSize->findText(QString::number(format.font().pointSize())));
-
-    d->colorChanged(format.foreground().color());
+    d->colorChanged(currentCharColor());
 
     d->buttonAlignLeft->setChecked(cursor.blockFormat().alignment() == Qt::AlignLeft);
     d->buttonAlignCenter->setChecked(cursor.blockFormat().alignment() == Qt::AlignCenter);
@@ -262,12 +261,29 @@ void HbFormatDialog::mergeCharFormat(const QTextCharFormat &format)
         cursor.select(QTextCursor::WordUnderCursor);
         int selectionStart = cursor.selectionStart();
         int selectionEnd = cursor.selectionEnd();
-        if (position == selectionStart || position == selectionEnd || currentChar.isSpace()) {
-            HbAbstractEditPrivate::d_ptr(d->editor)->nextCharCursor.mergeCharFormat(format);
+        if (position == selectionStart || position == selectionEnd || currentChar.isSpace()) {            
+            HbAbstractEditPrivate::d_ptr(d->editor)->nextCharCursor.mergeCharFormat(format);            
         } else {
             cursor.mergeCharFormat(format); 
         }
     }
+}
+
+/*!
+   Gets current character color, which can be either default or user changed.
+ */
+QColor HbFormatDialog::currentCharColor() const
+{
+    Q_D(const HbFormatDialog);
+
+    if (!d->editor) return QColor().convertTo(QColor::Invalid);
+    QTextCharFormat format = d->editor->textCursor().charFormat();
+    QVariant property = format.property(QTextFormat::ForegroundBrush);   
+    bool isBrush = (property.userType() == QVariant::Brush);
+    QColor color = format.colorProperty(QTextFormat::ForegroundBrush);
+    QColor foregoundColor = format.foreground().color();
+    QColor defaultColor = d->editor->palette().color(QPalette::Text);
+    return (isBrush && !color.isValid()) ? foregoundColor : defaultColor;
 }
 
 /*!

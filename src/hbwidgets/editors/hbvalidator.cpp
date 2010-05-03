@@ -307,7 +307,9 @@ void HbValidator::updateTextCursor(QTextCursor &cursor)
 }
 
 /*!
-    DEPRECATED
+   \deprecated HbValidator::addSeparator(const QString&)
+        is deprecated. You can use addDefaultSeparator or addField with separator parameter instead of this.
+
  */
 void HbValidator::addSeparator(const QString &str)
 {
@@ -316,7 +318,9 @@ void HbValidator::addSeparator(const QString &str)
 }
 
 /*!
-    DEPRECATED
+   \deprecated HbValidator::setMasterValidator(QValidator*)
+        is deprecated. Master validator is not needed anymore. Use only addField.
+
  */
 void HbValidator::setMasterValidator(QValidator *validator)
 {
@@ -327,7 +331,9 @@ void HbValidator::setMasterValidator(QValidator *validator)
 }
 
 /*!
-    DEPRECATED
+   \deprecated HbValidator::masterValidator() const
+        is deprecated. Master validator is not needed anymore. Use only addField.
+
  */
 const QValidator *HbValidator::masterValidator() const
 {

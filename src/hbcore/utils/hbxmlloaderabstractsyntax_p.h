@@ -26,20 +26,141 @@
 #ifndef HBXMLLOADERABSTRACTSYNTAX_P_H
 #define HBXMLLOADERABSTRACTSYNTAX_P_H
 
-#include "hbxmlloaderabstractactions_p.h"
-
 #include <hbglobal.h>
-#include <hbdeviceprofile.h>
 
 #include <QHash>
 #include <QList>
 #include <QXmlStreamReader>
 #include <QPointer>
+#include <QByteArray>
+#include <QVariant>
+
+namespace HbXml {
+
+    enum ElementType {
+        DOCUMENT,
+        OBJECT,
+        WIDGET,
+        LAYOUT,
+        SPACERITEM,
+        CONNECT,
+        CONTAINER,
+        PROPERTY,
+        SECTION,
+        REF,
+        VARIABLE,
+        METADATA,
+        UNKNOWN,
+        DEPRECATED
+    };
+
+    enum ActionType {
+        ActionReset,
+        ActionCleanUp,
+        ActionDeleteAll,
+        ActionPushDocument,
+        ActionPushObject,
+        ActionPushWidget,
+        ActionPushSpacerItem,
+        ActionPushConnect,
+        ActionPushProperty,
+        ActionPushRef,
+        ActionPushContainer,
+        ActionPop,
+        ActionSetContentsMargins,
+        ActionSetSizePolicy,
+        ActionSetSizeHint,
+        ActionSetToolTip,
+        ActionCreateAnchorLayout,
+        ActionAddAnchorLayoutEdge,
+        ActionCreateMeshLayout,
+        ActionAddMeshLayoutEdge,
+        ActionCreateGridLayout,
+        ActionAddGridLayoutCell,
+        ActionSetGridLayoutRowProperties,
+        ActionSetGridLayoutColumnProperties,
+        ActionSetGridLayoutRowHeights,
+        ActionSetGridLayoutColumnWidths,
+        ActionCreateLinearLayout,
+        ActionAddLinearLayoutItem,
+        ActionAddLinearLayoutStretch,
+        ActionSetLayoutContentsMargins,
+        ActionCreateStackedLayout,
+        ActionAddStackedLayoutItem,
+        ActionCreateNullLayout,
+        ActionEnd
+    };
+
+    struct Element {
+        ElementType type;
+        void *data;
+    };
+};
+
 
 class HbXmlLoaderAbstractActions;
 class HbWidget;
 
-class HB_CORE_EXPORT HbXmlLoaderAbstractSyntax
+struct HB_CORE_PRIVATE_EXPORT HbXmlLengthValue
+{
+    enum Type {
+        None = 0,
+        PlainNumber,
+        Pixel,
+        Unit,
+        Millimeter,
+        Variable,
+        Expression
+    };
+
+    HbXmlLengthValue() : mValue(0), mString(QString()), mType(None) {};
+    HbXmlLengthValue(qreal value, Type type) : mValue(value), mString(QString()), mType(type) {};
+
+    qreal mValue;
+    QString mString;
+    Type mType;
+};
+
+HB_CORE_PRIVATE_EXPORT QDataStream &operator<<(QDataStream &, const HbXmlLengthValue &);
+HB_CORE_PRIVATE_EXPORT QDataStream &operator>>(QDataStream &, HbXmlLengthValue &);
+
+
+class HB_CORE_PRIVATE_EXPORT HbXmlVariable
+{
+public:
+    enum Type {
+        UNKNOWN,
+        INT,
+        REAL,
+        STRING,
+        LOCALIZED_STRING,
+        BOOL,
+        ICON,
+        SIZE,
+        RECT,
+        POINT,
+        ENUMS,
+        COLOR,
+        FONTSPEC
+    };
+
+public:
+    HbXmlVariable();
+    ~HbXmlVariable();
+
+private:
+    Q_DISABLE_COPY(HbXmlVariable)
+
+public:
+    Type mType;
+    QList<void*> mParameters;
+};
+
+HB_CORE_PRIVATE_EXPORT QDataStream &operator<<(QDataStream &, const HbXmlVariable &);
+HB_CORE_PRIVATE_EXPORT QDataStream &operator>>(QDataStream &, HbXmlVariable &);
+
+
+class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractSyntax
 {
 
 public:
@@ -182,90 +303,22 @@ public:
 
         NUMBER_OF_LEXEMS // Keep this last!
     };
-    
-    enum TopState {
-        TS_READ_DOCUMENT,
-        TS_READ_METADATA,
-        TS_ERROR,
-        TS_EXIT
-    };
-    
-    enum DocumentState {
-        DS_START_DOCUMENT,
-        DS_READ_SECTIONS,
-        DS_END_DOCUMENT
-    };
-    
-    enum ElementState {
-        ES_GENERAL_ITEM,
-        ES_LAYOUT_ITEM,
-        ES_CONTAINER_ITEM
-    };
-    
-    
- 
-public:
 
+public:
     HbXmlLoaderAbstractSyntax( HbXmlLoaderAbstractActions *actions );
     virtual ~HbXmlLoaderAbstractSyntax();
     
     virtual bool load( QIODevice *device, const QString &section );
         
 public:
-    
-
-    virtual bool processDocument();
-    virtual bool processLayout();
-    virtual bool processContainer();
-    virtual bool checkEndElementCorrectness();
-    
-        
-    virtual ElementType elementType( QStringRef name ) const;    
-    
-    
-    virtual QString attribute( DocumentLexems lexem ) const;
-    
-    virtual bool toReal(const QString &value, qreal& result) const;
-    virtual bool toPixels(const QString &value, qreal& result) const;
-        
-    virtual bool readDocument();
-    virtual bool readAlienSection();
-    virtual bool readTargetSection();
-    
-    virtual bool readGeneralStartItem();
-    virtual bool readGeneralEndItem();
-    virtual bool readLayoutStartItem();
-    virtual bool readLayoutEndItem();
-    virtual bool readContainerStartItem();
-    virtual bool readContainerEndItem();
-
-public :
-    bool toPixels(const HbDeviceProfile &deviceProfile, const QString &value, qreal& result) const;
+    void setActions( HbXmlLoaderAbstractActions *actions );
+    bool toReal(const QString &value, qreal& result) const;
+    bool toLengthValue(const QString &value, HbXmlLengthValue& lengthVal) const;
     const char *lexemValue(DocumentLexems lex) const;
                   
-protected :
-    bool loadDevice(QIODevice *device, const QString &section);
+protected:
     
-public:
-    
-    TopState mTopState;
-    DocumentState mDocumentState;
-    ElementState mElementState;
-    
-    QStringList mCurrentSection;
-    QStringList mRequiredSection;
-    QStringList mCurrentContainer;
-    
-    QXmlStreamReader::TokenType mCurrentTokenType;
-    ElementType mCurrentElementType;
-    
-    DocumentLexems mCurrentLayoutType;
-    DocumentLexems mCurrentContainerType;
-
     HbXmlLoaderAbstractActions *mActions;
-
-    QXmlStreamReader mReader;
-    HbDeviceProfile mCurrentProfile;
 
 private:
 

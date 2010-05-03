@@ -57,7 +57,10 @@ public:
     void drawTextBaseLines(QPainter *painter) const;
     void drawBaseLineAt(QPainter *painter, qreal x1, qreal x2, qreal y) const;
 
+    void setBaseLineStyleFromString(const QString &str);
+
     bool mShowTextBaseLine;
+    bool mShowTextBaseLineApiProtectionFlag;
     QPen mTextBaseLinePen;
 };
 

@@ -182,6 +182,8 @@ public:
 * HbVector is templatized vector which can store its internal data either in shared memory or heap.
 * The class was written specially for sharing the output of CSS parser for subsequent lookup usage
 * across processes, to reduce the overall memory usage and to improve performance.
+*
+* In case of out of memory situation, the vector is restored to the state it was before the exception occurred. 
 * 
 * The class uses smart pointers (smart_ptr<T> class objects) which internally contains offsets from
 * a certain base address (which can either be shared memory or heap) instead of directly containing
@@ -256,7 +258,6 @@ public:
            return;
        if(mShared != true && !mData->mRef.deref()) {
            destroyData();
-           deAllocateData();
        }
     
     }
@@ -359,28 +360,17 @@ public:
     void resize(int newSize)
     {
        Q_ASSERT(newSize > -1);
-       int oldSize = this->size();
+       int oldSize = mData->mSize;
        if(newSize < oldSize) {
            // Destroy the last remaining elements
            erase(const_iterator(mData->mStart + newSize), constEnd());
        } else {
-           try{
-               reserve(newSize);
-               pointer last = mData->mStart + newSize;
-               pointer first = mData->mStart + mData->mSize;
-               while(last != first) {
-                   new(--last) T;
-                }
+           reserve(newSize);
+           Inserter it(mData->mStart + mData->mSize, mData->mStart + newSize);
+           while(it.canInsert()) {
+               it.insert(T());
            }
-            catch(std::bad_alloc &badAlloc){
-                Q_UNUSED(badAlloc)
-                //an exception happened in reserve or new probably
-                // restore the oldsize and leave vector in its earlier state
-                newSize = oldSize;
-                mData->mSize = newSize;
-                qCritical("HbVector::resize() failed!");
-                throw;
-            }
+           it.release();
        }
        mData->mSize = newSize;
     }
@@ -388,23 +378,16 @@ public:
     // reserve() can throw owing to OOM
     void reserve(int newSize)
     {
-        if( mShared || newSize > mData->mCapacity) {
+        if( mShared || newSize > mData->mCapacity || mData->mRef != 1) {
             GET_MEMORY_MANAGER(mMemoryType);
-            try{
-                int offset = (char*)mData->mStart.get() - (char*)manager->base();
-                int newOffset = -1;
-                if(newSize > mData->mCapacity)
-                    newOffset = this->reAlloc(offset, newSize * sizeof(T), mData->mCapacity * sizeof(T));
-                else
-                    newOffset = this->reAlloc(offset, mData->mCapacity * sizeof(T), mData->mCapacity * sizeof(T));
-                mData->mStart.setOffset(newOffset);
-                mData->mCapacity = newSize;
-           }
-            catch(std::bad_alloc &badAlloc){
-                Q_UNUSED(badAlloc)
-                qCritical("HbVector::reserve() failed!");
-                throw;
-           }
+            int offset = (char*)mData->mStart.get() - (char*)manager->base();
+            int newOffset = -1;
+            if(newSize > mData->mCapacity)
+                newOffset = reAlloc(offset, newSize, mData->mSize);
+            else
+                newOffset = reAlloc(offset, mData->mCapacity, mData->mSize);
+            mData->mStart.setOffset(newOffset);
+            mData->mCapacity = newSize;
        }
     }
 
@@ -450,7 +433,7 @@ public:
     }
 
     size_type count() const
-    { return this->mData->mSize; } 
+    { return mData->mSize; } 
 
     size_type size() const
     { return count(); } 
@@ -505,38 +488,15 @@ public:
     HbVector<T> & operator+= (const HbVector<T>& other)
     {
         int newSize = mData->mSize + other.mData->mSize;
-        //save the oldOffset in case of failure of memory allocation via new
-        //int oldOffset = mData->mStart.mOffset;
-        int newOffset = -1;
-        try{
-            if(mShared || mData->mRef != 1 || newSize > mData->mCapacity) {
-                GET_MEMORY_MANAGER(mMemoryType);
-                int offset = (char*)mData->mStart.get() - (char*)manager->base();
-                
-                if(newSize > mData->mCapacity) {
-                    newOffset = this->reAlloc(offset, newSize * sizeof(T), mData->mCapacity * sizeof(T));
-                } else {
-                    newOffset = this->reAlloc(offset, mData->mCapacity * sizeof(T), mData->mCapacity * sizeof(T));
-                }
-                
-                mData->mStart.setOffset(newOffset);
-                mData->mCapacity = newSize;
-            }
+        reserve(newSize);
+        Inserter it(mData->mStart + mData->mSize, mData->mStart + newSize);
+        pointer otherFirst = other.mData->mStart;
 
-            pointer selfLast = mData->mStart + newSize;
-            pointer otherLast = other.mData->mStart + other.mData->mSize;
-            pointer otherFirst = other.mData->mStart;
-
-            while( otherLast != otherFirst ) {
-                new(--selfLast)T(*--otherLast);
-            }
-
-            mData->mSize = newSize;
-    }
-    catch(std::bad_alloc &badAlloc){        
-        Q_UNUSED(badAlloc)
-        qCritical("HbVector::operator+= failed!");
-    }
+        for(;it.canInsert(); ++otherFirst ) {
+            it.insert(*otherFirst);
+        }
+        mData->mSize = newSize;
+        it.release();
         return *this;
     }
 
@@ -574,7 +534,6 @@ public:
             if(mShared != true) {
                 if(mData->mRef == 1) {
                     destroyData();
-                    deAllocateData();
                 }else {
                     mData->mRef.deref();
                 }
@@ -587,7 +546,6 @@ public:
         } else {
             if(!mData->mRef.deref() ) {
                destroyData();
-               deAllocateData();
             }
             other.mData->mRef.ref();
             mMemoryType = other.mMemoryType;
@@ -603,7 +561,7 @@ public:
         Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
         clear();
         foreach (T obj, other) {
-            this->append(obj);
+            append(obj);
         }
         return *this;
     }
@@ -619,7 +577,7 @@ private:
     void detach()
     {
         if(mData->mRef != 1 || mShared == true) {
-            copyData(this->size(), this->size());
+            copyData(size(), size());
             // Here assumption is the new copy of data is created in heap.
             // so disabling the shared flag.
             if(mShared)
@@ -633,51 +591,34 @@ private:
             *dest++ = *begin++;
         }
         return dest;
-    }
+    }    
 
-// copy the Data , this will call in Implicit sharing whenever vector State is going to change.
+// copy the Data , this will be called in Implicit sharing whenever vector State is going to change.
+// mData is not freed, because it is assumed, that it is owned by another HbVector (mData->mRef > 1)
     void copyData(int newSize, int oldSize)
     {
         DataPointer tempData(mData);
-        GET_MEMORY_MANAGER(mMemoryType)
         DataPointer newData(0, mMemoryType);
-        int offset = -1;
-        try{
-            offset = manager->alloc(sizeof(HbVectorData));
-            //Q_ASSERT(offset != -1);
-                  
-            newData = new ((char*)manager->base() + offset) 
-                            HbVectorData(mMemoryType, tempData->mSize, newSize);
-
-            mData = newData;
-            if(mShared != true)
-                tempData->mRef.deref();
-
-            if(QTypeInfo<value_type>::isComplex) {
-                pointer sourceStart = tempData->mStart;
-                pointer sourceEnd = tempData->mStart + tempData->mSize;
-                pointer destStart = mData->mStart;
-                while(sourceEnd != sourceStart) {
-                    new (destStart++) value_type(*sourceStart++);
-                }
-            } else {
-                ::memcpy(mData->mStart, tempData->mStart, oldSize * sizeof(T));
-            }
+        GET_MEMORY_MANAGER(mMemoryType)
+        HbSmartOffset offset(manager->alloc(sizeof(HbVectorData)), mMemoryType);
+        qDebug() << tempData->mSize << "," << oldSize;
+        newData = new ((char*)manager->base() + offset.get())
+                        HbVectorData(mMemoryType, oldSize, newSize);
+        mData = newData;
+        offset.release();
+        if(!mShared) {
+            tempData->mRef.deref();
         }
-        catch(std::bad_alloc &badAlloc){
-            Q_UNUSED(badAlloc)
-            //if first alloc is successful but HbVectorData ctor threw an exception
-            if(offset != -1){
-                manager->free(offset);
+
+        if(QTypeInfo<value_type>::isComplex) {
+            Inserter it(mData->mStart, mData->mStart + oldSize);
+            pointer sourceStart = tempData->mStart;
+            for(;it.canInsert(); ++sourceStart) {
+                it.insert(*sourceStart);
             }
-            //if first alloc as well as HbVectorData ctor succeeeded but allocation
-            // via new fails
-            /* if(newData){
-                delete newData;
-                newData = 0;
-            } */
-            qCritical("HbVector::copyData() failed!");
-            throw;
+            it.release();
+        } else {
+            ::memcpy(mData->mStart, tempData->mStart, oldSize * sizeof(T));
         }
     }
 
@@ -696,28 +637,26 @@ private:
             return (char*)mData->mStart.get() - (char*)manager->base();
         } else {
             // this statement can throw
-            int offset = manager->realloc( oldOffset, newSize );
+            int offset = manager->realloc(oldOffset, newSize * sizeof(T));
             return offset;
         }
-   }
-
-   void deAllocateData()
-   {
-       GET_MEMORY_MANAGER(mMemoryType);
-
-       mData->deAllocateAll(mMemoryType);
-
-       int dataOffset = (char*) mData.get() - (char*)manager->base();
-       manager->free(dataOffset);
-       mData = 0;
    }
 
    void destroyData()
    {
        mData->~HbVectorData();
+       deAllocateData();
    }
 
 private : // Data
+   void deAllocateData()
+   {
+       GET_MEMORY_MANAGER(mMemoryType);
+       mData->deAllocateAll(mMemoryType);
+       int dataOffset = (char*) mData.get() - (char*)manager->base();
+       manager->free(dataOffset);
+       mData = 0;
+   }   
     struct HbVectorData
     {
         // The ctor of HbVectorData can throw owing to manager->alloc, we're not catching the exception
@@ -766,6 +705,34 @@ private : // Data
         QAtomicInt mRef;
     };
 
+    struct Inserter {
+        Inserter(pointer begin, pointer end) : begin(begin), it(begin), end(end) {
+
+        }
+        void release() {
+            it = begin;
+        }
+        bool canInsert() const {
+            return (it != end);
+        }
+        void insert(const T& obj) {
+            new (it) T(obj);
+            ++it;
+        }
+
+        ~Inserter() {
+            if(QTypeInfo<value_type>::isComplex) {
+                while(it != begin) {
+                    begin.get()->~T();
+                    ++begin;
+                }
+            }
+        }
+    private:
+        pointer begin;
+        pointer it;
+        pointer end;
+    };
     typedef smart_ptr<HbVectorData> DataPointer;
     DataPointer mData;
     HbMemoryManager::MemoryType mMemoryType;
@@ -779,97 +746,72 @@ Q_TYPENAME HbVector<T>::iterator
 HbVector<T>::insert(const_iterator before, int count, const_reference value)
 {
     int offset = before - mData->mStart;
-    try{
-        if(count != 0) {
-            const_value_type copy(value);
-            if(mShared || mData->mRef !=1 || mData->mSize + count > mData->mCapacity) {
-                GET_MEMORY_MANAGER(mMemoryType);
-                int offset = (char*)mData->mStart.get() - (char*)manager->base();
-                int sizeRequired = 0;
-                int newOffset = -1;
-                if((mData->mSize + count) > mData->mCapacity) {
-                     sizeRequired = (mData->mSize + count) - mData->mCapacity; 
-                     newOffset = this->reAlloc(offset,(mData->mCapacity + sizeRequired)* sizeof(T),
-                                                    mData->mCapacity * sizeof(T));
-                } else {
-                     newOffset = this->reAlloc(offset,(mData->mCapacity)* sizeof(T),
-                                                    mData->mCapacity * sizeof(T));
-                }
+    if(count != 0) {
+        if(mShared || mData->mRef !=1 || mData->mSize + count > mData->mCapacity) {
+            GET_MEMORY_MANAGER(mMemoryType);
+            int offset = (char*)mData->mStart.get() - (char*)manager->base();
+            int newCapacity = mData->mSize + count;
+            if(newCapacity < mData->mCapacity) {
+                newCapacity = mData->mCapacity;
+            }
+            mData->mStart.setOffset(reAlloc(offset, newCapacity, mData->mSize));
+            mData->mCapacity = newCapacity;
+        }
+        if(QTypeInfo<value_type>::isStatic) {
+            pointer b = mData->mStart + mData->mSize;
+            pointer i = b + count;
+            while(i != b)
+                new(--i) T(mMemoryType);
+            i = mData->mStart + mData->mSize;
+            pointer j = i + count;
+            b = mData->mStart + offset;
+            while( i != b )
+                *--j = *--i;
+            i = b + count;
+            while( i != b )
+                *--i = value;
+        } else {
+            pointer b = mData->mStart + offset;
+            pointer i = b + count;
+            ::memmove(i, b, (mData->mSize - offset) * sizeof(T));
+            Inserter it(b, i);
+            while(it.canInsert()) {
+                it.insert(value);
+            }
+            it.release();
+        }
 
-                mData->mStart.setOffset(newOffset);
-                mData->mCapacity += sizeRequired;
-            }
-            if(QTypeInfo<value_type>::isStatic) {
-                pointer b = mData->mStart + mData->mSize;
-                pointer i = b + count;
-                while(i != b)
-                    new(--i) T(mMemoryType);
-                i = mData->mStart + mData->mSize;
-                pointer j = i + count;
-                b = mData->mStart + offset;
-                while( i != b )
-                    *--j = *--i;
-                i = b + count;
-                while( i != b )
-                    *--i = copy;
-            } else {
-                pointer b = mData->mStart + offset;
-                pointer i = b + count;
-                ::memmove(i, b, (mData->mSize - offset) * sizeof(T));
-                while( i!= b)   
-                    new (--i) value_type(value);
-            }
-            
-            mData->mSize += count;
-        }
-        }
-    catch(std::bad_alloc &badAlloc){
-        Q_UNUSED(badAlloc)
-        //@TODO:: have to see additional cases for memory clean up
-        qCritical("HbVector::insert() failed!");
-        throw;
+        mData->mSize += count;
     }
     return iterator(mData->mStart + offset);
 }
 
-
-
-
 template <typename T>
 void HbVector<T>::append(const value_type &value)
 {
-   try{
     if(!mShared && mData->mRef == 1 && mData->mSize < mData->mCapacity ) {
-        //There is more memory, just construct a new object at the end
-        if(QTypeInfo<value_type>::isComplex) 
+        //There is enough space, construct a new object at the end.
+        if(QTypeInfo<value_type>::isComplex) {
             new ((void*)(mData->mStart + mData->mSize)) value_type(value);
-        else
+        } else {
             mData->mStart[mData->mSize] = value;
-
-            
+        }
     } else {
-        const_value_type copy(value);
-
         GET_MEMORY_MANAGER(mMemoryType);
         int offset = (char*)mData->mStart.get() - (char*)manager->base();
-        int newOffset = this->reAlloc(offset,(2 * mData->mCapacity) * sizeof(T), mData->mCapacity * sizeof(T));
+        int newOffset = reAlloc(offset, 2 * mData->mCapacity, mData->mSize);
         mData->mStart.setOffset(newOffset);
-
-         if(QTypeInfo<value_type>::isComplex) 
-             new ((void*)(mData->mStart + mData->mSize)) value_type(copy);
-         else 
-            mData->mStart[mData->mSize] = copy;
-        
         mData->mCapacity *= 2;
-        
+
+        if(QTypeInfo<value_type>::isComplex) {
+            Inserter it(mData->mStart + mData->mSize, mData->mStart + mData->mSize + 1);
+            it.insert(value_type(value));
+            it.release();
+        } else {
+            mData->mStart[mData->mSize] = value;
+        }
     }
     ++mData->mSize;
-  }
-   catch(std::bad_alloc &badAlloc){
-       Q_UNUSED(badAlloc)
-       qCritical("HbVector::append() failed!");
-       throw;
-   }
 }
 
 template <typename T>

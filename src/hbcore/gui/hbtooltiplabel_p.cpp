@@ -49,7 +49,8 @@ namespace {
 }
 
 HbToolTipLabelPrivate::HbToolTipLabelPrivate():
-        label(0),aboutToHide(false)
+        label(0), aboutToHide(false),
+        mHorizontalMargin(0.0), mVerticalMargin(0.0), mPolishLayoutRequest(false)
 {
 }
 
@@ -151,88 +152,49 @@ void HbToolTipLabelPrivate::showText(QGraphicsItem *item, Qt::Alignment preferre
 {
     Q_Q(HbToolTipLabel);    
     QRectF itemSceneRect = item->sceneBoundingRect();    
-    QRectF toolTipBoundingRect = QRectF(qreal(0.0), qreal(0.0), q->preferredSize().width(), q->preferredSize().height()); //q->boundingRect();
+    QRectF toolTipBoundingRect = QRectF(qreal(0.0), qreal(0.0),
+                                        q->preferredSize().width(), q->preferredSize().height());
     QRectF screenRect(QPointF(qreal(0.0), qreal(0.0)), HbDeviceProfile::profile(q).logicalSize());
 
     Qt::Alignment currentAlignment = (preferredAlignment & Qt::AlignHorizontal_Mask)?
                                      QStyle::visualAlignment(q->layoutDirection(), preferredAlignment ): // krazy:exclude=qclasses
                                      preferredAlignment;
-    Qt::AlignmentFlag nextAlignmentFlag;
-    Qt::Alignment nextAlignment;
-    Qt::Alignment visitedAlignment;
+
     bool matchingFinished = false;
 
-    forever {
-
-        toolTipBoundingRect.moveCenter(itemSceneRect.center());
-
-        if (currentAlignment & Qt::AlignTop) {            
-            visitedAlignment |= Qt::AlignTop;
-            if (currentAlignment & Qt::AlignRight) {
-                visitedAlignment |= Qt::AlignRight;
-                toolTipBoundingRect.moveBottomLeft(itemSceneRect.topRight());
-
-                nextAlignment = Qt::AlignTop;
-                nextAlignmentFlag = Qt::AlignLeft;
-                nextAlignment |= nextAlignmentFlag;
-
-            } else if (currentAlignment & Qt::AlignLeft) {
-                visitedAlignment |= Qt::AlignLeft;
-                toolTipBoundingRect.moveBottomRight(itemSceneRect.topLeft());
-
-                nextAlignment = Qt::AlignTop;
-                nextAlignmentFlag = Qt::AlignRight;
-                nextAlignment |= nextAlignmentFlag;
-
-            } else {
-                toolTipBoundingRect.moveBottom(itemSceneRect.top());
-
-                // Find out next alignment
-                nextAlignment = Qt::AlignRight | (preferredAlignment & Qt::AlignAbsolute);
-                nextAlignment = QStyle::visualAlignment(q->layoutDirection(), nextAlignment ); // krazy:exclude=qclasses
-                nextAlignmentFlag = ((nextAlignment & Qt::AlignRight)?Qt::AlignRight:Qt::AlignLeft);
-            }
-
-        } else if (currentAlignment & Qt::AlignRight) {
-
-            visitedAlignment |= Qt::AlignRight;
-            toolTipBoundingRect.moveLeft(itemSceneRect.right());
-            nextAlignment = nextAlignmentFlag = Qt::AlignLeft;
-
-        } else if (currentAlignment & Qt::AlignLeft ) {
-
-            visitedAlignment |= Qt::AlignLeft;
-            toolTipBoundingRect.moveRight(itemSceneRect.left());
-            nextAlignment = nextAlignmentFlag = Qt::AlignRight;
-
-        } else {
-            currentAlignment = Qt::AlignTop;
-            continue;
+    if (currentAlignment & Qt::AlignTop) {        
+        if ((itemSceneRect.y() - mVerticalMargin - toolTipBoundingRect.height()) >= 0) {
+            q->setPreferredPos(QPointF(itemSceneRect.x() + item->boundingRect().width()/2,
+                                       itemSceneRect.y() - mVerticalMargin),
+                               HbPopup::BottomEdgeCenter);
+            matchingFinished = true;
         }
 
-        // Respect screen boundaries
-        toolTipBoundingRect.moveBottom(qMin(toolTipBoundingRect.bottom(),screenRect.bottom()));
-        toolTipBoundingRect.moveLeft(qMax(toolTipBoundingRect.left(),screenRect.left()));
-        toolTipBoundingRect.moveRight(qMin(toolTipBoundingRect.right(),screenRect.right()));
-        toolTipBoundingRect.moveTop(qMax(toolTipBoundingRect.top(),screenRect.top()));
-
-        // Check if a match is found or if matching was finished
-        if (!toolTipBoundingRect.intersects(itemSceneRect) || matchingFinished) {
-            break;
-        }
-        else { // move to the next alignment
-
-            // Check if every supported alignment was tried
-            if (visitedAlignment & nextAlignmentFlag) {
-                   currentAlignment = Qt::AlignTop;
-                   matchingFinished = true;
-            } else {
-                currentAlignment = nextAlignment;
-            }
+    }
+    if (currentAlignment & Qt::AlignRight || !matchingFinished) {        
+        if ((itemSceneRect.x() + item->boundingRect().width() +
+             mHorizontalMargin + toolTipBoundingRect.width()) <= screenRect.width()) {
+            q->setPreferredPos(QPointF(itemSceneRect.x() + item->boundingRect().width() + mHorizontalMargin,
+                                       itemSceneRect.y() +  item->boundingRect().height()/2),
+                               HbPopup::LeftEdgeCenter);
+            matchingFinished = true;
         }
     }
+    if (currentAlignment & Qt::AlignLeft || !matchingFinished) {        
+        if ((itemSceneRect.x() - mHorizontalMargin - toolTipBoundingRect.width()) >= 0) {
+            q->setPreferredPos(QPointF(itemSceneRect.x() - mHorizontalMargin,
+                                       itemSceneRect.y() +  item->boundingRect().height()/2),
+                               HbPopup::RightEdgeCenter);
+            matchingFinished = true;
+        }
+    }
+    //Using AlignTop as default
+    if (!matchingFinished) {
+        q->setPreferredPos(QPointF(itemSceneRect.x() + item->boundingRect().width()/2,
+                                   itemSceneRect.y() - mVerticalMargin),
+                           HbPopup::BottomEdgeCenter);
+    }
 
-    q->setPos(toolTipBoundingRect.topLeft());
     q->show();
 }
 
@@ -287,8 +249,6 @@ void HbToolTipLabel::eventHook(QEvent *event)
                 case QEvent::GraphicsSceneHoverEnter:
                 case QEvent::GraphicsSceneHoverLeave:
                 case QEvent::GraphicsSceneHoverMove:
-                case QEvent::KeyPress:
-                case QEvent::KeyRelease:
                 case QEvent::FocusIn:
                 case QEvent::FocusOut:
 
@@ -409,6 +369,7 @@ void HbToolTipLabel::timerEvent(QTimerEvent *event)
 /*
     reimp
 */
+#include <QDebug>
 bool HbToolTipLabel::event(QEvent *event)
 {
     Q_D(HbToolTipLabel);
@@ -416,15 +377,40 @@ bool HbToolTipLabel::event(QEvent *event)
         if (d->label) {
             d->label->setFont(font());
         }
-    } else if (event->type() == QEvent::LayoutRequest) {        
-        if (d->label) {
-            resize(preferredSize());
-            d->label->resize(d->label->preferredSize());
-        }
-        if (isVisible()) {
-            showText(d->mItem, d->mPreferredAlignment);
+    } else if (event->type() == QEvent::LayoutRequest) {
+        if (isVisible() && d->mPolishLayoutRequest) {
+            d->mPolishLayoutRequest = false;
+            d->showText(d->mItem, d->mPreferredAlignment);
         }
     }
     return HbPopup::event(event);
+}
+
+/*
+    reimp
+*/
+void HbToolTipLabel::polish(HbStyleParameters &params)
+{
+    Q_D(HbToolTipLabel);
+    const QString HorizontalMargin = "horizontal-margin";
+    const QString VerticalMargin = "vertical-margin";
+    const QString ScreenMargin = "screen-margin";
+
+    params.addParameter(HorizontalMargin);
+    params.addParameter(VerticalMargin);
+    params.addParameter(ScreenMargin);
+
+    HbPopup::polish(params);
+
+    if (params.value(HorizontalMargin).isValid()) {
+        d->mHorizontalMargin = params.value(HorizontalMargin).toReal();
+    }
+    if (params.value(VerticalMargin).isValid()) {
+        d->mVerticalMargin = params.value(VerticalMargin).toReal();
+    }
+    if (params.value(ScreenMargin).isValid()) {
+        d->mScreenMargin = params.value(ScreenMargin).toReal();
+    }
+    d->mPolishLayoutRequest = true;
 }
 

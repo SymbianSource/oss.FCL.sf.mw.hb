@@ -34,38 +34,25 @@ HbEglStates::HbEglStates( EGLDisplay d,
                           EGLContext  c,
                           EGLConfig cfg )
         : refCount(0),
-        init(0),
-        background(0)
+        init(0)
+       
 {
-    fgWatcher = HbForegroundWatcher::instance();
-    connect(fgWatcher, SIGNAL(foregroundLost()),
-            SLOT(handleForegroundLost()));
     set(d, rs, ds, c, cfg);
 }
 
 HbEglStates::HbEglStates()
         : refCount(0),
-        init(0),
-        background(0)
-{
-    fgWatcher = HbForegroundWatcher::instance();
-    connect(fgWatcher, SIGNAL(foregroundLost()),
-            SLOT(handleForegroundLost()));
-    reset();
+        init(0)
+       
+{   reset();
 }
 
 void HbEglStates::handleForegroundLost()
 {
     reset();
-    background = 1;
     init = 0;
-    HbNVGEnginePool::instance()->resetNVGEngine();
+    HbNvgEnginePool::instance()->resetNvgEngine();
     clearImages();
-}
-
-void HbEglStates::handleForegroundGained()
-{
-    background = 0;
 }
 
 void HbEglStates::clearImages()

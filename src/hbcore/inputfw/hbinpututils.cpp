@@ -42,6 +42,9 @@
 #include "hbinputlanguage.h"
 #include "hbinpututils.h"
 
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE 0x0660
+
+
 /// @cond
 
 static bool usesLatinDigits(QLocale::Language language, HbInputDigitType digitType)
@@ -105,8 +108,9 @@ QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
             }
         } else if (digitType == HbDigitTypeArabicIndic) {
             for (int i = 0; i < chars.length(); i++) {
-                if (chars.at(i) >= 0x0660 && chars.at(i) <= 0x0669) {
-                    return chars.at(i);
+                if (chars.at(i) >= '0' && chars.at(i) <= '9') {
+                    return HB_DIGIT_ARABIC_INDIC_START_VALUE +
+						(chars.at(i).toAscii() - '0');
                 }
             }
         } else if (digitType == HbDigitTypeEasternArabic) {
@@ -189,9 +193,8 @@ HbLanguageDatabaseInterface* HbInputUtils::languageDatabasePluginInstance(const 
 }
 
 /*!
-Returns true if the given plugin is located to permanent (ROM) memory.
-This is only relevant for devices where plugins can be pre-installed as part
-of ROM-based firmware. In Windows and Unix environments this always returns false.
+\deprecated HbInputUtils::isInputPluginInPermanentMemory(const QString&)
+    is deprecated.
 */
 bool HbInputUtils::isInputPluginInPermanentMemory(const QString& pluginFileName)
 {
@@ -250,5 +253,23 @@ QGraphicsWidget* HbInputUtils::createGraphicsProxyWidget(QWidget* widget)
     return proxy;
 }
 
+/*!
+returns the input digit type for the given input language
+*/
+
+HbInputDigitType HbInputUtils::inputDigitType(HbInputLanguage language)
+{
+    HbInputDigitType digitType = HbDigitTypeNone;
+
+    switch (language.language()) {
+        case QLocale::Arabic:
+            digitType = HbDigitTypeArabicIndic;
+            break;
+        default:
+            digitType = HbDigitTypeLatin;
+			break;		
+    }
+    return digitType;
+}
 // End of file
 

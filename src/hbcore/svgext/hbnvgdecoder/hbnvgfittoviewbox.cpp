@@ -25,16 +25,16 @@
 
 #include "hbnvgfittoviewbox_p.h"
 
-const qreal Zero = 0.0f ;
-const qreal One = 1.0f ;
+const qreal zero = 0.0f ;
+const qreal one = 1.0f ;
 
 HbNvgFitToViewBoxImpl::HbNvgFitToViewBoxImpl()
-		: mM00(One),
-        mM01(Zero),
-        mM02(Zero),
-        mM10(Zero),
-        mM11(One),
-        mM12(Zero),
+        : mM00(one),
+        mM01(zero),
+        mM02(zero),
+        mM10(zero),
+        mM11(one),
+        mM12(zero),
         mViewBoxDefined(false),
         mAlign(HbNvgEngine::NvgPreserveAspectRatioXmidYmid),
         mMeetSlice(HbNvgEngine::NvgMeet)
@@ -54,45 +54,45 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
 {
 
     //VIEWPORT NUMBERS
-    qreal lViewPortX = viewPort.left();
-    qreal lViewPortY = viewPort.top();
-    qreal lViewPortWidth = viewPort.width();
-    qreal lViewPortHeight = viewPort.height();
+    qreal viewPortX = viewPort.left();
+    qreal viewPortY = viewPort.top();
+    qreal viewPortWidth = viewPort.width();
+    qreal viewPortHeight = viewPort.height();
 
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-    vgTranslate(lViewPortX, lViewPortY);
+    vgTranslate(viewPortX, viewPortY);
 
-    qreal lViewBoxXmin;
-    qreal lViewBoxYmin;
-    qreal lViewBoxWidth;
-    qreal lViewBoxHeight;
+    qreal viewBoxXmin;
+    qreal viewBoxYmin;
+    qreal viewBoxWidth;
+    qreal viewBoxHeight;
 
     if (mViewBoxDefined) {
-        lViewBoxXmin = mVbX;
-        lViewBoxYmin = mVbY;
-        lViewBoxWidth = mVbW;
-        lViewBoxHeight = mVbH;
+        viewBoxXmin = mVbX;
+        viewBoxYmin = mVbY;
+        viewBoxWidth = mVbW;
+        viewBoxHeight = mVbH;
     } else {
         //this will default viewBox to <svg> element width and height
-        lViewBoxXmin = 0;
-        lViewBoxYmin = 0;
-        lViewBoxWidth = size.width();
-        lViewBoxHeight = size.height();
+        viewBoxXmin = 0;
+        viewBoxYmin = 0;
+        viewBoxWidth = size.width();
+        viewBoxHeight = size.height();
     }
 
-    if (lViewBoxWidth == 0.0f || lViewBoxHeight == 0.0f) {
+    if (viewBoxWidth == 0.0f || viewBoxHeight == 0.0f) {
         return;
     }
 
-    qreal sx = lViewPortWidth / lViewBoxWidth;
-    qreal sy = lViewPortHeight / lViewBoxHeight;
+    qreal sx = viewPortWidth / viewBoxWidth;
+    qreal sy = viewPortHeight / viewBoxHeight;
 
     if (sx == 0.0f || sy == 0.0f) {
         return;
     }
 
-    qreal xtrans = qreal(-1.0f) * lViewBoxXmin;
-    qreal ytrans = qreal(-1.0f) * lViewBoxYmin;
+    qreal xtrans = qreal(-1.0f) * viewBoxXmin;
+    qreal ytrans = qreal(-1.0f) * viewBoxYmin;
 
     switch (mAlign) {
     case HbNvgEngine::NvgPreserveAspectRatioNone:
@@ -131,19 +131,19 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight)) * (.5f)) / sx - lViewBoxXmin;
-            } else { 
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight)) * (.5f)) / sx - viewBoxXmin;
+            } else {
                 sy = sx;
                 //no change for ytrans...default above
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-            } else { 
+            } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
                 xtrans = xtrans / sx;
-                xtrans = xtrans / qreal(2) - lViewBoxXmin;
+                xtrans = xtrans / qreal(2) - viewBoxXmin;
             }
         }
         break;
@@ -153,8 +153,8 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight))) / sx - lViewBoxXmin;
-            } else { 
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight))) / sx - viewBoxXmin;
+            } else {
                 sy = sx;
                 //no change for ytrans...default above
             }
@@ -162,10 +162,10 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
             if (sx > sy) {
                 sy = sx;
                 //no change for ytrans...default above
-            } else { 
+            } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
-                xtrans = xtrans / sx - lViewBoxXmin;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
+                xtrans = xtrans / sx - viewBoxXmin;
             }
         }
         break;
@@ -176,18 +176,18 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
             if (sx > sy) {
                 sx = sy;
                 //no change for xtrans...default above
-            } else { 
+            } else {
                 sy = sx;
                 ytrans = ((qreal)
-                          (lViewPortHeight - ((qreal)(lViewBoxHeight / lViewBoxWidth) * lViewPortWidth)) * qreal(.5f)) / sy - lViewBoxYmin;
+                          (viewPortHeight - ((qreal)(viewBoxHeight / viewBoxWidth) * viewPortWidth)) * qreal(.5f)) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
                 ytrans = ytrans / sx;
-                ytrans = ytrans / qreal(2) - lViewBoxYmin;
-            } else { 
+                ytrans = ytrans / qreal(2) - viewBoxYmin;
+            } else {
                 sx = sy;
             }
         }
@@ -199,23 +199,23 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight)) * (.5f)) / sx - lViewBoxXmin;
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight)) * (.5f)) / sx - viewBoxXmin;
 
             } else if (sx < sy) {
                 sy = sx;
-                ytrans = ((lViewPortHeight - ((lViewBoxHeight / lViewBoxWidth) * lViewPortWidth)) * (.5f)) / sy - lViewBoxYmin;
+                ytrans = ((viewPortHeight - ((viewBoxHeight / viewBoxWidth) * viewPortWidth)) * (.5f)) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
                 ytrans = ytrans / sx;
-                ytrans = ytrans / qreal(2) - lViewBoxYmin;
-            } else { 
+                ytrans = ytrans / qreal(2) - viewBoxYmin;
+            } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
                 xtrans = xtrans / sx;
-                xtrans = xtrans / qreal(2) - lViewBoxXmin;
+                xtrans = xtrans / qreal(2) - viewBoxXmin;
             }
         }
         break;
@@ -225,21 +225,21 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight))) / sx - lViewBoxXmin;
-            } else { 
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight))) / sx - viewBoxXmin;
+            } else {
                 sy = sx;
-                ytrans = ((lViewPortHeight - ((lViewBoxHeight / lViewBoxWidth) * lViewPortWidth)) * (.5f)) / sy - lViewBoxYmin;
+                ytrans = ((viewPortHeight - ((viewBoxHeight / viewBoxWidth) * viewPortWidth)) * (.5f)) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
                 ytrans = ytrans / sx;
-                ytrans = ytrans / qreal(2) - lViewBoxYmin;
-            } else { 
+                ytrans = ytrans / qreal(2) - viewBoxYmin;
+            } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
-                xtrans = xtrans / sx - lViewBoxXmin;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
+                xtrans = xtrans / sx - viewBoxXmin;
             }
         }
         break;
@@ -250,16 +250,16 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
             if (sx > sy) {
                 sx = sy;
                 //no change for xtrans...default above
-            } else { 
+            } else {
                 sy = sx;
 
-                ytrans = ((lViewPortHeight - ((lViewBoxHeight / lViewBoxWidth) * lViewPortWidth))) / sy - lViewBoxYmin;
+                ytrans = ((viewPortHeight - ((viewBoxHeight / viewBoxWidth) * viewPortWidth))) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
-                ytrans = ytrans / sx - lViewBoxYmin;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
+                ytrans = ytrans / sx - viewBoxYmin;
             } else {
                 sx = sy;
             }
@@ -271,21 +271,21 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight)) * qreal(.5f)) / sx - lViewBoxXmin;
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight)) * qreal(.5f)) / sx - viewBoxXmin;
             } else {
                 sy = sx;
-                ytrans = ((lViewPortHeight - ((lViewBoxHeight / lViewBoxWidth) * lViewPortWidth))) / sy - lViewBoxYmin;
+                ytrans = ((viewPortHeight - ((viewBoxHeight / viewBoxWidth) * viewPortWidth))) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
-                ytrans = ytrans / sx - lViewBoxYmin;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
+                ytrans = ytrans / sx - viewBoxYmin;
             } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
                 xtrans = xtrans / sx;
-                xtrans = xtrans / qreal(2) - lViewBoxXmin;
+                xtrans = xtrans / qreal(2) - viewBoxXmin;
             }
         }
         break;
@@ -295,20 +295,20 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
         if (mMeetSlice == HbNvgEngine::NvgMeet) {
             if (sx > sy) {
                 sx = sy;
-                xtrans = ((lViewPortWidth - ((lViewBoxWidth / lViewBoxHeight) * lViewPortHeight))) / sx - lViewBoxXmin;
+                xtrans = ((viewPortWidth - ((viewBoxWidth / viewBoxHeight) * viewPortHeight))) / sx - viewBoxXmin;
             } else {
                 sy = sx;
-                ytrans = ((lViewPortHeight - ((lViewBoxHeight / lViewBoxWidth) * lViewPortWidth))) / sy - lViewBoxYmin;
+                ytrans = ((viewPortHeight - ((viewBoxHeight / viewBoxWidth) * viewPortWidth))) / sy - viewBoxYmin;
             }
         } else if (mMeetSlice == HbNvgEngine::NvgSlice) {
             if (sx > sy) {
                 sy = sx;
-                ytrans = lViewPortHeight - sx * lViewBoxHeight;
-                ytrans = ytrans / sx - lViewBoxYmin;
+                ytrans = viewPortHeight - sx * viewBoxHeight;
+                ytrans = ytrans / sx - viewBoxYmin;
             } else {
                 sx = sy;
-                xtrans = lViewPortWidth - sx * lViewBoxWidth;
-                xtrans = xtrans / sx - lViewBoxXmin;
+                xtrans = viewPortWidth - sx * viewBoxWidth;
+                xtrans = xtrans / sx - viewBoxXmin;
             }
         }
         break;
@@ -322,7 +322,8 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
 
 void HbNvgFitToViewBoxImpl::concatenate(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12)
 {
-    qreal m0, m1;
+    qreal m0;
+    qreal m1;
     m0  = mM00;
     m1  = mM01;
     mM00 = m00 * m0 + m10 * m1;
@@ -335,4 +336,3 @@ void HbNvgFitToViewBoxImpl::concatenate(qreal m00, qreal m01, qreal m02, qreal m
     mM12 += m02 * m0 + m12 * m1;
 }
 
-//--------------------------------EndOfFile------------------------------------

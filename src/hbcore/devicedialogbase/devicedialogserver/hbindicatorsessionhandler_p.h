@@ -31,7 +31,7 @@
 #include <QVariantMap>
 #include <QList>
 #include <QString>
-
+#include <QStringList>
 #include "hbindicatorclientinfo_p.h"
 
 class HbDeviceDialogServerPrivate;
@@ -74,7 +74,7 @@ public:
     void IndicatorsActivated(const QList<IndicatorClientInfo> &activated);
     void IndicatorsUpdated(const QList<IndicatorClientInfo> &activated);
     void IndicatorsDeactivated(const QList<IndicatorClientInfo> &deactivated);
-
+    void IndicatorUserActivated(const QVariantMap& data);
 private:
 
     HbDeviceDialogServerPrivate& Server();
@@ -88,6 +88,7 @@ private:
             IndicatorState state);
 
     void WriteIndicatorInfoL();
+    void WriteIndicatorDataL(const RMessage2 &aMessage);
     TInt DoWriteIndicatorInfoL(TInt &error);
     QString indicatorTypeFromMessageL(const RMessage2 &aMessage, QVariant &parameter) const;
     HbIndicatorSessionHandler(HbDeviceDialogSession *aSession);
@@ -98,6 +99,8 @@ private:
     TBool iIndicatorChannelOpen;
     RMessage2 iIndicatorChannel;
     QList<IndicatorQueueItem> iIndicatorQueue;
+    QStringList indicatorTypes;
+    QVariantMap indicatorDataMap;
     };
 
 #endif  // HBINDICATORSESSIONHANDLER_H

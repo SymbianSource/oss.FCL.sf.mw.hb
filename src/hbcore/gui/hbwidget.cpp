@@ -42,10 +42,6 @@
 #include <QGraphicsLayout>
 #include <QInputContext>
 
-#ifdef HB_GESTURE_FW
-#include <QGestureEvent>
-#endif
-
 #ifdef HB_TESTABILITY
 /*!
     \internal
@@ -119,6 +115,10 @@ QGraphicsLayoutItem *HbWidgetPrivate::createSpacerItem( const QString &name )
 }
 
 /*
+    
+    \deprecated HbWidget::setBackgroundItem(HbStyle::Primitive, int)
+    is deprecated. Use HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue) instead.
+    
     Creates background item to the widget from style primitive.
     
     Creates a new background item to the widget and the reparents it to
@@ -232,8 +232,8 @@ void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
 
     HbFocusGroup *group = getFocusGroup();
 
-    // Do not show focus if there is no focus group or the flag is NeverOn.
-    if (!group || (group && (group->focusParameters() == HbFocusGroup::NeverOn))) {
+    // Do not show focus if there is focus group and the flag is NeverOn.
+    if (group && (group->focusParameters() == HbFocusGroup::NeverOn)) {
         return;
     }
 
@@ -768,14 +768,6 @@ bool HbWidget::event(QEvent *event)
             }
             return true;
 
-#ifdef HB_GESTURE_FW
-        case QEvent::Gesture:
-            gestureEvent(static_cast<QGestureEvent *>(event));
-            if(!(static_cast<QGestureEvent *>(event))->isAccepted()) {
-                return false;
-            }
-            break;
-#endif
         default:
             if (event->type() == HbEvent::ChildFocusIn) {
                 QGraphicsWidget *parentW = parentWidget();
@@ -987,12 +979,9 @@ void HbWidget::repolish()
 }
 
 /*!
-    This is the default implementation of style primitive accessing. As a default it always returns NULL. 
-    Hb widgets can reimplement this method to offer access to style primitives (e.g. button's label or icon). 
-    This can be used for example for creating custom effects for parts of the widget.
 
-    \param primitive The primitive enumeration by which the widget returns the QGraphicsItem.
-    \return QGraphicsItem* pointer to GraphicsItem that matches the given primitive enumeration
+    \deprecated HbWidget::primitive(HbStyle::Primitive)
+        is deprecated. Use HbWidget::primitive(const QString) instead.
 */
 QGraphicsItem *HbWidget::primitive(HbStyle::Primitive primitive) const
 {
@@ -1007,6 +996,38 @@ QGraphicsItem *HbWidget::primitive(HbStyle::Primitive primitive) const
         return d->focusPrimitive(HbWidget::FocusHighlightResidual);
     }
 
+    return 0;
+}
+
+/*!
+    This is the default implementation of style primitive accessing. The method iterates through all widget's child items
+    and returns the child QGraphicsItem matching to \a itemName parameter. The \a itemName parameter matches to the 
+    item names set by the HbStyle::setItemName(). The item name should match with widget's WidgetML CSS definition.
+
+    Hb widgets can reimplement this method to do optimized lookup of primitives meaning that widget's implementation of this 
+    method will return correct primitives without going through all child items.
+
+    The returned QGraphicsItem can be used for example to perform an application-specific effect for widget's primitive.
+
+    \param itemName The string of the itemName used to search for the primitive.
+    \return QGraphicsItem* pointer to QGraphicsItem that matches the itemName. Returns 0 if not found.
+
+    \sa HbStyle::setItemName(QGraphicsItem *, const QString)
+    \sa HbStyle::itemName()
+*/
+QGraphicsItem *HbWidget::primitive(const QString &itemName) const
+{
+    if ( itemName == "" ) {
+        return 0;
+    } else {
+        QList<QGraphicsItem*> list = childItems();
+        for ( int i = 0 ; i < list.count() ; i++  ) {
+            QGraphicsItem* item = list.at(i);
+            if ( HbStyle::itemName(item) == itemName ) {
+                return item;
+            }
+        }
+    }
     return 0;
 }
 
@@ -1298,6 +1319,10 @@ HbWidget::FocusMode HbWidget::focusMode() const
 }
 
 /*
+
+    \deprecated HbWidget::setFocusHighlight(HbStyle::Primitive, HbWidget::FocusHighlight)
+    is deprecated. This method will be made private and should not be used by public API users.
+
     Sets focus primitives defined in HbStyle. If FocusHighlightNone is set both active
     and residual focus primitives are deleted.
 
@@ -1323,6 +1348,10 @@ void HbWidget::setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlig
 }
 
 /*!
+
+    \deprecated HbWidget::focusHighlight(HbWidget::FocusHighlight)
+    is deprecated. This method will be made private and should not be used by public API users.
+
     Returns identifier of the focus primitive defined in HbStyle for focus highlight.
     \param highlightType defines the highlight type.
 */
@@ -1339,7 +1368,12 @@ HbStyle::Primitive HbWidget::focusHighlight(HbWidget::FocusHighlight highlightTy
     return primitive;
 }
 
-/*! Default implementation of a virtual method for overriding instant feedback effects.
+/*! 
+    
+    \deprecated HbWidget::overrideFeedback(Hb::InstantInteraction) const
+        is deprecated. Effect overriding is done via properties.
+
+    Default implementation of a virtual method for overriding instant feedback effects.
     Returns HbFeedback::NoOverride by default.
     Widgets can reimplement this method to override the default feedback effects (if
     there is a strong need not to use the default ones).
@@ -1352,7 +1386,12 @@ HbFeedback::InstantEffect HbWidget::overrideFeedback(Hb::InstantInteraction inte
     return HbFeedback::NoOverride;
 }
 
-/*! Default implementation of a virtual method for overriding continuous feedback effects.
+/*! 
+
+    \deprecated HbWidget::overrideContinuousFeedback(Hb::ContinuousInteraction, int*) const
+        is deprecated. Effect overriding is done via properties.
+
+    Default implementation of a virtual method for overriding continuous feedback effects.
     Returns HbFeedback::NoContinuousOverride by default.
     Widgets can reimplement this method to override the default continuous feedbacks
     and/or their intensity (if there is a strong need not to use the default ones).
@@ -1368,9 +1407,3 @@ HbFeedback::ContinuousEffect HbWidget::overrideContinuousFeedback(Hb::Continuous
     return HbFeedback::NoContinuousOverride;
 }
 
-#ifdef HB_GESTURE_FW
-void HbWidget::gestureEvent(QGestureEvent *event)
-{
-    event->ignore();
-}
-#endif

@@ -56,7 +56,7 @@
 #include "hbthetestutility_p.h"
 #include "hbglobal_p.h"
 #include "hbevent.h"
-#include "hbsplashscreen_p.h"
+#include "hbsplashscreen.h"
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbmainwindoworientation_p.h"
@@ -129,9 +129,11 @@
 /*!
     \fn void HbMainWindow::aboutToChangeOrientation(Qt::Orientation newOrientation, bool animated)
 
-    This signal is emitted when the orientation change starts. This version of aboutToChangeOrientation also includes the information
-    about the new orientation and whether the orientation change is animated or not. 
-    This can be used for example by widgets who want to participate in the orientation change animation.
+    This signal is emitted when the orientation change starts. This version of
+    aboutToChangeOrientation also includes the information about the new
+    orientation and whether the orientation change is animated or not.  This can
+    be used for example by widgets who want to participate in the orientation
+    change animation.
  */
 
 /*!
@@ -150,9 +152,28 @@
  */
 
 /*!
+    \fn void HbMainWindow::aboutToChangeView(HbView *oldView, HbView *newView)
+
+    This signal is emitted before starting a view change. Note that it is only
+    emitted when there is a real view change (i.e. when setCurrentView() is
+    used), it will not be emitted when views are added to the main window via
+    addView().
+
+    It is guaranteed that this signal is emitted before starting any view switch
+    animation.
+ */
+
+/*!
     \fn void HbMainWindow::currentViewChanged(HbView *view)
 
-    This signal is emitted when the current view changes.
+    This signal is emitted when the current view changes. Do not make assumptions about
+    the exact timing of this signal, it may be emitted at any time during the view switch
+    (this is relevant if the view switch is animated, i.e. it is not guaranteed that the
+    signal will be emitted at the end of the animation, in fact it is usually emitted
+    already when the animation starts).
+
+    \sa aboutToChangeView()
+    \sa viewReady()
  */
 
 /*!
@@ -161,11 +182,12 @@
     This signal is emitted first time when window content is drawn on screen.
     It will only be emitted again when current view is changed and drawn on screen.
 
-    If applicationlaunch or current view is switched with effect, signal is
-    emitted after the effect has completed.
+    If the view switch is animated, the signal is emitted only after the effect has
+    completed.
 
-    Application developers may connect to this signal to do lower priority construction tasks. When
-    thinking about the tasks, it's important to keep the UI responsive all the time.
+    Application developers may connect to this signal to do lower priority construction
+    tasks. Note however that when thinking about the tasks, it is important to keep the UI
+    responsive all the time.
  */
 
 /*!
@@ -234,9 +256,12 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
         HbMainWindowOrientation::instance()->setFixedOrientation(Qt::Horizontal);
         d->mOrientation = Qt::Horizontal;
         d->mAutomaticOrientationSwitch = false;
-    } else {
+    } else if (HbMainWindowOrientation::instance()->isEnabled()) {
         d->mOrientation = HbMainWindowOrientation::instance()->sensorOrientation();
         d->mAutomaticOrientationSwitch = true;
+    } else {
+        d->mOrientation = d->mDefaultOrientation;
+        d->mAutomaticOrientationSwitch = false; 
     }
 
 #if defined(Q_WS_S60) || defined(HB_Q_WS_MAEMO)
@@ -292,6 +317,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     QRectF rect(0,0,pSize.width(),pSize.height());
     resize(pSize);
+	d->mLayoutRect = rect;
     d->mRootItem->setGeometry(rect);
     d->mClippingItem->setGeometry(rect);
 
@@ -300,6 +326,17 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 
     // Rest of the initialization is done later, see paintEvent().
+    
+    
+#ifdef HB_GESTURE_FW
+    // @todo remove after view auto-subscribes to gestures
+    viewport()->grabGesture(Qt::TapGesture);
+    viewport()->grabGesture(Qt::TapAndHoldGesture);
+    viewport()->grabGesture(Qt::PanGesture);
+    viewport()->grabGesture(Qt::SwipeGesture);
+    viewport()->grabGesture(Qt::PinchGesture);
+#endif
+
 }
 
 /*!
@@ -498,6 +535,7 @@ void HbMainWindow::setCurrentView(HbView *view, bool animate, Hb::ViewSwitchFlag
     HbView *oldView = currentView();
     // Switching to null view or to the one that is current will do nothing.
     if (view && oldView != view) {
+        emit aboutToChangeView(oldView, view);
         if (oldView && animate) {
             if (flags & Hb::ViewSwitchFullScreen) {
                 flags |= Hb::ViewSwitchSequential;
@@ -604,40 +642,7 @@ QList<HbView *> HbMainWindow::views() const
     
     return result;
 }
-/*!
-    \deprecated HbMainWindow::element(HbMainWindow::Element) const
-        is deprecated.
 
-    Returns user interface elements of mainwindow as QGraphicsWidgets. The term "element" here is used since each of these
-    elements consist of one or multiple items. The term "item" is used since each element is represented by a single 
-    QGraphicsWidget (which is also a QGraphicsItem).
-
-    The returned elements can be used for example to run effects using the HbEffect API.
-    For example an application could use the ViewPortItem to do an effect on all the other parts of the UI except the background item.
-
-    Currently supported elements are:
-    - HbMainWindow::RootItem, this is an item that contains all other items including the background element.
-    - HbMainWindow::ViewportItem, this contains all other items except the background, it can be thought as the viewport for widgets.
-      This item gets resized when the orientation changes.
-    - HbMainWindow::BackgroundItem, as the name says the enum represents the background item, nothing else.
-      Note that in this case the returned pointer may be null if the main window was constructed with Hb::WindowFlagNoBackground.
-
-    \param element Enumeration of the element. 
-
-*/
-QGraphicsWidget *HbMainWindow::element(HbMainWindow::Element element) const
-{
-    HB_DEPRECATED("HbMainWindow::element is deprecated!");
-    Q_D(const HbMainWindow);
-    if( element == HbMainWindow::RootItem )
-        return d->mRootItem;
-    else if( element == HbMainWindow::ViewportItem )
-        return d->mClippingItem;
-    else if( element == HbMainWindow::BackgroundItem )
-        return d->mBgItem;
-
-    return 0;
-}
 
 /*!
     Returns orientation of the window.
@@ -665,28 +670,8 @@ void HbMainWindow::setOrientation(Qt::Orientation orientation, bool animate)
 {
     Q_D(HbMainWindow);
     d->mAutomaticOrientationSwitch = false;
+    d->mUserOrientationSwitch = true;
     d->setTransformedOrientation(orientation, animate);
-}
-
-/*!
-    \deprecated HbMainWindow::toggleOrientation()
-        is deprecated.
-
-    @proto
-    
-    Switches orientation of main window.
-        
- */
-void HbMainWindow::toggleOrientation()
-{
-    HB_DEPRECATED("HbMainWindow::toggleOrientation is deprecated!");
-    Q_D(HbMainWindow);
-    d->mAutomaticOrientationSwitch = false;
-    if (d->mOrientation == Qt::Horizontal) {
-        d->setTransformedOrientation(Qt::Vertical,false);
-    } else {
-        d->setTransformedOrientation(Qt::Horizontal,false);
-    }
 }
 
 /*!
@@ -700,6 +685,7 @@ void HbMainWindow::unsetOrientation(bool animate)
     Q_D(HbMainWindow);
     if (!d->mAutomaticOrientationSwitch) {
         d->mAutomaticOrientationSwitch = true;
+        d->mUserOrientationSwitch = false;
         if(HbMainWindowOrientation::instance()->isEnabled())
             d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), animate);
     }
@@ -851,10 +837,7 @@ void HbMainWindow::resetNativeBackgroundWindow()
 QRectF HbMainWindow::layoutRect() const
 {
     Q_D(const HbMainWindow);
-    if (d->mClippingItem) {
-        return d->mClippingItem->geometry();
-    }
-    return QRectF();
+	return d->mLayoutRect;
 }
 /*!
     \deprecated HbMainWindow::setCurrentViewIndex(int)
@@ -940,6 +923,8 @@ void HbMainWindow::changeEvent(QEvent *event)
     if (event->type() == QEvent::LayoutDirectionChange) {
         // Notify layout direction change to the icon framework
         HbLayoutDirectionNotifier::instance()->notifyLayoutDirectionChange();
+
+        broadcastEvent( HbEvent::WindowLayoutDirectionChanged );
 
         foreach (QGraphicsItem *item, items()) {
             if (item->isWidget() && !item->parentItem() ) {
@@ -1073,15 +1058,36 @@ void HbMainWindow::customEvent( QEvent *event )
         }
     } else if (event->type() == HbMainWindowPrivate::IdleOrientationFinalEvent) {
         if (d->mAnimateOrientationSwitch) {
-            HbEffect::start(d->mStatusBar, "statusbar", "appear_orient"); 
             HbEffect::start(d->mTitleBar, "titlebar", "appear_orient");
+            HbEffect::start(d->mStatusBar, "statusbar", "appear_orient");
             if (d->mCurrentToolbar) {         
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(d->mCurrentToolbar);
                 toolBarD->startAppearOrientEffect();
             }
+            d->mOrientationChangeOngoing = false;
+            if (d->mAutomaticOrientationSwitch && HbMainWindowOrientation::instance()->isEnabled()) {
+                d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), d->mAnimateOrientationSwitch);
+            }
+            else if (d->mRequestedOrientation != d->mOrientation) {
+                d->setTransformedOrientation(d->mRequestedOrientation, d->mAnimateOrientationSwitch);
+            }
+        } else {
+            // cancel() with clearEffect cannot be used because the effects may have already been canceled.
+            if (d->mTitleBar) {
+                d->mTitleBar->resetTransform();
+                d->mTitleBar->setOpacity(1);
+            }
+            if (d->mStatusBar) {
+                d->mStatusBar->resetTransform();
+                d->mStatusBar->setOpacity(1);
+            }
+            if (d->mCurrentToolbar) {
+                d->mCurrentToolbar->resetTransform();
+                d->mCurrentToolbar->setOpacity(1);
+                d->mCurrentToolbar->show();
+            }
         }
     }
-      
 }
 
 /*!

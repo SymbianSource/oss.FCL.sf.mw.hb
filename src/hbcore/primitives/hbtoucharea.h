@@ -48,6 +48,7 @@ public:
 protected:
     HbTouchArea (HbTouchAreaPrivate &dd, QGraphicsItem *parent);
     QSizeF sizeHint (Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
+    void gestureEvent(QGestureEvent *event);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbTouchArea)

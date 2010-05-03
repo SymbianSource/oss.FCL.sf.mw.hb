@@ -37,30 +37,62 @@ class HbNvgFitToViewBoxImpl
 public:
     HbNvgFitToViewBoxImpl();
 
-    virtual ~HbNvgFitToViewBoxImpl();
+    ~HbNvgFitToViewBoxImpl();
 
 public:
-    inline void setViewBox(qreal vbX, qreal vbY, qreal vbW, qreal vbH);
+    void setViewBox(qreal vbX, qreal vbY, qreal vbW, qreal vbH)
+    {
+        mVbX = vbX;
+        mVbY = vbY;
+        mVbW = vbW;
+        mVbH = vbH;
+        mViewBoxDefined = true;
+    }
 
-    inline void setAlign(HbNvgEngine::NvgAlignStatusType alignStatus);
 
-    inline void setScaling(HbNvgEngine::NvgMeetOrSliceType  meetSlice);
+    void setAllignment(HbNvgEngine::HbNvgAlignType alignStatus)
+    {
+        mAlign = alignStatus;
+    }
 
-    inline void setTransform(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12);
+    void setScaling(HbNvgEngine::HbNvgMeetType meetSlice)
+    {
+        mMeetSlice = meetSlice;
+    }
 
+    void setTransform(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12)
+    {
+        mM00 = m00;
+        mM01 = m01;
+        mM02 = m02;
+        mM10 = m10;
+        mM11 = m11;
+        mM12 = m12;
+    }
 
-    inline void translate(qreal xValue, qreal yValue);
+    void translate(qreal tx, qreal ty)
+    {
+        qreal lTranslateMatrix[6] =  { 1, 0, tx, 0, 1, ty};
+        concatenate(lTranslateMatrix);
+    }
 
-    inline void scale(qreal xValue, qreal yValue);
-    
-    inline void concatenate(qreal *matrix);
+    void scale(qreal sx, qreal sy)
+    {
+        qreal lScaleMatrix[6] = { sx, 0, 0, 0, sy, 0};
+        concatenate(lScaleMatrix);
+    }
+
+    void concatenate(qreal *matrix)
+    {
+        concatenate(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+    }
 
     void setWindowViewportTrans(const QRect &viewPort, const QSize &size);
 
     void concatenate(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12);
 
 private:
-    
+
     qreal mM00;
     qreal mM01;
     qreal mM02;
@@ -75,11 +107,10 @@ private:
 
     bool mViewBoxDefined;
 
-    HbNvgEngine::NvgAlignStatusType mAlign;
+    HbNvgEngine::HbNvgAlignType mAlign;
 
-    HbNvgEngine::NvgMeetOrSliceType  mMeetSlice;
+    HbNvgEngine::HbNvgMeetType  mMeetSlice;
 };
 
-#include "hbnvgfittoviewbox_p.inl"
 #endif
 

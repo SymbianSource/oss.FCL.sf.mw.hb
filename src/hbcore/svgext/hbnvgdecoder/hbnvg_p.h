@@ -45,8 +45,8 @@ class HbNvgEnginePrivate;
 class HB_CORE_PRIVATE_EXPORT HbNvgEngine
 {
 public :
-    
-    enum NvgAlignStatusType {
+
+    enum HbNvgAlignType {
         NvgPreserveAspectRatioNone,
         NvgPreserveAspectRatioXminYmin,
         NvgPreserveAspectRatioXmidYmin,
@@ -59,12 +59,12 @@ public :
         NvgPreserveAspectRatioXmaxYmax
     };
 
-    enum NvgMeetOrSliceType  {
+    enum HbNvgMeetType  {
         NvgMeet,
         NvgSlice
     };
 
-    enum NvgErrorType {
+    enum HbNvgErrorType {
         NvgErrEof = -10,
         NvgErrUnknown = -9,
         NvgErrPermissionDenied = -8,
@@ -77,41 +77,42 @@ public :
         NvgErrBadHandle = -1,
         NvgErrNone = 0
     };
-    
+
     HbNvgEngine();
 
     virtual ~HbNvgEngine();
-    
+
     void rotate(float angle, float xval, float yval);
-    
-    void setPreserveAspectRatio(NvgAlignStatusType preserveAspectSetting,
-                NvgMeetOrSliceType smilFitSetting);
-   
+
+    void setPreserveAspectRatio(HbNvgAlignType preserveAspectSetting,
+                                HbNvgMeetType smilFitSetting);
+
     QSize contentDimensions(const QByteArray &buffer)const;
-   
+
     HbNvgIcon * createNvgIcon(const QByteArray &buffer, const QSize &size);
-    
-    NvgErrorType drawNvg(const QByteArray &buffer, const QSize &size);
-    
-    void setVgImageBinder(HbVgImageBinder *imageBinder); 
-   
-    NvgErrorType error() const;
-    
+
+    HbNvgErrorType drawNvg(const QByteArray &buffer, const QSize &size);
+
+    void setVgImageBinder(HbVgImageBinder *imageBinder);
+
+    HbNvgErrorType error() const;
+
     void setBackgroundColor(const QColor &rgba8888Color);
-    
+
     void clearBackground();
-    
-    void setMirroringMode(bool mirroringMode); 
+
+    void enableMirroring(bool mirroringMode);
 
 private :
     HbNvgEnginePrivate * const d_ptr;
-    
+
 private:
     Q_DISABLE_COPY(HbNvgEngine)
     Q_DECLARE_PRIVATE_D(d_ptr, HbNvgEngine)
 };
 
-HbNvgEngine::NvgErrorType openVgErrorToHbNvgError(int error);
+HbNvgEngine::HbNvgErrorType openVgErrorToHbNvgError(qint32 error);
 
 #endif
-//-------------------------------End Of File-------------------------
+
+

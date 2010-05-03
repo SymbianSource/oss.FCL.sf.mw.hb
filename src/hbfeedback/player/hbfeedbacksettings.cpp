@@ -187,6 +187,9 @@ bool HbFeedbackSettings::isFeedbackEnabled()
 }
 
 /*!
+  \deprecated HbFeedbackSettings::enableType(HbFeedback::Type)
+        is deprecated.
+
     Enables given type of feedback effects in the application.
     All feedback types are enabled by default.
     Emits signal typeEnabled(HbFeedback::Type type) if
@@ -201,6 +204,9 @@ void HbFeedbackSettings::enableType(HbFeedback::Type type)
 }
 
 /*!
+  \deprecated HbFeedbackSettings::disableType(HbFeedback::Type)
+        is deprecated.
+
     Disables given type of feedback effect mechanism in the application.
 
     Emits signal typeDisabled(HbFeedback::Type type) if
@@ -217,6 +223,9 @@ void HbFeedbackSettings::disableType(HbFeedback::Type type)
 }
 
 /*!
+  \deprecated HbFeedbackSettings::isTypeEnabled(HbFeedback::Type)
+        is deprecated.
+
     Returns true if a particular type of feedback effect mechanism has been 
     enabled for the application.
 */
@@ -226,6 +235,9 @@ bool HbFeedbackSettings::isTypeEnabled(HbFeedback::Type type)
 }
 
 /*!
+  \deprecated HbFeedbackSettings::isFeedbackAllowed(HbFeedback::Type)
+        is deprecated.
+
     True if feedback effects and the particular feedback type of feedback 
     effect mechanism is enabled, false if not.
 */
@@ -233,3 +245,13 @@ bool HbFeedbackSettings::isFeedbackAllowed(HbFeedback::Type type)
 {
     return d->feedbackEnabled && isTypeEnabled(type);
 }
+
+/*!
+  \deprecated HbFeedbackSettings::feedbackTypeEnabled(HbFeedback::Type)
+        is deprecated.
+
+  \deprecated HbFeedbackSettings::feedbackTypeDisabled(HbFeedback::Type)
+        is deprecated.
+*/
+
+

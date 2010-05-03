@@ -42,6 +42,7 @@
 #include "hbwidgetbase_p.h"
 
 class QFontMetricsF;
+class QLinearGradient;
 
 class HbTextItemPrivate : public HbWidgetBasePrivate
 {
@@ -66,6 +67,28 @@ public:
     QString elideLayoutedText(const QSizeF& size, const QFontMetricsF& metrics) const;
     bool adjustSizeHint();
 
+    bool fadeNeeded(const QRectF& contentRect) const;
+    static inline void setupGradient(QLinearGradient *gradient, QColor color);
+
+    void calculateFadeRects();
+
+    static inline void setPainterPen(QPainter *painter,
+                             const QPen& pen,
+                             const QPointF& lineBegin);
+
+    int paintFaded(QPainter *painter,
+                    int firstItemToPaint,
+                    const QPen& leftPen,
+                    const QPen& centerPen,
+                    const QPen& rightPen,
+                    const QRectF& area ) const;
+
+    void paintWithFadeEffect(QPainter *painter) const;
+
+    void setFadeLengths(qreal xLength, qreal yLength);
+
+    QRectF layoutBoundingRect() const;
+    QRectF boundingRect(const QRectF& contentsRect) const;
 
     QString mText;
     Qt::Alignment mAlignment;
@@ -73,7 +96,6 @@ public:
     bool mDontPrint;  // needed to fake text flags
     bool mDontClip;   // needed to fake text flags
 
-    Qt::LayoutDirection mTextDirection;
     bool mInvalidateShownText;
     QRectF mOldContentsRect;
     QColor mColor;
@@ -81,6 +103,14 @@ public:
     QTextLayout mTextLayout;
 
     QPointF mOffsetPos;
+
+    bool mPaintFaded;
+    qreal mFadeLengthX; // distance on which fade efect is performed when text doesn't fit content rectangle
+    qreal mFadeLengthY; // distance on which fade efect is performed when text doesn't fit content rectangle
+    qreal mCornerFadeX;
+    qreal mCornerFadeY;
+    QRectF mFadeToRect;
+    QRectF mFadeFromRect;
 
     qreal mPrefHeight;
     int mMinLines;

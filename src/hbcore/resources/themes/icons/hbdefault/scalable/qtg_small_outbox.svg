@@ -1,30 +1,30 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
 <rect fill="none" height="30" width="30"/>
-<rect fill="none" height="30.002" width="30.002"/>
-<polygon fill-opacity="0.6" points="11.471,19.118 11.471,12.942 7.941,12.942 15.001,3.53 22.061,12.942 18.53,12.942 18.53,19.118 " stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="15" x2="15" y1="4.79" y2="18.32">
-<stop offset="0" stop-color="#A0F800"/>
-<stop offset="1" stop-color="#319E00"/>
+<polygon fill-opacity="0.6" points="11,19 11,12 7,12 15,1.333 23,12 19,12 19,19 " stroke-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="2.7603" y2="18.0948">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="1" style="stop-color:#319E00"/>
 </linearGradient>
-<polygon fill="url(#SVGID_1)" points="15.001,5 9.707,12.06 12.354,12.06 12.354,18.236 17.648,18.236 17.648,12.06 20.295,12.06 "/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="15" x2="15" y1="4.79" y2="18.32">
-<stop offset="0" stop-color="#A0F800"/>
-<stop offset="0.76" stop-color="#4CB400"/>
-<stop offset="1" stop-color="#89CC6A"/>
+<polygon fill="url(#SVGID_1_)" points="15,3 9,11 12,11 12,18 18,18 18,11 21,11 "/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="2.7603" y2="18.0948">
+<stop offset="0" style="stop-color:#A0F800"/>
+<stop offset="0.7576" style="stop-color:#4CB400"/>
+<stop offset="1" style="stop-color:#89CC6A"/>
 </linearGradient>
-<path d="M15.001,5L9.707,12.06h2.647v6.177h5.295V12.06h2.646L15.001,5z M16.766,11.177v6.176h-3.53 v-6.176h-1.765l3.53-4.706l3.529,4.706H16.766z" fill="url(#SVGID_2)"/>
-<polygon fill-opacity="0.6" points="4.412,26.473 4.412,18.53 7.941,18.53 7.941,21.178 22.061,21.178 22.061,18.53 25.59,18.53 25.59,26.473 " stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3" x1="15" x2="15" y1="19.41" y2="25.59">
-<stop offset="0" stop-color="#4EDEFF"/>
-<stop offset="1" stop-color="#048CC6"/>
+<path d="M15,3l-6,8h3v7h6v-7h3L15,3z M17,10v7h-4v-7h-2l4-5.333L19,10H17z" fill="url(#SVGID_2_)"/>
+<polygon fill-opacity="0.6" points="1,28 1,19 5,19 5,22 25,22 25,19 29,19 29,28 " stroke-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="14.9995" x2="14.9995" y1="19.8877" y2="27.0436">
+<stop offset="0" style="stop-color:#4EDEFF"/>
+<stop offset="1" style="stop-color:#048CC6"/>
 </linearGradient>
-<polygon fill="url(#SVGID_3)" points="22.942,19.412 22.942,22.061 7.059,22.061 7.059,19.412 5.294,19.412 5.294,22.061 5.294,24.707 5.294,25.59 24.707,25.59 24.707,24.707 24.707,22.061 24.707,19.412 "/>
-<rect fill-opacity="0.2" height="0.883" stroke-opacity="0.2" width="19.413" x="5.294" y="24.707"/>
-<rect fill="#FFFFFF" fill-opacity="0.2" height="0.883" stroke-opacity="0.2" width="1.765" x="5.294" y="19.412"/>
-<rect fill="#FFFFFF" fill-opacity="0.2" height="0.883" stroke-opacity="0.2" width="1.765" x="22.942" y="19.412"/>
-<rect fill="#FFFFFF" fill-opacity="0.2" height="0.882" stroke-opacity="0.2" width="15.883" x="7.059" y="22.061"/>
+<polygon fill="url(#SVGID_3_)" points="26,20 26,23 4,23 4,20 2,20 2,23 2,26 2,27 28,27 28,26 28,23 28,20 "/>
+<rect fill-opacity="0.2" height="1" stroke-opacity="0.2" width="26" x="2" y="26"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="2" x="2" y="20"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="2" x="26" y="20"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="22" x="4" y="23"/>
+<rect fill="none" height="30" width="30"/>
 </g>
 </svg>

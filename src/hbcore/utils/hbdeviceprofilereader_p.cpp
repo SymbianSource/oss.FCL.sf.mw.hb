@@ -26,7 +26,8 @@
 #include "hbdeviceprofilereader_p.h"
 #include "hbdeviceprofiledatabase_p.h"
 
-#define FROM_INCHES_TO_MM 25.4
+#include <qmath.h>
+
 /*
     \class HbDeviceProfileReader
 
@@ -118,23 +119,37 @@ void HbDeviceProfileReader::readAttributes()
     QXmlStreamAttributes attrs = attributes();
  
     DeviceProfile deviceProfile(mType);
-    deviceProfile.mName=attrs.value("name").toString();
-    const QSize logicalSize(attrs.value("resolutionWidth").toString().toInt(),
-                          attrs.value("resolutionHeight").toString().toInt());
-    deviceProfile.mLogicalSize.setWidth(logicalSize.width());
-    deviceProfile.mLogicalSize.setHeight(logicalSize.height());
-    const qreal ppiValue(attrs.value("ppiValue").toString().toFloat());
-    if(ppiValue) {
-        deviceProfile.mPhysicalSize = (QSizeF((logicalSize.width() / ppiValue) * FROM_INCHES_TO_MM,
-                                         (logicalSize.height() / ppiValue * FROM_INCHES_TO_MM)) );
-    } else {
-        deviceProfile.mPhysicalSize = QSizeF(0,0);
+
+    int w = attrs.value("resolutionWidth").toString().toInt();
+    int h = attrs.value("resolutionHeight").toString().toInt();
+    deviceProfile.mLogicalSize.setWidth(w);
+    deviceProfile.mLogicalSize.setHeight(h);
+
+    QString orientationStr = "portrait";
+    QString altOrientationStr = "landscape";
+    if ( w > h ) {
+        orientationStr = "landscape";
+        altOrientationStr = "portrait";
     }
-    deviceProfile.mOrientation = (logicalSize.width() <= logicalSize.height() ?
-                                  Qt::Vertical : Qt::Horizontal);
-    deviceProfile.mAltName = attrs.value("alternateProfileName").toString();
     deviceProfile.mUnitValue = attrs.value("unitValue").toString().toFloat();
+    deviceProfile.mPpiValue = attrs.value("ppiValue").toString().toFloat();
     deviceProfile.mOrientationAngle= attrs.value("orientationAngle").toString().toInt();
+
+    QString resName = attrs.value("resolutionName").toString();
+    // Legacy support for deprecated "styleName"
+    if (resName.isEmpty()) {
+        resName = attrs.value("styleName").toString();
+    }
+
+    // Calculate inch size
+    qreal diagonal = qSqrt((qreal)(w*w+h*h)); // in "pixels"
+    int inchSizeX10 = qRound(10*(diagonal / deviceProfile.mPpiValue));
+    QString inchSizeStr = QString::number(inchSizeX10/10);
+    inchSizeStr.append('.');
+    inchSizeStr.append(QString::number(inchSizeX10%10));
+
+    deviceProfile.mName = resName + '-' + inchSizeStr + "-inch_" + orientationStr;
+    deviceProfile.mAltName = resName + '-' + inchSizeStr + "-inch_" + altOrientationStr;
 
     bool defaultMode = false;
     defaultMode = attrs.value("defaultMode").toString() == "true";

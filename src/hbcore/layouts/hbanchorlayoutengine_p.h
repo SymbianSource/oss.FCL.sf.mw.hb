@@ -26,34 +26,52 @@
 #ifndef HBANCHORLAYOUTENGINE_P_H
 #define HBANCHORLAYOUTENGINE_P_H
 
-#include <QHash>
+#include <hbglobal.h>
+#include <hbnamespace.h>
 #include <QList>
 
-class Variable
+
+struct GraphEdge;
+struct GraphVertex;
+struct SizeProperty;
+struct SerialBlockData;
+struct ParallelBlockData;
+
+class Variable;
+class Expression;
+
+struct SimpleExpression
 {
-public:
-    Variable() : mId(-1), mMin(0), mMax(0), mPref(0), mFlags(0), mRef(0) {}
-    ~Variable() {}
+    Variable *mVar;
+    qreal mCoef;
+};
 
-    bool operator== ( const Variable &var ) const { return ( var.mId == mId ); }
 
-public:
-    int mId;
-    qreal mMin;
-    qreal mMax;
-    qreal mPref;
-    enum 
+struct SizeProperty {
+    qreal min, pref, max;
+    enum
     {
         FlagFixed = 1,
         FlagExpanding = 2
     };
-    uint mFlags;
-    void *mRef; // reference to QGraphicsLayoutItem
+    uint flags;
 };
 
-typedef QHash<Variable, qreal> Solution;
 
-uint qHash ( Variable key );
+
+
+class Variable
+{
+public:
+
+    inline bool operator== ( const Variable &var ) const { return ( var.mId == mId ); }
+
+    int mId;
+
+    SizeProperty sizeProp;
+
+    void *mRef; // reference to QGraphicsLayoutItem
+};
 
 class VariableSet
 {
@@ -72,23 +90,30 @@ public:
     int mCurr_id;
 };
 
-struct SimpleExpression
-{
-    Variable *mVar;
-    qreal mCoef;
-};
+
+typedef QHash<Variable*, qreal> Solution;
+
 
 class Expression
 {
 public:
-    Expression();
-    ~Expression();
     void clear();
     void plusSimpleExpression( const SimpleExpression simp_exp );
-    void plusExpression( const Expression exp );
+    void plusExpression( const Expression *exp );
     void minusSimpleExpression( const SimpleExpression simp_exp );
-    void minusExpression( const Expression exp );
-    void minus();
+    void minusExpression( const Expression *exp );
+    void multiply( qreal multiplier );
+
+    Expression *toEquation( const SimpleExpression simp_exp );
+    Expression *toEquation( const Expression *exp );
+    Expression *toEquation();
+
+    bool isFixed() const;
+    bool isExpanding() const;
+
+    bool isTrivial() const;
+
+    uint flags() const;
 
     qreal value( Solution *solution ) const;
 
@@ -97,65 +122,56 @@ public:
     qreal maxValue() const;
     qreal minValue( Solution *solution ) const;
     qreal prefValue( Solution *solution ) const;
-    qreal prefExpandedValue( Solution *solution ) const;
     qreal maxValue( Solution *solution ) const;
+    qreal maxExpandedValue( Solution *solution ) const;
+
+
+
 
     QString print() const;
-    
+
 public:
     QList<SimpleExpression> mExpression;
 };
 
 
-class Equation
-{
-public:
-    Equation( const Expression &exp1, const Expression &exp2 );
-    ~Equation();
 
-    bool isTrivial() const;
-    bool operator== ( const Equation &first ) const;
-    Expression mFormula;
-    QString print() const;
-};
-
-class EquationSolver
-{
-public:
-    static bool solveEquation( QList<Equation> el, VariableSet &varset, Solution *solution );
-    static bool compareExpressions( const Expression &expression1, const Expression &expression2 );
-    static bool compareEquations( const Equation &equation1, const Equation &equation2 );
-
+class AnchorLayoutEngine {
 private:
-    static int numOfUnknownVars( const Equation *eq, const Solution *solution );
-};
-
-class DataGrid
-{
+    AnchorLayoutEngine();
+    ~AnchorLayoutEngine();
 public:
-    DataGrid();
-    ~DataGrid();
-
-    void setExpression( const Expression ex, int i, int j );
-    void setExpression( const SimpleExpression ex, int i, int j );
-
-    qreal value( int i, int j, Solution *solution, bool &ok ) const;
-
-    void clear();
-
-    QList<Equation> calculate();
-
+    static AnchorLayoutEngine *instance();
+    bool processItems( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, VariableSet *vs, QList<Expression*> *el );
+    void attachToLayout( GraphVertex *start, GraphVertex *middle, GraphVertex *end, Variable *layoutVar, QList<Expression*> *el );
+    void cleanUp( GraphVertex *start, GraphVertex *middle, GraphVertex *end, QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, QList<Expression*> *el );
+    bool solveEquation( QList<Expression*> *el, VariableSet *vs, Solution *solution );
 private:
-    void calculateLine( int x );
-    bool checkLine( int x, int y );
-    void calculateRect( int ax, int ay, int cx, int cy );
+    GraphVertex *nextVertex( GraphVertex *currentVertex, GraphEdge *currentEdge, int *sign );
+    GraphEdge *nextEdge( GraphVertex *currentVertex, GraphEdge *currentEdge );
+    bool findSerialChains( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, QList<Expression*> *el );
+    bool findParallelChains( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, VariableSet *vs, QList<Expression*> *el );
+    bool findBranches( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices );
+    bool splitVertices( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, int level );
+    bool ready( QList<GraphVertex*> *vertices );
 
-public:
-
-    QList<Equation> mResult;
-    int mSize;
-
-    QHash< int, QHash< int, Expression > > mGrid;
+    int numOfUnknownVars( const Expression *eq, const Solution *solution );
 };
+
+struct GraphEdge {
+    GraphEdge( bool initExpr = true );
+    ~GraphEdge();
+    void *ref;
+    GraphVertex *startVertex, *endVertex;
+    Expression *expr;
+};
+
+struct GraphVertex {
+    QList<GraphEdge*> edges;
+    bool special;
+    Hb::Edge itemSide;
+    void *itemRef;
+};
+
 
 #endif // HBANCHORLAYOUTENGINE_P_H

@@ -45,6 +45,8 @@
 #define HB_DROPD0WN_ITEM_TYPE "HB_DROPDOWN"
 #endif
 
+#include <hbtapgesture.h>
+
 HbComboBoxPrivate::HbComboBoxPrivate( ):
     HbWidgetPrivate (  ),
     mLineEdit ( 0 ),
@@ -90,6 +92,7 @@ void HbComboBoxPrivate::createPrimitives( )
 {
     Q_Q( HbComboBox );
 
+
     mTextItem = q->style()->createPrimitive( HbStyle::P_ComboBox_text, q );
     HbStyle::setItemName( mTextItem, "combobox_labelfield" );
 
@@ -103,10 +106,12 @@ void HbComboBoxPrivate::createPrimitives( )
                                             HbStyle::P_ComboBoxButton_toucharea, q );
     static_cast<HbTouchArea*>(mButtonTouchAreaItem)->installEventFilter( q );
     q->setHandlesChildEvents(true);
+
+    static_cast<HbTouchArea*>(mButtonTouchAreaItem)->grabGesture( Qt::TapGesture );
 }
 
 void HbComboBoxPrivate::touchAreaPressEvent( )
-{
+{    
     Q_Q( HbComboBox );
     if (q->count() > 0) {
         HbWidgetFeedback::triggered(q, Hb::InstantPressed);
@@ -134,6 +139,7 @@ void HbComboBoxPrivate::touchAreaClicked( )
     Q_Q( HbComboBox );
     if ( mModel && mModel->rowCount( ) ) {
         addDropDownToScene();
+        mDropDown->setVisible( true );
         if( !mDropDown->mList ) {
             mDropDown->createList( );
             mDropDown->mList->setModel( mModel );            
@@ -156,8 +162,7 @@ void HbComboBoxPrivate::touchAreaClicked( )
         #ifdef HB_EFFECTS
                HbEffect::start(mDropDown, HB_DROPD0WN_ITEM_TYPE, "appear");
         #endif
-        positionDropDown( );
-        mDropDown->setVisible( true );
+        positionDropDown( );        
     }
 }
 
@@ -184,6 +189,7 @@ void HbComboBoxPrivate::showPopup( QAbstractItemModel* aModel, QModelIndex aInde
             mDropDown->createList();            
             q->connect( mDropDown->mList, SIGNAL( activated( QModelIndex ) ), q,
                         SLOT( _q_textChanged( QModelIndex ) ) );
+            
         }
         mDropDown->mList->setModel( aModel );
         if ( aIndex.isValid( ) ) {
@@ -544,6 +550,7 @@ void HbComboBoxPrivate::addDropDownToScene( )
         if( scene1 )
         {
             scene1->installEventFilter( mDropDown );
+            //scene1->grabGesture( Qt::TapGesture );
         }
         mIsDropwnToSceneAdded = true;
     }
@@ -575,7 +582,7 @@ void HbComboBoxPrivate::setCurrentIndex( const QModelIndex &mi )
 }
 
 void HbComboBoxPrivate::currentIndexChanged( const QModelIndex &index )
-{
+{    
     Q_Q( HbComboBox );
     emit q->currentIndexChanged( index.row( ) );    
     emit q->currentIndexChanged( q->itemText ( mCurrentIndex.row( ) ) );

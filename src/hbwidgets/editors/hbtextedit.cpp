@@ -25,6 +25,7 @@
 
 #include "hbtextedit.h"
 #include "hbtextedit_p.h"
+#include "hbsmileyengine_p.h"
 
 #include <QTextCursor>
 
@@ -185,47 +186,75 @@ void HbTextEdit::polish( HbStyleParameters& params )
 {
     Q_D(HbTextEdit);
 
-    const QString KTextRowLinesColorCSSName   = "line-color";
-    const QString KTextRowLinesWidthCSSName   = "line-width";
-    const QString KTextRowLinesEnabledCSSName = "line-enabled";
+    if (isVisible()) {
 
-    // ------ adding css parameters ------
-    params.addParameter(KTextRowLinesColorCSSName, Qt::magenta);
-    params.addParameter(KTextRowLinesWidthCSSName, 0.0);
-    params.addParameter(KTextRowLinesEnabledCSSName);
+//        const QString KTextRowLinesColorCSSName   = "line-color";
+        const QString KTextRowLinesWidthCSSName   = "line-width";
+        const QString KSmileyScaleCSSName         = "smiley-scale";
+        const QString KTextRowLinesStyleCSSName   = "line-style";
 
-    HbAbstractEdit::polish(params);
+        // ------ adding css parameters ------
+//        params.addParameter(KTextRowLinesColorCSSName, Qt::black);
+        params.addParameter(KTextRowLinesWidthCSSName, 0.0);
+        params.addParameter(KSmileyScaleCSSName);
+        params.addParameter(KTextRowLinesStyleCSSName);
 
-    // ------ interpreting css parameters ------
-    QVariant param = params.value( KTextRowLinesEnabledCSSName );
-    d->mShowTextBaseLine = param.toBool();
+        HbAbstractEdit::polish(params);
 
-    param = params.value(KTextRowLinesColorCSSName);
-    if(param.canConvert(QVariant::Color)) {
-        d->mTextBaseLinePen.setColor(param.value<QColor>());
+        // ------ interpreting css parameters ------
+//        QVariant param = params.value(KTextRowLinesColorCSSName);
+//        if(param.canConvert(QVariant::Color)) {
+//            d->mTextBaseLinePen.setColor(param.value<QColor>());
+//        }
+
+        QVariant param = params.value(KTextRowLinesWidthCSSName);
+        if(param.canConvert(QVariant::Double)) {
+            d->mTextBaseLinePen.setWidthF(qMax(param.toDouble(), 0.0));
+        }
+
+        param = params.value(KSmileyScaleCSSName);
+        if(param.canConvert(QVariant::Double)) {
+            d->smileyEngineInstance()->setSmileyScaleFactor(param.toDouble());
+        }
+
+        param = params.value(KTextRowLinesStyleCSSName);
+        if(param.canConvert(QVariant::String)) {
+            d->setBaseLineStyleFromString(param.toString());
+        }
+    } else {
+        HbAbstractEdit::polish(params);
     }
+}
 
-    param = params.value(KTextRowLinesWidthCSSName);
-    if(param.canConvert(QVariant::Double)) {
-        d->mTextBaseLinePen.setWidthF(qMax(param.toDouble(), 0.0));
+
+/*!
+    @proto
+
+    Sets if row lines to be visible or not.
+
+    \sa HbTextEdit::isLined() const
+ */
+void HbTextEdit::setLined(bool visible)
+{
+    Q_D(HbTextEdit);
+
+    if (d->mShowTextBaseLine!=visible) {
+        d->mShowTextBaseLine=visible;
+        d->mShowTextBaseLineApiProtectionFlag = true;
+        update();
     }
 }
 
 /*!
-    \reimp
- */
-void HbTextEdit::focusOutEvent(QFocusEvent * event)
-{
-    HbAbstractEdit::focusOutEvent(event);
-    setBackgroundItem(HbStyle::P_TextEdit_frame_normal);
-}
+    @proto
 
-/*!
-    \reimp
- */
-void HbTextEdit::focusInEvent(QFocusEvent * event)
-{
-    HbAbstractEdit::focusInEvent(event);
-    setBackgroundItem(HbStyle::P_TextEdit_frame_highlight);
-}
+    Returns true if row lines are visble.
 
+    \sa HbTextEdit::setLined(bool)
+ */
+bool HbTextEdit::isLined() const
+{
+    Q_D(const HbTextEdit);
+
+    return d->mShowTextBaseLine;
+}

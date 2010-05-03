@@ -2,3 +2,8 @@ HbLabel::text
 {
     color:var(qtc_default_main_pane_normal);
 }
+
+HbDialog::heading > HbLabel::text
+{
+    color:var(qtc_popup_heading_normal);
+}

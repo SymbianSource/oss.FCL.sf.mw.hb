@@ -33,7 +33,11 @@
 #include "hbdatagroup_p_p.h"
 #include <hbcombobox.h>
 #include "hbdataformheadingwidget_p.h"
+#include "hbdataformmodelitem_p.h"
 #include "hbtreemodeliterator_p.h"
+
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QCoreApplication>
@@ -345,7 +349,7 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
     Q_D(HbDataForm);
 
     if (isExpanded(index) != expanded) {
-        d->treeModelIterator()->itemStateChanged(index, HbDataFormViewItem::ExpansionKey);
+        d->treeModelIterator()->itemExpansionChanged(index);
 
         HbDataFormViewItem *item =
             static_cast<HbDataFormViewItem *>(d->mContainer->itemByIndex(index));
@@ -353,7 +357,10 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
             item->setExpanded(expanded);
         }
 
-        d->mContainer->setItemStateValue(index, HbDataFormViewItem::ExpansionKey, expanded);
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+       d->mContainer->setItemStateValue(index, HbDataFormViewItem::ExpansionKey, expanded);
+#endif
+        d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
         d->mContainer->setModelIndexes();
     }
 }
@@ -368,7 +375,7 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
 bool HbDataForm::isExpanded(const QModelIndex &index) const
 {
     Q_D(const HbDataForm);
-    QVariant flags = d->mContainer->itemState(index).value(HbDataFormViewItem::ExpansionKey);
+    QVariant flags = d->mContainer->itemTransientState(index).value("expanded");
     if (flags.isValid() && flags.toBool() == true) {
         return true;
     } else {
@@ -484,12 +491,13 @@ QString HbDataForm::description() const
 }
 
 /*!
+
+    \deprecated HbDataForm::primitive(HbStyle::Primitive)
+         is deprecated.
+
     \reimp
 
     Returns the style primitive of HbDataForm depending upon the type \a primitive.
-    If primitive passed is P_DataForm_background then NULL is returned.
-    User cannot customize background of data form.
-
     \sa primitive
 */
 QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
@@ -497,6 +505,8 @@ QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
     Q_D(const HbDataForm);
 
     switch (primitive) {
+        case HbStyle::P_DataForm_heading_background:
+            return d->mHeadingWidget->mBackgroundItem;
         case HbStyle::P_DataForm_heading:
             return d->mHeadingWidget->mHeadingItem;
         case HbStyle::P_DataForm_description:
@@ -508,7 +518,7 @@ QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
 
 /*!
     
-    \deprecated HbDataForm::dataFormViewItem(const QModelIndex &index) const
+    \deprecated HbDataForm::dataFormViewItem(const QModelIndex&) const
         is deprecated. Please use HbAbstractItemView::itemByIndex instead.
 
     Returns HbDataFormViewItem for the correspoding \a index passed. Returns
@@ -597,12 +607,23 @@ void HbDataForm::storeSettings()
 void HbDataForm::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
     Q_UNUSED(bottomRight);
-    if(topLeft.isValid()) {       
+    if(topLeft.isValid()) {
+
             HbDataFormViewItem* item = static_cast<HbDataFormViewItem*>(dataFormViewItem(topLeft));
+            HbDataFormModelItem *modelItem = 
+                        static_cast<HbDataFormModel *>(model())->itemFromIndex(topLeft);           
+            HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(modelItem);
+
             if(item){
-                item->load();
-                HbDataFormModelItem *modelItem = 
-                        static_cast<HbDataFormModel *>(model())->itemFromIndex(topLeft);
+                if( modelItem_priv->dirtyProperty() == "LabelRole"      ||
+                    modelItem_priv->dirtyProperty() == "DecorationRole" || 
+                    modelItem_priv->dirtyProperty() == "DescriptionRole" ) {
+
+                         HbDataFormViewItemPrivate::d_ptr(item)->updateData();
+                         return;
+                }
+
+                item->load();                
                 HbDataFormViewItemPrivate::d_ptr(item)->setEnabled( modelItem->isEnabled() );          
             }
     }
@@ -618,22 +639,6 @@ void HbDataForm::initStyleOption(HbStyleOptionDataForm *option)
     d->mHeadingWidget->initStyleOption(option);
 }
 
-/*!
-    \reimp
-*/
-void HbDataForm::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbDataForm);
-    HbDataFormViewItem *hitItem = qobject_cast<HbDataFormViewItem*>(d->itemAt(event->scenePos()));
-
-    if ( d->mHitItem
-        && d->mHitItem == hitItem 
-        && !d->mWasScrolling ) {
-            hitItem->setExpanded(!hitItem->isExpanded());
-            d->mInstantClickedModifiers |= Hb::ModifierExpandedItem;
-    }
-    HbAbstractItemView::mouseReleaseEvent( event );
-}
 
 /*!
     \reimp

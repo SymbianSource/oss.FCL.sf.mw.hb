@@ -33,12 +33,10 @@
 
 HbGridItemContainerPrivate::HbGridItemContainerPrivate()
                              : mLayout(0),
-                             mViewSize(QSizeF()),
                              mMinCount(0),
                              mRowCount(4),
                              mColumnCount(3),
                              mItemsPerRow(3),
-                             mCachedItemHeight(0.0),
                              mScrollDirection(Qt::Vertical),
                              mOldItemsPerRow(0)
 {
@@ -57,23 +55,68 @@ void HbGridItemContainerPrivate::init()
         q, SLOT(layoutAnimationFinished(QGraphicsLayoutItem *, HbGridLayout::AnimationType)));
 
     mItemRecycling = false;
+    mUniformItemSizes = true;
     q->setLayout(mLayout);
     mLayout->setRowCount(mRowCount);
     mLayout->setColumnCount(mColumnCount);
+}
+
+qreal HbGridItemContainerPrivate::getDiffWithoutScrollareaCompensation(const QPointF &delta) const
+{
+    // substract invisible space from delta - part of scrolling that can
+    // be done by scroll area
+    Q_Q(const HbGridItemContainer);
+    const QSizeF containerSize(q->size());
+    const QPointF containerPos(q->pos());
+    qreal diff = 0.0;
+    qreal invisibleArea = 0.0;
+    QSizeF viewSize = mItemView->size();
+    if (Qt::Vertical == mScrollDirection) {
+        if (delta.y() > 0) {
+            // space at the bottom
+            invisibleArea = containerSize.height() - viewSize.height() + containerPos.y();
+            if (invisibleArea < delta.y()) {
+                diff = delta.y() - invisibleArea;
+            }
+        } else {
+            // space at the top
+            invisibleArea = -containerPos.y();
+            if (containerPos.y() > delta.y()) {
+                diff = delta.y() + invisibleArea;
+            }
+        }
+    }
+    else {
+        if (delta.x() > 0) {
+            // space at the right
+            invisibleArea = containerSize.width() - viewSize.width() + containerPos.x();
+            if (invisibleArea < delta.x()) {
+                diff = delta.x() - invisibleArea;
+            }
+        } else {
+            // space at the left
+            invisibleArea = -containerPos.x();
+            if (containerPos.x() > delta.x()) {
+                diff = delta.x() + invisibleArea;
+            }
+        }
+    }
+
+    return diff;
 }
 
 qreal HbGridItemContainerPrivate::recycling(qreal diff)
 {
     qreal result(0.0);
     bool resetLayout(false);
-
+    qreal itemSize = getScrollDirectionItemSize();
     if (diff < 0.0) {
         while (result > diff) {
             HbAbstractViewItem *item = shiftUp(false);
             if (!item) {
                 break;
             }
-            result -= mCachedItemHeight;
+            result -= itemSize;
             resetLayout = true;
         }
     }
@@ -83,7 +126,7 @@ qreal HbGridItemContainerPrivate::recycling(qreal diff)
             if (!item) {
                 break;
             }
-            result += mCachedItemHeight;
+            result += itemSize;
             resetLayout = true;
         }
     }
@@ -92,6 +135,47 @@ qreal HbGridItemContainerPrivate::recycling(qreal diff)
     }
 
     return result;
+}
+
+qreal HbGridItemContainerPrivate::farRecycling(const QPointF &delta)
+{
+    const qreal jumpDiff = (Qt::Vertical == mScrollDirection)
+                           ? delta.y() : delta.x();
+    qreal itemSize = getScrollDirectionItemSize();
+    int rowDiff = (int)(jumpDiff / itemSize);
+    QPointF deltaAfterJump = (Qt::Vertical == mScrollDirection)
+                             ? QPointF(delta.x(), delta.y() - (qreal)rowDiff * itemSize)
+                                 : QPointF(delta.x() - (qreal)rowDiff * itemSize, delta.y());
+    // after setModelIndexes will be used it will still be some delta - deltaAfterJump
+    // bottom lines check if those delta can be consumed by scrollArea, if not then
+    // corrections to new index need to be done (otherwise it is possible that scrollArea
+    // will do the rest of scrolling but leave some empty space)
+    qreal diffAfterJump = getDiffWithoutScrollareaCompensation(deltaAfterJump);
+    if (diffAfterJump != 0.0) {
+        // this mean that rest of delta can not be handled by scroll area
+        // so jump one row more
+        if (rowDiff < 0.0) {
+            rowDiff--;
+        } else {
+            rowDiff++;
+        }
+    }
+    QModelIndex currentIndex = mItems.first()->modelIndex();
+    HbModelIterator *modelIterator = mItemView->modelIterator();
+    int jumpIndexPos = modelIterator->indexPosition(currentIndex)
+                       + rowDiff * mItemsPerRow;
+    QModelIndex jumpIndex = modelIterator->index(jumpIndexPos);
+    if (!jumpIndex.isValid()) {
+        // get first or last valid index depending on scroll directions
+        if (rowDiff < 0) { // first index
+            jumpIndex = modelIterator->nextIndex(jumpIndex);
+        } else { // last index
+            jumpIndex = modelIterator->previousIndex(jumpIndex);
+        }
+    }
+    scrollToPositionAtTop(jumpIndex);
+
+    return (qreal)rowDiff * itemSize;
 }
 
 /*!
@@ -103,8 +187,6 @@ qreal HbGridItemContainerPrivate::recycling(qreal diff)
 */
 HbAbstractViewItem *HbGridItemContainerPrivate::shiftDownItem(bool doEvenBadIndex, bool animate)
 {
-    if (mItems.count() <= 0) return 0;
-
     Q_Q(HbGridItemContainer);
 
     HbAbstractViewItem *item = 0;
@@ -193,8 +275,6 @@ HbAbstractViewItem *HbGridItemContainerPrivate::shiftDown(bool animate)
 */
 HbAbstractViewItem *HbGridItemContainerPrivate::shiftUpItem(bool animate)
 {
-    if (mItems.count() <= 0) return 0;
-
     Q_Q(HbGridItemContainer);
 
     HbAbstractViewItem *firstItem = mItems.first();
@@ -232,16 +312,15 @@ HbAbstractViewItem *HbGridItemContainerPrivate::shiftUp(bool animate)
 */
 void HbGridItemContainerPrivate::resetBuffer()
 {
-    if(!mViewSize.isValid() || !mItemView || !mItemView->model()) {
+    if(!mItemView || !mItemView->model()) {
         return;
     }
     mMinCount = 0;
     Q_ASSERT(mLayout);
-    mLayout->setSize(mViewSize, mMinCount);
+    QRectF viewRect = itemBoundingRect(mItemView);
+    mLayout->setSize(viewRect.size(), mMinCount);
     mLayout->invalidate();
     QSizeF itemSize = mLayout->effectiveSizeHint(Qt::MinimumSize);
-    mCachedItemHeight = (Qt::Vertical == mScrollDirection)
-        ? itemSize.height() : itemSize.width();
     mItemsPerRow = (Qt::Vertical == mScrollDirection)
         ? mLayout->columnCount() : mLayout->rowCount();
     mMinCount += mBufferSize * mItemsPerRow;
@@ -300,13 +379,14 @@ void HbGridItemContainerPrivate::removeItem(const QModelIndex &index, bool anima
         QRectF viewRect(itemBoundingRect(mItemView));
         QSizeF itemsCanvas(q->layout()->preferredSize());
         QPointF pos = q->pos();
+        qreal itemSize = getScrollDirectionItemSize();
         if (Qt::Vertical == mScrollDirection) {
-            pos.setY(q->pos().y() - mCachedItemHeight); 
+            pos.setY(q->pos().y() - itemSize); 
             if (pos.y() < viewRect.height() - itemsCanvas.height()) {
                 pos.setY(viewRect.height() - itemsCanvas.height()); 
             }
         } else {
-            pos.setX(q->pos().x() - mCachedItemHeight);
+            pos.setX(q->pos().x() - itemSize);
             if (pos.x() < viewRect.width() - itemsCanvas.width()) {
                 pos.setX(viewRect.width() - itemsCanvas.width()); 
             }
@@ -346,15 +426,17 @@ void HbGridItemContainerPrivate::scrollToPositionAtTop(const QModelIndex &index)
 void HbGridItemContainerPrivate::scrollToPositionAtBottom(const QModelIndex &index)
 {
     Q_Q(HbGridItemContainer);
-    q->setModelIndexes(mItemView->model()->index(
-        index.row() - mItems.count() + mItemsPerRow, 0));
+    HbModelIterator *modelIterator = mItemView->modelIterator();
+    q->setModelIndexes(modelIterator->index(
+            modelIterator->indexPosition(index) - mItems.count() + mItemsPerRow));
 }
 
 void HbGridItemContainerPrivate::scrollToPositionAtCenter(const QModelIndex &index)
 {
     Q_Q(HbGridItemContainer);
-    q->setModelIndexes(mItemView->model()->index(
-            index.row() - mItems.count()/2, 0));
+    HbModelIterator *modelIterator = mItemView->modelIterator();
+    q->setModelIndexes(modelIterator->index(
+            modelIterator->indexPosition(index)- mItems.count()/2));
 }
 
 QModelIndex HbGridItemContainerPrivate::lastValidItemIndex() const
@@ -362,7 +444,7 @@ QModelIndex HbGridItemContainerPrivate::lastValidItemIndex() const
     int lastIndex = mItems.count() - 1;
     // it always find some valid item - buffer should contain
     // some items
-    while (!mItems[lastIndex]->modelIndex().isValid()) {
+    while(!mItems[lastIndex]->modelIndex().isValid()) {
         --lastIndex;
         if (lastIndex < 0) {
             return QModelIndex();

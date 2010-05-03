@@ -31,6 +31,7 @@
 #include "hbdeviceprofile.h"
 #include "hbevent.h"
 #include "hbtoolbar_p.h"
+#include "hbglobal_p.h"
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
@@ -51,7 +52,7 @@
 #endif
 
 /*!
-    @stable
+    @beta
     @hbcore
     \class HbDialog
     \brief HbDialog is a base class for different popup notes in Hb library.
@@ -242,24 +243,30 @@ void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
 }
 
 /*!
-* It returns the primary action added to the control area
-* \sa setPrimaryAction()
+\deprecated HbDialog::primaryAction() const
+       is deprecated.
+ It returns the primary action added to the control area
+ \sa setPrimaryAction()
 */
 HbAction* HbDialog::primaryAction() const
 {
+    HB_DEPRECATED("HbAction* HbDialog::primaryAction() is deprecated. Use QGraphicsWidget action api instead");
     Q_D(const HbDialog);
     return d->primaryAction;
 }
 
 /*!
-* It adds the given action to the control area.
-* It is added to the left side of the control area if the layout direction of the application
-* is left-to-right and in the vice-versa if the layout direction of the application
-* is right-to-left.
-* \sa primaryAction()
+\deprecated HbDialog::setPrimaryAction(HbAction*)
+           is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
+ It adds the given action to the control area.
+ It is added to the left side of the control area if the layout direction of the application
+ is left-to-right and in the vice-versa if the layout direction of the application
+ is right-to-left.
+ \sa primaryAction()
 */
 void HbDialog::setPrimaryAction(HbAction *action)
 {
+    HB_DEPRECATED("HbDialog::setPrimaryAction(HbAction *action) is deprecated. Use QGraphicsWidget action api instead");
     Q_D(HbDialog);
     if (d->primaryAction && action != d->primaryAction) {
         removeAction(d->primaryAction);
@@ -273,24 +280,30 @@ void HbDialog::setPrimaryAction(HbAction *action)
 }
 
 /*!
-* It returns the secondary action added to the control area
-* \sa setSecondaryAction()
+\deprecated HbDialog::secondaryAction() const
+            is deprecated.
+ It returns the secondary action added to the control area
+ \sa setSecondaryAction()
 */
 HbAction* HbDialog::secondaryAction() const
 {
+    HB_DEPRECATED("HbAction* HbDialog::secondaryAction() is deprecated. Use QGraphicsWidget action api instead");
     Q_D(const HbDialog);
     return(d->secondaryAction);
 }
 
 /*!
-* It adds the given action to the control area.
-* It is added to the right side of the control area if the layout direction of the application
-* is left-to-right and in the vice-versa if the layout direction of the application
-* is right-to-left.
-* \sa secondaryAction()
+\deprecated HbDialog::setSecondaryAction(HbAction*)
+           is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
+ It adds the given action to the control area.
+ It is added to the right side of the control area if the layout direction of the application
+ is left-to-right and in the vice-versa if the layout direction of the application
+ is right-to-left.
+ \sa secondaryAction()
 */
 void HbDialog::setSecondaryAction(HbAction *action)
 {
+    HB_DEPRECATED("HbDialog::setSecondaryAction(HbAction *action) is deprecated. Use QGraphicsWidget action api instead");
     Q_D(HbDialog);
     if (d->secondaryAction && action != d->secondaryAction) {
         removeAction(d->secondaryAction);
@@ -300,14 +313,16 @@ void HbDialog::setSecondaryAction(HbAction *action)
 }
 
 /*!
-    \deprecated HbDialog::exec()
-        is deprecated. Please use HbDialog::open( QObject* receiver, const char* member ) instead.
-*
-* Executes the popup synchronously.
-* Note: when popup is executed syncronously it is always modal.
+\deprecated HbDialog::exec()
+           is deprecated.
+ Please use HbDialog::open( QObject* receiver, const char* member ) instead.
+
+ Executes the popup synchronously.
+ Note: when popup is executed syncronously it is always modal.
 */
 HbAction* HbDialog::exec()
 {
+    HB_DEPRECATED("HbDialog::exec is deprecated. Use HbDialog::show() or HbDialog::open() instead!");
     Q_D(HbDialog);
 
     HbAction *action = 0;
@@ -342,7 +357,7 @@ void HbDialog::open( QObject* receiver, const char* member )
         d->receiverToDisconnectOnClose = 0;
         d->memberToDisconnectOnClose.clear();
     }
-    HbPopup::open();
+    show();
 }
 
 /*!
@@ -373,6 +388,13 @@ void HbDialog::closeEvent ( QCloseEvent * event )
     } else {
         HbAction* nullAction(0);
         emit finished( nullAction );
+    }
+    if (d->receiverToDisconnectOnClose) {
+        if (disconnect(this, SIGNAL(finished(HbAction*)),
+                       d->receiverToDisconnectOnClose, d->memberToDisconnectOnClose)) {
+            d->receiverToDisconnectOnClose = 0;
+            d->memberToDisconnectOnClose.clear();
+        }
     }
 
     HbPopup::closeEvent(event);
@@ -455,6 +477,30 @@ bool HbDialog::event(QEvent *event)
         d->doLayout();
     }
     return HbPopup::event(event);
+}
+
+/*!
+    \reimp
+*/
+QSizeF HbDialog::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    QSizeF hint = HbPopup::sizeHint(which, constraint);
+
+    if (which == Qt::PreferredSize) {
+        Q_D(const HbDialog);
+        if (d->contentWidget) {
+            QSizePolicy policy = d->contentWidget->sizePolicy();
+            if (policy.horizontalPolicy() & QSizePolicy::ExpandFlag) {
+                hint.setWidth(QWIDGETSIZE_MAX);
+            }
+
+            if (policy.verticalPolicy() & QSizePolicy::ExpandFlag) {
+                hint.setHeight(QWIDGETSIZE_MAX);
+            }
+        }
+    }
+
+    return hint;
 }
 
 #include "moc_hbdialog.cpp"

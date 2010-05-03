@@ -29,10 +29,12 @@
 #include <hbglobal.h>
 #include <hbnamespace.h>
 #include <hbthemecommon_p.h>
+#include <hbiconengine_p.h>
 #include <QStringList>
 #include <QIcon> //krazy:exclude=qclasses
 #include <QFlags>
 
+class HbFrameDrawerPrivate;
 class HbIconLoaderPrivate;
 class HbIconAnimator;
 class HbIconImpl;
@@ -102,7 +104,7 @@ public:
         HbIconAnimator *animator = 0,
         const QColor &color = QColor());
 
-    void unLoadIcon(HbIconImpl * icon);
+    void unLoadIcon(HbIconImpl * icon, bool unloadedByServer = false);
     void unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls);
         
     HbIconImpl* loadMultiPieceIcon(const QStringList &listOfIcons,
@@ -136,6 +138,17 @@ public:
     QString findSharedResource(const QString &name,
                                Hb::ResourceType resType = Hb::IconResource);
 
+    void storeIconEngineInfo( HbIconEngine *iconEngine );
+    void removeIconEngineInfo( HbIconEngine *iconEngine );
+    
+    void storeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer );
+    void removeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer );
+
+    void freeGpuIconData();
+    void removeItemInCache( HbIconImpl *iconImpl );
+
+    void handleForegroundLost();
+
 signals:
     void defaultSizeAdjustmentChanged();
 
@@ -154,6 +167,7 @@ private:
                                     Qt::AspectRatioMode aspectRatioMode,
                                     QIcon::Mode mode,
                                     bool mirrored,
+                                    bool mirroredIconFound,
                                     HbIconLoader::IconLoaderOptions options,
                                     const QColor &color,
                                     HbIconLoader::IconDataType type,
@@ -165,6 +179,8 @@ private:
     void loadAnimatedIcon(HbIconLoadingParams &params, const QString &format);
     void loadPixmapIcon(HbIconLoadingParams &params, const QString &format);
 
+    QList< HbFrameDrawerPrivate *> frameDrawerInstanceList;    
+    QList< HbIconEngine *> iconEngineList;
     friend class HbApplication;
     friend class HbIconLoaderPrivate;
 

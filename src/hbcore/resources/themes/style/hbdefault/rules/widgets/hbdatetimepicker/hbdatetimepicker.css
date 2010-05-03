@@ -8,10 +8,10 @@ HbDateTimePicker
 	layout:datetimepicker-layout;
 }
 
-HbDateTimePicker::separator{
-    pref-width: 0.5un;
-}
-
 HbDateTimePicker::frame{
     border-width: var(hb-param-background-tumbler);
+}
+
+HbDateTimePicker::highlight{
+    fixed-height: expr(var(hb-param-text-height-secondary)+2*var(hb-param-margin-gene-middle-vertical));
 }

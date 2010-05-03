@@ -26,29 +26,43 @@
 #include "hbstyleoptionmessagebox.h"
 
 /*!
+	\this class is deprecated.
     \class HbStyleOptionMessageBox
     \brief HbStyleOptionMessageBox has the style component for note primitives
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionMessageBox::HbStyleOptionMessageBox()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionMessageBox::HbStyleOptionMessageBox() :
     HbStyleOptionPopup(),
-    text(),
+    text(),    
     icon(),
-    textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
+    textAlignment(Qt::AlignLeft|Qt::AlignVCenter),    
     iconAlignment(Qt::AlignCenter),
-    textWrapping(false)
+    textWrapping(false)    
 {
     type = Type;
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionMessageBox::HbStyleOptionMessageBox(const HbStyleOptionMessageBox&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionMessageBox::HbStyleOptionMessageBox(const HbStyleOptionMessageBox &other) :
     HbStyleOptionPopup(other),
-    text(other.text),
+    text(other.text),   
     icon(other.icon),
-    textAlignment(other.textAlignment),
+    textAlignment(other.textAlignment),    
     iconAlignment(other.iconAlignment),
-    textWrapping(other.textWrapping)
+    textWrapping(other.textWrapping)    
 {
     type = Type;
     version = Version;

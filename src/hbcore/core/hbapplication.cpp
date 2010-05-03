@@ -25,8 +25,10 @@
 
 #include "hbapplication.h"
 #include "hbapplication_p.h"
-#include "hbsplashscreen_p.h"
+#include "hbsplashscreen.h"
 #include "hbactivitymanager.h"
+#include "hbactivitycommandlineparser_p.h"
+#include "hbiconloader_p.h"
 #include <QTime>
 #include <QUrl>
 
@@ -35,12 +37,8 @@
 #include <qsymbianevent.h>
 #endif // Q_OS_SYMBIAN
 
-// ### TODO remove this and do it in mainwindow_p once QGestureManager problems are fixed
 #ifdef HB_GESTURE_FW
-#include "hbmousepangesturerecognizer_p.h"
-#include "hbswipegesturerecognizer_p.h"
-#include "hbtapgesturerecognizer_p.h"
-#include "hbtapandholdgesturerecognizer_p.h"
+#include "hbgesturerecognizers_p.h"
 #endif
 
 /*!
@@ -68,7 +66,9 @@
     Unless the Hb::NoSplash flag is passed, the HbApplication constructor will
     try to show a suitable splash screen for the application. On some platforms
     there will be no splash screens available at all and thus nothing will be
-    shown.
+    shown. (note that even when an application uses QApplication instead of
+    HbApplication, the splash screen can still be started/stopped manually via
+    the HbSplashScreen class)
 
     Applications that support the 'activities' concept may check the start-up
     reason like this:
@@ -126,11 +126,11 @@ static void initSplash(Hb::ApplicationFlags flags)
     // Show the splash screen (start() also makes sure it is really drawn before
     // continuing with anything else).
 
-    HbSplash::Flags splashFlags = HbSplash::Default;
+    HbSplashScreen::Flags splashFlags = HbSplashScreen::Default;
     if (flags & Hb::SplashFixedVertical) {
-        splashFlags |= HbSplash::FixedVertical;
+        splashFlags |= HbSplashScreen::FixedVertical;
     } else if (flags & Hb::SplashFixedHorizontal) {
-        splashFlags |= HbSplash::FixedHorizontal;
+        splashFlags |= HbSplashScreen::FixedHorizontal;
     }
 
 #ifdef Q_OS_SYMBIAN
@@ -147,8 +147,6 @@ static void initSplash(Hb::ApplicationFlags flags)
 
 static void initialize()
 {
-// ### TODO remove this and enable HbMainWindowPrivate::initGestures once
-// the QGestureManager problems are fixed.
 #ifdef HB_GESTURE_FW
     QGestureRecognizer::unregisterRecognizer(Qt::TapGesture);
     QGestureRecognizer::unregisterRecognizer(Qt::TapAndHoldGesture);
@@ -157,7 +155,7 @@ static void initialize()
 
     QGestureRecognizer::registerRecognizer(new HbTapGestureRecognizer);
     QGestureRecognizer::registerRecognizer(new HbTapAndHoldGestureRecognizer);
-    QGestureRecognizer::registerRecognizer(new HbMousePanGestureRecognizer);
+    QGestureRecognizer::registerRecognizer(new HbPanGestureRecognizer);
     QGestureRecognizer::registerRecognizer(new HbSwipeGestureRecognizer);
 #endif
 }
@@ -227,7 +225,6 @@ void HbApplication::hideSplash()
 #include <hbtoucharea_p.h>
 #include "hbgraphicsscene_p.h"
 
-#ifdef BUILD_HB_INTERNAL
 static void forceRefresh()
 {
     foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
@@ -235,7 +232,6 @@ static void forceRefresh()
         QApplication::sendEvent(window, &event);
     }
 }
-#endif
 
 /*!
     Handles the S60 events.
@@ -267,49 +263,45 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
 
         }
             return false; //continue handling in QApplication::s60ProcessEvent
-		case KChangeDirection:{
-			TUint8* dataptr = aEvent->EventData();
-			switch(*dataptr){
-				case 0:
-					HbApplication::setLayoutDirection(Qt::LeftToRight);
-					break;
-				case 1:
-					HbApplication::setLayoutDirection(Qt::RightToLeft);
-					break;
-				default:
-					qWarning("HbApplication::s60EventFilter: Unknown layout direction received");
-					break;
-				}
-			}
-			return false;
-		case KChangeOrientation:{
-			TUint8* dataptr = aEvent->EventData();
-			switch(*dataptr){
-				case 0:
-					hbInstance->setOrientation(Qt::Vertical);
-					break;
-				case 1:
-					hbInstance->setOrientation(Qt::Horizontal);
-					break;
-				default:
-					qWarning("HbApplication::s60EventFilter: Unknown orientation received");
-					break;
-				}
-			}
-			return false;
-		case KChangeDeviceProfile:{
-			TUint8* dataptr = aEvent->EventData();
-			QStringList names = HbDeviceProfile::profileNames();
-			if(*dataptr > names.count() - 1){
-				qWarning("HbApplication::s60EventFilter: Unknown device profile received");
-			}else{
-				HbDeviceProfile profile(names.value(*dataptr));
-				HbDeviceProfileManager::select(profile);
-				HbInstancePrivate::d_ptr()->setOrientation(profile.orientation(),false);
-			}
-			}
-			return false;
-#ifdef BUILD_HB_INTERNAL
+        case KChangeDirection:{
+            TUint8* dataptr = aEvent->EventData();
+            switch(*dataptr){
+                case 0:
+                    HbApplication::setLayoutDirection(Qt::LeftToRight);
+                    break;
+                case 1:
+                    HbApplication::setLayoutDirection(Qt::RightToLeft);
+                    break;
+                default:
+                    qWarning("HbApplication::s60EventFilter: Unknown layout direction received");
+                    break;
+                }
+            }
+            return false;
+        case KChangeDeviceProfile:{
+            TUint8* dataptr = aEvent->EventData();
+            QStringList names = HbDeviceProfile::profileNames();
+            if(*dataptr > names.count() - 1){
+                qWarning("HbApplication::s60EventFilter: Unknown device profile received");
+            }else{
+                HbDeviceProfile profile(names.value(*dataptr));
+                HbDeviceProfileManager::select(profile);
+                QList<HbMainWindow*> windows = hbInstance->allMainWindows();
+                HbMainWindow *w = windows.at(0);
+                w->setOrientation(profile.orientation());
+            }
+            }
+            return false;
+        case EEventWindowVisibilityChanged:{
+                // Get the Visiblity notification from the window server.
+                const TWsVisibilityChangedEvent *visChangedEvent = aEvent->VisibilityChanged();
+                if ( visChangedEvent->iFlags & TWsVisibilityChangedEvent::ENotVisible ) {
+                    // App is not visible
+                    HbIconLoader *loader = HbIconLoader::global();
+                    loader->handleForegroundLost();
+                }
+            }
+            return QApplication::symbianEventFilter(event);
         case KChangeTouchAreaVis:{
                 TUint8* dataptr = aEvent->EventData();
                 HbTouchAreaPrivate::setOutlineDrawing(*dataptr == 1);
@@ -334,7 +326,6 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
                 forceRefresh();
             }
             return false;
-#endif
         default:
             return QApplication::symbianEventFilter(event);
         }
@@ -345,26 +336,7 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
 HbApplicationPrivate::HbApplicationPrivate(HbApplication *parent)
     : QObject(parent), q_ptr(parent), mActivateReason(Hb::ActivationReasonNormal)
 {
-    QStringList commandLineArguments = qApp->arguments();
-    int activityMarkerIndex = commandLineArguments.indexOf("-activity");
-    if (activityMarkerIndex != -1 && commandLineArguments.count() - 1 > activityMarkerIndex) {
-        QUrl activityUri(commandLineArguments.at(activityMarkerIndex+1));        
-        if (activityUri.scheme() == "appto") {
-            typedef QPair<QString, QString> ParamType;
-            QList<ParamType> parameters = activityUri.queryItems();            
-            foreach (const ParamType &param, parameters) {
-                mActivateParams.insert(param.first, param.second);
-            }
-            if (mActivateParams.contains("activityname") && !mActivateParams.value("activityname").toString().isEmpty()) {
-                // all necessary data is present
-                mActivateReason = Hb::ActivationReasonActivity;
-                mActivateId = mActivateParams.value("activityname").toString();
-            } else {
-                mActivateParams.clear();
-            }
-        }
-    }
-    
+    HbActivityCommandLineParser::parseUri(qApp->arguments(), mActivateReason, mActivateId, mActivateParams);
     mActivityManager = new HbActivityManager(this);
     connect(mActivityManager, SIGNAL(activityRequested(QString)), this, SLOT(prepareActivityData(QString)));
 }

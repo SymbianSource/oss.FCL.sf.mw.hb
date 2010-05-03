@@ -49,7 +49,6 @@ private:
     void handleAnimationFinish();
 
 public:
-    HbEffectGroup *mGroup;
     HbEffectScale *mEffect;
 
     qreal mCenter;

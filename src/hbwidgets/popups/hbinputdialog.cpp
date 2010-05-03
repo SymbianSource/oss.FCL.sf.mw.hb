@@ -26,6 +26,7 @@
 
 #include <hbinputdialog.h>
 #include "hbinputdialog_p.h"
+#include "hbglobal_p.h"
 #include <hblineedit.h>
 #include <hbaction.h>
 #include "hbinputdialogcontent_p.h"
@@ -42,11 +43,26 @@
 /*!
     @beta
     @hbwidgets
-    \class HbInputDialog
-    \brief Class used to get information from the user.
 
-    input value can be a text, int, double or ip address. 
+    \class HbInputDialog
+    \brief A class used to get information from the user.
+
+    the input value can be a text, int, double or ip address.
+
+    example code example:
+    \code
+    HbInputDialog *object = new HbInputDialog(parent);
+    object->show();
+    \endcode
+    
+    Four static convenience API's are provided: getText(), getInteger(), getDouble(), and getIp()
     static API's can be used to quickly get an input from user.
+ */
+
+
+/*!
+    Constructor of HbInputDialog
+    \param parent. Parent widget
 */
 HbInputDialog::HbInputDialog(QGraphicsItem* parent) :
                                 HbDialog(*new HbInputDialogPrivate, parent)
@@ -55,6 +71,9 @@ HbInputDialog::HbInputDialog(QGraphicsItem* parent) :
     d->init();
 }
 
+/*!
+    \internal
+*/
 HbInputDialog::HbInputDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
     HbDialog(dd, parent)
 {
@@ -63,6 +82,9 @@ HbInputDialog::HbInputDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
     d->init();
 }
 
+/*!
+    Destructs the HbInputDialog.
+ */
 HbInputDialog::~HbInputDialog()
 {
 }
@@ -71,8 +93,13 @@ HbInputDialog::~HbInputDialog()
 /*!
     @beta
     Sets the input mode of the primary(Top/default)line edit in the query widget.
-    this can be TextMode, IntMode, RealMode. each mode will affect how the line
-    edit filters its input.
+    
+    \param mode. InputMode can be TextMode, IntMode, RealMode and Ip address mode.
+    each mode will affect how the line edit filters its input.
+    
+    \param row. value 0 or 1
+    
+    \sa inputMode() 
 */	
 void HbInputDialog::setInputMode(InputMode mode ,int row)
 {
@@ -84,6 +111,10 @@ void HbInputDialog::setInputMode(InputMode mode ,int row)
 /*!
     @beta
     Returns input mode for top/default line edit.
+    The default InputMode is TextInput
+    \param row. value 0 or 1
+
+    \sa setInputMode()
 */
 HbInputDialog::InputMode HbInputDialog::inputMode(int row) const
 {
@@ -103,6 +134,11 @@ HbInputDialog::InputMode HbInputDialog::inputMode(int row) const
 /*!
     @beta
     Sets the prompt \a text for top/default line edit.
+
+    \param text. user defined text
+    \param row. value 0 or 1
+
+    \sa promtText()
 */
 void HbInputDialog::setPromptText(const QString &text, int row)
 {
@@ -114,6 +150,10 @@ void HbInputDialog::setPromptText(const QString &text, int row)
 /*!
     @beta
     Returns prompt text for top/default line edit.
+    the default is null string.
+    \param row. value 0 or 1
+
+    \sa setPromptText()
 */
 QString HbInputDialog::promptText(int row) const
 {
@@ -124,6 +164,11 @@ QString HbInputDialog::promptText(int row) const
 /*!
     @beta
     Sets the top/default line edit value in \a text format.
+
+    \param value. user defined value
+    \param row. value 0 or 1
+
+    \sa value()
 */
 void HbInputDialog::setValue(const QVariant &value,int row)
 {
@@ -134,6 +179,10 @@ void HbInputDialog::setValue(const QVariant &value,int row)
 /*!
     @beta
     Returns top/default line edit value as QVariant object.
+
+    \param row. value 0 or 1
+
+    \sa setValue()
 */
 QVariant HbInputDialog::value(int row) const
 {
@@ -144,6 +193,10 @@ QVariant HbInputDialog::value(int row) const
 /*!
     @beta
     Sets the visibility of bottom line edit and prompt text.
+
+    \param visible true or false.
+
+    \sa isAdditionalRowVisible()
 */
 void HbInputDialog::setAdditionalRowVisible(bool visible)
 {
@@ -153,7 +206,9 @@ void HbInputDialog::setAdditionalRowVisible(bool visible)
 
 /*!
     @beta
-    Returns the visibility of secondary(bottom line edit and prompt text).
+    Returns the visibility of secondary row(bottom line edit and prompt text).
+    the default is false
+    \sa setAdditionalRowVisible()
 */
 bool HbInputDialog::isAdditionalRowVisible()
 {
@@ -166,8 +221,9 @@ bool HbInputDialog::isAdditionalRowVisible()
     @beta
     Validator is used to validate the content and cursor movements.
 
-    \note Validator uses undo stack to back out invalid changes. Therefore undo
+    \param validator. Validator uses undo stack to back out invalid changes. Therefore undo
     is enabled when validator is set.
+
     \sa HbAbstractEdit::setValidator
 */
 void HbInputDialog::setValidator(HbValidator *validator,int row)
@@ -183,7 +239,11 @@ void HbInputDialog::setValidator(HbValidator *validator,int row)
 
 /*!
     @beta
-  returns the validator of the inputDialog's line edit.
+    returns the validator of the inputDialog's line edit.
+
+    \param row. A value 0 or 1
+
+    \sa setValidator()
 */
 HbValidator * HbInputDialog::validator(int row) const
 {
@@ -199,7 +259,9 @@ HbValidator * HbInputDialog::validator(int row) const
 
 /*!
     @beta
-  returns the lineEdit pointer. will return NULL if row is greater than 2.
+    returns the lineEdit pointer. will return NULL if row is greater than 2.
+
+    \param row. A value 0 or 1
 */
 HbLineEdit* HbInputDialog::lineEdit(int row) const
 {
@@ -214,9 +276,12 @@ HbLineEdit* HbInputDialog::lineEdit(int row) const
 
 /*!
     @beta
-  sets the echo mode for the given row.
+    sets the echo mode for the given row.
 
-  \sa HbLineEdit::setEchoMode
+    \param echoMode
+    \param row. A value 0 or 1
+
+    \sa HbLineEdit::setEchoMode
 */
 void HbInputDialog::setEchoMode(HbLineEdit::EchoMode echoMode,int row)
 {
@@ -233,10 +298,13 @@ void HbInputDialog::setEchoMode(HbLineEdit::EchoMode echoMode,int row)
 
 
 /*!
-    @beta
+
+    \deprecated HbInputDialog::primitive(HbStyle::Primitive)
+        is deprecated.
+    
     Provides access to primitives of HbInputDialog. 
     \param primitive is the type of the requested primitive. The available 
-    primitives are P_InputDialog_text, and P_InputDialog_additional_text.
+    primitives are P_InputDialog_text, and P_InputDialog_additionaltext.
 
 */
 QGraphicsItem* HbInputDialog::primitive(HbStyle::Primitive primitive) const
@@ -245,7 +313,7 @@ QGraphicsItem* HbInputDialog::primitive(HbStyle::Primitive primitive) const
     switch (primitive) {
     case HbStyle::P_InputDialog_text:
         return d->mContentWidget->mLabel1;
-    case HbStyle::P_InputDialog_additional_text:
+    case HbStyle::P_InputDialog_additionaltext:
         return d->mContentWidget->mLabel2;
     default:
         return 0;
@@ -269,7 +337,6 @@ void HbInputDialog::initStyleOption(HbStyleOptionInputDialog *option) const
 /*!
     @beta
     updatePrimitives.
-
 */
 void HbInputDialog::updatePrimitives()
 {
@@ -282,14 +349,18 @@ void HbInputDialog::updatePrimitives()
     }
 
     if (d->mContentWidget->mLabel2 && d->mContentWidget->mAdditionalRowVisible) {
-        style()->updatePrimitive(d->mContentWidget->mLabel2, HbStyle::P_InputDialog_additional_text, &option);
+        style()->updatePrimitive(d->mContentWidget->mLabel2, HbStyle::P_InputDialog_additionaltext, &option);
     }
 }
 
 
 /*!
     @beta
-  returns the echoMode of line edit. returns -1 if row is more than 2.
+    returns the echoMode of line edit. returns -1 if row is more than 2.
+
+    \param row. A value 0 or 1
+
+    \sa setEchoMode()
   */
 HbLineEdit::EchoMode HbInputDialog::echoMode(int row) const
 {
@@ -336,7 +407,9 @@ void HbInputDialog::getText(const QString &label,
 }
 
 /*!
-    @deprecated HbInputDialog::getText(const QString&,const QString&,bool*,QGraphicsScene*,QGraphicsItem*)
+    \deprecated HbInputDialog::getText(const QString&,const QString&,bool*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated. Please use the other available getText API.
+
     Static convenience function to get a string from the user. \a
     label is the text which is shown to the user (it should
     say what should be entered). \a text is the default text which is
@@ -353,6 +426,7 @@ void HbInputDialog::getText(const QString &label,
 QString HbInputDialog::getText(const QString &label,const QString &text,
                                 bool *ok, QGraphicsScene *scene, QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbInputDialog::getText is deprecated. Please use HbInputDialog::getText((const QString&, QObject*, const char*, const QString&, QGraphicsScene*, QGraphicsItem*) instead.");
     Q_UNUSED(parent);//this is a bug in popup framework, cannot set parent will affect fading
 
     HbInputDialog *dlg = new HbInputDialog();
@@ -411,7 +485,9 @@ void HbInputDialog::getInteger(const QString &label,
     dlg->open(receiver,member);
 }
 /*!
-    @deprecated HbInputDialog::getInteger(const QString&,int,bool*,QGraphicsScene*,QGraphicsItem*)
+     \deprecated HbInputDialog::getInteger(const QString&,int,bool*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated. Please use the other available HbInputDialog::getInteger API.
+
     Static convenience function to get an integer input from the
     user.\a label is the text which is shown to the user
     (it should say what should be entered). \a value is the default
@@ -427,6 +503,8 @@ void HbInputDialog::getInteger(const QString &label,
 int HbInputDialog::getInteger(const QString &label, int value,
                             bool *ok,QGraphicsScene *scene,QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbInputDialog::getInteger is deprecated. Please use HbInputDialog::getInteger(const QString&, QObject*, const char*,int,QGraphicsScene*,QGraphicsItem *) instead.");
+
     Q_UNUSED(parent)
 
     HbInputDialog *dlg = new HbInputDialog();
@@ -457,7 +535,6 @@ int HbInputDialog::getInteger(const QString &label, int value,
 
 
 /*!
-    @beta
     Static convenience function to get a floating point number from
     the user.\a label is the text which is shown to the user
     (it should say what should be entered). \a value is the default
@@ -490,7 +567,9 @@ void HbInputDialog::getDouble(const QString &label,
 
 
 /*!
-    @deprecated HbInputDialog::getDouble(const QString &,double,bool*,QGraphicsScene*,QGraphicsItem*)
+    \deprecated HbInputDialog::getDouble(const QString &,double,bool*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated. Please use the other available HbInputDialog::getDouble(...) API.
+
     Static convenience function to get a floating point number from
     the user.\a label is the text which is shown to the user
     (it should say what should be entered). \a value is the default
@@ -508,6 +587,8 @@ void HbInputDialog::getDouble(const QString &label,
 double HbInputDialog::getDouble(const QString &label, double value, 
                                 bool *ok, QGraphicsScene *scene, QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbInputDialog::getDouble is deprecated.Please use HbInputDialog::getDouble(const QString&, QObject*,const char*,double, QGraphicsItem*) instead.");
+
     Q_UNUSED(parent)
 
     HbInputDialog *dlg = new HbInputDialog();
@@ -570,7 +651,9 @@ void HbInputDialog::getIp(const QString &label,
 
 
 /*!
-    @deprecated HbInputDialog::getIp(const QString &,const QString&, bool *,QGraphicsScene*,QGraphicsItem*)
+    \deprecated HbInputDialog::getIp(const QString &,const QString&, bool *,QGraphicsScene*,QGraphicsItem*)
+        is deprecated. Please use the other available HbInputDialog::getIp API.
+
     Static convenience function to get a ip address from
     the user.\a label is the text which is shown to the user
     (it should say what should be entered). \a address is the default
@@ -588,6 +671,8 @@ void HbInputDialog::getIp(const QString &label,
 QString HbInputDialog::getIp(const QString &label, const QString &ipaddress, bool *ok, QGraphicsScene *scene, 
                                     QGraphicsItem *parent)
 {
+    HB_DEPRECATED("HbInputDialog::getIp is deprecated. Please use HbInputDialog::getIp(const QString &,QObject *,const char *,const QString &, QGraphicsScene *, QGraphicsItem *)");
+
     Q_UNUSED(parent)
 
     HbInputDialog *dlg = new HbInputDialog();

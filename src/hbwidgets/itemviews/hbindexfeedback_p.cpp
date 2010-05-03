@@ -164,7 +164,7 @@ void HbIndexFeedbackPrivate::showIndexFeedback()
                 updatePrimitives();
             }
 
-            if (mTextItem->opacity() == 0.0) {
+            if (mTextItem && mTextItem->opacity() == 0.0) {
                 HbEffect::start(mPopupItemList, HB_INDEXFEEDBACK_TYPE, EFFECT_IFAPPEAR);
             }
             if (mTextItem) {

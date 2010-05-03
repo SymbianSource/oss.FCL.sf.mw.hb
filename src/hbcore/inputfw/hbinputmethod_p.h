@@ -46,8 +46,7 @@ public:
         mFocusObject(0),
         mInputState(HbInputModeNone, HbTextCaseNone, HbKeyboardNone),        
         mFocusLocked(false),
-        mStateChangeInProgress(false),
-        mTrustLocalState(false),
+        mStateChangeInProgress(false),       
         mIsOrientationContextSwitchInProgress(false)
     {}
     ~HbInputMethodPrivate();
@@ -80,6 +79,11 @@ public:
     HbTextCase initialTextCase(HbInputModeType inputMode) const; 
     HbInputModeType initialInputMode(const HbInputLanguage &language) const;
     HbInputModeType defaultInputMode(const HbInputLanguage &inputLanguage) const;  
+    void setUpFocusedObjectAsDigitsOnlyEditor();
+    void setUpFocusedObjectAsFormattedNumberEditor();
+    void setUpFocusedObjectAsPhoneNumberEditor();
+    void setUpFocusedObjectAsEmailEditor();
+    void setUpFocusedObjectAsUrlEditor();
 
 public:
     HbInputMethod *q_ptr;
@@ -87,10 +91,7 @@ public:
     HbInputFocusObject* mFocusObject;
     HbInputState mInputState;   
     bool mFocusLocked;
-    bool mStateChangeInProgress;
-    bool mTrustLocalState;
-    bool mIsModifyEvent;
-    bool mHandleEvent;
+    bool mStateChangeInProgress;  
     bool mIsOrientationContextSwitchInProgress;
     QList<HbInputModeProperties> mInputModes;
 };

@@ -44,8 +44,11 @@ public:
     bool waitActivity();
     
 private:
-    HbActivityPluginInterface *mActivityPlugin;
+    HbActivityPluginInterface *activityPlugin() const;
     
+private:
+    HbActivityManager *q;
+    mutable HbActivityPluginInterface *mActivityPlugin;
 };
 
 #endif // HBACTIVITYMANAGER_P_H

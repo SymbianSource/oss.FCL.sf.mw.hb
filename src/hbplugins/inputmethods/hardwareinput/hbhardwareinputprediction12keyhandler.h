@@ -37,7 +37,6 @@ public:
 
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
-    void listInputModes(QVector<HbInputModeProperties>& aResults) const;
 	bool isActive() const;
     
 private:

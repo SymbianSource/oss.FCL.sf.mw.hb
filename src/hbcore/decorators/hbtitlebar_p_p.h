@@ -40,6 +40,7 @@ class HbTitleBarPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbTitleBar)
 
+    void delayedConstruction();
     void init();
     void initSceneEventFilters(HbView *view);
     void initTitleBarHandle(HbView *view);

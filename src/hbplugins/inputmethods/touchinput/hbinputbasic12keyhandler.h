@@ -36,12 +36,14 @@ public:
     ~HbInputBasic12KeyHandler();
 
     bool isComposing() const;
-    void listInputModes(QVector<HbInputModeProperties>& modes) const;
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
 
 public slots:
     void cursorPositionChanged(int oldPos, int newPos);
+
+protected:
+	HbInputBasic12KeyHandler(HbInputBasic12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputBasic12KeyHandler)

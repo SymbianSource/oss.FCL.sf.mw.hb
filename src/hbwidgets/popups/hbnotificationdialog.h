@@ -30,6 +30,7 @@
 
 class HbNotificationDialogPrivate;
 class HbIcon;
+class QGestureEvent;
 
 class HB_WIDGETS_EXPORT HbNotificationDialog : public HbDialog
 {
@@ -93,8 +94,7 @@ signals:
 
 protected:
     HbNotificationDialog( HbNotificationDialogPrivate &dd, QGraphicsItem *parent);
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void gestureEvent(QGestureEvent *event);
     void hideEvent(QHideEvent *event);
     void showEvent(QShowEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);

@@ -39,18 +39,18 @@ PUBLIC_HEADERS += $$PWD/hbdevicedialogsymbian.h
 PUBLIC_HEADERS += $$PWD/hbsymbianvariant.h
 PUBLIC_HEADERS += $$PWD/hbindicatorsymbian.h
 PUBLIC_HEADERS += $$PWD/hbtextresolversymbian.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogerrors_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogerrors_p.h
 
 SOURCES += $$PWD/hbdevicedialog.cpp
 SOURCES += $$PWD/hbindicator.cpp
 SOURCES += $$PWD/hbdevicedialogplugin.cpp
 
 symbian {
-INTERNAL_HEADERS += $$PWD/hbdevicedialogsym_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogclientsession_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorsym_p.h
-INTERNAL_HEADERS += $$PWD/hbsymbianvariantconverter_p.h
-INTERNAL_HEADERS += $$PWD/hbdeleteguardsymbian_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogsym_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogclientsession_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorsym_p.h
+PRIVATE_HEADERS += $$PWD/hbsymbianvariantconverter_p.h
+PRIVATE_HEADERS += $$PWD/hbdeleteguardsymbian_p.h
 
 SOURCES += $$PWD/hbsymbianvariant.cpp
 SOURCES += $$PWD/hbsymbiandevicedialog.cpp #deprecated
@@ -65,9 +65,9 @@ SOURCES += $$PWD/hbtextresolversymbian.cpp
 SOURCES += $$PWD/hbdeleteguardsymbian.cpp
 }
 
-win32|linux-*|macx-* {
-INTERNAL_HEADERS += $$PWD/hbdevicedialogwin32_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorwin32_p.h
+!symbian {
+PRIVATE_HEADERS += $$PWD/hbdevicedialogwin32_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorwin32_p.h
 SOURCES += $$PWD/hbdevicedialogwin32_p.cpp
 SOURCES += $$PWD/hbindicatorwin32_p.cpp
 }

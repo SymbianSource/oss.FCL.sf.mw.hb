@@ -30,12 +30,26 @@
     \brief HbStyleOptionSoftKey has the style component for softkey
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionSoftKey::HbStyleOptionSoftKey()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionSoftKey::HbStyleOptionSoftKey(): HbStyleOptionDecorator()
 {
     type = Type;
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionSoftKey::HbStyleOptionSoftKey(const HbStyleOptionSoftKey&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionSoftKey::HbStyleOptionSoftKey(const HbStyleOptionSoftKey &other) :
     HbStyleOptionDecorator(other)
 {

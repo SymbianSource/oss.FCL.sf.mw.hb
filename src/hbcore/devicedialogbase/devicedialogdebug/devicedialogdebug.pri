@@ -28,7 +28,7 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbdevicedialogtrace_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogmessagehandler_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogtrace_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogmessagehandler_p.h
 
 SOURCES += $$PWD/hbdevicedialogmessagehandler.cpp

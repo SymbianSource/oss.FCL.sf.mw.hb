@@ -30,7 +30,9 @@ TEMPLATE = subdirs
 SUBDIRS += hbdevicedialogappserver hbthemeserver themechanger hbsplashgenerator themeindexer
 
 symbian {
-    SUBDIRS += hbiconpreloader
+    SUBDIRS += hbiconpreloader 
+    SUBDIRS += hbthemeserveroogmplugin
 }
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)
+

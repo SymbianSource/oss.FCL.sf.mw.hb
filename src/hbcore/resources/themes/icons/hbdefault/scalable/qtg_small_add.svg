@@ -1,15 +1,16 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<polygon points="11.471,25.59 11.471,18.53 4.412,18.53 4.412,11.471   11.471,11.471 11.471,4.412 18.53,4.412 18.53,11.471 25.59,11.471 25.59,18.53 18.53,18.53 18.53,25.59 " style="opacity:0.6;enable-background:new    ;"/>
-<polygon points="24.707,12.354 17.648,12.354 17.648,5.294 12.354,5.294 12.354,12.354 5.294,12.354   5.294,17.648 12.354,17.648 12.354,24.707 17.648,24.707 17.648,17.648 24.707,17.648 " style="fill:url(#SVGID_1_);"/>
-<rect height="0.882" style="opacity:0.4;fill:#FFFFFF;enable-background:new    ;" width="5.295" x="12.354" y="5.294"/>
-<rect height="0.882" style="opacity:0.4;fill:#FFFFFF;enable-background:new    ;" width="7.059" x="5.294" y="12.354"/>
-<rect height="0.882" style="opacity:0.4;fill:#FFFFFF;enable-background:new    ;" width="7.059" x="17.648" y="12.354"/>
-<rect height="30.002" style="fill:none;" width="30.002"/>
+<rect fill="none" height="30" width="30"/>
+<polygon fill-opacity="0.6" points="11,29 11,19 1,19 1,11 11,11 11,1 19,1 19,11 29,11 29,19 19,19 19,29 "/>
+<polygon fill="url(#SVGID_1_)" points="28,12 18,12 18,2 12,2 12,12 2,12 2,18 12,18 12,28 18,28 18,18 28,18 "/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="6" x="12" y="2"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="10" x="2" y="12"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="10" x="18" y="12"/>
+<rect fill="none" height="30" width="30"/>
 <defs>
-<linearGradient gradientTransform="matrix(0.8824 0 0 -0.8824 -284.8232 -348.3516)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="339.7813" x2="339.7813" y1="-400.7783" y2="-422.7778">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="2" y2="28.0005">
 <stop offset="0" style="stop-color:#4EDEFF"/>
 <stop offset="1" style="stop-color:#048CC6"/>
 </linearGradient>

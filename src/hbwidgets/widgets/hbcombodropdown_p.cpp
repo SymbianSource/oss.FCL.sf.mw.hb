@@ -26,6 +26,12 @@
 #include "hbcombodropdown_p.h"
 #include "hbcombobox_p.h"
 #include <hblistview.h>
+#include <hbwidgetfeedback.h>
+
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#endif
+
 
 HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsItem *parent )
         :HbWidget( parent ),
@@ -40,10 +46,13 @@ HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsI
         setFlag( QGraphicsItem::ItemIsPanel, true );
         setActive( false );
     #endif
+        //setFlag(QGraphicsItem::ItemIsPanel);
+        //setPanelModality(PanelModal);
 }
 
 HbComboDropDown::~HbComboDropDown( )
 {
+
 }
 
 void HbComboDropDown::createList( )
@@ -73,6 +82,7 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
 {
     Q_UNUSED( obj );
     bool accepted = false;
+
     if ( isVisible( ) && !vkbOpened ) {
         switch( event->type( ) )
         {
@@ -88,8 +98,16 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
         case QEvent::GraphicsSceneMouseRelease:
             {
                 if( !( this->isUnderMouse( ) ) && backgroundPressed ) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPopupClosed);
                     setVisible( false );
                     backgroundPressed = false;
+                    accepted = true;
+                }
+            }
+            break;
+        case QEvent::Gesture:
+            {
+                if(!this->isUnderMouse()) {
                     accepted = true;
                 }
             }
@@ -98,7 +116,9 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
             break;
         }
     }
-        return accepted;
+
+    return accepted;
 }
+
 #include "moc_hbcombodropdown_p.cpp"
 

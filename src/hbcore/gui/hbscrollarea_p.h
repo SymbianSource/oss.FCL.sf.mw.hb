@@ -43,9 +43,9 @@
 #include <QTimer>
 #include <QTime>
 
-class HbGestureSceneFilter;
 class HbScrollBar;
 class QEasingCurve;
+class QPanGesture;
 
 class HB_CORE_PRIVATE_EXPORT HbScrollAreaPrivate: public HbWidgetPrivate
 {
@@ -68,8 +68,6 @@ public:
 
     void changeLayoutDirection(Qt::LayoutDirection aNewDirection);
 
-    void updateGestures();
-
     // returns true if it was able to scroll in either direction
     bool scrollByAmount(const QPointF& delta);
 
@@ -90,6 +88,8 @@ public:
     void _q_hideScrollBars();
     void _q_thumbPositionChanged(qreal value, Qt::Orientation orientation);
     void _q_groovePressed(qreal value, Qt::Orientation orientation);
+    void _q_thumbPressed();
+    void _q_thumbReleased();
 
     //void bounceBackValueChanged(qreal value);
     virtual void updateScrollMetrics();
@@ -101,8 +101,8 @@ public:
 
     bool positionOutOfBounds ();
 
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+    bool pan(QPanGesture *gesture);
+
     void adjustContent();
 
     virtual void ensureVisible(QPointF position, qreal xMargin, qreal yMargin);
@@ -114,7 +114,6 @@ public:
     void updateIndicators(QPointF newPosition);
 
     void hideChildComponents();
-    void orientationChanged();
 
     virtual void setContentPosition( qreal value, Qt::Orientation orientation, bool animate );
 
@@ -143,9 +142,7 @@ public:
     // valid during animation
     QPointF mScrollPosition;
 
-    Qt::Orientations mScrollDirections;
-
-    HbGestureSceneFilter* mGestureFilter;
+    Qt::Orientations mScrollDirections;    
 
     HbScrollBar* mHorizontalScrollBar;
     HbScrollBar* mVerticalScrollBar;
@@ -175,13 +172,10 @@ public:
 
     bool mFrictionEnabled;
     bool mScrollbarVisible;
+    bool mResetAlignment;
 
     HbScrollArea::ClampingStyle mClampingStyle;
-    HbScrollArea::ScrollingStyle mScrollingStyle;
-
-    bool mHandleLongPress;
-
-    bool mOrientationChanged;
+    HbScrollArea::ScrollingStyle mScrollingStyle;    
 
     // TODO/Q: All circular array related members could go
     // to circular array class if so wanted.
@@ -196,17 +190,13 @@ public:
     uint mEventPositionQueueLastIndex;
     bool mEventPositionQueueIsFull;
     Qt::LayoutDirection mLayoutDirection;
-    #if 0
-    QTime *mFlickTimer;
-    Qt::DirectionType mPanDirection;
-    #endif //HB_NEW_GESTURE_FW
 
     Qt::Alignment mAlignment;
     bool mContinuationIndicators;
     QGraphicsItem *continuationIndicatorTopItem;
     QGraphicsItem *continuationIndicatorBottomItem;
     QGraphicsItem *continuationIndicatorLeftItem;
-    QGraphicsItem *continuationIndicatorRightItem;
+    QGraphicsItem *continuationIndicatorRightItem;    
 
 private:
     // Private access for the fute application to enable setting tweaking
@@ -225,7 +215,6 @@ private:
     qreal mSpringDampingFactor;
     qreal mFrictionPerMilliSecond;
     bool mMultiFlickEnabled;
-
 };
 
 #endif // HBSCROLLAREA_P_H

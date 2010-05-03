@@ -99,10 +99,14 @@ protected:
 
     void keyPressEvent( QKeyEvent *event );
     void keyReleaseEvent( QKeyEvent *event );
-
     void mousePressEvent( QGraphicsSceneMouseEvent *event );
+#ifndef HB_GESTURE_FW
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+#endif
+
+    void gestureEvent(QGestureEvent *event);
+
     void resizeEvent( QGraphicsSceneResizeEvent *event );
     virtual void polish( HbStyleParameters& params );
 

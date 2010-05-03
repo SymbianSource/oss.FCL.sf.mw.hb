@@ -4,7 +4,7 @@
             <duration>0.3</duration>
             <keyframe at="0.0">0.0</keyframe>
             <keyframe at="1.0">1.0</keyframe>
-            <style>outquad</style>
+			<style>inoutquad</style>
             <start ref="visual.left">1</start>
             <end ref="extrect.left">1.1</end>
         </param>

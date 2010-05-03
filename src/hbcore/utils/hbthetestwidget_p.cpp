@@ -31,6 +31,11 @@
 #include "hbstyleoptiontoolbutton.h"
 #include "hbcolorscheme.h"
 #include "hbtextitem.h"
+#include "hbpopup.h"
+#include "hbdialog.h"
+#include "hbthemecommon_p.h"
+#include "hbthemeclient_p.h"
+
 
 #ifdef Q_OS_SYMBIAN
 #include <eikenv.h>
@@ -39,6 +44,7 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsGridLayout>
+#include <QGraphicsLinearLayout>
 #include <QGraphicsWidget>
 #include <QTextStream>
 #include <QFile>
@@ -320,7 +326,10 @@ void HbTheTestWidget::textLayoutWriteReport()
 
 void HbTheTestWidget::toggleOrientation()
 {
-    d->mMainWindow->toggleOrientation();
+    if (d->mMainWindow->orientation() == Qt::Horizontal)
+        d->mMainWindow->setOrientation(Qt::Vertical);
+    else 
+        d->mMainWindow->setOrientation(Qt::Horizontal);
 }
 
 void HbTheTestWidget::toggleMirroring()
@@ -336,6 +345,35 @@ void HbTheTestWidget::setApplicationBackground()
     task.SetWgId(CEikonEnv::Static()->RootWin().Identifier());
     task.SendToBackground();
 #endif
+}
+
+void HbTheTestWidget::showThemeServerMemoryInfo()
+{
+    HbDialog popup;
+    popup.setTimeout(HbPopup::StandardTimeout);   
+    popup.setPreferredPos(QPointF(10,10));
+    
+    HbWidget widget;
+    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(Qt::Vertical);
+    widget.setLayout(layout);
+    
+    int freeSharedMemory = HbThemeClient::global()->freeSharedMemory();
+    int allocatedSharedMemory = HbThemeClient::global()->allocatedSharedMemory();
+    int allocatedHeapMemory = HbThemeClient::global()->allocatedHeapMemory();
+    QString message("Free shared mem: ");
+    message += QString::number(freeSharedMemory / 1024);
+    message += " kB \nAllocated shared mem: ";
+    message += QString::number(allocatedSharedMemory / 1024);
+    message += " kB \nAllocated heap: ";
+    message += QString::number(allocatedHeapMemory / 1024);
+    message += " kB \n";
+    HbTextItem *textItem = new HbTextItem(message);
+    textItem->setTextColor(HbColorScheme::color("qtc_default_main_pane_normal"));
+    layout->addItem(textItem); 
+    
+    popup.setContentsMargins(0,20,0,20);
+    popup.setContentWidget(&widget);
+    popup.exec();
 }
 
 void HbTheTestWidget::screenCapture()

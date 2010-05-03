@@ -29,14 +29,14 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 PUBLIC_HEADERS += $$PWD/hbanchorlayout.h
-PUBLIC_HEADERS += $$PWD/hbstackedlayout.h
+PUBLIC_HEADERS += $$PWD/hbstackedlayout.h 
 
-INTERNAL_HEADERS += $$PWD/hbanchor_p.h
-INTERNAL_HEADERS += $$PWD/hbanchorlayoutdebug_p.h
-INTERNAL_HEADERS += $$PWD/hbanchorlayoutengine_p.h
-INTERNAL_HEADERS += $$PWD/hblayoututils_p.h
-INTERNAL_HEADERS += $$PWD/hbmeshlayout_p.h
-INTERNAL_HEADERS += $$PWD/hbspaceritem_p.h
+PRIVATE_HEADERS += $$PWD/hbanchor_p.h
+PRIVATE_HEADERS += $$PWD/hbanchorlayoutdebug_p.h
+PRIVATE_HEADERS += $$PWD/hbanchorlayoutengine_p.h
+PRIVATE_HEADERS += $$PWD/hblayoututils_p.h
+PRIVATE_HEADERS += $$PWD/hbmeshlayout_p.h
+PRIVATE_HEADERS += $$PWD/hbspaceritem_p.h
 
 SOURCES += $$PWD/hbanchorlayout.cpp
 SOURCES += $$PWD/hbanchorlayoutengine_p.cpp

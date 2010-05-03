@@ -7,9 +7,15 @@
     
     <meshitem src="dataGroup_HeadingLabel" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="dataGroup_HeadingLabel" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="dataGroup_HeadingLabel" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_HeadingLabel" srcEdge="BOTTOM" dst="dataGroup_Description" dstEdge="TOP" />
     <meshitem src="dataGroup_HeadingLabel" srcEdge="RIGHT" dst="dataGroup_Icon" dstEdge="LEFT" />
 
+
+    <meshitem src="dataGroup_Description" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="dataGroup_Description" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="dataGroup_Description" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    
+    
     <meshitem src="dataGroup_Background" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="dataGroup_Background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="dataGroup_Background" srcEdge="LEFT" dst="" dstEdge="LEFT" />

@@ -25,7 +25,7 @@
 
 #include <QDir>
 #include <QApplication>
-
+#include <QVariantMap>
 #include <hbindicatorpluginmanager_p.h>
 #include <hbindicatorplugininterface.h>
 #include <hbindicatorinterface.h>
@@ -134,6 +134,20 @@ HbIndicatorInterface *HbIndicatorPluginManager::addIndicator(const QString &indi
     return indicator;
 }
 
+void HbIndicatorPluginManager::userActivateIndicator(const QVariantMap& data)
+{    
+    const HbIndicatorInterface* indicator =
+           qobject_cast<const HbIndicatorInterface*>(sender());
+    if (!indicator) {
+        return;
+    }
+
+    QVariantMap package;
+    package.insert("type", indicator->indicatorType());    
+    package.insert("data", data);
+    emit indicatorUserActivated(package);
+}
+
 /*
    Activates the indicator.
    Assumes indicator-instance is already created (addIndicator called).
@@ -165,6 +179,7 @@ bool HbIndicatorPluginManager::activateIndicator(const QString &indicatorType,
                 indicator->category()));
 
             connect(indicator, SIGNAL(dataChanged()), SLOT(indicatorDataChanged()));
+            connect(indicator, SIGNAL(userActivated(QVariantMap)), SLOT(userActivateIndicator(QVariantMap)));
         }
         success = true;
     }
@@ -470,15 +485,9 @@ int HbIndicatorPluginManager::findPlugin(const QString &indicatorType,
 QString HbIndicatorPluginManager::statusAreaIconPath(
         const HbIndicatorInterface *indicator) const
 {
-    //Use MonoDecorationNameRole-role first, if empty,
-    //try with DecorationRole.
+    //Use MonoDecorationNameRole-role
     QString path(indicator->indicatorData(
         HbIndicatorInterface::MonoDecorationNameRole).toString());
-
-    if (path.isEmpty()) {
-        path = indicator->indicatorData(
-            HbIndicatorInterface::DecorationNameRole).toString();
-    }
 
     return path;
 }

@@ -25,6 +25,8 @@
 
 #include "hbprogresssliderhandle_p.h"
 #include <hbtooltip.h>
+#include <hbstyleoptionprogresssliderhandle_p.h>
+#include <hbextendedlocale.h>
 #include <QGraphicsSceneMouseEvent>
 
 #define HBPROGRESSSLIDERHANDLE_TRACES
@@ -40,6 +42,11 @@
 #define HB_PRGRESSSLIDERHANDLE_ITEM_TYPE "HB_PROGRESSSLIDERHANDLE"
 #endif
 
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+#endif
+
 #define   HandleMargin 0
 
 /*!
@@ -50,7 +57,7 @@
 HbProgressSliderHandle::HbProgressSliderHandle(HbHandleParent *parent) 
     :HbWidget(parent->parentGraphicsItem()),
     q(parent),
-    mThumbIcon(),
+    mHandleIcon(),
     mPlayThumb(true),
     mThumbEnabled(false)
 {
@@ -58,13 +65,10 @@ HbProgressSliderHandle::HbProgressSliderHandle(HbHandleParent *parent)
     mFlags |= TextVisible;
     mHandleSize = QSizeF(0,0);
 
-    mSliderState = HbProgressSlider::SliderStatePlayNormal;
+    mSliderHandleState = HbProgressSlider::SliderStatePlayNormal;
     HbStyle *style = static_cast<HbStyle*>(q->style());
 
-    mHandleItem = style->createPrimitive(HbStyle::P_ProgressSlider_handle,this);
-    HbStyle::setItemName(mHandleItem , "handle");
-
-    mHandleIconItem = style->createPrimitive(HbStyle::P_ProgressSlider_handleicon,this);
+    mHandleIconItem = style->createPrimitive(HbStyle::P_ProgressSliderHandle_icon,this);
     HbStyle::setItemName(mHandleIconItem , "icon");
 
     mTouchItem = style->createPrimitive(HbStyle::P_ProgressSliderHandle_toucharea, this); 
@@ -76,29 +80,46 @@ HbProgressSliderHandle::HbProgressSliderHandle(HbHandleParent *parent)
     HbEffectInternal::add(HB_PRGRESSSLIDERHANDLE_ITEM_TYPE,"progressslider_handlerelease", "progressslider_handlerelease");
     HbEffectInternal::add(HB_PRGRESSSLIDERHANDLE_ITEM_TYPE,"progressslider_handleoutofbound", "progressslider_handleoutofbound");
 #endif
+
+#ifdef HB_GESTURE_FW
+    grabGesture(Qt::TapGesture);
+    grabGesture(Qt::PanGesture);
+
+    if(QGraphicsObject *touchArea = mTouchItem->toGraphicsObject()) {
+        touchArea->grabGesture(Qt::TapGesture);
+        touchArea->grabGesture(Qt::PanGesture);
+    }
+#endif 
 }
 
 HbProgressSliderHandle::~HbProgressSliderHandle() 
 {
 }
 
-void HbProgressSliderHandle::setThumbIcon(const HbIcon& icon)
+void HbProgressSliderHandle::setHandleIcon(const HbIcon& icon)
 {
     if(icon.isNull()) {
         return;
     }
     HbStyle *style = qobject_cast<HbStyle*>(q->style());
-    mThumbIcon= icon;
-    HbStyleOptionProgressBar option;
-    option.handleRect = boundingRect();
-    option.thumbIcon = mThumbIcon;
-    style->updatePrimitive(mHandleIconItem,HbStyle::P_ProgressSlider_handleicon,&option);
+    mHandleIcon= icon;
+
+    HbStyleOptionProgressSliderHandle option;
+    initStyleOption(&option);
+
+    style->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
     mThumbEnabled = true;
 }
 
 HbIcon HbProgressSliderHandle::thumbIcon() const
 {
-    return mThumbIcon;    
+    return mHandleIcon;    
+}
+
+void HbProgressSliderHandle::gestureEvent(QGestureEvent *event)
+{
+    Q_UNUSED(event);
+    // HbWidgetBase::gestureEvent() ignores, overriding to accept
 }
 
 void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event) 
@@ -110,11 +131,22 @@ void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
 #endif
     mFlags |= HbProgressSliderHandle::MousePressed;
 
+    HbStyleOptionProgressSliderHandle option;
+	initStyleOption(&option);
+    option.pressedState = true;
+    if (mHandleIconItem) {
+        style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
+    }
+
     mMousePressPos = event->scenePos();
     mItemPosAtPress = pos();
     if(q->textVisible()) {
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemPosAtPress,QSize(0,0)),q->textAlignment());
     }
+	else {
+		HbExtendedLocale locale;
+		HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+	}
 
     HbWidgetFeedback::triggered(q->parentGraphicsWidget(), Hb::InstantPressed, Hb::ModifierSliderHandle);
 
@@ -125,6 +157,14 @@ void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void HbProgressSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
 {
     HbWidget::mouseReleaseEvent(event);
+
+    HbStyleOptionProgressSliderHandle option;
+	initStyleOption(&option);
+    option.pressedState = false;
+    if (mHandleIconItem) {
+        style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
+    }
+
     if (isHandleMoving()) {
       HbWidgetFeedback::continuousStopped(q->parentGraphicsWidget(), Hb::ContinuousDragged);
     }
@@ -136,6 +176,7 @@ void HbProgressSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     mFlags &= ~HbProgressSliderHandle::MousePressed;
     mFlags &=~HandleMoving;
     event->accept();
+	setHandlePosForValue(q->progressValue());   
     q->emitSliderReleased();
 }
 
@@ -188,6 +229,10 @@ void HbProgressSliderHandle::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
     if(q->textVisible()) {
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
     }
+    else {
+		HbExtendedLocale locale;
+		HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+	}
     event->accept();
 
     q->emitSliderMoved(pointToValue(mItemCurPos));
@@ -338,17 +383,41 @@ void HbProgressSliderHandle::setHandlePosForValue(int progressValue)
 
 void  HbProgressSliderHandle::updatePrimitives()
 {    
-    HbStyleOptionProgressBar option;
-    option.thumbIcon = mThumbIcon;
-    option.sliderState = (HbStyleOptionProgressBar::SliderState) mSliderState;
-    
-    if (mHandleItem) {
-        style()->updatePrimitive(mHandleItem, HbStyle::P_ProgressSlider_handle, &option);
-    }
+    HbStyleOptionProgressSliderHandle option;
+    initStyleOption(&option);
 
     if (mHandleIconItem) {
-        style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSlider_handleicon, &option);
+        style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
     }
 
+}
+
+/*!
+    Returns the pointer for \a primitive passed.
+    Will return NULL if \a primitive passed is invalid
+*/
+QGraphicsItem* HbProgressSliderHandle::primitive(HbStyle::Primitive primitive) const
+{
+    switch (primitive) {
+        case HbStyle::P_ProgressSliderHandle_icon:
+            return mHandleIconItem;
+        case HbStyle::P_ProgressSliderHandle_toucharea:
+            return mTouchItem;
+        default:
+            return 0;
+    }
+}
+
+/*!
+    Initializes \a option with the values from this HbProgressSliderHandle. 
+    This method is useful for subclasses when they need a HbStyleOptionProgressSliderHandle,
+    but don't want to fill in all the information themselves.
+ */
+void HbProgressSliderHandle::initStyleOption(HbStyleOptionProgressSliderHandle *option) const
+{
+    HbWidget::initStyleOption(option);
+    option->handleIcon = mHandleIcon;
+    option->pressedState = false;
+    option->sliderHandleState = (HbStyleOptionProgressSliderHandle::SliderState) mSliderHandleState;
 }
 

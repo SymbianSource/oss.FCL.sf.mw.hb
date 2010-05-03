@@ -28,11 +28,15 @@
 #include <hbnamespace.h>
 #include <hbeffectinternal_p.h>
 #include <hbinstance.h>
+#include <hbsensorlistener_p.h>
+#include "hbsleepmodelistener_p.h"
 #ifdef HB_EFFECTS_OPENVG
 #include <hbvgeffect_p.h>
 #endif
 #include <QEvent>
 #include <QApplication>
+#include "hbmemorymanager_p.h"
+#include "hbthemecommon_p.h"
 
 /*!
   @proto
@@ -77,7 +81,7 @@ HbForegroundWatcher *HbForegroundWatcher::instance()
 }
 
 HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
-    : QObject(parent), mForeground(true), mLights(true)
+    : QObject(parent), mForeground(true), mLights(true), mSensorListener(0)
 {
     connect(QApplication::instance(), SIGNAL(aboutToQuit()), SLOT(handleAboutToQuit()));
 #ifdef Q_OS_SYMBIAN
@@ -89,6 +93,12 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
     }
 #endif
     QApplication::instance()->installEventFilter(this);
+    HbSleepModeListener::instance(); // make sure the instance is created
+}
+
+void HbForegroundWatcher::setSensorListener(HbSensorListener *sensorListener)
+{
+    mSensorListener = sensorListener;
 }
 
 /*!
@@ -98,6 +108,10 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
 */
 void HbForegroundWatcher::HandleGainingForeground()
 {
+    if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
+        return;
+    }
+    
     if (!mForeground) {
         emit foregroundGained();
         if (!hbInstance->allMainWindows().isEmpty()) {
@@ -117,6 +131,10 @@ void HbForegroundWatcher::HandleGainingForeground()
 */
 void HbForegroundWatcher::HandleLosingForeground()
 {
+    if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
+        return;
+    }
+    
     if (mForeground) {
         emit foregroundLost();
         if (!hbInstance->allMainWindows().isEmpty()) {
@@ -161,11 +179,17 @@ bool HbForegroundWatcher::eventFilter(QObject *obj, QEvent *event)
             HbEffectInternal::stopEffects();
             emit stopAnimation();
         }
+        if (mSensorListener && mSensorListener->isEnabled()) {
+            mSensorListener->enableSensors(false, true);
+        }
         mLights = false;
     } else if (event->type() == HbEvent::SleepModeExit && !mLights) {
         if (mForeground) {
             HbEffectInternal::resumeEffects();
             emit resumeAnimation();
+        }
+        if (mSensorListener && !mSensorListener->isEnabled()) {
+            mSensorListener->enableSensors(true, true);
         }
         mLights = true;
     } else if (event->type() == QEvent::ApplicationActivate && !mForeground) {

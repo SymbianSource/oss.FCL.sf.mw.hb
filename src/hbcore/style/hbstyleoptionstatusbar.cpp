@@ -30,12 +30,26 @@
     \brief HbStyleOptionStatusBar has the style component for statusbar
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionStatusBar::HbStyleOptionStatusBar()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionStatusBar::HbStyleOptionStatusBar() : transparent(false)
 {
     type = Type;
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionStatusBar::HbStyleOptionStatusBar(const HbStyleOptionStatusBar&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionStatusBar::HbStyleOptionStatusBar(const HbStyleOptionStatusBar &other) :
     HbStyleOption(other)
 {

@@ -35,6 +35,7 @@
 
 class HbStyleOption;
 class HbWidgetBasePrivate;
+class QGestureEvent;
 
 class HB_CORE_EXPORT HbWidgetBase: public QGraphicsWidget
 {
@@ -63,6 +64,9 @@ protected:
     HbWidgetBase(HbWidgetBasePrivate &dd, QGraphicsItem *parent, Qt::WindowFlags wFlags = 0);
 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    bool sceneEvent(QEvent *event);
+
+    virtual void gestureEvent(QGestureEvent *event);
 
     void initStyleOption(HbStyleOption *option) const;
 

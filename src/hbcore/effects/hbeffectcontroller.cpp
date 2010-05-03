@@ -190,7 +190,7 @@ QString HbEffectController::expandFileName(const QString &fn, bool *fromTheme, b
     } else {
         // Try the theme, will return the same name if not found in the theme.
         bool temp;
-        return HbEffectTheme::global()->getEffectXml(fn, fromTheme ? *fromTheme : temp);
+        return HbEffectTheme::instance()->getEffectXml(fn, fromTheme ? *fromTheme : temp);
     }
 }
 

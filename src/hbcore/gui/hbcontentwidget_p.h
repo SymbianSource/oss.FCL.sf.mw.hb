@@ -49,7 +49,6 @@ public:
 private slots:
     void hideEffectFinished(HbEffect::EffectStatus status);
     void viewSwitchEffectsFinished(HbEffect::EffectStatus status);
-    void showTargetView();
 
 private:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);

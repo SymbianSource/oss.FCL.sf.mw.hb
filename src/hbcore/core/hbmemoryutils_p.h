@@ -30,6 +30,7 @@
 #include <QFileInfo>
 #include <QStringList>
 
+#include "hbsmartoffset_p.h"
 #include "hbmemorymanager_p.h"
 
 /*
@@ -55,19 +56,13 @@ public:
     static T * create(HbMemoryManager::MemoryType memType)
     {
         GET_MEMORY_MANAGER(memType);
+        T* temp = 0;
         if (manager->isWritable()) {
-            try{
-                int offset = manager->alloc(sizeof(T));
-                T* temp = new((char*)manager->base() + offset) T(memType);
-                //if successful return temp, else flow won't reach here and the exception will be caught
-                return temp;
-                }
-            catch(std::bad_alloc &badAlloc){
-                Q_UNUSED(badAlloc)
-                return 0;
-            }
+            HbSmartOffset offset(manager->alloc(sizeof(T)), memType);
+            temp = new((char*)manager->base() + offset.get()) T(memType);
+            offset.release();
         }
-        return 0;
+        return temp;
     }
     /*
     * To create instance of on object of type T in memory of given type. The object is copy of the 
@@ -80,20 +75,14 @@ public:
     static T * create(const T &other, HbMemoryManager::MemoryType memType)
     {
         GET_MEMORY_MANAGER(memType);
+        T* temp = 0;        
         if (manager->isWritable()) {
-            try{
-                int offset = manager->alloc(sizeof(T));
-                T* temp = new((char*)manager->base() + offset) T(other, memType);
-                return temp;
-            }
-            catch(std::bad_alloc &badAlloc){
-                Q_UNUSED(badAlloc)
-                return 0;
-            }
+            HbSmartOffset offset(manager->alloc(sizeof(T)),memType);
+            temp = new((char*)manager->base() + offset.get()) T(other, memType);
+            offset.release();
         }
-        return 0;
+        return temp;
     }
-    
     /*
     * To release the instant properly by taking care of the type of memory
     * (assming that memory allocated for the object is same as its memoryType)

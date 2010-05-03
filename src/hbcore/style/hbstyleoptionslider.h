@@ -31,6 +31,7 @@
 #include <hbstyleoption.h>
 #include <hbicon.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionSlider : public HbStyleOption
 {
 public:

@@ -28,6 +28,7 @@
 
 #include <hbstyleoptiongridviewitem.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionColorGridViewItem : public HbStyleOptionGridViewItem
 {
 public:

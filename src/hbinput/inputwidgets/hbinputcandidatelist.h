@@ -48,10 +48,11 @@ public:
     QString currentCandidate();
     void setNumberOfVisibleLines(int numLines);
     bool setSizeAndPositionForAutoCompletion(HbVkbHost *vkbHost);
-signals:
-	void candidatePopupCancelled();
 
-protected  : 
+signals:
+    void candidatePopupCancelled();
+
+protected:
     void closeEvent(QCloseEvent* event);
     void keyPressEvent(QKeyEvent* event);
     void hideEvent(QHideEvent * event);

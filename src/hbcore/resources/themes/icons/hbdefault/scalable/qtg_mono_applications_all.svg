@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
 <rect fill="none" height="30" width="30"/>
-<rect fill="none" height="30" width="30"/>
-<path d="M16.5,27H27V16.5H16.5V27z M18.75,18.75h6v6h-6V18.75z"/>
-<path d="M16.5,4.5V15H27V4.5H16.5z M24.75,12.75h-6v-6h6V12.75z"/>
-<path d="M4.5,27H15V16.5H4.5V27z M6.75,18.75h6v6h-6V18.75z"/>
-<rect height="12" width="12" x="3" y="3"/>
+</g>
+<path d="M16,3v11h11V3H16z M24,11h-5V6h5V11z"/>
+<path d="M16,27h11V16H16V27z M19,19h5v5h-5V19z"/>
+<rect height="12" width="12" x="2" y="2"/>
+<path d="M3,27h11V16H3V27z M6,19h5v5H6V19z"/>
 </svg>

@@ -64,7 +64,12 @@
   See also  HbAbstractItemView,HbAbstractViewitem,HbGridViewItem,HbScrollArea
  */
 
-     
+/*!
+ \fn void HbGridView::setUniformItemSizes(bool enabled) is public from HbAbstractItemView but for HbGridView
+ Calling this method make no sense - in grid case it is reimplemented and do not change
+ anything (items are always same size).
+*/
+
 /*!
  Constructs a new HbGridView with \a parent.
  */
@@ -270,7 +275,8 @@ void HbGridView::orientationChanged(Qt::Orientation newOrientation)
     d->mContainer->setPos(0,0);
     d->itemContainer()->orientationChanged(newOrientation);
 
-    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+    // abstract part is enought - container update buffer
+    HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
 
     d->mVisibleIndex = QModelIndex();
 }
@@ -376,7 +382,8 @@ void HbGridView::scrollDirectionChanged(Qt::Orientations scrollDirection)
     d->mContainer->setPos(0,0);
     d->itemContainer()->scrollDirectionChanged(scrollDirection);
 
-    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+    // abstract part is enought - container update buffer
+    HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
 
     d->mVisibleIndex = QModelIndex();
 }

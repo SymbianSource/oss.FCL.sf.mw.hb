@@ -36,6 +36,9 @@
 
 #include <QDebug>
 
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
+
 HbTreeItemSelectionModel::HbTreeItemSelectionModel( QAbstractItemModel          *model, 
                                                     HbAbstractItemViewPrivate   *viewPrivate,
                                                     QObject                     *parent) :
@@ -117,7 +120,10 @@ void HbTreeItemSelectionModel::select(const QItemSelection &selection, QItemSele
                         if (item) {
                             item->setCheckState(Qt::PartiallyChecked);
                         } 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
                         mViewPrivate->mContainer->setItemStateValue(parentIndex, HbAbstractViewItem::CheckStateKey, Qt::PartiallyChecked);
+#endif
+                        mViewPrivate->mContainer->setItemTransientStateValue(parentIndex, "checkState", Qt::PartiallyChecked);
                     }
                     parentIndex = parentIndex.parent();
                 }

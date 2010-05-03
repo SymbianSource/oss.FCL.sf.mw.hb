@@ -178,6 +178,10 @@ void HbGridViewItem::initStyleOption(HbStyleOptionGridViewItem *option) const
 }
 
 /*!
+
+    \deprecated HbGridViewItem::primitive(HbStyle::Primitive)
+        is deprecated.
+
   Provides access to primitives of HbGridViewItem. 
   \param primitive is the type of the requested primitive. The available primitives are 
   \c P_GridViewItem_text, \c P_GridViewItem_icon, \c P_ItemViewItem_checkbox and
@@ -198,7 +202,7 @@ QGraphicsItem * HbGridViewItem::primitive(HbStyle::Primitive primitive) const
 }
 
 /*!
-    \deprecated QRectF HbGridViewItem::contiguousSelectionArea() const
+    \deprecated HbGridViewItem::contiguousSelectionArea() const
         is deprecated.
 
     \reimp
@@ -213,14 +217,13 @@ QRectF HbGridViewItem::contiguousSelectionArea() const
 /*!
  \reimp
  */
-bool HbGridViewItem::selectionAreaContains(const QPointF &scenePosition) const
+bool HbGridViewItem::selectionAreaContains(const QPointF &position, 
+                                       SelectionAreaType selectionAreaType) const
 {
-    HB_SDD(const HbAbstractViewItem);
-    if (    sd->mItemView
-        &&  sd->mItemView->selectionMode() == HbAbstractItemView::ContiguousSelection) {
+    if (selectionAreaType == ContiguousSelection ) {
         return false;
     } 
-    return HbAbstractViewItem::selectionAreaContains(scenePosition);
+    return HbAbstractViewItem::selectionAreaContains(position, selectionAreaType);
 }
 
 /*!

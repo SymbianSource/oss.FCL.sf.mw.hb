@@ -25,6 +25,7 @@
 
 #include "hbsearchpanel.h"
 #include "hbsearchpanel_p.h"
+#include "hblineedit.h"
 
 
 /*!
@@ -128,13 +129,46 @@ void HbSearchPanel::setProgressive( bool progressive )
 {
     Q_D( HbSearchPanel );
 
-    if( progressive && !isProgressive( ) ) {
-        d->removeProgressButton();
-    }
-    else if ( !progressive && isProgressive( ) ) {
-        d->addProgressButton();
+    if( progressive != isProgressive( ) ) {
+        if(progressive) {
+            d->removeProgressButton();
+        } else {
+            d->addProgressButton();
+        }
     }
 }
+
+/*!
+    \property HbSearchPanel::cancelEnabled
+    True, there is a cancel button in the search panel.
+    False, there is not a cancel button in the search panel.
+
+    \sa setCancelEnabled
+ */
+bool HbSearchPanel::isCancelEnabled( ) const
+{
+    Q_D( const HbSearchPanel );
+    return d->mCancelEnabled;
+}
+
+/*!
+    Set cancelEnabled property of the search panel. Parameter \a enabled is the new value of the
+    property.
+
+    \sa isCancelEnabled
+ */
+void HbSearchPanel::setCancelEnabled( bool enabled )
+{
+    Q_D( HbSearchPanel );
+    if( enabled != isCancelEnabled( ) ) {
+        if(enabled) {
+            d->addCancelButton();
+        } else {
+            d->removeCancelButton();
+        }
+    }
+}
+
 
 /*!
     \property HbSearchPanel::searchOptions
@@ -158,11 +192,62 @@ bool HbSearchPanel::isSearchOptionsEnabled( ) const
 void HbSearchPanel::setSearchOptionsEnabled( bool enabled )
 {
     Q_D( HbSearchPanel );
-    if( enabled && !isSearchOptionsEnabled( ) ) {
-        d->addSearchOptionsButton();
-    }
-    else if ( !enabled && isSearchOptionsEnabled( ) ) {
-        d->removeSearchOptionsButton();
+    if( enabled != isSearchOptionsEnabled( ) ) {
+        if(enabled) {
+            d->addSearchOptionsButton();
+        } else {
+            d->removeSearchOptionsButton();
+        }
     }
 }
+
+
+/*!
+    \property HbSearchPanel::placeholderText
+    \brief the search panel's placeholder text
+
+    Setting this property makes the editor in search panel display a grayed-out
+    placeholder text as long as the criteria() is empty.
+    By default, this property contains an empty string.
+
+    \sa criteria()
+*/
+
+QString HbSearchPanel::placeholderText() const
+{
+    Q_D(const HbSearchPanel);
+    return d->mLineEdit->placeholderText();
+}
+
+/*!
+    \sa placeholderText()
+*/
+void HbSearchPanel::setPlaceholderText(const QString &text)
+{
+    Q_D(HbSearchPanel);
+    d->mLineEdit->setPlaceholderText(text);
+}
+
+/*!
+    Returns the search criteria.
+
+    \sa setCriteria()
+*/
+QString HbSearchPanel::criteria() const
+{
+    Q_D(const HbSearchPanel);
+    return d->mLineEdit->text();
+}
+
+/*!
+    Sets the search criteria to the search panel.
+
+    \sa criteria()
+*/
+void HbSearchPanel::setCriteria(const QString &text)
+{
+    Q_D(HbSearchPanel);
+    d->mLineEdit->setText(text);
+}
+
 

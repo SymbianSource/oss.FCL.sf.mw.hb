@@ -44,34 +44,40 @@ class HB_CORE_EXPORT HbEditorInterface : public QObject
     Q_OBJECT
 
 public:
-    HbEditorInterface(QObject* aEditor);
+    HbEditorInterface(QObject* editor);
     ~HbEditorInterface();
 
     HbTextCase textCase() const;
-    void setTextCase(HbTextCase aTextCase);
+    void setTextCase(HbTextCase textCase);
     int inputMode() const;
-    void setInputMode(int aInputMode);
+    void setInputMode(int inputMode);
+     HbInputModeType mode() const;
+     void setMode(HbInputModeType inputMode);
     int constraints() const;
-    void setConstraints(int aConstraints);
+    void setConstraints(int constraints);
+    HbEditorConstraints inputConstraints() const;
+    void setInputConstraints(HbEditorConstraints constraints);
     HbInputFilter *filter() const;
-    void setFilter(HbInputFilter *aFilter);
+    void setFilter(HbInputFilter *filter);
     int localDigitType() const;
-    void setLocalDigitType(int aDigitType);
+    void setLocalDigitType(int digitType);
+    HbInputDigitType digitType() const;
+    void setDigitType(HbInputDigitType digitType);
     void addAction(HbAction *action);
     void insertAction(HbAction *before, HbAction *action);
     void removeAction(HbAction *action);
     QList<HbAction*> actions() const;
     int extraDictionaryId() const;
-    void setExtraDictionaryId(int aId);
+    void setExtraDictionaryId(int id);
     HbInputEditorClass editorClass() const;
-    void setEditorClass(HbInputEditorClass aClass);
+    void setEditorClass(HbInputEditorClass editorClass);
     HbSmileyTheme smileyTheme() const;
     void setSmileyTheme(const HbSmileyTheme &theme);
     void lastFocusedState(HbInputState &result) const;
     void setLastFocusedState(const HbInputState &state);
 
-    bool operator==(const HbEditorInterface& aInterface) const;
-    bool operator!=(const HbEditorInterface& aInterface) const;
+    bool operator==(const HbEditorInterface& interface) const;
+    bool operator!=(const HbEditorInterface& interface) const;
     QObject* editor() const;
     HbVkbHost *vkbHost() const;
 

@@ -47,7 +47,8 @@ HbSensorListener::HbSensorListener(HbSensorListenerObserver &observer,
 mObserver(observer),
 mDefaultOrientation(defaultOrientation),
 mOrientation(mDefaultOrientation),
-mEnabled(false)
+mEnabled(false),
+mSettingsEnabled(false)
 #ifdef Q_OS_SYMBIAN
 ,
 mNotifyHandler(0),
@@ -114,6 +115,7 @@ void HbSensorListener::checkCenrepValue()
 #else
     QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
     bool enable = mSettings.value("SensorsEnabled").toBool();
+    mSettingsEnabled = enable;
     enableSensors(enable, false);
 #endif
 }
@@ -123,6 +125,8 @@ void HbSensorListener::enableSensors(bool enable, bool notify)
     mEnabled = enable;
 #ifdef Q_OS_SYMBIAN    
     enableSensorListening(enable);
+#else
+    mSettingsEnabled = enable;
 #endif    
     if (notify) {
         mObserver.sensorStatusChanged(enable, true);
@@ -131,7 +135,10 @@ void HbSensorListener::enableSensors(bool enable, bool notify)
 
 bool HbSensorListener::isEnabled() const
 {
-    return mEnabled;
+    if (mSettingsEnabled) {
+        return mEnabled;
+    }
+    return false;
 }
 
 #ifdef Q_OS_SYMBIAN
@@ -150,6 +157,7 @@ void HbSensorListener::enableSensorListening(bool enable)
 void HbSensorListener::cenrepValueChanged(TInt aValue, bool notify)
 {
     bool enable = (aValue == 0)? false : true;
+    mSettingsEnabled = enable;
     enableSensors(enable, notify);
 }
 #endif

@@ -69,8 +69,12 @@ public:
     virtual void _q_textChanged();
     virtual void _q_textChange(int position, int charsRemoved,int charsAdded);
 
+    void readjustStretchFont();
+    int linesToBeVisible() const;
+    void onResizeFontChange();
+    void setVisibleRows(int rowCount);
+
     int maxLength;
-    bool expandable;
     int minimumRows;
     int maximumRows;
     HbLineEdit::EchoMode echoMode;
@@ -78,6 +82,9 @@ public:
     bool clearOnEdit;
     bool emitTextChanged;
     QTextOption::WrapMode defaultWrapMode;
+
+    bool adjustFontSizeToFitHeight;
+    int stretchedToLineCount;
 };
 
 #endif // HBLINEEDIT_P_H

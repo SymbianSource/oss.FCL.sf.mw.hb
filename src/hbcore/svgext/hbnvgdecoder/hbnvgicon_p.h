@@ -37,55 +37,26 @@ class HB_CORE_PRIVATE_EXPORT HbNvgIcon
 {
 public:
 
-    /*!
-     set the aspectRatio \a preserveAspectSetting and \a smilFitSetting 
-     to be applied on the nvgicon. 
-     */
-    virtual void setPreserveAspectRatio(HbNvgEngine::NvgAlignStatusType preserveAspectSetting,
-            HbNvgEngine::NvgMeetOrSliceType smilFitSetting) = 0;
+    virtual void setPreserveAspectRatio(HbNvgEngine::HbNvgAlignType preserveAspectSetting,
+                                        HbNvgEngine::HbNvgMeetType smilFitSetting) = 0;
 
-    /*!
-     Set the \a angle for rotation of the nvgicon at the 
-     coordiantes  \a x and \a y. 
-     */
+
     virtual void rotate(float angle, float x, float y) = 0;
-    
-    virtual void setMirroringMode( bool mirroringmode)= 0;
 
-    /*!
-     Draw the nvgicon the nvgicon created of size \a size.
-     
-     */
-    virtual HbNvgEngine::NvgErrorType draw(const QSize &size) = 0;
+    virtual void enableMirroring(bool mirroringmode) = 0;
 
-    /*!
-     Destructor
-     */
-    virtual ~HbNvgIcon()
-    {
-    }
+    virtual HbNvgEngine::HbNvgErrorType draw(const QSize &size) = 0;
 
-    /*!
-      Set the VGImageBinder to the nvgicon.
-      */
+    virtual ~HbNvgIcon() {}
+
     virtual void setVgImageBinder(HbVgImageBinder *) {}
 
-    /*! 
-     Do the direct draw of the nvg graphic data \a buffer of size \a targetSize 
-     and return the status of the draw.
-     */
     virtual void directDraw(const QByteArray &buffer, const QSize& targetSize) = 0;
 
-    /*! 
-     Create the nvg graphic data \a buffer of size \a targetSize 
-     and return the status of the draw.
-     */
     virtual void create(const QByteArray &buffer, const QSize& targetSize) = 0;
-
-    /*! 
-     Sets the nvg graphic data \a buffer to the nvgicon.
-     */
+    
     virtual void setIconData(const QByteArray & /*buffer*/) {}
 };
 
 #endif
+

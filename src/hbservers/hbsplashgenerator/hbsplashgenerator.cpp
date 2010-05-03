@@ -38,6 +38,7 @@
 #include "hbstatusbar_p.h"
 #include "hbstyle.h"
 #include "hbbackgrounditem_p.h"
+#include "hbframeitem.h"
 #include <QCoreApplication>
 #include <QPainter>
 #include <QDir>
@@ -45,6 +46,7 @@
 #include <QSet>
 #include <QTranslator>
 #include <QLocale>
+#include <QTimer>
 
 const char *last_theme_key = "lasttheme";
 const char *last_lang_key = "lastlang";
@@ -100,10 +102,21 @@ int HbSplashGenerator::updateOutputDirContents(const QString &outDir)
 
 void HbSplashGenerator::start(bool forceRegen)
 {
-    // Start listening to the theme-change-finished signal and
-    // generate screens for the current theme if needed.
+    // Start listening to the theme-change-finished signal.
     HbTheme *theme = hbInstance->theme();
     connect(theme, SIGNAL(changeFinished()), SLOT(regenerate()));
+
+    // Watch also the directories containing splashml files. Files may
+    // be added/updated at any time.
+    connect(&mFsWatcher, SIGNAL(directoryChanged(QString)), SLOT(onDirectoryChanged(QString)));
+    foreach (const QString &dir, hbsplash_splashml_dirs()) {
+        // Check for directory existence before calling addPath() to
+        // avoid printing warnings.
+        if (QDir(dir).exists()) {
+            mFsWatcher.addPath(dir);
+        }
+    }
+
     // Regenerate screens on startup only when the theme, the language, the
     // number of files in the splash screen directory, or the splash screen
     // directory path is different than the recorded values. (or when
@@ -226,6 +239,9 @@ void HbSplashGenerator::processQueue()
             // The FixedVertical flag is used just to disable the sensor-based
             // orientation switching.
             mMainWindow = new HbMainWindow(0, Hb::WindowFlagFixedVertical);
+            // Make sure that at least the 1st phase of the delayed
+            // construction is done right now.
+            HbMainWindowPrivate::d_ptr(mMainWindow)->_q_delayedConstruction();
         }
         mMainWindow->setOrientation(mItem.mOrientation, false);
         qDebug() << PRE << "mainwindow init time (ms):" << mItemTime.elapsed();
@@ -302,10 +318,16 @@ QString HbSplashGenerator::splashFileName()
             qWarning() << PRE << "mkdir failed for" << outDirName;
         }
     }
-    QString splashFile = dir.filePath("splash_%1").arg(orientationName(mItem.mOrientation));
+    // "splash_<orientation>_<appid>_<screenid>"
+    QString splashFile = dir.filePath("splash_");
+    splashFile.append(orientationName(mItem.mOrientation));
     if (!mItem.mAppId.isEmpty()) {
         splashFile.append('_');
         splashFile.append(mItem.mAppId);
+        if (!mItem.mScreenId.isEmpty()) {
+            splashFile.append('_');
+            splashFile.append(mItem.mScreenId);
+        }
     }
     return splashFile;
 }
@@ -351,6 +373,7 @@ QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem& item)
     dbg << "["
         << item.mDocmlFileName
         << item.mAppId
+        << item.mScreenId
         << item.mDocmlWidgetName
         << item.mThemeName
         << orientationName(item.mOrientation)
@@ -471,6 +494,8 @@ void HbSplashGenerator::processSplashml(QXmlStreamReader &xml, QueueItem &item)
             if (item.mAppId.startsWith("0x")) {
                 item.mAppId.remove(0, 2);
             }
+        } else if (name == QLatin1String("screenid")) {
+            item.mScreenId = xml.readElementText().trimmed();
         } else if (name == QLatin1String("tsappname")) {
             item.mTsAppName = xml.readElementText().trimmed();
         } else if (name == QLatin1String("view-flags")) {
@@ -507,6 +532,31 @@ void HbSplashGenerator::processSplashml(QXmlStreamReader &xml, QueueItem &item)
             item.mCustomWidgetSubsts.insert(originalType, substitutedType);
         } else if (name == QLatin1String("fixed-orientation")) {
             item.mFixedOrientation = xml.readElementText().trimmed().toLower();
+        } else if (name == QLatin1String("item-bg-graphics")) {
+            QueueItem::ItemBgGraphicsRequest req;
+            req.mTargetWidgetName = xml.attributes().value("for").toString().trimmed();
+            QString type = xml.attributes().value("type").toString().trimmed();
+            req.mFrameGraphicsType = HbFrameDrawer::Undefined;
+            if (type == QLatin1String("1")) {
+                req.mFrameGraphicsType = HbFrameDrawer::OnePiece;
+            } else if (type == QLatin1String("3h")) {
+                req.mFrameGraphicsType = HbFrameDrawer::ThreePiecesHorizontal;
+            } else if (type == QLatin1String("3v")) {
+                req.mFrameGraphicsType = HbFrameDrawer::ThreePiecesVertical;
+            } else if (type == QLatin1String("9")) {
+                req.mFrameGraphicsType = HbFrameDrawer::NinePieces;
+            }                
+            QString z = xml.attributes().value("z").toString().trimmed();
+            if (z.isEmpty()) {
+                req.mZValue = -1;
+            } else {
+                req.mZValue = z.toFloat();
+            }
+            req.mOrientation = xml.attributes().value("when").toString().trimmed();
+            req.mFrameGraphicsName = xml.readElementText().trimmed();
+            if (!req.mTargetWidgetName.isEmpty() && !req.mFrameGraphicsName.isEmpty()) {
+                item.mItemBgGraphics.append(req);
+            }
         } else {
             qWarning() << PRE << "unknown element" << name;
         }
@@ -584,6 +634,9 @@ void HbSplashGenerator::setupAppSpecificWindow()
         }
     }
     if (ok) {
+        // Apply child widget settings.
+        setupNameBasedWidgetProps(loader);
+        // Find the root view and add it to the mainwindow.
         QGraphicsWidget *widget = loader.findWidget(mItem.mDocmlWidgetName);
         if (widget) {
             qDebug() << PRE << "widget created from" << mItem;
@@ -593,6 +646,27 @@ void HbSplashGenerator::setupAppSpecificWindow()
         }
     } else {
         qWarning() << PRE << "Unable to parse" << mItem.mDocmlFileName;
+    }
+}
+
+void HbSplashGenerator::setupNameBasedWidgetProps(HbDocumentLoader &loader)
+{
+    // item-bg-graphics
+    for (int i = 0, ie = mItem.mItemBgGraphics.count(); i != ie; ++i) {
+        QueueItem::ItemBgGraphicsRequest req = mItem.mItemBgGraphics.at(i);
+        if ((req.mOrientation == QLatin1String("portrait") && mItem.mOrientation != Qt::Vertical)
+            || (req.mOrientation == QLatin1String("landscape") && mItem.mOrientation != Qt::Horizontal))
+        {
+            continue;
+        }
+        HbWidget *widget = qobject_cast<HbWidget *>(loader.findWidget(req.mTargetWidgetName));
+        if (widget) {
+            qDebug() << PRE << "setting background item" << req.mFrameGraphicsName
+                     << "for" << req.mTargetWidgetName;
+            widget->setBackgroundItem(
+                new HbFrameItem(req.mFrameGraphicsName, req.mFrameGraphicsType),
+                (int) req.mZValue);
+        }
     }
 }
 
@@ -722,4 +796,13 @@ void HbSplashGenerator::clearTranslators()
     }
     qDeleteAll(mTranslators);
     mTranslators.clear();
+}
+
+void HbSplashGenerator::onDirectoryChanged(const QString &path)
+{
+    Q_UNUSED(path); // we are only watching directories containing splashml+docml
+    mParsedSplashmls.clear();
+    // Have some delay to avoid heavy system load in case of multiple
+    // directory-changed notifications.
+    QTimer::singleShot(1000, this, SLOT(regenerate()));
 }

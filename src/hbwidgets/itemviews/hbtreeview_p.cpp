@@ -26,15 +26,14 @@
 #include "hbtreeview_p.h"
 #include "hbtreeview.h"
 
-#include "hbtreeviewitem.h"
-#include "hbtreeitemselectionmodel_p.h"
-#include "hbtreemodeliterator_p.h"
+#include "hbabstractitemcontainer.h"
 
 const QString KDefaultLayoutOption = "default";
 
 HbTreeViewPrivate::HbTreeViewPrivate() :
     HbAbstractItemViewPrivate(),
-    mSelectionStarted(false)
+    mSelectionStarted(false),
+    mInSetExpanded(false)
 {
 }
 
@@ -45,13 +44,10 @@ HbTreeViewPrivate::~HbTreeViewPrivate()
 void HbTreeViewPrivate::init()
 {
     Q_Q(HbTreeView);
-
-    q->setClampingStyle(HbScrollArea::StrictClamping);
-    q->setFrictionEnabled(0);
     q->setItemRecycling(true);
     q->setScrollDirections(Qt::Horizontal | Qt::Vertical);
     mLayoutOptionName = KDefaultLayoutOption;
-    treeModelIterator()->setItemContainer(mContainer, HbTreeViewItem::ExpansionKey);
+    treeModelIterator()->setItemContainer(mContainer);
 }
 
 bool HbTreeViewPrivate::isParentValid(const QModelIndex &parent) const
@@ -107,3 +103,39 @@ QModelIndex HbTreeViewPrivate::searchIndexUp(
     }
     return previousIndex;
 }
+
+/*!
+    \reimp
+*/
+bool HbTreeViewPrivate::handleScrollBar(Qt::Orientation orientation)
+{
+    if (!mContainer->itemRecycling()
+        || orientation == Qt::Horizontal
+        || mContainer->itemPrototypes().count() != 1
+        || mContainer->items().isEmpty()
+        || !mVerticalScrollBar) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool HbTreeViewPrivate::animationEnabled(bool insertOperation)
+{
+    if (mInSetExpanded) {
+        if (insertOperation) {
+            if (mEnabledAnimations & HbAbstractItemView::Expand) {
+                return true;
+            }
+        } else {
+            if (mEnabledAnimations & HbAbstractItemView::Collapse) {
+                return true;
+            }
+        }
+        return false;
+    } else {
+        return HbAbstractItemViewPrivate::animationEnabled(insertOperation);
+
+    }
+}
+

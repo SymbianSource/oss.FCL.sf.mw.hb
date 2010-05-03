@@ -114,35 +114,35 @@ HbEditorInterfacePrivateCache::~HbEditorInterfacePrivateCache()
     }
 }
 
-HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* aEditor, HbEditorInterface* aInterface)
+HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* editor, HbEditorInterface* interface)
 {
-    if (aEditor) {
+    if (editor) {
         for (int i = 0; i < mObjectCache.count(); i++) {
-            if (mObjectCache[i]->mHostEditor == aEditor) {
-                if (!mObjectCache[i]->hasInterface(aInterface)) {
-                    mObjectCache[i]->mAttachedInterfaces.append(aInterface);
-                    connect(aInterface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
-                    connect(mObjectCache[i], SIGNAL(cursorPositionChanged(int, int)), aInterface, SIGNAL(cursorPositionChanged(int, int)));
+            if (mObjectCache[i]->mHostEditor == editor) {
+                if (!mObjectCache[i]->hasInterface(interface)) {
+                    mObjectCache[i]->mAttachedInterfaces.append(interface);
+                    connect(interface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
+                    connect(mObjectCache[i], SIGNAL(cursorPositionChanged(int, int)), interface, SIGNAL(cursorPositionChanged(int, int)));
                 }
                 return mObjectCache[i];
             }
         }
 
         HbEditorInterfacePrivate* newItem = new HbEditorInterfacePrivate();
-        newItem->mHostEditor = aEditor;
-        newItem->mAttachedInterfaces.append(aInterface);
+        newItem->mHostEditor = editor;
+        newItem->mAttachedInterfaces.append(interface);
         mObjectCache.append(newItem);
 
-        connect(aEditor, SIGNAL(destroyed(QObject*)), this, SLOT(destroyed(QObject*)));
-        connect(aInterface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
-        connect(newItem, SIGNAL(cursorPositionChanged(int, int)), aInterface, SIGNAL(cursorPositionChanged(int, int)));
+        connect(editor, SIGNAL(destroyed(QObject*)), this, SLOT(destroyed(QObject*)));
+        connect(interface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
+        connect(newItem, SIGNAL(cursorPositionChanged(int, int)), interface, SIGNAL(cursorPositionChanged(int, int)));
 
         // Check whether the connected object is a QLineEdit or QTextEdit, plain or wrapped in QGraphicsProxyWidget
         // and if yes, connect its cursorPositionChanged() signal to this item's cursorPositionChanged() signal
-        if (aEditor->inherits("HbAbstractEdit")) {
-            connect(aEditor, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
+        if (editor->inherits("HbAbstractEdit")) {
+            connect(editor, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
         } else {
-            QGraphicsProxyWidget* proxywidget = qobject_cast<QGraphicsProxyWidget*>(aEditor);
+            QGraphicsProxyWidget* proxywidget = qobject_cast<QGraphicsProxyWidget*>(editor);
             if (proxywidget) {
                 QWidget* editorwidget = proxywidget->widget();
                 QLineEdit* lineedit = qobject_cast<QLineEdit*>(editorwidget);
@@ -155,11 +155,11 @@ HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* a
                     }
                 }
             } else {
-                QLineEdit* lineedit = qobject_cast<QLineEdit*>(aEditor);
+                QLineEdit* lineedit = qobject_cast<QLineEdit*>(editor);
                 if (lineedit) {
                 connect(lineedit, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
                 } else {
-                    QTextEdit* textedit = qobject_cast<QTextEdit*>(aEditor);
+                    QTextEdit* textedit = qobject_cast<QTextEdit*>(editor);
                     if (textedit) {
                     connect(textedit, SIGNAL(cursorPositionChanged()), newItem, SLOT(cursorPositionChanged()));
                     }
@@ -173,10 +173,10 @@ HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* a
     return 0;
 }
 
-void HbEditorInterfacePrivateCache::destroyed(QObject* aObject)
+void HbEditorInterfacePrivateCache::destroyed(QObject* object)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
-        if (mObjectCache[i]->mHostEditor == aObject) {
+        if (mObjectCache[i]->mHostEditor == object) {
             delete mObjectCache[i];
             mObjectCache.remove(i);
             break;
@@ -184,11 +184,11 @@ void HbEditorInterfacePrivateCache::destroyed(QObject* aObject)
     }
 }
 
-void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* aObject)
+void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* object)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
         for (int j = 0; j < mObjectCache[i]->mAttachedInterfaces.count(); j++) {
-            if (mObjectCache[i]->mAttachedInterfaces[j] == aObject) {
+            if (mObjectCache[i]->mAttachedInterfaces[j] == object) {
                 mObjectCache[i]->mAttachedInterfaces.removeAt(j);
                 return;
             }
@@ -196,10 +196,10 @@ void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* aObject)
     }
 }
 
-void HbEditorInterfacePrivateCache::notifyValueChanged(QObject* aEditor)
+void HbEditorInterfacePrivateCache::notifyValueChanged(QObject* editor)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
-       if (mObjectCache[i]->mHostEditor == aEditor) {
+       if (mObjectCache[i]->mHostEditor == editor) {
             for (int j = 0; j < mObjectCache[i]->mAttachedInterfaces.count(); j++) {
                 mObjectCache[i]->mAttachedInterfaces[j]->backendModified();
             }

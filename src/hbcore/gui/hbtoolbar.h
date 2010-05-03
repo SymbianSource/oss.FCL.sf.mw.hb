@@ -56,6 +56,7 @@ public:
 
     Qt::Orientation orientation() const;
 
+    void updatePrimitives();
     enum { Type = Hb::ItemType_ToolBar };
     int type() const { return Type; }
 

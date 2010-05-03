@@ -30,6 +30,7 @@
 #include <hbwidget.h>
 
 class HbProgressBarPrivate;
+class HbStyleOptionProgressBar;
 
 class HB_WIDGETS_EXPORT HbProgressBar : public HbWidget
 {
@@ -43,7 +44,7 @@ class HB_WIDGETS_EXPORT HbProgressBar : public HbWidget
     Q_PROPERTY(QString maxText READ maxText WRITE setMaxText)
     Q_PROPERTY(bool minMaxTextVisible READ isMinMaxTextVisible WRITE setMinMaxTextVisible)
     Q_PROPERTY(Qt::Orientation orientation READ orientation WRITE setOrientation)
-	Q_PROPERTY(Qt::Alignment minMaxTextAlignment READ minMaxTextAlignment WRITE setMinMaxTextAlignment)
+    Q_PROPERTY(Qt::Alignment minMaxTextAlignment READ minMaxTextAlignment WRITE setMinMaxTextAlignment)
 
 public:
     enum ProgressBarType {SimpleProgressBar, RatingProgressBar };
@@ -63,14 +64,14 @@ public:
 
     void setMinText(const QString &text);
     QString minText() const;
-	
+    
     void setMaxText(const QString &text);
     QString maxText() const;
 
     void setMinMaxTextVisible(bool visible);
     bool isMinMaxTextVisible() const;
 
-	void setMinMaxTextAlignment(Qt::Alignment alignment);
+    void setMinMaxTextAlignment(Qt::Alignment alignment);
     Qt::Alignment minMaxTextAlignment() const;
 
     Qt::Orientation orientation() const;
@@ -79,7 +80,7 @@ public:
     int type() const { return Type; }  
 
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const; 
-	
+    
 public slots:
     void setProgressValue(int value);
     void setMaximum(int maximum);
@@ -93,7 +94,7 @@ signals:
 protected:
     HbProgressBar(HbProgressBarPrivate &dd, ProgressBarType type=SimpleProgressBar, QGraphicsItem *parent = 0);
     HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent);
-    virtual void initStyleOption(HbStyleOption *option) const;
+    void initStyleOption(HbStyleOptionProgressBar *option) const;
     void closeEvent ( QCloseEvent * event );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     void changeEvent(QEvent *event);
@@ -104,6 +105,7 @@ private:
 
 #ifdef HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void _q_delayedHide(HbEffect::EffectStatus status))
+    Q_PRIVATE_SLOT(d_func(), void _q_delayedShow(HbEffect::EffectStatus status))
 #endif
 
 };

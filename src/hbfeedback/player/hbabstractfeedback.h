@@ -52,11 +52,13 @@ public:
 
     QRect rect() const;
     QWidget* window() const;
+    HbFeedback::Modalities modalities() const;
 
     void setRect(QRect rect);
     void setRect(const QWidget* widget);
     void setRect(const QGraphicsItem* graphicsItem, const QGraphicsView* graphicsView);
     void setOwningWindow(const QWidget* widget);
+    void setModalities(HbFeedback::Modalities modalities = HbFeedback::All);
 
     virtual HbAbstractFeedback &operator=(const HbAbstractFeedback &feedback);
     virtual bool operator==(const HbAbstractFeedback &feedback) const;

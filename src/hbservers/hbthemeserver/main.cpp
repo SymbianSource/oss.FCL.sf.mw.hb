@@ -29,7 +29,9 @@
 
 #include "hbthemeserver_p.h"
 #include "hbthemecommon_p.h"
+#include "hbtheme.h"
 #if defined (Q_OS_SYMBIAN)
+#include "hbthemecommon_symbian_p.h"
 #include <eikenv.h>
 #include <apgwgnam.h>
 #endif
@@ -41,6 +43,67 @@ static const QLatin1String TEST_RESOURCE_LIB_NAME("HbTestResources");
 static const QLatin1String WIN32_DEBUG_SUFFIX("d");
 static const QLatin1String MAC_DEBUG_SUFFIX("_debug");
 
+#ifdef Q_OS_SYMBIAN
+class Lock
+{
+public:
+    enum State {
+        Reserved,
+        Acquired,
+        Error
+    };
+    Lock();
+    ~Lock(){close();}
+    void close(){mFile.Close(); mFs.Close();}
+    State acquire();
+    static bool serverExists();
+
+private:
+    RFs mFs;
+    RFile mFile;
+};
+
+Lock::Lock()
+{
+    // Using a file for interprocess lock
+    const int NumMessageSlots = 1;
+    if (mFs.Connect(NumMessageSlots) == KErrNone) {
+        mFs.CreatePrivatePath(EDriveC);
+        if (mFs.SetSessionToPrivate(EDriveC) == KErrNone) {
+            _LIT(KFileName, "lockFile");
+            const TUint mode = EFileShareReadersOrWriters;
+            if (mFile.Create(mFs, KFileName, mode) == KErrAlreadyExists) {
+                mFile.Open(mFs, KFileName, mode);
+            }
+        }
+    }
+}
+
+// Try to acquire lock
+Lock::State Lock::acquire()
+{
+    State state = Error;
+    // If process holding the lock crashes, file server releases the lock
+    if (mFile.SubSessionHandle()) {
+        TInt error = mFile.Lock(0, 1);
+        if (error == KErrNone) {
+            state = Acquired;
+        } else if (error == KErrLocked) {
+            state = Reserved;
+        }
+    }
+    return state;
+}
+
+// Check if Symbian server exists
+bool Lock::serverExists()
+{
+    TFindServer findHbServer(KThemeServerName);
+    TFullName name;
+    return findHbServer.Next(name) == KErrNone;
+}
+
+#endif
 /* 
     This function loads library which keeps resources of default theme
 */
@@ -81,38 +144,105 @@ int main(int argc, char *argv[])
 #ifdef QT_DEBUG
     //temporary solution until Hb specific style is ready
     QApplication::setStyle( new QWindowsStyle );
+#endif // QT_DEBUG
+#if QT_VERSION >= 0x040601
+    QApplication::setAttribute(Qt::AA_S60DontConstructApplicationPanes);
+#endif // QT_VERSION
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: START!!!";
 #endif
-	QtSingleApplication  app( argc, argv );
-	if (app.sendMessage("Am Alive"))
-         return 0;
-    
-    loadResourceLibrary(RESOURCE_LIB_NAME);
-#ifdef BUILD_HB_INTERNAL
-    loadResourceLibrary(TEST_RESOURCE_LIB_NAME);
+#ifdef Q_OS_SYMBIAN
+    // Guard against starting multiple copies of the server
+    Lock lock;
+    Lock::State lockState;
+    for(;;) {
+        lockState = lock.acquire();
+        if (lockState == Lock::Acquired) {
+            break;
+        } else if (lockState == Lock::Reserved) {
+            // Process may be starting, wait for server object to be created
+            if (Lock::serverExists()) {
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: serverExists!!!";
 #endif
-    HbThemeServer server;
-    bool success = server.startServer();
-    if ( !success ) {
-        return -1;
+                break;
+            } else {
+                const TInt KTimeout = 100000; // 100 ms
+                User::After(KTimeout);
+            }
+        } else {
+            break;
+        }
+    }
+    if (lockState != Lock::Acquired) {
+        // With KErrAlreadyExists client should try to connect, otherwise bail out.
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: Lock not acquired!!!";
+#endif
+        RProcess::Rendezvous(lockState == Lock::Reserved ? KErrAlreadyExists:KErrGeneral);
+        return KErrNone;
+    }
+#endif // Q_OS_SYMBIAN
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: start construction QtSingleApplication!!!";
+#endif
+    QtSingleApplication  app(argc, argv );
+
+    if (app.isRunning()) {
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: first instance already running!!!";
+#endif
+        return 0;
     }
 
+#ifdef THEME_SERVER_TRACES
+    qDebug() << "HbThemeServer::main: I'm first instance!!!";
+#endif
+        
 #if defined (Q_OS_SYMBIAN)
     CEikonEnv * env = CEikonEnv::Static();
     if ( env ) {
         CApaWindowGroupName* wgName = CApaWindowGroupName::NewLC(env->WsSession());
+        env->RootWin().SetOrdinalPosition(0, ECoeWinPriorityNeverAtFront); // avoid coming to foreground
         wgName->SetHidden(ETrue); // hides us from FSW and protects us from OOM FW etc.
         wgName->SetSystem(ETrue); // Allow only application with PowerManagement cap to shut us down    
         wgName->SetCaptionL(_L("HbThemeServer"));
         wgName->SetAppUid(KNullUid);
-        RWindowGroup &rootWindowGroup = env->RootWin();
-        wgName->SetWindowGroupName(rootWindowGroup);
-        rootWindowGroup.SetOrdinalPosition(-1, ECoeWinPriorityNormal); //move to background.        
+        wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
+        RThread::RenameMe(_L("HbThemeServer"));
     }
-#elif defined(QT_DEBUG)
-    server.showMinimized();
+#endif
+    HbTheme::instance(); //for theme initialization, instance needs to be created before starting the server.
+    loadResourceLibrary(RESOURCE_LIB_NAME);
+#ifdef HB_DEVELOPER
+    loadResourceLibrary(TEST_RESOURCE_LIB_NAME);
 #endif
 
-    return app.exec();
-}
+    HbThemeServer server;
 
+    bool success = server.startServer();
+    
+    if ( !success ) {
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: server not started!!!";
+#endif
+        return -1;
+    }
+    
+#ifdef THEME_SERVER_TRACES
+    qDebug() << "HbThemeServer::main: server started!!!";
+#endif
+
+#ifndef Q_OS_SYMBIAN
+#ifdef QT_DEBUG
+    server.showMinimized();
+#endif
+#endif // Q_OS_SYMBIAN
+
+    int result = app.exec();
+#ifdef THEME_SERVER_TRACES
+        qDebug() << "HbThemeServer::main: out from exec, with result code: " << result;
+#endif
+    return result; 
+}

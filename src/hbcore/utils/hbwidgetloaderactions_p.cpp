@@ -35,33 +35,27 @@
     \proto
 */
 
-
-HbWidgetLoaderActions::HbWidgetLoaderActions(HbMemoryManager::MemoryType type) : HbXmlLoaderAbstractActions(),mType(type),mLayoutDefinitionOffset(-1)
+/*!
+    \internal
+*/
+HbWidgetLoaderActions::HbWidgetLoaderActions() 
+    : HbXmlLoaderBaseActions(), mWidget(0), mLayout(0)
 {
-    // if the memory type is shared memory then allocate memory in the sharedmemory
-    // for the vector of meshitems
-    // else allocate the memory in the heap.
-    if(HbMemoryManager::SharedMemory == mType){
-        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-        mLayoutDefinitionOffset = manager->alloc(sizeof(LayoutDefinition));
-
-        if (mLayoutDefinitionOffset > -1) {
-        	mCacheLayout = new((char*)manager->base() + mLayoutDefinitionOffset) LayoutDefinition(HbMemoryManager::SharedMemory);
-        }
-    }
-    else {
-        if(mCacheLayout == NULL){
-        	mCacheLayout = new LayoutDefinition(HbMemoryManager::HeapMemory);
-        }
-    }
 }
 
+/*!
+    \internal
+*/
 HbWidgetLoaderActions::~HbWidgetLoaderActions()
 {
 }
 
-bool HbWidgetLoaderActions::createMeshLayout()
-{    
+/*!
+    \internal
+*/
+bool HbWidgetLoaderActions::createMeshLayout( const QString &widget )
+{
+    Q_UNUSED( widget );
     HbMeshLayout *layout = static_cast<HbMeshLayout*>(mWidget->layout());
     if (!layout) {
         layout = new HbMeshLayout();
@@ -75,122 +69,103 @@ bool HbWidgetLoaderActions::createMeshLayout()
         layout->clearSpacingOverrides();
         layout->clearItemIds();
     }
+    mLayout = layout;
     return true;
 }
 
-bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, const QString &srcEdge, 
-                                               const QString &dst, const QString &dstEdge,
-                                               const QString &spacing, const QString &spacer )
-{    
+/*!
+    \internal
+*/
+bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+                                               const QString &dst, Hb::Edge dstEdge,
+                                               const HbXmlLengthValue &spacing, const QString &spacer )
+{
+    bool ok = true;
     if ( !spacer.isEmpty() ) {
         // spacer is added
         // divide original mesh definition into two. src->dst becomes src->spacer->dst
-        bool ok = true;
         if ( src.isEmpty() ) {
             // if the starting item is layout
             // "layout --(spacing)--> item" 
             // becomes 
             // "layout --(spacing)--> spacer --(0)--> item"
             ok &= addMeshLayoutEdge( src, srcEdge, spacer, srcEdge, spacing, QString() );
-            ok &= addMeshLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, QString(), QString() );
+            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
+            ok &= addMeshLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, val, QString() );
         } else {
-            // if the starting item is not layout
+            // between two items, or if end item is layout
             // "item1 --(spacing)--> item2" 
             // becomes 
             // "item1 --(spacing)--> spacer --(0)--> item2"
             ok &= addMeshLayoutEdge( src, srcEdge, spacer, getAnchorOppositeEdge(srcEdge), spacing, QString() );
-            ok &= addMeshLayoutEdge( spacer, srcEdge, dst, dstEdge, QString(), QString() );
+            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
+            ok &= addMeshLayoutEdge( spacer, srcEdge, dst, dstEdge, val, QString() );
         }
-
+        if ( ok & !mWidget->layoutPrimitive( spacer ) ) {
+            static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(mWidget))
+                ->createSpacerItem(spacer);
+        }
+    } else {
+        qreal spacingPx=0.0;
+        if (spacing.mType != HbXmlLengthValue::None ) {
+            ok = toPixels(spacing, spacingPx);
+        } // else default to zero.
         if ( ok ) {
-            mCacheLayout->spacers.append(HbString(spacer,mType));
+            mLayout->setAnchor(src, srcEdge, dst, dstEdge, spacingPx);
         }
-
-        return ok;
     }
+    return ok;
+}
 
-    MeshItem item(mType);
-    item.src = src;
-    item.dst = dst;
-    
-    int edgeIndex = getAnchorEdge( srcEdge );
-    if( edgeIndex < 0 ) {
-        qWarning() << "Invalid mesh start edge"; 
-        return false;
-    }
-    
-    item.srcEdge = (Hb::Edge)edgeIndex;
-    
-    edgeIndex = getAnchorEdge( dstEdge );
-    if( edgeIndex < 0 ){
-        qWarning() << "Invalid mesh end edge"; 
-        return false;
-    }
-    
-    item.dstEdge = (Hb::Edge)edgeIndex;
-    
-    item.spacing = spacing;
+/*
+    \class HbWidgetLoaderMemoryActions
+    \internal
+    \proto
+*/
 
-    mCacheLayout->meshItems.append(item);
+/*!
+    \internal
+*/
+HbWidgetLoaderMemoryActions::HbWidgetLoaderMemoryActions() : HbXmlLoaderAbstractActions(), mLayoutDef(0)
+{
+}
 
+/*!
+    \internal
+*/
+HbWidgetLoaderMemoryActions::~HbWidgetLoaderMemoryActions()
+{
+}
+
+/*!
+    \internal
+*/
+bool HbWidgetLoaderMemoryActions::createMeshLayout( const QString &widget )
+{
+    Q_UNUSED(widget);
+    mLayoutDef->meshItems.clear();
     return true;
 }
 
-/*
-  Updates the widget's layout with the data given in LayoutDefinition.
-  If no LayoutDefinition it's assumed that the correct layout definition
-  is found in internal cache.
+/*!
+    \internal
 */
-void HbWidgetLoaderActions::updateWidget(LayoutDefinition* layoutDef)
-{
-    if (!layoutDef) {
-        // Use client side cache.
-        layoutDef = mCacheLayout;
-    }
-    if (layoutDef){
-        // Construct layout from layout definition
-	    createMeshLayout();
-	    HbWidgetLoaderSyntax loaderSyntax(NULL);
-	    HbMeshLayout *layout = static_cast<HbMeshLayout*>(mWidget->layout());
+bool HbWidgetLoaderMemoryActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+                                               const QString &dst, Hb::Edge dstEdge,
+                                               const HbXmlLengthValue &spacing, const QString &spacer )
+{    
+    HbWidgetLoader::MeshItem item(mLayoutDef->type);
+    item.src = src;
+    item.dst = dst;    
+    item.srcEdge = srcEdge;    
+    item.dstEdge = dstEdge;
+    item.spacingType = spacing.mType;
+    item.spacingVal = spacing.mValue;
+    item.spacingText = spacing.mString;
+    item.spacer = spacer;
+    
+    mLayoutDef->meshItems.append(item);
 
-	    for (int i = 0; i < layoutDef->meshItems.count(); i++){
-			const MeshItem &item = layoutDef->meshItems.at(i);
-	        // Mesh item stored in the sharedmemory doesn't contain
-	        // the actual data. so, converting that to pixels.
-	        qreal spacing=0.0;
-            if (!(item.spacing.isEmpty())){
-                loaderSyntax.toPixels(HbDeviceProfile::profile(mWidget), item.spacing,spacing);
-            }
-            layout->setAnchor(item.src, item.srcEdge, item.dst, item.dstEdge, spacing);
-	    }
-        for (int i=0; i<layoutDef->spacers.count(); i++){
-            QString spacer = layoutDef->spacers.at(i);
-            if ( !mWidget->layoutPrimitive( spacer ) ) {
-                static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(mWidget))
-                    ->createSpacerItem(spacer);
-            }
-        }
-    }
-}
-
-/*
-  Returns the mesh items offset.
-*/
-
-int HbWidgetLoaderActions::getLayoutDefintionOffset()
-{
-    if(HbMemoryManager::SharedMemory == mType) {
-    	return mLayoutDefinitionOffset;
-    }else {
-    	return -1;
-    }
-}
-
-/*
-  Sets the MeshItemsOffset
-*/
-void HbWidgetLoaderActions::setLayoutDefintionOffset(int offset)
-{
-    mLayoutDefinitionOffset = offset;
+    return true;
 }
 

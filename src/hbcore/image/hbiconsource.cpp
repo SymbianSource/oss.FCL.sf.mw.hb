@@ -97,7 +97,7 @@ QSize nvgContentDimensions(const QByteArray &buffer)
 	    float lViewboxHeight = * (float*)(lBuf + NVG_VIEWBOX_HEIGHT_OFS);
 
 	    if (lViewboxWidth > 0 && lViewboxHeight > 0) {
-	        ret = QSize(lViewboxWidth, lViewboxHeight);
+	        ret = QSize((int)lViewboxWidth, (int)lViewboxHeight);
 	    } else {
 	        ret = QSize(0, 0);
 	    }

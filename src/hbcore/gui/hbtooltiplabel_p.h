@@ -57,6 +57,7 @@ public:
 protected:    
     void timerEvent (QTimerEvent *event);
     bool event(QEvent *event);
+    void polish(HbStyleParameters &params);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbToolTipLabel)

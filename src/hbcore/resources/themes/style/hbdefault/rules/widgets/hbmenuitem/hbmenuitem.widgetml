@@ -14,10 +14,12 @@
     <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+	<meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
     
     <meshitem src="separator" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="separator" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="separator" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+	<meshitem src="separator" srcEdge="TOP" dst="" dstEdge="TOP" />
   </layout> 
    
 </hbwidget>

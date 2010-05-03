@@ -41,6 +41,30 @@ HbListViewItem::text-3[state="disabled"]{
     color: var(qtc_list_item_disabled);
 }
 
+HbListViewItem::icon-1{
+    color: var(qtc_list_item_title_normal);
+}
+
+HbListViewItem::icon-1[state="pressed"]{
+    color: var(qtc_list_item_pressed);
+}
+
+HbListViewItem::icon-1[state="disabled"]{
+    color: var(qtc_list_item_disabled);
+}
+
+HbListViewItem::icon-2{
+    color: var(qtc_list_item_title_normal);
+}
+
+HbListViewItem::icon-2[state="pressed"]{
+    color: var(qtc_list_item_pressed);
+}
+
+HbListViewItem::icon-2[state="disabled"]{
+    color: var(qtc_list_item_disabled);
+}
+ 
 
 /*
     List item inside popup color definitions.
@@ -85,3 +109,26 @@ HbListViewItem::text-3[insidePopup][state="disabled"]{
     color: var(qtc_popup_list_item_disabled);
 }
 
+HbListViewItem::icon-1[insidePopup]{
+    color: var(qtc_popup_list_title_normal);
+}
+
+HbListViewItem::icon-1[insidePopup][state="pressed"]{
+    color: var(qtc_popup_list_item_pressed);
+}
+
+HbListViewItem::icon-1[insidePopup][state="disabled"]{
+    color: var(qtc_popup_list_item_disabled);
+}
+
+HbListViewItem::icon-2[insidePopup]{
+    color: var(qtc_popup_list_title_normal);
+}
+
+HbListViewItem::icon-2[insidePopup][state="pressed"]{
+    color: var(qtc_popup_list_item_pressed);
+}
+
+HbListViewItem::icon-2[insidePopup][state="disabled"]{
+    color: var(qtc_popup_list_item_disabled);
+}

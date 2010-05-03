@@ -75,13 +75,12 @@ signals:
 protected:
     HbToolButton( HbToolButtonPrivate &dd, QGraphicsItem *parent );
 
-    void initStyleOption( HbStyleOptionToolButton *option ) const;
-    void mousePressEvent( QGraphicsSceneMouseEvent *event );
-    void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
+    void initStyleOption( HbStyleOptionToolButton *option );
     void resizeEvent( QGraphicsSceneResizeEvent *event );
     void nextCheckState();
     bool event( QEvent *event );
     void polish(HbStyleParameters &params);
+    bool sceneEvent(QEvent *event);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbToolButton )

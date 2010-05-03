@@ -35,6 +35,8 @@ const uint hbsplash_version_minor = 0;
 const uint hbsplash_version_build = 1;
 
 _LIT(hbsplash_server_name, "hbsplashgenerator");
+_LIT(hbsplash_server_exe, "hbsplashgenerator.exe");
+const TUid hbsplash_server_uid3 = { 0x2002E68B };
 
 enum HbSplashServerFuncs {
     HbSplashSrvGetSplash = 1

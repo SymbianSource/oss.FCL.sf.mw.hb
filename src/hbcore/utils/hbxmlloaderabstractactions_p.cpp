@@ -24,9 +24,11 @@
 ****************************************************************************/
 
 #include "hbxmlloaderabstractactions_p.h"
+#include "hbxmlloaderabstractsyntax_p.h"
 
 #include <QCoreApplication>
 
+#define RETURNVALUE true
 
 /*
     \class HbXmlLoaderAbstractActions
@@ -34,327 +36,339 @@
     \proto
 */
 
-HbXmlLoaderAbstractActions::HbXmlLoaderAbstractActions() : 
-    mContext(), 
-    mStack(),
-    mCurrentContainer(0)
+HbXmlLoaderAbstractActions::HbXmlLoaderAbstractActions()
 {
 }
 
 HbXmlLoaderAbstractActions::~HbXmlLoaderAbstractActions()
 {
-    reset();    
 }
-
-QList <QObject*> HbXmlLoaderAbstractActions::takeAll()
-{
-    QList<QPointer<QObject> > objects = mTopObjectMap.values();
-    
-    QList<QObject *> result;
-    while (objects.size()) {
-        QPointer<QObject> ptr = objects.takeLast();
-        if (ptr.data()) {
-            result.append(ptr.data());
-        }
-    }
-    
-    return result;
-    
-}
-
-
-void HbXmlLoaderAbstractActions::removeChildren( QPointer<QObject> parent )
-{
-    mObjectMap.remove( mObjectMap.key( parent ) );
-    QList<QPointer<QObject> > objects = mObjectMap.values();
-    for( int i = 0; i < objects.size(); i++ ) {
-        if( objects[i].data() ) {
-            if( objects[i].data()->parent() == parent ) {
-                removeChildren( objects[i] ); 
-            }
-        }
-    }
-}
-
-QGraphicsWidget* HbXmlLoaderAbstractActions::findWidget( const QString &name )
-{
-    QGraphicsWidget *result = 0;
-    
-    ObjectMap::iterator it = mObjectMap.find(name);
-    if (it != mObjectMap.end()) {
-        QObject *current = it.value().data();
-        result = qobject_cast<QGraphicsWidget *>(current);
-    }    
-        
-    return result;        
-}
-
-
-QObject* HbXmlLoaderAbstractActions::findObject( const QString &name )
-{
-    if( mObjectMap.contains(name) ) {               
-        return mObjectMap.value(name).data();
-    }
-    return 0;    
-}
-
-
-
-bool HbXmlLoaderAbstractActions::pushDocument(const QString& context)
-{
-    Element e;
-    e.type = DOCUMENT;
-    e.data = 0;
-    mStack.append( e );
-
-    mContext = context;
-
-    HB_DOCUMENTLOADER_PRINT( QString( "ADD ELEMENT " )  );
-    return true;
-}
-
-
-
-bool HbXmlLoaderAbstractActions::pop( const ElementType type )
-{
-    
-    // No check for now...
-    
-    switch( type ) {
-         case OBJECT:
-         case WIDGET:
-         case SPACERITEM:
-         case DOCUMENT:
-         {
-            if( mStack.isEmpty() ) {
-                return false;
-            }
-            
-            HB_DOCUMENTLOADER_PRINT( QString( "REMOVE ELEMENT " ) );            
-            mStack.removeLast();
-            break;
-         }
-         
-         case LAYOUT:
-         case CONTAINER:
-         case CONNECT:
-         case PROPERTY:
-         default:
-         {
-         }
-    }         
-    return true;
-}
-
 
 void HbXmlLoaderAbstractActions::cleanUp()
 {
-    mStack.clear();
-    
-    // Create mTopObjectMap
-    for (ObjectMap::const_iterator it = mObjectMap.constBegin(); 
-         it != mObjectMap.constEnd(); 
-         ++it ) {
-        QObject *object = it.value().data();
-        
-        QGraphicsWidget *asWidget = qobject_cast<QGraphicsWidget *>(object);
-        if (asWidget) {
-            if (!asWidget->parentItem() && !asWidget->parent()) {
-                mTopObjectMap.insert(it.key(), object);
-            }
-        } else if (object && !object->parent()) {
-            mTopObjectMap.insert(it.key(), object);
-        } else {
-            // not added - owned by another object.
-        }
-    }
 }
 
-QObject* HbXmlLoaderAbstractActions::createObject( const QString& type, const QString &name, const QString &plugin )
+void HbXmlLoaderAbstractActions::reset()
 {
-    Q_UNUSED( type );
-    Q_UNUSED( name );
-    Q_UNUSED( plugin );
-    return 0;
-}
-
-
-QObject* HbXmlLoaderAbstractActions::lookUp(const QString& type, const QString &name, const QString &plugin)
-{   
-    const bool nameNotEmpty = name.size() != 0;
-    bool doLookUp = true;
-    QObject *current = 0;
-    
-    if (nameNotEmpty) {
-        ObjectMap::iterator it = mObjectMap.find(name);
-        if (it != mObjectMap.end()) {
-            current = it.value();
-            
-            if (!current) {
-                mObjectMap.remove(name);
-            }
-            if (current && !type.isEmpty()) {
-                const QByteArray array = type.toUtf8();
-                
-                if (!current->inherits(array.data())) {                    
-                    HB_DOCUMENTLOADER_PRINT( QString( "Existing object requested with invalid type" ) );
-                    // We have object already in mObjectMap, but it does not fulfill
-                    // all needs. So object look up has failed.
-                    doLookUp = false;
-                    current = 0;
-                }
-            }
-        }
-    }
-    
-    if (doLookUp && !current) {
-        current = createObject(type, name, plugin);
-        
-        if (nameNotEmpty) {
-            mObjectMap.insert(name, current);
-        }
-    }
-
-    return current;
-}
-
-QGraphicsLayoutItem *HbXmlLoaderAbstractActions::findSpacerItemFromStackTop() const
-{
-    QGraphicsLayoutItem *current = 0;
-    if ( mStack[mStack.size()-1].type == SPACERITEM ) {
-        current = (QGraphicsLayoutItem*)mStack[mStack.size()-1].data;
-    }
-    return current;
-}
-
-QObject *HbXmlLoaderAbstractActions::findFromStack(bool *isWidgetElement) const
-{
-    QObject *current = 0;
-    bool widget = false;
-    
-    for( int i = mStack.size() - 1; i >=0; i-- )
-    {
-        if( ( mStack[i].type == OBJECT ) || ( mStack[i].type == WIDGET ) ) {
-            current = (QObject*)mStack[i].data;
-            widget = ( mStack[i].type == WIDGET );
-            break;
-        }
-    }
-    
-    if (isWidgetElement) {
-        *isWidgetElement = widget;
-    }
-    return current;
 }
 
 void HbXmlLoaderAbstractActions::deleteAll()
 {
-    QList<QObject *> list = takeAll();
-    
-    qDeleteAll( list );
-    
-    reset();
 }
 
-
-void HbXmlLoaderAbstractActions::reset()
+bool HbXmlLoaderAbstractActions::pushDocument( const QString& context)
 {
-    mStack.clear();
-    mTopObjectMap.clear();
-    mObjectMap.clear();
+    Q_UNUSED(context);
+    return RETURNVALUE;
 }
 
-
-
-bool HbXmlLoaderAbstractActions::setObjectTree( QList<QObject *> roots )
+bool HbXmlLoaderAbstractActions::pushObject( const QString& type, const QString &name )
 {
-    reset();
-    
-    for( int i = 0; i < roots.size(); i++ ) {
-        mTopObjectMap.insert( roots[i]->objectName(), roots[i] );        
-    }
-    
-    addToObjectMap( roots );
-    
-    return true;
+    Q_UNUSED(type);
+    Q_UNUSED(name);
+    return RETURNVALUE;
 }
 
-void HbXmlLoaderAbstractActions::addToObjectMap( QList<QObject *> objects )
+bool HbXmlLoaderAbstractActions::pushWidget(
+    const QString& type,
+    const QString &name,
+    const QString &role,
+    const QString &plugin )
 {
-    for( int i = 0; i < objects.size(); i++ ) {
-        mObjectMap.insert( objects[i]->objectName(), objects[i] );
-        QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>( objects[i] );
-        if( widget ) {
-            addToObjectMap( widget->childItems() );
-        } else {
-            addToObjectMap( objects[i]->children() );
-        }
-    }
+    Q_UNUSED(type);
+    Q_UNUSED(name);
+    Q_UNUSED(role);
+    Q_UNUSED(plugin);
+    return RETURNVALUE;
 }
 
-void HbXmlLoaderAbstractActions::addToObjectMap( QList<QGraphicsItem *> objects )
+bool HbXmlLoaderAbstractActions::pushSpacerItem( const QString &name, const QString &widget )
 {
-    for( int i = 0; i < objects.size(); i++ ) {
-        if( objects[i]->isWidget() ) {
-            QGraphicsWidget *widget = static_cast<QGraphicsWidget *>( objects[i] );
-            mObjectMap.insert( widget->objectName(), widget );
-            addToObjectMap( widget->childItems() );
-        }
-    }    
+    Q_UNUSED(name);
+    Q_UNUSED(widget);
+    return RETURNVALUE;
 }
 
-QString HbXmlLoaderAbstractActions::translate( const QString &value, const QString &comment )
+bool HbXmlLoaderAbstractActions::pushConnect(
+    const QString &srcName,
+    const QString &signalName,
+    const QString &dstName,
+    const QString &slotName )
 {
-    if( ! mContext.isEmpty() ) {
-        QByteArray contextUtf8(mContext.toUtf8());
-        QByteArray valueUtf8(value.toUtf8());
-		
-		if (comment.isEmpty()) {
-			return QCoreApplication::translate( 
-						contextUtf8.data(), valueUtf8.data(), 
-						0, QCoreApplication::UnicodeUTF8 );
-		} else {
-			QByteArray commentUtf8(comment.toUtf8());
-			return QCoreApplication::translate( 
-						contextUtf8.data(), valueUtf8.data(), 
-						commentUtf8.data(), QCoreApplication::UnicodeUTF8 );
-		}        
-    } else {
-        return value;
-    }
+    Q_UNUSED(srcName);
+    Q_UNUSED(signalName);
+    Q_UNUSED(dstName);
+    Q_UNUSED(slotName);
+    return RETURNVALUE;
 }
 
-int HbXmlLoaderAbstractActions::getAnchorEdge( const QString &edge ) const
+bool HbXmlLoaderAbstractActions::pushProperty( const char *propertyName, const HbXmlVariable &variable )
 {
-    if( edge=="TOP" ) {
-        return Hb::TopEdge;
-    } else if( edge=="BOTTOM" ) {
-        return Hb::BottomEdge;
-    } else if( edge=="LEFT" ) {
-        return Hb::LeftEdge;
-    } else if( edge=="RIGHT" ) {
-        return Hb::RightEdge;
-    } else if( edge=="CENTERH" ) {
-        return Hb::CenterHEdge;
-    } else if( edge=="CENTERV" ) {
-        return Hb::CenterVEdge;
-    }
-    return -1;
+    Q_UNUSED(propertyName);
+    Q_UNUSED(variable);
+    return RETURNVALUE;
 }
 
-QString HbXmlLoaderAbstractActions::getAnchorOppositeEdge( const QString &edge ) const
+bool HbXmlLoaderAbstractActions::pushRef( const QString &name, const QString &role )
 {
-    if( edge=="TOP" ) {
-        return "BOTTOM";
-    } else if( edge=="BOTTOM" ) {
-        return "TOP";
-    } else if( edge=="LEFT" ) {
-        return "RIGHT";
-    } else if( edge=="RIGHT" ) {
-        return "LEFT";
-    }
-
-    return edge;
+    Q_UNUSED(name);
+    Q_UNUSED(role);
+    return RETURNVALUE;
 }
 
+bool HbXmlLoaderAbstractActions::pushContainer(
+    const char *propertyName,
+    HbXmlLoaderAbstractSyntax::DocumentLexems type,
+    const QList<HbXmlVariable*> &container )
+{
+    Q_UNUSED(propertyName);
+    Q_UNUSED(type);
+    Q_UNUSED(container);
+    return RETURNVALUE;
+}
+
+        
+bool HbXmlLoaderAbstractActions::pop( const HbXml::ElementType type )
+{
+    Q_UNUSED(type);
+    return RETURNVALUE;
+}
+
+
+bool HbXmlLoaderAbstractActions::setContentsMargins( 
+    const HbXmlLengthValue &left,
+    const HbXmlLengthValue &top,
+    const HbXmlLengthValue &right,
+    const HbXmlLengthValue &bottom )
+{
+    Q_UNUSED(left);
+    Q_UNUSED(top);
+    Q_UNUSED(right);
+    Q_UNUSED(bottom);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setSizePolicy(
+    QSizePolicy::Policy *horizontalPolicy, 
+    QSizePolicy::Policy *verticalPolicy, 
+    int *horizontalStretch,
+    int *verticalStretch )
+{
+    Q_UNUSED(horizontalPolicy);
+    Q_UNUSED(verticalPolicy);
+    Q_UNUSED(horizontalStretch);
+    Q_UNUSED(verticalStretch);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setSizeHint(
+    Qt::SizeHint hint,
+    const HbXmlLengthValue &hintWidth,
+    const HbXmlLengthValue &hintHeight,
+    bool fixed)
+{
+    Q_UNUSED(hint);
+    Q_UNUSED(hintWidth);
+    Q_UNUSED(hintHeight);
+    Q_UNUSED(fixed);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setToolTip( const HbXmlVariable &tooltip )
+{
+    Q_UNUSED(tooltip);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::createAnchorLayout( const QString &widget )
+{
+    Q_UNUSED(widget);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addAnchorLayoutEdge(
+    const QString &src,
+    Hb::Edge srcEdge, 
+    const QString &dst,
+    Hb::Edge dstEdge,
+    const HbXmlLengthValue &spacing,
+    const QString &spacer )
+{
+    Q_UNUSED(src);
+    Q_UNUSED(srcEdge);
+    Q_UNUSED(dst);
+    Q_UNUSED(dstEdge);
+    Q_UNUSED(spacing);
+    Q_UNUSED(spacer);
+    return RETURNVALUE;
+}
+
+
+bool HbXmlLoaderAbstractActions::createMeshLayout( const QString &widget )
+{
+    Q_UNUSED(widget);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addMeshLayoutEdge(
+    const QString &src,
+    Hb::Edge srcEdge, 
+    const QString &dst,
+    Hb::Edge dstEdge,
+    const HbXmlLengthValue &spacing,
+    const QString &spacer )
+{
+    Q_UNUSED(src);
+    Q_UNUSED(srcEdge);
+    Q_UNUSED(dst);
+    Q_UNUSED(dstEdge);
+    Q_UNUSED(spacing);
+    Q_UNUSED(spacer);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::createGridLayout( const QString &widget, const HbXmlLengthValue &spacing )
+{
+    Q_UNUSED(widget);
+    Q_UNUSED(spacing);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addGridLayoutCell(
+    const QString &src,
+    int row, 
+    int column,
+    int *rowspan,
+    int *columnspan,
+    Qt::Alignment *alignment )
+{
+    Q_UNUSED(src);
+    Q_UNUSED(row);
+    Q_UNUSED(column);
+    Q_UNUSED(rowspan);
+    Q_UNUSED(columnspan);
+    Q_UNUSED(alignment);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setGridLayoutRowProperties(
+    int row,
+    int *rowStretchFactor,
+    Qt::Alignment *alignment )
+{
+    Q_UNUSED(row);
+    Q_UNUSED(rowStretchFactor);
+    Q_UNUSED(alignment);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setGridLayoutColumnProperties(
+    int column,
+    int *columnStretchFactor,
+    Qt::Alignment *alignment )
+{
+    Q_UNUSED(column);
+    Q_UNUSED(columnStretchFactor);
+    Q_UNUSED(alignment);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setGridLayoutRowHeights(
+    int row,
+    const HbXmlLengthValue &minHeight,
+    const HbXmlLengthValue &maxHeight, 
+    const HbXmlLengthValue &prefHeight,
+    const HbXmlLengthValue &fixedHeight, 
+    const HbXmlLengthValue &rowSpacing )
+{
+    Q_UNUSED(row);
+    Q_UNUSED(minHeight);
+    Q_UNUSED(maxHeight);
+    Q_UNUSED(prefHeight);
+    Q_UNUSED(fixedHeight);
+    Q_UNUSED(rowSpacing);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setGridLayoutColumnWidths(
+    int column,
+    const HbXmlLengthValue &minWidth,
+    const HbXmlLengthValue &maxWidth,
+    const HbXmlLengthValue &prefWidth,
+    const HbXmlLengthValue &fixedWidth,
+    const HbXmlLengthValue &columnSpacing )
+{
+    Q_UNUSED(column);
+    Q_UNUSED(minWidth);
+    Q_UNUSED(maxWidth);
+    Q_UNUSED(prefWidth);
+    Q_UNUSED(fixedWidth);
+    Q_UNUSED(columnSpacing);
+    return RETURNVALUE;
+}
+bool HbXmlLoaderAbstractActions::createLinearLayout(
+    const QString &widget,
+    Qt::Orientation *orientation, 
+    const HbXmlLengthValue &spacing )
+{
+    Q_UNUSED(widget);
+    Q_UNUSED(orientation);
+    Q_UNUSED(spacing);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addLinearLayoutItem(
+    const QString &itemname,
+    int *index,
+    int *stretchfactor, 
+    Qt::Alignment *alignment,
+    const HbXmlLengthValue &spacing )
+{
+    Q_UNUSED(itemname);
+    Q_UNUSED(index);
+    Q_UNUSED(stretchfactor);
+    Q_UNUSED(alignment);
+    Q_UNUSED(spacing);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addLinearLayoutStretch(
+    int *index,
+    int *stretchfactor )
+{
+    Q_UNUSED(index);
+    Q_UNUSED(stretchfactor);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::setLayoutContentsMargins(
+    const HbXmlLengthValue &left,
+    const HbXmlLengthValue &top,
+    const HbXmlLengthValue &right,
+    const HbXmlLengthValue &bottom )
+{
+    Q_UNUSED(left);
+    Q_UNUSED(top);
+    Q_UNUSED(right);
+    Q_UNUSED(bottom);
+    return RETURNVALUE;
+}
+bool HbXmlLoaderAbstractActions::createStackedLayout( const QString &widget )
+{
+    Q_UNUSED(widget);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::addStackedLayoutItem( const QString &itemname, int *index )
+{
+    Q_UNUSED(itemname);
+    Q_UNUSED(index);
+    return RETURNVALUE;
+}
+
+bool HbXmlLoaderAbstractActions::createNullLayout( const QString &widget )
+{
+    Q_UNUSED(widget);
+    return RETURNVALUE;
+}
 

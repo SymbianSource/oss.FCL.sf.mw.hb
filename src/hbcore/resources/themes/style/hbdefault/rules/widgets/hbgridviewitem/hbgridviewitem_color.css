@@ -13,6 +13,18 @@ HbGridViewItem::text[state="disabled"]{
     color: var(qtc_grid_disabled);
 }
 
+HbGridViewItem::icon{
+    color: var(qtc_grid_normal);
+}
+
+HbGridViewItem::icon[state="pressed"]{
+    color: var(qtc_grid_pressed);
+}
+
+HbGridViewItem::icon[state="disabled"]{
+    color: var(qtc_grid_disabled);
+}
+
 /*
     Grid item inside popup color definitions.
 */
@@ -25,5 +37,17 @@ HbGridViewItem::text[insidePopup][state="pressed"]{
 }
 
 HbGridViewItem::text[insidePopup][state="disabled"]{
+    color: var(qtc_popup_grid_disabled);
+}
+
+HbGridViewItem::icon[insidePopup]{
+    color: var(qtc_popup_grid_normal);
+}
+
+HbGridViewItem::icon[insidePopup][state="pressed"]{
+    color: var(qtc_popup_grid_pressed);
+}
+
+HbGridViewItem::icon[insidePopup][state="disabled"]{
     color: var(qtc_popup_grid_disabled);
 }

@@ -38,7 +38,7 @@
 #include "hbthemeperf_p.h"
 #include "hbcache_p.h"
 #include "hbiconsource_p.h"
-#include "hbwidgetloadersyntax_p.h"
+#include "hbwidgetloader_p.h"
 #include "hbwidgetloaderactions_p.h"
 
 //Hash of fileName-offset
@@ -70,7 +70,7 @@ HbIconSource *HbThemeServerUtils::getIconSource(const QString &filename)
     HbIconSource *newSource = tempHbIconSource.data();
 
     if (iconSources.count() >= ICON_SOURCES_MAX_SIZE) {
-        iconSources.removeFirst();
+        delete iconSources.takeFirst();
     }
     iconSources.append(newSource);
     tempHbIconSource.take();
@@ -129,9 +129,7 @@ int HbThemeServerUtils::getSharedStylesheet(const QString & fileName, HbLayeredS
         try {
             HbSharedCacheItem cacheItem(fileName, cssOffset);
             sharedCache->append(cacheItem);
-        } catch (std::bad_alloc &badAlloc) {
-            Q_UNUSED(badAlloc)
-            // item is not appended .
+        } catch (std::exception &) {
         }
 
     }
@@ -154,30 +152,25 @@ bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &file
     try {
         cssOffset = manager->alloc(sizeof(HbCss::StyleSheet));
         styleSheet = new((char*)manager->base() + cssOffset) HbCss::StyleSheet(HbMemoryManager::SharedMemory);
-    } catch (std::bad_alloc &badAlloc) {
-        Q_UNUSED(badAlloc)
-        // if manager->alloc in the previous try block suceeds but creation of
-        // HbCss::StyleSheet on shared memory failed
+    } catch (std::bad_alloc &) {
         if (cssOffset != -1) {
+            // if manager->alloc in the previous try block suceeds but creation of
+            // HbCss::StyleSheet on shared memory failed
             manager->free(cssOffset);
             cssOffset = -1;
         }
-        // if manager->alloc itself failed, in that case cssOffset will still be -1,
-        // just return offset as -1 to represent error
         return retVal;
     }
     // 2. Parse the required file into styleSheet.
     parser.init(fileName, true);
-
-    if (parser.parse(styleSheet)) {
-        retVal = true;
-    } else {
+    
+    retVal = parser.parse(styleSheet);
+    if (!retVal) {
         //parser::parse returns false in a number of scenarios
         // 1. css file has some error
         // 2. shared memory operations on HbVector/HbString/HbVariant threw an exception
         // in either case free the memory occupied by stylesheet
         HbMemoryUtils::release<HbCss::StyleSheet>(styleSheet);
-        manager->free(cssOffset);
         cssOffset = -1;
     }
     HB_END_SHAREDMEMORY_PRINT("");
@@ -198,8 +191,7 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
         layoutDefOffset = layoutDefsCache()->value(key);
         return layoutDefOffset;
     }
-    HbWidgetLoaderActions loader(HbMemoryManager::SharedMemory);
-    HbWidgetLoaderSyntax widgetMLSyntax(&loader);
+    HbWidgetLoader loader;
 
     QFile file(fileName);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
@@ -210,23 +202,23 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
     qDebug() << "Trying to load: " << fileName << "::" << layout << "::" << section;
 #endif // THEME_SERVER_TRACES
 
-    bool load = widgetMLSyntax.load(&file, layout, section);
-    if (load) {
-        layoutDefOffset = loader.getLayoutDefintionOffset();
-    } else {
-        // load() failed. free the memory
-        LayoutDefinition *layoutDef =
-            HbMemoryUtils::getAddress<LayoutDefinition>(HbMemoryManager::SharedMemory,
-                    loader.getLayoutDefintionOffset());
-        if (layoutDef) {
-            GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-            layoutDef->~LayoutDefinition();
-            manager->free(loader.getLayoutDefintionOffset());
-            loader.setLayoutDefintionOffset(-1);
+
+    HbWidgetLoader::LayoutDefinition *layoutDef(0);
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    try {
+        layoutDefOffset = manager->alloc(sizeof(HbWidgetLoader::LayoutDefinition));
+        layoutDef = new((char*)manager->base() + layoutDefOffset)
+            HbWidgetLoader::LayoutDefinition(HbMemoryManager::SharedMemory);
+    } catch (std::bad_alloc &badAlloc) {
+        Q_UNUSED(badAlloc)
+        if (layoutDefOffset != -1) {
+            manager->free(layoutDefOffset);
+            layoutDefOffset = -1;
         }
+        return layoutDefOffset;
     }
 
-    if (layoutDefOffset != -1) {
+    if (loader.loadLayoutDefinition(layoutDef, &file, layout, section)) {
         layoutDefsCache()->insert(key, layoutDefOffset);
         // add the filename and css offset to the secondary cache.
         if (sharedCache) {
@@ -241,8 +233,12 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
                 Q_UNUSED(badAlloc)
             }
         }
+    } else {
+        // load failed
+        layoutDef->~LayoutDefinition();
+        manager->free(layoutDefOffset);
+        layoutDefOffset = -1;
     }
-
     return layoutDefOffset;
 }
 
@@ -270,13 +266,15 @@ HbSharedCache *HbThemeServerUtils::createSharedCache()
             HbSharedCache(HbMemoryManager::SharedMemory);
             // reserving memory so that realloc calls will be minimized in future.
             sharedCache->reserve(NumberOfSharedCacheItems);
-        } catch (std::bad_alloc &exception) {
-            Q_UNUSED(exception)
+        } catch (std::exception &) {
             if (serverSecondaryCacheOffset != -1) {
+                if (sharedCache) {
+                    sharedCache->~HbSharedCache();
+                    sharedCache = 0;
+                }
                 manager->free(serverSecondaryCacheOffset);
+                serverSecondaryCacheOffset = -1;
             }
-            serverSecondaryCacheOffset = -1;
-            sharedCache = 0;
         }
     }
     return sharedCache;
@@ -289,6 +287,56 @@ HbSharedCache *HbThemeServerUtils::createSharedCache()
 int HbThemeServerUtils::sharedCacheOffset()
 {
     return serverSecondaryCacheOffset;
+}
+
+/**
+ * Removes fxml document from the shared memory and effects cache
+ *
+ * \param fileName of the removed fxml file
+ * \return true if effect was found and removed, false otherwise
+ */
+bool HbThemeServerUtils::removeSharedEffect(const QString &fileName)
+{
+    if (effCache()->contains(fileName)) {
+        effCache()->remove(fileName);
+
+        if (sharedCache) {
+            int count = sharedCache->count();
+            for (int i = 0; i < count ; i++) {
+                QString cacheKey = sharedCache->at(i).key;
+                if (fileName == cacheKey) {
+                    sharedCache->remove(i,1);
+                    break;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Clears fxml documents from the shared memory and effects cache
+ *
+ */
+void HbThemeServerUtils::clearSharedEffects()
+{
+    HbServerCache::const_iterator iterEnd(effCache()->constEnd());
+    for (HbServerCache::const_iterator iter = effCache()->constBegin();
+            iter != iterEnd;
+            ++iter) {
+        if (sharedCache) {
+            int count = sharedCache->count();
+            for (int i = 0; i < count ; i++) {
+                QString cacheKey = sharedCache->at(i).key;
+                if (cacheKey == iter.key()) {
+                    sharedCache->remove(i,1);
+                    break;
+                }
+            }
+        }
+    }
+    effCache()->clear();
 }
 
 /**
@@ -325,23 +373,20 @@ int HbThemeServerUtils::getSharedEffect(const QString &fileName)
         try {
             effOffset = manager->alloc(sizeof(HbEffectFxmlData));
             data = new((char*)manager->base() + effOffset) HbEffectFxmlData(HbMemoryManager::SharedMemory);
-        } catch (std::bad_alloc &badAlloc) {
-            Q_UNUSED(badAlloc)
-            // if manager->alloc in the previous try block suceeds but creation of
-            // HbEffectFxmlData on shared memory failed
+        } catch (std::exception &) {
             if (effOffset != -1) {
+                // if manager->alloc in the previous try block suceeds but creation of
+                // HbEffectFxmlData on shared memory failed
                 manager->free(effOffset);
                 effOffset = -1;
             }
-            // if manager->alloc itself failed, in that case effOffset will still be -1,
-            // just return offset as -1 to represent error
             return effOffset;
         }
         // 2. Parse the file.
         HbEffectXmlParser parser;
 
-
         QFile f(fileName);
+        bool fail = false;
         if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
             try {
                 parser.read(&f, data);
@@ -349,34 +394,31 @@ int HbThemeServerUtils::getSharedEffect(const QString &fileName)
 
                 // 3. Mark an entry for this styleSheet into the table
                 effCache()->insert(fileName, effOffset);
-            } catch (std::bad_alloc &badAlloc) {
-                Q_UNUSED(badAlloc)
+            } catch (std::exception &) {
                 f.close();
-                //HbMemoryUtils::release<HbEffectFxmlData>(data);
-                manager->free(effOffset);
-                effOffset = -1;
+                fail = true;
             }
-
         } else {
 #ifdef THEME_SERVER_TRACES
             qWarning() << "Cannot open" << fileName;
 #endif // THEME_SERVER_TRACES
-            //-1 represents invalid offset
+            fail = true;
+        }
+        if (fail) {
+            data->~HbEffectFxmlData();
             manager->free(effOffset);
-            effOffset = -1;
+            return -1;
         }
 
         // add the filename and css offset to the secondary cache.
-        if (sharedCache && effOffset != -1) {
+        if (sharedCache) {
             // no need to check if this item is already present in the
             // cache as the parsing of the file happens only once
             // in the server side.
             try {
                 HbSharedCacheItem cacheItem(fileName, effOffset);
                 sharedCache->append(cacheItem);
-            } catch (std::bad_alloc &badAlloc) {
-                // item is not appended.
-                Q_UNUSED(badAlloc)
+            } catch (std::exception &) {
             }
         }
     }
@@ -408,7 +450,7 @@ void HbThemeServerUtils::cleanupUnusedCss(HbCache *cache)
         }
         //Since we are cleaning up css-resources whose ref-count is zero, these entries will be
         // removed from actual cache.
-        cache->cacheHandle().remove(itemToRemove->fileName);
+        delete cache->cacheHandle().take(itemToRemove->fileName);
     }
 }
 

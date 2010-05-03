@@ -51,11 +51,15 @@ public:
     void addProgressButton();
     void removeProgressButton();
 
+    void addCancelButton();
+    void removeCancelButton();
+
     void constructUi();
 
 public:
     bool mProgressive;
     bool mSearchOptions;
+    bool mCancelEnabled;
     HbPushButton *mSearchOptionsButton;
     HbLineEdit *mLineEdit;
     HbPushButton *mProgressButton;

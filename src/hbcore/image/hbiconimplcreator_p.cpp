@@ -76,10 +76,10 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
         default:
             break;
     }
-
-    if (iconImpl) {
-        iconImpl->setColor(params.color);
-    }
+    
+	if (iconImpl && params.color.isValid()){
+		iconImpl->setColor(params.color);
+	}
 
     return iconImpl;
 }

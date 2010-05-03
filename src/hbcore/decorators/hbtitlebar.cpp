@@ -34,6 +34,7 @@
 #include <hbwidgetfeedback.h>
 #include <hbinstance.h>
 #include <hbnamespace.h>
+#include <hbpangesture.h>
 
 #include "hbtitlebar_p.h"
 #include "hbtitlebar_p_p.h"
@@ -57,30 +58,40 @@ HbTitleBarPrivate::HbTitleBarPrivate() :
 {
 }
 
+void HbTitleBarPrivate::delayedConstruction()
+{
+    Q_Q(HbTitleBar);
+
+    mTitlePane->delayedConstruction();
+    mIndicatorButton->delayedConstruction();
+    mNavigationButton->delayedConstruction();
+
+#ifdef HB_EFFECTS
+    HbEffect::add(
+        QStringList() << "decorator" << "decorator" << "decorator",
+        QStringList() << "decorator_pressed" <<  "decorator_released" << "decorator_latched",
+        QStringList() << "pressed" << "released" <<  "latched");
+#endif
+
+    q->connect(mTitlePane, SIGNAL(launchPopup(QPointF)), mMainWindow, SLOT(_q_launchMenu(QPointF)));
+    q->connect(q, SIGNAL(notificationCountChanged(int)), mIndicatorButton, SLOT(setIcon(int)));
+    q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
+    q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));  
+}
+
 void HbTitleBarPrivate::init()
 {
     Q_Q(HbTitleBar);
 
-#ifdef HB_EFFECTS
-    HbEffect::add("decorator", "decorator_pressed", "pressed");
-    HbEffect::add("decorator", "decorator_released", "released");
-    HbEffect::add("decorator", "decorator_latched", "latched");
-#endif
-
     // create title pane
     mTitlePane = new HbTitlePane(q);
     mTitlePane->setZValue(HbPrivate::TitlePaneZValue);
-    QObject::connect(mTitlePane, SIGNAL(launchPopup(QPointF)),
-                     mMainWindow, SLOT(_q_launchMenu(QPointF)));
 
     mIndicatorButton = new HbIndicatorButton(q);
-    q->connect(q, SIGNAL(notificationCountChanged(int)),
-               mIndicatorButton, SLOT(setIcon(int)));
     mNavigationButton = new HbNavigationButton(q);
     // add default quit action
     mDefaultNavigationAction = new HbAction(Hb::QuitNaviAction, q);
     mDefaultNavigationAction->setText("Quit");
-    q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     mNavigationButton->setAction(mDefaultNavigationAction);
 
     HbStyle::setItemName(q, "titlebar");
@@ -88,39 +99,27 @@ void HbTitleBarPrivate::init()
     HbStyle::setItemName(mIndicatorButton, "status");
     HbStyle::setItemName(mNavigationButton, "back");
     
-    QObject::connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
     mPreviousTitleBarProperties = 0; // view not yet ready
+
+    QObject::connect(this->mTitlePane, SIGNAL(panRight()), q, SLOT(gestureRight()));
+    QObject::connect(this->mTitlePane, SIGNAL(panLeft()), q, SLOT(gestureLeft()));
 }
 
 void HbTitleBarPrivate::initSceneEventFilters(HbView *view)
 {
     Q_Q(HbTitleBar);
     if (view->viewFlags() & HbView::ViewTitleBarMinimizable) {
-        if (!mTitleBarFilter) { // Install scene event filter
-            mTitleBarFilter = new HbGestureSceneFilter(Qt::LeftButton, q);
-            mTitleBarGestureLeft = new HbGesture(HbGesture::left, 20);
-            mTitleBarFilter->addGesture(mTitleBarGestureLeft);
-            mTitleBarGestureRight = new HbGesture(HbGesture::right, 20);
-            mTitleBarFilter->addGesture(mTitleBarGestureRight);
-            QObject::connect(mTitleBarGestureRight, SIGNAL(triggered(int)),
-                q, SLOT(gestureRight(int)));
-            QObject::connect(mTitleBarGestureLeft, SIGNAL(triggered(int)),
-                q, SLOT(gestureLeft(int)));
-
+        if(!mTouchAreaItem) {
             // Install sceneEvent filter(s)
             mTouchAreaItem = q->style()->createPrimitive(HbStyle::P_TitleBar_toucharea, q);
             mTouchAreaItem->setAcceptedMouseButtons(Qt::LeftButton);
             mTouchAreaItem->installSceneEventFilter(q);
-            mTouchAreaItem->installSceneEventFilter(mTitleBarFilter);
-            //mIndicatorButton->installSceneEventFilter(mTitleBarFilter);
-            mTitlePane->installSceneEventFilter(mTitleBarFilter);
+            QGraphicsObject *touchAreaItemGraphicsObject = static_cast<QGraphicsObject*>(mTouchAreaItem);
+            touchAreaItemGraphicsObject->grabGesture(Qt::PanGesture);
         }
     } else { // Remove scene event filter
-        if (mTitleBarFilter) {
-            //mIndicatorButton->removeSceneEventFilter(mTitleBarFilter);
-            mTitlePane->removeSceneEventFilter(mTitleBarFilter);
-            delete mTitleBarFilter;
-            mTitleBarFilter = 0;
+        if (mTouchAreaItem) {
+            mTouchAreaItem->removeSceneEventFilter(q);
             delete mTouchAreaItem;
             mTouchAreaItem = 0;
         }
@@ -135,8 +134,10 @@ void HbTitleBarPrivate::initTitleBarHandle(HbView *view)
             mTitleBarHandle = new HbTitleBarHandle(q);
             HbStyle::setItemName(mTitleBarHandle, "handle");
 #ifdef HB_EFFECTS
-            HbEffect::add("titlebar", "titlebar_minimize", "minimize");
-            HbEffect::add("titlebar", "titlebar_maximize", "maximize");
+            HbEffect::add(
+                QStringList() << "titlebar" << "titlebar",
+                QStringList() << "titlebar_minimize" <<  "titlebar_maximize",
+                QStringList() << "minimize" << "maximize");
 #endif
         }
     } else {
@@ -182,12 +183,20 @@ HbTitleBar::~HbTitleBar()
 { 
     Q_D(HbTitleBar);
     // Remove scene event filter
-    if(d->mTitleBarFilter) {
-        //d->mIndicatorButton->removeSceneEventFilter(d->mTitleBarFilter);
-        d->mTitlePane->removeSceneEventFilter(d->mTitleBarFilter);
-        delete d->mTitleBarFilter;
-        d->mTitleBarFilter = 0;
+    if (d->mTouchAreaItem) {
+        d->mTouchAreaItem->removeSceneEventFilter(this);
+        delete d->mTouchAreaItem;
+        d->mTouchAreaItem = 0;
     }
+}
+
+/*
+    Delayed constructor.
+ */
+void HbTitleBar::delayedConstruction()
+{
+       Q_D(HbTitleBar);
+       d->delayedConstruction();
 }
 
 /*
@@ -260,9 +269,11 @@ void HbTitleBar::setDefaultNavigationAction()
     gestureRight. Handles left-to-right flick.
             if(layoutDirection() == Qt::LeftToRight) {
 */
-void HbTitleBar::gestureRight(int speed)
+
+void HbTitleBar::gestureRight()
 {
     Q_D(HbTitleBar);
+
     if (!minimizable()) {
         return;
     }
@@ -273,7 +284,7 @@ void HbTitleBar::gestureRight(int speed)
     QRectF handleRect = d->mTitleBarHandle->boundingRect();
 
     if (layoutDirection() == Qt::LeftToRight && d->mMainWindow &&
-        d->mIndicatorButton->isVisible() && (speed > 50) &&
+        d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Original) {
 #ifdef HB_EFFECTS
         //grabMouse(); // this prevents taps/gestures on top of animating titlebar
@@ -283,7 +294,7 @@ void HbTitleBar::gestureRight(int speed)
         translate(screenSize.width()-handleRect.width(), 0);
 #endif //HB_EFFECTS
     } else if (layoutDirection() == Qt::RightToLeft && d->mMainWindow &&
-        d->mIndicatorButton->isVisible() && (speed > 50) &&
+        d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Minimized) {
 #ifdef HB_EFFECTS
         //grabMouse(); // this prevents taps/gestures on top of animating titlebar
@@ -298,9 +309,11 @@ void HbTitleBar::gestureRight(int speed)
 /*
     gestureLeft. Handles right-to-left flick.
 */
-void HbTitleBar::gestureLeft(int speed)
+
+void HbTitleBar::gestureLeft()
 {
     Q_D(HbTitleBar);
+
     if (!minimizable()) {
         return;
     }
@@ -312,7 +325,7 @@ void HbTitleBar::gestureLeft(int speed)
     // only way to reliable find the position of titlebar is using
     // titlebar's transformation information
     if (layoutDirection() == Qt::LeftToRight && d->mMainWindow &&
-        d->mIndicatorButton->isVisible() && (speed > 50) &&
+        d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Minimized) {
 #ifdef HB_EFFECTS
         //grabMouse(); // this prevents taps/gestures on top of animating titlebar
@@ -323,7 +336,7 @@ void HbTitleBar::gestureLeft(int speed)
         translate(x()-scenePos().x(), y()-scenePos().y());
 #endif //HB_EFFECTS
     } else if (layoutDirection() == Qt::RightToLeft && d->mMainWindow &&
-        d->mIndicatorButton->isVisible() && (speed > 50) &&
+        d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Original) {
 #ifdef HB_EFFECTS
         //grabMouse(); // this prevents taps/gestures on top of animating titlebar
@@ -455,6 +468,22 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
         } else if (d->mHandleDown) {
             d->mHandleDown = false;
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+        }
+        filterOutEvent = true;
+        break;
+    }
+    case QEvent::Gesture: {
+        QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+        if (HbPanGesture *pan = qobject_cast<HbPanGesture*>(gestureEvent->gesture(Qt::PanGesture))) {
+            if(pan->state() == Qt::GestureUpdated || pan->state() == Qt::GestureFinished) {
+                if(pan->sceneDelta().x() < -0) {
+                    gestureLeft();
+                }
+                if(pan->sceneDelta().x() > 0) {
+                    gestureRight();
+                }
+                gestureEvent->accept();
+            }
         }
         filterOutEvent = true;
         break;

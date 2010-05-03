@@ -46,6 +46,8 @@ public:
     explicit HbBatteryIndicator( QGraphicsItem *parent = 0 );
     virtual ~HbBatteryIndicator();
 
+    void delayedConstruction();
+
     inline int type() const { return Type; }
     int level() const;
 

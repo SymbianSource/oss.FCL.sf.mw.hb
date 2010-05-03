@@ -30,6 +30,13 @@
     \brief HbStyleOptionSignalIndicator has the style component for the signal indicator
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionSignalIndicator::HbStyleOptionSignalIndicator()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionSignalIndicator::HbStyleOptionSignalIndicator() : 
     HbStyleOption(),
     networkMode(0),
@@ -40,6 +47,12 @@ HbStyleOptionSignalIndicator::HbStyleOptionSignalIndicator() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionSignalIndicator::HbStyleOptionSignalIndicator(const HbStyleOptionSignalIndicator&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionSignalIndicator::HbStyleOptionSignalIndicator(const HbStyleOptionSignalIndicator &other) :
     HbStyleOption(other),
     networkMode(other.networkMode),

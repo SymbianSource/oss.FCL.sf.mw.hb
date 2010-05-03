@@ -30,7 +30,7 @@
 HbTreeModelIteratorPrivate::HbTreeModelIteratorPrivate()
     : HbModelIteratorPrivate(),
     mCachedCount(CachedIndexCount()), mCachedPosition(CachedIndexCount()),
-    mItemContainer(0), mExpansionKey(0), mUseCache(true)
+    mItemContainer(0), mUseCache(true)
 {
 }
 
@@ -152,7 +152,7 @@ bool HbTreeModelIteratorPrivate::isExpanded(const QModelIndex &index) const
 {
     Q_ASSERT(mItemContainer);
     //if (index == mRootIndex) return true; // must be expanded, otherwise mean empty view
-    QVariant flags = mItemContainer->itemState(index).value(mExpansionKey);
+    QVariant flags = mItemContainer->itemTransientState(index).value("expanded");
     if (flags.isValid() && flags.toBool() == true) {
         return true;
     } else {

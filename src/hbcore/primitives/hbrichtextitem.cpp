@@ -36,6 +36,7 @@
 #include <QTextLayout>
 #include <QPainter>
 #include <QAbstractTextDocumentLayout>
+#include <QApplication>
 
 const int KMinimumLetersToShow = 4;
 
@@ -110,12 +111,11 @@ bool HbRichTextItemPrivate::setLayoutDirection(Qt::LayoutDirection newDirection)
 {
     Qt::Alignment oldAlign = mTextOption.alignment();
     Qt::Alignment alignment = QStyle::visualAlignment(newDirection, mAlignment);
-    if(alignment!=oldAlign) {
-        mTextOption.setAlignment(alignment);
-        mRtf->setDefaultTextOption(mTextOption);
-        return true;
-    }
-    return false;
+    mTextOption.setAlignment(alignment);
+    mTextOption.setTextDirection(newDirection);
+    mRtf->setDefaultTextOption(mTextOption);
+
+    return alignment!=oldAlign;
 }
 
 void HbRichTextItemPrivate::setSize(const QSizeF &newSize)
@@ -276,6 +276,10 @@ void HbRichTextItem::paint(QPainter *painter,
 
     Q_D(HbRichTextItem);
 
+    // Save painter's state
+    QRegion oldClipRegion = painter->clipRegion();
+    QTransform oldTransform = painter->transform();
+
     if(!d->mDontPrint) {
         if(!d->mDontClip) {
             painter->setClipRect(contentsRect(), Qt::IntersectClip);
@@ -285,6 +289,10 @@ void HbRichTextItem::paint(QPainter *painter,
         context.palette.setColor(QPalette::Text, textDefaultColor());
         d->mRtf->documentLayout()->draw(painter, context);
     }
+
+    // Restore painter's state
+    painter->setClipRegion(oldClipRegion);
+    painter->setTransform(oldTransform);
 }
 
 /*!
@@ -342,9 +350,8 @@ void HbRichTextItem::changeEvent(QEvent *event)
     switch(event->type()) {
     case QEvent::LayoutDirectionChange: {
             prepareGeometryChange();
-            if(d->setLayoutDirection(layoutDirection())) {
-                update();
-            }
+            d->setLayoutDirection(layoutDirection());
+            update();
         }
         break;
 
@@ -480,9 +487,24 @@ QColor HbRichTextItem::textDefaultColor() const
 void HbRichTextItem::setTextDefaultColor(const QColor &color)
 {
     Q_D(HbRichTextItem);
+
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, color.isValid());
     if (d->mColor != color) {
         d->mColor = color;
-        update();
+
+        if (!color.isValid()) {
+            QGraphicsWidget* ccsHandler = parentWidget();
+            // check if there is a widget which handles CSS
+            if (ccsHandler!=NULL) {
+                // this is needed to enforce color fetch from CSS
+                HbEvent themeEvent(HbEvent::ThemeChanged);
+                QApplication::sendEvent(ccsHandler, &themeEvent);
+            }
+        }
+
+        if (!d->mText.isEmpty()) {
+            update();
+        }
     }
 }
 

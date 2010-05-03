@@ -30,11 +30,11 @@
 
 HbNvgIcon * HbNvgIconFactory::create(HbNvgIconFactory::HbNvgIconType type)
 {
-    HbNvgIcon * icon = NULL;
+    HbNvgIcon * icon = 0;
 
-    if (type == NVGCS) {
+    if (type == NvgCs) {
         icon = new HbNvgCsIcon();
-    } else if (type == NVGTLV) {
+    } else if (type == NvgTlv) {
         icon = new HbNvgTlvIcon();
     } else {
         throw HbNvgException(HbNvgEngine::NvgErrNotSupported);

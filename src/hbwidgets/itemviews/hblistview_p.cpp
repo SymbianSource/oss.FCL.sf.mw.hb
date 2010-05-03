@@ -26,26 +26,22 @@
 #include "hblistview_p.h"
 #include "hblistview.h"
 
-#include "hbinstance.h"
-#include "hblistlayout_p.h"
 #include "hblistviewitem.h"
-#include "hbapplication.h"
-#include "hbscrollbar.h"
-#include "hbgesturefilter.h"
-#include "hbgesture.h"
 #include "hbabstractitemcontainer.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
+#include <hbpangesture.h>
 
-#include <QTimeLine>
-#include <QGraphicsSceneMouseEvent>
-#include <QGraphicsLinearLayout>
-#include <QDebug>
-#include <QItemSelectionModel>
 #include <QGraphicsScene>
 
-static const qreal DRAGGED_ITEM_OPACITY = 0.75;
-const QString KDefaultLayoutOption = "default";
+namespace {
+    static const int FLICKMINDISTANCE = 50;
+    static const qreal SCROLLSPEED_FACTOR = 0.0004;
+    static const qreal FLICK_TIMEOUT = 200;
+    static const qreal DRAGGED_ITEM_SCROLL_SPEED = 0.2;
+    static const qreal DRAGGED_ITEM_OPACITY = 0.75;
+    const QString KDefaultLayoutOption = "default";
+}
 
 HbListViewPrivate::HbListViewPrivate() :
     HbAbstractItemViewPrivate(),
@@ -67,9 +63,6 @@ HbListViewPrivate::~HbListViewPrivate()
 void HbListViewPrivate::init()
 {
     Q_Q(HbListView);
-
-    q->setClampingStyle(HbScrollArea::StrictClamping);
-    q->setFrictionEnabled(0);
     q->setItemRecycling(true);
     mLayoutOptionName = KDefaultLayoutOption;
 }
@@ -125,7 +118,7 @@ void HbListViewPrivate::moveDraggedItemTo(const QPointF &mousePosition)
             mDraggedItem->setOpacity(1.0);
             mDraggedItem->setTransform(mOriginalTransform);
             mDraggedItem->setZValue(mDraggedItem->zValue() - 1);
-            mDraggedItem->setPressed(false, false);
+            //mDraggedItem->setPressed(false, false);
 
             int targetRow = targetIndex.row();
             q->move(mDraggedItemIndex, targetIndex);
@@ -144,7 +137,7 @@ void HbListViewPrivate::moveDraggedItemTo(const QPointF &mousePosition)
                     mDraggedItem->setOpacity(DRAGGED_ITEM_OPACITY);
                     mDraggedItem->setZValue(mDraggedItem->zValue() + 1);
 
-                    mDraggedItem->setPressed(true, false);
+                    //mDraggedItem->setPressed(true, false);
 
                     q->setCurrentIndex(mDraggedItemIndex);
                 }
@@ -153,64 +146,138 @@ void HbListViewPrivate::moveDraggedItemTo(const QPointF &mousePosition)
     }
 }
 
-void HbListViewPrivate::setContentPosition( qreal value, Qt::Orientation orientation, bool animate )
+bool HbListViewPrivate::panTriggered(QGestureEvent *event)
 {
-    Q_Q( HbListView );
+    Q_Q(HbListView);
 
-    if (mContainer->itemRecycling()
-        && mModelIterator->model()) {
-
-        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
-            mContainer->layout()->activate();
-        }
-
-        qreal filteredValue = (int)(value * 1000) / 1000.0;        
-
-        qreal itemHeight = mContainer->items().first()->size().height();
-        if (!mContainer->uniformItemSizes()) {
-            // add here the wisdom to get a proper item size in case they are all
-            // not of the same size
-        }
-
-        int indexCount = mModelIterator->indexCount();
-        qreal containerVirtualHeight = itemHeight * indexCount;
-        qreal target = (containerVirtualHeight * filteredValue) / itemHeight;
-
-        qreal posToBeInView = q->size().height() * filteredValue;
-
-        int newRow = (int)(indexCount * filteredValue);
-        newRow = qMin(newRow, indexCount - 1);
-        QModelIndex newIndex = mModelIterator->index(newRow);
-
-        if (!mContainer->itemByIndex(newIndex)) {
-
-            int itemsInBuffer = mContainer->items().count();
-            int newBufferStartRow = newRow - qMin(itemsInBuffer - 1, (int)(itemsInBuffer * filteredValue));
-            mContainer->setModelIndexes(mModelIterator->index(newBufferStartRow));
-
-            qreal posToBeInBuffer = (target - newBufferStartRow) * itemHeight;
-
-            qreal topToBe = posToBeInView - posToBeInBuffer;
-
-            HbScrollAreaPrivate::setContentPosition(QPointF(0, topToBe)); 
-
-        } else {
-            qreal topInBeginning = itemBoundingRect(mContainer->items().first()).top();
-
-            int firstRow = mContainer->items().first()->modelIndex().row();
-            qreal posToBeInBuffer = (target - firstRow) * itemHeight;
-            
-            qreal topToBe = posToBeInView - posToBeInBuffer;
-
-
-            q->scrollByAmount(QPointF(0, topInBeginning - topToBe));
-        }
-    } else {
-        HbScrollAreaPrivate::setContentPosition(value, orientation, animate);
+    bool arrangeModeEnabled = false;
+    if (mArrangeMode && mSelectionMode == HbAbstractItemView::NoSelection) {
+        arrangeModeEnabled = true;
     }
-    
-    if (animate) {
-        updateScrollBar(orientation);
+
+    HbPanGesture *gesture = static_cast<HbPanGesture *>(event->gesture(Qt::PanGesture));
+    switch (gesture->state()) {
+        case Qt::GestureStarted: {
+            if (arrangeModeEnabled && !mDraggedItem) {
+                QPointF scenePos = event->mapToGraphicsScene(gesture->startPos());
+                mDraggedItem = itemAt(scenePos);
+                if (mDraggedItem) {
+                    mDraggedItemIndex = mDraggedItem->modelIndex();
+
+                    if (mDraggedItemIndex.isValid()) {
+                        mMousePressTimer.restart();
+                        mMousePressPos = scenePos;
+                        mOriginalTransform = mDraggedItem->transform();
+                        mDraggedItem->setZValue(mDraggedItem->zValue() + 1);
+
+                        QObject::connect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(scrolling(QPointF)));    
+                    } else {
+                        mDraggedItem = 0;
+                    }
+                }
+                return true;
+            }
+        }
+        case Qt::GestureUpdated: {
+            if (arrangeModeEnabled && mDraggedItem) {
+                QPointF scenePos = event->mapToGraphicsScene(gesture->hotSpot());
+                QPointF pos = q->mapFromScene(scenePos);
+
+                if (!q->isScrolling()) {
+                    // move the item with the cursor to indicate the move
+                    //qDebug() << "ScenePos: " << scenePos;
+                    //qDebug() << "Offset: " << event->mapToGraphicsScene(gesture->offset()).y() << " lastOffset: " <<  event->mapToGraphicsScene(gesture->lastOffset()).y();
+                    mDraggedItem->translate(0, event->mapToGraphicsScene(gesture->offset()).y() -
+                                               event->mapToGraphicsScene(gesture->lastOffset()).y());
+
+                    if (mMousePressTimer.elapsed() >= FLICK_TIMEOUT) {
+                        moveDraggedItemTo(scenePos);
+                    }
+                }
+
+                // in case we are "dragging" an item and at the top/bottom of
+                // the view the view is scrolled to reveal more items in
+                // that direction
+                QModelIndex firstVisible;
+                QModelIndex lastVisible;
+                mContainer->firstAndLastVisibleModelIndex(firstVisible, lastVisible);
+                if (firstVisible.isValid() && lastVisible.isValid()) {
+                    // above indexes are valid so container contain at least one item - so it is
+                    // safe to call first and last
+                    QModelIndex firstItemIndex = mContainer->items().first()->modelIndex();
+                    QModelIndex lastItemIndex = mContainer->items().last()->modelIndex();
+                    // If the item is dragged up in the list (and there are more items to show), scroll up
+                    if (!q->isScrolling()
+                        && !q->isVisible(firstItemIndex)
+                        && scenePos.y() < mMousePressPos.y()
+                        && pos.y() < q->itemByIndex(firstVisible)->size().height()) {
+                        mScrollStartMousePos = scenePos;
+                        mLastScrollPos = QPointF(0,0);
+                        animateScroll(QPointF(0.0f , DRAGGED_ITEM_SCROLL_SPEED));
+                    }
+                    // If the item is dragged down in the list (and there are more items to show), scroll down
+                    else if (!q->isScrolling()
+                               && !q->isVisible(lastItemIndex)
+                               && scenePos.y() > mMousePressPos.y()
+                               && pos.y() > (q->size().height() - q->itemByIndex(lastVisible)->size().height())) {
+                        mScrollStartMousePos = scenePos;
+                        mLastScrollPos = QPointF(0,0);
+                        animateScroll(QPointF(0.0f , (-1 * DRAGGED_ITEM_SCROLL_SPEED)));
+                    }
+                    // If the view is scrolling and the drag event is inside the view, we need to stop the scrolling
+                    else if (pos.y() < (q->size().height() - q->itemByIndex(lastVisible)->size().height())
+                               && pos.y() > q->itemByIndex(firstVisible)->size().height()
+                               && q->isScrolling()) {
+                        stopAnimating();
+                    }
+                }
+                return true;
+            }
+        }
+        case Qt::GestureFinished: 
+		case Qt::GestureCanceled: {
+            if (arrangeModeEnabled && mDraggedItem) {
+                QObject::disconnect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(scrolling(QPointF)));
+
+                if (q->isScrolling()) {
+                    stopAnimating();
+                }
+
+                // remove item's drag indications
+                mDraggedItem->setOpacity(1.0);
+                mDraggedItem->setTransform(mOriginalTransform);
+                mDraggedItem->setZValue(mDraggedItem->zValue() - 1);
+                //mDraggedItem->setPressed(false);
+
+                QPointF scenePos = event->mapToGraphicsScene(gesture->hotSpot());
+                if (itemAt(scenePos)) {
+                    int downTime = mMousePressTimer.elapsed();
+                    // this seems to be a flick rather than item move, so start 
+                    // scrolling
+                    qreal distance = scenePos.y() - mMousePressPos.y();
+                    if (downTime > 0 && downTime < FLICK_TIMEOUT 
+                        && qAbs(distance) > FLICKMINDISTANCE ) {
+                        animateScroll(QPointF (0.0f, (distance * 1000 / downTime) * SCROLLSPEED_FACTOR));
+                    }
+                }
+
+                mDraggedItem = 0;
+                return true;
+            }
+        }
+        default:
+            break;
+    }
+
+    return HbAbstractItemViewPrivate::panTriggered(event);
+}
+
+bool HbListViewPrivate::animationEnabled(bool insertOperation)
+{
+    if (mArrangeMode) {
+        return false;
+    } else {
+        return HbAbstractItemViewPrivate::animationEnabled(insertOperation);
     }
 }
 

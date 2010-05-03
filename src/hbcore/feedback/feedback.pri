@@ -43,5 +43,5 @@ PUBLIC_HEADERS += $$PWD/hbfeedbacknamespace.h \
                   $$PWD/hbfeedbackplugin.h \
                   $$PWD/hbfeedbackplugingroup.h
 
-INTERNAL_HEADERS += $$PWD/hbinstantinteractionevent_p.h \
+PRIVATE_HEADERS += $$PWD/hbinstantinteractionevent_p.h \
                     $$PWD/hbcontinuousinteractionevent_p.h

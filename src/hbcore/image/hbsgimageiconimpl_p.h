@@ -33,6 +33,8 @@
 #include <QBitmap>
 
 class HbEglStates;
+class HbVgImageIconRenderer;
+class HbPixmapIconRenderer;
 
 class HB_AUTOTEST_EXPORT HbSgimageIconImpl : public HbIconImpl
 {
@@ -49,11 +51,12 @@ public :
     void paint(QPainter* painter,
                const QRectF &rect,
                Qt::Alignment alignment,
+               const QPainterPath &clipPath = QPainterPath(),
                HbMaskableIconImpl * maskIconData = 0);
 
     QSize defaultSize() const;
     QSize size();
-    void destroyMaskedData(IconMaskedData data);
+    void destroyMaskedData(HbIconMaskedData *data);
 
 private :
     void retrieveSgImageData();
@@ -62,20 +65,15 @@ private :
                          QSizeF& renderSize,
                          Qt::Alignment alignment);
     void updatePainterTransformation(QPainter * painter, const QPointF & pos);
-    void applySpecialCases(QPainter * painter,
-                           const QPointF & topLeft,
-                           HbMaskableIconImpl * maskIconData);
+    static VGImage getVgImage(HbIconImpl * impl, QPainter * painter);
+
 
 private:
     TSgDrawableId sgImageId;
-    VGImage vgImage;
     QPixmap currentPixmap;
-    bool readyToRender;
-    bool specialCaseApplied;
     QSize contentSize;
-    VGPaint opacityPaint;
-    qreal   lastOpacity;
-    HbEglStates *eglStates;
+    HbVgImageIconRenderer * vgImageRenderer;
+    HbPixmapIconRenderer * pixmapIconRenderer;
 };
 
 #endif // HBSGIMAGEICONIMPL_P_H

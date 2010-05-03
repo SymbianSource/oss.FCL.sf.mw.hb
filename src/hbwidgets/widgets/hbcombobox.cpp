@@ -30,10 +30,11 @@
 #include <hbtoucharea.h>
 #include <hbtextitem.h>
 #include <hbstyleoptioncombobox.h>
-
-#include <QGraphicsSceneMouseEvent>
 #include <QStandardItemModel>
 #include <QDebug>
+
+#include <hbtapgesture.h>
+
 
 /*!
     @beta
@@ -568,6 +569,10 @@ void HbComboBox::keyReleaseEvent( QKeyEvent *event )
 }
 
 /*!
+
+    \deprecated HbComboBox::primitive(HbStyle::Primitive)
+        is deprecated.
+
     \reimp
  */
 QGraphicsItem* HbComboBox::primitive( HbStyle::Primitive primitive ) const
@@ -575,8 +580,12 @@ QGraphicsItem* HbComboBox::primitive( HbStyle::Primitive primitive ) const
     Q_D( const HbComboBox );
 
     switch( primitive ){
+        case HbStyle::P_ComboBox_text:
+            return d->mTextItem;
         case HbStyle::P_ComboBox_background:
             return d->mBackgroundItem;
+        case HbStyle::P_ComboBox_button:
+            return d->mButton;
         case HbStyle::P_ComboBoxButton_toucharea:
             return d->mButtonTouchAreaItem;
         default:
@@ -957,27 +966,44 @@ void HbComboBox::setItemText( int index, const QString &text )
 /*!
     reimplementation. 
 */
-bool HbComboBox::eventFilter( QObject *obj, QEvent *event )
+bool HbComboBox::eventFilter( QObject* obj, QEvent* event )
 {
     Q_D( HbComboBox );
-    bool accepted = false;  
+    bool accepted = false;
+    if ( !isEnabled() ) {
+        return false ;
+    }
     if(obj == static_cast<HbTouchArea*>(d->mButtonTouchAreaItem)) {
-        if( (event->type() == QEvent::GraphicsSceneMousePress ) || 
-                (event->type() == QEvent::GraphicsSceneMouseDoubleClick ) ) {
-            if( static_cast<HbTouchArea*>(d->mButtonTouchAreaItem)->rect( ).contains( 
-                        static_cast<QGraphicsSceneMouseEvent *>( event )->pos( ) ) ){
-                d->touchAreaPressEvent( );
-                accepted = true;
+        if(event->type() == QEvent::Gesture ) {
+            QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event );
+            if(gestureEvent->gesture(Qt::TapGesture)) {
+                HbTapGesture *tap = static_cast<HbTapGesture *>(gestureEvent->gesture(Qt::TapGesture));
+                switch(tap->state()) {
+                case Qt::GestureStarted:
+                    {
+                        d->touchAreaPressEvent( );
+                        accepted = true;
+                        break;
+                    }                
+                case Qt::GestureCanceled:
+                    {
+                        d->mIsDown = false;
+                        updatePrimitives();
+                        setProperty("state", "normal");
+                        accepted = true;
+                        break;
+                    }
+                case Qt::GestureFinished:
+                    {
+                        d->touchAreaReleaseEvent( );
+                        accepted = true;
+                        break;
+                        //TODO :: move else part here
+                    }
+                default:
+                    break;
+                }
             }
-        }else if( event->type() == QEvent::GraphicsSceneMouseRelease ) {
-             if( static_cast<HbTouchArea*>(d->mButtonTouchAreaItem)->rect( ).contains(
-                        static_cast<QGraphicsSceneMouseEvent *>( event )->pos( ) ) ){
-                    d->touchAreaReleaseEvent( );
-                    accepted = true;
-             } else if (d->mIsDown) {
-                 d->mIsDown = false;
-                 updatePrimitives( );
-             }
         }
     }
     return accepted;

@@ -34,15 +34,15 @@ PUBLIC_HEADERS += $$PWD/hbdataformmodelitem.h
 PUBLIC_HEADERS += $$PWD/hbdataformmodel.h
 #PUBLIC_HEADERS += $$PWD/hbdataitemcontainer.h
 
-#INTERNAL_HEADERS += $$PWD/hbdataformitemcontainer_p.h
-INTERNAL_HEADERS += $$PWD/hbdatagroup_p.h
-INTERNAL_HEADERS += $$PWD/hbdataformviewitem_p.h
-INTERNAL_HEADERS += $$PWD/hbdataformmodel_p.h
-INTERNAL_HEADERS += $$PWD/hbdataitemcontainer_p.h
-INTERNAL_HEADERS += $$PWD/hbdataform_p.h
-INTERNAL_HEADERS += $$PWD/hbdataformheadingwidget_p.h
-INTERNAL_HEADERS += $$PWD/hbdatagroupheadingwidget_p.h
-INTERNAL_HEADERS += $$PWD/hbdataformmodelitem_p.h
+#PRIVATE_HEADERS += $$PWD/hbdataformitemcontainer_p.h
+PRIVATE_HEADERS += $$PWD/hbdatagroup_p.h
+PRIVATE_HEADERS += $$PWD/hbdataformviewitem_p.h
+PRIVATE_HEADERS += $$PWD/hbdataformmodel_p.h
+PRIVATE_HEADERS += $$PWD/hbdataitemcontainer_p.h
+PRIVATE_HEADERS += $$PWD/hbdataform_p.h
+PRIVATE_HEADERS += $$PWD/hbdataformheadingwidget_p.h
+PRIVATE_HEADERS += $$PWD/hbdatagroupheadingwidget_p.h
+PRIVATE_HEADERS += $$PWD/hbdataformmodelitem_p.h
 
 SOURCES += $$PWD/hbdataform.cpp
 SOURCES += $$PWD/hbdataformviewitem.cpp

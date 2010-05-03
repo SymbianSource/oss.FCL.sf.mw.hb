@@ -44,6 +44,7 @@ class HbSensorListenerObserver {
 public:
     virtual void sensorOrientationChanged(Qt::Orientation newOrientation) = 0;
     virtual void sensorStatusChanged(bool status, bool notify) = 0;
+    virtual ~HbSensorListenerObserver() {}
 };
 
 class HB_AUTOTEST_EXPORT HbSensorListener 
@@ -90,6 +91,7 @@ private:
     Qt::Orientation mDefaultOrientation;
     Qt::Orientation mOrientation;
     bool mEnabled;
+    bool mSettingsEnabled;
 #ifdef Q_OS_SYMBIAN
     HbSensorNotifyHandler* mNotifyHandler;
     CSensrvChannel* mSensrvChannel;

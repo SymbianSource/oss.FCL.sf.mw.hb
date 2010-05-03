@@ -34,7 +34,6 @@ contains(QT_CONFIG, webkit) {
 }
 
 DEFINES += BUILD_HB_TOOLS HB_PLUGINS_DIR=\"\\\"$${HB_PLUGINS_DIR}\\\"\"
-developer:DEFINES += BUILD_HB_INTERNAL
 
 INCLUDEPATH += .
 DEPENDPATH += .
@@ -48,7 +47,7 @@ include(document/document.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbutils/hbutils.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbutils/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$INTERNAL_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -73,14 +72,15 @@ hbAddLibrary(hbwidgets/HbWidgets)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbutils/private/*)
 
 symbian {
-    defFilePath = ..
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022F34
     #DEPLOYMENT_PLUGIN += qjpeg # TODO: Removed because this is already in qt.sis and that caused problems
     DEFINES += SYMBIAN_TARGET_ICON_CACHE_SIZE # TODO: what's this? why not use Q_OS_SYMBIAN?
 
-    INCLUDEPATH += /epoc32/include/osextensions/stdapis/stlport # TODO: depends on S60 version?
+    INCLUDEPATH += $${EPOCROOT}epoc32/include/osextensions/stdapis/stlport # TODO: depends on S60 version?
+
+    load(symbian_i18n.prf):TRANSLATIONS += common.ts
 
     hbExportHeaders(hbutils)
 }

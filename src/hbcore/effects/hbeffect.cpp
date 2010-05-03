@@ -179,12 +179,12 @@ void HbEffectPrivate::handleViewChanged(HbView *view)
                      while (e != d.mEventEffectList.end()) {
                          if (e.value() == group) { // found, erase from event effect list
                              d.mEventEffectList.erase(e);
+							 delete group; // once removed from list, delete group
                              e = d.mEventEffectList.end();
                          }
                          else
                             e++;  // try next one
                      }
-                     delete group; // once removed from list, delete group
                 }
             }
         }
@@ -436,6 +436,7 @@ bool HbEffect::add(QGraphicsItem *item, const QStringList &filePath, const QStri
     Q_UNUSED(item);
     Q_UNUSED(filePath);
     Q_UNUSED(effectEvent);
+    return false;
 #else
     return HbEffectInternal::add(item, filePath, effectEvent);
 #endif //HB_EFFECT_API_OFF
@@ -619,7 +620,7 @@ bool HbEffect::start(QGraphicsItem *item,
     Q_UNUSED(extRect)
     return false;
 #else
-    return HbEffectInternal::start(item, item, false, itemType, effectEvent, receiver, member, userData, extRect);
+    return HbEffectInternal::start(item, item, HbEffectInternal::Normal, itemType, effectEvent, receiver, member, userData, extRect);
 #endif //HB_EFFECT_API_OFF
 }
 
@@ -823,9 +824,9 @@ bool HbEffect::effectRunning(QGraphicsItem *item, const QString &effectEvent)
   \param effectEvent  String identifying effect-event type (eg "appear"). If
   not passed, all the effects running currently on the item are canceled.
 
-  \param hideEffect   If false, the effect is left in its end state in the
-                      graphics item.  If true, the effect is hidden from the
-                      graphics item.
+  \param clearEffect   If false, the effect is left in its end state in the
+                       graphics item.  If true, the effect is hidden from the
+                       graphics item.
 
   \param sendCallback   Optional boolean parameter (true if omitted), which
                         controls if the cancel call results to our
@@ -846,19 +847,19 @@ bool HbEffect::effectRunning(QGraphicsItem *item, const QString &effectEvent)
 bool HbEffect::cancel(
     QGraphicsItem *item,
     const QString &effectEvent,
-    bool hideEffect,
+    bool clearEffect,
     bool sendCallback,
     bool itemIsValid)
 {
 #ifdef HB_EFFECT_API_OFF
     Q_UNUSED(item);
     Q_UNUSED(effectEvent);
-    Q_UNUSED(hideEffect);
+    Q_UNUSED(clearEffect);
     Q_UNUSED(sendCallback);
     Q_UNUSED(itemIsValid);
     return false;
 #else 
-    if ( privateDestroyed ) {
+    if (privateDestroyed) {
         return false;
     }
 
@@ -867,9 +868,7 @@ bool HbEffect::cancel(
     if (effectEvent.isEmpty()) {
         // Stop all the effects running on item at that point of time.
         // (iterator way had some problem and caused crash so using foreach)
-
         QList<HbEffectGroup *> groupsToBeCanceled;
-
         foreach (const EffectMapKey &key, d.mEventEffectList.keys()) {
             if (key.mItem == item) {
                 HbEffectGroup* group = d.mEventEffectList.take(key);
@@ -884,11 +883,10 @@ bool HbEffect::cancel(
         fixEffectGroupOrder(&groupsToBeCanceled);
 
         bool first = true;
-
-        foreach(HbEffectGroup *group, groupsToBeCanceled) {
-            // If hideEffect is false then it is important to pass a default transform
+        foreach (HbEffectGroup *group, groupsToBeCanceled) {
+            // If clearEffect is false then it is important to pass a default transform
             // first so the matrix multiplication in cancelAll ends up correct.
-            group->cancelAll(sendCallback, itemIsValid, hideEffect, first || !itemIsValid ? QTransform() : item->transform());
+            group->cancelAll(sendCallback, itemIsValid, clearEffect, first || !itemIsValid ? QTransform() : item->transform());
             if (first) {
                 first = false;
             }
@@ -896,14 +894,12 @@ bool HbEffect::cancel(
             // return true if any of the effect was canceled
             ret = true;
         }
-
         return ret;
-    }
-    else {
+    } else {
         EffectMapKey key(item, effectEvent);
         HbEffectGroup* group = d.mEventEffectList.take(key);
         if (group) {
-            group->cancelAll(sendCallback, itemIsValid, hideEffect);
+            group->cancelAll(sendCallback, itemIsValid, clearEffect);
             delete group;
             return true;
         } else {
@@ -983,10 +979,7 @@ QRectF HbGVWrapperItem::boundingRect() const
     QRectF bRect;
     // viewportitem is used as a boundingrect since viewport item gets resized when changing orientation
     if( mMainWindow ) {
-        QGraphicsWidget *viewPortItem = mMainWindow->element(HbMainWindow::ViewportItem);
-        if( viewPortItem ) {
-            bRect.setRect( 0,0,viewPortItem->geometry().width(),viewPortItem->geometry().height() );
-        }
+        bRect = mMainWindow->layoutRect();
     }
     return bRect;
 }
@@ -1221,9 +1214,7 @@ void HbEffectInternal::reloadFxmlFiles()
     for (int i=0; i < newDataList.count(); i++) {
         HbEffectInfo effectData = newDataList.at(i);            
         bool ret = false;
-        QStringList  splitList = effectData.xmlFileFullPath().split(QRegExp("[\\\\ /]"));
-        QString relativename = splitList.takeLast();
-        relativename.chop(5);
+        QString relativename = QFileInfo(effectData.xmlFileFullPath()).baseName();
         if (effectData.item() != 0) {
             ret = d.mController.addFXML(effectData.item(), relativename,
                                         effectData.effectEvent(), true);
@@ -1282,7 +1273,7 @@ void HbEffectInternal::cancelAll(const QList<QGraphicsItem*> *exceptionList, boo
   Like cancelAll() but no observers are invoked and items are not assumed to
   be valid anymore.
  */
-void HbEffectInternal::safeCancelAll()
+void HbEffectInternal::safeCancelAll(bool clear)
 {
     QList<HbEffectGroup *> groupsToBeCanceled;
     foreach (HbEffectGroup *group, d.mEventEffectList) {
@@ -1290,7 +1281,7 @@ void HbEffectInternal::safeCancelAll()
     }
     foreach (HbEffectGroup *group, groupsToBeCanceled) {
         if (d.mEventEffectList.values().contains(group)) {
-            group->cancelAll(false, false);
+            group->cancelAll(false, false, clear);
         }
     }
 }
@@ -1337,6 +1328,20 @@ void HbEffectInternal::resumeEffects()
     }
 }
 
+inline void updateGroup(HbEffectGroup *group,
+                        QObject *receiver,
+                        const char *member,
+                        const QVariant &userData,
+                        const QRectF &extRect,
+                        HbEffectInternal::EffectFlags flags)
+
+{
+    group->setObserver(receiver, member ? QString(member) : QString());
+    group->setUserData(userData);
+    group->setExtRect(extRect);
+    group->setEffectFlags(flags);
+}
+
 /*!
   The real implementation for HbEffect::start().
 
@@ -1355,15 +1360,19 @@ void HbEffectInternal::resumeEffects()
   possibility) of having separate registration and target items is not exposed to the
   users of the HbEffect API in any way.
 
-  When \a hideWhenFinished is true (it is typically false when coming from the standard
-  HbEffect APIs) the effect is always hidden when it is finished or canceled (similarly to
-  when cancel() is called with hideEffect set to true).
+  When ClearEffectWhenFinished is set (it is typically not set when coming from the standard
+  HbEffect APIs) the effect is always removed when it is finished or canceled (similarly to
+  when cancel() is called with clearEffect set to true).
+
+  When ShowItemOnFirstUpdate is set, the target and registration items are set to visible
+  after the effects have been first applied. This flag is useful in certain cases to make
+  sure there is no flickering.
 
   \sa HbEffect::start()
  */
 bool HbEffectInternal::start(QGraphicsItem *registrationItem,
                              QGraphicsItem *targetItem,
-                             bool hideWhenFinished,
+                             EffectFlags flags,
                              const QString &itemType, 
                              const QString &effectEvent,
                              QObject *receiver,
@@ -1429,7 +1438,14 @@ bool HbEffectInternal::start(QGraphicsItem *registrationItem,
                 QGenericReturnArgument(),
                 Q_ARG(HbEffect::EffectStatus, status));
         }
-
+        if (flags.testFlag(HbEffectInternal::ShowItemOnFirstUpdate)) {
+            if (targetItem) {
+                targetItem->setVisible(true);
+            }
+            if (registrationItem && registrationItem != targetItem) {
+                registrationItem->setVisible(true);
+            }
+        }
         return false;
     }
 
@@ -1449,15 +1465,12 @@ bool HbEffectInternal::start(QGraphicsItem *registrationItem,
     if(e != d.mEventEffectList.end()) {
         HbEffectGroup *group = e.value();
         if (!group->dirty()) {
-            // if the effect group is not dirty, restart it. Cancel possible earlier effect first so that
-            // end position gets correct.
+            // if the effect group is not dirty, restart it. Cancel possible earlier
+            // effect first so that end position gets correct.
             group->cancelAll(true);
             
             // Update with given notification parameters
-            group->setObserver(receiver, member ? QString(member) : QString());
-            group->setUserData(userData);
-            group->setExtRect(extRect);
-            group->setHideWhenFinished(hideWhenFinished);
+            updateGroup(group, receiver, member, userData, extRect, flags);
 
             group->startAll();
             started = true;
@@ -1470,17 +1483,14 @@ bool HbEffectInternal::start(QGraphicsItem *registrationItem,
     if (!started) {
         // Create the effect.
         HbEffectGroup *group = d.mFactory.createEffect(registrationItem, targetItem, itemType, effectEvent);
-        
-        group->setObserver(receiver, member ? QString(member) : QString());
-        group->setUserData(userData);
-        group->setExtRect(extRect);
-        group->setHideWhenFinished(hideWhenFinished);
+
+        updateGroup(group, receiver, member, userData, extRect, flags);
 
         // Store effect to support cancelation and deletion of effect
         d.mEventEffectList.insert(key, group);
         group->startAll();
         // check if definition had effects
-        if( group->effectCount() == 0 ){
+        if (group->effectCount() == 0) {
 #ifdef HBEFFECT_WARNING
             qWarning("HbEffect Warning: Starting effect with effect count zero");
 #endif //HBEFFECT_WARNING
@@ -1496,19 +1506,20 @@ bool HbEffectInternal::start(QGraphicsItem *registrationItem,
  */
 bool HbEffectInternal::start(QGraphicsItem *registrationItem,
                              QGraphicsItem *targetItem,
-                             bool hideWhenFinished,
+                             EffectFlags flags,
                              const QString &effectEvent,
                              QObject *receiver,
                              const char *member,
                              const QVariant &userData,
                              const QRectF &extRect)
 {
-    return HbEffectInternal::start(registrationItem, targetItem, hideWhenFinished,
+    return HbEffectInternal::start(registrationItem, targetItem, flags,
                                    HB_EFFECT_INTERNAL_ITEM,
                                    effectEvent, receiver, member, userData, extRect);
 }
 
-/*!  By default effects are enabled. However with this function every effect can
+/*!
+  By default effects are enabled. However with this function every effect can
   be disabled, meaning that HbEffect::start() will have no effect (and will
   always return false).
 

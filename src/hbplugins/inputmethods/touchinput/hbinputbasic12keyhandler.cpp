@@ -32,32 +32,7 @@
 #include <hbinputpredictionfactory.h>
 #include "hbinputabstractbase.h"
 #include "hbinputbasic12keyhandler.h"
-#include "hbinputbasichandler_p.h"
-
-class HbInputBasic12KeyHandlerPrivate: public HbInputBasicHandlerPrivate
-{
-    Q_DECLARE_PUBLIC(HbInputBasic12KeyHandler)
-
-public:
-    HbInputBasic12KeyHandlerPrivate();
-    ~HbInputBasic12KeyHandlerPrivate();
-
-    void handleAlphaEvent(int buttonId);
-    bool buttonPressed(const QKeyEvent *keyEvent);
-    bool buttonReleased(const QKeyEvent *keyEvent);
-    bool actionHandler(HbInputModeHandler::HbInputModeAction action);
-
-    void _q_timeout();
-
-public:
-    int mLastKey;
-    QChar mCurrentChar;
-    int mNumChr;
-    int mDownKey;
-    HbInputFocusObject *mCurrentlyFocused;
-    bool mLongPressHappened;
-	bool mShiftKeyDoubleTapped;
-};
+#include "hbinputbasic12keyhandler_p.h"
 
 HbInputBasic12KeyHandlerPrivate::HbInputBasic12KeyHandlerPrivate()
 :    mLastKey(0),
@@ -83,9 +58,11 @@ void HbInputBasic12KeyHandlerPrivate::handleAlphaEvent(int buttonId)
     if (!focusObject) {
         return;
     }
-
-    mCurrentChar = q->getNthCharacterInKey(mNumChr, buttonId);
-
+	//This condition is to avoid get the characters mapped to Asterisk
+	//Especially for Thai language we have mapped character to Asterisk
+	if(buttonId != Qt::Key_Asterisk) {
+		mCurrentChar = q->getNthCharacterInKey(mNumChr, buttonId);
+	}
 
     if (mCurrentChar != 0) {
         QString str;
@@ -167,7 +144,7 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
 			// Need to check for shift key : In empty editor, click on editor
 			// press shift, multitap on a button. The char is entered in upper case.
 			// It should be entered in lower case.
-            if (Qt::Key_Shift != mLastKey) {
+            if (mLastKey && (Qt::Key_Shift != mLastKey)) {
 			    mInputMethod->updateState();
             }
 			refreshAutoCompleter();
@@ -179,7 +156,9 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
 			return true;
 		} else if (buttonId == Qt::Key_Shift) {
             // single tap of shift key toggles prediction status in case insensitive languages
-            if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage() && 
+			// The Editor should not be Web or URL which allows only Latin Alphabet
+            if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage() &&
+				((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)!=focusObject->editorInterface().constraints()) &&
                 // when the language does not support prediction in that case we should not update the state and prediction
                 HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language())) {
                 HbInputSettingProxy::instance()->togglePrediction();
@@ -190,14 +169,15 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
                     mShiftKeyDoubleTapped = false;
                     mTimer->stop();
                     if( HbInputSettingProxy::instance()->globalInputLanguage() == mInputMethod->inputState().language() ||
-                        HbInputSettingProxy::instance()->globalSecondaryInputLanguage() == mInputMethod->inputState().language() ){
+                        HbInputSettingProxy::instance()->globalSecondaryInputLanguage() == mInputMethod->inputState().language() ||
+						((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)==focusObject->editorInterface().constraints())){
                         // in latin variants , double tap of shift key toggles the prediction status	
                         // revert back to the old case as this is a double tap 
                         // (the case was changed on the single tap)
                         updateTextCase();
                         // when the language does not support prediction in that case we should not update the state and prediction
                         if(HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language())) {
-                            HbInputSettingProxy::instance()->togglePrediction();
+                            q->togglePrediction();
                         }
                     } else {
 					    // if the global language is different from the input mode language, we should 
@@ -390,6 +370,14 @@ HbInputBasic12KeyHandler::HbInputBasic12KeyHandler(HbInputAbstractMethod* inputM
     d->q_ptr = this;
 }
 
+HbInputBasic12KeyHandler::HbInputBasic12KeyHandler(HbInputBasic12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod)
+:HbInputBasicHandler(dd, inputMethod)
+{
+    Q_D(HbInputBasic12KeyHandler);
+    d->q_ptr = this;
+    d->init();
+}
+
 HbInputBasic12KeyHandler::~HbInputBasic12KeyHandler()
 {
 }
@@ -415,22 +403,6 @@ bool HbInputBasic12KeyHandler::isComposing() const
 {
     Q_D(const HbInputBasic12KeyHandler);
     return d->mTimer->isActive();
-}
-
-/*!
- list different input modes.
-*/
-void HbInputBasic12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    HbInputModeProperties binding;
-    binding.iMode = HbInputModeDefault;
-    binding.iKeyboard = HbKeyboardVirtual12Key;
-
-    QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-    foreach (HbInputLanguage language, languages) {
-        binding.iLanguage = language;
-        modes.push_back(binding);
-    }
 }
 
 /*!

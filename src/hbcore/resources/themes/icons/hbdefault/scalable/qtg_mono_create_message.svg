@@ -1,12 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
 <rect fill="none" height="30" width="30"/>
-<rect fill="none" height="30" width="30"/>
-<path d="M3,4.5v8.648l0.175-0.174l2.075-0.297V8.555l4.049,3.544l1.958-0.28L5.464,6.75h20.571l-6.463,5.655l-0.338,0.297 l-3.07,2.687l-0.326,2.277l4.424-3.871l5.988,6.361v0.094H15.47l-0.322,2.25H28.5v-18H3z M26.25,18.516l-5.141-5.462l5.141-4.499 V18.516z"/>
-<polygon points="9.431,13.598 3.862,14.393 5.453,18.105 9.697,22.348 13.409,23.938 14.204,18.371 "/>
-<polygon points="14.337,17.441 15,12.802 10.36,13.465 "/>
-<polygon points="10.349,27 12.349,25 10.228,23.938 7.166,27 "/>
-<polygon points="4.393,19.166 0.75,22.809 0.75,27 5.045,27 8.636,23.408 "/>
-<polygon points="0.75,20.688 3.862,17.576 2.802,15.454 0.75,17.506 "/>
+</g>
+<path d="M11.749,23.386c0.05-0.452,0.252-0.872,0.573-1.193L13.515,21H4.414l6.115-6.115L14,18.355l3.471-3.471l1.08,1.08  l0.707-0.707l-1.08-1.08L24,8.355v2.677c0.619-0.107,1.279,0.075,1.758,0.553L27,12.828V4H1v20h10.681L11.749,23.386z M22.527,7  L14,15.527L5.473,7H22.527z M4,8.355l5.822,5.822L4,20V8.355z"/>
+<path d="M24.343,13L13.736,23.606l-0.707,6.364l6.364-0.707L30,18.657L24.343,13z M18.687,27.142l-2.828-2.828l8.484-8.485  l2.829,2.829L18.687,27.142z"/>
 </svg>

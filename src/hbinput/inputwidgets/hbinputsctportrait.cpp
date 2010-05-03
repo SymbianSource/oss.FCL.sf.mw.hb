@@ -50,6 +50,7 @@
     @proto
     @hbinput
     \class HbInputSctPortrait
+    \deprecated class HbInputSctPortrait
     \brief A widget for displaying special character table in portrait mode.
     
     This widget displays special character table. Characters are organized in grid
@@ -296,7 +297,7 @@ int HbInputSctPortraitPrivate::keyCode(int buttonId)
     if (buttonId == HbDelButtonId) {
         code = Qt::Key_Delete;
     } else if (buttonId == HbAbcButtonId) {
-        code = Qt::Key_Asterisk;
+		code = Qt::Key_Control;
     } else if (buttonId == HbSpecialCharacterButtonId) {
         code = Qt::Key_F1;
     } else if (buttonId == HbSmileyButtonId) {
@@ -323,13 +324,14 @@ void HbInputSctPortraitPrivate::handleStandardButtonClick(int buttonId)
     Q_Q(HbInputSctPortrait);
 
     if (buttonId >= 0 && buttonId < HbNumSctButtons &&
-        buttonId%HbSctGridColumns != HbSctGridColumns-1) {
-        QString buttonText = mSctButtons.at(buttonId)->text();
-
-        if (buttonText.length() > 0) {
-            emit q->sctCharacterSelected(buttonText.at(0));
-        }
-    } else if (keyCode(buttonId) == Qt::Key_F1) {
+		buttonId%HbSctGridColumns != HbSctGridColumns-1) {
+			QString buttonText = mSctButtons.at(buttonId)->text();
+			if (mSctButtons.at(buttonId) && !mSctButtons.at(buttonId)->isFaded()) {
+				if (buttonText.length() > 0) {
+					emit q->sctCharacterSelected(buttonText.at(0));
+				}
+			}
+	} else if (keyCode(buttonId) == Qt::Key_F1) {
         if(mActiveView != HbInputVkbWidget::HbSctViewSpecialCharacter) {
             mStartIndex = 0;
         }
@@ -374,7 +376,8 @@ void HbInputSctPortraitPrivate::_q_mappedKeyClick(int buttonid)
 /// @endcond
 
 /*!
-Constructs the object.
+\deprecated HbInputSctPortrait::HbInputSctPortrait(HbInputMethod*, const HbKeymap *, QGraphicsItem*)
+    is deprecated.
 */
 HbInputSctPortrait::HbInputSctPortrait(HbInputMethod* owner, const HbKeymap *keymap, QGraphicsItem* parent)
                     : HbInputVkbWidget(*new HbInputSctPortraitPrivate, parent)
@@ -403,26 +406,36 @@ HbInputSctPortrait::HbInputSctPortrait(HbInputMethod* owner, const HbKeymap *key
     setKeymap(keymap);
 }
 
+/*!
+\deprecated HbInputSctPortrait::HbInputSctPortrait(HbInputSctPortraitPrivate &, QGraphicsItem*)
+    is deprecated.
+*/
 HbInputSctPortrait::HbInputSctPortrait(HbInputSctPortraitPrivate &dd, QGraphicsItem* parent)
     : HbInputVkbWidget(dd, parent)
 {
 }
 
 /*!
-Destructs the object.
+\deprecated HbInputSctPortrait::~HbInputSctPortrait()
+    is deprecated.
 */
 HbInputSctPortrait::~HbInputSctPortrait()
 {
 }
 
 /*!
-Returns keyboard type.
+\deprecated HbInputSctPortrait::keyboardType() const
+    is deprecated.
 */
 HbKeyboardType HbInputSctPortrait::keyboardType() const
 {
     return HbKeyboardSctPortrait;
 }
 
+/*!
+\deprecated HbInputSctPortrait::setSct(HbSctView)
+    is deprecated.
+*/
 void HbInputSctPortrait::setSct(HbSctView view)
 {
     Q_D(HbInputSctPortrait);
@@ -434,8 +447,8 @@ void HbInputSctPortrait::setSct(HbSctView view)
 }
 
 /*!
-This function should be called when ever there is a language change.
-This gets the accented and special characters from the given keymappings.
+\deprecated HbInputSctPortrait::setKeymap(const HbKeymap*)
+    is deprecated.
 */
 void HbInputSctPortrait::setKeymap(const HbKeymap* keymap)
 {
@@ -444,12 +457,20 @@ void HbInputSctPortrait::setKeymap(const HbKeymap* keymap)
     d->getSpecialCharacters();
 }
 
+/*!
+\deprecated HbInputSctPortrait::keypadLayout()
+    is deprecated.
+*/
 QGraphicsLayout *HbInputSctPortrait::keypadLayout()
 {
     Q_D(HbInputSctPortrait);
     return d->mButtonLayout;
 }
 
+/*!
+\deprecated HbInputSctPortrait::aboutToOpen(HbVkbHost*)
+    is deprecated.
+*/
 void HbInputSctPortrait::aboutToOpen(HbVkbHost *host)
 {
     Q_D(HbInputSctPortrait);
@@ -462,6 +483,10 @@ void HbInputSctPortrait::aboutToOpen(HbVkbHost *host)
     d->setLayoutDimensions(keypadSize);
 }
 
+/*!
+\deprecated HbInputSctPortrait::flickTriggered(HbInputVkbWidget::HbFlickDirection)
+    is deprecated.
+*/
 void HbInputSctPortrait::flickTriggered(HbInputVkbWidget::HbFlickDirection direction)
 {
     Q_D(HbInputSctPortrait);

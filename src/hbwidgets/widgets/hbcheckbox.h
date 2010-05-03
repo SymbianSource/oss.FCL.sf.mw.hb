@@ -70,9 +70,13 @@ protected:
     virtual bool hitButton( const QPointF &pos ) const;
     virtual void checkStateSet( );
     virtual void nextCheckState( );
-
+#ifndef HB_GESTURE_FW
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+#endif
+#ifdef HB_GESTURE_FW
+    virtual void gestureEvent(QGestureEvent *event);
+#endif
     void keyPressEvent(QKeyEvent *keyEvent);
     QVariant itemChange( GraphicsItemChange change, const QVariant &value );
 
@@ -82,6 +86,7 @@ signals:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbCheckBox)
     Q_DISABLE_COPY(HbCheckBox)
+    
 
 };
 

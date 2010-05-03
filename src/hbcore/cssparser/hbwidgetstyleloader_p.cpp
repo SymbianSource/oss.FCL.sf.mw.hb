@@ -32,7 +32,7 @@
 #include "hbwidgetloader_p.h"
 #include "hblayeredstyleloader_p.h"
 #include "hbstyleloader.h"
-
+#include "hbcolortheme_p.h"
 #include "hbwidget.h"
 
 //#define WIDGETSTYLELOADER_DEBUG
@@ -240,6 +240,11 @@ bool HbWidgetStyleLoader::doAddFileSet(const QString &path,
     if (HbInstancePrivate::d_ptr()->mStyle) {
         HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
     }
+    if ( concern == HbLayeredStyleLoader::Concern_Colors 
+         || concern == HbLayeredStyleLoader::Concern_All) {
+        HbColorTheme::instance()->flushVariableCache();
+    }
+
 #ifdef WIDGETSTYLELOADER_DEBUG
 	qDebug() << "WidgetStyleLoader now contains" << mFileSets.count() << "filters";
 #endif
@@ -302,6 +307,13 @@ bool HbWidgetStyleLoader::doRemoveFileSet(
     			mFileSets.removeAt(i);
                 if (HbInstancePrivate::d_ptr()->mStyle) {
                     HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
+                }
+                if ( concern && (*concern == HbLayeredStyleLoader::Concern_Colors || 
+                                 *concern == HbLayeredStyleLoader::Concern_All)) {
+                    HbColorTheme *colorThemeInstance = HbColorTheme::instance();
+                    if (colorThemeInstance) {  // Check that the instance has not been destroyed.
+                        colorThemeInstance->flushVariableCache();
+                    }
                 }
             }
 #ifdef WIDGETSTYLELOADER_DEBUG
@@ -472,7 +484,6 @@ bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutNa
 			
             if ( attemptToLoad ) {
 			    static HbWidgetLoader loader;
-			    loader.setWidget(widget);
 #ifdef WIDGETSTYLELOADER_DEBUG
 			    qDebug() << "Attempting to load file " << filename;
 #endif
@@ -480,7 +491,7 @@ bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutNa
                     HbLayeredStyleLoader::sharingNeeded(mFileSets[c].priority)
                     ? HbMemoryManager::SharedMemory
                     : HbMemoryManager::HeapMemory;
-                if(loader.load(filename, layoutName, sectionName, type)) {
+                if(loader.load(widget, filename, layoutName, sectionName, type)) {
 				    loaded = true;
 				    break;
 			    }

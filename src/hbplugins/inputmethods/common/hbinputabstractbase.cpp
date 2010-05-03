@@ -164,4 +164,15 @@ void HbInputAbstractMethod::getCandidatePositionAndSize(HbCandidateList *candida
         pos.setX(abs((int)viewport.width()) - size.width());
     }
 }
+
+void HbInputAbstractMethod::showThaiSpecialCharacters(uint buttonId)
+{
+	Q_UNUSED(buttonId);
+}
+
+bool HbInputAbstractMethod::isSctModeActive() const
+{
+	return false;
+}
+
    

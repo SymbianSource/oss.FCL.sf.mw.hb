@@ -38,16 +38,17 @@ public:
     HbEffectThemePrivate();
     ~HbEffectThemePrivate();
 
-    bool initialise(const QString &dir);
+    void initialise(const QString &dir);
     QString mThemeName;
     QStringList mDirList;
     QStringList mListOfExistingFolders;
 };
 
-bool HbEffectThemePrivate::initialise(const QString &dir)
+void HbEffectThemePrivate::initialise(const QString &themeName)
 {
+    mThemeName = themeName;
     QMap<int, QString> maplist = HbThemeUtils::constructHierarchyListWithPathInfo(
-        QString(), dir, Hb::EffectResource);
+        QString(), mThemeName, Hb::EffectResource);
         
     mDirList.clear();
         
@@ -56,8 +57,8 @@ bool HbEffectThemePrivate::initialise(const QString &dir)
         mDirList.append(list.at(i));
     }
 
-    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, Hb::EffectResource);
-    return mListOfExistingFolders.count() > 0;
+    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName, 
+                                                                    Hb::EffectResource);
 }
 
 HbEffectThemePrivate::HbEffectThemePrivate()
@@ -69,11 +70,12 @@ HbEffectThemePrivate::~HbEffectThemePrivate()
 {
 }
 
-Q_GLOBAL_STATIC(HbEffectTheme, instance)
+Q_GLOBAL_STATIC(HbEffectTheme, globalEffectTheme)
+HbEffectTheme *HbEffectTheme::self = 0;
 
-HbEffectTheme *HbEffectTheme::global()
+HbEffectTheme *HbEffectTheme::instance()
 {
-    return instance();
+    return globalEffectTheme();
 }
 
 QString HbEffectTheme::getEffectXml(const QString &fileNameLogical, bool &fromTheme) const 
@@ -99,6 +101,7 @@ QString HbEffectTheme::getEffectXml(const QString &fileNameLogical, bool &fromTh
 HbEffectTheme::HbEffectTheme()
   : d_ptr(new HbEffectThemePrivate)
 {
+    self = this;
 }
 
 HbEffectTheme::~HbEffectTheme()
@@ -108,12 +111,8 @@ HbEffectTheme::~HbEffectTheme()
 
 void HbEffectTheme::setCurrentTheme(const QString& themeName)
 {
-    bool success = d_ptr->initialise(themeName);
-    if (success && d_ptr->mListOfExistingFolders.count() == 2) {
-        d_ptr->mThemeName = "hbdefault";
-    } else {
-        d_ptr->mThemeName = themeName;
-    }
+    d_ptr->initialise(themeName);
+    d_ptr->mThemeName = themeName;
     HbEffectInternal::reloadFxmlFiles();
 }
 

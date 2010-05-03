@@ -32,48 +32,186 @@
 #include <hbinputvkbhost.h>
 #include <hbinputdialog.h>
 #include <hbaction.h>
+#include <hbmainwindow.h>
+#include <hbinstance.h>
+#include <hbeffect.h>
+
 #include "virtual12key.h"
 
 #include "hbinputprediction12keyhandler.h"
 #include "hbinputpredictionhandler_p.h"
 #include "hbinputabstractbase.h"
+#include "hbinputprediction12keyhandler_p.h"
 
 #define HbDeltaHeight 3.0
 #define MAXUDBWORDSIZE 64
 
-class HbInputPrediction12KeyHandlerPrivate: public HbInputPredictionHandlerPrivate
+HbInputSpellQuery::HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner) : mOwner(owner)
 {
-    Q_DECLARE_PUBLIC(HbInputPrediction12KeyHandler)
+}
 
-public:
-    HbInputPrediction12KeyHandlerPrivate();
-    ~HbInputPrediction12KeyHandlerPrivate();
+void HbInputSpellQuery::launch(QString editorText)
+{
+    HbInputFocusObject *focusObject = mOwner->mInputMethod->focusObject();
+    if (!focusObject) {
+        return;
+    }
+    mSavedState = mOwner->mInputMethod->inputState();
+    mOwner->mEngine->clear();
+    mOwner->mCanContinuePrediction = true;
+    // close the keypad before showing the spell dialog
+    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
+    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
+        vkbHost->closeKeypad();
+    }
+    setInputMode(HbInputDialog::TextInput);
+    setPromptText(tr("Spell:"));
+    setValue(QVariant(editorText));
 
-    bool buttonReleased(const QKeyEvent *keyEvent);
-    bool buttonPressed(const QKeyEvent *keyEvent);
-    void _q_timeout();
-    void launchSpellDialog(QString customWord);
-    void getSpellDialogPositionAndSize(QPointF & pos,QSizeF & size,QRectF & geom);
-    void cancelButtonPress();
-public:
-    int mLastKey;
-    bool mButtonDown;
-    QChar mCurrentChar;
-    bool mLongPressHappened;
-    bool mShiftKeyDoubleTap;
-};
+    //set the spell dialog position
+    QSizeF  newSize; 
+    QPointF newPos;
+    QRectF newGeometry;
+    getPositionAndSize(newPos, newSize, newGeometry);
+    newGeometry.setHeight(newSize.height());
+    newGeometry.setWidth(newSize.width());
+    setGeometry(newGeometry);
+    setPos(newPos);
+
+    // change the focus to spell dialog editor
+    HbLineEdit *spellEdit = lineEdit();
+    if (spellEdit) {      
+        spellEdit->setMaxLength(MAXUDBWORDSIZE);
+        spellEdit->setSmileysEnabled(false);
+        HbEditorInterface eInt(spellEdit);
+        // we don't want prediction and automatic textcase in spell query dialog
+        spellEdit->setInputMethodHints(spellEdit->inputMethodHints() | Qt::ImhNoPredictiveText | Qt::ImhNoAutoUppercase);
+        eInt.setLastFocusedState(mSavedState);
+        spellEdit->setFocus();
+    }
+    
+    // execute the spell dialog
+    mSavedFocusObject = focusObject->object();
+    mSavedEditorText = editorText;
+    //setAttribute(Qt::WA_DeleteOnClose);
+    mDidHandleFinish = false;
+    open(this,SLOT(dialogClosed(HbAction*)));
+}
+
+void HbInputSpellQuery::dialogClosed(HbAction* action)
+{
+	//There are multiple dialog closed event received. This will make sure we handle finish
+	//only once
+	if(mDidHandleFinish) {
+        return;
+    } else {
+        mDidHandleFinish = true;
+    }
+	
+	bool isOk = false;
+	bool isCancel = false;
+	bool isExternalClose = false;
+	// action is null when input query is closed externally , for example by calling
+	// HbDialog::close() function.
+	if (action) {
+		isOk = (action->text() == primaryAction()->text())? true : false;
+		isCancel = (action->text() == secondaryAction()->text())? true:false;
+	} else {
+		isExternalClose = true;
+	}
+    
+	//Need to disable effects as asynchronous hide will commit the word otherwise.
+	HbEffect::disable(this);
+	hide();
+	HbEffect::enable(this);  
+	
+	HbInputFocusObject *newFocusObject = new HbInputFocusObject(mSavedFocusObject);
+    newFocusObject->releaseFocus();
+    newFocusObject->setFocus();
+    
+    HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(mSavedFocusObject);
+    
+    if(abstractEdit) {
+        abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
+    }
+    
+    mOwner->mInputMethod->setFocusObject(newFocusObject);
+    mOwner->mInputMethod->focusObject()->editorInterface().setTextCase(mSavedState.textCase());
+    
+    if (isOk) {
+		mOwner->commit(value().toString(), true, true);
+	} else if (isCancel) {
+        //update the editor with pre-edit text
+        mOwner->mEngine->setWord(mSavedEditorText);
+        bool used = false;	 
+        mOwner->mEngine->updateCandidates(mOwner->mBestGuessLocation, used);
+        mOwner->mShowTail = false;
+        mOwner->updateEditor();
+	} else if (isExternalClose) {
+		mOwner->commit(mSavedEditorText, true, true);
+	}
+	
+	mSavedEditorText.clear();
+}
+
+void HbInputSpellQuery::getPositionAndSize(QPointF &pos,QSizeF &size, QRectF &geom)
+{
+    pos = HbInputDialog::pos();
+    size = HbInputDialog::size();
+    geom = HbInputDialog::geometry();
+
+    QRectF cursorRect = mOwner->mInputMethod->focusObject()->microFocus(); // from the top of the screen
+    pos = QPointF(cursorRect.bottomLeft().x(),cursorRect.bottomLeft().y());
+    qreal heightOfTitlebar = 80.0; // Using magic number for now...
+    qreal screenHeight = (qreal)HbDeviceProfile::current().logicalSize().height();
+
+    if( ((screenHeight - cursorRect.bottomLeft().y()) > (cursorRect.y() - heightOfTitlebar))
+        || ((screenHeight - cursorRect.bottomLeft().y() + HbDeltaHeight ) > geom.height()) ) {
+        // this means there is amore space below inline text than at the top or we can fit spell Dialog
+        // below inline text
+        pos.setY(cursorRect.bottomLeft().y() + HbDeltaHeight);
+        size.setHeight(screenHeight - pos.y());
+   } else {
+        // this means there is amore space above inline text than below it
+        pos.setY(cursorRect.y() - geom.height() - HbDeltaHeight);
+        if (pos.y() < heightOfTitlebar) {
+            // this means that spell dialog can not be fit in from top of inline text, we need to trim it
+            pos.setY(heightOfTitlebar);
+        }
+        size.setHeight(cursorRect.y() - heightOfTitlebar - HbDeltaHeight);
+    }
+    if ( size.height() > geom.height()) {
+        size.setHeight(geom.height());
+    }
+    if ((pos.x() + size.width()) > (qreal)HbDeviceProfile::current().logicalSize().width()) {
+        // can not fit spell dialog to the right side of inline edit text.
+        pos.setX((qreal)HbDeviceProfile::current().logicalSize().width()- size.width());
+    }
+}
 
 HbInputPrediction12KeyHandlerPrivate::HbInputPrediction12KeyHandlerPrivate()
 :mLastKey(0),
 mButtonDown(false),
 mCurrentChar(0),
 mLongPressHappened(false),
-mShiftKeyDoubleTap(false)
+mShiftKeyDoubleTap(false),
+mInputSpellQuery(NULL)
 {
 }
 
 HbInputPrediction12KeyHandlerPrivate::~HbInputPrediction12KeyHandlerPrivate()
 {
+    delete mInputSpellQuery;
+	mInputSpellQuery = 0;
+}
+
+void HbInputPrediction12KeyHandlerPrivate::chopQMarkAndUpdateEditor()
+{
+    if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {	
+        (*mCandidates)[mBestGuessLocation].chop(1);
+        updateEditor();
+        mCanContinuePrediction = true;
+    }
 }
 
 void HbInputPrediction12KeyHandlerPrivate::_q_timeout()
@@ -88,16 +226,14 @@ void HbInputPrediction12KeyHandlerPrivate::_q_timeout()
     if (mButtonDown) {	
         if (mLastKey == Qt::Key_Asterisk) {
 			//Remove the "?" mark if present
-			if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {	
-                (*mCandidates)[mBestGuessLocation].chop(1);
-                updateEditor();
-                mCanContinuePrediction = true;
-			}
+            chopQMarkAndUpdateEditor();
             mInputMethod->switchMode(mLastKey);
         } else if (mLastKey == Qt::Key_Shift) {
             mInputMethod->switchMode(Qt::Key_Shift);
             mLongPressHappened = true;
         } else if (mLastKey == Qt::Key_Control) {
+            //Remove the "?" mark if present
+            chopQMarkAndUpdateEditor();
             mInputMethod->selectSpecialCharacterTableMode();
         } else {
             //With a long key press of a key, numbers are supposed to be entered.
@@ -181,8 +317,8 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     // Sym key is handled in this class it self, so not passing it to 
     // the base mode handlers.	
     if ( buttonId == Qt::Key_Control) {
-        //Same SYM key is used for launching candidate list (long key press)
-        //and also for SCT. So, do not launch SCT if candidate list is already launched.
+        //Remove the "?" mark if present
+        chopQMarkAndUpdateEditor();
         mInputMethod->switchMode(buttonId);
         return true;
     } 
@@ -222,7 +358,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
                     // revert back to the old case as this is a double tap 
                     // (the case was changed on the single tap)
                     updateTextCase();				 
-                    HbInputSettingProxy::instance()->togglePrediction();
+                    q->togglePrediction();
                 } else {
                     // if the global language is different from the input mode language, we should 
                     // go back to the root state
@@ -249,112 +385,6 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     return false;
 }
 
-void HbInputPrediction12KeyHandlerPrivate::launchSpellDialog(QString editorText)
-{
-    HbInputFocusObject *focusObject = mInputMethod->focusObject();
-    if (!focusObject) {
-        return;
-    }
-        QPointer<QObject> focusedQObject = focusObject->object();
-	// store the current focused editor 
-			 
-    HbTextCase currentTextCase = focusObject->editorInterface().textCase();
-    mEngine->clear();
-    mCanContinuePrediction = true;
-    // close the keypad before showing the spell dialog
-	HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
-    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
-        vkbHost->closeKeypad(true);
-    }
-    // create the spell dialog
-    HbInputDialog *spellDialog = new HbInputDialog();
-    spellDialog->setInputMode(HbInputDialog::TextInput);
-    spellDialog->setPromptText("");
-    spellDialog->setValue(QVariant(editorText));
-    QSizeF  dialogSize = spellDialog->size();
-    QPointF dialogPos = spellDialog->pos();
-    QRectF geom = spellDialog->geometry();
-    
-    //set the spell dialog position
-    getSpellDialogPositionAndSize(dialogPos,dialogSize, geom);
-    geom.setHeight(dialogSize.height());
-    geom.setWidth(dialogSize.width());
-    spellDialog->setGeometry(geom);
-    spellDialog->setPos(dialogPos);
-
-    // change the focus to spell dialog editor
-    HbLineEdit *spellEdit = spellDialog->lineEdit();
-
-    if (spellEdit) {
-        spellEdit->setFocus();
-        spellEdit->clearFocus();
-        spellEdit->setFocus();
-        spellEdit->setMaxLength(MAXUDBWORDSIZE);
-        spellEdit->setSmileysEnabled(false);
-        HbEditorInterface eInt(spellEdit);
-		spellEdit->setInputMethodHints(spellEdit->inputMethodHints() | Qt::ImhNoPredictiveText);
-        eInt.setTextCase(currentTextCase);
-    }
-    // execute the spell dialog
-    HbAction *act = spellDialog->exec();
- 
-        //create new focus object and set the focus back to main editor
-        HbInputFocusObject *newFocusObject = new HbInputFocusObject(focusedQObject);
-	   
-		
-        newFocusObject->releaseFocus();
-        newFocusObject->setFocus();
-
-	    HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(focusedQObject);
-        if(abstractEdit) {
-            abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
-        }
-
-        mInputMethod->setFocusObject(newFocusObject);
-        mInputMethod->focusObject()->editorInterface().setTextCase(currentTextCase);
-
-    if (act->text() == spellDialog->primaryAction()->text()) {
-        commit(spellDialog->value().toString() , true, true);
-    } else if (act->text() == spellDialog->secondaryAction()->text()) {
-    //update the editor with pre-edit text
-        mEngine->setWord(editorText);
-        bool used = false;	 
-        mEngine->updateCandidates(mBestGuessLocation, used);
-		mShowTail = false;
-		updateEditor();
-	}  
-    delete spellDialog;
-}
-
-void HbInputPrediction12KeyHandlerPrivate::getSpellDialogPositionAndSize(QPointF & pos,QSizeF & size, QRectF &geom)
-{
-    QRectF cursorRect = mInputMethod->focusObject()->microFocus(); // from the top of the screen
-    pos = QPointF(cursorRect.bottomLeft().x(),cursorRect.bottomLeft().y());
-    qreal heightOfTitlebar = 80.0; // Using magic number for now...
-    qreal screenHeight = (qreal)HbDeviceProfile::current().logicalSize().height();
-    if( ((screenHeight - cursorRect.bottomLeft().y()) > (cursorRect.y() - heightOfTitlebar))
-        || ((screenHeight - cursorRect.bottomLeft().y() + HbDeltaHeight ) > geom.height()) ) {
-        // this means there is amore space below inline text than at the top or we can fit spell Dialog
-        // below inline text
-        pos.setY(cursorRect.bottomLeft().y() + HbDeltaHeight);
-        size.setHeight(screenHeight - pos.y());
-    } else {
-        // this means there is amore space above inline text than below it
-        pos.setY(cursorRect.y() - geom.height() - HbDeltaHeight);
-        if (pos.y() < heightOfTitlebar) {
-            // this means that spell dialog can not be fit in from top of inline text, we need to trim it
-            pos.setY(heightOfTitlebar);
-        }
-        size.setHeight(cursorRect.y() - heightOfTitlebar - HbDeltaHeight);
-    }
-    if ( size.height() > geom.height()) {
-        size.setHeight(geom.height());
-    }
-    if ((pos.x() + size.width()) > (qreal)HbDeviceProfile::current().logicalSize().width()) {
-        // can not fit spell dialog to the right side of inline edit text.
-        pos.setX((qreal)HbDeviceProfile::current().logicalSize().width()- size.width());
-    }
-}
 
 void HbInputPrediction12KeyHandlerPrivate::cancelButtonPress()
 {
@@ -371,16 +401,16 @@ HbInputPrediction12KeyHandler::HbInputPrediction12KeyHandler(HbInputAbstractMeth
     d->q_ptr = this;
 }
 
-HbInputPrediction12KeyHandler::~HbInputPrediction12KeyHandler()
+HbInputPrediction12KeyHandler::HbInputPrediction12KeyHandler(HbInputPrediction12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod)
+:HbInputPredictionHandler(dd, inputMethod)
 {
+    Q_D(HbInputPrediction12KeyHandler);
+    d->q_ptr = this;
+    d->init();
 }
 
-/*!
-    this function lists different modes.
-*/
-void HbInputPrediction12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
+HbInputPrediction12KeyHandler::~HbInputPrediction12KeyHandler()
 {
-    Q_UNUSED(modes); 
 }
 
 /*!
@@ -419,6 +449,7 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
         case Qt::Key_Return:
         case Qt::Key_Enter:
 		case Qt::Key_Asterisk:
+        case Qt::Key_Control:
             break;
         /* Behavior for other keys i.e. from key1 to key9 - 
         To start the long press timer as we need to handle long press functionality i.e Enter corresponding number mapped to a key */
@@ -491,6 +522,11 @@ bool HbInputPrediction12KeyHandler::actionHandler(HbInputModeAction action)
             HbInputPredictionHandler::actionHandler(HbInputModeActionSetKeypad);
             d->mTimer->stop();
             break;
+		case HbInputModeActionCloseSpellQuery:
+			if (d->mInputSpellQuery) {
+				d->mInputSpellQuery->close();
+		    }
+			break;
         default:
             ret = HbInputPredictionHandler::actionHandler(action);
             break;
@@ -524,7 +560,10 @@ void HbInputPrediction12KeyHandler::processCustomWord(QString customWord)
 {
     Q_D(HbInputPrediction12KeyHandler);
     if (customWord.size()) {
-        d->launchSpellDialog(customWord);
+		if(!d->mInputSpellQuery) {
+			d->mInputSpellQuery = new HbInputSpellQuery(d);
+		}
+        d->mInputSpellQuery->launch(customWord);
     }
     return;	  
 }

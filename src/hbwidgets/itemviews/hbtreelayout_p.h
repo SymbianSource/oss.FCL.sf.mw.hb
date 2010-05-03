@@ -23,25 +23,25 @@
 **
 ****************************************************************************/
 
-#ifndef HBTREELAYOUT_H
-#define HBTREELAYOUT_H
+#ifndef HBTREELAYOUT_P_H
+#define HBTREELAYOUT_P_H
 
 #include <QGraphicsLayout>
 #include <hbglobal.h>
 
-class HbTreeLayoutPrivate;
 class HbTreeView;
+class HbTreeLayoutPrivate;
 
 class HB_AUTOTEST_EXPORT HbTreeLayout : public QGraphicsLayout
 {
 public:
-    HbTreeLayout( QGraphicsLayoutItem *parent = 0 );
+    HbTreeLayout(QGraphicsLayoutItem *parent = 0);
     virtual ~HbTreeLayout();
 
-    void addItem(QGraphicsLayoutItem *item, int level);
-    void insertItem(int index, QGraphicsLayoutItem *item, int level);
+    void addItem(QGraphicsLayoutItem *item, int level, bool animate);
+    void insertItem(int index, QGraphicsLayoutItem *item, int level, bool animate);
     int indexOf(QGraphicsLayoutItem *item) const;
-    void removeItem( QGraphicsLayoutItem *item );
+    void removeItem( QGraphicsLayoutItem *item, bool animate );
     void setItemLevel(QGraphicsLayoutItem *item, int level);
     void setIndentation(qreal indentation);
     qreal indentation() const;
@@ -62,5 +62,5 @@ private:
     HbTreeLayoutPrivate *d;
 };
 
-#endif // HBTREELAYOUT_H
+#endif // HBTREELAYOUT_P_H
 

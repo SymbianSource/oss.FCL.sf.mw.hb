@@ -26,8 +26,6 @@
 #ifndef HBTAPANDHOLDGESTURE_P_H
 #define HBTAPANDHOLDGESTURE_P_H
 
-#ifdef HB_GESTURE_FW
-
 #include <hbglobal.h>
 #include <QGesture>
 
@@ -37,20 +35,22 @@ class HB_CORE_EXPORT HbTapAndHoldGesture : public QTapAndHoldGesture
 {
     Q_OBJECT
 
+    Q_PROPERTY(QPointF scenePosition READ scenePosition WRITE setScenePosition)
+
 public:
     HbTapAndHoldGesture(QObject* parent = NULL);
     virtual ~HbTapAndHoldGesture();
 
-// Data
-    bool outsideThreshold();
-    void update(QEvent& event);
+    QPointF scenePosition() const;
+    void setScenePosition(const QPointF &pos);
+
+protected:
+    HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* data, QObject* parent = NULL);
 
 private:
-	HbTapAndHoldGesturePrivate* priv;
-    friend class HbTapAndHoldGestureRecognizer;
+    HbTapAndHoldGesturePrivate* priv;
+    friend class HbTapAndHoldGestureLogic;
 };
-
-#endif // HB_GESTURE_FW
 
 #endif // HBTAPANDHOLDGESTURE_P_H
 

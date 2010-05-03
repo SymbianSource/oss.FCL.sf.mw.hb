@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60">
+<g>
+<rect fill="none" height="60" width="60"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="30" x2="30" y1="8.9082" y2="51.5718">
+<stop offset="0" style="stop-color:#E6E6E6"/>
+<stop offset="1" style="stop-color:#FFFFFF"/>
+</linearGradient>
+<path d="M30,8.67C18.217,8.67,8.666,18.218,8.666,30c0,11.783,9.551,21.334,21.334,21.334  S51.334,41.783,51.334,30C51.334,18.218,41.783,8.67,30,8.67z" fill="url(#SVGID_1_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="30" x2="30" y1="2.002" y2="57.8059">
+<stop offset="0" style="stop-color:#FFA680"/>
+<stop offset="0.7939" style="stop-color:#7D1212"/>
+<stop offset="1" style="stop-color:#F18769"/>
+</linearGradient>
+<path d="M30,2.002C14.535,2.002,2,14.534,2,30s12.535,28.002,28,28.002S58,45.466,58,30  S45.465,2.002,30,2.002z M30,9.307c3.941,0,7.619,1.127,10.758,3.047L12.355,40.763C10.43,37.623,9.305,33.948,9.305,30  C9.305,18.591,18.588,9.307,30,9.307z M30,50.697c-3.943,0-7.615-1.128-10.756-3.048l28.4-28.408  c1.922,3.141,3.051,6.817,3.051,10.759C50.695,41.413,41.41,50.697,30,50.697z" fill="url(#SVGID_2_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="30" x2="30" y1="2.752" y2="57.0611">
+<stop offset="0" style="stop-color:#FF7236"/>
+<stop offset="0.7939" style="stop-color:#BA1212"/>
+<stop offset="1" style="stop-color:#E8522A"/>
+</linearGradient>
+<path d="M30,57.252C14.975,57.252,2.75,45.026,2.75,30C2.75,14.976,14.975,2.752,30,2.752  S57.25,14.976,57.25,30C57.25,45.026,45.025,57.252,30,57.252L30,57.252z M18.039,47.793l0.813,0.496  c3.381,2.066,7.234,3.158,11.148,3.158c11.824,0,21.445-9.621,21.445-21.447c0-3.914-1.094-7.77-3.162-11.15l-0.496-0.812  L18.039,47.793z M30,8.557C18.174,8.557,8.555,18.176,8.555,30c0,3.923,1.094,7.781,3.16,11.155l0.498,0.811l29.748-29.754  l-0.813-0.497C37.771,9.649,33.916,8.557,30,8.557L30,8.557z" fill="url(#SVGID_3_)"/>
+<rect fill="none" height="60" width="60"/>
+</g>
+</svg>

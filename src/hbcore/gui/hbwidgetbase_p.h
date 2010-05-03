@@ -28,6 +28,7 @@
 
 #include <hbnamespace.h>
 #include <hbwidgetbase.h>
+#include <hbcssinspector_p.h>
 
 #include <QGraphicsItem>
 //
@@ -107,7 +108,9 @@ private:
     friend class HbStylePrivate;
     friend class HbDocumentLoaderActions;
     friend class HbWidgetLoaderActions;
-
+#ifdef HB_CSS_INSPECTOR
+    friend class HbCssInspectorWindow;
+#endif
 };
 
 

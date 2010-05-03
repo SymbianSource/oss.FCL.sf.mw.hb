@@ -34,6 +34,7 @@
 
 class HbAbstractItemViewPrivate;
 class HbAbstractViewItem;
+class HbAbstractViewItemPrivate;
 class HbAbstractItemContainer;
 class HbModelIterator;
 
@@ -49,6 +50,7 @@ class HB_WIDGETS_EXPORT HbAbstractItemView : public HbScrollArea
     Q_PROPERTY(QString layoutName READ layoutName WRITE setLayoutName)
     Q_PROPERTY(bool uniformItemSizes READ uniformItemSizes WRITE setUniformItemSizes)
     Q_PROPERTY(ItemAnimations enabledAnimations READ enabledAnimations WRITE setEnabledAnimations)
+    Q_PROPERTY(bool longPressEnabled  READ longPressEnabled  WRITE setLongPressEnabled )
 
 public:
 
@@ -74,6 +76,8 @@ public:
         Appear             = 0x00001,
         Disappear          = 0x00002,
         TouchDown          = 0x00004,
+        Expand             = 0x00008,
+        Collapse           = 0x00010,
         All                = 0xFFFFF
     };
 
@@ -108,8 +112,10 @@ public:
     void setItemRecycling(bool enabled);
     bool itemRecycling() const;
 
+    using HbScrollArea::isVisible;
     bool isVisible(const QModelIndex &index) const;
     bool isVisible(HbAbstractViewItem *item) const;  
+
     HbAbstractViewItem *currentViewItem() const;
 
     HbAbstractViewItem *itemByIndex(const QModelIndex &index) const;
@@ -135,6 +141,9 @@ public:
 	
     void setEnabledAnimations(ItemAnimations flags);
     ItemAnimations enabledAnimations() const;
+
+    void setLongPressEnabled(bool enabled);
+    bool longPressEnabled() const;
 
 public slots:
     void setCurrentIndex(const QModelIndex &index,
@@ -164,15 +173,7 @@ protected:
                                                     const HbAbstractViewItem *item, 
                                                     const QEvent *event);
     bool event(QEvent *e);
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-    void focusOutEvent(QFocusEvent *event);
-
-    virtual void upGesture(int value);
-    virtual void downGesture(int value);
-    virtual void leftGesture(int value);
-    virtual void rightGesture(int value);
+    void gestureEvent(QGestureEvent *event);
 
     virtual void emitActivated(const QModelIndex &modelIndex);
     virtual void emitPressed(const QModelIndex &modelIndex);
@@ -207,18 +208,27 @@ protected slots:
     virtual void columnsAboutToBeRemoved(const QModelIndex &index, int start, int end);
     virtual void columnsRemoved(const QModelIndex &parent, int start, int end);
 
-    virtual void panGesture(const QPointF &point);
-    virtual void longPressGesture(const QPointF &point);
+    virtual void itemPressed(const QPointF &pos);
+    virtual void itemReleased(const QPointF &pos);
+    virtual void itemActivated(const QPointF &pos);
+    virtual void itemLongPressed(const QPointF &pos);
+
+    virtual void itemCreated(HbAbstractViewItem *item);
+
+    virtual void modelLayoutChanged();
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbAbstractItemView)
     Q_DISABLE_COPY(HbAbstractItemView)
     Q_PRIVATE_SLOT(d_func(), void _q_modelDestroyed())
-    Q_PRIVATE_SLOT(d_func(), void _q_layoutChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_animationEnabled())
     Q_PRIVATE_SLOT(d_func(), void _q_animationFinished(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void _q_scrolling(QPointF newPosition))
+    Q_PRIVATE_SLOT(d_func(), void _q_scrollingEnded())
+    Q_PRIVATE_SLOT(d_func(), void _q_scrollingStarted())
 
     friend class HbAbstractItemContainer;
+    friend class HbAbstractViewItemPrivate;
 };
 
 Q_DECLARE_METATYPE(HbAbstractItemView::SelectionMode)

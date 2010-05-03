@@ -66,6 +66,7 @@ public:
     int   mColsPortrait;
     int   mColsLandscape;
     bool  lazyInitDone;
+    bool  orientationConnectDone;
 
 private:
     HbToolButton *mExtendedButton;

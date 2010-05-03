@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
+<rect fill="none" height="30" width="30"/>
 <path d="M15,30C7.495,30,4,25.224,4,14.969C4,4.757,7.495,0,15,0  s11,4.757,11,14.969C26,25.364,22.607,30,15,30L15,30z" fill-opacity="0.6" fill-rule="evenodd" stroke-opacity="0.6"/>
-<radialGradient cx="42.1641" cy="5.1909" gradientTransform="matrix(0.9686 0 0 1 -26.3024 0)" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="23.5175">
+<radialGradient cx="41.9736" cy="5.1909" gradientTransform="matrix(0.9686 0 0 1 -26.1192 0)" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="23.5175">
 <stop offset="0" style="stop-color:#4EDEFF"/>
 <stop offset="0.7636" style="stop-color:#0487BF"/>
 <stop offset="1" style="stop-color:#059FE0"/>
@@ -14,14 +15,14 @@
 <rect fill="none" fill-rule="evenodd" height="30" width="30"/>
 </g>
 <g>
-<rect height="34.268" style="opacity:0.6;enable-background:new    ;" transform="matrix(0.7073 -0.707 0.707 0.7073 -6.2126 14.9968)" width="3.169" x="13.418" y="-2.134"/>
-<polygon points="25.996,26.987 3.015,4.005 4.006,3.014 26.987,25.996 " style="fill:url(#SVGID_1__);"/>
-<rect height="30.002" style="fill:none;" width="30.002"/>
+<rect fill-opacity="0.6" height="34.27" stroke-opacity="0.6" style="enable-background:new;" transform="matrix(0.7073 -0.707 0.707 0.7073 -6.2126 14.9968)" width="3.169" x="13.42" y="-2.134"/>
+<polygon fill="url(#SVGID_1__)" points="26,26.99,3.015,4.005,4.006,3.014,26.99,26"/>
+<rect fill="none" height="30" width="30"/>
 <defs>
-<linearGradient gradientTransform="matrix(0.8824 0 0 -0.8824 -284.8232 -348.3516)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="339.7832" x2="339.7832" y1="-397.2993" y2="-425.2942">
-<stop offset="0" style="stop-color:#DE8029"/>
-<stop offset="0.2606" style="stop-color:#DE4E29"/>
-<stop offset="1" style="stop-color:#D82E09"/>
+<linearGradient gradientTransform="matrix(0.8824 0 0 -0.8824 -284.8232 -348.3516)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="339.8" x2="339.8" y1="-397.3" y2="-425.3">
+<stop offset="0" stop-color="#DE8029"/>
+<stop offset="0.2606" stop-color="#DE4E29"/>
+<stop offset="1" stop-color="#D82E09"/>
 </linearGradient>
 </defs>
 </g>

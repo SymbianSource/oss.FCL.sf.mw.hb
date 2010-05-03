@@ -60,6 +60,7 @@ symbian {
 }
 isEmpty(HB_THEMES_DIR):index.commands += echo HB_THEMES_DIR environment variable not set
 else {
+    index.path = .
     index.name = hbdefault
     index.source = $$PWD/src/hbcore/resources/themes/icons/hbdefault
     index.targets = $$HB_THEMES_DIR
@@ -71,9 +72,9 @@ else {
         !isEmpty(index.commands):index.commands += &&
         index.commands += $$THEMEINDEXER -n $$index.name -s $$index.source -t $$index.target
     }
+    QMAKE_EXTRA_TARGETS += index
+    INSTALLS += index
 }
-QMAKE_EXTRA_TARGETS += index
-INSTALLS += index
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src

@@ -37,6 +37,7 @@ class HB_WIDGETS_EXPORT HbTumbleView : public HbListView
     Q_OBJECT
     Q_PROPERTY(QStringList items READ items WRITE setItems)
     Q_PROPERTY(int selected READ selected WRITE setSelected)
+    Q_PROPERTY(bool isLoopingEnabled READ isLoopingEnabled WRITE setLoopingEnabled)
 
 public:
     explicit HbTumbleView(QGraphicsItem *parent=0);
@@ -58,19 +59,21 @@ public:
     int type() const { return Type; }
 
     QGraphicsItem *primitive(HbStyle::Primitive) const;
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots:
-
     void updatePrimitives();
 
 signals:
     void itemSelected(int index);
+
 protected slots:
     void currentIndexChanged(const QModelIndex &current, const QModelIndex &previous);
     void rowsAboutToBeRemoved(const QModelIndex &index, int start, int end);
     void rowsRemoved(const QModelIndex &parent, int start, int end);
     void rowsAboutToBeInserted(const QModelIndex &index, int start, int end);
     void rowsInserted(const QModelIndex &parent, int start, int end);
+
 protected:
     HbTumbleView(HbTumbleViewPrivate &dd, QGraphicsItem *parent = 0);
     void scrollTo(const QModelIndex &index, ScrollHint);
@@ -86,6 +89,7 @@ private:
     Q_DISABLE_COPY(HbTumbleView)
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingStarted())
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingEnded())
+    Q_PRIVATE_SLOT(d_func(), void _q_delayedSelectCurrent())
 };
 
 #endif

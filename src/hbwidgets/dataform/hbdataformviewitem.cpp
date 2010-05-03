@@ -32,6 +32,8 @@
 #include "hbdataform_p.h"
 #include "hbdatagroup_p.h"
 
+#include "hbtapgesture.h"
+
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
 #include "hbeffectinternal_p.h"
@@ -131,14 +133,35 @@
 
     The signals emitted by this class are:
     \li itemShown(const QModelIndex&) This signal is emitted when ever this item becomes visible.
-    \deprecated itemDestroyed(QPersistentModelIndex) This signal is deprecated.
-    \deprecated itemModified(QPersistentModelIndex, QVariant) This signal is deprecated . Use
-    dataChanged(QModelIndex,QModelIndex) signal of model instead and fetch the new value from 
-    corresponding modelItem.
+    \deprecated HbDataFormViewItem::itemDestroyed(QPersistentModelIndex)
+        This signal is deprecated.
+
+    \deprecated HbDataFormViewItem::itemModified(QPersistentModelIndex, QVariant)
+        This signal is deprecated . Use dataChanged(QModelIndex,QModelIndex) signal of model instead 
+        and fetch the new value from corresponding modelItem.
 
     Refer HbDataForm documentation for sample code.
 
     \sa HbDataForm, HbDataFormModel, HbDataFormModelItem
+*/
+
+/*!
+    \deprecated HbDataFormViewItem::StateKey
+        is deprecated. Please use string based state keys.
+
+    \enum HbDataFormViewItem::StateKey
+
+    HbDataFormViewItem's user defined state keys.
+
+    \sa HbAbstractViewItem::transientState()
+*/
+
+/*!
+    \deprecated HbDataFormViewItem::ExpansionKey
+        is deprecated. Please use string based state keys. This key is replaced by "expanded".
+
+    \var HbDataFormViewItem::ExpansionKey
+    Predefined key for expansion/collapsion state of a view item. Default state is collapsed.
 */
 
 
@@ -253,6 +276,7 @@ HbDataFormViewItem::HbDataFormViewItem(HbDataFormViewItemPrivate &dd, QGraphicsI
 {
     Q_D(HbDataFormViewItem);
     d->q_ptr = this;
+    setProperty( "hasIcon", false );
 }
 
 /*!
@@ -263,6 +287,7 @@ HbDataFormViewItem::HbDataFormViewItem(const HbDataFormViewItem &source):
 {
     Q_D(HbDataFormViewItem);
     d->q_ptr = this;
+    setProperty( "hasIcon", false );
 }
 
 /*!
@@ -272,6 +297,7 @@ HbDataFormViewItem& HbDataFormViewItem::operator=(const HbDataFormViewItem &sour
 {
     Q_D(HbDataFormViewItem);
     *d = *source.d_func();
+    setProperty( "hasIcon", false );
     return *this;
 }
 
@@ -315,17 +341,8 @@ void HbDataFormViewItem::store()
 */
 void HbDataFormViewItem::restore()
 {
-    Q_D( HbDataFormViewItem );
-    HbDataFormModel* data_model = static_cast<HbDataFormModel*>(itemView()->model());
-    HbDataFormModelItem *model_item = static_cast<HbDataFormModelItem*>(data_model->itemFromIndex(d->mIndex));
-    HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(model_item);
-    
-    if(modelItem_priv->dirtyProperty() == "LabelRole") {
-        d->updateLabel(model_item->label());
-        return;
-    }
+    Q_D( HbDataFormViewItem );    
 
-    //CRC: revisit this logic
     if( d->mType < HbDataFormModelItem::CustomItemBase ) {
         if( d->mContentWidget ) {   
             QVariant newValue;
@@ -446,6 +463,9 @@ bool HbDataFormViewItem::isExpanded() const
 }
 
 /*!
+     \deprecated HbDataFormViewItem::state() 
+        is deprecated. 
+    
     \reimp
 */
 QMap<int,QVariant> HbDataFormViewItem::state() const
@@ -454,6 +474,9 @@ QMap<int,QVariant> HbDataFormViewItem::state() const
 }
 
 /*!
+    \deprecated HbDataFormViewItem::setState(const QMap<int, QVariant>&)
+        is deprecated. 
+
     \reimp
 */
 void HbDataFormViewItem::setState(const QMap<int,QVariant> &state)
@@ -462,8 +485,8 @@ void HbDataFormViewItem::setState(const QMap<int,QVariant> &state)
 }
 
 /*!
-    \deprecated HbDataFormViewItem::contentWidget() const
-        is deprecated. This API is not needed and not be used from applications.
+    \deprecated  HbDataFormViewItem::contentWidget() const
+        is deprecated. Use dataItemContentWidget() instead
 
     Return the content widget of HbDataFormViewItem.    
     \sa dataItemContentWidget
@@ -489,13 +512,11 @@ HbWidget* HbDataFormViewItem::dataItemContentWidget()const
     switch( d->mType ) {
         case HbDataFormModelItem::RadioButtonListItem:
             {
-                widget = static_cast<HbRadioItem*>(d->mContentWidget)->contentWidget();
+                widget = static_cast<HbRadioItem*>(d->mContentWidget)->createRadioButton();
             }
             break;
-            //CRC: it should return NULL(done)
         case HbDataFormModelItem::MultiselectionItem:
             {
-                //widget = static_cast<HbMultiSelectionItem*>(d->mContentWidget)->contentWidget();
                 widget = NULL;
             }
             break;
@@ -537,12 +558,10 @@ void HbDataFormViewItem::showEvent(QShowEvent * event)
     Q_D( const HbDataFormViewItem );
 
     HbWidget::showEvent( event );
-    //CRC: this check might not be rerequired
     if( d->mIndex.isValid( ) ) {
         emit itemShown( d->mIndex.operator const QModelIndex & ( ) );
-        //CRC : Deprecate this (done)
-        emit itemModified( d->mIndex, d->mCurrentValue );
     }
 }
+
 #include "moc_hbdataformviewitem.cpp"
 

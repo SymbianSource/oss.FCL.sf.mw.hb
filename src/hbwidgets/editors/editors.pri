@@ -32,17 +32,17 @@ PUBLIC_HEADERS += $$PWD/hbvalidator.h
 PUBLIC_HEADERS += $$PWD/hbvalidatorfield.h
 PUBLIC_HEADERS += $$PWD/hbformatdialog.h
 
-PUBLIC_HEADERS += $$PWD/hbsmileyengine.h
-INTERNAL_HEADERS += $$PWD/hbabstractedit_p.h
-INTERNAL_HEADERS += $$PWD/hbdatetimeedit_p.h
-INTERNAL_HEADERS += $$PWD/hbdatetimevalidator_p.h
-INTERNAL_HEADERS += $$PWD/hbdatetimevalidator_p_p.h
-INTERNAL_HEADERS += $$PWD/hblineedit_p.h
-INTERNAL_HEADERS += $$PWD/hbtextedit_p.h
-INTERNAL_HEADERS += $$PWD/hbvalidator_p.h
-INTERNAL_HEADERS += $$PWD/hbselectioncontrol_p.h
-INTERNAL_HEADERS += $$PWD/hbformatdialog_p.h
-INTERNAL_HEADERS += $$PWD/hbsmileyengine_p.h
+PRIVATE_HEADERS += $$PWD/hbabstractedit_p.h
+PRIVATE_HEADERS += $$PWD/hbdatetimeedit_p.h
+PRIVATE_HEADERS += $$PWD/hbdatetimevalidator_p.h
+PRIVATE_HEADERS += $$PWD/hbdatetimevalidator_p_p.h
+PRIVATE_HEADERS += $$PWD/hblineedit_p.h
+PRIVATE_HEADERS += $$PWD/hbtextedit_p.h
+PRIVATE_HEADERS += $$PWD/hbvalidator_p.h
+PRIVATE_HEADERS += $$PWD/hbselectioncontrol_p.h
+PRIVATE_HEADERS += $$PWD/hbformatdialog_p.h
+PRIVATE_HEADERS += $$PWD/hbsmileyengine_p.h
+PRIVATE_HEADERS += $$PWD/hbsmileyengine_p_p.h
 
 SOURCES += $$PWD/hbabstractedit.cpp
 SOURCES += $$PWD/hbabstractedit_p.cpp
@@ -58,5 +58,5 @@ SOURCES += $$PWD/hbvalidator_p.cpp
 SOURCES += $$PWD/hbselectioncontrol_p.cpp
 SOURCES += $$PWD/hbformatdialog.cpp
 SOURCES += $$PWD/hbformatdialog_p.cpp
-SOURCES += $$PWD/hbsmileyengine.cpp
+SOURCES += $$PWD/hbsmileyengine_p.cpp
 

@@ -23,14 +23,11 @@
 **
 ****************************************************************************/
 
+#include "hbgestures_p.h"
 #include "hbtapandholdgesture_p.h"
 #include "hbtapandholdgesture.h"
 
-#include <QGraphicsSceneEvent>
-#include <QVariant>
-#include <QDebug>
-#include <QPoint>
-#include <QLine>
+#include <QObject>
 
 /*!
     \internal
@@ -41,9 +38,17 @@
 
 HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
     :
-    QTapAndHoldGesture(parent),
-    priv(new HbTapAndHoldGesturePrivate())
+    QTapAndHoldGesture(parent)
 {
+    priv = new HbTapAndHoldGesturePrivate(this);
+}
+
+HbTapAndHoldGesture::HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* data, QObject* parent)
+    :
+    QTapAndHoldGesture(parent),
+    priv(data)
+{
+    priv->q_ptr = this;
 }
 
 HbTapAndHoldGesture::~HbTapAndHoldGesture()
@@ -51,26 +56,12 @@ HbTapAndHoldGesture::~HbTapAndHoldGesture()
     delete priv; priv = NULL;
 }
 
-/*!
-    \internal
-    \brief Stores relevant values from the event.
-    \param event Event to be read.
-
-    Gesture needs to know its position all the time, and that information
-    is provided during the event.
-*/
-void HbTapAndHoldGesture::update(QEvent& event)
+QPointF HbTapAndHoldGesture::scenePosition() const
 {
-    if ( event.type() != QEvent::Timer )
-    {
-        QGraphicsSceneMouseEvent* me = static_cast<QGraphicsSceneMouseEvent*>(&event);
-        setProperty("position", me ? me->screenPos() : property("startPos"));
-    }
+    return priv->mScenePos;
 }
 
-bool HbTapAndHoldGesture::outsideThreshold()
+void HbTapAndHoldGesture::setScenePosition(const QPointF& pos)
 {
-    QPointF startPos = property("startPos").toPoint();
-    QPointF lastPos = property("position").toPoint();
-    return QLineF(startPos, lastPos).length() > DELTA_TOLERANCE;
+    priv->mScenePos = pos;
 }

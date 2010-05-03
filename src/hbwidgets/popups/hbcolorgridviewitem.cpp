@@ -49,6 +49,8 @@ public:
     QGraphicsItem *mBorderItem;
     // selection indication
     QGraphicsItem *mCheckMarkItem;
+    // background frame, "grid"
+    HbFrameBackground* mFrameBackGround;
 
 private:
     static HbColorGridViewItemPrivate *d_ptr(HbColorGridViewItem *item)
@@ -63,7 +65,8 @@ HbColorGridViewItemPrivate::HbColorGridViewItemPrivate(HbAbstractViewItem *proto
     : HbGridViewItemPrivate(prototype),
       mColorItem(0),
       mBorderItem(0),
-      mCheckMarkItem(0)
+      mCheckMarkItem(0),
+      mFrameBackGround(0)
 {
 }
 
@@ -98,6 +101,13 @@ void HbColorGridViewItemPrivate::createPrimitives()
     if(!mCheckMarkItem) {
             mCheckMarkItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_checkIcon, q);
             q->style()->setItemName( mCheckMarkItem, "cg-selection-icon" );
+    }
+
+    if (!mFrameBackGround) {
+        mFrameBackGround = new HbFrameBackground();
+        mFrameBackGround->setFrameGraphicsName("qtg_fr_popup_grid_normal");
+        mFrameBackGround->setFrameType(HbFrameDrawer::NinePieces);
+        q->setDefaultFrame( *mFrameBackGround );
     }
 }
 
@@ -206,6 +216,7 @@ QGraphicsItem * HbColorGridViewItem::primitive(HbStyle::Primitive primitive) con
 void HbColorGridViewItem::initStyleOption(HbStyleOptionColorGridViewItem *option) const
 {
     Q_D( const HbColorGridViewItem ); 
+    HbGridViewItem::initStyleOption(option);
 
     if( d->isNoneBlock() && d->mBorderItem ) {
         option->borderIcon = "qtg_graf_colorpicker_empty";
@@ -215,7 +226,7 @@ void HbColorGridViewItem::initStyleOption(HbStyleOptionColorGridViewItem *option
     
     option->color = d->mIndex.data(HbColorGridViewItem::ColorRole).value<QColor>(); 
     option->borderColor = HbColorScheme::color("qtc_popup_grid_normal");
-    HbGridViewItem::initStyleOption(option);
+    //    option->background = ;
 }
 
 void HbColorGridViewItem::resizeEvent ( QGraphicsSceneResizeEvent * event )

@@ -50,16 +50,11 @@
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbbackgrounditem_p.h"
+#include "hbforegroundwatcher_p.h"
+
 
 #ifdef Q_OS_SYMBIAN
 #include "hbnativewindow_sym_p.h"
-#endif
-
-#ifdef HB_GESTURE_FW
-#include "hbmousepangesturerecognizer_p.h"
-#include "hbswipegesturerecognizer_p.h"
-#include "hbtapgesturerecognizer_p.h"
-#include "hbtapandholdgesturerecognizer_p.h"
 #endif
 
 const int HbMainWindowPrivate::IdleEvent = QEvent::registerEventType();
@@ -85,8 +80,10 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mFadeItem(0),
     mRootItem(0),    
     mAutomaticOrientationSwitch(true),
+    mUserOrientationSwitch(false),
     mOrientationChangeOngoing(false),
     mOrientation(Qt::Vertical),
+    mRequestedOrientation(Qt::Vertical),
     mCurrentToolbar(0),
     mCurrentDockWidget(0),
     mVisibleItems(Hb::AllItems),
@@ -125,8 +122,6 @@ void HbMainWindowPrivate::init()
         mVisibleItems &= ~Hb::MiddleSoftKeyItem;
         mVisibleItems &= ~Hb::PrimarySoftKeyItem;
     }
-
-    mOrientation = hbInstance->orientation();
 }
 
 HbToolBar *HbMainWindowPrivate::toolBar() const
@@ -225,14 +220,19 @@ void HbMainWindowPrivate::removeDockWidgetFromLayout(HbDockWidget *dockWidget)
 
 void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation, bool animate)
 {
-    if ( (mOrientation == orientation) && !mForceSetOrientation && mEffectItem )
-        return;
-       
     Q_Q(HbMainWindow);
+    mRequestedOrientation = orientation;
 
+    if (mOrientationChangeOngoing) {
+        return;
+    }
+    if ( (mOrientation == orientation) && !mForceSetOrientation && mEffectItem) {
+        return;
+    }
 
-        // skip transition if graphicsview is not visible
+    // skip transition if graphicsview is not visible
     mAnimateOrientationSwitch = animate;
+
     if (!q->isVisible())
         mAnimateOrientationSwitch = false;
 
@@ -279,7 +279,6 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
 
 void HbMainWindowPrivate::changeSceneSize()
 {
-    
    // no need to perform the scene size change if there's no (rotation) effect for graphicsview
     if (!mGVOrientationChangeEffectEnabled)
         return;
@@ -364,18 +363,16 @@ void HbMainWindowPrivate::select(const HbDeviceProfile &profile, HbDeviceProfile
     mForceSetOrientation = true;
     setTransformedOrientation(profile.orientation(), false);
     mForceSetOrientation = false;
-    
 }
-
 
 HbDeviceProfile HbMainWindowPrivate::profile() const
 {
     return adjustedProfile(mCurrentProfile);
 }
 
- HbDeviceProfile HbMainWindowPrivate::adjustedProfile(const HbDeviceProfile &profile) const
- {
-     HbDeviceProfile result = profile;
+HbDeviceProfile HbMainWindowPrivate::adjustedProfile(const HbDeviceProfile &profile) const
+{
+    HbDeviceProfile result = profile;
     if (!result.isNull() && result.orientation() != mOrientation) {
         if(mAlternateProfile.isNull()) {
             mAlternateProfile = HbDeviceProfile(profile.alternateProfileName());
@@ -386,15 +383,15 @@ HbDeviceProfile HbMainWindowPrivate::profile() const
         }
      }
      return result;
- }
+}
 
 
 void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus& status)
 {
+    Q_UNUSED(status);
     Q_Q(HbMainWindow);
-    QSize newSize;
 
- 
+    QSize newSize;
     
     HbDeviceProfile o = HbDeviceProfile::profile(q);
     newSize = o.logicalSize(); 
@@ -406,13 +403,17 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
     
     q->setSceneRect(0,0,newSize.width(),newSize.height());
     
+    if (mBgItem)
+        mBgItem->updateBackgroundImage();
+
     // re-layouting, skip if size does not change
     if (mClippingItem->size() != newSize) {
         mClippingItem->resize(newSize);
+		mLayoutRect = QRectF(QPointF(0,0), newSize);
         
     // reset transformation
     q->resetTransform(); 
-    
+
     // if not default rotation, rotate to the defined angle no matter what the effect did
     if( mOrientation != mDefaultOrientation)
         q->rotate(mOrientationAngle);
@@ -429,33 +430,14 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
             HbInputSettingProxy::instance()->setScreenOrientation(mOrientation);
         }
     }
-
-    if (status.reason == Hb::EffectCancelled) {
-        mOrientationChangeOngoing = false;
-        HbEffect::EffectStatus dummy;
-        rootItemFinalPhaseDone(dummy);
-    }
 }
-
 
 void HbMainWindowPrivate::rootItemFirstPhaseDone(const HbEffect::EffectStatus& status)
 {
+    Q_UNUSED(status)
     Q_Q(HbMainWindow);
 
-    if (status.reason == Hb::EffectCancelled) {
-        // if using opacity effect make sure that opacity is 1 if first phase effect
-        // is cancelled
-        if (mEffectItem) {
-            mEffectItem->setOpacity(1.0f);
-            // also reset transform since root item first phase isn't the end state
-            mEffectItem->resetTransform();
-        }
-        HbEffect::EffectStatus empty;
-        orientationEffectFinished(empty);
-        return;
-    }
-
-   if (mOrientation == mDefaultOrientation)
+    if (mOrientation == mDefaultOrientation)
         HbEffect::start(&mGVWrapperItem,"toDefault", q, "orientationEffectFinished");
     else 
         HbEffect::start(&mGVWrapperItem,"toRotated", q, "orientationEffectFinished");
@@ -464,7 +446,7 @@ void HbMainWindowPrivate::rootItemFirstPhaseDone(const HbEffect::EffectStatus& s
 void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus& status)
 {
     Q_UNUSED(status);
-        
+
     if (mEffectItem) {
         HbEffect::enable(mEffectItem);
         // make sure effect does not leave anything in wrong state
@@ -495,6 +477,8 @@ void HbMainWindowPrivate::addOrientationChangeEffects()
 void HbMainWindowPrivate::addViewEffects()
 {
     // Register the view switch animations from the theme.
+    // Use HbEffectInternal and the HB_ prefix to prevent general overriding of these effects.
+    // Instead, view switch effects can be overridden on a per-instance basis.
     bool ok = HbEffectInternal::add(
         QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
         QStringList() << "view_show_normal" << "view_hide_normal" <<  "view_show_back" << "view_hide_back",
@@ -513,6 +497,7 @@ void HbMainWindowPrivate::addViewEffects()
     }
 
     // Register titlebar effects.
+    // These should be overridable in general (so we use HbEffect and no HB_ prefix).
     ok = HbEffect::add(
         QStringList() << "titlebar" << "titlebar" << "titlebar" << "titlebar",
         QStringList() << "titlebar_disappear" <<  "titlebar_appear" << "titlebar_orient_disappear" << "titlebar_orient_appear",
@@ -610,28 +595,29 @@ void HbMainWindowPrivate::_q_viewDockWidgetChanged()
 /*
     Launches the menu of the current view at given pos.
 */
-void HbMainWindowPrivate::_q_launchMenu(const QPointF &pos)
+void HbMainWindowPrivate::_q_launchMenu(const QPointF& pos)  // TODO - pos unused!
 {
     Q_Q(HbMainWindow);
-    QPointer<HbView> view = q->currentView();
-    if (view) {
-        HbMenu *menu = view->menu();
-
+    Q_UNUSED(pos);
+    mMenuView = q->currentView();
+    if (mMenuView) {
+        HbMenu *menu = mMenuView->menu();
         if (!menu->isEmpty()) {
             q->connect(menu, SIGNAL(aboutToClose()), q, SLOT(_q_restoreTitlePane()));
             menu->setTimeout(HbPopup::NoTimeout);
-            QPointer<HbMenu> menuAlive(menu);
-            menu->exec(pos);
-            if (menuAlive) {
-                q->disconnect(menu, SIGNAL(aboutToClose()), q, SLOT(_q_restoreTitlePane()));
-            }
-            if (view) {
-                view->setFocus();
-            }
+            menu->open( this, SLOT(menuClosed()));
         } else {
             _q_restoreTitlePane();
         }
     }
+}
+
+void HbMainWindowPrivate::menuClosed()
+{
+    if (mMenuView) {
+        mMenuView->setFocus();
+    }
+    _q_restoreTitlePane();
 }
 
 /*
@@ -704,7 +690,6 @@ void HbMainWindowPrivate::updateVisibleItems()
     if (view) {
         const Hb::SceneItems visibleItems(view->visibleItems());
         view->setTitleBarVisible(visibleItems & Hb::TitleBarItem); // also handles updating of the navigation button
-        mTitleBar->titlePane()->setVisible(visibleItems & Hb::TitlePaneItem);
         
         // ToolBar is a special case, since it depens on the current view's toolbar
         if (visibleItems & Hb::ToolBarItem) {
@@ -899,7 +884,6 @@ void HbMainWindowPrivate::_q_delayedConstruction()
         if (initializeInputs) {
             initializeInputs = false;
             HbInputMethod::initializeFramework(*qApp);
-            initGestures();
         }
         HbInputSettingProxy::instance()->initializeOrientation(mOrientation);
 
@@ -915,13 +899,15 @@ void HbMainWindowPrivate::_q_delayedConstruction()
         connect(q, SIGNAL(currentViewChanged(HbView*)),
                 mClippingItem, SLOT(currentViewChanged(HbView*)));
 
+        mTitleBar->delayedConstruction();
         connect(mTitleBar->titlePane(), SIGNAL(visibilityChanged()),
                 mClippingItem, SLOT(decoratorVisibilityChanged()));
         connect(mTitleBar, SIGNAL(titleBarStateChanged()),
                 mClippingItem, SLOT(decoratorVisibilityChanged()));
 
-         connect(mStatusBar, SIGNAL(notificationCountChanged(int)),
-                 mTitleBar, SIGNAL(notificationCountChanged(int)));
+        mStatusBar->delayedConstruction();
+        connect(mStatusBar, SIGNAL(notificationCountChanged(int)),
+                mTitleBar, SIGNAL(notificationCountChanged(int)));
 
         mFadeItem = new HbFadeItem;
         mFadeItem->setZValue(HbPrivate::FadingItemZValue);
@@ -938,6 +924,17 @@ void HbMainWindowPrivate::_q_viewReady()
 {
         Q_Q(HbMainWindow);
         emit q->viewReady();
+}
+
+QGraphicsWidget *HbMainWindowPrivate::element(HbMainWindowPrivate::Element element) const
+{
+     if( element == HbMainWindowPrivate::RootItem )
+        return mRootItem;
+    else if( element == HbMainWindowPrivate::ViewportItem )
+        return mClippingItem;
+    else if( element == HbMainWindowPrivate::BackgroundItem )
+        return mBgItem;
+    return 0;
 }
 
 void HbMainWindowPrivate::addBackgroundItem()
@@ -958,20 +955,5 @@ void HbMainWindowPrivate::removeBackgroundItem()
     }
 }
 
-void HbMainWindowPrivate::initGestures()
-{
-#ifdef HB_GESTURE_FW
-// ### TODO enable this (and remove the similar calls in HbApplication ctor) once QGestureManager problems are fixed
-/*    QGestureRecognizer::unregisterRecognizer(Qt::TapGesture);
-    QGestureRecognizer::unregisterRecognizer(Qt::TapAndHoldGesture);
-    QGestureRecognizer::unregisterRecognizer(Qt::PanGesture);
-    QGestureRecognizer::unregisterRecognizer(Qt::SwipeGesture);
-
-    QGestureRecognizer::registerRecognizer(new HbTapGestureRecognizer);
-    QGestureRecognizer::registerRecognizer(new HbTapAndHoldGestureRecognizer);
-    QGestureRecognizer::registerRecognizer(new HbMousePanGestureRecognizer);
-    QGestureRecognizer::registerRecognizer(new HbSwipeGestureRecognizer);*/
-#endif
-}
 
 // end of file

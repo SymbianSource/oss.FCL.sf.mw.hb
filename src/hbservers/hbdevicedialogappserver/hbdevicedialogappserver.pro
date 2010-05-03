@@ -37,15 +37,17 @@ hbAddLibrary(hbwidgets/HbWidgets)
 SOURCES += $$PWD/main.cpp
 
 symbian {
+    SOURCES += $$PWD/hbddappfactorysymbian.cpp
+
     TARGET.CAPABILITY = ProtServ SwEvent TrustedUI ReadDeviceData
     TARGET.UID3 = 0x20022FC5
-    LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore
+    LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lapparc -lefsrv
 
     myrssrules = \
     "hidden = KAppIsHidden;"
     RSS_RULES += myrssrules
-    MMP_RULES += "SYSTEMINCLUDE /epoc32/include/middleware"
-    MMP_RULES += "SYSTEMINCLUDE /epoc32/include/mw"
+    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/middleware"
+    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/mw"
 }
 
 include($${HB_SOURCE_DIR}/src/hbcore/devicedialogbase/devicedialogdebug/devicedialogtrace.pri)

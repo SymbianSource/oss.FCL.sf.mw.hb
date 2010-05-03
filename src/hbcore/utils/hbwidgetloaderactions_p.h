@@ -32,8 +32,10 @@
 #include <hbstring_p.h>
 #include <hbmeshlayout_p.h>
 #include <hbmemorymanager_p.h>
+#include "hbwidgetloader_p.h"
 #include "hbwidgetloaderactions_p.h"
-#include "hbxmlloaderabstractactions_p.h"
+#include "hbxmlloaderbaseactions_p.h"
+#include "hbxmlloaderabstractsyntax_p.h"
 #include "hbvector_p.h"
 #include <QDateTime>
 
@@ -47,58 +49,43 @@
 #define HB_DOCUMENTLOADER_PRINT(a) qDebug() << QString(a);
 #endif // HB_DOCUMENTLOADER_DEBUG
 
-
-struct MeshItem
-{
-    HbString src;
-    HbString dst;
-    Hb::Edge srcEdge;
-    Hb::Edge dstEdge;
-    HbString spacing;
-    MeshItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory):src(type),dst(type),spacing(type)
-    {
-    }
-};
-
-struct LayoutDefinition {
-    HbVector<MeshItem> meshItems;
-    HbVector<HbString> spacers;
-    LayoutDefinition(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory):meshItems(type),spacers(type)
-    {
-    }
-};
-
-class HB_CORE_PRIVATE_EXPORT HbWidgetLoaderActions : public HbXmlLoaderAbstractActions
+class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
 {
     public:
-        HbWidgetLoaderActions(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory);
+        HbWidgetLoaderActions();
         virtual ~HbWidgetLoaderActions();
 
-        bool createMeshLayout();
-        bool addMeshLayoutEdge( const QString &src, const QString &srcEdge, 
-                                const QString &dst, const QString &dstEdge,
-                                const QString &spacing, const QString &spacer = QString() );
+        void setWidget( HbWidget *widget );
 
-        void updateWidget(LayoutDefinition *layoutDef);
-
-        int getLayoutDefintionOffset();
-        void setLayoutDefintionOffset(int offset);
+        bool createMeshLayout( const QString &widget );
+        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+                                const QString &dst, Hb::Edge dstEdge,
+                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
 
     public:
         Q_DISABLE_COPY(HbWidgetLoaderActions)
 
         HbWidget *mWidget;
-        bool mLayoutFound;
-
-        // Layout caching
-        static LayoutDefinition *mCacheLayout;
-        static QString mCacheFileName;
-        static QString mCacheName;
-        static QString mCacheSection;
-        static QDateTime mCacheModified;
     private:
-        HbMemoryManager::MemoryType mType;
-        int mLayoutDefinitionOffset;
+        HbMeshLayout *mLayout;
+};
+
+class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
+{
+    public:
+        HbWidgetLoaderMemoryActions();
+        virtual ~HbWidgetLoaderMemoryActions();
+
+        bool createMeshLayout( const QString &widget );
+        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+                                const QString &dst, Hb::Edge dstEdge,
+                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+
+    public:
+        Q_DISABLE_COPY(HbWidgetLoaderMemoryActions)
+
+    public:
+        HbWidgetLoader::LayoutDefinition *mLayoutDef;
 };
 
 #endif // HBWIDGETLOADERACTIONS_P_H

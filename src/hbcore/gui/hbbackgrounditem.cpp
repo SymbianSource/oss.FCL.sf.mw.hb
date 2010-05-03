@@ -54,6 +54,7 @@ HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *pa
 #ifdef ENABLE_FAST_PAINT_
     setAttribute(Qt::WA_NoSystemBackground); // Disable clearing of background
 #endif
+    setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
 
     mPrtImageName = defaultImageName(Qt::Vertical);
     mLscImageName = defaultImageName(Qt::Horizontal);

@@ -101,17 +101,9 @@
 
     Note! Not implemented yet. Plugin implementors should always return true from this function.
 
-    \deprecated
-    Replaced by
-    virtual bool HbIndicatorPluginInterface::accessAllowed(
-        const QString &indicatorType, const QVariantMap &securityInfo) const
-*/
-/*
-    \deprecated virtual bool HbIndicatorPluginInterface::accessAllowed(
-        const QString &indicatorType, const HbSecurityInfo *securityInfo) const
-    is deprecated. Replaced by
-    virtual bool HbIndicatorPluginInterface::accessAllowed(
-        const QString &indicatorType, const QVariantMap &securityInfo) const
+    \deprecated HbIndicatorPluginInterface::accessAllowed(const QString &, const HbSecurityInfo *) const
+        is deprecated. Replaced by IndicatorPluginInterface::accessAllowed(const QString &indicatorType, const QVariantMap &securityInfo) const
+
 */
 
 /*!

@@ -32,7 +32,7 @@
 @proto
 @hbcore
 \class HbPredictionCallback
-\brief A callback method for prediction engine API.  
+\brief A callback method for prediction engine API.
 
 This callback class can be delivered as a parameter for various prediction engine API methods.
 When it is given, the prediction engine can use it for querying editor buffer contents and
@@ -43,13 +43,13 @@ cursor position. This information is needed for example in case of context sensi
 class HbPredictionCallback
 {
 public:
-    virtual ~HbPredictionCallback() {}    
+    virtual ~HbPredictionCallback() {}
 
     virtual QString surroundingText() = 0;
     virtual int cursorPosition() = 0;
     virtual QList<HbKeyPressProbability> probableKeypresses()
     {
-    return QList<HbKeyPressProbability>();
+        return QList<HbKeyPressProbability>();
     }
 };
 

@@ -47,7 +47,6 @@ public:
     bool setExpanded( bool expanded );
     bool isExpanded( ) const;   
 
-    //CRC: Is this required here ?
     void updateGroupPageName(int index , const QString &page);    
     QGraphicsItem* primitive( HbStyle::Primitive primitive );
 

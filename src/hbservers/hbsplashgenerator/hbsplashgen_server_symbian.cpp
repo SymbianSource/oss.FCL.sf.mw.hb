@@ -25,6 +25,7 @@
 
 #include "hbsplashgen_server_symbian_p.h"
 #include "hbsplashgenerator_p.h"
+#include "hbsplashdirs_p.h"
 #include "hbsplashdefs_p.h"
 #include <e32base.h>
 #include <f32file.h>
@@ -32,6 +33,27 @@
 #include <QDebug>
 
 #define PRE "[hbsplashgenerator] [server]"
+
+TBool HbSplashGenAppUi::FrameworkCallsRendezvous() const
+{
+    return EFalse;
+}
+
+HbSplashGenDocument::HbSplashGenDocument(CEikApplication &app)
+    : QS60MainDocument(app)
+{
+}
+
+CEikAppUi *HbSplashGenDocument::CreateAppUiL()
+{
+    qDebug() << PRE << "using custom appui";
+    return new (ELeave) HbSplashGenAppUi;
+}
+
+CApaDocument *HbSplashGenApplication::CreateDocumentL()
+{
+    return new (ELeave) HbSplashGenDocument(*this);
+}
 
 class HbSplashGenServerSymbian : public CServer2
 {
@@ -57,6 +79,7 @@ class HbSplashGenServerSession : public CSession2
 {
 public:
     HbSplashGenServerSession(HbSplashGenServerSymbian *server);
+    ~HbSplashGenServerSession();
     void ServiceL(const RMessage2 &message);
 
 private:
@@ -90,7 +113,6 @@ HbSplashGenServerSymbian::HbSplashGenServerSymbian()
         mFs.ShareProtected();
     } else {
         qWarning() << PRE << "cannot connect to file server";
-        return;
     }
     TRAPD(err, StartL(hbsplash_server_name));
     if (err == KErrNone) {
@@ -98,6 +120,10 @@ HbSplashGenServerSymbian::HbSplashGenServerSymbian()
     } else {
         qWarning() << PRE << "server start failed" << err;
     }
+    // Now it is the right time to do the rendezvous. By default it would be
+    // done too early so the custom appui disables FrameworkCallsRendezvous and
+    // it is done here instead.
+    RProcess::Rendezvous(KErrNone);
 }
 
 HbSplashGenServerSymbian::~HbSplashGenServerSymbian()
@@ -119,10 +145,11 @@ bool HbSplashGenServerSymbian::transferHandle(const RMessage2 &message, const QS
 {
     QDir splashScreenDir(mSplashScreenDir);
     QString nativeName = QDir::toNativeSeparators(splashScreenDir.filePath(fileName));
+    qDebug() << PRE << "trying to read" << nativeName;
     TPtrC nativeNameDes(static_cast<const TUint16 *>(nativeName.utf16()), nativeName.length());
     RFile f;
     if (f.Open(mFs, nativeNameDes, EFileRead | EFileShareReadersOrWriters) == KErrNone) {
-        TInt err = f.TransferToClient(message, 2); // completes the message with the fs handle
+        TInt err = f.TransferToClient(message, 3); // completes the message with the fs handle
         f.Close();
         if (err != KErrNone) {
             // the message is not yet completed if TransferToClient() failed
@@ -146,25 +173,32 @@ inline bool readParam(int param, TDes &dst, const RMessage2 &message)
 
 bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
 {
+    bool cachedEntryListValid = true;
     if (mSplashScreenDir.isEmpty() || mSplashScreenDirEntries.isEmpty()) {
-        qWarning() << PRE << "generator not up yet";
-        return false;
+        qWarning() << PRE << "getSplash: no contents received yet, using fallback";
+        mSplashScreenDir = hbsplash_output_dir();
+        cachedEntryListValid = false;
     }
 
     TBuf<16> orientationDes;
     if (!readParam(0, orientationDes, message)) {
         return false;
     }
-    TBuf<16> appIdDes;
+    TBuf<32> appIdDes;
     if (!readParam(1, appIdDes, message)) {
+        return false;
+    }
+    TBuf<64> screenIdDes;
+    if (!readParam(2, screenIdDes, message)) {
         return false;
     }
     QString orientation = QString::fromUtf16(orientationDes.Ptr(), orientationDes.Length());
     QString appId = QString::fromUtf16(appIdDes.Ptr(), appIdDes.Length());
-    qDebug() << PRE << "getSplash request" << orientation << appId;
+    QString screenId = QString::fromUtf16(screenIdDes.Ptr(), screenIdDes.Length());
+    qDebug() << PRE << "getSplash request" << orientation << appId << screenId;
 
     // Do not allow accessing app-specific splash screens of other applications.
-    if (!appId.isEmpty()) {
+    if (!appId.isEmpty() || !screenId.isEmpty()) {
         TUint32 clientId = message.SecureId().iId;
         bool ok;
         TUint32 requestedId = appId.toUInt(&ok, 16);
@@ -177,16 +211,29 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
     // First check for file existence without filesystem access by using the directory
     // listing received from the generator. This prevents wasting time with unnecessary
     // Open() calls.
-    QString appSpecificName = QString("splash_%1_%2.spl").arg(orientation).arg(appId);
+    QString appSpecificName;
+    if (!screenId.isEmpty()) {
+        appSpecificName = QString("splash_%1_%2_%3.spl").arg(orientation).arg(appId).arg(screenId);
+    } else {
+        appSpecificName = QString("splash_%1_%2.spl").arg(orientation).arg(appId);
+    }
     bool usingAppSpecific = false;
     QString genericName = QString("splash_%1.spl").arg(orientation);
     QString name = genericName;
-    if (!appId.isEmpty() && mSplashScreenDirEntries.contains(appSpecificName)) {
+    if (cachedEntryListValid) {
+        if (!appId.isEmpty() && mSplashScreenDirEntries.contains(appSpecificName, Qt::CaseInsensitive)) {
+            name = appSpecificName;
+            usingAppSpecific = true;
+        } else if (!mSplashScreenDirEntries.contains(genericName)) {
+            qWarning() << PRE << "no suitable splash screens found" << orientation << appId;
+            return false;
+        }
+    } else {
+        // The generator has not yet sent any notification about the splash dir and its
+        // contents. Therefore just try the app-specific screen first and then fall back
+        // to the generic one if needed.
         name = appSpecificName;
         usingAppSpecific = true;
-    } else if (!mSplashScreenDirEntries.contains(genericName)) {
-        qWarning() << PRE << "no suitable splash screens found" << orientation << appId;
-        return false;
     }
 
     bool transferred = transferHandle(message, name);
@@ -205,12 +252,23 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
     }
 
     qDebug() << PRE << "file handle transfered";
+    if (!cachedEntryListValid) {
+        // Set the splash dir back to empty so future invocations can also
+        // recognize that the generator has not notified us yet.
+        mSplashScreenDir.clear();
+    }
     return true;
 }
 
 HbSplashGenServerSession::HbSplashGenServerSession(HbSplashGenServerSymbian *server)
     : mServer(server)
 {
+    qDebug() << PRE << "new session";
+}
+
+HbSplashGenServerSession::~HbSplashGenServerSession()
+{
+    qDebug() << PRE << "session destroyed";
 }
 
 void HbSplashGenServerSession::ServiceL(const RMessage2 &message)
@@ -221,11 +279,12 @@ void HbSplashGenServerSession::ServiceL(const RMessage2 &message)
       EHbSplashSrvGetSplash
           param 0  [in] requested orientation ("prt" or "lsc")
           param 1  [in] empty or uid (currently ignored if does not match the client's secure id)
-          param 2 [out] RFile handle (file is open for read)
+          param 2  [in] empty or screen id
+          param 3 [out] RFile handle (file is open for read)
           Request is completed with RFs handle or KErrNotFound.
      */
 
-    //TInt requestResult = KErrNone;
+    qDebug() << PRE << "ServiceL" << message.Function() << QString::number(message.SecureId().iId, 16);
     switch (message.Function()) {
     case HbSplashSrvGetSplash:
         if (!mServer->processGetSplash(message)) {

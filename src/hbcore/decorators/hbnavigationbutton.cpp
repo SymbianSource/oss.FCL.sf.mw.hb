@@ -55,14 +55,17 @@ HbNavigationButton::HbNavigationButton(QGraphicsItem *parent)
     d->init(); 
 
     createPrimitives();
-
-    connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
-    connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
 }
 
 HbNavigationButton::~HbNavigationButton()
 {
 
+}
+
+void HbNavigationButton::delayedConstruction()
+{
+    connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
+    connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
 }
 
 void HbNavigationButton::createPrimitives()

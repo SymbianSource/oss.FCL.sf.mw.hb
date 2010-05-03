@@ -23,15 +23,15 @@
 **
 ****************************************************************************/
 
-#include <VG/openvg.h>
-
 #include "hbtlviconrenderer_p.h"
 #include "hbnvgimagebinder_p.h"
 #include "hbnvgutil_p.h"
 #include "hbnvgicondata_p.h"
 #include "hbnvgtlvicon_p.h"
 
-HbTlvIconRenderer::HbTlvIconRenderer(const QByteArray &buffer, int width, int height)
+#include <VG/openvg.h>
+
+HbTlvIconRenderer::HbTlvIconRenderer(const QByteArray &buffer, qint32 width, qint32 height)
         : HbTlvRenderer(buffer, width, height)
 {
 }
@@ -40,7 +40,7 @@ HbTlvIconRenderer::~HbTlvIconRenderer()
 {
 }
 
-void HbTlvIconRenderer::execute(int index)
+void HbTlvIconRenderer::execute(qint32 index)
 {
     if (index == HbNvgTlvIcon::TlvPath) {
         drawPath();

@@ -30,6 +30,12 @@
 #include <hbstyleoptionratingslider.h>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
+#include <hbtoucharea.h>
+
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
+#endif 
 
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
@@ -71,14 +77,22 @@ void HbRatingSliderPrivate::init()
     mTrack = q->style()->createPrimitive(HbStyle::P_RatingSlider_track,mFrame);
     mTouchArea = q->style()->createPrimitive(HbStyle::P_RatingSlider_toucharea, q);
 
-	HbStyle::setItemName(mLayoutItem, "frame");
-	HbStyle::setItemName(mTouchArea, "toucharea");
 	q->updatePrimitives();
 
 	#ifdef HB_EFFECTS
     HbEffectInternal::add(HB_RATINGSLIDER_ITEM_TYPE,"ratingslider_appear", "ratingslider_appear");
     HbEffectInternal::add(HB_RATINGSLIDER_ITEM_TYPE,"ratingslider_disappear", "ratingslider_disappear");
     #endif
+
+    #ifdef HB_GESTURE_FW
+    q->grabGesture(Qt::TapGesture);
+    q->grabGesture(Qt::PanGesture);
+
+    if(QGraphicsObject *touchArea = mTouchArea->toGraphicsObject()) {
+        touchArea->grabGesture(Qt::TapGesture);
+        touchArea->grabGesture(Qt::PanGesture);
+    }
+    #endif 
 
 }
 
@@ -115,31 +129,59 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
         
 		count++;
 	}
+
+	if (pos > mLookupValues[mStepCount-1]) {
+		return -1;
+	}
 	
 	return count;
 	
 }
 
 /*!
-    @beta
-    @HbWidgets
     \class HbRatingSlider
-    \brief HbRatingSlider widget provides a Rating control.
+    \brief A control for user to do rating.
 
-    A HbRatingSlider is used to rate a particular movie or a song.The user can drag over the 
-	slider to rate. As soon as he releases the pointer from within the area of slider the rating is done.
-	The Application can configure the RatingSlider to be ReadOnly/ReadWrite at any point using setReadOnly. 
-	The Application can configure a tooltip for rating assistance.
+    This is a general rating widget where user will be able to do different 
+	ratings for things like Music ,Video etc. 
 
-	By default there are 5 stars.User can rate in the range 1-5. By changinng the maximum it is possible to 
-	attain any number of ratings. Once the rating is done the HbRatingSlider emits the signal ratingChanged. 
-	Parameter of this signal is the new rating value. Which lies in the range min-max.
-*/
+	By default there are 5 ratings ( 5 stars ). This can be configured also.
+	The interval , number of icons etc can be configured.
+
+	Apart from rating the this can used for showing cumulative rating also.
+
+    example code example:
+    \code
+    HbRatingSlider *object = new HbRatingSlider(parent);
+    \endcode
+
+    The below  code can be used to show some rating e.g. 2.5/5
+	by default the  stepcount =5
+    
+	\code
+	HbRatingSlider *slider = new HbRatingSlider();
+	slider->setStepCount(100); //5 *20//
+	slider->setCurrentRating(50); //2.5*20 it shows 50 / 100 which is same as 2.5/5
+    \endcode
+	
+	This will show as 2.5/5. Now if one the same ratingslider 
+	if the Application wants to configure a rating slider with range 1-5
+	on emitting the signal rating changed it can set to 
+	slider->setStepCount(5);
+	slider->setCurrentRating(0)
+	
+	When the rating is done it emits a signal called ratingDone and when rating is 
+	changed by the user by draging the pointer ratingChanged signal is emitted.   
+	
+ */
+
 
 
 /*!
     @beta
-    Constructs a RatingSlider  a \a parent.
+	Constructor of  RatingSlider.
+    \param parent. Parent widget
+
 */
 
 HbRatingSlider::HbRatingSlider(QGraphicsItem *parent) :
@@ -153,9 +195,8 @@ HbWidget(*new HbRatingSliderPrivate,parent)
 
 /*!
     @beta
-    @HbWidgets
-    \class HbRatingSlider
-    \brief Constructs a basic Rating Slider
+	Constructor of  RatingSlider.
+    \param parent. Parent widget
 */
 HbRatingSlider::HbRatingSlider(HbRatingSliderPrivate &dd,QGraphicsItem *parent) : 
     HbWidget( dd,parent)
@@ -175,23 +216,29 @@ HbRatingSlider::~HbRatingSlider()
 
 /*!
     @beta
-    Sets  the read only flag of the Rating slider. If the ReadOnly flag is true then Rating slider is not 
-	interactive.Once the Rating is done The application can decide it to allow rating again or not by setting this 
-	flag.
+    Sets the read only property. It disables the interaction with widget
 
+    \param value true or false.
+
+    \sa readOnly()
 */
+
 void HbRatingSlider::setReadOnly(bool value)
 {
 	Q_D(HbRatingSlider);
 	d->mReadOnly = value;
 }
 
-/*!
-    @beta
+/*!	
+	
+	@beta  
     Sets the number of icons. In a Rating scenario you may have number of repeated icons. This API can be used to set 
 	the number of icons required. For Example the default image is "*" and you have 5 stars. You can set the number of 
 	stars  using this. By default this value is 5.
 
+    \param number. A value between 1 and 10 
+
+    \sa numberOfIcons()
 */
 
 void HbRatingSlider::setNumberOfIcons(int number)
@@ -205,11 +252,14 @@ void HbRatingSlider::setNumberOfIcons(int number)
 	d->createLookupTable();
 }
 
-/*!
-    @beta
+
+/*!		
+	@beta  
     Returns the number of icons set.
 
+    \sa setNumberOfIcons()
 */
+
 int HbRatingSlider::numberOfIcons() const
 {
 	Q_D(const HbRatingSlider);
@@ -221,12 +271,16 @@ int HbRatingSlider::numberOfIcons() const
     Sets the step count for the rating slider. If the number of icons is 5 and step count is 10 then it is possible to have 10 ratings.
 	one rating will be half star (by default). If the number of icons is 5 and step count is 5 then 5 ratings are possible. In this 
 	case one rating will be one complete star. By default this value is 5.
+	
+	\param count. A value between 1 and 100. This can be considerd as the maximum rating possible. 
+
+    \sa numberOfIcons()
 
 */
 void HbRatingSlider::setStepCount(int count)
 {
 	Q_D(HbRatingSlider);
-	if( (count <= 0) || (count >= 20) ) {
+	if( (count <= 0) || (count > 100) ) {
 		return;
 	}
 	d->mStepCount = count;
@@ -263,7 +317,9 @@ bool HbRatingSlider::isReadOnly() const
 
 /*!
     @beta
-    Sets the current rating value.In future this will be qreal value :).
+    It sets the current rating value.
+	\param count. A value between 1 and stepcount. 
+	\sa currentRating()
 
 */
 void  HbRatingSlider::setCurrentRating(int rating)
@@ -297,7 +353,13 @@ int HbRatingSlider::currentRating() const
 
 /*!
     @beta
-    It sets the unrated graphics name.This is the graphics shown when rating slider is displayed.
+    
+	It sets the unrated graphics name.This is the graphics shown when rating slider is displayed.
+	the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+	setting number of stars.
+	
+	\param name. The graphics name along with the path. 
+	\sa unRatedIconName()
 */
 void HbRatingSlider::setUnRatedIconName(const QString name)
 {
@@ -325,7 +387,13 @@ QString HbRatingSlider::unRatedIconName() const
 
 /*!
     @beta
-    It sets the rated graphics name.This is the graphics shown when rating is done. 
+    
+	It sets the rated graphics name.This is the graphics shown when rating is on going.
+	the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+	setting number of stars.
+	
+	\param name. The graphics name along with the path. 
+	\sa unRatedIconName()
 */
 void HbRatingSlider::setRatedIconName(const QString name)
 {
@@ -348,6 +416,7 @@ QString HbRatingSlider::ratedIconName() const
 	return d->mRatedIconName;
 }
 
+#ifndef HB_GESTURE_FW
 /*!
     \reimp
 */
@@ -450,8 +519,148 @@ void HbRatingSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 		}
 	
 	}		
-
 }
+#else
+void HbRatingSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    Q_UNUSED(event)
+}
+#endif
+
+#ifdef HB_GESTURE_FW
+void HbRatingSlider::gestureEvent(QGestureEvent *event)
+{
+    Q_D (HbRatingSlider);
+    if(event->gesture(Qt::TapGesture)) {
+            HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture));
+            switch(tap->state()) {
+            case Qt::GestureStarted:
+				{
+				qreal xVal = mapFromScene(event->mapToGraphicsScene(tap->position( ))).x();
+				int rating = d->calculateProgressValue(xVal);
+				if(rating == -1) {
+					return;
+				}
+                if(d->mReadOnly) {	
+                    event->ignore();
+                    return;
+                }
+
+                d->mMousePressed = true;
+                event->accept();
+				}
+                break;
+ 
+            case Qt::GestureFinished: // Reset state 
+                {
+            qreal xVal = mapFromScene(event->mapToGraphicsScene(tap->position( ))).x();
+            QRectF rect = d->mTouchArea->boundingRect();
+            int rating=0;
+            if(rect.contains(xVal,0 )) {
+                if(d->mReadOnly) {
+                    event->ignore();
+                    return;
+                }
+
+				if(!d->mMousePressed){
+					return;
+				}
+
+                if(xVal <0) {	
+                    setCurrentRating(0);
+					emit ratingDone (d->mCurrentValue);
+                    return;
+                }
+
+               rating = d->calculateProgressValue(xVal);
+		
+			   if(toolTip() != QString()) {
+                    HbToolTip::showText(toolTip(),this);
+                }	
+                setCurrentRating(rating);
+                if(d->mCurrentValue) {
+                    emit ratingDone (d->mCurrentValue);
+                }
+                event->accept();
+                d->mMousePressed = false;
+                }
+            }
+            break;
+            default: break;
+            } 
+    }else if(event->gesture(Qt::PanGesture)) {
+                HbPanGesture *pan = qobject_cast<HbPanGesture *>(event->gesture(Qt::PanGesture));
+                switch(pan->state()) {
+                    case Qt::GestureUpdated:
+                        {
+                        if(!d->mMousePressed) {
+		                    return;
+	                    }
+                        qreal xVal = mapFromScene(event->mapToGraphicsScene( pan->startPos()+pan->offset())).x();
+		                    QRectF rect = d->mTouchArea->boundingRect();
+		                    int rating=0;
+		                    if(rect.contains(xVal,0 )) {
+                                if(d->mReadOnly) {
+			                    event->ignore();
+			                    return;
+		                    }
+                    		
+		                    if(xVal <0) {	
+			                    setCurrentRating(0);
+								return;
+		                    }
+
+			                    rating = d->calculateProgressValue(xVal);
+								
+			                    if(toolTip() != QString()) {
+				                    HbToolTip::showText(toolTip(),this);
+			                    }	
+			                    setCurrentRating(rating);
+			                    emit ratingChanged (d->mCurrentValue);
+			                    event->accept();
+		                    }
+	                        else {
+			                    setCurrentRating(0);
+		                    }
+                        }
+                        break;
+				    case Qt::GestureFinished: // Reset state 
+					{						  
+						 qreal xVal = mapFromScene(event->mapToGraphicsScene( pan->startPos()+pan->offset())).x();
+                         QRectF rect = d->mTouchArea->boundingRect();
+                         int rating=0;
+                         if(rect.contains(xVal,0 )) {
+                            if(d->mReadOnly) {
+                               event->ignore();
+                               return;
+                             }
+						}
+
+						if(!d->mMousePressed) {
+							 return;
+						}
+
+                       if(xVal <0) {	
+                          setCurrentRating(0);
+						  emit ratingDone (d->mCurrentValue);
+                          return;
+                        }
+
+                        rating = d->calculateProgressValue(xVal);
+					    setCurrentRating(rating);
+                        if(d->mCurrentValue) {
+                           emit ratingDone (d->mCurrentValue);
+                        }
+					    d->mMousePressed = false;
+                        event->accept();
+					 }
+                     default:
+                     break;
+                }
+    }
+}
+#endif 
+
 /*!
     \reimp
 */
@@ -478,8 +687,14 @@ void HbRatingSlider::initStyleOption(HbStyleOption *hboption) const
 }
 
 /*!
-    @beta
-    Returns the primitives.
+
+    \deprecated HbRatingSlider::primitive(HbStyle::Primitive)
+        is deprecated.
+
+    Provides access to primitives of HbRatingSlider. 
+    \param primitive is the type of the requested primitive. The available 
+    primitives are P_RatingSlider_frame,P_RatingSlider_track and P_RatingSlider_layout.
+
 */
 QGraphicsItem* HbRatingSlider::primitive(HbStyle::Primitive primitive) const
 {

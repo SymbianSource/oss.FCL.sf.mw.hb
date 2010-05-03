@@ -1,13 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="30" width="29.999"/>
-<rect height="2" width="2" x="9" y="13"/>
-<rect height="2" width="8.94" x="12.059" y="13"/>
-<rect height="2" width="2" x="9" y="8"/>
-<rect height="2" width="8.94" x="12.059" y="8"/>
-<rect height="5" width="9.999" x="10"/>
-<polygon points="23.999,21 26.999,21 26.999,2 21.999,2 21.999,5 23.999,5 "/>
-<polygon points="17.999,27 6,27 6,5 8,5 8,2 3,2 3,30 17.999,30 "/>
-<polygon points="19.999,30 19.999,23 26.999,23 "/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
+</g>
+<polygon points="19,29 27,21 19,21 "/>
+<rect height="2" width="2" x="9" y="14"/>
+<rect height="2" width="8.999" x="12" y="14"/>
+<rect height="2" width="2" x="9" y="9"/>
+<rect height="2" width="8.999" x="12" y="9"/>
+<polygon points="22,2 22,5 24,5 24,20 27,20 27,2 "/>
+<polygon points="6,5 8,5 8,2 3,2 3,29 18,29 18,26 6,26 "/>
+<rect height="5" width="10" x="10"/>
 </svg>

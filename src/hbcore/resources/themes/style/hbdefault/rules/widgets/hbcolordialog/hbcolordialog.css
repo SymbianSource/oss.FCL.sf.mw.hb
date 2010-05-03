@@ -1,6 +1,5 @@
 HbColorDialog {
-    /* unfortunately, #ffffff notation is not supported. Have a nice day
-       with hex->dec conversions */
+    /* Unfortunately, #ffffff notation is not supported. */
 
     color0:  16777215; /* white */
     color1:  0;        /* black */ 

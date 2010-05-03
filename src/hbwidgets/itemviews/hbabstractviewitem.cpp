@@ -32,15 +32,25 @@
 #include <hbstyle.h>
 #include <hbiconitem.h>
 #include <hbframebackground.h>
-#include <hbtextitem.h>
+#include <hbabstractitemview_p.h>
+#include <hbwidgetfeedback.h>
+#include <hbtapgesture.h>
 
 #include <QPersistentModelIndex>
-#include <QGraphicsSceneMouseEvent>
-#include <QGraphicsLinearLayout>
+#include <QGraphicsLayout>
 #include <QVariant>
 #include <QCoreApplication>
 #include <QEvent>
 #include <QDebug>
+
+#include <QGesture>
+#include <QGestureEvent>
+
+#ifdef QMAP_INT__ITEM_STATE_DEPRECATED
+#define HB_ITEM_STATE_ASSERT Q_ASSERT_X(0, "", "QMap<int,QVariant> based view item state system is deprecated. Use QHash<QString, QVariant> based instead" )
+#else
+#define HB_ITEM_STATE_ASSERT
+#endif
 
 const QString KDefaultLayoutOption = "default";
 const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::registerEventType();
@@ -67,26 +77,87 @@ const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::regist
 
     If derived abstract view item has transient state information that is not meaningful to store within model index (child item cursor 
     position selection areas etc.) view item can use abstract views internal state model to store this information. This feature can
-    be taken into use by implementing state() and setState() functions in derived class.
+    be taken into use by implementing transientState() and setTransientState() functions in derived class.
 */
 
 /*!
+    \deprecated HbAbstractViewItem::StateKey
+        is deprecated. Please use string based state keys.
+
     \enum HbAbstractViewItem::StateKey
 
     HbAbstractViewItem's predefined set of state keys.
 
     This enum describes state keys for HbAbstractViewItem state values. State value can be accessed using this key.
+
+    \sa HbAbstractViewItem::transientState()
 */
 
 /*!
+    \deprecated HbAbstractViewItem::FocusKey
+        is deprecated. Please use string based state keys. This key is replaced by "focused".
+
     \var HbAbstractViewItem::FocusKey
          Predefined key for focus state value.
 */
 
 /*!
+    \deprecated HbAbstractViewItem::CheckStateKey
+        is deprecated. Please use string based state keys. This key is replaced by "checkState".
+
+    \var HbAbstractViewItem::CheckStateKey
+        Predefined key for check state value. Default value is Qt::Unchecked.
+*/
+
+/*!
+    \deprecated HbAbstractViewItem::UserKey
+        is deprecated. Please use string based state keys.
+
     \var HbAbstractViewItem::UserKey
          First key that can be used by the derived class for it's own purposes.
 */
+
+/*!
+    \fn void HbAbstractViewItem::pressed(const QPointF &position)
+
+    This signal is emitted when a touch down event is received for this view item.
+    \a position is position of touch event in view item coordinates.
+
+    \sa HbAbstractViewItem::released(const QPointF &position)
+    \sa HbAbstractViewItem::activated(const QPointF &position)
+*/
+
+/*!
+    \fn void HbAbstractViewItem::released(const QPointF &position)
+
+    This signal is emitted when a touch release event is received for this view item.
+    \a position is position of touch event in view item coordinates.
+
+    \sa HbAbstractViewItem::pressed(const QPointF &position)
+    \sa HbAbstractViewItem::activated(const QPointF &position)
+*/
+
+/*!
+    \fn void HbAbstractViewItem::activated(const QPointF &position)
+
+    This signal is emitted when view item is activated by the user.
+    How to activate items depends on the input method; e.g., with mouse by clicking the item
+    or with touch input by tapping the item.
+    \a position is position of touch event in view item coordinates.
+
+    \sa HbAbstractViewItem::pressed(const QPointF &position)
+    \sa HbAbstractViewItem::released(const QPointF &position)
+*/
+
+/*!
+    \fn void HbAbstractViewItem::longPressed(const QPointF &position)
+
+    This signal is emitted when long press event is received for this view item and long press is enabled in itemview.
+    \a position is position of touch event in view item coordinates.
+
+    \sa HbAbstractItemView::longPressEnabled()
+*/
+
 
 /*!
     \fn HbAbstractViewItem::createItem 
@@ -98,7 +169,6 @@ const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::regist
     \snippet{ultimatecodesnippet/customlistviewitem.cpp,1}
 */
 
-
 void HbAbstractViewItemPrivate::init()
 {
     Q_Q(HbAbstractViewItem);
@@ -108,6 +178,7 @@ void HbAbstractViewItemPrivate::init()
     if (isPrototype()) {
         q->setFocusPolicy(Qt::ClickFocus);
     } else {
+        q->grabGesture(Qt::TapGesture);
         QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
         itemFlags |= QGraphicsItem::ItemIsFocusable;
         q->setFlags(itemFlags);
@@ -141,11 +212,15 @@ void HbAbstractViewItemPrivate::repolishCloneItems()
     }
 }
 
-void HbAbstractViewItemPrivate::updateCloneItems()
+void HbAbstractViewItemPrivate::updateCloneItems(bool updateChildItems)
 {
     int count(mSharedData->mCloneItems.count());
     for (int i = 0; i < count; ++i) {
-        mSharedData->mCloneItems.at(i)->updatePrimitives();
+        if (updateChildItems) {
+            mSharedData->mCloneItems.at(i)->updateChildItems();
+        } else {
+            mSharedData->mCloneItems.at(i)->updatePrimitives();
+        }
     }
 }
 
@@ -158,6 +233,75 @@ void HbAbstractViewItemPrivate::setInsidePopup(bool insidePopup)
         themingPending = true;
         q->updatePrimitives();
         q->repolish();
+    }
+}
+
+void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
+{
+    Q_Q(HbAbstractViewItem);
+
+    HbTapGesture *gesture = static_cast<HbTapGesture *>(event->gesture(Qt::TapGesture));
+    QPointF position = event->mapToGraphicsScene(gesture->hotSpot());
+    position = q->mapFromScene(position);
+
+    switch (gesture->state()) {
+        case Qt::GestureStarted: {
+            HbWidgetFeedback::triggered(q, Hb::InstantPressed, 0);
+            q->setPressed(true);
+            emit q->pressed(position);
+
+            break;
+        }
+        case Qt::GestureUpdated: {
+            if (gesture->tapStyleHint() == HbTapGesture::TapAndHold 
+                && mSharedData->mItemView
+                && mSharedData->mItemView->longPressEnabled()) {
+                q->setPressed(false);
+                emit q->longPressed(position);
+                revealItem();
+            }
+            break;
+        }
+        case Qt::GestureFinished: {
+            HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
+
+            if (gesture->tapStyleHint() == HbTapGesture::Tap 
+			    || (mSharedData->mItemView
+                && !mSharedData->mItemView->longPressEnabled())) {
+                q->setPressed(false);
+
+                HbWidgetFeedback::triggered(q, Hb::InstantClicked);
+                emit q->activated(position);
+                emit q->released(position);
+                revealItem();
+            } else {
+                emit q->released(position);
+            }
+
+            break;
+        }
+        case Qt::GestureCanceled: {
+            HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
+
+            // hides focus immediately
+            q->setPressed(false, false);
+
+            emit q->released(position);
+            break;
+        }
+        default:
+            break;
+    }
+
+    event->accept();
+}
+
+void HbAbstractViewItemPrivate::revealItem()
+{
+    Q_Q(HbAbstractViewItem);
+
+    if (mSharedData->mItemView) {
+        static_cast<HbAbstractItemViewPrivate *>(mSharedData->mItemView->d_func())->revealItem(q, HbAbstractItemView::EnsureVisible);
     }
 }
 
@@ -269,6 +413,7 @@ void HbAbstractViewItem::setModelIndex(const QModelIndex &index)
     Q_D( HbAbstractViewItem );
     if (d->mIndex != index) {
         d->mIndex = index;
+
         updateChildItems();
     }
 }
@@ -320,9 +465,52 @@ bool HbAbstractViewItem::isFocused() const
     wanted to be preserved but it not meaningful to be stored inside model index because of it's
     momentary nature. States will be saved inside AbstractItemview and restored when current model index is
     assigned to certain Abstract view item.
+
+    String in the returned table is usually name of a Qt property.
+    Default values of properties should not be added into returned table.
+
+    Derived class should first call base class implementation. After that it adds its own
+    state items into returned table.
+*/
+QHash<QString, QVariant> HbAbstractViewItem::transientState() const
+{
+    Q_D( const HbAbstractViewItem );
+    QHash<QString,QVariant> state;
+    
+    if (d->mFocused) {
+        state.insert("focused", d->mFocused);
+    }
+    if (d->mCheckState != Qt::Unchecked) {
+        state.insert("checkState", d->mCheckState);
+    }
+
+    return state;
+}
+
+/*!
+    Sets the item's transient state using given \a state data.
+*/
+void HbAbstractViewItem::setTransientState(const QHash<QString, QVariant> &state)
+{
+    Q_D( HbAbstractViewItem );
+    d->mFocused = state.value("focused").toBool();
+    d->mCheckState = (Qt::CheckState)state.value("checkState").toInt();
+}
+
+
+/*!
+     \deprecated HbAbstractViewItem::state() const
+        is deprecated. Please use HbAbstractViewItem::transientState() instead. 
+
+    Returns the saved item's transient state. Transient state can be seen as a state data that is 
+    wanted to be preserved but it not meaningful to be stored inside model index because of it's
+    momentary nature. States will be saved inside AbstractItemview and restored when current model index is
+    assigned to certain Abstract view item.
 */
 QMap<int,QVariant> HbAbstractViewItem::state() const
 {
+    qWarning("HbAbstractViewItem::state() const is deprecated");
+    HB_ITEM_STATE_ASSERT;
     Q_D( const HbAbstractViewItem );
     QMap<int,QVariant> state;
 
@@ -333,10 +521,15 @@ QMap<int,QVariant> HbAbstractViewItem::state() const
 }
 
 /*!
+     \deprecated HbAbstractViewItem::setState(const QMap<int,QVariant> &)
+        is deprecated. Please use HbAbstractViewItem::setTransientState(const QHash<QString, QVariant> &state) instead. 
+
     Restores the item's transient state using given \a state data.
 */
 void HbAbstractViewItem::setState(const QMap<int,QVariant> &state)
 {
+    qWarning("HbAbstractViewItem::setState(const QMap<int,QVariant> &state) is deprecated");
+    HB_ITEM_STATE_ASSERT;
     Q_D( HbAbstractViewItem );
     if (state.contains(FocusKey)) {
         d->mFocused = state.value(FocusKey).toBool();
@@ -413,44 +606,37 @@ void HbAbstractViewItem::initStyleOption(HbStyleOptionAbstractViewItem *option) 
 }
 
 /*!
-    Check whether \a scenePosition of pressed down is inside selection area of view item in current selection mode.
+    Check whether \a position is inside the selection area of the given selectionAreaType in the view item.
 
     Default selection areas are for
-    \li HbAbstractItemView::SingleSelection mode: whole item
-    \li HbAbstractItemView::MultiSelection mode: touch area of selection icon. 
-        Touch are is represented by primitive HbStyle::P_ItemViewItem_touchmultiselection.
-    \li HbAbstractItemView::ContiguousSelection mode: touch area of selection icon. 
-        Touch are is represented by primitive HbStyle::P_ItemViewItem_touchmultiselection.
+    \li HbAbstractViewItem::SingleSelection mode: whole item
+    \li HbAbstractViewItem::MultiSelection mode: whole item.
+    \li HbAbstractItemView::ContiguousSelection mode: whole item. (Note: HbAbstractItemView::ContiguousSelection is deprecated.)
     \li HbAbstractItemView::NoSelection mode: none
+
+    The \a selectionAreaType tells what kind of selection area is requested.  The parameter value ContiguousSelection returns 
+	the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
+	the HbStyle::P_ItemViewItem_touchmultiselection.
+    
 */
-bool HbAbstractViewItem::selectionAreaContains(const QPointF &scenePosition) const
+bool HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
 {
-    HB_SDD(const HbAbstractViewItem);
+    Q_D(const HbAbstractViewItem);
     bool contains = false;
-    if (sd->mItemView) {
-        switch (sd->mItemView->selectionMode()) {
-            case HbAbstractItemView::SingleSelection: 
+    if (selectionAreaType == ContiguousSelection) {
+        if(     d->mMultiSelectionTouchArea 
+            &&  !d->mMultiSelectionTouchArea->boundingRect().isEmpty()) {
+                contains = d->mMultiSelectionTouchArea->boundingRect().contains(mapToItem(d->mMultiSelectionTouchArea, position));
+            } else if (d->mSelectionItem) {
+                contains = d->mSelectionItem->boundingRect().contains(mapToItem(d->mMultiSelectionTouchArea, position));
+            }
+    } else {
+        switch (selectionAreaType) {
+            case SingleSelection: 
+            case MultiSelection: 
+            case ContiguousSelection: 
                 contains = true;
                 break;
-            case HbAbstractItemView::MultiSelection: 
-                // fall through
-            case HbAbstractItemView::ContiguousSelection: {
-                // TODO: put assert back in action, when official layouts in use
-                /*Q_ASSERT_X(     d->mMultiSelectionTouchArea 
-                            &&  d->mMultiSelectionTouchArea->boundingRect().size().width() > 0 
-                            &&  d->mMultiSelectionTouchArea->boundingRect().size().height() > 0, "", "HbAbstractViewItem::selectionAreaContains(): d->mMultiSelectionTouchArea should exist");
-                */
-                if(     d->mMultiSelectionTouchArea 
-                    &&  d->mMultiSelectionTouchArea->boundingRect().size().width() > 0 
-                    &&  d->mMultiSelectionTouchArea->boundingRect().size().height() > 0) {
-                    contains = d->mMultiSelectionTouchArea->boundingRect().contains(
-                                    d->mMultiSelectionTouchArea->mapFromScene(scenePosition));
-                } else {
-                    contains = d->mSelectionItem->boundingRect().contains(
-                                    d->mSelectionItem->mapFromScene(scenePosition));
-                }
-                break;
-            }
             default:
                 break;
         }
@@ -473,6 +659,14 @@ bool HbAbstractViewItem::event(QEvent *e)
                     initStyleOption(&styleOption);
                     if (d->mFocusItem) {
                         style()->updatePrimitive(d->mFocusItem, HbStyle::P_ItemViewItem_focus, &styleOption);
+                    }
+
+                    if (d->mFrame) {
+                        style()->updatePrimitive(d->mFrame, HbStyle::P_ItemViewItem_frame, &styleOption);
+                    }
+
+                    if (d->mBackgroundItem) {
+                        style()->updatePrimitive(d->mBackgroundItem, HbStyle::P_ItemViewItem_background, &styleOption);
                     }
                 }
                 break;
@@ -499,6 +693,33 @@ bool HbAbstractViewItem::event(QEvent *e)
 }
 
 /*!
+    \reimp
+
+    Invalidates parent layout when ItemTransformHasChanged is received.
+*/
+QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    switch (change) {
+        case ItemTransformHasChanged: {
+            QGraphicsLayoutItem *parentLayoutItem = this->parentLayoutItem();
+            if (parentLayoutItem && parentLayoutItem->isLayout()) {
+                QGraphicsLayout *parentLayout = static_cast<QGraphicsLayout *>(parentLayoutItem);
+                parentLayout->invalidate();
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    return HbWidget::itemChange(change, value);
+}
+
+/*!
+
+    \deprecated HbAbstractViewItem::primitive(HbStyle::Primitive)
+       is deprecated.
+
   Provides access to primitives of HbAbstractViewItem.
   \param primitive is the type of the requested primitive. The available primitives are 
   \c P_ItemViewItem_background
@@ -625,6 +846,15 @@ void HbAbstractViewItem::updateChildItems()
         d->themingPending = true;
     }
 
+    /* Summary of background and frame handling:
+         d->mBackground is read from Qt::BackgroundRole of model
+         d->mBackgroundItem is created from d-mBackground (Qt::BackgroundRole), if this is HbIcon or QBrush.
+
+         If d->mBackgroundItem does not exist, d->mFrame is created from d-mBackground (Qt::BackgroundRole), 
+         if this is HbFrameBackground otherwise it either is created from sd->mDefaultFrame, 
+         not created at all or from system default.
+    */
+ 
     // background
     QVariant currentBackground = d->mIndex.data(Qt::BackgroundRole);
     if (currentBackground != d->mBackground) {
@@ -634,32 +864,41 @@ void HbAbstractViewItem::updateChildItems()
             if (!d->mBackgroundItem) {  
                 d->mItemsChanged = true;
                 d->mBackgroundItem = style()->createPrimitive(HbStyle::P_ItemViewItem_background, this);
+                delete d->mFrame;
+                d->mFrame = 0;
             }
-        } 
-        else if (currentBackground.canConvert<HbFrameBackground>()) {
+        } else if (currentBackground.canConvert<HbFrameBackground>()) {
+            if (!d->mFrame) {
+                d->mItemsChanged = true;
+                d->mFrame = style()->createPrimitive(HbStyle::P_ItemViewItem_frame, this);
+                delete d->mBackgroundItem;
+                d->mBackgroundItem = 0;
+            }
+        } else if (d->mBackgroundItem) {
+            d->mItemsChanged = true;
+            delete d->mBackgroundItem;
+            d->mBackgroundItem = 0;
+        }
+    }
+
+    // frame
+    if (!d->mBackgroundItem) {
+        if (    d->mModelItemType == Hb::ParentItem
+            ||  d->mModelItemType == Hb::SeparatorItem
+            ||  (   d->mModelItemType == Hb::StandardItem
+                &&  (   d->mBackground.canConvert<HbFrameBackground>()
+                    ||  sd->mDefaultFrame.frameGraphicsName().length() > 0    
+                    ||  sd->mDefaultFrame.isNull()))) { 
             if (!d->mFrame) {
                 d->mItemsChanged = true;
                 d->mFrame = style()->createPrimitive(HbStyle::P_ItemViewItem_frame, this);
             }
-            if (d->mBackgroundItem) {
-                d->mItemsChanged = true;
-                delete d->mBackgroundItem;
-                d->mBackgroundItem = 0;
-            }
+        } else if (d->mFrame) {
+            d->mItemsChanged = true;
+            delete d->mFrame;
+            d->mFrame = 0;
         }
-        else {
-            if (d->mBackgroundItem) {
-                d->mItemsChanged = true;
-                delete d->mBackgroundItem;
-                d->mBackgroundItem = 0;
-            }
-        }
-    }
-    
-    if (!d->mFrame) { // frame should always exists
-        d->mItemsChanged = true;
-        d->mFrame = style()->createPrimitive(HbStyle::P_ItemViewItem_frame, this);
-    }
+    } 
 
     GraphicsItemFlags itemFlags = flags();
     Qt::ItemFlags indexFlags = d->mIndex.flags();
@@ -669,12 +908,14 @@ void HbAbstractViewItem::updateChildItems()
             itemFlags |= QGraphicsItem::ItemIsFocusable;
             setFocusPolicy(sd->mPrototype->focusPolicy());
             setProperty("state", "normal");
+        grabGesture(Qt::TapGesture);
         }
     } else {
         if (itemFlags & QGraphicsItem::ItemIsFocusable) {
             itemFlags &= ~QGraphicsItem::ItemIsFocusable;
             setFocusPolicy(Qt::NoFocus);
             setProperty("state", "disabled");
+        ungrabGesture(Qt::TapGesture);
         }
     }
 
@@ -834,7 +1075,13 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
             HbEffect::start(this, sd->mItemType, "released");
             HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
         } else {
-            QCoreApplication::postEvent(this, new QEvent((QEvent::Type)HbAbstractViewItemShared::ViewItemDeferredDeleteEvent));
+            HbEffect::cancel(this, "pressed");
+            HbEffect::start(this, sd->mItemType, "released");
+            if (d->mFocusItem) {
+                HbEffect::cancel(d->mFocusItem, "pressed");
+                HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
+                QCoreApplication::postEvent(this, new QEvent((QEvent::Type)HbAbstractViewItemShared::ViewItemDeferredDeleteEvent));
+            }
         }
     }
 }
@@ -900,35 +1147,19 @@ void HbAbstractViewItem::polish(HbStyleParameters& params)
     }
 }
 
-
-/*!
-    \reimp
-
-    The default implementation ignores all mouse press events.
-*/
 void HbAbstractViewItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    event->ignore();
+    HbWidget::mousePressEvent(event);
 }
 
-/*!
-    \reimp
-
-    The default implementation ignores all mouse move events.
-*/
 void HbAbstractViewItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    event->ignore();
+    HbWidget::mouseMoveEvent(event);
 }
 
-/*!
-    \reimp
-
-    The default implementation ignores all mouse release events.
-*/
 void HbAbstractViewItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    event->ignore();
+    HbWidget::mouseReleaseEvent(event);
 }
 
 /*!
@@ -955,11 +1186,15 @@ QSizeF HbAbstractViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 /*!
     Sets the default frame for standard view items as \a frame.  
     
-    This method will change the used frame for
-    all view items that represent model index with Hb::StandardItem type.
+    This method will change the used frame for all view items that represent model index with Hb::StandardItem type.
 
-    Input parameter with empty graphicsName string will remove the frame.
-    Input parameter with null graphicsName string will restore the default frame.
+    Input parameter with empty but non-null graphicsName string will remove the default frame.
+    Input parameter with null graphicsName string will restore the system default frame.
+
+    This method has not immediate effect, if Qt::BackgroundRole includes HbFrameBackground object. Qt::BackgroundRole of model
+    has higher priority than any other frame type.
+
+    Default frame is system default frame.
 
     \sa defaultFrame
 */
@@ -971,7 +1206,7 @@ void HbAbstractViewItem::setDefaultFrame(const HbFrameBackground &frame)
         
         int count(sd->mCloneItems.count());
         for (int i = 0; i < count; ++i) {
-            sd->mCloneItems.at(i)->updatePrimitives();
+            sd->mCloneItems.at(i)->updateChildItems();
         }
     }
 }
@@ -985,6 +1220,19 @@ HbFrameBackground HbAbstractViewItem::defaultFrame() const
 {
     HB_SDD(const HbAbstractViewItem);
     return sd->mDefaultFrame;
+}
+
+/*!
+    \reimp
+*/
+void HbAbstractViewItem::gestureEvent(QGestureEvent *event)
+{
+    if (event->gesture(Qt::TapGesture)) {
+        Q_D(HbAbstractViewItem);
+        d->tapTriggered(event);
+    } else {
+        HbWidget::gestureEvent(event);
+    }
 }
 
 

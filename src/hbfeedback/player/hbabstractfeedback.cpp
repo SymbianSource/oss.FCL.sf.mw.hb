@@ -31,7 +31,7 @@
 class HbAbstractFeedbackPrivate
 {
 public:
-    HbAbstractFeedbackPrivate() : cWindow(0) {};
+    HbAbstractFeedbackPrivate() : cWindow(0),cModalities(HbFeedback::All) {};
     ~HbAbstractFeedbackPrivate() {};
     QRect mapWidgetToWindow(const QGraphicsItem* graphicsItem, const QGraphicsView* graphicsView);
     QRect mapWidgetToWindow(const QWidget* widget);
@@ -39,6 +39,7 @@ public:
 public:
     QPointer<QWidget> cWindow;
     QRect cRect;
+    HbFeedback::Modalities cModalities;
 };
 
 /*!
@@ -135,6 +136,17 @@ QWidget* HbAbstractFeedback::window() const
 }
 
 /*!
+    \fn HbFeedback::Modalities HbAbstractFeedback::modalities() const
+
+    Returns the modalities (eg. tactile, audio) used to produce the feedback.
+*/
+
+HbFeedback::Modalities HbAbstractFeedback::modalities() const
+{
+    return d->cModalities;
+}
+
+/*!
     \fn bool HbAbstractFeedback::isLocated() const
 
     Returns true if both the parent window and the feedback area rectange (in relation to the parent window) has been defined. Not all feedback objects have to be located.
@@ -220,6 +232,14 @@ void HbAbstractFeedback::setOwningWindow(const QWidget* widget)
     if (widget && widget->window()) {
         d->cWindow = widget->window();
     }
+}
+
+/*!
+    Sets the modalities (eg. tactile, audio) used to produce the feedback.
+*/
+void HbAbstractFeedback::setModalities(HbFeedback::Modalities modalities)
+{
+    d->cModalities = modalities;
 }
 
 /*!

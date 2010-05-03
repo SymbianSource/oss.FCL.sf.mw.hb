@@ -51,6 +51,8 @@
 #include "hbpixmapiconimpl_p.h"
 #include "hbpixmapiconprocessor_p.h"
 #include "hblayeredstyleloader_p.h"
+#include "hbthemesystemeffect_p.h"
+#include "hbsharedmemorymanager_p.h"
 
 /*!
   @hbserver
@@ -245,14 +247,26 @@ void HbThemeServerPrivate::handleThemeSelection(const QString &newTheme)
 #endif
     // Modify the QSettings to store the applied theme
     QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
-    QString prevTheme = settings.value("currenttheme").toString();
+    QString prevTheme = settings.value(CURRENT_THEME_KEY).toString();
     if (prevTheme == newTheme) {
         // Theme did not change, return.
         return;
     }
+    // Clear cached icons and session data
+    clearIconCache();
+    HbThemeServerSession *session;
+    foreach(session, sessionList) {
+        session->clearSessionIconData();
+    }
+
     QString cleanThemeName = newTheme.trimmed();
-    settings.setValue("currenttheme", cleanThemeName);
+    settings.remove("currenttheme"); //temporary
+    settings.setValue(CURRENT_THEME_KEY, cleanThemeName);
     settings.sync();
+
+    // Register new system effects
+    HbThemeSystemEffect::handleThemeChange(cleanThemeName);
+
     HbThemeServerRequest requestType;
     requestType = EThemeSelection;
     QByteArray block;
@@ -260,6 +274,67 @@ void HbThemeServerPrivate::handleThemeSelection(const QString &newTheme)
     out << (int)requestType;
     out << cleanThemeName;
     writeToClients(block);
+}
+
+void HbThemeServerPrivate::handleContentUpdate(const QStringList &fileNames)
+{
+    // If list is empty clear all themed content
+    if (!fileNames.count()) {
+        // Clear icons
+        HbThemeServerSession *session;
+        foreach(session, sessionList) {
+            session->clearSessionIconData();
+        }
+        iconCache->clear();
+
+        // Clear effects
+        HbThemeServerUtils::clearSharedEffects();
+
+        // Clear stylesheets
+        QHash<QString, HbCacheItem*>::const_iterator itEnd(themePriorityItems.constEnd());
+        for (QHash<QString, HbCacheItem*>::const_iterator iter = themePriorityItems.constBegin();
+                iter != itEnd;
+                ++iter) {
+            cssCache->cacheHandle().remove(iter.key());
+            HbThemeServerSession *session;
+            foreach(session, sessionList) {
+                session->removeSessionCssItem(iter.key());
+            }
+        }
+        themePriorityItems.clear();
+
+        return;
+    }
+
+    // Else delete only specified files
+    for (int i=0; i<fileNames.count();i++) {
+        QString filename = fileNames.at(i);
+
+        // Stylesheet
+        if (themePriorityItems.contains(filename)) {
+            cssCache->cacheHandle().remove(filename);
+            themePriorityItems.remove(filename);
+            HbThemeServerSession *session;
+            foreach(session, sessionList) {
+                session->removeSessionCssItem(filename);
+            }
+            break;
+        }
+        // Effect
+        if (HbThemeServerUtils::removeSharedEffect(filename)) {
+            break;
+        }
+
+        // Icon
+        QVector<const HbIconKey *> keys = iconCache->getKeys(filename);
+        for (int j = 0; j<keys.count();j++) {
+            HbThemeServerSession *session;
+            foreach(session, sessionList) {
+                session->removeSessionIconItem(*keys.at(j));
+            }
+            iconCache->remove(*keys.at(j),false);
+        }
+    }
 }
 
 /*!
@@ -577,11 +652,14 @@ void HbThemeServerSession::readDataFromClient()
             break;
         }
         case EThemeContentUpdate: {
-            iServer->clearIconCache();
+            QStringList themedItems;
+            inputDataStream >> themedItems;
+            iServer->handleContentUpdate(themedItems);
             HbThemeServerRequest requestType = EThemeContentUpdate;
             QByteArray block;
             QDataStream out(&block, QIODevice::WriteOnly);
             out << (int)requestType;
+            out << themedItems;
             iServer->writeToClients(block);
             break;
         }
@@ -720,16 +798,22 @@ void HbThemeServerSession::readDataFromClient()
             inputDataStream >> color;
 
 #ifdef THEME_SERVER_TRACES
-            qDebug() << "image req at server: " << filename;
+            qDebug() << "image req at server: " << fileList;
 #endif
             QByteArray output;
             for (int i = 0; i < fileList.count(); i++) {
-                HbIconKey key(fileList[i], sizeList[i], (Qt::AspectRatioMode)aspectRatioMode, (QIcon::Mode)mode, mirrored, color);
+                HbIconKey key(fileList[i], sizeList[i],
+                              static_cast<Qt::AspectRatioMode>(aspectRatioMode),
+                              static_cast<QIcon::Mode>(mode), mirrored, color);
                 output.append(handleIconLookup(key, data, options));
             }
 
             ((QLocalSocket *)sender())->write(output);
 
+            break;
+        }
+        case ENotifyForegroundLost: {
+            //Nothing to do here when the app notifies it's foreground lost event
             break;
         }
         //Debug Code for Test Purpose
@@ -857,6 +941,25 @@ void HbThemeServerSession::readDataFromClient()
                 ((QLocalSocket *)sender())->write(outputByteArray);
                 break;
             }
+        case EFreeSharedMem: {
+            int freeSharedMem = iServer->freeSharedMemory();
+            QByteArray outputByteArray;
+            QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
+            outputDataStream << requestType;
+            outputDataStream << freeSharedMem;
+            ((QLocalSocket *)sender())->write(outputByteArray);
+            break;
+        }
+        case EAllocatedSharedMem: {
+            int allocatedSharedMem = iServer->allocatedSharedMemory();
+            QByteArray outputByteArray;
+            QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
+            outputDataStream << requestType;
+            outputDataStream << allocatedSharedMem;
+            ((QLocalSocket *)sender())->write(outputByteArray);
+            break;
+        }
+
         default:
             break;
         }
@@ -932,12 +1035,14 @@ bool HbThemeServerSession::createStichedIconInfoOfParts(QVector<HbSharedIconInfo
     stitchedData.type = INVALID_FORMAT;
     QString format = HbThemeServerUtils::formatFromPath(params.multiPartIconList[0]);
 
-    QScopedPointer <HbPixmapIconProcessor> tempIconProcessor(new HbPixmapIconProcessor(finalIconKey, (HbIconLoader::IconLoaderOptions)params.options, format));
+    QScopedPointer <HbPixmapIconProcessor> tempIconProcessor(new HbPixmapIconProcessor(finalIconKey,
+                                                static_cast<HbIconLoader::IconLoaderOptions>(params.options), format));
     HbPixmapIconProcessor * rasterIcon = tempIconProcessor.data();
     rasterIcon->createMultiPieceIconData(dataForParts, params);
 
     QScopedPointer <HbIconCacheItem> tempIconCacheItem;
-    tempIconCacheItem.reset(HbIconCacheItemCreator::createCacheItem(finalIconKey, (HbIconLoader::IconLoaderOptions)params.options, format, false));
+    tempIconCacheItem.reset(HbIconCacheItemCreator::createCacheItem(finalIconKey,
+                                    static_cast<HbIconLoader::IconLoaderOptions>(params.options), format, false));
     cacheItem = tempIconCacheItem.data();
 
     cacheItem->rasterIconData = rasterIcon->sharedIconData();
@@ -952,7 +1057,6 @@ bool HbThemeServerSession::createStichedIconInfoOfParts(QVector<HbSharedIconInfo
         }
     }
     tempIconCacheItem.take();
-    delete rasterIcon;
     return insertKeyIntoSessionList;
 }
 
@@ -972,27 +1076,31 @@ void HbThemeServerSession::iconInfoFromMultiParts(HbMultiIconParams params,
     bool insertKeyIntoSessionList = false;
     bool failedToCreateParts = false;
     QString format;
-
-
-    for (int i = 0; i < noOfPieces; i++) {
-        HbSharedIconInfo data;
-        bool iconPieceMirrored = false;
-        HbIconKey key(params.multiPartIconList.at(i), params.multiPartIconData.pixmapSizes[i], (Qt::AspectRatioMode)stichedKey.aspectRatioMode, (QIcon::Mode)stichedKey.mode, iconPieceMirrored, stichedKey.color);
-        insertKeyIntoSessionList = iconInfoFromSingleIcon(key, data);
-        if (!insertKeyIntoSessionList) {
-            insertKeyIntoSessionList = createCacheItemData(key, params.options, data);
-        }
-        if ((data.type == INVALID_FORMAT) || (!insertKeyIntoSessionList)) {
-            failedToCreateParts = true;
-            break;
-        } else {
-            //The session will only keep track of icons that were either successfully found or were
-            //successfully inserted in the cache.
-            keysInserted.append(key);
-            dataForParts.append(data);
-            sessionIconData.append(key);
-        }
-    }//end of for
+    try {
+        for (int i = 0; i < noOfPieces; i++) {
+            HbSharedIconInfo data;
+            bool iconPieceMirrored = false;
+            HbIconKey key(params.multiPartIconList.at(i), params.multiPartIconData.pixmapSizes[i],
+                          static_cast<Qt::AspectRatioMode>(stichedKey.aspectRatioMode),
+                          static_cast<QIcon::Mode>(stichedKey.mode), iconPieceMirrored, stichedKey.color);
+            insertKeyIntoSessionList = iconInfoFromSingleIcon(key, data);
+            if (!insertKeyIntoSessionList) {
+                insertKeyIntoSessionList = createCacheItemData(key, params.options, data);
+            }
+            if ((data.type == INVALID_FORMAT) || (!insertKeyIntoSessionList)) {
+                failedToCreateParts = true;
+                break;
+            } else {
+                //The session will only keep track of icons that were either successfully found or were
+                //successfully inserted in the cache.
+                keysInserted.append(key);
+                dataForParts.append(data);
+                sessionIconData.append(key);
+            }
+        }//end of for
+    } catch(std::exception &) {
+        failedToCreateParts = true;
+    }
 
     if ((failedToCreateParts) || (dataForParts.count() != noOfPieces) || (!insertKeyIntoSessionList)) {
         //atLeast one of the icon did'nt get constructed , so move the cached piece icons to unused state and return
@@ -1005,14 +1113,36 @@ void HbThemeServerSession::iconInfoFromMultiParts(HbMultiIconParams params,
     }
 // Create a stitched icon of the available piece shared iconinfos
     if ((dataForParts.count() == noOfPieces) && (!failedToCreateParts)) {
-        if (createStichedIconInfoOfParts(dataForParts, params, stichedKey, stitchedData)) {
-            sessionIconData.append(stichedKey);
+        try {
+            if (createStichedIconInfoOfParts(dataForParts, params, stichedKey, stitchedData)) {
+                sessionIconData.append(stichedKey);
+            }
+        } catch(std::exception &) {
         }
     }
 // Move the keys created for pieces to unused state*/
     for (int i = 0; i < keysInserted.count(); i++) {
         sessionIconData.removeOne(keysInserted.at(i));
     }
+}
+
+/*!
+  \fn HbThemeServerSession::clearSessionIconData()
+  Clears the session data of the icons found in the cache.
+*/
+void HbThemeServerSession::clearSessionIconData()
+{
+    sessionIconData.clear();
+}
+
+void HbThemeServerSession::removeSessionIconItem(const HbIconKey &key)
+{
+    sessionIconData.removeAll(key);
+}
+
+void HbThemeServerSession::removeSessionCssItem(const QString &key)
+{
+    sessionCssData.removeAll(key);
 }
 
 /*!
@@ -1168,6 +1298,9 @@ QByteArray HbThemeServerSession::handleStyleSheetLookup(int request, const QStri
                     // in the primary and secondary cache.
                     cssItem->incrementRefCount();
                 }
+                if (priority == HbLayeredStyleLoader::Priority_Theme && cssItem->refCount == 1) {
+                    iServer->themePriorityItems.insert(fileName,cssItem);
+                }
                 break;
             } else if (offset == OUT_OF_MEMORY_ERROR && tryAgain == false) {
                 iServer->doCleanup();
@@ -1220,9 +1353,9 @@ QByteArray HbThemeServerSession::handleIconLookup(const HbIconKey &key, HbShared
         QString format = HbThemeServerUtils::formatFromPath(key.filename);
         QT_TRY {
             tempIconCacheItem.reset(HbIconCacheItemCreator::createCacheItem(key,
-            (HbIconLoader::IconLoaderOptions)options,
-            format,
-            false));
+                (HbIconLoader::IconLoaderOptions)options,
+                format,
+                false));
             cacheItem = tempIconCacheItem.data();
             if (cacheItem) {
                 if (cacheItem->rasterIconData.type != INVALID_FORMAT) {
@@ -1312,3 +1445,22 @@ int HbThemeServerPrivate::sessionListCount() const
     return sessionList.count();
 }
 
+/**
+ * HbThemeServerPrivate::freeSharedMemory()
+ * Gives the free shared memory.
+ */
+int HbThemeServerPrivate::freeSharedMemory() const
+{
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    return static_cast<HbSharedMemoryManager *>(manager)->freeSharedMemory();
+}
+
+/**
+ * HbThemeServerPrivate::allocatedSharedMemory()
+ * Gives the allocated shared memory.
+ */
+int HbThemeServerPrivate::allocatedSharedMemory() const
+{
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    return static_cast<HbSharedMemoryManager *>(manager)->allocatedSharedMemory();
+}

@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "themeclientsymbian.h"
+#include <e32property.h>
 #include <QDebug>
 
 
@@ -77,9 +78,17 @@ void ThemeClientSymbian::Close()
  */
 TInt ThemeClientSymbian::changeTheme(const QString& aString )
 {
-    TBuf<256> themeName(aString.utf16());
-    TIpcArgs args(&themeName);
-    TInt err = SendReceive(EThemeSelection, args);
+    TInt err = KErrGeneral;
+    RProperty themeRequestProp;
+    
+    User::LeaveIfError( themeRequestProp.Attach( KServerUid3, KNewThemeForThemeChanger ) );
+    
+    TBuf<256> newThemenameChangeRequest;
+    _LIT(KThemeRequestFormatter, "%d:%S");
+    TBuf<256> newThemename(aString.utf16());
+    newThemenameChangeRequest.Format( KThemeRequestFormatter, EThemeSelection, &newThemename);
+    err = themeRequestProp.Set(newThemenameChangeRequest);
+    themeRequestProp.Close();
     return err;
 }
 

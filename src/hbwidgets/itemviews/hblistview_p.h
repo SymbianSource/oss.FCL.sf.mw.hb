@@ -45,6 +45,7 @@ class QPersistentModelIndex;
 class QAbstractItemModel;
 class QTimeLine;
 class QGraphicsLinearLayout;
+class QPanGesture;
 QT_END_NAMESPACE
 
 class HbListView;
@@ -67,8 +68,9 @@ public:
     void init();
     void moveDraggedItemTo(const QPointF &mousePosition);
 
-    void setContentPosition( qreal value, Qt::Orientation orientation, bool animate );
+    virtual bool panTriggered(QGestureEvent *event);
 
+    virtual bool animationEnabled(bool insertOperation);
 public:
     bool mArrangeMode;
     QPersistentModelIndex mDraggedItemIndex;
@@ -78,7 +80,8 @@ public:
     QPointF mScrollStartMousePos;
     QPointF mLastScrollPos;
     QTransform mOriginalTransform;
-    
+
+    bool mOriginalFriction;    
 };
 
 #endif // HBLISTVIEW_PRIVATE_H

@@ -27,8 +27,8 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbtlvwrapper_p.h
+PRIVATE_HEADERS += $$PWD/hbtlvwrapper_p.h
 
-INTERNAL_HEADERS += $$PWD/hbtlvwrapper_p_p.h
+PRIVATE_HEADERS += $$PWD/hbtlvwrapper_p_p.h
 
 SOURCES += $$PWD/hbtlvwrapper.cpp

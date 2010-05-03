@@ -27,13 +27,17 @@
 #include "hbscrollarea_p.h"
 #include "hbscrollbar.h"
 #include "hbdeviceprofile.h"
+#include "hbinstance.h"
 #include <hbwidgetfeedback.h>
 #include <hbevent.h>
+#include "hbglobal_p.h"
+
+#include <QGesture>
 
 #include <QDebug>
 
 /*!
- *  @stable
+ *  @beta
  *  @hbcore
  *  \class HbScrollArea
  *  \brief HbScrollArea provides a finger-touch enabled scrollable container class.  
@@ -122,12 +126,6 @@
     \fn void HbScrollArea::scrollDirectionsChanged(Qt::Orientations newValue)
 
     This signal is emitted when scrolling direction is changed.
-*/
-
-/*!
-    \fn void HbScrollArea::gestureSceneFilterChanged(HbGestureSceneFilter* newFilter)
-
-    This signal is emitted when gesture filters are changed.
 */
 
 /*!
@@ -251,6 +249,10 @@ HbScrollArea::HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent):
  */
 HbScrollArea::~HbScrollArea()
 {
+    Q_D( HbScrollArea );
+    if (d && d->mContents) {
+        d->mContents->setParentLayoutItem(0);
+    }
 }
 
 /*!
@@ -282,14 +284,17 @@ void HbScrollArea::setContentWidget(QGraphicsWidget* contents)
     d->stopAnimating();
 
     if (0 != d->mContents) {
+        d->mContents->setParentLayoutItem(0);
         delete d->mContents;
     }
     d->mContents = contents;
     updateGeometry();
 
     if (0 != contents) {
+        contents->setParentLayoutItem(this);
         contents->setParentItem(this);
         contents->installEventFilter(this);
+        d->mResetAlignment = true;
         d->adjustContent();
         setContinuationIndicators(d->mContinuationIndicators);
     } else {
@@ -314,6 +319,7 @@ QGraphicsWidget *HbScrollArea::takeContentWidget()
 
     // Reset the ownership
     if (content) {
+        content->setParentLayoutItem(0);
         content->setParentItem(0);
         content->removeEventFilter(this);
     }
@@ -370,30 +376,29 @@ HbScrollArea::ScrollingStyle HbScrollArea::scrollingStyle() const
 }
 
 /*!
- * Sets the scrollingStyle property that controls how the style of scrolling interaction
- * provided by the widget
- *
- * Possible values for the clamping style include:
- *
- *		Pan - dragging motion pans the view with no follow-on scrolling animation
- *		PanOrFlick - dragging motion pans the view with no follow-on scrolling animation, quick flicking motion triggers scrolling animation
- *		PanWithFollowOn - dragging motion pans the view, velocity at end of drag motion triggers follow-on animated scrolling
- *
- * The default value is PanWithFollowOn.
- *
- * \sa HbScrollArea::scrollingStyle()
+  Sets the scrollingStyle property that controls how the style of scrolling interaction
+  provided by the widget
+ 
+  Possible values for the clamping style include:
+ 
+ 		Pan - dragging motion pans the view with no follow-on scrolling animation
+ \deprecated PanOrFlick
+                    is deprecated.
+ 		PanWithFollowOn - dragging motion pans the view, velocity at end of drag motion triggers follow-on animated scrolling
+ 
+  The default value is PanWithFollowOn.
+ 
+  \sa HbScrollArea::scrollingStyle()
  */
 void HbScrollArea::setScrollingStyle(ScrollingStyle value)
 {
     Q_D( HbScrollArea );
 
-    bool isChanged = (d->mScrollingStyle != value);
-
-    d->mScrollingStyle = value;
-
-    if (isChanged) {
-        d->updateGestures();
-        emit gestureSceneFilterChanged( d->mGestureFilter );
+    if (value == HbScrollArea::PanOrFlick) {
+        d->mScrollingStyle = HbScrollArea::PanWithFollowOn;
+        HB_DEPRECATED("HbScrollArea::PanOrFlick is deprecated");
+    } else {
+        d->mScrollingStyle = value;
     }
 }
 
@@ -428,11 +433,7 @@ void HbScrollArea::setScrollDirections(Qt::Orientations value)
     d->mScrollDirections = value;
 
     if (isChanged) {
-        d->updateGestures();
-
         emit scrollDirectionsChanged( value );
-
-        emit gestureSceneFilterChanged( d->mGestureFilter );
     }
 }
 
@@ -462,38 +463,35 @@ void HbScrollArea::setFrictionEnabled(bool value)
 }
 
 /*!
- * Returns true if the scroll area handles
- * long press gestures, false otherwise
- *
- * \sa HbScrollArea::setHandleLongPress()
+  Returns true if the scroll area handles
+  long press gestures, false otherwise
+ 
+  \deprecated HbScrollArea::longPressEnabled()
+      is deprecated.
+ 
+  \sa HbScrollArea::setHandleLongPress()
  */
 bool HbScrollArea::longPressEnabled() const
 {
-    Q_D( const HbScrollArea );
-
-    return d->mHandleLongPress;
+    HB_DEPRECATED("HbScrollArea::longPressEnabled() is deprecated");    
+    return false;
 }
 
 /*!
- * Sets the value of the handleLongPress property.  This value is set
- * to true if the widget is to respond to long press gestures, false otherwise.
- *
- * The default value is false.
- *
- * \sa HbScrollArea::handleLongPress()
+  Sets the value of the handleLongPress property.  This value is set
+  to true if the widget is to respond to long press gestures, false otherwise.
+ 
+  The default value is false.
+ 
+  \deprecated HbScrollArea::setLongPressEnabled(bool)
+        is deprecated.
+ 
+  \sa HbScrollArea::handleLongPress()
  */
 void HbScrollArea::setLongPressEnabled (bool value)
 {
-    Q_D( HbScrollArea );
-
-    bool isChanged = (d->mHandleLongPress != value);
-
-    d->mHandleLongPress = value;
-
-    if (isChanged) {
-        d->updateGestures();
-        emit gestureSceneFilterChanged( d->mGestureFilter );
-    }
+    HB_DEPRECATED("HbScrollArea::setLongPressEnabled(bool) is deprecated");
+    Q_UNUSED(value);
 }
 
 /*
@@ -503,12 +501,7 @@ QVariant HbScrollArea::itemChange(GraphicsItemChange change, const QVariant &val
 {
     Q_D( HbScrollArea );
 
-    // ??? need to support other changes ???
-    if ( change == QGraphicsItem::ItemSceneHasChanged ) {
-        d->updateGestures();
-
-        emit gestureSceneFilterChanged( d->mGestureFilter );
-    } else if (change == QGraphicsItem::ItemVisibleHasChanged && d->mContents) {
+    if (change == QGraphicsItem::ItemVisibleHasChanged && d->mContents) {
         if (value.toBool() == true)
             d->adjustContent();
         else
@@ -519,145 +512,119 @@ QVariant HbScrollArea::itemChange(GraphicsItemChange change, const QVariant &val
 }
 
 /*! @beta
- * upGesture() is a virtual slot function that is called whenever an
- * up flick gesture is detected, if the scrollDirection is set to
- * enable vertical scrolling.
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  In most cases, derived classes should call up to the
- * HbScrollArea parent method.
- *
+  upGesture() is a virtual slot function that is called whenever an
+  up flick gesture is detected, if the scrollDirection is set to
+  enable vertical scrolling.
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  In most cases, derived classes should call up to the
+  HbScrollArea parent method.
+ 
+  \deprecated HbScrollArea::upGesture(int)
+        is deprecated.
  */
 void HbScrollArea::upGesture(int speedPixelsPerSecond)
 {
-    Q_D( HbScrollArea );
+    HB_DEPRECATED("HbScrollArea::upGesture(int) is deprecated. Use gesture FW.");
 
-    // convert the speedPixelsPerSecond to pixels per msec
-    QPointF speed;
-    speed.setX(0.0f);
-    speed.setY(-speedPixelsPerSecond * d->mSpeedFactor);
-    d->animateScroll(speed);
+    Q_UNUSED(speedPixelsPerSecond);
 }
 
 /*! @beta
- * downGesture() is a virtual slot function that is called whenever an
- * down flick gesture is detected, if the scrollDirection is set to
- * enable vertical scrolling. 
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  In most cases, derived classes should call up to the
- * HbScrollArea parent method.
+  downGesture() is a virtual slot function that is called whenever an
+  down flick gesture is detected, if the scrollDirection is set to
+  enable vertical scrolling. 
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  In most cases, derived classes should call up to the
+  HbScrollArea parent method.
+ 
+  \deprecated HbScrollArea::downGesture(int)
+        is deprecated.
  */
 void HbScrollArea::downGesture(int speedPixelsPerSecond)
 {
-    Q_D( HbScrollArea );
-
-    // convert the speedPixelsPerSecond to pixels per msec
-    QPointF speed;
-    speed.setX(0.0f);
-    speed.setY(speedPixelsPerSecond * d->mSpeedFactor);
-    d->animateScroll(speed);
+    HB_DEPRECATED("HbScrollArea::downGesture(int) is deprecated. Use gesture FW.");
+    Q_UNUSED(speedPixelsPerSecond);
 }
 
 /*! @beta
- * leftGesture() is a virtual slot function that is called whenever an
- * left flick gesture is detected, if the scrollDirection is set to
- * enable horizontal scrolling.
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  In most cases, derived classes should call up to the
- * HbScrollArea parent method.
+  leftGesture() is a virtual slot function that is called whenever an
+  left flick gesture is detected, if the scrollDirection is set to
+  enable horizontal scrolling.
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  In most cases, derived classes should call up to the
+  HbScrollArea parent method.
+ 
+  \deprecated HbScrollArea::leftGesture(int)
+            is deprecated.
  */
 void HbScrollArea::leftGesture(int speedPixelsPerSecond)
 {
-    Q_D( HbScrollArea );
-    
-    // convert the speedPixelsPerSecond to pixels per msec
-    QPointF speed;
-    speed.setX(-speedPixelsPerSecond * d->mSpeedFactor);
-    speed.setY(0.0f);
-    d->animateScroll(speed);
+    HB_DEPRECATED("HbScrollArea::leftGesture(int) is deprecated. Use gesture FW.");
+    Q_UNUSED(speedPixelsPerSecond);
 }
 
 /*! @beta
- * rightGesture() is a virtual slot function that is called whenever an
- * right flick gesture is detected, if the scrollDirection is set to
- * enable horizontal scrolling.
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  In most cases, derived classes should call up to the
- * HbScrollArea parent method.
+  rightGesture() is a virtual slot function that is called whenever an
+  right flick gesture is detected, if the scrollDirection is set to
+  enable horizontal scrolling.
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  In most cases, derived classes should call up to the
+  HbScrollArea parent method.
+ 
+  \deprecated HbScrollArea::rightGesture(int)
+        is deprecated.
  */
 void HbScrollArea::rightGesture(int speedPixelsPerSecond)
 {
-    Q_D( HbScrollArea );
-    
-    // convert the speedPixelsPerSecond to pixels per msec
-    QPointF speed;
-    speed.setX(speedPixelsPerSecond * d->mSpeedFactor);
-    speed.setY(0.0f);
-    d->animateScroll(speed);
+    HB_DEPRECATED("HbScrollArea::rightGesture(int) is deprecated. Use gesture FW.");
+    Q_UNUSED(speedPixelsPerSecond);
 }
 
-/*!  @beta
- * panGesture() is a virtual slot function that is called whenever an
- * pan gesture is detected.
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  In most cases, derived classes should call up to the
- * HbScrollArea parent method.
+
+/*!
+  panGesture() is a virtual slot function that is called whenever an
+  pan gesture is detected.
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  In most cases, derived classes should call up to the
+  HbScrollArea parent method.
+ 
+  \deprecated HbScrollArea::panGesture(const QPointF&)
+   is deprecated.
  */
 void HbScrollArea::panGesture(const QPointF &delta)
 {
-    Q_D( HbScrollArea );
-    if ( d->mIsAnimating ) {
-        d->stopAnimating();
-    }
-    if (scrollingStyle() == HbScrollArea::PanWithFollowOn) {
-        d->addPositionToQueue(-delta, d->mDragElapsedTime.elapsed(), true);
-    }
-    if (d->mAbleToScrollY || d->mAbleToScrollX) {
-        // initiate scroll feedback
-        HbWidgetFeedback::continuousTriggered(this, Hb::ContinuousScrolled, delta);
-        d->mScrollFeedbackOngoing = true;
-    }
-    scrollByAmount(-delta);
+    HB_DEPRECATED("HbScrollArea::panGesture(const QPointF &) is deprecated. Use gesture FW.");
+    Q_UNUSED(delta);
 }
 
 /*!  @beta
- * longPressGesture() is a virtual slot function that is called whenever an
- * long press gesture is detected, if the handleLongPress property is set to true.
- *
- * Derived classes can override this method to add custom handling of
- * the gesture.  By default, HbScrollArea does not respond to a long press.
- *
- * \sa setHandleLongPress(), handleLongPress()
+  longPressGesture() is a virtual slot function that is called whenever an
+  long press gesture is detected, if the handleLongPress property is set to true.
+ 
+  Derived classes can override this method to add custom handling of
+  the gesture.  By default, HbScrollArea does not respond to a long press.
+ 
+  \deprecated HbScrollArea::longPressGesture(const QPointF&)
+   is deprecated.
+ 
+  \sa setHandleLongPress(), handleLongPress()
  */
-void HbScrollArea::longPressGesture(const QPointF &/* point */)
+void HbScrollArea::longPressGesture(const QPointF &)
 {
-    //	qDebug() << "GOT LONG PRESS GESTURE" << point;
+    HB_DEPRECATED("HbScrollArea::longPressGesture(const QPointF &) is deprecated. Use gesture FW.");
 }
 
 /*
     \reimp
- */
+*/
 void HbScrollArea::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    Q_D( HbScrollArea );
-    if (d->mContents) {
-        d->mousePressEvent( event );
-    }
-}
-
-/*
-    \reimp
- */
-void HbScrollArea::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{    
-    Q_D( HbScrollArea );
-    if (d->mContents) {
-        d->mouseReleaseEvent ( event );
-    }
+    Q_UNUSED (event);
 }
 
 /*!
@@ -694,21 +661,7 @@ bool HbScrollArea::scrollByAmount(const QPointF& delta)
 
     return d->scrollByAmount(delta);
 }
-
-#if 0
-
-bool HbScrollArea::sceneEvent(QEvent *event)
-{
-    Q_D( HbScrollArea );
-    bool eventAccepted(false);
-    eventAccepted = d->sceneEvent(event);
-    if(!eventAccepted);
-        eventAccepted = HbWidget::sceneEvent(event);
-    return eventAccepted;
-}
-
-#endif // HB_NEW_GESTURE_FW
-
+ 
 /*!
    \reimp
  */
@@ -723,12 +676,62 @@ bool HbScrollArea::event(QEvent *event)
              d->changeLayoutDirection(layoutDirection());
         } else if (event->type() == QEvent::GraphicsSceneResize) {
             if (isVisible() && d->mContents) {
-                d->orientationChanged();
+                if ( d->mIsAnimating ) {
+                    d->stopAnimating();
+                }
+                d->adjustContent();
             }
         }  else if (event->type() == HbEvent::ChildFocusOut) {
             //qDebug() << "focusout";
             if ( !d->positionOutOfBounds() ) {
                 d->stopAnimating();
+            }
+        } else if( event->type() == QEvent::GestureOverride ) {
+            if(static_cast<QGestureEvent *>(event)->gesture(Qt::TapGesture) &&
+                    d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
+                event->accept();
+                return true;
+            }
+        } else if (event->type() == QEvent::LayoutRequest) {
+            if (d->mContents) {
+                if (preferredSize() != d->mContents->preferredSize()) {
+                    updateGeometry();
+                }
+
+                QSizeF newSize = d->mContents->size();
+                QSizePolicy contentPolicy = d->mContents->sizePolicy();
+
+                if (d->mScrollDirections & Qt::Vertical) {
+                    if (contentPolicy.verticalPolicy() != QSizePolicy::Ignored) {
+                        newSize.setHeight(d->mContents->preferredHeight());
+                    }
+                } else {
+                    newSize.setHeight(size().height());
+                }
+
+                if (d->mScrollDirections & Qt::Horizontal) {
+                    if (contentPolicy.horizontalPolicy() != QSizePolicy::Ignored) {
+                        newSize.setWidth(d->mContents->preferredWidth());
+                    }
+                } else {
+                    newSize.setWidth(size().width());
+                }
+
+                d->mContents->resize(newSize);
+            }
+        } else if (event->type() == QEvent::GraphicsSceneResize) {
+            if (d->mContents) {
+                QSizeF newSize = d->mContents->size();
+
+                if (!(d->mScrollDirections & Qt::Vertical)) {
+                    newSize.setHeight(size().height());
+                }
+
+                if (!(d->mScrollDirections & Qt::Horizontal)) {
+                    newSize.setWidth(size().width());
+                }
+
+                d->mContents->resize(newSize);
             }
         }
     }
@@ -794,6 +797,33 @@ void HbScrollArea::focusOutEvent( QFocusEvent *event )
     }
 
 }
+
+#ifdef HB_GESTURE_FW
+void HbScrollArea::gestureEvent(QGestureEvent *event)
+{    
+    Q_D ( HbScrollArea );
+    if(QTapGesture *gesture = static_cast<QTapGesture *>(event->gesture(Qt::TapGesture))) {        
+        // Stop scrolling on tap
+        if (gesture->state() == Qt::GestureStarted) {
+            if (d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
+                d->stopAnimating();
+                event->accept(gesture);
+            } else {
+                event->ignore(gesture);
+            }
+        }
+    }
+    if (QPanGesture *panGesture = qobject_cast<QPanGesture*>(event->gesture(Qt::PanGesture))) {
+        if (!d->pan(panGesture)) {
+            event->ignore(panGesture);
+        } else {
+            event->accept(panGesture);
+            setFocus(Qt::MouseFocusReason);
+        }
+    }
+}
+
+#endif
 
 /*!
     Returns the scrollbar policy for vertical scrollbar
@@ -921,6 +951,7 @@ void HbScrollArea::setAlignment(Qt::Alignment alignment)
 {
     Q_D(HbScrollArea);
     d->mAlignment = alignment;
+    d->mResetAlignment = true;
     if (d->mContents)
         d->adjustContent();
 }
@@ -1005,11 +1036,8 @@ void HbScrollArea::scrollContentsTo (const QPointF& newPosition, int time) {
         d->startTargetAnimation (newPosition, qMax (0, time));
     } else {
         scrollByAmount(newPosition - (-d->mContents->pos()));
-        if (d->positionOutOfBounds() && d->mClampingStyle == BounceBackClamping) {
-            d->startAnimating();
-        } else {
-            d->stopScrolling();
-        }
+        d->stopScrolling();
+
     }
 }
 

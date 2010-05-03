@@ -88,24 +88,32 @@ void HbGridItemContainer::addItem(const QModelIndex &index, bool animate)
         return;
 
     int bufferIndex = 0;
-    if (d->mItems.count() != 0) {
-        bufferIndex = qMax(0, index.row() - d->mItems.first()->modelIndex().row());
+    QModelIndex firstInBuffer;
+    int firstInBufferPosition = -1;
+    int indexPosition = d->mItemView->modelIterator()->indexPosition(index);
+    if (!d->mItems.isEmpty()) {
+        firstInBuffer = d->mItems.first()->modelIndex();
+        firstInBufferPosition = d->mItemView->modelIterator()->indexPosition(firstInBuffer);
+        bufferIndex = qMax(0, indexPosition - firstInBufferPosition);
     }
     // inserting new item because of buffer size
-    if (d->mItems.count() == 0
+    if (d->mItems.isEmpty()
         || d->mItems.count() < maxItemCount()) {
         insertItem(bufferIndex, index, animate);
         viewLayout()->invalidate();
     }
     // special case - only for grid, if added item is above the 
     // visible region we need to shift all visible items by one!
-    else if (d->mItems.count() > 0
-        && d->mItems.first()->modelIndex().row() > index.row()) {
+    else if (!d->mItems.isEmpty()
+        && firstInBufferPosition > indexPosition) {
         d->shiftUpItem(animate); // shift up in this case always return something
         viewLayout()->invalidate();
     }
     // new item is in visible range
     else if (bufferIndex < d->mItems.count()) {
+        // new added item comes to buffer - it will be
+        // recycled from last item in buffer (it is also ok
+        // when that last item was invalid)
         HbAbstractViewItem *last = d->mItems.last();
         if (animate) {
             last->setOpacity(0.0);
@@ -160,30 +168,51 @@ void HbGridItemContainer::setModelIndexes(const QModelIndex &startIndex)
         return;
     }
 
+    HbModelIterator *modelIterator = d->mItemView->modelIterator();
     QModelIndex index = startIndex;
     if (!index.isValid()) {
-        index = d->mItemView->model()->index(0, 0);
-        if (!index.isValid())
+        index = modelIterator->nextIndex(QModelIndex());
+        if (!index.isValid()) {
+            // this mean model is empty
             return;
+        }
     }
-    index = d->mItemView->model()->index(
-                d->alignIndexToClosestFirstInRow(index.row()), 0);
 
-    int modelItemsCount = d->mItemView->model()->rowCount();
+    int indexPosition = modelIterator->indexPosition(index);
+    indexPosition = d->alignIndexToClosestFirstInRow(indexPosition);
+    index = modelIterator->index(indexPosition);
+
+    int modelItemsCount = modelIterator->indexCount();
     int itemsCount = d->mItems.count();
-    int diff = index.row() + itemsCount - modelItemsCount;
+    int diff = indexPosition + itemsCount - modelItemsCount;
     if (diff >= d->mItemsPerRow) {
-        diff = modelItemsCount - itemsCount;
-        if (diff % d->mItemsPerRow) diff = diff + d->mItemsPerRow - diff % d->mItemsPerRow;
-        index = d->mItemView->model()->index(diff, 0);
-        if (!index.isValid())
-            index = d->mItemView->model()->index(0, 0);
+        // starting from index do not fill the buffer
+        // so new starting index need to be calculated
+        // to fill the buffer with items
+        int newStartIndex = modelItemsCount - itemsCount;
+        int remainder = newStartIndex % d->mItemsPerRow;;
+        if (remainder) {
+            // move newStartIndex forward to contain
+            // last row and empty items
+            newStartIndex += d->mItemsPerRow - remainder;
+        }
+        index = modelIterator->index(newStartIndex);
+        if (!index.isValid()) {
+            // if invalid get first item from model
+            index = modelIterator->nextIndex(QModelIndex());
+        }
+        indexPosition = modelIterator->indexPosition(index);
+    }
+
+    if (d->mItems.first()->modelIndex() == index) {
+        // container already contain right items
+        return;
     }
 
     int i = 0;
     for (; i < itemsCount && index.isValid(); ++i) {
         setItemModelIndex(d->mItems.at(i), index);
-        index = d->mItemView->modelIterator()->nextIndex(index);
+        index = modelIterator->nextIndex(index);
     }
 
     if (i < itemsCount) {
@@ -191,6 +220,11 @@ void HbGridItemContainer::setModelIndexes(const QModelIndex &startIndex)
             setItemModelIndex(d->mItems.at(i), index);
         }
         if (i < itemsCount) {
+            // somehow model size was change
+            // this is almost impossible do get there -
+            // means that items were removed but view 
+            // was not noticed about that - or setModelIndexes
+            // was call before model has noticed view
             while (i > d->mItems.count()) {
                 d->mItems.removeLast();
             }
@@ -210,18 +244,10 @@ HbGridLayout *HbGridItemContainer::viewLayout() const
 /*!
     \reimp
 */
-void HbGridItemContainer::viewResized(const QSizeF &size)
+void HbGridItemContainer::viewResized(const QSizeF &)
 {
     Q_D(HbGridItemContainer);
-    if (!(qFuzzyCompare(d->mViewSize.height(), size.height())
-            && qFuzzyCompare(d->mViewSize.width(), size.width()))) {
-        QPointF p = pos();
-        p.setY(p.y() *  size.height() / d->mViewSize.height());
-        p.setX(p.x() * size.width() / d->mViewSize.width());
-        setPos(p);
-        d->mViewSize = size;
-        d->resetBuffer();
-    }
+    d->resetBuffer();
 }
 
 /*!
@@ -250,68 +276,56 @@ void HbGridItemContainer::setItemModelIndex(HbAbstractViewItem *item,
 /*!
     \reimp
 */
-
 QPointF HbGridItemContainer::recycleItems(const QPointF &delta)
 {
     Q_D(HbGridItemContainer);
 
-    if (!d->mItemRecycling || d->mItemsPerRow <=0) {
+    if (d->mPrototypes.count() != 1) {
         return delta;
     }
 
-    QRectF viewRect(d->itemBoundingRect(d->mItemView));
-    QSizeF itemsCanvas(layout()->preferredSize());
-    qreal invisibleArea = 0;
-
-    qreal diff = 0.0;
-    if (Qt::Vertical == d->mScrollDirection) {
-        invisibleArea = itemsCanvas.height() - viewRect.height();
-        diff = pos().y() - delta.y();
-        if ((delta.y() < 0.0 && diff > 0) 
-            || (delta.y() > 0.0 && invisibleArea + diff < 0)) {
-            diff = delta.y();
-        }
-        else {
-            diff = 0.0;   
-        }
-    }
-    else {
-        invisibleArea = itemsCanvas.width() - viewRect.width();
-        diff = pos().x() - delta.x();
-        if ((delta.x() < 0.0 && diff > 0) 
-            || (delta.x() > 0.0 && invisibleArea + diff < 0)) {
-            diff = delta.x();
-        }
-        else {
-            diff = 0.0;   
-        }
-    }
+    // current invisible space can be scrolled by base class
+    // recycling need only do the rest
+    const qreal diff = d->getDiffWithoutScrollareaCompensation(delta);
 
     if (diff != 0.0) {
-        if (HbAbstractItemViewPrivate::d_ptr(d->mItemView)->mOptions & HbAbstractItemViewPrivate::PanningActive) {
-            // jump is almost in the middle of fetched buffer - in most of cases
-            // after scrolling was stopped panning should be done without fetching 
-            // items
-            // in case when buffer == 1 below lines do not change diff
-            qreal extraDiff = invisibleArea/2 - d->mCachedItemHeight;
-            if (extraDiff < 0.0) {
-                extraDiff = 0.0; // impossible because this mean that bufferSize == 0
+        HbModelIterator *modelIterator = d->mItemView->modelIterator();
+        qreal result = 0.0;
+        qreal containerSize = (d->mScrollDirection == Qt::Vertical)
+            ? size().height() : size().width();
+        bool doFarJump = false;
+        if (qAbs(diff) > containerSize) {
+            // if huge diff - current buffer does not containt any item that should
+            // be there after jump - because of that use setModelIndexes instead of
+            // recycling items - faster
+            // but it is possible that even if far jump was requested (huge delta) 
+            // it can't be done because of model size and current position (at the end)
+            if (diff > 0) {
+                // scrolling down
+                int indexPos = modelIterator->indexPosition(d->lastValidItemIndex())
+                                + d->mItems.count();
+                doFarJump = (indexPos < modelIterator->indexCount());
+            } else {
+                // scrolling up
+                int indexPos = modelIterator->indexPosition(d->mItems.first()->modelIndex())
+                                - d->mItems.count();
+                doFarJump = (indexPos >= 0);
             }
-
-            if (diff < 0.0) {
-                diff -= extraDiff; 
-            }
-            else {
-                diff += extraDiff;
-            }   
+        }
+        if (doFarJump) {
+            // start calculations for far jump
+            // take back into account real delta (do jump as far as possible
+            // without leaving it for scroll area)
+            result = d->farRecycling(delta);
+        }
+        else {
+            result = d->recycling(diff);
         }
 
-        qreal result = (d->recycling(diff));
-
         QPointF newDelta(Qt::Vertical == d->mScrollDirection
-                ?QPointF(0.0, delta.y() - result) 
+                ? QPointF(0.0, delta.y() - result) 
                 : QPointF(delta.x() - result, 0.0));
-        
+
         return newDelta;
     }
 
@@ -460,7 +474,7 @@ void HbGridItemContainer::scrollTo(const QModelIndex &index, HbAbstractItemView:
 {
     Q_D(HbGridItemContainer);
 
-    if (!index.isValid() || d->mItems.count() <= 0)
+    if (!index.isValid() || d->mItems.isEmpty())
         return;
     
     switch (hint) {
@@ -512,6 +526,15 @@ void HbGridItemContainer::layoutAnimationFinished(QGraphicsLayoutItem *item, HbG
     }
 }
 
+/*!
+    \reimp
+    In grid case items are allways same size
+*/
+void HbGridItemContainer::setUniformItemSizes(bool enable)
+{
+    Q_UNUSED(enable);
+    // d->mUniformItemSizes - allways true
+}
 
 #include "moc_hbgriditemcontainer_p.cpp"
 

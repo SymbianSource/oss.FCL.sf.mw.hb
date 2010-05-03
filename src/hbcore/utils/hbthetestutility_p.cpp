@@ -90,9 +90,7 @@ button4used(false)
 */
 bool HbTheTestUtilityPrivate::checkConfigFile()
 {
-#if defined (Q_OS_UNIX)
-    return false; // currently no UNIX support
-#elif defined (Q_OS_SYMBIAN)
+#if defined (Q_OS_SYMBIAN)
     bool useC = false;
     useF = doCheckConfigFile(KDriveFPath);
     if (!useF) {
@@ -104,6 +102,8 @@ bool HbTheTestUtilityPrivate::checkConfigFile()
     return (useC || useE || useF);
 #elif defined (Q_OS_WIN32)
     return doCheckConfigFile(KDriveCPath);
+#else
+    return false; // only Symbian and Windows are supported
 #endif
 }
 

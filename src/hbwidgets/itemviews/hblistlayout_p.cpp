@@ -29,10 +29,8 @@
 
 #include "hbwidgetbase.h"
 #include "hbabstractitemcontainer.h"
-#include <hbeffect.h>
 
 #include <QWidget> // for QWIDGETSIZE_MAX
-#include <QTimer>
 #include <QDebug>
 
 /*
@@ -46,7 +44,6 @@ static const qreal INVALID_ITEM_HEIGHT = -1.0;
 
 HbListLayoutPrivate::HbListLayoutPrivate(HbListLayout *q_ptr) :
     q(q_ptr),
-    mTimer(0),
     mSmallestItemHeight(INVALID_ITEM_HEIGHT)
 {
 }
@@ -142,39 +139,6 @@ bool HbListLayoutPrivate::uniformSizedItems() const
 }
 
 /*!
-    Updates the animation progress.
-*/
-void HbListLayoutPrivate::update()
-{
-    QMapIterator<QGraphicsLayoutItem*, bool> i(mShrinkingItems);
-    while (i.hasNext()) {
-        i.next();
-        mShrinkingItems[i.key()] = true;
-
-        if (!HbEffect::effectRunning(i.key()->graphicsItem(), "disappear")) {
-            mShrinkingItems.remove(i.key());
-        }
-    }
-
-    QMapIterator<QGraphicsLayoutItem*, bool> j(mGrowingItems);
-    while (j.hasNext()) {
-        j.next();
-        mGrowingItems[j.key()] = true;
-
-        if (!HbEffect::effectRunning(j.key()->graphicsItem(), "appear")) {
-            mGrowingItems.remove(j.key());
-        }
-    }   
-
-    q->invalidate();
-
-    if (mGrowingItems.size() == 0 && mShrinkingItems.size() == 0) {
-        delete mTimer;
-        mTimer = 0;
-    }
-}
-
-/*!
     Constructor.
     \param parent parent layout item.
  */
@@ -192,7 +156,7 @@ HbListLayout::HbListLayout( QGraphicsLayoutItem *parent )
 HbListLayout::~HbListLayout()
 {
     if (d) {
-        for (int i = count() - 1; i >= 0; --i) {
+         for (int i = count() - 1; i >= 0; --i) {
             QGraphicsLayoutItem *item = itemAt(i);
             // The following lines can be removed, but this removes the item
             // from the layout more efficiently than the implementation of 
@@ -237,26 +201,7 @@ void HbListLayout::addItem(QGraphicsLayoutItem *item, bool animate)
  */
 void HbListLayout::insertItem(int index, QGraphicsLayoutItem *item, bool animate)
 {
-    if (animate) {
-        d->mGrowingItems[item] = false;
-        if (!d->mTimer) {
-            d->mTimer = new QTimer(d);
-            QObject::connect(d->mTimer, SIGNAL(timeout()), d, SLOT(update()));
-            d->mTimer->start(25);
-        }
-    }
-
-    // If some items are shrinking while the item is being inserted, the container's
-    // item list and the layout's item list may not be at sync.
-    // The following code block checks if any item *before* the index is shrinking and
-    // thus not apparent in the container index passed as a parameter.
-    if (!d->mShrinkingItems.isEmpty()) {
-        for (int i = 0; i < index; i++) {
-            if (d->mShrinkingItems.contains(d->mItems.at(i))) {
-                index++;
-            }
-        }
-    }
+    Q_UNUSED(animate);
 
     index = qMin(index, d->mItems.count());
     if (index < 0) {
@@ -295,25 +240,10 @@ int HbListLayout::indexOf( QGraphicsLayoutItem *item ) const
 void HbListLayout::removeItem( QGraphicsLayoutItem *item, bool animate )
 {
     if (animate) {
-        d->mShrinkingItems[item] = false;
-        if (d->mGrowingItems.contains(item)) {
-            d->mShrinkingItems[item] = d->mGrowingItems[item];
-        }
-
-        if (!d->mTimer) {
-            d->mTimer = new QTimer(d);
-            QObject::connect(d->mTimer, SIGNAL(timeout()), d, SLOT(update()));
-            d->mTimer->start(25);
-        }
         invalidate();
     } else {
         removeAt(indexOf(item));
     }
-
-    if (d->mGrowingItems.contains(item)) {
-        d->mGrowingItems.remove(item);
-    }
-
 }
 
 /*!
@@ -366,10 +296,6 @@ void HbListLayout::removeAt(int index)
         d->mItems.removeAt(index);
         item->setParentLayoutItem(0);
         invalidate();
-
-        if (d->mShrinkingItems.contains(item)) {
-            d->mShrinkingItems.remove(item);
-        }
     }
 }
 
@@ -393,10 +319,6 @@ void HbListLayout::setGeometry( const QRectF &rect )
         qreal itemHeight = item->preferredHeight();
         if (item->graphicsItem()->transform().isScaling()) {
             itemHeight *= item->graphicsItem()->transform().m22();
-        }
-
-        if (d->mGrowingItems.contains(item) && d->mGrowingItems[item] == false) {
-            itemHeight = 0;
         }
 
         QRectF itemRect(effectiveRect.x(), y, effectiveRect.width(), itemHeight);
@@ -450,6 +372,4 @@ QSizeF HbListLayout::sizeHint(Qt::SizeHint which, const QSizeF &constraint) cons
     return sizeHint;
 
 }
-
-#include "moc_hblistlayout_p_p.cpp"
 

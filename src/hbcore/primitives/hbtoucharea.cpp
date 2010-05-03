@@ -80,6 +80,7 @@ HbTouchArea::HbTouchArea(QGraphicsItem *parent) :
     Q_D(HbTouchArea);
     d->q_ptr = this;
     setFlag(QGraphicsItem::ItemHasNoContents, !HbTouchAreaPrivate::outlinesEnabled);
+    setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
 }
 
 /*!
@@ -177,5 +178,12 @@ QSizeF HbTouchArea::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
     }
 }
 
+/*!
+  Touch areas accept gestures by default
+  */
+void HbTouchArea::gestureEvent(QGestureEvent *event)
+{
+    Q_UNUSED(event);
+}
 
 // end of file

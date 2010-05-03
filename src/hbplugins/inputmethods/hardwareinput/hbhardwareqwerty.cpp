@@ -173,20 +173,6 @@ bool HbHardwareQwerty::filterEvent(const QEvent *event)
 }
 
 // ---------------------------------------------------------------------------
-// HbHardwareQwerty::listInputModes
-//
-// ---------------------------------------------------------------------------
-//
-void HbHardwareQwerty::listInputModes(QVector<HbInputModeProperties>& results)
-{       
-        // list out each mode handlers.
-    mBasicModeHandler->listInputModes(results);
-    mPredictionModeHandler->listInputModes(results);
-    mNumericModeHandler->listInputModes(results);
-}
-
-
-// ---------------------------------------------------------------------------
 // HbHardwareQwerty::focusReceived
 //
 // ---------------------------------------------------------------------------

@@ -31,7 +31,6 @@
 #include <QMutex>
 #include <QSet>
 
-#include "hbforegroundwatcher_p.h"
 #include "hbnvgiconimpl_p.h"
 #include "hbnvgenginepool_p.h"
 
@@ -74,12 +73,7 @@ public:
     {
         return init;
     }
-
-    int isBackground() const
-    {
-        return background;
-    }
-
+    
     void deref(HbEglStates *& instance)
     {
         if (instance && --(instance->refCount) == 0) {
@@ -94,6 +88,7 @@ public:
             imageList.insert(image);
         }
     }
+    void handleForegroundLost();
 
     EGLDisplay  display;
     EGLSurface  currentReadSurface;
@@ -102,11 +97,6 @@ public:
     EGLConfig   eglConfig;
 
     static HbEglStates *global();
-
-public slots:
-
-    void handleForegroundLost();
-    void handleForegroundGained();
 
 private:
 
@@ -120,9 +110,6 @@ private:
 
     int         refCount;
     int         init;
-    int         background;
-    HbForegroundWatcher * fgWatcher;
-
     typedef QSet<VGImage*>     ImageList;
     typedef ImageList::iterator ImageListIter;
 

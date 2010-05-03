@@ -89,15 +89,17 @@ enum HbDocumentLoaderFactoryWidgetRoles {
     HbWidgetRoleListViewPrototype,  // deprecated
     HbWidgetRoleGroupBoxContentWidget,
     HbWidgetRoleAbstractViewPrototype,
+    HbWidgetRoleStackedContentWidget,
     HbWidgetRoleAmount // needs to be the last one
 };
 
 enum HbDocumentLoaderFactoryObjectRoles {
     HbObjectRoleUnknown, // needs to be the first one = 0
-    HbObjectRoleDialogPrimaryAction,
-    HbObjectRoleDialogSecondaryAction,
-    HbObjectRoleMenuAction,
-    HbObjectRoleToolBarAction,
+    HbObjectRoleDialogPrimaryAction, // deprecated
+    HbObjectRoleDialogSecondaryAction, // deprecated
+    HbObjectRoleMenuAction, // deprecated
+    HbObjectRoleToolBarAction, // deprecated
+    HbObjectRoleWidgetAction,
     HbObjectRoleAmount // needs to be the last one
 };
 
@@ -117,6 +119,7 @@ const HbDocumentLoaderFactoryKnownValue widgetRoles[HbWidgetRoleAmount - 1] =
     { "HbListView:prototype", HbWidgetRoleListViewPrototype },  // deprecated
     { "HbMenu:menu", HbWidgetRoleMenuSubmenu },
     { "HbScrollArea:contents", HbWidgetRoleScrollAreaContents },
+    { "HbStackedWidget:contentWidget", HbWidgetRoleStackedContentWidget },
     { "HbView:menu", HbWidgetRoleViewMenu },
     { "HbView:toolBar", HbWidgetRoleViewToolBar },
     { "HbView:widget", HbWidgetRoleViewWidget }
@@ -125,10 +128,11 @@ const HbDocumentLoaderFactoryKnownValue widgetRoles[HbWidgetRoleAmount - 1] =
 // Used in binary seacrh, so keep name fields in alphabetical order.
 const HbDocumentLoaderFactoryKnownValue objectRoles[HbObjectRoleAmount - 1] =
 {
-    { "HbDialog:primaryAction", HbObjectRoleDialogPrimaryAction },
-    { "HbDialog:secondaryAction", HbObjectRoleDialogSecondaryAction },
-    { "HbMenu:addAction", HbObjectRoleMenuAction },
-    { "HbToolBar:addAction", HbObjectRoleToolBarAction }
+    { "HbDialog:primaryAction", HbObjectRoleDialogPrimaryAction }, // deprecated
+    { "HbDialog:secondaryAction", HbObjectRoleDialogSecondaryAction }, // deprecated
+    { "HbMenu:addAction", HbObjectRoleMenuAction }, // deprecated
+    { "HbToolBar:addAction", HbObjectRoleToolBarAction }, // deprecated
+    { "HbWidget:addAction", HbObjectRoleWidgetAction }
 };
 
 inline bool operator<(
@@ -372,6 +376,16 @@ bool HbDocumentLoaderFactory::setWidgetRole(
         }
         break;
 
+    case HbWidgetRoleStackedContentWidget:
+        {
+            HbStackedWidget *stacked= qobject_cast<HbStackedWidget *>(parent);
+            success = (stacked != 0);
+            if (stacked) {
+                stacked->addWidget(child);
+            }
+        }
+        break;
+
     case HbWidgetRoleUnknown:
     default:
         success = false;
@@ -393,41 +407,15 @@ bool HbDocumentLoaderFactory::setObjectRole(
 
     switch (findKnownValue(role, objectRoles, HbObjectRoleAmount)) {
     case HbObjectRoleDialogPrimaryAction:
-        {
-            HbDialog *popup = qobject_cast<HbDialog *>(parent);
-            success = (popup != 0);
-            if (popup) {
-                popup->setPrimaryAction(qobject_cast<HbAction *>(child));
-            }
-        }
-        break;
-
     case HbObjectRoleDialogSecondaryAction:
-        {
-            HbDialog *popup = qobject_cast<HbDialog *>(parent);
-            success = (popup != 0);
-            if (popup) {
-                popup->setSecondaryAction(qobject_cast<HbAction *>(child));
-            }
-        }
-        break;
-    
     case HbObjectRoleMenuAction:
-        {
-            HbMenu *menu = qobject_cast<HbMenu *>(parent);
-            success = (menu != 0);
-            if (menu) {
-                menu->addAction(qobject_cast<QAction *>(child));
-            }
-        }
-        break;
-
     case HbObjectRoleToolBarAction:
+    case HbObjectRoleWidgetAction:
         {
-            HbToolBar *toolBar = qobject_cast<HbToolBar *>(parent);
-            success = (toolBar != 0);
-            if (toolBar) {
-                toolBar->addAction(qobject_cast<HbAction *>(child));
+            HbWidget *widget = qobject_cast<HbWidget*>(parent);
+            success = (widget != 0);
+            if (widget) {
+                widget->addAction(qobject_cast<HbAction *>(child));
             }
         }
         break;

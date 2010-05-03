@@ -25,6 +25,10 @@
 #ifndef THEMECHANGERDEFS_H
 #define THEMECHANGERDEFS_H
 
+#ifdef Q_OS_SYMBIAN
+// Enable theme change timing logging
+#define THEME_CHANGER_TIMER_LOG
+#endif
 #undef THEME_CHANGER_TRACES
 
 #endif //THEMECHANGERDEFS_H

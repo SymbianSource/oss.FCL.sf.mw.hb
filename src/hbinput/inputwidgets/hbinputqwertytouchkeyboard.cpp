@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <QtGui>
+#include <QGraphicsGridLayout>
 #include <hbinputmethod.h>
 #include <hbinputkeymap.h>
 #include <hbinputsettingproxy.h>
@@ -61,16 +61,19 @@ const QString HbSpaceObjName = "qwerty space";
 const QString HbQwertyButtonTextLayout = "_hb_qwerty_button_text_layout";
 const QString HbQwertyButtonIconLayout = "_hb_qwerty_button_icon_layout";
 
+/*!
+\deprecated class HbQwertyKeyboard
+*/
+
 HbQwertyKeyboardPrivate::HbQwertyKeyboardPrivate()
 :mCtrlBtnIndex(-1),
 mPressedButtonIndex(-1),
 mPreviewPane(0),
 mInStickyRegion(false),
 mLongKeyPressCharsShown(false),
-mClickMapper(0),
 mKeypadCreated(false),
 mKeymapChanged(false),
-mKeyboardSize(HbQwerty4x10),
+mKeyboardSize(HbQwerty4x10), 
 mSize(QSizeF())
 {
 }
@@ -90,7 +93,6 @@ void HbQwertyKeyboardPrivate::constructKeypad()
             button->setAsStickyButton(true);
             q->connect(button, SIGNAL(pressed()), mPressMapper, SLOT(map()));
             q->connect(button, SIGNAL(released()), mReleaseMapper, SLOT(map()));
-            q->connect(button, SIGNAL(clicked()), mClickMapper, SLOT(map()));
             q->connect(button, SIGNAL(enteredInNonStickyRegion()), q, SLOT(enteredInNonStickyRegion()));
             if (i >= HbVirtualQwerty4x10MaxKeysCount) {
                 button->hide();
@@ -145,7 +147,6 @@ void HbQwertyKeyboardPrivate::constructKeypad()
             button->setAsStickyButton(false);
             q->connect(button, SIGNAL(pressed()), mPressMapper, SLOT(map()));
             q->connect(button, SIGNAL(released()), mReleaseMapper, SLOT(map()));
-            q->connect(button, SIGNAL(clicked()), mClickMapper, SLOT(map()));
             q->connect(button, SIGNAL(enteredInNonStickyRegion()), q, SLOT(enteredInNonStickyRegion()));
             mButtons.append(button);
         }
@@ -215,7 +216,6 @@ void HbQwertyKeyboardPrivate::constructKeypad()
 
             q->connect(button, SIGNAL(pressed()), mPressMapper, SLOT(map()));
             q->connect(button, SIGNAL(released()), mReleaseMapper, SLOT(map()));
-            q->connect(button, SIGNAL(clicked()), mClickMapper, SLOT(map()));
             q->connect(button, SIGNAL(enteredInNonStickyRegion()), q, SLOT(enteredInNonStickyRegion()));
             mButtons.append(button);
         }
@@ -225,7 +225,6 @@ void HbQwertyKeyboardPrivate::constructKeypad()
     // intercepting signal before passing to mOwner
     q->connect(mPressMapper, SIGNAL(mapped(int)), q, SLOT(mappedKeyPress(int)));
     q->connect(mReleaseMapper, SIGNAL(mapped(int)), q, SLOT(mappedKeyRelease(int)));
-    q->connect(mClickMapper, SIGNAL(mapped(int)), q, SLOT(mappedKeyClick(int)));
 }
 
 void HbQwertyKeyboardPrivate::getAllowedSctCharcters(QString & allowedSctCharacters)
@@ -258,25 +257,53 @@ void HbQwertyKeyboardPrivate::getAllowedSctCharcters(QString & allowedSctCharact
         }
     }
 }
-void HbQwertyKeyboardPrivate::updateButtonsText()
-{    
-    if(mMode == EModeNumeric) {
+
+void HbQwertyKeyboardPrivate::updateButtonsTextAndMappers()
+{
+    if (mMode == EModeNumeric) {
         QString allowedSctCharacters;
         getAllowedSctCharcters(allowedSctCharacters);
         int sctIndex = 1;
-        for(int jj = 0; jj < HbVirtualQwertyNumericKeypadButtonCount ; jj++) {
-            if(jj>=12 && jj<=16) {
+        for (int jj = 0; jj < HbVirtualQwertyNumericKeypadButtonCount ; jj++) {
+            if (jj>=12 && jj<=16) {
                 QString buttonText;
-                if(allowedSctCharacters.length() >= sctIndex) {
+                if (allowedSctCharacters.length() >= sctIndex) {
                     buttonText = allowedSctCharacters[sctIndex-1];
                 }
                 mButtons[jj]->setText(buttonText);
+                // Update press and release mapper.
+                mReleaseMapper->removeMappings(mButtons.at(jj));
+                mPressMapper->removeMappings(mButtons.at(jj));
+                if(!mButtons.at(jj)->text().isEmpty()) {
+                    mReleaseMapper->setMapping(mButtons.at(jj), mButtons.at(jj)->text().at(0).unicode());
+                    mPressMapper->setMapping(mButtons.at(jj), mButtons.at(jj)->text().at(0).unicode());
+                } 
                 sctIndex++;
             }
         }
+    } else { // mMode == EModeAbc
+        const HbKeyboardMap* keymap = mKeymap->keyboard(HbKeyboardVirtualQwerty);
+        if (keymap == 0) {
+            return;
+        }
+        int keymapCount = keymap->keys.count();
 
+        for (int i = 0; i < mButtons.count(); i++) {
+            if (i < keymapCount) {
+                mButtons.at(i)->setText(textForKey(i));
+                mButtons.at(i)->setKeyCode(keymap->keys.at(i)->keycode.unicode());
+                if (mKeymapChanged) {
+                    HbTouchKeypadButton *button = mButtons.at(i);
+                    mReleaseMapper->removeMappings(button);
+                    mPressMapper->removeMappings(button);
+                    mReleaseMapper->setMapping(button, keymap->keys.at(i)->keycode.unicode());
+                    mPressMapper->setMapping(button, keymap->keys.at(i)->keycode.unicode());
+                }
+            }
+        }
     }
 }
+
 HbQwertyKeyboardPrivate::~HbQwertyKeyboardPrivate()
 {
     delete mPreviewPane;
@@ -294,7 +321,8 @@ void HbQwertyKeyboardPrivate::launchPreviewPane(const QStringList& list)
     }
 }
 
-int HbQwertyKeyboardPrivate::indexForKeycode(int keycode) {
+int HbQwertyKeyboardPrivate::indexForKeycode(int keycode)
+{
     int index = -1;
     if (mMode == EModeNumeric) {
         switch(keycode) {
@@ -307,8 +335,20 @@ int HbQwertyKeyboardPrivate::indexForKeycode(int keycode) {
             case Qt::Key_Backspace:
                 index = 17;
                 break;
+            case '0':
+                index = 9;
+                break;
             default:
-                index = keycode;
+                if (keycode >= '1' && keycode <= '9') {
+                    index = keycode - '1';
+                } else {
+                    QString sctChars;
+                    getAllowedSctCharcters(sctChars);
+                    sctChars.truncate(5);
+                    if (sctChars.contains(QChar(keycode))) {
+                        index = sctChars.indexOf(QChar(keycode)) + 12;
+                    }
+                }
                 break;
         }
     } else {
@@ -379,7 +419,6 @@ void HbQwertyKeyboardPrivate::handleStandardButtonPress(int buttonId)
 
 void HbQwertyKeyboardPrivate::handleStandardButtonRelease(int buttonId)
 {
-    Q_UNUSED(buttonId);
     // mLongKeyPressCharsShown will be true in case there is a long key press
     // detected and preview pane is showing some character(s) to be selected
     // by user. so when mLongKeyPressCharsShown is true we should not close
@@ -388,17 +427,17 @@ void HbQwertyKeyboardPrivate::handleStandardButtonRelease(int buttonId)
         if (mPreviewPane->isVisible()) {
             mPreviewPane->hide();
         }
-    }
-    mLongKeyPressCharsShown = false;
-}
 
-void HbQwertyKeyboardPrivate::handleStandardButtonClick(int buttonId)
-{
+	/* Release Event is handled in Button Release as we do not get Click event from
+	pushButton on longpress of the button
+	*/
+
     // handle keypress only if there was no flick
-    if (mFlickDirection!=HbInputVkbWidget::HbFlickDirectionDown){
-        QKeyEvent releaseEvent(QEvent::KeyRelease, buttonId, Qt::NoModifier);
-        if (mOwner) {
-            mOwner->filterEvent(&releaseEvent);
+    if (mFlickDirection==HbInputVkbWidget::HbFlickDirectionNone && buttonId >= 0){
+            QKeyEvent releaseEvent(QEvent::KeyRelease, buttonId, Qt::NoModifier);
+            if (mOwner) {
+                mOwner->filterEvent(&releaseEvent);
+            }
         }
     }
 }
@@ -483,35 +522,32 @@ void HbQwertyKeyboardPrivate::initializeNumericKeyboard()
     for (int i = 0; i < HbVirtualQwertyNumericKeypadButtonCount; ++i) {
         if (i <= 9) {
             mButtonLayout->addItem(mButtons.at(i), 0, i);
-            mReleaseMapper->setMapping(mButtons.at(i), i);
-            mPressMapper->setMapping(mButtons.at(i), i);
-            mClickMapper->setMapping(mButtons.at(i), i);
+            mReleaseMapper->setMapping(mButtons.at(i), mButtons.at(i)->text().at(0).unicode());
+            mPressMapper->setMapping(mButtons.at(i), mButtons.at(i)->text().at(0).unicode());
         } else if(i>=12 && i<= 16) {
             mButtonLayout->addItem(mButtons.at(i), 1, i%10);
-            mReleaseMapper->setMapping(mButtons.at(i), i);
-            mPressMapper->setMapping(mButtons.at(i), i);
-            mClickMapper->setMapping(mButtons.at(i), i);
+            if(!mButtons.at(i)->text().isEmpty()) {
+                mReleaseMapper->setMapping(mButtons.at(i), mButtons.at(i)->text().at(0).unicode());
+                mPressMapper->setMapping(mButtons.at(i), mButtons.at(i)->text().at(0).unicode());
+            } 
         } else  {
             switch(i) {
             case 10: {
                 mButtonLayout->addItem(mButtons.at(i), 1, 0);
                 mReleaseMapper->setMapping(mButtons.at(i), Qt::Key_Shift);
                 mPressMapper->setMapping(mButtons.at(i), Qt::Key_Shift);
-                mClickMapper->setMapping(mButtons.at(i), Qt::Key_Shift);
                 }
                 break;
             case 11: {
                 mButtonLayout->addItem(mButtons.at(i), 1, 1);
                 mReleaseMapper->setMapping(mButtons.at(i), Qt::Key_Control);
                 mPressMapper->setMapping(mButtons.at(i), Qt::Key_Control);
-                mClickMapper->setMapping(mButtons.at(i), Qt::Key_Control);
                 }
                 break;
             case 17: {
                 mButtonLayout->addItem(mButtons.at(i), 1, 7);
                 mReleaseMapper->setMapping(mButtons.at(i), Qt::Key_Backspace);
                 mPressMapper->setMapping(mButtons.at(i), Qt::Key_Backspace);
-                mClickMapper->setMapping(mButtons.at(i), Qt::Key_Backspace);
                 }
                 break;
             default:
@@ -583,7 +619,6 @@ void HbQwertyKeyboardPrivate::removeExistingSignalMappings()
             HbTouchKeypadButton * button = mButtons.at(jj);
             mReleaseMapper->removeMappings(button);
             mPressMapper->removeMappings(button);
-            mClickMapper->removeMappings(button);
         }
         for (int i = mButtonLayout->count() - 1; i >= 0; i--) {
             mButtonLayout->removeAt(i);
@@ -604,10 +639,10 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
     for (int i = 0; i < keymap->keys.count() && i < HbVirtualQwerty4x11MaxKeysCount; ++i) {
         if (refreshButtonText) {
             mButtons[i]->setText(textForKey(i));
+            mButtons[i]->setKeyCode(keymap->keys.at(i)->keycode.unicode());
         }
         mReleaseMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
         mPressMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
-        mClickMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
         int row = 0;
         int column = 0;
         if (i < 10) {
@@ -647,7 +682,6 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 1, 9, Qt::Key_Backspace);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
             break;
             }
         case 1: {
@@ -655,7 +689,6 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 2, 9, Qt::Key_Enter);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
             break;
             }
         case 2: {
@@ -663,7 +696,6 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 0, Qt::Key_Shift);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
             break;
             }
         case 3: {
@@ -671,7 +703,6 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 1, Qt::Key_Control);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
             break;
             }
         case 4: {
@@ -679,7 +710,6 @@ void HbQwertyKeyboardPrivate::initialize4x10Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 4, Qt::Key_Space);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
             break;
             }
         default:
@@ -712,10 +742,10 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
     for (int i = 0; i < keymap->keys.count() && i <= HbVirtualQwerty4x11MaxKeysCount; ++i) {
         if (refreshButtonText) {
             mButtons[i]->setText(textForKey(i));
+            mButtons[i]->setKeyCode(keymap->keys.at(i)->keycode.unicode());
         }
         mReleaseMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
         mPressMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
-        mClickMapper->setMapping(mButtons.at(i), keymap->keys.at(i)->keycode.unicode());
         int row = 0;
         int column = 0;
         if (i < 11) {
@@ -756,7 +786,6 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 1, 10, Qt::Key_Backspace);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Backspace);
             break;
             }
         case 1: {
@@ -764,7 +793,6 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 2, 10, Qt::Key_Enter);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Enter);
             break;
             }
         case 2: {
@@ -772,7 +800,6 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 0, Qt::Key_Shift);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Shift);
             break;
             }
         case 3: {
@@ -780,7 +807,6 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 1, Qt::Key_Control);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Control);
             break;
             }
         case 4: {
@@ -788,7 +814,6 @@ void HbQwertyKeyboardPrivate::initialize4x11Keypad(bool refreshButtonText)
             setButtonObjectName(*mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), 3, 4, Qt::Key_Space);
             mReleaseMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
             mPressMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
-            mClickMapper->setMapping(mButtons.at(HbVirtualQwerty4x11MaxKeysCount+i), Qt::Key_Space);
             break;
             }
         default:
@@ -881,10 +906,8 @@ void HbQwertyKeyboardPrivate::applyEditorConstraints()
 //
 
 /*!
-Constructs the object. aOwner is the owning input method implementation. keyData
-is key mapping data to be used to display button texts. Key mapping data can be
-changed later (for example when the input language changes) by calling
-setKeyMapData. The keyboard is initialized based on the mode.
+\deprecated HbQwertyKeyboard::HbQwertyKeyboard(HbInputMethod*, const HbKeymap*, QGraphicsItem*, HbKeypadMode)
+    is deprecated.
 */
 HbQwertyKeyboard::HbQwertyKeyboard(HbInputMethod* owner,
                                    const HbKeymap* keymap,
@@ -908,33 +931,38 @@ HbQwertyKeyboard::HbQwertyKeyboard(HbInputMethod* owner,
     d->mMode = mode;
 }
 
+/*!
+\deprecated HbQwertyKeyboard::HbQwertyKeyboard(HbQwertyKeyboardPrivate&, QGraphicsItem*)
+    is deprecated.
+*/
 HbQwertyKeyboard::HbQwertyKeyboard(HbQwertyKeyboardPrivate &dd, QGraphicsItem* parent)
 : HbInputVkbWidget(dd, parent)
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbQwertyKeyboard::~HbQwertyKeyboard
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbQwertyKeyboard::~HbQwertyKeyboard()
+    is deprecated.
+*/
 HbQwertyKeyboard::~HbQwertyKeyboard()
 {
 }
 
 /*!
-Returns keyboard type.
+\reimp
+\deprecated HbQwertyKeyboard::keyboardType() const
+    is deprecated.
 */
 HbKeyboardType HbQwertyKeyboard::keyboardType() const
 {
     return HbKeyboardVirtualQwerty;
 }
 
-// ---------------------------------------------------------------------------
-// HbQwertyKeyboard::setMode
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+\deprecated HbQwertyKeyboard::setMode(HbKeypadMode, QFlags<HbModifier>)
+    is deprecated.
+*/
 void HbQwertyKeyboard::setMode(HbKeypadMode mode, HbModifiers modifiers)
 {
     Q_D(HbQwertyKeyboard);
@@ -942,7 +970,7 @@ void HbQwertyKeyboard::setMode(HbKeypadMode mode, HbModifiers modifiers)
     if(d->mMode == EModeNumeric && d->mKeypadCreated) {
         // for numeric edito we need to update sct character button everytime
         // we move between editors. ( dialer editor, digits only, formatted editor ect)
-        d->updateButtonsText();
+        d->updateButtonsTextAndMappers();
     }
 
 	setupToolCluster();
@@ -978,27 +1006,14 @@ void HbQwertyKeyboard::setMode(HbKeypadMode mode, HbModifiers modifiers)
         // Numeric keyboard does not change mode
         return;
     }
-
-    for (int i = 0; i < d->mButtons.count(); i++) {
-        if (i < keymapCount) {
-            d->mButtons.at(i)->setText(d->textForKey(i));
-            if (d->mKeymapChanged) {
-                HbTouchKeypadButton *button = d->mButtons.at(i);
-                d->mReleaseMapper->removeMappings(button);
-                d->mPressMapper->removeMappings(button);
-                d->mClickMapper->removeMappings(button);
-                d->mReleaseMapper->setMapping(button, keymap->keys.at(i)->keycode.unicode());
-                d->mPressMapper->setMapping(button, keymap->keys.at(i)->keycode.unicode());
-                d->mClickMapper->setMapping(button, keymap->keys.at(i)->keycode.unicode());
-            }
-        }
-    }
+    d->updateButtonsTextAndMappers();
     d->applyEditorConstraints();
 }
 
 /*!
-Sets key map data object. Given key map data will be used as a source for button titles.
-Usually the key map data for active input language is used.
+\reimp
+\deprecated HbQwertyKeyboard::setKeymap(const HbKeymap*)
+    is deprecated.
 */
 void HbQwertyKeyboard::setKeymap(const HbKeymap* keymap)
 {
@@ -1018,7 +1033,8 @@ void HbQwertyKeyboard::setKeymap(const HbKeymap* keymap)
 }
 
 /*!
-Initializes keypad dimensions based on the current screen configuration.
+\reimp
+\deprecated HbQwertyKeyboard::aboutToOpen(HbVkbHost*)
 */
 void HbQwertyKeyboard::aboutToOpen(HbVkbHost *host)
 {
@@ -1030,7 +1046,8 @@ void HbQwertyKeyboard::aboutToOpen(HbVkbHost *host)
 }
 
 /*!
-Returns preferred keyboard size. HbVkbHost uses this information when it opens the keyboard.
+\reimp
+\deprecated HbQwertyKeyboard::preferredKeyboardSize()
 */
 QSizeF HbQwertyKeyboard::preferredKeyboardSize()
 {
@@ -1049,7 +1066,8 @@ QSizeF HbQwertyKeyboard::preferredKeyboardSize()
 }
 
 /*!
-This function shows the preview of characters on top of currently pressed button.
+\deprecated HbQwertyKeyboard::previewCharacters(const QStringList&)
+    is deprecated.
 */
 bool HbQwertyKeyboard::previewCharacters(const QStringList& characters)
 {
@@ -1091,7 +1109,8 @@ bool HbQwertyKeyboard::previewCharacters(const QStringList& characters)
 }
 
 /*!
-This function is called when the keypad is about to close.
+\reimp
+\deprecated HbQwertyKeyboard::aboutToClose(HbVkbHost*)
 */
 void HbQwertyKeyboard::aboutToClose(HbVkbHost *host)
 {
@@ -1101,7 +1120,7 @@ void HbQwertyKeyboard::aboutToClose(HbVkbHost *host)
     if (d->mPreviewPane->isVisible()) {
         d->mPreviewPane->hide();
     }
-    // reset the states as the keypad is closing..!
+    // reset the states as the keypad is closing
     d->mLongKeyPressCharsShown = false;
     d->mInStickyRegion = true;
 
@@ -1125,9 +1144,8 @@ void HbQwertyKeyboard::sctModeListClosed()
 }
 
 /*!
-This slot is called when we slide our fingures on top of the keypad buttons and
-while sliding our fingure comes on top of a non sticky button Or on a region outside
-the keypad area.
+\deprecated HbQwertyKeyboard::enteredInNonStickyRegion()
+    is deprecated.
 */
 void HbQwertyKeyboard::enteredInNonStickyRegion()
 {
@@ -1140,20 +1158,11 @@ void HbQwertyKeyboard::enteredInNonStickyRegion()
 }
 
 /*!
-Handles virtual key release
+\deprecated HbQwertyKeyboard::mappedKeyClick(int)
+  is deprecated and will be removed.
 */
 void HbQwertyKeyboard::mappedKeyClick(int buttonid)
 {
-    Q_D(HbQwertyKeyboard);
-
-    if( d->mMode == EModeNumeric && buttonid != Qt::Key_Control && buttonid != Qt::Key_Shift 
-        && buttonid != Qt::Key_Backspace ) {
-        const QString &text = d->mButtons[buttonid]->text();
-        if(!text.isEmpty()){
-            buttonid = text[0].unicode();
-        }
-    }
-
-    d->handleStandardButtonClick(buttonid);
+    Q_UNUSED(buttonid);
 }
 // End of file

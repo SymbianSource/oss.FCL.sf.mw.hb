@@ -27,10 +27,7 @@
 #include <QSignalMapper>
 #include <QPainter>
 #include <QSizePolicy>
-
-#if QT_VERSION >= 0x040600
 #include <QGraphicsDropShadowEffect>
-#endif
 
 #include <hbeffect.h>
 #include <hbinputsettingproxy.h>
@@ -51,6 +48,7 @@ const int HbPreviewZoomDelta = 7;
 const qreal HbPreviewBoundaryDelta = 1.5;
 const qreal HbBoundaryLabelWidthFactor = 0.75;
 const qreal HbLabelwidthFactor = 0.50;
+
 /// @cond
 
 /*
@@ -66,10 +64,14 @@ public:
     */
     HbAccentedCharPreviewPane(QGraphicsItem *parent = 0)
         :HbWidget(parent),
-        mFramePrim(0),
         mTextItem(0)
     {
-        mFramePrim = static_cast<HbFrameItem*>(style()->createPrimitive(HbStyle::P_Popup_background, this));
+        HbFrameItem *n = new HbFrameItem(parent);
+        n->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+        n->frameDrawer().setFrameGraphicsName("qtg_fr_character_preview");
+
+
+        setBackgroundItem( n );
         mTextItem = static_cast<HbTextItem*>(style()->createPrimitive(HbStyle::P_Label_text, this));
     }
     /*!
@@ -77,9 +79,8 @@ public:
     */
     void updatePrimitives()
     {
-        if (mFramePrim) {
-            mFramePrim->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-            mFramePrim->frameDrawer().setFrameGraphicsName("qtg_fr_character_preview");
+        HbWidget::updatePrimitives();
+        if (mTextItem) {
             mTextItem->setFontSpec(HbFontSpec(HbFontSpec::Primary));
             mTextItem->setAlignment(Qt::AlignCenter);
         }
@@ -89,8 +90,8 @@ public:
     */
     ~HbAccentedCharPreviewPane() {
     }
+
 public:
-    HbFrameItem* mFramePrim;
     HbTextItem* mTextItem;
 };
 
@@ -113,7 +114,6 @@ public:
     QStringList mCharacterList;
     QSignalMapper *mReleaseMapper;
     QGraphicsLinearLayout* mCandLayout;
-    HbFrameItem* mFramePrim;
     QSizeF mItemSize;
     HbAccentedCharPreviewPane* mAccentedPreviewPane;
 };
@@ -121,17 +121,17 @@ public:
 void HbCharPreviewPanePrivate::init()
 {
     Q_Q(HbCharPreviewPane);
-    mFramePrim = static_cast<HbFrameItem*>(q->primitive(HbStyle::P_Popup_background));
 
-    if (!mFramePrim) {
-        mFramePrim = static_cast<HbFrameItem*>(q->style()->createPrimitive(HbStyle::P_Popup_background, q));
-    }
+    HbFrameItem *n = new HbFrameItem( q );
+    n->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+    n->frameDrawer().setFrameGraphicsName("qtg_fr_character_preview");
+
+    q->setBackgroundItem( n );
 }
 
 HbCharPreviewPanePrivate::HbCharPreviewPanePrivate()
     : mReleaseMapper(0),
-    mCandLayout(0),
-    mFramePrim(0)
+    mCandLayout(0)
 {
     mAccentedPreviewPane = new HbAccentedCharPreviewPane();
 }
@@ -187,6 +187,7 @@ void HbCharPreviewPanePrivate::updateCharacters()
     mCandLayout->updateGeometry();
     q->adjustSize();
 }
+
 /*!
 Sets the character for preview and shows in it's Pane.
 @param character The character for preview.
@@ -256,6 +257,7 @@ void HbCharPreviewPanePrivate::_q_hidePreviewPanePopup()
 @proto
 @hbinput
 \class HbCharPreviewPane
+\deprecated class HbCharPreviewPane
 \brief Character preview widget for virtual keyboards.
 
 
@@ -268,9 +270,10 @@ on the lebel of preview pane we display preview of the accented character on the
 \sa HbInputVkbWidget
 \sa HbPreviewLabel
 */
+
 /*!
-Constructor.
-@param parent of the widget.
+\deprecated HbCharPreviewPane::HbCharPreviewPane(QGraphicsItem*)
+    is deprecated.
 */
 HbCharPreviewPane::HbCharPreviewPane(QGraphicsItem* parent)
     : HbDialog(*new HbCharPreviewPanePrivate, parent)
@@ -319,16 +322,16 @@ HbCharPreviewPane::HbCharPreviewPane(QGraphicsItem* parent)
 }
 
 /*!
-Destroys the object.
+\deprecated HbCharPreviewPane::~HbCharPreviewPane()
+    is deprecated.
 */
 HbCharPreviewPane::~HbCharPreviewPane()
 {
 }
 
 /*!
-Sets the list of characters for preview.
-@param characterList The character preview list.
-@param itemSceneBoundingRect of the QGraphicsItem.
+\deprecated HbCharPreviewPane::showCharacters(const QStringList&, const QRectF &)
+    is deprecated.
 */
 void HbCharPreviewPane::showCharacters(const QStringList& characterList, const QRectF &itemSceneBoundingRect)
 {
@@ -392,17 +395,14 @@ void HbCharPreviewPane::showCharacters(const QStringList& characterList, const Q
     // we need to fix it here.
     d->mousePressLocation = HbPopupPrivate::None;
 
+	// set the background as a panel if the foreground is a panel to provide focus handling
+	if ((flags() & QGraphicsItem::ItemIsPanel) && isModal()) {
+		d->backgroundItem->setFlag(QGraphicsItem::ItemIsPanel);
+	}
     // show it!
     show();
 }
 
-void HbCharPreviewPane::updatePrimitives()
-{
-    Q_D(HbCharPreviewPane);
-    d->mFramePrim->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-    d->mFramePrim->frameDrawer().setFrameGraphicsName("qtg_fr_character_preview");
-    d->mFramePrim->setGeometry(boundingRect());
-}
-
 #include "moc_hbinputcharpreviewpane.cpp"
 // End Of File
+

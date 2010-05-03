@@ -59,6 +59,7 @@ public:
     void setOrientation( Qt::Orientation orientation );
     void setToolBarPosition( HbStyleOptionToolButton::ToolBarPosition position );
     void setBackgroundVisible( bool visible );
+    void setExtensionBackgroundVisible( bool visible );
     void setLayoutProperty(const char *name, bool value);
     QSizeF getMinimumSize();
 
@@ -75,11 +76,11 @@ public:
     Qt::Orientation orientation;
 
     bool mDialogToolBar;
+    bool toolbarExtensionFrame;
 
     void _q_actionTriggered();
     void _q_actionChanged();
 
-    // TODO: Remove when tooltip show/hide working
     void showToolTip();
 
     QSizeF mButtonSize;

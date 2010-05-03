@@ -35,15 +35,15 @@ PUBLIC_HEADERS += $$PWD/hbtoucharea.h
 PUBLIC_HEADERS += $$PWD/hbrichtextitem.h
 PUBLIC_HEADERS += $$PWD/hbmarqueeitem.h
 
-INTERNAL_HEADERS += $$PWD/hbrepeatitem_p.h
-INTERNAL_HEADERS += $$PWD/hbiconitem_p.h
-INTERNAL_HEADERS += $$PWD/hbprogresstrackitem_p.h
-INTERNAL_HEADERS += $$PWD/hbrepeaticonitem_p.h
-INTERNAL_HEADERS += $$PWD/hbtextitem_p.h
-INTERNAL_HEADERS += $$PWD/hbrichtextitem_p.h
-INTERNAL_HEADERS += $$PWD/hbtoucharea_p.h
-INTERNAL_HEADERS += $$PWD/hbslidertrackitem_p.h
-INTERNAL_HEADERS += $$PWD/hbmarqueeitem_p.h
+PRIVATE_HEADERS += $$PWD/hbrepeatitem_p.h
+PRIVATE_HEADERS += $$PWD/hbiconitem_p.h
+PRIVATE_HEADERS += $$PWD/hbprogresstrackitem_p.h
+PRIVATE_HEADERS += $$PWD/hbrepeaticonitem_p.h
+PRIVATE_HEADERS += $$PWD/hbtextitem_p.h
+PRIVATE_HEADERS += $$PWD/hbrichtextitem_p.h
+PRIVATE_HEADERS += $$PWD/hbtoucharea_p.h
+PRIVATE_HEADERS += $$PWD/hbslidertrackitem_p.h
+PRIVATE_HEADERS += $$PWD/hbmarqueeitem_p.h
 
 SOURCES += $$PWD/hbframeitem.cpp
 SOURCES += $$PWD/hbiconitem.cpp

@@ -27,20 +27,17 @@
 #define HBSWIPEGESTURE_P_H
 
 #include <hbglobal.h>
-#include <QTime>
 #include <QPoint>
 #include <QGesture>
 
 class HB_CORE_PRIVATE_EXPORT HbSwipeGesturePrivate
 {
 public:
-    qreal mSpeed;
-    QTime mTime;
-    QPointF mInitialPoint;
-    QPoint mInitialMousePoint;
-    int mTouchPointCount;
-    QSwipeGesture::SwipeDirection mVerticalDirection;
-    QSwipeGesture::SwipeDirection mHorizontalDirection;
+    QPointF mStartPos;
+    QPointF mSceneStartPos;
+    QTime mStartTime;   
+
+    qreal mSceneSwipeAngle;       
 };
 
 #endif // HBSWIPEGESTURE_P_H

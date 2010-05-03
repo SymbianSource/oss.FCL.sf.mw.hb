@@ -1,15 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<path d="M15,30C6.729,30,0,23.271,0,15S6.729,0,15,0c8.271,0,15,6.729,15,15S23.271,30,15,30L15,30z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<radialGradient cx="15" cy="2.8335" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="24.8358">
+<g>
+<rect fill="none" height="30" width="30"/>
+</g>
+<circle cx="15" cy="15" fill-opacity="0.6" r="14" stroke-opacity="0.6"/>
+<radialGradient cx="15" cy="3.7026" gradientUnits="userSpaceOnUse" id="SVGID_1_" r="23.0618">
 <stop offset="0" style="stop-color:#FEE891"/>
 <stop offset="0.7818" style="stop-color:#FFB701"/>
 <stop offset="1" style="stop-color:#FFC501"/>
 </radialGradient>
-<circle cx="15" cy="15" fill="url(#SVGID_1_)" r="14"/>
-<path d="M15,2c7.563,0,13.709,6.002,13.975,13.5C28.98,15.332,29,15.169,29,15c0-7.732-6.268-14-14-14  C7.268,1,1,7.268,1,15c0,0.169,0.02,0.332,0.025,0.5C1.291,8.002,7.437,2,15,2z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
+<path d="M15,28C7.832,28,2,22.168,2,15C2,7.832,7.832,2,15,2c7.168,0,13,5.832,13,13  C28,22.168,22.168,28,15,28L15,28z" fill="url(#SVGID_1_)"/>
+<path d="M15,3c7,0,12.709,5.564,12.975,12.5C27.98,15.333,28,15.169,28,15c0-7.168-5.832-13-13-13  C7.832,2,2,7.832,2,15c0,0.169,0.019,0.333,0.025,0.5C2.291,8.564,8,3,15,3z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
+<path d="M15,2c7.563,0,13.709,6.002,13.975,13.5C28.98,15.333,29,15.169,29,15c0-7.732-6.268-14-14-14  C7.268,1,1,7.268,1,15c0,0.169,0.02,0.333,0.025,0.5C1.291,8.002,7.437,2,15,2z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="22.5" y2="26.25">
 <stop offset="0" style="stop-color:#D48D00"/>
 <stop offset="1" style="stop-color:#FFF1B8"/>
@@ -21,45 +25,45 @@
 </linearGradient>
 <ellipse cx="15" cy="24" fill="url(#SVGID_3_)" rx="4" ry="1"/>
 <path d="M11.555,24.5C12.248,24.202,13.523,24,15,24c1.477,0,2.752,0.202,3.445,0.5C18.789,24.353,19,24.184,19,24  c0-0.553-1.791-1-4-1c-2.209,0-4,0.447-4,1C11,24.184,11.211,24.353,11.555,24.5z" fill-opacity="0.4" stroke-opacity="0.4"/>
-<ellipse cx="20.936" cy="4.254" fill-opacity="0.2" rx="4.36" ry="1.541" stroke-opacity="0.2" transform="matrix(0.9218 -0.3876 0.3876 0.9218 -0.0121 8.4476)"/>
-<ellipse cx="20.61" cy="3.926" fill="#3B2314" rx="4.361" ry="1" transform="matrix(0.9218 -0.3876 0.3876 0.9218 0.0893 8.2948)"/>
-<ellipse cx="8.446" cy="5.419" fill-opacity="0.2" rx="4.361" ry="1.542" stroke-opacity="0.2" transform="matrix(-0.9963 -0.0858 0.0858 -0.9963 16.3958 11.5433)"/>
-<ellipse cx="8.655" cy="5.007" fill="#3B2314" rx="4.361" ry="1" transform="matrix(-0.9963 -0.0858 0.0858 -0.9963 16.8477 10.7385)"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="8.5" x2="8.5" y1="6.5415" y2="18.6124">
+<ellipse cx="20.936" cy="5.254" fill-opacity="0.2" rx="4.36" ry="1.541" stroke-opacity="0.2" transform="matrix(0.9218 -0.3876 0.3876 0.9218 -0.3997 8.5257)"/>
+<ellipse cx="20.61" cy="4.926" fill="#3B2314" rx="4.361" ry="1" transform="matrix(0.9218 -0.3876 0.3876 0.9218 -0.2983 8.373)"/>
+<ellipse cx="8.446" cy="6.419" fill-opacity="0.2" rx="4.361" ry="1.541" stroke-opacity="0.2" transform="matrix(-0.9963 -0.0858 0.0858 -0.9963 16.31 13.5396)"/>
+<ellipse cx="8.655" cy="6.007" fill="#3B2314" rx="4.361" ry="1" transform="matrix(-0.9963 -0.0858 0.0858 -0.9963 16.7619 12.7348)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="8.5" x2="8.5" y1="7.5415" y2="19.6124">
 <stop offset="0" style="stop-color:#DB9D00"/>
 <stop offset="1" style="stop-color:#FFEEA9"/>
 </linearGradient>
-<path d="M8.5,18C5.467,18,3,15.533,3,12.5S5.467,7,8.5,7S14,9.467,14,12.5S11.533,18,8.5,18L8.5,18z" fill="url(#SVGID_4_)"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="8.5" x2="8.5" y1="7.625" y2="17.5013">
+<path d="M8.5,19C5.467,19,3,16.533,3,13.5C3,10.467,5.467,8,8.5,8s5.5,2.467,5.5,5.5  C14,16.533,11.533,19,8.5,19L8.5,19z" fill="url(#SVGID_4_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="8.5" x2="8.5" y1="8.625" y2="18.5013">
 <stop offset="0" style="stop-color:#CCCCCC"/>
 <stop offset="0.2" style="stop-color:#EEEEEE"/>
 <stop offset="1" style="stop-color:#FCFCFC"/>
 </linearGradient>
-<circle cx="8.5" cy="12.5" fill="url(#SVGID_5_)" r="4.5"/>
-<path d="M8.5,9c2.314,0,4.198,1.753,4.45,4c0.019-0.166,0.05-0.328,0.05-0.5C13,10.015,10.985,8,8.5,8  S4,10.015,4,12.5c0,0.172,0.032,0.334,0.05,0.5C4.302,10.753,6.186,9,8.5,9z" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M9.5,14C8.122,14,7,12.879,7,11.5S8.122,9,9.5,9s2.5,1.121,2.5,2.5S10.878,14,9.5,14L9.5,14z" fill="#0C3554"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="10.0005" x2="10.0005" y1="11.0039" y2="13.1352">
+<circle cx="8.5" cy="13.5" fill="url(#SVGID_5_)" r="4.5"/>
+<path d="M8.5,10c2.314,0,4.198,1.753,4.45,4c0.019-0.166,0.05-0.329,0.05-0.5C13,11.015,10.985,9,8.5,9  S4,11.015,4,13.5c0,0.171,0.032,0.334,0.05,0.5C4.302,11.753,6.186,10,8.5,10z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M9.5,15C8.122,15,7,13.878,7,12.5S8.122,10,9.5,10s2.5,1.122,2.5,2.5S10.878,15,9.5,15L9.5,15z" fill="#0C3554"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="10.0005" x2="10.0005" y1="12.0034" y2="14.1348">
 <stop offset="0" style="stop-color:#0C3554"/>
 <stop offset="1" style="stop-color:#84B2D9"/>
 </linearGradient>
-<circle cx="10" cy="12" fill="url(#SVGID_6_)" r="1"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_7_" x1="21.5" x2="21.5" y1="6.5415" y2="18.6124">
+<circle cx="10" cy="13" fill="url(#SVGID_6_)" r="1"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_7_" x1="21.5" x2="21.5" y1="7.5415" y2="19.6124">
 <stop offset="0" style="stop-color:#DB9D00"/>
 <stop offset="1" style="stop-color:#FFEEA9"/>
 </linearGradient>
-<path d="M21.5,18c-3.033,0-5.5-2.467-5.5-5.5S18.467,7,21.5,7S27,9.467,27,12.5S24.533,18,21.5,18L21.5,18z" fill="url(#SVGID_7_)"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_8_" x1="21.5" x2="21.5" y1="7.625" y2="17.5013">
+<path d="M21.5,19c-3.033,0-5.5-2.467-5.5-5.5c0-3.033,2.467-5.5,5.5-5.5s5.5,2.467,5.5,5.5  C27,16.533,24.533,19,21.5,19L21.5,19z" fill="url(#SVGID_7_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_8_" x1="21.5" x2="21.5" y1="8.625" y2="18.5013">
 <stop offset="0" style="stop-color:#CCCCCC"/>
 <stop offset="0.2" style="stop-color:#EEEEEE"/>
 <stop offset="1" style="stop-color:#FCFCFC"/>
 </linearGradient>
-<circle cx="21.5" cy="12.5" fill="url(#SVGID_8_)" r="4.5"/>
-<path d="M21.5,9c2.314,0,4.197,1.753,4.449,4C25.969,12.834,26,12.672,26,12.5c0-2.485-2.015-4.5-4.5-4.5  S17,10.015,17,12.5c0,0.172,0.031,0.334,0.051,0.5C17.303,10.753,19.186,9,21.5,9z" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M22.5,14c-1.379,0-2.5-1.121-2.5-2.5S21.121,9,22.5,9s2.5,1.121,2.5,2.5S23.879,14,22.5,14L22.5,14z" fill="#0C3554"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_9_" x1="23" x2="23" y1="11.0039" y2="13.1352">
+<circle cx="21.5" cy="13.5" fill="url(#SVGID_8_)" r="4.5"/>
+<path d="M21.5,10c2.314,0,4.197,1.753,4.449,4C25.969,13.834,26,13.671,26,13.5c0-2.485-2.015-4.5-4.5-4.5  S17,11.015,17,13.5c0,0.171,0.031,0.334,0.051,0.5C17.303,11.753,19.186,10,21.5,10z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M22.5,15c-1.379,0-2.5-1.122-2.5-2.5s1.121-2.5,2.5-2.5s2.5,1.122,2.5,2.5S23.879,15,22.5,15L22.5,15z" fill="#0C3554"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_9_" x1="23" x2="23" y1="12.0039" y2="14.1352">
 <stop offset="0" style="stop-color:#0C3554"/>
 <stop offset="1" style="stop-color:#84B2D9"/>
 </linearGradient>
-<circle cx="23" cy="12" fill="url(#SVGID_9_)" r="1"/>
+<circle cx="23" cy="13" fill="url(#SVGID_9_)" r="1"/>
 </g>
 </svg>

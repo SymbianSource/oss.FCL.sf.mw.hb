@@ -29,6 +29,7 @@
 #include <hbstyleoption.h>
 #include <hbicon.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionDataForm : public HbStyleOption
 {
 public:

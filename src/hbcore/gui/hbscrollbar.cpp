@@ -95,6 +95,9 @@ HbScrollBarPrivate::~HbScrollBarPrivate()
 
 void HbScrollBarPrivate::init()
 {
+    Q_Q(HbScrollBar);
+    q->grabGesture(Qt::PanGesture);
+    q->grabGesture(Qt::TapGesture);
 }
 
 void HbScrollBarPrivate::createPrimitives()
@@ -210,8 +213,6 @@ HbScrollBar::HbScrollBar( QGraphicsItem *parent ) :
     Q_D(HbScrollBar);
     d->q_ptr = this;
     d->init();
-    grabGesture(Qt::TapGesture);
-    grabGesture(Qt::PanGesture);
 }
 
 /*!
@@ -328,12 +329,9 @@ void HbScrollBar::setInteractive( bool enabled )
 */
 void HbScrollBar::setValue( qreal value )
 {
-    Q_D(HbScrollBar);
-    if( value < 0.0 || value > 1.0 ) {
-        qWarning( "HbScrollBar::setValue(%f) out of range 0.0-1.0", value );
-        return;
-    }
+    Q_D(HbScrollBar);        
 
+    value = qBound(static_cast<qreal>(0.0), value, static_cast<qreal>(1.0));
     if( !qFuzzyCompare(d->mCurrentPosition,value )) {
         d->mCurrentPosition = value;
         d->updatePosition();
@@ -351,10 +349,7 @@ void HbScrollBar::setValue( qreal value )
 void HbScrollBar::setPageSize( qreal size )
 {
     Q_D(HbScrollBar);
-    if( size < 0.0 || size > 1.0 ) {
-        qWarning( "HbScrollBar::setPageSize(%f) out of range 0.0-1.0", size );
-        return;
-    }
+    size = qBound(static_cast<qreal>(0.0), size, static_cast<qreal>(1.0));
 
     if(!qFuzzyCompare(d->mPageSize,size)) {
         d->mPageSize = size;
@@ -451,6 +446,7 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
             HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierSliderHandle);
             initStyleOption(&opt);
             style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
+            emit d->core.handlePressed();
         }
 
         break;
@@ -476,6 +472,7 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
             HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierSliderHandle);
             initStyleOption(&opt);
             style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
+            emit d->core.handlePressed();
         }
 
         break;
@@ -499,6 +496,7 @@ void HbScrollBar::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
         d->mThumbPressed = false;
         HbWidgetFeedback::triggered(this, Hb::InstantReleased, Hb::ModifierSliderHandle);
         emit valueChanged(value(), orientation());
+        emit d->core.handleReleased();
         initStyleOption(&opt);
         style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
     } else if (d->mGroovePressed){

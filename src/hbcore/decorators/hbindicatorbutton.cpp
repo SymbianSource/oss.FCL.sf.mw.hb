@@ -47,18 +47,12 @@ HbIndicatorButtonPrivate::~HbIndicatorButtonPrivate()
 
 void HbIndicatorButtonPrivate::init()
 {
-    Q_Q(HbIndicatorButton);
     setBackgroundVisible(false);
-
-     // add default actions
-    defaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "IndicatorMenu", q);
-    notificationAction = new HbAction(HbIcon("qtg_mono_new_event"), "IndicatorMenu", q);
-    q->setAction(defaultAction);
 }
 
 void HbIndicatorButtonPrivate::showIndicatorMenu()
 {
-    HbDeviceDialog *deviceDialog = new HbDeviceDialog();
+    //HbDeviceDialog *deviceDialog = new HbDeviceDialog();
 
     QVariantMap parametersMap;
     QString noteType(noteIndicatorType);
@@ -74,14 +68,25 @@ HbIndicatorButton::HbIndicatorButton(QGraphicsItem *parent)
     d->init(); 
 
     createPrimitives();
-
-    connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
-    connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
 }
 
 HbIndicatorButton::~HbIndicatorButton()
 {
 
+}
+
+void HbIndicatorButton::delayedConstruction()
+{
+    Q_D(HbIndicatorButton);
+    // add default actions
+    d->defaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "IndicatorMenu", this);
+    d->notificationAction = new HbAction(HbIcon("qtg_mono_new_event"), "IndicatorMenu", this);
+    setAction(d->defaultAction);
+
+    connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
+    connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
+
+    d->deviceDialog = new HbDeviceDialog();
 }
 
 void HbIndicatorButton::showHandleIndication(bool show)

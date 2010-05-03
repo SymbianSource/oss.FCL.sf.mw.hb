@@ -54,11 +54,14 @@ public:
     void changeToOptionsMenu();
     HbMenuItem *subMenuItem();
     void setSubMenuItem(HbMenuItem *menuItem);
+    void closeMenuAfterOrientationChange();
+    void closeMenuRecursively(HbAction* menuAction);
 
     void _q_triggerAction(HbMenuItem *currentItem);
     void _q_onActionTriggered();
     void _q_subMenuItemTriggered(HbAction *action);
     void _q_subMenuTimedOut();
+    void _q_handleMenuAfterOrientationChange();
     void actionAdded(QActionEvent *actionEvent);
     void actionRemoved(QActionEvent *actionEvent);
     void actionChanged(QActionEvent *actionEvent);

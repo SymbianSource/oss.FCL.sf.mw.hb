@@ -29,14 +29,16 @@
 #include <QModelIndex>
 #include <QStandardItemModel>
 #include <QFileSystemWatcher>
+#include <QTime>
 #include <hbview.h>
-#include <hblistview.h>
+#include <hblistwidget.h>
 
 #ifdef Q_OS_SYMBIAN
 #include "themeclientsymbian.h"
 #else
 #include "themeclientqt.h"
 #endif
+#include "themechangerdefs.h"
 
 class HbIcon;
 
@@ -56,10 +58,14 @@ signals:
     void newThemeSelected(const QString &newthemepath);
 public slots:
     void displayThemes();
-    void setChosen(const QModelIndex &index);
+    void setChosen(HbListWidgetItem *item);
     void applySelection();
     void updateThemeList(const QString &path);
     void sendThemeName(const QString& name);
+#ifdef THEME_CHANGER_TIMER_LOG
+    void processWhenIdle();
+    void themeChanged();
+#endif
 
 protected:
     bool event(QEvent *e);
@@ -67,9 +73,8 @@ protected:
 private:
     static QStringList rootPaths();
     QDir dir; 
-    QModelIndex oldItemIndex;
-    HbListView *themelist;
-    QStandardItemModel* model;
+    int oldItemIndex;
+    HbListWidget *themelist;
     HbIcon* rightMark;
     HbIcon* noMark;
     HbAction *action;
@@ -81,5 +86,9 @@ private:
 
     QFileSystemWatcher *watcher;
     QString iCurrentTheme;
+#ifdef THEME_CHANGER_TIMER_LOG
+    QTime timer;
+    QTimer *idleTimer;
+#endif
 };
 #endif //THEMESELECTIONLIST_H

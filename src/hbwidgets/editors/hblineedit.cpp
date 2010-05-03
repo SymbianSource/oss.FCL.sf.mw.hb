@@ -34,10 +34,10 @@
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 #include <QFontMetrics>
-#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QTextBlock>
 #include <QTextDocument>
+#include <QGraphicsSceneResizeEvent>
 
 /*!
  \class HbLineEdit
@@ -180,17 +180,26 @@ void HbLineEdit::setMinRows (int rows)
     Q_D(HbLineEdit);
     d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, true);
 
-    if (rows > 0) {
+    if (rows<=0) {
+        qWarning("HbLineEdit::setMinRows wrong argument, value \"%d\" has been ignored.",
+                 rows);
+        return;
+    }
+
+    if (rows != d->minimumRows) {
         d->minimumRows = rows;
 
         if (d->minimumRows > d->maximumRows) {
             d->maximumRows = d->minimumRows;
         }
-        d->expandable = isExpandable();
 
         d->updateWrappingMode();
 
-        updateGeometry();
+        if (d->adjustFontSizeToFitHeight) {
+            d->readjustStretchFont();
+        } else {
+            updateGeometry();
+        }
     }
 }
 
@@ -226,18 +235,26 @@ void HbLineEdit::setMaxRows (int rows)
     Q_D(HbLineEdit);
     d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, true);
 
-    if (rows > 0) {
+    if (rows<=0) {
+        qWarning("HbLineEdit::setMaxRows wrong argument, value \"%d\" has been ignored.",
+                 rows);
+        return;
+    }
+
+    if (rows != d->maximumRows) {
         d->maximumRows = rows;
 
         if (d->maximumRows  < d->minimumRows) {
             d->minimumRows = d->maximumRows;
         }
 
-        d->expandable = isExpandable();
-
         d->updateWrappingMode();
 
-        updateGeometry();
+        if (d->adjustFontSizeToFitHeight) {
+            d->readjustStretchFont();
+        } else {
+            updateGeometry();
+        }
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
         if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
@@ -575,16 +592,6 @@ void HbLineEdit::setText(const QString &text)
 /*!
     \reimp
  */
-void HbLineEdit::resizeEvent(QGraphicsSceneResizeEvent *event)
-{
-    HbAbstractEdit::resizeEvent(event);
-
-    document()->setTextWidth(primitive(HbStyle::P_Edit_text)->boundingRect().width());
-}
-
-/*!
-    \reimp
- */
 bool HbLineEdit::canInsertFromMimeData(const QMimeData *source) const
 {
     return source->hasText() && !source->text().isEmpty();
@@ -620,7 +627,6 @@ void HbLineEdit::insertFromMimeData(const QMimeData *source)
 void HbLineEdit::focusOutEvent(QFocusEvent * event)
 {
     Q_D(HbLineEdit);
-    setBackgroundItem(HbStyle::P_LineEdit_frame_normal);
 
     if(echoMode() == HbLineEdit::PasswordEchoOnEdit) {
         setPlainText(d->passwordString(d->passwordText));
@@ -637,7 +643,6 @@ void HbLineEdit::focusOutEvent(QFocusEvent * event)
 void HbLineEdit::focusInEvent(QFocusEvent * event)
 {
     Q_D(HbLineEdit);
-    setBackgroundItem(HbStyle::P_LineEdit_frame_highlight);
 
     if(echoMode() == HbLineEdit::PasswordEchoOnEdit) {
         // we need to clear the editor when typing starts
@@ -645,4 +650,59 @@ void HbLineEdit::focusInEvent(QFocusEvent * event)
     }
 
     HbAbstractEdit::focusInEvent(event);
+}
+
+/*!
+    @proto
+
+    Enables or disables vertical font stretch mode.
+
+    In this mode font size is depending on editor size and number of rows.
+    Font is adjusted in such way to show as much text as possible and as big
+    as possible and still have visible number of rows in range defined by
+    \l{HbLineEdit::setMinRows}{minimum} and \l{HbLineEdit::setMaxRows}{maximum}
+    number of rows.
+
+    \sa HbLineEdit::setMinRows(int)
+    \sa HbLineEdit::setMaxRows(int)
+    \sa HbLineEdit::adjustFontSizeToFitHeight()
+ */
+void HbLineEdit::setAdjustFontSizeToFitHeight(bool active)
+{
+    Q_D(HbLineEdit);
+    if (d->adjustFontSizeToFitHeight != active) {
+        d->adjustFontSizeToFitHeight = active;
+        if(!active) {
+            // clear font stretch
+            d->canvas->setFont(QFont());
+        }
+        updateGeometry();
+    }
+}
+
+/*!
+    @proto
+
+    Returns true if vertical font streach mode is active.
+    See HbLineEdit::setAdjustFontSizeToFitHeight for details.
+
+    \sa HbLineEdit::setAdjustFontSizeToFitHeight(bool)
+ */
+bool HbLineEdit::adjustFontSizeToFitHeight() const
+{
+    return d_func()->adjustFontSizeToFitHeight;
+}
+
+/*!
+    \reimp
+ */
+bool HbLineEdit::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_D(HbLineEdit);
+
+    if (obj == d->scrollArea && event->type()==QEvent::GraphicsSceneResize) {
+        document()->setTextWidth(d->scrollArea->size().width());
+        d->onResizeFontChange();
+    }
+    return HbAbstractEdit::eventFilter(obj, event);
 }

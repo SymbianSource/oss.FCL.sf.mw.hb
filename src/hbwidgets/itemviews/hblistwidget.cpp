@@ -30,7 +30,6 @@
 #include <hblistviewitem.h>
 #include <hblistwidgetitem.h>
 #include "hblistitemcontainer_p.h"
-#include <hbgesturefilter.h>
 #include "hbmodeliterator.h"
 
 #include <QModelIndex>
@@ -346,21 +345,20 @@ bool HbListWidget::setArrangeMode(const bool arrangeMode)
             if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
                 return false;
             }
-              if (d->mGestureFilter) {
-                removeSceneEventFilter(d->mGestureFilter);
-                d->mFilterRemoved = true;
-            }
             verticalScrollBar()->setInteractive(true);
         } else {
-            if (d->mFilterRemoved) {
-                installSceneEventFilter(d->mGestureFilter);
-                d->mFilterRemoved = true;
-            }
             verticalScrollBar()->setInteractive(false);
         }
 
         d->mArrangeMode = arrangeMode;
         d->mAnimateItems = !d->mArrangeMode;
+
+        if (d->mArrangeMode == true) {
+            d->mOriginalFriction = d->mFrictionEnabled;
+            setFrictionEnabled(false);
+        } else {
+            setFrictionEnabled(d->mOriginalFriction);
+        }
     }
     return true;
 }

@@ -51,18 +51,25 @@ public:
     enum { Type = HbPrivate::ItemType_DataGroupHeadingWidget };
     int type() const { return Type; }
 
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+#ifndef HB_GESTURE_FW
+    void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    void mouseReleaseEvent( QGraphicsSceneMouseEvent * event );
+#endif
+#ifdef HB_GESTURE_FW
+    virtual void gestureEvent(QGestureEvent *event);
+#endif
 
 
 public:
     QGraphicsItem *mBackgroundItem;
     QGraphicsItem *mHeadingItem;
-    QGraphicsItem *mIconItem;
+    QGraphicsItem *mIconItem;    
+    QGraphicsItem *mDescriptionItem;
     HbDataFormViewItem* mParent;
     bool mExpanded;
     bool mDown;
     QString mHeading;
+    QString mDescription;
 };
 
 #endif // HBDATAGROUPHEADINGWIDGET_H

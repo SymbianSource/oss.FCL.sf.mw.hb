@@ -31,11 +31,10 @@
 
 
 /*
-    \class HbWidgetLoaderActions
+    \class HbWidgetLoaderSyntax
     \internal
     \proto
 */
-
 
 // Uncomment the following in order to get additional debug prints
 //#define HB_WIDGETLOADER_DEBUG
@@ -55,16 +54,24 @@
 #define MIN_SUPPORTED_VERSION_MAJOR 0
 #define MIN_SUPPORTED_VERSION_MINOR 1
 
-
-HbWidgetLoaderSyntax::HbWidgetLoaderSyntax( HbWidgetLoaderActions *actions ) :
-    HbXmlLoaderAbstractSyntax( actions ), mRealActions( actions )
+/*!
+    \internal
+*/
+HbWidgetLoaderSyntax::HbWidgetLoaderSyntax( HbXmlLoaderAbstractActions *actions ) :
+    HbXmlLoaderBaseSyntax( actions )
 {
 }
 
+/*!
+    \internal
+*/
 HbWidgetLoaderSyntax::~HbWidgetLoaderSyntax()
 {
 }
 
+/*!
+    \internal
+*/
 bool HbWidgetLoaderSyntax::load( QIODevice *device, const QString &name, const QString &section )
 {
     //  HbXmlLoaderAbstractSyntax::load is not called here as it is coupled with the
@@ -74,7 +81,7 @@ bool HbWidgetLoaderSyntax::load( QIODevice *device, const QString &name, const Q
     mLayoutName = name;
     mLayoutFound = false;
 
-    bool result = HbXmlLoaderAbstractSyntax::loadDevice(device,section);
+    bool result = HbXmlLoaderBaseSyntax::loadDevice(device,section);
 
     if ( result && !mLayoutFound ) {
         // File parsed ok, but requested layout not found.
@@ -85,16 +92,22 @@ bool HbWidgetLoaderSyntax::load( QIODevice *device, const QString &name, const Q
     return result;
 }
 
-ElementType HbWidgetLoaderSyntax::elementType( QStringRef name ) const
+/*!
+    \internal
+*/
+HbXml::ElementType HbWidgetLoaderSyntax::elementType( QStringRef name ) const
 {
     const QString stringName = name.toString();
 
     if( stringName == lexemValue(TYPE_HBWIDGET) ){
-        return DOCUMENT;
+        return HbXml::DOCUMENT;
     } 
-    return HbXmlLoaderAbstractSyntax::elementType( name );
+    return HbXmlLoaderBaseSyntax::elementType( name );
 }
 
+/*!
+    \internal
+*/
 bool HbWidgetLoaderSyntax::processDocument()
 {
     bool ok, ok1, ok2, res = true;
@@ -132,10 +145,12 @@ bool HbWidgetLoaderSyntax::processDocument()
                 
     }
 
-    return mRealActions->pushDocument( attribute( ATTR_CONTEXT ) );
+    return mActions->pushDocument( attribute( ATTR_CONTEXT ) );
 }
 
-
+/*!
+    \internal
+*/
 bool HbWidgetLoaderSyntax::processLayout()
 {
     const QString layout_type = attribute( ATTR_TYPE );
@@ -146,21 +161,21 @@ bool HbWidgetLoaderSyntax::processLayout()
         if( layout_name == mLayoutName ) {
             mCurrentLayoutType = LAYOUT_MESH_TARGET;
             mLayoutFound = true;
-
-            mRealActions->mCacheLayout->meshItems.clear();
-            mRealActions->mCacheLayout->spacers.clear();
-            result = true;
+            result = mActions->createMeshLayout( QString() );
         } else {
             mCurrentLayoutType = LAYOUT_MESH_ALIEN;
             result = true;
         }
     } else {        
-        result =  HbXmlLoaderAbstractSyntax::processLayout();
+        result =  HbXmlLoaderBaseSyntax::processLayout();
     }
     
     return result;
 }
 
+/*!
+    \internal
+*/
 bool HbWidgetLoaderSyntax::readLayoutStartItem()
 {
     bool result = false;
@@ -175,33 +190,88 @@ bool HbWidgetLoaderSyntax::readLayoutStartItem()
         {
             HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: TARGET MESH ITEM" );
             if( mReader.name() == lexemValue(ML_MESHITEM) ) {
-            
+                result = true;
+                
                 const QString src = attribute( ML_SRC_NAME );  
                 const QString dst = attribute( ML_DST_NAME );
-                const QString srcEdge = attribute( ML_SRC_EDGE );
-                const QString dstEdge = attribute( ML_DST_EDGE );
+                const QString srcEdgeStr = attribute( ML_SRC_EDGE );
+                const QString dstEdgeStr = attribute( ML_DST_EDGE );
                 const QString spacing = attribute( ML_SPACING );
                 const QString spacer = attribute( ML_SPACER );
                 
-                                
-                result = mRealActions->addMeshLayoutEdge( src, srcEdge, dst, dstEdge, spacing, spacer );
+                HbXmlLengthValue spacingVal;
+                if ( !spacing.isEmpty() ) {
+                    result = toLengthValue(spacing, spacingVal);
+                }
+                Hb::Edge srcEdge, dstEdge;
+                result &= getAnchorEdge( srcEdgeStr, srcEdge );
+                result &= getAnchorEdge( dstEdgeStr, dstEdge );
+                if (result) {
+                    result = mActions->addMeshLayoutEdge( src, srcEdge, dst, dstEdge, spacingVal, spacer );
+                }
               
             }
             break;
         }
         default:
         {
-            result = HbXmlLoaderAbstractSyntax::readLayoutStartItem();
+            result = HbXmlLoaderBaseSyntax::readLayoutStartItem();
             break;
         }
     }
     return result;
 }
 
+/*!
+    \internal
+*/
 QString HbWidgetLoaderSyntax::version()
 {
     return ( QString::number( VERSION_MAJOR ) + QString( "." )
             + QString::number( VERSION_MINOR ) + QString( " (" )
             + QString::number( MIN_SUPPORTED_VERSION_MAJOR ) + QString( "." )
             + QString::number( MIN_SUPPORTED_VERSION_MINOR ) + QString( ")" ) );
+}
+
+
+/*
+    \class HbWidgetLoaderMemorySyntax
+    \internal
+    \proto
+*/
+
+/*!
+    \internal
+*/
+HbWidgetLoaderMemorySyntax::HbWidgetLoaderMemorySyntax( HbXmlLoaderAbstractActions *actions )
+    : HbXmlLoaderAbstractSyntax(actions)
+{
+}
+
+/*!
+    \internal
+*/
+HbWidgetLoaderMemorySyntax::~HbWidgetLoaderMemorySyntax()
+{
+}
+    
+/*!
+    \internal
+*/
+bool HbWidgetLoaderMemorySyntax::load( HbWidgetLoader::LayoutDefinition* layoutDef )
+{
+    bool retVal(true);
+
+    // Construct layout from layout definition
+    retVal = mActions->createMeshLayout(QString());
+    for (int i = 0; retVal && i < layoutDef->meshItems.count(); i++){
+		const HbWidgetLoader::MeshItem &item = layoutDef->meshItems.at(i);
+        HbXmlLengthValue spacingVal;
+        spacingVal.mType = item.spacingType;
+        spacingVal.mValue = item.spacingVal;
+        spacingVal.mString = item.spacingText;
+        retVal = mActions->addMeshLayoutEdge( item.src, item.srcEdge, item.dst, item.dstEdge, spacingVal, item.spacer );
+    }
+
+    return retVal;
 }

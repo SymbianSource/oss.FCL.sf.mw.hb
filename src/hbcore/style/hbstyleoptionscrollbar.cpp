@@ -30,6 +30,13 @@
     \brief HbStyleOptionScrollBar has the style component for scroll bar primitives
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionScrollBar::HbStyleOptionScrollBar()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionScrollBar::HbStyleOptionScrollBar() :
     orientation(Qt::Vertical),
     thumbPressed(false),
@@ -40,6 +47,12 @@ HbStyleOptionScrollBar::HbStyleOptionScrollBar() :
     version = Version;    
 }
 
+/*!
+
+    \deprecated HbStyleOptionScrollBar::HbStyleOptionScrollBar(const HbStyleOptionScrollBar&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionScrollBar::HbStyleOptionScrollBar(const HbStyleOptionScrollBar &other) :
     HbStyleOption(other),
     orientation(other.orientation)

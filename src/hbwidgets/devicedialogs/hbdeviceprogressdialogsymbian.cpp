@@ -507,7 +507,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::UpdateL()
     Cancels and closes the dialog.
 
     \deprecated CHbDeviceProgressDialogSymbian::Cancel()
-    is deprecated. Replaced by CHbDeviceProgressDialogSymbian::Close().
+        is deprecated. Replaced by CHbDeviceProgressDialogSymbian::Close().
 
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::Cancel()
@@ -785,8 +785,8 @@ EXPORT_C TInt CHbDeviceProgressDialogSymbian::IconAlignment() const
     lines breaks are at appropriate point, e.g. at word boundaries.
     \sa TextWrapping()
 
-    \deprecated CHbDeviceProgressDialogSymbian::SetTextWrapping()
-    is deprecated. Will be removed.
+    \deprecated CHbDeviceProgressDialogSymbian::SetTextWrapping(int)
+        is deprecated. Will be removed.
 
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextWrapping(TBool aWrap)
@@ -800,8 +800,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextWrapping(TBool aWrap)
     The default value is true.
     \sa SetTextWrapping()
 
-    \deprecated CHbDeviceProgressDialogSymbian::TextWrapping()
-    is deprecated. Will be removed.
+    \deprecated CHbDeviceProgressDialogSymbian::TextWrapping() const
+        is deprecated. Will be removed.
 */
 EXPORT_C TBool CHbDeviceProgressDialogSymbian::TextWrapping() const
     {

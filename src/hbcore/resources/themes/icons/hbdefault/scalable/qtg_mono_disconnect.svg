@@ -1,8 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
 <rect fill="none" height="30" width="30"/>
-<rect height="30.404" transform="matrix(-0.7066 0.7076 -0.7076 -0.7066 35.9314 14.8663)" width="1.4" x="14.184" y="-0.32"/>
-<polygon points="12.465,10.578 20.24,18.337 29,13.378 19.338,13.378 19.338,6.957 "/>
-<polygon points="17.743,19.751 9.904,11.927 1,16.619 11.927,16.619 11.927,23.043 "/>
+</g>
+<polygon points="16.854,21 12.854,17 1,17 11,27 14,24.344 10.657,21 "/>
+<polygon points="25.15,21 28,21 28,17 21.149,17 "/>
+<polygon points="13.148,9 17.149,13 29,13 19,3 16,5.657 19.343,9 "/>
+<polygon points="4.853,9 2,9 2,13 8.853,13 "/>
+<rect height="35.827" transform="matrix(0.7063 -0.7079 0.7079 0.7063 -6.0767 14.6963)" width="1.868" x="13.74" y="-3.242"/>
 </svg>

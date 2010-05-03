@@ -65,10 +65,10 @@ public:
     void setGeometry( const QRectF & rect );
     QRectF boundingRect () const;
 
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
+
 protected:
     HbRichTextItem(HbRichTextItemPrivate &dd, QGraphicsItem *parent );
-
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
 
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     void resizeEvent ( QGraphicsSceneResizeEvent * event );

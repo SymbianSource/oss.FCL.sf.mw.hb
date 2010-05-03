@@ -46,7 +46,7 @@ const int clockUpdateDelay = 10000; // 10 s
  */
 
 HbStatusBarPrivate::HbStatusBarPrivate() : 
-    mTimeText(0),
+    mTimeText(),
     mTimeTextItem(0),
     mSignalIndicator(0),
     mBatteryIndicator(0),
@@ -55,6 +55,23 @@ HbStatusBarPrivate::HbStatusBarPrivate() :
     mMainWindow(0),
     mPreviousProperties(0)
 {
+}
+
+void HbStatusBarPrivate::delayedConstruction()
+{
+    Q_Q(HbStatusBar);
+
+    mSignalIndicator->delayedConstruction();
+    mBatteryIndicator->delayedConstruction();
+    mNotificationIndicatorGroup->delayedConstruction();
+    mSettingsIndicatorGroup->delayedConstruction();
+
+    q->connect(mNotificationIndicatorGroup, SIGNAL(notificationCountChanged(int)), 
+        q, SIGNAL(notificationCountChanged(int)));
+    q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
+
+    mClockTimerId = q->startTimer(clockUpdateDelay);
+	updateTime();
 }
 
 void HbStatusBarPrivate::init()
@@ -70,21 +87,14 @@ void HbStatusBarPrivate::init()
 
     mNotificationIndicatorGroup = new HbIndicatorGroup(HbIndicatorGroup::NotificationType, q);
     q->style()->setItemName(mNotificationIndicatorGroup, "notificationindicators");
-    q->connect(mNotificationIndicatorGroup, SIGNAL(notificationCountChanged(int)), 
-        q, SIGNAL(notificationCountChanged(int)));
 
     mSettingsIndicatorGroup = new HbIndicatorGroup(HbIndicatorGroup::SettingsType, q);
     q->style()->setItemName(mSettingsIndicatorGroup, "settingsindicators");
-
-	mClockTimerId = q->startTimer(clockUpdateDelay);
-
-    q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
-
-	updateTime();
 }
 
 void HbStatusBarPrivate::updateTime()
 {
+    Q_Q(HbStatusBar);
 	// use QLocale to find out whether there is am/pm info
     QString timeFormat(QLocale().timeFormat(QLocale::ShortFormat));
 
@@ -100,6 +110,8 @@ void HbStatusBarPrivate::updateTime()
 
     // set time, using a proper formatting
     mTimeText = current.toString(timeFormat);
+
+    q->updatePrimitives();
 }
 
 /*
@@ -127,6 +139,15 @@ HbStatusBar::~HbStatusBar()
         killTimer(d->mClockTimerId);
         d->mClockTimerId = 0;
     }
+}
+
+/*
+    Delayed constructor.
+ */
+void HbStatusBar::delayedConstruction()
+{
+   Q_D(HbStatusBar);
+   d->delayedConstruction();
 }
 
 void HbStatusBar::propertiesChanged()
@@ -193,7 +214,6 @@ void HbStatusBar::timerEvent(QTimerEvent *event)
     Q_D(HbStatusBar);
     if (event->timerId() == d->mClockTimerId) {
         d->updateTime(); // get current time
-		updatePrimitives();
 	}
 }
 

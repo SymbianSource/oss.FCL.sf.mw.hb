@@ -34,8 +34,12 @@
 class HbPushButton;
 class HbRadioButtonList;
 class HbLabel;
-class HbListDialog;
+class HbSelectionDialog;
 class HbAction;
+class HbDialog;
+class HbListWidget;
+class QGraphicsLinearLayout;
+class QItemSelection;
 
 QT_FORWARD_DECLARE_CLASS(QGraphicsLinearLayout)
 
@@ -63,7 +67,6 @@ signals:
 
 private:
     HbPushButton* mButton;
-    //CRC: we can have thse variables in some common base class
     HbDataFormViewItem* mViewItem;
     HbDataFormModelItem* mModelItem;
     HbDataFormModel * mModel;
@@ -77,7 +80,8 @@ class HbRadioItem : public HbWidget
 public:
     HbRadioItem( QGraphicsItem* parent = 0 );
     ~HbRadioItem( );
-    HbWidget* contentWidget( );
+    HbWidget* createRadioButton( );
+    void initilizeButton();
 
     //void setItemEnabled(bool enable);
 
@@ -85,20 +89,28 @@ protected:
     virtual bool event( QEvent * e ); 
 
 public slots:
-    void itemSelected( int index );
+    void updateModel( int index );
     void buttonClicked();
+    void dialogClosed(HbAction* action);
+    void makeEmbedded();
+    void makePopup();
+    void changeMode();
+    void selectItem();
+    void resetSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
 
 private:
-    HbRadioButtonList* mRadioButton;
+    HbRadioButtonList* mRadioButtonList;
     HbPushButton* mButton;
-    bool mButtonVisible;
     QStringList mItems;
-    int mSelected;
     HbDataFormViewItem *mViewItem;
     HbDataFormModelItem* mModelItem;
     HbDataFormModel * mModel;
+    HbDialog *mDialog;
+    QGraphicsLinearLayout* layout;
+    bool mPopup;
+    int mSelected;
 };
 
 //multi selectio item class declaration
@@ -109,7 +121,6 @@ class HbMultiSelectionItem : public HbWidget
 public:
     HbMultiSelectionItem( QGraphicsItem* parent = 0 );
     ~HbMultiSelectionItem( );
-    HbWidget* contentWidget( ) const;
 
 protected:
     virtual bool event( QEvent * e ); 
@@ -117,18 +128,25 @@ protected:
 public slots:
     void launchMultiSelectionList( );
     void dialogClosed(HbAction*);
-
+    void updateModel( const QItemSelection & selected, const QItemSelection &deselected );
+    void makeEmbedded();
+    void makePopup();
+    void changeMode();
+    void makeSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
 
 private:
-    HbPushButton* mButton;
+
     QStringList mItems;
-    QList<int> mSelectedItems;
+    QList<QVariant> mSelectedItems;
     HbDataFormViewItem *mViewItem;
     HbDataFormModelItem* mModelItem;
     HbDataFormModel * mModel;
-    HbListDialog* mQuery;
+    HbSelectionDialog* mSelectionDialog;
+    HbPushButton* mButton;
+    HbListWidget *mMultiListWidget;
+    QGraphicsLinearLayout* layout;
 
 };
 
@@ -158,7 +176,7 @@ public:
     QString icon( ) const;
     void setDescription( const QString& description );
     QString description() const;
-    void updateLabel(const QString& label);
+    void updateData();
 
     void setEnabled(bool enabled);
 public:
@@ -177,7 +195,6 @@ public:
     QGraphicsItem *mLabelItem;
     QGraphicsItem *mIconItem;
     QGraphicsItem *mDescriptionItem;
-    QVariant mCurrentValue;//CRC why is this required
     bool mSetAllProperty;
     HbDataFormModel* mModel;
     HbDataFormModelItem *mModelItem;

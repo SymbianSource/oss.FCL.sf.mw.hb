@@ -18,10 +18,10 @@
     <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
 
@@ -56,10 +56,10 @@
     <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
   
@@ -94,10 +94,10 @@
     <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="max-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
 
@@ -120,23 +120,21 @@
             max-text: connected from item BOTTOM to BOTTOM
     -->
   <layout name="horizontal_progressbar_center_text" type="mesh">
-    <meshitem src="min-text" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="min-text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="min-text" srcEdge="RIGHT" dst="frame" dstEdge="LEFT" spacing="var(hb-param-margin-gene-middle-horizontal)"/>
-    <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="min-text" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
     
     <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     
-    <meshitem src="max-text" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="max-text" srcEdge="LEFT" dst="frame" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)"/>
     <meshitem src="max-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="max-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="max-text" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
 
@@ -173,10 +171,10 @@
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
 
@@ -212,11 +210,11 @@
     <meshitem src="min-text" srcEdge="LEFT" dst="frame" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)"/>
     <meshitem src="min-text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+ 
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
   </layout>
 
@@ -248,10 +246,10 @@
     <meshitem src="min-text" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
     <meshitem src="min-text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
-    <meshitem src="toucharea1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="toucharea1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="toucharea1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="toucharea1" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="frame" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="frame" dstEdge="RIGHT" />
+    <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
+    <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
 
   </layout>

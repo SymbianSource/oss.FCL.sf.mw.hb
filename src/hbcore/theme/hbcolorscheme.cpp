@@ -26,7 +26,7 @@
 
 
 /*!
-    @proto
+    @stable
     @hbcore
     \class HbColorScheme
     \brief HbColorScheme class is used to query colors from theme.
@@ -68,7 +68,14 @@
 #include <hbcolorscheme.h>
 #include "hbcolortheme_p.h"
 
+/*!
+Constructor
+*/
+HbColorScheme::HbColorScheme()
+{
+}
+
 QColor HbColorScheme::color( const QString &colorRole )
 {
-    return HbColorTheme::global()->color(colorRole);
+    return HbColorTheme::instance()->color(colorRole);
 }

@@ -38,8 +38,8 @@ A virtual keyboard host knows how to animate and display given virtual keyboard 
 Its purpose is to isolate virtual keyboard's interaction in application space from
 the widget and the input method.
 
-In other words, an input method is responsible for creating the virtual keyboard widget
-but it is the virtual keyboard host who places it on the screen. The host decides
+While the input method is responsible for creating virtual keyboard widget,
+it is the virtual keyboard host who places it on the screen. The host decides
 where the keyboard is shown and what is the maximum area it is allowed to cover.
 
 Virtual keyboard host also knows how to keep the editor cursor visible at all times
@@ -120,6 +120,12 @@ Returns zero sized rectangle if virtual keyboard is not active.
 \fn virtual void refresh() = 0
 The framework calls this method when it suspects that the host should
 refresh the split view status.
+*/
+
+/*!
+\fn bool stateTransitionOngoing() const = 0
+Returns true if the vkb host has state transition ongoing, ie. it is running open or close
+animation or updating the split-view status.
 */
 
 /*!

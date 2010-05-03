@@ -34,6 +34,7 @@ INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/image
 DEFINES += HB_BOOTSTRAPPED
 QT = core gui svg
 CONFIG += console
+CONFIG -= app_bundle
 
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin

@@ -29,6 +29,7 @@
 #include <hbglobal.h>
 #include <hbstyleoption.h>
 
+//Deprecated
 class HB_CORE_EXPORT HbStyleOptionScrollBar : public HbStyleOption
 {
 public:

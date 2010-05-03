@@ -46,6 +46,7 @@
 #endif
 
 
+
 /*!
     @beta
     @hbwidgets
@@ -269,7 +270,6 @@ void HbSliderPrivate::init( )
     HbStyle::setItemName( q,"this" );
     q->setFlags( QGraphicsItem::ItemIsFocusable );
     q->setProperty("TickLabelPresent",false);
-
 }
 
 void HbSliderPrivate::setElements( QList<HbSlider::SliderElement> elementList)
@@ -551,7 +551,8 @@ HbSlider::~HbSlider( )
 }
 
 /*!
-    \deprecated
+    \deprecated HbSlider::elements() const
+        is deprecated. Please use sliderElements() instead
     Returns the elements of the slider.
 
     The slider contains only track element by default.
@@ -566,7 +567,8 @@ QList<HbSlider::SliderElement> HbSlider::elements( ) const
 }
 
 /*!
-    \deprecated
+    \deprecated HbSlider::setElements(const QList<HbSlider::SliderElement>&)
+        is deprecated. Please use setSliderElements instead.
     Sets the elements of the slider.
 
     \note Duplicate elements will be ignored.
@@ -783,7 +785,9 @@ void HbSlider::setText( const QString &text )
 }
 
 /*!
-    \deprecated
+    \deprecated HbSlider::icon(HbSlider::SliderElement) const
+        is deprecated. Please use elementIcons() instead.
+    
     Returns the icon of the \a element.
 
     returns NULL if element does not exist or icon was not set for this element
@@ -798,7 +802,9 @@ HbIcon HbSlider::icon( SliderElement element ) const
 }
 
 /*!
-    \deprecated
+    \deprecated HbSlider::setIcon(HbSlider::SliderElement, const HbIcon&)
+        is deprecated. Please use setElementIcons() instead.
+    
     Sets the \a icon if the \a element.
 
     Supported elements:
@@ -916,7 +922,7 @@ void HbSlider::setToolTipVisible( bool value )
     @beta
     Returns \c true if tooltip is visible.
 
-    The default value is \c false.
+    The default value is \c true.
 
     \sa setToolTipVisible( )
 */
@@ -1603,6 +1609,10 @@ void HbSlider::setMinorTickLabels( const QStringList &minorTickLabels )
 
 
 /*!
+
+    \deprecated HbSlider::primitive(HbStyle::Primitive)
+        is deprecated.
+
     \reimp
  */
 QGraphicsItem *HbSlider::primitive( HbStyle::Primitive primitive ) const
@@ -1771,6 +1781,7 @@ void HbSlider::focusInEvent( QFocusEvent* event )
     HbWidget::focusInEvent( event );
     d->sliderControl->setFocus( );    
 }
+
 
 
 #include "moc_hbslider.cpp"

@@ -167,6 +167,11 @@ HbListViewItemPrivate::HbListViewItemPrivate(HbListViewItem *prototype) :
     HbAbstractViewItemPrivate(prototype, new HbListViewItemShared)
 {
 }
+
+HbListViewItemPrivate::HbListViewItemPrivate(HbListViewItem *prototype, HbListViewItemShared *shared) :
+    HbAbstractViewItemPrivate(prototype, shared)
+{
+}
  
 HbListViewItemPrivate::HbListViewItemPrivate(const HbListViewItemPrivate &source) :
     HbAbstractViewItemPrivate(source)
@@ -238,7 +243,7 @@ void HbListViewItemPrivate::setDisplayRole(const QString& value,
     Q_Q( HbListViewItem );
 
     // create text item  and set it to layout
-    if (!value.isEmpty()) {
+    if (!value.isNull()) {
         QGraphicsItem *textItem = mDisplayRoleTextItems.value(index);
 
         HbStyle::Primitive primitive = displayPrimitive();
@@ -253,10 +258,13 @@ void HbListViewItemPrivate::setDisplayRole(const QString& value,
             }
         }
     } else {
-        mItemsChanged = true;
         if (index < mDisplayRoleTextItems.count()) {
-            delete mDisplayRoleTextItems.at(index);
-            mDisplayRoleTextItems.replace(index, 0);
+            QGraphicsItem *item = mDisplayRoleTextItems.at(index);
+            if (item) {
+                mItemsChanged = true;
+                delete item;
+                mDisplayRoleTextItems.replace(index, 0);
+            }
         } else {
             mDisplayRoleTextItems.insert(index, 0);
         }
@@ -512,7 +520,7 @@ void HbListViewItem::setStretchingStyle(StretchingStyle style)
         sd->mStretchingStyle = style;
         if (d->isLandscape()) {
             // secondary text multiline change!
-            d->updateCloneItems();
+            d->updateCloneItems(false);
             d->repolishCloneItems();
         }
     }
@@ -549,7 +557,7 @@ void HbListViewItem::setGraphicsSize(GraphicsSize size)
         if (   thumbnailChange
             && !d->isStretching()) {
             // secondary text multiline change!
-            d->updateCloneItems();
+            d->updateCloneItems(false);
         }
         d->repolishCloneItems();
     }
@@ -607,7 +615,7 @@ void HbListViewItem::setSecondaryTextRowCount(int minimum, int maximum)
 
     if (    update
         &&  d->isMultilineSupported()) {
-        d->updateCloneItems();
+        d->updateCloneItems(false);
     }
 }
 
@@ -619,8 +627,12 @@ void HbListViewItem::polish(HbStyleParameters& params)
     HB_SDD(HbListViewItem);
 
     setProperty("icon-1", (bool)d->mDecorationRoleItems.value(0));
+    setProperty("icon-2", (bool)d->mDecorationRoleItems.value(1));
+
+    setProperty("text-1", (bool)d->mDisplayRoleTextItems.value(0));
     setProperty("text-2", (bool)d->mDisplayRoleTextItems.value(1));
     setProperty("text-3", (bool)d->mDisplayRoleTextItems.value(2));
+
     setProperty("maximumSecondaryTextRowCount", sd->mMaximumSecondaryTextRowCount);
     if (itemView() && itemView()->selectionMode() != HbListView::NoSelection) {
         setProperty("selectionMode", true);

@@ -41,9 +41,16 @@ const TUint KDefaultMessageSlots = 4;
 * constructor
 */
 HbThemeClientPrivate::HbThemeClientPrivate(): 
-    clientConnected(false), 
-    themelistener(new CThemeListenerPrivate(this))    
+    clientConnected(false) 
 {
+    if(THEME_SERVER_NAME != HbMemoryUtils::getCleanAppName()) {
+        themelistener = new CHbThemeListenerPrivate(this);
+    }
+
+
+#ifdef HB_SGIMAGE_ICON
+    sgDriverInit = false;    
+#endif
 }
 
 /**
@@ -54,7 +61,7 @@ HbThemeClientPrivate::HbThemeClientPrivate():
 bool HbThemeClientPrivate::connectToServer()
 {
     TInt error(KErrNone);
-    for( int tries(0); tries < 2; tries++) {
+    for( int tries(0); tries < 100; tries++) {
         error = CreateSession(KThemeServerName, Version(), KDefaultMessageSlots);
         if(!error) {
             // connected to existing server - OK
@@ -72,8 +79,11 @@ bool HbThemeClientPrivate::connectToServer()
         break; // server not launched : don't cycle round again.
     }
 #ifdef HB_SGIMAGE_ICON
-    if (!error) {
-        error = sgDriver.Open();       
+    if (!error && !sgDriverInit) {
+        error = sgDriver.Open();
+    	if (error == KErrNone) {
+            sgDriverInit = true;
+        }
     }
 #endif
     return ( clientConnected = (KErrNone == error) );
@@ -440,13 +450,13 @@ void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
  *
  * Returns the layout definition for the given file name,layout name,section name
 */
-LayoutDefinition* HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition* HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
 {
     if ( !clientConnected ) {
         return 0;
     }
 
-    LayoutDefinition* layoutDef(0);
+    HbWidgetLoader::LayoutDefinition* layoutDef(0);
 
     TBuf<256> fileDes(fileName.utf16());
     TBuf<256> layoutDes(layout.utf16());
@@ -461,7 +471,7 @@ LayoutDefinition* HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileN
    
     if (KErrNone == err) {
         if( widgetmlInfo.offset >=0){
-            layoutDef = HbMemoryUtils::getAddress<LayoutDefinition>(
+            layoutDef = HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(
                     HbMemoryManager::SharedMemory, widgetmlInfo.offset);
         }
     }
@@ -521,7 +531,7 @@ void HbThemeClientPrivate::handleThemeChange(const QString &themeName)
 #ifdef THEME_SERVER_TRACES
         qDebug() << Q_FUNC_INFO <<"themeChanged(): called";
 #endif
-        hbInstance->theme()->d_ptr->handleThemeChange();
+        hbInstance->theme()->d_ptr->handleThemeChange(themeName);
     }
 }
 
@@ -557,6 +567,12 @@ void HbThemeClientPrivate::getThemeIndexTables(ThemeIndexTables &tables)
 HbThemeClientPrivate::~HbThemeClientPrivate()
 {
     RSessionBase::Close();
+#ifdef HB_SGIMAGE_ICON
+    if (sgDriverInit) {
+        sgDriver.Close();  
+        sgDriverInit = false;
+    }
+#endif
     delete themelistener;
 }
 
@@ -615,6 +631,8 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
                                                             HbIconLoader::IconLoaderOptions options,
                                                             const QColor &color)
 {
+    Q_UNUSED(options)
+
     HbSharedIconInfoList sharedIconInfoList;
     
     if ( !clientConnected ) {
@@ -642,3 +660,67 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
     return sharedIconInfoList;
 }
 
+/**
+ *  Notifies the server about the foreground lost event.
+ */
+void HbThemeClientPrivate::notifyForegroundLostToServer()
+{
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    TInt err = SendReceive(ENotifyForegroundLost);
+    if (KErrNone == err) {        
+        //ForegroundLostToServer Event is sent to server Successfully.
+    }
+#endif
+}
+
+/**
+ * HbThemeClientPrivate::freeSharedMemory()
+ */
+int HbThemeClientPrivate::freeSharedMemory()
+{
+    int freeSharedMem = -1;
+    if ( !clientConnected ) {
+        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::freeSharedMemory";
+        return freeSharedMem;
+    }
+
+    TPckg<int> freeInfo(freeSharedMem);
+    TIpcArgs args(0, &freeInfo);
+    TInt err = SendReceive(EFreeSharedMem, args);
+    qDebug() << "HbThemeClientPrivate::freeSharedMemory end";
+    return freeSharedMem;
+}
+
+/**
+ * HbThemeClientPrivate::allocatedSharedMemory()
+ */
+int HbThemeClientPrivate::allocatedSharedMemory()
+{
+    int allocatedSharedMem = -1;
+    if ( !clientConnected ) {
+        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::allocatedSharedMemory";
+        return allocatedSharedMem;
+    }
+
+    TPckg<int> allocatedInfo(allocatedSharedMem);
+    TIpcArgs args(0, &allocatedInfo);
+    TInt err = SendReceive(EAllocatedSharedMem, args);
+    return allocatedSharedMem;
+}
+
+/**
+ * HbThemeClientPrivate::allocatedHeapMemory()
+ */
+int HbThemeClientPrivate::allocatedHeapMemory()
+{
+    int allocatedHeapMem = -1;
+    if ( !clientConnected ) {
+        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::allocatedHeapMemory";
+        return allocatedHeapMem;
+    }
+
+    TPckg<int> allocatedInfo(allocatedHeapMem);
+    TIpcArgs args(0, &allocatedInfo);
+    TInt err = SendReceive(EAllocatedHeapMem, args);
+    return allocatedHeapMem;
+}

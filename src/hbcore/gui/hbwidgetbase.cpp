@@ -171,6 +171,19 @@ bool HbWidgetBase::event(QEvent *e)
     return QGraphicsWidget::event(e);
 }
 
+
+bool HbWidgetBase::sceneEvent(QEvent *event)
+{
+    bool result = QGraphicsWidget::sceneEvent(event);
+    if(!result && event->type() == QEvent::Gesture &&
+       !isBlockedByModalPanel() // workaround for missing panel support in qt
+        ) {
+        gestureEvent(static_cast<QGestureEvent *>(event));
+        return true;
+    }
+    return result;
+}
+
 /*!
  * \reimp
  * Function handles attribute Hb::InsidePopup.
@@ -362,5 +375,19 @@ void HbWidgetBase::initStyleOption(HbStyleOption *option) const
     option->boundingRect = boundingRect();
 }
 
+/*!
+    This event handler, for \a event, receives gesture events. Its base
+    implementation ignores all gestures delivered in the \a event.
 
+    You can reimplement this handler in a subclass of HbWidgetBase to
+    provide your own custom gesture handling.
 
+    \sa event()
+*/
+void HbWidgetBase::gestureEvent(QGestureEvent *event)
+{
+    event->ignore();
+    foreach(QGesture *g, event->gestures()) {
+        event->ignore(g);
+    }
+}

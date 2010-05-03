@@ -39,14 +39,14 @@ public:
     explicit HbTreeItemContainer(QGraphicsItem *parent=0);
     virtual ~HbTreeItemContainer();
 
+    virtual void addItem(const QModelIndex &index, bool animate = false);
+    virtual void removeItem(int pos, bool animate = false);
+
     void setIndentation(qreal indentation);
     qreal indentation() const;
 
     QPointF recycleItems(const QPointF &delta);
     int maxItemCount() const;
-
-    bool isExpanded(const QModelIndex &index) const;
-    void setExpanded(const QModelIndex &index, bool expanded);
 
 protected:
 
@@ -61,6 +61,9 @@ protected:
     virtual bool event(QEvent *e);
 
     virtual HbAbstractViewItem *createDefaultPrototype() const;
+
+protected slots:
+    void animationFinished(const HbEffect::EffectStatus &status);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbTreeItemContainer)

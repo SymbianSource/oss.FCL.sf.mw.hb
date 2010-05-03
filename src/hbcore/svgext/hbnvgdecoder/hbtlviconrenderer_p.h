@@ -32,13 +32,13 @@ class HbTlvIconRenderer : public HbTlvRenderer
 {
 public:
 
-	HbTlvIconRenderer(const QByteArray &buffer, int width, int height);
+    HbTlvIconRenderer(const QByteArray &buffer, qint32 width, qint32 height);
 
     virtual ~HbTlvIconRenderer();
 
 protected:
     void drawPath();
-    virtual void execute(int index);
+    virtual void execute(qint32 index);
 };
 
 #endif

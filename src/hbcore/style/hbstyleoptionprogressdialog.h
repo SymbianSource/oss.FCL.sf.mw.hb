@@ -29,6 +29,7 @@
 #include <hbstyleoption.h>
 #include <hbicon.h>
 
+//Deprecated
 class HB_CORE_EXPORT HbStyleOptionProgressDialog : public HbStyleOption
 {
 public:
@@ -36,13 +37,13 @@ public:
     HbStyleOptionProgressDialog(const HbStyleOptionProgressDialog &other);
     ~HbStyleOptionProgressDialog();
     HbIcon icon;
-	QString text;
-    Qt::Alignment iconAlignment;
+    QString text;
+    Qt::Alignment iconAlignment;    // deprecated
     enum StyleOptionType { Type = HbSO_ProgressDialog };
     enum StyleOptionVersion { Version = 1 };
-	QSizeF progressBarSize;
-	bool wrap;
-	Qt::Alignment textAlignment;
+    QSizeF progressBarSize;    // deprecated
+    bool wrap;    // deprecated
+    Qt::Alignment textAlignment;    // deprecated
 };
 
 #endif

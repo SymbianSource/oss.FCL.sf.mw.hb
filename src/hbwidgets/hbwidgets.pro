@@ -29,7 +29,6 @@ QT = core \
     svg \
     network
 DEFINES += BUILD_HB_WIDGETS
-developer:DEFINES += BUILD_HB_INTERNAL
 
 # directories
 DESTDIR = $${HB_BUILD_DIR}/lib
@@ -46,7 +45,7 @@ include(dataform/dataform.pri)
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbwidgets/hbwidgets.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbwidgets/Hb*)
 HEADERS += $$PUBLIC_HEADERS \
-    $$INTERNAL_HEADERS \
+    $$PRIVATE_HEADERS \
     $$CONVENIENCE_HEADERS
 
 # dependencies
@@ -70,14 +69,13 @@ hbAddLibrary(hbcore/HbCore)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbwidgets/private/*)
 
 symbian {
-    defFilePath = ..
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022FCC
 
     # DEPLOYMENT_PLUGIN += qjpeg # TODO: Removed because this is already in qt.sis and that caused problems
     DEFINES += SYMBIAN_TARGET_ICON_CACHE_SIZE # TODO: what's this? why not use Q_OS_SYMBIAN?
-    INCLUDEPATH += /epoc32/include/osextensions/stdapis/stlport # TODO: depends on S60 version?
+    INCLUDEPATH += $${EPOCROOT}epoc32/include/osextensions/stdapis/stlport # TODO: depends on S60 version?
     hbExportHeaders(hbwidgets)
 }
 

@@ -459,7 +459,6 @@ void HbGroupBox::setCollapsed( bool collapsed )
                 d->mContentWidget->setVisible(true);
             }
             d->mHeadingWidget->updatePrimitives();
-            repolish();
             emit toggled( d->mHeadingWidget->collapsed );
         }
     }
@@ -590,6 +589,10 @@ HbWidget* HbGroupBox::contentWidget( ) const
 }
 
 /*!
+
+    \deprecated HbGroupBox::primitive(HbStyle::Primitive)
+        is deprecated.
+
     Returns the pointer for \a primitive passed.
     Will return NULL if \a primitive passed is invalid
 */

@@ -28,6 +28,7 @@
 #include <qglobal.h>
 #include "hbiconloader_p.h"
 #include "hbthemecommon_p.h"
+#include "hbwidgetloader_p.h"
 #include "hbcssparser_p.h"
 #include "hbdeviceprofiledatabase_p.h"
 #include "hblayeredstyleloader_p.h"
@@ -36,7 +37,6 @@
 
 class HbThemeClientPrivate;
 class HbEffectFxmlData;
-struct LayoutDefinition;
 
 class HB_AUTOTEST_EXPORT HbThemeClient
 {
@@ -57,7 +57,7 @@ public:
 
     QByteArray getSharedBlob(const QString &name);
 
-    LayoutDefinition *getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section);
+    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section);
 
     HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
     
@@ -68,6 +68,8 @@ public:
     HbDeviceProfileList *deviceProfiles();
 
     int globalCacheOffset();
+
+    void notifyForegroundLostToServer();
 
     void unloadIcon(const QString& iconPath , 
                         const QSizeF &size,
@@ -107,6 +109,10 @@ public:
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     void createMemoryReport() const;
 #endif
+
+    int freeSharedMemory();
+    int allocatedSharedMemory();
+    int allocatedHeapMemory();
 
 public:
     static HbThemeClient *global();

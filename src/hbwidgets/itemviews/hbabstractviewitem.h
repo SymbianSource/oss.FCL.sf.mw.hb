@@ -30,6 +30,8 @@
 #include <hbnamespace.h>
 #include <hbeffect.h>
 
+#include <QHash>
+
 QT_BEGIN_NAMESPACE
 class QModelIndex;
 QT_END_NAMESPACE
@@ -45,8 +47,16 @@ class HB_WIDGETS_EXPORT HbAbstractViewItem : public HbWidget
     Q_OBJECT
 
     Q_PROPERTY(Hb::ModelItemType modelItemType READ modelItemType)
+    Q_PROPERTY(Qt::CheckState checkState READ checkState WRITE setCheckState)
 
 public:
+
+    enum SelectionAreaType
+    {
+        SingleSelection,
+        MultiSelection,
+        ContiguousSelection
+    };
 
     enum StateKey
     { 
@@ -77,9 +87,12 @@ public:
     virtual void receivedFocus();
     virtual void lostFocus();
 
+    virtual QHash<QString, QVariant> transientState() const;
+    virtual void setTransientState(const QHash<QString, QVariant> &state);
+
     virtual QMap<int,QVariant> state() const;
     virtual void setState(const QMap<int,QVariant> &state);
-    virtual bool selectionAreaContains(const QPointF &scenePosition) const;
+    virtual bool selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const;
 
     virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
@@ -97,6 +110,12 @@ public:
 public slots:
     void updatePrimitives();
 
+signals:
+    void pressed(const QPointF &position);
+    void released(const QPointF &position);
+    void activated(const QPointF &position);
+    void longPressed(const QPointF &position);
+
 protected:
 
     HbAbstractViewItem(const HbAbstractViewItem &source);
@@ -106,6 +125,7 @@ protected:
     void initStyleOption(HbStyleOptionAbstractViewItem *option) const;
     virtual void polish(HbStyleParameters& params);
 
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     virtual bool event(QEvent *e);
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
@@ -115,6 +135,8 @@ protected:
     virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
 
     virtual void pressStateChanged(bool value, bool animate);
+
+    virtual void gestureEvent(QGestureEvent *event);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbAbstractViewItem )

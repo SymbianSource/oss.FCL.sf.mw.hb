@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "hbcontinuousfeedback.h"
+#include "hbfeedbackplayer.h"
 
 #include <QGraphicsItem>
 #include <QGraphicsView>
@@ -33,6 +34,7 @@ class HbContinuousFeedbackPrivate
 {
 public:
     HbContinuousFeedbackPrivate() : cEffect(HbFeedback::ContinuousSmooth),
+        cFeedbackId(-1),
         cTimeout(HbFeedback::StandardFeedbackTimeout),
         cIntensity(HbFeedback::IntensityFull)
     {
@@ -42,6 +44,7 @@ public:
 
 public:
     HbFeedback::ContinuousEffect cEffect;
+    int cFeedbackId;
     int cTimeout;
     int cIntensity;
 };
@@ -158,7 +161,7 @@ void HbContinuousFeedback::setTimeout(int msecTimeout)
 
 /*!
     Sets the intensity of the continuous feedback effect. The intensity
-    has to always be between zero and HbFeedback::IntensityFull = 100.
+    has to always be between HbFeedback::IntensityZero and HbFeedback::IntensityFull.
 */
 void HbContinuousFeedback::setIntensity(int intensity)
 {
@@ -166,8 +169,49 @@ void HbContinuousFeedback::setIntensity(int intensity)
         d->cIntensity = intensity;
     }
 }
+/*!
+    Plays the continuous feedback.
+*/
+void HbContinuousFeedback::play()
+{
+    HbFeedbackPlayer* feedbackPlayer = HbFeedbackPlayer::instance();
+
+    if (feedbackPlayer) {
+        d->cFeedbackId = feedbackPlayer->startContinuousFeedback(*this);
+    }
+}
+/*!
+    Stops the continous feedback.
+  */
+void HbContinuousFeedback::stop()
+{
+    HbFeedbackPlayer* feedbackPlayer = HbFeedbackPlayer::instance();
+
+    if (feedbackPlayer) {
+        feedbackPlayer->cancelContinuousFeedback(d->cFeedbackId);
+    }
+}
+
 
 /*!
+    Returns true if the continuous feedback is being played.
+*/
+bool HbContinuousFeedback::isPlaying()
+{
+    bool feedbackOngoing = false;
+    HbFeedbackPlayer* feedbackPlayer = HbFeedbackPlayer::instance();
+
+    if (feedbackPlayer) {
+        feedbackOngoing = feedbackPlayer->continuousFeedbackOngoing(d->cFeedbackId);
+    }
+
+    return feedbackOngoing;
+}
+
+/*!
+  \deprecated HbContinuousFeedback::isValid() const
+        is deprecated.
+
     Continuous feedback is valid if the feedback effect is not set to HbFeedback::ContinuousNone
     and if the owning window has been defined. There can only be one ongoing continuous feedback effect
     per one application window.

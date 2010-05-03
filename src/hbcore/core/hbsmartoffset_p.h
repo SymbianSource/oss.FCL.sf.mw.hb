@@ -26,7 +26,7 @@
 #ifndef HBSMARTOFFSET_P_H
 #define HBSMARTOFFSET_P_H
 
-#include "hbmemoryutils_p.h"
+#include "hbmemorymanager_p.h"
 #include <QDebug>
 
 
@@ -48,13 +48,12 @@ public:
     ~HbSmartOffset()
     {
         if (mOffset != -1) {
-            GET_MEMORY_MANAGER(mType);
+            HbMemoryManager * manager = HbMemoryManager::instance(mType);
             manager->free(mOffset);
             qDebug() << "HbSmartOffset::~HbSmartOffset() offset = " << mOffset;
         }
     }
 private:
-    //Q_DISABLE_COPY(HbSmartOffset)
     int mOffset;
     HbMemoryManager::MemoryType mType;
 };

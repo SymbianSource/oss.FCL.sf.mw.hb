@@ -1,6 +1,5 @@
-
-/* Only for AutoTest Purpose*/
-HbWidget#AutoTestWidget::text, testtext
+/* HbWidget can have a default text color (and other color attributes)*/
+HbWidget::text
 {
- color:var(testforeground_focused);
+color:var(qtc_default_main_pane_normal);
 }

@@ -91,6 +91,7 @@ enum THbSrvCommands
     EHbSrvGetActivatedIndicatorsStart,
     EHbSrvGetActivatedIndicatorContinue,
     EhbSrvGetActivatedIndicatorsClose,
+    EHbSrvActivatedIndicatorData,
     EHbSrvIndicatorCommandsEnd
     };
 
@@ -105,6 +106,7 @@ enum THbSrvIndicatorChannelData
     {
     EHbIndicatorAllActivated = 0,
     EHbIndicatorUpdates,
+    EHbIndicatorUserActivated
     };
 
 struct THbDeviceDialogSrvUpdateInfo {

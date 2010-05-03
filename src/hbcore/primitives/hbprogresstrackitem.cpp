@@ -113,14 +113,9 @@ void HbProgressTrackItem::paint ( QPainter * painter, const QStyleOptionGraphics
         }
     }
 
-	QPixmap mask(size);
-    mask.fill(Qt::white);
-    QPainter p;
-    p.begin(&mask);
-    p.setBrush(QBrush(Qt::black));
-	p.drawRect(maskRect);
-	p.end();
-	frameDrawer().setMask(mask);                   
+	QPainterPath path;
+	path.addRect(maskRect);
+	frameDrawer().setClipPath(path);         
     HbFrameItem::paint(painter,option,widget);
 }
 

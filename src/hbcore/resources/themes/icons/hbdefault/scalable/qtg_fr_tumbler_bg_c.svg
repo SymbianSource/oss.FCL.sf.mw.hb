@@ -2,13 +2,14 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="50px" version="1.1" viewBox="0 0 50 50" width="50px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <rect fill="none" height="50" width="50"/>
-<g>
 <rect fill="url(#SVGID_1_)" height="50" width="50"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="24.9995" x2="24.9995" y1="-9.75" y2="60.2617">
-<stop offset="0" style="stop-color:#B3B3B3"/>
-<stop offset="1" style="stop-color:#4D4D4D"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="24.9995" x2="24.9995" y1="-9" y2="58.8632">
+<stop offset="0" style="stop-color:#CCCCCC"/>
+<stop offset="0.0043" style="stop-color:#CCCCCC"/>
+<stop offset="0.35" style="stop-color:#FFFFFF"/>
+<stop offset="0.7" style="stop-color:#FFFFFF"/>
+<stop offset="1" style="stop-color:#D9D9D9"/>
 </linearGradient>
 </defs>
-</g>
 </svg>

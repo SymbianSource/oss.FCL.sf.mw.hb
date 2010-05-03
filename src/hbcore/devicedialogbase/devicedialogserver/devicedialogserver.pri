@@ -27,14 +27,14 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbdevicedialogmanager_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogmanager_p_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogscontainer_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogpluginmanager_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorclientinfo_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogserver_p.h
-INTERNAL_HEADERS += $$PWD/hbpluginnamecache_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogserverstatus_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogmanager_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogmanager_p_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogscontainer_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogpluginmanager_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorclientinfo_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogserver_p.h
+PRIVATE_HEADERS += $$PWD/hbpluginnamecache_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogserverstatus_p.h
 
 SOURCES += $$PWD/hbdevicedialogserver.cpp
 SOURCES += $$PWD/hbdevicedialogmanager.cpp
@@ -44,9 +44,9 @@ SOURCES += $$PWD/hbdevicedialogpluginmanager.cpp
 SOURCES += $$PWD/hbpluginnamecache.cpp
 
 symbian {
-INTERNAL_HEADERS += $$PWD/hbdevicedialogserversym_p_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogsession_p.h
-INTERNAL_HEADERS += $$PWD/hbdevicedialogserverdefs_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogserversym_p_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogsession_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialogserverdefs_p.h
 
 SOURCES += $$PWD/hbdevicedialogserversym_p.cpp
 SOURCES += $$PWD/hbdevicedialogsession.cpp
@@ -54,14 +54,14 @@ SOURCES += $$PWD/hbindicatorsessionhandler.cpp
 SOURCES += $$PWD/hbdevicedialogserverstatussym.cpp
 }
 
-win32|linux-*|macx-* {
-INTERNAL_HEADERS += $$PWD/hbdevicedialogserverwin_p_p.h
+!symbian {
+PRIVATE_HEADERS += $$PWD/hbdevicedialogserverwin_p_p.h
 
 SOURCES += $$PWD/hbdevicedialogserverwin_p.cpp
 SOURCES += $$PWD/hbdevicedialogserverstatuswin.cpp
 }
 
-symbian: {
+symbian {
 LIBS += -lws32
 LIBS += -lcone
 }

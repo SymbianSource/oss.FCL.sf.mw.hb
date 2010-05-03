@@ -30,6 +30,7 @@
 #include <hbwidget_p.h>
 #include <hbeffect.h>
 #include <hbframebackground.h>
+#include <hbnamespace.h>
 
 #include <QPersistentModelIndex>
 #include <QPointer>
@@ -38,6 +39,8 @@
 
 class HbAbstractItemView;
 class QGraphicsItem;
+
+class QGestureEvent;
 
 #define HB_SD(Class) Class##Shared * sd = (Class##Shared *)(d->mSharedData.data())
 #define HB_SDD(Class) Q_D(Class); Class##Shared * sd = (Class##Shared *)(d->mSharedData.data())
@@ -49,7 +52,7 @@ class HbAbstractViewItemShared : public QSharedData
         HbAbstractViewItemShared() :
           mPrototype(0),
           mItemView(0),
-          mDefaultFrame("", HbFrameDrawer::Undefined),
+          mDefaultFrame(),
           mItemType("viewitem")
         {
         }
@@ -64,7 +67,9 @@ class HbAbstractViewItemShared : public QSharedData
         static const int ViewItemDeferredDeleteEvent;
 };
 
-class HbAbstractViewItemPrivate : public HbWidgetPrivate
+// Note! Temporary HB_AUTOTEST_EXPORT. Removed when QMAP_INT__ITEM_STATE_DEPRECATED when QMap<int,QVariant> based state item system is removed 
+//#define QMAP_INT__ITEM_STATE_DEPRECATED
+class HB_AUTOTEST_EXPORT HbAbstractViewItemPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbAbstractViewItem )
 
@@ -84,7 +89,7 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
           mSizeHintPolish(false),
           mPressed(false),
           mFocusItem(0),
-          mMultiSelectionTouchArea(0),
+          mMultiSelectionTouchArea(0),                    
           mSharedData(shared)
         {
             if (!mSharedData) {
@@ -149,10 +154,14 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
         void _q_animationFinished(const HbEffect::EffectStatus &status);
 
         void repolishCloneItems();
-        void updateCloneItems();
+        void updateCloneItems(bool updateChildItems);
 
         virtual void setInsidePopup(bool insidePopup);
 
+        virtual void tapTriggered(QGestureEvent *event);
+
+        void revealItem();
+public:
         QPersistentModelIndex mIndex;
         bool mFocused;
         

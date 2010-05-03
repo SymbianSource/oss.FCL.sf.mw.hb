@@ -248,6 +248,7 @@ void HbInputModeCachePrivate::updateMonitoredPaths()
 /// @endcond
 
 /*!
+\internal
 Returns the singleton instance.
 */
 HbInputModeCache* HbInputModeCache::instance()
@@ -257,6 +258,7 @@ HbInputModeCache* HbInputModeCache::instance()
 }
 
 /*!
+\internal
 Construct the object.
 */
 HbInputModeCache::HbInputModeCache() : d_ptr(new HbInputModeCachePrivate())
@@ -271,6 +273,7 @@ HbInputModeCache::HbInputModeCache() : d_ptr(new HbInputModeCachePrivate())
 }
 
 /*!
+\internal
 Destruct the object.
 */
 HbInputModeCache::~HbInputModeCache()
@@ -279,6 +282,7 @@ HbInputModeCache::~HbInputModeCache()
 }
 
 /*!
+\internal
 This slot is called whenever a change in input method plugin file system is detected and
 the list needs to be refreshed.
 */
@@ -294,6 +298,7 @@ void HbInputModeCache::directoryChanged(const QString &directory)
 }
 
 /*!
+\internal
 Shuts down the object safely. This is needed mainly for singleton object. There has been a lot
 of problems related to randown singleton desctruction order and additional shutdown step is
 needed to guarantee that it will be done safely. The slot is connected to
@@ -314,6 +319,7 @@ void HbInputModeCache::shutdown()
 }
 
 /*!
+\internal
 Loads given input method and caches it.
 */
 HbInputMethod* HbInputModeCache::loadInputMethod(const HbInputMethodDescriptor &inputMethod)
@@ -335,6 +341,7 @@ HbInputMethod* HbInputModeCache::loadInputMethod(const HbInputMethodDescriptor &
 }
 
 /*!
+\internal
 Lists custom input methods.
 */
 QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
@@ -357,8 +364,9 @@ QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
 }
 
 /*!
- Find correct handler for given input state.
- */
+\internal
+Find correct handler for given input state.
+*/
 HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
 {
     Q_D(HbInputModeCache);
@@ -409,10 +417,11 @@ HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
 }
 
 /*!
- Returns the active input method.
+\internal
+Returns the active input method.
 
- \sa HbInputMethod
- */
+\sa HbInputMethod
+*/
 HbInputMethod* HbInputModeCache::activeMethod() const
 {
     Q_D(const HbInputModeCache);
@@ -427,6 +436,7 @@ HbInputMethod* HbInputModeCache::activeMethod() const
 }
 
 /*!
+\internal
 Lists available input languages.
 */
 QList<HbInputLanguage> HbInputModeCache::listInputLanguages() const

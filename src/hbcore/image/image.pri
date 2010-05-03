@@ -34,26 +34,27 @@ PUBLIC_HEADERS += $$PWD/hbiconanimationmanager.h
 PUBLIC_HEADERS += $$PWD/hbiconanimationdefinition.h
 PUBLIC_HEADERS += $$PWD/hbiconanimator.h
 
-INTERNAL_HEADERS += $$PWD/hbframedrawer_p.h
-INTERNAL_HEADERS += $$PWD/hbframebackground_p.h
-INTERNAL_HEADERS += $$PWD/hbicon_p.h
-INTERNAL_HEADERS += $$PWD/hbiconanimation_p.h 
-INTERNAL_HEADERS += $$PWD/hbiconanimator_p.h
-INTERNAL_HEADERS += $$PWD/hbiconanimationdatatypes_p.h
-INTERNAL_HEADERS += $$PWD/hbiconanimationmanager_p.h
-INTERNAL_HEADERS += $$PWD/hbiconanimationparser_p.h
-INTERNAL_HEADERS += $$PWD/hbiconengine_p.h
-INTERNAL_HEADERS += $$PWD/hbiconloader_p.h
-INTERNAL_HEADERS += $$PWD/hbicontheme_p.h
-INTERNAL_HEADERS += $$PWD/hblayoutdirectionnotifier_p.h
-INTERNAL_HEADERS += $$PWD/hbiconimpl_p.h
-INTERNAL_HEADERS += $$PWD/hbpixmapiconimpl_p.h
-INTERNAL_HEADERS += $$PWD/hbbadgeicon_p.h
-INTERNAL_HEADERS += $$PWD/hbbadgeiconinfo_p.h
-INTERNAL_HEADERS += $$PWD/hbiconsource_p.h
-INTERNAL_HEADERS += $$PWD/hbframedrawerpool_p.h
-INTERNAL_HEADERS += $$PWD/hbmaskableiconimpl_p.h
-INTERNAL_HEADERS += $$PWD/hbiconimplcreator_p.h
+PRIVATE_HEADERS += $$PWD/hbframedrawer_p.h
+PRIVATE_HEADERS += $$PWD/hbframebackground_p.h
+PRIVATE_HEADERS += $$PWD/hbicon_p.h
+PRIVATE_HEADERS += $$PWD/hbiconanimation_p.h 
+PRIVATE_HEADERS += $$PWD/hbiconanimator_p.h
+PRIVATE_HEADERS += $$PWD/hbiconanimationdatatypes_p.h
+PRIVATE_HEADERS += $$PWD/hbiconanimationmanager_p.h
+PRIVATE_HEADERS += $$PWD/hbiconanimationparser_p.h
+PRIVATE_HEADERS += $$PWD/hbiconengine_p.h
+PRIVATE_HEADERS += $$PWD/hbiconloader_p.h
+PRIVATE_HEADERS += $$PWD/hbicontheme_p.h
+PRIVATE_HEADERS += $$PWD/hblayoutdirectionnotifier_p.h
+PRIVATE_HEADERS += $$PWD/hbiconimpl_p.h
+PRIVATE_HEADERS += $$PWD/hbpixmapiconimpl_p.h
+PRIVATE_HEADERS += $$PWD/hbbadgeicon_p.h
+PRIVATE_HEADERS += $$PWD/hbbadgeiconinfo_p.h
+PRIVATE_HEADERS += $$PWD/hbiconsource_p.h
+PRIVATE_HEADERS += $$PWD/hbframedrawerpool_p.h
+PRIVATE_HEADERS += $$PWD/hbmaskableiconimpl_p.h
+PRIVATE_HEADERS += $$PWD/hbiconimplcreator_p.h
+PRIVATE_HEADERS += $$PWD/hbpixmapiconrenderer_p.h
 
 SOURCES += $$PWD/hbframedrawer.cpp
 SOURCES += $$PWD/hbframebackground.cpp
@@ -73,16 +74,20 @@ SOURCES += $$PWD/hbbadgeiconinfo.cpp
 SOURCES += $$PWD/hbiconsource.cpp
 SOURCES += $$PWD/hbframedrawerpool.cpp
 SOURCES += $$PWD/hbiconimplcreator_p.cpp
+SOURCES += $$PWD/hbpixmapiconrenderer.cpp
 
 symbian {
     nvg {
+        PRIVATE_HEADERS += $$PWD/hbnvgiconimpl_p.h   
+        PRIVATE_HEADERS += $$PWD/hbeglstate_p.h   
+        PRIVATE_HEADERS += $$PWD/hbvgimageiconrenderer_p.h
+	
         SOURCES += $$PWD/hbnvgiconimpl_p.cpp    
         SOURCES += $$PWD/hbeglstate.cpp
-        INTERNAL_HEADERS += $$PWD/hbnvgiconimpl_p.h   
-    	INTERNAL_HEADERS += $$PWD/hbeglstate_p.h   
+	SOURCES += $$PWD/hbvgimageiconrenderer.cpp
     }
     sgimage {    
         SOURCES += $$PWD/hbsgimageiconimpl_p.cpp
-        INTERNAL_HEADERS += $$PWD/hbsgimageiconimpl_p.h
+        PRIVATE_HEADERS += $$PWD/hbsgimageiconimpl_p.h
     }
 }

@@ -37,10 +37,11 @@ public:
 
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
-    void listInputModes(QVector<HbInputModeProperties>& aResults) const;
     bool isActive() const; 
     void processCustomWord(QString customWord);
 	void mouseHandler(int cursorPosition, QMouseEvent* mouseEvent);
+protected:
+	HbInputPrediction12KeyHandler(HbInputPrediction12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputPrediction12KeyHandler)
     Q_DISABLE_COPY(HbInputPrediction12KeyHandler)

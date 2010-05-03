@@ -30,8 +30,10 @@
 #include <hbinpututils.h>
 #include <hbinputvkbhost.h>
 #include <hbinputsettingproxy.h>
-#include <hbinputsettingdialog.h>
 #include <hbinputcommondialogs.h>
+#include <hbmainwindow.h>
+#include <hbview.h>
+#include <hbdataform.h>
 
 #include "hbinputvkbwidget_p.h"
 #include "hbinputhwtoolcluster.h"
@@ -150,7 +152,7 @@ void HbHwToolCluster::setupToolCluster()
         d->mSettingsButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
         d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
 
-        connect(d->mSettingsButton, SIGNAL(clicked()), this, SLOT(showSettingsDialog()));
+        connect(d->mSettingsButton, SIGNAL(clicked()), this, SLOT(showSettingList()));
     }
     if(!d->mLanguageButton) {
         d->mLanguageButton = new HbTouchKeypadButton(this, QString(""));
@@ -182,7 +184,7 @@ void HbHwToolCluster::setupToolCluster()
     }
 
     // update prediction button status
-    if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
+    if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard()) {
         d->mPredictionIndicatorButton->setIcon(HbIcon(predictionOffIcon));
     } else {
         d->mPredictionIndicatorButton->setIcon(HbIcon(predictionOnIcon));
@@ -274,19 +276,13 @@ QSizeF HbHwToolCluster::preferredKeyboardSize()
 }
 
 /*!
+\deprecated HbHwToolCluster::showSettingsDialog()
+    is deprecated. Use showSettingsView instead.
+
 Shows the settings dialog
 */
 void HbHwToolCluster::showSettingsDialog()
 {
-    Q_D(HbHwToolCluster);
-
-    HbInputSettingDialog::HbSettingItems items = HbInputSettingDialog::HbSettingItemAll;
-    if(d->mOwner->focusObject() && d->mOwner->focusObject()->editorInterface().isNumericEditor()){
-        items &=  (~HbInputSettingDialog::HbSettingItemPrediction);
-    }
-    HbInputSettingDialog* settings = new HbInputSettingDialog(items);
-    settings->exec();
-    delete settings;
 }
 
 /*!

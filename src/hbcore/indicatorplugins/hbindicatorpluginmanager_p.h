@@ -88,7 +88,8 @@ signals:
     void indicatorUpdated(const IndicatorClientInfo &clientInfo);
     void indicatorRemoved(HbIndicatorInterface *indicatorRemoved);
     void indicatorRemoved(const IndicatorClientInfo &clientInfo);
-
+    void indicatorUserActivated(const QVariantMap& data);
+    
 public slots:
     bool activateIndicator(const QString &indicatorType, const QVariant &parameter,
         const QVariantMap &securityCredentials);
@@ -96,6 +97,7 @@ public slots:
         const QVariantMap &securityCredentials);
     void deactivateIndicator();
     void indicatorDataChanged();
+    void userActivateIndicator(const QVariantMap& data);
 private:
     bool checkAccess(int index, const QString &indicatorType,
         const QVariantMap &securityCredentials);    

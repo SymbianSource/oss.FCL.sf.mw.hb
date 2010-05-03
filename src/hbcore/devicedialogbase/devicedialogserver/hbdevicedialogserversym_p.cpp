@@ -62,11 +62,12 @@ HbDeviceDialogServerPrivate::~HbDeviceDialogServerPrivate()
     \internal
     Initialisation step. Starts a server with given name.
 */
-void HbDeviceDialogServerPrivate::Init()
+int HbDeviceDialogServerPrivate::Init()
 {
     TRACE_ENTRY
-    TRAP_IGNORE(StartL(KHbServerName));
+    int error = Start(KHbServerName);
     TRACE_EXIT
+    return error;
 }
 
 /*!
@@ -275,6 +276,15 @@ void HbDeviceDialogServerPrivate::IndicatorsDeactivated(
     TRACE_ENTRY
     for (TInt i(0); i < iIndicatorSessionList.Count(); ++i ) {
         iIndicatorSessionList[i]->IndicatorsDeactivated( indicatorInfoList );
+    }
+    TRACE_EXIT
+}
+
+void HbDeviceDialogServerPrivate::IndicatorUserActivated(const QVariantMap &data) const
+{    
+    TRACE_ENTRY
+    for (TInt i(0); i < iIndicatorSessionList.Count(); ++i) {
+        iIndicatorSessionList[i]->IndicatorUserActivated(data);
     }
     TRACE_EXIT
 }

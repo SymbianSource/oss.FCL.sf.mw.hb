@@ -103,14 +103,19 @@ protected:
     bool event( QEvent *event );
     void keyPressEvent( QKeyEvent *event );
     void keyReleaseEvent( QKeyEvent *event );
+#ifndef HB_GESTURE_FW
     void mousePressEvent( QGraphicsSceneMouseEvent *event );
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
     void mouseMoveEvent( QGraphicsSceneMouseEvent *event );
+#endif
     void focusInEvent( QFocusEvent *event );
     void changeEvent( QEvent *event );
     void timerEvent( QTimerEvent *event );
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
     void polish(HbStyleParameters& params);
+
+    void gestureEvent(QGestureEvent *event);
+
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbAbstractButton )
     Q_DISABLE_COPY( HbAbstractButton )

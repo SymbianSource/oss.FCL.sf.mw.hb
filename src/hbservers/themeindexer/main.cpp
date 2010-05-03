@@ -25,9 +25,17 @@
 
 #include <hbiconsource_p.h>
 #include <hbthemeindex_p.h>
-#include <QtGui>
 #include <assert.h>
 #include <iostream>
+#include <QApplication>
+#include <QStringList>
+#include <QTextStream>
+#include <QFileInfo>
+#include <QLibrary>
+#include <QString>
+#include <QFile>
+#include <QMap>
+#include <QDir>
 
 #define RESOURCE_LIB_NAME "HbCore"
 #define WIN32_DEBUG_SUFFIX "d"
@@ -322,7 +330,7 @@ void loadHbResource()
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+    QApplication app(argc, argv, false); // GUIenabled=false
 
     if (argc <= 2) {
         showHelp();

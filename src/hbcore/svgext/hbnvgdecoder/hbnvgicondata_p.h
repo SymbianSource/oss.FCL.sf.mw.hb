@@ -35,23 +35,37 @@
 class HbNvgIconData
 {
 public:
-    HbNvgIconData(uint length = 0);
+    HbNvgIconData(quint32 length = 0);
 
     HbNvgIconData(const QByteArray &buffer);
 
-    virtual ~HbNvgIconData();
+    ~HbNvgIconData();
 
-    int encodeInt8(quint8 val); 
-   
-    int encodeInt16(quint16 val); 
-   
-    int encodeInt32(quint32 val);
-   
-    int encodeReal32(float val); 
-   
-    int encodeReal64(qreal val);
-   
-    int encodeData(const void *data, quint32 length);
+    qint32 encodeUint8(quint8 aVal)
+    {
+        return encodeData(&aVal, sizeof(aVal));
+    }
+
+    qint32 encodeUint16(quint16 aVal)
+    {
+        return encodeData(&aVal, sizeof(aVal));
+    }
+
+    qint32 encodeUint32(quint32 aVal)
+    {
+        return encodeData(&aVal, sizeof(aVal));
+    }
+
+    int encodeReal32(float aVal)
+    {
+        return encodeData(&aVal, sizeof(aVal));
+    }
+    qint32 encodeReal64(double aVal)
+    {
+        return encodeData(&aVal, sizeof(aVal));
+    }
+
+    qint32 encodeData(const void *data, quint32 length);
 
     void beginRead();
 
@@ -63,73 +77,154 @@ public:
 
     qint8 readInt8();
 
-    void read(quint8 *ptr, int length);
+    void read(quint8 *ptr, qint32 length);
 
     float readReal32();
 
     qreal readReal64();
 
-    int readPos();
-    
-    void skip(int length);
+    qint32 readPos() const
+    {
+        return totalRead;
+    }
+
+    void skip(qint32 length);
 
     const char* buffer() {
         return mNvgData->data() ;
     }
 
-    bool eof();
-    
-    int dataLength();
+    bool eof() const
+    {
+        return (totalRead >= dataSize);
+    }
+
+    qint32 dataLength() const
+    {
+        return dataSize;
+    }
 
 private:
 
-	void checkOutOfBound(int length);
-	    
+    void checkOutOfBound(qint32 length)
+    {
+        if (totalRead + length > dataSize ||
+                totalRead + length < 0){
+            throw HbNvgException(HbNvgEngine::NvgErrEof);
+        }
+    }
+
     QByteArray*        mNvgData;
-    int                totalRead;
-    int                dataSize;
+    qint32                totalRead;
+    qint32                dataSize;
     quint8 *           readStream;
 };
 
 class HbDereferencer
-    {
+{
+#define DEREF_PTR(TOTYPE, Offset, Size) do {\
+                                checkOutOfBound(Offset + Size); \
+                                return * (TOTYPE *)&mReadStream[mTotalRead + Offset];\
+                           } while (0)
 public:
-    
-    HbDereferencer(quint8* buf, int length);
-    
-    HbDereferencer(const QByteArray& buffer);
-    
-    void skip(int length);
-    
-    qint16 derefInt16(int at = 0);
-    operator qint16();
-    
-    qint32 derefInt32(int at = 0);
-    operator qint32();
-    
-    qint8 derefInt8(int at = 0);
-    operator qint8();
+   
+    HbDereferencer(quint8* buf, qint32 length)
+        : mTotalRead(0),
+        mDataLength(length),
+        mReadStream((unsigned char*)buf)
+    {
+    }
 
-    quint8 * derefInt8Array(int length, int at = 0);
-       
-    float derefReal32(int at = 0);
-    operator float();
+    HbDereferencer(const QByteArray& buffer)
+            : mTotalRead(0),
+            mDataLength(buffer.length()),
+            mReadStream((unsigned char*)buffer.data())
+    {        
+    }
+
+    void skip(qint32 length)
+    {
+        checkOutOfBound(length);
+        mTotalRead += length;
+    }
+
+    qint16 derefInt16(qint16 at = 0)
+    {
+        DEREF_PTR(qint16, at, sizeof(qint16));
+    }
+    operator qint16()
+    {
+        return derefInt16();    
+    }
+
+    qint32 derefInt32(qint32 at = 0)
+    {
+        DEREF_PTR(qint32, at, sizeof(qint32));
+    }
     
-    void isSafe(int length, int at = 0);
+    operator qint32()
+    {
+        return derefInt32();    
+    }
 
-    quint8* getPtr();
-
-    int getLength();
+    qint8 derefInt8(qint32 at = 0)
+    {
+        DEREF_PTR(qint8, at, sizeof(qint8));
+    }
     
-    int getReadingPos();
+    operator qint8()
+    {
+        return derefInt8();    
+    }
 
+    quint8* derefInt8Array(qint32 length, qint32 at = 0)
+    {
+        checkOutOfBound(at + length);
+        return (quint8 *)&mReadStream[mTotalRead + at];
+    }
+
+    float derefReal32(qint32 at = 0)
+    {
+        DEREF_PTR(float, at, sizeof(float));
+    }
+    operator float()
+    {
+        return derefReal32();
+    }
+
+    void assertBound(qint32 length, qint32 at = 0)
+    {
+        checkOutOfBound(at + length);
+    }
+
+    quint8* getPtr() const
+    {
+        return mReadStream;
+    }
+
+    qint32 getLength() const
+    {
+        return mDataLength;
+    }
+
+    qint32 getReadingPos() const
+    {
+        return mTotalRead;
+    }
+    
 private:
-    void checkOutOfBound(int length);
+    void checkOutOfBound(qint32 length)
+    {
+        if (mTotalRead + length > mDataLength ||
+                mTotalRead + length < 0){
+            throw HbNvgException(HbNvgEngine::NvgErrEof);
+        }
+    }
 
-    int                mTotalRead;
-    int                mDataLength;
+    qint32                mTotalRead;
+    qint32                mDataLength;
     quint8*            mReadStream;
-    };
+};
 
-#include "hbnvgicondata_p.inl"
 #endif
+

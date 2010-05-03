@@ -31,6 +31,7 @@ const int HbEvent::ThemeChanged = registerEventType();
 const int HbEvent::DeviceProfileChanged = registerEventType();
 const int HbEvent::SleepModeEnter = registerEventType();
 const int HbEvent::SleepModeExit = registerEventType();
+const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
 
 /*!
     @stable
@@ -57,12 +58,16 @@ const int HbEvent::SleepModeExit = registerEventType();
                   the event can be catched in event(QEvent *event) method.
 
     SleepModeEnter - This event is sent by the system when the phone enters to the sleep mode. 
-                   If your application/component needs to take some action when entering the
-                   sleep mode then you can do it in event(QEvent *event) method.
+                     If your application/component needs to take some action when entering the
+                     sleep mode then you can do it in event(QEvent *event) method.
     
     SleepModeExit - This event is sent by the system when the phone exist from the sleep mode.
-                   If your application/component needs to take some action when exiting the
-                   sleep mode then you can do it in event(QEvent *event) method.
+                    If your application/component needs to take some action when exiting the
+                    sleep mode then you can do it in event(QEvent *event) method.
+
+    DeviceProfileChanged - This event is sent by the system when layout direction of the main
+                           window changes. If your application/component needs to take some
+                           action upon this event you can do it in event(QEvent *event) method.
 
     Example of how to send HbEvent
     \snippet{gui/hbwidget.cpp,1}

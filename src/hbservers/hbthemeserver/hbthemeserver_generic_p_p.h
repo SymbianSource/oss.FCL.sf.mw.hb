@@ -63,6 +63,7 @@ public:
     void removeIconCacheItem(const HbIconKey &key);
     void clearIconCache();
     void handleThemeSelection(const QString &newtheme);
+    void handleContentUpdate(const QStringList &fileNames);
 
     QByteArray handleSharedEffectAddAndFileLookup(int request, const QString &fileName);
     QByteArray handleSharedWidgetMLLookup(const QString &fileName, const QString &layout, const QString &section);
@@ -77,6 +78,8 @@ public:
     void doCleanup();
     int sessionListCount() const;
 
+    int freeSharedMemory() const;
+    int allocatedSharedMemory() const;
 
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -101,6 +104,9 @@ public:
 private slots:
     void newClientConnected();
     void removeFromList();
+
+public:
+    QHash<QString, HbCacheItem*> themePriorityItems;
 
 private:
 #ifdef QT_DEBUG
@@ -135,6 +141,9 @@ public:
                                 int noOfPieces,
                                 HbIconKey &stichedKey,
                                 HbSharedIconInfo &stitchedData);
+    void clearSessionIconData();
+    void removeSessionIconItem(const HbIconKey &key);
+    void removeSessionCssItem(const QString &key);
 
 public slots:
     void readDataFromClient();

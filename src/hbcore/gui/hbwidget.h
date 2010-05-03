@@ -90,6 +90,7 @@ public:
     HbMainWindow *mainWindow() const;
 
     virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
+    virtual QGraphicsItem *primitive(const QString &itemName) const;
     virtual QGraphicsLayoutItem *layoutPrimitive(const QString &itemName) const;
 
     void setFocusOrientation(Qt::Orientations previous, Qt::Orientations next);
@@ -119,8 +120,8 @@ public:
     void setBackgroundItem(QGraphicsItem *item, int zValue = -1);
     QGraphicsItem *backgroundItem() const;
 
-    virtual HbFeedback::InstantEffect overrideFeedback(Hb::InstantInteraction interaction) const;
-    virtual HbFeedback::ContinuousEffect overrideContinuousFeedback(Hb::ContinuousInteraction interaction, int *intensity) const;
+    virtual HbFeedback::InstantEffect overrideFeedback(Hb::InstantInteraction interaction) const; // deprecated
+    virtual HbFeedback::ContinuousEffect overrideContinuousFeedback(Hb::ContinuousInteraction interaction, int *intensity) const; // deprecated
 
 public slots:
     virtual void recreatePrimitives();
@@ -140,10 +141,6 @@ protected:
     void repolish();
 
     void setPluginBaseId(int baseId);
-
-#ifdef HB_GESTURE_FW
-    virtual void gestureEvent(QGestureEvent *event);
-#endif
 
 protected:
     HbWidget(HbWidgetPrivate &dd, QGraphicsItem *parent, Qt::WindowFlags wFlags=0);

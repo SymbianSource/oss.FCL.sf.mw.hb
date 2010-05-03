@@ -38,7 +38,7 @@ public:
     TBool ServerRunning() const;
     TInt Connect();
     void Close();
-    TInt StartServer(RSemaphore &aServerStartedSema);
+    TInt StartServer();
 
     int SendSyncRequest(int aCommand, int aInt0 = 0);
     int SendSyncRequest(int aCommand, const TDesC8 &aData, TDes8 *aReceiveData = 0);

@@ -52,7 +52,7 @@ public:
         : mInputMode(0),
         mTextCase(HbTextCaseNone),
         mConstraints(0),
-        mLocalDigitType(0),
+        mLocalDigitType(HbDigitTypeNone),
         mExtraDictionaryId(0),
         mClass(0),
         mHostEditor(0)
@@ -67,11 +67,11 @@ public:
     Qt::InputMethodHints inputMethodHints() const;
 
 public:
-    int mInputMode;
+    HbInputModeType mInputMode;
     HbTextCase mTextCase;
-    int mConstraints;
+    HbEditorConstraints mConstraints;
     QPointer<HbInputFilter> mFilter;
-    int mLocalDigitType;
+    HbInputDigitType mLocalDigitType;
     int mExtraDictionaryId;
     int mClass;
     HbSmileyTheme mSmileyTheme;
@@ -103,13 +103,13 @@ private:
     ~HbEditorInterfacePrivateCache();
 
 public:
-    HbEditorInterfacePrivate* attachEditor(QObject* aEditor, HbEditorInterface* aInterface);
+    HbEditorInterfacePrivate* attachEditor(QObject* editor, HbEditorInterface* interface);
     bool isConnected(QObject* object);
-    void notifyValueChanged(QObject *aEditor);
+    void notifyValueChanged(QObject *editor);
 
 public slots:
-    void destroyed(QObject* aObject);
-    void interfaceDestroyed(QObject* aObject);
+    void destroyed(QObject* object);
+    void interfaceDestroyed(QObject* object);
 
 private:
     QVector<HbEditorInterfacePrivate*> mObjectCache;

@@ -30,10 +30,10 @@ DEPENDPATH += $$PWD
 PUBLIC_HEADERS += $$PWD/hbdocumentloader.h
 PUBLIC_HEADERS += $$PWD/hbdocumentloaderplugin.h
 
-INTERNAL_HEADERS += $$PWD/hbdocumentloader_p.h
-INTERNAL_HEADERS += $$PWD/hbdocumentloaderactions_p.h
-INTERNAL_HEADERS += $$PWD/hbdocumentloaderfactory_p.h
-INTERNAL_HEADERS += $$PWD/hbdocumentloadersyntax_p.h
+PRIVATE_HEADERS += $$PWD/hbdocumentloader_p.h
+PRIVATE_HEADERS += $$PWD/hbdocumentloaderactions_p.h
+PRIVATE_HEADERS += $$PWD/hbdocumentloaderfactory_p.h
+PRIVATE_HEADERS += $$PWD/hbdocumentloadersyntax_p.h
 
 SOURCES += $$PWD/hbdocumentloader.cpp
 SOURCES += $$PWD/hbdocumentloader_p.cpp

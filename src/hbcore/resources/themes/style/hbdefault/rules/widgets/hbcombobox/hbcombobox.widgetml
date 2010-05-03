@@ -8,7 +8,8 @@
       
     <meshitem src="text_background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="text_background" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />
-    <meshitem src="text_background" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="text_background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text_background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
     <meshitem src="combobox_labelfield" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="combobox_labelfield" srcEdge="RIGHT" dst="combobox_button" dstEdge="LEFT" />

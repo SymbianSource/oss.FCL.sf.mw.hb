@@ -46,7 +46,7 @@
 
 #define VGCREATEPATH(a1, a2, a3, a4, a5, a6, a7)  vgCreatePath(a1, a2, a3, a4, a5, a6, a7)
 #define VGDESTROYPATH(h)     vgDestroyPath(h)
-    
+
 #define VGCREATEIMAGE(a1, a2, a3, a4) vgCreateImage(a1, a2, a3, a4)
 #define VGDESTROYIMAGE(h)     vgDestroyImage(h)
 
@@ -55,7 +55,7 @@
 #define DECLARE_HANDLECHECKER()
 #define INIT_HANDLECHECKER()
 #define ASSERT_HANDLE_COUNT()
-    
+
 #else
 
 #define NVG_DEBUGP1(x1)                                 qDebug(x1)
@@ -70,152 +70,150 @@
 
 #define NVG_DEBUGSTMT(x1)                             do { x1; } while (0)
 
-struct HandleCounter
-        {
-        int    paintHC;
-        int    pathHC;
-        int    imageHC;
-        HandleCounter() : paintHC(0), pathHC(0), imageHC(0) {}
-        };
+struct HbHandleCounter {
+    qint32    paintHC;
+    qint32    pathHC;
+    qint32    imageHC;
+    HbHandleCounter() : paintHC(0), pathHC(0), imageHC(0) {}
+};
 
-inline void incrementPaintHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void incrementPaintHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->paintHC++;
     }
-    }
+}
 
-inline void decrementPaintHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void decrementPaintHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->paintHC--;
     }
-    }
+}
 
-inline void decrementImageHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void decrementImageHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->imageHC--;
     }
-    }
+}
 
-inline void decrementPathHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void decrementPathHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->pathHC--;
     }
-    }
+}
 
-inline void incrementPathHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void incrementPathHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->pathHC++;
     }
-    }
+}
 
-inline void incrementImageHandleCountL(HandleCounter * handleCounter)
-    {
-    if (handleCounter){
+inline void incrementImageHandleCountL(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
         handleCounter->imageHC++;
     }
-    }
+}
 
-inline void checkHandleCout(HandleCounter * handleCounter)
-    {
-    if (handleCounter)
-        {
-        if (handleCounter->paintHC != 0){
-			// @TODO, throw panic.
+inline void checkHandleCout(HbHandleCounter * handleCounter)
+{
+    if (handleCounter) {
+        if (handleCounter->paintHC != 0) {
+            // @TODO, throw panic.
             //User::Panic(_L("Paint Handle Deallocation Not Matching"), 1);
         }
-        
-        if (handleCounter->pathHC != 0){
+
+        if (handleCounter->pathHC != 0) {
             // @TODO , throw panic
             //User::Panic(_L("Path Handle Deallocation Not Matching"), 1);
         }
-        
-        if (handleCounter->imageHC != 0){
+
+        if (handleCounter->imageHC != 0) {
             // @TODO , throw panic
             //User::Panic(_L("Image Handle Deallocation Not Matching"), 1);
         }
     }
-    
+
     delete handleCounter;
     handleCounter = 0;
-    }
+}
 
-inline VGHandle vgCreatePaintWrapper(HandleCounter * handleCounter)
-    {
+inline VGHandle vgCreatePaintWrapper(HbHandleCounter * handleCounter)
+{
     VGPaint pH = vgCreatePaint();
-    if (pH){
+    if (pH) {
         incrementPaintHandleCountL(handleCounter);
     }
     return pH;
-    }
-                                    
-inline void vgDestroyPaintWrapper(HandleCounter * handleCounter, VGHandle h)
-    {
-    if (h){
+}
+
+inline void vgDestroyPaintWrapper(HbHandleCounter * handleCounter, VGHandle h)
+{
+    if (h) {
         vgDestroyPaint(h);
         decrementPaintHandleCountL(handleCounter);
     }
-    }
-    
-    
-inline VGHandle vgCreatePathWrapper(HandleCounter * handleCounter, VGint a1,
-        VGPathDatatype a2,
-        VGfloat a3, VGfloat a4,
-        VGint a5,
-        VGint a6,
-        VGbitfield a7)
-    {
+}
+
+
+inline VGHandle vgCreatePathWrapper(HbHandleCounter * handleCounter, VGint a1,
+                                    VGPathDatatype a2,
+                                    VGfloat a3, VGfloat a4,
+                                    VGint a5,
+                                    VGint a6,
+                                    VGbitfield a7)
+{
     VGPath pH = vgCreatePath(a1, a2, a3, a4, a5, a6, a7);
-    if (pH){
+    if (pH) {
         incrementPathHandleCountL(handleCounter);
     }
     return pH;
-    }
-   
-inline void vgDestroyPathWrapper(HandleCounter * handleCounter, VGHandle h)
-    {
-    if (h){
+}
+
+inline void vgDestroyPathWrapper(HbHandleCounter * handleCounter, VGHandle h)
+{
+    if (h) {
         vgDestroyPath(h);
         decrementPathHandleCountL(handleCounter);
     }
-    }
-    
-inline VGHandle vgCreateImageWrapper(HandleCounter * handleCounter, VGImageFormat a1,
-        VGint a2, VGint a3,
-        VGbitfield a4)
-    {
+}
+
+inline VGHandle vgCreateImageWrapper(HbHandleCounter * handleCounter, VGImageFormat a1,
+                                     VGint a2, VGint a3,
+                                     VGbitfield a4)
+{
     VGImage iH = vgCreateImage(a1, a2, a3, a4);
-    if (iH){
+    if (iH) {
         incrementImageHandleCountL(handleCounter);
     }
     return iH;
-    }
+}
 
-inline void vgDestroyImageWrapper(HandleCounter * handleCounter, VGHandle h)
-    {
-    if (h){
+inline void vgDestroyImageWrapper(HbHandleCounter * handleCounter, VGHandle h)
+{
+    if (h) {
         vgDestroyImage(h);
         decrementImageHandleCountL(handleCounter);
     }
-    }
-   
-    #define DECLARE_HANDLECHECKER_GLOBAL()  HandleCounter * __handleCounter;
-    #define DECLARE_HANDLECHECKER()  private:  HandleCounter * __handleCounter;
-    #define INIT_HANDLECHECKER()  __handleCounter = new HandleCounter;
-    #define ASSERT_HANDLE_COUNT() checkHandleCout(__handleCounter);
+}
 
-    #define VGCREATEPAINT()     (NVG_DEBUGP3("/*vgCreatePaint() %s:%d*/", __FILE__, __LINE__), vgCreatePaintWrapper(__handleCounter))
-    #define VGDESTROYPAINT(h)   (NVG_DEBUGP3("/*vgDestroyPaint() %s:%d*/", __FILE__, __LINE__), vgDestroyPaintWrapper(__handleCounter, h))
-    
-    #define VGCREATEPATH(a1, a2, a3, a4, a5, a6, a7)  (NVG_DEBUGP3("/*vgCreatePath() %s:%d*/", __FILE__, __LINE__), vgCreatePathWrapper(__handleCounter, a1, a2, a3, a4, a5, a6, a7))
-	#define VGDESTROYPATH(h)     (NVG_DEBUGP3("/*vgDestroyPath() %s:%d*/", __FILE__, __LINE__), vgDestroyPathWrapper(__handleCounter, h))
+#define DECLARE_HANDLECHECKER_GLOBAL()  HbHandleCounter * __handleCounter;
+#define DECLARE_HANDLECHECKER()  private:  HbHandleCounter * __handleCounter;
+#define INIT_HANDLECHECKER()  __handleCounter = new HbHandleCounter;
+#define ASSERT_HANDLE_COUNT() checkHandleCout(__handleCounter);
 
-    #define VGCREATEIMAGE(a1, a2, a3, a4) (NVG_DEBUGP3("/*vgCreateImage() %s:%d*/", __FILE__, __LINE__), vgCreateImageWrapper(__handleCounter, a1, a2, a3, a4))
-    #define VGDESTROYIMAGE(h)     (NVG_DEBUGP3("/*vgDestroyImage() %s:%d*/", __FILE__, __LINE__), vgDestroyImageWrapper(__handleCounter, h))
+#define VGCREATEPAINT()     (NVG_DEBUGP3("/*vgCreatePaint() %s:%d*/", __FILE__, __LINE__), vgCreatePaintWrapper(__handleCounter))
+#define VGDESTROYPAINT(h)   (NVG_DEBUGP3("/*vgDestroyPaint() %s:%d*/", __FILE__, __LINE__), vgDestroyPaintWrapper(__handleCounter, h))
+
+#define VGCREATEPATH(a1, a2, a3, a4, a5, a6, a7)  (NVG_DEBUGP3("/*vgCreatePath() %s:%d*/", __FILE__, __LINE__), vgCreatePathWrapper(__handleCounter, a1, a2, a3, a4, a5, a6, a7))
+#define VGDESTROYPATH(h)     (NVG_DEBUGP3("/*vgDestroyPath() %s:%d*/", __FILE__, __LINE__), vgDestroyPathWrapper(__handleCounter, h))
+
+#define VGCREATEIMAGE(a1, a2, a3, a4) (NVG_DEBUGP3("/*vgCreateImage() %s:%d*/", __FILE__, __LINE__), vgCreateImageWrapper(__handleCounter, a1, a2, a3, a4))
+#define VGDESTROYIMAGE(h)     (NVG_DEBUGP3("/*vgDestroyImage() %s:%d*/", __FILE__, __LINE__), vgDestroyImageWrapper(__handleCounter, h))
 
 #endif
 
@@ -256,7 +254,9 @@ inline void vgDestroyImageWrapper(HandleCounter * handleCounter, VGHandle h)
  */
 template <class T>
 inline bool isAligned4(T aValue)
-    {return !((quint32)aValue & (sizeof(quint32) - 1));}
+{
+    return !((quint32)aValue & (sizeof(quint32) - 1));
+}
 
 /*
  * There is an Align2 function which does the alignement
@@ -264,6 +264,8 @@ inline bool isAligned4(T aValue)
  */
 template <class T>
 inline bool isAligned2(T aValue)
-    {return !((quint16)aValue & (sizeof(quint16) - 1));}
-    
+{
+    return !((quint16)aValue & (sizeof(quint16) - 1));
+}
+
 #endif /* HBNVGUTIL_H*/

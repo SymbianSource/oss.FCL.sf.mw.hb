@@ -30,6 +30,7 @@ import re
 import os
 import sys
 import shutil
+import fnmatch
 import tempfile
 import optparse
 if sys.version_info[0] == 2 and sys.version_info[1] < 4:
@@ -82,6 +83,38 @@ def run_process(command, cwd=None):
         code = -1
     return [code, output]
 
+def read_file(filepath):
+    content = ""
+    try:
+        file = open(filepath, "r")
+        content = file.read()
+        file.close()
+    except IOError, e:
+        print(e)
+    return content
+
+def grep(path, pattern, include = [], exclude = []):
+    result = {}
+    expr = re.compile(pattern)
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            accept = True
+            for ipattern in include:
+                if not fnmatch.fnmatch(filename, ipattern):
+                    accept = False
+            for epattern in exclude:
+                if fnmatch.fnmatch(filename, epattern):
+                    accept = False
+            if accept:
+                filepath = os.path.normpath(os.path.join(root, filename))
+                content = read_file(filepath)
+                for match in expr.finditer(content):
+                    if match.group(1):
+                        if filename not in result:
+                            result[filename] = []
+                        result[filename].append(match.group(1))
+    return result
+
 # ============================================================================
 # OptionParser
 # ============================================================================
@@ -119,6 +152,10 @@ class OptionParser(optparse.OptionParser):
                          help="Build in debug mode.")
         group.add_option("--debug_and_release", action="store_const", dest="config", const="debug_and_release",
                          help="Build in both debug and release modes.")
+        group.add_option("--debug-output", action="store_false", dest="debug_output",
+                         help="Do not suppress debug and warning output (suppressed by default in release mode).")
+        group.add_option("--no-debug-output", action="store_true", dest="no_debug_output",
+                         help="Suppress debug and warning output (not supporessed by default in debug mode).")
         if platform != "symbian":
             group.add_option("--silent", action="store_true", dest="silent",
                              help="Suppress verbose compiler output.")
@@ -200,6 +237,10 @@ class OptionParser(optparse.OptionParser):
                              help="DEPRECATED: Qt 4.6 includes QApplication::symbianEventFilter().")
             group.add_option("--qt-s60-eventfilter", action="store_true", dest="s60eventfilter",
                              help="DEPRECATED: Qt 4.6 includes QApplication::symbianEventFilter().")
+        group.add_option("--dui", action="store_true", dest="dui",
+                         help="Assumes that Maemo Direct UI is available without performing a compilation test.")
+        group.add_option("--no-dui", action="store_false", dest="dui",
+                         help="Assumes that Maemo Direct UI is not available without performing a compilation test.")
         self.add_option_group(group)
         self.set_defaults(qtmobility=None)
         self.set_defaults(qtanimation=None)
@@ -534,6 +575,7 @@ def main():
     test.setup(sourcedir, currentdir)
     print("INFO: Detecting available features...")
     patterns = { "symbian" : ["\\*\\*\\*", "Errors caused tool to abort"],
+                 "maemo"   : ["\\*\\*\\*"],
                  "unix"    : ["\\*\\*\\*"],
                  "win32"   : ["\\*\\*\\*"] }
     if options.qtmobility == None:
@@ -542,15 +584,16 @@ def main():
     if options.qtmobility:
         config.add_value("DEFINES", "HB_HAVE_QT_MOBILITY")
     if platform.name() == "symbian":
-        advanced_tactile_result = test.compile("config.tests/symbian/advancedtactile", patterns.get(platform.name(), None))
-        if advanced_tactile_result:
-            config.add_value("CONFIG", "advanced_tactile_support")
-        print("INFO:\tAdvanced Tactile:\t\t%s" % advanced_tactile_result)
-        #sgimagelite_result = test.compile("config.tests/symbian/sgimagelite", patterns.get(platform.name(), None))
-        #if sgimagelite_result:
-        #    config.add_value("CONFIG", "sgimage")
-        #print("INFO:\tSgImage-Lite:\t\t\t%s" % sgimagelite_result)
-        print("NOTE:\t(For SgImage-Lite support, pass --qmake-options \"CONFIG+=sgimage\")")
+        sgimagelite_result = test.compile("config.tests/symbian/sgimagelite", patterns.get(platform.name(), None))
+        if sgimagelite_result:
+            config.add_value("CONFIG", "sgimagelite_support")
+        print("INFO:\tSgImage-Lite:\t\t\t%s" % sgimagelite_result)
+    if options.dui == None:
+        options.dui = test.compile("config.tests/maemo/dui", patterns.get(platform.name(), None))
+        print("INFO:\tDirect UI:\t\t\t%s" % options.dui)
+    if options.dui:
+        config.add_value("CONFIG", "hb_maemo_dui")
+        config.add_value("DEFINES", "HB_MAEMO_DUI")
 
     config.set_value("HB_BIN_DIR", ConfigFile.format_dir(basedir + "/bin"))
     config.set_value("HB_LIB_DIR", ConfigFile.format_dir(basedir + "/lib"))
@@ -574,8 +617,12 @@ def main():
         config.add_value("DEFINES", "HB_EFFECTS")
     if options.textMeasurement:
         config.add_value("DEFINES", "HB_TEXT_MEASUREMENT_UTILITY")
+	if platform.name() != "symbian" and options.developer:
+		config.add_value("DEFINES", "HB_CSS_INSPECTOR")
     if options.defines:
         config.add_value("DEFINES", " ".join(options.defines.split(",")))
+    if options.developer:
+        config.add_value("DEFINES", "HB_DEVELOPER")
 
     if options.verbose:
         print("INFO: Writing hb_install.prf")
@@ -626,18 +673,34 @@ def main():
         config.add_value("CONFIG", "coverage")
     if options.config:
         config.add_value("CONFIG", options.config)
+    if options.debug_output != None:
+        config.add_value("CONFIG", "debug_output")
+    if options.no_debug_output != None:
+        config.add_value("CONFIG", "no_debug_output")
 
-    # disable debug & warning outputs for non-developer symbian-armv5-release builds
-    if not options.developer and platform.name() == "symbian":
-        config._lines.append("no_output = \\ \n")
-        config._lines.append("\"$${LITERAL_HASH}if defined(ARMV5) && defined(UREL)\" \\ \n")
-        config._lines.append("\"MACRO\tQT_NO_DEBUG_OUTPUT\" \\ \n")
-        config._lines.append("\"MACRO\tQT_NO_WARNING_OUTPUT\" \\ \n")
-        config._lines.append("\"$${LITERAL_HASH}endif\" \n")
-        config._lines.append("MMP_RULES += no_output \n")
+    # debug & warning outputs:
+    #   - release
+    #       - disabled by default
+    #       - can be enabled by passing --debug_output option
+    #   - debug
+    #       - enabled by default
+    #       - can be disabled by passing --no_debug_output option
+    config._lines.append("CONFIG(release, debug|release) {\n")
+    config._lines.append("    debug_output|developer {\n")
+    config._lines.append("        # debug/warning output enabled {\n")
+    config._lines.append("    } else {\n")
+    config._lines.append("        DEFINES += QT_NO_DEBUG_OUTPUT\n")
+    config._lines.append("        DEFINES += QT_NO_WARNING_OUTPUT\n")
+    config._lines.append("    }\n")
+    config._lines.append("} else {\n")
+    config._lines.append("    no_debug_output {\n")
+    config._lines.append("        DEFINES += QT_NO_DEBUG_OUTPUT\n")
+    config._lines.append("        DEFINES += QT_NO_WARNING_OUTPUT\n")
+    config._lines.append("    }\n")
+    config._lines.append("}\n")
 
     # TODO: is there any better way to expose functions to the whole source tree?
-    config._lines.append("include(%s)\n" % (os.path.splitdrive(sourcedir)[1] + "/src/functions.prf"))
+    config._lines.append("include(%s)\n" % (os.path.splitdrive(sourcedir)[1] + "/src/hbfunctions.prf"))
 
     if options.verbose:
         print("INFO: Writing .qmake.cache")
@@ -688,6 +751,31 @@ def main():
             outputdir = os.path.join(currentdir, "coverage")
             if not os.path.exists(outputdir):
                 os.makedirs(outputdir)
+        # nag about tests that are commented out
+        result = grep(sourcedir + "/tsrc", "#\s*SUBDIRS\s*\+=\s*(\S+)", ["*.pr?"])
+        maxlen = 0
+        for profile in result:
+            maxlen = max(maxlen, len(profile))
+        if len(result):
+            print ""
+            print "###############################################################################"
+            print "%s THE FOLLOWING TESTS ARE COMMENTED OUT:" % "WARNING:".ljust(maxlen + 1)
+            for profile, subdirs in result.iteritems():
+                line = (profile + ":").ljust(maxlen + 2)
+                init = len(line)
+                while len(subdirs):
+                    if len(line) > init:
+                        line += ", "
+                    if len(line) + len(subdirs[-1]) < 80:
+                        line += subdirs.pop()
+                    elif len(line) == init and init + len(subdirs[-1]) >= 79:
+                        line += subdirs.pop()
+                    else:
+                        print line
+                        line = "".ljust(maxlen + 2)
+                if len(line) > init:
+                    print line
+            print "###############################################################################"
 
     # print summary
     print("")

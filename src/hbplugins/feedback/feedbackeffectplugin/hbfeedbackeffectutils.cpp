@@ -133,6 +133,10 @@ HbFeedbackEffectUtils::WidgetFamily HbFeedbackEffectUtils::widgetFamily(const Hb
 
         case HbPrivate::ItemType_GroupBoxHeadingWidget:
 
+        case HbPrivate::ItemType_GroupBoxContentWidget:
+
+        case HbPrivate::ItemType_DataGroupHeadingWidget:
+
             family = HbFeedbackEffectUtils::List;
             IF_INSTANCEOF_SET_FAMILY(HbGridView, Grid)
             break;
@@ -247,8 +251,9 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                 }
             }
 
-            if (widget->type() == HbPrivate::ItemType_NavigationButton ||
-                widget->type() == HbPrivate::ItemType_IndicatorButton) {
+            if (widget->type() == HbPrivate::ItemType_NavigationButton
+                // Commented out until use cases are clarified
+                /*|| widget->type() == HbPrivate::ItemType_IndicatorButton*/) {
                 effect = HbFeedback::BasicButton;
             }
             
@@ -272,7 +277,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             break;
 
         case HbFeedbackEffectUtils::List:
-            if (modifiers & Hb::ModifierCollapsedItem) {
+            if (modifiers & (Hb::ModifierExpandedItem | Hb::ModifierCollapsedItem)) {
                 effect = HbFeedback::BasicItem;
             }
             else {
@@ -372,16 +377,6 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                 }
             }
 
-            // Expandable or collapsible data form item gives BasicItem feedback
-            if (const HbDataFormViewItem* dataFormItem = qobject_cast<const HbDataFormViewItem *>(widget)) {
-                if (itemView->model()->rowCount(dataFormItem->modelIndex()) > 0) {
-                    effect = HbFeedback::BasicItem;
-                }
-                else {
-                    effect = HbFeedback::SensitiveItem;
-                }
-            }
-
             if (modifiers & Hb::ModifierScrolling) {
                 effect = HbFeedback::StopFlick;
             }
@@ -430,8 +425,9 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
                 }
             }
 
-            if (widget->type() == HbPrivate::ItemType_NavigationButton ||
-                widget->type() == HbPrivate::ItemType_IndicatorButton) {
+            if (widget->type() == HbPrivate::ItemType_NavigationButton
+                // Commented out until use cases are clarified
+                /*|| widget->type() == HbPrivate::ItemType_IndicatorButton*/) {
                 effect = HbFeedback::BasicButton;
             }
 
@@ -457,7 +453,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             break;
 
         case HbFeedbackEffectUtils::List:
-            if (modifiers & Hb::ModifierCollapsedItem) {
+            if (modifiers & (Hb::ModifierExpandedItem | Hb::ModifierCollapsedItem)) {
                 effect = HbFeedback::BasicItem;
             }
             else {
@@ -490,7 +486,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             break;
 
         case HbFeedbackEffectUtils::Editor:
-            effect = HbFeedback::None;
+            effect = HbFeedback::Editor;
             break;
 
         default:
@@ -702,6 +698,9 @@ bool HbFeedbackEffectUtils::isFeedbackAllowedForPopup(const HbWidget *widget)
             feedbackAllowed = false;
         }
     }
+    else if (QString(widget->metaObject()->className()) == "HbComboDropDown") {
+        feedbackAllowed = true;
+    }
     return feedbackAllowed;
 }
 
@@ -717,7 +716,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyPress(const HbWidge
 /*!
     Returns the instant feedback effect on selection changed events.
 */
-HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const HbWidget *widget)
+HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const HbWidget *widget, Hb::InteractionModifiers modifiers)
 {
     HbFeedback::InstantEffect effect = HbFeedback::None;
 
@@ -740,6 +739,9 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const
                 }
                 default:
                     break;
+            }
+            if (modifiers == Hb::ModifierScrolling) {
+                effect = HbFeedback::StopFlick;
             }
 		}
 	}
@@ -785,7 +787,10 @@ HbFeedback::ContinuousEffect HbFeedbackEffectUtils::continuousEffect(const HbWid
 int HbFeedbackEffectUtils::intensity(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta)
 {
     Q_UNUSED(interaction);
-    int intensity = HbFeedback::IntensitySmooth;
+    Q_UNUSED(delta);
+
+    int intensity = HbFeedback::IntensityFull;
+
     if (const HbAbstractSliderControl *slider = qobject_cast<const HbAbstractSliderControl *>(widget)) {
         switch(parentItemType(slider)) {
             case HbPrivate::ItemType_ZoomSlider:
@@ -803,29 +808,14 @@ int HbFeedbackEffectUtils::intensity(const HbWidget *widget, Hb::ContinuousInter
             default:
                 break;
        }
-     } else if (const HbProgressSlider *progressbar = qobject_cast<const HbProgressSlider *>(widget)) {
-        Q_UNUSED(progressbar);
-        intensity = HbFeedback::IntensitySmooth;
-     } else if (const HbScrollBar *scrollbar = qobject_cast<const HbScrollBar *>(widget)) {
+    }
+    else if (const HbScrollBar *scrollbar = qobject_cast<const HbScrollBar *>(widget)) {
         Q_UNUSED(scrollbar);
         intensity = HbFeedback::IntensitySmooth;
-    } else if (const HbGridView *gridView = qobject_cast<const HbGridView *>(widget)) {
-        Q_UNUSED(gridView);
-        intensity = HbFeedback::IntensitySmooth;
-    } else if (widget->type() == Hb::ItemType_VirtualTrackPoint) {
-        intensity = HbFeedback::IntensityFull;
-    } else if (widget->type() == Hb::ItemType_WritingBox) {
-        intensity = HbFeedback::IntensitySmooth;
-    } else {
-        intensity = int((abs(25*HbFeedback::IntensityFull*delta.toPoint().y()) / widget->rect().height()) + (abs(25*HbFeedback::IntensityFull*delta.toPoint().x()) / widget->rect().width()));
-
-        if (intensity > HbFeedback::IntensityFull) {
-            intensity = HbFeedback::IntensityFull;
-        }
     }
-
-    if (interaction == Hb::ContinuousRotated) {
-        intensity = HbFeedback::IntensitySmooth;
+    else {
+        // The default intensity for continuous effects
+        intensity = HbFeedback::IntensityFull;
     }
 
     return intensity;
@@ -881,3 +871,52 @@ bool HbFeedbackEffectUtils::isOptionsMenuEmpty(const HbWidget *widget)
     return menuEmpty;
 }
 
+/*!
+  Returns the default modalities to be used when playing feedback effect asociated with this \a widget, \a interaction, \a modifiers.
+*/
+HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers )
+{
+    Q_UNUSED(modifiers)
+
+    HbFeedback::Modalities modalities = 0;
+
+    switch( interaction ) {
+    case Hb::InstantPressed :
+    case Hb::InstantMultitouchActivated:
+        modalities |= HbFeedback::Tactile;
+        modalities |= HbFeedback::Audio;
+        break;
+    case Hb::InstantReleased:
+    case Hb::InstantLongPressed:
+    case Hb::InstantKeyRepeated:
+    case Hb::InstantDraggedOver:
+    case Hb::InstantFlicked:
+    case Hb::InstantRotated90Degrees:
+    case Hb::InstantPopupOpened:
+    case Hb::InstantPopupClosed:
+    case Hb::InstantSelectionChanged:
+        modalities =  HbFeedback::Tactile;
+        break;
+    case Hb::InstantClicked:
+        modalities = HbFeedback::Tactile;
+        if(widget->type() == Hb::ItemType_CheckBox) {
+            modalities |= HbFeedback::Audio;
+        }
+        break;
+    default:
+        modalities = HbFeedback::Tactile;
+        break;
+    }
+    return modalities;
+}
+
+/*!
+  Returns the default modalities to be used when playing feedback effect asociated with this \a widget, \a interaction, \a modifiers.
+*/
+HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget * widget, Hb::ContinuousInteraction interaction, Hb::InteractionModifiers modifiers )
+{
+    Q_UNUSED(widget)
+    Q_UNUSED(interaction)
+    Q_UNUSED(modifiers)
+    return HbFeedback::Tactile;
+}

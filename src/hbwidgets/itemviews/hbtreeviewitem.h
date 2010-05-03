@@ -44,6 +44,7 @@ class HB_WIDGETS_EXPORT HbTreeViewItem : public HbListViewItem
     Q_OBJECT
 
     Q_PROPERTY(bool expanded READ isExpanded WRITE setExpanded)
+    Q_PROPERTY(bool userExpandable READ isUserExpandable WRITE setUserExpandable)
 
 public:
 
@@ -62,6 +63,9 @@ public:
 
     virtual void updateChildItems();
 
+    virtual QHash<QString, QVariant> transientState() const;
+    virtual void setTransientState(const QHash<QString, QVariant> &state);
+
     virtual QMap<int,QVariant> state() const;
     virtual void setState(const QMap<int,QVariant> &state);
 
@@ -69,6 +73,11 @@ public:
     bool isExpanded() const;
 
     virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
+
+    void setUserExpandable(bool expandable);
+    bool isUserExpandable() const;
+
+    virtual bool selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const;
 
 public slots:
     void updatePrimitives();

@@ -24,9 +24,10 @@
 ****************************************************************************/
 
 #include "hbdocumentloaderactions_p.h"
+#include <hbxmlloaderabstractsyntax_p.h>
 
 #include <QCoreApplication>
-#include <QGraphicsLinearLayout> 
+#include <QGraphicsLinearLayout>
 #include <QGraphicsGridLayout>
 
 #include <QMetaObject>
@@ -46,11 +47,11 @@ class AccessToMetadata : public QObject
     public:
         int getEnumValue( const char *enumeration, const char *str )
             {
-                QMetaObject metaobject = staticQtMetaObject; 
+                QMetaObject metaobject = staticQtMetaObject;
                 QMetaEnum e = metaobject.enumerator( metaobject.indexOfEnumerator( enumeration ) );
                 return e.keysToValue( str );
             }
-    };        
+    };
 
 /*
     \class HbDocumentLoaderActions
@@ -58,15 +59,20 @@ class AccessToMetadata : public QObject
     \proto
 */
 
-HbDocumentLoaderActions::HbDocumentLoaderActions( HbDocumentLoaderPrivate *ref ) : 
-    HbXmlLoaderAbstractActions(), 
+HbDocumentLoaderActions::HbDocumentLoaderActions( HbDocumentLoaderPrivate *ref, const HbMainWindow *window ) :
+    HbXmlLoaderBaseActions(),
     d( ref )
 {
+    if ( window ) {
+        mCurrentProfile = HbDeviceProfile::profile(window);
+    } else {
+        mCurrentProfile = HbDeviceProfile::current();
+    }
 }
 
 HbDocumentLoaderActions::~HbDocumentLoaderActions()
 {
-    reset();    
+    reset();
 }
 
 
@@ -79,7 +85,7 @@ QObject* HbDocumentLoaderActions::createObject( const QString& type, const QStri
 
 QObject* HbDocumentLoaderActions::createObjectWithFactory( const QString& type, const QString &name )
 {
-    return factory.create(type, name);
+    return mFactory.create(type, name);
 }
 
 
@@ -87,28 +93,28 @@ QObject* HbDocumentLoaderActions::createObjectWithFactory( const QString& type, 
 bool HbDocumentLoaderActions::pushObject( const QString& type, const QString &name )
 {
     QObject *parent = findFromStack();
- 
+
     if ( !parent && name.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Top level object must have name" ) );
         return false;
     }
 
-    QObject *current = lookUp(type, name);
-    
+    QObject *current = lookUp(type, name).first.data();
+
     if( current == 0 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Not supported object: " ) + type );
         return false;
     }
-    
-    Element e;
-    e.type = OBJECT;
+
+    HbXml::Element e;
+    e.type = HbXml::OBJECT;
     e.data = current;
     mStack.append( e );
-    
+
     if (parent) {
         current->setParent(parent);
     }
-    
+
     HB_DOCUMENTLOADER_PRINT( QString( "ADD ELEMENT " ) + name );
 
     return true;
@@ -116,45 +122,52 @@ bool HbDocumentLoaderActions::pushObject( const QString& type, const QString &na
 
 bool HbDocumentLoaderActions::pushWidget( const QString& type, const QString &name, const QString &role, const QString &plugin )
 {
-    bool parentWidget = false;
-    QObject *parent = findFromStack(&parentWidget);
+    bool parentIsWidget = false;
+    QObject *parent = findFromStack(&parentIsWidget);
 
     if ( !parent && name.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Top level widget must have name" ) );
         return false;
     }
-    
-    if ( parent && !parentWidget ) {
+
+    if ( parent && !parentIsWidget ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Object element cannot be parent of widget" ) );
         return false;
-    }    
+    }
 
-    QObject *current = lookUp(type, name, plugin);
-    
+    ObjectMapItem item = lookUp(type, name, plugin);
+    QObject *current = item.first.data();
+
     if( current == 0 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Not supported object: " ) + type );
         return false;
     }
-    
-    QGraphicsWidget *parentAsWidget = qobject_cast<QGraphicsWidget *>(parent);
-    QGraphicsWidget *asWidget = qobject_cast<QGraphicsWidget *>(current);
+
+    QGraphicsWidget *parentAsWidget(0);
+    if (parentIsWidget) {
+        parentAsWidget = static_cast<QGraphicsWidget *>(parent);
+    }
+    QGraphicsWidget *asWidget(0);
+    if (item.second == HbXml::WIDGET) {
+        asWidget = static_cast<QGraphicsWidget *>(current);
+    }
 
     if (!asWidget || (parent && !parentAsWidget)) {
         HB_DOCUMENTLOADER_PRINT( QString( "Not a widget" ) );
         return false;
-    } 
+    }
 
     if (parentAsWidget && !setWidgetRole(parentAsWidget, asWidget, role)) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to set role" ) );
         return false;
     }
 
-    Element e;
-    e.type = WIDGET;
+    HbXml::Element e;
+    e.type = HbXml::WIDGET;
     e.data = current;
     mStack.append( e );
     HB_DOCUMENTLOADER_PRINT( QString( "ADD ELEMENT " ) + name );
-    
+
     return true;
 }
 
@@ -178,8 +191,11 @@ bool HbDocumentLoaderActions::pushSpacerItem( const QString &name, const QString
     } else if( !( mObjectMap.contains( widget ) ) ) {
         HB_DOCUMENTLOADER_PRINT( QString( "SPACERITEM: NO SUCH ITEM " ) + widget );
         return false;
-    } else {   
-        parent = qobject_cast<HbWidget *>( mObjectMap[ widget ].data() );
+    } else {
+        ObjectMapItem &item = mObjectMap[ widget ];
+        if (item.second == HbXml::WIDGET) {
+            parent = qobject_cast<HbWidget *>( item.first.data() );
+        }
         if( !parent ) {
             HB_DOCUMENTLOADER_PRINT( QString( "SPACERITEM: CANNOT SET SPACERITEM TO NON-HBWIDGET " ) );
             return false;
@@ -193,96 +209,93 @@ bool HbDocumentLoaderActions::pushSpacerItem( const QString &name, const QString
     }
 
     // add it onto stack for further processing
-    Element e;
-    e.type = SPACERITEM;
+    HbXml::Element e;
+    e.type = HbXml::SPACERITEM;
     e.data = current;
     mStack.append( e );
     HB_DOCUMENTLOADER_PRINT( QString( "ADD ELEMENT " ) + name );
-    
+
     return true;
 
 }
 
-bool HbDocumentLoaderActions::pushConnect( const QString &srcName, const QString &signalName, 
+bool HbDocumentLoaderActions::pushConnect( const QString &srcName, const QString &signalName,
                                             const QString &dstName, const QString &slotName )
 {
     if( srcName.isEmpty() || signalName.isEmpty() || dstName.isEmpty() || slotName.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Wrong parameters for signal/slot connection" ) );
         return false;
     }
-    
+
     if( ! mObjectMap.contains( srcName ) ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, no instance with name " ) + srcName );
-        return false;        
+        return false;
     }
     if( ! mObjectMap.contains( dstName ) ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, no instance with name " ) + dstName );
-        return false;   
+        return false;
     }
-    
-    QObject *src = mObjectMap[ srcName ];
+
+    QObject *src = mObjectMap[ srcName ].first;
 
     if( !src ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, already destroyed " ) + srcName );
-        return false;        
+        return false;
     }
 
-    QObject *dst = mObjectMap[ dstName ];
+    QObject *dst = mObjectMap[ dstName ].first;
 
     if( !dst ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, already destroyed " ) + dstName );
         return false;
     }
-    
+
     const QMetaObject *msrc = src->metaObject();
     const QMetaObject *mdst = dst->metaObject();
-    
+
     int signalIndex = msrc->indexOfSignal( QMetaObject::normalizedSignature( signalName.toLatin1() ) );
     int slotIndex = mdst->indexOfSlot( QMetaObject::normalizedSignature( slotName.toLatin1() ) );
-    
+
     if( signalIndex == -1 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, no such signal " ) + signalName );
         return false;
     }
-    
+
     if( slotIndex == -1 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, no such slot " ) + slotName );
         return false;
     }
-    
-    QMetaObject::connect(src, signalIndex, dst, slotIndex );    
-    
+
+    QMetaObject::connect(src, signalIndex, dst, slotIndex );
+
     return true;
 }
 
-bool HbDocumentLoaderActions::pushProperty( const QString &propertyName, const QVariant &value )
+bool HbDocumentLoaderActions::pushProperty( const char *propertyName, const HbXmlVariable &variable )
 {
     QObject *current = findFromStack();
-    
+
     if( current == 0 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to set property " ) + propertyName );
         return false;
     }
-    
-        
-    if( propertyName.isEmpty() ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "No property name for " ) + propertyName );
-        return false;
-    } 
-    
-    QByteArray asLatin1 = propertyName.toLatin1();    
-    current->setProperty( asLatin1, value );
-    return true;    
+
+    QVariant value;
+    bool ok = variableToQVariant(variable, value);
+    if (ok) {
+        current->setProperty( propertyName, value );
+    }
+    return ok;
 }
 
 bool HbDocumentLoaderActions::pushRef( const QString &name, const QString &role )
 {
     QObject *current = findFromStack();
-    QObject *ref = mObjectMap[ name ].data();
-    
+    QObject *ref = mObjectMap[ name ].first.data();
+
     if( ( current == 0 ) || ( ref == 0 ) ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Wrong role name or role context" ) );
-        return false;        
+        return false;
     }
 
     if ( !setObjectRole(current, ref, role)) {
@@ -292,70 +305,139 @@ bool HbDocumentLoaderActions::pushRef( const QString &name, const QString &role 
     return true;
 }
 
-bool HbDocumentLoaderActions::setContentsMargins( qreal left, qreal top, qreal right, qreal bottom )
+bool HbDocumentLoaderActions::pushContainer( const char *propertyName,
+                                             HbXmlLoaderAbstractSyntax::DocumentLexems type,
+                                             const QList<HbXmlVariable*> &container )
+{
+    bool result = true;
+    if ( type == HbXmlLoaderAbstractSyntax::CONTAINER_STRINGLIST ) {
+        QStringList list;
+        for ( int i=0; i<container.count(); i++ ) {
+            QVariant variant;
+            result = variableToQVariant(*(container.value(i)), variant);
+            if ( result ) {
+                list.append( variant.toString() );
+            }
+        }
+        if ( result ) {
+            QObject *current = findFromStack();
+
+            if (current == 0) {
+                HB_DOCUMENTLOADER_PRINT( QString( "Unable to set property " ) + propertyName );
+                result = false;
+            }
+
+            if (result) {
+                current->setProperty( propertyName, list );
+            }
+        }
+    } else {
+        result = false;
+    }
+
+    return result;
+}
+
+bool HbDocumentLoaderActions::setContentsMargins( const HbXmlLengthValue &left,
+                                                 const HbXmlLengthValue &top,
+                                                 const HbXmlLengthValue &right,
+                                                 const HbXmlLengthValue &bottom )
 {
     bool isWidget = false;
-    QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>(findFromStack(&isWidget));
-    if( !isWidget || !widget ) {
+    QObject* obj = findFromStack(&isWidget);
+    if( !obj || !isWidget ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Cannot set contentsmargins for non-QGraphicsWidget" ) );
         return false;
     }
-    widget->setContentsMargins( left, top, right, bottom );
-    return true;
+    QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(obj);
+
+    qreal leftVal=0, topVal=0, rightVal=0, bottomVal=0;
+    bool ok = true;
+    if (left.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(left, leftVal);
+    }
+    if (top.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(top, topVal);
+    }
+    if (right.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(right, rightVal);
+    }
+    if (bottom.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(bottom, bottomVal);
+    }
+    if ( ok ) {
+        widget->setContentsMargins( leftVal, topVal, rightVal, bottomVal );
+    }
+    return ok;
 }
 
 
-bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, qreal *hintWidth, qreal *hintHeight, bool fixed)
+bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, const HbXmlLengthValue &hintWidth, const HbXmlLengthValue &hintHeight, bool fixed)
 {
     QGraphicsLayoutItem *current = findSpacerItemFromStackTop();
     if (!current) {
         bool isWidget = false;
-        QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>(findFromStack(&isWidget));
-        if( !isWidget || !widget ) {
+        QObject* obj = findFromStack(&isWidget);
+        if( !obj || !isWidget ) {
             HB_DOCUMENTLOADER_PRINT( QString( "Cannot set sizehint for non-QGraphicsWidget" ) );
             return false;
         }
+        QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(obj);
         current = widget;
     }
+    qreal hintWidthVal, hintHeightVal;
 
+    bool ok = true;
+    if ( hintWidth.mType != HbXmlLengthValue::None ) {
+        ok &= toPixels(hintWidth, hintWidthVal);
+    }
+    if ( hintHeight.mType != HbXmlLengthValue::None ) {
+        ok &= toPixels(hintHeight, hintHeightVal);
+    }
+    if (!ok) {
+        return false;
+    }
+
+    // TODO: Use set <Min/Pref/Max> Size if both declared. It's more efficient.
     switch (hint) {
-    case Qt::MinimumSize: 
-        if ( hintWidth ) {
-            current->setMinimumWidth(*hintWidth);
+    case Qt::MinimumSize:
+        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+
+            current->setMinimumWidth(hintWidthVal);
         }
-        if ( hintHeight ) {
-            current->setMinimumHeight(*hintHeight);
+        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+            current->setMinimumHeight(hintHeightVal);
         }
         break;
 
-    case Qt::PreferredSize: 
-        if ( hintWidth ) {
-            current->setPreferredWidth(*hintWidth);
+    case Qt::PreferredSize:
+        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+            current->setPreferredWidth(hintWidthVal);
         }
-        if ( hintHeight ) {
-            current->setPreferredHeight(*hintHeight);
+        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+            current->setPreferredHeight(hintHeightVal);
         }
         break;
 
-    case Qt::MaximumSize: 
-        if ( hintWidth ) {
-            current->setMaximumWidth(*hintWidth);
+    case Qt::MaximumSize:
+        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+            current->setMaximumWidth(hintWidthVal);
         }
-        if ( hintHeight ) {
-            current->setMaximumHeight(*hintHeight);
+        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+            current->setMaximumHeight(hintHeightVal);
         }
         break;
 
     default:
         break;
     }
-    
+
     if (fixed) {
         QSizePolicy policy = current->sizePolicy();
-        if ( hintWidth && *hintWidth >= 0) {
+        if ( hintWidth.mType != HbXmlLengthValue::None && hintWidthVal >= 0) {
             policy.setHorizontalPolicy(QSizePolicy::Fixed);
         }
-        if ( hintHeight && *hintHeight >= 0) {
+        if ( hintHeight.mType != HbXmlLengthValue::None && hintHeightVal >= 0) {
             policy.setVerticalPolicy(QSizePolicy::Fixed);
         }
         current->setSizePolicy(policy);
@@ -364,46 +446,39 @@ bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, qreal *hintWidth, q
     return true;
 }
 
-bool HbDocumentLoaderActions::setZValue( qreal zValue )
+bool HbDocumentLoaderActions::setToolTip( const HbXmlVariable &tooltip )
 {
-    bool isWidget = false;
-    QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>(findFromStack(&isWidget));
-    if( !isWidget || !widget ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "Cannot set z value for non-QGraphicsWidget" ) );
-        return false;
-    }
-
-    widget->setZValue( zValue );
-    return true;
-}
-
-bool HbDocumentLoaderActions::setToolTip( const QString &tooltip )
-{
-    bool isWidget = false;
-    QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>(findFromStack(&isWidget));
-    if( !isWidget || !widget ) {
+    bool isWidget;
+    QObject* obj = findFromStack(&isWidget);
+    if( !obj || !isWidget ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Cannot set tooltip for non-QGraphicsWidget" ) );
         return false;
     }
+    QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(obj);
 
-    widget->setToolTip( tooltip );
-    return true;
+    QVariant variant;
+    bool result = variableToQVariant( tooltip, variant );
+    if ( result ) {
+        widget->setToolTip( variant.toString() );
+    }
+    return result;
 }
 
-bool HbDocumentLoaderActions::setSizePolicy( 
-    const QSizePolicy::Policy *horizontalPolicy, 
-    const QSizePolicy::Policy *verticalPolicy, 
-    const int *horizontalStretch,
-    const int *verticalStretch )
+bool HbDocumentLoaderActions::setSizePolicy(
+    QSizePolicy::Policy *horizontalPolicy,
+    QSizePolicy::Policy *verticalPolicy,
+    int *horizontalStretch,
+    int *verticalStretch )
 {
     QGraphicsLayoutItem *current = findSpacerItemFromStackTop();
     if (!current) {
         bool isWidget = false;
-        QGraphicsWidget *widget = qobject_cast<QGraphicsWidget *>(findFromStack(&isWidget));
-        if( !isWidget || !widget ) {
+        QObject* obj = findFromStack(&isWidget);
+        if( !obj || !isWidget ) {
             HB_DOCUMENTLOADER_PRINT( QString( "Cannot set size policy for non-QGraphicsWidget" ) );
             return false;
         }
+        QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(obj);
         current = widget;
     }
 
@@ -440,29 +515,29 @@ bool HbDocumentLoaderActions::setSizePolicy(
 bool HbDocumentLoaderActions::createAnchorLayout( const QString &widget )
 {
     QGraphicsWidget *parent = 0;
-    
+
     if( widget.isEmpty() ) {
         bool isWidget = false;
-        parent = qobject_cast<QGraphicsWidget *>( findFromStack( &isWidget ) );
-        if( !isWidget ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: CANNOT SET LAYOUT TO NON-QGRAPHICSWIDGET " ) );
-            return false;
+        QObject *parentObj = findFromStack( &isWidget );
+        if( isWidget ) {
+            parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if( !( mObjectMap.contains( widget ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SUCH ITEM " ) + widget );
-        return false;
-    } else {   
-        parent = qobject_cast<QGraphicsWidget *>( mObjectMap[ widget ].data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
     }
-    
-    mCurrentLayout = new HbAnchorLayout();  
-    
+    if ( !parent ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: PARENT NOT FOUND" ) );
+        return false;
+    }
+
+    mCurrentLayout = new HbAnchorLayout();
+
     parent->setLayout( mCurrentLayout );
-    
+
     return true;
 }
 
-QGraphicsLayoutItem *findLayoutItem( const QGraphicsLayout &layout, const QString &layoutItemName ) 
+QGraphicsLayoutItem *findLayoutItem( const QGraphicsLayout &layout, const QString &layoutItemName )
 {
     QGraphicsLayoutItem *result = 0;
     if ( layout.parentLayoutItem() ) {
@@ -477,8 +552,9 @@ QGraphicsLayoutItem *findLayoutItem( const QGraphicsLayout &layout, const QStrin
     return result;
 }
 
-bool HbDocumentLoaderActions::addAnchorLayoutEdge( const QString &src, const QString &srcEdge, 
-                                                    const QString &dst, const QString &dstEdge, qreal spacing, const QString &spacer )
+bool HbDocumentLoaderActions::addAnchorLayoutEdge( const QString &src, Hb::Edge srcEdge,
+                                                   const QString &dst, Hb::Edge dstEdge,
+                                                   const HbXmlLengthValue &spacing, const QString &spacer )
 {
     if ( !spacer.isEmpty() ) {
         // spacer is added
@@ -486,547 +562,494 @@ bool HbDocumentLoaderActions::addAnchorLayoutEdge( const QString &src, const QSt
         bool ok = true;
         if ( src.isEmpty() ) {
             // if the starting item is layout
-            // "layout --(spacing)--> item" 
-            // becomes 
+            // "layout --(spacing)--> item"
+            // becomes
             // "layout --(spacing)--> spacer --(0)--> item"
             ok &= addAnchorLayoutEdge( src, srcEdge, spacer, srcEdge, spacing );
-            ok &= addAnchorLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, 0 );
+            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
+            ok &= addAnchorLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, val );
         } else {
             // if the starting item is not layout
-            // "item1 --(spacing)--> item2" 
-            // becomes 
+            // "item1 --(spacing)--> item2"
+            // becomes
             // "item1 --(spacing)--> spacer --(0)--> item2"
             ok &= addAnchorLayoutEdge( src, srcEdge, spacer, getAnchorOppositeEdge(srcEdge), spacing );
-            ok &= addAnchorLayoutEdge( spacer, srcEdge, dst, dstEdge, 0 );
+            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
+            ok &= addAnchorLayoutEdge( spacer, srcEdge, dst, dstEdge, val );
         }
         return ok;
     }
 
     QGraphicsLayoutItem *item1 = 0;
     QGraphicsLayoutItem *item2 = 0;
-    
+
     HbAnchorLayout *layout = static_cast<HbAnchorLayout *>( mCurrentLayout );
-    
-    if( src.isEmpty() ) {
+
+    if ( src.isEmpty() ) {
         item1 = layout;
-    } else if( !( mObjectMap.contains( src ) ) ) {
+    } else if ( !( mObjectMap.contains( src ) ) ) {
         item1 = findLayoutItem( *layout, src );
-        if ( !item1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SUCH ITEM " ) + src );
-            return false;
-        }
     } else {
-        item1 = qobject_cast<QGraphicsWidget *>( mObjectMap[ src ].data() );
+        if (mObjectMap[ src ].second == HbXml::WIDGET) {
+            item1 = static_cast<QGraphicsWidget *>( mObjectMap[ src ].first.data() );
+        }
     }
-    
-    if( dst.isEmpty() ) {
+    if ( !item1 ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SUCH ITEM " ) + src );
+        return false;
+    }
+
+    if ( dst.isEmpty() ) {
         item2 = layout;
     } else if( !( mObjectMap.contains( dst ) ) ) {
         item2 = findLayoutItem( *layout, dst );
-        if ( !item2 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SUCH ITEM " ) + dst );
-            return false;
-        }
     } else {
-        item2 = qobject_cast<QGraphicsWidget *>( mObjectMap[ dst ].data() );
-    }  
-    
-    int edge1 = getAnchorEdge( srcEdge );
-    int edge2 = getAnchorEdge( dstEdge );
-    
-    if( edge1 < 0 ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: UNKNOWN EDGE " ) + srcEdge );
-        return false;
-    }
-
-    if( edge2 < 0 ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: UNKNOWN EDGE " ) + dstEdge );
-        return false;
-    }
-
-    layout->setAnchor( item1, ( HbAnchorLayout::Edge )edge1, item2, ( HbAnchorLayout::Edge )edge2, spacing );    
-    return true;
-}
-
-
-bool HbDocumentLoaderActions::createGridLayout( const QString &widget, qreal *spacing )
-{       
-    QGraphicsWidget *parent = 0;
-    
-    if( widget.isEmpty() ) {
-        bool isWidget = false;
-        parent = qobject_cast<QGraphicsWidget *>( findFromStack( &isWidget ) );
-        if( !isWidget ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: CANNOT SET LAYOUT TO NON-QGRAPHICSWIDGET " ) );
-            return false;
+        if (mObjectMap[ dst ].second == HbXml::WIDGET) {
+            item2 = static_cast<QGraphicsWidget *>( mObjectMap[ dst ].first.data() );
         }
-    } else if( !( mObjectMap.contains( widget ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ITEM " ) + widget );
+    }
+    if ( !item2 ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SUCH ITEM " ) + dst );
         return false;
-    } else {   
-        parent = qobject_cast<QGraphicsWidget *>( mObjectMap[ widget ].data() );
-    }
-    
-    QGraphicsGridLayout* layout = new QGraphicsGridLayout();  
-    if (spacing) {
-        layout->setSpacing(*spacing);
     }
 
-    mCurrentLayout = layout;    
-    parent->setLayout( mCurrentLayout );
-    
-    return true;
-}
-
-bool HbDocumentLoaderActions::addGridLayoutCell( const QString &src, const QString &row, 
-                                                 const QString &column, const QString &rowspan, const QString &columnspan,
-                                                 const QString &alignment )
-{
-    QGraphicsLayoutItem *item = 0;
-    
-    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
-    
-    if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) + src );
-        return false;        
-    }
-    
-    if( src.isEmpty() ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: TRY TO ADD EMPTY ITEM " ) + src );
+    qreal spacingVal(0);
+    if ( spacing.mType != HbXmlLengthValue::None && !toPixels(spacing, spacingVal) ) {
         return false;
-    } else if( !( mObjectMap.contains( src ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ITEM " ) + src );
-        return false;
-    } else {
-        item = qobject_cast<QGraphicsWidget *>( mObjectMap[ src ].data() );
     }
-    
-    bool ok = false;
-    int rownum = row.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO ROW SPECIFIED" ) );
-        return false;                        
-    } 
-
-    int columnnum = column.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO COLUMN SPECIFIED" ) );
-        return false;                    
-    } 
-    
-    int rowspannum = rowspan.toInt( &ok );
-    if( !ok ) {
-        rowspannum = 1;
-    }                  
-
-    int columnspannum = columnspan.toInt( &ok );
-    if( !ok ) {
-        columnspannum = 1;
-    }                   
-    
-    Qt::Alignment align = 0;
-    if( !alignment.isEmpty() ) {
-        AccessToMetadata myAccess;
-                
-        int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
-        if( value == -1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ALIGNMENT " ) + alignment );
-            return false;            
-        } 
-        align = ( Qt::Alignment )value;
-    }
-
-    layout->addItem( item, rownum, columnnum, rowspannum, columnspannum, align );
-    
+    layout->setAnchor( item1, srcEdge, item2, dstEdge, spacingVal );
     return true;
 }
 
-bool HbDocumentLoaderActions::setGridLayoutRowProperties( const QString &row, const QString &rowStretchFactor, 
-                                                          const QString &alignment )
-{
-    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
-    
-    if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
-        return false;        
-    }
 
-    bool ok = false;
-    const int rownum = row.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO ROW NUMBER SPECIFIED FOR STRETCH FACTOR" ) );
-        return false;                        
-    } 
-
-    if( !rowStretchFactor.isEmpty() ) {
-        bool ok = false;
-        int rowStretch = rowStretchFactor.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: UNABLE TO PARSE ROW STRETCH FACTOR VALUE" ) );
-            return false;                        
-        } 
-        layout->setRowStretchFactor( rownum, rowStretch );
-    }
-
-    if( !alignment.isEmpty() ) {
-        AccessToMetadata myAccess;
-                
-        int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
-        if( value == -1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ROW ALIGNMENT " ) + alignment );
-            return false;            
-        } 
-        layout->setRowAlignment(rownum, ( Qt::Alignment )value );
-    }
-
-    return true;
-}
-
-bool HbDocumentLoaderActions::setGridLayoutColumnProperties( const QString &column, const QString &columnStretchFactor,
-                                                          const QString &alignment )
-{
-    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
-    
-    if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
-        return false;        
-    }
-
-    bool ok = false;
-    const int columnnum = column.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO COLUMN NUMBER SPECIFIED FOR STRETCH FACTOR" ) );
-        return false;                        
-    } 
-
-    if( !columnStretchFactor.isEmpty() ) {
-        bool ok = false;
-        int columnStretch = columnStretchFactor.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: UNABLE TO PARSE COLUMN STRETCH FACTOR VALUE" ) );
-            return false;                        
-        } 
-        layout->setColumnStretchFactor( columnnum, columnStretch );
-    }
-
-    if( !alignment.isEmpty() ) {
-        AccessToMetadata myAccess;
-                
-        int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
-        if( value == -1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH COLUMN ALIGNMENT " ) + alignment );
-            return false;            
-        } 
-        layout->setColumnAlignment( columnnum, ( Qt::Alignment )value );
-    }
-
-    return true;
-}
-
-bool HbDocumentLoaderActions::setGridLayoutRowHeights( const QString &row, const qreal minHeight, 
-                                                       const qreal maxHeight, const qreal prefHeight,
-                                                       const qreal fixedHeight, const qreal rowSpacing, 
-                                                       const int flagsPropertyAvailable )
-{
-    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
-    
-    if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
-        return false;        
-    }
-
-    bool ok = false;
-    const int rownum = row.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO ROW NUMBER SPECIFIED FOR ROW HEIGHTS" ) );
-        return false;                        
-    } 
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyMin ) {
-        layout->setRowMinimumHeight( rownum, minHeight );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyMax ) {
-        layout->setRowMaximumHeight( rownum, maxHeight );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyPref ) {
-        layout->setRowPreferredHeight( rownum, prefHeight );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyFixed ) {
-        layout->setRowFixedHeight( rownum, fixedHeight );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertySpacing ) {
-        layout->setRowSpacing( rownum, rowSpacing );
-    }
-
-    return true;
-
-}
-
-bool HbDocumentLoaderActions::setGridLayoutColumnWidths( const QString &column, const qreal minWidth, 
-                                                         const qreal maxWidth, const qreal prefWidth, 
-                                                         const qreal fixedWidth, const qreal columnSpacing,
-                                                         const int flagsPropertyAvailable )
-{
-    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
-    
-    if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
-        return false;        
-    }
-
-    bool ok = false;
-    const int columnnum = column.toInt( &ok );
-    if( !ok ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO COLUMN NUMBER SPECIFIED FOR COLUMN WIDTHS" ) );
-        return false;                        
-    } 
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyMin ) {
-        layout->setColumnMinimumWidth( columnnum, minWidth );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyMax ) {
-        layout->setColumnMaximumWidth( columnnum, maxWidth );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyPref ) {
-        layout->setColumnPreferredWidth( columnnum, prefWidth );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertyFixed ) {
-        layout->setColumnFixedWidth( columnnum, fixedWidth );
-    }
-
-    if ( flagsPropertyAvailable & HbDocumentLoaderActions::propertySpacing ) {
-        layout->setColumnSpacing( columnnum, columnSpacing );
-    }
-
-    return true;
-}
-
-bool HbDocumentLoaderActions::createLinearLayout( const QString &widget, const QString &orientation, qreal *spacing )
+bool HbDocumentLoaderActions::createGridLayout( const QString &widget, const HbXmlLengthValue &spacing )
 {
     QGraphicsWidget *parent = 0;
-    QGraphicsLinearLayout *layout = 0;
-    
+
     if( widget.isEmpty() ) {
         bool isWidget = false;
-        parent = qobject_cast<QGraphicsWidget *>( findFromStack( &isWidget ) );
-        if( !isWidget ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: CANNOT SET LAYOUT TO NON-QGRAPHICSWIDGET " ) );
+        QObject *parentObj = findFromStack( &isWidget );
+        if( isWidget ) {
+            parent = static_cast<QGraphicsWidget *>( parentObj );
+        }
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    }
+    if ( !parent ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: PARENT NOT FOUND" ) );
+        return false;
+    }
+
+    QGraphicsGridLayout* layout = new QGraphicsGridLayout();
+    if (spacing.mType != HbXmlLengthValue::None) {
+        qreal spacingVal;
+        if ( toPixels(spacing, spacingVal) ) {
+            layout->setSpacing(spacingVal);
+        } else {
+            delete layout;
             return false;
         }
-    } else if( !( mObjectMap.contains( widget ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ITEM " ) + widget );
-        return false;
-    } else {   
-        parent = qobject_cast<QGraphicsWidget *>( mObjectMap[ widget ].data() );
-    }
-    
-    Qt::Orientation orient = Qt::Horizontal;
-    
-    if( ! orientation.isEmpty() ) {
-        AccessToMetadata myAccess;
-                
-        int value = myAccess.getEnumValue( "Orientation", orientation.toLatin1().data() );
-        if( value == -1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ORIENTATION " ) + orientation );
-            return false;            
-        } 
-        orient = ( Qt::Orientation )value;
-        layout = new QGraphicsLinearLayout( orient );
-    } else {
-        layout = new QGraphicsLinearLayout();
-    }  
-    
-    if ( spacing ) {
-        layout->setSpacing(*spacing);
     }
 
     mCurrentLayout = layout;
     parent->setLayout( mCurrentLayout );
-    
+
     return true;
 }
 
-bool HbDocumentLoaderActions::addLinearLayoutItem( const QString &itemname, const QString &index, 
-                                                   const QString &stretchfactor, const QString &alignment,
-                                                   qreal *spacing )
+bool HbDocumentLoaderActions::addGridLayoutCell(
+    const QString &src,
+    int row,
+    int column,
+    int *rowspan,
+    int *columnspan,
+    Qt::Alignment *alignment )
 {
     QGraphicsLayoutItem *item = 0;
-    
-    QGraphicsLinearLayout *layout = static_cast<QGraphicsLinearLayout *>( mCurrentLayout );
-    
+
+    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
+
     if( !layout ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: INTERNAL ERROR " ) );
-        return false;        
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) + src );
+        return false;
     }
-    
-    if( itemname.isEmpty() ) {
+
+    if( src.isEmpty() ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: TRY TO ADD EMPTY ITEM " ) + src );
+        return false;
+    } else if ( mObjectMap.contains( src ) && mObjectMap[ src ].second == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ src ].first.data() );
+    } else {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ITEM " ) + src );
+        return false;
+    }
+
+    int rowspannum = rowspan ? *rowspan : 1;
+    int columnspannum = columnspan ? *columnspan : 1;
+    Qt::Alignment align = alignment ? *alignment : (Qt::Alignment)0;
+
+    layout->addItem( item, row, column, rowspannum, columnspannum, align );
+
+    return true;
+}
+
+bool HbDocumentLoaderActions::setGridLayoutRowProperties(
+    int row,
+    int *rowStretchFactor,
+    Qt::Alignment *alignment )
+{
+    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
+
+    if (!layout) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
+        return false;
+    }
+
+    if (rowStretchFactor) {
+        layout->setRowStretchFactor( row, *rowStretchFactor );
+    }
+
+    if (alignment) {
+        layout->setRowAlignment( row, *alignment );
+    }
+
+    return true;
+}
+
+bool HbDocumentLoaderActions::setGridLayoutColumnProperties(
+    int column,
+    int *columnStretchFactor,
+    Qt::Alignment *alignment )
+{
+    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
+
+    if( !layout ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
+        return false;
+    }
+
+    if (columnStretchFactor) {
+        layout->setColumnStretchFactor( column, *columnStretchFactor );
+    }
+
+    if (alignment) {
+        layout->setColumnAlignment( column, *alignment );
+    }
+
+    return true;
+}
+
+bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
+                                                       const HbXmlLengthValue &minHeight,
+                                                       const HbXmlLengthValue &maxHeight,
+                                                       const HbXmlLengthValue &prefHeight,
+                                                       const HbXmlLengthValue &fixedHeight,
+                                                       const HbXmlLengthValue &rowSpacing )
+{
+    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
+
+    if( !layout ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
+        return false;
+    }
+
+    if ( minHeight.mType != HbXmlLengthValue::None ) {
+        qreal minHeightVal;
+        if ( !toPixels(minHeight, minHeightVal) ) {
+            return false;
+        }
+        layout->setRowMinimumHeight( row, minHeightVal );
+    }
+
+    if ( maxHeight.mType != HbXmlLengthValue::None ) {
+        qreal maxHeightVal;
+        if ( !toPixels(maxHeight, maxHeightVal) ) {
+            return false;
+        }
+        layout->setRowMaximumHeight( row, maxHeightVal );
+    }
+
+    if ( prefHeight.mType != HbXmlLengthValue::None ) {
+        qreal prefHeightVal;
+        if ( !toPixels(prefHeight, prefHeightVal) ) {
+            return false;
+        }
+        layout->setRowPreferredHeight( row, prefHeightVal );
+    }
+
+    if ( fixedHeight.mType != HbXmlLengthValue::None ) {
+        qreal fixedHeightVal;
+        if ( !toPixels(fixedHeight, fixedHeightVal) ) {
+            return false;
+        }
+        layout->setRowFixedHeight( row, fixedHeightVal );
+    }
+
+    if ( rowSpacing.mType != HbXmlLengthValue::None ) {
+        qreal rowSpacingVal;
+        if ( !toPixels(rowSpacing, rowSpacingVal) ) {
+            return false;
+        }
+        layout->setRowSpacing( row, rowSpacingVal );
+    }
+
+    return true;
+
+}
+
+bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
+                                                         const HbXmlLengthValue &minWidth,
+                                                         const HbXmlLengthValue &maxWidth,
+                                                         const HbXmlLengthValue &prefWidth,
+                                                         const HbXmlLengthValue &fixedWidth,
+                                                         const HbXmlLengthValue &columnSpacing )
+{
+    QGraphicsGridLayout *layout = static_cast<QGraphicsGridLayout *>( mCurrentLayout );
+
+    if( !layout ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INTERNAL ERROR " ) );
+        return false;
+    }
+
+    if ( minWidth.mType != HbXmlLengthValue::None ) {
+        qreal minWidthVal;
+        if ( !toPixels(minWidth, minWidthVal) ) {
+            return false;
+        }
+        layout->setColumnMinimumWidth( column, minWidthVal );
+    }
+
+    if ( maxWidth.mType != HbXmlLengthValue::None ) {
+        qreal maxWidthVal;
+        if ( !toPixels(maxWidth, maxWidthVal) ) {
+            return false;
+        }
+        layout->setColumnMaximumWidth( column, maxWidthVal );
+    }
+
+    if ( prefWidth.mType != HbXmlLengthValue::None ) {
+        qreal prefWidthVal;
+        if ( !toPixels(prefWidth, prefWidthVal) ) {
+            return false;
+        }
+        layout->setColumnPreferredWidth( column, prefWidthVal );
+    }
+
+    if ( fixedWidth.mType != HbXmlLengthValue::None ) {
+        qreal fixedWidthVal;
+        if ( !toPixels(fixedWidth, fixedWidthVal) ) {
+            return false;
+        }
+        layout->setColumnFixedWidth( column, fixedWidthVal );
+    }
+
+    if ( columnSpacing.mType != HbXmlLengthValue::None ) {
+        qreal columnSpacingVal;
+        if ( !toPixels(columnSpacing, columnSpacingVal) ) {
+            return false;
+        }
+        layout->setColumnSpacing( column, columnSpacingVal );
+    }
+
+    return true;
+}
+
+bool HbDocumentLoaderActions::createLinearLayout(
+    const QString &widget,
+    Qt::Orientation *orientation,
+    const HbXmlLengthValue &spacing )
+{
+    QGraphicsWidget *parent = 0;
+    QGraphicsLinearLayout *layout = 0;
+
+    if( widget.isEmpty() ) {
+        bool isWidget = false;
+        QObject *parentObj = findFromStack( &isWidget );
+        if ( isWidget ) {
+            parent = static_cast<QGraphicsWidget *>( parentObj );
+        }
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    }
+    if ( !parent ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: PARENT NOT FOUND" ) );
+        return false;
+    }
+
+    if( orientation ) {
+        layout = new QGraphicsLinearLayout( *orientation );
+    } else {
+        layout = new QGraphicsLinearLayout();
+    }
+
+    if ( spacing.mType != HbXmlLengthValue::None ) {
+        qreal spacingVal;
+        if ( !toPixels(spacing, spacingVal) ) {
+            return false;
+        }
+        layout->setSpacing(spacingVal);
+    }
+
+    mCurrentLayout = layout;
+    parent->setLayout( mCurrentLayout );
+
+    return true;
+}
+
+bool HbDocumentLoaderActions::addLinearLayoutItem(
+    const QString &itemname,
+    int *index,
+    int *stretchfactor,
+    Qt::Alignment *alignment,
+    const HbXmlLengthValue &spacing )
+{
+    QGraphicsLayoutItem *item = 0;
+
+    QGraphicsLinearLayout *layout = static_cast<QGraphicsLinearLayout *>( mCurrentLayout );
+
+    if ( !layout ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: INTERNAL ERROR " ) );
+        return false;
+    }
+
+    if ( itemname.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: TRY TO ADD EMPTY ITEM " ) + itemname );
         return false;
-    } else if( !( mObjectMap.contains( itemname ) ) ) {
+    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].second == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].first.data() );
+    } else {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ITEM " ) + itemname );
         return false;
-    } else {
-        item = qobject_cast<QGraphicsWidget *>( mObjectMap[ itemname ].data() );
     }
-    
-    int indexValue = -1;
-    
-    if( ! index.isEmpty() ) {
-        bool ok = false;
-        indexValue = index.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE ITEM INDEX" ) );
-            return false;                        
-        } 
-    }
-    
+
+    int indexValue = index ? *index : -1;
     layout->insertItem( indexValue, item );
-    if ( spacing ) {
+
+    if ( spacing.mType != HbXmlLengthValue::None ) {
+        qreal spacingVal;
+        if ( !toPixels(spacing, spacingVal) ) {
+            return false;
+        }
+
         // Need to resolve the item index for spacing
         int i = layout->count();
         while (i--) {
             if ( layout->itemAt(i) == item ) {
-                layout->setItemSpacing(i, *spacing);
+                layout->setItemSpacing(i, spacingVal);
                 break;
             }
         }
     }
-    
-    if( !stretchfactor.isEmpty() ) {
-        bool ok = false;
-        int stretch = stretchfactor.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH VALUE" ) );
-            return false;                        
-        } 
-        layout->setStretchFactor( item, stretch );
+
+    if ( stretchfactor ) {
+        layout->setStretchFactor( item, *stretchfactor );
     }
-    
-    if( !alignment.isEmpty() ) {
-        AccessToMetadata myAccess;
-                
-        int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
-        if( value == -1 ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ITEM ALIGNMENT " ) + alignment );
-            return false;            
-        } 
-        layout->setAlignment( item, ( Qt::Alignment )value );
+
+    if( alignment ) {
+        layout->setAlignment( item, *alignment );
     }
-    
+
     return true;
 }
 
-bool HbDocumentLoaderActions::addLinearLayoutStretch( const QString &index, const QString &stretchfactor )
+bool HbDocumentLoaderActions::addLinearLayoutStretch(
+    int *index,
+    int *stretchfactor )
 {
     QGraphicsLinearLayout *layout = static_cast<QGraphicsLinearLayout *>( mCurrentLayout );
-    
+
     if( !layout ) {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: INTERNAL ERROR " ) );
-        return false;        
-    }
-    
-    int indexValue = -1;
-    int stretch = 1;
-    
-    if( ! index.isEmpty() ) {
-        bool ok = false;
-        indexValue = index.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH INDEX" ) );
-            return false;                        
-        } 
+        return false;
     }
 
-    if( ! stretchfactor.isEmpty() ) {
-        bool ok = false;
-        stretch = stretchfactor.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH VALUE" ) );
-            return false;                        
-        } 
-    }
-    
+    int indexValue = index ? *index : -1;
+    int stretch = stretchfactor ? * stretchfactor : 1;
+
     layout->insertStretch( indexValue, stretch );
-    
+
     return true;
 }
 
-bool HbDocumentLoaderActions::setLayoutContentsMargins( qreal left, qreal top, qreal right, qreal bottom )
+bool HbDocumentLoaderActions::setLayoutContentsMargins( const HbXmlLengthValue &left,
+                                                        const HbXmlLengthValue &top,
+                                                        const HbXmlLengthValue &right,
+                                                        const HbXmlLengthValue &bottom )
 {
     if( !mCurrentLayout ) {
         HB_DOCUMENTLOADER_PRINT( QString( "LAYOUT: INTERNAL ERROR " ) );
-        return false;        
+        return false;
     }
-    mCurrentLayout->setContentsMargins( left, top, right, bottom );
-    return true;
+
+    qreal leftVal=0, topVal=0, rightVal=0, bottomVal=0;
+    bool ok = true;
+    if (left.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(left, leftVal);
+    }
+    if (top.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(top, topVal);
+    }
+    if (right.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(right, rightVal);
+    }
+    if (bottom.mType != HbXmlLengthValue::None) {
+        ok &= toPixels(bottom, bottomVal);
+    }
+    if ( ok ) {
+        mCurrentLayout->setContentsMargins( leftVal, topVal, rightVal, bottomVal );
+    }
+    return ok;
 }
 
 bool HbDocumentLoaderActions::createStackedLayout( const QString &widget )
 {
     QGraphicsWidget *parent = 0;
-    
+
     if( widget.isEmpty() ) {
         bool isWidget = false;
-        parent = qobject_cast<QGraphicsWidget *>( findFromStack( &isWidget ) );
-        if( !isWidget ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: CANNOT SET LAYOUT TO NON-QGRAPHICSWIDGET " ) );
-            return false;
+        QObject *parentObj = findFromStack( &isWidget );
+        if( isWidget ) {
+            parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if( !( mObjectMap.contains( widget ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: NO SUCH ITEM " ) + widget );
-        return false;
-    } else {   
-        parent = qobject_cast<QGraphicsWidget *>( mObjectMap[ widget ].data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
     }
-    
+    if ( !parent ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: PARENT NOT FOUND" ) );
+        return false;
+    }
+
     mCurrentLayout = new HbStackedLayout();
-    
+
     parent->setLayout( mCurrentLayout );
-    
+
     return true;
 }
 
-bool HbDocumentLoaderActions::addStackedLayoutItem( const QString &itemname, const QString &index )
+bool HbDocumentLoaderActions::addStackedLayoutItem( const QString &itemname, int *index )
 {
     QGraphicsLayoutItem *item = 0;
-    
+
     HbStackedLayout *layout = static_cast<HbStackedLayout *>( mCurrentLayout );
-    
+
     if( !layout ) {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: INTERNAL ERROR " ) );
-        return false;        
+        return false;
     }
-    
+
     if( itemname.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: TRY TO ADD EMPTY ITEM " ) + itemname );
         return false;
-    } else if( !( mObjectMap.contains( itemname ) ) ) {
+    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].second == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].first.data() );
+    } else {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: NO SUCH ITEM " ) + itemname );
         return false;
-    } else {
-        item = qobject_cast<QGraphicsWidget *>( mObjectMap[ itemname ].data() );
     }
-    
-    int indexValue = -1;
-    
-    if( ! index.isEmpty() ) {
-        bool ok = false;
-        indexValue = index.toInt( &ok );
-        if( !ok ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: UNABLE TO PARSE ITEM INDEX" ) );
-            return false;                        
-        } 
-    }
-    
+
+    int indexValue = index ? *index : -1;
     layout->insertItem( indexValue, item );
-    
+
     return true;
 }
 
@@ -1034,62 +1057,202 @@ bool HbDocumentLoaderActions::addStackedLayoutItem( const QString &itemname, con
 bool HbDocumentLoaderActions::createNullLayout( const QString &widget )
 {
     QGraphicsWidget *parent = 0;
-    
+
     if( widget.isEmpty() ) {
         bool isWidget = false;
-        parent = qobject_cast<QGraphicsWidget *>( findFromStack( &isWidget ) );
-        if( !isWidget ) {
-            HB_DOCUMENTLOADER_PRINT( QString( "NULL LAYOUT: CANNOT UNSET LAYOUT FROM NON-QGRAPHICSWIDGET " ) );
-            return false;
+        QObject *parentObj = findFromStack( &isWidget );
+        if( isWidget ) {
+            parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if( !( mObjectMap.contains( widget ) ) ) {
-        HB_DOCUMENTLOADER_PRINT( QString( "NULL LAYOUT: NO SUCH ITEM " ) + widget );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    }
+    if ( !parent ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "NULL LAYOUT: PARENT NOT FOUND" ) );
         return false;
-    } else {   
-        parent = qobject_cast<QGraphicsWidget *>( mObjectMap[ widget ].data() );
     }
-    
-    mCurrentLayout = 0;  
-    
+
+    mCurrentLayout = 0;
+
     parent->setLayout( mCurrentLayout );
-    
-    return true;
-    
-}
 
-bool HbDocumentLoaderActions::createContainer()
-{
-    if (mCurrentContainer) {
-        delete mCurrentContainer;
-    }
-    mCurrentContainer = new QList<QVariant>();      
     return true;
-}
 
-bool HbDocumentLoaderActions::appendPropertyToContainer( const QVariant &value )
-{
-    bool result(false);
-    if (!mCurrentContainer) {
-        result = false;
-    } else {
-        // note that for a successful conversion later on, all of the appended items need
-        // to be of the same (appropriate type) e.g. String
-        mCurrentContainer->append(value);
-        result = true;
-    }
-    return result;
 }
 
 bool HbDocumentLoaderActions::setWidgetRole(
     QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role)
 {
-    return factory.setWidgetRole(parent, child, role);
+    return mFactory.setWidgetRole(parent, child, role);
 }
 
 bool HbDocumentLoaderActions::setObjectRole(
     QObject *parent, QObject *child, const QString &role)
 {
-    return factory.setObjectRole(parent, child, role);
+    return mFactory.setObjectRole(parent, child, role);
+}
+
+bool HbDocumentLoaderActions::variableToQVariant( const HbXmlVariable& variable, QVariant &variant )
+{
+    Q_UNUSED(variable);
+    Q_UNUSED(variant);
+    bool result(true);
+
+    switch (variable.mType) {
+        case HbXmlVariable::INT:
+        {
+        qint16* int_b =(qint16*)variable.mParameters.at(0);
+        variant.setValue((int)(*int_b));
+        break;
+        }
+
+        case HbXmlVariable::REAL:
+        {
+        HbXmlLengthValue* realVal = (HbXmlLengthValue*)variable.mParameters.at(0);
+        qreal realNum;
+        result = toPixels(*realVal, realNum );
+        if (result) {
+            variant.setValue(realNum);
+        }
+        break;
+        }
+
+        case HbXmlVariable::LOCALIZED_STRING:
+        {
+        QString *value = (QString*)variable.mParameters.at(0);
+        QString *comment = (QString*)variable.mParameters.at(1);
+        const QString text = translate( *value, *comment );
+        variant.setValue( text );
+        break;
+        }
+
+        case HbXmlVariable::STRING:
+        {
+        QString *value = (QString*)variable.mParameters.at(0);
+        QString *locId = (QString*)variable.mParameters.at(1);
+        variant.setValue( locId->isEmpty() ? *value : hbTrId(locId->toUtf8()) );
+        break;
+        }
+
+        case HbXmlVariable::BOOL:
+        {
+        bool *bool_b = (bool*)variable.mParameters.at(0);
+        variant.setValue( *bool_b );
+        break;
+        }
+
+        case HbXmlVariable::ICON:
+        {
+        QString *iconName = (QString*)variable.mParameters.at(0);
+        HbXmlLengthValue* widthVal = (HbXmlLengthValue*)variable.mParameters.at(1);
+        HbXmlLengthValue* heightVal = (HbXmlLengthValue*)variable.mParameters.at(2);
+
+        HbIcon icon(*iconName);
+        qreal width, height;
+        if ( widthVal->mType != HbXmlLengthValue::None ) {
+            result = toPixels(*widthVal, width);
+        }
+        if ( result && heightVal->mType != HbXmlLengthValue::None ) {
+            result = toPixels(*heightVal, height);
+        }
+        if ( result ) {
+            if ( widthVal->mType != HbXmlLengthValue::None &&
+                 heightVal->mType != HbXmlLengthValue::None ) {
+                icon.setSize(QSizeF(width, height));
+            } else if ( widthVal->mType != HbXmlLengthValue::None ) {
+                icon.setWidth(width);
+            } else if ( heightVal->mType != HbXmlLengthValue::None ) {
+                icon.setHeight(height);
+            }
+            variant.setValue( icon );
+        }
+        break;
+        }
+
+        case HbXmlVariable::SIZE:
+        {
+        HbXmlLengthValue* widthVal = (HbXmlLengthValue*)variable.mParameters.at(0);
+        HbXmlLengthValue* heightVal = (HbXmlLengthValue*)variable.mParameters.at(1);
+        qreal width, height;
+        result &= toPixels(*widthVal, width);
+        result &= toPixels(*heightVal, height);
+        if ( result ) {
+            variant.setValue( QSizeF( width, height ) );
+        }
+        break;
+        }
+
+        case HbXmlVariable::RECT:
+        {
+        HbXmlLengthValue* widthVal = (HbXmlLengthValue*)variable.mParameters.at(0);
+        HbXmlLengthValue* heightVal = (HbXmlLengthValue*)variable.mParameters.at(1);
+        HbXmlLengthValue* posxVal = (HbXmlLengthValue*)variable.mParameters.at(2);
+        HbXmlLengthValue* posyVal = (HbXmlLengthValue*)variable.mParameters.at(3);
+        qreal width, height, posx, posy;
+        result &= toPixels(*widthVal, width);
+        result &= toPixels(*heightVal, height);
+        result &= toPixels(*posxVal, posx);
+        result &= toPixels(*posyVal, posy);
+        if ( result ) {
+            variant.setValue(QRectF(QPointF(posx, posy), QSizeF(width, height)));
+        }
+        break;
+        }
+
+        case HbXmlVariable::POINT:
+        {
+        HbXmlLengthValue* posxVal = (HbXmlLengthValue*)variable.mParameters.at(0);
+        HbXmlLengthValue* posyVal = (HbXmlLengthValue*)variable.mParameters.at(1);
+        qreal posx, posy;
+        result &= toPixels(*posxVal, posx);
+        result &= toPixels(*posyVal, posy);
+        if ( result ) {
+            variant.setValue(QPointF(posx, posy));
+        }
+        break;
+        }
+
+        case HbXmlVariable::ENUMS:
+        {
+        // Relies on implicit conversion.
+        QString *string = (QString*)variable.mParameters.at(0);
+        variant.setValue(*string);
+        break;
+        }
+
+        case HbXmlVariable::COLOR:
+        {
+        QColor *color = (QColor*)variable.mParameters.at(0);
+        variant.setValue(*color);
+        break;
+        }
+
+        case HbXmlVariable::FONTSPEC:
+        {
+        quint8* role_b = (quint8*)variable.mParameters.at(0);
+        HbXmlLengthValue* textHeightVal = (HbXmlLengthValue*)variable.mParameters.at(1);
+        qreal textHeight;
+        if ( textHeightVal->mType != HbXmlLengthValue::None ) {
+            result = toPixels(*textHeightVal, textHeight);
+        }
+        if (result) {
+            HbFontSpec fontSpec((HbFontSpec::Role)(*role_b));
+            if ( textHeightVal->mType != HbXmlLengthValue::None ) {
+                fontSpec.setTextHeight(textHeight);
+            }
+            variant.setValue(fontSpec);
+        }
+        break;
+        }
+
+        default:
+        {
+        result = false;
+        break;
+        }
+        }
+
+    return result;
 }
 
 

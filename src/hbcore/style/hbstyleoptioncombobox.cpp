@@ -35,6 +35,11 @@
     Text shown in the comboBox, if not NULL. 
 */
 
+/*!
+
+    \deprecated HbStyleOptionComboBox::HbStyleOptionComboBox()
+    is deprecated. Styleoptions will not be public.
+*/
 
 HbStyleOptionComboBox::HbStyleOptionComboBox() : HbStyleOption(HbSO_Combo),
     text( )  //CRC: this is not required 
@@ -42,7 +47,11 @@ HbStyleOptionComboBox::HbStyleOptionComboBox() : HbStyleOption(HbSO_Combo),
     type = Type;
     version = Version;
 }
+/*!
 
+    \deprecated HbStyleOptionComboBox::HbStyleOptionComboBox(const HbStyleOptionComboBox&)
+    is deprecated. Styleoptions will not be public.
+*/
 HbStyleOptionComboBox::HbStyleOptionComboBox(const HbStyleOptionComboBox &other) :
     HbStyleOption(other),
     text(other.text)   

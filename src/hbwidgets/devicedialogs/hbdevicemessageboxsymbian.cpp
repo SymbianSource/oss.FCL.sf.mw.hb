@@ -913,9 +913,8 @@ EXPORT_C TPtrC CHbDeviceMessageBoxSymbian::AnimationDefinition() const
     \sa Qt::Alignment, IconAlignment()
 */
 /*!
-    \deprecated void CHbDeviceMessageBoxSymbian::SetIconAlignmentL(TInt aQtAlignment)
-    is deprecated. Replaced by
-    void CHbDeviceMessageBoxSymbian::SetIconAlignment(TInt aQtAlignment).
+    \deprecated CHbDeviceMessageBoxSymbian::SetIconAlignmentL(int)
+        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetIconAlignment(TInt aQtAlignment).
 
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconAlignmentL(TInt aQtAlignment)
@@ -978,9 +977,8 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::IconVisible() const
     \sa Timeout()
 */
 /*!
-    \deprecated void CHbDeviceMessageBoxSymbian::SetTimeoutL(TInt aTimeout)
-    is deprecated. Replaced by
-    void CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout).
+    \deprecated CHbDeviceMessageBoxSymbian::SetTimeoutL(int)
+        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout).
 
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeoutL(TInt aTimeout)
@@ -1020,9 +1018,8 @@ EXPORT_C TInt CHbDeviceMessageBoxSymbian::Timeout() const
     \sa HbPopup::DismissPolicy, DismissPolicy()
 */
 /*!
-    \deprecated void CHbDeviceMessageBoxSymbian::SetDismissPolicyL(TInt aHbPopupDismissPolicy)
-    is deprecated. Replaced by
-    void CHbDeviceMessageBoxSymbian::SetDismissPolicy(TInt aHbPopupDismissPolicy).
+    \deprecated CHbDeviceMessageBoxSymbian::SetDismissPolicyL(int)
+        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetDismissPolicy(TInt aHbPopupDismissPolicy).
 
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetDismissPolicyL(TInt aHbPopupDismissPolicy)
@@ -1094,9 +1091,8 @@ EXPORT_C const TPtrC CHbDeviceMessageBoxSymbian::ButtonText(TButtonId aButton) c
     \sa HasButton()
 */
 /*!
-    \deprecated void CHbDeviceMessageBoxSymbian::SetButtonL(TButtonId aButton, TBool aEnable)
-    is deprecated. Replaced by
-    void CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEnable).
+    \deprecated CHbDeviceMessageBoxSymbian::SetButtonL(CHbDeviceMessageBoxSymbian::TButtonId, int)
+        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEnable).
 
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetButtonL(TButtonId aButton, TBool aEnable)

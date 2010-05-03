@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="60px" version="1.1" viewBox="45 45 60 60" width="60px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<g>
-<rect fill="none" height="52" width="52" x="49" y="49"/>
-<path d="M51.921,82.501c0.009,0.029,0.021,0.062,0.03,0.091l5.431-1.765c-0.009-0.028-0.02-0.062-0.03-0.091   c-3.163-9.733,2.183-20.223,11.913-23.384c9.734-3.163,20.221,2.183,23.384,11.916c3.122,9.611-2.05,19.961-11.554,23.264   l1.765,5.431c12.498-4.275,19.316-17.853,15.22-30.459C93.945,54.777,80.229,47.785,67.5,51.921   C54.775,56.056,47.787,69.775,51.921,82.501z" fill="url(#SVGID_1_)"/>
+<svg baseProfile="tiny" height="52px" version="1.1" viewBox="0 0 52 52" width="52px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="52" width="52"/>
+<path d="M2.922,33.501c0.008,0.028,0.02,0.062,0.029,0.091l5.432-1.765c-0.01-0.028-0.021-0.062-0.031-0.091  c-3.162-9.733,2.184-20.223,11.914-23.385C30,5.189,40.487,10.535,43.649,20.268c3.123,9.611-2.049,19.961-11.553,23.265  l1.764,5.431c12.498-4.275,19.316-17.854,15.221-30.459C44.946,5.777,31.229-1.215,18.5,2.921  C5.775,7.057-1.213,20.775,2.922,33.501z" fill="url(#SVGID_1_)"/>
 <defs>
-<linearGradient gradientTransform="matrix(-0.309 -0.9511 -0.9511 0.309 -167.8735 592.8785)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="419.2471" x2="413.2627" y1="-400.5396" y2="-368.3193">
-<stop offset="0" style="stop-color:#3B87C0"/>
-<stop offset="1" style="stop-color:#0069B2;stop-opacity:0"/>
+<linearGradient gradientTransform="matrix(-0.309 -0.9511 0.9511 -0.309 -652.6261 210.8405)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-32.1201" x2="-38.1047" y1="712.0537" y2="679.8328">
+<stop offset="0" style="stop-color:#0067B1"/>
+<stop offset="1" style="stop-color:#0069B1;stop-opacity:0.25"/>
 </linearGradient>
 </defs>
-</g>
 </svg>

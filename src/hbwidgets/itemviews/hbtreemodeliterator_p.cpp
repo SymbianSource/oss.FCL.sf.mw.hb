@@ -307,12 +307,10 @@ void HbTreeModelIterator::setRootIndex(QModelIndex rootIndex)
     }
 }
 
-void HbTreeModelIterator::setItemContainer(HbAbstractItemContainer *itemContainer,
-                                           int expansionKey)
+void HbTreeModelIterator::setItemContainer(HbAbstractItemContainer *itemContainer)
 {
     Q_D(HbTreeModelIterator);
     d->mItemContainer = itemContainer;
-    d->mExpansionKey = expansionKey;
 }
 
 bool HbTreeModelIterator::lessThan(const QModelIndex &index1,
@@ -349,13 +347,11 @@ bool HbTreeModelIterator::lessThan(const QModelIndex &index1,
     return (list1Count < list2Count);
 }
 
-void HbTreeModelIterator::itemStateChanged(const QModelIndex &index, int stateKey)
+void HbTreeModelIterator::itemExpansionChanged(const QModelIndex &index)
 {
     Q_UNUSED(index);
     Q_D(HbTreeModelIterator);
-    if (stateKey & d->mExpansionKey) {
-        d->resetCache();
-    }
+    d->resetCache();
 }
 
 void HbTreeModelIterator::rowsInserted(const QModelIndex &parent, int start, int end)

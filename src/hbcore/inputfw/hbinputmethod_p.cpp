@@ -99,6 +99,12 @@ void HbInputMethodPrivate::inputStateFromEditor(HbInputState& result)
 
         // this editor has not been focused before, return the root state.
         editorRootState(result);
+
+        // See if the editor prefers numeric mode when focused for the first time.
+        Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
+        if (hints & Qt::ImhPreferNumbers) {
+            result.setInputMode(HbInputModeNumeric);
+        }
     } else {
         result = HbInputState();
     }
@@ -209,7 +215,7 @@ HbInputMethod* HbInputMethodPrivate::findInitialStateHandler(const QVector<HbInp
     HbInputState inState;
 
     foreach (HbInputModeProperties mode, modes) {
-        if (modeAllowedInEditor(mode.iMode)) {
+        if (modeAllowedInEditor(mode.inputMode())) {
             stateFromMode(mode, inState);
             master = HbInputModeCache::instance()->findStateHandler(inState);
             if (master) {
@@ -228,10 +234,10 @@ Creates input state from input mode.
 void HbInputMethodPrivate::stateFromMode(const HbInputModeProperties& mode, HbInputState& state)
 {
     state.setKeyboard(activeKeyboard());
-    state.setInputMode(mode.iMode);
-    state.setLanguage(mode.iLanguage);
+    state.setInputMode(mode.inputMode());
+    state.setLanguage(mode.language());
 
-    if (state.language().isCaseSensitiveLanguage() && HbInputUtils::isCaseSensitiveMode(mode.iMode)) {
+    if (state.language().isCaseSensitiveLanguage() && HbInputUtils::isCaseSensitiveMode(mode.inputMode())) {
         if (automaticTextCaseNeeded()) {
             state.setTextCase(HbTextCaseAutomatic);
         } else {
@@ -370,37 +376,29 @@ void HbInputMethodPrivate::setFocusCommon()
     Q_Q(HbInputMethod);
 
     if (mFocusObject) {
-        if (mFocusObject->editorInterface().filter() == 0) {
-            // If input method hints suggest certain input method filter but none is set,
-            // provide suitable one with compliments.
-            Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
-            if (hints & Qt::ImhDialableCharactersOnly) {
-                mFocusObject->editorInterface().setFilter(HbPhoneNumberFilter::instance());
-            } else if (hints & Qt::ImhFormattedNumbersOnly) {
-                mFocusObject->editorInterface().setFilter(HbFormattedNumbersFilter::instance());
-            } else if (hints & Qt::ImhDigitsOnly) {
-                mFocusObject->editorInterface().setFilter(HbDigitsOnlyFilter::instance());
-            } else if (hints & Qt::ImhUrlCharactersOnly) {
-                mFocusObject->editorInterface().setFilter(HbUrlFilter::instance());
-            } else if (hints & Qt::ImhEmailCharactersOnly) {
-                mFocusObject->editorInterface().setFilter(HbEmailAddressFilter::instance());
-            } 
+        Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
+        if (hints & Qt::ImhDialableCharactersOnly) {
+            setUpFocusedObjectAsPhoneNumberEditor();
+        } else if (hints & Qt::ImhFormattedNumbersOnly) {
+            setUpFocusedObjectAsFormattedNumberEditor();
+        } else if (hints & Qt::ImhDigitsOnly) {
+            setUpFocusedObjectAsDigitsOnlyEditor();
+        } else if (hints & Qt::ImhUrlCharactersOnly) {
+            setUpFocusedObjectAsUrlEditor();
+        } else if (hints & Qt::ImhEmailCharactersOnly) {
+            setUpFocusedObjectAsEmailEditor();
+        } 
+
+        if (mFocusObject->editorInterface().editorClass() != HbInputEditorClassUnknown &&
+            mFocusObject->editorInterface().extraDictionaryId() == 0) {
+            // Editor class is set, but no dictionary id. Set it automatically here.
+            mFocusObject->editorInterface().setExtraDictionaryId(mFocusObject->editorInterface().editorClass());
         }
     }
 
-    // Create input state.
-    if (mTrustLocalState) {
-        // This focus operation is a direct result from UI operation that modified
-        // input state (and probably caused context switch) while focus was away.
-        // Therefore it was not possible to store new state to editor interface,
-        // but instead input method was requested to trust the local state instead
-        // of reading it from the editor. We assume that whatever part of code set this flag
-        // knows what it is doing.
-        mTrustLocalState = false;
-    } else {
-        inputStateFromEditor(mInputState);
-    }
-   
+    // Create input state.  
+    inputStateFromEditor(mInputState);
+
     // Find state handler
     HbInputMethod* stateHandler = 0;
     HbInputMethodDescriptor activeMethod = HbInputSettingProxy::instance()->activeCustomInputMethod();
@@ -666,8 +664,8 @@ HbInputModeType HbInputMethodPrivate::initialInputMode(const HbInputLanguage &la
         } else {
             // Editor doesn't have mode asigned. Propose default mode.                  
             Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
-            if (mFocusObject->editorInterface().isNumericEditor() || (hints & Qt::ImhPreferNumbers)) {
-                // It is either fixed numeric or prefers numeric.
+            if (mFocusObject->editorInterface().isNumericEditor()) {
+                // It is fixed numeric editor.
                 ret = HbInputModeNumeric;
             } else {
                 ret = defaultInputMode(language);        
@@ -707,6 +705,83 @@ HbInputModeType HbInputMethodPrivate::defaultInputMode(const HbInputLanguage &in
 
     return HbInputModeDefault;
 }
+
+/*!
+A convenience method for setting up the editor as digits only editor.
+*/
+void HbInputMethodPrivate::setUpFocusedObjectAsDigitsOnlyEditor()
+{
+    if(mFocusObject) {
+        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        if(!mFocusObject->editorInterface().filter()) {
+            mFocusObject->editorInterface().setFilter(HbDigitsOnlyFilter::instance());
+        }
+        mFocusObject->setInputMethodHints(Qt::ImhDigitsOnly | Qt::ImhNoPredictiveText);
+    }
+}
+
+/*!
+A convenience method for setting up the editor as formatted only editor
+*/
+void HbInputMethodPrivate::setUpFocusedObjectAsFormattedNumberEditor()
+{
+    if(mFocusObject) {
+        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        if(!mFocusObject->editorInterface().filter()) {
+            mFocusObject->editorInterface().setFilter(HbFormattedNumbersFilter::instance());
+        }
+        mFocusObject->setInputMethodHints(Qt::ImhFormattedNumbersOnly | Qt::ImhNoPredictiveText);
+    }
+}
+
+/*!
+A convenience method for setting up the editor as phone number editor
+*/
+void HbInputMethodPrivate::setUpFocusedObjectAsPhoneNumberEditor()
+{
+    if(mFocusObject) {
+        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        if(!mFocusObject->editorInterface().filter()) {
+            mFocusObject->editorInterface().setFilter(HbPhoneNumberFilter::instance());
+        }
+        mFocusObject->setInputMethodHints(Qt::ImhDialableCharactersOnly | Qt::ImhNoPredictiveText);
+    }
+}
+
+/*!
+A convenience method for setting up the editor as email editor
+*/
+void HbInputMethodPrivate::setUpFocusedObjectAsEmailEditor()
+{
+    if(mFocusObject) {
+        mFocusObject->editorInterface().setInputMode(HbInputModeNone);
+        mFocusObject->editorInterface().setConstraints(HbEditorConstraintLatinAlphabetOnly);
+        if(!mFocusObject->editorInterface().filter()) {
+            mFocusObject->editorInterface().setFilter(HbEmailAddressFilter::instance());
+        }
+        mFocusObject->setInputMethodHints(Qt::ImhEmailCharactersOnly | Qt::ImhNoPredictiveText 
+            | Qt::ImhPreferLowercase);
+    }
+}
+/*!
+A convenience method for setting up the editor as url editor
+*/
+void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
+{
+    if(mFocusObject) {
+        mFocusObject->editorInterface().setInputMode(HbInputModeNone);
+        mFocusObject->editorInterface().setConstraints(HbEditorConstraintLatinAlphabetOnly);
+        if(!mFocusObject->editorInterface().filter()) {
+            mFocusObject->editorInterface().setFilter(HbUrlFilter::instance());
+        }
+        mFocusObject->setInputMethodHints(Qt::ImhUrlCharactersOnly | Qt::ImhNoPredictiveText 
+            | Qt::ImhPreferLowercase);
+    }
+}
+
 
 /// @endcond
 

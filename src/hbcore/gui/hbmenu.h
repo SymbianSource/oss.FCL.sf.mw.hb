@@ -89,8 +89,6 @@ signals:
 protected:
     HbMenu(HbMenuPrivate &dd, QGraphicsItem *parent);
 
-    void keyPressEvent(QKeyEvent *event);
-    void keyReleaseEvent(QKeyEvent *event);
     bool event(QEvent *event);
     void polish(HbStyleParameters &params);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
@@ -103,6 +101,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_onActionTriggered())
     Q_PRIVATE_SLOT(d_func(), void _q_subMenuItemTriggered(HbAction *action))
     Q_PRIVATE_SLOT(d_func(), void _q_subMenuTimedOut())
+    Q_PRIVATE_SLOT(d_func(), void _q_handleMenuAfterOrientationChange())
 };
 
 #endif // HBMENU_H

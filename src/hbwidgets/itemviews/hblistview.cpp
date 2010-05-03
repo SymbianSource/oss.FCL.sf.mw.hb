@@ -30,7 +30,6 @@
 #include "hblistviewitem.h"
 #include "hblistitemcontainer_p.h"
 #include "hblistitemcontainer_p.h"
-#include "hbgesturefilter.h"
 #include "hbscrollbar.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
@@ -38,6 +37,8 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QAbstractItemModel>
+
+#include <QPanGesture>
 
 #include <qdebug.h>
 /*!
@@ -72,11 +73,6 @@
     
     More information about this can be found from HbListViewItem documentation.
 */
-
-static const qreal DRAGGED_ITEM_SCROLL_SPEED = 0.2;
-static const int FLICKMINDISTANCE = 50;
-static const qreal FLICK_TIMEOUT = 200;
-static const qreal SCROLLSPEED_FACTOR = 0.0004;
 
 /*!
     Constructs a list view with \a parent.
@@ -140,9 +136,8 @@ void HbListView::scrollTo(const QModelIndex &index, ScrollHint hint)
     //This is always the case if recycling is off 
     //and sometimes the case when recycling is on
     if (itemRecycling()) {
-        if (!   (    d->mContainer->itemByIndex(index)
-                &&  (   hint == PositionAtTop
-                    ||  hint == EnsureVisible))) {
+        if (    !d->mContainer->itemByIndex(index)
+            ||  hint != EnsureVisible) {
             //Now the item is not in the buffer.
             //We must first set the item to be in the buffer
             //If the item is above let's put it first and if it is below put it last
@@ -244,135 +239,28 @@ bool HbListView::setArrangeMode(const bool arrangeMode)
                 || !(d->mModelIterator->model()->supportedDropActions().testFlag(Qt::MoveAction))) {
                 return false;
             }
-            if (d->mGestureFilter) {
-                removeSceneEventFilter(d->mGestureFilter);
-                d->mFilterRemoved = true;
-            }
             verticalScrollBar()->setInteractive(true);
-
         } else {
-            if (d->mFilterRemoved) {
-                installSceneEventFilter(d->mGestureFilter);
-                d->mFilterRemoved = false;
-            }
             verticalScrollBar()->setInteractive(false);
         }
         d->mArrangeMode = arrangeMode;
         d->mAnimateItems = !d->mArrangeMode;
+
+        if (d->mArrangeMode == true) {
+            d->mOriginalFriction = d->mFrictionEnabled;
+            setFrictionEnabled(false);
+        } else {
+            setFrictionEnabled(d->mOriginalFriction);
+        }
     }
     return true;
 }
 
 /*!
-    \reimp
-*/
-void HbListView::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbListView);
-    if (d->mArrangeMode 
-        && d->mSelectionMode == HbAbstractItemView::NoSelection
-        && !d->mDraggedItem) {
-
-        if (d->mFilterRemoved == false && d->mGestureFilter) {
-            removeSceneEventFilter(d->mGestureFilter);
-            d->mFilterRemoved = true;
-        }
-
-        d->mDraggedItem = d->itemAt(event->scenePos());
-        if(d->mDraggedItem) {
-            d->mDraggedItemIndex = d->mDraggedItem->modelIndex();
-
-            if (d->mDraggedItemIndex.isValid()) {
-                setCurrentIndex(d->mDraggedItemIndex);
-                d->mMousePressTimer.restart();
-                d->mMousePressPos = event->scenePos();
-                d->mOriginalTransform = d->mDraggedItem->transform();
-                d->mDraggedItem->setZValue(d->mDraggedItem->zValue() + 1);
-                d->mDraggedItem->setPressed(true);
-
-                connect(this, SIGNAL(scrollPositionChanged(QPointF)), this, SLOT(scrolling(QPointF)));    
-                Hb::InteractionModifiers modifiers = 0;
-                if (d->mWasScrolling) {
-                    modifiers |= Hb::ModifierScrolling;
-                }
-                HbWidgetFeedback::triggered(d->mDraggedItem,Hb::InstantPressed,modifiers);
-            } else {
-                d->mDraggedItem = 0;
-            }
-        }
-    } else {
-        if (!d->mDraggedItem) {
-            HbAbstractItemView::mousePressEvent(event);
-        }
-    }
-}
-
-/*!
-    \reimp
-*/
-void HbListView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbListView);
-
-    if (d->mArrangeMode
-        && d->mSelectionMode == HbAbstractItemView::NoSelection
-        && d->mDraggedItem) {
-
-        if (!isScrolling()) {
-            // move the item with the cursor to indicate the move
-            d->mDraggedItem->translate(0, event->scenePos().y() - event->lastScenePos().y());
-
-            if (d->mMousePressTimer.elapsed() >= FLICK_TIMEOUT) {
-                d->moveDraggedItemTo(event->scenePos());
-            }
-        }
-
-        // in case we are "dragging" an item and at the top/bottom of
-        // the view the view is scrolled to reveal more items in
-        // that direction
-        QModelIndex firstVisible;
-        QModelIndex lastVisible;        
-        d->mContainer->firstAndLastVisibleModelIndex(firstVisible, lastVisible);
-        if (firstVisible.isValid() && lastVisible.isValid()) {
-            // above indexes are valid so container contain at least one item - so it is
-            // safe to call first and last
-            QModelIndex firstItemIndex = d->mContainer->items().first()->modelIndex();
-            QModelIndex lastItemIndex = d->mContainer->items().last()->modelIndex();
-            // If the item is dragged up in the list (and there are more items to show), scroll up
-            if (!isScrolling()
-                && !isVisible(firstItemIndex)
-                && event->scenePos().y() < d->mMousePressPos.y()
-                && event->pos().y() < itemByIndex(firstVisible)->size().height()) {
-                d->mScrollStartMousePos = event->scenePos();
-                d->mLastScrollPos = QPointF(0,0);
-                d->animateScroll(QPointF(0.0f , DRAGGED_ITEM_SCROLL_SPEED));
-            }
-            // If the item is dragged down in the list (and there are more items to show), scroll down
-            else if (!isScrolling()
-                       && !isVisible(lastItemIndex)
-                       && event->scenePos().y() > d->mMousePressPos.y()
-                       && event->pos().y() > (size().height() - itemByIndex(lastVisible)->size().height())) {
-                d->mScrollStartMousePos = event->scenePos();
-                d->mLastScrollPos = QPointF(0,0);
-                d->animateScroll(QPointF(0.0f , (-1 * DRAGGED_ITEM_SCROLL_SPEED)));
-            }
-            // If the view is scrolling and the drag event is inside the view, we need to stop the scrolling
-            else if (event->pos().y() < (size().height() - itemByIndex(lastVisible)->size().height())
-                       && event->pos().y() > itemByIndex(firstVisible)->size().height()
-                       && isScrolling()) {
-                d->stopAnimating();
-            }
-        }
-    } else {
-        HbAbstractItemView::mouseMoveEvent(event);
-    }
-}
-
-
-/*!
     This slot is called when the arrangeMode is true, user is dragging an item 
     and the underlying scrollarea is moving. 
-*/void HbListView::scrolling(QPointF newPosition)
+*/
+void HbListView::scrolling(QPointF newPosition)
 {
     Q_UNUSED(newPosition);
 
@@ -394,54 +282,6 @@ void HbListView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         if (d->mDraggedItem) {
             d->mDraggedItem->translate(delta.x(), delta.y());
         }
-    }
-}
-
-
-
-/*!
-    \reimp
-*/
-void HbListView::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbListView);
-
-    if (d->mArrangeMode 
-        && d->mSelectionMode == HbAbstractItemView::NoSelection
-        && d->mDraggedItem) {
-
-        disconnect(this, SIGNAL(scrollPositionChanged(QPointF)), this, SLOT(scrolling(QPointF)));
-
-        if (isScrolling()) {
-            d->stopAnimating();
-        }
-
-        // remove item's drag indications
-        d->mDraggedItem->setOpacity(1.0);
-        d->mDraggedItem->setTransform(d->mOriginalTransform);
-        d->mDraggedItem->setZValue(d->mDraggedItem->zValue() - 1);
-        d->mDraggedItem->setPressed(false);
-
-        if (d->itemAt(event->scenePos())) {
-            int downTime = d->mMousePressTimer.elapsed();
-            // this seems to be a flick rather than item move, so start 
-            // scrolling
-            qreal distance = event->scenePos().y() - d->mMousePressPos.y();
-            if (downTime > 0 && downTime < FLICK_TIMEOUT 
-                && qAbs(distance) > FLICKMINDISTANCE ) {
-                d->animateScroll(QPointF (0.0f, (distance * 1000 / downTime) * SCROLLSPEED_FACTOR));
-            }
-        }
-
-        Hb::InteractionModifiers modifiers = 0;
-        if (d->mWasScrolling) {
-            modifiers |= Hb::ModifierScrolling;
-        }
-        HbWidgetFeedback::triggered(d->mDraggedItem,Hb::InstantReleased,modifiers);
-        d->mDraggedItem = 0;
-
-    } else {
-        HbAbstractItemView::mouseReleaseEvent(event);
     }
 }
 
@@ -484,9 +324,8 @@ void HbListView::rowsInserted(const QModelIndex &parent, int start, int end)
 
     if (parent == d->mModelIterator->rootIndex()) {
         HbAbstractItemView::rowsInserted(parent, start, end);
-        bool animate = d->mEnabledAnimations & HbAbstractItemView::Appear ? d->mAnimateItems : false;
-        if (!d->mArrangeMode && animate) {
-            d->startAppearEffect(parent, start, end);
+        if (!d->mArrangeMode && d->animationEnabled(true)) {
+            d->startAppearEffect("viewitem", "appear", parent, start, end);
         }
     }
 }
@@ -505,8 +344,8 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
                 if (d->mDraggedItem == item) {
                    d->mDraggedItem = 0;
                 }
-                bool animate = d->mEnabledAnimations & HbAbstractItemView::Disappear ? d->mAnimateItems : false;
-                if (!d->mArrangeMode && animate) {
+
+                if (!d->mArrangeMode && d->animationEnabled(false)) {
                     d->mItemsAboutToBeDeleted.append(item);
                 }
             }
@@ -518,14 +357,17 @@ void HbListView::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
     if (parent == d->mModelIterator->rootIndex()) {
-        bool animate = d->mEnabledAnimations & HbAbstractItemView::Disappear ? d->mAnimateItems: false;
-        if (animate) {
+        if (d->animationEnabled(false)) {
             for (int i = 0; i < d->mItemsAboutToBeDeleted.count(); i++) {
-                HbEffect::start(d->mItemsAboutToBeDeleted.at(i), 
+                QGraphicsItem *item = d->mItemsAboutToBeDeleted.at(i);
+                HbEffect::cancel(item, "appear");
+
+                item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+                HbEffect::start(item, 
                                 "viewitem", 
                                 "disappear",
                                 d->mContainer,
-                                "animationFinished");    
+                                "animationFinished");  
             }
             d->mItemsAboutToBeDeleted.clear();
         }

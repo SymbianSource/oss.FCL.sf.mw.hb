@@ -29,7 +29,15 @@
 
 #include "hbdevicedialogclientsession_p.h"
 
-_LIT(KSemaName, "hbdevdlgcli_");
+// Check if the client is running in device dialog server
+static bool IsDeviceDialogServer()
+{
+    const TUid ServerUid = {0x20022FC5};
+    return RProcess().SecureId().operator TUid() == ServerUid;
+}
+
+// Preallocate 1 message slot for sessions
+static const int KNumAsyncMessageSlots = 1;
 
 /*!
     \internal
@@ -52,12 +60,17 @@ RHbDeviceDialogClientSession::~RHbDeviceDialogClientSession()
 TInt RHbDeviceDialogClientSession::Connect(TRequestStatus *aStatus)
 {
     TRACE_ENTRY
+    // Check server is not trying to connect to itself
+    if (IsDeviceDialogServer()) {
+      return KErrNotSupported;
+    }
+
     TInt error = KErrNone;
     if (ServerRunning()) {
         if (!Handle()) {
-            TUid serviceUid = { 0x10009822 };
-            error = CreateSession(KHbServerName, *reinterpret_cast<TVersion*>(&serviceUid), 
-                                  -1, EIpcSession_Unsharable, 0, aStatus);
+            TVersion serverVersion(KHbServerMajor, KHbServerMinor, KHbServerBuild);
+            error = CreateSession(KHbServerName, serverVersion, KNumAsyncMessageSlots,
+                EIpcSession_Unsharable, 0, aStatus);
         }
     } else {
         error = Connect();
@@ -83,25 +96,18 @@ TInt RHbDeviceDialogClientSession::Connect()
 {
     TRACE_ENTRY
 
-    TInt error = KErrNone;
-
-    // Create semaphore. Sserver application signals it after server object is created. Also
-    // existence of the semaphore tells server app that connection is in the progress and it
-    // should not start exiting.
-    RSemaphore serverStartedSema;
-    TBuf<sizeof(KSemaName) + 16> semaName(KSemaName); // name + thread id
-    semaName.AppendNum(RThread().Id().Id(), EHex);
-    error = serverStartedSema.CreateGlobal(semaName, 0, EOwnerProcess);
-    if (error != KErrNone) {
-        return error;
+    // Check server is not trying to connect to itself
+    if (IsDeviceDialogServer()) {
+      return KErrNotSupported;
     }
+
+    TInt error = KErrNone;
 
     TInt retry(3);
     if (!Handle()) {
-        TUid serviceUid = { 0x10009822 };
-
         forever {
-            error = CreateSession(KHbServerName, *reinterpret_cast<TVersion*>(&serviceUid));
+            TVersion serverVersion(KHbServerMajor, KHbServerMinor, KHbServerBuild);
+            error = CreateSession(KHbServerName, serverVersion, KNumAsyncMessageSlots);
 
             if (error != KErrNotFound && error != KErrServerTerminated) {
                 // KErrNone, KErrPermissionDenied or other serious error.
@@ -113,15 +119,13 @@ TInt RHbDeviceDialogClientSession::Connect()
                 break;
             }
 
-            error = StartServer(serverStartedSema);
-
+            error = StartServer();
             if (error != KErrNone && error != KErrAlreadyExists) {
                 // Unrecoverable error, return an error.
                 break;
             }
         } // for-loop end
     }
-    serverStartedSema.Close();
     TRACE_EXIT
     return error;
 }
@@ -129,17 +133,12 @@ TInt RHbDeviceDialogClientSession::Connect()
 /*!
     \internal
 */
-TInt RHbDeviceDialogClientSession::StartServer(RSemaphore &aServerStartedSema)
+TInt RHbDeviceDialogClientSession::StartServer()
 {
     TRACE_ENTRY
     TInt error(KErrNone);
 
-    TFindServer findHbServer(KHbServerName);
-    TFullName name;
-
-    error = findHbServer.Next(name);
-
-    if (error == KErrNone) {
+    if (ServerRunning()) {
         // Already running, return error.
         return KErrAlreadyExists;
     }
@@ -195,23 +194,6 @@ TInt RHbDeviceDialogClientSession::StartServer(RSemaphore &aServerStartedSema)
         error = status.Int();
     }
 
-    // QApplication calls Rendezvous() before device dialog server has created server object.
-    // Therefore we wait here for server app to create the server object.
-    if (error == KErrNone || error == KErrAlreadyExists) {
-        forever {
-            findHbServer.Find(KHbServerName);
-            error = findHbServer.Next(name);
-            if (error != KErrNotFound) {
-                break;
-            }
-            if (process.ExitType() != EExitPending) {
-                error = KErrGeneral;
-                break;
-            }
-            const TInt KTimeout = 1000000; // 1 s
-            aServerStartedSema.Wait(KTimeout);
-        }
-    }
     process.Close();
     TRACE_EXIT
     return error;

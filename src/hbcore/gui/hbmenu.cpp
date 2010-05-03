@@ -35,6 +35,7 @@
 #include "hbeffectinternal_p.h"
 bool HbMenuPrivate::menuEffectsLoaded = false;
 #endif
+#include "hbglobal_p.h"
 
 #include <QPointer>
 
@@ -69,7 +70,6 @@ void HbMenuPrivate::init()
     q->setTimeout(HbPopup::ContextMenuTimeout);
 
     q->setBackgroundFaded(false);
-    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
 }
 
 void HbMenuPrivate::addPopupEffects()
@@ -108,7 +108,7 @@ void HbMenuPrivate::_q_triggerAction(HbMenuItem *currentItem)
         }
 #endif
         HbAction *hbAction = qobject_cast<HbAction *>(currentItem->action());
-        if (hbAction && hbAction->menu()) {
+        if (hbAction && hbAction->menu() && !actionTriggered) {
             hbAction->trigger();
             stopTimeout();
             openSubmenu(currentItem);
@@ -131,13 +131,7 @@ void HbMenuPrivate::createMenuView()
     if (!menuItemView && q->actions().count()){
         menuItemView = new HbMenuListView(q, q);
         HbStyle::setItemName(menuItemView, "content");
-        /* This is for qt versions 4.5,which had the clipping problem.
-           FOR http://www.qtsoftware.com/developer/task-tracker/index_html?id=257232&method=entry
-          see also HbMenu constructor */
-#if QT_VERSION < 0x040600
-        menuItemView->setFlag( QGraphicsItem::ItemClipsChildrenToShape, false );
-#endif
-   //This optimises case of options menu which otherwise updates its primitives twice.
+        //This optimises case of options menu which otherwise updates its primitives twice.
         if (menuType ==  HbMenu::OptionsMenu)
             q->setFrameType(HbPopup::Strong);
     	else
@@ -294,6 +288,47 @@ void HbMenuPrivate::_q_subMenuTimedOut()
     }
 }
 
+void HbMenuPrivate::_q_handleMenuAfterOrientationChange()
+{
+    Q_Q(HbMenu);
+    if ( menuType == HbMenu::ContextMenu || menuType == HbMenu::OptionsMenu ) {
+        if(activeSubMenu){
+            HbAction* action = activeSubMenu->activeAction();
+            if(action) {
+                closeMenuRecursively(action);
+            }
+            closeSubmenu();
+        }
+        q->close();
+    }
+}
+
+/*!
+* closes the menu after Orientation change
+*/
+void HbMenuPrivate::closeMenuAfterOrientationChange()
+{
+    Q_Q(HbMenu);
+    HbMainWindow* w(q->mainWindow());
+    if ( w ){
+        QObject::disconnect( w, SIGNAL(aboutToChangeOrientation()),
+                             q, SLOT(_q_handleMenuAfterOrientationChange()));
+        QObject::connect( w, SIGNAL(aboutToChangeOrientation()),
+                 q, SLOT(_q_handleMenuAfterOrientationChange()));
+    }
+}
+
+void HbMenuPrivate::closeMenuRecursively(HbAction* menuAction)
+{
+    if(menuAction->menu() && menuAction->menu()->activeAction()) {
+        closeMenuRecursively(menuAction->menu()->activeAction());
+    }
+    if(menuAction->menu()) {
+        menuAction->menu()->close();
+    }
+}
+
+
 bool HbMenuPrivate::menuTimedOut(HbMenu* menu)
 {
     return (menu && menu->timeout() > 0 && HbMenuPrivate::d_ptr(menu)->timedOut);
@@ -314,10 +349,7 @@ void HbMenuPrivate::setSubMenuPosition()
         qreal upperEdge = mSubMenuItem->scenePos().y() + mSubMenuItem->size().height() * 2 / 3;
         QSizeF windowSize = QSizeF(0,0);
         if (q->mainWindow()) {
-            QGraphicsWidget *viewPortItem = q->mainWindow()->element(HbMainWindow::ViewportItem);
-            if (viewPortItem) {
-                windowSize = viewPortItem->size();
-            }
+            windowSize = q->mainWindow()->layoutRect().size();
         }
         if (windowSize.height() - mDownMargin - q->preferredHeight() < upperEdge) {
             upperEdge = windowSize.height() - mDownMargin - q->preferredHeight();
@@ -343,7 +375,7 @@ void HbMenuPrivate::setSubMenuPosition()
 }
 
 /*!
-    @stable
+    @beta
     @hbcore
     \class HbMenu
     \brief HbMenu is a menu widget for use in HbView.
@@ -446,12 +478,7 @@ HbMenu::HbMenu(QGraphicsItem *parent) :
     Q_D(HbMenu);
     d->q_ptr = this;
     d->init();
-    /* This is for qt versions 4.5,which had the clipping problem.
-           FOR http://www.qtsoftware.com/developer/task-tracker/index_html?id=257232&method=entry
-           */
-#if QT_VERSION < 0x040600
-    setFlag( QGraphicsItem::ItemClipsChildrenToShape, true );
-#endif
+    setModal(true);
 }
 
 /*!
@@ -492,9 +519,10 @@ HbMenu::~HbMenu()
 }
 
 /*!
-    \deprecated HbMenu::exec(HbAction*)
-        is deprecated. Please use void HbMenu::open( QObject *receiver, const char *member )
-        or HbMenu::show() instead.
+ \deprecated HbMenu::exec(HbAction*)
+         is deprecated. Please use
+  void HbMenu::open( QObject *receiver, const char *member ) or 
+  HbMenu::show() instead.
 
     Executes the menu synchronously so that given \a action
     is active.
@@ -519,6 +547,7 @@ HbMenu::~HbMenu()
  */
 HbAction *HbMenu::exec(HbAction *action)
 {
+    HB_DEPRECATED("HbMenu::exec is deprecated. Use HbMenu::show() or HbMenu::open() instead!");
     Q_D(HbMenu);
     if (actions().count() == 0) {
         return 0;
@@ -548,9 +577,10 @@ HbAction *HbMenu::exec(HbAction *action)
 }
 
 /*!
-    \deprecated HbMenu::exec(const QPointF&, HbAction*)
-        is deprecated. Please use void HbMenu::open( QObject *receiver, const char *member )
-        or HbMenu::show() and setPreferredPos() instead.
+  \deprecated HbMenu::exec(const QPointF&, HbAction*)
+     is deprecated. Please use
+  void HbMenu::open( QObject *receiver, const char *member ) or 
+  HbMenu::show() and setPreferredPos() instead.
 
     Executes the menu synchronously at \a pos so that given \a action
     is active.
@@ -693,6 +723,7 @@ HbAction *HbMenu::insertSeparator(HbAction *before)
     HbAction *action = new HbAction(this);
     action->setSeparator(true);
     action->setEnabled(false);
+    action->setVisible(false);
     insertAction(before, action);
     return action;
 }
@@ -766,6 +797,9 @@ QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
 {
     Q_D(HbMenu);
 
+    if (change == QGraphicsItem::ItemSceneHasChanged) {
+        d->closeMenuAfterOrientationChange();
+    }
     if (change == QGraphicsItem::ItemVisibleChange) {
         if (value.toBool() && d->delayMenuConstruction) {
             d->delayedLayout();
@@ -779,48 +813,6 @@ QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
         }
     }
     return HbPopup::itemChange(change,value);
-}
-
-/*!
-    \reimp
- */
-void HbMenu::keyPressEvent(QKeyEvent *event)
-{
-    //TODO: check if non-touch version works with the key bindings below
-    Q_D(HbMenu);
-    switch( event->key() ) {
-            case Qt::Key_Up:
-            case Qt::Key_Down:
-        break;
-            case Qt::Key_Right:
-        layoutDirection() == Qt::LeftToRight
-                ? d->openSubmenu()
-                    : d->closeSubmenu();
-        break;
-            case Qt::Key_Left:
-        layoutDirection() == Qt::LeftToRight
-                ? d->closeSubmenu()
-                    : d->openSubmenu();
-        break;
-            case Qt::Key_Backspace:
-        d->closeSubmenu();
-        break;
-            case Qt::Key_Escape:
-        close();
-        break;
-            default:
-        HbPopup::keyPressEvent( event );
-        break;
-    }
-}
-
-/*!
-    \reimp
- */
-void HbMenu::keyReleaseEvent(QKeyEvent *event)
-{
-    //TODO do we need this method?
-    QGraphicsWidget::keyReleaseEvent( event );
 }
 
 /*!
@@ -846,9 +838,9 @@ bool HbMenu::event(QEvent *event)
         }
     }
     if (event->type() == QEvent::LayoutRequest) {
-        resize(preferredSize());
         if(d->menuItemView)
             d->menuItemView->contentWidget()->adjustSize();
+    } else if (event->type() == QEvent::GraphicsSceneResize){
         if (d->mSubMenuItem)
             d->setSubMenuPosition();
     }
@@ -881,11 +873,13 @@ void HbMenu::polish(HbStyleParameters &params)
 
 QPainterPath HbMenu::shape() const
 {
-    QRectF sceneRect = mapRectToScene(boundingRect());
-    QRectF clipRect = sceneRect.intersected(geometry());
-    QPainterPath path;    
+    QRectF sceneRect = mapRectToScene(QRectF(-0.5, -0.5, boundingRect().width() + 0.5, boundingRect().height() + 0.5));
+    QRectF clipRect = sceneRect.intersected(QRectF(pos().x() - 0.5, pos().y() - 0.5, size().width() + 0.5, size().height() + 0.5));
+
+    QPainterPath path;
     path.addRect(mapRectFromScene(clipRect));
-    return path;
+
+    return path.intersected(HbPopup::shape());
 }
 
 /*!  @alpha

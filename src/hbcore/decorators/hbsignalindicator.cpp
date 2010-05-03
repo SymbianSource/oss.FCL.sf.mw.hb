@@ -57,12 +57,6 @@ HbSignalIndicatorPrivate::~HbSignalIndicatorPrivate()
     delete mSystemNetworkInfo;
 }
 
-void HbSignalIndicatorPrivate::init()
-{
-    Q_Q(HbSignalIndicator);
-    q->createPrimitives();
-}
-
 void HbSignalIndicatorPrivate::_q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode mode, int strength)
 {
     Q_Q(HbSignalIndicator);
@@ -88,14 +82,7 @@ void HbSignalIndicatorPrivate::_q_setNetworkMode(HbSystemNetworkInfo::NetworkMod
 HbSignalIndicator::HbSignalIndicator(QGraphicsItem *parent)
     : HbWidget(*new HbSignalIndicatorPrivate, parent)
 {
-    Q_D(HbSignalIndicator);
-
-    d->init();
-
-    connect(d->mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(HbSystemNetworkInfo::NetworkMode, int)), 
-        this, SLOT(_q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode, int)));
-    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(HbSystemNetworkInfo::NetworkMode)), 
-        this, SLOT(_q_setNetworkMode(HbSystemNetworkInfo::NetworkMode)));
+    createPrimitives();
 }
 
 /*
@@ -103,6 +90,17 @@ HbSignalIndicator::HbSignalIndicator(QGraphicsItem *parent)
  */
 HbSignalIndicator::~HbSignalIndicator()
 {
+
+}
+
+void HbSignalIndicator::delayedConstruction()
+{
+    Q_D(HbSignalIndicator);
+    connect(d->mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(HbSystemNetworkInfo::NetworkMode, int)), 
+        this, SLOT(_q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode, int)));
+    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(HbSystemNetworkInfo::NetworkMode)), 
+        this, SLOT(_q_setNetworkMode(HbSystemNetworkInfo::NetworkMode)));
+    updatePrimitives();
 }
 
 /*

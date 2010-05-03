@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+
 #include <hbglobal.h>
 #include "hbeffectanimation_p.h"
 #include "hbeffectgroup_p.h"
@@ -30,8 +31,8 @@
 #include <QGraphicsItem>
 #include <QtDebug>
 
-HbEffectAnimation::HbEffectAnimation() :
-    QVariantAnimation(),
+HbEffectAnimation::HbEffectAnimation(HbEffectGroup *group) :
+    mGroup(group),
     mCurve(QEasingCurve::Linear),
     mLoopStart(-1),
     mLoopEnd(-1),
@@ -45,7 +46,7 @@ HbEffectAnimation::~HbEffectAnimation()
 {
 }
 
-void HbEffectAnimation::addLooping(const HbEffectFxmlParamData *param, HbEffectGroup *group)
+void HbEffectAnimation::addLooping(const HbEffectFxmlParamData *param)
 {
     if (param) {
         if (param->loopDefined()) {
@@ -62,7 +63,7 @@ void HbEffectAnimation::addLooping(const HbEffectFxmlParamData *param, HbEffectG
             if (loopEnd > loopStart) {
                 mLoopStart = loopStart;
                 mLoopEnd = loopEnd;
-                group->setLooping(true);
+                mGroup->setLooping(true);
             }
         }
     }
@@ -75,8 +76,9 @@ void HbEffectAnimation::updateCurrentValue(const QVariant &value)
     }
 
     // If there is a loop defined, check whether the current time of
-    // the animation is past the loop end. If it is, do not update the effect with that value
-    // but instead change the current time back to (loopStartTime + currentTime - LoopEndTime).
+    // the animation is past the loop end. If it is, do not update the
+    // effect with that value but instead change the current time back
+    // to (loopStartTime + currentTime - LoopEndTime).
 
     if (looping()) {
         int current = currentTime();
@@ -90,8 +92,6 @@ void HbEffectAnimation::updateCurrentValue(const QVariant &value)
                 newCurrentTime = mLoopEnd;
             }
 
-            //qDebug() << "Loop restarted: current time changed from" << current << "to" << newCurrentTime;
-            
             // Set the current time of the animation according to the defined loop,
             // it will create a callback to this function again.
             setCurrentTime(newCurrentTime);
@@ -99,7 +99,7 @@ void HbEffectAnimation::updateCurrentValue(const QVariant &value)
         }
     }
 
-    // Create a callback to derived classes
+    // Let the derived classes handle the value change.
     handleAnimationUpdate(value);
 }
 
@@ -115,8 +115,6 @@ void HbEffectAnimation::handleFinished()
         if (newCurrentTime > mLoopEnd) {
             newCurrentTime = mLoopEnd;
         }
-
-        //qDebug() << "Loop restarted: current time changed from" << current << "to" << newCurrentTime;
         
         // Temporarily prevent the animation from reacting to update request,
         // because start() causes update with time=0 and the loop might start from a later point of time.
@@ -147,7 +145,3 @@ QVariant HbEffectAnimation::interpolated(const QVariant &from, const QVariant &t
 }
 
 // End of File
-
-
-
-

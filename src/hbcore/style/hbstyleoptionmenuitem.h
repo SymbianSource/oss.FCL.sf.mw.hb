@@ -30,6 +30,7 @@
 #include <hbglobal.h>
 #include <hbstyleoption.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionMenuItem : public HbStyleOption
 {
 public:

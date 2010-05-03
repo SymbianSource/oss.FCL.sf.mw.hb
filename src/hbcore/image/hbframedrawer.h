@@ -84,6 +84,9 @@ public:
     QPixmap mask() const; 
     QBitmap maskBitmap() const; 
 
+    void setClipPath(const QPainterPath &clipPath);
+    QPainterPath clipPath() const;
+
     QSize frameSize() const;
 
     void themeChanged();

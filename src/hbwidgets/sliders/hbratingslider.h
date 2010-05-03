@@ -78,9 +78,14 @@ signals:
 
 protected:
     HbRatingSlider(HbRatingSliderPrivate &dd,QGraphicsItem *parent = 0);
+
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
+#ifndef HB_GESTURE_FW
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent (QGraphicsSceneMouseEvent *event) ;    
+#else
+    virtual void gestureEvent(QGestureEvent *event);
+#endif
     void initStyleOption(HbStyleOption *option) const;
     void changeEvent(QEvent *event);
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);

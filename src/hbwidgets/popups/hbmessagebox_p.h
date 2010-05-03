@@ -49,9 +49,6 @@ public:
     HbMessageBoxContentWidget *mMessageBoxContentWidget;
     HbMessageBox::MessageBoxType mMessageBoxType;
   	bool mIconVisible;
-	HbGestureSceneFilter *gestureFilter;
-    HbGesture *gesture;  
-
 public slots:
     void _q_closeOnGesture();
 };

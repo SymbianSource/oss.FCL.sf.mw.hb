@@ -28,11 +28,14 @@
 
 #include "hbwidget_p.h"
 #include "hbabstractitemcontainer.h"
+#include "hbabstractviewitem.h"
 
 #include <QPersistentModelIndex>
 
 class HbAbstractViewItem;
 class HbAbstractItemView;
+
+#include <QHash>
 
 class HbAbstractItemContainerPrivate : public HbWidgetPrivate
 {
@@ -80,8 +83,15 @@ public:
     virtual bool intoContainerBuffer(const QModelIndex &index) const; 
     virtual int containerBufferIndexForModelIndex(const QModelIndex &index) const;
 
+    virtual qreal getDiffWithoutScrollareaCompensation(const QPointF &delta) const;
+
+    void restoreItemPosition(HbAbstractViewItem *item, const QPointF &position);
+
+    void insertItem(HbAbstractViewItem *item, int pos, const QModelIndex &index, bool animate);
+
     mutable QList<HbAbstractViewItem*>  mPrototypes;
     QList<StateItem> mItemStateList;
+    QHash<QPersistentModelIndex, QHash<QString, QVariant> > mItemStates;
 
     QList<HbAbstractViewItem*>  mItems;
     HbAbstractItemView *mItemView;

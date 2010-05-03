@@ -27,6 +27,7 @@
 #include "hbactivitymanager_p.h"
 
 #include <QPluginLoader>
+#include <QLibrary>
 #include <QDir>
 
 #include "hbmainwindow.h"
@@ -51,19 +52,8 @@
 /*!
 \internal
 */
-HbActivityManagerPrivate::HbActivityManagerPrivate(HbActivityManager *q) : mActivityPlugin(0)
+HbActivityManagerPrivate::HbActivityManagerPrivate(HbActivityManager *q) : q(q), mActivityPlugin(0)
 {
-#ifdef Q_OS_SYMBIAN
-    QPluginLoader *loader = new QPluginLoader("/resource/qt/plugins/hbactivityplugin.qtplugin");
-    mActivityPlugin = qobject_cast<HbActivityPluginInterface*>(loader->instance());
-    if (mActivityPlugin) {
-        q->connect(mActivityPlugin, SIGNAL(activityRequested(QString)), SIGNAL(activityRequested(QString)));
-    } else {
-        qWarning("Cannot load activity plugin. Features related to activities won't be available.");
-    }
-#else
-    Q_UNUSED(q);
-#endif
 }
 
 /*!
@@ -71,7 +61,51 @@ HbActivityManagerPrivate::HbActivityManagerPrivate(HbActivityManager *q) : mActi
 */
 HbActivityManagerPrivate::~HbActivityManagerPrivate()
 {
-    delete mActivityPlugin;
+}
+
+/*!
+\internal
+*/
+HbActivityPluginInterface *HbActivityManagerPrivate::activityPlugin() const
+{
+    if (!mActivityPlugin) {
+        QStringList pluginPathList;
+#if defined(Q_OS_SYMBIAN)
+        QStringList cDriveList;
+        QStringList romList;
+
+        foreach (const QString &libraryPath, qApp->libraryPaths()) {
+            QString absolutePath = QDir(libraryPath).absolutePath();
+            cDriveList << absolutePath.replace(0, 1, 'C');
+            romList << absolutePath.replace(0, 1, 'Z');
+        }
+        pluginPathList << cDriveList << romList;
+#else
+        pluginPathList << qApp->libraryPaths();
+#endif
+
+        foreach (const QString &path, pluginPathList) {
+            QDir dir(path);
+            QString filePath = dir.filePath("hbactivityplugin");
+            QLibrary library(filePath);
+            if (library.load()) {
+                QPluginLoader loader(dir.filePath(library.fileName()));
+                QObject *pluginInstance = loader.instance();
+                if (pluginInstance) {
+                    mActivityPlugin = qobject_cast<HbActivityPluginInterface*>(pluginInstance);
+                    if (mActivityPlugin) {
+                        q->connect(pluginInstance, SIGNAL(activityRequested(QString)), q, SIGNAL(activityRequested(QString)));
+                    } else {
+#if defined(Q_OS_SYMBIAN)
+                        qWarning("Cannot load activity plugin. Features related to activities won't be available.");
+#endif
+                        loader.unload();
+                    }
+                }
+            }
+        }
+    }
+    return mActivityPlugin;
 }
 
 /*!
@@ -80,8 +114,9 @@ HbActivityManagerPrivate::~HbActivityManagerPrivate()
 bool HbActivityManagerPrivate::addActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters)
 {
     bool result(false);
-    if (mActivityPlugin) {
-        result = mActivityPlugin->addActivity(activityId, data, parameters);
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        result = plugin->addActivity(activityId, data, parameters);
     }
     return result;
 }
@@ -92,8 +127,9 @@ bool HbActivityManagerPrivate::addActivity(const QString &activityId, const QVar
 bool HbActivityManagerPrivate::removeActivity(const QString &activityId)
 {
     bool result(false);
-    if (mActivityPlugin) {
-        result = mActivityPlugin->removeActivity(activityId);
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        result = plugin->removeActivity(activityId);
     }
     return result;
 }
@@ -102,9 +138,10 @@ bool HbActivityManagerPrivate::removeActivity(const QString &activityId)
 \internal
 */
 QList<QVariantHash> HbActivityManagerPrivate::activities() const
-{    
-    if (mActivityPlugin) {
-        return mActivityPlugin->activities();
+{
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        return plugin->activities();
     } else {
         return QList<QVariantHash>();
     }
@@ -116,10 +153,11 @@ QList<QVariantHash> HbActivityManagerPrivate::activities() const
 bool HbActivityManagerPrivate::updateActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters)
 {
     bool result(false);
-    if (mActivityPlugin) {
-        result = mActivityPlugin->updateActivity(activityId, data, parameters);
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        result = plugin->updateActivity(activityId, data, parameters);
     }
-    return result;    
+    return result;
 }
 
 /*!
@@ -128,8 +166,9 @@ bool HbActivityManagerPrivate::updateActivity(const QString &activityId, const Q
 QVariant HbActivityManagerPrivate::activityData(const QString &activityId) const
 {
     QVariant result;
-    if (mActivityPlugin) {
-        result = mActivityPlugin->activityData(activityId);
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        result = plugin->activityData(activityId);
     }
     return result;
 }
@@ -140,10 +179,11 @@ QVariant HbActivityManagerPrivate::activityData(const QString &activityId) const
 bool HbActivityManagerPrivate::waitActivity()
 {
     bool result(false);
-    if (mActivityPlugin) {
-        result = mActivityPlugin->waitActivity();
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        result = plugin->waitActivity();
     }
-    return result;    
+    return result;
 }
 
 /*!
@@ -151,7 +191,7 @@ bool HbActivityManagerPrivate::waitActivity()
     \a parent. Parent of this object.
  */
 HbActivityManager::HbActivityManager(QObject *parent) : QObject(parent), d_ptr(new HbActivityManagerPrivate(this))
-{   
+{
 }
 
 /*!
@@ -225,3 +265,4 @@ bool HbActivityManager::waitActivity()
     Q_D(HbActivityManager);
     return d->waitActivity();
 }
+

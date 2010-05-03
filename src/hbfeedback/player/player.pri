@@ -42,19 +42,19 @@ PUBLIC_HEADERS +=   $$PWD/hbfeedbackplayer.h \
                     $$PWD/hbhitareafeedback.h \
                     $$PWD/hbtacticonfeedback.h 
 
-INTERNAL_HEADERS += $$PWD/hbfeedbackplayer_p.h
+PRIVATE_HEADERS += $$PWD/hbfeedbackplayer_p.h
 
 symbian {
     SOURCES  += $$PWD/hbfeedbackplayer_symbian.cpp
-    INTERNAL_HEADERS  += $$PWD/hbfeedbackplayer_symbian_p.h
+    PRIVATE_HEADERS  += $$PWD/hbfeedbackplayer_symbian_p.h
 } 
 else {
     SOURCES += hbfeedbackplayer_stub.cpp
-    INTERNAL_HEADERS += hbfeedbackplayer_stub_p.h
+    PRIVATE_HEADERS += hbfeedbackplayer_stub_p.h
 }
 
 developer|feedback_traces {
     DEFINES += FEEDBACK_TEST_EVENT
     SOURCES +=          $$PWD/hbfeedbacktestevent.cpp
-    INTERNAL_HEADERS += $$PWD/hbfeedbacktestevent_p.h
+    PRIVATE_HEADERS += $$PWD/hbfeedbacktestevent_p.h
 }

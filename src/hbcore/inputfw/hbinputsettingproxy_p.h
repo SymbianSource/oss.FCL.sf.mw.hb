@@ -49,7 +49,7 @@ struct HbSettingProxyInternalData
     HbKeyboardType iActiveKeyboard;
     HbKeyboardType iHwKeyboard;
     HbKeyboardType iTouchKeyboard;
-    int iPredictiveInputState;
+    HbKeyboardSettingFlags iPredictiveInputState;
     HbInputDigitType iDigitType;
     bool iQwertyTextCasing;
     bool iQwertyCharacterPreview;
@@ -59,6 +59,10 @@ struct HbSettingProxyInternalData
     bool iOrientationChangeCompleted;
     bool iFlipStatus;
     bool iRegionalCorrectionStatus;
+    int iKeypressTimeout;
+    HbKeyboardSettingFlags iAutocompletion;
+    HbTypingCorrectionLevel iTypingCorrectionLevel;
+    HbPrimaryCandidateMode iPrimaryCandidateMode;
 };
 
 class HB_CORE_PRIVATE_EXPORT HbInputSettingProxyPrivate

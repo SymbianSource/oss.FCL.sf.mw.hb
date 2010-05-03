@@ -29,6 +29,8 @@
 #include <hbnamespace.h>
 #include <hbstyleoptionpopup.h>
 #include <hbicon.h>
+
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionDataQuery : public HbStyleOptionPopup
 {
 public:

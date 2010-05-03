@@ -28,7 +28,6 @@
 
 #include "hbgesturefilter.h"
 #include "hbgesture.h"
-#include "hblongpressvisualizer_p.h"
 #include <QTime>
 #include <QPointer>
 #include <QGraphicsWidget>
@@ -54,7 +53,6 @@ public:
     QPointF panLastScenePos;
     QTime gestureTimer;
     HbGesture::Direction allGestures;
-    HbLongPressVisualizer *longPressAnimation;
     QTimeLine *longPressTimer;
     QTimeLine *longPressDelayTimer;
 };

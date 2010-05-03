@@ -42,7 +42,9 @@ public:
     //inherited from HbHandleParent
     void emitSliderPressed();
     void emitSliderReleased();
+    void setProgressValue(int value);
     void emitSliderMoved(int newValue);
+	void setEnableFlag(bool flag);
     QRectF boundingRect() const;
     HbStyle* style() const;
     QGraphicsItem* parentGraphicsItem() const;
@@ -54,16 +56,17 @@ public:
     QString toolTipText() const;
     Qt::Alignment textAlignment() const;
     bool textVisible()const{ return (mTooltipText=="")? false:true ;};
-    void updateMaskWidth(qreal width);
+
     Qt::Orientation orientation();
     void setRange(int minimum, int maximum);
 private:
     QGraphicsItem *mSliderGraphicItem;
     int mSliderValue;
-    bool downState;
+    bool mDownState;
     HbIcon thumbIcon;
     QString mTooltipText;
-	HbProgressSlider::SliderState state;
+    HbProgressSlider::SliderState state;
+    QString mHandlePath;
 };
 
 #endif //HBPROGRESSSLIDER_P_H

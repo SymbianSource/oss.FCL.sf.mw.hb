@@ -29,6 +29,7 @@
 #include <hbstyleoption.h>
 #include <hbicon.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionToolButton : public HbStyleOption
 {
 public:
@@ -56,6 +57,8 @@ public:
     Qt::Orientation orientation;
     bool isCheckable;
     bool useSecondaryGraphics;
+    bool useTransparentGraphics;
+    bool isToolBarExtension;
 };
 
 #endif // HBSTYLEOPTIONTOOLBUTTON_H

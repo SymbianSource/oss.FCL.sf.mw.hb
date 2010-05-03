@@ -63,7 +63,7 @@ public:
 
 public: // from HbUserDictionary
     int id() const;
-    bool addWord(const QString& newWord, HbPredictionCallback* aCallback = 0);
+    bool addWord(const QString& newWord, HbPredictionCallback* callback = 0);
     bool addWords(const QStringList& wordList);
     bool removeWord(const QString& toBeRemoved);
     int numberOfWords() const;

@@ -40,6 +40,7 @@
     @proto
     @hbinput
     \class HbInputUsedSymbolPane
+    \deprecated class HbInputUsedSymbolPane
     \brief A widget for displaying most frequently used special characters.
     
     This is a widget that knows how to display most frequently used special characters.
@@ -120,7 +121,8 @@ QChar HbInputUsedSymbolPanePrivate::mapClickedCharacter(QPointF aClickPoint, QGr
 /// @endcond
 
 /*!
-Constructs the object.
+\deprecated HbInputUsedSymbolPane::HbInputUsedSymbolPane(HbInputVkbWidget*, QGraphicsWidget*)
+    is deprecated.
 */
 HbInputUsedSymbolPane::HbInputUsedSymbolPane(HbInputVkbWidget* aOwner, QGraphicsWidget* aParent)
     : QGraphicsWidget(aParent)
@@ -130,7 +132,8 @@ HbInputUsedSymbolPane::HbInputUsedSymbolPane(HbInputVkbWidget* aOwner, QGraphics
 }
 
 /*!
-Destructs the object.
+\deprecated HbInputUsedSymbolPane::~HbInputUsedSymbolPane()
+    is deprecated.
 */
 HbInputUsedSymbolPane::~HbInputUsedSymbolPane()
 {
@@ -138,9 +141,8 @@ HbInputUsedSymbolPane::~HbInputUsedSymbolPane()
 }
 
 /*!
-Sets the number of characters to be displayed when the widget is visible. The
-actual number of characters displayed may be smaller if there are fewer 
-characters in setting proxy's frequency list.
+\deprecated HbInputUsedSymbolPane::setNumberOfCharacters(int)
+    is deprecated.
 */
 void HbInputUsedSymbolPane::setNumberOfCharacters(int aNumChrs)
 {
@@ -148,7 +150,8 @@ void HbInputUsedSymbolPane::setNumberOfCharacters(int aNumChrs)
 }
 
 /*!
-Handles mouse press event.
+\deprecated HbInputUsedSymbolPane::mousePressEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
 void HbInputUsedSymbolPane::mousePressEvent(QGraphicsSceneMouseEvent* aEvent)
 {
@@ -162,7 +165,9 @@ void HbInputUsedSymbolPane::mousePressEvent(QGraphicsSceneMouseEvent* aEvent)
 }
 
 /*!
-Handles mouse release event.
+\reimp
+\deprecated HbInputUsedSymbolPane::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
 void HbInputUsedSymbolPane::mouseReleaseEvent(QGraphicsSceneMouseEvent* aEvent)
 {
@@ -170,7 +175,9 @@ void HbInputUsedSymbolPane::mouseReleaseEvent(QGraphicsSceneMouseEvent* aEvent)
 }
 
 /*!
-Handles mouse double click event.
+\reimp
+\deprecated HbInputUsedSymbolPane::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
 void HbInputUsedSymbolPane::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* aEvent)
 {
@@ -181,7 +188,8 @@ void HbInputUsedSymbolPane::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* aEve
 }
 
 /*!
-Paints the widget.
+\deprecated HbInputUsedSymbolPane::paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*)
+    is deprecated.
 */
 void HbInputUsedSymbolPane::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
@@ -213,6 +221,11 @@ void HbInputUsedSymbolPane::paint(QPainter* painter, const QStyleOptionGraphicsI
         chrRect.moveRight(chrRect.right() + xstep);
     }
 }
+
+/*!
+\deprecated HbInputUsedSymbolPane::restoreSctLine(HbInputFilter*)
+    is deprecated.
+*/
 void HbInputUsedSymbolPane::restoreSctLine(HbInputFilter *aFilter)
 {
         if (aFilter != mPrivate->mFilter)

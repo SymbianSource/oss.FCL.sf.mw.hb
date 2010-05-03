@@ -46,7 +46,7 @@ class HbEffectFxmlParamData;
 class HB_AUTOTEST_EXPORT HbEffectFilterAnimation : public HbEffectAnimation
 {
 public:
-    HbEffectFilterAnimation(HbEffectFilter *effect, int duration);
+    HbEffectFilterAnimation(HbEffectFilter *effect, int duration, HbEffectGroup *group);
     ~HbEffectFilterAnimation();
 
 private:
@@ -60,7 +60,7 @@ public:
 class HB_AUTOTEST_EXPORT HbEffectColorAnimation : public HbEffectFilterAnimation
 {
 public:
-    HbEffectColorAnimation(HbEffectFilter *effect, int duration);
+    HbEffectColorAnimation(HbEffectFilter *effect, int duration, HbEffectGroup *group);
     ~HbEffectColorAnimation();
 
 private:

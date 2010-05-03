@@ -65,15 +65,10 @@ protected:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void orientationChanged(Qt::Orientation newOrientation);
 
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-
     virtual void move(const QModelIndex &from, const QModelIndex &to);
 
 protected slots:
     void scrolling(QPointF newPosition);
-
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbListView)
     Q_DISABLE_COPY(HbListView)

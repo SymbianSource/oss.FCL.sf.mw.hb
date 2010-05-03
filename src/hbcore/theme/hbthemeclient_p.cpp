@@ -158,11 +158,12 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName, H
  * \a layout
  * \a section
  */  
-LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
 {
     int offset = sharedCacheItemOffset(fileName + layout + section);
     if ( -1 != offset ) {
-       LayoutDefinition *layoutDefs = HbMemoryUtils::getAddress<LayoutDefinition>(HbMemoryManager::SharedMemory,offset);
+       HbWidgetLoader::LayoutDefinition *layoutDefs =
+           HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(HbMemoryManager::SharedMemory,offset);
        return layoutDefs;
     }
     Q_D(HbThemeClient);
@@ -188,6 +189,16 @@ int HbThemeClient::globalCacheOffset()
         sharedCacheOffset = d->globalCacheOffset();
     }
     return sharedCacheOffset;
+}
+
+/**
+ * HbThemeClient::notifyForegroundLostToServer()
+ *
+ */
+void HbThemeClient::notifyForegroundLostToServer()
+{
+    Q_D(HbThemeClient);
+    d->notifyForegroundLostToServer();
 }
 
 /**
@@ -367,4 +378,33 @@ HbSharedIconInfoList HbThemeClient::getMultiIconInfo(const QStringList &multiPar
     return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode, mirrored, options, color);
 }
 
+/**
+ * freeSharedMemory  gets free memory in shared chunk
+ *
+ */
+int HbThemeClient::freeSharedMemory()
+{
+    Q_D(HbThemeClient);
+    return d->freeSharedMemory();
+}
+
+/**
+ * allocatedSharedMemory  gets allocated memory in shared chunk
+ *
+ */
+int HbThemeClient::allocatedSharedMemory()
+{
+    Q_D(HbThemeClient);
+    return d->allocatedSharedMemory();
+}
+
+/**
+ * allocatedHeapMemory  gets free memory in shared chunk
+ *
+ */
+int HbThemeClient::allocatedHeapMemory()
+{
+    Q_D(HbThemeClient);
+    return d->allocatedHeapMemory();
+}
 

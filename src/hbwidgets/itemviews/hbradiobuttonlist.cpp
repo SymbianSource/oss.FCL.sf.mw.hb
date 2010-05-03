@@ -153,7 +153,7 @@ void HbRadioButtonListPrivate::_q_itemActivated(const QModelIndex &modelIndex)
 void HbRadioButtonListPrivate::_q_itemActivationTimerExpired()
 {
     Q_Q(HbRadioButtonList);
-    emit q->activated(mCurrentIndex);
+    q->HbListView::emitActivated(mCurrentIndex);
 }
 
 void HbRadioButtonListPrivate::_q_itemPreviewTimerExpired()
@@ -376,18 +376,15 @@ QItemSelectionModel::SelectionFlags HbRadioButtonList::selectionCommand(const Hb
     Q_D(HbRadioButtonList);
 
     if (!item->modelIndex().isValid() 
-        || selectionMode()!=SingleSelection
-        || !d->mHitItem
-        ||event->type() != QEvent::GraphicsSceneMouseRelease){
+        || selectionMode() != SingleSelection
+        || event->type() != QEvent::GraphicsSceneMouseRelease){
             return QItemSelectionModel::NoUpdate;
-    } else if (item->modelIndex() == d->mHitItem->modelIndex()) {
+    } else {
         if(d->mPreviewGoingOn==true) {
             return QItemSelectionModel::NoUpdate;
         } else {
             return QItemSelectionModel::ClearAndSelect;
         }
-    } else {
-        return QItemSelectionModel::NoUpdate;
     }
 }
 

@@ -217,28 +217,6 @@ HbHardwareInputBasicQwertyHandler::HbHardwareInputBasicQwertyHandler(HbInputAbst
     d->q_ptr = this;
 }
 
-
-/*!
-This function lists different input modes.
-*/
-void HbHardwareInputBasicQwertyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    HbInputModeProperties binding;
-	binding.iMode = HbInputModeDefault;
-	QList<HbKeyboardType> availableKeyBoards;
-	HbInputSettingProxy::instance()->availableHwKeyboard(availableKeyBoards);
-	foreach(HbKeyboardType keyboardType, availableKeyBoards) {
-		(keyboardType&HbQwertyKeyboardMask) ? binding.iKeyboard = keyboardType : binding.iKeyboard = HbKeyboardNone;
-		if (binding.iKeyboard != HbKeyboardNone) {
-			QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-			foreach(HbInputLanguage lang, languages) {
-				binding.iLanguage = lang;        
-				modes.push_front(binding);
-			}
-		}
-	}
-}
-
 HbHardwareInputBasicQwertyHandler::~HbHardwareInputBasicQwertyHandler()
 {
 }

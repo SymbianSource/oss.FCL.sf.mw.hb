@@ -86,13 +86,17 @@ public slots:
     virtual void ensureCursorVisibility() = 0;
 
 signals:
+    void aboutToOpen();
+    void aboutToClose();
     void keypadOpened();
     void keypadClosed();
 
 protected:
     virtual void refresh() = 0;
+    virtual bool stateTransitionOngoing() const = 0;
 
     friend class HbInputMethod;
+    friend class HbVkbHostBridge;
 };
 
 #endif // HB_INPUT_VKB_HOST_H

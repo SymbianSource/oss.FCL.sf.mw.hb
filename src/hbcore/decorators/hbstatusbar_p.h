@@ -41,6 +41,8 @@ public:
     explicit HbStatusBar(HbMainWindow *mainWindow, QGraphicsItem *parent = 0);
     virtual ~HbStatusBar();
 
+    void delayedConstruction();
+
     enum { Type = HbPrivate::ItemType_StatusBar };
     int type() const { return Type; }
 

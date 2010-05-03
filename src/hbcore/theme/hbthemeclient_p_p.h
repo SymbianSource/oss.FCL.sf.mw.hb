@@ -29,6 +29,7 @@
 #include <QIcon>
 #include "hbthemecommon_p.h"
 #include "hbiconloader_p.h"
+#include "hbwidgetloader_p.h"
 #include "hblayeredstyleloader_p.h"
 #include "hbdeviceprofile_p.h"
 #include "hbthemeindex_p.h"
@@ -41,10 +42,9 @@
 #include <e32base.h>
 #endif
 
-class CThemeListenerPrivate;
+class CHbThemeListenerPrivate;
 class QSizeF;
 class HbEffectFxmlData;
-struct LayoutDefinition;
 #ifndef Q_OS_SYMBIAN
 class QLocalSocket;
 #endif
@@ -75,7 +75,7 @@ public QObject
                                        HbIconLoader::IconLoaderOptions options,
                                        const QColor &color);						
    
-    LayoutDefinition *getSharedLayoutDefs(const QString &fileName, const QString &layout, const QString &section);
+    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName, const QString &layout, const QString &section);
    
     HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
 
@@ -116,8 +116,14 @@ public QObject
                                         bool mirrored,
                                         HbIconLoader::IconLoaderOptions options,
                                         const QColor &color);
+   
+    void notifyForegroundLostToServer();
     
     void getThemeIndexTables(ThemeIndexTables &tables);
+
+    int freeSharedMemory();
+    int allocatedSharedMemory();
+    int allocatedHeapMemory();
 
     ~HbThemeClientPrivate();
     bool event(QEvent *e);
@@ -141,10 +147,11 @@ private:
 
 private:
 #ifdef Q_OS_SYMBIAN
-    CThemeListenerPrivate *themelistener;
-    friend class CThemeListenerPrivate;
+    CHbThemeListenerPrivate *themelistener;
+    friend class CHbThemeListenerPrivate;
 #ifdef HB_SGIMAGE_ICON
     RSgDriver sgDriver;
+    bool sgDriverInit;
 #endif
 
 #else

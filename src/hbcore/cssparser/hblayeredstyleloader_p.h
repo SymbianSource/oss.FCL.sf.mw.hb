@@ -83,7 +83,7 @@ public:
             const Qt::Orientation orientation, const char *extraPseudo = 0) const;
     HbVector<HbCss::StyleRule> styleRulesForNode(HbStyleSelector::NodePtr node,
 			const Qt::Orientation orientation) const;
-    HbVector<HbCss::Declaration> variableRuleSets() const;
+    void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
     
 private:
     QVector<LayerPriority> LayerList() const;
@@ -99,7 +99,10 @@ private:
 private:
     PriorityLayerMap mStyleLayers;
     Concern mConcern;
-    mutable QMap<QString,HbCss::Value> defaultVariablesMap;
+    mutable QHash<QString, HbCss::Declaration> mDefaultVariables;
+#ifdef HB_CSS_INSPECTOR
+    HbCss::StyleSheet *mCurrentSheet;
+#endif
 };
 
 #endif // HBLAYEREDSTYLELOADER_P_H

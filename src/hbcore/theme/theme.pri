@@ -38,21 +38,21 @@ SOURCES += $$PWD/hbcssthemeinterface_p.cpp
 SOURCES += $$PWD/hbthemeclient_p.cpp
 SOURCES += $$PWD/hbeffecttheme_p.cpp
 
-INTERNAL_HEADERS += $$PWD/hbthemecommon_p.h
-INTERNAL_HEADERS += $$PWD/hbtheme_p.h
-INTERNAL_HEADERS += $$PWD/hbthemeutils_p.h
-INTERNAL_HEADERS += $$PWD/hbcolortheme_p.h
-INTERNAL_HEADERS += $$PWD/hbcolortheme_p_p.h
-INTERNAL_HEADERS += $$PWD/hbcssthemeinterface_p.h
-INTERNAL_HEADERS += $$PWD/hbthemeclient_p.h
-INTERNAL_HEADERS += $$PWD/hbeffecttheme_p.h
-INTERNAL_HEADERS += $$PWD/hbthemeclient_p_p.h
+PRIVATE_HEADERS += $$PWD/hbthemecommon_p.h
+PRIVATE_HEADERS += $$PWD/hbtheme_p.h
+PRIVATE_HEADERS += $$PWD/hbthemeutils_p.h
+PRIVATE_HEADERS += $$PWD/hbcolortheme_p.h
+PRIVATE_HEADERS += $$PWD/hbcolortheme_p_p.h
+PRIVATE_HEADERS += $$PWD/hbcssthemeinterface_p.h
+PRIVATE_HEADERS += $$PWD/hbthemeclient_p.h
+PRIVATE_HEADERS += $$PWD/hbeffecttheme_p.h
+PRIVATE_HEADERS += $$PWD/hbthemeclient_p_p.h
 
 symbian {
 SOURCES += $$PWD/hbthemelistener_symbian_p.cpp
 SOURCES += $$PWD/hbthemeclient_symbian_p.cpp
-INTERNAL_HEADERS += $$PWD/hbthemelistener_symbian_p.h
-INTERNAL_HEADERS += $$PWD/hbthemecommon_symbian_p.h
+PRIVATE_HEADERS += $$PWD/hbthemelistener_symbian_p.h
+PRIVATE_HEADERS += $$PWD/hbthemecommon_symbian_p.h
 }
 
 !symbian {

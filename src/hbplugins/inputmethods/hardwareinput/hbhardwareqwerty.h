@@ -61,7 +61,6 @@ public: // From QInputContext
     bool filterEvent(const QEvent *event);
 
 public: // From HbInputMethod
-    void listInputModes(QVector<HbInputModeProperties>& results);
     void focusReceived();
     void focusLost(bool focusSwitch);
     void InputLanguageChanged(int newLanguage); 

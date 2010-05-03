@@ -61,6 +61,7 @@ public:
     inline TTacticonType convertTacticonToSymbian(HbFeedback::TacticonEffect effect);
     inline TTouchContinuousFeedback convertToSymbian(HbFeedback::ContinuousEffect effect);
     inline TTouchEventType convertToSymbian(HbFeedback::HitAreaType hitAreaType);
+    inline TTouchFeedbackType convertToSymbian(HbFeedback::Modalities modalities);
 			
 public:
     MTouchFeedback *iFeedback;
@@ -209,6 +210,9 @@ TTouchLogicalFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::
     case HbFeedback::PopUp:
         instantFeedbackSymbian = ETouchFeedbackPopUp;
         break;
+    case HbFeedback::LongPress:
+        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        break;
     default:
         break;
     }
@@ -298,9 +302,24 @@ TTouchEventType HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::HitAre
     return touchEventType;
 }
 
+TTouchFeedbackType HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::Modalities modalities)
+{
+    int symbianFeedbackType = 0;
 
-CCoeControl* HbFeedbackBasePlayerPrivate::convertToSymbian(QWidget* window) {
+    if(modalities == HbFeedback::All) {
+        // enable all modalities
+        symbianFeedbackType |= ETouchFeedbackAudio;
+        symbianFeedbackType |= ETouchFeedbackVibra;
+    } else {
+        // enable individual modalities
+        if(modalities & HbFeedback::Audio)   symbianFeedbackType |= ETouchFeedbackAudio;
+        if(modalities & HbFeedback::Tactile) symbianFeedbackType |= ETouchFeedbackVibra;
+    }
+    return TTouchFeedbackType(symbianFeedbackType);
+}
 
+CCoeControl* HbFeedbackBasePlayerPrivate::convertToSymbian(QWidget* window)
+{
     CCoeControl* control = 0;
     
     if ( window && window->winId()) {
@@ -348,6 +367,7 @@ void HbFeedbackBasePlayer::cancelContinuousFeedbacks() {
 }
 
 void HbFeedbackBasePlayer::playInstantFeedback(const HbInstantFeedback& feedback) {
+    TPointerEvent pointerEvent;
 
     if (d->iFeedback) {
         // If the effect is a tacticon, use the tacticon playing mechanism of the feedback player
@@ -360,9 +380,9 @@ void HbFeedbackBasePlayer::playInstantFeedback(const HbInstantFeedback& feedback
         } else {
             CCoeControl* control = d->convertToSymbian(feedback.window());
             if (control) {
-                d->iFeedback->InstantFeedback(control, d->convertToSymbian(feedback.instantEffect()));
-            }
-            else {
+                d->iFeedback->InstantFeedback(control, d->convertToSymbian(feedback.instantEffect()),
+                                              d->convertToSymbian(feedback.modalities()),pointerEvent);
+            } else {
                 d->iFeedback->InstantFeedback(d->convertToSymbian(feedback.instantEffect()));
             }
         }

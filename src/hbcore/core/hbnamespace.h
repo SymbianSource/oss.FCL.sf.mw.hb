@@ -150,7 +150,6 @@ namespace Hb
         ItemType_Popup,
         ItemType_Dialog,
         ItemType_MessageBox,
-        ItemType_ProgressNote,
         ItemType_ProgressDialog,
         ItemType_AbstractButton,
         ItemType_AbstractItem,
@@ -217,6 +216,8 @@ namespace Hb
         ItemType_DateTimePicker,
         ItemType_MarqueeItem,
         ItemType_IndexFeedback,
+        ItemType_SelectionDialog,
+        ItemType_SelectionDialogContentWidget,
         ItemType_Last = QGraphicsItem::UserType + 20000
     };
 
@@ -275,10 +276,10 @@ namespace Hb
     enum Edge {
         LeftEdge = 0,
         TopEdge,
-        RightEdge,
-        BottomEdge,
         CenterHEdge,
-        CenterVEdge
+        CenterVEdge,
+        RightEdge,
+        BottomEdge
     };
 
     enum ResourceType {

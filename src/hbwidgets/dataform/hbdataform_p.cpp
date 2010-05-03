@@ -75,7 +75,7 @@ void HbDataFormPrivate::init()
     q->setItemPrototypes(protos);
     q->setClampingStyle(HbScrollArea::BounceBackClamping);
     q->setItemRecycling(true);
-    treeModelIterator()->setItemContainer(mContainer, HbDataFormViewItem::ExpansionKey);
+    treeModelIterator()->setItemContainer(mContainer);
 }
 
 void  HbDataFormPrivate::_q_page_changed(int index)
@@ -177,6 +177,7 @@ void HbDataFormPrivate::removeFormPage(const QString& page)
             q,SLOT(_q_page_changed(int)));
 
         mHeadingWidget->mPageCombo->removeItem(mHeadingWidget->mPageCombo->findText(page));
+        mHeadingWidget->mActivePage = mHeadingWidget->mPageCombo->currentIndex();
         
          QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
@@ -213,8 +214,10 @@ void HbDataFormPrivate::makeConnection(QModelIndex index)
                             QString signalName = signal.signal;
                             QString slot = signal.slot;
                             // Make connection
-                            QObject::connect(contentWidget, signalName.toAscii().data(), 
-                                objct,slot.toAscii().data());
+                            if(objct) { 
+                                QObject::connect(contentWidget, signalName.toAscii().data(), 
+                                    objct,slot.toAscii().data());
+                            }
                             
                         }
                     }

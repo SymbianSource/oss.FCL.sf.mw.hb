@@ -1,31 +1,24 @@
-HbProgressDialogContentWidget[hasIcon="true"]{
+/*Layout Selection*/
+HbProgressDialogContentWidget{
     layout:progressdialog_layout;
 }
 
-HbProgressDialogContentWidget[hasIcon="false"]{
-    layout:progressdialog_layout_text;
-}
-
+/*Primitive & sub-element properties*/
 HbProgressDialogContentWidget::text
 {
     top:-var(hb-param-margin-gene-popup);
-    left:-var(hb-param-margin-gene-popup);  
-    right:var(hb-param-margin-gene-popup);   
-    bottom:var(hb-param-margin-gene-popup);
+    left:-var(hb-param-margin-gene-popup);
+    right:var(hb-param-margin-gene-popup);
     
     font-variant:primary;
-    text-line-count-min: 3;
-    text-line-count-max: 5;
-    text-height:var(hb-param-text-height-secondary);
+    text-height: var(hb-param-text-height-primary);
 }
 
-
-HbProgressDialogContentWidget[hasIcon="true"]::icon
+HbProgressDialogContentWidget::icon
 {
     top:-var(hb-param-margin-gene-popup);
-    left:-var(hb-param-margin-gene-popup);  
-    right:var(hb-param-margin-gene-popup); 
-      
+    left:-var(hb-param-margin-gene-popup);
+    
     fixed-width:var(hb-param-graphic-size-primary-large);
     fixed-height:var(hb-param-graphic-size-primary-large);  
 }
@@ -34,8 +27,32 @@ HbProgressDialogContentWidget::pbar
 {   
     left:-var(hb-param-margin-gene-popup);
     right:var(hb-param-margin-gene-popup);
-    bottom:var(hb-param-margin-gene-popup);    
+    bottom:var(hb-param-margin-gene-popup);
     
     fixed-height:var(hb-param-widget-progress-bar-height);  
+}
+
+HbProgressDialogContentWidget::TextSpacer
+{
+    min-height:var(hb-param-margin-gene-popup);
+}
+
+HbProgressDialogContentWidget::IconSpacer
+{
+    min-height:var(hb-param-margin-gene-popup);
+}
+
+/* Text line count for Icon & Text Layout use cases */
+HbProgressDialogContentWidget[text="true"][icon="true"]::text
+{
+    text-line-count-min:1;
+    text-line-count-max:3;
+}
+
+/* Text line count for only text Layout use cases */
+HbProgressDialogContentWidget[text="true"][icon="false"]::text
+{
+    text-line-count-min:1;
+    text-line-count-max:5;
 }
 

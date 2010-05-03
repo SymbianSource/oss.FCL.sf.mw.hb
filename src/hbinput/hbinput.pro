@@ -27,7 +27,6 @@
 TEMPLATE = lib
 TARGET = $$hbLibraryTarget(HbInput)
 DEFINES += BUILD_HB_INPUT
-developer:DEFINES += BUILD_HB_INTERNAL
 
 # directories
 DESTDIR = $${HB_BUILD_DIR}/lib
@@ -38,7 +37,7 @@ include(inputwidgets/inputwidgets.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbinput/hbinput.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbinput/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$INTERNAL_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -52,7 +51,7 @@ hbAddLibrary(hbwidgets/HbWidgets)
     pubheaders.files = $$PUBLIC_HEADERS
     pubheaders.path = $${HB_INCLUDE_DIR}/hbinput
 
-    privheaders.files = $$INTERNAL_HEADERS
+    privheaders.files = $$PRIVATE_HEADERS
     privheaders.path = $${HB_INCLUDE_DIR}/hbinput/private
 
     convheaders.files = $$CONVENIENCE_HEADERS
@@ -66,7 +65,6 @@ hbAddLibrary(hbwidgets/HbWidgets)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbinput/private/*)
 
 symbian {
-    defFilePath = ..
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022EA7

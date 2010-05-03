@@ -140,9 +140,7 @@ int HbLayeredStyleLoader::load(const QString &fileName, LayerPriority priority, 
             QTime time;
             time.start();
 #endif
-#ifndef HB_TOOL_INTERFACE
             styleSheet = HbThemeClient::global()->getSharedStyleSheet(fileName,priority);
-#endif
 #ifdef LAYEREDSTYLELOADER_DEBUG
             qDebug() << "Time elapsed in getting the shared stylesheet "<< fileName << " is : %d ms" <<time.elapsed();
 #endif
@@ -514,13 +512,10 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
 
 
 /*!
-     Provides the variable rule sets for the loaded CSS files
-
-     \return variable rules
+     Provides the variable rule sets for the loaded CSS files.
 */
-HbVector<HbCss::Declaration> HbLayeredStyleLoader::variableRuleSets() const
+void HbLayeredStyleLoader::variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const
 {
-    HbVector<HbCss::Declaration> vars;
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
     
     QVectorIterator<LayerPriority> iter(LayerList());
@@ -530,30 +525,24 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::variableRuleSets() const
         if (it != mStyleLayers.constEnd()) {
             if (priority != HbLayeredStyleLoader::Priority_Core) {
                 if (it != mStyleLayers.constEnd()) {
-                    vars += it->styleSelector.variableRuleSets();
+                    it->styleSelector.variableRuleSets(variables);
                 }
             } else {
-                //these variables are from Core Priority
-                //insert it into map to be used during look up, this happens only once
-                //next time onwards instead of comparing each value from list, it's looked from this map only
-                if (!defaultVariablesMap.count()) {
-                    HbVector<HbCss::Declaration> sets = it->styleSelector.variableRuleSets();
-                    for(int i=0; i<sets.count();i++) {
-                        defaultVariablesMap.insert(sets.at(i).property,
-                                                   sets.at(i).values.first());
-                    }
-                } 
-               }
+                // These variables are from Core Priority
+                // insert it into hash to be used during look up, this happens only once
+                // next time onwards instead of comparing each value from list, it's looked from this hash only.
+                if (!mDefaultVariables.count()) {
+                    it->styleSelector.variableRuleSets(&mDefaultVariables);
+                }
+            }
         }
         if (allStack) {
             QMap<LayerPriority, Layer>::const_iterator allIt = allStack->mStyleLayers.constFind(priority);
             if (allIt != allStack->mStyleLayers.constEnd()) {
-                vars += allIt->styleSelector.variableRuleSets();
+                allIt->styleSelector.variableRuleSets(variables);
             }
         }
     }
-
-    return vars;
 }
 
 /*!
@@ -564,8 +553,8 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::variableRuleSets() const
 bool HbLayeredStyleLoader::findInDefaultVariables(const QString& variableName, HbCss::Value &val) const
 {
     bool found = false;
-    if (defaultVariablesMap.contains(variableName)) {
-        val = defaultVariablesMap.value(variableName);
+    if (mDefaultVariables.contains(variableName)) {
+        val = mDefaultVariables.value(variableName).values.first();
         found = true;
     }
     return found;
@@ -668,9 +657,12 @@ bool HbLayeredStyleLoader::saveBinary(const QString& fileName,
 */
 bool HbLayeredStyleLoader::loadBinary(const QString& fileName, HbCss::StyleSheet *sheet)
 {
-
     QTime timer;
     timer.start();
+#ifdef HB_CSS_INSPECTOR
+    sheet->fileName = fileName;
+    mCurrentSheet = sheet;
+#endif
     QFile file(fileName);
     if (file.open (QFile::ReadOnly)) {
 
@@ -818,7 +810,9 @@ void HbLayeredStyleLoader::loadStyleRules(QDataStream &stream, HbVector<HbCss::S
         //populating the declarations
         HbVector<HbCss::Declaration> declarations = loadDeclarations(stream);
         style_rule.declarations= declarations;
-
+#ifdef HB_CSS_INSPECTOR
+        style_rule.owningStyleSheet = mCurrentSheet;
+#endif
         rules.append(style_rule);
     }// style rule loop end
 }

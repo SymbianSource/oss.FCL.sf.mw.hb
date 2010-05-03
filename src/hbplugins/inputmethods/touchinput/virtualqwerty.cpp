@@ -241,7 +241,7 @@ void HbVirtualQwerty::closeKeypad()
         mVkbHost->closeKeypad();
         // set mCurrentKeypad to null.
         mCurrentKeypad = 0;
-        if (mCandidatePopup && mCandidatePopup->isVisible()) {
+        if (mCandidatePopup) {
             mCandidatePopup->hide();
         }
     }
@@ -253,6 +253,7 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
     if(!keypadToOpen) {
         return;
     }
+    bool wasKeypadOpen = false;
     // see if we are trying to open a different keypad than what is already opened.
     if (mCurrentKeypad != keypadToOpen) {
         // close currently open keypad. We always close keypad without animation
@@ -260,6 +261,9 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
         // in focusLost function call.
         if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
             mVkbHost->closeKeypad(false);
+            // when their is a keypad that needs to be closed before opening the new keypad, we don't
+            // want to animate the opening of new keypad.
+            wasKeypadOpen = true;
         }
     }
     // Close candidate popup if open
@@ -274,7 +278,7 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
         if (inMinimizedMode) {
             mVkbHost->openMinimizedKeypad(mCurrentKeypad, this);
         } else {
-            mVkbHost->openKeypad(mCurrentKeypad, this);
+            mVkbHost->openKeypad(mCurrentKeypad, this, !wasKeypadOpen);
         }
 
         // If previous focused editor was numeric, prediction is disabled.
@@ -314,9 +318,6 @@ void HbVirtualQwerty::mouseHandler(int x, QMouseEvent* event)
 
 void HbVirtualQwerty::keypadClosed()
 {
-    // by calling focuslost we will be committing the inline text.
-    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusLost);
-
     if (mOrientationAboutToChange) {
         mOrientationAboutToChange = false;
     }
@@ -327,10 +328,12 @@ void HbVirtualQwerty::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMetho
     Q_UNUSED(vkbCloseMethod);
     if (isActiveMethod()) {
         if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusMinimized) {
-            mVkbHost->minimizeKeypad(!stateChangeInProgress());
+            // We need to commit the inline word when we minimize the keypad
+            mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
             if (mCandidatePopup) {
                 mCandidatePopup->hide();
             }
+            mVkbHost->minimizeKeypad(!stateChangeInProgress());
         }
     }
 }
@@ -607,8 +610,10 @@ void HbVirtualQwerty::orientationAboutToChange()
 
     if (isActiveMethod()) {
         mOrientationAboutToChange = true;
+        // We need to commit the inline word before orientation change.
+        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
+        closeKeypad();
     }
-    closeKeypad();
 }
 
 /*!
@@ -687,15 +692,28 @@ void HbVirtualQwerty::rockerDirection(int aDirection, HbInputVirtualRocker::Rock
     }
 }
 
+/*!
+\deprecated HbVirtualQwerty::predictiveInputStatusChanged(int newStatus)
+    is deprecated. Use predictiveInputStateChanged instead.
+*/
 void HbVirtualQwerty::predictiveInputStatusChanged(int newStatus)
+{
+    predictiveInputStateChanged(HbKeyboardSettingQwerty, newStatus);
+}
+
+/*!
+The framework calls this method when the predictive input status changes.
+*/
+void HbVirtualQwerty::predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newStatus)
 {
     Q_UNUSED(newStatus);
 
-    HbInputFocusObject *focusedObject = focusObject();
-    if (focusedObject) {
-        // Just refresh the situation.
-        inputStateActivated(inputState());
-        return;
+    if (keyboardType & HbKeyboardSettingQwerty) {
+        HbInputFocusObject *focusedObject = focusObject();
+        if (focusedObject) {
+            // Just refresh the situation.
+            inputStateActivated(inputState());
+        }
     }
 }
 
@@ -747,12 +765,12 @@ Returns true if prediction is on, prediction engine is available and predictions
 bool HbVirtualQwerty::usePrediction() const
 {
     HbInputFocusObject *fo = focusObject();
-    if (HbInputSettingProxy::instance()->predictiveInputStatus() &&
+    if (HbInputSettingProxy::instance()->predictiveInputStatus(HbKeyboardSettingQwerty) &&
         fo &&
         fo->editorInterface().isPredictionAllowed() &&
         mPredictionModeHandler->isActive() &&
         HbPredictionFactory::instance()->predictionEngineForLanguage(inputState().language())) {
-         return true;           
+        return true;           
     }
 
     return false;

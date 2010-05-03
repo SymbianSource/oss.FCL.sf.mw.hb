@@ -36,10 +36,10 @@ class HB_AUTOTEST_EXPORT HbEffectAnimation : public QVariantAnimation
 {
     Q_OBJECT
 public:
-    HbEffectAnimation();
+    HbEffectAnimation(HbEffectGroup *group);
     virtual ~HbEffectAnimation();
 
-    void addLooping(const HbEffectFxmlParamData *param, HbEffectGroup *group);
+    void addLooping(const HbEffectFxmlParamData *param);
 
     virtual void handleAnimationUpdate(const QVariant &value) = 0;
     virtual void handleAnimationFinish() = 0;
@@ -49,12 +49,13 @@ protected:
 
 private:
     void updateCurrentValue(const QVariant &value);
-    inline bool looping() const {return mLoopEnd > 0;}
+    inline bool looping() const { return mLoopEnd > 0; }
 
 private slots:
     void handleFinished();
 
 public:
+    HbEffectGroup *mGroup;
     // The curve is stored here instead of setting it to QVariantAnimation so that it uses linear curve always
     // and does not mess up with applying the curve to each keyframe separately.
     QEasingCurve mCurve;
@@ -65,4 +66,3 @@ public:
 };
 
 #endif // HB_EFFECT_ANIMATION_P_H
-

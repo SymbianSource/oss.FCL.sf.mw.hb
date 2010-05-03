@@ -63,6 +63,8 @@ public:
     int primitiveBaseId;
 };
 
+static QHash<const QGraphicsWidget*, QString> widgetLayoutNames;
+
 class HbStylePrivate
 {
     Q_DECLARE_PUBLIC( HbStyle )
@@ -93,12 +95,11 @@ public:
     mutable QHash<QString, QString> pluginStylePaths;
     mutable int nextAvailableId;
 
-    mutable HbVector<HbCss::Declaration> colorParameters;
-    mutable HbVector<HbCss::Declaration> layoutParameters;
+    mutable QHash<QString, HbCss::Declaration> colorParameters;
+    mutable QHash<QString, HbCss::Declaration> layoutParameters;
     mutable QString layoutParametersProfileName;
 
     mutable QHash<QString, HbVector<HbCss::StyleRule> > styleRulesCache;
-    mutable QHash<const QGraphicsWidget*, QString> widgetLayoutNames;
 };
 
 #endif // HBSTYLE_P_H

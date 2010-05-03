@@ -61,8 +61,6 @@ public:
 
 public:   
     HbComboBox *mPageCombo;
-    QGraphicsItem *mGroupDescriptionItem;
-    QString mGroupDescription;
     QString mPageString;
     HbDataGroupHeadingWidget *mGroupHeading;
     QGraphicsItem *mPageComboBackgroundItem;

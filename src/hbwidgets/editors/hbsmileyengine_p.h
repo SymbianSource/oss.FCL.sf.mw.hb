@@ -25,70 +25,50 @@
 #ifndef HBSMILEYENGINE_P_H
 #define HBSMILEYENGINE_P_H
 
+#include <hbglobal.h>
 #include <hbsmileytheme.h>
-#include <hbsmileyengine.h>
-#include <QTextCursor>
-#include <QTextObjectInterface>
+
 #include <QObject>
-#include <QPair>
 
-class HbIconAnimator;
+class HbSmileyEnginePrivate;
 QT_FORWARD_DECLARE_CLASS(QTextDocument);
+QT_FORWARD_DECLARE_CLASS(QTextCursor);
 
-class HbIconTextObject : public QObject, public QTextObjectInterface
+class HB_AUTOTEST_EXPORT HbSmileyEngine : public QObject
 {
     Q_OBJECT
-    Q_INTERFACES(QTextObjectInterface)
 public:
-    enum Properties { HbSmileyData = 1 };
-    typedef QPair<QTextCursor*, HbIconAnimator*> HbSmileyDataType;
+    explicit HbSmileyEngine(QObject *parent = 0);
+    ~HbSmileyEngine();
 
-public:
-    QSizeF intrinsicSize(QTextDocument *doc, int posInDocument,
-                         const QTextFormat &format);
-    void drawObject(QPainter *painter, const QRectF &rect, QTextDocument *doc,
-                    int posInDocument, const QTextFormat &format);
-};
-
-class HbSmileyEnginePrivate
-{
-    Q_DECLARE_PUBLIC(HbSmileyEngine)
-public:
-    enum { HbIconTextFormat = QTextFormat::UserObject + 1 };
-    HbSmileyEnginePrivate();
-    virtual ~HbSmileyEnginePrivate();
-    void init();
-    void cleanUp();
     void setDocument(QTextDocument *doc);
-    void insertSmiley( QTextCursor cursor, const QString& name);
-    void insertSmileys( QTextCursor cursor, bool insertOne = false);
-    HbIconAnimator* lookupAnimator(const QString& name);
-    bool isCursorValid(QTextCursor* cursor) const;
+    void startAnimation();
+    void stopAnimation();
+    void setTheme(const HbSmileyTheme& theme);
+    HbSmileyTheme theme() const;
+    HbSmileyTheme defaultTheme() const;
 
-    HbIconAnimator* animatorForCursor(const QTextCursor& cursor);
-    void removeCursor(const QTextCursor &cursor, HbIconAnimator* animator);
-    void convertToText(QTextDocument *copyDoc) const;
+    QString toPlainText() const;
+    QString toHtml() const;
+    void setSmileyScaleFactor(qreal scaleFactor);
 
-    void _q_animationProgressed();
-    void _q_documentContentsChanged(int position, int charsRemoved, int charsAdded);
-
-    HbSmileyEngine *q_ptr;
-
-    QTextDocument *mDocument;
-    HbSmileyTheme mSmileyTheme;
-    bool mEdited;
-    QObject *mIconTextObject;
+public slots:
+    void insertSmileys();
+    void insertSmileys(const QTextCursor& cursor);
+    void insertSmiley(const QTextCursor& cursor);
 
 
-    QHash<HbIconAnimator*, QList<QTextCursor*> > mAnimatorToCursors;
-    QHash<QTextCursor*,HbIconAnimator*> mCursorToAnimator;
-    QHash<QString, HbIconAnimator*> mSmileyAnimator;
+protected:
+    HbSmileyEnginePrivate * const d_ptr;
+    explicit HbSmileyEngine(HbSmileyEnginePrivate &dd, QObject *parent = 0);
 
-    static HbSmileyTheme mDefaultTheme;
+private:
+    Q_DECLARE_PRIVATE_D(d_ptr, HbSmileyEngine)
+    Q_DISABLE_COPY(HbSmileyEngine)
+    Q_PRIVATE_SLOT(d_func(), void _q_animationProgressed())
+    Q_PRIVATE_SLOT(d_func(), void _q_documentContentsChanged(int position, int charsRemoved, int charsAdded))
+
 };
 
-Q_DECLARE_METATYPE(HbIconAnimator*)
-Q_DECLARE_METATYPE(HbIconTextObject::HbSmileyDataType)
-
-
+Q_DECLARE_METATYPE(HbSmileyEngine*)
 #endif // HBSMILEYENGINE_P_H

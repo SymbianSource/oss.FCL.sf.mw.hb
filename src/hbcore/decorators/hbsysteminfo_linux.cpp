@@ -26,6 +26,7 @@
 #include "hbsysteminfo_linux_p_p.h"
 
 #include <QTimerEvent>
+#include <QDebug>
 
 Q_GLOBAL_STATIC(HbSystemNetworkInfoPrivate, hbSystemNetworkInfoPrivate)
 

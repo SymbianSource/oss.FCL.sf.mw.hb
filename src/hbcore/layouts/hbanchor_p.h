@@ -34,17 +34,17 @@ public:
     HbAnchor();
     HbAnchor(
         QGraphicsLayoutItem *startItem,
-        HbAnchorLayout::Edge startEdge,
+        Hb::Edge startEdge,
         QGraphicsLayoutItem *endItem,
-        HbAnchorLayout::Edge endEdge,
+        Hb::Edge endEdge,
         qreal value );
     HbAnchor(const HbAnchor &anchor);
     HbAnchor &operator=(const HbAnchor &anchor);
 
     QGraphicsLayoutItem *mStartItem;
-    HbAnchorLayout::Edge mStartEdge;
+    Hb::Edge mStartEdge;
     QGraphicsLayoutItem *mEndItem;
-    HbAnchorLayout::Edge mEndEdge;
+    Hb::Edge mEndEdge;
     qreal mValue;
 };
 

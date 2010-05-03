@@ -54,10 +54,16 @@ public:
     QModelIndex searchIndexUp(const QModelIndex &index,
                                 int  maxStepCount) const;
 
+    bool handleScrollBar(Qt::Orientation orientation);
+
     inline HbTreeModelIterator *treeModelIterator();
+
+    virtual bool animationEnabled(bool insertOperation);
 
     bool mSelectionStarted;
     QList<int> mItemsToBeDeleted;
+
+    bool mInSetExpanded;
 };
 
 HbTreeModelIterator *HbTreeViewPrivate::treeModelIterator()

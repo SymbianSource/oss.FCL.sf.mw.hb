@@ -81,6 +81,7 @@ protected:
     void polish( HbStyleParameters& params );
     void resizeEvent(QGraphicsSceneResizeEvent *event);
     void gestureEvent(QGestureEvent* event);
+
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbScrollBar )
     Q_DISABLE_COPY(HbScrollBar)

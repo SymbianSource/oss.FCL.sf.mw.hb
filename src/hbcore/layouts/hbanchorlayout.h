@@ -38,22 +38,22 @@ class HB_CORE_EXPORT HbAnchorLayout : public QGraphicsLayout
 {
 public:
     typedef Hb::Edge Edge;
-    
+
     explicit HbAnchorLayout(QGraphicsLayoutItem *parent = 0);
     virtual ~HbAnchorLayout();
 
     bool setAnchor(
         QGraphicsLayoutItem *startItem,
-        Edge startEdge,
+        Hb::Edge  startEdge,
         QGraphicsLayoutItem *endItem,
-        Edge endEdge,
+        Hb::Edge  endEdge,
         qreal value);
 
     bool removeAnchor(
         QGraphicsLayoutItem *startItem,
-        Edge startEdge,
+        Hb::Edge  startEdge,
         QGraphicsLayoutItem *endItem,
-        Edge endEdge);
+        Hb::Edge  endEdge);
 
     void removeAt(int index);
     void removeItem(QGraphicsLayoutItem* item);
@@ -80,5 +80,5 @@ private:
     friend class HbAnchorLayoutDebug;
 };
 
-#endif
+#endif // HBANCHORLAYOUT_H
 

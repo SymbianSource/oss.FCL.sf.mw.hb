@@ -47,6 +47,7 @@
     @proto
     @hbinput
     \class HbInputSctLandscape
+    \deprecated class HbInputSctLandscape
     \brief A widget for displaying special character table in landscape mode.
     
     This widget displays special character table. Characters are organized in grid
@@ -454,15 +455,6 @@ Handles button clicks.
 */
 void HbInputSctLandscapePrivate::handleStandardButtonClick(int buttonId)
 {
-    // if there was a flick event, then make sure that the release events are not handled
-    // basically, a release on a button would add the character to the editor, and this wasn't
-    // intended, as you are gesturing for another action
-    if(mFlickDirection==HbInputVkbWidget::HbFlickDirectionDown ||
-       mFlickDirection==HbInputVkbWidget::HbFlickDirectionLeft ||
-       mFlickDirection==HbInputVkbWidget::HbFlickDirectionRight) {
-        return;
-    }
-
     Q_Q(HbInputSctLandscape);
 
     switch (sctVkbTable[buttonId].mKey) {
@@ -538,7 +530,8 @@ void HbInputSctLandscapePrivate::_q_mappedKeyClick(int buttonid)
 /// @endcond
 
 /*!
-Constructs the object.
+\deprecated HbInputSctLandscape::HbInputSctLandscape(HbInputMethod*, const HbKeymap*, QGraphicsItem*)
+    is deprecated.
 */
 HbInputSctLandscape::HbInputSctLandscape(HbInputMethod* owner, const HbKeymap *keymap, QGraphicsItem* parent)
                     : HbInputVkbWidget(*new HbInputSctLandscapePrivate, parent)
@@ -569,20 +562,27 @@ HbInputSctLandscape::HbInputSctLandscape(HbInputMethod* owner, const HbKeymap *k
     setKeymap(keymap);
 }
 
+/*!
+\deprecated HbInputSctLandscape::HbInputSctLandscape(HbInputSctLandscapePrivate&, QGraphicsItem*)
+    is deprecated.
+*/
 HbInputSctLandscape::HbInputSctLandscape(HbInputSctLandscapePrivate &dd, QGraphicsItem* parent)
             : HbInputVkbWidget(dd, parent)
 {
 }
 
 /*!
-Destructs the object.
+\deprecated HbInputSctLandscape::~HbInputSctLandscape()
+    is deprecated.
 */
 HbInputSctLandscape::~HbInputSctLandscape()
 {
 }
 
 /*!
-Returns keyboard type.
+\reimp
+\deprecated HbInputSctLandscape::keyboardType() const
+    is deprecated.
 */
 HbKeyboardType HbInputSctLandscape::keyboardType() const
 {
@@ -590,9 +590,8 @@ HbKeyboardType HbInputSctLandscape::keyboardType() const
 }
 
 /*!
-Sets the sct keypad buttons depending on the keymapping set to the keypad.
-Different Smiley, special character views can be activated directly.
-Most used character pane can also be enabled by this function.
+\deprecated HbInputSctLandscape::setSct(HbSctView, bool)
+    is deprecated.
 */
 void HbInputSctLandscape::setSct(HbSctView view , bool enableMostUsedCharacterPane)
 {
@@ -608,8 +607,9 @@ void HbInputSctLandscape::setSct(HbSctView view , bool enableMostUsedCharacterPa
 }
 
 /*!
-This function should be called when ever there is a language change.
-This gets the special characters from the given keymappings.
+\reimp
+\deprecated HbInputSctLandscape::setKeymap(const HbKeymap*)
+    is deprecated.
 */
 void HbInputSctLandscape::setKeymap(const HbKeymap* keymap)
 {
@@ -619,7 +619,9 @@ void HbInputSctLandscape::setKeymap(const HbKeymap* keymap)
 }
 
 /*!
-This function provides the actual button layout of the keypad.
+\reimp
+\deprecated HbInputSctLandscape::keypadLayout()
+    is deprecated.
 */
 QGraphicsLayout *HbInputSctLandscape::keypadLayout()
 {
@@ -628,7 +630,9 @@ QGraphicsLayout *HbInputSctLandscape::keypadLayout()
 }
 
 /*!
-This is called right before the keypad is about to open.
+\reimp
+\deprecated HbInputSctLandscape::aboutToOpen(HbVkbHost*)
+    is deprecated.
 */
 void HbInputSctLandscape::aboutToOpen(HbVkbHost *host)
 {
@@ -645,7 +649,9 @@ void HbInputSctLandscape::aboutToOpen(HbVkbHost *host)
 }
 
 /*!
-This is called right before the keypad is about to close. 
+\reimp
+\deprecated HbInputSctLandscape::aboutToClose(HbVkbHost*)
+    is deprecated.
 */
 void HbInputSctLandscape::aboutToClose(HbVkbHost *host)
 {
@@ -657,8 +663,8 @@ void HbInputSctLandscape::aboutToClose(HbVkbHost *host)
 }
 
 /*!
-this is called whenever there is a left/right flick event on sct keypad
-used to navigate within the sct keypad for more characters
+\deprecated HbInputSctLandscape::flickTriggered(HbInputVkbWidget::HbFlickDirection)
+    is deprecated.
 */
 void HbInputSctLandscape::flickTriggered(HbInputVkbWidget::HbFlickDirection direction)
 {

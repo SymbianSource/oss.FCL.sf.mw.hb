@@ -400,7 +400,7 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
     \a key denotes the unique identifier for the cache item whose ref count is to be decremented in the cache.
 
  */
-bool HbIconDataCache::remove(const HbIconKey& key)
+bool HbIconDataCache::remove(const HbIconKey& key, bool keepInCache)
 {
     if (key.filename.isEmpty() || !cache->contains(key)) {
         return false;
@@ -415,13 +415,25 @@ bool HbIconDataCache::remove(const HbIconKey& key)
 
     if (item->refCount == 0) {
         if (item->rasterIconData.type == SGIMAGE) {
-            gpuLruList.insertBack(item);
-            updateGpuLruSize(item->rasterIconDataCost);
+            if (keepInCache) {
+                gpuLruList.insertBack(item);
+                updateGpuLruSize(item->rasterIconDataCost);
+            } else {
+                releaseRasterItem(item);
+                removeFromCache(key, item);
+                return true;
+            }
         }
 
         if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
-            cpuLruList.insertBack(item);
-            updateCpuLruSize(item->rasterIconDataCost);
+            if (keepInCache) {
+                cpuLruList.insertBack(item);
+                updateCpuLruSize(item->rasterIconDataCost);
+            } else {
+                releaseRasterItem(item);
+                removeFromCache(key, item);
+                return true;
+            }
         }
 
 
@@ -467,10 +479,14 @@ bool HbIconDataCache::remove(const HbIconKey& key)
                 }
             } else {
 #endif
-
-                cpuLruList.insertBack(item);
-                updateCpuLruSize(item->vectorIconDataCost);
-
+                if (keepInCache) {
+                    cpuLruList.insertBack(item);
+                    updateCpuLruSize(item->vectorIconDataCost);
+                } else {
+                    releaseVectorItem(item);
+                    removeFromCache(key, item);
+                    return true;
+                }
                 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
                 vectorLruListCount++;
@@ -778,6 +794,22 @@ void HbIconDataCache::freeGpuRam(int bytes)
     }
 }
 
+QVector<const HbIconKey *> HbIconDataCache::getKeys(const QString &filename) const
+{
+    QVector<const HbIconKey *> keys;
+    QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
+    for (QHash < HbIconKey,
+            HbIconCacheItem* >::const_iterator iter = cache->constBegin();
+            iter != itEnd;
+            ++iter) {
+        const HbIconKey *key = &iter.key();
+        if (key->filename == filename) {
+            keys.append(key);
+        }
+    }
+    return keys;
+}
+
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
 void HbIconDataCache::cleanVectorLRUList()
@@ -813,6 +845,7 @@ void HbIconDataCache::cleanVectorLRUList()
         removeFromCache(cache->key(itemToRemove), itemToRemove);
     }
 }
+#endif // HB_ICON_CACHE_DEBUG
 
 void HbIconDataCache::releaseVectorItem(HbIconCacheItem* releaseItem)
 {
@@ -836,6 +869,7 @@ void HbIconDataCache::releaseVectorItem(HbIconCacheItem* releaseItem)
     releaseItem->cpuLink.setPrev(0);
 }
 
+#ifdef HB_ICON_CACHE_DEBUG
 void HbIconDataCache::cleanRasterLRUList()
 {
 
@@ -869,6 +903,7 @@ void HbIconDataCache::cleanRasterLRUList()
         removeFromCache(cache->key(itemToRemove), itemToRemove);
     }
 }
+#endif // HB_ICON_CACHE_DEBUG
 
 void HbIconDataCache::releaseRasterItem(HbIconCacheItem* releaseItem)
 {
@@ -894,6 +929,7 @@ void HbIconDataCache::removeFromCache(const HbIconKey &key, const HbIconCacheIte
     }
 }
 
+#ifdef HB_ICON_CACHE_DEBUG
 int HbIconDataCache::count() const
 {
     return cache->count();

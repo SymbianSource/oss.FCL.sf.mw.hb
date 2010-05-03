@@ -63,6 +63,18 @@ class HbDeviceDialogInterface;
 #if defined(Q_OS_SYMBIAN)
 class HbDeviceDialogManagerPrivate;
 
+class RegionUpdateFilter : public QObject
+{
+    Q_OBJECT
+public:
+    RegionUpdateFilter(HbDeviceDialogManagerPrivate *deviceDialogManger) :
+    mDeviceDialogManger(deviceDialogManger) {}
+protected:
+    bool eventFilter(QObject* obj, QEvent *event);
+private:	
+    HbDeviceDialogManagerPrivate *mDeviceDialogManger;
+};
+
 //acts as a scene event filter to catch mouse press events.
 //when caught, resets window region to full screen.
 class MousePressCatcher : public QGraphicsItem
@@ -142,7 +154,7 @@ private:
     bool doHousekeeping();
     void timerEvent(QTimerEvent *event);
     void markNoClient(quintptr clientTag);
-
+    void setupWindowRegion();
 private:
     // Public interface
     HbDeviceDialogManager * const q;
@@ -157,6 +169,8 @@ private:
     int mHousekeeperTimerId;
 #if defined(Q_OS_SYMBIAN)
     MousePressCatcher mMousePressCatcher; //acts as a scene event filter to catch mouse press events.
+    friend class RegionUpdateFilter;
+    RegionUpdateFilter mRegionUpdateFilter;
 
     struct RegionMapping
     {

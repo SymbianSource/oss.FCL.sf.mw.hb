@@ -483,3 +483,13 @@ void HbSplayTreeAllocator::insertLengthNode(unsigned int *root, TreeNode *node)
         }
     }
 }
+
+int HbSplayTreeAllocator::freeBytes()
+{
+    return header->freeBytes;
+}
+
+int HbSplayTreeAllocator::allocatedBytes()
+{
+    return header->allocatedBytes;
+}

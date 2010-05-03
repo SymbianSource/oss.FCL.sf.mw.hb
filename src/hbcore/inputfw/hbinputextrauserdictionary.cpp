@@ -42,17 +42,20 @@ const int HbExtraDictMaxFrequency = 255;
 \brief A generic implementation of HbUserDictionary class.
 
 This class provides generic all-purpose implementation of HbUserDictionary class.
-It uses shared memory and words are stored in plain text format. Entries are sorted and 
-a binary search algorithm is used for finding matches. There is a random access
-operator for read operations. It also knows how to save it self to disk and load again.
+It uses shared memory and words are stored in plain text format. Entries are sorted and
+a binary search algorithm is provided for finding matches. There is a random access
+operator for read operations. It also knows how to save its contents to disk and load it again.
 There is a separate factory class for creating and accessing HbExtraUserDictionary
 instances.
 
 The dictionary data is organized so that there is a directory area and data area. Directory area
-contains an array of HbExtraUDDirectoryEntry items. They specify where each word begins in the 
+contains an array of HbExtraUDDirectoryEntry items. They specify where each word begins in the
 data area and how long it is. Data area contains characters in a single long string. There are
 methods for accessing directory and data area in case direct access is needed.
 Typically this is not needed and default search and access operators are enough.
+
+Example uses cases for extra dictonaries are additional prediction engine databases and
+acting as a backend for auto-completing fields.
 
 \sa HbUserDictionary
 \sa HbExtraDictionaryFactory
@@ -165,6 +168,7 @@ void HbExtraUserDictionaryPrivate::removeEntry(int index)
     // Update word count.
     dataHeader()->numWords--;
     dataHeader()->dataSize -= length;
+    dataHeader()->modified = true;
 
     // Then update remaining dictionary entries.
     const int rounds = dataHeader()->numWords;
@@ -178,9 +182,9 @@ void HbExtraUserDictionaryPrivate::addEntry(int index, const QString& newWord)
     HbExtraUDDirectoryEntry *dir = directory();
     QChar *data = dataArea();
 
-    const int origNumWords = dataHeader()->numWords;  
+    const int origNumWords = dataHeader()->numWords;
     if (origNumWords > 0) {
-        if (index < origNumWords) { 
+        if (index < origNumWords) {
             // First move the trailing part of the data area to make space for the new word.
             memmove((char*)&data[dir[index].start + newWord.size()] + sizeof(HbExtraUDDirectoryEntry),
                     (char*)(&data[dir[index].start]),
@@ -200,7 +204,8 @@ void HbExtraUserDictionaryPrivate::addEntry(int index, const QString& newWord)
 
     // Update word count.
     dataHeader()->numWords++;
-    dataHeader()->dataSize += newWord.size(); 
+    dataHeader()->dataSize += newWord.size();
+    dataHeader()->modified = true;
 
     data = dataArea();  // data area starting point has changed, refresh.
 
@@ -246,12 +251,12 @@ int HbExtraUserDictionaryPrivate::findWord(int startIndex, int endIndex, const Q
 }
 
 int HbExtraUserDictionaryPrivate::findIndexForNewWord(int start, int end, const QString& newWord) const
-{    
+{
     if (start >= end) {
         if (dataHeader()->numWords == 0) {
             return 0;
         }
-    
+
         if (compareWords(start, newWord) > 0) {
             return start + 1;
         } else {
@@ -277,31 +282,31 @@ int HbExtraUserDictionaryPrivate::compareWords(int index, const QString& otherWo
 
     const int start = dir[index].start;
     const int rounds = (dir[index].length > otherWord.size() ? otherWord.size() : dir[index].length);
-	if (caseSensitivity == Qt::CaseSensitive) {
-		for (int i = 0; i < rounds; i++) {
-			if (data[start + i] == otherWord[i]) {
-				continue;
-			}
+        if (caseSensitivity == Qt::CaseSensitive) {
+                for (int i = 0; i < rounds; i++) {
+                        if (data[start + i] == otherWord[i]) {
+                                continue;
+                        }
 
-			if (otherWord[i] > data[start + i]) {
-				return 1;
-			}
+                        if (otherWord[i] > data[start + i]) {
+                                return 1;
+                        }
 
-			return -1;
-		}
-	} else {
-		for (int i = 0; i < rounds; i++) {
-			if (data[start + i].toCaseFolded() == otherWord[i].toCaseFolded()) {
-				continue;
-			}
+                        return -1;
+                }
+        } else {
+                for (int i = 0; i < rounds; i++) {
+                        if (data[start + i].toCaseFolded() == otherWord[i].toCaseFolded()) {
+                                continue;
+                        }
 
-			if (otherWord[i].toCaseFolded() > data[start + i].toCaseFolded()) {
-				return 1;
-			}
+                        if (otherWord[i].toCaseFolded() > data[start + i].toCaseFolded()) {
+                                return 1;
+                        }
 
-			return -1;
-		}
-	}
+                        return -1;
+                }
+        }
 
     if (dir[index].length == otherWord.size()) {
         return 0;  // Match!
@@ -337,7 +342,7 @@ Constructs the object. This version tries to attachs to given user dictionary an
 if not found, initializes it.
 */
 HbExtraUserDictionary::HbExtraUserDictionary(int dbId) : d_ptr(new HbExtraUserDictionaryPrivate)
-{ 
+{
     setId(dbId);
     attach();
 }
@@ -378,10 +383,10 @@ exists.
 \sa addWords
 \sa removeWord
 */
-bool HbExtraUserDictionary::addWord(const QString& newWord, HbPredictionCallback* aCallback)
+bool HbExtraUserDictionary::addWord(const QString& newWord, HbPredictionCallback* callback)
 {
-    Q_UNUSED(aCallback);
-    Q_D(HbExtraUserDictionary);    
+    Q_UNUSED(callback);
+    Q_D(HbExtraUserDictionary);
 
     d->lock();
 
@@ -392,15 +397,15 @@ bool HbExtraUserDictionary::addWord(const QString& newWord, HbPredictionCallback
     }
 
     if (newWord.size() < KExtraUserDictionaryMaxWordLength &&
-        d->hasEnoughSpaceForNewWord(newWord) && 
+        d->hasEnoughSpaceForNewWord(newWord) &&
         d->dataHeader()->numWords < KExtraUserDictionaryMaxWords) {
        int newIndex = d->findIndexForNewWord(0, d->dataHeader()->numWords - 1, newWord);
-       d->addEntry(newIndex, newWord);  
+       d->addEntry(newIndex, newWord);
 
        d->unlock();
        return true;
        }
- 
+
     d->unlock();
     return false;
 }
@@ -435,7 +440,7 @@ bool HbExtraUserDictionary::removeWord(const QString& toBeRemoved)
 
     d->lock();
 
-	int index = d->findWord(0, d->dataHeader()->numWords - 1, toBeRemoved, Qt::CaseInsensitive);
+    int index = d->findWord(0, d->dataHeader()->numWords - 1, toBeRemoved, Qt::CaseInsensitive);
     if (index >= 0) {
        d->removeEntry(index);
        d->unlock();
@@ -710,7 +715,7 @@ QChar* HbExtraUserDictionary::rawDataArea() const
 
 /*!
 Returs the maximum size of raw data area. This size will decrease every time new words are
-added to the dictionary, because directory size will increase. This method is provided for sake 
+added to the dictionary, because directory size will increase. This method is provided for sake
 of efficiency for those who need direct access and know what they are doing.
 
 \sa rawDataArea
@@ -722,7 +727,7 @@ int HbExtraUserDictionary::rawDataAreaSize() const
 }
 
 /*!
-Returns direct access to internal directory in the data area. The array contains as many items as there are 
+Returns direct access to internal directory in the data area. The array contains as many items as there are
 words in the dictionary. This method is provided for sake of efficiency for those who need direct access
 and know what they are doing.
 
@@ -761,10 +766,11 @@ void HbExtraUserDictionary::incrementUseCount(const QString& word)
 
     if (d->dataHeader()->numWords) {
         HbExtraUDDirectoryEntry *dir = d->directory();
-      
+
         int first = d->findFirstMatch(0, d->dataHeader()->numWords - 1, word);
         if (first >= 0 && dir[first].frequency < HbExtraDictMaxFrequency) {
             dir[first].frequency++;
+            d->dataHeader()->modified = true;
             }
         }
 }
@@ -772,48 +778,49 @@ void HbExtraUserDictionary::incrementUseCount(const QString& word)
 /*!
 Returns true if given word exits in the dictionary.
 */
-bool HbExtraUserDictionary::hasWord(const QString& word, Qt::CaseSensitivity caseSensitivity) const 
+bool HbExtraUserDictionary::hasWord(const QString& word, Qt::CaseSensitivity caseSensitivity) const
 {
     Q_D(const HbExtraUserDictionary);
 
     if (d->dataHeader()->numWords) {
         QChar *data = d->dataArea();
         HbExtraUDDirectoryEntry *dir = d->directory();
-		int first = d->findFirstMatch(0, d->dataHeader()->numWords - 1, word,-1, caseSensitivity);
-		if (first >= 0) {
-			if (caseSensitivity == Qt::CaseSensitive) {
-				if (QString(&data[dir[first].start], dir[first].length) == word) {
-					return true;
-				}
-				const int rounds = d->dataHeader()->numWords;
-				for (int i = first + 1; i <= rounds; i++) {
-					QString candidate(&data[dir[i].start], dir[i].length);
-					if (candidate.startsWith(word, Qt::CaseInsensitive)) {  
-						if (candidate == word) { 
-							return true;
-						}                    
-					} else {
-						break;
-					}
-				}
-			} else {
-				if (QString(&data[dir[first].start], dir[first].length).toCaseFolded() == word.toCaseFolded()) {
-					return true;
-				}
-				const int rounds = d->dataHeader()->numWords;
-				for (int i = first + 1; i <= rounds; i++) {
-					QString candidate(&data[dir[i].start], dir[i].length);
-					if (candidate.startsWith(word, Qt::CaseInsensitive)) {  
-						if (candidate.toCaseFolded() == word.toCaseFolded()) {
-							return true;
-						}                    
-					} else {
-						break;
-					}
-				}
-			}
-		}
-	}
+            int first = d->findFirstMatch(0, d->dataHeader()->numWords - 1, word,-1, caseSensitivity);
+            if (first >= 0) {
+                if (caseSensitivity == Qt::CaseSensitive) {
+                    if (QString(&data[dir[first].start], dir[first].length) == word) {
+                        return true;
+                    }
+
+                    const int rounds = d->dataHeader()->numWords;
+                    for (int i = first + 1; i <= rounds; i++) {
+                         QString candidate(&data[dir[i].start], dir[i].length);
+                         if (candidate.startsWith(word, Qt::CaseInsensitive)) {
+                             if (candidate == word) {
+                                 return true;
+                             }
+                         } else {
+                             break;
+                         }
+                    }
+            } else {
+                if (QString(&data[dir[first].start], dir[first].length).toCaseFolded() == word.toCaseFolded()) {
+                    return true;
+                }
+                const int rounds = d->dataHeader()->numWords;
+                for (int i = first + 1; i <= rounds; i++) {
+                    QString candidate(&data[dir[i].start], dir[i].length);
+                    if (candidate.startsWith(word, Qt::CaseInsensitive)) {
+                        if (candidate.toCaseFolded() == word.toCaseFolded()) {
+                            return true;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+           }
+        }
+    }
 
     return false;
 }

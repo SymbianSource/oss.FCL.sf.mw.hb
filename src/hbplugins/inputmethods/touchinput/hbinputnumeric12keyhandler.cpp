@@ -40,17 +40,22 @@ public:
     HbInputNumeric12KeyHandlerPrivate();
     ~HbInputNumeric12KeyHandlerPrivate();
 
+	void handleMultitapStarKey();
     bool buttonPressed(const QKeyEvent *keyEvent);
     bool buttonReleased(const QKeyEvent *keyEvent);
     void _q_timeout();
 public:
     int mLastKey;
-    bool mButtonDown;
+    int mButtonDown;
+	int mMultiTapNum;
+	QChar mCurrentMultitapChar;
 };
 
 HbInputNumeric12KeyHandlerPrivate::HbInputNumeric12KeyHandlerPrivate():
     mLastKey(0),
-    mButtonDown(false)
+    mButtonDown(0),
+	mMultiTapNum(0),
+	mCurrentMultitapChar(0)
 {
 }
 
@@ -58,20 +63,60 @@ HbInputNumeric12KeyHandlerPrivate::~HbInputNumeric12KeyHandlerPrivate()
 {
 }
 
+void HbInputNumeric12KeyHandlerPrivate::handleMultitapStarKey()
+{
+	HbInputFocusObject *focusObject = 0;
+	focusObject = mInputMethod->focusObject();
+	if (!focusObject) {
+		return;
+	}
+	QChar MultitapStarKeyArray[] = {'+','*','p','w','\0'};
+	mCurrentMultitapChar = MultitapStarKeyArray[mMultiTapNum];
+	
+	mMultiTapNum = (++mMultiTapNum)%4;
+	if (mCurrentMultitapChar != 0) {
+		QString str;
+		str += mCurrentMultitapChar;
+
+		QList<QInputMethodEvent::Attribute> list;
+		QInputMethodEvent event(str,list);
+		focusObject->sendEvent(event);
+	}
+}
 bool HbInputNumeric12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
 {
+	Q_Q(HbInputNumeric12KeyHandler);
+	HbInputFocusObject *focusObject = 0;
+    focusObject = mInputMethod->focusObject();
+    if (!focusObject) {
+        return false;
+    }
 	int buttonId = keyEvent->key();
-	mButtonDown = true;
-	mLastKey = buttonId;
-    mTimer->stop();
-    if (buttonId == Qt::Key_Control) {
-        mLastKey = buttonId;        
+	mButtonDown = buttonId;
+    
+	if (buttonId == Qt::Key_Shift) {
         mTimer->start(HbLongPressTimerTimeout);
-        return true;
-    } else if (buttonId == Qt::Key_Shift) {
-        mTimer->start(HbLongPressTimerTimeout);
+		mLastKey = buttonId;
 		return true;
-	}		              
+	}		   
+	if (mInputMethod) {
+		if (mLastKey != buttonId) {
+			if (mCurrentMultitapChar !=0) {
+				if (!focusObject->characterAllowedInEditor(mCurrentMultitapChar))
+					focusObject->sendCommitString(QString());
+				else {
+					QChar commitChar(mCurrentMultitapChar);
+					mCurrentMultitapChar = 0;
+					q->commitAndUpdate(commitChar);
+				}
+			}
+		}
+		if (buttonId == Qt::Key_Asterisk) {
+			mTimer->stop();
+			mTimer->start(HbMultiTapTimerTimeout);
+		}
+		return false;
+	}           
     return false;
 }
 
@@ -88,24 +133,33 @@ bool HbInputNumeric12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent
         qDebug("HbInputModeHandler::buttonReleased no focusObject ... failed!!");
         return false;
     }
-	if(mTimer->isActive()) {
+	int buttonId = keyEvent->key();
+	if(mTimer->isActive() && buttonId == Qt::Key_Shift) {
 		mTimer->stop();
 	}
-
-	int buttonId = keyEvent->key();
     
-	mButtonDown = false;
+	if (mLastKey != buttonId)
+		mMultiTapNum = 0;
 
-    if (buttonId == Qt::Key_Asterisk || buttonId == Qt::Key_Control) {
-        //Same asterisk key is used for launching candidate list (long key press)
-        //and also for SCT. So, do not launch SCT if candidate list is already launched.
-        mInputMethod->switchMode(buttonId);
+	mButtonDown = 0;
+
+    if (buttonId == Qt::Key_Asterisk) {
+        //Asterisk Key will multitap bettween *,+,p,w
+        //mInputMethod->switchMode(buttonId);
+		mLastKey = buttonId;
+		handleMultitapStarKey();
         return true;
-    } else if (buttonId == Qt::Key_Return) {
+	} else if (buttonId == Qt::Key_Control){
+		mInputMethod->switchMode(buttonId);
+		mLastKey = buttonId;
+		return true;
+	}
+	else if (buttonId == Qt::Key_Return) {
         mInputMethod->closeKeypad();
         return true;
-	} else if ( buttonId == Qt::Key_Shift && mLastKey == buttonId ) {
+	} else if ( buttonId == Qt::Key_Shift ) {
 		//Let's commit character "#" on single tap and double tap of shift Key
+		mLastKey = buttonId;
 		QChar qc(keyEvent->key());
 		qc = QChar('#');
 		q->commitAndUpdate(qc);
@@ -115,7 +169,7 @@ bool HbInputNumeric12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent
         if (q->HbInputNumericHandler::filterEvent(keyEvent)) {
             return true;
         }
-        
+        mLastKey = buttonId;
         q->commitFirstMappedNumber(buttonId);
         return true;
     }
@@ -126,6 +180,7 @@ void HbInputNumeric12KeyHandlerPrivate::_q_timeout()
 {
 	Q_Q(HbInputNumeric12KeyHandler);
     mTimer->stop();
+	mMultiTapNum = 0;
 
     HbInputFocusObject *focusedObject = 0;
     focusedObject = mInputMethod->focusObject();
@@ -136,8 +191,7 @@ void HbInputNumeric12KeyHandlerPrivate::_q_timeout()
     //switch to Alpha mode when Long key press of Shift key is received
     if (mButtonDown)
     {
-        mButtonDown = false;
-		if (mLastKey == Qt::Key_Shift) {
+		if (mButtonDown == Qt::Key_Shift) {
 			// If the editor is not a number only editor, then activate the alphanumeric keypad
             if( !focusedObject->editorInterface().isNumericEditor() ) {
 				mInputMethod->switchMode(mLastKey);
@@ -148,11 +202,17 @@ void HbInputNumeric12KeyHandlerPrivate::_q_timeout()
 				q->commitAndUpdate(QChar('#'));
 			}
         }
-		else if (mLastKey == Qt::Key_Control)
+		else if (mButtonDown == Qt::Key_Asterisk)
 		{
-			mInputMethod->switchMode(Qt::Key_Control);
+			q->commitAndUpdate(QChar('*'));
 		}
+		mButtonDown = 0;
     }
+	else {
+		if (mCurrentMultitapChar != 0)
+			focusedObject->filterAndCommitCharacter(mCurrentMultitapChar);
+	}
+	mCurrentMultitapChar = 0;
 }
 
 HbInputNumeric12KeyHandler::HbInputNumeric12KeyHandler(HbInputAbstractMethod* inputMethod)
@@ -193,7 +253,7 @@ bool HbInputNumeric12KeyHandler::actionHandler(HbInputModeAction action)
 		case HbInputModeHandler::HbInputModeActionCancelButtonPress:
         case HbInputModeHandler::HbInputModeActionReset:
 			d->mLastKey = 0;
-        	d->mButtonDown = false;
+        	d->mButtonDown = 0;
 			d->mTimer->stop();
 			break;
         //In case of the numeric editor the character is already committed.
@@ -224,22 +284,6 @@ bool HbInputNumeric12KeyHandler::actionHandler(HbInputModeAction action)
         ret = HbInputNumericHandler::actionHandler(action);
     }
     return ret;
-}
-
-/*!
- list different input modes.
-*/
-void HbInputNumeric12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    HbInputModeProperties binding;
-    binding.iMode = HbInputModeNumeric;
-    binding.iKeyboard = HbKeyboardVirtual12Key;
-
-    QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-    foreach (HbInputLanguage language, languages) {
-        binding.iLanguage = language;
-        modes.push_back(binding);
-    }
 }
 
 // EOF

@@ -259,8 +259,8 @@
     from the property set. If not set localisable strings are localised by the device
     dialog service.
 
-    \deprecated HbDeviceDialogPlugin::NoLocalisableData. Will be removed as localization
-    is always done by application.
+    \deprecated HbDeviceDialogPlugin::NoLocalisableData
+        is deprecated. Will be removed as localization is always done by application.
 */
 
 /*!

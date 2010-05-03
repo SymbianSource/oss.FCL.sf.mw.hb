@@ -36,7 +36,6 @@ public:
     ~HbInputPredictionQwertyHandler();
 
     bool filterEvent(const QKeyEvent * event);
-    void listInputModes(QVector<HbInputModeProperties>& aResults) const;
     bool actionHandler(HbInputModeAction action);
     void processExactWord(QString exactWord);
     void sctCharacterSelected(QString character);

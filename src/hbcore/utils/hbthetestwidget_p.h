@@ -79,6 +79,7 @@ public slots:
     void toggleOrientation();
     void toggleMirroring();
     void setApplicationBackground(); // only for S60
+    void showThemeServerMemoryInfo();
     void screenCapture(); // not working on HW
 
 protected:

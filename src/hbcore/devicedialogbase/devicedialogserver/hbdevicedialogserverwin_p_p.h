@@ -52,13 +52,13 @@ public:
     void IndicatorsActivated(const QList<IndicatorClientInfo> &indicatorInfoList);
     void IndicatorsUpdated(const QList<IndicatorClientInfo> &indicatorInfoList);
     void IndicatorsDeactivated(const QList<IndicatorClientInfo> &indicatorInfoList);
-
+    void IndicatorUserActivated(const QVariantMap &data) const;
     Q_DECLARE_PUBLIC(HbDeviceDialogServer)
 
 public:
 
     HbDeviceDialogServer *q_ptr;
-    void Init();
+    int Init();
 
 public:
 };

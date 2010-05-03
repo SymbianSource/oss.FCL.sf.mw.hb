@@ -52,6 +52,12 @@ HEADERS += ..\common\hbinputnumerichandler_p.h
 HEADERS += hbinputnumericqwertyhandler.h
 HEADERS += hbinputnumeric12keyhandler.h
 HEADERS += ..\common\hbinputabstractbase.h
+HEADERS += hbinputprediction12keyhandler_p.h
+HEADERS += hbinputbasic12keyhandler_p.h
+HEADERS += hbinputbasic12keythaihandler.h
+HEADERS += hbinputprediction12keythaihandler.h
+HEADERS += hbinputthaispecialpopup.h
+
 
 SOURCES = virtual12key.cpp
 SOURCES += virtualqwerty.cpp
@@ -67,7 +73,9 @@ SOURCES += ..\common\hbinputnumerichandler.cpp
 SOURCES += hbinputnumericqwertyhandler.cpp
 SOURCES += hbinputnumeric12keyhandler.cpp
 SOURCES += ..\common\hbinputabstractbase.cpp
-
+SOURCES += hbinputbasic12keythaihandler.cpp
+SOURCES += hbinputprediction12keythaihandler.cpp
+SOURCES += hbinputthaispecialpopup.cpp
 symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL

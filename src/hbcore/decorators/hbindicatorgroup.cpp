@@ -39,7 +39,7 @@
 
 HbIndicatorGroupPrivate::HbIndicatorGroupPrivate() :
     mIndicatorType(HbIndicatorGroup::NotificationType),
-    mIndicatorPrivate(0), mProgressAdded(false)
+    mIndicatorPrivate(0), mProgressAdded(false), mIndicatorAdded(false)
 {
 }
 
@@ -51,14 +51,9 @@ HbIndicatorGroupPrivate::~HbIndicatorGroupPrivate()
      mIndicators.clear();
 }
 
-void HbIndicatorGroupPrivate::init()
+void HbIndicatorGroupPrivate::delayedConstruction()
 {
     Q_Q(HbIndicatorGroup);
-    q->createPrimitives();
-
-    mIndicatorPrivate = new HbIndicatorPrivate;
-    mIndicatorPrivate->init();
-
     q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
         q, SLOT(activate(const QList<IndicatorClientInfo> &)));
     q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
@@ -68,7 +63,23 @@ void HbIndicatorGroupPrivate::init()
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
 
+#ifdef HB_EFFECTS
+    HbEffect::add(
+        QStringList() << "indicator" << "indicator" << "indicator" << "indicator",
+        QStringList() << "indicator_appear" <<  "indicator_disappear" << "indicator_move_right" << "indicator_move_left",
+        QStringList() << "appear" << "disappear" <<  "move_right" << "move_left");
+#endif
+
     QTimer::singleShot(0, q, SLOT(startListen()));
+}
+
+void HbIndicatorGroupPrivate::init()
+{
+    Q_Q(HbIndicatorGroup);
+    q->createPrimitives();
+
+    mIndicatorPrivate = new HbIndicatorPrivate;
+    mIndicatorPrivate->init();
 }
 
 int HbIndicatorGroupPrivate::setIconName(HbStyleOptionIndicatorGroup &option, int index)
@@ -103,6 +114,7 @@ void HbIndicatorGroupPrivate::addIndicators(const QList<IndicatorClientInfo> &cl
         const IndicatorClientInfo &indicator = clientInfo.at(i);
         if (canAddIndicator(indicator)) {
             mIndicators.prepend(indicator);
+            mIndicatorAdded = true;
         }
     }
     emitNotificationCount();
@@ -120,6 +132,7 @@ void HbIndicatorGroupPrivate::updateIndicators(const QList<IndicatorClientInfo> 
 
 void HbIndicatorGroupPrivate::removeIndicators(const QList<IndicatorClientInfo> &clientInfo)
 {
+    mRemovedIndicators.clear();
     for (int i = 0; i < clientInfo.size(); ++i) {
         removeIndicator(clientInfo.at(i));
     }
@@ -142,6 +155,11 @@ void HbIndicatorGroupPrivate::removeIndicator(const IndicatorClientInfo &indicat
 {
     int index = findIndicator(indicator);
     if (index >= 0) {
+        if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
+            mRemovedIndicators.append("qtg_status_progress");
+        } else {
+            mRemovedIndicators.append(mIndicators.at(index).iconPath);
+        }
         mIndicators.removeAt(index);
     }
 }
@@ -149,6 +167,10 @@ void HbIndicatorGroupPrivate::removeIndicator(const IndicatorClientInfo &indicat
 bool HbIndicatorGroupPrivate::canAddIndicator(const IndicatorClientInfo &indicator) const
 {
     bool canAdd(false);
+
+    if (indicator.iconPath.isEmpty()) {
+        return canAdd;
+    }
 
     if (indicator.category == HbIndicatorInterface::NotificationCategory 
         && mIndicatorType == HbIndicatorGroup::NotificationType) {
@@ -171,6 +193,80 @@ void HbIndicatorGroupPrivate::emitNotificationCount()
     }
 }
 
+void HbIndicatorGroupPrivate::startAddingEffect()
+{
+#ifdef HB_EFFECTS
+    Q_Q(HbIndicatorGroup);
+    if (mIndicatorAdded) {
+        // get the original positions for the first time
+        if (mOriginalPos.count() == 0) {
+            for (int i = 0; i < mIcons.size(); ++i) {
+                mOriginalPos.append(mIcons[i]->pos());
+            }
+        }
+        // Move positions one to left
+        if (mIndicatorType == HbIndicatorGroup::NotificationType) {
+            for (int i = mIcons.size() - 1; i > 0; --i) {
+                mIcons[i]->setPos(mIcons[i - 1]->pos());
+             }
+        }
+
+        // Start the effects
+        HbEffect::start(mIcons[0], "indicator", "appear");
+        if (mIndicatorType == HbIndicatorGroup::NotificationType) {
+            HbEffect::start(mIcons[1], "indicator", "move_right");
+            HbEffect::start(mIcons[2], "indicator", "move_right");
+            HbEffect::start(mIcons[3], "indicator", "move_right", q, "moveEffectFinnished");
+        } else {
+            HbEffect::start(mIcons[1], "indicator", "move_left");
+            HbEffect::start(mIcons[2], "indicator", "move_left");
+            HbEffect::start(mIcons[3], "indicator", "move_left", q, "moveEffectFinnished");
+        }
+    }
+#endif
+}
+
+void HbIndicatorGroupPrivate::startRemovingEffect()
+{
+#ifdef HB_EFFECTS
+    Q_Q(HbIndicatorGroup);
+    for (int i = 0; i < mRemovedIndicators.size(); ++i) {   
+        int index = findIndicatorIcon(mRemovedIndicators[i]);
+        if (index >= 0) {
+            HbEffect::start(mIcons[index], "indicator", "disappear", q, "disappearEffectFinnished");
+            if (mIndicatorType == HbIndicatorGroup::NotificationType) {
+                 for (int i = mIcons.size() - 1; i > index; --i) {
+                    mIcons[i]->setPos(mIcons[i - 1]->pos());
+                 }
+                for (int i = index + 1; i < mIcons.size(); ++i) {
+                    HbEffect::start(mIcons[i], "indicator", "move_left");
+                }
+            } else {
+                for (int i = index + 1; i < mIcons.size(); ++i) {
+                    HbEffect::start(mIcons[i], "indicator", "move_right");
+                }
+            }
+        }
+    }
+#else 
+    updatePrimitives();
+#endif
+}
+
+int HbIndicatorGroupPrivate::findIndicatorIcon(const QString &iconPath) const
+{
+    int index = -1;
+
+    for (int i = 0; i < mIcons.size(); ++i) {
+        if (static_cast<HbIconItem*>(mIcons[i])->iconName() == iconPath) {
+            index = i;
+            break;
+        }
+    }
+
+    return index;
+}
+
 // ======== MEMBER FUNCTIONS ========
 
 /*
@@ -191,6 +287,15 @@ HbIndicatorGroup::HbIndicatorGroup(IndicatorType indicatorType, QGraphicsItem *p
 HbIndicatorGroup::~HbIndicatorGroup()
 {
     
+}
+
+/*
+    Delayed constructor.
+ */
+void HbIndicatorGroup::delayedConstruction()
+{
+   Q_D(HbIndicatorGroup);
+   d->delayedConstruction();
 }
 
 void HbIndicatorGroup::createPrimitives()
@@ -217,6 +322,10 @@ void HbIndicatorGroup::updatePrimitives()
     style()->updatePrimitive(d->mIcons[2], HbStyle::P_IndicatorGroup_icon3, &option);
     index = d->setIconName(option, index);
     style()->updatePrimitive(d->mIcons[3], HbStyle::P_IndicatorGroup_icon4, &option);
+
+    if (d->mIndicatorAdded) {
+        d->startAddingEffect();
+    }
 }
 
 void HbIndicatorGroup::activate(const QList<IndicatorClientInfo> &clientInfo)
@@ -225,6 +334,7 @@ void HbIndicatorGroup::activate(const QList<IndicatorClientInfo> &clientInfo)
     d->addIndicators(clientInfo);
 
     updatePrimitives();
+    d->mIndicatorAdded = false;
 }
 
 void HbIndicatorGroup::update(const QList<IndicatorClientInfo> &clientInfo)
@@ -249,16 +359,53 @@ void HbIndicatorGroup::deactivate(const QList<IndicatorClientInfo> &clientInfo)
     Q_D(HbIndicatorGroup);
     d->removeIndicators(clientInfo);
 
-    updatePrimitives();
+    if (d->mRemovedIndicators.count() > 0) {
+        d->startRemovingEffect();
+    }
 }
 
 void HbIndicatorGroup::startListen()
 {
     Q_D(HbIndicatorGroup);
     d->mIndicatorPrivate->startListen();
+
+#ifdef HB_EFFECTS
+    HbEffect::add(
+        QStringList() << "indicator" << "indicator" << "indicator" << "indicator",
+        QStringList() << "indicator_appear" <<  "indicator_disappear" << "indicator_move_right" << "indicator_move_left",
+        QStringList() << "appear" << "disappear" <<  "move_right" << "move_left");
+#endif
 }
 
 void HbIndicatorGroup::initStyleOption(HbStyleOptionIndicatorGroup *option) const
 {
     HbWidget::initStyleOption(option);
+}
+
+void HbIndicatorGroup::moveEffectFinnished(const HbEffect::EffectStatus &status)
+{
+    Q_D(HbIndicatorGroup);
+    if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
+        || status.reason == Hb::EffectNotStarted) {
+        // Reset the positions and transformations
+        for (int i = 0; i < d->mIcons.size(); ++i) {
+            d->mIcons[i]->resetTransform();
+            d->mIcons[i]->setPos(d->mOriginalPos[i]);
+        }
+    }
+}
+
+void HbIndicatorGroup::disappearEffectFinnished(const HbEffect::EffectStatus &status)
+{
+    Q_D(HbIndicatorGroup);
+    if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
+        || status.reason == Hb::EffectNotStarted) {
+            // Reset the positions and transformations and opacity
+        for (int i = 0; i < d->mIcons.size(); ++i) {
+            d->mIcons[i]->resetTransform();
+            d->mIcons[i]->setOpacity(1.0);
+            d->mIcons[i]->setPos(d->mOriginalPos[i]);
+        }
+        updatePrimitives();
+    }
 }

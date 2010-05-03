@@ -34,7 +34,7 @@ class HbExtraUserDictionary;
 const int HbMaxDictionariesInCollection = 16;
 
 class HB_CORE_EXPORT HbExtraDictionaryCollection
-{      
+{
 public:
     HbExtraDictionaryCollection();
     HbExtraDictionaryCollection(QList<int> dictionaries);
@@ -49,11 +49,10 @@ public:
     QList<int> dictionaries() const;
 
     void disableDictionary(int id);
-    void enableDictionary(int id); 
+    void enableDictionary(int id);
 
     bool isDisabled(int id) const;
 
-public:
     int numberOfWords() const;
     int totalNumberOfWords() const;
 
@@ -61,7 +60,7 @@ public:
     QStringList findMatches(const QString& searchString, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive);
 
     bool hasWord(const QString& word) const;
-    void incrementUseCount(const QString& word); 
+    void incrementUseCount(const QString& word);
 
 protected:
     HbExtraDictionaryCollectionPrivate* const d_ptr;

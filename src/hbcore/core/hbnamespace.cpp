@@ -586,3 +586,50 @@
     \var Hb::ActivationReason Hb::ActivationReasonNormal
     Application was started by other means.
  */ 
+
+/*!
+    \deprecated Hb::ItemType_FormViewItem
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_FormView
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_AbstractItemContainer
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_AbstractItemView
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_AbstractViewItem
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_ItemHighlight
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_ListWidgetViewItem
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_Highlight
+        is deprecated.
+*/
+
+/*!
+    \deprecated Hb::ItemType_RoundRobinLabel
+        is deprecated.
+*/
+
+

@@ -26,6 +26,7 @@
 #include "hbabstractvkbhost_p.h"
 #include "hbinputvirtualkeyboard.h"
 #include "hbinputsettingproxy.h"
+#include "hbinputvkbhostbridge.h"
 #include "hbinputmethod.h"
 #include "hbdeviceprofile.h"
 #include "hbmainwindow.h"
@@ -67,6 +68,7 @@ mKeypadMovementVector(QPointF(0, 0)),
 mInputMethod(0),
 mKeypadStatusBeforeOrientationChange(HbVkbHost::HbVkbStatusClosed)
 {
+    mTimeLine.setUpdateInterval(16);
 }
 
 void HbAbstractVkbHostPrivate::prepareAnimationsCommon()
@@ -150,8 +152,17 @@ bool HbAbstractVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus 
             // The cursor is outside the visible area. Figure out how much and
             // to which direction the container has to be moved.
             if (microFocus.bottom() <= visibleArea.top()) {
-                // It goes to the upper part of the visible area.
-                mContainerMovementVector = QPointF(0.0, HbCursorLineMargin - microFocus.top());
+                // First see what would happen if we returned the container to original position.
+                // Is the cursor visible then?
+                // This is always preferred, use it if possible.
+                QPointF toOriginalPos = mOriginalContainerPosition - mContainerWidget->pos();
+                QRectF translatedMicroFocus = microFocus.translated(toOriginalPos);
+                if (visibleArea.contains(translatedMicroFocus)) {
+                    mContainerMovementVector = toOriginalPos;
+                } else {
+                    // It goes to the upper part of the visible area.
+                    mContainerMovementVector = QPointF(0.0, HbCursorLineMargin - microFocus.top());
+                }
             } else {
                 mContainerMovementVector = QPointF(0.0, visibleArea.bottom() - HbCursorLineMargin - microFocus.bottom());
             }
@@ -198,8 +209,18 @@ bool HbAbstractVkbHostPrivate::prepareAnimations(HbVkbHost::HbVkbStatus status)
 {
     prepareAnimationsCommon();
 
-    return (prepareContainerAnimation(status) |
-            prepareKeypadAnimation(status));
+    bool containerResult = prepareContainerAnimation(status);
+    if (containerResult) {
+        // A sanity check. Container should never be moved below it's original
+        // position. Limit the movement in case editor's micro focus returned faulty value
+        // or something else bad happened.
+        if ((mContainerMovementStartingPoint + mContainerMovementVector).y() > mOriginalContainerPosition.y()) {
+            mContainerMovementVector.setY(mOriginalContainerPosition.y() - mContainerMovementStartingPoint.y());
+            qWarning("Abstract VKB host: Invalid container position.");
+        }
+    }
+
+    return (containerResult | prepareKeypadAnimation(status));
 }
 
 void HbAbstractVkbHostPrivate::connectSignals()
@@ -245,7 +266,7 @@ void HbAbstractVkbHostPrivate::disconnectSignals()
 }
 
 void HbAbstractVkbHostPrivate::openKeypad()
-{
+{    
     if (mContainerWidget) {
         HbMainWindow* mainWin = mainWindow();
         if (mainWin && mKeypad) {
@@ -311,17 +332,17 @@ void HbAbstractVkbHostPrivate::openKeypadWithoutAnimation()
             mCallback->aboutToOpen(q_ptr);
             q_ptr->resizeKeyboard(); // Make sure that the keyboard doesn't exceed given boundaries.
         }
-
         if (prepareAnimations(HbVkbHost::HbVkbStatusOpened)) {
             if (!disableCursorShift()) {
                 // Move the container widget to keep the focused line visible.
                 mContainerWidget->setPos(mContainerWidget->pos() + mContainerMovementVector);
-
+                
                 // Move the keypad
                 mKeypad->setPos(mKeypadMovementStartingPoint + mKeypadMovementVector);
             }
 
             mKeypadStatus = HbVkbHost::HbVkbStatusOpened;
+            mCallback->keyboardOpened(q_ptr);
             q_ptr->openFinished();
         }
     }
@@ -339,7 +360,7 @@ void HbAbstractVkbHostPrivate::openMinimizedKeypad()
         }
 
         if (mKeypadStatus != HbVkbHost::HbVkbStatusMinimized) {
-            mCallback->aboutToOpen(q_ptr);
+            mCallback->aboutToOpen(q_ptr);           
             q_ptr->resizeKeyboard(); // Make sure that the keyboard doesn't exceed given boundaries.
         }
 
@@ -367,6 +388,7 @@ void HbAbstractVkbHostPrivate::closeKeypadWithoutAnimation()
 
         // Hide the keypad
         mKeypad->hide();
+        mCallback->keyboardClosed(q_ptr);
         mCallback = 0;
     }
 }
@@ -375,12 +397,13 @@ void HbAbstractVkbHostPrivate::minimizeKeypadWithoutAnimation()
 {
     HbMainWindow *mainWin = mainWindow();
     if (mKeypadStatus != HbVkbHost::HbVkbStatusMinimized && mKeypad && mainWin) {
-        mCallback->aboutToClose(q_ptr);
+        mCallback->aboutToClose(q_ptr);                
         if (mKeypad->scene() != mainWin->scene()) {
             // Add item to scene if it is not already in there.
             mainWin->scene()->addItem(mKeypad);
         }
 
+        mKeypadStatus = HbVkbHost::HbVkbStatusMinimized;
         if (!disableCursorShift()) {
             // Return the container widget to original position.
             mContainerWidget->setPos(mOriginalContainerPosition);
@@ -388,8 +411,6 @@ void HbAbstractVkbHostPrivate::minimizeKeypadWithoutAnimation()
             // Set the keypad to minimized position.
             mKeypad->setPos(QPointF(0.0, mScreenSize.height() - mCallback->minimizedKeyboardSize().height()));
         }
-
-        mKeypadStatus = HbVkbHost::HbVkbStatusMinimized;
     }
 }
 
@@ -409,6 +430,8 @@ void HbAbstractVkbHostPrivate::cancelAnimationAndHideVkbWidget()
         // Clear possible pending call.
         mPendingCall.vkb = 0;
 
+        emit q_ptr->keypadClosed();
+        HbVkbHostBridge::instance()->connectHost(0);
         mKeypadStatus = HbVkbHost::HbVkbStatusClosed;
     }
 }
@@ -514,6 +537,7 @@ HbVkbHost::HbVkbStatus HbAbstractVkbHost::keypadStatus() const
 /*!
 \reimp
 */
+
 void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner, bool animationAllowed)
 {
     Q_D(HbAbstractVkbHost);
@@ -529,7 +553,8 @@ void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner,
         return;
     }
 
-    if (d->mTimeLine.state() == QTimeLine::Running) {
+    if (!HbVkbHostBridge::instance()->connectHost(this)) {
+        connect(HbVkbHostBridge::instance(), SIGNAL(stateTransitionCompleted()), this, SLOT(stateTransitionCompleted()));
         // The previous keyboard is still closing. Set the call pending and return.
         d->mPendingCall.vkb = vkb;
         d->mPendingCall.animationAllowed = animationAllowed;
@@ -552,10 +577,13 @@ void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner,
             return;
         }
 
+        emit aboutToOpen();
+
         if (animationAllowed) {
             d->openKeypad();
         } else {
             d->openKeypadWithoutAnimation();
+            emit keypadOpened();
         }
 
         d->connectSignals();
@@ -573,10 +601,14 @@ void HbAbstractVkbHost::closeKeypad(bool animationAllowed)
     if (d->mKeypadStatus != HbVkbStatusClosed && !d->mKeypadOperationOngoing) {
         d->mKeypadOperationOngoing = true;
 
+        emit aboutToClose();
+
         if (animationAllowed) {
             d->closeKeypad();
         } else {
             d->closeKeypadWithoutAnimation();
+            emit keypadClosed();
+            HbVkbHostBridge::instance()->connectHost(0);
         }
 
         d->disconnectSignals();
@@ -661,7 +693,6 @@ void HbAbstractVkbHost::animationFinished()
         if (!d->disableCursorShift()) {
             // Make sure the container reached target position.
             d->mContainerWidget->setPos(d->mContainerMovementStartingPoint + d->mContainerMovementVector);
-
             // Make sure the keypad reached target position.
             d->mKeypad->setPos(d->mKeypadMovementStartingPoint + d->mKeypadMovementVector);
         }
@@ -686,17 +717,13 @@ void HbAbstractVkbHost::animationFinished()
             d->mCallback->keyboardMinimized(this);
             emit keypadClosed();
         } else {
-            // It was closed.
+            // It was closed. Hide the keyboard.
             d->mKeypad->hide();
+            // Return the container where it was.
+            d->mContainerWidget->setPos(d->mOriginalContainerPosition);
             d->mCallback->keyboardClosed(this);
             emit keypadClosed();
-
-            if (d->mPendingCall.vkb) {
-                // There was an open call pending. Do it now.
-                HbVirtualKeyboard *vkb = d->mPendingCall.vkb;
-                d->mPendingCall.vkb = 0;
-                openKeypad(vkb, d->mInputMethod, d->mPendingCall.animationAllowed);
-            }
+            HbVkbHostBridge::instance()->connectHost(0);
         }
     }
 }
@@ -921,12 +948,11 @@ void HbAbstractVkbHost::currentViewChanged(HbView *view)
     Q_D(HbAbstractVkbHost);
 
     if (view != d->mContainerWidget) {
-        if (d->mTimeLine.state() == QTimeLine::Running) {
+        if (d->mTimeLine.state() == QTimeLine::Running) {               
             d->cancelAnimationAndHideVkbWidget();
             if (d->mCallback) {
                 d->mCallback->keyboardClosed(this);
-            }
-            emit keypadClosed();
+            }          
         } else if (d->mKeypadStatus != HbVkbStatusClosed) {
             d->closeKeypadWithoutAnimation();
         }
@@ -948,6 +974,33 @@ void HbAbstractVkbHost::refresh()
              d->mTimeLine.start();
          }
      }
+}
+
+/*!
+\reimp
+*/
+bool HbAbstractVkbHost::stateTransitionOngoing() const
+{
+     Q_D(const HbAbstractVkbHost);
+     return (d->mTimeLine.state() == QTimeLine::Running);
+}
+
+/*!
+Receives signal from HbVkbHostBridge when previous host completes its state
+transition and sens pending call if any.
+*/
+void HbAbstractVkbHost::stateTransitionCompleted()
+{
+    Q_D(HbAbstractVkbHost);
+
+    disconnect(HbVkbHostBridge::instance(), SIGNAL(stateTransitionCompleted()), this, SLOT(stateTransitionCompleted()));
+
+    if (d->mPendingCall.vkb) {
+        // There was an open call pending. Do it now.
+        HbVirtualKeyboard *vkb = d->mPendingCall.vkb;
+        d->mPendingCall.vkb = 0;
+        openKeypad(vkb, d->mInputMethod, d->mPendingCall.animationAllowed);
+    }
 }
 
 // End of file

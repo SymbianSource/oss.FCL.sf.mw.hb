@@ -26,7 +26,7 @@
 #include "hbdocumentloader.h"
 #include "hbdocumentloader_p.h"
 #include "hbdocumentloaderactions_p.h"
-#include <hbmainwindow.h>
+#include "hbdocumentloadersyntax_p.h"
 
 #include <QString>
 #include <QGraphicsWidget>
@@ -160,6 +160,17 @@ QObjectList HbDocumentLoader::load( QIODevice *device, bool *ok )
     return load( device, QString(), ok );
 }
 
+/*!
+    Converts DocML document to binary document. 
+    \param srcDevice source IO device to be processed.
+    \param dstDevice destination IO device where to write to.
+    \return true if conversion was ok.
+*/
+bool HbDocumentLoader::createBinary( QIODevice *srcDevice, QIODevice *dstDevice )
+{
+    Q_D(HbDocumentLoader);
+    return d->createBinary( srcDevice, dstDevice );
+}
 
 /*!
     Retrieves widget of which object name equals to \a name.
@@ -208,8 +219,14 @@ bool HbDocumentLoader::setObjectTree( QObjectList roots )
 */
 QObject *HbDocumentLoader::createObject(const QString& type, const QString &name)
 {
+#ifdef HB_BOOTSTRAPPED
+    Q_UNUSED(type);
+    Q_UNUSED(name);
+    return 0;
+#else
     Q_D(HbDocumentLoader);
     return d->actions->createObjectWithFactory(type, name);
+#endif
 }
 
 

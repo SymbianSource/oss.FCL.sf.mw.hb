@@ -59,8 +59,7 @@ public: // From QInputContext
     void reset();
     void mouseHandler(int cursorPosition, QMouseEvent* event);
     bool usePrediction() const;
-public: // From HbInputMethod
-    void listInputModes(QVector<HbInputModeProperties>& results);
+public: // From HbInputMethod    
     void focusReceived();
         void focusLost(bool focusSwitch);
     void inputLanguageChanged(int newLanguage); 

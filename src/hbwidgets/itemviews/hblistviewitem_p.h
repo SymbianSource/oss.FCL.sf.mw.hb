@@ -64,6 +64,8 @@ class HbListViewItemPrivate : public HbAbstractViewItemPrivate
 public:
 
     HbListViewItemPrivate(HbListViewItem *prototype);
+
+    HbListViewItemPrivate(HbListViewItem *prototype, HbListViewItemShared *shared);
     
     HbListViewItemPrivate(const HbListViewItemPrivate &source);
     
@@ -107,7 +109,9 @@ public:
     }
 
     inline bool isMultilineSupported() const {
-        return !(   static_cast<const HbListViewItemShared*>(mSharedData.constData())->mGraphicsSize == HbListViewItem::Thumbnail
+        HbListViewItem::GraphicsSize graphicsSize = static_cast<const HbListViewItemShared*>(mSharedData.constData())->mGraphicsSize;
+        return !(   graphicsSize == HbListViewItem::Thumbnail
+                ||  graphicsSize == HbListViewItem::WideThumbnail
                 ||  isStretching()); 
     }
 

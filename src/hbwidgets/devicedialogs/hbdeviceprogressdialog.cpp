@@ -459,7 +459,7 @@ void HbDeviceProgressDialog::update()
     Closes the dialog.
 
     \deprecated HbDeviceProgressDialog::cancel()
-    is deprecated. Replaced by HbDeviceProgressDialog::close().
+        is deprecated. Replaced by HbDeviceProgressDialog::close().
 
 */
 void HbDeviceProgressDialog::cancel()
@@ -692,8 +692,8 @@ Qt::Alignment HbDeviceProgressDialog::textAlignment() const
 
     \sa textWrapping()
 
-    \deprecated HbDeviceProgressDialog::setTextWrapping()
-    is deprecated. Will be removed.
+    \deprecated HbDeviceProgressDialog::setTextWrapping(bool)
+        is deprecated. Will be removed.
 */
 void HbDeviceProgressDialog::setTextWrapping(bool wrap)
 {
@@ -707,8 +707,8 @@ void HbDeviceProgressDialog::setTextWrapping(bool wrap)
 
     \sa setTextWrapping()
 
-    \deprecated HbDeviceProgressDialog::textWrapping()
-    is deprecated. Will be removed.
+    \deprecated HbDeviceProgressDialog::textWrapping() const
+        is deprecated. Will be removed.
 */
 bool HbDeviceProgressDialog::textWrapping() const
 {

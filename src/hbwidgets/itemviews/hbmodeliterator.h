@@ -66,7 +66,6 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d, HbModelIterator)
     Q_DISABLE_COPY(HbModelIterator)
-
 };
 
 #endif // HBMODELITERATOR_H

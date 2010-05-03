@@ -48,9 +48,10 @@ public:
     }
     
     void paint(QPainter* painter, const QRectF &childRect,
-                        Qt::Alignment alignment)
+                        Qt::Alignment alignment,
+                        const QPainterPath &clipPath = QPainterPath())
     {
-        icon->paint(painter, childRect, alignment, this);
+        icon->paint(painter, childRect, alignment, clipPath, this);
         maskApplied = false;
     }
     
@@ -159,12 +160,12 @@ public:
         delete this;
     }
     
-    void setImplData(IconMaskedData data)
+    void setImplData(HbIconMaskedData *data)
     {
         this->data = data;
     }
     
-    IconMaskedData implData()
+    HbIconMaskedData * implData() const
     {
         return data;
     }
@@ -174,10 +175,10 @@ private:
     {
     }
 
-    HbIconImpl *      icon;
-    IconMaskedData    data;
-    QBitmap           maskBitmap;
-    bool              maskApplied;
+    HbIconImpl        *icon;
+    HbIconMaskedData  *data;
+    QBitmap            maskBitmap;
+    bool               maskApplied;
 };
 
 #endif

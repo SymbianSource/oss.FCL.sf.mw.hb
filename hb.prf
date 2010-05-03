@@ -27,7 +27,7 @@
 # default collections
 isEmpty(HB):HB = hbcore hbwidgets hbutils # hbinput hbfeedback
 QT *= core gui svg network
-symbian:CONFIG += symbian_i18n
+symbian:CONFIG += symbian_i18n skin_icon
 
 include(hb_install.prf)
 
@@ -73,5 +73,5 @@ for(COLLECTION, $$list($$COLLECTIONS)) {
 
 !isEmpty(LINKAGE) {
     LIBS += -L$${HB_LIB_DIR} $${LINKAGE}
-    unix:!symbian:!isEmpty(QMAKE_RPATH):QMAKE_LFLAGS += $${QMAKE_RPATH}$${HB_LIB_DIR}
+    QMAKE_RPATHDIR *= $${HB_LIB_DIR}
 }

@@ -29,6 +29,8 @@
 #include "hbiconimpl_p.h"
 #include <QBitmap>
 
+class HbPixmapIconRenderer;
+
 class HB_AUTOTEST_EXPORT HbPixmapIconImpl : public HbIconImpl
 {
 public :
@@ -37,22 +39,25 @@ public :
                      Qt::AspectRatioMode aspectRatioMode,
                      QIcon::Mode mode,
                      bool mirrored);
-    HbPixmapIconImpl(const QPixmap& pixmap);
+    HbPixmapIconImpl(const QPixmap& pixmap, const QString& name = QString());
     ~HbPixmapIconImpl();
 
     QPixmap pixmap();
     void paint(QPainter* painter,
                const QRectF &rect,
-               Qt::Alignment alignment, HbMaskableIconImpl * maskIconData = 0);
+               Qt::Alignment alignment,
+               const QPainterPath &clipPath = QPainterPath(),
+               HbMaskableIconImpl * maskIconData = 0);
     QSize defaultSize() const;
     QSize size();
-    void destroyMaskedData(IconMaskedData data);
+    void destroyMaskedData(HbIconMaskedData *data);
 
 private :
     void retrievePixmapData();
 
 private:
     QPixmap pixmapData;
+    HbPixmapIconRenderer *pixmapIconRenderer;
 };
 
 #endif

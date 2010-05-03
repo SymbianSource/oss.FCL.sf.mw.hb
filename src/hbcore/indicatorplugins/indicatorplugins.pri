@@ -30,7 +30,7 @@ DEPENDPATH += $$PWD
 PUBLIC_HEADERS += $$PWD/hbindicatorinterface.h
 PUBLIC_HEADERS += $$PWD/hbindicatorplugininterface.h
 
-INTERNAL_HEADERS += $$PWD/hbindicatorpluginmanager_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorpluginmanager_p.h
 
 SOURCES += $$PWD/hbindicatorinterface.cpp
 SOURCES += $$PWD/hbindicatorplugininterface.cpp

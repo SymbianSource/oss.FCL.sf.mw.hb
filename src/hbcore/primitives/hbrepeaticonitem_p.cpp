@@ -130,7 +130,7 @@ void HbRepeatIconItem::paint (QPainter *painter, const QStyleOptionGraphicsItem 
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
-    if(boundingRect().isValid()) {
+  //  if(boundingRect().isValid()) { // There is no geomtry set at any point ? 
 		if(!mConnected) {
 			connect(&mTimer,SIGNAL(timeout()),this,SLOT(updateAnimation()));
 		}
@@ -163,7 +163,7 @@ void HbRepeatIconItem::paint (QPainter *painter, const QStyleOptionGraphicsItem 
             newblit.setMask(mMask);
         }
         painter->drawPixmap(QPointF(0,0),newblit);
-    }
+  //  }
 }
 
 

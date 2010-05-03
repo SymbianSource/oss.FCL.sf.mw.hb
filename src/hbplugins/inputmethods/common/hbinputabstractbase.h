@@ -50,9 +50,11 @@ public:
     virtual void launchAutoCompletionPopup(const QStringList& candidates);
     virtual void closeAutoCompletionPopup();
     virtual void switchMode(int keyCode);
+	virtual void showThaiSpecialCharacters(uint buttonId);
     virtual void starKeySelected();
     virtual void getCandidatePositionAndSize(HbCandidateList *candidatePopup,
                     HbInputVkbWidget *currentKeypad, QPointF & pos,QSizeF & size);
+	virtual bool isSctModeActive() const;
 private:
     Q_DISABLE_COPY(HbInputAbstractMethod)
 };

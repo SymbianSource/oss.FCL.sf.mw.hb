@@ -26,10 +26,17 @@
 #include "hbstyleoptiondataquery.h"
 
 /*!
-    @deprecated HbStyleOptionDataQuery
-        Replaced with HbStyleOptionInputDialog
+    \this class is deprecated. Use HbStyleOptionInputDialog instead.
+
     \class HbStyleOptionDataQuery
     \brief HbStyleOptionDataQuery has the style component for input dialog
+*/
+
+/*!
+    \deprecated HbStyleOptionDataQuery::HbStyleOptionDataQuery()
+        is deprecated. Use HbStyleOptionInputDialog instead.
+
+    Constructor.
 */
 
 HbStyleOptionDataQuery::HbStyleOptionDataQuery():HbStyleOptionPopup()
@@ -40,6 +47,12 @@ HbStyleOptionDataQuery::HbStyleOptionDataQuery():HbStyleOptionPopup()
     modeIcon = 0;
 }
 
+/*!
+    \deprecated HbStyleOptionDataQuery::HbStyleOptionDataQuery(const HbStyleOptionDataQuery &)
+        is deprecated. Use HbStyleOptionInputDialog instead.
+
+    Constructor.
+*/
 HbStyleOptionDataQuery::HbStyleOptionDataQuery(const HbStyleOptionDataQuery &other) :
 HbStyleOptionPopup(other)
 {

@@ -34,7 +34,7 @@
 HbNvgTlvIcon::HbNvgTlvIcon()
         : mNvgIconData(0),
         mVgImageBinder(0),
-        mMirroringMode(false)
+        mMirrored(false)
 {
     mNvgIconData = new HbNvgIconData();
     Q_CHECK_PTR(mNvgIconData);
@@ -48,23 +48,28 @@ HbNvgTlvIcon::~HbNvgTlvIcon()
     delete mOpenVgHandles;
 }
 
-void HbNvgTlvIcon::setPreserveAspectRatio(HbNvgEngine::NvgAlignStatusType preserveAspectSetting,
-        HbNvgEngine::NvgMeetOrSliceType smilFitSetting)
+/*!
+    set the aspectRatio \a preserveAspectSetting and \a smilFitSetting
+    to be applied on the nvgicon.
+*/
+
+void HbNvgTlvIcon::setPreserveAspectRatio(HbNvgEngine::HbNvgAlignType /*preserveAspectSetting*/,
+        HbNvgEngine::HbNvgMeetType /*smilFitSetting*/)
 {
-    (void)preserveAspectSetting;
-    (void)smilFitSetting;    
 }
 
-void HbNvgTlvIcon::rotate(float angle, float x, float y)
+/*!
+    Set the \a angle for rotation of the nvgicon at the
+    coordiantes  \a x and \a y.
+*/
+
+void HbNvgTlvIcon::rotate(float /*angle*/, float /*x*/, float /*y*/)
 {
-    (void)angle;
-    (void)x;
-    (void)y;
 }
 
-void HbNvgTlvIcon::setMirroringMode(bool mirroringMode)
+void HbNvgTlvIcon::enableMirroring(bool mirroringMode)
 {
-    mMirroringMode = mirroringMode;
+    mMirrored = mirroringMode;
 }
 
 void HbNvgTlvIcon::directDraw(const QByteArray &buffer, const QSize &targetSize)
@@ -72,16 +77,16 @@ void HbNvgTlvIcon::directDraw(const QByteArray &buffer, const QSize &targetSize)
     // Try to set user's matrix to path matrix
     VGfloat origMatrix[9];
     vgGetMatrix(origMatrix);
-        
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE); 
-    vgLoadMatrix(origMatrix);   
-    
-    if (mMirroringMode) {
-        vgTranslate((VGfloat)(targetSize.width()), 0); 
+
+    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
+    vgLoadMatrix(origMatrix);
+
+    if (mMirrored) {
+        vgTranslate((VGfloat)(targetSize.width()), 0);
         vgScale(-1.0f, 1.0f);
     }
-        
-       
+
+
 #ifndef __MIRROR_
     vgScale(1.0f, -1.0f);
     vgTranslate(0, (VGfloat)(-targetSize.height()));
@@ -91,7 +96,7 @@ void HbNvgTlvIcon::directDraw(const QByteArray &buffer, const QSize &targetSize)
     QScopedPointer<HbTlvRenderer> iconRenderer(tlvRenderer);
 
     iconRenderer->initialize();
-    
+
     iconRenderer->setVgImageBinder(mVgImageBinder);
 
     iconRenderer->execute();
@@ -104,27 +109,27 @@ void HbNvgTlvIcon::create(const QByteArray &buffer, const QSize &targetSize)
     QScopedPointer<HbTlvIconCreator> iconCreater(tlvIconCreator);
 
     iconCreater->initialize();
-    
+
     iconCreater->execute();
 }
 
-HbNvgEngine::NvgErrorType HbNvgTlvIcon::draw(const QSize &size)
+/*!
+    Draw the nvgicon the nvgicon created of size \a size.
+*/
+HbNvgEngine::HbNvgErrorType HbNvgTlvIcon::draw(const QSize &size)
 {
-    HbNvgEngine::NvgErrorType error = HbNvgEngine::NvgErrNone;
+    HbNvgEngine::HbNvgErrorType error = HbNvgEngine::NvgErrNone;
 
     updateClientMatrices();
 
-    try
-    {
+    try {
         doDraw(size);
-    } catch (const std::bad_alloc & e)
-    {
+    } catch (const std::bad_alloc & e) {
         error = HbNvgEngine::NvgErrNoMemory;
-    } catch (const HbNvgException & e)
-    {
-        error = (HbNvgEngine::NvgErrorType) e.errorID();
+    } catch (const HbNvgException & e) {
+        error = (HbNvgEngine::HbNvgErrorType) e.errorID();
     }
-    
+
     // restore everything as we may have changed matrix mode
     restoreClientMatrices();
 
@@ -151,7 +156,7 @@ void HbNvgTlvIcon::doDraw(const QSize &size)
 
     iconRenderer->execute();
 }
- 
+
 void HbNvgTlvIcon::addPathHandle(VGPath path)
 {
     if (path) {
@@ -161,26 +166,26 @@ void HbNvgTlvIcon::addPathHandle(VGPath path)
 
 void HbNvgTlvIcon::addDrawPathCommand(VGPath path, VGPaintMode paintMode)
 {
-    mOpenVgHandles->addPath(path);	
-    mNvgIconData->encodeInt8(TlvPath);
-    mNvgIconData->encodeInt32(path);
-    mNvgIconData->encodeInt32(paintMode);
+    mOpenVgHandles->addPath(path);
+    mNvgIconData->encodeUint8(TlvPath);
+    mNvgIconData->encodeUint32(path);
+    mNvgIconData->encodeUint32(paintMode);
 }
 
-void HbNvgTlvIcon::addCommand(const quint8 * commandBuffer, int commandBufferLength)
+void HbNvgTlvIcon::addCommand(const quint8 * commandBuffer, qint32 commandBufferLength)
 {
     mNvgIconData->encodeData(commandBuffer, commandBufferLength);
 }
 
-void HbNvgTlvIcon::addCommand(qint8 commandType, const quint8 * commandBuffer, int commandBufferLength)
+void HbNvgTlvIcon::addCommand(qint8 commandType, const quint8 * commandBuffer, qint32 commandBufferLength)
 {
-    mNvgIconData->encodeInt8(commandType);
+    mNvgIconData->encodeUint8(commandType);
     mNvgIconData->encodeData(commandBuffer, commandBufferLength);
 }
 
 void HbNvgTlvIcon::updateClientMatrices()
 {
-	mMatrixMode = vgGeti(VG_MATRIX_MODE);
+    mMatrixMode = vgGeti(VG_MATRIX_MODE);
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     vgGetMatrix(mPathMatrix);
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
@@ -194,6 +199,6 @@ void HbNvgTlvIcon::restoreClientMatrices()
     vgLoadMatrix(mPathMatrix);
     vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
     vgLoadMatrix(mImageMatrix);
-	vgSeti(VG_MATRIX_MODE, mMatrixMode);
+    vgSeti(VG_MATRIX_MODE, mMatrixMode);
 }
 

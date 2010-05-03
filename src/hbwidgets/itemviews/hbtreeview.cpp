@@ -34,6 +34,9 @@
 #include <QItemSelection>
 #include <QGraphicsSceneMouseEvent>
 
+// for QMAP_INT__ITEM_STATE_DEPRECATED's sake
+#include <hbabstractviewitem.h>
+
 /*!
     @alpha
     @hbwidgets
@@ -126,9 +129,8 @@ void HbTreeView::scrollTo(const QModelIndex &index, ScrollHint hint)
     }
 
     if ( itemRecycling()) {
-        bool itemBuffered = d->mContainer->itemByIndex(newIndex);
-        if (! (     itemBuffered
-                &&  hint == PositionAtTop)) {
+        if (    !d->mContainer->itemByIndex(newIndex)
+            ||  hint != EnsureVisible) {
             if ( hint != PositionAtTop ) {
                 // Following two variable applies only for hint EnsureVisible.
                 // It is position relative to the view
@@ -248,13 +250,32 @@ void HbTreeView::rowsInserted(const QModelIndex &parent, int start, int end)
 
     if (d->isParentValid(parent)) {
         if (isExpanded(parent) || parent == d->mModelIterator->rootIndex()) {
-            HbAbstractItemView::rowsInserted(parent, start, end);
+            int lastStartPoint = 0;
+            for (int i = start; i <= end; ++i) {
+                QModelIndex newParent = d->treeModelIterator()->index(i, parent);
+                int childCount = d->treeModelIterator()->childCount(newParent);
+                if (childCount > 0 && isExpanded(newParent)) {
+                    HbAbstractItemView::rowsInserted(parent, lastStartPoint, i);
+                    lastStartPoint = i;
+                    rowsInserted(newParent, 0, childCount - 1);
+                }
+            }
+
+            HbAbstractItemView::rowsInserted(parent, lastStartPoint, end);
+
+            if (d->animationEnabled(true)) {
+                if (d->mInSetExpanded) {
+                    d->startAppearEffect("treeviewitem", "expand", parent, start, end);
+                } else {
+                    d->startAppearEffect("viewitem", "appear", parent, start, end);
+                }
+            }
         }
 
         HbAbstractViewItem *parentItem = d->mContainer->itemByIndex(parent);
         if (parentItem) {
             parentItem->updateChildItems();
-        }            
+        }
     }
 }
 
@@ -282,10 +303,43 @@ void HbTreeView::rowsRemoved(const QModelIndex &parent, int start, int end)
             } 
         }  
 
-        if (isExpanded(parent) || parent == d->mModelIterator->rootIndex()) {
+        if (isExpanded(parent) || parent == d->mModelIterator->rootIndex() || d->mInSetExpanded) {
+            bool animate = d->animationEnabled(false);
+
+            QList<HbAbstractViewItem *> items = d->mContainer->items();
             for (int i = d->mItemsToBeDeleted.count() - 1; i >= 0; --i) {
                 int pos = d->mItemsToBeDeleted.at(i);
-                d->mContainer->removeItem(pos);
+                
+                HbAbstractViewItem *item = items.at(pos);
+                if (item) {
+                    if (animate) {
+                        HbEffect::cancel(item, "appear");
+                        HbEffect::cancel(item, "expand");
+                        
+                        QString effectType;
+                        QString itemType;
+                        if (d->mInSetExpanded) {
+                            effectType = "collapse";
+                            itemType = "treeviewitem";
+                        } else {
+                            effectType = "disappear";
+                            itemType = "viewitem";
+                        }
+
+                        item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+                        HbEffect::start(item,
+                                itemType,
+                                effectType,
+                                d->mContainer,
+                                "animationFinished");
+                        
+                        if (HbEffect::effectRunning(item, effectType)) {
+                            d->mContainer->removeItem(pos, animate);
+                        }
+                    } else {
+                        d->mContainer->removeItem(pos, animate);
+                    }
+                }
             }
         }
 
@@ -294,8 +348,6 @@ void HbTreeView::rowsRemoved(const QModelIndex &parent, int start, int end)
             parentItem->updateChildItems();
         }
     }
-
-    d->mItemsToBeDeleted.clear();
 }
 
 /*!
@@ -305,19 +357,21 @@ void HbTreeView::rowsAboutToBeRemoved(const QModelIndex &index, int start, int e
 {
     Q_D(HbTreeView);
 
-    d->mItemsToBeDeleted.clear();
+    if (d->isParentValid(index)) {
+        d->mItemsToBeDeleted.clear();
         
-    QList <HbAbstractViewItem *> items = d->mContainer->items();
-    int itemCount = items.count();
+        QList <HbAbstractViewItem *> items = d->mContainer->items();
+        int itemCount = items.count();
 
-    // Add the view items given as parameters and all their child items to a list for deletion.    
-    for (int i = start; i <= end; ++i) {
-        QModelIndex parent = model()->index(i, 0, index);
-        
-        for (int j = 0; j < itemCount; ++j) {
-            QModelIndex itemIndex = items.at(j)->modelIndex();
-            if (itemIndex == parent || d->isChild(itemIndex, parent)) {
-                d->mItemsToBeDeleted.append(j);
+        // Add the view items given as parameters and all their child items to a list for deletion.
+        for (int i = start; i <= end; ++i) {
+            QModelIndex parent = model()->index(i, 0, index);
+
+            for (int j = 0; j < itemCount; ++j) {
+                QModelIndex itemIndex = items.at(j)->modelIndex();
+                if (itemIndex == parent || d->isChild(itemIndex, parent)) {
+                    d->mItemsToBeDeleted.append(j);
+                }
             }
         }
     }
@@ -442,7 +496,7 @@ void HbTreeView::currentSelectionChanged(const QItemSelection &selected, const Q
                             // When node1 will be handled, node2 is unchecked in the map but not yet in the view item
                             childCheckState = parentItems.value(childIndex);
                         } else {
-                            QVariant value = d->mContainer->itemState(childIndex).value(HbTreeViewItem::CheckStateKey);
+                            QVariant value = d->mContainer->itemTransientState(childIndex).value("checkState");
                             if (value.isValid()) {
                                 childCheckState = (Qt::CheckState)value.toInt();
                             }
@@ -478,7 +532,10 @@ void HbTreeView::currentSelectionChanged(const QItemSelection &selected, const Q
                 item->setCheckState(iterator.value());
             } 
 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
             d->mContainer->setItemStateValue(iterator.key(), HbAbstractViewItem::CheckStateKey, iterator.value());
+#endif
+            d->mContainer->setItemTransientStateValue(iterator.key(), "checkState", iterator.value());
             iterator++;
         }
 
@@ -496,9 +553,30 @@ void HbTreeView::setExpanded(const QModelIndex &index, bool expanded)
     Q_D(HbTreeView);
 
     if (isExpanded(index) != expanded) {
-        d->treeModelIterator()->itemStateChanged(index, HbTreeViewItem::ExpansionKey);
-        HbTreeItemContainer *container = qobject_cast<HbTreeItemContainer *>(d->mContainer);
-        container->setExpanded(index, expanded);
+        d->mInSetExpanded = true;
+        d->treeModelIterator()->itemExpansionChanged(index);
+
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+        d->mContainer->setItemStateValue(index, HbTreeViewItem::ExpansionKey, expanded);
+#endif
+        d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
+
+        int childCount = d->treeModelIterator()->childCount(index) - 1;
+
+        if (expanded) {
+            rowsAboutToBeInserted(index, 0, childCount);
+            rowsInserted(index, 0, childCount);
+        } else {
+            rowsAboutToBeRemoved(index, 0, childCount);
+            rowsRemoved(index, 0, childCount);
+        }
+
+        HbTreeViewItem *item = qobject_cast<HbTreeViewItem *>(itemByIndex(index));
+        if (item) {
+            item->setExpanded(expanded);
+        } 
+
+        d->mInSetExpanded = false;
     }
 }
 
@@ -511,8 +589,12 @@ bool HbTreeView::isExpanded(const QModelIndex &index) const
 {
     Q_D(const HbTreeView);
 
-    HbTreeItemContainer *container = qobject_cast<HbTreeItemContainer *>(d->mContainer);
-    return container->isExpanded(index);
+    QVariant flags = d->mContainer->itemTransientState(index).value("expanded");
+    if (flags.isValid() && flags.toBool() == true) {
+        return true;
+    } else {
+        return false;
+    }
 }
 /*!
     Overrides default indentation of tree view items defined in style sheet.
@@ -561,41 +643,6 @@ void HbTreeView::setRootIndex(const QModelIndex &index)
     //Q_D(HbTreeView);
     HbAbstractItemView::setRootIndex(index);
     setExpanded(index, true); 
-}
-
-/*!
-    This function handles expanding and collapsing parent items in tree view. 
-    Parent item expands and collapses, when pressed down is released
-    exluding following use cases:
-    \li HbTreeViewItem::selectionAreaContains() has returned true for pressed down
-    \li view is panned or scrolled 
-
-    \sa HbTreeViewItem::selectionAreaContains() 
-*/
-void HbTreeView::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbTreeView);
-
-    HbTreeViewItem* hitItem = qobject_cast<HbTreeViewItem*>(d->itemAt(event->scenePos()));
-
-    // check whether expansion collapsion can be done
-    if (    d->mHitItem
-        &&  d->mHitItem == hitItem
-        &&  hitItem->primitive(HbStyle::P_TreeViewItem_expandicon)
-        &&  hitItem->flags().testFlag(QGraphicsItem::ItemIsFocusable)
-        &&  !d->mWasScrolling
-        &&  (   d->mSelectionMode == SingleSelection
-            || !d->mSelectionSettings.testFlag(HbAbstractItemViewPrivate::Selection))) {
-        Hb::InteractionModifiers modifiers = 0;
-        if (hitItem->isExpanded()) {
-            d->mInstantClickedModifiers |= Hb::ModifierExpandedItem;
-        } else {
-            d->mInstantClickedModifiers |= Hb::ModifierCollapsedItem;
-        }
-        hitItem->setExpanded(!hitItem->isExpanded());
-    }
-
-    HbAbstractItemView::mouseReleaseEvent(event);
 }
 
 /*!

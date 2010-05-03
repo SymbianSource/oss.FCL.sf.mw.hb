@@ -76,8 +76,12 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
 
+    QPointF fadeLengths() const;
+    void setFadeLength(qreal length);
+    void setFadeLengths(qreal xLength, qreal yLength);
+    void setFadeLengths(const QPointF& lengths);
+
 protected:
-    
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     void resizeEvent ( QGraphicsSceneResizeEvent * event );
     void changeEvent(QEvent *event);

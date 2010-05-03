@@ -27,18 +27,36 @@
 
 /*!
     \class HbStyleOptionProgressDialog
-    \brief HbStyleOptionProgressDialog has the style component for progress note primitives
+    \brief HbStyleOptionProgressDialog has the style component for progress dialog primitives
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionProgressDialog::HbStyleOptionProgressDialog()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionProgressDialog::HbStyleOptionProgressDialog()  :
-    HbStyleOption()
+    HbStyleOption(),
+    icon(),
+    text()
 {
     type = Type;
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionProgressDialog::HbStyleOptionProgressDialog(const HbStyleOptionProgressDialog&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionProgressDialog::HbStyleOptionProgressDialog(const HbStyleOptionProgressDialog &other)  :
-HbStyleOption(other)
+    HbStyleOption(other),
+    icon(other.icon),
+    text(other.text)
 {
     type = Type;
     version = Version;

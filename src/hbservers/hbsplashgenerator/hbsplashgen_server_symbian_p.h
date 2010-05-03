@@ -28,6 +28,9 @@
 
 #include <QObject>
 #include <QStringList>
+#include <qs60mainappui.h>
+#include <qs60maindocument.h>
+#include <qs60mainapplication.h>
 
 class HbSplashGenerator;
 class HbSplashGenServerSymbian;
@@ -45,6 +48,25 @@ private slots:
 
 private:
     HbSplashGenServerSymbian *mServer;
+};
+
+class HbSplashGenAppUi : public QS60MainAppUi
+{
+public:
+    TBool FrameworkCallsRendezvous() const;
+};
+
+class HbSplashGenDocument : public QS60MainDocument
+{
+public:
+    HbSplashGenDocument(CEikApplication &app);
+    CEikAppUi *CreateAppUiL();
+};
+
+class HbSplashGenApplication : public QS60MainApplication
+{
+protected:
+    CApaDocument *CreateDocumentL();
 };
 
 #endif

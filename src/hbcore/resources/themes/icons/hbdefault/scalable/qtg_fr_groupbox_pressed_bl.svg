@@ -11,5 +11,5 @@
 </linearGradient>
 </defs>
 </g>
-<path d="M6,9C3.243,9,1,6.757,1,4V0H0v4c0,3.3,2.7,6,6,6h4V9H6z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
+<path d="M6,9C3.243,9,1,6.757,1,4V0H0v4c0,3.3,2.7,6,6,6h4V9H6z" fill-opacity="0.2" stroke-opacity="0.2"/>
 </svg>

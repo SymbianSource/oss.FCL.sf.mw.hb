@@ -29,6 +29,7 @@
 #include <QIcon>
 #include <QIconEngine>
 #include <QDataStream>
+#include "hbthemecommon_p.h"
 #include "hbglobal.h"
 #include "hbicon.h"
 
@@ -77,18 +78,19 @@ public:
     void setColor(const QColor &color);
     QColor color() const;
 
-    void paint( QPainter *painter,
-                const QRect &rect,
-                QIcon::Mode mode,
-                QIcon::State state );
+    void paint(QPainter *painter,
+               const QRect &rect,
+               QIcon::Mode mode,
+               QIcon::State state);
 
-    void paint( QPainter *painter,
-                const QRectF &rect,
-                Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
-                Qt::Alignment alignment = Qt::AlignCenter,
-                QIcon::Mode mode = QIcon::Normal,
-                QIcon::State state = QIcon::Off ) const;
+    void paint(QPainter *painter,
+               const QRectF &rect,
+               Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
+               Qt::Alignment alignment = Qt::AlignCenter,
+               QIcon::Mode mode = QIcon::Normal,
+               QIcon::State state = QIcon::Off);
 
+    void resetIconImpl() const;
     HbIconAnimator *animator() const;
     void setAnimator(HbIconAnimator *animator);
     bool isMirrored() const;
@@ -98,26 +100,26 @@ public:
     bool removeBadge(const HbIcon& badge);
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;
-
+    HbIconFormatType iconFormatType() const;    
 private:
-    void init();
+    void ensureSignalConnections();
     QPixmap getPixmapFromAnimation() const;
     
-    HbIconImpl* paintHelper( const QSizeF &size,
-        Qt::AspectRatioMode aspectRatioMode,
-        QIcon::Mode,
-        QIcon::State) const;
+    HbIconImpl* paintHelper(const QSizeF &size,
+                            Qt::AspectRatioMode aspectRatioMode,
+                            QIcon::Mode,
+                            QIcon::State);
 
     bool loadFailed(QIcon::Mode mode, QIcon::State state) const;
 
     HbIconAnimation *animation() const;
 
 public slots:
-    void clearStoredIconContent(bool resetIconSize = false);
+    void clearStoredIconContent(bool resetIconSize = false, bool unloadedByServer = false);
     void clearStoredNonAnimIconContent();
 
 private slots:
-    void updateTheme();
+    void themeChange(const QStringList &updatedFiles);
     void handleLayoutDirectionChanged();
     void handleDefaultSizeAdjustmentChanged();
     void handleAnimationUpdated();

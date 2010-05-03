@@ -28,7 +28,6 @@ TEMPLATE = lib
 TARGET = $$hbLibraryTarget(HbFeedback)
 DEFINES += BUILD_HB_FEEDBACK
 DEFINES += HB_INSTALL_DIR=\"\\\"$${HB_INSTALL_DIR}\\\"\"
-developer:DEFINES += BUILD_HB_INTERNAL
 
 INCLUDEPATH += .
 DEPENDPATH += .
@@ -42,7 +41,7 @@ include(player/player.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbfeedback/hbfeedback.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbfeedback/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$INTERNAL_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -68,14 +67,13 @@ hbAddLibrary(hbcore/HbCore)
 symbian {
     LIBS += -ltouchfeedback -lcone -lws32
     LIBS        += -ltacticon
-    INCLUDEPATH += /epoc32/include/platform/mw
+    INCLUDEPATH += $${EPOCROOT}epoc32/include/platform/mw
 
-    defFilePath = ..
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022E9D
     # for touchfeedback headers
-    INCLUDEPATH += /epoc32/include/mw
+    INCLUDEPATH += $${EPOCROOT}epoc32/include/mw
 
     hbExportHeaders(hbfeedback)
 }

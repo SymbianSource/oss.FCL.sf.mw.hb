@@ -27,13 +27,15 @@
 #include "hbpushbutton_p.h"
 #include "hbstyle.h"
 #include "hbstyleoptionpushbutton.h"
-#include "hbgesturefilter.h"
-#include "hbgesture.h"
 #include "hbframedrawerpool_p.h"
 #include "hbnamespace.h"
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
 #include "hbeffectinternal_p.h"
+#endif
+
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
 #endif
 
 #include <QGraphicsSceneMouseEvent>
@@ -133,8 +135,6 @@ HbPushButtonPrivate::HbPushButtonPrivate() :
     focusItem(0),
     orientation(Qt::Vertical),
     backgroundFrameDrawer(0),
-    gestureFilter(0),
-    gestureLongpressed(0),
     longPressTimer(0),
     textAlignment(Qt::AlignHCenter | Qt::AlignVCenter ),
     additionalTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter ),
@@ -155,10 +155,7 @@ HbPushButtonPrivate::HbPushButtonPrivate() :
  */
 HbPushButtonPrivate::~HbPushButtonPrivate()
 {
-    if(gestureFilter){
-        delete gestureFilter;
-        gestureFilter = NULL;
-    }
+
 }
 
 /*
@@ -205,6 +202,12 @@ void HbPushButtonPrivate::createPrimitives()
 
     if( !touchArea ) {
         touchArea = q->style()->createPrimitive( HbStyle::P_PushButton_toucharea, q );
+        if(QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>(touchArea)) {
+            ta->grabGesture(Qt::TapGesture);
+            q->ungrabGesture(Qt::TapGesture);
+        } else {
+            q->grabGesture(Qt::TapGesture);
+        }
     }
 
     if( !focusItem ) {
@@ -215,28 +218,7 @@ void HbPushButtonPrivate::createPrimitives()
     }
 }
 
-/*
-  initGesture.
- */
-void HbPushButtonPrivate::initGesture()
-{
-    Q_Q(HbPushButton);
-    // Create gesture filter
-    gestureFilter = new HbGestureSceneFilter( Qt::LeftButton, q );
-    // Add gestures for longpress
-    gestureLongpressed = new HbGesture( HbGesture::longpress,5 );
-    gestureFilter->addGesture( gestureLongpressed );
 
-    // scene event filter for gesture can be installed
-    // if widget is already added to scene
-    if (q->scene()) {
-        q->installSceneEventFilter(gestureFilter);
-        if (touchArea) {
-            touchArea->installSceneEventFilter(gestureFilter);
-        }
-    }
-
-}
 
 void HbPushButtonPrivate::_q_handleLongPress(QPointF point)
 {
@@ -261,8 +243,6 @@ void HbPushButtonPrivate::initialize()
     Q_Q(HbPushButton);
     q_ptr = q;
     createPrimitives();
-    initGesture();
-
 }
 
 /*!
@@ -274,8 +254,7 @@ HbPushButton::HbPushButton( QGraphicsItem *parent )
 {
     Q_D(HbPushButton);
     d->initialize();
-    connect( d->gestureLongpressed, SIGNAL(longPress(QPointF)),
-        this, SLOT(_q_handleLongPress(QPointF)));
+
     setProperty("state", "normal");
      
 }
@@ -290,8 +269,7 @@ HbPushButton::HbPushButton(const QString &text, QGraphicsItem *parent)
     Q_D(HbPushButton);
     d->text = text;
     d->initialize();
-    connect( d->gestureLongpressed, SIGNAL(longPress(QPointF)),
-        this, SLOT(_q_handleLongPress(QPointF)) );
+
     setProperty("state", "normal");
      
 
@@ -308,8 +286,7 @@ HbPushButton::HbPushButton( const HbIcon &icon, const QString &text, QGraphicsIt
     d->icon = icon;
     d->text = text;
     d->initialize();
-    connect( d->gestureLongpressed, SIGNAL(longPress(QPointF)),
-        this, SLOT(_q_handleLongPress(QPointF)) );
+
     setProperty("state", "normal");
 
 }
@@ -328,8 +305,7 @@ HbPushButton::HbPushButton( const HbIcon &icon, const QString &text,
     d->text = text;
     d->initialize();
     d->orientation = orientation;
-    connect( d->gestureLongpressed, SIGNAL(longPress(QPointF)),
-        this, SLOT(_q_handleLongPress(QPointF)) );
+
     setProperty("state", "normal");
             
 }
@@ -339,10 +315,7 @@ HbPushButton::HbPushButton( const HbIcon &icon, const QString &text,
  */
 HbPushButton::~HbPushButton()
 {
-    Q_D(HbPushButton);
-    if( d->gestureFilter ) {
-        removeSceneEventFilter( d->gestureFilter );
-    }
+
 }
 
 /*!
@@ -685,6 +658,10 @@ bool HbPushButton::isStretched() const
 }
 
 /*!
+
+    \deprecated HbPushButton::primitive(HbStyle::Primitive)
+        is deprecated.
+
     \reimp
  */
 QGraphicsItem* HbPushButton::primitive( HbStyle::Primitive primitive ) const
@@ -771,10 +748,6 @@ void HbPushButton::updatePrimitives()
 HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem * parent) :
     HbAbstractButton(dd, parent)
 {
-    Q_D(HbPushButton);
-    d->initGesture();
-    connect( d->gestureLongpressed, SIGNAL(longPress(QPointF)),
-        this, SLOT(_q_handleLongPress(QPointF)) );
 }
 
 /*!
@@ -876,6 +849,7 @@ void HbPushButton::keyReleaseEvent(QKeyEvent *event)
  */
 void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifndef HB_GESTURE_FW
     Q_D(HbPushButton);
     HbAbstractButton::mousePressEvent(event);
     HbStyleOptionPushButton buttonOption;
@@ -889,8 +863,12 @@ void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
     }
 #endif
     setProperty("state", "pressed");    
+#else
+    Q_UNUSED(event)
+#endif
 }
 
+#ifndef HB_GESTURE_FW
 /*!
     \reimp
  */
@@ -924,11 +902,61 @@ void HbPushButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
     if (d->down) {
-        setProperty("state", "pressed"); 
+        setProperty("state", "pressed");
     } else {
-        setProperty("state", "normal"); 
+        setProperty("state", "normal");
     }
 }
+#endif
+
+
+#ifdef HB_GESTURE_FW
+void HbPushButton::gestureEvent(QGestureEvent *event)
+{
+    Q_D(HbPushButton);
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted:{
+#ifdef HB_EFFECTS
+                HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
+#endif
+                if(d->checkable && !d->checked){
+                    setProperty("state", "latched");
+                }else if(!d->checkable){
+                    setProperty("state", "pressed");
+                }
+            }
+            break;
+        case Qt::GestureUpdated:
+            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
+                d->longPress = true;
+                emit longPress(event->mapToGraphicsScene(tap->position()));
+            }
+            break;
+        case Qt::GestureCanceled:
+            setProperty("state", "normal");
+            break;
+        case Qt::GestureFinished:{
+#ifdef HB_EFFECTS
+                HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
+#endif
+                if( d->checkable && !d->checked){
+                    setProperty("state", "latched");
+                }else {                    
+                    setProperty("state", "normal");
+                }
+
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    HbAbstractButton::gestureEvent(event);
+
+}
+#endif
 
 
 /*!
@@ -992,8 +1020,6 @@ void HbPushButton::focusOutEvent(QFocusEvent *event)
  */
 QVariant HbPushButton::itemChange(GraphicsItemChange change, const QVariant &value)
 {
-    Q_D(HbPushButton);
-
     switch ( change ) {
         case ItemEnabledHasChanged:
         case ItemVisibleChange: {
@@ -1001,14 +1027,6 @@ QVariant HbPushButton::itemChange(GraphicsItemChange change, const QVariant &val
             }
             break;
         case ItemSceneHasChanged: {
-                // scene event filter for gestures can be installed
-                // once the widget has been added to the scene
-                if(!value.isNull() && d->gestureFilter) {
-                    installSceneEventFilter(d->gestureFilter);
-                    if (d->touchArea) {
-                        d->touchArea->installSceneEventFilter(d->gestureFilter);
-                    }
-                }
                 updatePrimitives();
             }
             break;

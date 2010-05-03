@@ -5,11 +5,11 @@
 <g>
 <path d="M0,0v4c0,3.3,2.7,6,6,6h4V0H0z" fill="url(#SVGID_1_)"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="5" x2="5" y1="-90.3325" y2="9.8478">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="5" x2="5" y1="-90.3325" y2="9.8475">
 <stop offset="0" style="stop-color:#66B8CC"/>
 <stop offset="1" style="stop-color:#3F89A9"/>
 </linearGradient>
 </defs>
 </g>
-<path d="M6,9C3.243,9,1,6.757,1,4V0H0v4c0,3.3,2.7,6,6,6h4V9H6z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
+<path d="M6,9C3.243,9,1,6.757,1,4V0H0v4c0,3.3,2.7,6,6,6h4V9H6z" fill-opacity="0.2" stroke-opacity="0.2"/>
 </svg>

@@ -30,7 +30,7 @@
 
 static const qint16 NvgHeaderSize  = 0x34;
 
-enum OpenVgApi  {
+enum HbOpenVgApi  {
     VgClear = 0,
     VgSeti,
     VgSetf,
@@ -68,7 +68,7 @@ enum OpenVgApi  {
     VgBindImage,
     VgUnBindImage,
     VgFlush,
-    VgAPICount
+    VgApiCount
 };
 
 #endif

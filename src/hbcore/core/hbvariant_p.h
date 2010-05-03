@@ -120,7 +120,7 @@ public:
     
 private:
     HbVariantData * initializeData();
-    void fillStringData(const QString &str);
+    void fillStringData(const QChar *str, int size);
     void fillColorData(const QColor &col);
     QString getString() const;
     QColor getColor() const;
@@ -139,6 +139,19 @@ private:
         }
         Q_ASSERT(data != 0);
         return data;
+    }
+    static bool reservesMemory(const HbVariantData *data)
+    {
+        return data->mDataType == HbVariant::String
+               || data->mDataType == HbVariant::Color;
+    }
+    void freeMemory(HbVariantData *data)
+    {
+        if(reservesMemory(data)) {
+            HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
+            data->mData.offset = -1;
+            data->stringSize = 0;
+        }
     }
 
     void detach();

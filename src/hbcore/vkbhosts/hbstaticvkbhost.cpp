@@ -78,7 +78,7 @@ Constructs the object.
 */
 HbStaticVkbHost::HbStaticVkbHost(HbWidget *widget) : HbAbstractVkbHost(new HbStaticVkbHostPrivate(this, widget))
 {  
-    setParent(widget);
+    setParent(widget);  
 }
 
 /*!

@@ -34,17 +34,14 @@
 #include <QApplication>
 
 #include "hbmaskableiconimpl_p.h"
+#include "hbvgimageiconrenderer_p.h"
 #include "hbeglstate_p.h"
+#include "hbpixmapiconrenderer_p.h"
 
-struct HbSgImageMaskedIcon
-{
-    QPixmap    currentPixmap;
-};
-
-typedef EGLImageKHR( *pfnEglCreateImageKHR)(EGLDisplay, EGLContext,
+typedef EGLImageKHR(*pfnEglCreateImageKHR)(EGLDisplay, EGLContext,
         EGLenum, EGLClientBuffer, EGLint*);
-typedef EGLBoolean( *pfnEglDestroyImageKHR)(EGLDisplay, EGLImageKHR);
-typedef VGImage( *pfnVgCreateEGLImageTargetKHR)(VGeglImageKHR);
+typedef EGLBoolean(*pfnEglDestroyImageKHR)(EGLDisplay, EGLImageKHR);
+typedef VGImage(*pfnVgCreateEGLImageTargetKHR)(VGeglImageKHR);
 
 HbSgimageIconImpl::HbSgimageIconImpl(const HbSharedIconInfo &iconData,
                                      const QString& name,
@@ -58,28 +55,19 @@ HbSgimageIconImpl::HbSgimageIconImpl(const HbSharedIconInfo &iconData,
                    aspectRatioMode,
                    mode,
                    mirrored),
-        vgImage(VG_INVALID_HANDLE),
-        readyToRender(false),
-        specialCaseApplied(false),
-        opacityPaint(VG_INVALID_HANDLE),
-        lastOpacity(1.0)
-
+        vgImageRenderer(0),
+        pixmapIconRenderer(0)
 {
-    eglStates = HbEglStates::global();
-    eglStates->ref();
     retrieveSgImageData();
 }
 
 HbSgimageIconImpl::~HbSgimageIconImpl()
 {
-    if (vgImage) {
-        eglStates->removeVGImage(&vgImage);
+    if (vgImageRenderer) {
+        delete vgImageRenderer;
     }
-
-    eglStates->deref(eglStates);
-
-    if (opacityPaint) {
-        vgDestroyPaint(opacityPaint);
+    if (pixmapIconRenderer) {
+        delete pixmapIconRenderer;
     }
 }
 
@@ -127,133 +115,72 @@ void HbSgimageIconImpl::retrieveSgImageData()
     contentSize = QSize(sharedIconData.sgImageData.width, sharedIconData.sgImageData.height);
 }
 
-void HbSgimageIconImpl::paint(QPainter *painter,
-                              const QRectF &rect,
+VGImage HbSgimageIconImpl::getVgImage(HbIconImpl * impl, QPainter *)
+{
+    return ((HbSgimageIconImpl *)impl)->getVgImageFromSgImage();
+}
+
+void HbSgimageIconImpl::paint(QPainter* painter,
+                              const QRectF& rect,
                               Qt::Alignment alignment,
-                              HbMaskableIconImpl *maskIconData)
+                              const QPainterPath &clipPath,
+                              HbMaskableIconImpl * maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
-    qDebug() << "HbSgimageIconImpl::paint()-->"<<this->fileName;
+    qDebug() << "HbSgimageIconImpl::paint()-->" << this->fileName;
 #endif
 
     QSizeF renderSize(contentSize);
+
     QPointF topLeft = setAlignment(rect, renderSize, alignment);
+
     bool maskApplied = false;
-    if (maskIconData && maskIconData->maskChanged()) {
+    if (maskIconData && (maskIconData->maskChanged() ||  maskIconData->implData())) {
         maskApplied = true;
     }
 
-    if (readyToRender && !maskApplied) {
-        if (maskIconData) {
-            HbSgImageMaskedIcon * mi = (HbSgImageMaskedIcon *) maskIconData->implData();
-            if (mi) {
-                painter->drawPixmap(topLeft, mi->currentPixmap, mi->currentPixmap.rect());
-                return;
-            }
+    if ((painter->paintEngine()->type() != QPaintEngine::OpenVG) ||
+         maskApplied || pixmapIconRenderer) {
+        // going to pixmap, vgimage may not be required any more
+        if (vgImageRenderer) {
+            delete vgImageRenderer;
+            vgImageRenderer = 0;
         }
-        painter->drawPixmap(topLeft, currentPixmap, currentPixmap.rect());
+        
+        if (!pixmapIconRenderer) {
+            painter->beginNativePainting();
+            pixmap();
+            painter->endNativePainting();
+            
+            pixmapIconRenderer = new HbPixmapIconRenderer(currentPixmap, this);
+            pixmapIconRenderer->setColor(iconColor);
+            pixmapIconRenderer->setMode(mode);
+        }
+
+        pixmapIconRenderer->draw(painter, topLeft, clipPath, maskIconData);
         return;
     }
-    if ((iconColor.isValid()) || (mode != QIcon::Normal) ||
-            (painter->paintEngine()->type() != QPaintEngine::OpenVG) ||
-            (maskApplied)) {
-        applySpecialCases(painter, topLeft, maskIconData);
-        return;
-    }
-    if (vgImage == VG_INVALID_HANDLE) {
+
+    if (!vgImageRenderer) {
+        VGImage vgImage = VG_INVALID_HANDLE;
         vgImage = getVgImageFromSgImage();
-        if (vgImage == VG_INVALID_HANDLE) {
-            return;
-        }
-        eglStates->addVGImage(&vgImage);
-        opacityPaint = VG_INVALID_HANDLE;
-    }
-
-    VGint imageMode      = vgGeti(VG_IMAGE_MODE);
-    VGint matrixMode     = vgGeti(VG_MATRIX_MODE);
-    VGPaint oldFillPaint = VG_INVALID_HANDLE;
-    VGPaint oldStrkPaint = VG_INVALID_HANDLE;
-    VGint   blendMode    = 0;
-
-    updatePainterTransformation(painter, topLeft);
-
-    qreal opacity = painter->opacity();
-
-    if (opacity != lastOpacity) {
-        lastOpacity = opacity;
-        if (opacity != 1.0) {
-            if (opacityPaint == VG_INVALID_HANDLE) {
-                opacityPaint = vgCreatePaint();
-            }
-            VGfloat opaquePaint[] = {1.0f, 1.0f, 1.0f, opacity};
-            if (opacityPaint != VG_INVALID_HANDLE) {
-                vgSetParameteri(opacityPaint, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-                vgSetParameterfv(opacityPaint, VG_PAINT_COLOR, 4, opaquePaint);
-            }
+        if (vgImage != VG_INVALID_HANDLE) {
+            vgImageRenderer = new HbVgImageIconRenderer(vgImage, renderSize.toSize(), this);
+            vgImageRenderer->setVgImageCreator(getVgImage);
+            vgImageRenderer->setColor(iconColor);
+            vgImageRenderer->setMode(mode);
         }
     }
 
-    if (opacity != 1.0 && opacityPaint != VG_INVALID_HANDLE) {
-        oldFillPaint = vgGetPaint(VG_FILL_PATH);
-        oldStrkPaint = vgGetPaint(VG_STROKE_PATH);
-        blendMode = vgGeti(VG_BLEND_MODE);
-        vgSeti(VG_BLEND_MODE, VG_BLEND_SRC_OVER);
-        vgSetPaint(opacityPaint, VG_FILL_PATH | VG_STROKE_PATH);
-    }
-
-    if (opacity == 1.0) {
-        vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
-    } else {
-        vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_MULTIPLY);
-    }
-
-#ifdef HB_ICON_TRACES
-    qDebug() <<  "HbSgimageIconImpl::paint() " + this->fileName;
-#endif
-    vgDrawImage(vgImage);
-    eglWaitClient();
-
-    vgSeti(VG_MATRIX_MODE, matrixMode);
-    vgSeti(VG_IMAGE_MODE, imageMode);
-
-    if (oldFillPaint) {
-        vgSetPaint(oldFillPaint, VG_FILL_PATH);
-    }
-
-    if (oldStrkPaint) {
-        vgSetPaint(oldStrkPaint, VG_STROKE_PATH);
-    }
-
-    if (blendMode) {
-        vgSeti(VG_BLEND_MODE, blendMode);
+    if (vgImageRenderer) {
+        vgImageRenderer->draw(painter, topLeft, clipPath);
+        eglWaitClient();
+        return;
     }
 }
 
-void HbSgimageIconImpl::updatePainterTransformation(QPainter *painter, const QPointF &pos)
-{
-    VGfloat devh = painter->device()->height() - 1;
-    QTransform viewport(1.0f, 0.0f, 0.0f,
-                        0.0f, -1.0f, 0.0f,
-                        0.5f, devh + 0.5f, 1.0f);
-    QTransform imageTransform = painter->transform() * viewport;
-    imageTransform.translate(pos.x(), pos.y());
-
-    VGfloat mat[9];
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-    mat[0] = imageTransform.m11();
-    mat[1] = imageTransform.m12();
-    mat[2] = imageTransform.m13();
-    mat[3] = imageTransform.m21();
-    mat[4] = imageTransform.m22();
-    mat[5] = imageTransform.m23();
-    mat[6] = imageTransform.m31();
-    mat[7] = imageTransform.m32();
-    mat[8] = imageTransform.m33();
-    vgLoadMatrix(mat);
-}
-
-QPointF HbSgimageIconImpl::setAlignment(const QRectF &rect,
-                                        QSizeF &renderSize,
+QPointF HbSgimageIconImpl::setAlignment(const QRectF& rect,
+                                        QSizeF& renderSize,
                                         Qt::Alignment alignment)
 {
     QPointF topLeft = rect.topLeft();
@@ -288,15 +215,17 @@ VGImage HbSgimageIconImpl::getVgImageFromSgImage()
 #endif
     }
 
+    
+    
     EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
     // Retrieve the extensions
     pfnEglCreateImageKHR eglCreateImageKHR = (pfnEglCreateImageKHR)
-        eglGetProcAddress("eglCreateImageKHR");
+            eglGetProcAddress("eglCreateImageKHR");
     pfnEglDestroyImageKHR eglDestroyImageKHR = (pfnEglDestroyImageKHR)
-        eglGetProcAddress("eglDestroyImageKHR");
+            eglGetProcAddress("eglDestroyImageKHR");
     pfnVgCreateEGLImageTargetKHR vgCreateEGLImageTargetKHR = (pfnVgCreateEGLImageTargetKHR)
-        eglGetProcAddress("vgCreateEGLImageTargetKHR");
+            eglGetProcAddress("vgCreateEGLImageTargetKHR");
 
     // Create an EGLImage based on the RSgImage via extensions, specifying the
     // EGL_IMAGE_PRESERVED_KHR attribute as EGL_TRUE to ensure its contents
@@ -316,6 +245,7 @@ VGImage HbSgimageIconImpl::getVgImageFromSgImage()
 
     VGImage vgImage = vgCreateEGLImageTargetKHR((VGeglImageKHR)eglImage);
     eglDestroyImageKHR(display, eglImage);
+    sgImage.Close();
     return vgImage;
 }
 
@@ -324,53 +254,9 @@ QSize HbSgimageIconImpl::size()
     return  contentSize;
 }
 
-void HbSgimageIconImpl::applySpecialCases(QPainter *painter,
-        const QPointF &topLeft,
-        HbMaskableIconImpl *maskIconData)
+
+void HbSgimageIconImpl::destroyMaskedData(HbIconMaskedData *data)
 {
-    painter->beginNativePainting();
-    pixmap();
-    painter->endNativePainting();
-
-    if (!specialCaseApplied) {
-        if ((iconColor.isValid()) && (mode != QIcon::Disabled)) {
-            if (!currentPixmap.isNull()) {
-                QPixmap mask = currentPixmap.alphaChannel();
-                currentPixmap.fill(iconColor);
-                currentPixmap.setAlphaChannel(mask);
-            }
-        }
-        // Apply the mode
-        if (mode != QIcon::Normal) {
-            QStyleOption opt(0);
-            opt.palette = QApplication::palette();
-            currentPixmap = QApplication::style()->generatedIconPixmap(mode, currentPixmap, &opt);
-        }
-        specialCaseApplied = true;
-    }
-
-    if (maskIconData) {
-        HbSgImageMaskedIcon * mi = (HbSgImageMaskedIcon *)maskIconData->implData();
-        if (maskIconData->maskChanged()) {
-            if (!mi) {
-                mi = new HbSgImageMaskedIcon();
-            }
-            mi->currentPixmap = currentPixmap;
-            mi->currentPixmap.setMask(maskIconData->mask());
-            maskIconData->setImplData(mi);
-        }
-        if (mi) {
-            painter->drawPixmap(topLeft, mi->currentPixmap, mi->currentPixmap.rect());
-            readyToRender = true;
-            return;
-        }
-    }
-    painter->drawPixmap(topLeft, currentPixmap, currentPixmap.rect());
-    readyToRender = true;
-}
-
-void HbSgimageIconImpl::destroyMaskedData(IconMaskedData data)
-{
-    delete((HbSgImageMaskedIcon *)data);
+    pixmapIconRenderer->destroyMaskedData(data);
 }
 

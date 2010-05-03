@@ -43,6 +43,7 @@ public:
 public slots:
     void updateIndicator();
     void udpdatePredictionStatus(int newStatus);
+    void updatePredictionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
 
 private:
     Q_DISABLE_COPY(HbInputModeIndicator)

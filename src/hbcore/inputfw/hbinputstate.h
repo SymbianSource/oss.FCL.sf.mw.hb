@@ -48,31 +48,31 @@ class HbInputState
 {
 public:
     HbInputState()
-        : iModeType(HbInputModeNone),
-          iTextCase(HbTextCaseNone),
-          iKeyboardType(HbKeyboardNone),
-          iLanguage(HbInputLanguage())
+        : mModeType(HbInputModeNone),
+          mTextCase(HbTextCaseNone),
+          mKeyboardType(HbKeyboardNone),
+          mLanguage(HbInputLanguage())
     {}
 
-    HbInputState(HbInputModeType aModeType, HbTextCase aTextCase, HbKeyboardType aKeyboardType, const HbInputLanguage &aLanguage = HbInputLanguage())
-        : iModeType(aModeType),
-          iTextCase(aTextCase),
-          iKeyboardType(aKeyboardType),
-          iLanguage(aLanguage)
+    HbInputState(HbInputModeType modeType, HbTextCase textCase, HbKeyboardType keyboardType, const HbInputLanguage &language = HbInputLanguage())
+        : mModeType(modeType),
+          mTextCase(textCase),
+          mKeyboardType(keyboardType),
+          mLanguage(language)
     {}
 
-    void operator=(const HbInputState& aState) {
-        iModeType = aState.iModeType;
-        iTextCase = aState.iTextCase; 
-        iKeyboardType = aState.iKeyboardType;
-        iLanguage = aState.iLanguage;
+    void operator=(const HbInputState& other) {
+        mModeType = other.mModeType;
+        mTextCase = other.mTextCase;
+        mKeyboardType = other.mKeyboardType;
+        mLanguage = other.mLanguage;
     }
 
-    bool operator==(const HbInputState& aState) {
-        if (iModeType == aState.iModeType
-            && iTextCase == aState.iTextCase
-            && iKeyboardType == aState.iKeyboardType
-            && iLanguage == aState.iLanguage) {
+    bool operator==(const HbInputState& other) {
+        if (mModeType == other.mModeType
+            && mTextCase == other.mTextCase
+            && mKeyboardType == other.mKeyboardType
+            && mLanguage == other.mLanguage) {
                 return true;
         }
         return false;
@@ -83,23 +83,23 @@ public:
     states being compared has undefined language value, it will match to any language.
     If both language values are defined, then they are compared directly.
     */
-    bool isMatch(const HbInputState& aState) {
-        if (iModeType == aState.iModeType
-            && iTextCase == aState.iTextCase
-            && iKeyboardType == aState.iKeyboardType
-            && (iLanguage == aState.iLanguage ||
-                iLanguage.undefined() ||           // Undefined matches to anything.
-        aState.iLanguage.undefined())) {
+    bool isMatch(const HbInputState& other) {
+        if (mModeType == other.mModeType
+            && mTextCase == other.mTextCase
+            && mKeyboardType == other.mKeyboardType
+            && (mLanguage == other.mLanguage ||
+                mLanguage.undefined() ||           // Undefined matches to anything.
+        other.mLanguage.undefined())) {
                 return true;
         }
-    return false;
+        return false;
     }
 
-    bool operator!=(const HbInputState& aState) {
-        if (iModeType != aState.iModeType
-            || iTextCase != aState.iTextCase
-            || iKeyboardType != aState.iKeyboardType
-            || iLanguage != aState.iLanguage) {
+    bool operator!=(const HbInputState& other) {
+        if (mModeType != other.mModeType
+            || mTextCase != other.mTextCase
+            || mKeyboardType != other.mKeyboardType
+            || mLanguage != other.mLanguage) {
                 return true;
         }
         return false;
@@ -108,48 +108,48 @@ public:
     /*!
     Returns input mode.
     */
-    HbInputModeType inputMode() const { return iModeType; }
+    HbInputModeType inputMode() const { return mModeType; }
 
     /*!
     Sets input mode.
     */
-    void setInputMode(HbInputModeType newMode) { iModeType = newMode; }
+    void setInputMode(HbInputModeType newMode) { mModeType = newMode; }
 
     /*!
     Returns text case.
     */
-    HbTextCase textCase() const { return iTextCase; }
+    HbTextCase textCase() const { return mTextCase; }
 
     /*!
     Sets text case.
     */
-    void setTextCase(HbTextCase newCase) { iTextCase = newCase; }
+    void setTextCase(HbTextCase newCase) { mTextCase = newCase; }
 
     /*!
     Returns keyboard type.
     */
-    HbKeyboardType keyboard() const { return iKeyboardType; }
+    HbKeyboardType keyboard() const { return mKeyboardType; }
 
     /*!
     Sets keyboard type.
     */
-    void setKeyboard(HbKeyboardType newKeyboard) { iKeyboardType = newKeyboard; } 
+    void setKeyboard(HbKeyboardType newKeyboard) { mKeyboardType = newKeyboard; }
 
     /*!
     Returns language.
     */
-    HbInputLanguage language() const { return HbInputLanguage(iLanguage); }
+    HbInputLanguage language() const { return HbInputLanguage(mLanguage); }
 
     /*!
     Sets language. 
     */
-    void setLanguage(const HbInputLanguage &newLanguage) { iLanguage = newLanguage; }
+    void setLanguage(const HbInputLanguage &newLanguage) { mLanguage = newLanguage; }
 
 private:
-    HbInputModeType iModeType;
-    HbTextCase iTextCase;
-    HbKeyboardType iKeyboardType;
-    HbInputLanguage iLanguage;
+    HbInputModeType mModeType;
+    HbTextCase mTextCase;
+    HbKeyboardType mKeyboardType;
+    HbInputLanguage mLanguage;
 };
 
 #endif // HB_INPUT_STATE_H

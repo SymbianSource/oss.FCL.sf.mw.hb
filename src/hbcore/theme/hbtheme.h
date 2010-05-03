@@ -34,10 +34,7 @@ class HbThemePrivate;
 class HbIconLoader;
 class HbLayeredStyleLoader;
 class HbThemeClientPrivate;
-
-#ifdef Q_OS_SYMBIAN
-class CThemeListenerPrivate;
-#endif
+class HbIconTheme;
 
 class HB_CORE_EXPORT HbTheme : public QObject
 {
@@ -47,7 +44,6 @@ public:
     static HbTheme *instance();
     QString name() const;
     QString description() const;
-
 signals:
     void changed();
     void changeFinished();
@@ -60,14 +56,11 @@ private:
     friend class HbThemeClientPrivate;
     friend class HbIconLoader;
     friend class HbIconLoaderPrivate;
+    friend class HbIconEngine;
     friend class HbLayeredStyleLoader;
     friend class HbWidgetLoader;
     friend class HbEffectController;
     friend class HbDeviceProfile;
-#ifdef Q_OS_SYMBIAN
-    friend class CThemeListenerPrivate;
-#endif
-
     Q_DECLARE_PRIVATE_D( d_ptr, HbTheme )
     Q_DISABLE_COPY(HbTheme)
 };

@@ -61,7 +61,7 @@ void HbInputDialogContentWidget::setAdditionalRowVisible(bool visible)
     mAdditionalRowVisible = visible;
 
     if(!mLabel2 && visible) {
-        mLabel2 = style()->createPrimitive(HbStyle::P_InputDialog_additional_text,this);
+        mLabel2 = style()->createPrimitive(HbStyle::P_InputDialog_additionaltext,this);
     }
 
     if(!mEdit2 && visible) {
@@ -143,95 +143,58 @@ void HbInputDialogPrivate::init()
 void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputMode mode)
 {
     Q_Q(HbInputDialog);
-#ifdef HBINPUTDIALOG_DEBUG
-    qDebug()<<"Entering setInputMode";
-#endif
-    HbEditorInterface eInt(pEdit);
+
     switch(mode) {
     case HbInputDialog::TextInput:
-#ifdef HBINPUTDIALOG_DEBUG
-        qDebug()<<"TextInputMode";
-#endif
-        eInt.setConstraints(HbEditorConstraintNone);
         break;
+
     case HbInputDialog::IntInput: 
-    {
-#ifdef HBINPUTDIALOG_DEBUG
-        qDebug()<<"IntInputMode";
-#endif
-        //set the validator
-        if(mValid) {
-            // NOTE:This validation is for readability. mValid is being deleted 
-            // when setValidator is called on editor.
-            mValid = 0;
+        {
+            //set the validator
+            if(mValid) {
+                // NOTE:This validation is for readability. mValid is being deleted 
+                // when setValidator is called on editor.
+                mValid = 0;
+            }
+            mValid = new HbValidator();
+            QValidator *intValidator = new QIntValidator(q);
+            mValid->addField(intValidator, "0");
+            pEdit->setValidator(mValid);
+
+            pEdit->setInputMethodHints(Qt::ImhDigitsOnly);
+
+            break;
         }
-        mValid = new HbValidator();
-        QValidator *intValidator = new QIntValidator(q);
-        mValid->addField(intValidator, "0");
-        pEdit->setValidator(mValid);
-
-        eInt.setConstraints(HbEditorConstraintFixedInputMode);
-        eInt.setInputMode(HbInputModeNumeric);
-        //eInt.setFilter(HbConverterNumberFilter::instance());
-/*          Old custom button API has been deprecated for some time now. Commented out to prevent a build break.
-             customButtonBank = HbInputCustomButtonStore::instance()->newBank();
-        1, intValidator->locale().negativeSign(), intValidator->locale().negativeSign());
-        mCustomButtonBank->addButton(mDashButton);
-            dashButton = new HbInputCustomButton(HbInputCustomButton::HbCustomButtonShortcut,
-                1, intValidator->locale().negativeSign(), intValidator->locale().negativeSign());
-            customButtonBank->addButton(dashButton);
-            eInt.setCustomButtonBank(customButtonBank->id());  */
-
-        break;
-    }
     case HbInputDialog::RealInput:
-    {
-#ifdef HBINPUTDIALOG_DEBUG
-        qDebug()<<"RealInputMode";
-#endif
-        //set the validator
-        if(mValid) {
-            mValid = 0;
-        }
-            
-        mValid = new HbValidator();
-        QValidator *doubleValidator = new QDoubleValidator(q);
-        mValid->addField(doubleValidator, "0");
-        pEdit->setValidator(mValid);
-        
-        eInt.setConstraints(HbEditorConstraintFixedInputMode);
-        eInt.setInputMode(HbInputModeNumeric);
-        //eInt.setFilter(HbConverterNumberFilter::instance());
-/*          Old custom button API has been deprecated for some time now. Commented out to prevent a build break.
-            customButtonBank = HbInputCustomButtonStore::instance()->newBank();
-            dotButton = new HbInputCustomButton(HbInputCustomButton::HbCustomButtonShortcut,
-                0, doubleValidator->locale().decimalPoint(), doubleValidator->locale().decimalPoint());
-            customButtonBank->addButton(dotButton);
-            dashButton = new HbInputCustomButton(HbInputCustomButton::HbCustomButtonShortcut,
-                1, doubleValidator->locale().negativeSign(), doubleValidator->locale().negativeSign());
-            customButtonBank->addButton(dashButton);
-            eInt.setCustomButtonBank(customButtonBank->id()); */
-            
-        break;
-    }                     
+        {
+            //set the validator
+            if(mValid) {
+                mValid = 0;
+            }
+
+            mValid = new HbValidator();
+            QValidator *doubleValidator = new QDoubleValidator(q);
+            mValid->addField(doubleValidator, "0");
+            pEdit->setValidator(mValid);
+
+            pEdit->setInputMethodHints(Qt::ImhFormattedNumbersOnly);
+
+            break;
+        }                     
     case HbInputDialog::IpInput:
-    {
-        mValid = new HbValidator;
-        QRegExp r("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-        mValid->setMasterValidator(new QRegExpValidator(r,0));
-        mValid->addField(new QIntValidator(0,255,0),"127");
-        mValid->addSeparator(QString("."));
-        mValid->addField(new QIntValidator(0,255,0),"0");
-        mValid->addSeparator(QString("."));
-        mValid->addField(new QIntValidator(0,255,0),"0");
-        mValid->addSeparator(QString("."));
-        mValid->addField(new QIntValidator(0,255,0),"1");
+        {
+            mValid = new HbValidator;
+            mValid->setDefaultSeparator(".");
+            mValid->addField(new QIntValidator(0, 255, 0), "127");
+            mValid->addField(new QIntValidator(0, 255, 0), "0");
+            mValid->addField(new QIntValidator(0, 255, 0), "0");
+            mValid->addField(new QIntValidator(0, 255, 0), "1");
 
-        pEdit->setValidator(mValid);
-        eInt.setInputMode(HbInputModeNumeric);
+            pEdit->setValidator(mValid);
+            pEdit->setInputMethodHints(Qt::ImhDigitsOnly);
 
-        break;
-    }  
+            break;
+        }  
     default:
         break;
     }
@@ -270,7 +233,7 @@ void HbInputDialogPrivate::setPromptText(const QString& text,int row)
         mPromptAdditionalText = text;
         q->initStyleOption(&option);
         if(mContentWidget->mAdditionalRowVisible) {
-           q->style()->updatePrimitive(mContentWidget->mLabel2,HbStyle::P_InputDialog_additional_text,&option);
+           q->style()->updatePrimitive(mContentWidget->mLabel2,HbStyle::P_InputDialog_additionaltext,&option);
         }
     }
 }

@@ -98,24 +98,6 @@ HbHardwareInputNumericQwertyHandler::HbHardwareInputNumericQwertyHandler(HbInput
     d->q_ptr = this;
 }
 
-
-/*!
- This function lists different input modes.
-*/
-void HbHardwareInputNumericQwertyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    HbInputModeProperties binding;
-    binding.iMode = HbInputModeNumeric;
-    binding.iKeyboard = HbKeyboardQwerty4x10;
-
-    QVector<int> languages;
-    HbKeyMapFactory::instance()->listLanguages(languages);
-    foreach (int languageCode, languages) {
-		binding.iLanguage = (QLocale::Language)languageCode;
-        modes.push_back(binding);
-    }
-}
-
 HbHardwareInputNumericQwertyHandler::~HbHardwareInputNumericQwertyHandler()
 {
 }

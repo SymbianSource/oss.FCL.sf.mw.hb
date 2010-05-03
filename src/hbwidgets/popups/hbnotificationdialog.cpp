@@ -28,12 +28,17 @@
 #include <QGraphicsScene>
 #include <QCoreApplication>
 #include <QtGlobal>
+#include <QGesture>
+#include <QGestureEvent>
+
 #include <hbnotificationdialog.h>
 #include <hbnotificationdialog_p.h>
 #include <hblabel.h>
 #include <hbmainwindow.h>
 #include <hbwidgetsequentialshow_p.h>
 #include <hbdevicedialogserverstatus_p.h>
+#include <hbtapgesture.h>
+#include <hbpangesture.h>
 
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
@@ -148,6 +153,9 @@ HbNotificationDialog::HbNotificationDialog() : HbDialog(*new HbNotificationDialo
     setTimeout(HbPopup::StandardTimeout);
     d->setBackgroundStyle();
 
+    grabGesture(Qt::PanGesture);
+    grabGesture(Qt::TapGesture);
+
 #ifdef HB_EFFECTS
     HbEffectInternal::add(this, "notificationdialog_appear", "appear");
     HbEffectInternal::add(this, "notificationdialog_disappear", "disappear");
@@ -205,8 +213,9 @@ void HbNotificationDialog::launchDialog(const QString &title, const QString &tex
 /*!
  Convenience method for using HbNotificationDialog. Shows a notification dialog with
  the given parameters. The dialog is owned by NotificationDialog.
- \deprecated HbNotificationDialog::launchDialog(const HbIcon &icon, QGraphicsScene* scene) is deprecated.
-    Showing only icon is not supported by the layout. Use other launchDialog-methods instead.
+
+ \deprecated HbNotificationDialog::launchDialog(const HbIcon&, QGraphicsScene*)
+     is deprecated. Showing only icon is not supported by the layout. Use other launchDialog-methods instead.
 */
 void HbNotificationDialog::launchDialog(const HbIcon &icon, QGraphicsScene* scene)
 {
@@ -349,10 +358,8 @@ void HbNotificationDialog::setIcon(const HbIcon& icon)
 }
 
 /*!
-\deprecated HbNotificationDialog::setWrapMode(int mode)
-      is deprecated. Please use setTitleTextWrapping(Hb::TextWrapping wrapping) instead.
-
-Deprecated.
+\deprecated HbNotificationDialog::setWrapMode(int)
+    is deprecated. Please use setTitleTextWrapping(Hb::TextWrapping wrapping) instead.
 */
 void HbNotificationDialog::setWrapMode(int mode)
 {
@@ -431,9 +438,7 @@ bool HbNotificationDialog::isSequentialShow() const
 
 /*!
 \deprecated HbNotificationDialog::wrapMode() const
-      is deprecated. Please use titleTextWrapping() const instead.
-
-Deprecated.
+    is deprecated. Please use titleTextWrapping() const instead.
 */
 int HbNotificationDialog::wrapMode() const
 {
@@ -448,35 +453,23 @@ HbNotificationDialog::HbNotificationDialog(HbNotificationDialogPrivate &dd, QGra
 {
 }
 
-/*!
-    \reimp
- */
-void HbNotificationDialog::mousePressEvent(QGraphicsSceneMouseEvent *event)
+void HbNotificationDialog::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbNotificationDialog);
-    d->pointerDownPoint = event->pos();
-    // "Pop-up is visible as long as the user holds the finger on top of it."
-    d->stopTimeout();
-    event->accept();
-}
-
-/*!
-    \reimp
- */
-void HbNotificationDialog::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbNotificationDialog);
-    // Touch release => Inactive or application specific functionality
-
-    if (d->isTouchActivating) {
-        QPointF point = event->pos() - d->pointerDownPoint;
-        qreal manhattanLength = qAbs(point.x()) + qAbs(point.y());
-        if (manhattanLength < 20)
-        {
-            emit activated();
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+        if(tap->state() == Qt::GestureStarted) {
+            d->stopTimeout();
+        } else if(tap->state() == Qt::GestureFinished) {
+            if (d->isTouchActivating) {
+                emit activated();
+            }
+            close();
+        }
+    } else if( HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
+        if(pan->state() == Qt::GestureFinished){
+            close();
         }
     }
-    close();
 }
 
 // Widget is about to hide. Closing effect has ended,

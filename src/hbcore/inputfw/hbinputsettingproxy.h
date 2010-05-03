@@ -69,6 +69,10 @@ public:
     void setActiveTouchKeyboard(HbKeyboardType keyboard);
     int predictiveInputStatus() const;
     void setPredictiveInputStatus(int newStatus);
+    bool predictiveInputStatus(HbKeyboardSettingFlags keyboardType) const;
+    void setPredictiveInputStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
+    bool predictiveInputStatusForActiveKeyboard() const;
+    void setPredictiveInputStatusForActiveKeyboard(bool newStatus);
     HbInputDigitType globalDigitType() const;
     void setGlobalDigitType(HbInputDigitType digitType);
     bool automaticTextCasingForQwerty();
@@ -84,6 +88,14 @@ public:
     void initializeOrientation(Qt::Orientation screenOrientation);
     bool regionalCorrectionEnabled();
     void enableRegionalCorrection(bool status);
+    void setKeypressTimeout(int timeout);
+    int keypressTimeout() const;
+    void setAutocompletionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
+    bool isAutocompletionEnabled(HbKeyboardSettingFlags keyboardType) const;
+    void setTypingCorrectionLevel(HbTypingCorrectionLevel level);
+    HbTypingCorrectionLevel typingCorrectionLevel() const;
+    void setPrimaryCandidateMode(HbPrimaryCandidateMode mode);
+    HbPrimaryCandidateMode primaryCandidateMode() const;
 
 signals:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
@@ -91,10 +103,16 @@ signals:
     void activeKeyboardChanged(HbKeyboardType newKeyboard);
     void activeHwKeyboardChanged(HbKeyboardType newKeyboard);
     void activeTouchKeyboardChanged(HbKeyboardType newKeyboard);
-    void predictiveInputStateChanged(int newState);
+    void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void automaticTextCasingStateForQwertyChanged(bool newState);
+    void characterPreviewStateForQwertyChanged(bool newState);
     void orientationAboutToChange();
     void orientationChanged(Qt::Orientation orientation);
     void regionalCorretionStatusChanged(bool newStatus);
+    void keypressTimeoutChanged(int newTimeout);
+    void autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void typingCorrectionLevelChanged(HbTypingCorrectionLevel newLevel);
+    void primaryCandidateModeChanged(HbPrimaryCandidateMode newMode);
 
 public slots:
     void togglePrediction();

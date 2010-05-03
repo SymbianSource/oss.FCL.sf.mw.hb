@@ -75,7 +75,7 @@ public:
     static bool cancel(
         QGraphicsItem *item,
         const QString &effectEvent = QString(),
-        bool hideEffect = false,
+        bool clearEffect = false,
         bool sendCallback = true,
         bool itemIsValid = true);
 

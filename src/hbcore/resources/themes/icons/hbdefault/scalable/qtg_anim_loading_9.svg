@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="60px" version="1.1" viewBox="45 45 60 60" width="60px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<g>
-<rect fill="none" height="52" width="52" x="49" y="49"/>
-<path d="M51.92,67.503c-0.009,0.03-0.019,0.063-0.028,0.091l5.43,1.764c0.01-0.028,0.02-0.061,0.03-0.091   c3.163-9.733,13.652-15.077,23.382-11.916c9.734,3.163,15.077,13.651,11.914,23.384c-3.122,9.61-13.39,14.944-23.02,12.029   l-1.765,5.432c12.625,3.888,26.121-3.09,30.216-15.696c4.135-12.726-2.853-26.445-15.58-30.581   C69.773,47.786,56.055,54.777,51.92,67.503z" fill="url(#SVGID_1_)"/>
+<svg baseProfile="tiny" height="52px" version="1.1" viewBox="0.001 0 52 52" width="52px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="52" width="52.002"/>
+<path d="M2.92,18.503c-0.01,0.03-0.02,0.063-0.027,0.091l5.432,1.764c0.01-0.027,0.02-0.061,0.029-0.09  c3.164-9.733,13.65-15.078,23.383-11.916c9.73,3.162,15.076,13.651,11.912,23.383C40.525,41.346,30.26,46.68,20.627,43.764  l-1.764,5.432C31.49,53.084,44.984,46.105,49.08,33.5C53.215,20.773,46.229,7.055,33.5,2.919C20.773-1.214,7.057,5.777,2.92,18.503z  " fill="url(#SVGID_1_)"/>
 <defs>
-<linearGradient gradientTransform="matrix(0.309 -0.9511 -0.9511 -0.309 -425.8908 351.2161)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="419.2471" x2="413.2628" y1="-400.541" y2="-368.3211">
-<stop offset="0" style="stop-color:#3B87C0"/>
-<stop offset="1" style="stop-color:#0069B2;stop-opacity:0"/>
+<linearGradient gradientTransform="matrix(0.309 -0.9511 0.9511 0.309 -828.1402 -62.6477)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="181.373" x2="175.3885" y1="849.2324" y2="817.0112">
+<stop offset="0" style="stop-color:#0067B1"/>
+<stop offset="0.9939" style="stop-color:#0069B1;stop-opacity:0.25"/>
+<stop offset="1" style="stop-color:#0069B1;stop-opacity:0.25"/>
 </linearGradient>
 </defs>
-</g>
 </svg>

@@ -25,11 +25,14 @@
 #include <QSettings>
 #include <QStringList>
 #include <QDir>
+#include <QTimer>
 #include <hbinstance.h>
 #include <hbmenu.h>
 #include <hbaction.h>
 #include <hbicon.h>
+#include <hblistwidgetitem.h>
 #include <QDebug>
+#include <QTime>
 
 #include "themeselectionlist.h"
 #include "themechangerdefs.h"
@@ -44,13 +47,13 @@ ThemeSelectionList::ThemeSelectionList(
     ThemeClientQt* client
 #endif
                         ): 
-                        themelist(new HbListView(this)),
-                        model(new QStandardItemModel(this)),
+                        oldItemIndex(-1),
+                        themelist(new HbListWidget(this)),
                         rightMark(new HbIcon(QString("qtg_small_tick"))),
                         noMark(new HbIcon(QString(""))),
                         client(client)
 {
-    connect(themelist, SIGNAL(activated(const QModelIndex&)),this, SLOT(setChosen(const QModelIndex&)));
+    connect(themelist, SIGNAL(activated(HbListWidgetItem *)),this, SLOT(setChosen(HbListWidgetItem *)));
     setWidget(themelist);
 
     // Automatic updation of the themelist when some theme is installed or uninstalled
@@ -63,6 +66,12 @@ ThemeSelectionList::ThemeSelectionList(
     }
     connect(watcher,SIGNAL(directoryChanged(const QString &)),this,SLOT(updateThemeList(const QString &)));
     QObject::connect(this,SIGNAL(newThemeSelected(QString)),this,SLOT(sendThemeName(QString)));    
+#ifdef THEME_CHANGER_TIMER_LOG
+    idleTimer = new QTimer(this);
+    connect(idleTimer, SIGNAL(timeout()), this, SLOT(processWhenIdle()));
+    connect(hbInstance->theme(),SIGNAL(changeFinished()), this, SLOT(themeChanged()));
+    idleTimer->start(0); // to make a connection to server
+#endif
 }
 
 /**
@@ -71,17 +80,12 @@ ThemeSelectionList::ThemeSelectionList(
 ThemeSelectionList::~ThemeSelectionList()
 {
     // Set the theme to the applied theme before exiting.
-    setChosen(oldItemIndex);
+    setChosen(themelist->item(oldItemIndex));
     delete noMark;
 
     noMark=NULL;
     delete rightMark;
     rightMark=NULL;
-
-    // Remove all the items from model, then delete
-    model->clear();
-    delete model;
-    model=NULL;
 
     // Reset the item view
     themelist->reset();
@@ -100,7 +104,7 @@ void ThemeSelectionList::displayThemes()
     foreach(const QString &KThemeRootPath, rootPaths()){
         dir.setPath(KThemeRootPath) ;
         QStringList list = dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
-        if(list.contains("themes",Qt::CaseSensitive )) {
+        if(list.contains("themes",Qt::CaseInsensitive )) {
             themePresent = true;
             QDir root = KThemeRootPath;
             dir.setPath(root.path()+"/themes/icons/") ;
@@ -128,16 +132,14 @@ void ThemeSelectionList::displayThemes()
             }
             list=iconthemeslist;
             for (int i=0; i <list.count();i++) {
-                // Items are populated to create the model
-                QStandardItem *item=new QStandardItem(list.at(i));
-                model->appendRow(item);
+                // populate theme list with existing themes
                 if((HbInstance::instance()->theme()->name())==(list.at(i))) { 
-                    item->setIcon(rightMark->qicon());
-                    oldItemIndex=item->index();
-                    themelist->setCurrentIndex(oldItemIndex,QItemSelectionModel::Select);
+                    themelist->addItem(*rightMark,list.at(i));
+                    oldItemIndex=themelist->count()-1;
+                    themelist->setCurrentRow(oldItemIndex);
                 }
                 else {
-                    item->setIcon(noMark->qicon());
+                    themelist->addItem(*noMark,list.at(i));
                 }
             }
         }
@@ -146,9 +148,7 @@ void ThemeSelectionList::displayThemes()
     if(!themePresent) {
             QStringList defaultList;
             defaultList.insert(0,"hbdefault"); //adding one default entry
-            QStandardItem *item=new QStandardItem(defaultList.at(0));
-            model->appendRow(item);
-            item->setIcon(rightMark->qicon());
+            themelist->addItem(*rightMark,defaultList.at(0));
             QString themeName=HbInstance::instance()->theme()->name();
             if (themeName != "hbdefault")
             {
@@ -164,24 +164,23 @@ void ThemeSelectionList::displayThemes()
             }
 
         }
-
-    // Set the this model for the list 
-    themelist->setModel(model);
 }
 
 /**
  * setChosen
  */
-void ThemeSelectionList::setChosen(const QModelIndex &index)
+void ThemeSelectionList::setChosen(HbListWidgetItem *item)
 {
-     // Extract the string from the model index
-    QVariant variant=index.data();
-    QString str=variant.toString();
+    QString str=item->text();
 
 #ifdef THEME_CHANGER_TRACES
     qDebug() << "ThemeSelectionList::Setchosen with ThemeName: "<<str;
 #endif
     if(iCurrentTheme != str ) {
+#ifdef THEME_CHANGER_TIMER_LOG
+        timer.start();
+        qDebug() << "Selected theme: " << str;
+#endif
         iCurrentTheme = str;
         if (!client->isConnected()) {
             bool success = client->connectToServer();
@@ -205,15 +204,13 @@ void ThemeSelectionList::setChosen(const QModelIndex &index)
  */
 void ThemeSelectionList::applySelection()
 {
-    QModelIndex currentItemIndex = (themelist)->currentIndex();
-    if(oldItemIndex!=currentItemIndex) {
-        (model->itemFromIndex(currentItemIndex))->setIcon(rightMark->qicon());
-        if(oldItemIndex.isValid()) {
-            (model->itemFromIndex(oldItemIndex))->setIcon(noMark->qicon());
+    if(oldItemIndex!=themelist->currentRow()) {
+        themelist->setIcon(themelist->currentRow(),*rightMark);
+        if(oldItemIndex >= 0) {
+            themelist->setIcon(oldItemIndex,*noMark);
         }
-        oldItemIndex = currentItemIndex;
+        oldItemIndex = themelist->currentRow();
     }
-
 }
 
 
@@ -223,9 +220,10 @@ void ThemeSelectionList::applySelection()
 bool ThemeSelectionList::event(QEvent *e)
 {
     if((e->type()==QEvent::ShortcutOverride)||(e->type()==QEvent::WindowDeactivate)) {        
-        themelist->setCurrentIndex(oldItemIndex,QItemSelectionModel::Select);
+        // save old applied theme
+        themelist->setCurrentRow(oldItemIndex);
         themelist->setFocus();
-        setChosen(oldItemIndex);
+        setChosen(themelist->item(oldItemIndex));
         return true;
     }
     return (HbView::event(e));
@@ -237,7 +235,7 @@ bool ThemeSelectionList::event(QEvent *e)
 void ThemeSelectionList::updateThemeList(const QString &path)
 {
     Q_UNUSED(path);
-    model->clear();
+    themelist->clear();
     this->displayThemes();
 }
 
@@ -258,7 +256,9 @@ QStringList ThemeSelectionList::rootPaths()
     QStringList rootDirs;
 #if defined(Q_OS_SYMBIAN)
     rootDirs << "c:/resource/hb"
-             << "z:/resource/hb";
+             << "z:/resource/hb"
+             << "e:/resource/hb"
+             << "f:/resource/hb";
 #else
     QString envDir = qgetenv("HB_THEMES_DIR");
     if (!envDir.isEmpty())
@@ -271,3 +271,19 @@ QStringList ThemeSelectionList::rootPaths()
 #endif
     return rootDirs;
 }
+
+#ifdef THEME_CHANGER_TIMER_LOG
+void ThemeSelectionList::processWhenIdle()
+{    
+    qDebug() << "Theme changed applied in " << timer.elapsed() << " msec";
+    idleTimer->stop();
+    if (!client->isConnected()) {
+        client->connectToServer();
+    }
+}
+
+void ThemeSelectionList::themeChanged()
+{
+    idleTimer->start(0);
+}
+#endif //THEME_CHANGER_TIMER_LOG

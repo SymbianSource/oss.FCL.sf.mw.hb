@@ -52,18 +52,16 @@ PUBLIC_HEADERS += $$PWD/hbinputvkbhost.h
 PUBLIC_HEADERS += $$PWD/hbinputlanguage.h
 PUBLIC_HEADERS += $$PWD/hbinputstandardfilters.h
 PUBLIC_HEADERS += $$PWD/hbinputmethoddescriptor.h
+PUBLIC_HEADERS += $$PWD/hbinputvkbhostbridge.h
 
 # private framework headers
-INTERNAL_HEADERS += $$PWD/hbinputmodecache_p.h
-INTERNAL_HEADERS += $$PWD/hbinputcontextproxy_p.h
-INTERNAL_HEADERS += $$PWD/hbinputmethodnull_p.h
-INTERNAL_HEADERS += $$PWD/hbinputeditorinterface_p.h
-INTERNAL_HEADERS += $$PWD/hbinputbasepaths_p.h
-INTERNAL_HEADERS += $$PWD/hbinputextrauserdictionary_p.h
-INTERNAL_HEADERS += $$PWD/hbinputmethod_p.h
-INTERNAL_HEADERS += $$PWD/hbinputcustombutton_p.h
-INTERNAL_HEADERS += $$PWD/hbinputsettingproxy_p.h
-
+PRIVATE_HEADERS += $$PWD/hbinputmodecache_p.h
+PRIVATE_HEADERS += $$PWD/hbinputcontextproxy_p.h
+PRIVATE_HEADERS += $$PWD/hbinputmethodnull_p.h
+PRIVATE_HEADERS += $$PWD/hbinputeditorinterface_p.h
+PRIVATE_HEADERS += $$PWD/hbinputextrauserdictionary_p.h
+PRIVATE_HEADERS += $$PWD/hbinputmethod_p.h
+PRIVATE_HEADERS += $$PWD/hbinputsettingproxy_p.h
 
 # framework sources
 SOURCES += $$PWD/hbinputmethod.cpp
@@ -89,4 +87,5 @@ SOURCES += $$PWD/hbinputvkbhost.cpp
 SOURCES += $$PWD/hbinputlanguage.cpp
 SOURCES += $$PWD/hbinputmethod_p.cpp
 SOURCES += $$PWD/hbinputmethoddescriptor.cpp
+SOURCES += $$PWD/hbinputvkbhostbridge.cpp
 

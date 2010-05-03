@@ -28,7 +28,7 @@
 
 #include <QFlags>
 #include <QObject>
-
+#include <QVariantMap>
 #include <hbglobal.h>
 
 class HbIndicatorInterfacePrivate;
@@ -82,7 +82,8 @@ public:
 signals:
     void dataChanged();
     void deactivate();
-
+    void userActivated(const QVariantMap& data);
+    
 protected:
     HbIndicatorInterface(const QString &indicatorType,
         GroupPriority indicatorGroup, InteractionTypes interactionTypes); //deprecated.

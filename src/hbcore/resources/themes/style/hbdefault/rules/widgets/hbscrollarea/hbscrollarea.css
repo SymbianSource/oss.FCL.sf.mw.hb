@@ -1,10 +1,10 @@
 *{
-	speed-factor:0.0004;
-        inertia-speed-factor:2.5;
-        max-scroll-speed:3.0;
-        spring-strength:0.0013;
-        spring-damping-factor:0.33;
-        friction:0.003;
+	speed-factor:0.0001;
+	inertia-speed-factor:1.0;
+	max-scroll-speed:3.0;
+	spring-strength:0.0013;
+	spring-damping-factor:0.33;
+	friction:0.003;
 }
 
 HbScrollArea[scrollDirections="Horizontal"]

@@ -32,6 +32,7 @@
 
 #include <QByteArray>
 #include <QBitmap>
+#include <QPainterPath>
 
 class HbMaskableIconImpl;
 
@@ -43,7 +44,7 @@ public:
     HbFrameDrawerPrivate(const HbFrameDrawerPrivate &other);
 
     ~HbFrameDrawerPrivate();
-
+    HbIconFormatType iconFormatType() const;
     void checkFrameParts();
     QStringList fileNameSuffixList() const;
     QSize divideSpace(HbMultiPartSizeData &data);
@@ -57,6 +58,7 @@ public:
     void paint(QPainter *painter);
 
     void reset( bool resetFrameCount = true );
+    void resetMaskableIcon();    
     bool fillWholeRect() const;
     QString multiPartIconId() const;
     HbIconLoader::IconLoaderOptions iconLoaderOptions();
@@ -72,7 +74,7 @@ private:
     bool hasBorderWidths() const;
     // disabled
     HbFrameDrawerPrivate& operator=(const HbFrameDrawerPrivate &other);
-
+    HbIconFormatType iconType;   
 public:
     QString frameGraphicsName;
     HbFrameDrawer::FrameType type;
@@ -116,6 +118,7 @@ public:
     QVector<HbMaskableIconImpl *> fallbackMaskableIconList;
     HbMultiPartSizeData multiPartSizeData;
     QRect prevRect;
+    QPainterPath clipPath;
 };
 
 #endif // HBFRAMEDRAWER_P_H

@@ -41,16 +41,24 @@
 
 #include <QTextDocument>
 #include <QTextBlock>
+#include <math.h>
+
+// value used if no maximum lines is set
+const int DefaulMaximumVisibleLines = 30;
+
+// minimum font size when using stretch font mode
+const qreal KMinimumLineHeight = 4.0;
 
 HbLineEditPrivate::HbLineEditPrivate () :
     HbAbstractEditPrivate(),
     maxLength(-1),
-    expandable(false),
     minimumRows(1),
     maximumRows(1),
     echoMode(HbLineEdit::Normal),
     clearOnEdit(false),
-    emitTextChanged(true)
+    emitTextChanged(true),
+    adjustFontSizeToFitHeight(false),
+    stretchedToLineCount(-1)
 {
 }
 
@@ -71,9 +79,12 @@ void HbLineEditPrivate::init()
     scrollArea->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff); 
     defaultWrapMode = doc->defaultTextOption().wrapMode(); // cannot be changed.
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    doc->documentLayout()->document()->setDocumentMargin(0);
     q->setBackgroundItem(HbStyle::P_LineEdit_frame_normal);
+    q->setFocusHighlight(HbStyle::P_LineEdit_frame_highlight,HbWidget::FocusHighlightActive);
     updateWrappingMode();
+
+    Q_ASSERT(scrollArea);
+    scrollArea->installEventFilter(q); // needed for resize event processing
 }
 
 void HbLineEditPrivate::updatePaletteFromTheme()
@@ -84,6 +95,7 @@ void HbLineEditPrivate::updatePaletteFromTheme()
     QColor textColor = HbColorScheme::color("qtc_lineedit_normal");
     QColor selectedColor = HbColorScheme::color("qtc_lineedit_selected");
     QColor selectedBackground = HbColorScheme::color("qtc_lineedit_marker_normal");
+    QColor hintText = HbColorScheme::color("qtc_lineedit_hint_normal");
     QPalette pal = q->palette();
 
     if (textColor.isValid()) {
@@ -97,6 +109,11 @@ void HbLineEditPrivate::updatePaletteFromTheme()
     if (selectedBackground.isValid()) {
         pal.setColor(QPalette::Highlight, selectedBackground);
     }
+
+    if (hintText.isValid()) {
+        pal.setColor(QPalette::NoRole, hintText);
+    }
+
     q->setPalette(pal);
 }
 bool HbLineEditPrivate::forwardKeyEvent (QKeyEvent *event)
@@ -156,6 +173,10 @@ void HbLineEditPrivate::_q_textChanged()
     if(emitTextChanged && !isPasswordMode()) {
         emit q->textChanged(q->text());
     }
+
+    if(adjustFontSizeToFitHeight) {
+        readjustStretchFont();
+    }
 }
 
 void HbLineEditPrivate::_q_textChange(int position, int charsRemoved,int charsAdded)
@@ -170,21 +191,38 @@ void HbLineEditPrivate::_q_textChange(int position, int charsRemoved,int charsAd
     emitTextChanged = true;
 }
 
-
 void HbLineEditPrivate::updateEditingSize()
 {
     Q_Q(HbLineEdit);
     if (scrollArea) {
-        const int fontHeight = QFontMetrics(q->font()).height();
-        scrollArea->setMinimumHeight(fontHeight * minimumRows);
-        if (maximumRows == 1) {
-            scrollArea->setPreferredHeight(fontHeight);
-            scrollArea->setScrollDirections(Qt::Horizontal);
+        if(!adjustFontSizeToFitHeight) {
+            const int fontHeight = QFontMetrics(q->font()).height();
+            scrollArea->setMinimumHeight(fontHeight * minimumRows + 2 * doc->documentMargin());
+            if (maximumRows == 1) {
+                scrollArea->setPreferredHeight(fontHeight);
+                scrollArea->setScrollDirections(Qt::Horizontal);
+            } else {
+                scrollArea->setPreferredHeight(doc->documentLayout()->documentSize().height());
+                scrollArea->setScrollDirections(Qt::Vertical);
+            }
+            scrollArea->setMaximumHeight(fontHeight * maximumRows + 2 * doc->documentMargin());
         } else {
-            scrollArea->setPreferredHeight(doc->documentLayout()->documentSize().height());
-            scrollArea->setScrollDirections(Qt::Vertical);
+            qreal prefLineHeight = q->fontSpec().textHeight();
+            if (prefLineHeight<0) {
+                QFontMetricsF metrics(q->font());
+                prefLineHeight = metrics.lineSpacing();
+            }
+
+            const qreal marginBonus = 2*doc->documentMargin();
+            scrollArea->setMinimumHeight(qMax(minimumRows,1)*KMinimumLineHeight
+                                         +marginBonus);
+
+            // minimumRows is used here because it is expected that
+            // text will be short in most use cases
+            scrollArea->setPreferredHeight(prefLineHeight*minimumRows+marginBonus);
+
+            scrollArea->setMaximumHeight(QWIDGETSIZE_MAX);
         }
-        scrollArea->setMaximumHeight(fontHeight * maximumRows);
     }
 }
 
@@ -281,6 +319,80 @@ void HbLineEditPrivate::updateWrappingMode()
         option.setWrapMode(defaultWrapMode);
     }
     doc->setDefaultTextOption(option);
+}
+
+int HbLineEditPrivate::linesToBeVisible() const
+{
+    int docLineCount = 0;
+    QTextBlock block = doc->firstBlock();
+    for (int i=0; i<doc->blockCount(); ++i) {
+        docLineCount += block.layout()->lineCount();
+        block.next();
+    }
+    return qBound(minimumRows, docLineCount, maximumRows);
+}
+
+void HbLineEditPrivate::readjustStretchFont()
+{
+    int desiredLineCount=linesToBeVisible();
+
+    if (desiredLineCount==stretchedToLineCount) {
+        return;
+    }
+
+    setVisibleRows(desiredLineCount);
+
+    if (desiredLineCount<stretchedToLineCount
+        && desiredLineCount<linesToBeVisible()) {
+        do {
+            ++desiredLineCount;
+            setVisibleRows(desiredLineCount);
+        } while(desiredLineCount<linesToBeVisible());
+    }
+    stretchedToLineCount = desiredLineCount;
+}
+
+void HbLineEditPrivate::onResizeFontChange()
+{
+    if (!adjustFontSizeToFitHeight) {
+        return;
+    }
+
+    const int maxRows = (maximumRows>0)?maximumRows:DefaulMaximumVisibleLines;
+    for (int i=minimumRows; i<=maxRows; ++i) {
+        setVisibleRows(i);
+        if(linesToBeVisible()<=i) {
+            stretchedToLineCount = i;
+            break;
+        }
+    }
+}
+
+void HbLineEditPrivate::setVisibleRows(int rowCount)
+{
+    Q_Q(HbLineEdit);
+
+    qreal singleLineHeight = scrollArea->size().height()
+                             -2*doc->documentMargin();
+    if(singleLineHeight<=0) {
+        return;
+    }
+    singleLineHeight/=rowCount;
+
+    HbFontSpec fSpec(q->fontSpec());
+    if (fSpec.role()!=HbFontSpec::Undefined) {
+        fSpec.setTextHeight(singleLineHeight);
+        canvas->setFontSpec(fSpec);
+    } else {
+        QFont deltaFont;
+        deltaFont.setPixelSize(static_cast<int>(singleLineHeight+0.5));
+        QFont oldFont = q->font();
+        QFontMetricsF metrics(deltaFont.resolve(oldFont));
+        //recalculate pixels size to line height
+        singleLineHeight = singleLineHeight * singleLineHeight / metrics.lineSpacing();
+        deltaFont.setPixelSize(static_cast<int>(singleLineHeight));
+        canvas->setFont(deltaFont);
+    }
 }
 
 #include "moc_hblineedit.cpp"

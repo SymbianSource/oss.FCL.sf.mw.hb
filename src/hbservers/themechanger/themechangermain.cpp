@@ -27,15 +27,42 @@
 #include <hbmainwindow.h>
 #include "themechangerdefs.h"
 #include "themeselectionlist.h"
-
+#include <QTextStream>
 #ifdef Q_OS_SYMBIAN
 #include "themeclientsymbian.h"
 #else
 #include "themeclientqt.h"
 #endif
 
+#ifdef THEME_CHANGER_TIMER_LOG
+void debugOutput(QtMsgType type, const char *msg)
+ {
+    QFile file("c:/data/logs/themechanger.txt");
+
+    if (!file.open(QIODevice::Append))
+        return;
+    QTextStream out(&file);
+
+    switch (type)
+    {
+    case QtDebugMsg:
+        out << msg << QChar::LineSeparator;
+        break;
+    case QtWarningMsg:
+        break;
+    case QtCriticalMsg:
+        break;
+    case QtFatalMsg:
+        break;
+    }
+ }
+#endif //THEME_CHANGER_TIMER_LOG
+
 int main(int argc, char *argv[])
 {
+#ifdef THEME_CHANGER_TIMER_LOG
+    qInstallMsgHandler(debugOutput);
+#endif
     // Initialization
     HbApplication app(argc, argv);
     app.setApplicationName("ThemeChanger");

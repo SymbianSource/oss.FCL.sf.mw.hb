@@ -27,23 +27,21 @@
 #define HBNVGEXCEPTION_P_H_
 
 #include <exception>
-#include <QString>
 
 class HbNvgException: public std::exception
 {
 public:
-    HbNvgException(int id) 
-    : errID(id)
-    {}
-    
-    int errorID() const 
-    {
+    HbNvgException(qint32 id)
+            : errID(id) {}
+
+    qint32 errorID() const
+	{
         return errID;
     }
-    
+
 private:
-    int     errID;
+    qint32     errID;
 };
 
-#endif 
+#endif
 

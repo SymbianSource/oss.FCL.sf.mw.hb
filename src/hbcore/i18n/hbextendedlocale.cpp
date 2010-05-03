@@ -108,6 +108,8 @@ QT_END_NAMESPACE
     
     \snippet{unittest_hbextendedlocale/unittest_hbextendedlocale.cpp,11}
     
+    \snippet{unittest_hbextendedlocale/unittest_hbextendedlocale.cpp,12}
+    
     \sa QLocale
 */
 
@@ -1109,20 +1111,12 @@ static const symbianToISO symbian_to_iso_list[] = {
     { ELangNorwegian,           "no_NO" },
     { ELangFinnish,             "fi_FI" },
     { ELangAmerican,            "en_US" },
-    { ELangSwissFrench,         "fr_CH" },
-    { ELangSwissGerman,         "de_CH" },
     { ELangPortuguese,          "pt_PT" },
     { ELangTurkish,             "tr_TR" },
     { ELangIcelandic,           "is_IS" },
     { ELangRussian,             "ru_RU" },
     { ELangHungarian,           "hu_HU" },
     { ELangDutch,               "nl_NL" },
-    { ELangBelgianFlemish,      "nl_BE" },
-    { ELangAustralian,          "en_AU" },
-    { ELangBelgianFrench,       "fr_BE" },
-    { ELangAustrian,            "de_AT" },
-    { ELangNewZealand,          "en_NZ" },
-    { ELangInternationalFrench, "fr" },
     { ELangCzech,               "cs_CZ" },
     { ELangSlovak,              "sk_SK" },
     { ELangPolish,              "pl_PL" },
@@ -1132,90 +1126,57 @@ static const symbianToISO symbian_to_iso_list[] = {
     { ELangPrcChinese,          "zh_CN" },
     { ELangJapanese,            "ja_JP" },
     { ELangThai,                "th_TH" },
-    { ELangAfrikaans,           "af" }, // SouthAfrika/Namibia
-    { ELangAlbanian,            "sq_AL" },
-    { ELangAmharic,             "am_ET" },
     { ELangArabic,              "ar_AE" },
-    { ELangArmenian,            "hy_AM" },
     { ELangTagalog,             "tl_PH" },
-    { ELangBelarussian,         "be_BY" },
-    { ELangBengali,             "bn" }, // Bangladesh/India
+    { ELangBengali,             "bn_IN" }, // Bangladesh/India
     { ELangBulgarian,           "bg_BG" },
-    { ELangBurmese,             "my_MM" },
     { ELangCatalan,             "ca_ES" },
     { ELangCroatian,            "hr_HR" },
-    { ELangCanadianEnglish,     "en_CA" },
-    { ELangInternationalEnglish, "en" },
-    { ELangSouthAfricanEnglish, "en_ZA" },
     { ELangEstonian,            "et_EE" },
     { ELangFarsi,               "fa_IR" },
     { ELangCanadianFrench,      "fr_CA" },
-    { ELangScotsGaelic,         "gd_GB" },
-    { ELangGeorgian,            "ka_GE" },
     { ELangGreek,               "el_GR" },
-    { ELangCyprusGreek,         "el_GR" },
     { ELangGujarati,            "gu_IN" },
     { ELangHebrew,              "he_IL" },
     { ELangHindi,               "hi_IN" },
     { ELangIndonesian,          "id_ID" },
-    { ELangIrish,               "ga_IE" },
-    { ELangSwissItalian,        "it_CH" },
     { ELangKannada,             "kn_IN" },
-    { ELangKazakh,              "kk_KZ" },
-    { ELangKhmer,               "km_KH" },
     { ELangKorean,              "ko_KR" },
-    { ELangLao,                 "lo_LA" },
     { ELangLatvian,             "lv_LV" },
     { ELangLithuanian,          "lt_LT" },
-    { ELangMacedonian,          "mk_MK" },
     { ELangMalay,               "ms_MY" },
     { ELangMalayalam,           "ml_IN" },
     { ELangMarathi,             "mr_IN" },
-    { ELangMoldavian,           "mo_MD" },
-    { ELangMongolian,           "mn_MN" },
-    { ELangNorwegianNynorsk,    "nn_NO" },
     { ELangBrazilianPortuguese, "pt_BR" },
-    { ELangPunjabi,             "pa" }, // India/Pakistan
     { ELangRomanian,            "ro_RO" },
     { ELangSerbian,             "sr_YU" },
-    { ELangSinhalese,           "si_LK" },
-    { ELangSomali,              "so_SO" },
-    { ELangInternationalSpanish, "es" },
-    { ELangLatinAmericanSpanish, "es" },
-    { ELangSwahili,             "sw" }, // Kenya/Tanzania
-    { ELangFinlandSwedish,      "sv_FI" },
+    { ELangLatinAmericanSpanish, "es_MX" },
     { ELangTamil,               "ta_IN" },
     { ELangTelugu,              "te_IN" },
-    { ELangTibetan,             "bo_CN" },
-    { ELangTigrinya,            "ti_ER" },
-    { ELangCyprusTurkish,       "tr_GR" },
-    { ELangTurkmen,             "tk_TM" },
     { ELangUkrainian,           "uk_UA" },
     { ELangUrdu,                "ur_PK" }, // India/Pakistan
     { ELangVietnamese,          "vi_VN" },
-    { ELangWelsh,               "cy_GB" },
-    { ELangZulu,                "zu_ZA" },
-    { ELangSouthSotho,          "st_LS" },
 #ifdef __E32LANG_H__
 // 5.0
     { ELangBasque,              "eu_ES" },
     { ELangGalician,            "gl_ES" },
 #endif
-    { ELangEnglish_Apac,        "en" },
+    { ELangEnglish_Apac,        "en_APAC" },
     { ELangEnglish_Taiwan,      "en_TW" },
     { ELangEnglish_HongKong,    "en_HK" },
     { ELangEnglish_Prc,         "en_CN" },
     { ELangEnglish_Japan,       "en_JP"},
     { ELangEnglish_Thailand,    "en_TH" },
-//  { ELangSantali,             "" }, // dll in 3.2, not in 5.0, defined in 5.0
-    { ELangMalay_Apac,          "ms" }
+    { ELangEnglish_India,       "en_IN" },
+    { ELangMalay_Apac,          "ms_APAC" },
+    { ELangIndonesian_Apac,     "id_APAC" }
 };
 #endif
 
 /*!
     \return ISO name corresponding to the Symbian language \a code.
     If the code does not does not correspond to any Symbian language,
-    returns a null string.
+    returns a empty string.
     
     \sa User::Language()
 */
@@ -1257,7 +1218,48 @@ QString HbExtendedLocale::symbianLangToISO( const int code )
     return QString();
 #else
     Q_UNUSED(code);
-    return QString("not supported");
+    return QString();
+#endif
+}
+
+/*!
+    \return RFC3066 name corresponding to the Symbian language \a code.
+    If the code does not does not correspond to any Symbian language,
+    returns a empty string.
+    
+    \sa User::Language()
+*/
+QString HbExtendedLocale::symbianLangToRfc3066( const int code )
+{
+    return symbianLangToISO(code).replace('_', '-');
+}
+
+/*!
+    Converts ISO tag to Symbian language code.
+
+    \param langAndCountry ISO tag, example "fi_FI"
+    
+    \return Symbian language code or -1 (failed case)
+ */
+int HbExtendedLocale::ISOToSymbianLang( const QString &langAndCountry )
+{
+#if defined(Q_OS_SYMBIAN)
+    
+    if ( langAndCountry.length() == 0 ){
+        return -1;
+    }        
+    
+    int count = sizeof(symbian_to_iso_list)/sizeof(symbianToISO);
+    for ( int i = 0; i < count; i++) {
+        if ( langAndCountry.compare(symbian_to_iso_list[i].iso_name) == 0 ) {
+            return symbian_to_iso_list[i].symbian_language;
+        }        
+    }
+    
+    return -1;
+#else
+    Q_UNUSED(langAndCountry);
+    return -1;
 #endif
 }
 
@@ -1810,7 +1812,7 @@ bool HbExtendedLocale::homeHasDaylightSavingOn() const
 #endif    
 }
 
-/*! \enum HbExtendedLocale::DaylightSavingZone
+/*! 
     Returns the daylight saving zone in which the home city is located.
     
     \value Home Home daylight saving zone

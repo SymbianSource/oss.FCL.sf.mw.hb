@@ -58,14 +58,14 @@ enum HbPredictionInterfaceTypeFlag {
     HbPredInterfaceLatinBased = 0x00000001,
     HbPredInterfaceChinese    = 0x00000002,
     HbPredInterfaceJapanese   = 0x00000004,
-    HbPredInterfaceHidden     = 0x00000008     /**< The engine is exluded from factory queries and must be instantiated directly */
+    HbPredInterfaceHidden     = 0x00000008     /**< The engine is excluded from factory queries and must be instantiated directly */
 };
 
 Q_DECLARE_FLAGS(HbPredictionInterfaceType, HbPredictionInterfaceTypeFlag)
 
 
 class HB_CORE_EXPORT HbPredictionBase
-{        
+{
 public:
     virtual ~HbPredictionBase();
 
@@ -76,6 +76,7 @@ public:
     virtual QList<HbInputLanguage> languages() const = 0;
     virtual void setWord(const QString& word, HbPredictionCallback* callback = 0) = 0;
     virtual void updateCandidates(int& bestGuessLocation, bool& noMoreCandidates) = 0;
+    virtual bool updateCandidates(int& bestGuessLocation) = 0;
     virtual void appendKeyPress(const int keycode, const Qt::KeyboardModifiers modifiers, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0) = 0;
     virtual void deleteKeyPress(HbPredictionCallback* callback = 0) = 0;
     virtual void commit(const QString &word = QString()) = 0;
@@ -100,7 +101,7 @@ class HB_CORE_EXPORT HbPredictionEngine : public HbPredictionBase
 {
 public:
     /*!
-    Specifies error correction levels. 
+    Specifies error correction levels.
     */
     enum HbErrorCorrectionLevel {
         HbErrorCorrectionLevelNone = 0,
@@ -112,8 +113,9 @@ public:
 public:
     virtual void setCandidateList(QStringList* candidateList) = 0;
     virtual QStringList candidateList() = 0;
+    virtual QStringList candidates() = 0;
     virtual int inputLength() = 0;
-    virtual void appendCharacter(const QChar aChar, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0) = 0;
+    virtual void appendCharacter(const QChar character, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0) = 0;
 
     virtual QStringList nextWordCandidateList(HbPredictionCallback* callback = 0);
     virtual bool setErrorCorrectionLevel(HbErrorCorrectionLevel level);
@@ -140,7 +142,7 @@ public:
 
     virtual QStringList getCandidates(int startIndex, int count) = 0;
     virtual bool selectCandidate(int index) = 0;
-    virtual bool selectCandidate(const QString& candidate) = 0; 
+    virtual bool selectCandidate(const QString& candidate) = 0;
     virtual bool candidateExist(int index) = 0;
 
     virtual bool pressKey(const int keycode, const Qt::KeyboardModifiers modifiers, const int textCase = 0) = 0;

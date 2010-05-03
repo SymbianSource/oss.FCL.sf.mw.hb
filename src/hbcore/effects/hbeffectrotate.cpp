@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+
 #include "hbeffectrotate_p.h"
 #include "hbeffectanimation_p.h"
 #include "hbeffectutils_p.h"
@@ -45,7 +46,6 @@ private:
     void handleAnimationFinish();
 
 public:
-    HbEffectGroup *mGroup;
     Qt::Axis mAxis;
     qreal mCenterX;
     qreal mCenterY;
@@ -57,8 +57,7 @@ HbEffectRotateAnimation::HbEffectRotateAnimation(
     HbEffectGroup *group,
     Qt::Axis axis,
     int duration ) :
-        HbEffectAnimation(),
-        mGroup(group),
+        HbEffectAnimation(group),
         mAxis(axis),
         mCenterX(0),
         mCenterY(0),
@@ -162,11 +161,10 @@ HbEffectRotate::HbEffectRotate(
     }
 
     // Create rotation animation
-
     HbEffectRotateAnimation *anim = new HbEffectRotateAnimation(
         group, axis, duration);
 
-    anim->addLooping(angleParam, group);
+    anim->addLooping(angleParam);
 
     foreach( const HbKeyFrame &kf, keyFrameList ) {
 	    if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
@@ -188,8 +186,6 @@ HbEffectRotate::HbEffectRotate(
     anim->setEndValue(QVariant(endAngle));
 }
 
-/* Destructor
-*/
 HbEffectRotate::~HbEffectRotate()
 {
     if (mAnimation) {
@@ -205,8 +201,6 @@ QString HbEffectRotate::name() const
 
 void HbEffectRotate::init()
 {
-
-
     bool valueOk(false);
     qreal value = HbEffectUtils::resolveFxmlRef(originXData, &valueOk, item(), HbEffectUtils::Center);
     if (valueOk) {

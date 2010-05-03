@@ -66,7 +66,7 @@ void HbInputPredictionHandlerPrivate::deleteOneCharacter()
     mShowTooltip = true;
     // A backspace in predictive means updating the engine for the delete key press
     // and get the new candidate list from the engine.
-    if ((mEngine->inputLength() >= 1) || selectWord()) {
+    if ( mEngine->inputLength() >= 1 ) {
         //Only autocomplition part should be deleted when autocompliton part is enable and user pressed a delete key
         if(false == mTailShowing) {
             mEngine->deleteKeyPress( this );
@@ -74,30 +74,26 @@ void HbInputPredictionHandlerPrivate::deleteOneCharacter()
         //To prevent showing autocompletion part while deleting the characters using backspace key
         mShowTail = false;
         mShowTooltip = false;
-		if (mEngine->inputLength() > 0) {
-            bool unused = false;
-            mEngine->updateCandidates(mBestGuessLocation, unused);
-            if (!mCandidates->count()) {
-                mCandidates->append(mEngine->currentWord());
-            }
-		}
+		bool unused = false;
+        mEngine->updateCandidates(mBestGuessLocation, unused);
+		//If Input length greater or equal to one then Append the current word to candidate 
+		if (!mCandidates->count() && mEngine->inputLength() >= 1) {
+			mCandidates->append(mEngine->currentWord());
+        }
 		mCanContinuePrediction = true;
 		// update the editor with the new preedit text.
         updateEditor();
         return;
-    }
-
-    HbInputFocusObject* focusedObject = 0;
-    focusedObject = mInputMethod->focusObject();
-    if (!focusedObject) {
+    } else {
+        // we come here if their is no data in engine.
+        // once the word is committed, we can not bring it back to inline edit.
+        // so if the engine does not have any data, we just send backspace event to the editor.
+        Q_Q(HbInputPredictionHandler);
+        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);		
+        q->sendAndUpdate(event);
+        event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
+        q->sendAndUpdate(event);
         return;
-    }
-
-    if ((focusedObject->inputMethodQuery(Qt::ImCursorPosition).toInt() >= 0) || focusedObject->preEditString().length()) {
-        QList<QInputMethodEvent::Attribute> list;
-        QInputMethodEvent event(QString(), list);
-        event.setCommitString(QString(), -1, 1);
-        commit(event);
     }
 }
 
@@ -194,78 +190,6 @@ QList<HbKeyPressProbability> HbInputPredictionHandlerPrivate::probableKeypresses
 }
 
 /*!
-This sets the selected candidate from the candidate list as the editor text.
-*/
-bool HbInputPredictionHandlerPrivate::selectWord(bool selectFromLeft)
-{
-    if (!mEngine) {
-        return false;
-    }
-    mShowTail = false;
-
-    HbInputFocusObject* focusedObject = 0;
-    focusedObject = mInputMethod->focusObject();
-    if(!focusedObject) {
-        return false;
-    }
-    // No word selected, if we move next to a word on left side, select it
-    int cursorPos = focusedObject->inputMethodQuery(Qt::ImCursorPosition).toInt();
-
-    QString text = focusedObject->inputMethodQuery(Qt::ImSurroundingText).toString();
-    if ((cursorPos > 0 && selectFromLeft) || (cursorPos < text.length() && !selectFromLeft)) {
-        int start;
-        int end;
-        if (selectFromLeft && cursorPos>=1 &&!text.at(cursorPos-1).isSpace()) {
-            // selecting word from left side of cursor
-            end = cursorPos;
-            for(start = end; start > 0; start--) {
-                if (text.at(start-1).isSpace()) {
-                    break;
-                }
-            }
-        } else if (!selectFromLeft && !text.at(cursorPos).isSpace()) {
-            // selecting word from right side of cursor
-            start = cursorPos;
-            for(end = start; end < text.length(); ++end) {
-                if (text.at(end).isSpace()) {
-                    break;
-                }
-            }
-        } else {
-            // no word in the direction where cursor is moving
-            return false;
-        }
-        int length = end-start;
-        // update internal state and editor
-        if(length > 0){
-            mEngine->setWord(text.mid(start, length), this);
-        }
-        bool unused = false;
-        mEngine->updateCandidates(mBestGuessLocation, unused);
-        //With selection we can always continue predicting, even when the selection 
-        //is not a well predicted word.
-        if (!mCandidates->count()) {
-            //Here we are making sure that even if the engine does not return any candidate
-            //for given input sequence, the candidate list is non-empty. In such a scenario
-            //the candidate list will contain the actual selection or the exact word.
-            mCandidates->append(mEngine->currentWord());
-        }
-        //
-        QTextCharFormat underlined;
-        QList<QInputMethodEvent::Attribute> list;
-        underlined.setFontUnderline(true);
-        QInputMethodEvent::Attribute textstyle(QInputMethodEvent::TextFormat, 0, mEngine->inputLength(), underlined);
-        list.append(textstyle);
-        QInputMethodEvent event(mCandidates->at(0), list);
-        event.setCommitString(QString(), (selectFromLeft ? -length : 0), length);
-        focusedObject->sendEvent(event);
-        return true;
-    } else {
-        return false;
-    }
-}
-
-/*!
 This method updates the editor contents based on the candidates available in the candidate list.
 */
 void HbInputPredictionHandlerPrivate::updateEditor()
@@ -293,7 +217,7 @@ void HbInputPredictionHandlerPrivate::updateEditor()
             int taillength = mCandidates->at(mBestGuessLocation).length() - mEngine->inputLength();
             if (taillength > 0 && mShowTail) {
                 // TODO: Color from skin should be used
-				QColor col = HbColorScheme::color("qtc_editor_hint_normal");
+				QColor col = HbColorScheme::color("qtc_input_hint_normal");
                 QBrush brush(col);
                 QTextCharFormat gray;
                 gray.setForeground(brush);
@@ -509,9 +433,10 @@ void HbInputPredictionHandlerPrivate::mouseHandler(int cursorPosition, QMouseEve
 
 void HbInputPredictionHandlerPrivate::init()
 {
+    mEngine = NULL;
     HbInputLanguage language = HbInputSettingProxy::instance()->globalInputLanguage();
     mEngine = HbPredictionFactory::instance()->predictionEngineForLanguage(language.language());
-    if (mEngine) {
+    if (mEngine && !mCandidates) {
         mCandidates = new QStringList();
     }
 }
@@ -652,6 +577,7 @@ void HbInputPredictionHandlerPrivate::handleEmptyCandidateList()
         mEngine->deleteKeyPress();
         mEngine->updateCandidates(mBestGuessLocation, isCustomWord);
         if (mCandidates->count()){
+			(*mCandidates)[mBestGuessLocation] = (*mCandidates)[mBestGuessLocation].left(mEngine->inputLength());
             (*mCandidates)[mBestGuessLocation].append("?");
         } else {
             //Should the mBestGuessLocation not be zero. 
@@ -755,7 +681,7 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
             break;
         case HbInputModeActionPrimaryLanguageChanged:
             if(!d->mEngine) {
-                d->init();
+            d->init();
             }
             if (d->mEngine) {
                 d->mEngine->setLanguage(HbInputSettingProxy::instance()->globalInputLanguage());

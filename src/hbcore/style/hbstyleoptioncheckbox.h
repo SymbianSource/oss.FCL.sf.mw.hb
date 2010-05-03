@@ -28,6 +28,7 @@
 
 #include <hbstyleoption.h>
 
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionCheckBox : public HbStyleOption
 {
 public:

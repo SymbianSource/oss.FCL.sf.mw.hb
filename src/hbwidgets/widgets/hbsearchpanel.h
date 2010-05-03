@@ -36,6 +36,9 @@ class HB_WIDGETS_EXPORT HbSearchPanel : public HbWidget
 
     Q_PROPERTY( bool progressive READ isProgressive WRITE setProgressive )
     Q_PROPERTY( bool searchOptions READ isSearchOptionsEnabled WRITE setSearchOptionsEnabled )
+    Q_PROPERTY( bool cancel READ isCancelEnabled WRITE setCancelEnabled )
+    Q_PROPERTY(QString criteria READ criteria WRITE setCriteria USER true)
+    Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
 
 public:
     explicit HbSearchPanel(QGraphicsItem *parent = 0);
@@ -46,6 +49,16 @@ public:
 
     void setSearchOptionsEnabled(bool enabled);
     bool isSearchOptionsEnabled() const;
+
+    void setCancelEnabled(bool enabled);
+    bool isCancelEnabled() const;
+
+    QString placeholderText() const;
+    void setPlaceholderText(const QString &text);
+
+    QString criteria() const;
+    void setCriteria(const QString &text);
+
 
 signals:
     void searchOptionsClicked();

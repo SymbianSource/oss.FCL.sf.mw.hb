@@ -38,11 +38,8 @@ class HB_CORE_EXPORT HbInputFilter : public QObject
 public:
     virtual ~HbInputFilter() {};
 
-    /*!
-    Returns true if given character passes the filter.
-    */
-    virtual bool filter(QChar aChar) = 0;
-    virtual void filterString(const QString &aIn, QString &aOut);
+    virtual bool filter(QChar character) = 0;
+    virtual void filterString(const QString &in, QString &out);
 };
 
 #endif // HB_INPUT_FILTER_H

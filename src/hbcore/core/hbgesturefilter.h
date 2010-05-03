@@ -40,7 +40,6 @@
 class HbGesture;
 class HbGestureFilterPrivate;
 class HbGestureSceneFilterPrivate;
-class HbLongPressVisualizer;
 
 class HB_CORE_EXPORT HbGestureFilter : public QObject
 {

@@ -45,7 +45,7 @@ public:
         
         qreal originalM31;
         qreal originalM32;
-        int originalZValue;
+        qreal originalZValue;
         
         HbGridLayout::AnimationType type;
         QGraphicsLayoutItem *startItem;

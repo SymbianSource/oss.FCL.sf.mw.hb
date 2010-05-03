@@ -50,96 +50,95 @@ class HbTlvRenderer
 
 public:
 
-	HbTlvRenderer(const QByteArray &ptr, int width, int height);
+    HbTlvRenderer(const QByteArray &ptr, qint32 width, qint32 height);
 
     virtual ~HbTlvRenderer();
 
     virtual void execute();
 
-    void setVgImageBinder(HbVgImageBinder *imageBinder) 
-    {
+    void setVgImageBinder(HbVgImageBinder *imageBinder) {
         mVgImageBinder = imageBinder;
     }
 
     void initialize();
-    
+
 protected:
 
-    void dVgSeti();
-    void dVgSetf();
-    void dVgSetParameteri();
-    void dVgSetParameterf();
-    void dVgSetParameterfv();
-    void dVgSetColor();
-    void dVgSetPaint();
-    void dVgLoadMatrix();
-    void dVgMultMatrix();
-    void dVgLoadIdentity();
-    void dVgScale();
-    void dVgTranslate();
-    void dVgAppendPathData();
-    void dVgDrawPath();
-    void dVgClearPath();
-    void dVguRect();
-    void dVguEllipse();
-    void dVguRoundRect();
-    void dVguLine();
-    void dVgCreatePaint();
-    void dVgSetiv();
-    void dVgClear();
-    void dVgSetfv();
-    void dVgRotate();
-    void dVgCreatePath();
-    void dVgCreateImage();
-    void dVgGetPixels();
-    void dVgClearImage();
-    void dVgImageSubData();
-    void dVgDrawImage();
-    void dVgDestroyImage();
-    void dVgDestroyPaint();
-    void dVgDestroyPath();
-    void dVgPrepareToBindImage();
-    void dVgBindImage();
-    void dVgUnBindImage();
-    void dVgFlush();
+    void tlvVgSeti();
+    void tlvVgSetf();
+    void tlvVgSetParameteri();
+    void tlvVgSetParameterf();
+    void tlvVgSetParameterfv();
+    void tlvVgSetColor();
+    void tlvVgSetPaint();
+    void tlvVgLoadMatrix();
+    void tlvVgMultMatrix();
+    void tlvVgLoadIdentity();
+    void tlvVgScale();
+    void tlvVgTranslate();
+    void tlvVgAppendPathData();
+    void tlvVgDrawPath();
+    void tlvVgClearPath();
+    void tlvVguRect();
+    void tlvVguEllipse();
+    void tlvVguRoundRect();
+    void tlvVguLine();
+    void tlvVgCreatePaint();
+    void tlvVgSetiv();
+    void tlvVgClear();
+    void tlvVgSetfv();
+    void tlvVgRotate();
+    void tlvVgCreatePath();
+    void tlvVgCreateImage();
+    void tlvVgGetPixels();
+    void tlvVgClearImage();
+    void tlvVgImageSubData();
+    void tlvVgDrawImage();
+    void tlvVgDestroyImage();
+    void tlvVgDestroyPaint();
+    void tlvVgDestroyPath();
+    void tlvVgPrepareToBindImage();
+    void tlvVgBindImage();
+    void tlvVgUnBindImage();
+    void tlvVgFlush();
 
-    virtual void execute(int index);
+    virtual void execute(qint32 index);
 
 #ifdef HB_NVG_DEBUG
     //Command specific logging methods
     void logVgSeti(VGParamType type, VGint fvalue);
     void logVgSetf(VGParamType type, VGfloat fvalue);
-    void logvgSetXv(VGParamType type, VGint count, qint8 vtype, VGint * data); 
-    void logVgSetParameteri(VGHandle handle, VGint paramType, VGint pvalue, int Lpvalue);
-    void logVgSetPaint(VGPaint paint, VGbitfield paintModes, int Lpvalue);
+    void logvgSetXv(VGParamType type, VGint count, qint8 vtype, VGint * data);
+    void logVgSetParameteri(VGHandle handle, VGint paramType, VGint pvalue, qint32 Lpvalue);
+    void logVgSetPaint(VGPaint paint, VGbitfield paintModes, qint32 Lpvalue);
     void logVgDrawPath(VGuint path, VGbitfield paintModes);
-    void logVgSetParameterfv(VGPaint handle, VGint paramtype, int count, float* handlenum);
-    void logvgImageSubData(VGImage imageHandle, const void * dataPtr, int dataLength, VGint dataStride,
-                    VGImageFormat dataFormat, VGint x, VGint y, VGint width, VGint height);
+    void logVgSetParameterfv(VGPaint handle, VGint paramtype, qint32 count, float* handlenum);
+    void logvgImageSubData(VGImage imageHandle, const void * dataPtr, qint32 dataLength, VGint dataStride,
+                           VGImageFormat dataFormat, VGint x, VGint y, VGint width, VGint height);
 #endif
 
 protected:
 
-    typedef void (HbTlvRenderer::*pvgapi)();
-    pvgapi vgapi[VgAPICount];
+    typedef void (HbTlvRenderer::*VgApiCallBack)();
+    VgApiCallBack vgapi[VgApiCount];
 
     HbNvgIconData *  mNvgIconData;
-    int             mDataLength;
+    qint32             mDataLength;
     QSize           mResizedCanvasSize;
 
     struct HbTlvVgHandlePair {
-        enum HandleType {
+        enum HbHandleType {
             VgPath,
             VgPaint,
             VgImage
         };
-        VGHandle    mVgHandle;
-        int         mTlvHandle;
-        HandleType  mHandleType;
-        int         mCustomData;
+        VGHandle      mVgHandle;
+        qint32           mTlvHandle;
+        HbHandleType  mHandleType;
+        qint32           mCustomData;
 
-        explicit HbTlvVgHandlePair(VGHandle vgHandle = 0, int tlvHandle = 0,
-                                   HandleType handleType = VgPaint, int customData = 0)
+        explicit HbTlvVgHandlePair(VGHandle vgHandle = 0, qint32 tlvHandle = 0,
+                                   HbHandleType handleType = VgPaint, qint32 customData = 0)
                 : mVgHandle(vgHandle),
                 mTlvHandle(tlvHandle),
                 mHandleType(handleType),
@@ -147,11 +146,11 @@ protected:
         }
     };
 
-    VGHandle getHandle(int index);
-    VGHandle removeHandle(int index);
-    void getHandlePair(int index, HbTlvVgHandlePair & pair);
+    VGHandle getHandle(qint32 index);
+    VGHandle removeHandle(qint32 index);
+    void getHandlePair(qint32 index, HbTlvVgHandlePair & pair);
 
-    void setHandle(int index, VGHandle handle);
+    void setHandle(qint32 index, VGHandle handle);
 
     QPoint  getTranslatedPoint(VGfloat *matrix, const QPoint &point);
     VGfloat minVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4);
@@ -160,18 +159,18 @@ protected:
     VGPath          mPathHandle;
 
     quint8          mNvgHeader[NvgHeaderSize];
-    int            mTargetWidth;
-    int            mTargetHeight;
+    qint32            mTargetWidth;
+    qint32            mTargetHeight;
     bool           mScaled;
 
     VGfloat             mUserMatrix[9];
     HbVgImageBinder *    mVgImageBinder;
-    int               mPrepareToBindImage;
+    qint32               mPrepareToBindImage;
     QList<HbTlvVgHandlePair > mTlvVgHandleList;
 
     HbNvgTlvIcon *   mNvgTlvIcon;
     friend class HbNvgTlvIcon;
-    
+
     DECLARE_HANDLECHECKER()
 };
 

@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
 <g fill-opacity="0.5" stroke-opacity="0.5">
 <rect fill="none" height="30" width="30"/>
 </g>
-<polygon points="26,4 12,4 12,2 2,2 2,4 2,5 2,6 26,6 "/>
-<polygon points="5,11 25,11 25,12 28,12 28,8 2,8 2,25 9,25 9,22 5,22 "/>
-<path d="M30,16v-2H11v2h1v2h-1v2h3v4h-3v2h1v2h-1v2h19v-2h-1v-2h1v-2h-3v-4h3v-2h-1v-2H30z M19,18v-2h3v2H19z M14,16h3v2h-3V16z   M22,26v2h-3v-2H22z M14,26h3v2h-3V26z M27,28h-3v-2h3V28z M24,24h-7v-4h7V24z M27,18h-3v-2h3V18z"/>
+<path d="M6,13h2v1h-2v2h2v3h-2v2h2v1h-2v2h13v-2h-1v-1h1v-2h-2v-3h2v-2h-1v-1h1v-2h-13v2zm3,0h2v1h-2v-1zm3,1v-1h2v1h-2zm-3,7h2v1h-2v-1zm5,0v1h-2v-1h2zm3,1h-2v-1h2v1zm-2-3h-5v-3h5v3zm2-5h-2v-1h2v1z"/>
+<polygon points="5.999,1,5.999,4,26,4,26,24,29,24,29,1"/>
+<path d="M1,29h23v-23h-23v23zm3-20h17v17h-17v-17z"/>
 </svg>

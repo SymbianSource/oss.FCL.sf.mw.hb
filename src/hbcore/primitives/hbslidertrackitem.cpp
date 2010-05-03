@@ -106,66 +106,54 @@ void HbSliderTrackItem::setSpan( qreal span )
     }
 }
 
-void HbSliderTrackItem::paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget )
+void HbSliderTrackItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
 {
-
-    if ( setMask ) {
-        QSize size = boundingRect().size().toSize();
-     
-        QPixmap mask(size);
-        mask.fill(Qt::white);
-        QPainter p;
-        p.begin(&mask);
-
-        p.setBrush(QBrush(Qt::black));
-        if(maximum != minimum) {
-            if(maskWidth == 0) {
-                if(mOrientation == Qt::Horizontal){
+    QSize size = boundingRect().size().toSize();
+    if (setMask) {
+        QRectF maskRect;
+        if (maximum != minimum) {
+            if (maskWidth == 0) {
+                if (mOrientation == Qt::Horizontal) {
                     qreal left = (qreal)boundingRect().topLeft().x();
-                    if(inverted) {
-                        left = (qreal)boundingRect().width()* ((maximum - value)/(qreal) (maximum - minimum));
+                    if (inverted) {
+                        left = (qreal)boundingRect().width() * ((maximum - value) / (qreal)(maximum - minimum));
                     }
-                    if ( layoutDirection() == Qt::RightToLeft ) {
-
-                        p.drawRect(QRectF(
-                            left,
-                            (qreal)boundingRect().topLeft().y(),
-                            (qreal)boundingRect().width()* ((value -  minimum)/(qreal) (maximum - minimum)),
-                            (qreal)boundingRect().height()));
-
+                    if (layoutDirection() == Qt::RightToLeft) {
+                        maskRect = QRectF(
+                                       left,
+                                       (qreal)boundingRect().topLeft().y(),
+                                       (qreal)boundingRect().width() * ((value -  minimum) / (qreal)(maximum - minimum)),
+                                       (qreal)boundingRect().height());
+                    } else {
+                        maskRect = QRectF(
+                                       left,
+                                       (qreal)boundingRect().topLeft().y(),
+                                       (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum)),
+                                       (qreal)boundingRect().height());
                     }
-                    else {
-                        p.drawRect(QRectF(
-                            left,
-                            (qreal)boundingRect().topLeft().y(),
-                            (qreal)trackSpan* ((value -  minimum)/(qreal) (maximum - minimum)),
-                            (qreal)boundingRect().height()));
-                    }
-
-                }
-                else{
-                    qreal start = boundingRect().bottom() -(qreal)trackSpan*((value -  minimum)/(qreal) (maximum - minimum));
+                } else {
+                    qreal start = boundingRect().bottom() - (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum));
                     qreal end = boundingRect().bottom();
 
-                    if(inverted) {
+                    if (inverted) {
                         start = boundingRect().top();
-                        end = start+(qreal)trackSpan*((value -  minimum)/(qreal) (maximum - minimum));
+                        end = start + (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum));
                     }
-                    p.drawRect(QRectF(
-                        (qreal)boundingRect().topLeft().x(),
-                        start,
-                        (qreal)boundingRect().width(),
-                        end ));
+                    maskRect = QRectF(
+                                   (qreal)boundingRect().topLeft().x(),
+                                   start,
+                                   (qreal)boundingRect().width(),
+                                   end);
                 }
             }
         }
-        p.end();        
-                  
-        frameDrawer().setMask(mask); 
-        setMask = false; 
+        QPainterPath rectPath;
+        rectPath.addRect(maskRect);
+        frameDrawer().setClipPath(rectPath);
+        setMask = false;
     }
-    HbFrameItem::paint(painter,option,widget);
 
+    HbFrameItem::paint(painter, option, widget);
 }
 
  /*!

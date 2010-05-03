@@ -34,6 +34,10 @@
 HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead \
 { &HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead; }; class
 
+#define HB_DECL_DEPRECATED Q_DECL_DEPRECATED
+#define HB_DECL_VARIABLE_DEPRECATED Q_DECL_VARIABLE_DEPRECATED
+#define HB_DECL_CONSTRUCTOR_DEPRECATED Q_DECL_CONSTRUCTOR_DEPRECATED
+
 #ifndef HB_BOOTSTRAPPED
 
 #  ifdef BUILD_HB_CORE
@@ -72,7 +76,7 @@ HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead \
 #    define HB_FEEDBACK_EXPORT Q_DECL_IMPORT
 #  endif // BUILD_HB_FEEDBACK
 
-#  ifdef BUILD_HB_INTERNAL
+#  ifdef HB_DEVELOPER
 #    if defined(BUILD_HB_CORE) || defined(BUILD_HB_WIDGETS)
 #      define HB_AUTOTEST_EXPORT Q_DECL_EXPORT
 #    else

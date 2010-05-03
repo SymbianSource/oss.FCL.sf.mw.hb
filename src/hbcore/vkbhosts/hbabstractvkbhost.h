@@ -59,6 +59,7 @@ public: // From HbVkbHost
 
 protected: // From HbVkbHost
     void refresh();
+    bool stateTransitionOngoing() const;
 
 public:
     void resizeKeyboard();
@@ -76,6 +77,7 @@ public slots:
     virtual void closeFinished();
     virtual void animationFinished(); 
     virtual void currentViewChanged(HbView*);
+    virtual void stateTransitionCompleted();
 
 protected:
     HbAbstractVkbHost() : d_ptr(0) {}

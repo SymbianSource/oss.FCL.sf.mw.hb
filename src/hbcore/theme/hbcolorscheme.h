@@ -38,6 +38,8 @@ class HB_CORE_EXPORT HbColorScheme
 {
 public:
     static QColor color( const QString &colorRole );
+private:
+    HbColorScheme();
 };
 
 #endif // HBCOLORSCHEME_H

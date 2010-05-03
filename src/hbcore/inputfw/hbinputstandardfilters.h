@@ -36,7 +36,7 @@ class HB_CORE_EXPORT HbPhoneNumberFilter : public HbInputFilter
 public:
     static HbPhoneNumberFilter* instance();
     virtual ~HbPhoneNumberFilter();
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
     HbPhoneNumberFilter();
@@ -53,7 +53,7 @@ class HB_CORE_EXPORT HbFormattedNumbersFilter : public HbInputFilter
 public:
     static HbFormattedNumbersFilter* instance();
     virtual ~HbFormattedNumbersFilter();
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
    HbFormattedNumbersFilter();
@@ -70,7 +70,7 @@ class HB_CORE_EXPORT HbDigitsOnlyFilter : public HbInputFilter
 public:
     static HbDigitsOnlyFilter* instance();
     virtual ~HbDigitsOnlyFilter();
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
    HbDigitsOnlyFilter();
@@ -87,7 +87,7 @@ class HB_CORE_EXPORT HbUrlFilter : public HbInputFilter
 public: 
     static HbUrlFilter* instance();
     virtual ~HbUrlFilter();
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
      HbUrlFilter();
@@ -105,7 +105,7 @@ class HB_CORE_EXPORT HbEmailAddressFilter : public HbInputFilter
 public: 
     static HbEmailAddressFilter* instance();
     virtual ~HbEmailAddressFilter();
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
     HbEmailAddressFilter();
@@ -122,7 +122,7 @@ class HB_CORE_EXPORT HbInputLowerCaseFilter : public HbInputFilter
 public:
     static HbInputLowerCaseFilter* instance();
     virtual ~HbInputLowerCaseFilter() {}
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
     HbInputLowerCaseFilter() {}
@@ -139,7 +139,7 @@ class HB_CORE_EXPORT HbInputUpperCaseFilter : public HbInputFilter
 public:
     static HbInputUpperCaseFilter* instance();
     virtual ~HbInputUpperCaseFilter() {}
-    bool filter(QChar aChar);
+    bool filter(QChar character);
 
 private:
     HbInputUpperCaseFilter() {}

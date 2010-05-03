@@ -1,15 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<g>
-<rect height="30.002" style="fill:none;" width="30.002"/>
-</g>
-<polygon points="11.561,21.769 4.789,15.001 8.398,11.392 12.141,15.135   20.215,7.059 23.824,10.668 12.096,22.396 " style="opacity:0.6;enable-background:new    ;"/>
-<polygon points="22.576,10.668 20.215,8.307 12.141,16.383 8.398,12.64 6.037,15.001 12.136,21.098   12.141,21.092 12.146,21.098 " style="fill:url(#SVGID_1_);"/>
-<polygon points="8.398,13.522 12.141,17.266 20.215,9.189   22.135,11.109 22.576,10.668 20.215,8.307 12.141,16.383 8.398,12.64 6.037,15.001 6.478,15.442 " style="opacity:0.4;fill:#FFFFFF;enable-background:new    ;"/>
+<rect fill="none" height="30.002" width="30.002"/>
+<polygon fill-opacity="0.6" points="0.587,15.429 5.713,10.303 11.597,16.187 24.289,3.491 29.416,8.617   11.605,26.427 " stroke-opacity="0.6"/>
+<polygon fill="url(#SVGID_1_)" points="28.002,8.617 24.289,4.905 11.597,17.601 5.713,11.718 2.001,15.429 11.589,25.013   11.597,25.003 11.605,25.013 "/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="5.713,13.103 11.597,18.989 24.289,6.292 27.307,9.31   28.002,8.617 24.289,4.905 11.597,17.601 5.713,11.718 2.001,15.429 2.695,16.12 " stroke-opacity="0.4"/>
 <defs>
-<linearGradient gradientTransform="matrix(0.8824 0 0 -0.8824 -284.8232 -348.3516)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="338.9951" x2="338.9951" y1="-403.4404" y2="-420.1114">
+<linearGradient gradientTransform="matrix(0.8824 0 0 0.8824 -227.5791 -1120.5674)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="274.9102" x2="274.9102" y1="1274.2861" y2="1300.495">
 <stop offset="0" style="stop-color:#A0F800"/>
 <stop offset="1" style="stop-color:#319E00"/>
 </linearGradient>

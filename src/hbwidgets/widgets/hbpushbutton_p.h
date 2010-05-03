@@ -47,8 +47,6 @@ class QTimer;
 class QGraphicsItem;
 QT_END_NAMESPACE
 
-class HbGestureSceneFilter;
-class HbGesture;
 class HbFrameDrawer;
 class QGraphicsItem;
 
@@ -61,7 +59,6 @@ public:
     virtual ~HbPushButtonPrivate();
 
     void createPrimitives();
-    void initGesture();
     void initialize();
     void _q_handleLongPress(QPointF point);
     void _q_handleLongKeyPress( );
@@ -79,8 +76,6 @@ public:
     HbIcon background;
     Qt::Orientation orientation;
     HbFrameDrawer *backgroundFrameDrawer;
-    HbGestureSceneFilter *gestureFilter;
-    HbGesture *gestureLongpressed;
     QTimer *longPressTimer;
     Qt::Alignment textAlignment;
     Qt::Alignment additionalTextAlignment;

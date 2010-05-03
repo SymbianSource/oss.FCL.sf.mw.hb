@@ -91,7 +91,7 @@ is visible on the keypad. The deafult implementation is empty.
 
 /*!
 \fn QSizeF HbVirtualKeyboard::minimizedKeyboardSize()
-This function is used by HbVkbHost to show the keypad in minimized state.
+The vkb host queries the size of minimized keyboard through this method.
 */
 
 /*!

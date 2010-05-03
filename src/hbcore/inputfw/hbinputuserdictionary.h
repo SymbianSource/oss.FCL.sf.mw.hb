@@ -42,12 +42,12 @@ class HbPredictionCallback;
 class HB_CORE_EXPORT HbUserDictionary
 {
 public:
-    virtual ~HbUserDictionary() {} 
+    virtual ~HbUserDictionary() {}
 
     virtual int id() const = 0;
-    virtual bool addWord(const QString& aWord, HbPredictionCallback* aCallback = 0) = 0;
-    virtual bool addWords(const QStringList& aWordList) = 0;
-    virtual bool removeWord(const QString& aWord) = 0;
+    virtual bool addWord(const QString& word, HbPredictionCallback* callback = 0) = 0;
+    virtual bool addWords(const QStringList& wordList) = 0;
+    virtual bool removeWord(const QString& word) = 0;
     virtual int numberOfWords() const = 0;
     virtual QStringList listWords() = 0;
     virtual void clear() = 0;

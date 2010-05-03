@@ -30,6 +30,13 @@
     \brief HbStyleOptionInputDialog has the style component for inpudialog primitives
 */
 
+
+/*!
+
+    \deprecated HbStyleOptionInputDialog::HbStyleOptionInputDialog() 
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionInputDialog::HbStyleOptionInputDialog() :
     HbStyleOptionPopup(),
     text(),
@@ -39,6 +46,13 @@ HbStyleOptionInputDialog::HbStyleOptionInputDialog() :
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionInputDialog::HbStyleOptionInputDialog(const HbStyleOptionInputDialog&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionInputDialog::HbStyleOptionInputDialog(const HbStyleOptionInputDialog &other) :
     HbStyleOptionPopup(other),
     text(other.text),

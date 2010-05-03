@@ -25,7 +25,6 @@
 #include <hbgridview_p.h>
 #include <hbgridlayout_p.h>
 #include <hbgriditemcontainer_p.h>
-#include <hbgridviewitem_p.h>
 
 #include <hbgesturefilter.h>
 #include <hbgridviewitem.h>
@@ -35,7 +34,6 @@
 
 #include <QDebug>
 #include <QGraphicsView>
-
 
 const QString KDefaultLayoutOption = "default";
 
@@ -52,14 +50,8 @@ HbGridViewPrivate::~HbGridViewPrivate()
 void HbGridViewPrivate::init()
 {
     Q_Q(HbGridView);
-    q->setClampingStyle(q->BounceBackClamping);
-    q->setScrollingStyle(q->PanOrFlick);
-    q->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
-    q->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
-    q->setFrictionEnabled(false);
-    q->setFlag(QGraphicsItem::ItemClipsToShape);
-    QObject::connect(q, SIGNAL(scrollDirectionsChanged(Qt::Orientations)),
-                      q, SLOT(scrollDirectionChanged(Qt::Orientations)));
+    q->connect(q, SIGNAL(scrollDirectionsChanged(Qt::Orientations)),
+               q, SLOT(scrollDirectionChanged(Qt::Orientations)));
     mLayoutOptionName = KDefaultLayoutOption;
 }
 
@@ -125,6 +117,44 @@ void HbGridViewPrivate::relayout()
     }
 }
 
+qreal HbGridViewPrivate::calculateScrollBarPos() const
+{
+    // calculate thumb size and position
+    Q_Q(const HbGridView);
+
+    qreal thumbPos = 0.0;
+    int columnCount = getScrollDirectionColumnCount();
+    int rowCount = getScrollDirectionRowCount();
+    qreal containerPos = getScrollDirectionContainerPos();
+    qreal itemSize = getScrollDirectionItemSize();
+
+    // add coulmnCount-1 to indexCount to get remainder included in result (rounding up)
+    int modelRowCount = (mModelIterator->indexCount() + columnCount - 1) / columnCount;
+    modelRowCount -= rowCount;
+    QModelIndex firstItem = mContainer->items().first()->modelIndex();
+    qreal firstVisibleRow = (qreal)(q->modelIterator()->indexPosition(firstItem)) / columnCount;
+    firstVisibleRow += -containerPos / itemSize; // applying container pos to get trully visible row 
+    thumbPos = firstVisibleRow / (qreal)modelRowCount;
+    thumbPos = qBound((qreal)0.0, thumbPos, (qreal)1.0);
+
+    return thumbPos;
+}
+
+qreal HbGridViewPrivate::calculateScrollBarThumbSize() const
+{
+    // calculate thumb size and position
+    qreal thumbSize = 0.0;
+    int columnCount = getScrollDirectionColumnCount();
+    int rowCount = getScrollDirectionRowCount();
+
+    // add coulmnCount-1 to indexCount to get remainder included in result (rounding up)
+    int modelRowCount = (mModelIterator->indexCount() + columnCount - 1) / columnCount;
+    thumbSize = (qreal)rowCount / (qreal)modelRowCount;
+    thumbSize = qBound((qreal)0.0, thumbSize, (qreal)1.0);
+
+    return thumbSize;
+}
+
 /*!
     Overwrites the default scroll area scrollbar updating algorithm when
     recycling is used. On recycling the scrollbar position & size is calculated
@@ -132,136 +162,41 @@ void HbGridViewPrivate::relayout()
 */
 void HbGridViewPrivate::updateScrollBar(Qt::Orientation orientation)
 {
-    if (!mContainer->itemRecycling()
-        || mContainer->itemPrototypes().count() != 1 
-        || mContainer->items().count() == 0) {
+    if (!handleScrollBar(orientation)) {
         HbScrollAreaPrivate::updateScrollBar(orientation);
     } else {
         if (mContainer->layout() && !mContainer->layout()->isActivated()) {
             mContainer->layout()->activate();
         }
-        if (orientation == Qt::Vertical) {
-            updateVerticalScrollBar();
-        } else {
-            updateHorizontalScrollBar();
-        }
-    }
-} 
 
-void HbGridViewPrivate::updateHorizontalScrollBar()
-{    
-    Q_Q(const HbGridView);
-    
-    HbAbstractViewItem *firstItem = mContainer->items().first();
-    qreal uniformItemWidth = firstItem->size().width();
-
-    int rowCount = q->rowCount();
-    int indexCount = mModelIterator->indexCount();
-
-    int virtualColumnCount = indexCount / rowCount;
-    int remainder = indexCount % rowCount;
-    if (remainder != 0) {
-        virtualColumnCount++;
-    }
-
-    int firstItemModelRowNumber = mModelIterator->indexPosition(firstItem->modelIndex());
-    int firstBufferItemRowNumber = firstItemModelRowNumber / rowCount; 
-
-    QRectF itemRect = itemBoundingRect(firstItem);
-    qreal realLeftBoundary = itemRect.left();   
-    qreal virtualLeftBoundary = realLeftBoundary - (firstBufferItemRowNumber*uniformItemWidth); 
-
-    qreal containerVirtualWidth = uniformItemWidth *  virtualColumnCount;
-    qreal thumbPosition(0);
-
-    // The scrollbar "thumb" position is the current position of the contents widget divided
-    // by the difference between the width of the contents widget and the width of the scroll area.
-    // This formula assumes that the "thumb" of the the scroll bar is sized proportionately to
-    // the width of the contents widget.
-    qreal hiddenVirtualWidth = containerVirtualWidth - q->boundingRect().width();
-    if (hiddenVirtualWidth != 0) {
-        thumbPosition = (-virtualLeftBoundary)  / hiddenVirtualWidth;
-    }
-
-    if (thumbPosition < 0.0)
-        thumbPosition = 0.0;
-    else if (thumbPosition > 1.0)
-        thumbPosition = 1.0;
-
-    if (mHorizontalScrollBar) {
-        if (containerVirtualWidth!=0) {
-            mHorizontalScrollBar->setPageSize(qBound ( (qreal)0.0,
-                                     q->boundingRect().width() / containerVirtualWidth,
-                                      (qreal)1.0));
-        }
-        mHorizontalScrollBar->setValue(thumbPosition); 
+        qreal thumbPos = calculateScrollBarPos();
+        HbScrollBar *scrollBar = getScrollDirectionScrollBar();
+        scrollBar->setValue(thumbPos);
     }
 }
 
-void HbGridViewPrivate::updateVerticalScrollBar()
-{
-    Q_Q(const HbGridView);
-
-    HbAbstractViewItem *firstItem = mContainer->items().first();
-    qreal uniformItemHeight = firstItem->size().height();
-
-    int columnCount = q->columnCount();
-    int indexCount = mModelIterator->indexCount();
-
-    int virtualRowCount = indexCount / columnCount;
-    int remainder = indexCount % columnCount;
-    if (remainder != 0) {  //even one item requires the whole row
-        virtualRowCount++;
-    }
-
-    int firstItemModelRowNumber = mModelIterator->indexPosition(firstItem->modelIndex());
-    int firstBufferItemRowNumber = firstItemModelRowNumber / columnCount; 
-
-    QRectF itemRect = itemBoundingRect(firstItem);
-    qreal realTopBoundary = itemRect.top();
-    qreal virtualTopBoundary = realTopBoundary - (firstBufferItemRowNumber*uniformItemHeight); 
-
-    qreal containerVirtualHeight = uniformItemHeight *  virtualRowCount;
-    qreal thumbPosition = 0;
-
-    // The scrollbar "thumb" position is the current position of the contents widget divided
-    // by the difference between the height of the contents widget and the height of the scroll area.
-    // This formula assumes that the "thumb" of the the scroll bar is sized proportionately to
-    // the height of the contents widget.
-    qreal hiddenVirtualHeight = containerVirtualHeight - q->boundingRect().height();
-    if (hiddenVirtualHeight != 0) {
-        thumbPosition = (-virtualTopBoundary) / hiddenVirtualHeight;
-    } 
-
-    if (thumbPosition < 0.0)
-        thumbPosition = 0.0;
-    else if (thumbPosition > 1.0)
-        thumbPosition = 1.0;
-
-    if (mVerticalScrollBar) {
-        if (containerVirtualHeight!=0) {
-            mVerticalScrollBar->setPageSize(qBound ( (qreal)0.0,
-                                     q->boundingRect().height() / containerVirtualHeight,
-                                      (qreal)1.0));
-        }
-        mVerticalScrollBar->setValue(thumbPosition); 
-    }    
-}
-
+/*!
+    \reimp
+*/
 void HbGridViewPrivate::setScrollBarMetrics(Qt::Orientation orientation)
-{   
-    if (!mContainer->itemRecycling()
-        || mContainer->itemPrototypes().count() != 1 
-        || mContainer->items().count() == 0)  {
+{
+    if (!handleScrollBar(orientation)) {
         HbScrollAreaPrivate::setScrollBarMetrics(orientation);
     } else {
-        //We just make sure that the base clas is not called
-        //It set the page size wrongly
-        updateScrollBar(orientation); 
-    }
-} 
+        if (mContainer->layout() && !mContainer->layout()->isActivated()) {
+            mContainer->layout()->activate();
+        }
 
-void HbGridViewPrivate::setContentPosition( qreal value, Qt::Orientation orientation, bool animate )
+        qreal thumbSize = calculateScrollBarThumbSize();
+        HbScrollBar *scrollBar = getScrollDirectionScrollBar();
+        scrollBar->setPageSize(thumbSize);
+    }
+}
+
+/*!
+    \reimp
+*/
+void HbGridViewPrivate::setContentPosition(qreal value, Qt::Orientation orientation, bool animate)
 {
     Q_Q( HbGridView );
 
@@ -270,77 +205,21 @@ void HbGridViewPrivate::setContentPosition( qreal value, Qt::Orientation orienta
             mContainer->layout()->activate();
         }
 
-        qreal filteredValue = (int)(value * 1000) / 1000.0;        
-
-        HbAbstractViewItem *firstItem = mContainer->items().first();
-
-        qreal uniformItemDimension = 0; // width or height of item
-        qreal dimension = 0; // width or height of view
-        int dimensionCount = 0; // rowcount or columncount
-        qreal posInBeginning = 0; // top or left position of first item in buffer
+        int columnCount = getScrollDirectionColumnCount();
+        int rowCount = getScrollDirectionRowCount();
+        int modelRowCount = (mModelIterator->indexCount() + columnCount - 1) / columnCount;
+        modelRowCount -= rowCount;
+        qreal thumbPos = calculateScrollBarPos();
+        qreal itemSize = getScrollDirectionItemSize();
+        qreal diff = (value - thumbPos) * itemSize * modelRowCount;
 
         if (orientation == Qt::Vertical) {
-            posInBeginning = itemBoundingRect(firstItem).top();
-            uniformItemDimension = firstItem->size().height();
-            dimension = q->boundingRect().height();
-            dimensionCount = q->columnCount();
+            q->scrollByAmount(QPointF(0, diff));
         } else {
-            posInBeginning = itemBoundingRect(firstItem).left();
-            uniformItemDimension = firstItem->size().width();
-            dimension = q->boundingRect().width();
-            dimensionCount = q->rowCount();
-        }
-
-        int indexCount = mModelIterator->indexCount();
-        int virtualCount = indexCount / dimensionCount; // amount of rows/columns in "complete" grid
-        int remainder = indexCount % dimensionCount;
-        if (remainder != 0) {  //even one item requires the whole row
-            virtualCount++;
-        }
-
-        qreal target = virtualCount * filteredValue;  // target position in "complete" grid (in rows/columns)
-        int virtualItemCount = virtualCount * dimensionCount; // item count when all the "empty" items are also counted in
-        qreal posToBeInView = dimension * filteredValue; 
-
-        QModelIndex newIndex = mModelIterator->index(qMin((int)(virtualItemCount * filteredValue), indexCount - 1));
-
-        if (!mContainer->itemByIndex(newIndex)) {
-            //jump
-            int itemsInBuffer = mContainer->items().count();
-
-            int newBufferStartItem = (int)(virtualItemCount * filteredValue) - qMin(itemsInBuffer - 1, (int)(itemsInBuffer * filteredValue));
-            mContainer->setModelIndexes(mModelIterator->index(newBufferStartItem));
-            int newBufferStartRow = newBufferStartItem / dimensionCount;
-
-            qreal posToBeInBuffer = ((target - newBufferStartRow) * uniformItemDimension);
-
-            qreal posToBe = posToBeInView - posToBeInBuffer;
-
-            if (orientation == Qt::Vertical) {
-                HbScrollAreaPrivate::setContentPosition(QPointF(0, posToBe)); 
-            } else {
-                HbScrollAreaPrivate::setContentPosition(QPointF(posToBe, 0)); 
-            }
-        } else {
-            // scroll
-            int firstItemRow = mContainer->items().first()->modelIndex().row() / dimensionCount;
-
-            qreal posToBeInBuffer = (target - firstItemRow) * uniformItemDimension;
-            
-            qreal posToBe = posToBeInView - posToBeInBuffer;
-
-            if (orientation == Qt::Vertical) {
-                q->scrollByAmount(QPointF(0, posInBeginning - posToBe));
-            } else {
-                q->scrollByAmount(QPointF(posInBeginning - posToBe, 0));
-            }
+            q->scrollByAmount(QPointF(diff, 0));
         }
     } else {
         HbScrollAreaPrivate::setContentPosition(value, orientation, animate);
-    }
-       
-    if (animate) {
-        updateScrollBar(orientation);
     }
 }
 

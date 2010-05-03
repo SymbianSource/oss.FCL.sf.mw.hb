@@ -26,11 +26,7 @@
 #ifndef HBCSSINSPECTOR_P_H
 #define HBCSSINSPECTOR_P_H
 
-#ifdef HB_SETTINGS_WINDOW
-#define CSS_INSPECTOR
-#endif
-
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
 #include <QWidget>
 #include <hbanchorlayout.h>
 #include <hbwidgetbase.h>
@@ -56,21 +52,28 @@ public slots:
     void setItemTextVisible(bool visible) { mShowItemText = visible; };
     void setHintTextVisible(bool visible) { mShowHintText = visible; };
     void setBoxVisible(bool visible) { mShowBox = visible; };
+	void setHintBoxVisible(bool visible) { mShowHintBox = visible; };
+    void setGuideLinesVisible(bool visible) { mDrawGuideLines = visible; };
     void updateFocusItem(const QGraphicsItem* item);
 
 protected:
     void changeEvent(QEvent *event);
     void updateColors();
+    void paintRect(QPainter *painter, QRectF rect);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 private:
     bool mShowItemText;
     bool mShowHintText;
     bool mShowBox;
+	bool mShowHintBox;
+    bool mDrawGuideLines;
     QColor mTextColor;
     QColor mBoxColor;
     QString mItemText;
     QString mHintText;
+    QRectF mItemRect;
+    QRectF mHintRect;
 };
 
 
@@ -120,6 +123,7 @@ public slots:
 private:
     void removeFilters();
     void addFilters();
+    static QString meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, const QString layoutName);
 
 private:
     explicit HbCssInspectorWindow(QWidget *parent = 0);
@@ -130,9 +134,11 @@ private:
     QLabel *mSizeHintLabel;
     QCheckBox *mArrowsCheck;
     QCheckBox *mOutlinesCheck;
+	QCheckBox *mHintOutlinesCheck;
     QCheckBox *mSpacersCheck;
     QCheckBox *mNameCheck;
     QCheckBox *mSizeHintCheck;
+    QCheckBox *mGuideLinesCheck;
     QRadioButton *mLiveRadio;
     QRadioButton *mClickRadio;
     QRadioButton *mBlockRadio;

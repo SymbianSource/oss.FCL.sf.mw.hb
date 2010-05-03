@@ -41,7 +41,7 @@ class HbNvgTlvIcon : public HbNvgIcon
 private:
 
 public:
-    enum NvgTlvIconCommands {
+    enum HbNvgTlvIconCommands {
         TlvPath = 0x50,
         TlvNone
     };
@@ -51,16 +51,16 @@ public:
 
     virtual ~HbNvgTlvIcon();
 
-    void setPreserveAspectRatio(HbNvgEngine::NvgAlignStatusType preserveAspectSetting,
-            HbNvgEngine::NvgMeetOrSliceType smilFitSetting);
+    void setPreserveAspectRatio(HbNvgEngine::HbNvgAlignType preserveAspectSetting,
+                                HbNvgEngine::HbNvgMeetType smilFitSetting);
 
     void rotate(float angle, float x, float y) ;
-    
-    void setMirroringMode( bool mirroringMode);
 
-    virtual HbNvgEngine::NvgErrorType draw(const QSize &size);
+    void enableMirroring(bool mirroringMode);
 
-    
+    virtual HbNvgEngine::HbNvgErrorType draw(const QSize &size);
+
+
     void directDraw(const QByteArray &buffer, const QSize &targetSize);
 
     void create(const QByteArray &buffer, const QSize& targetSize);
@@ -68,22 +68,22 @@ public:
     void setVgImageBinder(HbVgImageBinder *imageBinder) {
         mVgImageBinder = imageBinder;
     }
-    
+
     void addDrawPathCommand(VGPath path, VGPaintMode paintMode);
 
-    void addCommand(const quint8 * commandBuffer, int commandBufferLength);
+    void addCommand(const quint8 * commandBuffer, qint32 commandBufferLength);
 
-    void addCommand(qint8 commandType, const quint8 * commandBuffer, int commandBufferLength);
+    void addCommand(qint8 commandType, const quint8 * commandBuffer, qint32 commandBufferLength);
 
 
 private:
 
     void doDraw(const QSize &size);
-    
+
     void addPathHandle(VGPath path);
 
     void updateClientMatrices();
-    
+
     void restoreClientMatrices();
 
     VGint             mMatrixMode;
@@ -93,7 +93,7 @@ private:
     HbNvgIconData *      mNvgIconData;
     HbVgImageBinder *    mVgImageBinder;
     HbOpenVgHandleStore* mOpenVgHandles;
-    bool                 mMirroringMode;
+    bool                 mMirrored;
 };
 
 #endif

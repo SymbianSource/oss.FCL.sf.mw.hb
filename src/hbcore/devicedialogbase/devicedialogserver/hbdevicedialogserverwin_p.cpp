@@ -51,9 +51,10 @@ HbDeviceDialogServerPrivate::~HbDeviceDialogServerPrivate()
     \internal
     Initialisation step. Starts a server with given name.
 */
-void HbDeviceDialogServerPrivate::Init()
+int HbDeviceDialogServerPrivate::Init()
 {
-    //do nothing
+    const int error = 0;
+    return error;
 }
 
 /*!
@@ -151,3 +152,7 @@ void HbDeviceDialogServerPrivate::IndicatorsDeactivated(
     Q_UNUSED(indicatorInfoList)
 }
 
+void HbDeviceDialogServerPrivate::IndicatorUserActivated(const QVariantMap &data) const
+{
+    Q_UNUSED(data);
+}

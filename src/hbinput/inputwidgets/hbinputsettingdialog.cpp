@@ -26,6 +26,7 @@
 #if QT_VERSION >= 0x040600
 #include <QGraphicsDropShadowEffect>
 #endif
+#include <QtAlgorithms>
 
 #include <hbdataform.h>
 #include <hbdataformmodel.h>
@@ -38,7 +39,7 @@
 #include <hbdeviceprofile.h>
 
 #include <hbinputlanguage.h>
-
+#include <hbstringutil.h>
 #include <hbdialog_p.h>
 
 #include "hbinputsettingproxy.h"
@@ -57,6 +58,7 @@ public:
     void fillLanguageList(QStringList &list, QList<HbInputLanguage> &languageList, QString replace = QString(" "));
     int languageToIndex(HbInputLanguage &language, QList<HbInputLanguage> &languageList);
     HbInputLanguage indexToLanguage(int index, QList<HbInputLanguage> &languageList);
+    static bool caseInsensitiveLessThan(const HbInputLanguage &s1, const HbInputLanguage &s2);
 
 public:
     HbDataForm *mForm;
@@ -64,23 +66,24 @@ public:
     QList<HbInputLanguage> mSecondaryLanguages;
     HbInputLanguage mPrimaryInputLanguage;
     HbInputLanguage mSecondaryInputLanguage;
-    int mPredictionStatus;
-    HbComboBox *mPrimaryComboBox;
-    HbComboBox *mSecondaryComboBox;
+    bool mPredictionStatus;
     HbPushButton *mPredictionButton;
+    HbDataFormModelItem *mSecondaryLangComboBox;
 };
 
 HbInputSettingDialogPrivate::HbInputSettingDialogPrivate()
- : mPrimaryComboBox(0), mSecondaryComboBox(0), mPredictionButton(0)
+ : mPredictionButton(0), mSecondaryLangComboBox(0)
 {
     mForm = new HbDataForm();
 
     HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     mPrimaryInputLanguage = settings->globalInputLanguage();
     mSecondaryInputLanguage = settings->globalSecondaryInputLanguage();
-    mPredictionStatus = settings->predictiveInputStatus();
+    mPredictionStatus = settings->predictiveInputStatusForActiveKeyboard();
 
     HbInputUtils::listSupportedInputLanguages(mPrimaryLanguages);
+    qStableSort(mPrimaryLanguages.begin(), mPrimaryLanguages.end(), HbInputSettingDialogPrivate::caseInsensitiveLessThan);
+    //No need to sort secondary language as primary language list is already sorted.
     createSecondaryLanguageList();
 }
 
@@ -134,13 +137,24 @@ HbInputLanguage HbInputSettingDialogPrivate::indexToLanguage(int index, QList<Hb
     }
 }
 
+bool HbInputSettingDialogPrivate::caseInsensitiveLessThan(const HbInputLanguage &s1, const HbInputLanguage &s2)
+{
+    //Temporaries because localisedName() is a non-const function
+    HbInputLanguage t1 = s1;
+    HbInputLanguage t2 = s2;
+    //Locale based comparison does not seem to be working perfectly.
+    //return !HbStringUtil::compareC(s1.localisedName(),s2.localisedName());
+    return t1.localisedName().toLower() < t2.localisedName().toLower();
+}
+
+
 /// @endcond
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::HbInputSettingDialog
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::HbInputSettingDialog(HbSettingItems, QGraphicsWidget*)
+    is deprecated. HbInputSettingDialog will be removed.
+
+*/
 HbInputSettingDialog::HbInputSettingDialog(HbSettingItems items, QGraphicsWidget *parent)
     : HbDialog(*new HbInputSettingDialogPrivate, parent)
 {
@@ -192,14 +206,13 @@ HbInputSettingDialog::HbInputSettingDialog(HbSettingItems items, QGraphicsWidget
     }
     // Create drop down list for secondary language selection
     if(items & HbSettingItemSecondaryLang) {
-        HbDataFormModelItem *secondaryLanguage =
-            model->appendDataFormItem(HbDataFormModelItem::ComboBoxItem, tr("Secondary Writing language"));
+        d->mSecondaryLangComboBox = model->appendDataFormItem(HbDataFormModelItem::ComboBoxItem, tr("Secondary Writing language"));
         QStringList secondaryLanguageItems;
         d->fillLanguageList(secondaryLanguageItems, d->mSecondaryLanguages, tr("None"));
-        secondaryLanguage->setContentWidgetData(QString("items"),secondaryLanguageItems);
-        secondaryLanguage->setContentWidgetData(QString("currentIndex"),d->languageToIndex(d->mSecondaryInputLanguage, d->mSecondaryLanguages));
-        secondaryLanguage->setData(HbDataFormModelItem::KeyRole, QString("secondary_language"));
-        d->mForm->addConnection(secondaryLanguage, SIGNAL(currentIndexChanged(int)), this, SLOT(secondaryLanguageChanged(int)));
+        d->mSecondaryLangComboBox->setContentWidgetData(QString("items"),secondaryLanguageItems);
+        d->mSecondaryLangComboBox->setContentWidgetData(QString("currentIndex"),d->languageToIndex(d->mSecondaryInputLanguage, d->mSecondaryLanguages));
+        d->mSecondaryLangComboBox->setData(HbDataFormModelItem::KeyRole, QString("secondary_language"));
+        d->mForm->addConnection(d->mSecondaryLangComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(secondaryLanguageChanged(int)));
     }
     if(items & HbSettingItemPrediction) {
         QString statusOff = tr("Off");
@@ -226,20 +239,21 @@ HbInputSettingDialog::HbInputSettingDialog(HbSettingItems items, QGraphicsWidget
     setContentWidget(d->mForm);
 }
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::~HbInputSettingDialog
-//
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::~HbInputSettingDialog()
+    is deprecated. HbInputSettingDialog will be removed.
+
+*/
 HbInputSettingDialog::~HbInputSettingDialog()
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::selected
-// Called when new settings are accepted
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::selected()
+    is deprecated. HbInputSettingDialog will be removed.
+
+Called when new settings are accepted
+*/
 void HbInputSettingDialog::selected()
 {
     Q_D(HbInputSettingDialog);
@@ -261,46 +275,49 @@ void HbInputSettingDialog::selected()
         d->mPredictionStatus = false;
     }
     //  synchronize the prediction status in settings to prediction status set through the settings dialog.	
-    if(d->mPredictionStatus != settings->predictiveInputStatus()) {
-        settings->setPredictiveInputStatus(d->mPredictionStatus);
+    if (d->mPredictionStatus != settings->predictiveInputStatusForActiveKeyboard()) {
+        settings->setPredictiveInputStatusForActiveKeyboard(d->mPredictionStatus);
     }
 }
 
 /*!
 \deprecated HbInputSettingDialog::settingItemDisplayed(const QModelIndex&)
-  is deprecated and will be removed.
+    is deprecated. HbInputSettingDialog will be removed.
+
+Called when setting items are shown
 */
 void HbInputSettingDialog::settingItemDisplayed(const QModelIndex &index)
 {
     Q_UNUSED(index);
 }
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::primaryLanguageChanged
-// Called when user changes primary language
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::primaryLanguageChanged(int index)
+    is deprecated. HbInputSettingDialog will be removed.
+
+Called when user changes primary language
+*/
 void HbInputSettingDialog::primaryLanguageChanged(int index)
 {
     Q_D(HbInputSettingDialog);
 
     HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     HbPredictionFactory *predFactory = HbPredictionFactory::instance();
-    int oldPLangSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);		
+    bool oldPLangSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);		
     d->mPrimaryInputLanguage = d->indexToLanguage(index, d->mPrimaryLanguages);
-    int langSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);		
+    bool langSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);		
     if( oldPLangSupportsPrediction != langSupportsPrediction ) {
         if(langSupportsPrediction) { // language supports prediction
             // first we need to enable the button then only we can click on it
-            if (d->mPredictionButton && settings->predictiveInputStatus() != d->mPredictionStatus) {
+            if (d->mPredictionButton && settings->predictiveInputStatusForActiveKeyboard() != d->mPredictionStatus) {
                 d->mPredictionButton->click();
-            } else if (!d->mPredictionButton && settings->predictiveInputStatus() != d->mPredictionStatus) { 
+            } else if (!d->mPredictionButton && settings->predictiveInputStatusForActiveKeyboard() != d->mPredictionStatus) { 
                 // for numeric editors we dont have prediction button but we need to change the prediction status while changing language
-                d->mPredictionStatus = settings->predictiveInputStatus();
+                d->mPredictionStatus = settings->predictiveInputStatusForActiveKeyboard();
             }
         } else { // language does not supports prediction
             if(d->mPredictionButton && (d->mPredictionStatus)) {
-                d->mPredictionButton->click();		
+                d->mPredictionButton->click();
             } else if (!d->mPredictionButton && langSupportsPrediction != d->mPredictionStatus) {
                 // for numeric editors we dont have prediction button but we need to change the prediction status
                 d->mPredictionStatus = langSupportsPrediction;	
@@ -310,26 +327,23 @@ void HbInputSettingDialog::primaryLanguageChanged(int index)
             d->mPredictionButton->setEnabled(langSupportsPrediction);
         }
     }
-    if (d->mSecondaryComboBox) {
-        HbInputLanguage secondaryLanguage = d->mSecondaryInputLanguage;
 
-        // Update secondary language list
+    // refreshing the secondary language list
+    // remove the current primary language selected from the secondary language items list
+    if(d->mSecondaryLangComboBox) {
         d->createSecondaryLanguageList();
         QStringList secondaryLanguageItems;
         d->fillLanguageList(secondaryLanguageItems, d->mSecondaryLanguages, tr("None"));
-        d->mSecondaryComboBox->setItems(secondaryLanguageItems);
-
-        if (d->mPrimaryInputLanguage != secondaryLanguage) {
-            d->mSecondaryComboBox->setCurrentIndex(d->languageToIndex(secondaryLanguage, d->mSecondaryLanguages));
-        }
+        d->mSecondaryLangComboBox->setContentWidgetData(QString("items"),secondaryLanguageItems);
     }
 }
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::secondaryLanguageChanged
-// Called when user changes secondary language
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::secondaryLanguageChanged(int)
+    is deprecated. HbInputSettingDialog will be removed.
+
+Called when user changes secondary language
+*/
 void HbInputSettingDialog::secondaryLanguageChanged(int index)
 {
     Q_D(HbInputSettingDialog);
@@ -337,11 +351,12 @@ void HbInputSettingDialog::secondaryLanguageChanged(int index)
     d->mSecondaryInputLanguage = d->indexToLanguage(index, d->mSecondaryLanguages);
 }
 
-// ---------------------------------------------------------------------------
-// HbInputSettingDialog::predictionStatusChanged
-// Called when user changes prediction status
-// ---------------------------------------------------------------------------
-//
+/*!
+\deprecated HbInputSettingDialog::predictionStatusChanged()
+    is deprecated. HbInputSettingDialog will be removed.
+
+Called when user changes prediction status
+*/
 void HbInputSettingDialog::predictionStatusChanged()
 {
     Q_D(HbInputSettingDialog);
@@ -350,6 +365,9 @@ void HbInputSettingDialog::predictionStatusChanged()
 }
 
 /*!
+\deprecated HbInputSettingDialog::showEvent(QShowEvent*)
+    is deprecated. HbInputSettingDialog will be removed.
+
 \reimp
 */
 void HbInputSettingDialog::showEvent(QShowEvent *event)

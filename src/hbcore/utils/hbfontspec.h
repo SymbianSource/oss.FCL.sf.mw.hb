@@ -68,23 +68,6 @@ public:
     qreal textHeight() const;
     void setTextHeight(qreal textHeight);
 
-    //Deprecated
-    int pixelSize() const;
-    //Deprecated
-    void setPixelSize(int pixelSize);
-    //Deprecated
-    int pointSize() const;
-    //Deprecated
-    void setPointSize(int pointSize);
-    //Deprecated
-    qreal textPaneHeight() const;
-    //Deprecated
-    void setTextPaneHeight(qreal textPaneHeight);
-    //Deprecated
-    QFont fontDelta() const;
-    //Deprecated
-    void setFontDelta(const QFont &font);
-
     operator QVariant() const;
     bool operator==(const HbFontSpec &other) const;
     bool operator!=(const HbFontSpec &other) const;

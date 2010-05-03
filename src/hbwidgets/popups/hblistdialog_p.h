@@ -69,8 +69,6 @@ public:
 	HbAbstractItemView::SelectionMode mSelectionMode;
     int mSelectedIndex; //for noselection mode
     QModelIndex mSelectedModelIndex;
-	void createPrimitives();
-    void updatePrimitives();
     void close();
 };
 

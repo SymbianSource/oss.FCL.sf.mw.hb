@@ -50,7 +50,8 @@
 
 /*!
     \var HbStyleOptionAbstractViewItem::itemName
-    @deprecated This variable will cease to exist in near future. HbStyleOptionListViewItem::itemNameIndex replaces this variable.
+    \deprecated HbStyleOptionAbstractViewItem::itemName
+       is deprecated. This variable will cease to exist in near future. HbStyleOptionListViewItem::itemNameIndex replaces this variable.
 
     This variable holds content item name of the primitive item required by css/xml layouting.
     
@@ -94,6 +95,12 @@
 */
 
 
+/*!
+	\deprecated HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem()
+	is deprecated. Styleoptions will not be public.
+	
+*/
+
 HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem() :
     HbStyleOption(),
     modelItemType(Hb::StandardItem),
@@ -104,6 +111,12 @@ HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem() :
     type = Type;
     version = Version;
 }
+
+/*!
+	\deprecated HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem(const HbStyleOptionAbstractViewItem&)
+	is deprecated. Styleoptions will not be public.
+	
+*/
 
 HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem(const HbStyleOptionAbstractViewItem &other) :
     HbStyleOption(other),

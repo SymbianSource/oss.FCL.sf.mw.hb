@@ -60,6 +60,9 @@ public:
     bool aboutToHide;
     QGraphicsItem *mItem;
     Qt::Alignment mPreferredAlignment;
+    qreal mHorizontalMargin;
+    qreal mVerticalMargin;
+    bool mPolishLayoutRequest;
 
 private:
 

@@ -32,43 +32,58 @@
     \brief HbStyleOptionProgressBar has the style component for progress bar primitives
 
 */
+
+
+/*!
+
+    \deprecated HbStyleOptionProgressBar::HbStyleOptionProgressBar()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionProgressBar::HbStyleOptionProgressBar() :
     progressValue(0),
     minimum(0),
     maximum(100),
     inverted(false),
-    text(),// deprecated
+    text(),                             // deprecated
     isSlider(false),
     minText(QString()),
     maxText(QString()),
     orientation(Qt::Horizontal),
-    thumbIcon(),// deprecated
-    maskWidth(0),
-    secondoryType(false),
-    handleState(PlayNormal),// deprecated
-    sliderState(SliderStatePlayNormal),
+    thumbIcon(),                        // deprecated
+    maskWidth(0),                       // deprecated
+    secondaryType(false),
+    handleState(PlayNormal),            // deprecated
+    sliderState(SliderStatePlayNormal), // deprecated
     minMaxTextAlignment(Qt::AlignCenter)
 {
     type = Type;
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionProgressBar::HbStyleOptionProgressBar(const HbStyleOptionProgressBar&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionProgressBar::HbStyleOptionProgressBar(const HbStyleOptionProgressBar &other) :
     HbStyleOption(other),
     progressValue(other.progressValue),
     minimum(other.minimum),
     maximum(other.maximum),
     inverted(other.inverted),
-    text(other.text),// deprecated
+    text(other.text),                   // deprecated
     isSlider(other.isSlider),
     minText(other.minText),
     maxText(other.maxText),
     orientation(other.orientation),
-    thumbIcon(other.thumbIcon),
-    maskWidth(other.maskWidth),
-    secondoryType(other.secondoryType),
-    handleState(other.handleState),
-    sliderState(other.sliderState),
+    thumbIcon(other.thumbIcon),         // deprecated
+    maskWidth(other.maskWidth),         // deprecated
+    secondaryType(other.secondaryType),
+    handleState(other.handleState),     // deprecated
+    sliderState(other.sliderState),     // deprecated
     minMaxTextAlignment(other.minMaxTextAlignment)
 {
     type = Type;

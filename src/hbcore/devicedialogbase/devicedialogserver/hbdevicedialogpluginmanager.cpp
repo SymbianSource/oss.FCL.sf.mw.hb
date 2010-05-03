@@ -188,7 +188,7 @@ void HbDeviceDialogPluginManager::freeWidget(HbDeviceDialogInterface *widget)
             sender->disconnect(); // disconnect all signals
             mDeleteWidgets.append(widget);
 #if defined(Q_OS_SYMBIAN)
-            const int deleteDelay = 30000; // 30s
+            const int deleteDelay = 2000; // 2s
 #else
             const int deleteDelay = 500; // 0.5s
 #endif

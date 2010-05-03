@@ -28,11 +28,16 @@
 #include "hbinstance_p.h"
 #include "hbmemorymanager_p.h"
 #include "hbtheme_p.h"
+#include "hbthemeclient_p.h"
 #include <hbmainwindow.h>
 #include "hbmainwindow_p.h"
 
+#include <QDebug>
+
 // To store the pointer to the deviceProfiles at the client side.
 static HbDeviceProfileList *deviceProfilesList = NULL;
+
+#define MM_PER_INCH 25.4
 
 /*!
 	@stable
@@ -74,11 +79,15 @@ HbDeviceProfile::HbDeviceProfile(const QString &name) : d_ptr(new HbDeviceProfil
 {
     if (d_ptr->deviceProfiles()) {
         int count = deviceProfilesList->count();
-        for (int i = 0; i < count; i++) {
+        bool found( false );
+        for (int i = 0; !found && i < count; i++) {
             if (deviceProfilesList->at(i).mName == name) {
                 d_ptr->mProfile = deviceProfilesList->at(i);
-                break;
+                found = true;
             }
+        }
+        if (!found) {
+            qWarning() << "Device profile" << name << "not found!";
         }
     }
 }
@@ -134,7 +143,9 @@ QSize HbDeviceProfile::logicalSize() const
 */
 QSizeF HbDeviceProfile::physicalSize() const
 {
-    return d_ptr->mProfile.mPhysicalSize;
+    QSizeF physicalSize(d_ptr->mProfile.mLogicalSize);
+    physicalSize /= ppmValue();
+    return physicalSize;
 }
 
 /*!
@@ -142,7 +153,8 @@ QSizeF HbDeviceProfile::physicalSize() const
 */
 Qt::Orientation HbDeviceProfile::orientation() const
 {
-    return d_ptr->mProfile.mOrientation;
+    QSize s = d_ptr->mProfile.mLogicalSize;
+    return (s.width() > s.height()) ? Qt::Horizontal : Qt::Vertical;
 }
 
 /*!
@@ -192,11 +204,7 @@ qreal HbDeviceProfile::unitValue() const
 */
 qreal HbDeviceProfile::ppmValue() const
 {
-    // Assuming square pixels
-    if (d_ptr->mProfile.mPhysicalSize.width() != 0) {
-        return d_ptr->mProfile.mLogicalSize.width() / d_ptr->mProfile.mPhysicalSize.width();
-    }
-    return 0.0;
+    return d_ptr->mProfile.mPpiValue / MM_PER_INCH;
 }
 
 /*!

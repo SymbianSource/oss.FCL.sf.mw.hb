@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<path d="M13,22.5c0-0.169,0.017-0.333,0.025-0.5h-1.02v-1h1.131c0.11-0.693,0.293-1.364,0.546-2h-3.68v-3h5v0.689c0.875-1.127,1.995-2.048,3.283-2.689h-0.28v-1h1v-2h-13v2h2v1h-2v2h2v3h-2v2h2v1h-2v2h7.131c-0.08-0.49-0.13-0.99-0.13-1.5zm2-9.5h2v1h-2v-1zm-3,0h2v1h-2v-1zm-3,0h2v1h-2v-1zm2,9h-2v-1h2v1z"/>
+<path d="M13.68,26h-9.68v-17h17v4.13c0.49-0.078,0.988-0.13,1.5-0.13s1.01,0.052,1.5,0.13v-7.13h-23v23h14.59c-0.81-0.86-1.47-1.88-1.91-3z"/>
+<path d="M26,13.68c1.121,0.446,2.135,1.1,3,1.914v-14.59h-23v3h20v9.677z"/>
+<path d="M22.5,15c-4.137,0-7.5,3.364-7.5,7.5s3.363,7.5,7.5,7.5,7.5-3.364,7.5-7.5-3.36-7.5-7.5-7.5zm0,13c-3.033,0-5.5-2.468-5.5-5.5s2.467-5.5,5.5-5.5,5.5,2.468,5.5,5.5-2.47,5.5-5.5,5.5z"/>
+<rect height="3" width="9" x="18" y="21"/>
+</svg>

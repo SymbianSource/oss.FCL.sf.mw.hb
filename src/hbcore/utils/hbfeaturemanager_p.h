@@ -49,7 +49,8 @@ public:
 
     typedef enum {
         TextMeasurement = 0x1,
-        TheTestUtility  = 0x2
+        TheTestUtility  = 0x2,
+        LanguageSwitch  = 0x4
     } HbFeature;
 
 

@@ -23,15 +23,17 @@
 **
 ****************************************************************************/
 #include "hbfontspec.h"
+#ifndef HB_BOOTSTRAPPED
 #include "hbinstance_p.h"
 #include "hbtypefaceinfo_p.h"
 #include "hbstyle.h"
+#endif
 
+#include <QVariant>
 #include <QFont>
-#include <QSharedData>
 
 /*!
-    @beta
+	@stable
     @hbcore
     \class HbFontSpec
     \brief HbFontSpec is used to request a system font.
@@ -137,6 +139,9 @@ default text height based on the font role.
 */
 qreal HbFontSpecPrivate::textHeight() const
 {
+#ifdef HB_BOOTSTRAPPED
+    return 0;
+#else
     if ( (mRole != HbFontSpec::Undefined) && (mTextHeight < 0) ) {
         qreal parameterValue;
         QString parameterName;
@@ -162,6 +167,7 @@ qreal HbFontSpecPrivate::textHeight() const
         mTextHeight = parameterValue;
     }
 	return mTextHeight;
+#endif
 }
 
 /*!
@@ -169,6 +175,9 @@ qreal HbFontSpecPrivate::textHeight() const
 */
 QFont HbFontSpecPrivate::font() const
 {
+#ifdef HB_BOOTSTRAPPED
+    return QFont();
+#else
     if ( mRole == HbFontSpec::Undefined ) {
         return QFont();
     }
@@ -188,6 +197,7 @@ QFont HbFontSpecPrivate::font() const
     font.setPixelSize(downSizedSize);
 
     return font;
+#endif
 }
 
 /*!
@@ -286,60 +296,6 @@ QFont HbFontSpec::font() const
 }
 
 /*!
-    \deprecated HbFontSpec::pixelSize() const
-        is deprecated. Use QFont instead.
-*/
-int HbFontSpec::pixelSize() const
-{
-    return -1;
-}
-
-/*!
-    \deprecated HbFontSpec::setPixelSize(int)
-        is deprecated. Use QFont instead.
-*/
-void HbFontSpec::setPixelSize(int pixelSize)
-{
-    Q_UNUSED(pixelSize);
-}
-
-/*!
-    \deprecated HbFontSpec::pointSize() const
-        is deprecated. Use QFont instead.
-*/
-int HbFontSpec::pointSize() const
-{
-    return -1;
-}
-
-/*!
-    \deprecated HbFontSpec::setPointSize(int)
-        is deprecated. Use QFont instead.
-*/
-void HbFontSpec::setPointSize(int pointSize)
-{
-    Q_UNUSED(pointSize);
-}
-
-/*!
-    \deprecated HbFontSpec::fontDelta() const
-        is deprecated. Use QFont instead.
-*/
-QFont HbFontSpec::fontDelta() const
-{
-    return QFont();
-}
-
-/*!
-    \deprecated HbFontSpec::setFontDelta(const QFont&)
-        is deprecated. Use QFont instead.
-*/
-void HbFontSpec::setFontDelta(const QFont &fontDelta)
-{
-    Q_UNUSED(fontDelta);
-}
-
-/*!
     Returns the fontspec as a QVariant.
 */
 HbFontSpec::operator QVariant() const
@@ -362,24 +318,6 @@ bool HbFontSpec::operator==(const HbFontSpec &other) const
 bool HbFontSpec::operator!=(const HbFontSpec &other) const
 {
     return (!(*this == other));
-}
-
-/*!
-    \deprecated HbFontSpec::textPaneHeight() const
-        is deprecated. Use textHeight instead.
-*/
-qreal HbFontSpec::textPaneHeight() const
-{
-	return textHeight();
-}
-
-/*!
-    \deprecated HbFontSpec::setTextPaneHeight(qreal)
-        is deprecated. Use textHeight instead.
-*/
-void HbFontSpec::setTextPaneHeight(qreal textHeight)
-{
-    setTextHeight(textHeight);
 }
 
 /*!

@@ -28,21 +28,66 @@
 #include "hbdocumentloader_p.h"
 #include "hbdocumentloader.h"
 
-#include <hbicon.h>
 #include <hbfontspec.h>
-#include <QDebug>
-#include <QMetaEnum>
 
+#include <QMetaEnum>
 #include <QTranslator>
-#include <hbmainwindow.h>
+#include <QDataStream>
+
+#include <QDebug>
 
 
 // Document loader version number
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 0
+#define VERSION_MINOR 1
 
 #define MIN_SUPPORTED_VERSION_MAJOR 0
 #define MIN_SUPPORTED_VERSION_MINOR 1
+
+
+//#define LINE_DEBUGGING
+
+#ifdef LINE_DEBUGGING
+#include <QTime>
+static QTime lineDebugTime;
+
+#ifdef Q_OS_SYMBIAN
+#include <e32debug.h>
+#endif
+
+void doDebugPrint(const char* text)
+{
+#ifdef Q_OS_SYMBIAN
+    RDebug::Printf(text);
+#else
+    qDebug() << text;
+#endif
+}
+
+// Takes standard c-format.
+void debugPrint(const char* cformat, ...)
+{
+    va_list ap;
+    va_start(ap, cformat);
+    QString str = QString().vsprintf(cformat, ap);
+    va_end(ap);
+    doDebugPrint(str.toAscii().constData());
+}
+
+#endif // LINE_DEBUGGING
+
+const char *ZValueProperty = "z";
+
+class AccessToMetadata : public QObject
+    {
+    public:
+        int getEnumValue( const char *enumeration, const char *str )
+            {
+                QMetaObject metaobject = staticQtMetaObject;
+                QMetaEnum e = metaobject.enumerator( metaobject.indexOfEnumerator( enumeration ) );
+                return e.keysToValue( str );
+            }
+    };
 
 /*
     \class HbDocumentLoaderSyntax
@@ -50,8 +95,8 @@
     \proto
 */
 
-HbDocumentLoaderSyntax::HbDocumentLoaderSyntax( HbDocumentLoaderActions *actions, const HbMainWindow *window )
-: HbXmlLoaderAbstractSyntax( actions ), mRealActions( actions ), mMainWindow(window)
+HbDocumentLoaderSyntax::HbDocumentLoaderSyntax( HbXmlLoaderAbstractActions *actions )
+: HbXmlLoaderBaseSyntax( actions )
 {
 }
 
@@ -59,10 +104,30 @@ HbDocumentLoaderSyntax::~HbDocumentLoaderSyntax()
 {
 }
 
+bool HbDocumentLoaderSyntax::scanForSections( QIODevice *device, QList<QString> &sectionsList )
+{
+#ifdef LINE_DEBUGGING
+    lineDebugTime.restart();
+    debugPrint("MYTRACE: DocML scanForSections, start");
+#endif
+    bool ret = HbXmlLoaderBaseSyntax::scanForSections( device, sectionsList );
+#ifdef LINE_DEBUGGING
+    debugPrint("MYTRACE: DocML scanForSections, end: %d", lineDebugTime.elapsed());
+#endif
+    return ret;
+}
+
 bool HbDocumentLoaderSyntax::load( QIODevice *device, const QString &section )
 {
-    mCurrentProfile = HbDeviceProfile::profile(mMainWindow);
-    return HbXmlLoaderAbstractSyntax::loadDevice( device, section );
+#ifdef LINE_DEBUGGING
+    lineDebugTime.restart();
+    debugPrint("MYTRACE: DocML load, start");
+#endif
+    bool ret = HbXmlLoaderBaseSyntax::loadDevice( device, section );
+#ifdef LINE_DEBUGGING
+    debugPrint("MYTRACE: DocML load, end: %d", lineDebugTime.elapsed());
+#endif
+    return ret;
 }
 
 bool HbDocumentLoaderSyntax::readLayoutStartItem()
@@ -76,17 +141,20 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
 
                 const QString src = attribute( AL_SRC_NAME );
                 const QString dst = attribute( AL_DST_NAME );
-                const QString srcEdge = attribute( AL_SRC_EDGE );
-                const QString dstEdge = attribute( AL_DST_EDGE );
+                const QString srcEdgeStr = attribute( AL_SRC_EDGE );
+                const QString dstEdgeStr = attribute( AL_DST_EDGE );
                 const QString spacing = attribute( AL_SPACING );
                 const QString spacer = attribute( AL_SPACER );
-                qreal spacingVal = 0;
+                HbXmlLengthValue spacingVal;
                 result = true;
                 if( !spacing.isEmpty() ) {
-                    result = toPixels( spacing, spacingVal );
+                    result = toLengthValue( spacing, spacingVal );
                 }
-                if (result) {
-                    result = mRealActions->addAnchorLayoutEdge( src, srcEdge, dst, dstEdge, spacingVal, spacer );
+                Hb::Edge srcEdge, dstEdge;
+                result &= getAnchorEdge( srcEdgeStr, srcEdge );
+                result &= getAnchorEdge( dstEdgeStr, dstEdge );
+                if ( result ) {
+                    result = mActions->addAnchorLayoutEdge( src, srcEdge, dst, dstEdge, spacingVal, spacer );
                 }
             }
             break;
@@ -97,28 +165,148 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
             if( mReader.name() == lexemValue( GL_GRIDCELL ) ) {
 
                 const QString src = attribute( GL_ITEMNAME );
-
                 const QString row = attribute( GL_ROW );
                 const QString column = attribute( GL_COLUMN );
                 const QString rowspan = attribute( GL_ROWSPAN );
                 const QString columnspan = attribute( GL_COLUMNSPAN );
                 const QString alignment = attribute( TYPE_ALIGNMENT );
-                result = mRealActions->addGridLayoutCell( src, row, column, rowspan, columnspan, alignment );
+
+                int rownum = row.toInt( &result );
+                if (!result) {
+                    HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO ROW SPECIFIED" ) );
+                    break;
+                }
+
+                int columnnum = column.toInt( &result );
+                if (!result) {
+                    HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO COLUMN SPECIFIED" ) );
+                    break;
+                }
+
+                int rowspannum;
+                int *rowspan_p = 0;
+                if (!rowspan.isEmpty()) {
+                    rowspannum = rowspan.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INVALID ROWSPAN" ) );
+                        break;
+                    } else {
+                        rowspan_p = &rowspannum;
+                    }
+                }
+
+                int columnspannum;
+                int *columnspan_p = 0;
+                if (!columnspan.isEmpty()) {
+                    columnspannum = columnspan.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: INVALID ROWSPAN" ) );
+                        break;
+                    } else {
+                        columnspan_p = &columnspannum;
+                    }
+                }
+
+                Qt::Alignment align;
+                Qt::Alignment *align_p = 0;
+                if (!alignment.isEmpty()) {
+                    AccessToMetadata myAccess;
+                    int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
+                    if (value == -1) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ALIGNMENT " ) + alignment );
+                        result = false;
+                        break;
+                    } else {
+                        align = (Qt::Alignment)value;
+                        align_p = &align;
+                    }
+                }
+                result = mActions->addGridLayoutCell( src, rownum, columnnum, rowspan_p, columnspan_p, align_p );
             } else if( mReader.name() == lexemValue( GL_GRIDROW ) ) {
                 const QString row = attribute( GL_ROW );
                 const QString stretchfactor = attribute( ATTR_STRETCHFACTOR );
                 const QString alignment = attribute( TYPE_ALIGNMENT );
-                result = mRealActions->setGridLayoutRowProperties( row, stretchfactor, alignment );
+
+                const int rownum = row.toInt( &result );
+                if (!result) {
+                    HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO ROW NUMBER SPECIFIED FOR STRETCH FACTOR" ) );
+                    break;
+                }
+
+                int stretchnum;
+                int *stretch_p = 0;
+                if( !stretchfactor.isEmpty() ) {
+                    stretchnum = stretchfactor.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: UNABLE TO PARSE ROW STRETCH FACTOR VALUE" ) );
+                        break;
+                    } else {
+                        stretch_p = &stretchnum;
+                    }
+                }
+
+                Qt::Alignment align;
+                Qt::Alignment *align_p = 0;
+                if( !alignment.isEmpty() ) {
+                    AccessToMetadata myAccess;
+
+                    int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
+                    if( value == -1 ) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ROW ALIGNMENT " ) + alignment );
+                        result = false;
+                        break;
+                    } else {
+                        align = (Qt::Alignment)value;
+                        align_p = &align;
+                    }
+                }
+
+                result = mActions->setGridLayoutRowProperties( rownum, stretch_p, align_p );
                 if (result) {
-                    result = processRowHeights( row );
+                    result = processRowHeights( rownum );
                 }
             } else if( mReader.name() == lexemValue( GL_GRIDCOLUMN ) ) {
                 const QString column = attribute( GL_COLUMN );
                 const QString stretchfactor = attribute( ATTR_STRETCHFACTOR );
                 const QString alignment = attribute( TYPE_ALIGNMENT );
-                result = mRealActions->setGridLayoutColumnProperties( column, stretchfactor, alignment );
+
+                const int columnnum = column.toInt( &result );
+                if (!result) {
+                    HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO COLUMN NUMBER SPECIFIED FOR STRETCH FACTOR" ) );
+                    break;
+                }
+
+                int stretchnum;
+                int *stretch_p = 0;
+                if (!stretchfactor.isEmpty()) {
+                    stretchnum = stretchfactor.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: UNABLE TO PARSE COLUMN STRETCH FACTOR VALUE" ) );
+                        break;
+                    } else {
+                        stretch_p = &stretchnum;
+                    }
+                }
+
+                Qt::Alignment align;
+                Qt::Alignment *align_p = 0;
+                if (!alignment.isEmpty()) {
+                    AccessToMetadata myAccess;
+
+                    int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
+                    if (value == -1) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH COLUMN ALIGNMENT " ) + alignment );
+                        result = false;
+                        break;
+                    } else {
+                        align = (Qt::Alignment)value;
+                        align_p = &align;
+                    }
+                }
+
+                result = mActions->setGridLayoutColumnProperties( columnnum, stretch_p, align_p );
                 if (result) {
-                    result = processColumnWidths( column );
+                    result = processColumnWidths( columnnum );
                 }
             } else if( mReader.name() == lexemValue( TYPE_CONTENTSMARGINS ) ) {
                 result = processContentsMargins();
@@ -130,26 +318,88 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
             HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: LINEAR ITEM" );
             if( mReader.name() == lexemValue( LL_LINEARITEM ) ) {
                 result = true;
-                const QString index = attribute( LL_INDEX );
                 const QString itemname = attribute( LL_ITEMNAME );
-                const QString spacing = attribute( LL_SPACING );
+                const QString index = attribute( LL_INDEX );
                 const QString stretchfactor = attribute( ATTR_STRETCHFACTOR );
                 const QString alignment = attribute( TYPE_ALIGNMENT );
-                
-                qreal spacingValue(0);
-                qreal *spacingPtr(0);
-                if( !spacing.isEmpty() ) {
-                    result = toPixels( spacing, spacingValue );
-                    spacingPtr = &spacingValue;
+                const QString spacing = attribute( LL_SPACING );
+
+                int indexnum;
+                int *index_p = 0;
+                if (!index.isEmpty()) {
+                    indexnum = index.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE ITEM INDEX" ) );
+                        break;
+                    } else {
+                        index_p = &indexnum;
+                    }
+                }
+
+                int stretchnum;
+                int *stretch_p = 0;
+                if (!stretchfactor.isEmpty()) {
+                    stretchnum = stretchfactor.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH VALUE" ) );
+                        break;
+                    } else {
+                        stretch_p = &stretchnum;
+                    }
+                }
+
+                Qt::Alignment align;
+                Qt::Alignment *align_p = 0;
+                if (!alignment.isEmpty()) {
+                    AccessToMetadata myAccess;
+
+                    int value = myAccess.getEnumValue( "Alignment", alignment.toLatin1().data() );
+                    if (value == -1) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ITEM ALIGNMENT " ) + alignment );
+                        result = false;
+                        break;
+                    } else {
+                        align = (Qt::Alignment)value;
+                        align_p = &align;
+                    }
+                }
+
+                HbXmlLengthValue spacingValue;
+                if (!spacing.isEmpty()) {
+                    result = toLengthValue( spacing, spacingValue );
                 }
                 if (result) {
-                    result = mRealActions->addLinearLayoutItem( itemname, index, stretchfactor, alignment, spacingPtr );
+                    result = mActions->addLinearLayoutItem( itemname, index_p, stretch_p, align_p, spacingValue );
                 }
             } else if( mReader.name() == lexemValue( LL_STRETCH ) ) {
                 const QString index = attribute( LL_INDEX );
                 const QString stretchfactor = attribute( ATTR_STRETCHFACTOR );
 
-                result = mRealActions->addLinearLayoutStretch( index, stretchfactor );
+                int indexnum;
+                int *index_p = 0;
+                if (!index.isEmpty()) {
+                    indexnum = index.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH INDEX" ) );
+                        break;
+                    } else {
+                        index_p = &indexnum;
+                    }
+                }
+
+                int stretchnum;
+                int *stretch_p = 0;
+                if (!stretchfactor.isEmpty()) {
+                    stretchnum = stretchfactor.toInt( &result );
+                    if (!result) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: UNABLE TO PARSE STRETCH VALUE" ) );
+                        break;
+                    } else {
+                        stretch_p = &stretchnum;
+                    }
+                }
+
+                result = mActions->addLinearLayoutStretch( index_p, stretch_p );
             } else if( mReader.name() == lexemValue( TYPE_CONTENTSMARGINS ) ) {
                 result = processContentsMargins();
             }
@@ -163,7 +413,18 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
                 const QString index = attribute( SL_INDEX );
                 const QString itemname = attribute( SL_ITEMNAME );
 
-                result =  mRealActions->addStackedLayoutItem( itemname, index );
+                int indexnum;
+                int *index_p = 0;
+                if( !index.isEmpty() ) {
+                    indexnum = index.toInt( &result );
+                    if( !result ) {
+                        HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: UNABLE TO PARSE ITEM INDEX" ) );
+                        break;
+                    } else {
+                        index_p = &indexnum;
+                    }
+                }
+                result = mActions->addStackedLayoutItem( itemname, index_p );
             }
             break;
 
@@ -178,6 +439,9 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
             qWarning() << "Internal error, wrong layout type, line " << mReader.lineNumber();
         }
     }
+#ifdef LINE_DEBUGGING
+    debugPrint("MYTRACE: --- after line %d, time: %d", (int)mReader.lineNumber(), lineDebugTime.elapsed());
+#endif
     return result;
 }
 
@@ -189,22 +453,22 @@ bool HbDocumentLoaderSyntax::processContentsMargins()
     const QString bottomS = attribute( ATTR_BOTTOM );
 
     bool result = true;
-    qreal left = 0, top = 0, right = 0, bottom = 0;
+    HbXmlLengthValue left, top, right, bottom;
     if ( !leftS.isEmpty() ) {
-        result = toPixels(leftS, left);
+        result = toLengthValue(leftS, left);
     }
     if ( result && !topS.isEmpty() ) {
-        result = toPixels(topS, top);
+        result = toLengthValue(topS, top);
     }
     if ( result && !rightS.isEmpty() ) {
-        result = toPixels(rightS, right);
+        result = toLengthValue(rightS, right);
     }
     if ( result && !bottomS.isEmpty() ) {
-        result = toPixels(bottomS, bottom);
+        result = toLengthValue(bottomS, bottom);
     }
 
     if ( result ) {
-        result = mRealActions->setLayoutContentsMargins( left, top, right, bottom );
+        result = mActions->setLayoutContentsMargins( left, top, right, bottom );
     }
 
     if (!result) {
@@ -214,111 +478,96 @@ bool HbDocumentLoaderSyntax::processContentsMargins()
     return result;
 }
 
-bool HbDocumentLoaderSyntax::processRowHeights( const QString &row )
+bool HbDocumentLoaderSyntax::processRowHeights( int row )
 {
     const QString minHeightS = attribute( GL_MINHEIGHT );
     const QString maxHeightS = attribute( GL_MAXHEIGHT );
     const QString prefHeightS = attribute( GL_PREFHEIGHT );
     const QString fixedHeightS = attribute( GL_FIXEDHEIGHT );
     const QString rowSpacingS = attribute( GL_SPACING );
-    qreal minHeight = -1;
-    qreal maxHeight = -1;
-    qreal prefHeight = -1;
-    qreal fixedHeight = -1;
-    qreal rowSpacing = -1;
+    HbXmlLengthValue minHeight, maxHeight, prefHeight, fixedHeight, rowSpacing;
 
     bool result = true;
-    int propertyAvailable = 0;
 
     if ( !minHeightS.isEmpty() ) {
-        result = toPixels(minHeightS, minHeight);
-        propertyAvailable |= HbDocumentLoaderActions::propertyMin;
+        result = toLengthValue(minHeightS, minHeight);
     }
 
     if ( result && !maxHeightS.isEmpty() ) {
-        result = toPixels(maxHeightS, maxHeight);
-        propertyAvailable |= HbDocumentLoaderActions::propertyMax;
+        result = toLengthValue(maxHeightS, maxHeight);
     }
 
     if ( result && !prefHeightS.isEmpty() ) {
-        result = toPixels(prefHeightS, prefHeight);
-        propertyAvailable |= HbDocumentLoaderActions::propertyPref;
+        result = toLengthValue(prefHeightS, prefHeight);
     }
 
     if ( result && !fixedHeightS.isEmpty() ) {
-        result = toPixels(fixedHeightS, fixedHeight);
-        propertyAvailable |= HbDocumentLoaderActions::propertyFixed;
+        result = toLengthValue(fixedHeightS, fixedHeight);
     }
 
     if ( result && !rowSpacingS.isEmpty() ) {
-        result = toPixels(rowSpacingS, rowSpacing);
-        propertyAvailable |= HbDocumentLoaderActions::propertySpacing;
+        result = toLengthValue(rowSpacingS, rowSpacing);
     }
 
-    if ( result && propertyAvailable ) {
-        result = mRealActions->setGridLayoutRowHeights( row, minHeight, maxHeight, 
-                                                        prefHeight, fixedHeight, 
-                                                        rowSpacing, propertyAvailable);
+    if ( result ) {
+        result = mActions->setGridLayoutRowHeights(
+            row, minHeight, maxHeight, prefHeight, fixedHeight, rowSpacing);
     }
 
     return result;
 }
 
-bool HbDocumentLoaderSyntax::processColumnWidths( const QString &column )
+bool HbDocumentLoaderSyntax::processColumnWidths( int column )
 {
     const QString minWidthS = attribute( GL_MINWIDTH );
     const QString maxWidthS = attribute( GL_MAXWIDTH );
     const QString prefWidthS = attribute( GL_PREFWIDTH );
     const QString fixedWidthS = attribute( GL_FIXEDWIDTH );
     const QString columnSpacingS = attribute( GL_SPACING );
-    qreal minWidth = -1;
-    qreal maxWidth = -1;
-    qreal prefWidth = -1;
-    qreal fixedWidth = -1;
-    qreal columnSpacing = -1;
+    HbXmlLengthValue minWidth, maxWidth, prefWidth, fixedWidth, columnSpacing;
 
     bool result = true;
-    int propertyAvailable = 0;
 
     if ( !minWidthS.isEmpty() ) {
-        result = toPixels(minWidthS, minWidth);
-        propertyAvailable |= HbDocumentLoaderActions::propertyMin;
+        result = toLengthValue(minWidthS, minWidth);
     }
 
     if ( result && !maxWidthS.isEmpty() ) {
-        result = toPixels(maxWidthS, maxWidth);
-        propertyAvailable |= HbDocumentLoaderActions::propertyMax;
+        result = toLengthValue(maxWidthS, maxWidth);
     }
 
     if ( result && !prefWidthS.isEmpty() ) {
-        result = toPixels(prefWidthS, prefWidth);
-        propertyAvailable |= HbDocumentLoaderActions::propertyPref;
+        result = toLengthValue(prefWidthS, prefWidth);
     }
 
     if ( result && !fixedWidthS.isEmpty() ) {
-        result = toPixels(fixedWidthS, fixedWidth);
-        propertyAvailable |= HbDocumentLoaderActions::propertyFixed;
+        result = toLengthValue(fixedWidthS, fixedWidth);
     }
 
     if ( result && !columnSpacingS.isEmpty() ) {
-        result = toPixels(columnSpacingS, columnSpacing);
-        propertyAvailable |= HbDocumentLoaderActions::propertySpacing;
+        result = toLengthValue(columnSpacingS, columnSpacing);
     }
 
-    if ( result && propertyAvailable ) {
-        result = mRealActions->setGridLayoutColumnWidths( column, minWidth, maxWidth, 
-                                                          prefWidth, fixedWidth, 
-                                                          columnSpacing, propertyAvailable);
+    if ( result ) {
+        result = mActions->setGridLayoutColumnWidths(
+            column, minWidth, maxWidth, prefWidth, fixedWidth, columnSpacing);
     }
 
     return result;
 }
 
+bool HbDocumentLoaderSyntax::checkEndElementCorrectness()
+{
+    return HbXmlLoaderBaseSyntax::checkEndElementCorrectness();
+}
+
+
+
 bool HbDocumentLoaderSyntax::readContainerStartItem()
 {
     bool result = false;
     switch ( mCurrentElementType ) {
-         case PROPERTY:
+         case HbXml::PROPERTY:
          {
             HB_DOCUMENTLOADER_PRINT( "CONTAINER START ITEM: PROPERTY" );
 
@@ -359,47 +608,26 @@ bool HbDocumentLoaderSyntax::readContainerStartItem()
 
 bool HbDocumentLoaderSyntax::readContainerEndItem()
 {
+
     bool result = false;
     QString currentPropertyName;
     QVariant variant;
 
     switch( mCurrentElementType ) {
-        case CONTAINER:
+        case HbXml::CONTAINER:
         {
-            currentPropertyName = mCurrentContainer.back();
-            mCurrentContainer.removeLast();
+            currentPropertyName = mCurrentContainerNames.back();
+            mCurrentContainerNames.removeLast();
 
-            if (mRealActions->mCurrentContainer) {
-                // in order for the conversion to work, all of the contained types need to be suitable and equivalent, e.g. strings
-                QVariant variantContainer = QVariant(*(mRealActions->mCurrentContainer));
-                if (variantContainer.isValid()) {
-                    switch(mCurrentContainerType) {
-                        case CONTAINER_STRINGLIST:
-                        {
-                            QStringList list = variantContainer.toStringList();
-                            variant = QVariant(list);
-                            break;
-                        }
-                        default:
-                        {
-                            variant = variantContainer;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            result = mRealActions->pushProperty(currentPropertyName, variant);
+            result = mActions->pushContainer(currentPropertyName.toLatin1(), mCurrentContainerType, mCurrentContainer);
 
             HB_DOCUMENTLOADER_PRINT( "CONTAINER END ITEM : SWITCHING TO GENERAL ITEM PROCESSING MODE" );
             mElementState = ES_GENERAL_ITEM;
-
-            result = true;
             break;
         }
         default:
         {
-            result = HbXmlLoaderAbstractSyntax::readGeneralEndItem();
+            result = HbXmlLoaderBaseSyntax::readGeneralEndItem();
             break;
         }
     }
@@ -410,49 +638,49 @@ bool HbDocumentLoaderSyntax::readGeneralStartItem()
 {
     bool result = false;
     switch( mCurrentElementType ) {
-         case OBJECT:
+         case HbXml::OBJECT:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: OBJECT" );
             result = processObject();
             break;
          }
-         case WIDGET:
+         case HbXml::WIDGET:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: WIDGET" );
             result = processWidget();
             break;
          }
-         case SPACERITEM:
+         case HbXml::SPACERITEM:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: SPACERITEM" );
             result = processSpacerItem();
             break;
          }
-         case CONNECT:
+         case HbXml::CONNECT:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: CONNECT" );
             result = processConnect();
             break;
          }
-         case PROPERTY:
+         case HbXml::PROPERTY:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: PROPERTY" );
             result = processProperty();
             break;
          }
-         case REF:
+         case HbXml::REF:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: REF" );
             result = processRef();
             break;
          }
-         case VARIABLE:
+         case HbXml::VARIABLE:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: VARIABLE" );
             result = processVariable();
             break;
          }
-         case DEPRECATED:
+         case HbXml::DEPRECATED:
          {
              HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: DEPRECATED" );
              result = true;
@@ -460,9 +688,12 @@ bool HbDocumentLoaderSyntax::readGeneralStartItem()
          }
          default:
          {
-              result = HbXmlLoaderAbstractSyntax::readGeneralStartItem();
+              result = HbXmlLoaderBaseSyntax::readGeneralStartItem();
          }
     }
+#ifdef LINE_DEBUGGING
+    debugPrint("MYTRACE: --- after line %d, time: %d", (int)mReader.lineNumber(), lineDebugTime.elapsed());
+#endif
     return result;
 }
 
@@ -501,7 +732,7 @@ bool HbDocumentLoaderSyntax::processDocument()
         return false;
 
     }
-    return mRealActions->pushDocument( attribute( ATTR_CONTEXT ) );
+    return mActions->pushDocument( attribute( ATTR_CONTEXT ) );
 }
 
 bool HbDocumentLoaderSyntax::processObject()
@@ -509,7 +740,8 @@ bool HbDocumentLoaderSyntax::processObject()
     const QString type = attribute( ATTR_TYPE );
     const QString name = attribute( ATTR_NAME );
 
-    if( !mRealActions->pushObject( type, name ) ) {
+    bool pushOK = mActions->pushObject( type, name );
+    if( !pushOK ) {
         qWarning() << "Error in object processing, line " << mReader.lineNumber();
         return false;
     }
@@ -522,7 +754,8 @@ bool HbDocumentLoaderSyntax::processWidget()
     const QString name = attribute( ATTR_NAME );
     const QString role = attribute( ATTR_ROLE );
     const QString plugin = attribute( ATTR_PLUGIN );
-    if( !mRealActions->pushWidget( type, name, role, plugin) ) {
+    bool pushOK = mActions->pushWidget( type, name, role, plugin);
+    if( !pushOK ) {
         qWarning() << "Error in widget processing, line " << mReader.lineNumber();
         return false;
     }
@@ -534,7 +767,8 @@ bool HbDocumentLoaderSyntax::processSpacerItem()
     const QString name = attribute( ATTR_NAME );
     const QString widget = attribute( ATTR_WIDGET );
 
-    if( !mRealActions->pushSpacerItem( name, widget ) ) {
+    bool pushOK = mActions->pushSpacerItem( name, widget );
+    if( !pushOK ) {
         qWarning() << "Error in object processing, line " << mReader.lineNumber();
         return false;
     }
@@ -550,21 +784,19 @@ bool HbDocumentLoaderSyntax::processLayout()
     if( layout_type == lexemValue( LAYOUT_ANCHOR ) ) {
 
         mCurrentLayoutType = LAYOUT_ANCHOR;
-        result = mRealActions->createAnchorLayout( widget );
+        result = mActions->createAnchorLayout( widget );
 
     } else if( layout_type == lexemValue( LAYOUT_GRID ) ) {
 
         result = true;
         mCurrentLayoutType = LAYOUT_GRID;
         const QString spacing = attribute( GL_SPACING );
-        qreal spacingValue(0);
-        qreal *spacingPtr(0);
+        HbXmlLengthValue spacingValue;
         if( !spacing.isEmpty() ) {
-            result = toPixels( spacing, spacingValue );
-            spacingPtr = &spacingValue;
+            result = toLengthValue( spacing, spacingValue );
         }
         if (result) {
-            result = mRealActions->createGridLayout( widget, spacingPtr );
+            result = mActions->createGridLayout( widget, spacingValue );
         }
 
     } else if( layout_type == lexemValue( LAYOUT_LINEAR ) ) {
@@ -572,29 +804,43 @@ bool HbDocumentLoaderSyntax::processLayout()
         result = true;
         mCurrentLayoutType = LAYOUT_LINEAR;
         const QString orientation = attribute( LL_ORIENTATION );
+
+
+        Qt::Orientation orient;
+        Qt::Orientation *orient_p = 0;
+        if (!orientation.isEmpty()) {
+            AccessToMetadata myAccess;
+            int value = myAccess.getEnumValue( "Orientation", orientation.toLatin1().data() );
+            if (value == -1) {
+                HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ORIENTATION " ) + orientation );
+                result = false;
+            } else {
+                orient = (Qt::Orientation)value;
+                orient_p = &orient;
+            }
+        }
+
         const QString spacing = attribute( LL_SPACING );
-        qreal spacingValue(0);
-        qreal *spacingPtr(0);
-        if( !spacing.isEmpty() ) {
-            result = toPixels( spacing, spacingValue );
-            spacingPtr = &spacingValue;
+        HbXmlLengthValue spacingValue;
+        if( result && !spacing.isEmpty() ) {
+            result = toLengthValue( spacing, spacingValue );
         }
         if (result) {
-            result = mRealActions->createLinearLayout( widget, orientation, spacingPtr );
+            result = mActions->createLinearLayout( widget, orient_p, spacingValue );
         }
 
     } else if( layout_type == lexemValue( LAYOUT_STACK ) ) {
 
         mCurrentLayoutType = LAYOUT_STACK;
-        result = mRealActions->createStackedLayout( widget );
+        result = mActions->createStackedLayout( widget );
 
     } else if( layout_type == lexemValue( LAYOUT_NULL ) ) {
 
         mCurrentLayoutType = LAYOUT_NULL;
-        result = mRealActions->createNullLayout( widget );
+        result = mActions->createNullLayout( widget );
 
     } else {
-        return HbXmlLoaderAbstractSyntax::processLayout();
+        return HbXmlLoaderBaseSyntax::processLayout();
     }
 
     if( !result ) {
@@ -611,7 +857,8 @@ bool HbDocumentLoaderSyntax::processConnect()
     const QString dstName = attribute( ATTR_DST );
     const QString slotName = attribute( ATTR_SLOT );
 
-    if( !mRealActions->pushConnect( srcName, signalName, dstName, slotName ) ) {
+    bool pushOK = mActions->pushConnect( srcName, signalName, dstName, slotName );
+    if( !pushOK ) {
         qWarning() << "Error in connect processing, line " << mReader.lineNumber();
         return false;
 
@@ -621,7 +868,7 @@ bool HbDocumentLoaderSyntax::processConnect()
 
 bool HbDocumentLoaderSyntax::processContainer()
 {
-    bool result = false;
+    bool result = true;
     const QString container_type = attribute( ATTR_TYPE );
 
     if( container_type == lexemValue( CONTAINER_STRINGLIST ) ) {
@@ -629,46 +876,54 @@ bool HbDocumentLoaderSyntax::processContainer()
         mCurrentContainerType = CONTAINER_STRINGLIST;
 
         const QString propertyName = attribute ( ATTR_NAME );
-        mCurrentContainer << propertyName;
-        result = mRealActions->createContainer();
-
+        if (propertyName.isEmpty()) {
+            qWarning() << "No property name defined, line " << mReader.lineNumber();
+            result = false;
+        }
+        if (result) {
+            mCurrentContainerNames << propertyName;
+            mCurrentContainer.clear();
+        }
     } else {
-        return HbXmlLoaderAbstractSyntax::processContainer();
+        result = HbXmlLoaderBaseSyntax::processContainer();
+        if( !result ) {
+            qWarning() << "Unable to create container, line " << mReader.lineNumber();
+            return false;
+        }
     }
-
-    if( !result ) {
-        qWarning() << "Unable to create container, line " << mReader.lineNumber();
-        return false;
-    }
-    return true;
+    return result;
 }
 
 bool HbDocumentLoaderSyntax::processContainedProperty()
 {
-    const QVariant value = decodeValue();
-    if( ! value.isValid() ) {
+    HbXmlVariable *variable = new HbXmlVariable();
+    if ( !createVariable(*variable) ) {
         qWarning() << "Invalid property, line " << mReader.lineNumber();
+        delete variable;
         return false;
     }
 
-    if( !mRealActions->appendPropertyToContainer( value ) ) {
-        qWarning() << "Unable to set property, line " << mReader.lineNumber();
-        return false;
-    }
+    mCurrentContainer.append(variable);
     return true;
 }
 
 bool HbDocumentLoaderSyntax::processProperty()
 {
-    const QVariant value = decodeValue();
-    if( ! value.isValid() ) {
+    HbXmlVariable variable;
+    if ( !createVariable(variable) ) {
         qWarning() << "Invalid property, line " << mReader.lineNumber();
         return false;
     }
 
     const QString propertyName = attribute( ATTR_NAME );
 
-    if( !mRealActions->pushProperty( propertyName, value ) ) {
+    if( propertyName.isEmpty() ) {
+        qWarning() << "No property name defined, line " << mReader.lineNumber();
+        return false;
+    }
+
+    bool pushOK = mActions->pushProperty( propertyName.toLatin1(), variable );
+    if( !pushOK ) {
         qWarning() << "Unable to set property, line " << mReader.lineNumber();
         return false;
     }
@@ -680,7 +935,8 @@ bool HbDocumentLoaderSyntax::processRef()
     const QString objectName = attribute( ATTR_OBJECT );
     const QString role = attribute( ATTR_ROLE );
 
-    if( !mRealActions->pushRef( objectName, role ) ) {
+    bool pushOK = mActions->pushRef( objectName, role );
+    if( !pushOK ) {
         qWarning() << "Error in reference processing, line " << mReader.lineNumber();
         return false;
     }
@@ -721,22 +977,22 @@ bool HbDocumentLoaderSyntax::processVariable()
         const QString bottomS = attribute( ATTR_BOTTOM );
 
         result = true;
-        qreal left = 0, top = 0, right = 0, bottom = 0;
+        HbXmlLengthValue left, top, right, bottom;
         if ( !leftS.isEmpty() ) {
-            result = toPixels(leftS, left);
+            result = toLengthValue(leftS, left);
         }
         if ( result && !topS.isEmpty() ) {
-            result = toPixels(topS, top);
+            result = toLengthValue(topS, top);
         }
         if ( result && !rightS.isEmpty() ) {
-            result = toPixels(rightS, right);
+            result = toLengthValue(rightS, right);
         }
         if ( result && !bottomS.isEmpty() ) {
-            result = toPixels(bottomS, bottom);
+            result = toLengthValue(bottomS, bottom);
         }
 
         if ( result ) {
-            result = mRealActions->setContentsMargins( left, top, right, bottom );
+            result = mActions->setContentsMargins( left, top, right, bottom );
         }
 
         if (!result) {
@@ -786,7 +1042,7 @@ bool HbDocumentLoaderSyntax::processVariable()
         }
 
         if ( result ) {
-            result = mRealActions->setSizePolicy( hPol, vPol, hStretch, vStretch );
+            result = mActions->setSizePolicy( hPol, vPol, hStretch, vStretch );
         }
         delete hPol;
         delete vPol;
@@ -806,30 +1062,20 @@ bool HbDocumentLoaderSyntax::processVariable()
 
             result = true;
 
-            qreal *sizeHintWidth = 0;
+            HbXmlLengthValue sizeHintWidth;
             const QString width = attribute( ATTR_WIDTH );
             if (!width.isEmpty()) {
-                qreal widthInPixels;
-                result = toPixels(width, widthInPixels);
-                if (result) {
-                    sizeHintWidth = new qreal;
-                    *sizeHintWidth = widthInPixels;
-                }
+                result = toLengthValue(width, sizeHintWidth);
             }
 
-            qreal *sizeHintHeight = 0;
+            HbXmlLengthValue sizeHintHeight;
             const QString height = attribute( ATTR_HEIGHT );
             if (result && !height.isEmpty()) {
-                qreal heightInPixels;
-                result = toPixels(height, heightInPixels);
-                if (result) {
-                    sizeHintHeight = new qreal;
-                    *sizeHintHeight = heightInPixels;
-                }
+                result = toLengthValue(height, sizeHintHeight);
             }
 
             if (result) {
-                result = mRealActions->setSizeHint(hint, sizeHintWidth, sizeHintHeight, fixed);
+                result = mActions->setSizeHint(hint, sizeHintWidth, sizeHintHeight, fixed);
             }
         }
 
@@ -837,12 +1083,17 @@ bool HbDocumentLoaderSyntax::processVariable()
             qWarning() << "Invalid size hint, line " << mReader.lineNumber();
         }
     } else if ( type == lexemValue( TYPE_ZVALUE ) ) {
-        const QString zValueAsString = attribute( ATTR_VALUE );
-        if (!zValueAsString.isEmpty()) {
-            qreal zValueAsReal;
-            result = toReal(zValueAsString, zValueAsReal);
-            if ( result ) {
-                result = mRealActions->setZValue( zValueAsReal );
+        const QString value = attribute( ATTR_VALUE );
+        if (!value.isEmpty()) {
+            HbXmlLengthValue *value_res = new HbXmlLengthValue();
+            result = toLengthValue( value, *value_res );
+            if( result ) {
+                HbXmlVariable variable;
+                variable.mType = HbXmlVariable::REAL;
+                variable.mParameters.append( value_res );
+                result = mActions->pushProperty( ZValueProperty, variable );
+            } else {
+                delete value_res;
             }
         }
 
@@ -854,14 +1105,24 @@ bool HbDocumentLoaderSyntax::processVariable()
         const QString comment = attribute( ATTR_COMMENT );
         const QString locId = attribute( ATTR_LOCID );
 
+        HbXmlVariable variable;
+
+        QString *param1 = new QString();
+        QString *param2 = new QString();
+
         if (!locId.isEmpty()) {
-            QByteArray locIdUtf8(locId.toUtf8());
-            const QString translated = hbTrId(locIdUtf8);
-            result = mRealActions->setToolTip( translated );
+            variable.mType = HbXmlVariable::STRING;
+            *param1 = value;
+            *param2 = locId;
         } else {
-            const QString translated = mRealActions->translate( value, comment );
-            result = mRealActions->setToolTip( translated );
+            variable.mType = HbXmlVariable::LOCALIZED_STRING;
+            *param1 = value;
+            *param2 = comment;
         }
+        variable.mParameters.append(param1);
+        variable.mParameters.append(param2);
+
+        result = mActions->setToolTip(variable);
 
         if (!result) {
             qWarning() << "Invalid tooltip, line " << mReader.lineNumber();
@@ -871,97 +1132,106 @@ bool HbDocumentLoaderSyntax::processVariable()
     return result;
 }
 
-ElementType
+HbXml::ElementType
     HbDocumentLoaderSyntax::elementType( QStringRef name ) const
 {
     const QString stringName = name.toString();
 
     if( stringName == lexemValue(TYPE_DOCUMENT) ){
-        return DOCUMENT;
+        return HbXml::DOCUMENT;
     }
-    return HbXmlLoaderAbstractSyntax::elementType( name );
+    return HbXmlLoaderBaseSyntax::elementType( name );
 }
 
-QVariant HbDocumentLoaderSyntax::decodeValue()
+bool HbDocumentLoaderSyntax::createVariable( HbXmlVariable& variable )
 {
-    QVariant result = QVariant::Invalid;
-
     const QString type = mReader.name().toString();
+    bool ok = true;
 
-    bool ok = false;
     if( type == lexemValue( TYPE_INT ) ) {
         const QString value = attribute( ATTR_VALUE );
-        int int_res = value.toInt( &ok );
-        if( ok ) {
-            result = int_res;
+        qint16 *int_res = new qint16();
+        *int_res = value.toInt( &ok );
+        if ( ok ) {
+            variable.mType = HbXmlVariable::INT;
+            variable.mParameters.append(int_res);
+        } else {
+            delete int_res;
         }
     } else if( type == lexemValue( TYPE_REAL ) ) {
         const QString value = attribute( ATTR_VALUE );
-        qreal qreal_res;
-        ok = toPixels( value, qreal_res );
+        HbXmlLengthValue *value_res = new HbXmlLengthValue();
+        ok = toLengthValue( value, *value_res );
         if( ok ) {
-            result = qreal_res;
+            variable.mType = HbXmlVariable::REAL;
+            variable.mParameters.append(value_res);
+        } else {
+            delete value_res;
         }
     } else if( type == lexemValue( TYPE_LOCALIZED_STRING ) ) {
-        const QString value =
-            mRealActions->translate( attribute( ATTR_VALUE ), attribute( ATTR_COMMENT ) );
-        result = value;
+        QString *value = new QString();
+        QString *attr = new QString();
+        *value = attribute( ATTR_VALUE );
+        *attr = attribute( ATTR_COMMENT );
+        variable.mType = HbXmlVariable::LOCALIZED_STRING;
+        variable.mParameters.append(value);
+        variable.mParameters.append(attr);
     } else if( type == lexemValue( TYPE_STRING ) ) {
-        const QString value = attribute( ATTR_VALUE );
-        const QString locId = attribute( ATTR_LOCID );
-        if (!locId.isEmpty()) {
-            QByteArray locIdUtf8(locId.toUtf8());
-            result = hbTrId(locIdUtf8);
-        } else {
-            result = value;
-        }
-    } else if( type == lexemValue( TYPE_ENUMS ) ) {
-        result = attribute( ATTR_VALUE );
+        QString *value = new QString();
+        QString *locId = new QString();
+        *value = attribute( ATTR_VALUE );
+        *locId = attribute( ATTR_LOCID );
+        variable.mType = HbXmlVariable::STRING;
+        variable.mParameters.append(value);
+        variable.mParameters.append(locId);
+    } else if( type == lexemValue( TYPE_ENUMS ) || type == lexemValue(TYPE_ALIGNMENT) || type == lexemValue(LL_ORIENTATION) ) {
+        QString *value = new QString();
+        *value = attribute( ATTR_VALUE );
+        variable.mType = HbXmlVariable::ENUMS;
+        variable.mParameters.append(value);
     } else if ( type == lexemValue( TYPE_BOOL ) ) {
+        bool *boolVal = new bool();
         const QString value = attribute( ATTR_VALUE );
         if (value == lexemValue( VALUE_BOOL_TRUE ) ) {
-            result = QVariant(true);
+            *boolVal = true;
         } else if (value == lexemValue( VALUE_BOOL_FALSE ) ) {
-            result = QVariant(false);
+            *boolVal = false;
+        } else {
+            ok = false;
+        }
+        if (ok) {
+            variable.mType = HbXmlVariable::BOOL;
+            variable.mParameters.append(boolVal);
+        } else {
+            delete boolVal;
         }
     } else if ( type == lexemValue( TYPE_ICON ) ) {
 
-        HbIcon icon;
-        ok = true;
-
-        // Read optional iconName attribute (if not given, it's null icon)
-        const QString iconName = attribute( ATTR_ICONNAME );
-        if ( !iconName.isEmpty() ) {
-            icon.setIconName( iconName );
-        }
-
-        qreal desiredWidth = 0;
-        qreal desiredHeight = 0;
+        QString *iconName = new QString(attribute( ATTR_ICONNAME ));
+        HbXmlLengthValue *desiredWidth = new HbXmlLengthValue();
+        HbXmlLengthValue *desiredHeight = new HbXmlLengthValue();
 
         // Read optional width attribute
         const QString width = attribute( ATTR_WIDTH );
         if (!width.isEmpty()) {
-            ok = toPixels( width, desiredWidth );
+            ok = toLengthValue( width, *desiredWidth );
         }
 
         // Read optional height attribute
         const QString height = attribute( ATTR_HEIGHT );
         if (ok && !height.isEmpty()) {
-            ok = toPixels( height, desiredHeight );
+            ok = toLengthValue( height, *desiredHeight );
         }
 
         if (ok) {
-            if (!width.isEmpty() && !height.isEmpty()) {
-                icon.setSize(QSizeF(desiredWidth, desiredHeight));
-            } else if (!width.isEmpty()) {
-                icon.setWidth(desiredWidth);
-            } else if (!height.isEmpty()) {
-                icon.setHeight(desiredHeight);
-            } else {
-                // neither defined.
-            }
-
-            result = icon;
+            variable.mType = HbXmlVariable::ICON;
+            variable.mParameters.append(iconName);
+            variable.mParameters.append(desiredWidth);
+            variable.mParameters.append(desiredHeight);
+        } else {
+            delete iconName;
+            delete desiredWidth;
+            delete desiredHeight;
         }
     } else if ( type == lexemValue(TYPE_SIZE) ) {
 
@@ -969,18 +1239,22 @@ QVariant HbDocumentLoaderSyntax::decodeValue()
         const QString height = attribute( ATTR_HEIGHT );
 
         if (!width.isEmpty() && !height.isEmpty()) {
-            ok = true;
-            QSizeF size;
-            qreal widthVal, heightVal;
-            ok = toPixels(width, widthVal);
+            HbXmlLengthValue *widthVal = new HbXmlLengthValue();
+            HbXmlLengthValue *heightVal = new HbXmlLengthValue();
+            ok = toLengthValue(width, *widthVal);
             if (ok) {
-                size.setWidth(widthVal);
-                ok = toPixels(height, heightVal);
+                ok = toLengthValue(height, *heightVal);
             }
             if (ok) {
-                size.setHeight(heightVal);
-                result = size;
+                variable.mType = HbXmlVariable::SIZE;
+                variable.mParameters.append(widthVal);
+                variable.mParameters.append(heightVal);
+            } else {
+                delete widthVal;
+                delete heightVal;
             }
+        } else {
+            ok = false;
         }
 
     } else if ( type == lexemValue(TYPE_RECT) ) {
@@ -991,27 +1265,34 @@ QVariant HbDocumentLoaderSyntax::decodeValue()
         const QString height = attribute( ATTR_HEIGHT );
 
         if (!width.isEmpty() && !height.isEmpty() && !posx.isEmpty() && !posy.isEmpty()) {
-            ok = true;
-            QSizeF size;
-            QPointF point;
-            qreal widthVal, heightVal, posxVal, posyVal;
-            ok = toPixels(width, widthVal);
+            HbXmlLengthValue *widthVal = new HbXmlLengthValue();
+            HbXmlLengthValue *heightVal = new HbXmlLengthValue();
+            HbXmlLengthValue *posxVal = new HbXmlLengthValue();
+            HbXmlLengthValue *posyVal = new HbXmlLengthValue();
+            ok = toLengthValue(width, *widthVal);
             if (ok) {
-                size.setWidth(widthVal);
-                ok = toPixels(height, heightVal);
+                ok = toLengthValue(height, *heightVal);
             }
             if (ok) {
-                size.setHeight(heightVal);
-                ok = toPixels(posx, posxVal);
+                ok = toLengthValue(posx, *posxVal);
             }
             if (ok) {
-                point.setX(posxVal);
-                ok = toPixels(posy, posyVal);
+                ok = toLengthValue(posy, *posyVal);
             }
             if (ok) {
-                point.setY(posyVal);
-                result = QRectF(point, size);
+                variable.mType = HbXmlVariable::RECT;
+                variable.mParameters.append(widthVal);
+                variable.mParameters.append(heightVal);
+                variable.mParameters.append(posxVal);
+                variable.mParameters.append(posyVal);
+            } else {
+                delete widthVal;
+                delete heightVal;
+                delete posxVal;
+                delete posyVal;
             }
+        } else {
+            ok = false;
         }
 
     } else if ( type == lexemValue(TYPE_POINT) ) {
@@ -1019,74 +1300,69 @@ QVariant HbDocumentLoaderSyntax::decodeValue()
         const QString posx = attribute( ATTR_X );
         const QString posy = attribute( ATTR_Y );
         if (!posx.isEmpty() && !posy.isEmpty()) {
-            ok = true;
-            QPointF point;
-            qreal posxVal, posyVal;
-            ok = toPixels(posx, posxVal);
+            HbXmlLengthValue *posxVal = new HbXmlLengthValue();
+            HbXmlLengthValue *posyVal = new HbXmlLengthValue();
+            ok = toLengthValue(posx, *posxVal);
             if (ok) {
-                point.setX(posxVal);
-                ok = toPixels(posy, posyVal);
+                ok = toLengthValue(posy, *posyVal);
             }
             if (ok) {
-                point.setY(posyVal);
-                result = point;
+                variable.mType = HbXmlVariable::POINT;
+                variable.mParameters.append(posxVal);
+                variable.mParameters.append(posyVal);
+            } else {
+                delete posxVal;
+                delete posyVal;
             }
-        }
-
-    } else if ( type == lexemValue(TYPE_ALIGNMENT) ) {
-
-        const QString alignment = attribute( ATTR_VALUE );
-        if (!alignment.isEmpty() ) {
-            result = alignment;
-        }
-
-    } else if ( type == lexemValue(LL_ORIENTATION) ) {
-
-        const QString orientation = attribute( ATTR_VALUE );
-        if (!orientation.isEmpty() ) {
-            result = orientation;
+        } else {
+            ok = false;
         }
 
     } else if ( type == lexemValue(TYPE_COLOR) ) {
 
         const QString curColor = attribute( ATTR_VALUE  );
         if (!curColor.isEmpty() ) {
-            ok = true;
-            result = QColor(curColor);
+            QColor *colorVal = new QColor(curColor);
+            variable.mType = HbXmlVariable::COLOR;
+            variable.mParameters.append(colorVal);
+        } else {
+            ok = false;
         }
 
     } else if ( type == lexemValue(TYPE_FONTSPEC) ) {
         QString roleString = attribute( ATTR_FONTSPECROLE );
         HbFontSpec::Role role(HbFontSpec::Undefined);
-        ok = true;
         if (!roleString.isEmpty()) {
             ok = toFontSpecRole(roleString, role); // sets role if ok
         }
         if (ok) {
-            HbFontSpec spec(role);
+            quint8 *role_b = new quint8();
+            *role_b = (quint8)role;
+            HbXmlLengthValue *height = new HbXmlLengthValue();
             QString textHeightString = attribute( ATTR_TEXTHEIGHT );
             if (textHeightString.isEmpty()) {
                 // Deprecated.
                 textHeightString = attribute( ATTR_TEXTPANEHEIGHT );
             }
             if (!textHeightString.isEmpty()) {
-                qreal height(0);
-                ok = toPixels(textHeightString, height);
-                if (ok) {
-                    spec.setTextHeight(qRound(height));
-                }
+                ok = toLengthValue(textHeightString, *height);
             }
             if (ok) {
-                result = spec;
+                variable.mType = HbXmlVariable::FONTSPEC;
+                variable.mParameters.append(role_b);
+                variable.mParameters.append(height);
+            } else {
+                delete role_b;
+                delete height;
             }
         }
     }
 
     else {
         // unknown property.
+        ok = false;
     }
-
-    return result;
+    return ok;
 }
 
 bool HbDocumentLoaderSyntax::convertSizeHintType(

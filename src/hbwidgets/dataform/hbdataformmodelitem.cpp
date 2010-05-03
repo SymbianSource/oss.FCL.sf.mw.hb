@@ -89,6 +89,9 @@ QString HbDataFormModelItemPrivate::dirtyProperty()
  */
 
 /*!
+    \deprecated HbDataFormModelItem::KeyRole
+        is deprecated.Please remove the reference to this Role.
+
     \var HbDataFormModelItem::KeyRole
     KeyRole: This Role is used for the key string for the data item. This will be used 
     for storing and loading the data from central repository.
@@ -162,6 +165,7 @@ QString HbDataFormModelItemPrivate::dirtyProperty()
  */
 
 /*!
+
     \var HbDataFormModelItem::VolumeSliderItem
     VolumeSliderItem:  This itemType is for volume slider type of data item
     
@@ -232,13 +236,45 @@ QString HbDataFormModelItemPrivate::dirtyProperty()
     \var HbDataFormModelItem::RadioButtonListItem
     RadioButtonListItem:  This itemType is for radio button list type of data item
     
+    RadioButtonListItem will appear in three display modes
+
+    automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
+    if more than three items then selected items are displayed as text on a PushButton and when pushbutton 
+    clicked it lunches popup. Automatic mode is set as the default mode.
+    
+    embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
+    with value of property as "embedded"
+    
+    popup : Application can set these items as always popup by setting the property "displayMode" 
+    with value of property as "popup"
+    HbDataFormModelItem *radioItem = model->appendDataItem(HbDataFormModelItem::RadioButtonListItem, 
+        QString("Caller Tone"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("embedded"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("automatic"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("popup"));
+    
  */
 
 /*!
     \var HbDataFormModelItem::MultiselectionItem
     MultiselectionItem:  This itemType is for multi selection type of data item.
-    MultiSelectionItem launches a pop-up list dialog.
     
+    MultiSelectionListItem will appear in three display modes
+
+    automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
+    if more than three items then selected items are displayed as text on a PushButton and when pushbutton 
+    clicked it lunches popup. Automatic mode is set as the default mode.
+    
+    embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
+    with value of property as "embedded"
+    
+    popup : Application can set these items as always popup by setting the property "displayMode" 
+    with value of property as "popup"
+    HbDataFormModelItem *radioItem = model->appendDataItem(HbDataFormModelItem::MultiSelectionListItem, 
+        QString("Caller Tone"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("embedded"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("automatic"));
+    radioItem->setContentWidgetData(QString("displayMode"),QString("popup"));
  */
 
 /*!
@@ -422,7 +458,11 @@ void HbDataFormModelItem::removeChildren(int startIndex, int count)
      HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
      model->d_func()->rowsAboutToBeRemoved(this, startIndex, startIndex + count -1); 
      for(int index = 0; index < count ;index++) {
-         removeChild(startIndex);
+        HbDataFormModelItem *item = d->mChildItems.takeAt(0);
+        if ( item ) {
+            delete item;
+            item = 0;
+        }
      }
      model->d_func()->rowsRemoved();
 }
@@ -665,7 +705,7 @@ QString HbDataFormModelItem::icon() const
 
 
 /*!
-    \deprecated HbDataFormModelItem::setModel(const QAbstractItemModel *model)
+    \deprecated HbDataFormModelItem::setModel(const QAbstractItemModel*)
         is deprecated. Please remove all refernces to this API.
 
     Sets the given \a model to the item's model. Also sets the Model to Child Items.

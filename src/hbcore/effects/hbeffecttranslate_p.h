@@ -55,10 +55,8 @@ private:
 public:
     qreal originalPos;
     qreal currentPos;
-    HbEffectGroup *group;
     HbEffectTranslate *effect;
 };
-
 
 class HB_AUTOTEST_EXPORT HbEffectTranslate : public HbEffectAbstract
 {

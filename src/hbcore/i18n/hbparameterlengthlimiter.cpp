@@ -308,10 +308,6 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
 {
     QChar tmpChar = fillChar;
 
-    if ( a.length() == 0 ) {
-        return *this;    
-    }
-    
     QString result = "";
     int i = 0;
 

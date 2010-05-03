@@ -51,6 +51,7 @@ public: // From HbPredictionBase
     void appendKeyPress(const int keycode, const Qt::KeyboardModifiers modifiers, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0);
     void setWord(const QString& word, HbPredictionCallback* callback = 0);
     void updateCandidates(int& bestGuessLocation, bool& noMoreCandidates); 
+    bool updateCandidates(int& bestGuessLocation);
     HbInputPredictionFeature features() const;
     QString vendorIdString() const;
     QString engineVersion() const;
@@ -62,6 +63,7 @@ public: // From HbPredictionEngine
     int inputLength();
     void setCandidateList(QStringList* candidateList);
     QStringList candidateList();
+    QStringList candidates();
     void setKeyboard(HbKeyboardType aKeyboardType);
     void appendCharacter(const QChar aChar, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0);
  

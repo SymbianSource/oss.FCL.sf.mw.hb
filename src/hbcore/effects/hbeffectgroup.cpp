@@ -28,7 +28,6 @@
 #include "hbeffect.h"
 #include "hbtimer_p.h"
 #include "hbeffectdef_p.h"
-#include "hbeffectinternal_p.h"
 #include "hbmainwindow.h"
 #include "hbinstance.h"
 
@@ -38,13 +37,11 @@
 #include <QGraphicsItem>
 #include <QGraphicsWidget>
 #include <QGraphicsView>
-#include <QTimer>
 
 #ifdef HB_FILTER_EFFECTS
 #include "hbvgeffect_p.h"
 #include "hbvgchainedeffect_p.h"
 #endif
-
 
 HbEffectGroup::HbEffectGroup(
     const QString &effectEventType, 
@@ -63,7 +60,9 @@ HbEffectGroup::HbEffectGroup(
       mRunningState(NotRunning),
       mLooping(false),
       mView(0),
-      mHideWhenFinished(false)
+      mEffectFlags(HbEffectInternal::Normal),
+      mRegItemHidden(false),
+      mTargetItemHidden(false)
 {
 }
 
@@ -158,14 +157,15 @@ void HbEffectGroup::updateItemTransform()
     }
     QTransform transform;
 
-    Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect)
             effect->updateItemTransform(transform);
     }
-    if (!gv)
-        mTargetItem->setTransform(transform);	
-    else 
+    if (!gv) {
+        mTargetItem->setTransform(transform);
+    } else {
         gv->setTransform(transform);
+    }
 }
 
 bool HbEffectGroup::dirty() const
@@ -200,14 +200,14 @@ bool HbEffectGroup::isLooping() const
 
 void HbEffectGroup::pause()
 {
-    Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         effect->pause();
     }
 }
 
 void HbEffectGroup::resume()
 {
-    Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         effect->resume();
     }
 }
@@ -302,10 +302,8 @@ void HbEffectGroup::startAll()
 
     // First resolve parameters and set the start states for all the effects.
     // This is done before starting the effect animations to avoid screen flickering.
-
     QTransform transform;
-
-    Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         // Resolve parameters etc.
         effect->init();
         if (effect->interval() == 0) {
@@ -313,15 +311,28 @@ void HbEffectGroup::startAll()
             effect->setStartState(transform);
         }
     }
-
     mTargetItem->setTransform(transform);
+
+    // Make the target item visible, if needed, now that the start state is set
+    // for all the effects.
+    if (mEffectFlags.testFlag(HbEffectInternal::ShowItemOnFirstUpdate)) {
+        // In case of a view switch the registration item may be the HbView
+        // itself and the target item is just the view's content widget. Make
+        // sure both are visible.
+        mTargetItem->setVisible(true);
+        if (mRegistrationItem != mTargetItem) {
+            mRegistrationItem->setVisible(true);
+        }
+    }
+
+    mRegItemHidden = false;
+    mTargetItemHidden = false;
 
     if (mEffects.empty()) {
         // No effect exists but user wants notification when effect finishes. 
         // Let the user do whatever he wanted to do when effect finishes.
         invokeObserver(Hb::EffectNotStarted);
-    }        
-    else {
+    } else {
         // Start state has been set for all the effects,
         // next step is to start the effect animations.
         // Before that, resolve the view where the effect belongs if the effect is looping.
@@ -329,8 +340,7 @@ void HbEffectGroup::startAll()
         if (isLooping()) {
             resolveView();
         }
-
-        Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+        foreach (HbEffectAbstract *effect, mEffects) {
             // If the starttime is zero, start effect immediately
             if (effect->interval() == 0) {
                 effect->start(); // This may call group's effectFinished if the effect was empty.
@@ -342,18 +352,17 @@ void HbEffectGroup::startAll()
     }
 }
 
-void HbEffectGroup::resolveView() {
-    if (!mView) {
-        if (mTargetItem) {
-            QGraphicsScene *scene = mTargetItem->scene();
-            if (scene) {
-                // Resolve the main window having the same scene that the item belongs to
-                QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
-                Q_FOREACH(const HbMainWindow *window, windowList) {
-                    if (window->scene() == scene) {
-                        mView = window->currentView();
-                        break;
-                    }
+void HbEffectGroup::resolveView()
+{
+    if (!mView && mTargetItem) {
+        QGraphicsScene *scene = mTargetItem->scene();
+        if (scene) {
+            // Resolve the main window having the same scene that the item belongs to
+            QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
+            foreach (const HbMainWindow *window, windowList) {
+                if (window->scene() == scene) {
+                    mView = window->currentView();
+                    break;
                 }
             }
         }
@@ -362,18 +371,17 @@ void HbEffectGroup::resolveView() {
 
 bool HbEffectGroup::hasTranslateEffect() const
 {
-    foreach(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_TRANSLATE) {
             return true;
         }
     }
-
     return false;
 }
 
 bool HbEffectGroup::hasRotateEffect() const
 {
-    foreach(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_ROTATE) {
             return true;
         }
@@ -384,45 +392,67 @@ bool HbEffectGroup::hasRotateEffect() const
 
 bool HbEffectGroup::hasScaleEffect() const
 {
-    foreach(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_SCALE) {
             return true;
         }
     }
-
     return false;
 }
 
 bool HbEffectGroup::hasOpacityEffect() const
 {
-    foreach(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_OPACITY) {
             return true;
         }
     }
-
     return false;
 }
 
-void HbEffectGroup::doHideEffect(const QTransform *transform, bool opacityEffectUsed)
+void HbEffectGroup::doClearEffect(const QTransform *transform, bool opacityEffectUsed)
 {
+    // Hide registration item if needed.
+    if (mEffectFlags.testFlag(HbEffectInternal::HideRegItemBeforeClearingEffect)) {
+        // We get here also from cancelAll() when starting a new effect so there
+        // must be some guarding to do the hiding only once.
+        if (!mRegItemHidden) {
+            mRegItemHidden = true;
+            // This flag affects the registration item only.
+            mRegistrationItem->setVisible(false);
+        }
+    }
+    // Same for the target item.
+    if (mEffectFlags.testFlag(HbEffectInternal::HideTargetItemBeforeClearingEffect)) {
+        if (!mTargetItemHidden) {
+            mTargetItemHidden = true;
+            mTargetItem->setVisible(false);
+        }
+    }
+    // Reset the transformation.
     mTargetItem->setTransform(transform ? *transform : QTransform());
+    // Reset opacity.
     if (opacityEffectUsed) {
         // Hide opacity effect by setting item fully opaque regardless of what
         // its opacity value was before the effect.
         mTargetItem->setOpacity(1.0f);
     }
+    // Reset filter effects.
 #ifdef HB_FILTER_EFFECTS            
     deactivateVgEffect();
 #endif            
 }
 
-void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool hideEffect, const QTransform &initialItemTransform)
+void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool clearEffect, const QTransform &initialItemTransform)
 {
+    // No checks for running state here. The cancellation (esp. the clearing of
+    // the effect (if needed)) must be done always, regardless of the effect's
+    // state.
+
     QTransform transform;
     bool opacityEffectUsed = false;
 
-    Q_FOREACH(HbEffectAbstract *effect, mEffects) {
+    foreach (HbEffectAbstract *effect, mEffects) {
         if (effect) {
             HbTimer::instance()->unregisterEntry(effect);
             effect->cancel(transform, itemIsValid);
@@ -434,8 +464,8 @@ void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool hideEffe
 
     if (itemIsValid) {
         // If effect needs to be removed, reset transform matrix and deactivate VG effect
-        if (hideEffect || mHideWhenFinished) {
-            doHideEffect(&initialItemTransform, opacityEffectUsed);
+        if (clearEffect || mEffectFlags.testFlag(HbEffectInternal::ClearEffectWhenFinished)) {
+            doClearEffect(&initialItemTransform, opacityEffectUsed);
         } else { // Otherwise set transform corresponding to the end state of the effect
             mTargetItem->setTransform(initialItemTransform * transform);
         }
@@ -446,8 +476,9 @@ void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool hideEffe
     mRunningState = NotRunning;
 
     // Invoke observer with cancel signal
-    if (sendCallback)
+    if (sendCallback) {
         invokeObserver(Hb::EffectCancelled);
+    }
 }
 
 void HbEffectGroup::effectFinished(Hb::EffectEvent reason)
@@ -455,13 +486,16 @@ void HbEffectGroup::effectFinished(Hb::EffectEvent reason)
     // Inform the animated item when the whole effect group has finished.
     if (++mFinishedCount == mEffects.count()) {
         mFinishedCount = 0;
-        
-        // The animation framework funnily enough sends the finished signal before updating the animation with the final
-        // value, so here we set running state to NotRunning asynchronously so the effect's final value gets still updated.
-        mRunningState = FinishInProgress;
-        QTimer::singleShot(0, this, SLOT(clearEffectRunning()));
 
-        // Send callback if observer has been provided
+        // The animation framework funnily enough sends the finished signal
+        // before updating the animation with the final value, so here we set
+        // running state to NotRunning asynchronously so the effect's final
+        // value gets still updated.
+        mRunningState = FinishInProgress;
+        QMetaObject::invokeMethod(this, "clearEffectRunning", Qt::QueuedConnection);
+
+        // Send callback if observer has been provided. Note that with the
+        // EffectFinished reason the observer will be invoked asynchronously.
         invokeObserver(reason);
     }
 
@@ -478,11 +512,11 @@ void HbEffectGroup::clearEffectRunning()
     // has not been restarted meanwhile.
     if (mRunningState == FinishInProgress) {
         mRunningState = NotRunning;
-        // We are finished either normally or with EffectNotStarted. It is now the time to
-        // get rid of all the "effects" caused by the effects in this group if the
-        // hide-when-finished flag is set.
-        if (mHideWhenFinished) {
-            doHideEffect(0, hasOpacityEffect());
+        // We are finished either normally or with EffectNotStarted. It is now
+        // the time to get rid of all the "effects" caused by the effects in
+        // this group, if needed.
+        if (mEffectFlags.testFlag(HbEffectInternal::ClearEffectWhenFinished)) {
+            doClearEffect(0, hasOpacityEffect());
         }
     }
 }
@@ -505,9 +539,10 @@ void HbEffectGroup::invokeObserver(Hb::EffectEvent reason)
         mObserver = 0;
 
         // Send callback if observer has been provided. Use queued connection if
-        // the effect finished normally, because otherwise deleting the effect during the callback
-        // would cause crash because this function finally returns back to animation framework code
-        // which assumes the effect objects are alive.
+        // the effect finished normally, because otherwise deleting the effect
+        // during the callback would cause crash because this function finally
+        // returns back to animation framework code which assumes the effect
+        // objects are alive.
         QMetaObject::invokeMethod(
             observer,
             mEffectFinishedSlotName.toAscii().data(),
@@ -520,9 +555,9 @@ void HbEffectGroup::invokeObserver(Hb::EffectEvent reason)
     }
 }
 
-void HbEffectGroup::setHideWhenFinished(bool hideWhenFinished)
+void HbEffectGroup::setEffectFlags(HbEffectInternal::EffectFlags flags)
 {
-    mHideWhenFinished = hideWhenFinished;
+    mEffectFlags = flags;
 }
 
 // End of File

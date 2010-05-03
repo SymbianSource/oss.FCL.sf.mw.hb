@@ -55,6 +55,13 @@
     Aspect ratio mode of icon. 
 */
 
+
+/*!
+
+    \deprecated   HbStyleOptionLabel::HbStyleOptionLabel()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionLabel::HbStyleOptionLabel() : HbStyleOption(HbSO_Label),
     text(),
     fontSpec(), /*HbFontSpec::Primary*/
@@ -68,6 +75,13 @@ HbStyleOptionLabel::HbStyleOptionLabel() : HbStyleOption(HbSO_Label),
     version = Version;
 }
 
+
+/*!
+
+    \deprecated HbStyleOptionLabel::HbStyleOptionLabel(const HbStyleOptionLabel&) 
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionLabel::HbStyleOptionLabel(const HbStyleOptionLabel &other) :
     HbStyleOption(other),
     text(other.text),

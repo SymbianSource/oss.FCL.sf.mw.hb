@@ -20,21 +20,25 @@ HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"] {
 
 HbToolBar > HbToolButton[toolButtonStyle="3"][orientation="2"] {
     min-width:15un;
-    min-height:var(hb-param-widget-toolbar-height);
+    min-height:1un;
+    pref-height:var(hb-param-widget-toolbar-height);
 }
 
 HbToolBar > HbToolButton[toolButtonStyle="2"][orientation="2"] {
     min-width:15un;
-    min-height:var(hb-param-widget-toolbar-height);
+    min-height:1un;
+    pref-height:var(hb-param-widget-toolbar-height);
 }
 
 HbToolBar > HbToolButton[toolButtonStyle="1"][orientation="2"] {
     min-width:9un;
-    min-height:var(hb-param-widget-toolbar-height);
+    min-height:1un;
+    pref-height:var(hb-param-widget-toolbar-height);
 }
 
 HbToolBar > HbToolButton[orientation="1"] {
-    min-width:var(hb-param-widget-chrome-height);
+    pref-width:var(hb-param-widget-chrome-height);
+    min-width:1un;
     min-height:var(hb-param-widget-toolbar-height);
 }
 

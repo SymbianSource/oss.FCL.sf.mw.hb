@@ -33,6 +33,7 @@
 #include "hbscrollarea_p.h"
 #include "hbactionmanager_p.h"
 #include <QGraphicsLinearLayout>
+#include <QGesture>
 
 class HbMenuContainer;
 class HbMenuContainerPrivate;
@@ -63,8 +64,7 @@ protected:
     void upGesture(int value);
     void downGesture(int value);
     void panGesture(const QPointF &point);
-    void keyPressEvent(QKeyEvent *event);
-    void keyReleaseEvent(QKeyEvent *event);
+    virtual void gestureEvent(QGestureEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 private:
     HbMenuItem* itemAt(const QPointF& position) const;

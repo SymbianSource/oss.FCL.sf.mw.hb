@@ -43,10 +43,9 @@ public:
 
     void setName(const QString &name);
     void setLogicalSize(const QSize &size);
-    void setPhysicalSize(const QSizeF &size);
-    void setOrientation(Qt::Orientation orientation);
     void setAlternateProfileName(const QString &name);
     void setUnitValue(qreal value);
+    void setPpiValue(qreal value);
 };
 
 

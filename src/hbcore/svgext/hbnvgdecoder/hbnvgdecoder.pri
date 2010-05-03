@@ -27,23 +27,23 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbnvg_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgicon_p.h
+PRIVATE_HEADERS += $$PWD/hbnvg_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgicon_p.h
 
-INTERNAL_HEADERS += $$PWD/hbtlvcommon_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgfittoviewbox_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgimagebinder_p.h 
-INTERNAL_HEADERS += $$PWD/hbtlviconcreator_p.h
-INTERNAL_HEADERS += $$PWD/hbtlvrenderer_p.h
-INTERNAL_HEADERS += $$PWD/hbtlviconrenderer_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgtlvicon_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgicondata_p.h
-INTERNAL_HEADERS += $$PWD/hbopenvghandlestore_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgcsicon_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgiconfactory_p.h 
-INTERNAL_HEADERS += $$PWD/hbnvg_p_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgexception_p.h
-INTERNAL_HEADERS += $$PWD/hbnvgenginepool_p.h
+PRIVATE_HEADERS += $$PWD/hbtlvcommon_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgfittoviewbox_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgimagebinder_p.h 
+PRIVATE_HEADERS += $$PWD/hbtlviconcreator_p.h
+PRIVATE_HEADERS += $$PWD/hbtlvrenderer_p.h
+PRIVATE_HEADERS += $$PWD/hbtlviconrenderer_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgtlvicon_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgicondata_p.h
+PRIVATE_HEADERS += $$PWD/hbopenvghandlestore_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgcsicon_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgiconfactory_p.h 
+PRIVATE_HEADERS += $$PWD/hbnvg_p_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgexception_p.h
+PRIVATE_HEADERS += $$PWD/hbnvgenginepool_p.h
 
 SOURCES += $$PWD/hbnvgfittoviewbox.cpp
 #SOURCES += $$PWD/hbnvgfittoviewbox_p.inl

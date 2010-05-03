@@ -84,7 +84,7 @@
      TInt value = 0;
      TInt error = mRepository->Get(KHbSensorCenrepKey, value);
      if (error == KErrNone) {
-         mObserver.cenrepValueChanged(value);
+        mObserver.cenrepValueChanged(value);
      }
      // Re-subscribe
      error = mRepository->NotifyRequest(KHbSensorCenrepKey, iStatus);

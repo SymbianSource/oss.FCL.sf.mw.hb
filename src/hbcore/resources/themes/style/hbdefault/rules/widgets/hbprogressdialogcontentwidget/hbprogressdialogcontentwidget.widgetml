@@ -1,33 +1,46 @@
 <hbwidget version="0.1" type="HbProgressDialogContentWidget">
-
+  <!--  layout : progressdialog_layout -->
+  <!--
+        Required item: 
+            text
+        Optional item:
+            icon
+        Default item:
+            pBar
+            
+        Items from left to right:
+            <- icon   <-    text ->
+            <-      pBar         ->
+                                         
+        Other:
+            icon: connected from item TOP to TOP 
+                        
+            text: connected from item TOP to TOP 
+            
+            IconSpacer: connected from item TOP to icon BOTTOM
+            IconSpacer: connected from item BOTTOM to pBar TOP
+            
+            TextSpacer: connected from item TOP to text BOTTOM
+            TextSpacer: connected from item BOTTOM to pBar TOP
+            
+            pBar: connected from item BOTTOM to BOTTOM 
+    -->
   <layout name="progressdialog_layout" type="mesh">
 
-    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="icon" srcEdge="BOTTOM" dst="pbar" dstEdge="TOP" spacer="IconSpacer"/>
 
-    <meshitem src="text" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
-    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="text" srcEdge="BOTTOM" dst="pbar" dstEdge="TOP" />
+      <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="text" srcEdge="LEFT" dst="icon" dstEdge="RIGHT" />
+      <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="text" srcEdge="BOTTOM" dst="pbar" dstEdge="TOP" spacer="TextSpacer"/>
 
-    <meshitem src="pbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="pbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="pbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
- 
-  </layout>
+      <meshitem src="pbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="pbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="pbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
-  <layout name="progressdialog_layout_text" type="mesh">
-
-    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="text" srcEdge="BOTTOM" dst="pbar" dstEdge="TOP" />
-   
-    <meshitem src="pbar" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="pbar" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="pbar" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
- 
-  </layout>
+    </layout>
 
 </hbwidget>
 

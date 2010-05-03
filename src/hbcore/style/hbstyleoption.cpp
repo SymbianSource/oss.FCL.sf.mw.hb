@@ -26,7 +26,10 @@
 #include <hbstyleoption.h>
 
 /*!
-	@beta
+
+    \deprecated HbStyleOption::HbStyleOption(int, int)
+    is deprecated. Styleoptions will not be public.
+
     \class HbStyleOption
     \brief HbStyleOption is the base class for all Hbwidgets Style Options
 */

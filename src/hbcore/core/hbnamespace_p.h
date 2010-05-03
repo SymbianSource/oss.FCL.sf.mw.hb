@@ -56,7 +56,6 @@ namespace HbPrivate
         ItemType_TitlePane,
         ItemType_MessageBoxContentWidget,
         ItemType_MessageNoteContentWidget,
-        ItemType_ProgressNoteContentWidget,
         ItemType_ProgressDialogContentWidget,
         ItemType_GraphicsItemGroup,
         ItemType_BackgroundItem,
@@ -147,12 +146,14 @@ namespace HbPrivate
     static const int PopupPriorityCount = 256;
 
     // The number of popups that can have the same priority
-    static const int PopupCountWithSamePriority = 256;
+    static const int PopupCountWithSamePriority = 64;
 
-    static const qreal PopupWithDifferentPriorityZValueUnit  = (PopupZValueRangeEnd-PopupZValueDefaultOffset)/256;
+    static const qreal PopupWithDifferentPriorityZValueUnit  = (PopupZValueRangeEnd-PopupZValueDefaultOffset)/PopupPriorityCount;
     static const qreal PopupWithSamePriorityZValueUnit       = PopupWithDifferentPriorityZValueUnit / PopupCountWithSamePriority;
     static const qreal PopupBackgroundItemZValueUnit         = PopupWithSamePriorityZValueUnit / 2;
     static const qreal FadingItemZValueUnit                  = PopupBackgroundItemZValueUnit / 2;
+    static const qreal VKBValueUnit                          = FadingItemZValueUnit / 2;
+    static const qreal SelectionControlHandlesValueUnit      = VKBValueUnit / 2;
 
     enum SoftKeyId
     {

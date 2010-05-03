@@ -226,3 +226,21 @@ void HbSharedMemoryManager::releaseInstance()
     delete memManager;
     memManager = 0;
 }
+
+/**
+ * gets the free memory reported by main allocator
+ */
+int HbSharedMemoryManager::freeSharedMemory()
+{
+    HbSplayTreeAllocator *splayAllocator = static_cast<HbSplayTreeAllocator*>(mainAllocator);
+    return splayAllocator->freeBytes();
+}
+
+/**
+ * gets the allocated memory reported by main allocator
+ */
+int HbSharedMemoryManager::allocatedSharedMemory()
+{
+    HbSplayTreeAllocator *splayAllocator = static_cast<HbSplayTreeAllocator*>(mainAllocator);
+    return splayAllocator->allocatedBytes();
+}

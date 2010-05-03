@@ -33,8 +33,7 @@
 HbEffectOpacityAnimation::HbEffectOpacityAnimation(
     HbEffectGroup *group,
     int duration ) :
-        HbEffectAnimation(),
-        group(group)
+        HbEffectAnimation(group)
 {
     setDuration(duration);
 }
@@ -42,15 +41,13 @@ HbEffectOpacityAnimation::HbEffectOpacityAnimation(
 void HbEffectOpacityAnimation::handleAnimationUpdate(const QVariant &value)
 {
     qreal opacity = qVariantValue<qreal>(value);
-    group->targetItem()->setOpacity(opacity);
+    mGroup->targetItem()->setOpacity(opacity);
 }
 
 void HbEffectOpacityAnimation::handleAnimationFinish()
 {
-    group->effectFinished();
+    mGroup->effectFinished();
 }
-
-// -----------------------------------------------------------------------------
 
 // HbEffectOpacity
 
@@ -104,7 +101,7 @@ HbEffectOpacity::HbEffectOpacity(
             }
         }
 
-        mAnimation->addLooping(opacityParam, group);
+        mAnimation->addLooping(opacityParam);
         mAnimation->setEndValue(QVariant(mEndOpacity));
         mAnimation->setStartValue(QVariant(mStartOpacity));
         mAnimation->mCurve = curve;

@@ -239,7 +239,6 @@ QString HbTextResolverSymbianPrivate::ConvertToQString(const TDesC& aMessageId, 
         <translation>Text test</translation>
     </message>
     
-
     _LIT(KTextTest, "text_test");
     // returns the string "Text test"
     HBufC* tmp = HbTextResolverSymbian::LoadL(KTextTest);

@@ -29,11 +29,11 @@ DEPENDPATH += $$PWD
 
 PUBLIC_HEADERS += $$PWD/hbstyleloader.h
 
-INTERNAL_HEADERS += $$PWD/hbcssparser_p.h
-INTERNAL_HEADERS += $$PWD/hblayeredstyleloader_p.h
-INTERNAL_HEADERS += $$PWD/hbstyleselector_p.h
-INTERNAL_HEADERS += $$PWD/hbwidgetstyleloader_p.h
-INTERNAL_HEADERS += $$PWD/hbcssformatter_p.h
+PRIVATE_HEADERS += $$PWD/hbcssparser_p.h
+PRIVATE_HEADERS += $$PWD/hblayeredstyleloader_p.h
+PRIVATE_HEADERS += $$PWD/hbstyleselector_p.h
+PRIVATE_HEADERS += $$PWD/hbwidgetstyleloader_p.h
+PRIVATE_HEADERS += $$PWD/hbcssformatter_p.h
 
 SOURCES += $$PWD/hbcssparser_p.cpp
 SOURCES += $$PWD/hbcssscanner_p.cpp

@@ -37,13 +37,13 @@
 #ifndef HBSELECTIONCONTROL_P_H
 #define HBSELECTIONCONTROL_P_H
 
-#include "hbpopup.h"
+#include "hbwidget.h"
 
 class HbSelectionControlPrivate;
 class HbAbstractEdit;
 QT_FORWARD_DECLARE_CLASS(QGraphicsSceneMouseEvent)
 
-class HbSelectionControl : public HbPopup
+class HbSelectionControl : public HbWidget
 {
 
     Q_OBJECT
@@ -56,28 +56,29 @@ public:
         SelectionEndHandle
     };
 
-    explicit HbSelectionControl(HbAbstractEdit *edit);
-
+    static HbSelectionControl* attachEditor(HbAbstractEdit *edit);
+    void detachEditor();
     void hideHandles();
     void showHandles();
+    bool event(QEvent *event);
 
 public slots:
-    void panStarted();
-    void panFinished();
+    void scrollStarted();
+    void scrollFinished();
     void updatePrimitives();
 
-protected:    
+protected:
     
-    void mousePressEvent (QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent (QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent (QGraphicsSceneMouseEvent *event);    
     void timerEvent (QTimerEvent *event);
     void polish( HbStyleParameters& params );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void gestureEvent(QGestureEvent* event);
 
 private:
+    HbSelectionControl();
     Q_DECLARE_PRIVATE_D(d_ptr, HbSelectionControl)
     Q_DISABLE_COPY(HbSelectionControl)
+    Q_PRIVATE_SLOT(d_func(), void _q_aboutToChangeView())
 };
 
 #endif // HBSELECTIONCONTROL_P_H

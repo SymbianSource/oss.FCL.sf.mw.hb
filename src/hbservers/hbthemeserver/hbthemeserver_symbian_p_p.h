@@ -45,6 +45,7 @@ class HbThemeServerSession;
 struct HbIconKey;
 class HbIconSource;
 class ThemeIndexTables;
+class CHbThemeChangeNotificationListener;
 
 // reasons for server panic
 enum TPixmapServPanic {
@@ -73,6 +74,7 @@ public:
     // implements the pure virtutal function
     // defined in class CServer2
     HbThemeServerPrivate(CActive::TPriority aActiveObjectPriority);
+    HbIconFormatType IconTypeInCache( const HbIconKey &key ) const;
     static HbThemeServerPrivate * NewL(CActive::TPriority aActiveObjectPriority);
     ~HbThemeServerPrivate();
     CSession2 * NewSessionL(const TVersion& aVersion, const RMessage2& aMessage) const;
@@ -105,6 +107,11 @@ public :
     void getThemeIndexTables(ThemeIndexTables &tables);
     void openCurrentIndexFile();
     void resolveCurrentThemeDrive();	
+    void HandleThemeSelection( const QString& themeName);
+
+    int freeSharedMemory();
+    int allocatedSharedMemory();
+    int allocatedHeapMemory();
 
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -155,6 +162,9 @@ private:
     QString lastThemeIndexKey;
 	
     static bool gpuGoodMemoryState;	
+    
+    QStringList romThemeNames;
+    CHbThemeChangeNotificationListener * iListener;
 };
 
 //**********************************
@@ -202,6 +212,8 @@ public:
                    HbSharedIconInfoList &iconInfoList);
     void unLoadIcon(const RMessage2& aMessage);
     void unloadMultiIcon(const RMessage2& aMessage);
+    void freeClientGpuResources();
+    void ClearSessionData();
 
 protected:
     TIconParams ReadMessageAndRetrieveParams(const RMessage2 & aMessage);
@@ -212,4 +224,37 @@ private:
     QList<HbIconKey> sessionData;
     QList<QString> sessionCssData;
 };
+
+//**********************************
+//CHbThemeChangeNotificationListener
+//**********************************
+/**
+This class represents a listener for Pub/Sub events sent from the clients.
+Functions are provided to parse clients messages.
+*/
+class CHbThemeChangeNotificationListener : public CActive
+{
+public:
+    static CHbThemeChangeNotificationListener* NewL(HbThemeServerPrivate& aObserver);
+    virtual ~CHbThemeChangeNotificationListener();
+    void startListening();
+    void stopListening();
+
+protected: // From CActive
+    void RunL();
+    void DoCancel();
+    
+private:
+    CHbThemeChangeNotificationListener(HbThemeServerPrivate& aObserver);
+    void ConstructL();
+    bool parseData( TDesC& requestData, HbThemeServerRequest& etype, TDes& data);
+    
+        
+private: // data
+    RProperty themeRequestProp;
+    HbThemeServerPrivate& iObserver;
+};
+
+
 #endif // HBTHEMESERVER_SYMBIAN_P_H 
+

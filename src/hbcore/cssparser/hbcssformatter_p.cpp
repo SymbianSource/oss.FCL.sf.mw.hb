@@ -40,7 +40,7 @@
        qDebug() << HbCssFormatter::weightedStyleRulesToString(rules);
 */
 
-
+static QString LAST_FILENAME_WRITTEN = "";
 
 /*!
  @internal
@@ -48,7 +48,7 @@
 QString HbCssFormatter::weightedStyleRulesToString(const HbVector<HbCss::WeightedRule> &rules)
 {
 	QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
 	foreach (const HbCss::WeightedRule &rule, rules) {
 		if (str.length() > 0) {
 			str.append("\n");
@@ -69,7 +69,7 @@ QString HbCssFormatter::weightedStyleRulesToString(const HbVector<HbCss::Weighte
 QString HbCssFormatter::weightedDeclarationsToString(const HbVector<HbCss::WeightedDeclaration> &decls)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     foreach (const HbCss::WeightedDeclaration &decl, decls) {
         if (str.length() > 0) {
             str.append("\n");
@@ -93,7 +93,7 @@ QString HbCssFormatter::weightedDeclarationsToString(const HbVector<HbCss::Weigh
 QString HbCssFormatter::styleRulesToString(const HbVector<HbCss::StyleRule> &rules)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     foreach (const HbCss::StyleRule &rule, rules) {
         if (str.length() > 0) {
             str.append("\n\n");
@@ -114,7 +114,7 @@ QString HbCssFormatter::styleRulesToString(const HbVector<HbCss::StyleRule> &rul
 QString HbCssFormatter::styleRulesToHtml(const HbVector<HbCss::StyleRule> &rules)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     QMap<QString, QVector<QString> > usedProperties;
     QVector<const HbCss::Declaration*> usedDecls;
     for (int i=rules.count()-1; i>=0; i--) {
@@ -145,6 +145,7 @@ QString HbCssFormatter::styleRulesToHtml(const HbVector<HbCss::StyleRule> &rules
         }
     }
 
+    LAST_FILENAME_WRITTEN = "";
     foreach (const HbCss::StyleRule &rule, rules) {
         if (str.length() > 0) {
             str.append("<br/><br/>");
@@ -165,7 +166,7 @@ QString HbCssFormatter::styleRulesToHtml(const HbVector<HbCss::StyleRule> &rules
 QString HbCssFormatter::declarationsToString(const HbVector<HbCss::Declaration> &decls)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     foreach (const HbCss::Declaration &decl, decls ) {
         str.append("\n    ");
         str.append(declarationToString(decl));
@@ -182,7 +183,7 @@ QString HbCssFormatter::declarationsToString(const HbVector<HbCss::Declaration> 
 QString HbCssFormatter::styleRuleToString(const HbCss::StyleRule &rule, int specificity)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     str.append(selectorsToString(rule.selectors, specificity));
     str.append("\n{");
     str.append(declarationsToString(rule.declarations));
@@ -200,7 +201,19 @@ QString HbCssFormatter::styleRuleToString(const HbCss::StyleRule &rule, int spec
 QString HbCssFormatter::styleRuleToHtml(const HbCss::StyleRule &rule, QVector<const HbCss::Declaration*> usedDecls, int specificity)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
+#ifdef HB_CSS_INSPECTOR
+    if (rule.owningStyleSheet.get()) {
+        if (rule.owningStyleSheet->fileName != LAST_FILENAME_WRITTEN) {
+            str.append("<p class=\"filename\">");
+            str.append(rule.owningStyleSheet->fileName);
+            str.append("</p>");
+            LAST_FILENAME_WRITTEN = rule.owningStyleSheet->fileName;
+        }
+    } else {
+        str.append("<p class=\"filename\">[Unknown origin]</p>");
+    }
+#endif
     str.append("<p class=\"selectors\">");
     str.append(selectorsToString(rule.selectors, specificity, true));
     str.append("</p>{");
@@ -227,7 +240,7 @@ QString HbCssFormatter::styleRuleToHtml(const HbCss::StyleRule &rule, QVector<co
 QString HbCssFormatter::selectorsToString(const HbVector<HbCss::Selector> &selectors, int specificity, bool html)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     foreach (const HbCss::Selector &sel, selectors) {
         if (str.length() > 0) {
             str.append(',');
@@ -255,7 +268,7 @@ QString HbCssFormatter::selectorsToString(const HbVector<HbCss::Selector> &selec
 QString HbCssFormatter::declarationToString(const HbCss::Declaration &decl, bool html)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     if(html) str.append("<span class=\"property\">");
     str.append(decl.property);
     if(html) str.append("</span>");
@@ -300,7 +313,7 @@ QString HbCssFormatter::declarationToString(const HbCss::Declaration &decl, bool
 QString HbCssFormatter::selectorToString(const HbCss::Selector &sel, bool html)
 {
     QString str;
-#ifdef BUILD_HB_INTERNAL
+#ifdef HB_DEVELOPER
     foreach (const HbCss::BasicSelector &basi, sel.basicSelectors ) {
         if (basi.elementName.length() > 0) {
             str.append( basi.elementName );

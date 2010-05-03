@@ -25,6 +25,7 @@
 #include "qtlocalpeer.h"
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTime>
+#include <QtCore/QDebug>
 
 //Delete these lines.
 #if defined(Q_OS_SYMBIAN)

@@ -26,32 +26,30 @@
 #ifndef HBICONTHEME_P_H
 #define HBICONTHEME_P_H
 
+#include <QObject>
 #include <hbglobal.h>
 #include <QStringList>
 
 class HbIconThemePrivate;
 
-class HB_AUTOTEST_EXPORT HbIconTheme
+class HB_AUTOTEST_EXPORT HbIconTheme : public QObject
 {
+Q_OBJECT
+
 public:
     explicit HbIconTheme();
     ~HbIconTheme();
-
-    static HbIconTheme *global();
-
+    void setCurrentTheme(const QString &theme);
     QString currentTheme() const;
-
-    void setCurrentTheme( const QString& dir );
-
-    QString dir() const;
-
     QStringList dirList() const;
     QString description() const;
-    
     void clearDirList();
-
+    void emitUpdateIcons(const QStringList &fileNames = QStringList());
 //    For future addition:
 //    QSizeF actualSize(HbIconLoader::Purpose purpose) const;
+
+signals:
+    void iconsUpdated(const QStringList &fileNames);
 
 private:
     Q_DISABLE_COPY(HbIconTheme)

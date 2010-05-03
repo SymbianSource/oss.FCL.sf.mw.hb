@@ -24,12 +24,12 @@
 ****************************************************************************/
 
 #include "hblistview_p.h"
-#include <hbtumbleview.h>
-#include <hbtumbleviewitem.h>
 #include "hblistitemcontainer_p.h"
 #include "hblistitemcontainer_p_p.h"
 #include "hbmodeliterator.h"
 
+#include <hbtumbleview.h>
+#include <hbtumbleviewitem.h>
 #include <hbevent.h>
 #include <hbstyleoption.h>
 
@@ -38,12 +38,15 @@
 
 #define HB_TUMBLE_ITEM_ANIMATION_TIME 500
 #define HB_TUMBLE_PREFERRED_ITEMS 3
+#define DELAYED_SELECT_INTERVAL 100
 
 #define HBTUMBLE_DEBUG
 #ifdef HBTUMBLE_DEBUG
 #include <QDebug>
 #endif
+
 class HbTumbleViewItemContainerPrivate;
+
 class HbTumbleViewItemContainer:public HbListItemContainer
 {
     Q_DECLARE_PRIVATE(HbTumbleViewItemContainer)
@@ -85,19 +88,26 @@ public:
     void selectMiddleItem();
 
     void createPrimitives();
-    void createBackground();
+
+    void delayedSelectCurrent(const QModelIndex& index);
 
     void _q_scrollingStarted();//private slot
     void _q_scrollingEnded();//private slot
+    void _q_delayedSelectCurrent();//private slot
+
+    void setPressedState(HbAbstractViewItem *item);
 
 private:
     qreal mHeight;
-    HbAbstractViewItem *mPrevSelectedItem;
+    QPointer<HbAbstractViewItem> mPrevSelectedItem;
     bool mInternalScroll;
     bool mStartup;//needed for layout request
 
     //geometry prob, some how loop setGeometry call is happening
     QRectF mPrevSetGeometryRect;
+
+    QModelIndex mDelayedSelectIndex;
+    QTimer mDelayedSelectTimer;
 
     //primitives
     QGraphicsItem   *mBackground;
@@ -105,6 +115,7 @@ private:
     QGraphicsItem   *mHighlight;
     int             mSelected;
     bool mNeedScrolling;
+    QGraphicsItem   *mDivider;
 };
 
 
@@ -184,8 +195,8 @@ bool HbTumbleViewItemContainer::isLoopingEnabled() const {
 }
 
 HbTumbleViewItemContainerPrivate::HbTumbleViewItemContainerPrivate()
-    : mIsLooped(false) //TODO: make this true once issues are fixed.
-{ //issues, initial loop creation
+    : mIsLooped(false) 
+{ 
 }
 
 
@@ -259,10 +270,14 @@ HbTumbleViewPrivate::HbTumbleViewPrivate()
     ,mPrevSelectedItem(0)
     ,mInternalScroll(false)
     ,mStartup(true)
+    ,mDelayedSelectIndex()
+    ,mDelayedSelectTimer(0)
     ,mBackground(0)
     ,mFrame(0)
     ,mHighlight(0)
     ,mSelected(-1)
+    ,mNeedScrolling(true)
+    ,mDivider(0)
 {
 }
 
@@ -299,11 +314,12 @@ void HbTumbleViewPrivate::init(QAbstractItemModel *model)
     q->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     q->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     q->setFrictionEnabled(true);
-
+    mDelayedSelectTimer.setSingleShot(true);
     bool b = q->connect(q,SIGNAL(scrollingStarted()),q,SLOT(_q_scrollingStarted()));
     Q_ASSERT(b);
     b = q->connect(q,SIGNAL(scrollingEnded()),q,SLOT(_q_scrollingEnded()));
     Q_ASSERT(b);
+    b = q->connect(&mDelayedSelectTimer,SIGNAL(timeout()),q,SLOT(_q_delayedSelectCurrent()));
     Q_UNUSED(b);
     createPrimitives();
 }
@@ -322,19 +338,32 @@ void HbTumbleViewPrivate::selectMiddleItem()
 #ifdef HBTUMBLE_DEBUG  
     qDebug() << "HbTumbleViewPrivate::selectMiddleItem - " << item->modelIndex().row() ;
 #endif
-        //clampScroll(item);
-        q->setCurrentIndex(item->modelIndex(),QItemSelectionModel::SelectCurrent);
-        mSelected = item->modelIndex().row();
+            delayedSelectCurrent(item->modelIndex());
+            mSelected = item->modelIndex().row();
+        }
     }
-}
 
 void HbTumbleViewPrivate::scrollTo(const QModelIndex &index, HbAbstractItemView::ScrollHint hint)
 {
+    Q_Q(HbTumbleView);
 #ifdef HBTUMBLE_DEBUG  
     qDebug() << "HbTumbleViewPrivate::scrollTo(" << index.row() << "," << hint << " )";
 #endif
+    if(!q->scene()) {
+        return;
+    }
     
     HbListViewPrivate::scrollTo(index, hint);
+
+    HbAbstractViewItem *item = mContainer->itemByIndex(index);
+    if(item) {
+        setPressedState(item); 
+    } 
+#ifdef HBTUMBLE_DEBUG  
+    else {
+        qDebug() << "HbTumbleViewPrivate::scrollTo(" << index.row() << ",failed to get itembyindex";
+    }
+#endif
 }
 
 void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint)
@@ -353,25 +382,15 @@ void HbTumbleViewPrivate::createPrimitives()
     if(!mHighlight) {
         mHighlight = q->style()->createPrimitive(HbStyle::P_TumbleView_highlight,q);
         q->style()->setItemName(mHighlight,"highlight");
-    } 
+    }
+    if(!mDivider){
+        mDivider = q->style()->createPrimitive(HbStyle::P_DateTimePicker_separator,q);
+        q->style()->setItemName(mDivider,"separator");
+        mDivider->hide();
+    }
 
-    //createBackground(); //done in derived class
-    //the parent item adds multiple tumbleviews and has only one bg.so this is commented
 }
 
-void HbTumbleViewPrivate::createBackground()
-{
-    Q_Q(HbTumbleView);
-    //not called, but used in derived classes to get a bg/frame for single specialized tumbleview
-    if(!mBackground) {
-        mBackground = q->style()->createPrimitive(HbStyle::P_TumbleView_background,q);
-        q->style()->setItemName(mBackground,"background");
-    }
-    if(!mFrame) {
-        mFrame = q->style()->createPrimitive(HbStyle::P_TumbleView_frame,q);
-        q->style()->setItemName(mFrame,"frame");//stays on top of background
-    }
-}
 
 void HbTumbleViewPrivate::calculateItemHeight()
 {
@@ -399,7 +418,30 @@ void HbTumbleViewPrivate::updateScrollMetrics()
 
 /*!
     @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \class HbTumbleView 
+    \this is a tumbler widget which lets the user select alphanumeric values from a predefined list of 
+    values via vertical flicking and dragging. Typically widgets such as date picker and time picker use the 
+    Tumbler. The Tumbler could also be used to change other values such as number code sequence, 
+    landmark coordinates, country selection, and currency.
+
+    Only strings can be accepted as HbTumbleView's items.
+
+    \this can be used like this:
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,52}
+*/
+
+/*!
+    \fn void itemSelected(int index)
+
+    This signal is emitted when an item is selected in date time picker.
+    \param index  selected item.
+
+*/
+
+/*!
+    HbTumbleView's default constructor.
+
+    \param parent item to set as parent.
 */
 HbTumbleView::HbTumbleView(QGraphicsItem *parent)
     :HbListView(*new HbTumbleViewPrivate,
@@ -413,8 +455,10 @@ HbTumbleView::HbTumbleView(QGraphicsItem *parent)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    HbTumbleView's constructor.
+
+    \param list to be set as data to QStringListModel.
+    \parent item to set as parent.
 */
 HbTumbleView::HbTumbleView(const QStringList &list,QGraphicsItem *parent)
     :HbListView(*new HbTumbleViewPrivate,
@@ -429,8 +473,7 @@ HbTumbleView::HbTumbleView(const QStringList &list,QGraphicsItem *parent)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Protected constructor.
 */
 HbTumbleView::HbTumbleView(HbTumbleViewPrivate &dd, QGraphicsItem *parent):
     HbListView(dd,
@@ -443,18 +486,19 @@ HbTumbleView::HbTumbleView(HbTumbleViewPrivate &dd, QGraphicsItem *parent):
 
     d->calculateItemHeight();
 }
+
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+   Destructor
 */
- 
 HbTumbleView::~HbTumbleView()
 {
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Sets the HbTumbleView's items to the given string \a list.
+
+    \param list Items to be set as tumble view's model.
+
 */
 void HbTumbleView::setItems(const QStringList &list)
 {
@@ -468,8 +512,9 @@ void HbTumbleView::setItems(const QStringList &list)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Returns items in QStringList format.
+
+    \return list of items in tumbleview's model in QStringList format.
 */
 QStringList HbTumbleView::items() const
 {
@@ -479,9 +524,12 @@ QStringList HbTumbleView::items() const
     }
     return QStringList();
 }
+
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Sets the selection to the item at \a index.
+
+    \param index to be selected in the tumble view.
+
 */
 void HbTumbleView::setSelected(int index)
 {
@@ -493,24 +541,28 @@ void HbTumbleView::setSelected(int index)
 
     QModelIndex modelIndex = d->mModelIterator->index(index, rootIndex());
     if(modelIndex.isValid()) {
-        setCurrentIndex(modelIndex,QItemSelectionModel::SelectCurrent);
+        d->delayedSelectCurrent(modelIndex);
         emitActivated(modelIndex);
     } 
 }
  
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Returns the index of the current selected item in integer format.
+
+    \return current index selected in tumble view.
 */
 int HbTumbleView::selected() const
 {
     return currentIndex().row();
 }
-/*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
-*/
 
+/*!
+
+    \deprecated HbTumbleView::primitive(HbStyle::Primitive)
+        is deprecated.
+
+    \reimp
+*/
 QGraphicsItem *HbTumbleView::primitive(HbStyle::Primitive id) const
 {
     Q_D(const HbTumbleView);
@@ -528,8 +580,15 @@ QGraphicsItem *HbTumbleView::primitive(HbStyle::Primitive id) const
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
+*/
+QGraphicsItem *HbTumbleView::primitive(const QString &itemName) const
+{
+    return HbListView::primitive(itemName);
+}
+
+/*!
+    \reimp
 */
 void HbTumbleView::currentIndexChanged(const QModelIndex &current, const QModelIndex &previous)
 {
@@ -537,16 +596,22 @@ void HbTumbleView::currentIndexChanged(const QModelIndex &current, const QModelI
     Q_D(HbTumbleView);
     HbListView::currentIndexChanged(current,previous);
     if(d->mNeedScrolling && current.isValid()){
+        //scrolling
         d->mInternalScroll = true;
         scrollTo(current,PositionAtCenter);
         emit itemSelected(current.row());
         d->mInternalScroll = false;
+
+        //below code should be after scrolling. setModelIndexes should have finished.
+        HbAbstractViewItem *item=d->mContainer->itemByIndex(current);
+        if(item) {
+            d->setPressedState(item);
+        } 
     }
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::updatePrimitives()
 {                   
@@ -563,14 +628,16 @@ void HbTumbleView::updatePrimitives()
     } 
     if(d->mHighlight) {
         style()->updatePrimitive(d->mHighlight,HbStyle::P_TumbleView_highlight,&opt);
-    }   
+    }
+    if(d->mDivider){
+        style()->updatePrimitive(d->mDivider, HbStyle::P_DateTimePicker_separator, &opt);
+    }
     HbListView::updatePrimitives();
 
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+   \reimp
 */
 QVariant HbTumbleView::itemChange(GraphicsItemChange change,const QVariant &value)
 {
@@ -582,19 +649,33 @@ QVariant HbTumbleView::itemChange(GraphicsItemChange change,const QVariant &valu
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::rowsInserted(const QModelIndex &parent,int start,int end)
 {
-   // Q_D(HbTumbleView);
     HbListView::rowsInserted(parent,start,end);
     scrollTo(currentIndex(),PositionAtCenter);
 }
 
+void HbTumbleViewPrivate::_q_delayedSelectCurrent()
+{
+    Q_Q(HbTumbleView);
+    if(!mIsAnimating && !mIsScrolling) {
+         if(mDelayedSelectIndex == q->currentIndex()){
+             HbAbstractViewItem *item =q->itemByIndex(mDelayedSelectIndex);
+             QPointF delta = pixelsToScroll(item,HbAbstractItemView::PositionAtCenter );
+             QPointF newPos = -mContainer->pos() + delta;
+             checkBoundaries(newPos);
+             scrollByAmount(newPos - (-mContents->pos()));
+         }
+         else{
+            q->setCurrentIndex(mDelayedSelectIndex);
+        }
+    }
+}
+
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::rowsAboutToBeInserted(const QModelIndex &index, int start, int end)
 {
@@ -602,8 +683,7 @@ void HbTumbleView::rowsAboutToBeInserted(const QModelIndex &index, int start, in
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 bool HbTumbleView::event(QEvent *e)
 {
@@ -621,8 +701,7 @@ bool HbTumbleView::event(QEvent *e)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::setGeometry(const QRectF &rect)
 {
@@ -648,8 +727,11 @@ void HbTumbleView::setGeometry(const QRectF &rect)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Sets the looping enabled flag to eith true or false, which makes the tumbleview to scroll in a circular way.
+
+    \param looped flag to enable curcular view.
+
+    \sa isLoopingEnabled
 */
 void HbTumbleView::setLoopingEnabled(bool looped) 
 {
@@ -661,8 +743,12 @@ void HbTumbleView::setLoopingEnabled(bool looped)
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    Returns looping enabled flag.
+
+    \return looping enabled flag.
+
+    \sa setLoopingEnabled
+
 */
 bool HbTumbleView::isLoopingEnabled() const
 {
@@ -675,49 +761,29 @@ bool HbTumbleView::isLoopingEnabled() const
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
 #ifdef HBTUMBLE_DEBUG
     qDebug() << "HbTumbleView::mousePressEvent";
 #endif
-    Q_D(HbTumbleView);
-    QPointF pt = mapToScene(event->pos());
-    d->mPrevSelectedItem = d->itemAt(pt);
-
     HbListView::mousePressEvent(event);
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 void HbTumbleView::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
 #ifdef HBTUMBLE_DEBUG
     qDebug() << "HbTumbleView::mouseReleaseEvent";
 #endif
-    //Q_D(HbTumbleView);
-    //if(d->mPrevSelectedItem) {
-        //d->mInternalScroll = true;
-    //}
     HbListView::mouseReleaseEvent(event);
-    //TODO: add functinality in HbAbstractItemView or HbScrollArea to stop revealItem
-    //which happens for half visible item tap.
-
-    /*if(d->mPrevSelectedItem) {
-        d->stopAnimating();
-        d->mInternalScroll = false;
-        d->clampScroll(d->mPrevSelectedItem);
-    }*/
-    
 }
 
 /*!
-    @proto
-    Tumbler Widget. used by datetimepicker. lot of changes to come.
+    \reimp
 */
 QSizeF HbTumbleView::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
@@ -730,6 +796,7 @@ QSizeF HbTumbleView::sizeHint(Qt::SizeHint which, const QSizeF &constraint) cons
             break;
         case Qt::PreferredSize:
             sh = QSizeF(sh.width(),HB_TUMBLE_PREFERRED_ITEMS*d->mHeight);
+            sh.setWidth(HbWidget::sizeHint(which, constraint).width());
             break;
         case Qt::MaximumSize:
             break;
@@ -738,11 +805,8 @@ QSizeF HbTumbleView::sizeHint(Qt::SizeHint which, const QSizeF &constraint) cons
             break;
     }
     return sh;
-     //TODO:fix sizeHinting.
-    //return HbListView::sizeHint(which,constraint);
 }
  
-
 void HbTumbleViewPrivate::_q_scrollingStarted()
 {
 #ifdef HBTUMBLE_DEBUG
@@ -751,8 +815,8 @@ void HbTumbleViewPrivate::_q_scrollingStarted()
     if(mInternalScroll) {
         return;
     }
-    mPrevSelectedItem = 0;
 
+    setPressedState(0);//disable current selected item
 }
 
 void HbTumbleViewPrivate::_q_scrollingEnded()
@@ -772,14 +836,31 @@ void HbTumbleViewPrivate::_q_scrollingEnded()
     QPointF pt = q->mapToScene(q->boundingRect().center());
     HbAbstractViewItem *centerItem=itemAt(pt);
     if(centerItem) {
+        setPressedState(centerItem);
+
         if(centerItem->modelIndex().isValid()) {
-            q->setCurrentIndex(centerItem->modelIndex(),QItemSelectionModel::SelectCurrent);
-            //emit q->itemSelected(centerItem->modelIndex().row());
+            delayedSelectCurrent(centerItem->modelIndex());
             q->emitActivated(centerItem->modelIndex());
         } 
     }
 }
+void HbTumbleViewPrivate::setPressedState(HbAbstractViewItem *item)
+{
+    //set state
+    if(mPrevSelectedItem) {
+        mPrevSelectedItem->setProperty("state","normal");
+    }
 
+    mPrevSelectedItem = item;
+
+    if(mPrevSelectedItem) {
+        mPrevSelectedItem->setProperty("state","selected");
+    }
+}
+
+/*!
+    \reimp
+*/
 void HbTumbleView::rowsAboutToBeRemoved(const QModelIndex &index, int start, int end)
 {
     Q_D(HbTumbleView);
@@ -787,12 +868,20 @@ void HbTumbleView::rowsAboutToBeRemoved(const QModelIndex &index, int start, int
     HbListView::rowsAboutToBeInserted(index,start,end);
 }
 
+/*!
+    \reimp
+*/
 void HbTumbleView::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbTumbleView);
     d->mNeedScrolling = true;
     HbListView::rowsRemoved(parent,start,end);
     scrollTo(currentIndex(),PositionAtCenter);
+}
+void HbTumbleViewPrivate::delayedSelectCurrent(const QModelIndex& index)
+{
+    mDelayedSelectIndex = index;
+    mDelayedSelectTimer.start(DELAYED_SELECT_INTERVAL);
 }
 
 #include "moc_hbtumbleview.cpp"

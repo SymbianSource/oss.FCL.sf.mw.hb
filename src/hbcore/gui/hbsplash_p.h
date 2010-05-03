@@ -27,31 +27,23 @@
 #define HBSPLASH_P_H
 
 #include <hbglobal.h>
+#include <hbsplashscreen.h>
 #include <QImage>
 
 class HB_AUTOTEST_EXPORT HbSplash
 {
 public:
-    enum Flag {
-        Default         = 0x00,
-        FixedVertical   = 0x01,
-        FixedHorizontal = 0x02
-    };
-
-    Q_DECLARE_FLAGS(Flags, Flag)
-
     typedef uchar *(*AllocFunc)(int w, int h, int bpl, QImage::Format fmt, void *param);
 
     static uchar *load(int &w,
                        int &h,
                        int &bpl,
                        QImage::Format &fmt,
-                       Flags flags = Default,
+                       HbSplashScreen::Flags flags = HbSplashScreen::Default,
                        const QString &appId = QString(),
+                       const QString &screenId = QString(),
                        AllocFunc allocFunc = 0,
                        void *allocFuncParam = 0);
 };
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(HbSplash::Flags)
 
 #endif // HBSPLASH_P_H

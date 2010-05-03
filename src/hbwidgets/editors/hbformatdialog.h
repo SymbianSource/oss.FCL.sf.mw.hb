@@ -62,6 +62,7 @@ public slots:
     void setStyleBullet(bool toggled);
 
 protected:
+    QColor currentCharColor() const;
     virtual void setContent(QTextCursor cursor);
     virtual void polish(HbStyleParameters& params);
 

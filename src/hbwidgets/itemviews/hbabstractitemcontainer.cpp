@@ -36,10 +36,22 @@
 #include <QEvent>
 #include <QDebug>
 
+
+// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
+#include <hbabstractviewitem_p.h>
+
+#ifdef QMAP_INT__ITEM_STATE_DEPRECATED
+#define HB_ITEM_STATE_ASSERT Q_ASSERT_X(0, "", "QMap<int,QVariant> based view item state system is deprecated. Use QHash<QString, QVariant> based instead" )
+#else
+#define HB_ITEM_STATE_ASSERT
+#endif
+
 /*!
     @alpha
     @hbwidgets
     \class HbAbstractItemContainer
+    \deprecated HbAbstractItemContainer
+        is deprecated from public API. This class will be made private.
     \brief HbAbstractItemContainer represents container for HbAbstractViewItem derived items.
 
     
@@ -50,6 +62,8 @@
 
 /*!
     \fn void HbAbstractItemContainer::itemAdded(int index, HbAbstractViewItem *item)
+    \deprecated HbAbstractItemContainer::itemAdded(int, HbAbstractViewItem *)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
 
     Function is called after new \a item was added into \a index position into
     container.
@@ -57,18 +71,24 @@
 
 /*!
     \fn void HbAbstractItemContainer::itemRemoved(HbAbstractViewItem *item)
+    \deprecated HbAbstractItemContainer::itemRemoved(HbAbstractViewItem *)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
 
     Function is called after the \a item was removed from the container. 
 */
 
 /*!
     \fn void HbAbstractItemContainer::viewResized(const QSizeF &size)
+    \deprecated HbAbstractItemContainer::viewResized(const QSizeF &)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
 
     Function is called when container needs to be resized.
 */
 
 /*!
     \fn HbAbstractViewItem *createDefaultPrototype() const
+    \deprecated HbAbstractItemContainer::createDefaultPrototype() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
 
     Returns the default prototype.
 
@@ -98,6 +118,10 @@ HbAbstractItemContainerPrivate::~HbAbstractItemContainerPrivate()
  */
 QRectF HbAbstractItemContainerPrivate::itemBoundingRect(const QGraphicsItem *item) const
 {
+    Q_Q(const HbAbstractItemContainer);
+    if (q->layout()) {
+        q->layout()->activate();
+    }
     return item->mapToItem(mItemView, item->boundingRect()).boundingRect();
 }
 
@@ -192,6 +216,8 @@ HbAbstractViewItem* HbAbstractItemContainerPrivate::createItem(const QModelIndex
         result = prototype->createItem();
         Q_ASSERT_X(result && result->prototype() == prototype, "HbAbstractItemContainerPrivate::createItem", "Copy constructor must be used for creating concrete view items in createItem(). Create your custom view item with 'new YourCustomViewItem(*this)' instead of 'new YourCustomViewItem(this)'");
         result->setParentItem(q);
+
+        emit q->itemCreated(result);
     }
     return result;
 }
@@ -255,24 +281,7 @@ void HbAbstractItemContainerPrivate::updateItemBuffer()
         decreaseBufferSize(itemCount - targetCount);
     }
 
-    QGraphicsLayout *layout = q->layout();
-    if (layout && !layout->isActivated()) {
-        layout->activate();
-    }
-
-    // Restore the first item position related to view if it has changed.
-    if (firstItem) {
-        QPointF delta = itemBoundingRect(firstItem).topLeft() - firstItemPos;
-        if (!delta.isNull()) {
-            q->setPos(q->pos() - delta);
-
-            if (mItemView) {
-                // this will force the HbScrollArea to adjust the content correctly. Adjustment
-                // is not done in the setPos generated event handling by default to speed up scrolling.
-                HbAbstractItemViewPrivate::d_ptr(mItemView)->adjustContent();
-            }
-        }
-    }
+    restoreItemPosition(firstItem, firstItemPos);
 }
 
 /*!
@@ -351,7 +360,7 @@ void HbAbstractItemContainerPrivate::decreaseBufferSize(int amount)
 
     int firstVisible = 0;
     int lastVisible = 0;
-    firstAndLastVisibleBufferIndex(firstVisible, lastVisible, itemBoundingRect(mItemView), false);
+    firstAndLastVisibleBufferIndex(firstVisible, lastVisible, mItemView->geometry(), false);
 
     int deletableItemsOnTop = firstVisible - 1;
     int deletableItemsOnBottom = mItems.count() - lastVisible - 1;
@@ -418,11 +427,15 @@ HbAbstractViewItem* HbAbstractItemContainerPrivate::item(const QModelIndex &inde
 */
 void HbAbstractItemContainerPrivate::doRemoveItem(HbAbstractViewItem *item, const QModelIndex &index, bool animate)
 {
-    Q_Q(HbAbstractItemContainer);
-    
     if (item) {
         deleteItem(item, animate);
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+        Q_Q(HbAbstractItemContainer);
         q->setItemState(index, QMap<int, QVariant>());
+#endif
+        if (!index.isValid()) {
+            mItemStates.remove(index);
+        }
     }
 }
 
@@ -436,15 +449,18 @@ void HbAbstractItemContainerPrivate::deleteItem(HbAbstractViewItem *item, bool a
 {
     Q_Q(HbAbstractItemContainer);
 
-    q->setItemState(item->modelIndex(), item->state());
-
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
+	q->setItemState(item->modelIndex(), item->state());
+#endif
+    q->setItemTransientState(item->modelIndex(), item->transientState());
     mItems.removeOne(item);
     q->itemRemoved(item, animate);
 
 #ifndef HB_EFFECTS
     delete item;
 #else
-    if (!HbEffect::effectRunning(item, "disappear")) {
+    if (!HbEffect::effectRunning(item, "disappear") 
+        && !HbEffect::effectRunning(item, "collapse")) {
         delete item;
     }
 #endif
@@ -452,25 +468,22 @@ void HbAbstractItemContainerPrivate::deleteItem(HbAbstractViewItem *item, bool a
 
 /*
     \private
-    The previous and the next index must be in the buffer. We cannot assume in this base class 
+    The previous or the next index must be in the buffer. We cannot assume in this base class 
     that the container is a list we just have to loop through the items and find if the previous
-    and next exist in the buffer
-
+    or next exist in the buffer. Next index should not be the first one in the buffer and the
+    previous index should not be the last one in the buffer in order this index to the buffer.
 */
 bool HbAbstractItemContainerPrivate::intoContainerBuffer(const QModelIndex &index) const
 {    
     QModelIndex nextIndex = mItemView->modelIterator()->nextIndex(index);
     QModelIndex previousIndex = mItemView->modelIterator()->previousIndex(index);
-    bool nextFound = false;
-    bool previousFound = false;
 
-    foreach (const HbAbstractViewItem *bufferItem, mItems) {
-        if (bufferItem->modelIndex() == nextIndex){
-            nextFound=true;
-        } else if (bufferItem->modelIndex() == previousIndex) {
-            previousFound=true;
-        }
-        if (previousFound && nextFound) {
+    int itemCount = mItems.count();
+    for (int i = 0; i < itemCount; ++i) {
+        QModelIndex currentIndex = mItems.at(i)->modelIndex();
+        if (currentIndex == nextIndex && i != 0){
+            return true;
+        } else if (currentIndex == previousIndex && i != (itemCount - 1)) {
             return true;
         }
     }
@@ -481,16 +494,82 @@ int HbAbstractItemContainerPrivate::containerBufferIndexForModelIndex(const QMod
 {   
     int bufferIndex = 0;
     QModelIndex nextIndex = mItemView->modelIterator()->nextIndex(index);
+    QModelIndex previousIndex = mItemView->modelIterator()->previousIndex(index);
+
     while (bufferIndex < mItems.count()) {
-        if (mItems.at(bufferIndex)->modelIndex() == nextIndex) {
+        QModelIndex currentIndex = mItems.at(bufferIndex)->modelIndex();
+        if (currentIndex == nextIndex) {
             break;
         }
+
         ++bufferIndex;
+
+        if (currentIndex == previousIndex) {
+            break;
+        }
     }
     return bufferIndex;
 }
 
+void HbAbstractItemContainerPrivate::restoreItemPosition(HbAbstractViewItem *item, const QPointF &position)
+{
+    Q_Q(HbAbstractItemContainer);
+
+    if (item) {
+        QPointF delta = itemBoundingRect(item).topLeft() - position;
+        if (!delta.isNull()) {
+            q->setPos(q->pos() - delta);
+
+            if (mItemView) {
+                // this will force the HbScrollArea to adjust the content correctly. Adjustment
+                // is not done in the setPos generated event handling by default to speed up scrolling.
+                HbAbstractItemViewPrivate::d_ptr(mItemView)->adjustContent();
+            }
+        }
+    }
+}
+
+void HbAbstractItemContainerPrivate::insertItem(HbAbstractViewItem *item, int pos, const QModelIndex &index, bool animate)
+{
+    Q_Q(HbAbstractItemContainer);
+
+    if (item) {
+        mItems.insert(pos, item);
+        q->itemAdded(pos, item, animate);
+
+        q->setItemModelIndex(item, index);
+    }
+}
+
+qreal HbAbstractItemContainerPrivate::getDiffWithoutScrollareaCompensation(const QPointF &delta) const
+{
+    Q_Q( const HbAbstractItemContainer);
+    const QSizeF containerSize(q->size());
+    const QPointF containerPos(q->pos());
+    qreal diff = 0.0;
+    qreal invisibleArea = 0.0;
+    if (delta.y() > 0) {
+        // space at the bottom
+        QSizeF viewSize = mItemView->size();
+        invisibleArea = containerSize.height() - viewSize.height() + containerPos.y();
+        if (invisibleArea < delta.y()) {
+            diff = delta.y() - invisibleArea;
+        }
+    } else {
+        // space at the top
+        invisibleArea = -containerPos.y();
+        if (containerPos.y() > delta.y()) {
+            diff = delta.y() + invisibleArea;
+        }
+    }
+
+    return diff;
+}
+
 /*!
+    \deprecated HbAbstractItemContainer::HbAbstractItemContainer__sub_object(QGraphicsItem*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+    
     Constructs a new HbAbstractItemContainer with \a parent.
 */
 HbAbstractItemContainer::HbAbstractItemContainer(QGraphicsItem *parent) : 
@@ -501,6 +580,9 @@ HbAbstractItemContainer::HbAbstractItemContainer(QGraphicsItem *parent) :
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::HbAbstractItemContainer__sub_object(HbAbstractItemContainerPrivate&, QGraphicsItem*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Constructs an item with private class object \a dd and \a parent. 
 */
 HbAbstractItemContainer::HbAbstractItemContainer(HbAbstractItemContainerPrivate &dd, QGraphicsItem *parent) :
@@ -512,6 +594,9 @@ HbAbstractItemContainer::HbAbstractItemContainer(HbAbstractItemContainerPrivate 
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::~HbAbstractItemContainer()
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Destroys the container.
 */
 HbAbstractItemContainer::~HbAbstractItemContainer()
@@ -519,6 +604,9 @@ HbAbstractItemContainer::~HbAbstractItemContainer()
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::event(QEvent*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     \reimp
 */
 bool HbAbstractItemContainer::event(QEvent *e)
@@ -534,12 +622,15 @@ bool HbAbstractItemContainer::event(QEvent *e)
     } else if (e->type() == UpdateItemBufferEvent) {
         Q_D(HbAbstractItemContainer);
         d->updateItemBuffer();
-   }
+    }
 
     return HbWidget::event(e);
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::itemByIndex(const QModelIndex&) const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns view item object corresponding given model \a index. This might be 0 pointer if
     there is no view item representing given index or given \a index is invalid.
 */
@@ -554,6 +645,9 @@ HbAbstractViewItem* HbAbstractItemContainer::itemByIndex(const QModelIndex &inde
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::removeItems()
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     This function is provided for convenience. 
     
     It removes all the items from the container and clears the internal state model.
@@ -565,9 +659,13 @@ void HbAbstractItemContainer::removeItems()
     qDeleteAll(d->mItems);
     d->mItems.clear();
     d->mItemStateList.clear();
+   d->mItemStates.clear();
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::itemView() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns the item view that container is connected.
 */
 HbAbstractItemView *HbAbstractItemContainer::itemView() const
@@ -577,6 +675,9 @@ HbAbstractItemView *HbAbstractItemContainer::itemView() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemView(HbAbstractItemView*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Sets item \a view that container is connected.
 */
 void HbAbstractItemContainer::setItemView(HbAbstractItemView *view)
@@ -602,6 +703,9 @@ void HbAbstractItemContainer::setItemView(HbAbstractItemView *view)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemModelIndex(HbAbstractViewItem*, const QModelIndex&)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Assigns new model \a index to the given \a item. Item's current state is saved
     and state for \a index is restored to item.
 */
@@ -610,21 +714,29 @@ void HbAbstractItemContainer::setItemModelIndex(HbAbstractViewItem *item, const 
 
     if (item && item->modelIndex() != index) { 
 
+#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
         setItemState(item->modelIndex(), item->state());
+#endif
+        setItemTransientState(item->modelIndex(), item->transientState());
 
         // Transfer the state from item currently representing index to new item, if such exists.
         HbAbstractViewItem *oldItem = itemByIndex(index);
+
         if (oldItem) {
-            item->setState(oldItem->state());
+            item->setTransientState(oldItem->transientState());
         } else {
-            item->setState(itemState(index));
+            item->setTransientState(itemTransientState(index));
         }
+
 
         item->setModelIndex(index);
     }
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setModelIndexes(const QModelIndex&)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Sets item's model indexes starting from given \a startIndex. If \a startIndex is
     QModelIndex() then startIndex is taken from the first item. 
 
@@ -769,6 +881,9 @@ QModelIndex HbAbstractItemContainer::lastItemIndex() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::items() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns list of items inside item buffer.
 */
 QList<HbAbstractViewItem *> HbAbstractItemContainer::items() const
@@ -778,6 +893,9 @@ QList<HbAbstractViewItem *> HbAbstractItemContainer::items() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::addItem(const QModelIndex&, bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Adds item for model \a index to container.
 */
 void HbAbstractItemContainer::addItem(const QModelIndex &index, bool animate)
@@ -786,27 +904,66 @@ void HbAbstractItemContainer::addItem(const QModelIndex &index, bool animate)
 
     // Add new item if maximum item count allows it or item falls within the range of
     // item buffer items. 
-    if (d->mItems.count() < maxItemCount() 
-        || (d->mItems.count() > 0
-           && d->intoContainerBuffer(index))) {
-
-        int bufferIndex = 0;
-        if (d->mItems.count() != 0) {
-            bufferIndex = d->containerBufferIndexForModelIndex(index); 
-        }
+    if (d->intoContainerBuffer(index)) {
+        int bufferIndex = d->containerBufferIndexForModelIndex(index); 
 
         if (bufferIndex >= d->mItems.count()
             || d->mItems.at(bufferIndex)->modelIndex() != index) {
-            insertItem(bufferIndex, index, animate);
+            // Store the second item position related to view.
+            HbAbstractViewItem *referenceItem = d->mItems.value(1);
+            QPointF referenceItemPos;
+            if (referenceItem) {
+                referenceItemPos = d->itemBoundingRect(referenceItem).topLeft();
+            }
 
-            if (d->mItemRecycling) {
+            HbAbstractViewItem *recycledItem = 0;
+            QRectF viewRect = d->itemBoundingRect(d->mItemView);
+
+            if (d->mItemRecycling && !viewRect.isEmpty()) {
+                // Recycling allowed. Try recycling the items from buffer.
+                int firstVisible = 0;
+                int lastVisible = 0;
+                d->firstAndLastVisibleBufferIndex(firstVisible, lastVisible, viewRect, false);
+
+                int itemsOnTop = firstVisible - 1;
+                int itemsOnBottom = d->mItems.count() - lastVisible - 1;
+
+                if (itemsOnBottom > 0) {
+                    recycledItem = d->mItems.takeLast();
+                } else if (itemsOnTop > 0) {
+                    recycledItem = d->mItems.takeFirst();
+                    bufferIndex--;
+                    bufferIndex = qMax(0, bufferIndex);
+                }
+
+                if (recycledItem) {
+                    itemRemoved(recycledItem, false);
+                    d->insertItem(recycledItem, bufferIndex, index, animate);
+                }
+            }
+
+            if (!recycledItem) {
+                // No recycling has happened. Insert completely new item.
+                insertItem(bufferIndex, index, animate);
+            }
+
+            // Restore second item position.
+            d->restoreItemPosition(referenceItem, referenceItemPos);
+            
+            if (!recycledItem && d->mItemRecycling) {
+                // Resize the buffer.
                 d->updateItemBuffer();
             }
         }
-    }  
+    } else if (d->mItems.count() < maxItemCount()) {
+        d->updateItemBuffer();
+    }
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::removeItem(const QModelIndex&, bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Removes item representing \a index from container.
 */
 void HbAbstractItemContainer::removeItem(const QModelIndex &index, bool animate)
@@ -818,6 +975,9 @@ void HbAbstractItemContainer::removeItem(const QModelIndex &index, bool animate)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::removeItem(int, bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Removes item from \a pos.
 */
 void HbAbstractItemContainer::removeItem(int pos, bool animate)
@@ -832,6 +992,9 @@ void HbAbstractItemContainer::removeItem(int pos, bool animate)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::recycleItems(const QPointF&)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Derived class should implement this function to perform item recycling based on container \a delta.
     Given \a delta is the distance between container's current position and desired new position. Recycling
     should be done based on the new position and function should return the actual delta. Actual delta could
@@ -846,6 +1009,9 @@ QPointF HbAbstractItemContainer::recycleItems(const QPointF &delta)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::eventFilter(QObject*, QEvent*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     \reimp
 */
 bool HbAbstractItemContainer::eventFilter(QObject *obj, QEvent *event)
@@ -868,6 +1034,9 @@ bool HbAbstractItemContainer::eventFilter(QObject *obj, QEvent *event)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::maxItemCount() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns maximum amount of items that item buffer can hold. 
 
     Default implementation returns the total number of indexes that can
@@ -890,6 +1059,9 @@ int HbAbstractItemContainer::maxItemCount() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemPrototype(HbAbstractViewItem*)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Deletes other prototypes and sets \a prototype as only prototype.
 
     Returns true if the prototype list was changed; otherwise returns false.
@@ -902,6 +1074,9 @@ bool HbAbstractItemContainer::setItemPrototype(HbAbstractViewItem *prototype)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::itemPrototypes() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns the list of item prototypes.
 */
 QList<HbAbstractViewItem *> HbAbstractItemContainer::itemPrototypes() const
@@ -921,6 +1096,9 @@ QList<HbAbstractViewItem *> HbAbstractItemContainer::itemPrototypes() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemPrototypes(const QList<HbAbstractViewItem*>&)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Sets the list of prototypes. 
     
     Returns true if the prototype list was changed; otherwise returns false.
@@ -955,12 +1133,16 @@ bool HbAbstractItemContainer::setItemPrototypes(const QList<HbAbstractViewItem *
 }
 
 /*!
+     \deprecated HbAbstractItemContainer::itemState(const QModelIndex&) const
+        is deprecated. Please use HbAbstractItemContainer::itemTransientState() instead. 
+
     Returns state of view item with \a index.
 */
 QMap<int,QVariant> HbAbstractItemContainer::itemState(const QModelIndex &index) const
 {
+    qWarning("HbAbstractViewItem::itemState(const QModelIndex &index) const is deprecated");
+    HB_ITEM_STATE_ASSERT;
     Q_D(const HbAbstractItemContainer);
-
     QMap<int,QVariant> result;
 
     if (index.isValid()) {
@@ -974,12 +1156,29 @@ QMap<int,QVariant> HbAbstractItemContainer::itemState(const QModelIndex &index) 
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::itemTransientState(const QModelIndex &) const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
+    Returns transient state of view item with \a index.
+*/
+QHash<QString, QVariant> HbAbstractItemContainer::itemTransientState(const QModelIndex &index) const
+{
+    Q_D(const HbAbstractItemContainer);
+    return d->mItemStates.value(index);
+}
+
+/*!
+     \deprecated HbAbstractItemContainer::setItemStateValue(const QModelIndex&, int, QVariant)
+        is deprecated. Please use HbAbstractItemContainer::setItemTransientStateValue(const QModelIndex &index, const QString &key, const QVariant &value) instead. 
+
    This is an overloaded member function, provided for convenience.
 
    Sets single state \a key to \a value for a view item with \a index.
 */
 void HbAbstractItemContainer::setItemStateValue(const QModelIndex &index, int key, QVariant value)
 {
+    qWarning("HbAbstractViewItem::setItemStateValue(const QModelIndex &index, int key, QVariant value) const is deprecated");
+    HB_ITEM_STATE_ASSERT;
     Q_D(HbAbstractItemContainer);
     if (index.isValid()) {
         int listIndex = d->findStateItem(index);
@@ -994,12 +1193,48 @@ void HbAbstractItemContainer::setItemStateValue(const QModelIndex &index, int ke
         }
     }
 }
+/*!
+    \deprecated HbAbstractItemContainer::setItemTransientStateValue(const QModelIndex &, const QString &, const QVariant &)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
+    This is an overloaded member function, provided for convenience.
+
+    Stores \a key with \a value of a view item with \a index into state model.
+    \a key is usually name of a Qt property. If \a value is invalid, state item with the \a key is removed.
+
+    Default values of properties should not be added.
+*/
+void HbAbstractItemContainer::setItemTransientStateValue(const QModelIndex &index, const QString &key, const QVariant &value)
+{
+    Q_D(HbAbstractItemContainer);
+    if (index.isValid()) {
+        QHash<QString, QVariant> stateItem = d->mItemStates.value(index);
+        if (!value.isValid()) {
+            stateItem.remove(key);
+        } else {
+            stateItem.insert(key, value);
+        }
+        if (stateItem.count()) {
+            d->mItemStates.insert(index, stateItem);
+        } else {
+            d->mItemStates.remove(index);
+        }
+    } else {
+        d->mItemStates.remove(index);
+    }
+}
+
 
 /*!
-    Sets state of a view item with \a index to a \a map.
+    \deprecated HbAbstractItemContainer::setItemState(const QModelIndex&, QMap<int, QVariant>)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
+    Sets state of a view item with \a index.
 */
 void HbAbstractItemContainer::setItemState(const QModelIndex &index, QMap<int,QVariant> state)
 {
+    qWarning("HbAbstractViewItem::setItemState(const QModelIndex &index, QMap<int,QVariant> state) is deprecated");
+    HB_ITEM_STATE_ASSERT;
     Q_D(HbAbstractItemContainer);
     if (index.isValid() && !state.isEmpty()) {
         int listIndex = d->findStateItem(index);
@@ -1016,6 +1251,31 @@ void HbAbstractItemContainer::setItemState(const QModelIndex &index, QMap<int,QV
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemTransientState(const QModelIndex &, QHash<QString,QVariant>)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
+    Stores state of a view item with \a index into item state model. State of the view item is usually 
+    retrieved by calling HbAbstractViewItem::transientState().
+    
+    Existing state is replaced. If \a state is empty, existing state is removed. 
+    Default values of state items should not be added into \a state.
+
+    \sa HbAbstractViewItem::transientState()
+*/
+void HbAbstractItemContainer::setItemTransientState(const QModelIndex &index, QHash<QString,QVariant> state)
+{
+    Q_D(HbAbstractItemContainer);
+    if (index.isValid() && state.count()) {
+        d->mItemStates.insert(index, state);
+    } else {
+        d->mItemStates.remove(index);
+    }
+}
+
+/*!
+    \deprecated HbAbstractItemContainer::itemChange(QGraphicsItem::GraphicsItemChange, const QVariant&)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     \reimp
 */
 QVariant HbAbstractItemContainer::itemChange(GraphicsItemChange change, const QVariant & value)
@@ -1024,6 +1284,9 @@ QVariant HbAbstractItemContainer::itemChange(GraphicsItemChange change, const QV
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::firstAndLastVisibleModelIndex(QModelIndex&, QModelIndex&, bool) const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns the model indexes of items that are located on top left and bottom right corners
     of visible area.
 */
@@ -1048,15 +1311,36 @@ void HbAbstractItemContainer::firstAndLastVisibleModelIndex(
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::removeItemTransientStates()
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
+    Clears the state model.
+*/
+void HbAbstractItemContainer::removeItemTransientStates()
+{
+    Q_D(HbAbstractItemContainer);
+    d->mItemStateList.clear();
+    d->mItemStates.clear();
+}
+
+/*!
+    \deprecated HbAbstractItemContainer::removeItemStates()
+        is deprecated. Please use HbAbstractItemContainer::removeTransientItemStates() instead. 
+
     Clears the state model.
 */
 void HbAbstractItemContainer::removeItemStates()
 {
+    qWarning("HbAbstractItemContainer::removeItemStates is deprecated");
     Q_D(HbAbstractItemContainer);
     d->mItemStateList.clear();
+    d->mItemStates.clear();
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setItemRecycling(bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Sets item recycling to \a enabled.
     By default recycling is off.
  */
@@ -1066,7 +1350,7 @@ void HbAbstractItemContainer::setItemRecycling(bool enabled)
     if (d->mItemRecycling != enabled) {
         d->mItemRecycling = enabled;
         if (!enabled) {
-            removeItemStates();
+            removeItemTransientStates();
         }
 
         d->updateItemBuffer();
@@ -1074,6 +1358,9 @@ void HbAbstractItemContainer::setItemRecycling(bool enabled)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::itemRecycling() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns whether item recycling feature is in use.
  */
 bool HbAbstractItemContainer::itemRecycling() const
@@ -1083,6 +1370,9 @@ bool HbAbstractItemContainer::itemRecycling() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::setUniformItemSizes(bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Sets the feature informing whether all items in the item view have the same size.
     In case all the items have the same size, the item view can do some 
     optimizations for performance purposes.
@@ -1094,6 +1384,9 @@ void HbAbstractItemContainer::setUniformItemSizes(bool enable)
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::uniformItemSizes() const
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Returns whether the uniform item sizes feature is in use.
  */
 bool HbAbstractItemContainer::uniformItemSizes() const
@@ -1103,26 +1396,28 @@ bool HbAbstractItemContainer::uniformItemSizes() const
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::insertItem(int, const QModelIndex&, bool)
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Inserts item for \a index to \a pos.
 */
 void HbAbstractItemContainer::insertItem(int pos, const QModelIndex &index, bool animate)
 {
     Q_D(HbAbstractItemContainer);
     HbAbstractViewItem *item = d->createItem(index);
-
-    if (item) {
-        d->mItems.insert(pos, item);
-        itemAdded(pos, item, animate);
-
-        setItemModelIndex(item, index);
-    }
+    d->insertItem(item, pos, index, animate);
 }
 
 /*!
+    \deprecated HbAbstractItemContainer::reset()
+        is deprecated from public API. Class HbAbstractItemContainer will be made private.
+
     Reset the internal state of the container.
 */
 void HbAbstractItemContainer::reset()
 {
+    // position need to be reseted while changing model
+    setPos(0.0, 0.0);
     removeItems(); 
     QCoreApplication::postEvent(this, new QEvent((QEvent::Type)UpdateItemBufferEvent));
 }

@@ -292,21 +292,6 @@ bool HbHardware12key::filterEvent(const QEvent *event)
     return mActiveModeHandler->filterEvent(event);
 }
 
-
-
-// ---------------------------------------------------------------------------
-// HbHardware12key::listInputModes
-//
-// ---------------------------------------------------------------------------
-//
-void HbHardware12key::listInputModes(QVector<HbInputModeProperties>& results)
-{   
-    mBasicModeHandler->listInputModes(results);
-    mPredictionModeHandler->listInputModes(results);
-    mNumericModeHandler->listInputModes(results);
-}
-
-
 // ---------------------------------------------------------------------------
 // HbHardware12key::focusReceived
 //

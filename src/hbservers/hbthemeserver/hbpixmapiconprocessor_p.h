@@ -29,6 +29,10 @@
 #include "hbiconprocessor_p.h"
 #include <QPixmap>
 
+#if defined (Q_OS_SYMBIAN)
+#include <nvg.h>
+#endif //Q_OS_SYMBIAN
+
 QT_BEGIN_NAMESPACE
 class QSvgRenderer;
 class QPicture;
@@ -36,6 +40,14 @@ class QPixmap;
 QT_END_NAMESPACE
 
 class HbThemeServerSymbian;
+
+#if defined (Q_OS_SYMBIAN)
+struct HbNvgAspectRatioSettings
+{
+    TNvgAlignStatusType nvgAlignStatusAndAspectRatio;
+    TNvgMeetOrSliceType type;
+};
+#endif //Q_OS_SYMBIAN
 
 class HbPixmapIconProcessor : public HbIconProcessor
 {
@@ -57,9 +69,13 @@ public :
 private :
     bool renderSvgToPixmap(const QString& iconPath);
     bool renderPicToPixmap(const QString& iconPath);
-    bool storeNvgData(const QString& iconPath);
     bool renderOtherFormatsToPixmap(const QString& iconPath);
 
+#if defined (Q_OS_SYMBIAN)
+    bool renderNvgToPixmap(const QString& iconPath);
+    HbNvgAspectRatioSettings mapKeyAspectRatioToNvgAspectRatio(
+	                                                Qt::AspectRatioMode aspectRatio) const;
+#endif //Q_OS_SYMBIAN
 private:
     QPixmap pixmap;
 };

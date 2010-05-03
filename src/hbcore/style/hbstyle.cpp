@@ -63,6 +63,8 @@
 #include "hbstyleoptionindexfeedback.h"
 #include "hbstyleoptioncombobox.h"
 #include "hbstyleoptioninputdialog.h"
+#include "hbstyleoptionprogresssliderhandle_p.h"
+#include "hbstyleoptionprogressslider.h"
 
 #include <hbicon.h>
 #include <hbstyle.h>
@@ -95,7 +97,6 @@
 #include "hbwidgetstyleloader_p.h"
 #include "hbcssparser_p.h"
 #include "hbrepeaticonitem_p.h"
-#include "hbcolortheme_p.h"
 #include "hbnamespace_p.h"
 
 
@@ -109,13 +110,10 @@
 
 #include <QDebug>
 
-//Uncomment next define in order to get more debug prints.
+//Uncomment next define(s) in order to get more debug prints.
 //Similar define exists also in the engine side.
 //#define HBSTYLE_DEBUG
-
-#ifdef HBSTYLE_DEBUG
-#include <QDebug>
-#endif
+#define HBSTYLE_DEBUG_FONT
 
 /*!
     @beta
@@ -141,7 +139,651 @@
 
 */
 
+/*!
+        
+	    \deprecated P_PushButton_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
 
+
+        \deprecated P_PushButton_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+        
+        \deprecated P_PushButton_additionaltext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_PushButton_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_PushButton_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_PushButton_focus
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataGrou\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataGroupComboBackground
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataGrou\deprecated P_heading
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataGrou\deprecated P_description
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataForm_heading
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataForm_heading_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataForm_description
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataGrou\deprecated P_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ToolButton_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ToolButton_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ToolButton_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Slider_thumb
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_increase
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_decrease
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Slider_groove
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Slider_progressgroove
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_checkbox
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_radiobutton
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_selection
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_LineEdit_frame_normal
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_LineEdit_frame_highlight
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TextEdit_frame_normal
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TextEdit_frame_highlight
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Edit_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Label_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Label_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_focus
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_submenuindicator
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_checkindicator
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MenuItem_separator
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollBar_groove
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollBar_handle
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollBar_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Popu\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Popu\deprecated P_background_weak
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Popu\deprecated P_heading_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ToolTi\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MessageBox_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ListViewItem_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ListViewItem_richtext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ListViewItem_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+        
+        \deprecated P_ItemHighlight_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ToolBarExtension_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GridViewItem_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GridViewItem_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_CheckBox_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_CheckBox_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_CheckBox_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Fade_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TitlePane_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TitlePane_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TitlePane_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TitleBar_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_signalicon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+   
+        \deprecated P_IndicatorGrou\deprecated P_batteryicon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+  
+        \deprecated P_SignalIndicator_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SignalLevel_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SignalLevel_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_BatteryIndicator_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_BatteryLevel_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_BatteryLevel_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_icon1
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_icon2
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_icon3
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorGrou\deprecated P_icon4
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressBar_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressBar_track
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressBar_waittrack
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+       
+        \deprecated P_ProgressBar_mintext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressBar_maxtext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Softkey_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+ 
+        \deprecated P_NavigationButton_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorButton_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndicatorButton_handleindication
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+   
+        \deprecated P_SelectionControl_selectionstart
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SelectionControl_selectionend
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TreeViewItem_expandicon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_Label_richtext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_RatingSlider_track
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_RatingSlider_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_RatingSlider_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+				\deprecated P_ProgressSlider_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+				\deprecated P_ProgressSlider_track
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSlider_slidertrack
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSlider_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSliderHandle_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+ 
+        \deprecated P_ProgressSliderHandle_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSliderHandle_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_RatingSlider_layout
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollArea_continuationbottom
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollArea_continuationtop
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollArea_continuationleft
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ScrollArea_continuationright
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_focus
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_NotificationDialog_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_NotificationDialog_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_NotificationDialog_title
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_NotificationDialog_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ComboBox_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ComboBoxPopu\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ComboBoxButton_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ComboBox_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataItem_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataItem_separator
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ColorGridViewItem_colorIcon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ColorGridViewItem_borderIcon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ColorGridViewItem_checkIcon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ComboBox_button
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressDialog_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressDialog_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataItem_label
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataItem_description
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_touchincrease
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_touchdecrease
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_touchhandle
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderElement_touchgroove
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderTickMark_majoricon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderTickMark_minoricon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderTickMark_majorlabel
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderTickMark_minorlabel
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_QueryInputMode_image
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GroupBoxHeading_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GroupBoxHeading_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GroupBoxMarquee_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GroupBoxHeading_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_GroupBoxContent_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DataItem_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ItemViewItem_touchmultiselection
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TumbleView_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TumbleView_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_TumbleView_highlight
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DateTimePicker_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DateTimePicker_frame
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_DateTimePicker_separator
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndexFeedback_popu\deprecated P_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_IndexFeedback_popu\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_SliderPopu\deprecated P_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_StatusBar_background
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_StatusBar_timetext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_InputDialog_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_InputDialog_additionaltext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSlider_toucharea
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSlider_track
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSliderHandle_icon
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_InputDialog_additionaltext
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_MessageBox_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressSlider_handle
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+
+
+        \deprecated P_ProgressBar_text
+        is deprecated. HbStyle::Primitive enums are deprecated. Primitives can be accessed by item names using HbWidget::primitive(const QString).
+*/
 
 // TODO: margins should be defined in layout data once layout specification exists.
 static const int ItemName = 0xfffe;
@@ -172,6 +814,9 @@ HbStyle::~HbStyle()
 }
 
 /*!
+    \deprecated HbStyle::registerPlugin(const QString&)
+    is deprecated. Style plugins are not supported anymore.
+
     Registers the style plugin with the Style system. This method can be called by a custom widget
     or application in order to register the style plugin that implements the custom graphics primitives.
     This method results in loading of the plugin, if the plugin is registered for the first time.
@@ -271,6 +916,9 @@ int HbStyle::registerPlugin(const QString &pluginName)
 
 
 /*!
+    \deprecated HbStyle::unregisterPlugin(const QString&)
+    is deprecated. Style plugins are not supported anymore.
+
     Un-registers the style plugin.
     If the reference count becomes zero, the plugin is unloaded and the primitive IDs are de-registered
     If a client has called registerPlugin() it must unregister the style plugin with this method.
@@ -294,7 +942,7 @@ void HbStyle::unregisterPlugin(const QString &pluginName)
             }
             d->registeredPlugins.remove(pluginName);
 
-	        // unregister associated style files
+            // unregister associated style files
             HbWidgetStyleLoader::instance()->removeFilePath(
                 d->pluginStylePaths.value(pluginName),
                 HbLayeredStyleLoader::Concern_Layouts, 
@@ -312,6 +960,10 @@ void HbStyle::unregisterPlugin(const QString &pluginName)
 
 
 /*!
+
+  \deprecated HbStyle::createPrimitive(HbStyle::Primitive, QGraphicsItem*) 
+  is deprecated. This method will be replaced with an altered version which will use new base primitive enumerations.
+    
   Creates instances of primitive graphics items. This method should be used by all widgets that support styling.
   When changing the style the returned primitives can be replaced with an altered version of the primitives, or with a completely
   different primitive, to create a custom appearance. This shouldn't cause changes to the widget if the functional design
@@ -326,6 +978,7 @@ void HbStyle::unregisterPlugin(const QString &pluginName)
   \param primitive, to identify the primitive to create
   \param parent of the item
   \return HbWidgetBase is returned.
+
  */
 QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent ) const
 {
@@ -362,7 +1015,12 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 }
             case P_ToolButton_icon:
             case P_PushButton_icon:
-			case P_ProgressDialog_icon:
+            case P_ProgressDialog_icon: {
+                HbIconItem *iconItem = new HbIconItem(HbIcon(),parent);
+                setItemName(iconItem, QLatin1String("icon"));
+                return iconItem; 
+                }
+
             case P_CheckBox_icon:
             case P_GroupBoxHeading_icon:
             case P_Label_icon:
@@ -392,6 +1050,11 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_ToolButton_text:
             case P_CheckBox_text:
             case P_ProgressDialog_text:
+                {
+                    HbTextItem *textItem = new HbTextItem(parent);
+                    setItemName(textItem, QLatin1String("text"));
+                    return  textItem;
+                }
             case P_PushButton_text:
                 {
                 HbTextItem *ti = new HbTextItem(parent);
@@ -429,40 +1092,36 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(ti, QLatin1String("additional-text"));
                 return  ti;
                 }
-             case P_ProgressBar_toucharea:
-                {
-                HbTouchArea *ta = new HbTouchArea(parent);
-                ta->setFlag(QGraphicsItem::ItemIsFocusable);
-                setItemName(ta, QLatin1String("toucharea1"));
-				ta->setZValue(TOUCHAREA_ZVALUE);
-                return ta;
-                }
-			case P_ProgressSliderHandle_toucharea: 
+            case P_ProgressSlider_toucharea:
                 {
                 HbTouchArea *ta = new HbTouchArea(parent);
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
                 setItemName(ta, QLatin1String("toucharea"));
-				ta->setZValue(TOUCHAREA_ZVALUE);
+                ta->setZValue(TOUCHAREA_ZVALUE);
+                return ta;
+                }
+            case P_ProgressSliderHandle_toucharea: 
+                {
+                HbTouchArea *ta = new HbTouchArea(parent);
+                ta->setFlag(QGraphicsItem::ItemIsFocusable);
+                setItemName(ta, QLatin1String("toucharea"));
+                ta->setZValue(TOUCHAREA_ZVALUE);
                 if(parent){
                     parent->setHandlesChildEvents(true); 
                 }
                 return ta;
                 }
 
-			case P_ProgressSlider_handle:
-			    {
+            case P_ProgressSliderHandle_icon:
+                {
                 HbIconItem *item = new HbIconItem(QLatin1String("qtg_graf_progslider_handle_normal"), parent);
-				item->setAspectRatioMode(Qt::IgnoreAspectRatio);
-                return item;									 
-				}
-            case P_ProgressSlider_handleicon:{
-                HbIconItem *item = new HbIconItem(QLatin1String("qtg_mono_play"), parent);
+                item->setAspectRatioMode(Qt::IgnoreAspectRatio);
                 return item;
                 }
             case P_PushButton_toucharea: // Generic implementation, can add other cases here
             case P_CheckBox_toucharea:
             case P_RatingSlider_toucharea:
-	        case P_SliderElement_touchhandle: 
+            case P_SliderElement_touchhandle: 
                 {
                 HbTouchArea *ta = new HbTouchArea(parent);
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
@@ -597,7 +1256,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             {
                 HbFrameItem *n = new HbFrameItem(parent);
                 n->setZValue(-1);
-				setItemName(n , "dropdown_background");
+                setItemName(n , "dropdown_background");
                 return n;
             }
 
@@ -610,16 +1269,13 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 n->setZValue(-5);
                 return n;
             }
-            case P_TumbleView_highlight:{
-                //return new HbIconItem(parent);
+            case P_TumbleView_highlight:
+            {
                 return new HbFrameItem(parent);//TODO:make it icon once iconitem setGeomoetry works for tumbleview
             }
+
             case P_DateTimePicker_separator:{
-                //return new HbIconItem(parent);
                 HbFrameItem *frameItem= new HbFrameItem(parent);//TODO:make it icon once iconitem setGeomoetry works for tumbleview
-                frameItem->frameDrawer().setFrameGraphicsName("qtg_graf_tumbler_devider");
-                frameItem->frameDrawer().setFrameType(HbFrameDrawer::OnePiece);
-                frameItem->setPreferredWidth(2);
                 return frameItem;
             }           
             case P_DataGroup_background :
@@ -665,12 +1321,12 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 n->setZValue(-2);
                 return n;
             }
-            case P_ProgressBar_slidertrack:
+            case P_ProgressSlider_slidertrack:
             {
                 HbProgressTrackItem *n = new HbProgressTrackItem(parent);
                 n->setZValue(-1);
                 return n;
-            }        
+            }
             case P_Slider_progressgroove:
             {
                 HbSliderTrackItem *n=new HbSliderTrackItem(parent);
@@ -796,6 +1452,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_TitlePane_icon:
             {
                 HbIconItem *n = new HbIconItem(parent);
+                n->setFlags(HbIcon::Colorized);
                 setItemName(n, QLatin1String("icon"));
                 return n;
             }
@@ -805,7 +1462,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 n->setZValue(-1);
                 setItemName(n, QLatin1String("statusbar"));
                 return n;
-			}
+            }
             case P_StatusBar_timetext:
             {
                 HbTextItem *textItem = new HbTextItem(parent);
@@ -841,9 +1498,8 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 return textItem;
             }
 
-
             case P_ProgressBar_waittrack:
-                return new HbRepeatIconItem(QLatin1String("qtg_fr_progbar_wait"), parent);
+                return new HbRepeatIconItem(QLatin1String("qtg_graf_progbar_h_wait"), parent);
 
             case P_RatingSlider_frame:
                 return  new HbRepeatItem(parent);
@@ -851,8 +1507,11 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_RatingSlider_track:
                 return new HbRepeatMaskItem(parent);
             
-			case P_RatingSlider_layout:
-                return new HbWidgetBase(parent);
+            case P_RatingSlider_layout: {
+                HbWidgetBase *layout = new HbWidgetBase(parent);
+                setItemName(layout, "frame");
+                return layout;
+            }
 
             case P_ItemViewItem_checkbox: {
                 qDebug() << "Primitive P_ItemViewItem_checkbox is deprecated and will cease to exist in the near future.";
@@ -887,7 +1546,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(n, QLatin1String("icon"));
                 return n;
             }
-            case P_MessageBox_text:{
+            case P_MessageBox_text:{    //deprecated
                 HbTextItem *rti = new HbTextItem(parent);
                 return rti;
             }
@@ -935,7 +1594,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_ColorGridViewItem_borderIcon:
                 return new HbIconItem("qtg_graf_colorpicker_filled", parent);
             case P_ColorGridViewItem_checkIcon:
-                return new HbIconItem("qtg_small_tick", parent); // TODO: likely wrong
+                return new HbIconItem("qtg_small_tick", parent);
 
             case P_TreeViewItem_expandicon: {
                 HbIconItem *iconItem = new HbIconItem(parent);
@@ -1041,7 +1700,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(n, QLatin1String("label-1"));
                 return n;
             }
-            case P_InputDialog_additional_text:
+            case P_InputDialog_additionaltext:
             {
                 HbTextItem *n = new HbTextItem(parent);
                 setItemName(n, QLatin1String("label-2"));
@@ -1053,6 +1712,10 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
 }
 
 /*!
+
+  \deprecated HbStyle::updatePrimitive(QGraphicsItem*, HbStyle::Primitive, const QStyleOption*)
+  is deprecated. This method will be made private and finally removed since primitive updating will be done in the widgets.
+
   Updates the state and content of widget's child primitives. Update for a styled primitive should happen always when
   a state change that affects drawing occurs. Such a situation can be for example pressing of a button (change background image), or 
   changing a text for a widget having text content. The updatePrimitive() implementation for each primitive element can be considered 
@@ -1160,22 +1823,16 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         if (opt->hasTextAlignment) {
                             textItem->setAlignment( opt->textAlignment );                                           
                         }                        
-                        textItem->setTextWrapping(Hb::TextWrapAnywhere);
+                        textItem->setTextWrapping(Hb::TextWordWrap);
                     }
                 }
                 break;
             case P_ProgressDialog_text:
-                 {
-                   if (const HbStyleOptionProgressDialog *opt = 
-					   qstyleoption_cast<const HbStyleOptionProgressDialog*>(option)) {
+                {
+                    if (const HbStyleOptionProgressDialog *opt = 
+                        qstyleoption_cast<const HbStyleOptionProgressDialog*>(option)) {
                         HbTextItem *textItem = static_cast<HbTextItem*>(item);
-                        textItem->setAlignment( opt->textAlignment );
-						if (opt->wrap) {
-							textItem->setTextWrapping(Hb::TextWrapAnywhere);
-						 } else {
-							 textItem->setTextWrapping(Hb::TextNoWrap);
-						}
-                        textItem->setText(opt->text);						
+                        textItem->setText(opt->text);                       
                     }
                 break;
                 }
@@ -1190,7 +1847,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         if (opt->hasAdditionalTextAlignment) {
                             additionalTextItem->setAlignment( opt->additionalTextAlignment );                       
                         }                       
-                        additionalTextItem->setTextWrapping(Hb::TextWrapAnywhere);
+                        additionalTextItem->setTextWrapping(Hb::TextWordWrap);
                     }                    
                 }
                 break;
@@ -1219,8 +1876,8 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 }
             case P_DataGroup_description:
                 {
-                   if (const HbStyleOptionDataGroup *opt = 
-                        qstyleoption_cast<const HbStyleOptionDataGroup*>(option)) {
+                   if (const HbStyleOptionDataGroupHeadingWidget *opt = 
+                        qstyleoption_cast<const HbStyleOptionDataGroupHeadingWidget*>(option)) {
                         HbTextItem *textItem = static_cast<HbTextItem*>(item);
                         textItem->setText(opt->description);
                     }
@@ -1265,22 +1922,22 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     textItem->setText(opt->text);
                 }
                 break;
-            case P_ProgressBar_text: {
-                if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar*>(option)) {
-                    HbTextItem *textItem = static_cast<HbTextItem*>(item);
-                    textItem->setAlignment(Qt::AlignCenter);
-                    textItem->setZValue(100);
-                    textItem->setText(opt->text);
-                }
-                break;
-            }
+            case P_ProgressBar_text: {    
+                  if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar*>(option)) {    
+                      HbTextItem *textItem = static_cast<HbTextItem*>(item);    
+                      textItem->setAlignment(Qt::AlignCenter);    
+                      textItem->setZValue(100);    
+                      textItem->setText(opt->text);    
+                  }    
+                  break;    
+              } 
             case P_DataGroup_background: {
                 if (const HbStyleOptionDataGroupHeadingWidget *opt = 
                     qstyleoption_cast<const HbStyleOptionDataGroupHeadingWidget *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>( item );
-	                if(!frameItem){
-	                    return;
-	                }
+                    if(!frameItem){
+                        return;
+                    }
                     frameItem->setZValue(-1.0);
                     if(opt->pressed) {
                         frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_list_pressed"));
@@ -1451,11 +2108,11 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 }
                 break;
             }
-			case P_StatusBar_background: {
+            case P_StatusBar_background: {
                 const HbStyleOptionStatusBar *opt = qstyleoption_cast<const HbStyleOptionStatusBar *>(option);
                 if (opt) {
-				    HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
-				    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                    HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
                     if (opt->transparent) {
                         frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_statusbar_trans"));
                     } else {
@@ -1464,13 +2121,13 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 }
                 break;
             }
-			case P_StatusBar_timetext: {
+            case P_StatusBar_timetext: {
                 if (const HbStyleOptionStatusBar *opt = 
                     qstyleoption_cast<const HbStyleOptionStatusBar*>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
                     textItem->setText(opt->timeText);
                     }
-				break;
+                break;
             }
             case P_IndicatorGroup_background: { // deprecated
                 const HbStyleOptionIndicatorGroup *opt = qstyleoption_cast<const HbStyleOptionIndicatorGroup *>(option);
@@ -1564,7 +2221,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                             iconItem->setIconName("qtg_status_wcdma");
                             break;
                         case 5:
-                            iconItem->setIconName("qtg_status_wlan");
+                            iconItem->setIconName("qtg_mono_wlan");
                             break;
                         default:
                             iconItem->setIconName("qtg_mono_offline");
@@ -1808,7 +2465,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 const HbStyleOptionTitlePane *opt = qstyleoption_cast<const HbStyleOptionTitlePane *>(option);
                 if (opt) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
-                    iconItem->setIconName("qgn_indi_input_arrow_down");
+                    iconItem->setIconName("qtg_mono_options_menu");
                 }
                 break;
             }
@@ -1855,7 +2512,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 const HbStyleOptionToolButton *opt = qstyleoption_cast<const HbStyleOptionToolButton *>(option);
                 HbFrameItem *frameItem = static_cast<HbFrameItem*>( item );
                 frameItem->frameDrawer().setFillWholeRect(true);
-                frameItem->setGeometry(opt->rect);
                 if (opt->orientation == Qt::Vertical) {
                     frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
                 } else {
@@ -1873,8 +2529,20 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     break;
                 }
 
+                QString frameGraphicsName;
+                if(opt->isToolBarExtension) {
+                   if (mode == QIcon::Normal && state == QIcon::On) {
+                        if(!opt->isCheckable){
+                            frameGraphicsName = QLatin1String("qtg_fr_popup_grid_pressed");
+                        } else {
+                            frameGraphicsName = QLatin1String("qtg_fr_tb_ext");
+                        }
+                    }
+                    frameItem->frameDrawer().setFrameGraphicsName(frameGraphicsName);
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+                    return;
+                }
                 if (!opt->toolBarPosition) {
-                    QString frameGraphicsName;
                     if (mode == QIcon::Disabled && state == QIcon::Off) {
                         frameGraphicsName = QLatin1String("qtg_fr_btn_disabled");
                     } else if (mode == QIcon::Normal && state == QIcon::On) {
@@ -1896,8 +2564,15 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
 
                 QString frameGraphicsHeader;
                 if (!opt->useSecondaryGraphics){
-                    frameGraphicsHeader = opt->orientation == Qt::Vertical ? QLatin1String("qtg_fr_tb_h_"):
-                                                                             QLatin1String("qtg_fr_tb_v_");
+                    if (opt->useTransparentGraphics) {
+                        frameGraphicsHeader = opt->orientation == Qt::Vertical ?
+                                              QLatin1String("qtg_fr_tb_trans_h_"):
+                                              QLatin1String("qtg_fr_tb_trans_v_");
+                    } else {
+                        frameGraphicsHeader = opt->orientation == Qt::Vertical ?
+                                              QLatin1String("qtg_fr_tb_h_"):
+                                              QLatin1String("qtg_fr_tb_v_");
+                    }
                 }else {
                     frameGraphicsHeader = QLatin1String("qtg_fr_popup_sk_");
                     frameItem->frameDrawer().setMirroringMode(HbIcon::LayoutDirection);
@@ -2156,7 +2831,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_CheckBox_text:
                 if (const HbStyleOptionCheckBox *opt = qstyleoption_cast<const HbStyleOptionCheckBox*>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
-                    textItem->setTextWrapping(Hb::TextWrapAnywhere);
+                    textItem->setTextWrapping(Hb::TextWordWrap);
                     textItem->setText(opt->text);
                 }
                 break;
@@ -2227,9 +2902,12 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             }
 
             case P_LineEdit_frame_highlight:{
-                if (HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>( item ) ) {
-                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_lineedit_highlight"));
-                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+                if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption *>(option)) {
+                    if (HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>( item ) ) {
+                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_lineedit_highlight"));
+                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+                        frameItem->setGeometry(opt->boundingRect);
+                    }
                 }
             break;
             }
@@ -2243,9 +2921,12 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             }
 
             case P_TextEdit_frame_highlight:{
-                if (HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>( item ) ) {
-                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_textedit_highlight"));
-                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+                if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption *>(option)) {
+                    if (HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>( item ) ) {
+                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_textedit_highlight"));
+                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+                        frameItem->setGeometry(opt->boundingRect);
+                    }
                 }
             break;
             }
@@ -2258,7 +2939,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         if (opt->state & QStyle::State_Sunken) {
                             frameGraphicsName = QLatin1String("qtg_fr_combobox_pressed");
                         } else {
-                        	frameGraphicsName = QLatin1String("qtg_fr_combobox_normal");
+                            frameGraphicsName = QLatin1String("qtg_fr_combobox_normal");
                         }
                     } else {                        
                         frameGraphicsName = QLatin1String("qtg_fr_combobox_disabled");
@@ -2541,15 +3222,11 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ProgressDialog_icon:
                 if (const HbStyleOptionProgressDialog *opt = static_cast<const HbStyleOptionProgressDialog *>(option)) {
                     HbIconItem *icon = static_cast<HbIconItem*>(item);
-
                     icon->setIcon(opt->icon);
-                    icon->setAlignment(opt->iconAlignment);
                 }
-
                 break;
 
-            
-            case P_MessageBox_text:
+            case P_MessageBox_text:    //deprecated
                 if (const HbStyleOptionMessageBox *opt = static_cast<const HbStyleOptionMessageBox *>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
                     textItem->setAlignment(opt->textAlignment);
@@ -2563,44 +3240,27 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 }
                 break;
             case P_MessageBox_icon:
-	              
                 if (const HbStyleOptionMessageBox *opt = static_cast<const HbStyleOptionMessageBox *>(option)) {
-                        HbIconItem *icon = static_cast<HbIconItem*>(item);
-                        HbIcon noteIcon = opt->icon;
-                        if(noteIcon.isNull()) {
-                            switch (opt->messageBoxType) {
-                                case HbStyleOptionMessageBox::MessageTypeInformation:
-                                    icon->setIcon(HbIcon(QLatin1String("note_info")));
-                                    break;
-                                case HbStyleOptionMessageBox::MessageTypeQuestion:
-                                    icon->setIcon(HbIcon(QLatin1String("qtg_large_question_mark")));
-                                    break;
-                                case HbStyleOptionMessageBox::MessageTypeWarning:
-                                    icon->setIcon(HbIcon(QLatin1String("note_warning")));
-                                    break;
-                                default:
-                                    break;
-                            }
-									                            
+                    HbIconItem *icon = static_cast<HbIconItem*>(item);
+                    HbIcon noteIcon = opt->icon;
+                    if(noteIcon.isNull()) {
+                        switch (opt->messageBoxType) {
+                        case HbStyleOptionMessageBox::MessageTypeInformation:
+                            icon->setIcon(HbIcon(QLatin1String("qtg_large_info")));
+                            break;
+                        case HbStyleOptionMessageBox::MessageTypeQuestion:
+                            icon->setIcon(HbIcon(QLatin1String("qtg_large_help")));
+                            break;
+                        case HbStyleOptionMessageBox::MessageTypeWarning:
+                            icon->setIcon(HbIcon(QLatin1String("qtg_large_warning")));
+                            break;
+                        default:
+                            break;
                         }
-						else {                 
-                            icon->setIcon(opt->icon);
-                        }
-                        icon->setAlignment(opt->iconAlignment);
-                }
-                break;
-            case P_ItemViewItem_background:
-                if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
-                    HbIconItem *iconItem = static_cast<HbIconItem*>(item);
-                    iconItem->setZValue(-3.0);
-
-                    if (opt->background.canConvert<HbIcon>()){
-                        iconItem->setIcon(opt->background.value<HbIcon>());
-                    } else if (opt->background.canConvert<QBrush>()){
-                        iconItem->setBrush(opt->background.value<QBrush>());
+                    } else {                 
+                        icon->setIcon(opt->icon);
                     }
                 }
-
                 break;
             case P_ListViewItem_text:
                 if (const HbStyleOptionListViewItem *opt = qstyleoption_cast<const HbStyleOptionListViewItem *>(option)) {
@@ -2702,10 +3362,10 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 break;
             case P_ToolBarExtension_background:
                 if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption *>(option)) {
+                    Q_UNUSED(opt);
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
                     frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
-                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_tb_ext"));
-                    frameItem->setGeometry(opt->boundingRect);
+                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_popup_trans"));
                 }
                 break;
             case P_SliderPopup_background:
@@ -2719,28 +3379,17 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ProgressBar_frame:
                 if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
-
-                    if(opt->isSlider) {
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::OnePiece);
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
                         if(opt->orientation == Qt::Horizontal){
-                            frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_graf_progslider_unrated"));
-                        }
-                        else{
-                            frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_graf_vprogslider_unrated"));
-                        }
-                    } else {
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-                        if(opt->orientation == Qt::Horizontal){
-                            frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_frame"));
-                        }
+                       
+                                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_frame"));
+                         }
+                      
                         else{
                             frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
-                            // frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_vprogbar_frame"));
                             frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_v_frame"));
                         }
-                    }
                     frameItem->frameDrawer().setFillWholeRect(true);
-                    //frameItem->setZValue(-2.0);
                 }
                 break;
             case P_ProgressBar_track:
@@ -2750,43 +3399,20 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     if(!frameItem->isVisible()) {
                         break;
                     }
-                    if(opt->isSlider) {
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::OnePiece);
-                        if(opt->orientation == Qt::Horizontal){
-                            frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_graf_progslider_rated"));
-                        }
-                        else{
-                            frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_graf_vprogslider_rated"));
-                        }
-                    } else {
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-                        if(opt->secondoryType){
-                            if(opt->orientation == Qt::Horizontal){
-                                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_down"));
-
-                            }
-                            else{
-
-                                frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
-                                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progress_v_frame_second"));
-                            }
-                            //frameItem->setZValue(-2.0);
-                        }
-                        else{
-                            if(opt->orientation == Qt::Horizontal){
-                                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_filled"));
-                            }
-                            else{
-                                frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
-                                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_v_filled"));
-                            }
-                        }
-                    }
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                    if(opt->orientation == Qt::Horizontal){
+                               frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_filled"));
+                     }
+                     else{
+                               frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
+                               frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_v_filled"));
+                     }
                     frameItem->frameDrawer().setFillWholeRect(true);
                     frameItem->setMaximum(opt->maximum);
                     frameItem->setMinimum(opt->minimum);
                     frameItem->setValue(opt->progressValue);
                     frameItem->setInverted(opt->inverted);
+                    //frameItem->setGeometry(opt->rect);
                     frameItem->setOrientation(opt->orientation);
                     frameItem->update();
                 }
@@ -2807,48 +3433,52 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     if(opt->stopWaitAnimation){
                         iconItem->stopAnimation();
                     }
-
-                /*    HbFrameDrawer drawer("qtg_fr_progbar_mask",HbFrameDrawer::ThreePiecesHorizontal);
-                    drawer.setFillWholeRect(true);
-                    QPixmap track(opt->frameRect.size().toSize());
-                    track.fill(Qt::black);
-                    QPainter p;
-                    p.begin(&track);
-                    drawer.paint(&p, opt->frameRect);
-                    p.end();
-                    iconItem->setIconHeight(opt->frameRect.height());//set height of the image drawer
-                    iconItem->setGeometry(opt->frameRect);//set geometry of QGI
-                    
-                    QImage i=track.toImage();
-                    i.invertPixels();
-                    iconItem->setMask(QPixmap::fromImage(i));*/
-                }
-                break;
-
-            case P_ProgressBar_slidertrack:
-                if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar *>(option)) {
+                    }
+                    break;
+              
+            case P_ProgressSlider_frame:
+                if (const HbStyleOptionProgressSlider *opt = qstyleoption_cast<const HbStyleOptionProgressSlider *>(option)) {
+                    HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                    if(opt->pressedState) {
+                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_pressed"));
+                    }
+                    else {
+                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_normal"));
+                    }
+                    frameItem->frameDrawer().setFillWholeRect(true);       
+                    frameItem->update();
+                    }
+                    break;
+            case P_ProgressSlider_track: // The ProgressValue Mask
+                if (const HbStyleOptionProgressSlider *opt = qstyleoption_cast<const HbStyleOptionProgressSlider *>(option)) {
                     HbProgressTrackItem* frameItem = static_cast<HbProgressTrackItem*>(item);
-
-                    if(opt->orientation == Qt::Horizontal){
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_filled"));
-                    }
-                    else{
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
-                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_v_filled"));
-                    }
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_loaded"));
                     frameItem->frameDrawer().setFillWholeRect(true);
                     frameItem->setMaximum(opt->maximum);
                     frameItem->setMinimum(opt->minimum);
-                    frameItem->setValue(opt->sliderValue);
+                    frameItem->setValue(opt->progressValue);
                     frameItem->setInverted(opt->inverted);
-                    frameItem->setMaskWidth(opt->maskWidth);//maskWidth != 0 when  progress handle's moving.
                     frameItem->setOrientation(opt->orientation);
                     frameItem->update();
-                    //frameItem->setZValue(-1.0);
-                }
-                break;
+                    } 
+                    break;
 
+            case P_ProgressSlider_slidertrack: // The Slider Position Mask
+                if (const HbStyleOptionProgressSlider *opt = qstyleoption_cast<const HbStyleOptionProgressSlider *>(option)) {
+                    HbProgressTrackItem* frameItem = static_cast<HbProgressTrackItem*>(item);
+                    frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                    frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_played"));
+                    frameItem->frameDrawer().setFillWholeRect(true);
+                    frameItem->setMaximum(opt->maximum);
+                    frameItem->setMinimum(opt->minimum);
+                    frameItem->setValue(opt->progressSliderValue);
+                    frameItem->setInverted(opt->inverted);
+                    frameItem->setOrientation(opt->orientation);
+                    frameItem->update();
+                    } 
+                    break;
             case P_ProgressBar_mintext: {
                  if (const HbStyleOptionProgressBar *opt = 
                         qstyleoption_cast<const HbStyleOptionProgressBar*>(option)) {
@@ -2857,7 +3487,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                             return;
                         }
                         textItem->setTextWrapping(Hb::TextWrapAnywhere);
-                        textItem->setText(opt->minText);                        	
+                        textItem->setText(opt->minText);                            
                     }
                  break;
             }
@@ -2870,7 +3500,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                             return;
                         }
                         textItem->setTextWrapping(Hb::TextWrapAnywhere);
-                        textItem->setText(opt->maxText);                        	
+                        textItem->setText(opt->maxText);                            
                     }
                 break;
             }
@@ -2909,40 +3539,22 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 }
                 break;
             }
-
-   		case P_ProgressSlider_handle:
-					 if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar *>(option)) {
-                        HbIconItem *iconItem = static_cast<HbIconItem*>(item);
-						iconItem->setIconName(QLatin1String("qtg_graf_progslider_handle_normal"));
-                        Q_UNUSED(opt)
-						}
-					    break;
-         case P_ProgressSlider_handleicon:
-                    if (const HbStyleOptionProgressBar *opt = qstyleoption_cast<const HbStyleOptionProgressBar *>(option)) {
+        case P_ProgressSliderHandle_icon:
+                    if (const HbStyleOptionProgressSliderHandle *opt = qstyleoption_cast<const HbStyleOptionProgressSliderHandle *>(option)) {
                         HbIconItem *iconItem = static_cast<HbIconItem*>(item);
 
-                        if(!opt->thumbIcon.isNull()) {                           
-                            HbIcon icon(opt->thumbIcon.iconName());                       
-                            iconItem->setIconName(opt->thumbIcon.iconName());
+                        if(!opt->handleIcon.isNull()) {
+                            iconItem->setIconName(opt->handleIcon.iconName());
                         }
                         else {
-                            switch(opt->sliderState) {
-                            case HbStyleOptionProgressBar::SliderStatePlayNormal:                            
-                                iconItem->setIconName(QLatin1String("qtg_mono_play"));
-                                break;
-                            case HbStyleOptionProgressBar::SliderStatePlayPressed:
-                                iconItem->setIconName(QLatin1String("qtg_mono_play"));
-                                break;
-                            case HbStyleOptionProgressBar::SliderStatePauseNormal:
-                                iconItem->setIconName(QLatin1String("qtg_mono_pause"));
-                                break;
-                            case HbStyleOptionProgressBar::SliderStatePausePressed:
-                                iconItem->setIconName(QLatin1String("qtg_mono_pause"));
-                                break;
+                            if(opt->pressedState) {
+                                iconItem->setIconName(QLatin1String("qtg_graf_progslider_handle_pressed"));
+                            }
+                            else {
+                                iconItem->setIconName(QLatin1String("qtg_graf_progslider_handle_normal"));
                             }
                         }
                     }
-
                     break;
             case P_QueryInputMode_image:
 
@@ -2953,10 +3565,24 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                 }*/
                 break;
+            case P_ItemViewItem_background:
+                if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
+                    HbIconItem *iconItem = static_cast<HbIconItem*>(item);
+                    iconItem->setZValue(-3.0);
+                    iconItem->setGeometry(opt->boundingRect);
+                    if (opt->background.canConvert<HbIcon>()){
+                        iconItem->setIcon(opt->background.value<HbIcon>());
+                    } else if (opt->background.canConvert<QBrush>()){
+                        iconItem->setBrush(opt->background.value<QBrush>());
+                    }
+                }
+
+                break;
             case P_ItemViewItem_frame: 
                 if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
                     frameItem->setZValue(-4.0);
+                    frameItem->setGeometry(opt->boundingRect);
 
                     if (opt->background.canConvert<HbFrameBackground>()) {
                         HbFrameBackground frame = opt->background.value<HbFrameBackground>();
@@ -2986,7 +3612,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                                 QLatin1String("qtg_fr_popup_list_normal") : QLatin1String("qtg_fr_list_normal"));
                         }
                     } else if (opt->viewItemType == Hb::ItemType_GridViewItem
-								|| opt->viewItemType == HbPrivate::ItemType_ColorGridViewItem) {
+                                || opt->viewItemType == HbPrivate::ItemType_ColorGridViewItem) {
                         frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
                         frameItem->frameDrawer().setFrameGraphicsName( opt->insidePopup ? 
                             QLatin1String("qtg_fr_popup_grid_normal") : QLatin1String("qtg_fr_grid_normal"));
@@ -3090,12 +3716,13 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                 }
                 break;
+
             case P_TumbleView_highlight:
                 if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption*>(option)) {
                     if(HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>(item)) {
-                        frameItem->frameDrawer().setFrameGraphicsName("qtg_graf_tumbler_highlight_sec");
-                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::OnePiece);
-                        frameItem->setZValue(2);
+                        frameItem->frameDrawer().setFrameGraphicsName("qtg_fr_tumbler_highlight_pri");
+                        frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                        frameItem->setZValue(3);
                         //TODO:temp fix, issue with css rule picking in derived class
                         
                         //frameItem->setGeometry(0,(opt->boundingRect.height()-frameItem->boundingRect().height())/2,opt->boundingRect.width(),opt->boundingRect.height());
@@ -3103,7 +3730,8 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                     
                 }
-                break;            
+                break;
+
             case P_IndexFeedback_popup_text:
                 if (const HbStyleOptionIndexFeedback *opt = qstyleoption_cast<const HbStyleOptionIndexFeedback *>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
@@ -3146,9 +3774,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_DateTimePicker_separator:
                 if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption*>(option)) {
                     if(HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>(item)) {
-                        frameItem->frameDrawer().setFrameGraphicsName("qtg_graf_tumbler_highlight_pri");
+                        frameItem->frameDrawer().setFrameGraphicsName("qtg_graf_tumbler_divider");
                         frameItem->frameDrawer().setFrameType(HbFrameDrawer::OnePiece);
-                        frameItem->setZValue(0);
+                        frameItem->setZValue(2);
                         //TODO:temp fix, issue with css rule picking in derived class
 
                         //frameItem->setGeometry(0,(opt->boundingRect.height()-frameItem->boundingRect().height())/2,opt->boundingRect.width(),opt->boundingRect.height());
@@ -3165,10 +3793,10 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         return;
                     }
                     textItem->setTextWrapping(Hb::TextWrapAnywhere);
-                    textItem->setText(opt->text);                        	
+                    textItem->setText(opt->text);                           
                 }
                 break;
-             case P_InputDialog_additional_text:
+             case P_InputDialog_additionaltext:
                 if (const HbStyleOptionInputDialog *opt = 
                     qstyleoption_cast<const HbStyleOptionInputDialog*>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
@@ -3176,7 +3804,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         return;
                     }
                     textItem->setTextWrapping(Hb::TextWrapAnywhere);
-                    textItem->setText(opt->additionalText);                        	
+                    textItem->setText(opt->additionalText);                         
                 } 
                 break;
              default:
@@ -3191,6 +3819,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
 static HbVector<HbCss::Declaration> declarations(
     const HbVector<HbCss::StyleRule> &styleRules,
     const QString &part,
+    HbWidget* widget,
     const HbDeviceProfile &profile)
 {
     quint64 pseudoClass(0);
@@ -3199,6 +3828,21 @@ static HbVector<HbCss::Declaration> declarations(
         pseudoClass |= HbCss::PseudoClass_Landscape;
     } else {
         pseudoClass |= HbCss::PseudoClass_Portrait;
+    }
+
+    HbMainWindow *mainWindow = 0;
+    if (widget) {
+        mainWindow = widget->mainWindow();
+    } else {
+        QList<HbMainWindow *> mainWindows = hbInstance->allMainWindows();
+        if (!mainWindows.isEmpty()) {
+            mainWindow = mainWindows.at(0);
+        }
+    }
+    if (mainWindow && mainWindow->isRightToLeft()) {
+        pseudoClass |= HbCss::PseudoClass_RightToLeft;
+    } else {
+        pseudoClass |= HbCss::PseudoClass_LeftToRight;
     }
 
     HbVector<HbCss::Declaration> decls;
@@ -3235,19 +3879,19 @@ void HbStylePrivate::polishItem(
 #ifdef HBSTYLE_DEBUG
     qDebug() << "HbStyle::polish : -- --";
     if ( widget == item ) {
-        qDebug() << "HbStyle::polish : -- polishItem: " << widget->metaObject()->className();
+        qDebug() << "HbStyle::polishItem : -- item name: " << widget->metaObject()->className();
     } else if ( item ) {
-        qDebug() << "HbStyle::polish : -- polishItem: " << name << "(existing item)";
+        qDebug() << "HbStyle::polishItem : -- item name: " << name << "(existing item)";
     } else {
-        qDebug() << "HbStyle::polish : -- polishItem: " << name << "(missing item)";
+        qDebug() << "HbStyle::polishItem : -- item name: " << name << "(missing item)";
     }
 #endif
 
     HbDeviceProfile profile(HbDeviceProfile::profile(widget));
 
-    const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, profile);
+    const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, widget, profile);
 #ifdef HBSTYLE_DEBUG
-    qDebug() << "HbStyle::polish : -- Number of maching CSS declarations: " << decl.count();
+    qDebug() << "HbStyle::polishItem : -- Number of maching CSS declarations: " << decl.count();
 #endif
     HbCss::ValueExtractor extractor(decl, layoutParameters, profile);
     HbCss::GeometryValues geomValues;
@@ -3259,20 +3903,20 @@ void HbStylePrivate::polishItem(
 #endif
 #ifdef HBSTYLE_DEBUG
     if ( !extracted ) {
-        qDebug() << "HbStyle::polish : -- No geometry information found";
+        qDebug() << "HbStyle::polishItem : -- No geometry overrides found";
     }
 #endif
     extracted = extractor.extractPosition(posValues);
 #ifdef HBSTYLE_DEBUG
     if ( !extracted ) {
-        qDebug() << "HbStyle::polish : -- No position information found";
+        qDebug() << "HbStyle::polishItem : -- No position overrides found";
     }
 #endif
 
     if ( item ) {
         if (posValues.mFlags & HbCss::ExtractedZValue) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting zvalue: " << posValues.mZ;
+            qDebug() << "HbStyle::polishItem : -- Setting zvalue: " << posValues.mZ;
 #endif
             item->setZValue(posValues.mZ);
         }
@@ -3282,20 +3926,44 @@ void HbStylePrivate::polishItem(
         ? static_cast<QGraphicsWidget*>(item)
         : 0;
     if ( gWidget ) {
-        if (posValues.mFlags & HbCss::ExtractedMirroring) {
+        if (posValues.mFlags & HbCss::ExtractedLayoutDirection) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting mirroring: " << posValues.mMirroring;
+            qDebug() << "HbStyle::polishItem : -- Setting layout direction: " << posValues.mLayoutDirection;
 #endif
-            if(posValues.mMirroring){
-                gWidget->unsetLayoutDirection();
-            }else{
+            if (posValues.mLayoutDirection == HbCss::LayoutDirection_LeftToRight) {
                 gWidget->setLayoutDirection(Qt::LeftToRight);
+            } else if (posValues.mLayoutDirection == HbCss::LayoutDirection_RightToLeft) {
+                gWidget->setLayoutDirection(Qt::RightToLeft);
+            } else {
+                gWidget->unsetLayoutDirection();
             }
         }
     }
 
     HbWidgetBase *hbWidget = qobject_cast<HbWidgetBase*>(gWidget);
     if ( hbWidget ) {
+#ifdef HBSTYLE_DEBUG_FONT
+        QString debugName;
+        bool isHbGroupBoxHeadingWidget(false);
+        if (!name.isEmpty()) {
+            QGraphicsItem* debugParent = hbWidget->parentItem();
+            if (debugParent->isWidget()) {
+                debugName = static_cast<QGraphicsWidget*>(debugParent)->metaObject()->className();
+                if (debugName == "HbGroupBoxHeadingWidget") {
+                    isHbGroupBoxHeadingWidget = true;
+                }
+            }
+            debugName.append("::");
+            debugName.append(name);
+        } else {
+            debugName = widget->metaObject()->className();
+        }
+        if ( isHbGroupBoxHeadingWidget ) {
+            qDebug() << "HbStyle::polishItem :" << debugName;
+            qDebug() << "HbStyle::polishItem : -- Number of maching CSS declarations: " << decl.count();
+        }
+
+#endif
         HbWidgetBasePrivate* hbWidget_p = HbWidgetBasePrivate::d_ptr(hbWidget);
         QFont font;
         HbFontSpec fontSpec;
@@ -3303,20 +3971,23 @@ void HbStylePrivate::polishItem(
         if (extractor.extractFont(&font, &fontSpec, &dummy)) {
             if ( !fontSpec.isNull() ) {
                 if ( font == QFont() ) {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting fontspec: " << fontSpec.role();
+#ifdef HBSTYLE_DEBUG_FONT
+                    if ( isHbGroupBoxHeadingWidget )
+                    qDebug() << "HbStyle::polishItem : -- Setting fontspec: " << fontSpec.role();
 #endif
                     hbWidget->setFontSpec(fontSpec);
                 } else {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting fontspec with overrides: "
+#ifdef HBSTYLE_DEBUG_FONT
+                    if ( isHbGroupBoxHeadingWidget )
+                    qDebug() << "HbStyle::polishItem : -- Setting fontspec with overrides: "
                              << fontSpec.role() << font;
 #endif
                     hbWidget->setFont(fontSpec.font().resolve(font));
                 }
             } else {
-#ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting explicit font: " << font;
+#ifdef HBSTYLE_DEBUG_FONT
+                if ( isHbGroupBoxHeadingWidget )
+                qDebug() << "HbStyle::polishItem : -- Setting explicit font: " << font;
 #endif
                 hbWidget->setFont(font);
             }
@@ -3326,9 +3997,9 @@ void HbStylePrivate::polishItem(
         if (icon) {
             Qt::AspectRatioMode mode;
             if (extractor.extractAspectRatioMode(&mode) 
-				&& !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode)) {
+                && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting aspect ratio mode: " << mode;
+                qDebug() << "HbStyle::polishItem : -- Setting aspect ratio mode: " << mode;
 #endif
                 icon->setAspectRatioMode(mode);
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode, false);
@@ -3343,12 +4014,12 @@ void HbStylePrivate::polishItem(
                 HbCss::Origin clip = HbCss::Origin_Border;
                 if (extractor.extractBackground(&brush, &uri, &repeat, &alignment, &origin, &attachment, &clip)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting icon background: " << brush;
+                    qDebug() << "HbStyle::polishItem : -- Setting icon background: " << brush;
 #endif
                     icon->setBrush( brush );
                 } else {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Resetting icon background";
+                    qDebug() << "HbStyle::polishItem : -- Resetting icon background";
 #endif
                     icon->setBrush( QBrush() );
                 }
@@ -3363,7 +4034,7 @@ void HbStylePrivate::polishItem(
                 if ( textValues.mFlags & HbCss::ExtractedLineCountMin
                     && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting text min lines: " << textValues.mLineCountMin;
+                    qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << textValues.mLineCountMin;
 #endif
                     text->setMinimumLines( textValues.mLineCountMin );
                     hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
@@ -3371,7 +4042,7 @@ void HbStylePrivate::polishItem(
                 if ( textValues.mFlags & HbCss::ExtractedLineCountMax
                     && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting text max lines: " << textValues.mLineCountMax;
+                    qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << textValues.mLineCountMax;
 #endif
                     text->setMaximumLines( textValues.mLineCountMax );
                     hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
@@ -3380,7 +4051,7 @@ void HbStylePrivate::polishItem(
             if ( posValues.mFlags & HbCss::ExtractedTextAlign 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting text alignment: " << posValues.mTextAlignment;
+                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << posValues.mTextAlignment;
 #endif
                 text->setAlignment( posValues.mTextAlignment );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, false);
@@ -3388,7 +4059,7 @@ void HbStylePrivate::polishItem(
             if ( posValues.mFlags & HbCss::ExtractedWrapMode 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting wrap mode : " << posValues.mTextWrapMode;
+                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << posValues.mTextWrapMode;
 #endif
                 text->setTextWrapping( posValues.mTextWrapMode );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
@@ -3400,7 +4071,7 @@ void HbStylePrivate::polishItem(
             if ( posValues.mFlags & HbCss::ExtractedTextAlign
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting text alignment: " << posValues.mTextAlignment;
+                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << posValues.mTextAlignment;
 #endif
                 richtext->setAlignment( posValues.mTextAlignment );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, false);
@@ -3408,7 +4079,7 @@ void HbStylePrivate::polishItem(
             if ( posValues.mFlags & HbCss::ExtractedWrapMode 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting wrap mode : " << posValues.mTextWrapMode;
+                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << posValues.mTextWrapMode;
 #endif
                 richtext->setTextWrapping( posValues.mTextWrapMode );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
@@ -3424,7 +4095,7 @@ void HbStylePrivate::polishItem(
 
             if (extractor.extractBorder(borderWidths,borderColors,borderStyles,borderRadii)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting border widths (l,t,r,b):"
+                qDebug() << "HbStyle::polishItem : -- Setting border widths (l,t,r,b):"
                     << borderWidths[HbCss::LeftEdge]
                     << borderWidths[HbCss::TopEdge]
                     << borderWidths[HbCss::RightEdge]
@@ -3444,7 +4115,7 @@ void HbStylePrivate::polishItem(
                 if ( textValues.mFlags & HbCss::ExtractedLineCountMin
                     && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting text min lines: " << textValues.mLineCountMin;
+                    qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << textValues.mLineCountMin;
 #endif
                     hbWidget->setProperty( "minRows", textValues.mLineCountMin );
                     hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
@@ -3452,7 +4123,7 @@ void HbStylePrivate::polishItem(
                 if ( textValues.mFlags & HbCss::ExtractedLineCountMax
                     && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polish : -- Setting text max lines: " << textValues.mLineCountMax;
+                    qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << textValues.mLineCountMax;
 #endif
                     hbWidget->setProperty( "maxRows", textValues.mLineCountMax );
                     hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
@@ -3472,50 +4143,50 @@ void HbStylePrivate::polishItem(
     if ( lItem ) {
         if ( geomValues.mFlags & HbCss::ExtractedMinW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting minimum width: " << geomValues.mMinW;
+            qDebug() << "HbStyle::polishItem : -- Setting minimum width: " << geomValues.mMinW;
 #endif
             lItem->setMinimumWidth( geomValues.mMinW );
         }
         if ( geomValues.mFlags & HbCss::ExtractedMinH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting minimum height: " << geomValues.mMinH;
+            qDebug() << "HbStyle::polishItem : -- Setting minimum height: " << geomValues.mMinH;
 #endif
             lItem->setMinimumHeight( geomValues.mMinH );
         }
         if ( geomValues.mFlags & HbCss::ExtractedPrefW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting preferred width: " << geomValues.mPrefW;
+            qDebug() << "HbStyle::polishItem : -- Setting preferred width: " << geomValues.mPrefW;
 #endif
             lItem->setPreferredWidth( geomValues.mPrefW );
         }
         if ( geomValues.mFlags & HbCss::ExtractedPrefH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting preferred height: " << geomValues.mPrefH;
+            qDebug() << "HbStyle::polishItem : -- Setting preferred height: " << geomValues.mPrefH;
 #endif
             lItem->setPreferredHeight( geomValues.mPrefH );
         }
         if ( geomValues.mFlags & HbCss::ExtractedMaxW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting maximum width: " << geomValues.mMaxW;
+            qDebug() << "HbStyle::polishItem : -- Setting maximum width: " << geomValues.mMaxW;
 #endif
             lItem->setMaximumWidth( geomValues.mMaxW );
         }
         if ( geomValues.mFlags & HbCss::ExtractedMaxH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting maximum height: " << geomValues.mMaxH;
+            qDebug() << "HbStyle::polishItem : -- Setting maximum height: " << geomValues.mMaxH;
 #endif
             lItem->setMaximumHeight( geomValues.mMaxH );
         }
         QSizePolicy itemPol = lItem->sizePolicy();
         if ( geomValues.mFlags & HbCss::ExtractedPolHor ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting horizontal size policy: " << geomValues.mSizePolicy.horizontalPolicy();
+            qDebug() << "HbStyle::polishItem : -- Setting horizontal size policy: " << geomValues.mSizePolicy.horizontalPolicy();
 #endif
             itemPol.setHorizontalPolicy(geomValues.mSizePolicy.horizontalPolicy());
         }
         if ( geomValues.mFlags & HbCss::ExtractedPolVer ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polish : -- Setting vertical size policy: " << geomValues.mSizePolicy.verticalPolicy();
+            qDebug() << "HbStyle::polishItem : -- Setting vertical size policy: " << geomValues.mSizePolicy.verticalPolicy();
 #endif
             itemPol.setVerticalPolicy(geomValues.mSizePolicy.verticalPolicy());
         }
@@ -3527,37 +4198,37 @@ void HbStylePrivate::polishItem(
         if ( layout ) {
             if (posValues.mFlags & HbCss::ExtractedLeft) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting left override: " << posValues.mLeft;
+                qDebug() << "HbStyle::polishItem : -- Setting left override: " << posValues.mLeft;
 #endif
                 layout->overrideSpacing(name, Hb::LeftEdge, posValues.mLeft);
             }
             if (posValues.mFlags & HbCss::ExtractedRight) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting right override: " << posValues.mRight;
+                qDebug() << "HbStyle::polishItem : -- Setting right override: " << posValues.mRight;
 #endif
                 layout->overrideSpacing(name, Hb::RightEdge, posValues.mRight);
             }
             if (posValues.mFlags & HbCss::ExtractedTop) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting top override: " << posValues.mTop;
+                qDebug() << "HbStyle::polishItem : -- Setting top override: " << posValues.mTop;
 #endif
                 layout->overrideSpacing(name, Hb::TopEdge, posValues.mTop);
             }
             if (posValues.mFlags & HbCss::ExtractedBottom) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting bottom override: " << posValues.mBottom;
+                qDebug() << "HbStyle::polishItem : -- Setting bottom override: " << posValues.mBottom;
 #endif
                 layout->overrideSpacing(name, Hb::BottomEdge, posValues.mBottom);
             }
             if (posValues.mFlags & HbCss::ExtractedCenterH) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting centerh override: " << posValues.mCenterH;
+                qDebug() << "HbStyle::polishItem : -- Setting centerh override: " << posValues.mCenterH;
 #endif
                 layout->overrideSpacing(name, Hb::CenterHEdge, posValues.mCenterH);
             }
             if (posValues.mFlags & HbCss::ExtractedCenterV) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : -- Setting centerv override: " << posValues.mCenterV;
+                qDebug() << "HbStyle::polishItem : -- Setting centerv override: " << posValues.mCenterV;
 #endif
                 layout->overrideSpacing(name, Hb::CenterVEdge, posValues.mCenterV);
             }
@@ -3596,9 +4267,22 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
 #ifdef HBSTYLE_DEBUG
     qDebug() << "HbStyle::polish : Polishing" << widget->metaObject()->className();
 #endif
+#ifdef HBSTYLE_DEBUG_FONT
+    bool isHbGroupBoxHeadingWidget(false);
+    if (QString(widget->metaObject()->className()) == "HbGroupBoxHeadingWidget") {
+        isHbGroupBoxHeadingWidget = true;
+        QVariant gbtype = widget->property( "groupBoxType" );
+        qDebug() << "HbStyle::polish : Polishing HbGroupBoxHeadingWidget, type" << gbtype.toInt();
+    }
+#endif
 
     HbLayeredStyleLoader *styleLoader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Layouts);
     if(!styleLoader){
+#ifdef HBSTYLE_DEBUG_FONT
+    if (isHbGroupBoxHeadingWidget) {
+        qDebug() << "HbStyle::polish : HbLayeredStyleLoader returned a null pointer.";
+    }
+#endif
 #ifdef HBSTYLE_DEBUG
         qDebug() << "HbStyle::polish : HbLayeredStyleLoader returned a null pointer.";
 #endif
@@ -3622,13 +4306,23 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
         styleRules = styleLoader->styleRulesForNode(n, profile.orientation());
     }
 
+#ifdef HBSTYLE_DEBUG_FONT
+    if (isHbGroupBoxHeadingWidget) {
+        qDebug() << "HbStyle::polish : Number of style rules:" << styleRules.count();
+    }
+#endif
     if (!styleRules.count()) {
 #ifdef HBSTYLE_DEBUG
         qDebug() << "HbStyle::polish : No style rules found.";
 #endif
         return;
     }
-    const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", profile);
+    const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", widget, profile);
+#ifdef HBSTYLE_DEBUG_FONT
+    if (isHbGroupBoxHeadingWidget) {
+        qDebug() << "HbStyle::polish : Number of maching CSS declarations: " << decl.count();
+    }
+#endif
 #ifdef HBSTYLE_DEBUG
     qDebug() << "HbStyle::polish : Number of maching CSS declarations: " << decl.count();
 #endif
@@ -3646,6 +4340,15 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     }
 
     bool layoutDefined = extractor.extractLayout(&layoutName, &sectionName);
+#ifdef HBSTYLE_DEBUG_FONT
+    if (isHbGroupBoxHeadingWidget) {
+        if (!layoutDefined) {
+            qDebug() << "HbStyle::polish : Couldn't find layout name for the widget.";
+        } else {
+            qDebug() << "HbStyle::polish : Layout name: " << layoutName;
+        }
+    }
+#endif
 #ifdef HBSTYLE_DEBUG
     if (!layoutDefined) {
         qDebug() << "HbStyle::polish : Couldn't find layout name for the widget.";
@@ -3658,7 +4361,7 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     HbMeshLayout *meshLayout(0);
     if (layoutDefined) {
 
-        QString cachedLayoutName = d->widgetLayoutNames[widget];
+        QString cachedLayoutName = widgetLayoutNames[widget];
         bool cached = (cachedLayoutName == layoutName );
         if ( !cached ) {
 #ifdef HBSTYLE_DEBUG
@@ -3666,12 +4369,17 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
 #endif
             HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
             if ( !loader->loadWidgetML(widget, layoutName, sectionName)) {
+#ifdef HBSTYLE_DEBUG_FONT
+                if (isHbGroupBoxHeadingWidget) {
+                    qDebug() << "HbStyle::polish : Failed to load WidgetML";
+                }
+#endif
 #ifdef HBSTYLE_DEBUG
                 qDebug() << "HbStyle::polish : Failed to load WidgetML";
 #endif
                 return;       
             }
-            d->widgetLayoutNames[widget] = layoutName;
+            widgetLayoutNames[widget] = layoutName;
             if (cachedLayoutName.isNull()) {
                 // Cached for the first time. Connect to destroyed signal.
                 QObject::connect(widget, SIGNAL(destroyed(QObject*)), this, SLOT(widgetDestroyed(QObject*)));
@@ -3733,7 +4441,7 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
     
     QString name = HbStyle::itemName(item);
     if (name.isEmpty() ) {
-        return ;
+        return;
     }
   
     HbTextItem* text = qgraphicsitem_cast<HbTextItem*>( item );
@@ -3744,7 +4452,7 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
     }
     
     HbDeviceProfile profile;
-    const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, profile);
+    const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, 0, profile);
 
 #ifdef HBSTYLE_DEBUG
    qDebug() << "HbStyle::updateThemedItems : -- Number of maching CSS declarations: " << decl.count();
@@ -3752,34 +4460,36 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
    ensureColorParameters();
    HbCss::ValueExtractor extractor(decl, colorParameters, profile);
    
-   QColor col;
-   bool extracted = extractor.extractColor( &col );
+    QColor col;
+    bool extracted = extractor.extractColor( &col );
+    if (!extracted || !col.isValid()) {
+        // Setting non black or white default color to make it visisble in black or white theme
+        col.setRgb(255,0,255);
+    }
    //apply the themed color to text-item
-   if(text) {   
+    if(text) {   
 #ifdef HBSTYLE_DEBUG
-       if ( !extracted ) {
+        if ( !extracted ) {
             qDebug() << "HbStyle::getColor : -- No color information found";
-       }
+        }
 #endif    
-       if( extracted && col.isValid() && !HbWidgetBasePrivate::d_ptr(text)->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor)){
-           text->setTextColor(col);
-           HbWidgetBasePrivate::d_ptr(text)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
-       }
-   }   
-   if(iconItem){
-       //applying color to mono-colorised icons from theme
-       if( extracted && col.isValid()) {
-           iconItem->setColor( col ); 
-       }
-   }
-   if(marqueeItem){
-       //applying color to the marquee-item from theme
-       if(extracted && col.isValid() && !HbWidgetBasePrivate::d_ptr(marqueeItem)->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor)) {
-           marqueeItem->setTextColor( col ); 
-           HbWidgetBasePrivate::d_ptr(marqueeItem)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
-       }
-   }
-} 
+        if ( !HbWidgetBasePrivate::d_ptr(text)->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor ) ){
+            text->setTextColor(col);
+            HbWidgetBasePrivate::d_ptr(text)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
+        }
+    }   
+    if(iconItem){
+        //applying color to mono-colorised icons from theme
+        iconItem->setColor( col );
+    }
+    if(marqueeItem){
+        //applying color to the marquee-item from theme
+        if(!HbWidgetBasePrivate::d_ptr(marqueeItem)->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor)) {
+            marqueeItem->setTextColor( col ); 
+            HbWidgetBasePrivate::d_ptr(marqueeItem)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
+        }
+    }
+}
  
 /*!
     HbStyle::updateThemedParams()
@@ -3845,8 +4555,7 @@ bool HbStyle::hasOrientationSpecificStyleRules(HbWidget *widget)
 */
 void HbStyle::widgetDestroyed(QObject* obj)
 {
-    Q_D( HbStyle );
-    d->widgetLayoutNames.remove((const QGraphicsWidget *)obj);
+    widgetLayoutNames.remove((const QGraphicsWidget *)obj);
 }
 
 /*!
@@ -3866,8 +4575,19 @@ void HbStyle::widgetDestroyed(QObject* obj)
 */
 void HbStyle::setItemName( QGraphicsItem *item, const QString &name )
 {
-    if (item) {
+    if (item && itemName(item) != name) {
         item->setData( ItemName, name );
+        QGraphicsItem* parent = item->parentItem();
+        QGraphicsLayoutItem* lItem = (item->isWidget()) ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item) : 0;
+        if (lItem && parent && parent->isWidget()) {
+            QGraphicsWidget* parentW = static_cast<QGraphicsWidget*>(parent);
+            if ( parentW->layout() && widgetLayoutNames.contains(parentW) ) {
+                HbMeshLayout* layout = static_cast<HbMeshLayout*>(parentW->layout());
+                if ( layout->indexOf(lItem) != -1 ) {
+                    layout->setItemId(lItem, name.isEmpty() ? QString() : name);
+                }
+            }
+        }
     }
 }
 
@@ -3952,9 +4672,12 @@ void HbStyle::parameters(HbStyleParameters &parameters, const HbDeviceProfile &p
     d->ensureLayoutParameters(effectiveProfile);
     HbCss::ValueExtractor valueExtractor(d->layoutParameters, true, effectiveProfile);
     qreal value = 0;
-    for (int i = 0; i < d->layoutParameters.count(); i++) {
-        if (valueExtractor.extractValue(d->layoutParameters[i].property, value))
-            parameters.addParameter(d->layoutParameters[i].property, value);
+    QHash<QString, HbCss::Declaration>::const_iterator i = d->layoutParameters.constBegin();
+    while (i != d->layoutParameters.constEnd()) {
+        if (valueExtractor.extractValue(i.key(), value)) {
+            parameters.addParameter(i.key(), value);
+        }
+        ++i;
     }
 }
 
@@ -3980,7 +4703,7 @@ HbStylePrivate::HbStylePrivate()
 HbStylePrivate::~HbStylePrivate()
 {
     layoutParameters.clear();
-	colorParameters.clear();
+    colorParameters.clear();
 
     HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
     if(loader){
@@ -4086,10 +4809,9 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
 
         HbStyleSelector selector;
         selector.styleSheets.append(styleSheet);
-        layoutParameters = selector.variableRuleSets();
+        selector.variableRuleSets(&layoutParameters);
     }
     if (!firstParse && (layoutParametersProfileName != profile.name())) {
-        layoutParameters.remove(layoutParameters.count()-4, 4);
         addSpecialParams = true;
     }
     if (addSpecialParams) {
@@ -4104,7 +4826,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)pSize.width(),HbMemoryManager::HeapMemory);
             decl.values.append(val);
-            layoutParameters.append(decl);
+            layoutParameters.insert(decl.property, decl);
         }
         {
             HbCss::Declaration decl;
@@ -4114,7 +4836,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)pSize.height(),HbMemoryManager::HeapMemory);
             decl.values.append(val);
-            layoutParameters.append(decl);
+            layoutParameters.insert(decl.property, decl);
         }
         {
             HbCss::Declaration decl;
@@ -4124,7 +4846,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)qMin(pSize.height(),pSize.width()),HbMemoryManager::HeapMemory);
             decl.values.append(val);
-            layoutParameters.append(decl);
+            layoutParameters.insert(decl.property, decl);
         }
         {
             HbCss::Declaration decl;
@@ -4134,17 +4856,16 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)qMax(pSize.height(),pSize.width()),HbMemoryManager::HeapMemory);
             decl.values.append(val);
-            layoutParameters.append(decl);
+            layoutParameters.insert(decl.property, decl);
         }
     }
-
 }
 
 void HbStylePrivate::ensureColorParameters() const
 {
     if (colorParameters.isEmpty()) {
         HbLayeredStyleLoader *styleLoader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
-        colorParameters = styleLoader->variableRuleSets();
+        styleLoader->variableRuleSets(&colorParameters);
     }
 }
 

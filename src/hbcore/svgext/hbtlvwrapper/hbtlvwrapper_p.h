@@ -37,9 +37,9 @@ class HB_CORE_PRIVATE_EXPORT HbTlvWrapper
 {
 public:
     static HbTlvWrapper *instance();
-    const QByteArray getTLVEncodedData(QString& filename,QSizeF& size, Qt::AspectRatioMode aspectRatioM);
-    const QByteArray getTLVEncodedDataFromDom(quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioM);
-    const QSize contentDimensions(QString& filename, quint32& domhandle); 
+    const QByteArray getTlvEncodedData(const QString& filename, const QSizeF& size, Qt::AspectRatioMode aspectRatioMode);
+    const QByteArray getTlvEncodedDataFromDom(const quint32& domhandle, QSizeF& size, Qt::AspectRatioMode aspectRatioMode);
+    const QSize contentDimensions(QString& filename, quint32& domhandle);
 private:
     HbTlvWrapper();
     ~HbTlvWrapper();

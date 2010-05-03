@@ -64,6 +64,7 @@ protected: // From QGraphicsItem
     void mouseMoveEvent ( QGraphicsSceneMouseEvent *event);
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    virtual void gestureEvent(QGestureEvent *event);
 
 signals:
     void rockerDirection(int aDirection, HbInputVirtualRocker::RockerSelectionMode aSelectionMode);

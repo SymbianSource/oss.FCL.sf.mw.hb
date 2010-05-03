@@ -37,15 +37,16 @@ class HB_AUTOTEST_EXPORT HbEffectTheme
 public:
     HbEffectTheme();
     ~HbEffectTheme();
-    static HbEffectTheme *global();
+    static HbEffectTheme *instance();
+    void setCurrentTheme(const QString &themeName);
 
     QString getEffectXml(const QString &fileNameLogical, bool &fromTheme) const;
-    void setCurrentTheme(const QString &themeName);
     void clearDirList();
     QString currentTheme() const;
 
 private:
     HbEffectThemePrivate* d_ptr;
+    static HbEffectTheme *self;
     Q_DISABLE_COPY(HbEffectTheme)
     friend class TestHbEffectTheme;
 };

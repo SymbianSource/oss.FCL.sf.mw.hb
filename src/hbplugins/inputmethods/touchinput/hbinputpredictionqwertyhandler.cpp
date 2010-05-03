@@ -201,14 +201,6 @@ HbInputPredictionQwertyHandler::~HbInputPredictionQwertyHandler()
 }
 
 /*!
-lists different input mode bindings..
-*/
-void HbInputPredictionQwertyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-    Q_UNUSED(modes); 
-}
-
-/*!
 Action Handler.
 */
 bool HbInputPredictionQwertyHandler::actionHandler(HbInputModeAction action)
@@ -349,7 +341,7 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
     mShowTooltip = true;
     // A backspace in predictive means updating the engine for the delete key press
     // and get the new candidate list from the engine.
-    if ((mEngine->inputLength() >= 1) || selectWord()) {
+    if ( mEngine->inputLength() >= 1 ) {
         //Only autocomplition part should be deleted when autocompliton part is enable and user pressed a delete key
         //To prevent showing autocompletion part while deleting the characters using backspace key
         mShowTail = false;
@@ -359,15 +351,13 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         //we actually reduce ambiguity in the engine and hence we should have
         //some word getting predicted as a result to that.
         mCanContinuePrediction = true;
-        if (true == mExactPopupLaunched) {			
-			QString exactWord = mCandidates->at(0);
-			mEngine->setWord(exactWord);	
-			mCandidates->clear();
-			mCandidates->append(exactWord);
-			mBestGuessLocation = 0 ;
-		} 
+ 
 		if(false == mTailShowing && true == mExactPopupLaunched) {
-				mEngine->deleteKeyPress();				
+				mEngine->deleteKeyPress();
+				mEngine->updateCandidates(mBestGuessLocation);
+		}
+		if (true == mExactPopupLaunched) {			
+			mBestGuessLocation = 0 ;
 		}
         //When there is a deletion of key press, no need to update the candidate list
         //This is because deletion should not cause reprediction.
@@ -388,25 +378,23 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
 		        commit(QString(""),false);
 		    }
 		        
-		} else if(!mCandidates->count()) {
-            mCandidates->append(mEngine->currentWord());
+		} else if(!mCandidates->count() && mEngine->inputLength() >= 1) {
+            //If Input length greater or equal to one then Append the current word to candidate 
+			mCandidates->append(mEngine->currentWord());
         }
         // update the editor with the new preedit text.
         updateEditor();
         return;
-    }
-
-    HbInputFocusObject* focusedObject = 0;
-    focusedObject = mInputMethod->focusObject();
-    if (!focusedObject) {
+    } else {
+        // we come here if their is no data in engine.
+        // once the word is committed, we can not bring it back to inline edit.
+        // so if the engine does not have any data, we just send backspace event to the editor.
+        Q_Q(HbInputPredictionQwertyHandler);
+        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);		
+        q->sendAndUpdate(event);
+        event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
+        q->sendAndUpdate(event);
         return;
-    }
-
-    if ((focusedObject->inputMethodQuery(Qt::ImCursorPosition).toInt() >= 0) || focusedObject->preEditString().length()) {
-        QList<QInputMethodEvent::Attribute> list;
-        QInputMethodEvent event(QString(), list);
-        event.setCommitString(QString(), -1, 1);
-        commit(event);
     }
 }
 

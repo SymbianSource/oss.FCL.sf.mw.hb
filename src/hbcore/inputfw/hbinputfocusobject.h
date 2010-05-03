@@ -41,35 +41,37 @@ class HbInputMethod;
 class QGraphicsProxyWidget;
 class QGraphicsWidget;
 
-class HB_CORE_EXPORT HbInputFocusObject : public QObject 
+class HB_CORE_EXPORT HbInputFocusObject : public QObject
 {
     Q_OBJECT
 
 public:
     explicit HbInputFocusObject(QObject *focusedObject);
-    ~HbInputFocusObject();   
+    ~HbInputFocusObject();
 
     void sendPreEditString(const QString& string);
     void sendCommitString(const QString& string);
-    void sendEvent(QEvent& aEvent);
-    void postEvent(QEvent& aEvent);
+    void sendEvent(QEvent& event);
+    void postEvent(QEvent& event);
     QVariant inputMethodQuery(Qt::InputMethodQuery query) const;
     int editorCursorPosition();
     QFont editorFont();
     QString editorTextSelection();
     QString editorSurroundingText();
     HbEditorInterface& editorInterface() const;
-    void cursorLeft(int aModifiers = 0);
-    void cursorRight(int aModifiers = 0);      
+    void cursorLeft(int modifiers);
+    void cursorRight(int modifiers);
+    void cursorLeft(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void cursorRight(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void releaseFocus();
-    bool filterAndCommitCharacter(QChar aChar);
+    bool filterAndCommitCharacter(QChar character);
     QRectF editorGeometry() const;
     QRectF microFocus() const;
     QString preEditString() const;
     qreal findVkbZValue() const;
     Qt::InputMethodHints inputMethodHints() const;
     void setInputMethodHints(Qt::InputMethodHints hints);
- 
+
     QPointF scenePos() const;
     void filterStringWithEditorFilter(const QString& source, QString& result);
     bool characterAllowedInEditor(QChar character) const;

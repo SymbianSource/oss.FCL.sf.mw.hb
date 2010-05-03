@@ -70,15 +70,15 @@ public:
         // focus change
         HbInputModeActionFocusRecieved, // focus recived state
         HbInputModeActionFocusLost, // focus lost state
-        HbInputModeActionCancelButtonPress
-        // more..
+        HbInputModeActionCancelButtonPress,
+		HbInputModeActionCloseSpellQuery
+       // more..
     };
 
     virtual ~HbInputModeHandler();
 
     // HbInputMethod specific operations.
     virtual bool isComposing() const {return false;}
-    virtual void listInputModes(QVector<HbInputModeProperties>& modes) const = 0 ;
     virtual void mouseHandler(int x, QMouseEvent* mouseEvent);
     virtual bool filterEvent(const QEvent * event);
 
@@ -91,6 +91,7 @@ public:
     void sendAndUpdate(QEvent &event);
     virtual void setKeymap(const HbKeymap* keymap);
     virtual void characterPreviewAvailable(bool available);
+	void togglePrediction();
 
 signals:
     // incase one mode handler is not capable of processing the events.

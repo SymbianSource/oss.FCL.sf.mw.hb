@@ -1,14 +1,11 @@
 HbDataFormHeadingWidget::dataForm_Heading
 {
-	color:var(qtc_view_normal);
+	color:var(qtc_dataform_heading);
 }
 
 HbDataFormHeadingWidget::dataForm_Desc
 {
-	color:var(qtc_view_normal);
-}
-HbDataFormHeadingWidget::dataFormHeading_Background
-{
 	color:var(qtc_dataform_heading);
 }
+
 

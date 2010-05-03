@@ -369,7 +369,7 @@ void HbDataFormModel::insertDataFormItem(int index, HbDataFormModelItem *data,
 
 
 /*!
-   \deprecated  HbDataFormModel::insertRows(int row, int count, const QModelIndex &index)
+   \deprecated  HbDataFormModel::insertRows(int, int, const QModelIndex&)
         is deprecated. Please use other insert and additem API's in HbDataFormModel instead.
 */
 bool HbDataFormModel::insertRows(int row, int count, const QModelIndex &index)

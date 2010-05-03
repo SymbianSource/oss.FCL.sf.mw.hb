@@ -32,12 +32,15 @@
 #include "hbgraphicsscene.h"
 #include "hbgraphicsscene_p.h"
 #include "hbtooltip.h"
+#include "hbglobal_p.h"
 #include <QTimer>
 #include <QGraphicsSceneMouseEvent>
 #include <QShowEvent>
 #include <QHideEvent>
 #include <QEventLoop>
 #include <QPointer>
+#include <QDebug>
+#include <QBitmap>
 #include <QApplication> // krazy:exclude=qclasses
 
 #include <hbwidgetfeedback.h>
@@ -47,7 +50,7 @@
 bool HbPopupPrivate::popupEffectsLoaded = false;
 #endif
 /*!
-    @stable
+    @beta
     @hbcore
     \class HbPopup
     \brief HbPopup is a base class for different popup notes in Hb library.
@@ -281,6 +284,8 @@ HbPopupPrivate::HbPopupPrivate( ) :
     frameType(HbPopup::Strong),
     preferredPosSet(false),
     mStartEffect(false),
+    mScreenMargin(0.0),
+    mPath(0),
     timeoutTimerInstance(0)
 {
 }
@@ -304,10 +309,22 @@ void HbPopupPrivate::init()
         backgroundItem = new HbPopupBackGround(q);
         backgroundItem->setVisible(false);
 
-        // Popup is invisible by default (explicit show or exec call is required)
+        // Popup is invisible by default (explicit show or open call is required)
         q->setVisible(false);
     }
     hidingInProgress = false;   
+
+    q->setFlag(QGraphicsItem::ItemClipsToShape);
+    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
+
+#if QT_VERSION > 0x040602
+    q->grabGesture(Qt::TapGesture);
+    q->grabGesture(Qt::TapAndHoldGesture);
+    q->grabGesture(Qt::PanGesture);
+    q->grabGesture(Qt::SwipeGesture);
+    q->grabGesture(Qt::PinchGesture);
+#endif
+
 }
 
 /*
@@ -396,25 +413,14 @@ QTimer *HbPopupPrivate::timeoutTimer()
     return timeoutTimerInstance;
 }
 
-void HbPopupPrivate::handleKeyEvent(QKeyEvent *event)
-{
-    Q_Q(HbPopup);
-    event->accept();
-
-    // Any key event dismisses the popup if dismissPolicy includes TapInside flag
-    if (dismissPolicy & HbPopup::TapInside && !q->parentItem()) {
-        q->close();
-    }
-}
-
 //returns true if popup has been added to scene here.
 bool HbPopupPrivate::addPopupToScene()
 {
     Q_Q(HbPopup);
     bool popupAdded(false);
     if (!q->parentItem()) {
-        if (!q->scene() && !HbInstance::instance()->allMainWindows().isEmpty()) {
-            HbInstance::instance()->allMainWindows().at(0)->scene()->addItem(q);
+        if (!q->scene() && !HbInstance::instance()->allMainWindows().isEmpty()) {            
+            HbInstance::instance()->allMainWindows().at(0)->scene()->addItem(q);           
             popupAdded = true;
             if (backgroundItem) {
                 q->scene()->addItem(backgroundItem);
@@ -523,7 +529,39 @@ void HbPopupPrivate::doSetModal( bool modal ) {
         // events to be able to prevent last focus item losing its
         // focus
         backgroundItem->setFlag(QGraphicsItem::ItemIsFocusable, modal);
+        backgroundItem->setFlag(QGraphicsItem::ItemIsPanel, modal);
+        if(modal) {
+            backgroundItem->setPanelModality(QGraphicsItem::PanelModal);
+        } else {
+            backgroundItem->setPanelModality(QGraphicsItem::NonModal);
+        }
     }
+}
+
+void HbPopupPrivate::calculateShape()
+{
+    Q_Q(HbPopup);
+    if (mPath)
+        delete mPath;
+    mPath = new QPainterPath();
+#if 1
+    QPixmap image(QSize(static_cast<int>(q->backgroundItem()->boundingRect().width() + 0.5), 
+	                    static_cast<int>(q->backgroundItem()->boundingRect().height() + 0.5)));
+    image.fill(Qt::transparent);
+
+    QPainter imagePainter(&image);
+
+    q->backgroundItem()->paint(&imagePainter, 0, 0);
+
+    imagePainter.end();
+
+    mPath->addRegion(image.mask());
+#else
+    QRectF rect(-0.5, -0.5, q->boundingRect().width() + 0.5, q->boundingRect().height() + 0.5);
+    mPath->addRoundedRect(rect, 12, 12);
+#endif
+
+    mPath->translate(-0.5, -0.5);
 }
 
 /*!
@@ -547,7 +585,7 @@ HbPopup::HbPopup(QGraphicsItem *parent) :
 {
     Q_D(HbPopup);
     d->q_ptr = this;
-    d->init();
+    d->init();    
 }
 
 
@@ -559,7 +597,7 @@ HbPopup::HbPopup(HbPopupPrivate &dd, QGraphicsItem *parent) :
 {
     Q_D(HbPopup);
     d->q_ptr = this;
-    d->init();
+    d->init();    
 }
 /*!
 * Destroys the popup.
@@ -742,40 +780,28 @@ void HbPopup::setFrameType(HbPopup::FrameType frameType)
 void HbPopup::open( QObject *receiver, const char *member )
 {
     Q_D(HbPopup);
-    connect(this, SIGNAL(aboutToClose()), receiver, member);
+    if (receiver) {
+        connect(this, SIGNAL(aboutToClose()), receiver, member);
+    }
     d->receiverToDisconnectOnClose = receiver;
     d->memberToDisconnectOnClose = member;
 
-#if needed
-    // Ungrab the mouse if it is currently grabbed
-        // todo; currently needed menus to work ok, otherwise:
-        // - quick multiple presses on menuitem causes multiple actions (menu relaunch?)
-        // - closing menu with titlepane needs multiple presses (menu relaunch?)
-        // Ungrab was removed when trying to fix problem when button pressed()-signal
-        // was connected to menu launch. Button did not get anymore mouse release event.
-        if (scene()) {
-            QGraphicsItem *item = scene()->mouseGrabberItem();
-            if (item) {
-                item->ungrabMouse();
-            }
-        }
-#endif
     show();
 }
 
 
 /*!
-    \deprecated HbPopup::exec()
-        is deprecated. Please use HbPopup::show() or
-        void HbPopup::open( QObject *receiver, const char *member ) instead.
-*
-* Executes the popup synchronously.
-* Note: when popup is executed syncronously it is always modal.
-* This function is deprecated. use \sa open() or \sa show() instead.
+\deprecated HbPopup::exec()
+       is deprecated. Please use HbPopup::show() or
+ void HbPopup::open( QObject *receiver, const char *member ) instead.
+
+ Executes the popup synchronously.
+ Note: when popup is executed syncronously it is always modal.
+ This function is deprecated. use \sa open() or \sa show() instead.
 */
 void HbPopup::exec()
 {
-    //    Q_ASSERT(false);
+    HB_DEPRECATED("HbPopup::exec is deprecated. Use HbPopup::show() or HbPopup::open() instead!");
     Q_D(HbPopup);
 
     HbMainWindow* w(mainWindow());
@@ -847,7 +873,6 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
             }
             // Note: when visibility changes to "visible" base class implementation needs
             //       to be called otherwise showEvent() is not called.
-            
         } else {
             d->aboutToShowSignalGuard = false;
             if (!d->hidingInProgress) {
@@ -934,15 +959,6 @@ void HbPopup::mouseReleaseEvent(QGraphicsSceneMouseEvent *event )
 /*!
     \reimp
  */
-void HbPopup::keyPressEvent(QKeyEvent *event)
-{
-    Q_D(HbPopup);
-    d->handleKeyEvent(event);
-}
-
-/*!
-    \reimp
- */
 //
 // Shows the popup with an animation and starts the timer to dismiss the popup,
 // unless it is a permanent popup.
@@ -967,20 +983,17 @@ void HbPopup::showEvent(QShowEvent *event)
     if (!parentItem()) {
         //check if popup needs to be added to scene.This can result in duplciate show event,
         // if popup is added to scene here.
-           if(d->addPopupToScene())
+        if(d->addPopupToScene()) {
               d->duplicateShowEvent = true;
-
+        }
         // Popup clears closed state
         d->closed = false;
         if (d->backgroundItem) {
             d->backgroundItem->setVisible(true);
             d->backgroundItem->setAcceptHoverEvents(isModal());
-            // Let the background be a panel if the popup is one
-            // However if the popup is not modal we don't want the background
-            // to be a panel. A panel provides contained focus handling
-            if ((flags() & QGraphicsItem::ItemIsPanel) && isModal()) {
+            if (isModal()) {
                 d->backgroundItem->setFlag(QGraphicsItem::ItemIsPanel);
-            }
+             }
         }
         if (qobject_cast<HbGraphicsScene *>(scene())) {
             qobject_cast<HbGraphicsScene *>(scene())->d_ptr->showPopup(this);
@@ -1047,9 +1060,15 @@ void HbPopup::hideEvent(QHideEvent *event)
     \reimp
  */
 void HbPopup::resizeEvent( QGraphicsSceneResizeEvent * event )
-{
+{    
     HbWidget::resizeEvent(event);
     updatePrimitives();
+#if 1
+    Q_D(HbPopup);
+    if (d->polished) {
+        d->calculateShape();
+    }
+#endif
 }
 
 /*!
@@ -1087,24 +1106,30 @@ void HbPopup::closeEvent ( QCloseEvent * event )
  */
 bool HbPopup::event(QEvent *event)
 {
-    /*Q_D(HbPopup);
-    if (event->type() == QEvent::GraphicsSceneResize) {
-        //Workaround when showing first time                   
-        #ifdef HB_EFFECTS
+/*    Q_D(HbPopup);
+    if (event->type() == QEvent::LayoutRequest) {
+        //Workaround when showing first time                           
+#ifdef HB_EFFECTS
         if(d->mStartEffect && boundingRect().isValid()) {
+            d->mStartEffect = false;
+            QCoreApplication::sendPostedEvents(this, QEvent::LayoutRequest);
             QRectF extRect(0.0,
                            -boundingRect().height(),
                            boundingRect().width(),
                            0);
-            HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);
-            d->mStartEffect = false;
+            HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);            
+            qDebug() << "effect start";
         }
-            #endif//HB_EFFECTS        
+#endif//HB_EFFECTS
         //workaround ends
+    }
+    qDebug() << "event: " << event;*/
+    /*Q_D(HbPopup);
+    if (event->type() == QEvent::LayoutDirectionChange) {
+        d->calculateShape();
     }*/
     return HbWidget::event(event);
 }
-
 
 /*!
   Sets preferred position\a position for popup with \a placement
@@ -1125,7 +1150,6 @@ bool HbPopup::event(QEvent *event)
 
 void HbPopup::setPreferredPos( const QPointF& preferredPos,
                                HbPopup::Placement placement )
-
 {
     Q_D(HbPopup);
     bool layoutFlag = false;
@@ -1140,8 +1164,22 @@ void HbPopup::setPreferredPos( const QPointF& preferredPos,
     d->preferredPosSet = true;
     //If position updated, informing layoutproxy with layoutrequest
     if (layoutFlag) {
-        QApplication::postEvent(this, new QEvent(QEvent::LayoutRequest));
+        QApplication::sendEvent(this, new QEvent(QEvent::LayoutRequest));
     }
+}
+
+QPainterPath HbPopup::shape() const
+{    
+#if 1
+    Q_D(const HbPopup);    
+    if (backgroundItem() && d->mPath) {
+        return *d->mPath;
+    } else {
+        return HbWidget::shape();
+    }
+#else
+    return HbWidget::shape();
+#endif
 }
 
 #include "moc_hbpopup.cpp"

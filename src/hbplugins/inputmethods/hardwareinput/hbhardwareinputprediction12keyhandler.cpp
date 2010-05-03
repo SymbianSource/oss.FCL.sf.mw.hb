@@ -177,30 +177,6 @@ HbHardwareInputPrediction12KeyHandler::~HbHardwareInputPrediction12KeyHandler()
 }
 
 /*!
-this function lists different modes.
-*/
-void HbHardwareInputPrediction12KeyHandler::listInputModes(QVector<HbInputModeProperties>& modes) const
-{
-	  Q_UNUSED(modes); 
-    /*HbInputMode binding;
-    binding.iMode = HbInputModeLatinPredictive;
-    binding.iKeyboard = HbKeyboard12Key;
-    QVector<int> languages;
-    HbKeyMapFactory::instance()->listLanguages(languages);
-
-    const QVector<HbInputLanguage>* engineLanguages = supportedLanguages();
-    if (engineLanguages) {
-        binding.iMode = HbInputModeLatinPredictive;
-        foreach (const HbInputLanguage& languageCode, *engineLanguages) {
-            if (languages.contains(languageCode.language())) {
-                binding.iLanguage = languageCode;
-                modes.push_back(binding);
-            }
-        }
-    }*/
-}
-
-/*!
 filterEvent to handler keypress/release events.
 */
 bool HbHardwareInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)

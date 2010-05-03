@@ -77,21 +77,22 @@ HbDeviceProfileDatabase *HbDeviceProfileDatabase::instance(HbMemoryManager::Memo
 HbDeviceProfileDatabase::HbDeviceProfileDatabase(HbMemoryManager::MemoryType type)
     : mDeviceProfiles(0),mDeviceModes(0),mDeviceProfilesOffset(-1),mType(type)
 {
-    if(HbMemoryManager::SharedMemory == mType) {
-        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-        try
-        {
-            mDeviceProfilesOffset = manager->alloc(sizeof(HbDeviceProfileList));
-        }
-        catch(...)
-        {
-
-        }
-    }else {
-        mDeviceProfiles = new HbDeviceProfileList(HbMemoryManager::HeapMemory);
-        mDeviceProfilesOffset = (qptrdiff)mDeviceProfiles;
+    GET_MEMORY_MANAGER(mType);
+    try {
+        mDeviceProfilesOffset = manager->alloc(sizeof(HbDeviceProfileList));
+        mDeviceProfiles = new((char*)manager->base() + mDeviceProfilesOffset)
+                HbDeviceProfileList(mType);
+        init();
+    } catch(std::exception &) {
+        if (mDeviceProfilesOffset != -1) {
+            if (mDeviceProfiles) {
+                mDeviceProfiles->~HbDeviceProfileList();
+                mDeviceProfiles = 0;
+            }
+            manager->free(mDeviceProfilesOffset);
+            mDeviceProfilesOffset = -1;
+        }        
     }
-    init();
 }
 
 int HbDeviceProfileDatabase::deviceProfilesOffset()
@@ -105,17 +106,6 @@ int HbDeviceProfileDatabase::deviceProfilesOffset()
 */
 void HbDeviceProfileDatabase::init()
 {
-    if(HbMemoryManager::SharedMemory == mType) {
-        // return if mDeviceProfilesOffset is -1 as unable to allocate
-        // memory in shared memory.
-        if(mDeviceProfilesOffset == -1 ) {
-            return;
-        }
-        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-        mDeviceProfiles = new((char*)manager->base() + mDeviceProfilesOffset)
-                       HbDeviceProfileList(HbMemoryManager::SharedMemory);
-    }
-
     HbDeviceProfileReader reader(mDeviceProfiles,mType);
 	
     // resolve correct displaydefinition.xml path for emulator and HW (z:/resource)
@@ -210,7 +200,8 @@ void HbDeviceProfileDatabase::initOrientationStatus() {
     if(HbMemoryManager::SharedMemory == mType) {
         Qt::Orientation defaultOrientation = Qt::Vertical;
         if (mDeviceProfiles && mDeviceProfiles->count()) {
-            defaultOrientation = mDeviceProfiles->at(0).mOrientation;
+            QSize s = mDeviceProfiles->at(0).mLogicalSize;
+            defaultOrientation = (s.width() > s.height()) ? Qt::Horizontal : Qt::Vertical;
         }
         // Orientation status keeps track of current device orientation.
         // It is initialized at device profile database creation.

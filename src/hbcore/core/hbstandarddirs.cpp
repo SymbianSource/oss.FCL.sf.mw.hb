@@ -35,7 +35,8 @@
 #include <QResource>
 #include <sys/stat.h>
 
-
+// Standard theme root dirs
+const char *coreResourcesRootDir = ":";
 
 // Private API
 // WARNING: This API is at prototype level and shouldn't be used before
@@ -55,15 +56,17 @@ public:
     // Return icon filename if it exists in file system,
     // otherwise return empty string.
     QString findIcon( const QString &fullFileName );
-
-    // Provide the Root Directory Path sepecific to the Platform
-    QStringList getRootPaths();
-    QStringList additionalRootPath();
+    QStringList rootPaths() const { return rootPathList; }
 private:
+    // Root Directory Path sepecific to the Platform
+    void constructRootPathList();
+    QStringList additionalRootPath();
     int fileSize(QByteArray fileName);
 private:
     // Cached contents of icon directories
     QMap<QString, QStringList> iconDirs;
+    QStringList rootPathList;
+    QStringList extList;
 };
 
 // Static instance
@@ -80,6 +83,11 @@ public:
 
 HbStandardDirsInstance::HbStandardDirsInstance()
 {
+    constructRootPathList();
+#ifdef HB_NVG_CS_ICON
+    extList << ".nvg";
+#endif
+    extList << ".svg" << ".qpic" << ".png" << ".mng" << ".gif" << ".xpm" << ".jpg";
 }
 
 HbStandardDirsInstance::~HbStandardDirsInstance()
@@ -166,11 +174,6 @@ QString HbStandardDirsInstance::findIcon( const QString &fullFileName )
                 int extensionIndex = file.lastIndexOf('.');
                 int extensionLength = 0;
                 bool searchAllIconExtensions = true;
-                QStringList extList;
-#ifdef HB_NVG_CS_ICON
-                extList << ".nvg"; 
-#endif
-                extList << ".svg" << ".qpic" << ".png" << ".mng" << ".gif" << ".xpm" << ".jpg";
                 if (extensionIndex > 0) {
                         searchAllIconExtensions = false;
                 }
@@ -200,23 +203,25 @@ QString HbStandardDirsInstance::findIcon( const QString &fullFileName )
     return QString();
 }
 
-QStringList HbStandardDirsInstance::getRootPaths()
+void HbStandardDirsInstance::constructRootPathList()
 {
-    QStringList rootDirs;
 #if defined(Q_OS_SYMBIAN)
-    rootDirs << QLatin1String("c:/resource/hb")
-             << QLatin1String("z:/resource/hb");
+    rootPathList << QLatin1String("z:/resource/hb")
+                 << QLatin1String("c:/resource/hb")
+                 << QLatin1String("e:/resource/hb")
+                 << QLatin1String("f:/resource/hb");
 #else
-    QString envDir = qgetenv("HB_THEMES_DIR");
-    if (!envDir.isEmpty())
-        rootDirs << envDir;
+    const QString &mainThemesDir = HbStandardDirs::themesDir();
+    if (!mainThemesDir.isEmpty()) {
+        rootPathList << mainThemesDir;
+    }
 #endif
 #if defined(Q_OS_MAC)
-    rootDirs << QDir::homePath() + QLatin1String("/Library/UI Extensions for Mobile");
-#elif !defined(Q_OS_SYMBIAN)
-    rootDirs << HB_RESOURCES_DIR;
+    rootPathList << QDir::homePath() + QLatin1String("/Library/UI Extensions for Mobile");
 #endif
-    return rootDirs;
+
+    // Add core resource dir as well
+    rootPathList << coreResourcesRootDir;
 }
 
 int HbStandardDirsInstance::fileSize( QByteArray fileName ) 
@@ -238,7 +243,7 @@ QStringList HbStandardDirsInstance::additionalRootPath()
     
     if(size > 0) {
         if (rootPathFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&rootPathFile);                
+            QTextStream in(&rootPathFile);
             rootpaths.clear();
             while (!in.atEnd()) {
                 QString line = in.readLine();
@@ -268,11 +273,17 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
         resType == Hb::EffectResource)
     {
         QString absolutePath;
+
         QStringList rootDirs;
 
         if (QDir::isRelativePath(name)) {
-            // Given filename has a relative path, determine appDataDir
-            rootDirs = instance.getRootPaths();
+#ifdef HB_TOOL_INTERFACE
+            // Additional root directory support Currently used by tools only.
+            // This may not be needed if themes tool start using HB_THEMES_DIR to set their
+            // root dir
+            rootDirs << instance.additionalRootPath();
+#endif
+            rootDirs << instance.rootPaths();
         } else {
             // Given filename has an absolute path, use that.
             absolutePath = name;
@@ -280,23 +291,11 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
         if (resType == Hb::IconResource ) {
             // Relative path was given, search in the standard icon folders
             if (absolutePath.isEmpty()) {
-#ifdef HB_TOOL_INTERFACE
-                // Additional root directory support Currently used by tools only.
-                const QStringList rootpaths = instance.additionalRootPath();
-#endif
-                QStringList strList;
-                strList
-#ifdef HB_TOOL_INTERFACE
-                << rootpaths
-#endif
-                <</*insert app icons here*/ ":" 
-                << rootDirs ;     
-                foreach ( const QString &prefix, strList) {
-                    absolutePath =  prefix + '/' +  name;
+                foreach ( const QString &prefix, rootDirs) {
+                    absolutePath =  prefix + '/' + name;
                     // Check file existence from instance, it caches directory contents 
                     // to speed up the lookup
                     QString ret = instance.findIcon(absolutePath);
-
                     if (!ret.isEmpty()) {
                         return ret;
                     }
@@ -307,133 +306,147 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
             }
         }
         else if (resType == Hb::ThemeResource) {
-			QFile file;
-			bool fileExists = false;
+            QFile file;
+            bool fileExists = false;
             foreach ( const QString &prefix, rootDirs ) {
                 if (absolutePath.isEmpty()) {
                     absolutePath = prefix + '/' + name;
                 }
-				// Check for the availability of the file, as QFile::Exists takes more
-				// time this method is used
-				file.setFileName(absolutePath);        
+                // Check for the availability of the file, as QFile::Exists takes more
+                // time this method is used
+                file.setFileName(absolutePath);
                 fileExists = file.open(QIODevice::ReadOnly);
                 file.close();
                 // E.g. in hardware absolutepath is not found...
-                if(name.endsWith("theme.theme") && !fileExists) {
-                    return QString(":/themes/icons/hbdefault/theme.theme");        
-                }
-                // E.g. in hardware absolutepath is not found...
-                if(name.endsWith("mirrored.txt") && !fileExists) {
-                    return QString(":/themes/icons/hbdefault/mirrored.txt");       
-                } else {
+                // ToDo: mirrored.txt will be refactored
+                //if(name.endsWith("mirrored.txt") && !fileExists) {
+                //    return QString(":/themes/icons/hbdefault/mirrored.txt");       
+                //} else {
                     return absolutePath;
-                }
+                //}
             }
         }
         else if (resType == Hb::EffectResource) {
-			 QFile file;
-			 bool fileExists = false;
-             foreach ( const QString &prefix, rootDirs ) {
-                 if (absolutePath.isEmpty()) {
-                     absolutePath = prefix + '/' + name;
-                 }
-				 // Check for the availability of the file, as QFile::Exists takes more
-				 // time this method is used
-				 file.setFileName(absolutePath);
-                 fileExists = file.open(QIODevice::ReadOnly);
-                 file.close();
-                 if( fileExists ) {
-                     return absolutePath;
-                 }
-             }
+            QFile file;
+            bool fileExists = false;
+            foreach ( const QString &prefix, rootDirs ) {
+                if (absolutePath.isEmpty()) {
+                    absolutePath = prefix + '/' + name;
+                }
+                // Check for the availability of the file, as QFile::Exists takes more
+                // time this method is used
+                file.setFileName(absolutePath);
+                fileExists = file.open(QIODevice::ReadOnly);
+                file.close();
+                if( fileExists ) {
+                    return absolutePath;
+                }
+            }
         }
     }
     return QString();
 }
 
-/* @param relativePathList List of relative paths
+/* @param pathList. List of paths, relative or absolute. Modified to absolute paths.
  * @param typeOfResource Type of Resource, can be Hb::StyleSheetResource or Hb::EffectResource.
  * 
- * @ret QMap: StringList in which each item is absolute path and a path is added to list after
- *            checking the existence of the file. List Items are added in priority order.
- *
- * The QFile::exists() check can be turned off by passing false in \a checkForFileExistence.
  */
-QMap<int, QString> HbStandardDirs::findResourceList(const QMap<int, QString> &relativePathList,
-                                                    Hb::ResourceType resType,
-                                                    bool checkForFileExistence)
+void HbStandardDirs::findResourceList(QMap<int, QString> &pathList,
+                                      Hb::ResourceType resType, bool assumeAbsolutesExists)
 {
     QString absolutePath;
     QString path;
-    QMap<int,QString> listWithPref;
     if (resType == Hb::StyleSheetResource || resType == Hb::EffectResource) {
         QStringList rootDirs;
-        rootDirs = instance.getRootPaths();
+        QMutableMapIterator<int, QString> i(pathList);
+        rootDirs
 #ifdef HB_TOOL_INTERFACE
         // Additional root directory support Currently used by tools only.
-        const QStringList rootpaths = instance.additionalRootPath();
+        // This may not be needed if themes tool start using HB_THEMES_DIR to set their
+        // root dir
+        << instance.additionalRootPath()
 #endif
-        QMap<int,QString>::const_iterator i;
-        QStringList strList;
-        strList
-#ifdef HB_TOOL_INTERFACE
-        << rootpaths
-#endif
-        << rootDirs ;
-		QFile file;
-		bool fileExists = false;
-		
-        foreach ( const QString &prefix, strList ) {
-            for (i = relativePathList.constBegin(); i != relativePathList.constEnd(); ++i){
-                absolutePath =  prefix + '/' + i.value();
-				// Check for the availability of the file, as QFile::Exists takes more 
-				// time this method is used
-				file.setFileName(absolutePath);
-                fileExists = file.open(QIODevice::ReadOnly);
-                file.close();
-                if (!checkForFileExistence || fileExists) {
-                    listWithPref.insert(i.key(), absolutePath);
-                }
-                if (resType == Hb::StyleSheetResource
-                    && HbLayeredStyleLoader::Priority_Core == i.key())
-                {
-                    QString absPath = ":/";
-                    absPath += i.value();
-					file.setFileName(absPath);
-					fileExists = file.open(QIODevice::ReadOnly);
-					file.close();
+        << instance.rootPaths();
+        QFile file;
+        bool fileExists = false;
+        while (i.hasNext()) {
+            i.next();
+            if (QDir::isAbsolutePath(i.value())) {
+                fileExists = (assumeAbsolutesExists) ? true : QFile::exists(i.value());
+            } else {
+                fileExists = false;
+            foreach ( const QString &prefix, rootDirs ) {
+                    absolutePath =  prefix + '/' + i.value();
+                    // Check for the availability of the file, as QFile::Exists takes more
+                    // time this method is used
+                    file.setFileName(absolutePath);
+                    fileExists = file.open(QIODevice::ReadOnly);
+                    file.close();
                     if (fileExists) {
-                        listWithPref.insert(i.key(),absPath);
+                        i.setValue(absolutePath);
+                        break;
                     }
-                }
+             }
+            }
+            if (!fileExists) {
+                i.remove();
             }
         }
     }
-    return listWithPref;
 }
 
 
-QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths,
-                                                   const Hb::ResourceType resType)
+QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths, 
+                                                   const QString &currentThemeName,
+                                                   Hb::ResourceType resType)
 {
     QString absolutePath;
-    QStringList  existingPaths;
-    if (resType == Hb::EffectResource){
-        QStringList rootDirs;
-        rootDirs = instance.getRootPaths();
-		
-        foreach ( const QString &relpath, relativeFolderPaths) {
+    QStringList existingPaths;
+
+    QStringList rootDirs;
+    rootDirs
+#ifdef HB_TOOL_INTERFACE
+    // Additional root directory support Currently used by tools only.
+    // This may not be needed if themes tool start using HB_THEMES_DIR to set their
+    // root dir
+    << instance.additionalRootPath()
+#endif
+    << instance.rootPaths();
+
+    foreach (const QString &path, relativeFolderPaths) {
+        if (QDir::isAbsolutePath(path)) {
+            if(QFile::exists(path)) {
+                existingPaths.append(path);
+            }
+        } else {
             foreach( const QString &prefix, rootDirs) {
-                absolutePath =  prefix + '/' + relpath;
-				// Check for the availability of the file
+                absolutePath =  prefix + '/' + path;
+                // Check for the availability of the file
                 if( QFile::exists(absolutePath) ) {
                     existingPaths.append(absolutePath);
+                    // Assuming each path will be there only in one root directory
+                    // (not supporting a single theme scattered in multiple root dirs)
+                    break;
                 }
             }
         }
-        existingPaths.append(":/themes/effects/" + HbThemeUtils::defaultTheme()
-                             + "/locale/" + QLocale().name() + '/');
-        existingPaths.append(":/themes/effects/" + HbThemeUtils::defaultTheme() + '/');
     }
+    // Appending base theme folder
+    const HbThemeInfo &themeInfo = HbThemeUtils::baseTheme();
+    if (themeInfo.name != currentThemeName && resType == Hb::EffectResource) {
+        existingPaths.append(themeInfo.rootDir + '/' + HbThemeUtils::platformHierarchy + '/' + HbThemeUtils::effectsResourceFolder + '/' + themeInfo.name + '/');
+    }
+
     return existingPaths;
 }
+
+const QString &HbStandardDirs::themesDir()
+{
+#ifdef Q_OS_SYMBIAN
+    static QString mainThemesDir("Z:\\resource\\hb\\");
+#else
+    static QString mainThemesDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
+#endif
+    return mainThemesDir;
+}
+

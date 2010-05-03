@@ -35,6 +35,7 @@
 #include <QPalette>
 #include <QIcon>
 #include <QSizePolicy>
+#include <QHash>
 
 #include <hbglobal.h>
 #include <hbnamespace.h>
@@ -182,7 +183,8 @@ enum Property {
     HbTextLineCountMax,
     HbTextHeight,
     HbTextWrapMode,
-    Mirroring,
+    Mirroring, // deprecated
+    HbLayoutDirection,
     ZValue,
     NumProperties
 };
@@ -281,7 +283,10 @@ enum KnownValue {
     Value_MinimumExpanding,
     Value_Ignored,
     
-    Value_Mirrored,
+    Value_Mirrored, // deprecated
+    Value_LeftToRight,
+    Value_RightToLeft,
+    Value_Parent,
 
     Value_NoWrap,
     Value_WordWrap,
@@ -355,6 +360,13 @@ enum PositionMode {
     PositionMode_Absolute,
     PositionMode_Fixed,
     NumKnownPositionModes
+};
+
+enum LayoutDirection {
+    LayoutDirection_LeftToRight,
+    LayoutDirection_RightToLeft,
+    LayoutDirection_Parent,
+    NumKnownLayoutDirections
 };
 
 enum Attachment {
@@ -586,9 +598,11 @@ const quint64 PseudoClass_EditFocus        = Q_UINT64_C(0x0000080000000000);
 const quint64 PseudoClass_Alternate        = Q_UINT64_C(0x0000100000000000);
 const quint64 PseudoClass_Landscape        = Q_UINT64_C(0x0000200000000000);
 const quint64 PseudoClass_Portrait         = Q_UINT64_C(0x0000400000000000);
+const quint64 PseudoClass_LeftToRight      = Q_UINT64_C(0x0000800000000000);
+const quint64 PseudoClass_RightToLeft      = Q_UINT64_C(0x0001000000000000);
 // The Any specifier is never generated, but can be used as a wildcard in searches.
-const quint64 PseudoClass_Any              = Q_UINT64_C(0x0000800000000000);
-const int NumPseudos = 48;
+const quint64 PseudoClass_Any              = Q_UINT64_C(0x0002000000000000);
+const int NumPseudos = 50;
 
 struct HB_CORE_PRIVATE_EXPORT Pseudo
 {
@@ -755,7 +769,7 @@ enum PositionValueFlag {
     ExtractedTextAlign = 0x0080,
     ExtractedCenterH = 0x0100,
     ExtractedCenterV = 0x0200,
-    ExtractedMirroring = 0x0400,
+    ExtractedLayoutDirection = 0x0400,
     ExtractedZValue = 0x0800,
     ExtractedWrapMode = 0x1000
 };
@@ -793,7 +807,7 @@ struct PositionValues
     HbCss::Origin mOrigin;
     HbCss::PositionMode mPositionMode;
     Qt::Alignment mTextAlignment;
-    bool mMirroring;    
+    HbCss::LayoutDirection mLayoutDirection;    
     Hb::TextWrapping mTextWrapMode;
     PositionValueFlags mFlags;
 };
@@ -815,9 +829,10 @@ struct VariableRule;  //new added for variable support
 struct HB_CORE_PRIVATE_EXPORT ValueExtractor
 {
     ValueExtractor(const HbVector<Declaration> &declarations, const HbDeviceProfile &profile, const QPalette & = QPalette());
-    ValueExtractor(const HbVector<Declaration> &declarations, const HbVector<Declaration> &varDeclarations,
+    ValueExtractor(const HbVector<Declaration> &declarations, const QHash<QString, HbCss::Declaration> &varDeclarations,
                    const HbDeviceProfile &profile, const QPalette & = QPalette());
     ValueExtractor(const HbVector<Declaration> &varDeclarations, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
+    ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
 
     bool extractFont(QFont *font, HbFontSpec *fontSpec, int *fontSizeAdjustment);
     bool extractValue(const QString& variableName, HbVector<HbCss::Value>& values) const;
@@ -879,6 +894,7 @@ private:
 
     HbVector<Declaration> declarations;
     HbVector<Declaration> variableDeclarations; //for variables
+    QHash<QString, HbCss::Declaration> variableDeclarationsHash;
     QFont f;
     HbFontSpec fSpec;
     int adjustment;
@@ -888,12 +904,17 @@ private:
     QList<ExpressionValue> expressionValues; // for parsed expression string
 };
 
+struct StyleSheet;
+
 struct HB_CORE_PRIVATE_EXPORT StyleRule
 {
     StyleRule(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
           selectors(type),
           declarations(type)
+#ifdef HB_CSS_INSPECTOR
+          , owningStyleSheet(0, type)
+#endif
     {}
 
 #ifdef CSS_PARSER_TRACES
@@ -914,6 +935,9 @@ struct HB_CORE_PRIVATE_EXPORT StyleRule
     HbMemoryManager::MemoryType memoryType;
     HbVector<Selector> selectors;
     HbVector<Declaration> declarations;
+#ifdef HB_CSS_INSPECTOR
+    smart_ptr<StyleSheet> owningStyleSheet;
+#endif
 };
 
 typedef QPair<int, StyleRule> WeightedRule;
@@ -1072,6 +1096,9 @@ StyleSheet(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         importRules(type),
         origin(StyleSheetOrigin_Unspecified),
         depth(0)
+#ifdef HB_CSS_INSPECTOR
+        , fileName(type)
+#endif
     { }
 
 StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type) 
@@ -1083,12 +1110,18 @@ StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type)
         importRules(type),
         origin(other.origin),
         depth(other.depth)
+#ifdef HB_CSS_INSPECTOR
+        , fileName(type)
+#endif
     {
         variableRules = other.variableRules;
         widgetRules = other.widgetRules;
         mediaRules = other.mediaRules;
         pageRules = other.pageRules;
         importRules = other.importRules;
+#ifdef HB_CSS_INSPECTOR
+        fileName = other.fileName;
+#endif
     }
 
 #ifdef CSS_PARSER_TRACES
@@ -1141,6 +1174,9 @@ StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type)
 
     StyleSheetOrigin origin;
     int depth; // applicable only for inline style sheets
+#ifdef HB_CSS_INSPECTOR
+    HbString fileName;
+#endif
 };
 
 class HB_AUTOTEST_EXPORT StyleSelector
@@ -1160,7 +1196,7 @@ public:
     QVector<WeightedDeclaration> weightedDeclarationsForNode(NodePtr node, const Qt::Orientation orientation, const char *extraPseudo = 0) const;
     HbVector<StyleRule> styleRulesForNode(NodePtr node, const Qt::Orientation orientation) const;
     HbVector<Declaration> declarationsForNode(NodePtr node, const Qt::Orientation orientation, const char *extraPseudo = 0) const;
-    HbVector<Declaration> variableRuleSets() const;
+    void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
 
     virtual int nodeNameEquals(NodePtr node, const HbString& nodeName) const = 0;
     virtual bool attributeMatches(NodePtr node, const AttributeSelector &attr) const = 0;
@@ -1346,7 +1382,7 @@ public:
 	Error errorCode;
     bool hasEscapeSequences;
     QString sourcePath;
-
+    QString sourceFile;
 };
 
 } // namespace HbCss

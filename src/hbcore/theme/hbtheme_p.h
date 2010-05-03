@@ -25,7 +25,7 @@
 #ifndef HBTHEME_P_H
 #define HBTHEME_P_H
 
-#include "hbthemeclient_p.h"
+#include "hbicontheme_p.h"
 #include "hbthemeindex_p.h"
 #include "hbtheme.h"
 
@@ -35,13 +35,16 @@ class HbThemePrivate
 public:
     void handleThemeChange(const QString &str = QString());
     void fetchCurrentThemeFromSettings();
-    void clearCache();
+    void updateTheme(const QStringList &updatedFiles);
     HbThemePrivate();
     ~HbThemePrivate();
     static HbThemePrivate *d_ptr(HbTheme *t) { return t->d_func(); }
+    static HbThemePrivate *instance() { return HbTheme::instance()->d_func(); }
+    QStringList iconDirectories() { return iconTheme.dirList();}
 
 public:
     QString currentTheme;
+	HbIconTheme iconTheme;
     ThemeIndexTables themeIndex;
     HbTheme* q_ptr;
 

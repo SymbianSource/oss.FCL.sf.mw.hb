@@ -27,6 +27,7 @@
 #include <hbprogressbar.h>
 #include <hbstyleoptionprogressbar.h>
 #include "hbprogressbar_p.h"
+#include "hbglobal_p.h"
 
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
@@ -110,7 +111,8 @@ HbProgressBarPrivate::HbProgressBarPrivate() :
     mMinText(QString()),
     mMaxText(QString()),
     mOrientation(Qt::Horizontal),
-    mDelayHideInProgress(true)
+    mDelayHideInProgress(true),
+    mShowEffectInProgress(false)
 {
 }
 
@@ -159,8 +161,47 @@ void HbProgressBarPrivate::createTextPrimitives()
     mMinTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_mintext,q);
     mMaxTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_maxtext,q);
 }
+void HbProgressBarPrivate::setProgressValue(int value)
+{
+   Q_Q(HbProgressBar);
+   if (mProgressValue == value) {
+        return;
+    }
+    if (value >= mMaximum) {
+        value = mMaximum;
+#ifdef HB_EFFECTS
+        HbEffect::start(mTrack, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_progress_complete");
+#endif
+    }
+    else if (value < mMinimum) {
+        value = mMinimum;
+    }
+    
+    mProgressValue=value;
 
-/*!
+    //redraw track
+    HbStyleOptionProgressBar progressBarOption;
+    q->initStyleOption(&progressBarOption);
+    if(mTrack) {
+        q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
+    }
+
+    emit q->valueChanged(value);
+    
+}
+/*
+    \internal
+    Sets the progressbar enabling/disabling
+*/
+void HbProgressBarPrivate::setEnableFlag(bool flag)
+{
+    Q_Q(HbProgressBar);
+    if(!flag) {
+        q->setProgressValue(q->minimum());
+
+    }
+}
+/*
     \internal
     Sets the progressbar range
 */
@@ -219,6 +260,16 @@ void HbProgressBarPrivate::_q_delayedHide(HbEffect::EffectStatus status)
         q->setVisible(false);
     } 
 }
+
+/*!
+    \internal
+    Private slot which delays the show effect.
+*/
+void HbProgressBarPrivate::_q_delayedShow(HbEffect::EffectStatus status)
+{
+    Q_UNUSED(status);
+    mShowEffectInProgress = false;
+}
 #endif
 
 /*!
@@ -226,10 +277,13 @@ void HbProgressBarPrivate::_q_delayedHide(HbEffect::EffectStatus status)
 
     \deprecated HbProgressBar::HbProgressBar(HbProgressBar::ProgressBarType, QGraphicsItem*)
         is deprecated. Please use HbProgressBar::HbProgressBar(QGraphicsItem *parent) instead.
+
 */
 HbProgressBar::HbProgressBar(ProgressBarType type, QGraphicsItem *parent) : 
     HbWidget(*new HbProgressBarPrivate, parent)
 {    
+    HB_DEPRECATED("HbProgressBar::HbProgressBar(HbProgressBar::ProgressBarType, QGraphicsItem*) is deprecated. Use HbProgressBar::HbProgressBar(QGraphicsItem *parent) instead.");
+
     Q_D( HbProgressBar );
     d->q_ptr = this;
     d->init();
@@ -238,7 +292,9 @@ HbProgressBar::HbProgressBar(ProgressBarType type, QGraphicsItem *parent) :
 
 /*!
     @beta
-    Constructs a progressbar of a given \a parent.
+    Constructor of  Progressbar.
+    \param parent. Parent widget
+
 */
 HbProgressBar::HbProgressBar(QGraphicsItem *parent) : 
     HbWidget(*new HbProgressBarPrivate, parent)
@@ -251,10 +307,13 @@ HbProgressBar::HbProgressBar(QGraphicsItem *parent) :
 /*!
     \deprecated HbProgressBar::HbProgressBar(HbProgressBarPrivate&, HbProgressBar::ProgressBarType, QGraphicsItem*)
         is deprecated. Please use HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent) instead.
+
 */
 HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, ProgressBarType type, QGraphicsItem *parent) : 
     HbWidget( dd, parent)
 {   
+    HB_DEPRECATED("HbProgressBar::HbProgressBar(HbProgressBarPrivate&, HbProgressBar::ProgressBarType, QGraphicsItem*) is deprecated. Use HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent) instead.");
+
     Q_D( HbProgressBar );
     d->init();
     d->mType = type;
@@ -279,13 +338,10 @@ HbProgressBar::~HbProgressBar()
 
 /*!
     @beta
-   This property holds whether or not a progress bar shows its progress inverted. The function
-   returns the value of this property.
+    Return the inverted appearence property. 
 
-   Not implemented yet.
-
-   \sa setInvertedAppearance()
- */
+    \sa setInvertedAppearance()
+*/
 bool HbProgressBar::invertedAppearance() const 
 {
     Q_D( const HbProgressBar );
@@ -294,13 +350,13 @@ bool HbProgressBar::invertedAppearance() const
 
 /*!
     @beta
-   This property holds whether or not a progress bar shows its progress inverted. The function
-   sets the property to the \a inverted value.
+    Sets the inverted appearence. If this is true progress grows from right to 
+    left otherwise left to right.
 
-   Not implemented yet.
+    \param inverted true or false.
 
-   \sa invertedAppearance()
- */
+    \sa invertedAppearance()
+*/
 void HbProgressBar::setInvertedAppearance(bool inverted)
 {
     Q_D( HbProgressBar );
@@ -310,9 +366,7 @@ void HbProgressBar::setInvertedAppearance(bool inverted)
 
 /*!
     @beta
-    Returns the maximum value of the progress bar.
-
-    The default value is \c 100.
+    Returns the maximum value of the progressbar. By default it is 100. 
 
     \sa setMaximum()
 */
@@ -324,11 +378,11 @@ int HbProgressBar::maximum() const
 
 /*!
     @beta
-    Sets the maximum value of the progress bar.
-    when setting this property, the minimum is adjusted to ensure
-    that the range remains valid.
+    Sets the maximum value of the progressbar. By default it is 100. 
 
-    \sa maximum(),minimum(),setMinimum()
+    \param maximum the max value
+
+    \sa maximum()
 */
 void HbProgressBar::setMaximum(int maximum)
 {
@@ -338,9 +392,7 @@ void HbProgressBar::setMaximum(int maximum)
 
 /*!
     @beta
-    Returns the minimum value of the progress bar.
-
-    The default value is \c 0.
+    Returns the minimum value of the progressbar. By default it is 0. 
 
     \sa setMinimum()
 */
@@ -352,12 +404,11 @@ int HbProgressBar::minimum() const
 
 /*!
     @beta
-    Sets the minimum value of the progress bar.
-    when setting this property, the maximum is adjusted to ensure
-    that the range remains valid.
+    Sets the minimum value of the progressbar. By default it is 0. 
 
-    \sa maximum(),minimum(),setMaximum()
+    \param maximum the max value
 
+    \sa minimum()
 */
 void HbProgressBar::setMinimum(int minimum)
 {
@@ -368,8 +419,7 @@ void HbProgressBar::setMinimum(int minimum)
 /*!
     @beta
     Returns the current value of the progress bar.
-
-    The default progressValue is \c 0.
+    \sa setProgressValue()
 */
 int HbProgressBar::progressValue() const
 {
@@ -379,50 +429,29 @@ int HbProgressBar::progressValue() const
 
 /*!
     @beta
-    Sets the current value of the progress bar.
+    Sets the progress value of the progressbar. 
 
-    The progress bar forces the value to be within the legal range: \b
-    minimum <= \c value <= \b maximum.
+    \param value the progress value
 
     \sa progressValue()
 */
 void HbProgressBar::setProgressValue(int value)
 {
     Q_D( HbProgressBar );
-    if (d->mProgressValue == value) {
-        return;
-    }
-    if (value >= d->mMaximum) {
-        value = d->mMaximum;
-#ifdef HB_EFFECTS
-        HbEffect::start(d->mTrack, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_progress_complete");
-#endif
-    }
-    else if (value<d->mMinimum) {
-        value = d->mMinimum;
-    }
-    d->mProgressValue=value;
-
-    //redraw track
-    HbStyleOptionProgressBar progressBarOption;
-    initStyleOption(&progressBarOption);
-    if(d->mTrack) {
-        style()->updatePrimitive(d->mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
-    }
-
-    emit valueChanged(value);
+    d->setProgressValue(value);
 }
 
 /*!
     @beta
     This function is provided for convenience.
 
-    Sets the progress bar's minimum to \a minimum and its maximum to \a max.
+    Sets the progress bar's minimum and its maximum.
 
-    If \a maximum is smaller than minimum, minimum becomes the only valid legal
+    If  maximum is smaller than minimum, minimum becomes the only valid legal
     value.
 
-    \sa setMinimum(), setMaximum()
+     \param minimum the minimum value
+     \param maximum the maximum value
 */
 void HbProgressBar::setRange(int minimum, int maximum) 
 {
@@ -432,8 +461,11 @@ void HbProgressBar::setRange(int minimum, int maximum)
 
 /*!
     @beta
-    Set the \a Min text shown on the progressbar.
-    \sa text()
+    Sets the min text string. 
+
+    \param text mintext string
+
+    \sa minText()
 */
 void HbProgressBar::setMinText(const QString &text)
 {
@@ -449,8 +481,7 @@ void HbProgressBar::setMinText(const QString &text)
 /*!
     @beta
     Returns the Min Text of the progress bar.
-
-    The default progressValue is \c 0.
+    \sa setMinText()
 */
 QString HbProgressBar::minText() const
 {
@@ -460,12 +491,15 @@ QString HbProgressBar::minText() const
 
 /*!
     @beta
-    Set the \a Max text shown on the progressbar.
-    \sa text()
+    Sets the max text string. 
+
+    \param text max text string
+
+    \sa maxText()
 */
 void HbProgressBar::setMaxText(const QString &text)
 {
-  	Q_D(HbProgressBar);
+    Q_D(HbProgressBar);
     if (d->mMaxText != text) {
         d->mMaxText = text;
         HbStyleOptionProgressBar progressBarOption;
@@ -477,8 +511,7 @@ void HbProgressBar::setMaxText(const QString &text)
 /*!
     @beta
     Returns the Max Text of the progress bar.
-
-    The default progressValue is \c 0.
+    \sa setMaxText()
 */
 QString HbProgressBar::maxText() const
 {
@@ -488,8 +521,9 @@ QString HbProgressBar::maxText() const
 
 /*!
     @beta 
-    Set the MinMaxtext visibility \a true for showing text,false for hiding the text.
-    The default is \c false. Min Max text doesnt have a background and would have a transparent background.
+    Set the MinMaxtext visibility. true for showing text,false for hiding the text.
+    The default is  false. Min Max text doesnt have a background and would have a transparent background.
+    \param visible true or false.
     \sa isMinMaxTextVisible().
 */
 void HbProgressBar::setMinMaxTextVisible(bool visible)
@@ -517,10 +551,8 @@ void HbProgressBar::setMinMaxTextVisible(bool visible)
 
 /*!
     @beta
-    This property holds whether the MinMax text should be displayed.
-    Return the value of this property.
-
-    \sa setMinMaxTextVisibile()
+    Returns the MinMax visibility.
+    \sa setMinMaxTextVisible()
 */
 bool HbProgressBar::isMinMaxTextVisible() const
 {
@@ -531,26 +563,29 @@ bool HbProgressBar::isMinMaxTextVisible() const
 /*!
     @beta
     Sets the Min-Max text alignment
-	
-	Supportted alignments are (in both horizontal and vertical orientations)
-	Qt::AlignTop
-	Qt::AlignBottom
-	Qt::AlignCenter
+    
+    Supportted alignments are (in both horizontal and vertical orientations)
+    Qt::AlignTop
+    Qt::AlignBottom
+    Qt::AlignCenter
 
     In Vertical orienatation,     
     AlignTop is equivalent to Left
     AlignBottom is equivalent to Right
 
+    \param alignment alignement for the min max text
+    \sa isMinMaxTextVisible().
+
 */
 void HbProgressBar::setMinMaxTextAlignment(Qt::Alignment alignment)
 {
-	Q_D(HbProgressBar);
-	if( (alignment != Qt::AlignBottom) && (alignment != Qt::AlignTop) && (alignment != Qt::AlignCenter) ) {
-		return;
-	}
-	if (d->mMinMaxTextAlignment != alignment) {
+    Q_D(HbProgressBar);
+    if( (alignment != Qt::AlignBottom) && (alignment != Qt::AlignTop) && (alignment != Qt::AlignCenter) ) {
+        return;
+    }
+    if (d->mMinMaxTextAlignment != alignment) {
         d->mMinMaxTextAlignment = alignment;
-		if (d->mMinMaxTextVisible) {
+        if (d->mMinMaxTextVisible) {
             repolish();
         }
         updatePrimitives();
@@ -560,17 +595,20 @@ void HbProgressBar::setMinMaxTextAlignment(Qt::Alignment alignment)
 /*!
     @beta
     Returns the minmax Text alignment.
+    \sa setMinMaxTextAlignment().
    
 */
 Qt::Alignment HbProgressBar::minMaxTextAlignment() const
 {
-	Q_D(const HbProgressBar);
-	return d->mMinMaxTextAlignment;
+    Q_D(const HbProgressBar);
+    return d->mMinMaxTextAlignment;
 }
 
 /*!
     @beta
     sets the orientation of the progressbar.It can be vertical or horizontal.
+    \param orientation Horizontal or Vertical
+    \sa orientation().
 */
 void HbProgressBar::setOrientation(Qt::Orientation orientation)
 {
@@ -582,6 +620,7 @@ void HbProgressBar::setOrientation(Qt::Orientation orientation)
 /*!
     @beta
     Returns the orientation of the progressbar.It can be vertical or horizontal.
+    \sa setOrientation().
 */
 Qt::Orientation HbProgressBar::orientation() const
 {
@@ -625,7 +664,7 @@ void HbProgressBar::updatePrimitives()
         HbStyleOptionProgressBar progressBarOption;
         initStyleOption(&progressBarOption);
         if (d->mFrame) {
-            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressBar_frame, &progressBarOption);			
+            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressBar_frame, &progressBarOption);          
         }
      
         if (d->mTrack) {
@@ -637,11 +676,11 @@ void HbProgressBar::updatePrimitives()
         }
         
         if(d->mMinTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);	
+            style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);    
         }
 
         if(d->mMaxTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption);	
+            style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption);    
         }
     }
     HbWidget::updatePrimitives();
@@ -653,29 +692,25 @@ void HbProgressBar::updatePrimitives()
     want to fill in all the information themselves.
  */
 
-void HbProgressBar::initStyleOption(HbStyleOption *hboption) const
+void HbProgressBar::initStyleOption(HbStyleOptionProgressBar *option) const
 {
     Q_D( const HbProgressBar );
-    Q_ASSERT(hboption);
 
-    HbWidget::initStyleOption(hboption);
-    HbStyleOptionProgressBar *option = 0;
-    if ((option = qstyleoption_cast< HbStyleOptionProgressBar *>(hboption)) != 0) {
-        
-        option->progressValue = d->mProgressValue;
-        option->maximum = d->mMaximum;
-        option->minimum = d->mMinimum;
-        option->minText = d->mMinText;
-        option->maxText = d->mMaxText;
-        option->orientation = d->mOrientation;
-        option->isSlider=d->mType == HbProgressBar::RatingProgressBar;
-        option->inverted = d->mInvertedAppearance;
-        option->stopWaitAnimation = false;
-        option->minMaxTextAlignment = d->mMinMaxTextAlignment;
-		QRect rect(d->mFrame->boundingRect().x(),d->mFrame->boundingRect().y(),d->mFrame->boundingRect().width(),
-		d->mFrame->boundingRect().height());
-		option->rect = rect;
-    }
+    HbWidget::initStyleOption(option);
+
+    option->progressValue = d->mProgressValue;
+    option->maximum = d->mMaximum;
+    option->minimum = d->mMinimum;
+    option->minText = d->mMinText;
+    option->maxText = d->mMaxText;
+    option->orientation = d->mOrientation;
+    option->isSlider=d->mType == HbProgressBar::RatingProgressBar;
+    option->inverted = d->mInvertedAppearance;
+    option->stopWaitAnimation = false;
+    option->minMaxTextAlignment = d->mMinMaxTextAlignment;
+    QRect rect((int)d->mFrame->boundingRect().x(),(int)d->mFrame->boundingRect().y(),(int)d->mFrame->boundingRect().width(),
+    (int)d->mFrame->boundingRect().height());
+    option->rect = rect;
 }
 
 /*!
@@ -706,7 +741,10 @@ QVariant HbProgressBar::itemChange(GraphicsItemChange change, const QVariant &va
     if(change == QGraphicsItem::ItemVisibleChange){
         if(value.toBool()) {
 
-            HbEffect::start(this, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_appear");
+            if(!d->mShowEffectInProgress) {
+                HbEffect::start(this, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_appear",this,"_q_delayedShow");
+                d->mShowEffectInProgress = true;
+            }
 
             d->mDelayHideInProgress  = false;
         }
@@ -731,20 +769,31 @@ QVariant HbProgressBar::itemChange(GraphicsItemChange change, const QVariant &va
  */
 void HbProgressBar::changeEvent(QEvent *event)
 {
-    HbWidget::changeEvent(event);
-    
+    Q_D(HbProgressBar);
     switch (event->type()) {
-    case QEvent::LayoutDirectionChange:
-	    if(layoutDirection() == Qt::RightToLeft) {
-            setInvertedAppearance(true);
-        }
-        else {
-            setInvertedAppearance(false);
-        }
-        break;
-    default:
-        break;
+        case QEvent::LayoutDirectionChange:
+            if(layoutDirection() == Qt::RightToLeft) {
+                setInvertedAppearance(true);
+            }
+            else {
+                setInvertedAppearance(false);
+            }
+            break;
+        case QEvent::EnabledChange:
+            {
+                if (!isEnabled()) {
+                   d->setEnableFlag(false);
+                }
+                else
+                {
+                    d->setEnableFlag(true);
+                }
+            }
+        default:
+            break;
     }
+
+    HbWidget::changeEvent(event);
 }
 
 #include "moc_hbprogressbar.cpp"

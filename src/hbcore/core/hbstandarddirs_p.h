@@ -41,6 +41,8 @@ const QString rootPathsFile = QDir::homePath() + QString( "Library/UI Extensions
 const QString rootPathsFile = "/usr/local/hb/theme/themerootsdir.txt";
 #endif
 
+// Standard theme root dirs
+extern const char *coreResourcesRootDir;
 // WARNING: This API is at prototype level and shouldn't be used before
 // the resource fetching with theming is fully implemented
 class HbStandardDirs
@@ -50,13 +52,15 @@ public:
         const QString &name,
         Hb::ResourceType resType );
 
-    static QMap<int,QString> findResourceList(
-        const QMap<int,QString> &relativePathList,
-        Hb::ResourceType resType,
-        bool checkForFileExistence = true);        
+    static void findResourceList(
+        QMap<int,QString> &pathList,
+        Hb::ResourceType resType, bool assumeAbsolutesExists = false);
+
     static QStringList findExistingFolderList(
-    const QStringList &relativeFolderPaths, 
-    const Hb::ResourceType resType);
+        const QStringList &relativeFolderPaths,
+        const QString &currentThemeName, Hb::ResourceType resType);
+
+    static const QString &themesDir();
 };
 
 #endif

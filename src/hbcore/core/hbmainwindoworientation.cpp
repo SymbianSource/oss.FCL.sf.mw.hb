@@ -44,6 +44,7 @@ HbMainWindowOrientation::~HbMainWindowOrientation()
 void HbMainWindowOrientation::setFixedOrientation(Qt::Orientation fixedOrientation)
 {
     mOrientation = fixedOrientation;
+    mFixedOrientation = true;
 }
 
 //Returns the latest orientation interpreted from sensor data
@@ -105,7 +106,8 @@ void HbMainWindowOrientation::handleWindowRemoved(HbMainWindow *window)
 
 HbMainWindowOrientation::HbMainWindowOrientation(QObject *parent)
     : QObject(parent),
-    mSensorListener(0)
+    mSensorListener(0),
+    mFixedOrientation(false)
 {
     //Get mainwindows from instance. Can't use mainWindow() method from HbWidget,
     //because this class is not inherited from it
@@ -126,8 +128,10 @@ HbMainWindowOrientation::HbMainWindowOrientation(QObject *parent)
     mOrientation = mDefaultOrientation;
 
     mSensorListener = new HbSensorListener(*this, mDefaultOrientation);
-    
+
     mForegroundWatcher = HbForegroundWatcher::instance();
+    mForegroundWatcher->setSensorListener(mSensorListener);
+
     connect(mForegroundWatcher, SIGNAL(foregroundGained()), SLOT(handleForegroundGained()));
     connect(mForegroundWatcher, SIGNAL(foregroundLost()), SLOT(handleForegroundLost()));
 
@@ -149,7 +153,14 @@ void HbMainWindowOrientation::sensorOrientationChanged(Qt::Orientation newOrient
 
 void HbMainWindowOrientation::sensorStatusChanged(bool status, bool notify)
 {
-    notifyOrientationChange(status, notify);
+    if (status) {
+        foreach(HbMainWindow *window, mWindowList) {
+            if (!mFixedOrientation && !HbMainWindowPrivate::d_ptr(window)->mUserOrientationSwitch) {
+                HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch = true;
+            }
+        }
+    }
+    notifyOrientationChange(false, notify);
 }
 
 // Notifies orientation change only if

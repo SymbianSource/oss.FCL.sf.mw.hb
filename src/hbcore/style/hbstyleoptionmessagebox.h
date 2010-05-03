@@ -30,7 +30,7 @@
 #include <hbstyleoptionpopup.h>
 #include <hbicon.h>
 
-
+// Deprecated
 class HB_CORE_EXPORT HbStyleOptionMessageBox : public HbStyleOptionPopup
 {
 public:
@@ -41,11 +41,11 @@ public:
     enum StyleOptionType { Type = HbSO_MessageBox };
     enum StyleOptionVersion { Version = 1 };
 
-    QString text;
+    QString text;    //deprecated
     HbIcon icon;
-    Qt::Alignment textAlignment;
-    Qt::Alignment iconAlignment;
-    bool textWrapping;
+    Qt::Alignment textAlignment;    //deprecated
+    Qt::Alignment iconAlignment;    //deprecated
+    bool textWrapping;    //deprecated
     enum MessageBoxType {
         MessageTypeInformation,
         MessageTypeQuestion,

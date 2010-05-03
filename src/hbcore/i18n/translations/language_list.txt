@@ -1,0 +1,51 @@
+1,English
+2,French
+3,German
+4,Spanish
+5,Italian
+6,Swedish
+7,Danish
+8,Norwegian
+9,Finnish
+10,English (American)
+13,Portuguese
+14,Turkish
+15,Icelandic
+16,Russian
+17,Hungarian
+18,Dutch
+25,Czech
+26,Slovak
+27,Polish
+28,Slovenian
+29,Chinese TW
+30,Chinese HK
+31,Chinese PRC
+32,Japanese
+33,Thai
+37,Arabic
+39,Pilipino
+42,Burgarian
+44,Catalan
+45,Croatian
+49,Estonian
+50,Farsi
+51,French (Canadian)
+54,Greek
+57,Hebrew
+58,Hindi
+59,Indonesian
+65,Korean
+67,Latvian
+68,Lithuanian
+70,Malay
+72,Marathi
+76,Portuguese (Brasilian)
+78,Romanian
+79,Serbian
+83,Spanish (American)
+93,Ukrainian
+94,Urdu
+96,Vietnamese
+102,Basque
+103,Galician

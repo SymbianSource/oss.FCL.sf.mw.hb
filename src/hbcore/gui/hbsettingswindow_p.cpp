@@ -34,6 +34,7 @@
 #include "hbtextitem_p.h"
 #include "hbiconitem_p.h"
 #include "hbgraphicsscene_p.h"
+#include "hbeffectinternal_p.h"
 
 #include <QPointer>
 #include <QComboBox>
@@ -42,9 +43,11 @@
 #include <QGroupBox>
 #include <QApplication>
 #include <QSettings>
-
-#ifdef CSS_INSPECTOR
 #include <QPushButton>
+#include <hbevent.h>
+
+#ifdef HB_CSS_INSPECTOR
+#include "hbcssinspector_p.h"
 #endif
 
 static QString windowName(HbMainWindow *window)
@@ -81,18 +84,25 @@ HbSettingsWindow *HbSettingsWindow::instance()
 
 HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
 {
+    mLights = true;
+    mAnimation = true;
+
     windowComboBox = new QComboBox(this);
     windowComboBox->hide();
     resolutionComboBox = new QComboBox(this);
-    orientationComboBox = new QComboBox(this);
     directionComboBox = new QComboBox(this);
     dragToResizeComboBox = new QComboBox(this);
     mSensorComboBox = new QComboBox(this);
     mGeneralSettingsForSensorsComboBox = new QComboBox(this);
     mUnsetOrientationButton = new QPushButton(tr("&Unset orientation"), this);
 
+    mLights = true;
+    HbIcon icon("qtg_mono_light");
+    mLightsButton = new QPushButton(icon.pixmap(), "", this);
+
+    mAnimationButton = new QPushButton(tr("&Animation on"), this);
+
     resolutionComboBox->addItems(HbDeviceProfile::profileNames());
-    orientationComboBox->addItems(QStringList() << tr("Portrait") << tr("Landscape"));
     directionComboBox->addItems(QStringList() << tr("Left to right") << tr("Right to left"));
     dragToResizeComboBox->addItems(QStringList() << tr("Disabled") << tr("Enabled"));
     mSensorComboBox->addItems(QStringList() << tr("Landscape") << tr("Portrait"));
@@ -101,12 +111,13 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
 
     connect(windowComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeWindow(int)));
     connect(resolutionComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeResolution(int)));
-    connect(orientationComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeOrientation(int)));
     connect(directionComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeDirection(int)));
     connect(dragToResizeComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeDragToResize(int)));
     connect(mSensorComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeSensorValue(int)));
     connect(mGeneralSettingsForSensorsComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeGSettingsForSensors(int)));
     connect(mUnsetOrientationButton, SIGNAL(pressed()), SLOT(unsetOrientation()));
+    connect(mLightsButton, SIGNAL(pressed()), SLOT(toggleLights()));
+    connect(mAnimationButton, SIGNAL(pressed()), SLOT(toggleAnimation()));
 
     QVBoxLayout *boxLayout = new QVBoxLayout(this);
     
@@ -114,7 +125,6 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     QFormLayout *layout = new QFormLayout(mainGroup);
     layout->addRow(tr("&Window"), windowComboBox);
     layout->addRow(tr("&Resolution"), resolutionComboBox);
-    layout->addRow(tr("&Orientation"), orientationComboBox);
     layout->addRow(tr("&Direction"), directionComboBox);
     layout->addRow(tr("&Drag to resize"), dragToResizeComboBox);
 
@@ -127,6 +137,9 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     sensorLayout->addRow(tr("&Sensors"), mSensorComboBox);
     sensorLayout->addRow(tr("&GS sensors"), mGeneralSettingsForSensorsComboBox);
     sensorLayout->addRow(mUnsetOrientationButton);
+    sensorLayout->addRow(mLightsButton);
+    sensorLayout->addRow(mAnimationButton);
+
     mainGroup->setLayout(sensorLayout);
     boxLayout->addWidget(sensorGroup);
 
@@ -156,7 +169,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     globalGroup->setLayout(globalLayout);
     boxLayout->addWidget(globalGroup);
 
-#ifdef CSS_INSPECTOR
+#ifdef HB_CSS_INSPECTOR
     QGroupBox *cssGroup = new QGroupBox(tr("CSS Debugging"), this);
     QHBoxLayout *cssLayout = new QHBoxLayout(cssGroup);
 
@@ -227,26 +240,6 @@ void HbSettingsWindow::changeResolution(int index)
     }
 }
 
-void HbSettingsWindow::changeOrientation(int index)
-{
-    HbMainWindow *window = getWindow(windowComboBox->currentIndex());
-    if (!window) {
-        // global
-        HbInstancePrivate::d_ptr()->setOrientation(index == 0 ? Qt::Vertical : Qt::Horizontal, true);
-    } else {
-        // window specific
-        if (index == 2)
-            window->unsetOrientation();
-        else{
-            Qt::Orientation orientation = index == 0 ? Qt::Vertical : Qt::Horizontal;
-            if(orientation != HbInstancePrivate::d_ptr()->orientation()){
-                window->setOrientation(orientation);
-            }else{
-                window->unsetOrientation();
-            }
-        }
-    }
-}
 
 void HbSettingsWindow::changeDirection(int index)
 {
@@ -307,7 +300,6 @@ void HbSettingsWindow::changeFpsCounter(int index)
 void HbSettingsWindow::changeDragToResize(int index)
 {
     resolutionComboBox->setEnabled(index == 0);
-    orientationComboBox->setEnabled(index == 0);
     foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
         HbDeviceProfile profile = HbDeviceProfile::profile(window);
         window->resize(profile.logicalSize());
@@ -361,4 +353,38 @@ void HbSettingsWindow::unsetOrientation()
             window->unsetOrientation();
         }
     }
+}
+
+void HbSettingsWindow::toggleLights()
+{
+    HbIcon icon("qtg_mono_light");
+    QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
+    for (int i = 0; i < mainWindowList.count(); ++i) {
+        if (mLights) {
+            icon.setIconName("qtg_mono_light_off");
+			mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
+			mLights = false;
+            mainWindowList[i]->setForegroundBrush(QBrush(Qt::black, Qt::Dense1Pattern));
+        } else {
+            icon.setIconName("qtg_mono_light");
+            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
+			mLights = true;
+            mainWindowList[i]->setForegroundBrush(Qt::NoBrush);
+        }
+        mLightsButton->setIcon(icon.pixmap());
+    }
+}
+
+void HbSettingsWindow::toggleAnimation()
+{
+    if (mAnimation) {
+        HbEffectInternal::setEffectsEnabled(false);
+        mAnimationButton->setText(tr("&Animation Off"));
+        mAnimation = false;
+    } else {
+        HbEffectInternal::setEffectsEnabled(true);
+        mAnimationButton->setText(tr("&Animation On"));
+        mAnimation = true;
+    }
+
 }

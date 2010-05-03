@@ -38,8 +38,6 @@ public:
     HbBatteryIndicatorPrivate();
     virtual ~HbBatteryIndicatorPrivate();
 
-    void init();
-
     void _q_setPowerState(HbSystemDeviceInfo::PowerState powerState);
 
 private:

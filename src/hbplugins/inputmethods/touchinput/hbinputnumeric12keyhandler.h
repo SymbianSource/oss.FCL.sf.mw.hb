@@ -35,7 +35,6 @@ public:
     HbInputNumeric12KeyHandler(HbInputAbstractMethod* inputMethod);
     ~HbInputNumeric12KeyHandler();
     
-    void listInputModes(QVector<HbInputModeProperties>& modes) const;
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
 

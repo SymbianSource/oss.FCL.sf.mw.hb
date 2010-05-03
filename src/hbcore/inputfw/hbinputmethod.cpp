@@ -35,6 +35,7 @@
 #include "hbinputfilter.h"
 #include "hbinputmethodnull_p.h"
 #include "hbinputpredictionfactory.h"
+#include "hbinputextradictionaryfactory.h"
 #include "hbinputstandardfilters.h"
 #include "hbinpututils.h"
 #include "hbinputvkbhost.h"
@@ -46,18 +47,20 @@
 \brief A base class for input method implementations.
 
 HbInputMethod is the base class for input method implementations. It inherits from QInputContext,
-connects to the input framework behind the scenes and provides focusing and other framework level 
-services.   
+connects to the input framework behind the scenes and resolves correct input state handler when
+an editor widget is focused.
 
-An internal framework class called HbInputModeCache scans through the system and looks for available HbInputMethod instances. It then forms a list of available input methods based on language
-and keyboard type. Input method plugin reports (on plugin level, as meta-data) which languages, keyboards and input modes that input method instance supports. Input mode cache then activates suitable
-input method depending on the situation. It can also switch active input method on the fly
-when the focus switches between editors and the previously active input method is unable to 
+An internal framework class called HbInputModeCache scans through the system and looks for
+available HbInputMethod instances. It then forms a list of input methods based on language
+and keyboard type. Input method plugin reports (as plugin meta-data) which languages,
+keyboards and input modes that plugin instance implements. Input mode cache then activates matching
+HbInputMethod depending on the editor properties. It switches the active input method on the fly
+when the focus switches between editors if the previous input method is unable to
 support newly focused editor.
 
 Custom input methods are a special class of input methods. Once a custom input method is
-activated from UI, input mode cache stops resolving suitable input methods upon focus operations
-and the custom input is ative in all editors until it is deactivated.
+activated from UI, input mode cache stops resolving input methods upon focus operations
+and the custom input is active in all editors until it is deactivated.
 
 Following is the basic input framework program flow:
 
@@ -68,9 +71,9 @@ Following is the basic input framework program flow:
    opens the virtual keyboard by using HbVkbHost API) and waits for user actions.
 4. Text is written. The input method delivers results to the editor buffer by using HbInputFocusObject API.
    It can access editor attributes via HbEditorInterface API.
-5. The active editor loses focus. At this point the input method receives a call to virtual function   
+5. The active editor loses focus. At this point the input method receives a call to virtual function
    HbInputMethod::focusLost and is expected to conclude any ongoing input operations and shut down active
-   UI elements (such as the virtual keyboard).   
+   UI elements (such as the virtual keyboard).
 6. The input method waits for next focusReceived() call.
 
 \sa QInputContext
@@ -84,7 +87,7 @@ Constructs the object
 */
 HbInputMethod::HbInputMethod() : d_ptr(new HbInputMethodPrivate(this))
 {
-    HbInputSettingProxy::instance()->connectObservingObject(this);  
+    HbInputSettingProxy::instance()->connectObservingObject(this);
 }
 
 /*!
@@ -98,8 +101,7 @@ HbInputMethod::~HbInputMethod()
 }
 
 /*!
-Initializes the HbInputs framework. Each Qt application needs to call this
-method once in order to connect to the HbInputs framework.
+Initializes the input framework.
 */
 bool HbInputMethod::initializeFramework(QApplication& app)
 {
@@ -107,6 +109,7 @@ bool HbInputMethod::initializeFramework(QApplication& app)
     connect(&app, SIGNAL(aboutToQuit()), HbInputModeCache::instance(), SLOT(shutdown()));
     connect(&app, SIGNAL(aboutToQuit()), HbInputSettingProxy::instance(), SLOT(shutdown()));
     connect(&app, SIGNAL(aboutToQuit()), HbPredictionFactory::instance(), SLOT(shutDown()));
+    connect(&app, SIGNAL(aboutToQuit()), HbExtraDictionaryFactory::instance(), SLOT(shutdown()));
 
     HbInputMethod *master = HbInputMethodNull::Instance();
 
@@ -124,10 +127,9 @@ bool HbInputMethod::initializeFramework(QApplication& app)
 }
 
 /*!
-Returns active instance of HbInputMethod. There is always active HbInputMethod instance after
+Returns the active instance of HbInputMethod. There is always active HbInputMethod instance after
 InitializeFramework method has been called, even when there is no focused editor (in some cases it may
-be so called null input method). Normally this method is needed only for special cases, such as developing
-and debugging framework level code, but it is made public for convenience.
+be so called null input method).
 */
 HbInputMethod* HbInputMethod::activeInputMethod()
 {
@@ -161,7 +163,7 @@ QList<HbInputMethodDescriptor> HbInputMethod::listCustomInputMethods()
 }
 
 /*!
-Activates given input method. input context is
+Activates given input method. Input context is
 switched to custom method. Returns false if input method was not found
 or the framework was not able to activate it.
 */
@@ -187,7 +189,6 @@ bool HbInputMethod::activateInputMethod(const HbInputMethodDescriptor &inputMeth
     return false;
 }
 
-
 /*!
 This slot is called when the input language changes. The framework connects it
 to the input setting proxy. When the signal is received, the input method implementation
@@ -197,7 +198,7 @@ is notified by calling inputLanguageChanged.
 \sa HbInputSettingProxy
 */
 void HbInputMethod::globalInputLanguageChanged(const HbInputLanguage &newLanguage)
-{ 
+{
     Q_D(HbInputMethod);
 
     inputLanguageChanged(newLanguage);
@@ -208,12 +209,12 @@ void HbInputMethod::globalInputLanguageChanged(const HbInputLanguage &newLanguag
         // in the active method
         return;
     }
-   
+
     // Just behave as if this was the first focus operation
     // to this editor.
-    if (d->mFocusObject) { 
+    if (d->mFocusObject) {
         HbInputState state;
-        editorRootState(state);  
+        editorRootState(state);
         activateState(state);
     }
 }
@@ -226,14 +227,14 @@ is notified by calling secondaryInputLanguageChanged.
 \sa secondaryInputLanguageChanged
 \sa HbInputSettingProxy
 */
-void HbInputMethod::globalSecondaryInputLanguageChanged(const HbInputLanguage &aNewLanguage)
+void HbInputMethod::globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage)
 {
-    secondaryInputLanguageChanged(aNewLanguage);
+    secondaryInputLanguageChanged(newLanguage);
 }
 
 /*!
-This slot is connected to the setting proxy hw keyboard attribute. It will
-do refreshState() when the signal is received.
+\deprecated HbInputMethod::activeHwKeyboardChanged(HbKeyboardType)
+    is deprecated.
 */
 void HbInputMethod::activeHwKeyboardChanged(HbKeyboardType newKeyboard)
 {
@@ -247,8 +248,8 @@ void HbInputMethod::activeHwKeyboardChanged(HbKeyboardType newKeyboard)
 }
 
 /*!
-This slot is connected to the setting proxy touch keyboard attribute. It will
-do refreshState() when the signal is received.
+\deprecated HbInputMethod::activeTouchKeyboardChanged(HbKeyboardType)
+    is deprecated.
 */
 void HbInputMethod::activeTouchKeyboardChanged(HbKeyboardType newKeyboard)
 {
@@ -257,7 +258,6 @@ void HbInputMethod::activeTouchKeyboardChanged(HbKeyboardType newKeyboard)
 
     d->refreshState();
 }
-
 
 /*!
 This slot is connected to the setting proxy activeKeyboard attribute. It will
@@ -270,7 +270,7 @@ void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
     }
     Q_D(HbInputMethod);
     d->mInputState.setKeyboard(newKeyboard);
-    HbInputMethod* stateHandler = d->findStateHandler(d->mInputState); 
+    HbInputMethod* stateHandler = d->findStateHandler(d->mInputState);
     if (stateHandler) {
         d->inputStateToEditor(d->mInputState);
         if (stateHandler != this) {
@@ -284,20 +284,22 @@ void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
 }
 
 /*!
-This slot is called when the predictive input state changes. The framework connects it
-to the input setting proxy. When the signal is received, the input method implementation
-is notified by calling predictiveInputStatusChanged.
-
-\sa predictiveInputStatusChanged
-\sa HbInputSettingProxy
+\deprecated HbInputMethod::predictiveInputStateChanged(int newStatus)
+    is deprecated.
 */
 void HbInputMethod::predictiveInputStateChanged(int newStatus)
 {
-    // Do here whatever needs to be done on HbInputMethod level, then
-    // call virtual predictiveInputStatusChanged() in case plugin needs to do something.
-    // ...
+    Q_UNUSED(newStatus);
+}
 
-    predictiveInputStatusChanged(newStatus);
+/*!
+\deprecated HbInputMethod::predictiveInputStateChanged(HbKeyboardSettingFlags, bool)
+    is deprecated.
+*/
+void HbInputMethod::predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState)
+{
+    Q_UNUSED(keyboardType);
+    Q_UNUSED(newState);
 }
 
 /*!
@@ -352,7 +354,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
 
     if (!widget) {
         // Losing focus.
-        if (d->mFocusObject) { 
+        if (d->mFocusObject) {
             focusLost(false);
             delete d->mFocusObject;
             d->mFocusObject = 0;
@@ -384,7 +386,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
         }
         return;
     }
-   
+
     if (d->mFocusObject) {
         if (d->mFocusObject->object() == widget) {
             // Focus remains in same widget, do nothing.
@@ -437,10 +439,8 @@ void HbInputMethod::widgetDestroyed(QWidget* widget)
 }
 
 /*!
-Checks if the destroyed object is currently focused and clears the focus
-if needed.
-
-\sa widgetDestroyed
+\deprecated HbInputMethod::focusObjectDestroyed(const HbInputFocusObject*)
+    is deprecated.
 */
 void HbInputMethod::focusObjectDestroyed(const HbInputFocusObject* focusObject)
 {
@@ -454,11 +454,9 @@ void HbInputMethod::focusObjectDestroyed(const HbInputFocusObject* focusObject)
 /*!
 Graphics item based editors (or any other object that implements
 HbInputFocusObject) send their focus events notifications through this method.
-Since Qt's QInputContext mechanism works only with QWidget based editors,
-this alternate focus channel is needed for objects belonging to a graphics scene
-(in case of a graphics scene, the topmost QWidget that has focus is
-graphics view, not the the object inside the view). The ownership of
-incoming focus object is transferred to the input framework.
+
+Typically this method is called by HbInputContextProxy when it receives
+requestSoftwareInputPanel event.
 
 \sa setFocusWidget
 \sa HbInputFocusObject
@@ -492,7 +490,7 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
         }
         return;
     }
-   
+
     bool refreshHost = false;
 
     // Delete previous focus object.
@@ -528,25 +526,17 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
 }
 
 /*!
-The secondary channel uses this slot for inserting text active editor.
+\deprecated HbInputMethod::receiveText(const QString&)
+    is deprecated.
 */
 void HbInputMethod::receiveText(const QString& string)
 {
-    Q_D(HbInputMethod);
-
-    if (isActiveMethod() && d->mFocusObject &&
-        (d->editorConstraints() & HbEditorConstraintsNoSecondaryChannel) == 0) {
-        QList<QInputMethodEvent::Attribute> list;
-        QInputMethodEvent event(QString(), list);
-        event.setCommitString(string);
-        d->mFocusObject->sendEvent(event);
-    }
+    Q_UNUSED(string);
 }
 
 /*!
-This slot is called when the candidate list popup is closed. The base
-class implementation is empty so any input method interested in
-candidate list close event should implement it.
+\deprecated HbInputMethod::candidatePopupClosed(int closingKey)
+    is deprecated.
 */
 void HbInputMethod::candidatePopupClosed(int closingKey)
 {
@@ -581,9 +571,8 @@ void HbInputMethod::secondaryInputLanguageChanged(const HbInputLanguage &aNewLan
 }
 
 /*!
-The framework calls this method when the predictive input status changes.
-The base class implementation is empty so any input method interested in
-prediction status events should implement it.
+\deprecated HbInputMethod::predictiveInputStatusChanged(int newStatus)
+    is deprecated.
 */
 void HbInputMethod::predictiveInputStatusChanged(int newStatus)
 {
@@ -618,7 +607,7 @@ void HbInputMethod::inputStateActivated(const HbInputState& newState)
     Q_UNUSED(newState);
     // Empty default implementation.
     if (this != HbInputMethodNull::Instance()) {
-        qDebug("WARNING: inputStateActivated() default implementation called: Is that ok?");
+        qWarning("WARNING: inputStateActivated() default implementation called: Is that ok?");
     }
 }
 
@@ -635,7 +624,7 @@ HbInputState HbInputMethod::inputState() const
 }
 
 /*!
-Returns the first input state that should be activated when an editor is 
+Returns the first input state that should be activated when an editor is
 focused for the first time. The state is constructed from edirtor attributes and
 input settings.
 */
@@ -681,13 +670,13 @@ bool HbInputMethod::activateState(const HbInputState& state)
 
     d->mInputState = state;
 
-    if (stateHandler != this) {     
+    if (stateHandler != this) {
         stateHandler->d_ptr->mStateChangeInProgress = true;
         // Context switch needed.
-        d->inputStateToEditor(d->mInputState);        
+        d->inputStateToEditor(d->mInputState);
         d->contextSwitch(stateHandler);
         stateHandler->d_ptr->mStateChangeInProgress = false;
-    } else {         
+    } else {
         // Same method handles new state, just report the state change.
         d->inputStateToEditor(d->mInputState);
         inputStateActivated(d->mInputState);
@@ -736,9 +725,8 @@ void HbInputMethod::updateState()
 }
 
 /*!
-Clears focus state from input method side. After calling this method,
-HbInputMethod instance thinks that it is not focused to any widget.
-The widget itself still remain focused to this input context.
+\deprecated HbInputMethod::releaseFocus()
+    is deprecated.
 */
 void HbInputMethod::releaseFocus()
 {
@@ -843,12 +831,12 @@ void HbInputMethod::forceUnfocus()
         active->focusLost(false);
         active->releaseFocus();
         delete active->d_ptr->mFocusObject;
-        active->d_ptr->mFocusObject = 0;  
+        active->d_ptr->mFocusObject = 0;
     }
 }
 
 /*!
-Wrapper
+Wrapper.
 */
 bool HbInputMethod::automaticTextCaseNeeded() const
 {
@@ -857,7 +845,7 @@ bool HbInputMethod::automaticTextCaseNeeded() const
 }
 
 /*!
-Wrapper
+Deep copies the input state back to editor interface.
 */
 void HbInputMethod::inputStateToEditor(const HbInputState& source)
 {
@@ -892,8 +880,8 @@ void HbInputMethod::editorDeleted(QObject *obj)
 }
 
 /*!
-This function returns true if there is a context switch happening due to a orientation
-switch.
+\deprecated HbInputMethod::orientationContextSwitchInProgress()
+    is deprecated.
 */
 bool HbInputMethod::orientationContextSwitchInProgress()
 {

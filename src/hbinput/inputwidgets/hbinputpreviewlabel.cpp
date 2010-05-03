@@ -35,8 +35,12 @@
 */
 
 /*!
-Constructor.
-@param previewSymbols The string of the label and parent Graphics Item.
+\deprecated class HbPreviewLabel
+*/
+
+/*!
+\deprecated HbPreviewLabel::HbPreviewLabel(QString, QGraphicsItem *)
+    is deprecated.
 */
 HbPreviewLabel::HbPreviewLabel(QString previewSymbols, QGraphicsItem *parent)
     :HbWidget(parent),
@@ -49,15 +53,16 @@ HbPreviewLabel::HbPreviewLabel(QString previewSymbols, QGraphicsItem *parent)
 }
 
 /*!
-Destroy the object
+\deprecated HbPreviewLabel::~HbPreviewLabel()
+    is deprecated.
 */
 HbPreviewLabel::~HbPreviewLabel()
 {
 }
 
 /*!
-sets geometry of textItem
-@param itemsize the Geometry of Button.
+\deprecated HbPreviewLabel::setTextGeometry(qreal, qreal)
+    is deprecated.
 */
 void HbPreviewLabel::setTextGeometry(qreal width, qreal height)
 {
@@ -72,8 +77,8 @@ void HbPreviewLabel::setTextGeometry(qreal width, qreal height)
 }
 
 /*!
-This function handles the mouse press event.
-@param event The mouse events in the graphics view framework.
+\deprecated HbPreviewLabel::mousePressEvent(QGraphicsSceneMouseEvent *)
+    is deprecated.
 */
 void HbPreviewLabel::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
@@ -82,11 +87,8 @@ void HbPreviewLabel::mousePressEvent(QGraphicsSceneMouseEvent * event)
 }
 
 /*!
-This function handles the mouse move event.
-@param event The mouse events in the graphics view framework.
-
-In case of a key/touch movement will activate a mousePressEvent on another Label
-and the next Label is set as the grabber item.
+\deprecated HbPreviewLabel::mouseMoveEvent(QGraphicsSceneMouseEvent *)
+    is deprecated. 
 */
 void HbPreviewLabel::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
@@ -128,11 +130,8 @@ void HbPreviewLabel::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 }
 
 /*!
-This function handles the mouse release event.
-@param event The mouse events in the graphics view framework.
-
-emits the signal selected to input the corrosponding character mapped to the key whenever
-a key is released and afterwards hides the PreviewPopup by emiitting hidePreview
+\deprecated HbPreviewLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
+    is deprecated.
 */
 void HbPreviewLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
@@ -145,3 +144,4 @@ void HbPreviewLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 }
 
 // End Of File
+

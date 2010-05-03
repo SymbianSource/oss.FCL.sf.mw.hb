@@ -45,6 +45,8 @@ private:
     QGraphicsItem *handleIcon;
     HbAction *defaultAction;
     HbAction *notificationAction;
+
+    HbDeviceDialog *deviceDialog;
 };
 
 #endif // HBINDICATORBUTTON_P_P_H

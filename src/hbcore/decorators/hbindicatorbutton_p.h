@@ -40,6 +40,8 @@ public:
     explicit HbIndicatorButton(QGraphicsItem *parent = 0);
     virtual ~HbIndicatorButton();
 
+    void delayedConstruction();
+
     enum { Type = HbPrivate::ItemType_IndicatorButton };
     int type() const { return Type; }
 

@@ -36,6 +36,7 @@ public:
     virtual ~HbLanguageDatabase()
     {
     }
+
     virtual int HostId() const=0;
     virtual int LanguageCode() const=0;
     virtual char* LanguageData(void* aNativeParams=0) const=0;
@@ -53,6 +54,36 @@ public:
     virtual void ListLanguages(QVector<int>& aResult) = 0;
     virtual HbLanguageDatabase* LanguageDatabase(int aLanguage) = 0;
 };
+
+/*!
+\deprecated HbLanguageDatabase::HostId() const
+    is deprecated. Use upcoming lower case version instead.
+*/
+
+/*!
+\deprecated HbLanguageDatabase::LanguageCode() const
+    is deprecated. Use upcoming lower case version instead.
+*/
+
+/*!
+\deprecated HbLanguageDatabase::LanguageData(void*) const
+    is deprecated. Use upcoming lower case version instead.
+*/
+
+/*!
+\deprecated HbLanguageDatabase::NativeId() const
+    is deprecated. Use upcoming lower case version instead.
+*/
+
+/*!
+\deprecated HbLanguageDatabaseInterface::ListLanguages(QVector<int>&)
+    is deprecated. Use upcoming lower case version instead.
+*/
+
+/*!
+\deprecated HbLanguageDatabaseInterface::LanguageDatabase(int)
+    is deprecated. Use upcoming lower case version instead.
+*/
 
 #endif // HB_LANGUAGE_DATABASE_H
 

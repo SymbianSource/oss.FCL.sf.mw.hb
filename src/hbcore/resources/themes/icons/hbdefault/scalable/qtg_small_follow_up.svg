@@ -1,30 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
 <rect fill="none" height="30" width="30"/>
-<rect fill="none" height="30" width="30"/>
-<path d="M24.955,7.031h-5.033c-0.84,0-1.506-0.412-2.352-0.934 c-1.068-0.661-2.281-1.41-4.094-1.41h-3.164V1.875H3.75v3.75h0.938v22.5h4.688v-9.844h4.102c1.281,0,2.168,0.549,3.107,1.13 c0.967,0.597,1.965,1.214,3.338,1.214h5.033l-3.398-6.797L24.955,7.031z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="23.18" x2="9.34" y1="12.65" y2="12.65">
-<stop offset="0" stop-color="#DE8029"/>
-<stop offset="0.26" stop-color="#DE4E29"/>
-<stop offset="1" stop-color="#D82E09"/>
+<path d="M26.618,6.5H21.25c-0.896,0-1.607-0.439-2.508-0.996C17.602,4.799,16.309,4,14.375,4H11V1H4v4h1v24h5  V18.5h4.375c1.366,0,2.313,0.585,3.315,1.205C18.721,20.342,19.785,21,21.25,21h5.368l-3.625-7.25L26.618,6.5z" fill-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="24.7227" x2="9.9584" y1="12.5005" y2="12.5005">
+<stop offset="0" style="stop-color:#DE8029"/>
+<stop offset="0.2606" style="stop-color:#DE4E29"/>
+<stop offset="1" style="stop-color:#D82E09"/>
 </linearGradient>
-<path d="M20.508,13.828l2.93,5.859c0,0-2.344,0-3.516,0c-2.344,0-3.516-2.344-6.445-2.344 c-0.586,0-4.102,0-4.102,0V5.625c0,0,3.516,0,4.102,0c2.93,0,4.102,2.344,6.445,2.344c1.172,0,3.516,0,3.516,0L20.508,13.828z" fill="url(#SVGID_1)"/>
-<path d="M20.273,14.297l2.695,5.391c0.285,0,0.469,0,0.469,0 l-2.93-5.859L20.273,14.297z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
-<path d="M19.922,8.906c0.847,0,2.303,0,3.047,0l0.469-0.938 c0,0-2.344,0-3.516,0c-2.344,0-3.516-2.344-6.445-2.344c-0.586,0-4.102,0-4.102,0v0.938c0,0,3.516,0,4.102,0 C16.406,6.563,17.578,8.906,19.922,8.906z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="8.44" x2="5.66" y1="15.94" y2="15.94">
-<stop offset="0" stop-color="#8C8E8F"/>
-<stop offset="0.65" stop-color="#D9D9D9"/>
-<stop offset="1" stop-color="#AEB2B3"/>
+<path d="M21.875,13.75L25,20c0,0-2.5,0-3.75,0c-2.5,0-3.75-2.5-6.875-2.5c-0.625,0-4.375,0-4.375,0V5  c0,0,3.75,0,4.375,0C17.5,5,18.75,7.5,21.25,7.5c1.25,0,3.75,0,3.75,0L21.875,13.75z" fill="url(#SVGID_1_)"/>
+<path d="M21.625,14.25L24.5,20c0.304,0,0.5,0,0.5,0l-3.125-6.25L21.625,14.25z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
+<path d="M21.25,8.5c0.903,0,2.457,0,3.25,0l0.5-1c0,0-2.5,0-3.75,0c-2.5,0-3.75-2.5-6.875-2.5  C13.75,5,10,5,10,5v1c0,0,3.75,0,4.375,0C17.5,6,18.75,8.5,21.25,8.5z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="9" x2="6.0412" y1="15.9995" y2="15.9995">
+<stop offset="0" style="stop-color:#8C8E8F"/>
+<stop offset="0.6545" style="stop-color:#D9D9D9"/>
+<stop offset="1" style="stop-color:#AEB2B3"/>
 </linearGradient>
-<rect fill="url(#SVGID_2)" height="22.5" width="2.813" x="5.625" y="4.688"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3" x1="9.34" x2="4.73" y1="3.75" y2="3.75">
-<stop offset="0" stop-color="#4F4F4F"/>
-<stop offset="0.59" stop-color="#BFBFBF"/>
-<stop offset="1" stop-color="#6B6B6B"/>
+<rect fill="url(#SVGID_2_)" height="24" width="3" x="6" y="4"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="9.9585" x2="5.0415" y1="3" y2="3">
+<stop offset="0" style="stop-color:#4F4F4F"/>
+<stop offset="0.589" style="stop-color:#BFBFBF"/>
+<stop offset="1" style="stop-color:#6B6B6B"/>
 </linearGradient>
-<rect fill="url(#SVGID_3)" height="1.875" width="4.688" x="4.688" y="2.813"/>
-<rect fill-opacity="0.2" height="0.938" stroke-opacity="0.2" width="2.813" x="5.625" y="4.688"/>
+<rect fill="url(#SVGID_3_)" height="2" width="5" x="5" y="2"/>
+<rect fill-opacity="0.2" height="1" stroke-opacity="0.2" width="3" x="6" y="4"/>
 </g>
 </svg>

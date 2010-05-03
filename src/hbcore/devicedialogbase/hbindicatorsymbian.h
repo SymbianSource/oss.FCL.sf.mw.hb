@@ -30,7 +30,14 @@
 #include <e32base.h>
 
 class CHbIndicatorSymbianPrivate;
+class CHbSymbianVariantMap;
 class CHbSymbianVariant;
+
+class MHbIndicatorSymbianObserver
+{
+public:
+    virtual void IndicatorUserActivated(const TDesC& aType, CHbSymbianVariantMap& aData) = 0;
+};
 
 class CHbIndicatorSymbian : public CBase
 {
@@ -48,10 +55,12 @@ public:
     TBool Deactivate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
 
     TInt Error() const; 
+    void SetObserver(MHbIndicatorSymbianObserver* aObserver);
 
 private:
     CHbIndicatorSymbian();
     void ConstructL();
+
 private:
     CHbIndicatorSymbianPrivate *d;
 };

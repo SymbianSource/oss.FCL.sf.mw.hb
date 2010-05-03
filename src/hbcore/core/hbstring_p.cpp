@@ -55,7 +55,7 @@ HbStringData *getStringData(HbMemoryManager::MemoryType type, int offset, bool s
     Constructs a new HbString with \a MemoryType (SharedMemory/HeapMemory).
 */
 HbString::HbString(HbMemoryManager::MemoryType type)
-    : mMemoryType(type), mShared(false)
+    : mMemoryType(type), mShared(false), mDataOffset(-1)
 {
     if (type == HbMemoryManager::HeapMemory) {
         // Set offset to point to default NULL instance of HbStringData to
@@ -317,6 +317,10 @@ void HbString::detach(int size)
         newData->mCapacity = size;
         mShared = false;
         mDataOffset = dataOffset.release();
+    } else if (size > data->mCapacity) { // no need to detach, but make sure there is capacity for the new size
+        GET_MEMORY_MANAGER(mMemoryType);
+        data->mStartOffset = manager->realloc(data->mStartOffset, size*sizeof(QChar));
+        data->mCapacity = size;
     }
 }
 
@@ -512,17 +516,18 @@ bool HbString::operator!=(const QString &str) const
 */
 void HbString::clear()
 {
-    HbStringData* data = 0;
-
-    data = getStringData(mMemoryType, mDataOffset, mShared);
+    // No need to clear null string
+    if (mDataOffset == shared_null_offset) {
+        return;
+    }
 
     detach(0); // This will update the new mDataOffset.
-    GET_MEMORY_MANAGER(mMemoryType)
-    RETURN_IF_READONLY(manager);
-
-    data = getStringData(mMemoryType, mDataOffset, mShared);
+    HbStringData* data = getStringData(mMemoryType, mDataOffset, mShared);
 
     if (data->mStartOffset != -1) {
+        GET_MEMORY_MANAGER(mMemoryType)
+        RETURN_IF_READONLY(manager);
+
         manager->free(data->mStartOffset);
         data->mStartOffset = -1;
         data->mLength = 0;
@@ -694,39 +699,37 @@ HbString HbString::toLower() const
     HbStringData* data = 0;
     data = getStringData(mMemoryType, mDataOffset, mShared);
 
+    // If the string is empty, a copy of it can be returned directly.
+    if (!data->mLength) {
+        return *this;
+    }
+
     QChar *src = getAddress<QChar>(mMemoryType, data->mStartOffset, mShared);
     
     // check whether source memory type is writable if yes, create temporary HbString using same
     // memory manager else use Heap memory
-    HbMemoryManager::MemoryType tempMemoryType;
+    HbMemoryManager::MemoryType copyMemoryType = HbMemoryManager::HeapMemory;
     if (manager->isWritable()) {
-        tempMemoryType = mMemoryType;
-    } else {
-        tempMemoryType = HbMemoryManager::HeapMemory;
+        copyMemoryType = mMemoryType;
     }
-    HbString strTemp(tempMemoryType);
 
-    HbStringData* newData = 0;
-	newData = getStringData(strTemp.mMemoryType, strTemp.mDataOffset, strTemp.mShared);
-    
-    if(data->mLength > 0){
-        // get memory manager of tempMemoryType
-        GET_MEMORY_MANAGER(strTemp.mMemoryType)
-        newData->mStartOffset = manager->alloc(data->mLength*sizeof(QChar));
-        newData->mLength = data->mLength;
-        newData->mCapacity = data->mLength;
+    HbString copy(copyMemoryType);
+    // Detach allocates data with new capacity
+    copy.detach(data->mLength);
+    HbStringData *newData = getStringData(copy.mMemoryType, copy.mDataOffset, copy.mShared);
 
-		QChar *dest = getAddress<QChar>(tempMemoryType, newData->mStartOffset, strTemp.mShared);
+	QChar *dest = getAddress<QChar>(copyMemoryType, newData->mStartOffset, copy.mShared);
 
-        int count = 0;
-        while( count < data->mLength){
-            *dest = src->toLower();
-            dest++;
-            src++;
-            count++;
-        }
+    int count = data->mLength;
+    for (int i = 0; i<count; ++i) {
+        *dest = src->toLower();
+        dest++;
+        src++;
     }
-    return strTemp;
+
+    // Update string length after data copy
+    newData->mLength = count;
+    return copy;
 }
 
 /*
@@ -791,57 +794,36 @@ int HbString::compare(const QLatin1String &other)const
 */
 QDataStream& operator>>(QDataStream &in, HbString &str)
 {
-    GET_MEMORY_MANAGER(str.mMemoryType)
-    char *sTemp;
-    uint len;
-    in.readBytes(sTemp, len);
-    
-    HbStringData* data = 0;
-    if(str.mShared == true) {
-        data = getStringData(HbMemoryManager::SharedMemory, str.mDataOffset);
-    }
-    else {
-        data = getStringData(str.mMemoryType,str.mDataOffset);
-    }
-
-    if(len > 0){
+    quint32 length = 0;
+    in >> length;
+        
+    // If stream had an empty string, clear target string.
+    if (!length) {
         str.clear();
-        data->mStartOffset = manager->alloc(len);
+    } else {
+        // Detach target string and allocate its buffer to the new length
+        str.detach(length);
+        GET_MEMORY_MANAGER(str.mMemoryType)
+        RETURN_OBJECT_IF_READONLY(manager, in)
+        HbStringData* data = getStringData(str.mMemoryType, str.mDataOffset);
+        char *dest = getAddress<char>(str.mMemoryType, data->mStartOffset, str.mShared);
+        in.readRawData(dest, (uint)length * sizeof(QChar));
+        data->mLength = length;
+    }
 
-        char *dest =0;
-        if(str.mShared == true) {
-            dest = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                    data->mStartOffset);
-        } else {
-            dest = HbMemoryUtils::getAddress<char>(str.mMemoryType, data->mStartOffset);
-        }
-        ::memcpy(dest, sTemp,len); 
-        data->mLength = len/sizeof(QChar);
-        data->mCapacity = data->mLength;
-    }  
-    delete[] sTemp;
     return in;
 }
 
 /*
     Writes the HbString to the QDataStream
 */
-QDataStream& operator<<(QDataStream &out,const HbString &str)
+QDataStream& operator<<(QDataStream &out, const HbString &str)
 {
-    HbStringData* data = 0;
-    if(str.mShared == true)
-        data = getStringData(HbMemoryManager::SharedMemory, str.mDataOffset);
-    else
-        data = getStringData(str.mMemoryType, str.mDataOffset);
-    if(data->mLength > 0){
-        char *sTemp = 0;
-        if(str.mShared == true) {
-            sTemp = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                    data->mStartOffset);
-        } else {
-            sTemp = HbMemoryUtils::getAddress<char>(str.mMemoryType, data->mStartOffset);
-        }
-        out.writeBytes(sTemp,(uint)data->mLength*sizeof(QChar));
+    HbStringData* data = getStringData(str.mMemoryType, str.mDataOffset);
+    out << quint32(data->mLength);
+    if (data->mLength > 0) {
+        const char *contents = getAddress<char>(str.mMemoryType, data->mStartOffset, str.mShared);
+        out.writeRawData(contents, (uint)data->mLength * sizeof(QChar));
     }
     return out;
 }

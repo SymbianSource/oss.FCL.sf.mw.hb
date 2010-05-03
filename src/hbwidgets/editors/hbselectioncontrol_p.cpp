@@ -41,6 +41,12 @@
 #include "hbabstractedit.h"
 #include "hbabstractedit_p.h"
 #include "hbtoucharea.h"
+#include "hbpangesture.h"
+#include "hbtapgesture.h"
+#include "hbevent.h"
+#include "hbpopup.h"
+#include "hbnamespace_p.h"
+#include "hbmainwindow.h"
 
 
 #include <QTextCursor>
@@ -50,8 +56,13 @@
 #include <QBasicTimer>
 #include <QSizeF>
 #include <QPointF>
+#include <QHash>
+#include <QGraphicsScene>
 
 #include <hbwidgetfeedback.h>
+
+typedef QHash<HbMainWindow*,HbSelectionControl*> HbSelectionControlHash;
+Q_GLOBAL_STATIC(HbSelectionControlHash, globalSelectionControlHash)
 
 namespace {
     static const int SNAP_DELAY = 300;
@@ -63,7 +74,7 @@ class HbSelectionControlPrivate :public HbDialogPrivate
     Q_DECLARE_PUBLIC(HbSelectionControl)
 
 public:
-    HbSelectionControlPrivate(HbAbstractEdit *edit);
+    HbSelectionControlPrivate();
     void init();
     void createPrimitives();
     void updateHandle(int newHandlePos,
@@ -74,10 +85,17 @@ public:
     QGraphicsItem * reparent(QGraphicsItem *item);
     void reparent(QGraphicsItem *item, QGraphicsItem *newParent);
     void reparentHandles(QGraphicsItem *newParent);
+    void tapGestureFinished (const QPointF& point);
+    void panGestureStarted (HbPanGesture *gesture);
+    void panGestureUpdated (HbPanGesture *gesture);
+    void panGestureFinished (HbPanGesture *gesture);
+    void show();
+    void _q_aboutToChangeView();
 
 public:
 
     HbAbstractEdit *mEdit;
+    QGraphicsItem *mTopLevelAncestor;
     QPointF mMouseOffset;
 
     QGraphicsItem *mSelectionStartHandle;
@@ -86,24 +104,21 @@ public:
     HbTouchArea* mSelectionEndTouchArea;
 
     HbSelectionControl::HandleType mPressed;
-    bool mHandlesDisabled;
     bool mPanInProgress;
-    bool mHandlesMoved;
     QBasicTimer mWordSnapTimer;
 };
 
 
-HbSelectionControlPrivate::HbSelectionControlPrivate(HbAbstractEdit *edit):
-    mEdit(edit),
+HbSelectionControlPrivate::HbSelectionControlPrivate():
+    mEdit(0),
+    mTopLevelAncestor(0),
     mSelectionStartHandle(0),
     mSelectionEndHandle(0),
     mSelectionStartTouchArea(0),
     mSelectionEndTouchArea(0),
     mPressed(HbSelectionControl::HandleType(0)),
-    mHandlesDisabled(true),
-    mPanInProgress(false),
-    mHandlesMoved(false)
-{
+    mPanInProgress(false)
+{    
 }
 
 void HbSelectionControlPrivate::init()
@@ -111,55 +126,51 @@ void HbSelectionControlPrivate::init()
     Q_Q(HbSelectionControl);
     createPrimitives();
 
-    q->setBackgroundItem(HbStyle::P_None);
-    q->setFocusPolicy(Qt::NoFocus);
-    q->setTimeout(HbPopup::NoTimeout);
-    q->setBackgroundFaded(false);
     q->setVisible(false);
-    q->setDismissPolicy(HbPopup::NoDismiss);
-    q->setModal(false);
-
-    #ifdef HB_EFFECTS
-    HbEffect::disable(q);
-    #endif    
-
-    q->setParent(mEdit);
+    q->setFlag(QGraphicsItem::ItemIsFocusable,false);
+    q->setFlag(QGraphicsItem::ItemIsPanel,true);
+    q->setFocusPolicy(Qt::NoFocus);
+    q->setActive(false);
 
     // Control will handle all events going to different handlers.
     q->setHandlesChildEvents(true);
-
-    QObject::connect(mEdit, SIGNAL(cursorPositionChanged(int, int)), q, SLOT(updatePrimitives()));
-    QObject::connect(mEdit, SIGNAL(selectionChanged(const QTextCursor&, const QTextCursor&)), q, SLOT(updatePrimitives()));
-    QObject::connect(mEdit, SIGNAL(contentsChanged()), q, SLOT(updatePrimitives()));
-
-    q->updatePrimitives();
-
 }
 
 void HbSelectionControlPrivate::createPrimitives()
 {
     Q_Q(HbSelectionControl);
     if (!mSelectionStartHandle) {
-        mSelectionStartHandle = mEdit->style()->createPrimitive(HbStyle::P_SelectionControl_selectionstart, q);
-        mSelectionStartHandle->hide();
+        mSelectionStartHandle = q->style()->createPrimitive(HbStyle::P_SelectionControl_selectionstart, q);
+        mSelectionStartHandle->setFlag(QGraphicsItem::ItemIsPanel);
+        mSelectionStartHandle->setFlag(QGraphicsItem::ItemIsFocusable,false);
+        mSelectionStartHandle->setActive(false);
     }
 
     if (!mSelectionEndHandle) {
-        mSelectionEndHandle = mEdit->style()->createPrimitive(HbStyle::P_SelectionControl_selectionend, q);
-        mSelectionEndHandle->hide();
+        mSelectionEndHandle = q->style()->createPrimitive(HbStyle::P_SelectionControl_selectionend, q);
+        mSelectionEndHandle->setFlag(QGraphicsItem::ItemIsPanel);
+        mSelectionEndHandle->setFlag(QGraphicsItem::ItemIsFocusable,false);
+        mSelectionEndHandle->setActive(false);
     }
 
     if (!mSelectionStartTouchArea) {
         mSelectionStartTouchArea = new HbTouchArea(q);
-        mSelectionStartTouchArea->hide();
+        mSelectionStartTouchArea->setFlag(QGraphicsItem::ItemIsPanel);
+        mSelectionStartTouchArea->setFlag(QGraphicsItem::ItemIsFocusable,false);
+        mSelectionStartTouchArea->setActive(false);
         HbStyle::setItemName(mSelectionStartTouchArea, "handle-toucharea");
-
+        mSelectionStartTouchArea->grabGesture(Qt::TapGesture);
+        mSelectionStartTouchArea->grabGesture(Qt::PanGesture);
     }
 
     if (!mSelectionEndTouchArea) {
         mSelectionEndTouchArea = new HbTouchArea(q);
-        mSelectionEndTouchArea->hide();
+        mSelectionEndTouchArea->setFlag(QGraphicsItem::ItemIsPanel);
+        mSelectionEndTouchArea->setFlag(QGraphicsItem::ItemIsFocusable,false);
+        mSelectionEndTouchArea->setActive(false);
         HbStyle::setItemName(mSelectionEndTouchArea, "handle-toucharea");
+        mSelectionEndTouchArea->grabGesture(Qt::TapGesture);
+        mSelectionEndTouchArea->grabGesture(Qt::PanGesture);
     }
 }
 
@@ -209,15 +220,12 @@ void HbSelectionControlPrivate::updateHandle(int newHandlePos,
         QGraphicsItem * newParent = reparent(handle);
         reparent(handleTouchArea, newParent);
     }
-
-    handle->show();
-    handleTouchArea->show() ;
 }
 
 
 
 /*
-   Reparents item to q if item's bounding rect intersects mEdit bounding rectangle or otherwise to
+   Reparents item to q if item's bounding rect intersects mEdit's viewPort rectangle or otherwise to
    HbAbstractEditPrivate::d_ptr(d->mEdit)->canvas.
    Returns new parent.
 */
@@ -231,7 +239,9 @@ QGraphicsItem * HbSelectionControlPrivate::reparent(QGraphicsItem *item)
     QRectF rect = item->boundingRect();
     rect = item->mapRectToItem(mEdit,rect);
 
-    if (mEdit->contains(rect.topLeft()) || mEdit->contains(rect.bottomRight())) {
+    QRectF scrollAreaRect = HbAbstractEditPrivate::d_ptr(mEdit)->scrollArea->geometry();
+
+    if (rect.intersects(scrollAreaRect)) {
         newParent = q;
     }
 
@@ -241,10 +251,19 @@ QGraphicsItem * HbSelectionControlPrivate::reparent(QGraphicsItem *item)
 
 void HbSelectionControlPrivate::reparent(QGraphicsItem *item, QGraphicsItem *newParent)
 {
+    Q_Q(HbSelectionControl);
+
     if (item && newParent && newParent != item->parentItem()) {
 
         // Reparent handle items to newParent
         QPointF pos = newParent->mapFromItem(item->parentItem(),item->pos());
+
+        // If the item is parented to other then q we have to
+        // turn off the QGraphicsItem::ItemIsPanel flag because
+        // otherwise the new parent loses its activeness.
+        bool enablePanel = (newParent == q);
+
+        item->setFlag(QGraphicsItem::ItemIsPanel,enablePanel);
 
         // TODO: This is a workaround for a Qt bug when reparenting from a clipping parent to a
         //       non-clipping parent
@@ -264,8 +283,171 @@ void HbSelectionControlPrivate::reparentHandles(QGraphicsItem *newParent)
 }
 
 
-HbSelectionControl::HbSelectionControl(HbAbstractEdit *edit) :
-    HbPopup(*new HbSelectionControlPrivate(edit),0)
+void HbSelectionControlPrivate::tapGestureFinished(const QPointF &pos)
+{
+    if (mEdit->contextMenuFlags().testFlag(Hb::ShowTextContextMenuOnSelectionClicked)) {
+        mEdit->showContextMenu(pos);
+    }
+}
+
+void HbSelectionControlPrivate::panGestureStarted(HbPanGesture *gesture)
+{
+    Q_Q(HbSelectionControl);
+
+    QPointF point = q->mapFromScene(gesture->sceneStartPos());
+    mPressed = HbSelectionControl::DummyHandle;
+
+    // Find out which handle is being moved
+    if (mSelectionStartTouchArea->contains(q->mapToItem(mSelectionStartTouchArea, point))) {
+        mPressed = HbSelectionControl::SelectionStartHandle;
+        mMouseOffset = mSelectionStartHandle->pos() - point;
+    }
+    if (mSelectionEndTouchArea->contains(q->mapToItem(mSelectionEndTouchArea, point))) {
+        bool useArea = true;
+        if(mPressed != HbSelectionControl::DummyHandle) {
+
+            // The press point was inside in both of the touch areas
+            // choose the touch area whose center is closer to the press point
+            QRectF rect = mSelectionStartTouchArea->boundingRect();
+            rect.moveTopLeft(mSelectionStartTouchArea->pos());
+            QLineF  lineEventPosSelStartCenter(point,rect.center());
+
+            rect = mSelectionEndTouchArea->boundingRect();
+            rect.moveTopLeft(mSelectionEndTouchArea->pos());
+            QLineF  lineEventPosSelEndCenter(point,rect.center());
+
+            if (lineEventPosSelStartCenter.length() < lineEventPosSelEndCenter.length()) {
+                useArea = false;
+            }
+        }
+        if (useArea) {
+            mPressed = HbSelectionControl::SelectionEndHandle;
+            mMouseOffset = mSelectionEndHandle->pos() - point;
+        }
+    }
+
+    if (mPressed == HbSelectionControl::DummyHandle) {
+        // Hit is outside touch areas, ignore
+        return;
+    }
+
+    // Position cursor at the pressed selection handle
+
+    QTextCursor cursor = mEdit->textCursor();
+    int selStartPos = qMin(mEdit->textCursor().anchor(),mEdit->textCursor().position());
+    int selEndPos = qMax(mEdit->textCursor().anchor(),mEdit->textCursor().position());
+
+    if (mPressed == HbSelectionControl::SelectionStartHandle) {
+        cursor.setPosition(selEndPos);
+        cursor.setPosition(selStartPos, QTextCursor::KeepAnchor);
+    } else {
+        cursor.setPosition(selStartPos);
+        cursor.setPosition(selEndPos, QTextCursor::KeepAnchor);
+    }
+    mEdit->setTextCursor(cursor);
+
+}
+
+
+void HbSelectionControlPrivate::panGestureFinished(HbPanGesture *gesture)
+{
+    Q_Q(HbSelectionControl);
+    Q_UNUSED(gesture)
+
+    if (mWordSnapTimer.isActive()) {
+
+        // Snap selection to word beginning or end
+        QTextCursor cursor = mEdit->textCursor();
+        int curPos = mEdit->textCursor().position();
+        int anchPos = mEdit->textCursor().anchor();
+        cursor.select(QTextCursor::WordUnderCursor);
+
+        // Snap direction depends on cursor position
+        curPos = ((curPos > anchPos)?cursor.position():cursor.anchor());
+
+        cursor.setPosition(anchPos);
+        cursor.setPosition(curPos, QTextCursor::KeepAnchor);
+        mEdit->setTextCursor(cursor);
+    }
+
+    mPressed = HbSelectionControl::DummyHandle;
+    q->updatePrimitives();
+}
+
+
+void HbSelectionControlPrivate::panGestureUpdated(HbPanGesture *gesture)
+{
+    Q_Q(HbSelectionControl);
+
+    QPointF editPos = mEdit->mapFromScene(gesture->sceneStartPos() + gesture->sceneOffset());
+
+    QRectF handleRect = mSelectionStartHandle->boundingRect();
+    handleRect.moveTopLeft(editPos + mMouseOffset);
+
+    QPointF hitTestPos = handleRect.center();
+
+    if (mPressed == HbSelectionControl::SelectionStartHandle) {
+        hitTestPos.setY(handleRect.bottom()+1);
+    } else {
+        hitTestPos.setY(handleRect.top()-1);
+    }
+
+    QTextCursor cursor = mEdit->textCursor();
+    // Hit test for the center of current selection touch area
+    int hitPos = HbAbstractEditPrivate::d_ptr(mEdit)->hitTest(hitTestPos,Qt::FuzzyHit);
+    if (hitPos == -1 || hitPos == cursor.anchor()) {
+        return;
+    }
+
+
+    bool handlesMoved(false);
+    if (hitPos != cursor.position()) {
+        handlesMoved = true;
+    }
+    cursor.setPosition(hitPos, QTextCursor::KeepAnchor);
+    if (handlesMoved) {
+        if (mEdit) {
+            HbWidgetFeedback::triggered(mEdit, Hb::InstantDraggedOver);
+        }
+        // Restart timer every time when a selection handle moved
+        mWordSnapTimer.start(SNAP_DELAY, q);
+        mEdit->setTextCursor(cursor);
+    }
+
+    // Ensure that the hitPos is visible
+    HbAbstractEditPrivate::d_ptr(mEdit)->ensurePositionVisible(hitPos);
+    q->updatePrimitives();
+}
+
+void HbSelectionControlPrivate::show() {
+    Q_Q(HbSelectionControl);
+
+    // Set the z-value of the selection control above its top-level ancestor
+    if (mTopLevelAncestor) {
+        qreal zValue = mTopLevelAncestor->zValue() + HbPrivate::SelectionControlHandlesValueUnit;
+
+        q->setZValue(zValue);
+    }
+
+    if (q->scene() != mEdit->scene() && mEdit->scene()) {
+        mEdit->scene()->addItem(q);
+    }
+    q->show();    
+    q->updatePrimitives();
+}
+
+
+void HbSelectionControlPrivate::_q_aboutToChangeView()
+{
+    Q_Q(HbSelectionControl);
+
+    if (mEdit && q->isVisible()) {
+        mEdit->deselect();
+    }
+}
+
+
+HbSelectionControl::HbSelectionControl() : HbWidget(*new HbSelectionControlPrivate(),0)
 
 {
     Q_D(HbSelectionControl);
@@ -275,34 +457,55 @@ HbSelectionControl::HbSelectionControl(HbAbstractEdit *edit) :
     //      since only one selection control is used at a time
 }
 
+HbSelectionControl* HbSelectionControl::attachEditor(HbAbstractEdit *edit)
+{
+    if(!edit || !edit->mainWindow()) {
+        qWarning("HbSelectionControl: attempting to attach to null editor pointer!");
+    }
 
-void HbSelectionControl::updatePrimitives()
+    HbSelectionControl *control = globalSelectionControlHash()->value(edit->mainWindow());
+
+    if (!control) {
+        control = new HbSelectionControl();
+        globalSelectionControlHash()->insert(edit->mainWindow(),control);
+        QObject::connect(edit->mainWindow(), SIGNAL(aboutToChangeView(HbView *, HbView *)), control, SLOT(_q_aboutToChangeView()));
+    }
+
+    HbSelectionControlPrivate *d = control->d_func();
+
+    if (edit != d->mEdit) {
+        control->detachEditor();
+        d->mEdit = edit;        
+        QObject::connect(d->mEdit, SIGNAL(cursorPositionChanged(int, int)), control, SLOT(updatePrimitives()));
+        QObject::connect(d->mEdit, SIGNAL(contentsChanged()), control, SLOT(updatePrimitives()));
+
+        // find first top-level ancestor of d->mEdit
+        for(d->mTopLevelAncestor = d->mEdit;
+            d->mTopLevelAncestor->parentItem();
+            d->mTopLevelAncestor = d->mTopLevelAncestor->parentItem()){};
+    }
+    return control;
+}
+
+void HbSelectionControl::detachEditor()
 {
     Q_D(HbSelectionControl);
-    if (!d->mHandlesDisabled && d->polished) {
-        if (d->mEdit->textCursor().hasSelection() ||
-            (!d->mEdit->textCursor().hasSelection() && (d->mPressed == SelectionStartHandle || d->mPressed == SelectionEndHandle))) {
-
-            int selStartPos = qMin(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
-            int selEndPos = qMax(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
-
-            d->updateHandle(selStartPos,Qt::AlignTop,d->mSelectionStartHandle,d->mSelectionStartTouchArea,HbStyle::P_SelectionControl_selectionstart);
-            d->updateHandle(selEndPos,Qt::AlignBottom,d->mSelectionEndHandle,d->mSelectionEndTouchArea,HbStyle::P_SelectionControl_selectionend);
-        }
-        else {
-            d->mSelectionStartHandle->hide();
-            d->mSelectionStartTouchArea->hide() ;
-            d->mSelectionEndHandle->hide();
-            d->mSelectionEndTouchArea->hide() ;
-        }
+    if (d->mEdit) {
+        hideHandles();
+        d->reparentHandles(this);
+        d->mEdit->disconnect(this);
+        d->mEdit->d_func()->selectionControl = 0;        
+        d->mEdit->deselect();
+        d->mEdit = 0;
+        d->mTopLevelAncestor = 0;
     }
 }
+
 
 void HbSelectionControl::hideHandles()
 {
     Q_D(HbSelectionControl);
-    if (!d->mHandlesDisabled) {
-        d->mHandlesDisabled = true;
+    if (isVisible() && d->mEdit) {
         hide();
         d->reparentHandles(this);
     }
@@ -311,169 +514,27 @@ void HbSelectionControl::hideHandles()
 void HbSelectionControl::showHandles()
 {
     Q_D(HbSelectionControl);
-    if (d->mHandlesDisabled) {
-        d->mHandlesDisabled = false;
-        show();
+    if (!isVisible() && d->mEdit) {
+        d->show();
     }
 }
 
-void HbSelectionControl::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+void HbSelectionControl::scrollStarted()
 {
     Q_D(HbSelectionControl);
 
-    QPointF editPos = d->mEdit->mapFromScene(event->scenePos());
-
-    QRectF handleRect = d->mSelectionStartHandle->boundingRect();
-    handleRect.moveTopLeft(editPos + d->mMouseOffset);
-
-    QPointF hitTestPos = handleRect.center();
-
-    if (d->mPressed == SelectionStartHandle) {
-        hitTestPos.setY(handleRect.bottom()+1);
-    } else {
-        hitTestPos.setY(handleRect.top()-1);
-    }
-
-    // Hit test for the center of current selection touch area
-    int hitPos = HbAbstractEditPrivate::d_ptr(d->mEdit)->hitTest(hitTestPos,Qt::FuzzyHit);
-    if (hitPos == -1) {
-        return;
-    }
-
-    QTextCursor cursor = d->mEdit->textCursor();
-
-    if (hitPos != cursor.position()) {
-        d->mHandlesMoved = true;
-    }
-    cursor.setPosition(hitPos, QTextCursor::KeepAnchor);
-    if (d->mHandlesMoved) {
-        if (d->mEdit) {
-            HbWidgetFeedback::triggered(d->mEdit, Hb::InstantDraggedOver);
-        }
-        // Restart timer every time when a selection handle moved
-        d->mWordSnapTimer.start(SNAP_DELAY, this);
-        d->mEdit->setTextCursor(cursor);
-    }
-
-    // Ensure that the hitPos is visible
-    HbAbstractEditPrivate::d_ptr(d->mEdit)->ensurePositionVisible(hitPos);
-    updatePrimitives();
-}
-
-void HbSelectionControl::mousePressEvent (QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbSelectionControl);
-
-    if (d->mEdit) {
-        HbWidgetFeedback::triggered(d->mEdit, Hb::InstantPressed);
-    }
-
-    d->mPressed = DummyHandle;
-
-    // Find out which handle is being moved
-    if (d->mSelectionStartTouchArea->contains(mapToItem(d->mSelectionStartTouchArea, event->pos()))) {
-        d->mPressed = SelectionStartHandle;
-        d->mMouseOffset = d->mSelectionStartHandle->pos() - event->pos();
-    }
-    if (d->mSelectionEndTouchArea->contains(mapToItem(d->mSelectionEndTouchArea, event->pos()))) {
-        bool useArea = true;
-        if(d->mPressed != DummyHandle) {
-
-            // The press point was inside in both of the touch areas
-            // choose the touch area whose center is closer to the press point
-            QRectF rect = d->mSelectionStartTouchArea->boundingRect();
-            rect.moveTopLeft(d->mSelectionStartTouchArea->pos());
-            QLineF  lineEventPosSelStartCenter(event->pos(),rect.center());
-
-            rect = d->mSelectionEndTouchArea->boundingRect();
-            rect.moveTopLeft(d->mSelectionEndTouchArea->pos());
-            QLineF  lineEventPosSelEndCenter(event->pos(),rect.center());
-
-            if (lineEventPosSelStartCenter.length() < lineEventPosSelEndCenter.length()) {
-                useArea = false;
-            }
-        }
-        if (useArea) {
-            d->mPressed = SelectionEndHandle;
-            d->mMouseOffset = d->mSelectionEndHandle->pos() - event->pos();
-        }
-    }
-
-    if (d->mPressed == DummyHandle) {
-        // Hit is outside touch areas, ignore
-        event->ignore();
-        return;
-    }
-
-    // Position cursor at the pressed selection handle
-
-    QTextCursor cursor = d->mEdit->textCursor();
-    int selStartPos = qMin(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
-    int selEndPos = qMax(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
-
-    if (d->mPressed == SelectionStartHandle) {
-        cursor.setPosition(selEndPos);
-        cursor.setPosition(selStartPos, QTextCursor::KeepAnchor);
-    } else {
-        cursor.setPosition(selStartPos);
-        cursor.setPosition(selEndPos, QTextCursor::KeepAnchor);
-    }
-    d->mEdit->setTextCursor(cursor);
-
-}
-
-void HbSelectionControl::mouseReleaseEvent (QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbSelectionControl);
-    Q_UNUSED(event);
-
-    if (d->mEdit) {
-        HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
-    }
-
-    if (d->mWordSnapTimer.isActive()) {
-
-        // Snap selection to word beginning or end
-        QTextCursor cursor = d->mEdit->textCursor();
-        int curPos = d->mEdit->textCursor().position();
-        int anchPos = d->mEdit->textCursor().anchor();
-        cursor.select(QTextCursor::WordUnderCursor);
-
-        // Snap direction depends on cursor position
-        curPos = ((curPos > anchPos)?cursor.position():cursor.anchor());
-
-        cursor.setPosition(anchPos);
-        cursor.setPosition(curPos, QTextCursor::KeepAnchor);
-        d->mEdit->setTextCursor(cursor);
-    }
-
-    d->mPressed = DummyHandle;
-    updatePrimitives();
-
-    if (!d->mHandlesMoved) {
-        if (d->mEdit->contextMenuFlags().testFlag(Hb::ShowTextContextMenuOnSelectionClicked)) {
-            d->mEdit->showContextMenu(event->scenePos());
-        }
-    }
-    d->mHandlesMoved = false;
-}
-
-void HbSelectionControl::panStarted()
-{
-    Q_D(HbSelectionControl);
-
-    if (!d->mHandlesDisabled) {
+    if (isVisible() && d->mEdit) {
         d->mPanInProgress = true;
         // Reparent handle items to editor canvas on pan start
         d->reparentHandles(HbAbstractEditPrivate::d_ptr(d->mEdit)->canvas);
     }
 }
 
-void HbSelectionControl::panFinished()
+void HbSelectionControl::scrollFinished()
 {
     Q_D(HbSelectionControl);
 
-    if (!d->mHandlesDisabled) {
+    if (isVisible() && d->mEdit) {
         d->mPanInProgress = false;
         updatePrimitives();
     }
@@ -493,19 +554,102 @@ void HbSelectionControl::polish( HbStyleParameters& params )
 {
     Q_D(HbSelectionControl);
 
-    HbPopup::polish(params);
+    HbWidget::polish(params);
     QSizeF size = d->mSelectionStartTouchArea->preferredSize();
     d->mSelectionStartTouchArea->resize(size);
     d->mSelectionEndTouchArea->resize(size);
+    updatePrimitives();
 }
 
 QVariant HbSelectionControl::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if (change == QGraphicsItem::ItemPositionChange) {
         return qVariantFromValue(QPointF(0,0));
-    } else if (change == QGraphicsItem::ItemVisibleChange) {        
-        updatePrimitives();
     }
 
-    return HbPopup::itemChange(change, value);
+    return HbWidget::itemChange(change, value);
 }
+
+void HbSelectionControl::gestureEvent(QGestureEvent* event) {
+    Q_D(HbSelectionControl);
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+        QPointF pos = event->mapToGraphicsScene(tap->position());
+        switch(tap->state()) {
+        case Qt::GestureStarted:
+            if (d->mEdit) {
+                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantPressed);
+            }
+            break;
+        case Qt::GestureUpdated:
+            break;
+      case Qt::GestureFinished:
+            if (d->mEdit) {
+                d->tapGestureFinished(pos);
+                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+            }
+            break;
+      case Qt::GestureCanceled:
+            break;
+      default:
+            break;
+        }
+    }
+
+    if(HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
+        switch(pan->state()) {
+        case Qt::GestureStarted:
+            if (d->mEdit) {
+                d->panGestureStarted(pan);
+            }
+            break;
+        case Qt::GestureUpdated:
+            if (d->mEdit) {
+                d->panGestureUpdated(pan);
+            }
+            break;
+        case Qt::GestureFinished:
+            if (d->mEdit) {
+                d->panGestureFinished(pan);
+                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+            }
+            break;
+      case Qt::GestureCanceled:
+            break;
+      default:
+            break;
+        }
+    }
+}
+
+bool HbSelectionControl::event(QEvent *event)
+{
+    Q_D(HbSelectionControl);
+
+    if (event->type() == HbEvent::DeviceProfileChanged && d->mEdit) {
+        HbDeviceProfileChangedEvent* dpEvent = static_cast<HbDeviceProfileChangedEvent*>(event);
+        if ( dpEvent->profile().alternateProfileName() == dpEvent->oldProfile().name() ) {
+            updatePrimitives();
+        }
+    }
+    return HbWidget::event(event);
+}
+
+void HbSelectionControl::updatePrimitives()
+{
+    Q_D(HbSelectionControl);
+
+    if (isVisible() && d->polished && d->mEdit) {
+        if (d->mEdit->textCursor().hasSelection() ) {
+           
+            int selStartPos = qMin(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
+            int selEndPos = qMax(d->mEdit->textCursor().anchor(),d->mEdit->textCursor().position());
+
+            d->updateHandle(selStartPos,Qt::AlignTop,d->mSelectionStartHandle,d->mSelectionStartTouchArea,HbStyle::P_SelectionControl_selectionstart);
+            d->updateHandle(selEndPos,Qt::AlignBottom,d->mSelectionEndHandle,d->mSelectionEndTouchArea,HbStyle::P_SelectionControl_selectionend);
+        }
+        else {
+            hide();
+        }
+    }
+}
+#include "moc_hbselectioncontrol_p.cpp"

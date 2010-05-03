@@ -37,7 +37,7 @@ defineReplace(traceOutputFile) {
             }
         } else:win32 {
             filePath = TRACE_OUTPUT_FILE=\\\"c:/temp/$$1\\\"
-        } else:linux-*|macx-* {
+        } else:unix {
             filePath = TRACE_OUTPUT_FILE=\\\"/usr/tmp/$$1\\\"
         } else {
             filePath = TRACE_OUTPUT_FILE=\\\"./$$1\\\"

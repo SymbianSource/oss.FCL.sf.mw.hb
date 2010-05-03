@@ -43,6 +43,13 @@
 */
 
 
+
+/*!
+
+    \deprecated HbStyleOptionGridViewItem::HbStyleOptionGridViewItem()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionGridViewItem::HbStyleOptionGridViewItem() :
     HbStyleOptionAbstractViewItem()
 {
@@ -50,6 +57,12 @@ HbStyleOptionGridViewItem::HbStyleOptionGridViewItem() :
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionGridViewItem::HbStyleOptionGridViewItem(const HbStyleOptionGridViewItem&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionGridViewItem::HbStyleOptionGridViewItem(const HbStyleOptionGridViewItem &other) :
     HbStyleOptionAbstractViewItem(other)
 {

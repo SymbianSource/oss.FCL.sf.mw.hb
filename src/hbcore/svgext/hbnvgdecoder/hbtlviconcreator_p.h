@@ -39,75 +39,75 @@ class HbTlvIconCreator
 {
 public:
 
-	HbTlvIconCreator(const QByteArray &ptr, int width, int height, HbNvgTlvIcon * nvgTlvIcon);
-	
+    HbTlvIconCreator(const QByteArray &ptr, qint32 width, qint32 height, HbNvgTlvIcon * nvgTlvIcon);
+
     virtual ~HbTlvIconCreator();
 
-    HbNvgEngine::NvgErrorType execute();
+    HbNvgEngine::HbNvgErrorType execute();
 
     void setTlvIcon(HbNvgTlvIcon * nvgTlvIcon) {
         mNvgTlvIcon = nvgTlvIcon;
     }
-    
+
     void initialize();
 
 private:
 
-    void dVgAddCommand(int length, int pos);
-    void dVgAddCommand();
-    void dVgSetParameterfv();
-    void dVgSetPaint();
-    void dVgAppendPathData();
-    void dVgDrawPath();
-    void dVgClearPath();
-    void dVgCreatePaint();
-    void dVgSetiv();
-    void dVgClear();
-    void dVgSetfv();
-    void dVgCreatePath();
-    void dVgCreateImage();
-    void dVgGetPixels();
-    void dVgClearImage();
-    void dVgImageSubData();
-    void dVgDrawImage();
-    void dVgDestroyImage();
-    void dVgDestroyPaint();
-    void dVgDestroyPath();
-    void dVguRect();
-    void dVguEllipse();
-    void dVguRoundRect();
-    void dVguLine();
-    void dVgPrepareToBindImage();
-    void dVgBindImage();
-    void dVgUnBindImage();
-    void dVgFlush();
-    HbNvgEngine::NvgErrorType execute(int index);
+    void tlvVgAddCommand(qint32 length, qint32 pos);
+    void tlvVgAddCommand();
+    void tlvVgSetParameterfv();
+    void tlvVgSetPaint();
+    void tlvVgAppendPathData();
+    void tlvVgDrawPath();
+    void tlvVgClearPath();
+    void tlvVgCreatePaint();
+    void tlvVgSetiv();
+    void tlvVgClear();
+    void tlvVgSetfv();
+    void tlvVgCreatePath();
+    void tlvVgCreateImage();
+    void tlvVgGetPixels();
+    void tlvVgClearImage();
+    void tlvVgImageSubData();
+    void tlvVgDrawImage();
+    void tlvVgDestroyImage();
+    void tlvVgDestroyPaint();
+    void tlvVgDestroyPath();
+    void tlvVguRect();
+    void tlvVguEllipse();
+    void tlvVguRoundRect();
+    void tlvVguLine();
+    void tlvVgPrepareToBindImage();
+    void tlvVgBindImage();
+    void tlvVgUnBindImage();
+    void tlvVgFlush();
+    HbNvgEngine::HbNvgErrorType execute(qint32 index);
 
 #ifdef HB_NVG_DEBUG
     //Command specific logging methods
-    void logVgSeti(VGParamType type, VGint fvalue, int cmdsize);
-    void logVgSetf(VGParamType type, VGfloat fvalue, int cmdsize);
-    void logVgSetParameteri(VGHandle handle, VGint paramType, VGint pvalue, int cmdsize, int lpvalue);
-    void logVgSetPaint(VGPaint paint, VGbitfield paintModes, int cmdsize, int lpvalue);
-    void logVgDrawPath(VGbitfield paintModes, int cmdsize);
-    void logVgSetParameterfv(VGPaint handle, VGint paramtype, int count, int handlenum);
+    void logVgSeti(VGParamType type, VGint fvalue, qint32 cmdsize);
+    void logVgSetf(VGParamType type, VGfloat fvalue, qint32 cmdsize);
+    void logVgSetParameteri(VGHandle handle, VGint paramType, VGint pvalue, qint32 cmdsize, qint32 lpvalue);
+    void logVgSetPaint(VGPaint paint, VGbitfield paintModes, qint32 cmdsize, qint32 lpvalue);
+    void logVgDrawPath(VGbitfield paintModes, qint32 cmdsize);
+    void logVgSetParameterfv(VGPaint handle, VGint paramtype, qint32 count, qint32 handlenum);
 #endif
 
 private:
 
-    typedef void (HbTlvIconCreator::*pvgapi)();
+    typedef void (HbTlvIconCreator::*VgApiCallBack)();
 
     VGPath  createPath();
 
-    pvgapi vgapi[VgAPICount];
+    VgApiCallBack vgapi[VgApiCount];
 
     HbNvgIconData *  mNvgIconData;
-    int              mDataLength;
+    qint32              mDataLength;
     QSize            mResizedCanvasSize;
 
     quint8          mNvgHeader[NvgHeaderSize];
-    int             mTargetWidth;
-    int             mTargetHeight;
+    qint32             mTargetWidth;
+    qint32             mTargetHeight;
     bool            mScaled;
 
     VGfloat         mUserMatrix[9];
@@ -117,7 +117,7 @@ private:
 
     qint8           mCurrentCommand;
     quint8 *        mCommandBuffer;
-    VGPath          mLastVGPath;
+    VGPath          mLastVgPath;
 
     friend class HbNvgTlvIcon;
 };

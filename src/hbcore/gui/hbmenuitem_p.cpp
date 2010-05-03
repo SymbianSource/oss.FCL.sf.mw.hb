@@ -26,6 +26,7 @@
 #include "hbmenuitem_p.h"
 #include "hbmenuitem_p_p.h"
 #include "hbmenu.h"
+#include "hbmenu_p.h"
 #include "hbaction.h"
 #include "hbstyle.h"
 #include "hbstyleoptionmenuitem.h"
@@ -33,7 +34,10 @@
 #include "hbtextitem.h"
 #include "hbevent.h"
 #include "hbcolorscheme.h"
-
+#include "hbwidgetfeedback.h"
+#ifdef HB_GESTURE_FW
+#include <QGesture>
+#endif
 Q_DECLARE_METATYPE (QAction*)
 
 /*
@@ -180,7 +184,8 @@ HbMenuItem::HbMenuItem(HbMenu *menu, QGraphicsItem *parent)
 
     d->q_ptr = this;
     d->menu = menu;
-    setAcceptedMouseButtons(Qt::NoButton);
+    grabGesture(Qt::TapGesture);
+    setAcceptedMouseButtons (Qt::NoButton);
 }
 
 /*
@@ -247,6 +252,28 @@ void HbMenuItem::changeEvent(QEvent *event)
         d->_q_updateItem();
     }
 }
+#ifdef HB_GESTURE_FW
+void HbMenuItem::gestureEvent(QGestureEvent *event)
+{
+    //Q_D(HbMenuItem);
+    if(QTapGesture *gesture = qobject_cast<QTapGesture *>(event->gesture(Qt::TapGesture))) {
+        if (gesture->state() == Qt::GestureStarted) {           
+            // Tactile feedback                        
+            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+
+            pressStateChanged(true);
+            event->accept();
+        } else if (gesture->state() == Qt::GestureFinished) {
+            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+            pressStateChanged(false);
+            event->accept();            
+            HbMenuPrivate::d_ptr(menu())->_q_triggerAction(this);
+        } else if (gesture->state() == Qt::GestureCanceled) {
+            pressStateChanged(false);
+        }
+    }
+}
+#endif
 
 /*
     Sets the action,which is represented by the menu item.

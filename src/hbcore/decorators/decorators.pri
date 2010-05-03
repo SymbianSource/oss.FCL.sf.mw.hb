@@ -27,38 +27,35 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
-INTERNAL_HEADERS += $$PWD/hbbatteryindicator_p.h
-INTERNAL_HEADERS += $$PWD/hbbatteryindicator_p_p.h
-INTERNAL_HEADERS += $$PWD/hbdecorator_p.h
-INTERNAL_HEADERS += $$PWD/hbdecorator_p_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorgroup_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorgroup_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsignalindicator_p.h
-INTERNAL_HEADERS += $$PWD/hbsignalindicator_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsleepmodelistener_p.h
-INTERNAL_HEADERS += $$PWD/hbsleepmodelistener_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsoftkey_p.h
-INTERNAL_HEADERS += $$PWD/hbsoftkey_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsoftkeygroup_p.h
-INTERNAL_HEADERS += $$PWD/hbstatusbar_p.h
-INTERNAL_HEADERS += $$PWD/hbstatusbar_p_p.h
-INTERNAL_HEADERS += $$PWD/hbtitlebar_p.h
-INTERNAL_HEADERS += $$PWD/hbtitlebar_p_p.h
-INTERNAL_HEADERS += $$PWD/hbtitlebarhandle_p.h
-INTERNAL_HEADERS += $$PWD/hbtitlepane_p.h
-INTERNAL_HEADERS += $$PWD/hbtitlepane_p_p.h
-INTERNAL_HEADERS += $$PWD/hbsysteminfo_p.h
-INTERNAL_HEADERS += $$PWD/hbnavigationbutton_p.h
-INTERNAL_HEADERS += $$PWD/hbnavigationbutton_p_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorbutton_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorbutton_p_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatorleveliconitem_p.h
+PRIVATE_HEADERS += $$PWD/hbbatteryindicator_p.h
+PRIVATE_HEADERS += $$PWD/hbbatteryindicator_p_p.h
+PRIVATE_HEADERS += $$PWD/hbdecorator_p.h
+PRIVATE_HEADERS += $$PWD/hbdecorator_p_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorgroup_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorgroup_p_p.h
+PRIVATE_HEADERS += $$PWD/hbsignalindicator_p.h
+PRIVATE_HEADERS += $$PWD/hbsignalindicator_p_p.h
+PRIVATE_HEADERS += $$PWD/hbsoftkey_p.h
+PRIVATE_HEADERS += $$PWD/hbsoftkey_p_p.h
+PRIVATE_HEADERS += $$PWD/hbsoftkeygroup_p.h
+PRIVATE_HEADERS += $$PWD/hbstatusbar_p.h
+PRIVATE_HEADERS += $$PWD/hbstatusbar_p_p.h
+PRIVATE_HEADERS += $$PWD/hbtitlebar_p.h
+PRIVATE_HEADERS += $$PWD/hbtitlebar_p_p.h
+PRIVATE_HEADERS += $$PWD/hbtitlebarhandle_p.h
+PRIVATE_HEADERS += $$PWD/hbtitlepane_p.h
+PRIVATE_HEADERS += $$PWD/hbtitlepane_p_p.h
+PRIVATE_HEADERS += $$PWD/hbsysteminfo_p.h
+PRIVATE_HEADERS += $$PWD/hbnavigationbutton_p.h
+PRIVATE_HEADERS += $$PWD/hbnavigationbutton_p_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorbutton_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorbutton_p_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatorleveliconitem_p.h
 
 SOURCES += $$PWD/hbbatteryindicator.cpp
 SOURCES += $$PWD/hbdecorator.cpp
 SOURCES += $$PWD/hbindicatorgroup.cpp
 SOURCES += $$PWD/hbsignalindicator.cpp
-SOURCES += $$PWD/hbsleepmodelistener.cpp
 SOURCES += $$PWD/hbsoftkey.cpp
 SOURCES += $$PWD/hbsoftkeygroup.cpp
 SOURCES += $$PWD/hbstatusbar.cpp
@@ -71,11 +68,11 @@ SOURCES += $$PWD/hbindicatorbutton.cpp
 SOURCES += $$PWD/hbindicatorleveliconitem.cpp
 
 symbian {
-INTERNAL_HEADERS += $$PWD/hbsysteminfo_sym_p_p.h
-INTERNAL_HEADERS += $$PWD/hbbatterymonitor_sym_p.h
-INTERNAL_HEADERS += $$PWD/hbnetworksignalmonitor_sym_p.h
-INTERNAL_HEADERS += $$PWD/hbindicatormonitor_sym_p.h
-INTERNAL_HEADERS += $$PWD/hbnetworkmodemonitor_sym_p.h
+PRIVATE_HEADERS += $$PWD/hbsysteminfo_sym_p_p.h
+PRIVATE_HEADERS += $$PWD/hbbatterymonitor_sym_p.h
+PRIVATE_HEADERS += $$PWD/hbnetworksignalmonitor_sym_p.h
+PRIVATE_HEADERS += $$PWD/hbindicatormonitor_sym_p.h
+PRIVATE_HEADERS += $$PWD/hbnetworkmodemonitor_sym_p.h
 SOURCES += $$PWD/hbsysteminfo_sym.cpp
 SOURCES += $$PWD/hbbatterymonitor_sym.cpp
 SOURCES += $$PWD/hbnetworksignalmonitor_sym.cpp
@@ -91,8 +88,8 @@ LIBS += -letel3rdparty \
 }
 
 win32* {
-INTERNAL_HEADERS += $$PWD/hbsysteminfo_win_p_p.h
-INTERNAL_HEADERS += $$PWD/hbwmihelper_win_p.h
+PRIVATE_HEADERS += $$PWD/hbsysteminfo_win_p_p.h
+PRIVATE_HEADERS += $$PWD/hbwmihelper_win_p.h
 SOURCES += $$PWD/hbsysteminfo_win.cpp
 SOURCES += $$PWD/hbwmihelper_win.cpp
 
@@ -108,7 +105,7 @@ LIBS += Ole32.lib \
 }
 }
 
-linux-*|macx-* {
-INTERNAL_HEADERS += $$PWD/hbsysteminfo_linux_p_p.h
+unix:!symbian {
+PRIVATE_HEADERS += $$PWD/hbsysteminfo_linux_p_p.h
 SOURCES += $$PWD/hbsysteminfo_linux.cpp
 }

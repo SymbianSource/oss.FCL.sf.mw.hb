@@ -83,26 +83,6 @@
 */
 
 /*!
-    \deprecated HbStringUtil::collationMethods()
-        is deprecated.
-    
-    Returns the number of collation methods supported.
-    On Symbian platform uses Mem::CollationMethods,
-    elsewhere return 0.
-     
-    \return The number of collation methods available.
- */
-int HbStringUtil::collationMethods()
-{
-    qWarning("HbStringUtil::collationMethods is DEPRECATED. Do not use this function.");
-#if defined( Q_OS_SYMBIAN )
-    return Mem::CollationMethods();
-#else
-    return 0;
-#endif 
-}
-
-/*!
     Searches source string's collated data for a
     match with collated data supplied in pattern string
     
@@ -321,28 +301,6 @@ int HbStringUtil::compareF( const QString &string1,
 #else
     // folding is just case insensitive     
     return string1.compare( string2, Qt::CaseInsensitive );   
-#endif 
-}
-
-/*!
-    \deprecated HbStringUtil::collate( const uint chr )
-        is deprecated.
-    
-    Converts the character to its collated form.
-    Collating is the process of removing differences between characters 
-    that are considered unimportant for the purposes of ordering characters.
-    The result of the conversion depends on the locale
-    
-    \param chr The charcter to be collated.
-    \return The converted character.
- */
-uint HbStringUtil::collate( const uint chr )
-{
-    qWarning("HbStringUtil::collate is DEPRECATED. Do not use this function.");
-#if defined( Q_OS_SYMBIAN )
-    return User::Collate( chr );
-#else
-    return chr;
 #endif 
 }
 

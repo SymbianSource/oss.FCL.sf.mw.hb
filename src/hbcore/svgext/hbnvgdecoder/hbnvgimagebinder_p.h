@@ -31,9 +31,9 @@ class HbVgImageBinder
 public:
     virtual ~HbVgImageBinder() {}
 
-    virtual int bindClientBuffer(quint32 buffer) = 0;
+    virtual qint32 bindClientBuffer(quint32 buffer) = 0;
 
-    virtual int unBindClientBuffer() = 0;
+    virtual qint32 unbindClientBuffer() = 0;
 };
 
 #endif

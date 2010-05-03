@@ -32,6 +32,12 @@
 */
 
 
+/*!
+
+    \deprecated HbStyleOptionGroupBox::HbStyleOptionGroupBox()
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionGroupBox::HbStyleOptionGroupBox():
     collapsed(false),
     heading(QString()),
@@ -42,6 +48,12 @@ HbStyleOptionGroupBox::HbStyleOptionGroupBox():
     version = Version;
 }
 
+/*!
+
+    \deprecated HbStyleOptionGroupBox::HbStyleOptionGroupBox(const HbStyleOptionGroupBox&)
+    is deprecated. Styleoptions will not be public.
+
+*/
 HbStyleOptionGroupBox::HbStyleOptionGroupBox(const HbStyleOptionGroupBox &other) 
     : HbStyleOption(other), 
     collapsed( other.collapsed ),
