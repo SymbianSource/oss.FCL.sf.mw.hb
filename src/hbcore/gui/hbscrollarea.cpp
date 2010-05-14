@@ -37,26 +37,26 @@
 #include <QDebug>
 
 /*!
- *  @beta
- *  @hbcore
- *  \class HbScrollArea
- *  \brief HbScrollArea provides a finger-touch enabled scrollable container class.  
- *
- *  HbScrollArea handles the events need to scroll the contents placed inside it.  It also
- *  handles the display of scrollbar while scrolling is occurring.
- *
- *  HbScrollArea is used by constructing a QGraphicsWidget that contains the content to be
- *  displayed, then calling the setContentWidget() method.  The content widget must have its size
- *  set appropriately either by associating a layout with the widget or by explicitly setting
- *  the size (e.g. by calling QGraphicsWidget::setGeometry()).
- * 
- *  The class can be used by itself to provide default scrolling behavior or can be
- *  subclassed to add touch feedback, selection feedback, etc.
- *
- *  By default, the class provides dragging, flicking with animated follow-on, a
- *  simple inertia algorithm for slowing the animated follow-on scrolling and
- *  a bounce-back algorithm for animating the content back to its bounding
- *  limits at the end of a drag or flick action.
+ @beta
+ @hbcore
+ \class HbScrollArea
+ \brief HbScrollArea provides a finger-touch enabled scrollable container class.  
+ 
+ HbScrollArea handles the events need to scroll the contents placed inside it.  It also
+ handles the display of scrollbar while scrolling is occurring.
+ 
+ HbScrollArea is used by constructing a QGraphicsWidget that contains the content to be
+ displayed, then calling the setContentWidget() method.  The content widget must have its size
+ set appropriately either by associating a layout with the widget or by explicitly setting
+ the size (e.g. by calling QGraphicsWidget::setGeometry()).
+ 
+ The class can be used by itself to provide default scrolling behavior or can be
+ subclassed to add touch feedback, selection feedback, etc.
+ 
+ By default, the class provides dragging, flicking with animated follow-on, a
+ simple inertia algorithm for slowing the animated follow-on scrolling and
+ a bounce-back algorithm for animating the content back to its bounding
+ limits at the end of a drag or flick action.
  */
 
 /*!
@@ -222,9 +222,9 @@
 */
 
 /*!
- * Constructor
- *
- * \sa HbScrollArea::HbScrollArea
+  Constructor
+ 
+  \sa HbScrollArea::HbScrollArea
  */
 HbScrollArea::HbScrollArea(QGraphicsItem* parent) : 
         HbWidget( *new HbScrollAreaPrivate, parent )
@@ -243,9 +243,9 @@ HbScrollArea::HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent):
 }
    
 /*!
- * Destructor
- *
- * \sa HbScrollArea::~HbScrollArea
+ Destructor
+ 
+ \sa HbScrollArea::~HbScrollArea
  */
 HbScrollArea::~HbScrollArea()
 {
@@ -256,9 +256,9 @@ HbScrollArea::~HbScrollArea()
 }
 
 /*!
- * Returns a pointer to the QGraphicsWidget,which is the content of scrollable area.
- *
- * \sa HbScrollArea::setContentWidget()
+ Returns a pointer to the QGraphicsWidget,which is the content of scrollable area.
+ 
+ \sa HbScrollArea::setContentWidget()
  */
 QGraphicsWidget* HbScrollArea::contentWidget() const
 {
@@ -268,10 +268,10 @@ QGraphicsWidget* HbScrollArea::contentWidget() const
 }
 
 /*!
- * Assigns the QGraphicsWidget that is to be scrolled.  The HbScrollArea widget takes ownership of
- * the QGraphicsWidget.
- *
- * \sa HbScrollArea::contentWidget()
+ Assigns the QGraphicsWidget that is to be scrolled.  The HbScrollArea widget takes ownership of
+ the QGraphicsWidget.
+ 
+ \sa HbScrollArea::contentWidget()
  */
 void HbScrollArea::setContentWidget(QGraphicsWidget* contents)
 {
@@ -329,9 +329,9 @@ QGraphicsWidget *HbScrollArea::takeContentWidget()
 }
 
 /*!
- * Returns the value of the clampingStyle property
- *
- * \sa HbScrollArea::setClampingStyle()
+ Returns the value of the clampingStyle property
+ 
+ \sa HbScrollArea::setClampingStyle()
  */
 HbScrollArea::ClampingStyle HbScrollArea::clampingStyle() const
 {
@@ -341,20 +341,20 @@ HbScrollArea::ClampingStyle HbScrollArea::clampingStyle() const
 }
 
 /*!
- * Sets the clampingStyle property that controls how the scrolling is constrained
- * relative to the contents of the scrolling area.
- *
- * Possible values for the clamping style include:
- *
- *		StrictClamping - scrolling is limited to the bounding rectangle of the content item
- *		BounceBackClamping - scrolling can go beyond the bounding rectangle of the content item, but bounces back to the
- *						limits of the bounding rectangle when released or when inertia scrolling stops
- *		NoClamping - scrolling is completely unclamped (this is usually used when the subclass implements its own
- *						custom clamping behavior)
- *
- * The default value is BounceBackClamping.
- *
- * \sa HbScrollArea::clampingStyle()
+ Sets the clampingStyle property that controls how the scrolling is constrained
+ relative to the contents of the scrolling area.
+ 
+ Possible values for the clamping style include:
+ 
+ 	StrictClamping - scrolling is limited to the bounding rectangle of the content item
+ 	BounceBackClamping - scrolling can go beyond the bounding rectangle of the content item, but bounces back to the
+ 					limits of the bounding rectangle when released or when inertia scrolling stops
+ 	NoClamping - scrolling is completely unclamped (this is usually used when the subclass implements its own
+ 					custom clamping behavior)
+ 
+ The default value is BounceBackClamping.
+ 
+ \sa HbScrollArea::clampingStyle()
  */
 void HbScrollArea::setClampingStyle(ClampingStyle value)
 {
@@ -364,9 +364,9 @@ void HbScrollArea::setClampingStyle(ClampingStyle value)
 }
 
 /*!
- * Returns the value of the scrollingStyle property
- *
- * \sa HbScrollArea::setScrollingStyle()
+  Returns the value of the scrollingStyle property
+ 
+  \sa HbScrollArea::setScrollingStyle()
  */
 HbScrollArea::ScrollingStyle HbScrollArea::scrollingStyle() const
 {
@@ -382,7 +382,7 @@ HbScrollArea::ScrollingStyle HbScrollArea::scrollingStyle() const
   Possible values for the clamping style include:
  
  		Pan - dragging motion pans the view with no follow-on scrolling animation
- \deprecated PanOrFlick
+               \deprecated PanOrFlick
                     is deprecated.
  		PanWithFollowOn - dragging motion pans the view, velocity at end of drag motion triggers follow-on animated scrolling
  
@@ -403,9 +403,9 @@ void HbScrollArea::setScrollingStyle(ScrollingStyle value)
 }
 
 /*!
- * Returns the value of the scrollDirections property.
- *
- * \sa HbScrollArea::setScrollDirections()
+  Returns the value of the scrollDirections property.
+ 
+  \sa HbScrollArea::setScrollDirections()
  */
 Qt::Orientations HbScrollArea::scrollDirections() const
 {
@@ -415,14 +415,14 @@ Qt::Orientations HbScrollArea::scrollDirections() const
 }
 
 /*!
- * Sets the value of the scrollDirections property.  This value is of
- * type Qt::Orientations and can set to either Qt::Horizontal to enable horizontal scrolling,
- * Qt::Vertical to enable vertical scrolling or (Qt::Horizontal | Qt::Vertical) to enable
- * scrolling in both directions.
- *
- * The default value is Qt::Vertical.
- *
- * \sa HbScrollArea::scrollDirections()
+  Sets the value of the scrollDirections property.  This value is of
+  type Qt::Orientations and can set to either Qt::Horizontal to enable horizontal scrolling,
+  Qt::Vertical to enable vertical scrolling or (Qt::Horizontal | Qt::Vertical) to enable
+  scrolling in both directions.
+ 
+  The default value is Qt::Vertical.
+ 
+  \sa HbScrollArea::scrollDirections()
  */
 void HbScrollArea::setScrollDirections(Qt::Orientations value)
 {
@@ -438,9 +438,9 @@ void HbScrollArea::setScrollDirections(Qt::Orientations value)
 }
 
 /*!
- * Returns true if the inertia scrolling effect is enabled, false otherwise.
- *
- * \sa HbScrollArea::setFrictionEnabled()
+  Returns true if the inertia scrolling effect is enabled, false otherwise.
+ 
+  \sa HbScrollArea::setFrictionEnabled()
  */
 bool HbScrollArea::frictionEnabled() const
 {
@@ -450,10 +450,10 @@ bool HbScrollArea::frictionEnabled() const
 }
 
 /*!
- * Enables/disables the inertia scrolling effect.
- * By default, the inertia effect is enabled.
- *
- * \sa HbScrollArea::frictionEnabled()
+  Enables/disables the inertia scrolling effect.
+  By default, the inertia effect is enabled.
+ 
+  \sa HbScrollArea::frictionEnabled()
  */
 void HbScrollArea::setFrictionEnabled(bool value)
 {
@@ -495,7 +495,7 @@ void HbScrollArea::setLongPressEnabled (bool value)
 }
 
 /*
- * \reimp
+  \reimp
  */
 QVariant HbScrollArea::itemChange(GraphicsItemChange change, const QVariant &value)
 {
@@ -628,7 +628,7 @@ void HbScrollArea::mousePressEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /*!
- * Returns true if a scrolling action is in progress, false otherwise.
+  Returns true if a scrolling action is in progress, false otherwise.
  */
 bool HbScrollArea::isScrolling() const
 {
@@ -638,7 +638,7 @@ bool HbScrollArea::isScrolling() const
 }
 
 /*!
- * Returns true if the scrolling is due to dragging as opposed to follow-on scrolling
+  Returns true if the scrolling is due to dragging as opposed to follow-on scrolling
  */
 bool HbScrollArea::isDragging() const
 {
@@ -648,12 +648,12 @@ bool HbScrollArea::isDragging() const
 }
 
 /*!
- * Scrolls the view by the amount indicated by "delta".
- *
- * The function returns TRUE if the view was able to scroll, FALSE otherwise.
- *
- * The function is virtual so subclasses can override it to customize the behavior by, for example, 
- * clamping the position so that at least one item in the view remains visible.
+  Scrolls the view by the amount indicated by "delta".
+ 
+  The function returns TRUE if the view was able to scroll, FALSE otherwise.
+ 
+  The function is virtual so subclasses can override it to customize the behavior by, for example, 
+  clamping the position so that at least one item in the view remains visible.
  */
 bool HbScrollArea::scrollByAmount(const QPointF& delta)
 {
@@ -674,14 +674,7 @@ bool HbScrollArea::event(QEvent *event)
         if(event->type() == QEvent::ApplicationLayoutDirectionChange
                    || event->type() == QEvent::LayoutDirectionChange) {
              d->changeLayoutDirection(layoutDirection());
-        } else if (event->type() == QEvent::GraphicsSceneResize) {
-            if (isVisible() && d->mContents) {
-                if ( d->mIsAnimating ) {
-                    d->stopAnimating();
-                }
-                d->adjustContent();
-            }
-        }  else if (event->type() == HbEvent::ChildFocusOut) {
+        } else if (event->type() == HbEvent::ChildFocusOut) {
             //qDebug() << "focusout";
             if ( !d->positionOutOfBounds() ) {
                 d->stopAnimating();
@@ -702,7 +695,10 @@ bool HbScrollArea::event(QEvent *event)
                 QSizePolicy contentPolicy = d->mContents->sizePolicy();
 
                 if (d->mScrollDirections & Qt::Vertical) {
-                    if (contentPolicy.verticalPolicy() != QSizePolicy::Ignored) {
+                    if ((contentPolicy.verticalPolicy() & QSizePolicy::ExpandFlag) &&
+                        (d->mContents->preferredHeight() < size().height())) {
+                        newSize.setHeight(size().height());
+                    } else if (contentPolicy.verticalPolicy() != QSizePolicy::Ignored) {
                         newSize.setHeight(d->mContents->preferredHeight());
                     }
                 } else {
@@ -710,7 +706,10 @@ bool HbScrollArea::event(QEvent *event)
                 }
 
                 if (d->mScrollDirections & Qt::Horizontal) {
-                    if (contentPolicy.horizontalPolicy() != QSizePolicy::Ignored) {
+                    if ((contentPolicy.horizontalPolicy() & QSizePolicy::ExpandFlag) &&
+                        (d->mContents->preferredWidth() < size().width())) {
+                        newSize.setWidth(size().width());
+                    } else if (contentPolicy.horizontalPolicy() != QSizePolicy::Ignored) {
                         newSize.setWidth(d->mContents->preferredWidth());
                     }
                 } else {
@@ -721,17 +720,26 @@ bool HbScrollArea::event(QEvent *event)
             }
         } else if (event->type() == QEvent::GraphicsSceneResize) {
             if (d->mContents) {
+                if ( d->mIsAnimating ) {
+                    d->stopAnimating();
+                }
                 QSizeF newSize = d->mContents->size();
+                bool sizeChanged = false;
 
                 if (!(d->mScrollDirections & Qt::Vertical)) {
                     newSize.setHeight(size().height());
+                    sizeChanged = true;
                 }
 
                 if (!(d->mScrollDirections & Qt::Horizontal)) {
                     newSize.setWidth(size().width());
+                    sizeChanged = true;
                 }
-
-                d->mContents->resize(newSize);
+                if (sizeChanged) {
+                    d->mContents->resize(newSize);
+                } else {
+                    d->adjustContent();
+                }
             }
         }
     }
@@ -1042,7 +1050,7 @@ void HbScrollArea::scrollContentsTo (const QPointF& newPosition, int time) {
 }
 
 /*
- * \reimp
+  \reimp
  */
 void HbScrollArea::polish(HbStyleParameters& params)
 {

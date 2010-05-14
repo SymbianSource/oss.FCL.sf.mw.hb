@@ -31,13 +31,13 @@
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
 #endif // HB_EFFECTS
-#include <hbgesture.h>
 
 class HbIndicatorButton;
 class HbTitleBarPrivate;
 class HbTitlePane;
 class HbView;
 class HbAction;
+struct IndicatorClientInfo;
 
 class HB_CORE_PRIVATE_EXPORT HbTitleBar : public HbWidget
 {
@@ -71,10 +71,12 @@ public:
     HbAction *navigationAction() const;
     void setNavigationAction(HbAction *action);
     void setDefaultNavigationAction();
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 signals:
     void titleBarStateChanged();
-    void notificationCountChanged(int count);
+    void activated(const QList<IndicatorClientInfo> &clientInfo);
+    void deactivated(const QList<IndicatorClientInfo> &clientInfo);
 
 public slots:
     void gestureRight();

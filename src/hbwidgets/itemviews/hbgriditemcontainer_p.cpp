@@ -536,5 +536,49 @@ void HbGridItemContainer::setUniformItemSizes(bool enable)
     // d->mUniformItemSizes - allways true
 }
 
+/*!
+    \reimp
+
+    All other sizehints are taken from grid layout except preferred sizehint. Preferred sizeHint for grid container
+    is maximum height & width.
+*/
+QSizeF HbGridItemContainer::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    if (which == Qt::PreferredSize) {
+        return QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);       
+    } else {
+        return HbAbstractItemContainer::sizeHint(which, constraint);
+    }
+}
+
+/*!
+    \reimp
+
+    Resizes the container. 
+    
+    If vertical scrolling is used view width and layout preferred height are used. 
+    
+    If horizontal scrolling is used view height and layout preferred width are used.
+*/
+void HbGridItemContainer::resizeContainer()
+{
+    Q_D(HbGridItemContainer);
+    
+    qreal width = 0;
+    qreal height = 0;
+
+    if (d->mItemView) {
+        if (d->mScrollDirection == Qt::Vertical) {
+            width = d->mItemView->size().width();
+            height = layout()->preferredHeight();
+        } else {
+            width = layout()->preferredWidth();
+            height = d->mItemView->size().height();
+        }
+    }
+
+    resize(width, height);
+}
+
 #include "moc_hbgriditemcontainer_p.cpp"
 

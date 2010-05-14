@@ -26,7 +26,6 @@
 #include "hbfeedbackeffectengine.h"
 #include "hbfeedbackeffectutils.h"
 
-#include <hbfeedbackplayer.h>
 #include <hbinstantfeedback.h>
 #include <hbcontinuousfeedback.h>
 
@@ -42,24 +41,24 @@
 #include "hbinputvirtualrocker.h"
 #include <hbnamespace_p.h>
 
-/*!
+/*
     Constructor
 */
 HbFeedbackEffectEngine::HbFeedbackEffectEngine() : activelyScrollingItemView(0), previousCursorPosition(0)
 {
-    // initialize
-    HbFeedbackPlayer::instance();
+    instantFeedback = new HbInstantFeedback(HbFeedback::None);
 }
 
-/*!
+/*
     Destructor
 */
 HbFeedbackEffectEngine::~HbFeedbackEffectEngine()
 {
-    if (hbFeedbackPlayer) {
-        foreach(int identifier, continuousFeedbacks) {
-            hbFeedbackPlayer->cancelContinuousFeedback(identifier);
-        }
+    if(instantFeedback)
+        delete instantFeedback;
+    foreach(HbContinuousFeedback *feedback, continuousFeedbacks) {
+        feedback->stop();
+        delete feedback;
     }
 
     continuousFeedbacks.clear();
@@ -230,7 +229,7 @@ bool HbFeedbackEffectEngine::widgetOverridesModalities(const HbWidget *widget,Hb
 }
 
 
-/*!
+/*
     Called by the feedback manager when an interaction is triggered.
 */
 void HbFeedbackEffectEngine::triggered(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers)
@@ -265,7 +264,7 @@ void HbFeedbackEffectEngine::triggered(const HbWidget *widget, Hb::InstantIntera
     }
 }
 
-/*!
+/*
     Called by the feedback manager when a widget is pressed.
 */
 void HbFeedbackEffectEngine::pressed(const HbWidget *widget)
@@ -289,7 +288,7 @@ void HbFeedbackEffectEngine::pressed(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a widget is released.
 */
 void HbFeedbackEffectEngine::released(const HbWidget *widget)
@@ -343,7 +342,7 @@ void HbFeedbackEffectEngine::released(const HbWidget *widget)
     // normally touch end feedback effect is initiated with a clicked signal
 }
 
-/*!
+/*
     Called by the feedback manager when a long press is detected for a widget.
 */
 void HbFeedbackEffectEngine::longPressed(const HbWidget *widget)
@@ -356,7 +355,7 @@ void HbFeedbackEffectEngine::longPressed(const HbWidget *widget)
         effect = overrider.newInstantEffect;
     } else {
         effect = HbFeedback::None;
-        if (widget->type() == Hb::ItemType_InputCharacterButton) {
+        if (widget->type() == Hb::ItemType_InputButtonGroup) {
             effect = HbFeedback::SensitiveKeypad;
         }
         else {
@@ -374,7 +373,7 @@ void HbFeedbackEffectEngine::longPressed(const HbWidget *widget)
 
 }
 
-/*!
+/*
     Called by the feedback manager when a widget is clicked.
 */
 void HbFeedbackEffectEngine::clicked(const HbWidget *widget)
@@ -402,7 +401,7 @@ void HbFeedbackEffectEngine::clicked(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when keyrepeats are detected for a widget.
 */
 void HbFeedbackEffectEngine::keyRepeated(const HbWidget *widget)
@@ -426,7 +425,7 @@ void HbFeedbackEffectEngine::keyRepeated(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a dragged over event is detected for a widget.
 */
 void HbFeedbackEffectEngine::draggedOver(const HbWidget *widget)
@@ -476,7 +475,7 @@ void HbFeedbackEffectEngine::draggedOver(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a widget is flicked.
 */
 void HbFeedbackEffectEngine::flicked(const HbWidget *widget)
@@ -500,7 +499,7 @@ void HbFeedbackEffectEngine::flicked(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a scroll area widget is flicked or dragged and the boundary reached.
 */
 void HbFeedbackEffectEngine::boundaryReached(const HbWidget *widget)
@@ -508,7 +507,7 @@ void HbFeedbackEffectEngine::boundaryReached(const HbWidget *widget)
     boundaryWidgets.append(widget);
 }
 
-/*!
+/*
     Called by the feedback manager when a rotate gesture is recognized for a widget.
 */
 void HbFeedbackEffectEngine::rotated90Degrees(const HbWidget *widget)
@@ -533,7 +532,7 @@ void HbFeedbackEffectEngine::rotated90Degrees(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a popup opens.
 */
 void HbFeedbackEffectEngine::popupOpened(const HbWidget *widget)
@@ -556,7 +555,7 @@ void HbFeedbackEffectEngine::popupOpened(const HbWidget *widget)
     }
 }
 
-/*!
+/*
     Called by the feedback manager when a popup closes.
 */
 void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
@@ -579,7 +578,7 @@ void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
     }
 }
 
-/*!
+/*
     Called by the feedback manager when an item view selection has changed.
 */
 void HbFeedbackEffectEngine::selectionChanged(const HbWidget *widget)
@@ -603,7 +602,7 @@ void HbFeedbackEffectEngine::selectionChanged(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when multitouch is activated.
 */
 void HbFeedbackEffectEngine::multitouchActivated(const HbWidget *widget)
@@ -627,7 +626,7 @@ void HbFeedbackEffectEngine::multitouchActivated(const HbWidget *widget)
     playInstantFeedback(widget, effect, modalities);
 }
 
-/*!
+/*
     Called by the feedback manager when a continuous interaction is triggered.
 */
 void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta)
@@ -706,6 +705,10 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
                             activelyScrollingItemView = widget;
                             newItemFound = false;
                         }
+                        // To prevent the uninitialized list to cause false new item detections
+                        if (oldVisibleIndexes.empty()) {
+                            newItemFound = false;
+                        }
                         oldVisibleIndexes.clear();
                         oldVisibleIndexes = visibleIndexes;
                         
@@ -750,7 +753,7 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
     }
 }
 
-/*!
+/*
     Called by the feedback manager when a continuous interaction is stopped.
 */
 void HbFeedbackEffectEngine::continuousStopped(const HbWidget *widget, Hb::ContinuousInteraction interaction)
@@ -788,60 +791,71 @@ void HbFeedbackEffectEngine::continuousStopped(const HbWidget *widget, Hb::Conti
     }
 }
 
-/*!
+/*
     Plays the instant feedback.
 */
 void HbFeedbackEffectEngine::playInstantFeedback(const HbWidget* widget, HbFeedback::InstantEffect effect, HbFeedback::Modalities modalities)
 {
     const QGraphicsView* view = widget->mainWindow();
-    if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget)) {
-        HbInstantFeedback feedback(effect);
-        feedback.setRect(widget, view);
-        feedback.setOwningWindow(view);
-        feedback.setModalities(modalities);
-
-        if (hbFeedbackPlayer && feedback.isLocated()) {
-            hbFeedbackPlayer->playInstantFeedback(feedback);
+    if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget) && instantFeedback) {
+        instantFeedback->setInstantEffect(effect);
+        instantFeedback->setRect(widget, view);
+        instantFeedback->setOwningWindow(view);
+        instantFeedback->setModalities(modalities);
+        
+        if (instantFeedback->isLocated()) {
+            instantFeedback->play();
         }
     }
 }
 
-/*!
+/*
     Plays the continuous feedback.
 */
 void HbFeedbackEffectEngine::playContinuousFeedback(const HbWidget* widget, HbFeedback::ContinuousEffect effect, int intensity, HbFeedback::Modalities modalities)
 {
     const QGraphicsView* view = widget->mainWindow();
-    if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget)) {
-        HbContinuousFeedback feedback(effect,view);
-        feedback.setRect(widget, view);
-        feedback.setIntensity(intensity);
-        feedback.setModalities(modalities);
 
-        if (hbFeedbackPlayer && feedback.isLocated()) {
-            // if continuous feedback is still active and not stopped by continuous feedback timeout
-            if (continuousFeedbacks.contains(widget)
-                && hbFeedbackPlayer->continuousFeedbackOngoing(continuousFeedbacks.value(widget))) {
-                hbFeedbackPlayer->updateContinuousFeedback(continuousFeedbacks.value(widget), feedback);
-            } else {
-                // if timeout has happened remove the item from the map storing continuous feedback identifiers
-                if (continuousFeedbacks.contains(widget)) {
-                    continuousFeedbacks.remove(widget);
-                }
-                // create a new continuous feedback
-                continuousFeedbacks.insert(widget, hbFeedbackPlayer->startContinuousFeedback(feedback));
+    // if feedback can be played
+    if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget)) {
+
+        // if this widget has been playing
+        if (continuousFeedbacks.contains(widget)) {
+            HbContinuousFeedback* feedback = continuousFeedbacks.value(widget);
+
+            // if this feedback is already playing then only its effect and intensity are updated
+            feedback->setModalities(modalities);
+            feedback->setOwningWindow(view);
+            feedback->setRect(widget, view);
+            feedback->setContinuousEffect(effect);
+            feedback->setIntensity(intensity);
+            // if this feedback is not being played, play it
+            if (!feedback->isPlaying()) {
+                feedback->play();
             }
+        } else {
+            // this widget has not played anything before
+            HbContinuousFeedback *feedback = new HbContinuousFeedback();
+            feedback->setModalities(modalities);
+            feedback->setOwningWindow(view);
+            feedback->setRect(widget, view);
+            feedback->setContinuousEffect(effect);
+            feedback->setIntensity(intensity);
+            continuousFeedbacks.insert(widget, feedback);
+            feedback->play();
         }
     }
 }
 
-/*!
+/*
     Cancels the playing of a continuous feedback.
 */
 void HbFeedbackEffectEngine::cancelContinuousFeedback(const HbWidget* widget)
 {
-    if (hbFeedbackPlayer && continuousFeedbacks.contains(widget)) {
-        hbFeedbackPlayer->cancelContinuousFeedback(continuousFeedbacks.take(widget));
+    if (continuousFeedbacks.contains(widget)) {
+        HbContinuousFeedback *feedback = continuousFeedbacks.take(widget);
+        feedback->stop();
+        delete feedback;
     }
 }
 

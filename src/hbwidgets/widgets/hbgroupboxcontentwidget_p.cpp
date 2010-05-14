@@ -24,10 +24,8 @@
 ****************************************************************************/
 
 #include "hbgroupboxcontentwidget_p.h"
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 #include <hbscrollarea.h>
-#include <hbgesturefilter.h>
-#include <hbgesture.h>
 #include <QGraphicsSceneMouseEvent>
 #include <hbwidgetfeedback.h>
 #ifdef HB_GESTURE_FW
@@ -50,8 +48,8 @@ HbGroupBoxContentWidget::HbGroupBoxContentWidget(QGraphicsItem *parent ) :
     HbWidget(parent),
     mContent(0),
     mBackgroundItem(0),
+    groupBoxType( GroupBoxTypeUnknown ),
     contentPressed(false)
-  
 {
     groupBox = qgraphicsitem_cast<HbGroupBox*>( parent );
 
@@ -122,16 +120,18 @@ void HbGroupBoxContentWidget::createConnection()
 */
 void HbGroupBoxContentWidget::setType(GroupBoxType type)
 {
-    groupBoxType = type;
-    // set dynamic properties for type
-    if(groupBoxType == GroupBoxCollapsingContainer)
-        setProperty("groupBoxType",3);
-    else if(groupBoxType == GroupBoxRichLabel)
-        setProperty("groupBoxType",2);
+    if( groupBoxType != type ){
+        groupBoxType = type;
+        // set dynamic properties for type
+        if(groupBoxType == GroupBoxCollapsingContainer)
+            setProperty("groupBoxType",3);
+        else if(groupBoxType == GroupBoxRichLabel)
+            setProperty("groupBoxType",2);
 
-    if(groupBoxType != GroupBoxSimpleLabel){
-       createPrimitives();
-       //createConnection();
+        if(groupBoxType != GroupBoxSimpleLabel){
+           createPrimitives();
+           //createConnection();
+        }
     }
 }
 
@@ -147,7 +147,7 @@ void HbGroupBoxContentWidget::setContentWidget( HbWidget *widget )
         delete mContent; 
         mContent = 0;
     }
-     // if NULL widget is passed dont do anything
+     // if NULL widget is passed don't do anything
     if ( !widget   ) {
         return;
     }

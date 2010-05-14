@@ -67,16 +67,19 @@ public:
     static HbIconCacheItem* createCacheItem(const HbIconKey &key,
                                             HbIconLoader::IconLoaderOptions options,
                                             const QString &format,
+                                            HbRenderingMode currentRenderingMode,
                                             bool isMultiPiece = false);
     static void createCacheItem(HbIconCacheItem& iconCacheItem,
-                                const HbIconKey &key);
+                                const HbIconKey &key,
+                                HbRenderingMode currentRenderingMode);
 
     static HbIconCacheItem * createMultiPieceCacheItem(const HbIconKey &key,
             HbIconLoader::IconLoaderOptions options,
             const QString &format,
             const QVector<HbSharedIconInfo> &multiPieceIconInfo,
             HbMultiIconParams &multiPieceIconParams,
-            bool allNvg);
+            bool allNvg,
+            HbRenderingMode currentRenderingMode);
 
 
 

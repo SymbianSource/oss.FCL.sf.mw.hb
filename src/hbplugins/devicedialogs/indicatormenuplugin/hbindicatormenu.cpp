@@ -25,13 +25,11 @@
 
 #include <QVariant>
 #include <QTimer>
-#include <hbstyleoptionindicatormenu.h>
 #include <hbmainwindow.h>
 
 #include "hbindicatormenucontent_p.h"
 #include "hbindicatormenu_p.h"
 #include "hbindicatormenupluginerrors_p.h"
-
 #include "hbdialog_p.h"
 
 #ifdef HB_EFFECTS
@@ -192,6 +190,11 @@ void HbIndicatorMenu::doMenuLayout()
     if (style()->parameter("hb-param-widget-chrome-height", chromeHeight)
         && style()->parameter("hb-param-margin-gene-middle-horizontal", xPos)){
         setPreferredPos(QPointF(xPos, chromeHeight));
+    }
+    if (mShowEventReceived) {
+        HbIndicatorMenuContent *menuContent =
+            qobject_cast<HbIndicatorMenuContent*>(contentWidget());
+        menuContent->updatePrimitives();
     }
 }
 

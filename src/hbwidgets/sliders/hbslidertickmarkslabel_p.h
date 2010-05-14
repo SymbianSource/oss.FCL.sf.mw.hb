@@ -29,7 +29,7 @@
 #include "hbnamespace_p.h"
 #include <hbwidget.h>
 #include <hbnamespace.h>
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 
 class QStyleOption;
 class HbSliderTickmarksLabelPrivate;

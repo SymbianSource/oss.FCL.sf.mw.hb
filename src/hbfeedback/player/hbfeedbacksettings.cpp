@@ -35,33 +35,37 @@
 
     \class HbFeedbackSettings
 
-    \brief %Feedback Settings API for Qt application development.
+    \brief Feedback setting interface for controlling the feedback playing.
 
-    Application can choose to disable feedback effects for the application, for example
-    phone application may want to disable vibration and sound feedback effects during a phone call.
-
-    Feedback effects can also be disabled based on the type of feedback. There are currently four
-    supported types of feedback: instant fire&forget feedback, continuous feedback that needs to
-    be started and ended separately, hit area feedback that uses pre-registered feedback areas and
-    finally tacticon feedback.
+    Application can choose to disable feedback effects for the application, for example a phone 
+    application may want to disable the haptic and audio feedback effects during a phone call.
 */
+
 
 class HbFeedbackSettingsPrivate
 {
 
 public:
-    HbFeedbackSettingsPrivate(HbFeedbackSettings* parent);
+    static HbFeedbackSettingsPrivate* instance();
+    HbFeedbackSettingsPrivate();
     ~HbFeedbackSettingsPrivate();
     void init();
 
 public:
     bool feedbackEnabled;
     HbFeedback::Types enabledTypes;
-    HbFeedbackSettings* parent;
 };
 
-HbFeedbackSettingsPrivate::HbFeedbackSettingsPrivate(HbFeedbackSettings* parent) : parent(parent)
+Q_GLOBAL_STATIC(HbFeedbackSettingsPrivate, feedbackSettingsPrivateGlobal);
+
+HbFeedbackSettingsPrivate* HbFeedbackSettingsPrivate::instance()
 {
+    return feedbackSettingsPrivateGlobal();
+}
+
+HbFeedbackSettingsPrivate::HbFeedbackSettingsPrivate()
+{
+    init();
 }
 
 HbFeedbackSettingsPrivate::~HbFeedbackSettingsPrivate()
@@ -80,19 +84,17 @@ void HbFeedbackSettingsPrivate::init()
 
 #endif
     // all types are enabled by default
-    enabledTypes = HbFeedback::TypeInstant
-                   | HbFeedback::TypeContinuous
-                   | HbFeedback::TypeHitArea
-                   | HbFeedback::TypeTacticon;
+    enabledTypes = HbFeedback::TypeInstant | HbFeedback::TypeContinuous;
 }
+
+
 
 /*!
     Constructor.
 */
-HbFeedbackSettings::HbFeedbackSettings(QObject* parent) : QObject(parent),
-        d(new HbFeedbackSettingsPrivate(this))
+HbFeedbackSettings::HbFeedbackSettings(QObject* parent) : QObject(parent)
 {
-    d->init();
+    d = HbFeedbackSettingsPrivate::instance();
 }
 
 /*!
@@ -100,7 +102,6 @@ HbFeedbackSettings::HbFeedbackSettings(QObject* parent) : QObject(parent),
 */
 HbFeedbackSettings::~HbFeedbackSettings()
 {
-    delete d;
 }
 
 /*!
@@ -185,73 +186,4 @@ bool HbFeedbackSettings::isFeedbackEnabled()
 #endif
     return d->feedbackEnabled;
 }
-
-/*!
-  \deprecated HbFeedbackSettings::enableType(HbFeedback::Type)
-        is deprecated.
-
-    Enables given type of feedback effects in the application.
-    All feedback types are enabled by default.
-    Emits signal typeEnabled(HbFeedback::Type type) if
-    previously disabled feedback type has been enabled.
-*/
-void HbFeedbackSettings::enableType(HbFeedback::Type type)
-{
-    if (!isTypeEnabled(type)) {
-        d->enabledTypes |= type;
-        emit feedbackTypeEnabled(type);
-    }
-}
-
-/*!
-  \deprecated HbFeedbackSettings::disableType(HbFeedback::Type)
-        is deprecated.
-
-    Disables given type of feedback effect mechanism in the application.
-
-    Emits signal typeDisabled(HbFeedback::Type type) if
-    previously enabled feedback type has been disabled.
-
-    \param type type of feedback effect
-*/
-void HbFeedbackSettings::disableType(HbFeedback::Type type)
-{
-    if (isTypeEnabled(type)) {
-        d->enabledTypes &= ~type;
-        emit feedbackTypeDisabled(type);
-    }
-}
-
-/*!
-  \deprecated HbFeedbackSettings::isTypeEnabled(HbFeedback::Type)
-        is deprecated.
-
-    Returns true if a particular type of feedback effect mechanism has been 
-    enabled for the application.
-*/
-bool HbFeedbackSettings::isTypeEnabled(HbFeedback::Type type)
-{
-    return d->enabledTypes & type;
-}
-
-/*!
-  \deprecated HbFeedbackSettings::isFeedbackAllowed(HbFeedback::Type)
-        is deprecated.
-
-    True if feedback effects and the particular feedback type of feedback 
-    effect mechanism is enabled, false if not.
-*/
-bool HbFeedbackSettings::isFeedbackAllowed(HbFeedback::Type type)
-{
-    return d->feedbackEnabled && isTypeEnabled(type);
-}
-
-/*!
-  \deprecated HbFeedbackSettings::feedbackTypeEnabled(HbFeedback::Type)
-        is deprecated.
-
-  \deprecated HbFeedbackSettings::feedbackTypeDisabled(HbFeedback::Type)
-        is deprecated.
-*/
-
 

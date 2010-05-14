@@ -28,7 +28,6 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 PUBLIC_HEADERS += $$PWD/hbabstractitemview.h
-PUBLIC_HEADERS += $$PWD/hbabstractitemcontainer.h
 PUBLIC_HEADERS += $$PWD/hbabstractviewitem.h
 PUBLIC_HEADERS += $$PWD/hbgridview.h
 PUBLIC_HEADERS += $$PWD/hbgridviewitem.h
@@ -46,6 +45,7 @@ PUBLIC_HEADERS += $$PWD/hbmodeliterator.h
 
 PRIVATE_HEADERS += $$PWD/hbabstractitemview_p.h
 PRIVATE_HEADERS += $$PWD/hbabstractitemcontainer_p.h
+PRIVATE_HEADERS += $$PWD/hbabstractitemcontainer_p_p.h
 PRIVATE_HEADERS += $$PWD/hbabstractviewitem_p.h
 PRIVATE_HEADERS += $$PWD/hbgriditemcontainer_p.h
 PRIVATE_HEADERS += $$PWD/hbgriditemcontainer_p_p.h
@@ -74,7 +74,7 @@ PRIVATE_HEADERS += $$PWD/hbtreeitemselectionmodel_p.h
 PRIVATE_HEADERS += $$PWD/hbmodeliterator_p.h
 PRIVATE_HEADERS += $$PWD/hbtreemodeliterator_p.h
 PRIVATE_HEADERS += $$PWD/hbtreemodeliterator_p_p.h
-SOURCES += $$PWD/hbabstractitemcontainer.cpp
+SOURCES += $$PWD/hbabstractitemcontainer_p.cpp
 SOURCES += $$PWD/hbabstractitemview.cpp
 SOURCES += $$PWD/hbabstractitemview_p.cpp
 SOURCES += $$PWD/hbabstractviewitem.cpp

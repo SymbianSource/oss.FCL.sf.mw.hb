@@ -36,28 +36,32 @@ SUBDIRS += src
 
 feature.files += $$HB_SOURCE_DIR/hb.prf
 feature.files += $$HB_BUILD_DIR/hb_install.prf
-feature.path = $$[QMAKE_MKSPECS]/features
+feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
+#feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
+feature.path = $$HB_FEATURES_DIR
 INSTALLS += feature
 
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/.qmake.cache)
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/hb_install.prf)
 
+hbvar.path = .
+hbvar.commands += $(QMAKE) -set HB \"hbcore hbwidgets hbutils\"
+QMAKE_EXTRA_TARGETS += hbvar
+INSTALLS += hbvar
+
 symbian {
     exists(rom):include(rom/rom.pri)
-    install.depends += index
+    install.depends += index hbvar
+#    install.depends += cssbinary
     install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     QMAKE_EXTRA_TARGETS += install
 }
 
-# indexing
-symbian {
-    THEMEINDEXER  = $$hbNativePath($$HB_SOURCE_DIR/bin/themeindexer_symbian)
-    HB_THEMES_DIR = $${EPOCROOT}epoc32/data/z/resource/hb/themes
-} else {
-    THEMEINDEXER  = $$hbNativePath($$HB_BUILD_DIR/bin/themeindexer)
-    HB_THEMES_DIR = $(HB_THEMES_DIR)/themes
-}
+# theme indexing
+
+symbian:HB_THEMES_DIR = $${EPOCROOT}epoc32/data/z/resource/hb/themes
+else:HB_THEMES_DIR = $(HB_THEMES_DIR)/themes
 isEmpty(HB_THEMES_DIR):index.commands += echo HB_THEMES_DIR environment variable not set
 else {
     index.path = .
@@ -70,11 +74,14 @@ else {
     }
     for(index.target, index.targets) {
         !isEmpty(index.commands):index.commands += &&
-        index.commands += $$THEMEINDEXER -n $$index.name -s $$index.source -t $$index.target
+        index.commands += $$hbToolCommand(hbthemeindexer) -n $$index.name -s $$index.source -t $$index.target
     }
     QMAKE_EXTRA_TARGETS += index
     INSTALLS += index
 }
+
+# css binary generation
+
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src

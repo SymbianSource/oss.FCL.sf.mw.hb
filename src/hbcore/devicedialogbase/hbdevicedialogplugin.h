@@ -70,8 +70,7 @@ public:
     enum DeviceDialogFlag{
         NoDeviceDialogFlags = 0x00,
         SharedDeviceDialog = 0x01,
-        SecurityCheck = 0x02,
-        NoLocalisableData = 0x04 // deprecated
+        SecurityCheck = 0x02
     };
     Q_DECLARE_FLAGS(DeviceDialogFlags, DeviceDialogFlag)
 

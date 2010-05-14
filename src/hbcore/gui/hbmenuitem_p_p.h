@@ -28,7 +28,7 @@
 
 #include "hbglobal.h"
 #include "hbwidget_p.h"
-#include "hbstyleoptionmenuitem.h"
+#include "hbstyleoptionmenuitem_p.h"
 
 class HbMenu;
 class HbMenuItem;

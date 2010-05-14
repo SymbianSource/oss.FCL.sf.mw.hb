@@ -52,7 +52,7 @@ void HbSplayTreeAllocator::initialize(QSharedMemory *sharedChunk,
     chunk = sharedChunk;
     this->offset = offset;
 
-    header = (HeapHeader*)(chunk->data()) + offset;
+    header = (HeapHeader*)(static_cast<char *>(chunk->data()) + offset);
     if (header->identifier == INITIALIZED_ALLOCATOR_IDENTIFIER) {
         return; // already initialized
     }
@@ -484,6 +484,28 @@ void HbSplayTreeAllocator::insertLengthNode(unsigned int *root, TreeNode *node)
     }
 }
 
+/**
+ * HbSplayTreeAllocator::size
+ *
+ * Gets the total size as bytes used.
+ */
+int HbSplayTreeAllocator::size()
+{
+    // splay the 'pointer' tree to obtain last pointer
+    TreeNode *node = TO_NODE_POINTER(splay(&header->pointerNode, (unsigned int)((char*)chunk->data()+chunk->size())));
+
+    if (node) {
+        TreeNode *right = TO_NODE_POINTER(node->rightNode);
+        if (right) {
+            node = right;
+        }
+        MemoryBlock *block = reinterpret_cast<MemoryBlock*>(reinterpret_cast<char*>(node) - sizeof(TreeNode));
+        int lastUsedOffset = TO_OFFSET(block)+sizeof(MemoryBlock)-1; // this is not aligned to 4!!! but actual last byte allocated
+        return lastUsedOffset;
+    }
+    return -1; // couldn't found last used offset
+}
+
 int HbSplayTreeAllocator::freeBytes()
 {
     return header->freeBytes;
@@ -493,3 +515,14 @@ int HbSplayTreeAllocator::allocatedBytes()
 {
     return header->allocatedBytes;
 }
+
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+void HbSplayTreeAllocator::writeReport(QTextStream &reportWriter)
+{
+    reportWriter << "***** (Main)HbSplayTreeAllocator report *****\n\n";
+    reportWriter << "Allocated memory (including memory allocated by multisegment allocator): " << header->allocatedBytes << " bytes\n";
+    reportWriter << "Free memory: " << header->freeBytes << " bytes\n";
+    reportWriter << "Splaytree allocator is best fit allocator, so there is really no point to calculate fragmentation\n\n";
+
+}
+#endif

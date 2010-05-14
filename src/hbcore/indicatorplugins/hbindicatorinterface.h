@@ -44,13 +44,6 @@ public:
         SettingCategory
     };
 
-    //deprecated
-    enum GroupPriority{
-        GroupPriorityHigh,
-        GroupPriorityAverage,
-        GroupPriorityLow
-    };
-
     enum InteractionType {
         NoInteraction = 0x00,
         InteractionActivated = 0x01
@@ -58,12 +51,10 @@ public:
     Q_DECLARE_FLAGS(InteractionTypes, InteractionType)
 
     enum DataRole {
-        IconNameRole, //deprecated
         DecorationNameRole,
         MonoDecorationNameRole,
         PrimaryTextRole,
-        SecondaryTextRole,
-        TextRole = PrimaryTextRole
+        SecondaryTextRole
     };
 
     enum RequestType {
@@ -73,7 +64,6 @@ public:
 
     QString indicatorType() const;
     InteractionTypes interactionTypes() const;
-    GroupPriority groupPriority() const; //deprecated
     Category category() const;
     void processClientRequest(RequestType type, const QVariant &parameter);
     virtual bool handleInteraction(InteractionType type);
@@ -85,8 +75,6 @@ signals:
     void userActivated(const QVariantMap& data);
     
 protected:
-    HbIndicatorInterface(const QString &indicatorType,
-        GroupPriority indicatorGroup, InteractionTypes interactionTypes); //deprecated.
     HbIndicatorInterface(const QString &indicatorType,
         Category category, InteractionTypes interactionTypes);
 

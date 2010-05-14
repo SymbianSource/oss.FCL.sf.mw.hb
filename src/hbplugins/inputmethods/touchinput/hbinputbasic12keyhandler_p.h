@@ -33,7 +33,7 @@ public:
     HbInputBasic12KeyHandlerPrivate();
     ~HbInputBasic12KeyHandlerPrivate();
 
-    void handleAlphaEvent(int buttonId);
+    bool handleAlphaEvent(int buttonId, HbKeyboardType type);
     bool buttonPressed(const QKeyEvent *keyEvent);
     bool buttonReleased(const QKeyEvent *keyEvent);
     bool actionHandler(HbInputModeHandler::HbInputModeAction action);

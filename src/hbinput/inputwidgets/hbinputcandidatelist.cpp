@@ -72,6 +72,7 @@ public:
     int numCandidates;
     int longestStringWidth;
     HbFrameItem *mFrameBackground;
+    bool mCandidateCommitted;
 };
 
 HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
@@ -79,7 +80,8 @@ HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
       numRows(HbCandListDefaultNumRows),
       numCandidates(0),
       longestStringWidth(0),
-      mFrameBackground(0)
+      mFrameBackground(0),
+      mCandidateCommitted(false)
 {
     Q_Q(HbCandidateList);
 
@@ -164,7 +166,6 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
     d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.
     d->initFrameIcon();
 
-#if QT_VERSION >= 0x040600
     // Make sure the preview pane never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
@@ -173,7 +174,6 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
     QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
     effect->setBlurRadius(8);
     setGraphicsEffect(effect);
-#endif
 
     setTimeout(NoTimeout);
     setAttribute(Qt::WA_InputMethodEnabled, false);
@@ -242,7 +242,10 @@ void HbCandidateList::keyPressEvent(QKeyEvent* event)
         || event->key() == Qt::Key_Return
         || event->key() == Qt::Key_Right
         || event->key() == Qt::Key_Left) {
-        d->mInput->candidatePopupClosed(event->key());
+        if (!d->mCandidateCommitted) {
+            emit candidateSelected(event->key(), currentCandidate());
+            d->mCandidateCommitted = true;
+        }
         hide();
     }
 }
@@ -263,8 +266,10 @@ void HbCandidateList::itemActivated(HbListWidgetItem *item)
 {
     Q_UNUSED(item);
     Q_D(HbCandidateList);
-
-    d->mInput->candidatePopupClosed();
+    if (!d->mCandidateCommitted) {
+        emit candidateSelected(0, currentCandidate());
+        d->mCandidateCommitted = true;
+    }
     hide();
 }
 
@@ -293,6 +298,8 @@ this event handler is called, for Hide events, is delivered after the widget has
 */
 void HbCandidateList::hideEvent(QHideEvent * event)
 {
+    Q_D(HbCandidateList);
+    d->mCandidateCommitted = false;
     HbDialog::hideEvent(event);
 }
 

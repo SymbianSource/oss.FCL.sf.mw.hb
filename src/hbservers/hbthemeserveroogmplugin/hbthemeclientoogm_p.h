@@ -38,8 +38,11 @@ public:
     HbThemeClientOogm();
     TVersion Version() const;
     void Close();
-    void FreeRam(int bytes);
+    void FreeRam(TInt bytes);
     void GoodMemory();
+
+    void FreeRam(TInt bytes, TBool aUseSwRendering);
+    void GoodMemory(TBool isUsingSwRendering);
 
 private:
     bool ConnectToServer();

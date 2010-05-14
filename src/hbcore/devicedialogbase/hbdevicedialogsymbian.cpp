@@ -49,7 +49,7 @@
  When plugin returns data in Qt format, the data is converted, if possible,
  to CHbSymbianVariantMap.
 
- \proto
+ \stable
 
  \hbcore
  */

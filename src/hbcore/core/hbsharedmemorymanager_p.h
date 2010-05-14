@@ -26,15 +26,23 @@
 #ifndef HBSHAREDMEMORYMANAGER_P_H
 #define HBSHAREDMEMORYMANAGER_P_H
 
+#if !defined(HB_BOOTSTRAPPED) || defined(HB_BIN_CSS)
 #include "hbmemorymanager_p.h"
-
-#include <new>
+#include "hbthemecommon_p.h"
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+#include <QMap>
+#include <QPair>
+#endif
+#endif // HB_BOOTSTRAPPED
 
 // 13 MB cache size
 #define CACHE_SIZE 1024*1024*13
 
+#if !defined(HB_BOOTSTRAPPED) || defined(HB_BIN_CSS)
+
 class QSharedMemory;
 class HbSharedMemoryAllocator;
+class HbSharedCache;
 
 class HB_CORE_PRIVATE_EXPORT HbSharedMemoryManager
     : public HbMemoryManager
@@ -50,9 +58,17 @@ public:
     }
     static HbMemoryManager *instance();
     static void releaseInstance();
+    int size();
+    HbSharedCache *createSharedCache(
+        const char *offsetMapData, int size, int offsetItemCount, int sharedCacheOffset = -1);
+    HbSharedCache *cache();
 
     int freeSharedMemory();
     int allocatedSharedMemory();
+
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+    void createReport();
+#endif
 
 protected:
     HbSharedMemoryManager();
@@ -60,6 +76,7 @@ protected:
 
 private:
     bool initialize();
+    int loadMemoryFile(const QString &filePath);
 
 protected:
     bool writable;
@@ -69,6 +86,19 @@ protected:
 
 private:
     static HbSharedMemoryManager *memManager;
+
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+    int totalAllocated;
+    int OOMCount; // how many out of memory exceptions have occurred
+    bool OOMReportCreated; // write report in first OOM
+    int ordinal; // used in report filename
+    QMap<quint32, QPair<quint32, quint32> > allocations; // size, <allocated, freed>
+#ifdef HB_THEME_SERVER_FULL_MEMORY_REPORT
+    QVector<QPair<quint32, quint32> > fullAllocationHistory;
+#endif
+#endif
 };
+
+#endif // HB_BOOTSTRAPPED
 
 #endif // HBSHAREDMEMORYMANAGER_P_H

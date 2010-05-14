@@ -32,7 +32,7 @@
 #include <hbeffect.h>
 #include <hbeffectinternal_p.h>
 #endif
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbfontspec.h"
 #include "hbwidgetbase.h"
 #include "hbwidgetbase_p.h"

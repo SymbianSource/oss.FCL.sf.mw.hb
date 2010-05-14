@@ -72,27 +72,27 @@ public:
 
 public:
     static void getText(const QString &heading
-            ,QObject *receiver
-            ,const char *member
-            ,const QString &text=QString()
-            ,QGraphicsScene *scene=0
-            ,QGraphicsItem *parent=0);
-   static void getInteger(const QString &label
-            ,QObject *receiver
-            ,const char *member
+            ,QObject *receiver = 0
+            ,const char *member = 0
+            ,const QString &text = QString()
+            ,QGraphicsScene *scene = 0
+            ,QGraphicsItem *parent = 0);
+    static void getInteger(const QString &label
+            ,QObject *receiver = 0
+            ,const char *member = 0
             ,int value = 0
             ,QGraphicsScene *scene = 0
             ,QGraphicsItem *parent = 0);
     static void getDouble(const QString &label
-            ,QObject *receiver
-            ,const char *member
+            ,QObject *receiver = 0
+            ,const char *member = 0
             ,double value = 0
             , QGraphicsScene *scene = 0
             , QGraphicsItem *parent = 0);
 
     static void getIp(const QString &label
-            ,QObject *receiver
-            ,const char *member
+            ,QObject *receiver = 0
+            ,const char *member = 0
             , const QString &ipaddress = QString()
             , QGraphicsScene *scene = 0
             , QGraphicsItem *parent = 0);
@@ -102,13 +102,6 @@ public:
     enum { Type = Hb::ItemType_InputDialog };
     int type() const { return Type; }
 
-public:
-    static QString getText(const QString &label,const QString &text = QString(),bool *ok = 0, QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-    static int getInteger(const QString &label, int value = 0,bool *ok = 0, QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-
-    static double getDouble(const QString &label, double value = 0,bool *ok = 0, QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-    static QString getIp(const QString &label, const QString &ipaddress = QString(),bool *ok = 0, QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-    
 public slots:
     void updatePrimitives();
 

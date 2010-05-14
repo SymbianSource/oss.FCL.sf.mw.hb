@@ -6,14 +6,14 @@
   <action commandrole="NewRole"/>
   <action commandrole="DeleteRole"/>
   <action commandrole="ClearRole"/>
-  <action commandrole="SettingsRole"/>
   <action commandrole="SendRole"/>
   <action commandrole="PrintRole"/>
   <action commandrole="EditRole"/>
   <action commandrole="CopyRole"/>
   <action commandrole="PasteRole"/>
   <action commandrole="HelpRole"/>
-  <action commandrole="QuitRole"/>
-  <action commandrole="ExitRole"/>
   <action commandrole="OtherRole"/>
+  <action commandrole="QuitRole"/>
+  <action commandrole="SettingsRole"/>
+  <action commandrole="ExitRole"/>
 </distributiontemplate>

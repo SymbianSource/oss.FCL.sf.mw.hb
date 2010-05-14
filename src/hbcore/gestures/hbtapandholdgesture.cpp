@@ -30,12 +30,17 @@
 #include <QObject>
 
 /*!
-    \internal
+    @hbcore
     \class HbTapAndHoldGesture
 
-    \brief HbTapAndHoldGesture implements a gesture for tap and hold.
+    \brief HbTapAndHoldGesture is an extension to Qt standard QTapAndHoldGesture
+    \sa QTapAndHoldGesture
 */
 
+/*!
+    \brief HbTapAndHoldGesture constructor
+    \param parent Parent for the gesture
+*/
 HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
     :
     QTapAndHoldGesture(parent)
@@ -43,19 +48,33 @@ HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
     priv = new HbTapAndHoldGesturePrivate(this);
 }
 
-HbTapAndHoldGesture::HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* data, QObject* parent)
+/*!
+    \brief HbTapAndHoldGesture constructor
+    \param dd Custom private data
+    \param parent Parent for the gesture
+*/
+HbTapAndHoldGesture::HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* dd, QObject* parent)
     :
     QTapAndHoldGesture(parent),
-    priv(data)
+    priv(dd)
 {
     priv->q_ptr = this;
 }
 
+/*!
+    \brief HbTapAndHoldGesture destructor
+*/
 HbTapAndHoldGesture::~HbTapAndHoldGesture()
 {
     delete priv; priv = NULL;
 }
 
+/*!
+    \property scenePosition
+
+    Current position of the gesture.
+    \sa QTapAndHoldGesture::position()
+*/
 QPointF HbTapAndHoldGesture::scenePosition() const
 {
     return priv->mScenePos;

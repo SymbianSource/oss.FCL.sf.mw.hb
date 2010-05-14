@@ -146,7 +146,7 @@ void HbXmlLoaderBaseActions::cleanUp()
          ++it ) {
         QObject *object = it.value().first.data();
 
-        if (it.value().second == HbXml::WIDGET) {
+        if (object && it.value().second == HbXml::WIDGET) {
             QGraphicsWidget *asWidget = static_cast<QGraphicsWidget *>(object);
             if (!asWidget->parentItem() && !asWidget->parent()) {
                 mTopObjectMap.insert(it.key(), it.value());

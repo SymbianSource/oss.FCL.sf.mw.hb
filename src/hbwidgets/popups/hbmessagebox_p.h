@@ -28,11 +28,7 @@
 
 #include <hbmessagebox.h>
 #include "hbdialog_p.h"
-#include <hbgesture.h>
-#include <hbgesturefilter.h>
 
-class HbGesture;
-class HbGestureSceneFilter;
 class HbMessageBoxContentWidget;
 
 class HbMessageBoxPrivate : public HbDialogPrivate
@@ -45,7 +41,6 @@ public:
 
     void init();
     HbIcon mIcon;
-    Qt::Alignment mIconAlignment;
     HbMessageBoxContentWidget *mMessageBoxContentWidget;
     HbMessageBox::MessageBoxType mMessageBoxType;
   	bool mIconVisible;

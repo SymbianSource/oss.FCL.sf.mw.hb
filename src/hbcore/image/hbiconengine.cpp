@@ -723,13 +723,13 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
                     d->appendLoadFail(mode, state); 
                 }
             }
-            if (d->icon){
+            if (d->icon) {
+                d->pixmap = d->icon->pixmap();
                 // Draw badges on this pixmap
                 QPainter painter(&d->pixmap);
                 if (d->badgeInfo){
                     d->badgeInfo->paint(&painter, QRectF(QPointF(0, 0), pixelSize), mode, state, d->isMirrored());
                 }
-                d->pixmap = d->icon->pixmap();
                 return d->pixmap;
             }
         }
@@ -794,11 +794,14 @@ void HbIconEngine::paint( QPainter *painter,
 {
     // This method is called by QIcon and it should paint the icon with the size defined by 'rect'.
     HbIconImpl* icon =  NULL;
+    
+    // update the rendering mode
+    HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());
+    
     icon = paintHelper(rect.size(), Qt::KeepAspectRatio, mode, state);
     if (icon){
         icon->paint(painter, rect, Qt::AlignCenter);
-        HbIconLoader *loader = HbIconLoader::global();
-        loader->unLoadIcon(icon);
+        HbIconLoader::global()->unLoadIcon(icon);
         icon->dispose();
     }
 
@@ -855,6 +858,8 @@ void HbIconEngine::paint( QPainter *painter,
         d->state = state;
         // If icon parameters changed unload the icon first, and get the new icon
         d->unLoadIcon();
+        // Update the rendering mode
+        HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());        
         d->icon = paintHelper(s, aspectRatioMode, mode, state);
         if ( d->icon && d->icon->isCreatedOnServer() ) {
             d->iconType = d->icon->iconData().type;

@@ -43,13 +43,15 @@ QLabel *testLabel = 0;
  * Constructor
  */
 
-#ifdef Q_OS_SYMBIAN
-HbThemeServer::HbThemeServer(): themeServer(0)
-#else
-HbThemeServer::HbThemeServer(QWidget *parent): QMainWindow(parent), themeServer(0)
-#endif
-{
+HbThemeServer::HbThemeServer(QWidget *parent) :
 #ifndef Q_OS_SYMBIAN
+    QMainWindow(parent),
+#endif
+    themeServer(0)
+{
+#ifdef Q_OS_SYMBIAN
+    Q_UNUSED(parent);
+#else
     statusLabel = new QLabel;
     statusLabel->setText("Theme Server Started");
     setCentralWidget(statusLabel);
@@ -100,10 +102,18 @@ bool HbThemeServer::startServer()
     // Parses the device profiles and device modes and stores in the
     // shared memory.
     HbThemeServerUtils::createDeviceProfileDatabase();
-
-    //Creates the secondary Cache.
-    HbThemeServerUtils::createSharedCache();
     return success;
+}
+
+/**
+ * stopServer
+ */
+void HbThemeServer::stopServer()
+{
+#ifndef Q_OS_SYMBIAN
+    delete themeServer;
+    themeServer = 0;
+#endif // Q_OS_SYMBIAN
 }
 
 /**
@@ -111,7 +121,7 @@ bool HbThemeServer::startServer()
  */
 HbThemeServer::~HbThemeServer()
 {
-    delete themeServer;
+    stopServer();
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
     if (manager) {
         manager->releaseInstance(HbMemoryManager::SharedMemory);

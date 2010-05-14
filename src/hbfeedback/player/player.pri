@@ -30,19 +30,15 @@ SOURCES  += $$PWD/hbfeedbackplayer.cpp \
             $$PWD/hbfeedbacksettings.cpp \
             $$PWD/hbabstractfeedback.cpp \
             $$PWD/hbinstantfeedback.cpp \
-            $$PWD/hbcontinuousfeedback.cpp \
-            $$PWD/hbhitareafeedback.cpp \
-            $$PWD/hbtacticonfeedback.cpp
+            $$PWD/hbcontinuousfeedback.cpp
 
-PUBLIC_HEADERS +=   $$PWD/hbfeedbackplayer.h \
-                    $$PWD/hbfeedbacksettings.h \
+PUBLIC_HEADERS +=   $$PWD/hbfeedbacksettings.h \
                     $$PWD/hbabstractfeedback.h \
                     $$PWD/hbinstantfeedback.h \
-                    $$PWD/hbcontinuousfeedback.h \
-                    $$PWD/hbhitareafeedback.h \
-                    $$PWD/hbtacticonfeedback.h 
+                    $$PWD/hbcontinuousfeedback.h
 
-PRIVATE_HEADERS += $$PWD/hbfeedbackplayer_p.h
+PRIVATE_HEADERS += $$PWD/hbfeedbackplayer_p.h \
+                   $$PWD/hbfeedbackplayer_p_p.h
 
 symbian {
     SOURCES  += $$PWD/hbfeedbackplayer_symbian.cpp
@@ -51,10 +47,11 @@ symbian {
 else {
     SOURCES += hbfeedbackplayer_stub.cpp
     PRIVATE_HEADERS += hbfeedbackplayer_stub_p.h
+
+    developer|feedback_traces {
+        DEFINES += FEEDBACK_TEST_EVENT
+        SOURCES +=         $$PWD/hbfeedbacktestevent.cpp
+        PRIVATE_HEADERS += $$PWD/hbfeedbacktestevent_p.h
+    }
 }
 
-developer|feedback_traces {
-    DEFINES += FEEDBACK_TEST_EVENT
-    SOURCES +=          $$PWD/hbfeedbacktestevent.cpp
-    PRIVATE_HEADERS += $$PWD/hbfeedbacktestevent_p.h
-}

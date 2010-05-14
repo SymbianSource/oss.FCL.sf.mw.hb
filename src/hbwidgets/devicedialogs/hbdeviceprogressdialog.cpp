@@ -76,9 +76,7 @@ void HbDeviceProgressDialogPrivate::initProperties(HbProgressDialog::ProgressDia
     }
     q->setProgressValue(0);
     q->setText(text);
-    q->setTextAlignment(Qt::AlignLeft|Qt::AlignVCenter);
     q->setIconName(text);
-    q->setIconAlignment(Qt::AlignCenter);
     q->setAnimationDefinition(text);
 }
 
@@ -105,9 +103,7 @@ void HbDeviceProgressDialogPrivate::sendToServer(bool show)
         "value",
         "autoClose",
         "text",
-        "textAlignment",
         "iconName",
-        "iconAlignment",
         "animationDefinition"
     };
 
@@ -122,20 +118,17 @@ void HbDeviceProgressDialogPrivate::sendToServer(bool show)
     }
 
     static const char * const actionNames[] = {
-        "primaryActionText"
-    };
-    static const char * const nullActionNames[] = {
-        "primaryActionNull"
+        "cancelAction"
     };
 
     for(int i = 0; i < NumActions; i++) {
         if (mActions[i].mFlags & Modified) {
             if (show || !(mActions[i].mFlags & SentToServer)) {
+                QString actionData; // empty removes action at the plugin
                 if (mActions[i].mAction) {
-                    parameters.insert(actionNames[i], mActions[i].mAction->text());
-                } else {
-                    parameters.insert(nullActionNames[i], true);
+                    actionData.append("t:").append(mActions[i].mAction->text());
                 }
+                parameters.insert(actionNames[i], actionData);
                 mActions[i].mFlags |= SentToServer;
             }
         }
@@ -270,7 +263,7 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
     const char *key = "act";
     QVariantMap::const_iterator i = data.find(key);
     if (i != data.constEnd()) {
-        if (i.value().toString() == "p") {
+        if (i.value().toString() == "c") {
             // Client has pressed button. Signal action if one is set. Otherwise emit
             // cancelled() signal.
             mActions[CancelButton].mTriggered = true;
@@ -360,7 +353,7 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
     \endcode
 
     \sa HbProgressDialog, HbDialog, HbDeviceDialog
-    \alpha
+    \stable
     \hbwidgets
 */
 
@@ -452,20 +445,6 @@ void HbDeviceProgressDialog::update()
 {
     TRACE_ENTRY
     d->sendToServer(false);
-    TRACE_EXIT
-}
-
-/*!
-    Closes the dialog.
-
-    \deprecated HbDeviceProgressDialog::cancel()
-        is deprecated. Replaced by HbDeviceProgressDialog::close().
-
-*/
-void HbDeviceProgressDialog::cancel()
-{
-    TRACE_ENTRY
-    return d->cancel();
     TRACE_EXIT
 }
 
@@ -658,64 +637,6 @@ QString HbDeviceProgressDialog::text() const
 }
 
 /*!
-    Sets the text alignment.
-
-    \param align Qt defined alignment options can used.
-
-    \sa textAlignment()
-*/
-void HbDeviceProgressDialog::setTextAlignment(Qt::Alignment align)
-{
-    TRACE_ENTRY
-    d->setProperty(HbDeviceProgressDialogPrivate::TextAlignment, align);
-    TRACE_EXIT
-}
-
-/*!
-    Returns the text alignment.
-
-    The default value is Qt::AlignLeft|Qt::AlignVCenter
-
-    \sa setTextAlignment()
-*/
-Qt::Alignment HbDeviceProgressDialog::textAlignment() const
-{
-    return static_cast<Qt::Alignment>
-        (d->mProperties[HbDeviceProgressDialogPrivate::TextAlignment].mValue.toInt());
-}
-
-/*!
-    Sets the text wrapping.
-
-    \param wrap When set, the text is drawn with Qt::TextWordWrap enabled meaning that
-    lines breaks are at appropriate point, e.g. at word boundaries.
-
-    \sa textWrapping()
-
-    \deprecated HbDeviceProgressDialog::setTextWrapping(bool)
-        is deprecated. Will be removed.
-*/
-void HbDeviceProgressDialog::setTextWrapping(bool wrap)
-{
-    TRACE_ENTRY
-    Q_UNUSED(wrap)
-    TRACE_EXIT
-}
-
-/*!
-    Returns the text wrapping setting. Default value is true.
-
-    \sa setTextWrapping()
-
-    \deprecated HbDeviceProgressDialog::textWrapping() const
-        is deprecated. Will be removed.
-*/
-bool HbDeviceProgressDialog::textWrapping() const
-{
-    return true;
-}
-
-/*!
     Sets message box icon name or animation logical name.
 
     \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
@@ -738,31 +659,6 @@ void HbDeviceProgressDialog::setIconName(const QString &iconName)
 QString HbDeviceProgressDialog::iconName() const
 {
     return d->mProperties[HbDeviceProgressDialogPrivate::IconName].mValue.toString();
-}
-
-/*!
-    Sets the icon alignment.
-
-    \param align Qt defined alignment options can used.
-
-    \sa iconAlignment()
-*/
-void HbDeviceProgressDialog::setIconAlignment(Qt::Alignment align)
-{
-    TRACE_ENTRY
-    d->setProperty(HbDeviceProgressDialogPrivate::IconAlignment, align);
-    TRACE_EXIT
-}
-
-/*!
-    Returns the icon alignment. Default value is Qt::AlignCenter.
-
-    \sa setIconAlignment()
-*/
-Qt::Alignment HbDeviceProgressDialog::iconAlignment() const
-{
-    return static_cast<Qt::Alignment>
-        (d->mProperties[HbDeviceProgressDialogPrivate::IconAlignment].mValue.toInt());
 }
 
 /*!

@@ -27,7 +27,6 @@
 #include "hbnvgicondata_p.h"
 #include "hbnvgfittoviewbox_p.h"
 #include "hbnvgutil_p.h"
-#include "hbopenvghandlestore_p.h"
 #include "hbnvgexception_p.h"
 
 #include <QScopedPointer>
@@ -129,7 +128,6 @@ HbNvgCsIcon::HbNvgCsIcon()
         mPreserveAspectSetting(HbNvgEngine::NvgPreserveAspectRatioXmidYmid),
         mSmilFitSetting(HbNvgEngine::NvgMeet),
         mNvgIconData(0),
-        mOpenVgHandles(0),
         mLastFillPaintType(0),
         mLastStrokePaintType(0),
         mLastFillPaintColor(0),
@@ -144,7 +142,6 @@ void HbNvgCsIcon::setIconData(const QByteArray &buffer)
 {
     mNvgIconData = new HbNvgIconData(buffer.size());
     Q_CHECK_PTR(mNvgIconData);
-    mOpenVgHandles = new HbOpenVgHandleStore();
     Q_CHECK_PTR(mNvgIconData);
 }
 
@@ -164,7 +161,6 @@ HbNvgCsIcon::~HbNvgCsIcon()
     vgSetPaint(VG_INVALID_HANDLE, VG_STROKE_PATH);
 
     delete mNvgIconData;
-    delete mOpenVgHandles;
 }
 
 
@@ -1179,7 +1175,6 @@ void HbNvgCsIcon::addPathData(VGint numSegments, const VGubyte * pathSegments, c
 
 void HbNvgCsIcon::addDrawPathCommand(VGPath path, VGbitfield paintMode)
 {
-    mOpenVgHandles->addPath(path);
     mNvgIconData->encodeUint32(NvgPath);
     mNvgIconData->encodeUint32(path);
     mNvgIconData->encodeUint32(paintMode);
@@ -1187,14 +1182,12 @@ void HbNvgCsIcon::addDrawPathCommand(VGPath path, VGbitfield paintMode)
 
 void HbNvgCsIcon::addLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
 {
-    mOpenVgHandles->addPaint(paint);
     mNvgIconData->encodeUint32(NvgPaint);
     addLinearGradientCommandData(paint, count, gradientData, gradientMatrix);
 }
 
 void HbNvgCsIcon::addRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
 {
-    mOpenVgHandles->addPaint(paint);
     mNvgIconData->encodeUint32(NvgPaint);
     addRadialGradientCommandData(paint, count, gradientData, gradientMatrix);
 }
@@ -1240,14 +1233,12 @@ void HbNvgCsIcon::addStrokeLineJoinCapCommand(VGint capStyle, VGint joinStyle)
 
 void HbNvgCsIcon::addStrokeLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
 {
-    mOpenVgHandles->addPaint(paint);
     mNvgIconData->encodeUint32(NvgStrokePaint);
     addLinearGradientCommandData(paint, count, gradientData, gradientMatrix);
 }
 
 void HbNvgCsIcon::addStrokeRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
 {
-    mOpenVgHandles->addPaint(paint);
     mNvgIconData->encodeUint32(NvgStrokePaint);
     addRadialGradientCommandData(paint, count, gradientData, gradientMatrix);
 }

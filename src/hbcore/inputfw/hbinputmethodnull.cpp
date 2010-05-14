@@ -85,15 +85,7 @@ void HbInputMethodNull::reset()
 */
 bool HbInputMethodNull::filterEvent(const QEvent* event)
 {
-    if (!event || event->type() != QEvent::KeyPress) {
-        return false;
-    }
-
-    if (focusObject() && !(focusObject()->editorInterface().constraints() & HbEditorConstraintOnlySecondaryChannel)) {
-        qDebug("WARNING: HbInputMethodNull::filterEvent called without HbEditorConstraintOnlySecondaryChannel."); 
-        qDebug("         Is everything ok?");
-    }
-
+    Q_UNUSED(event);
     return false;
 }
 

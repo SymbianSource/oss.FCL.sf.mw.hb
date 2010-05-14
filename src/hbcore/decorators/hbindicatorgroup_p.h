@@ -65,11 +65,6 @@ public slots:
     void activateAll(const QList<IndicatorClientInfo> &clientInfo);
     void deactivate(const QList<IndicatorClientInfo> &clientInfo);
 
-    void startListen();
-
-signals:
-    void notificationCountChanged(int count);
-
 protected:
     virtual void initStyleOption(HbStyleOptionIndicatorGroup *option) const;
 

@@ -67,9 +67,7 @@ class HbAbstractViewItemShared : public QSharedData
         static const int ViewItemDeferredDeleteEvent;
 };
 
-// Note! Temporary HB_AUTOTEST_EXPORT. Removed when QMAP_INT__ITEM_STATE_DEPRECATED when QMap<int,QVariant> based state item system is removed 
-//#define QMAP_INT__ITEM_STATE_DEPRECATED
-class HB_AUTOTEST_EXPORT HbAbstractViewItemPrivate : public HbWidgetPrivate
+class HbAbstractViewItemPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbAbstractViewItem )
 
@@ -161,6 +159,9 @@ class HB_AUTOTEST_EXPORT HbAbstractViewItemPrivate : public HbWidgetPrivate
         virtual void tapTriggered(QGestureEvent *event);
 
         void revealItem();
+
+        void setPressed(bool pressed, bool animate);
+
 public:
         QPersistentModelIndex mIndex;
         bool mFocused;

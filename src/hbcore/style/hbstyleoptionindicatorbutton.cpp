@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionindicatorbutton.h"
+#include "hbstyleoptionindicatorbutton_p.h"
 
 /*!
     \class HbStyleOptionIndicatorButton

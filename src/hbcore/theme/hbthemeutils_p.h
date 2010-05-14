@@ -29,6 +29,7 @@
 #include <QList>
 #include <hbglobal.h>
 #include <hbnamespace.h>
+#include <hbthemecommon_p.h>
 #include <hblayeredstyleloader_p.h>
 #include <QPair>
 
@@ -44,7 +45,6 @@ struct HbHierarchy
     HbLayeredStyleLoader::LayerPriority layerPriority;
 };
 
-
 struct HbThemeInfo
 {
     HbThemeInfo()
@@ -55,7 +55,25 @@ struct HbThemeInfo
     }
     QString name;
     QString rootDir;
+}; 
 
+struct HbThemeIndexInfo
+{
+    HbThemeIndexInfo() :
+        name(QString("")),
+        path(QString("")),
+        themeIndexOffset(0)
+    {
+    }
+    HbThemeIndexInfo(const QString &themeName, const QString &path, quint32 themeIndexOffset) :
+        name(themeName),
+        path(path),
+        themeIndexOffset(themeIndexOffset)
+    {
+    }
+    QString name;
+    QString path;
+    quint32 themeIndexOffset;
 };
 
 
@@ -77,11 +95,11 @@ public:
 
     enum Setting
     {
-        CurrentThemeSetting = 1,
-        DefaultThemeSetting = 2,
-        DefaultThemeRootDirSetting = 3,
-        BaseThemeSetting = 4,
-        OperatorBasePathSetting = 5
+        BaseThemeSetting = 0x1,
+        DefaultThemeSetting = 0x2,
+        DefaultThemeRootDirSetting = 0x3,
+        CurrentThemeSetting = 0x4,
+        OperatorNameSetting = 0x5
     };
 
     static QString getThemeSetting(Setting setting);
@@ -93,6 +111,8 @@ public:
     static HbThemeInfo defaultTheme();
     static bool isThemeValid(const HbThemeInfo &themeInfo);
 
+    static const HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
+    
     // Standard folder names
     static const char *iconsResourceFolder;
     static const char *effectsResourceFolder;
@@ -104,6 +124,9 @@ public:
 
 private:
     static HbThemeInfo getBaseThemeFromFile(const QString &rootDir);
+    static void saveBaseThemeSettings(HbThemeInfo &baseThemeInfo,
+                                      const QString &defaultTheme,
+                                      const QString &rootDir);
 };
 
 #endif //HBTHEMEUTILS_P_H

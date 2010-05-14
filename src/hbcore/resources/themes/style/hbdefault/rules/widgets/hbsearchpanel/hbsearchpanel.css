@@ -8,8 +8,6 @@ HbSearchPanel::searchoptionsbutton
 {	
     fixed-width:9.0un;
     left: -var(hb-param-margin-gene-middle-horizontal);
-    top: -var(hb-param-margin-gene-middle-vertical);
-    bottom: var(hb-param-margin-gene-middle-vertical);
 }
 
 HbSearchPanel::lineedit
@@ -26,12 +24,11 @@ HbSearchPanel::progressbutton
 {	
     fixed-width:9.0un;
     right: 0un;
-    top: -var(hb-param-margin-gene-middle-vertical);
-    bottom: var(hb-param-margin-gene-middle-vertical);
 }
 
 HbSearchPanel::progressbutton[progressive="true"]
 {
+    fixed-width:9.0un;
     right: var(hb-param-margin-gene-middle-horizontal);
 }
 
@@ -39,7 +36,4 @@ HbSearchPanel::cancelbutton
 {
     fixed-width:9.0un;
     right: var(hb-param-margin-gene-middle-horizontal);
-    top: -var(hb-param-margin-gene-middle-vertical);
-    bottom: var(hb-param-margin-gene-middle-vertical);
-
 }

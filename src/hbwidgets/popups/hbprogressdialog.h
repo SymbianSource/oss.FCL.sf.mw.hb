@@ -43,11 +43,6 @@ class HB_WIDGETS_EXPORT HbProgressDialog : public HbDialog
     Q_PROPERTY( HbIcon icon READ icon WRITE setIcon )
     Q_PROPERTY( ProgressDialogType progressDialogType READ progressDialogType WRITE setProgressDialogType )
 
-    /*  Deprecated */
-    Q_PROPERTY( Qt::Alignment textAlignment READ textAlignment WRITE setTextAlignment )
-    /*  Deprecated */
-    Q_PROPERTY( Qt::Alignment iconAlignment READ iconAlignment WRITE setIconAlignment )
-
 public:
 
     enum ProgressDialogType { ProgressDialog, WaitDialog };
@@ -78,16 +73,6 @@ public:
     int type() const { return Type; }
 
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
-
-    /*  Deprecated */
-    void setTextAlignment(Qt::Alignment align);
-    /*  Deprecated */
-    Qt::Alignment textAlignment() const;
-
-    /*  Deprecated */
-    void setIconAlignment(Qt::Alignment align);
-    /*  Deprecated */
-    Qt::Alignment iconAlignment() const;
 
 signals:
     void cancelled();

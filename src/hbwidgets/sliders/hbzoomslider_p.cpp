@@ -33,9 +33,6 @@
 #include <QGraphicsScene>
 
 /*!
-    \deprecated
-    This class will be deprecated
-    Use HbSlider instead
     Example usage:
     \code
     HbSlider *slider = new HbSlider(Qt::Horizontal);
@@ -175,10 +172,7 @@ void HbZoomSliderPrivate::_q_resetToDefault( )
 }
 
 
-/*!
-    \deprecated HbZoomSlider::HbZoomSlider(QGraphicsItem*)
-        is deprecated. Please use HbSlider instead
-    
+/*!   
     Constructs a zoom slider with \a parent.
 
     The orientation is \b Qt::Vertical and the slider contains increase, track, 
@@ -205,8 +199,6 @@ HbZoomSlider::~HbZoomSlider( )
 
 
 /*!
-    \deprecated HbZoomSlider::defaultZoomLevel( ) const
-        is deprecated. Please use HbSlider instead
     Returns the default Zoom Level of the zoom slider if set by application
     otherwise returns minimum value. 
 
@@ -224,10 +216,7 @@ int HbZoomSlider::defaultZoomLevel( ) const
 }
 
 
-/*!
-    \deprecated HbZoomSlider::setDefaultZoomLevel(int)
-        is deprecated. Please use HbSlider instead
-    
+/*!   
     sets the default Zoom Level of the zoom slider with \a value.
     if not set minimum( ) value will be used for default value.
 
@@ -244,10 +233,7 @@ void HbZoomSlider::setDefaultZoomLevel( int value )
 }
 
 
-/*!
-    \deprecated HbZoomSlider::setToolTipVisible(bool)
-        is deprecated. Please use HbSlider instead
-    
+/*!   
     \reimp
     This is not supported in HbZoomSlider
  */

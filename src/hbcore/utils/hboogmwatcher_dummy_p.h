@@ -28,6 +28,7 @@
 
 #include <hbglobal.h>
 #include <QList>
+#include "hbthemecommon_p.h"
 
 class HbOogmWatcher;
 class HbIconItem;
@@ -38,10 +39,11 @@ public:
     Q_DECLARE_PUBLIC(HbOogmWatcher)
 
     void graphicsMemoryLow();
-    void mainWindowReady() { }
+    void graphicsMemoryGood();
 
     HbOogmWatcher *q_ptr;
     QList<HbIconItem *> mIconItems;
+    HbRenderingMode mRenderMode;
 };
 
 #endif

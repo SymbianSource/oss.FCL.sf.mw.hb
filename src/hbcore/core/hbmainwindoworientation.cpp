@@ -176,14 +176,15 @@ void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyW
         newOrientation = mDefaultOrientation;
     }
     foreach(HbMainWindow *window, mWindowList) {
-
         void *surface(0);
         if (window)
             surface = (void*)window->windowSurface();
+        if (!HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationChangeAnimation)
+            animate = false;
         
         if ((isEnabled() || notifyWhenDisabled) && (mForeground || surface)
             && HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) { 
-            HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
+                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
         }
     }
 }

@@ -28,7 +28,7 @@
 #include "hbslidercontrol_p.h"
 #include "hbsliderhandle_p.h"
 #include <hbstyle.h>
-#include <hbstyleoptionslider.h>
+#include <hbstyleoptionslider_p.h>
 #include <hbstyle.h>
 #include <hbapplication.h>
 #include <hbiconitem.h>

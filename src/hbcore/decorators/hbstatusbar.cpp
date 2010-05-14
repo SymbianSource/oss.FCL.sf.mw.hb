@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include <QTime>
+
 #include <hbtextitem.h>
 #include <hbmainwindow.h>
 #include <hbview.h>
@@ -34,6 +35,12 @@
 #include "hbsignalindicator_p.h"
 #include "hbbatteryindicator_p.h"
 #include "hbindicatorgroup_p.h"
+
+#if defined(Q_OS_SYMBIAN)
+#include "hbindicatorsym_p.h"
+#else
+#include "hbindicatorwin32_p.h"
+#endif // defined(Q_OS_SYMBIAN)
 
 const int clockUpdateDelay = 10000; // 10 s
 
@@ -53,8 +60,15 @@ HbStatusBarPrivate::HbStatusBarPrivate() :
     mNotificationIndicatorGroup(0),
     mSettingsIndicatorGroup(0),
     mMainWindow(0),
-    mPreviousProperties(0)
+    mPreviousProperties(0),
+    mIndicatorPrivate(0)
 {
+}
+
+HbStatusBarPrivate::~HbStatusBarPrivate()
+{
+    mIndicatorPrivate->stopListen();     
+    delete mIndicatorPrivate;
 }
 
 void HbStatusBarPrivate::delayedConstruction()
@@ -66,12 +80,31 @@ void HbStatusBarPrivate::delayedConstruction()
     mNotificationIndicatorGroup->delayedConstruction();
     mSettingsIndicatorGroup->delayedConstruction();
 
-    q->connect(mNotificationIndicatorGroup, SIGNAL(notificationCountChanged(int)), 
-        q, SIGNAL(notificationCountChanged(int)));
-    q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
+    q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
+        mNotificationIndicatorGroup, SLOT(activate(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
+        mNotificationIndicatorGroup, SLOT(update(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+        mNotificationIndicatorGroup, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
+        mNotificationIndicatorGroup, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
+
+    q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
+        mSettingsIndicatorGroup, SLOT(activate(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
+        mSettingsIndicatorGroup, SLOT(update(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+        mSettingsIndicatorGroup, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
+        mSettingsIndicatorGroup, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
+
+    q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
+        q, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
+        q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
 
     mClockTimerId = q->startTimer(clockUpdateDelay);
-	updateTime();
+    mIndicatorPrivate->startListen();
 }
 
 void HbStatusBarPrivate::init()
@@ -90,6 +123,9 @@ void HbStatusBarPrivate::init()
 
     mSettingsIndicatorGroup = new HbIndicatorGroup(HbIndicatorGroup::SettingsType, q);
     q->style()->setItemName(mSettingsIndicatorGroup, "settingsindicators");
+
+    mIndicatorPrivate = new HbIndicatorPrivate;
+    mIndicatorPrivate->init();
 }
 
 void HbStatusBarPrivate::updateTime()
@@ -164,6 +200,8 @@ void HbStatusBar::createPrimitives()
 
     d->mTimeTextItem = style()->createPrimitive(HbStyle::P_StatusBar_timetext, this);
     setBackgroundItem(HbStyle::P_StatusBar_background);
+
+	d->updateTime();
 }
 
 void HbStatusBar::updatePrimitives()
@@ -217,3 +255,34 @@ void HbStatusBar::timerEvent(QTimerEvent *event)
 	}
 }
 
+/*!
+    \reimp
+*/
+QGraphicsItem *HbStatusBar::primitive(const QString &itemName) const
+{
+    const Q_D(HbStatusBar);
+    if (itemName == "") {
+        return 0;
+    } else {
+        if (itemName == "background") {
+            return this->backgroundItem();
+        }
+        else if (itemName == "timetext") {
+            return d->mTimeTextItem;
+        }
+        else if (itemName == "signal") {
+            return d->mSignalIndicator;
+        }
+        else if (itemName == "battery") {
+            return d->mBatteryIndicator;
+        }
+        else if (itemName == "notificationindicators") {
+            return d->mNotificationIndicatorGroup;
+        }
+        else if (itemName == "settingsindicators") {
+            return d->mSettingsIndicatorGroup;
+        } else {
+            return 0;
+        }
+    }
+}

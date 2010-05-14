@@ -26,7 +26,7 @@
 #include <hbscrollbar.h>
 #include <hbscrollbar_p.h>
 #include <hbwidget_p.h>
-#include <hbstyleoptionscrollbar.h>
+#include <hbstyleoptionscrollbar_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbframeitem.h>
 
@@ -280,20 +280,6 @@ bool HbScrollBar::isInteractive() const
 {
     const Q_D(HbScrollBar);
     return d->mInteractive;
-}
-
-/*!
-    Returns whether scrollbar is in interactive mode.
-
-    \deprecated HbScrollBar::interactive() const
-        is deprecated. Please use HbScrollBar::isInteractive() const instead.
-
-    \sa HbScrollBar::isInteractive()
-*/
-bool HbScrollBar::interactive() const
-{
-    qWarning() << "HbScrollBar::interactive() is DEPRECATED! Use HbScrollBar::isInteractive";
-    return isInteractive();
 }
 
 /*!

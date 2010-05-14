@@ -41,6 +41,7 @@ struct TIconParams
     TBool mirrored;
     TUint32 rgba;
     TBool colorflag;
+    TInt renderMode;
  };
 
 struct TMultiIconSymbParams
@@ -57,6 +58,7 @@ struct TMultiIconSymbParams
     TBool mirrored;
     TInt rgba;
     TBool colorflag;
+    TInt renderMode;
  };
 
 struct TIconListParams
@@ -68,6 +70,7 @@ struct TIconListParams
     TBool mirrored;
     TInt rgba;
     TBool colorflag;
+    TInt renderMode;
     TInt iconCount;
 };
 
@@ -88,6 +91,19 @@ enum TThemeServerLeave
 {
     ENonNumericString = 99
 };
+
+/**
+ * KHbBaseThemeCenrepKey
+ * Define the base theme
+ */
+const TUint32 KHbBaseThemeCenrepKey  = 0x1;
+
+/**
+ * KHbDefaultThemeCenrepKey
+ * Define the default theme
+ */
+const TUint32 KHbDefaultThemeCenrepKey  = 0x2;
+
 
 #endif // HBTHEMECOMMON_SYMBIAN_P_H
 

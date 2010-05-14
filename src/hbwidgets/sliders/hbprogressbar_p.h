@@ -59,10 +59,9 @@ public:
     QGraphicsItem *mFrame;
     QGraphicsItem *mTrack;
     QGraphicsItem *mWaitTrack;
-   // QGraphicsItem *mTextItem;
     QGraphicsItem *mMinTextItem;
     QGraphicsItem *mMaxTextItem;
-	QGraphicsItem *mTouchAreaItem;
+    QGraphicsItem *mTouchAreaItem;
 
 
     uint mMinMaxTextVisible : 1;
@@ -70,9 +69,7 @@ public:
     int mMinimum;
     int mProgressValue;
     uint mInvertedAppearance : 1;
-    HbProgressBar::ProgressBarType mType;
     uint mTextVisible : 1;
-   // QString mText;
     Qt::Alignment mMinMaxTextAlignment;
 
     QString mMinText;

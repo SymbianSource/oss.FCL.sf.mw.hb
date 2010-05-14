@@ -43,9 +43,7 @@ public:
     void closeKeypad(bool animationAllowed);
     void minimizeKeypad(bool animationAllowed);
     HbVkbStatus keypadStatus() const;
-    int priority() const; 
-    QSizeF keyboardArea() const;
-    void preferredSizeChanged(const QSizeF& newSize);
+    QSizeF keyboardArea() const;  
     HbVirtualKeyboard* activeKeypad() const;
     QRectF applicationArea() const;
     HbVkbStatus keypadStatusBeforeOrientationChange() const;

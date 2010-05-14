@@ -32,6 +32,40 @@
 #include "hbstring_p.h"
 #include "hbsmartoffset_p.h"
 
+#ifdef HB_BIN_CSS
+#include "hbcssconverterutils_p.h"
+#endif
+
+HbVariant::HbVariantData::HbVariantData()
+    :stringSize(0),
+      mRef(1),
+      mDataType(Invalid)
+{
+}
+
+HbVariant::HbVariantData::~HbVariantData()
+{
+#ifdef HB_BIN_CSS    
+    // Does not matter if unregistering with types that do not actually
+    // use mem offset
+    HbCssConverterUtils::unregisterOffsetHolder(&mData.offset);
+#endif
+}
+
+void HbVariant::HbVariantData::setDataType(Type dataType)
+{
+    mDataType = dataType;
+#ifdef HB_BIN_CSS
+    // Types that allocate memory from memory manager
+    if (mDataType == String || mDataType == StringList || mDataType == Color) {
+        // Does not matter if register same offset holder many times
+        HbCssConverterUtils::registerOffsetHolder(&mData.offset);
+    } else {
+        HbCssConverterUtils::unregisterOffsetHolder(&mData.offset);
+    }
+#endif
+}
+
 /**
  * detach
  * used to support implicit sharing
@@ -48,17 +82,23 @@ void HbVariant::detach()
 
         HbVariantData *newData = new((char*)manager->base() + offset.get()) HbVariantData();
         newData->mData = data->mData;
-        newData->mDataType = data->mDataType;
+        newData->setDataType(data->dataType());
 
-        if ( data->mDataType == String ) {
+        if ( data->dataType() == String ) {
             HbSmartOffset dataOffset(manager->alloc( data->stringSize*sizeof(QChar)));
+#ifdef HB_BIN_CSS
+                HbCssConverterUtils::registerOffsetHolder(&(newData->mData.offset));
+#endif
             ::memcpy(HbMemoryUtils::getAddress<char>(mMemoryType, dataOffset.get()),
                 getAddress<char>(mMemoryType, data->mData.offset, mShared),
                 data->stringSize * sizeof(QChar));
             newData->stringSize = data->stringSize;
             newData->mData.offset = dataOffset.release();
-        } else if(data->mDataType == Color) {
+        } else if(data->dataType() == Color) {
             HbSmartOffset dataOffset(manager->alloc(sizeof(QColor)));
+#ifdef HB_BIN_CSS
+                HbCssConverterUtils::registerOffsetHolder(&(newData->mData.offset));
+#endif
             new (HbMemoryUtils::getAddress<QColor>(mMemoryType, dataOffset.get()))
                     QColor(*getAddress<QColor>(mMemoryType, data->mData.offset, mShared));
             newData->mData.offset = dataOffset.release();
@@ -76,6 +116,10 @@ HbVariant::HbVariant( HbMemoryManager::MemoryType type )
     : mMemoryType( type ), mShared( false )
 {
     initializeData();
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -87,8 +131,12 @@ HbVariant::HbVariant( int val, HbMemoryManager::MemoryType type )
     HbVariantData * data = initializeData();
     if(data){
         data->mData.i = val;
-        data->mDataType = Int;
+        data->setDataType(Int);
     }
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -100,8 +148,12 @@ HbVariant::HbVariant( double val, HbMemoryManager::MemoryType type )
     HbVariantData * data = initializeData();
     if(data){
         data->mData.d = val;
-        data->mDataType = Double;
+        data->setDataType(Double);
     }
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -112,6 +164,10 @@ HbVariant::HbVariant( const QString &str, HbMemoryManager::MemoryType type )
 {
     initializeData();
     fillStringData(str.constData(), str.length());
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -123,6 +179,10 @@ HbVariant::HbVariant( const char *val, HbMemoryManager::MemoryType type )
     initializeData();
     QString str = QString::fromAscii(val);
     fillStringData(str.constData(), str.length());
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 
@@ -134,6 +194,10 @@ HbVariant::HbVariant( const QColor &col, HbMemoryManager::MemoryType type )
 {
     initializeData();
     fillColorData(col);
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -158,6 +222,10 @@ HbVariant::HbVariant( const HbVariant &other )
     }    
     Q_ASSERT( mMemoryType == HbMemoryManager::SharedMemory 
             || mMemoryType == HbMemoryManager::HeapMemory );
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -172,8 +240,13 @@ HbVariant::~HbVariant()
     HbVariantData *data= getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
     if( mShared != true && !data->mRef.deref() ) {
         clear();
+        data->~HbVariantData();
         HbMemoryUtils::freeMemory( mMemoryType, mDataOffset );
     }
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::unregisterOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -183,7 +256,7 @@ int HbVariant::toInt() const
 {
     HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
    
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::Int:
         return data->mData.i;
     case HbVariant::Double:
@@ -205,7 +278,7 @@ QString HbVariant::toString() const
 {
     HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
    
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::Int:
         return QString::number(data->mData.i);
     case HbVariant::Double:
@@ -243,7 +316,7 @@ QColor HbVariant::toColor() const
 {
     HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
    
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::String: {
         QColor col = QColor();
         col.setNamedColor(getString());
@@ -286,7 +359,7 @@ double HbVariant::toDouble() const
 {
     HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
    
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::Int:
         return double(data->mData.i);
     case HbVariant::Double:
@@ -332,7 +405,7 @@ void HbVariant::fillStringData(const QChar *str, int size)
                                 str, allocBytes);
     }
     data->stringSize = size;
-    data->mDataType = String;
+    data->setDataType(String);
     if (oldOffset != -1) {
         //clean old string data when assigned with a new string value
         HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
@@ -348,13 +421,13 @@ void HbVariant::fillColorData( const QColor &col )
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
     int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
 
-    if(data->mDataType == HbVariant::Color && data->mData.offset != -1) {
+    if(data->dataType() == HbVariant::Color && data->mData.offset != -1) {
         oldOffset = -1; //use the preallocated memory.
     } else {
         data->mData.offset = manager->alloc(sizeof(QColor));
     }
     new (getAddress<char>(mMemoryType, data->mData.offset, mShared)) QColor(col);
-    data->mDataType = Color;
+    data->setDataType(Color);
     if (oldOffset != -1) {
         HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
     }
@@ -370,7 +443,7 @@ HbVariant& HbVariant::operator=(int val)
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
     freeMemory(data);
     data->mData.i = val;
-    data->mDataType = Int;
+    data->setDataType(Int);
     return *this;
 }
 
@@ -384,7 +457,7 @@ HbVariant& HbVariant::operator=(double val)
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
     freeMemory(data);
     data->mData.d = val;
-    data->mDataType = Double;
+    data->setDataType(Double);
     return *this;
 }
 
@@ -444,6 +517,7 @@ HbVariant& HbVariant::operator=(const HbVariant &other)
         if(mShared != true) {
             if(data->mRef == 1) {
                 clear();
+                data->~HbVariantData();
                 HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
             }else {
                 data->mRef.deref();
@@ -455,6 +529,7 @@ HbVariant& HbVariant::operator=(const HbVariant &other)
         otherData->mRef.ref();
         if(mShared != true && !data->mRef.deref() ) {
             clear();
+            data->~HbVariantData();
             HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
         }
         mShared = other.mShared;
@@ -472,24 +547,24 @@ bool HbVariant::canConvert (HbVariant::Type t) const
 {
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
-    if(data->mDataType == t) {
+    if(data->dataType() == t) {
         return true;
     }
     switch(uint(t)) {
     case HbVariant::Int:
-        return data->mDataType == HbVariant::Double 
-            || data->mDataType == HbVariant::String;
+        return data->dataType() == HbVariant::Double 
+            || data->dataType() == HbVariant::String;
     case HbVariant::Double:
-        return data->mDataType == HbVariant::Int
-            || data->mDataType == HbVariant::String;
+        return data->dataType() == HbVariant::Int
+            || data->dataType() == HbVariant::String;
     case HbVariant::String:
-        return data->mDataType == HbVariant::Int
-            || data->mDataType == HbVariant::StringList
-            || data->mDataType == HbVariant::Double
-            || data->mDataType == HbVariant::Color;
+        return data->dataType() == HbVariant::Int
+            || data->dataType() == HbVariant::StringList
+            || data->dataType() == HbVariant::Double
+            || data->dataType() == HbVariant::Color;
     case HbVariant::StringList:
     case HbVariant::Color:
-        return data->mDataType == HbVariant::String;
+        return data->dataType() == HbVariant::String;
     default :
         return false;
     }
@@ -507,7 +582,7 @@ bool HbVariant::convert (HbVariant::Type t)
     int tempOffset = -1;
     QColor col;
     QString str;
-    if(data->mDataType == t) {
+    if(data->dataType() == t) {
         return true;
     }
     if (!this->canConvert(t)) {
@@ -515,10 +590,10 @@ bool HbVariant::convert (HbVariant::Type t)
     }
     switch (t) {
     case HbVariant::Int: 
-        switch(data->mDataType) {
+        switch(data->dataType()) {
         case HbVariant::Double: 
             data->mData.i = qRound64(data->mData.d);
-            data->mDataType = HbVariant::Int;
+            data->setDataType(HbVariant::Int);
             return true;
         case HbVariant::String:
             str = getString();
@@ -526,17 +601,17 @@ bool HbVariant::convert (HbVariant::Type t)
             tempOffset = data->mData.offset;
             data->mData.i = str.toLongLong(&ok);
             HbMemoryUtils::freeMemory(mMemoryType, tempOffset);
-            data->mDataType = HbVariant::Int;
+            data->setDataType(HbVariant::Int);
             return ok;
         default:
             return false;
         }
 
     case HbVariant::Double: 
-        switch(data->mDataType) {
+        switch(data->dataType()) {
         case HbVariant::Int: 
             data->mData.d = double(data->mData.i);
-            data->mDataType = HbVariant::Double;
+            data->setDataType(HbVariant::Double);
             return true;
         case HbVariant::String:
             str = getString();
@@ -544,24 +619,22 @@ bool HbVariant::convert (HbVariant::Type t)
             tempOffset = data->mData.offset;
             data->mData.d = str.toDouble(&ok);
             HbMemoryUtils::freeMemory(mMemoryType, tempOffset);
-            data->mDataType = HbVariant::Double;
+            data->setDataType(HbVariant::Double);
             return ok;
     default:
         return false;
         }
 
     case HbVariant::String: 
-        switch(data->mDataType) {
+        switch(data->dataType()) {
         case HbVariant::Int : {
             QString num = QString::number(data->mData.i);
             fillStringData(num.constData(), num.length());
-            data->mDataType = HbVariant::String;
             return true;
         }
         case HbVariant::Double: {
             QString num = QString::number(data->mData.d);
             fillStringData(num.constData(), num.length());
-            data->mDataType = HbVariant::String;
             return true;
         }
         case HbVariant::StringList:
@@ -570,7 +643,6 @@ bool HbVariant::convert (HbVariant::Type t)
         case HbVariant::Color: {
             QString colName = getColor().name();
             fillStringData(colName.constData(), colName.length());
-            data->mDataType = HbVariant::String;
             return true;
         }
         default:
@@ -578,7 +650,7 @@ bool HbVariant::convert (HbVariant::Type t)
         }
 
     case HbVariant::Color: 
-        switch(data->mDataType) {
+        switch(data->dataType()) {
         case HbVariant::String: 
             col.setNamedColor(getString());
             if (!col.isValid()) {
@@ -605,7 +677,7 @@ HbVariant::operator QVariant() const
 {
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::Int :
         return QVariant(data->mData.i);
     case HbVariant::Double :
@@ -632,7 +704,7 @@ void HbVariant::clear()
     detach(); // This can be optimise.
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType,mDataOffset, mShared);
     
-    switch(data->mDataType) {
+    switch(data->dataType()) {
     case HbVariant::Int : 
         data->mData.i=0;
         break;
@@ -650,7 +722,7 @@ void HbVariant::clear()
         break;
     }
     data->stringSize = 0;
-    data->mDataType=HbVariant::Invalid;
+    data->setDataType(HbVariant::Invalid);
 }
 
 #ifdef CSS_PARSER_TRACES
@@ -665,7 +737,7 @@ bool HbVariant::supportsPrinting() const
 void HbVariant::print() const
 {
     HbVariantData * data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared);
-    switch(data->mDataType)
+    switch(data->dataType())
     {
     case HbVariant::Int:
         qDebug() << data->mData.i;

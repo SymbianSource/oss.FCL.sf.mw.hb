@@ -30,15 +30,12 @@
 #include "hbinstance.h"
 #include "hbabstractbutton.h"
 #include "hbslidercontrol_p.h"
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 #include <QGraphicsSceneEvent>
 #include <QGraphicsScene>
 #include <hbwidgetfeedback.h>
 
 /*!
-    \deprecated
-    This class will be deprecated
-    Use HbSlider instead
     Example usage:
     \code
     HbSlider *slider = new HbSlider(Qt::Horizontal);
@@ -252,9 +249,6 @@ void HbVolumeSliderPrivate::_q_muteToggled( bool state )
 
 
 /*!
-    \deprecated HbVolumeSlider::HbVolumeSlider(bool, QGraphicsItem*)
-        is deprecated. Please use HbSlider instead
-
     The orientation is \b Qt::Vertical and the slider contains increase, track,
 
     decrease and icon elements by default.
@@ -288,8 +282,6 @@ HbVolumeSlider::~HbVolumeSlider( )
 
 
 /*!
-    \deprecated HbVolumeSlider::setCurrentValueVisible(bool)
-        is deprecated. Please use HbSlider instead
     Sets whether the text element is visible.
 
     \sa isCurrentValueVisible( )
@@ -321,8 +313,6 @@ void HbVolumeSlider::setCurrentValueVisible( bool visible )
 
 
 /*!
-    \deprecated HbVolumeSlider::isCurrentValueVisible( ) const
-        is deprecated. Please use HbSlider instead
     Returns \c true whether the text element is visible.
 
     The default value is \c false.
@@ -336,8 +326,6 @@ bool HbVolumeSlider::isCurrentValueVisible( ) const
 }
 
 /*!
-    \deprecated HbVolumeSlider::setToolTipVisible(bool)
-        is deprecated. Please use HbSlider instead
     \reimp
 
     This is not supported in HbVolumeSlider

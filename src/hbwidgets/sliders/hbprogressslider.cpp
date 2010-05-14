@@ -26,7 +26,7 @@
 #include <hbprogressslider.h>
 #include "hbprogressslider_p.h"
 
-#include <hbstyleoptionprogressslider.h>
+#include <hbstyleoptionprogressslider_p.h>
 #include <hbtooltip.h>
 #include <hbwidgetfeedback.h>
 #include "hbglobal_p.h"
@@ -45,8 +45,6 @@ HbProgressSliderPrivate::HbProgressSliderPrivate()
     mDownState=false;
     handle = 0;
     mSliderValue = 0;
-    thumbIcon = HbIcon();
-    state = HbProgressSlider::SliderStatePlayNormal;
     mHandlePath = QString();
 }
 
@@ -88,9 +86,16 @@ void HbProgressSliderPrivate::setProgressValue(int value)
 void HbProgressSliderPrivate::setEnableFlag(bool flag)
 {
     Q_Q(HbProgressSlider);
-    if(!flag) {
+	
+	HbStyleOptionProgressSlider option;
+    q->initStyleOption(&option);
+    
+	if(!flag) {
         q->setProgressValue(q->minimum());
         q->setSliderValue(q->minimum());
+    }
+    if (mFrame) {
+            q->style()->updatePrimitive(mFrame, HbStyle::P_ProgressSlider_frame, &option);          
     }
 }
 
@@ -243,7 +248,7 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
 */
 
 HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
-    HbProgressBar(*new HbProgressSliderPrivate,HbProgressBar::SimpleProgressBar,parent)
+    HbProgressBar(*new HbProgressSliderPrivate,parent)
 {
     Q_D( HbProgressSlider );
     d->q_ptr = this;
@@ -273,7 +278,7 @@ HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
     Constructs a progressslider with a  parent.
 */
 HbProgressSlider::HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *parent) : 
-    HbProgressBar( dd,HbProgressBar::SimpleProgressBar,parent)
+    HbProgressBar( dd,parent)
 {
     Q_D( HbProgressSlider );
     d->init();
@@ -382,34 +387,6 @@ void HbProgressSlider::setInvertedAppearance(bool inverted)
 }
 
 
-/*!    
-    \deprecated HbProgressSlider::setThumbIcon(const HbIcon&)
-        is deprecated. Use setHandleIcon instead of this
-
-    Sets the Icon for the progressslider thumb.
-*/
-void HbProgressSlider::setThumbIcon(const HbIcon &icon)
-{
-    HB_DEPRECATED("HbProgressSlider::setThumbIcon is deprecated.");
-
-    Q_D( HbProgressSlider );
-    d->handle->setHandleIcon(icon);
-}
-
-/*!
-    \deprecated HbProgressSlider::thumbIcon() const
-        is deprecated. 
-
-    Returns the Icon for the progressslider thumb.
-*/
-HbIcon HbProgressSlider::thumbIcon() const
-{
-    HB_DEPRECATED("HbProgressSlider::thumbIcon is deprecated.");
-
-    Q_D( const HbProgressSlider );
-    return d->handle->thumbIcon();
-}
-
 void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
     Q_D(HbProgressSlider);
@@ -484,6 +461,12 @@ void HbProgressSlider::initStyleOption( HbStyleOptionProgressSlider *option ) co
     option->secondaryType = true;
     option->progressSliderValue = d->mSliderValue;  
     option->pressedState = d->mDownState;
+    if(isEnabled()) {
+        option->disableState = false;
+    }
+    else {
+        option->disableState = true;
+    }
 }
 
 void HbProgressSlider::updatePrimitives()
@@ -568,64 +551,6 @@ bool HbProgressSlider::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
     return false;
 }
 
-/*!
-    \deprecated HbProgressSlider::setHandleToolTip(const QString&)
-        is deprecated. Please use HbProgressSlider::setSliderToolTip(const QString &text) instead.
-
-    set the tooltip text . 
-    
-    \sa handleToolTip()
-*/
-void HbProgressSlider::setHandleToolTip(const QString &text)
-{
-    HB_DEPRECATED("HbProgressSlider::setHandleToolTip is deprecated. Use HbProgressSlider::setSliderToolTip(const QString &text) instead.");
-
-    setSliderToolTip(text);
-}
-
-
-/*!
-    \deprecated HbProgressSlider::handleToolTip() const
-        is deprecated. Please use HbProgressSlider::sliderToolTip() const instead.
-
-    Returns the current tooltip text value.
-    
-    \sa setHandleToolTip()
-*/
-QString HbProgressSlider::handleToolTip() const
-{
-    HB_DEPRECATED("HbProgressSlider::handleToolTip is deprecated. Use HbProgressSlider::sliderToolTip() instead.");
-
-    return sliderToolTip();
-}
-
-/*!
-    \deprecated HbProgressSlider::setHandleState(HbProgressSlider::HandleState)
-        is deprecated. Please use HbProgressSlider::setSliderState(HbProgressSlider::SliderState state) instead.
-
-    Sets the state of the handle as normal play,pressed play,normal pause,pressed pause etc. 
-*/
-void HbProgressSlider::setHandleState(HbProgressSlider::HandleState state)
-{
-    HB_DEPRECATED("HbProgressSlider::setHandleState is deprecated. Use HbProgressSlider::setSliderState instead.");
-
-    setSliderState((HbProgressSlider::SliderState)state);
-}
-
-/*!
-
-    \deprecated HbProgressSlider::handleState() const
-        is deprecated. Please use HbProgressSlider::sliderState() const instead.
-
-    Returns the state of the handle. 
-*/
-HbProgressSlider::HandleState HbProgressSlider::handleState() const
-{
-    HB_DEPRECATED("HbProgressSlider::handleState is deprecated. Use HbProgressSlider::handleState() instead.");
-
-    return (HbProgressSlider::HandleState)sliderState();
-}
-
 
 /*!
     @beta
@@ -656,53 +581,7 @@ QString HbProgressSlider::sliderToolTip() const
     return d->mTooltipText;
 }
 
-/*!
-    \deprecated HbProgressSlider::setSliderState(HbProgressSlider::SliderState)
-        is deprecated.
 
-    Sets the state of the handle as normal play,pressed play,normal pause,pressed pause etc. 
-*/
-void HbProgressSlider::setSliderState(HbProgressSlider::SliderState state)
-{
-    Q_D(HbProgressSlider);
-    if(d->state != state) {
-        d->state = state;
-        if (d->handle) {
-            d->handle->mSliderHandleState = state;
-
-            switch(d->handle->mSliderHandleState) {
-               case HbProgressSlider::SliderStatePlayNormal:
-                   d->handle->setProperty("state","normal");
-                   break;
-               case HbProgressSlider::SliderStatePlayPressed:
-                   d->handle->setProperty("state","pressed");
-                   break;
-               case HbProgressSlider::SliderStatePauseNormal:
-                    d->handle->setProperty("state","normal");
-                   break;
-               case HbProgressSlider::SliderStatePausePressed:
-                    d->handle->setProperty("state","pressed");
-                   break;
-               default:
-                    break;
-            }
-
-            d->handle->updatePrimitives();
-            
-        }
-    }
-}
-/*!
-    \deprecated HbProgressSlider::sliderState() const
-        is deprecated.
-
-    Sets the state of the handle as normal play,pressed play,normal pause,pressed pause etc. 
-*/
-HbProgressSlider::SliderState HbProgressSlider::sliderState() const
-{
-    Q_D(const HbProgressSlider);
-    return d->state;
-}
 
 /*!
     @beta

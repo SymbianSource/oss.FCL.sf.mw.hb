@@ -27,6 +27,7 @@
 #include <QApplication>
 #include <QVariantMap>
 #include <hbindicatorpluginmanager_p.h>
+#include <hbdevicedialogpluginmanager_p.h>
 #include <hbindicatorplugininterface.h>
 #include <hbindicatorinterface.h>
 #include <hbdevicedialogtrace_p.h>
@@ -45,9 +46,12 @@ HbIndicatorPluginManager::HbIndicatorPluginManager(QObject *parent) :
     QObject(parent), mNameCache(pluginKeys)
 {
     // Get list of plugin directories to watch/scan
-    const QStringList pathList = pluginPathList();
-    for (int i = 0; i < pathList.length(); i++) {
-        updateCachePath(pathList.at(i));
+    int readOnlyPaths;
+    mPluginPathList = HbDeviceDialogPluginManager::pluginPathList("/indicators/", readOnlyPaths);
+
+    // Scan only read-only drives at startup to ensure installed plugins cannot affect device boot
+    for(int i = 0; i < readOnlyPaths; i++) {
+        updateCachePath(mPluginPathList.at(i), true);
     }
 }
 
@@ -174,9 +178,8 @@ bool HbIndicatorPluginManager::activateIndicator(const QString &indicatorType,
             emit indicatorActivated(indicator);
             indicatorInfo->statusAreaIconPath = statusAreaIconPath(indicator);
             emit indicatorActivated(IndicatorClientInfo(
-                indicator->indicatorType(),
-                indicatorInfo->statusAreaIconPath,
-                indicator->category()));
+                indicator->indicatorType(), indicatorInfo->statusAreaIconPath,
+                indicator->category(), hasMenuData(*indicator)));
 
             connect(indicator, SIGNAL(dataChanged()), SLOT(indicatorDataChanged()));
             connect(indicator, SIGNAL(userActivated(QVariantMap)), SLOT(userActivateIndicator(QVariantMap)));
@@ -208,9 +211,8 @@ bool HbIndicatorPluginManager::removeIndicator(const QString &indicatorType)
         emit indicatorRemoved(indicator);
 
         emit indicatorRemoved(IndicatorClientInfo(
-            indicator->indicatorType(),
-            statusAreaPath,
-            indicator->category()));
+            indicator->indicatorType(), statusAreaPath, indicator->category(),
+            hasMenuData(*indicator)));
 
         //plugin-interface may also be HbIndicatorInterface.
         //in that case, don't delete.
@@ -253,8 +255,8 @@ QList<IndicatorClientInfo>
             QString path(indicatorInfo.statusAreaIconPath);
 
             if (!path.isEmpty()) {
-                IndicatorClientInfo clientInfo(
-                        indicator->indicatorType(), path, category);
+                IndicatorClientInfo clientInfo(indicator->indicatorType(), path, 
+                    category, hasMenuData(*indicator));
                 clientInfoList.append(clientInfo);
             }
         }
@@ -346,9 +348,8 @@ void HbIndicatorPluginManager::indicatorDataChanged()
             indicatorInfo->statusAreaIconPath = statusAreaPath;
 
             emit indicatorUpdated(IndicatorClientInfo(
-                indicator->indicatorType(),
-                indicatorInfo->statusAreaIconPath,
-                indicator->category()));
+                indicator->indicatorType(), indicatorInfo->statusAreaIconPath,
+                indicator->category(), hasMenuData(*indicator)));
         }
     }
 }
@@ -393,11 +394,10 @@ int HbIndicatorPluginManager::loadPlugin(const QString &indicatorType)
 int HbIndicatorPluginManager::scanPlugins(const QString &indicatorType)
 {
     TRACE_ENTRY
-    const QStringList pathList = pluginPathList();
-    const QString fileNameFilter = pluginFileNameFilter();
+    const QString fileNameFilter = HbDeviceDialogPluginManager::pluginFileNameFilter();
     int index = -1;
 
-    foreach (const QString &path, pathList) {
+    foreach (const QString &path, mPluginPathList) {
         QDir pluginDir(path, fileNameFilter, QDir::NoSort, QDir::Files | QDir::Readable);
         foreach (const QString &fileName, pluginDir.entryList()) {
             index = loadPlugin(indicatorType, pluginDir.absoluteFilePath(fileName));
@@ -493,7 +493,7 @@ QString HbIndicatorPluginManager::statusAreaIconPath(
 }
 
 // Update plugin name cache watch/scan list
-void HbIndicatorPluginManager::updateCachePath(const QString &path)
+void HbIndicatorPluginManager::updateCachePath(const QString &path, bool updateReadOnly)
 {
     QString dirPath = HbPluginNameCache::directoryPath(path);
     QFileInfo fileInfo(dirPath);
@@ -502,55 +502,13 @@ void HbIndicatorPluginManager::updateCachePath(const QString &path)
         if (fileInfo.isWritable()) {
             mNameCache.addWatchPath(dirPath);
         } else {
-            mNameCache.scanDirectory(dirPath);
+            if (updateReadOnly) {
+                mNameCache.scanDirectory(dirPath);
+            }
         }
     } else {
         mNameCache.removeWatchPath(dirPath);
     }
-}
-
-// Generate directory path list to search plugins
-QStringList HbIndicatorPluginManager::pluginPathList()
-{
-    QStringList pluginPathList;
-
-#if defined(Q_OS_SYMBIAN)
-    const QString pluginRelativePath("resource/plugins/indicators/");
-
-    QFileInfoList driveInfoList = QDir::drives();
-
-    foreach (const QFileInfo &driveInfo, driveInfoList) {
-        const QString drive = driveInfo.absolutePath();
-        if (drive.startsWith("z:", Qt::CaseInsensitive) ||
-            drive.startsWith("c:", Qt::CaseInsensitive)) {
-            QString path(drive + pluginRelativePath);
-            pluginPathList << path;
-        }
-    }
-#elif defined(Q_OS_WIN32) || defined(Q_OS_UNIX)
-    pluginPathList << qApp->applicationDirPath() + '/' << HB_PLUGINS_DIR"/indicators/";
-#endif
-
-    // Plugin name caching differentiates directory and file names by trailing slash in a name
-    for (int i = 0; i < pluginPathList.length(); i++) {
-        Q_ASSERT(pluginPathList.at(i).endsWith('/'));
-    }
-
-    return pluginPathList;
-}
-
-// Generate plugin file name filter
-QString HbIndicatorPluginManager::pluginFileNameFilter()
-{
-#if defined(Q_OS_LINUX)
-    return QString("*.so");
-#elif defined(Q_OS_MAC)
-    return QString("*.dylib");
-#elif defined(Q_OS_WIN32)
-    return QString("*.dll");
-#else
-    return QString("*.qtplugin");
-#endif
 }
 
 // Return keys (indicator types) the plugin implements
@@ -559,4 +517,15 @@ QStringList HbIndicatorPluginManager::pluginKeys(QObject *pluginInstance)
     HbIndicatorPluginInterface *plugin =
         qobject_cast<HbIndicatorPluginInterface*>(pluginInstance);
     return plugin ? plugin->indicatorTypes() : QStringList();
+}
+
+bool HbIndicatorPluginManager::hasMenuData(const HbIndicatorInterface &indicator) const
+{
+    if (!indicator.indicatorData(HbIndicatorInterface::PrimaryTextRole).toString().isEmpty() 
+        || !indicator.indicatorData(HbIndicatorInterface::SecondaryTextRole).toString().isEmpty() 
+        || !indicator.indicatorData(HbIndicatorInterface::DecorationNameRole).toString().isEmpty()) {
+        return true;
+    }
+
+    return false;
 }

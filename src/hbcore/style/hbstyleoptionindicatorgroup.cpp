@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionindicatorgroup.h"
+#include "hbstyleoptionindicatorgroup_p.h"
 
 /*!
     \class HbStyleOptionIndicatorGroup
@@ -51,7 +51,7 @@ HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup()
 
 */
 HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup(const HbStyleOptionIndicatorGroup &other) :
-    HbStyleOptionDecorator(other), iconName(other.iconName)
+    HbStyleOption(other), iconName(other.iconName)
 {
     type = Type;
     version = Version;

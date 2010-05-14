@@ -25,7 +25,7 @@
 
 #include "hbdatetimepicker_p.h"
 #include "hbdatetimepicker.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 
 /*!
     @beta

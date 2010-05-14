@@ -1,19 +1,21 @@
 <hbwidget version="0.1" type="HbSearchPanel">
     <layout name="default" type="mesh">
-        <meshitem src="cancelbutton" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-        <meshitem src="cancelbutton" srcEdge="TOP" dst="" dstEdge="TOP" />
-        <meshitem src="cancelbutton" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="searchoptionsbutton" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+        <meshitem src="searchoptionsbutton" srcEdge="TOP" dst="lineedit" dstEdge="TOP" />
+        <meshitem src="searchoptionsbutton" srcEdge="BOTTOM" dst="lineedit" dstEdge="BOTTOM" />
 
         <meshitem src="lineedit" srcEdge="LEFT" dst="searchoptionsbutton" dstEdge="RIGHT" />
         <meshitem src="lineedit" srcEdge="RIGHT" dst="progressbutton" dstEdge="LEFT" />
-        <meshitem src="lineedit" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-
-        <meshitem src="searchoptionsbutton" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-        <meshitem src="searchoptionsbutton" srcEdge="TOP" dst="" dstEdge="TOP" />
-        <meshitem src="searchoptionsbutton" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="lineedit" srcEdge="TOP" dst="" dstEdge="TOP" />
+        <meshitem src="lineedit" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 
         <meshitem src="progressbutton" srcEdge="RIGHT" dst="cancelbutton" dstEdge="LEFT" />
-        <meshitem src="progressbutton" srcEdge="TOP" dst="" dstEdge="TOP" />
-        <meshitem src="progressbutton" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+        <meshitem src="progressbutton" srcEdge="TOP" dst="lineedit" dstEdge="TOP" />
+        <meshitem src="progressbutton" srcEdge="BOTTOM" dst="lineedit" dstEdge="BOTTOM" />
+
+        <meshitem src="cancelbutton" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+        <meshitem src="cancelbutton" srcEdge="TOP" dst="lineedit" dstEdge="TOP" />
+        <meshitem src="cancelbutton" srcEdge="BOTTOM" dst="lineedit" dstEdge="BOTTOM" />
+
     </layout>
 </hbwidget>

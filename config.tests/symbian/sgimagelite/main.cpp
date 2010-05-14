@@ -24,9 +24,11 @@
 ****************************************************************************/
 
 #include <ncp_feature_consts.hrh>
+#include <ncp_feature_settings.hrh>
 
 #ifndef VSW_GSW_SGIMAGELITE
 #error VSW_GSW_SGIMAGELITE not defined
 #endif
 
-int main() { }
+int main() { return 0;}
+

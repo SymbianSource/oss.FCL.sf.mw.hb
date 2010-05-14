@@ -26,7 +26,7 @@
 #include "hblineedit.h"
 #include "hblineedit_p.h"
 
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbscrollarea.h"
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 #include "hbtextmeasurementutility_p.h"
@@ -606,7 +606,9 @@ void HbLineEdit::insertFromMimeData(const QMimeData *source)
     if (!(d->interactionFlags & Qt::TextEditable) || !source)
         return;
 
-    QString txt = source->text().replace(QString("\n"),QString(" "));
+    QString text = source->text().replace(QString("\n"),QString(" "));
+
+    QString txt = filterInputText(text);
 
     if (!txt.isNull()) {
 

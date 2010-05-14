@@ -35,6 +35,7 @@
 #include <hbvgeffect_p.h>
 #endif
 #include <QApplication>
+#include "hbiconloader_p.h"
 
 /*!
   \class HbOogmWatcher
@@ -71,6 +72,7 @@ HbOogmWatcher::HbOogmWatcher(QObject *parent)
 {
     Q_D(HbOogmWatcher);
     d->q_ptr = this;
+    d->mRenderMode = EHWRendering;
 }
 
 HbOogmWatcher::~HbOogmWatcher()
@@ -94,6 +96,10 @@ void HbOogmWatcher::notifyGraphicsMemoryLow()
 void HbOogmWatcherPrivate::graphicsMemoryLow()
 {
     qWarning("HbOogmWatcher::graphicsMemoryLow()");
+    if (mRenderMode == EHWRendering) {        
+        mRenderMode = ESWRendering;
+        HbIconLoader::global()->switchRenderingMode(mRenderMode);
+    }    
 #ifdef HB_EFFECTS_OPENVG
     // Destroy the cached pixmaps of effects. This is also necessary
     // to make the OpenVG filter effect caching working properly. (if
@@ -112,7 +118,20 @@ void HbOogmWatcherPrivate::graphicsMemoryLow()
         }
     }
     emit q_ptr->iconCleanupDone(n);
-    emit q_ptr->graphicsMemoryNeeded();
+    emit q_ptr->graphicsMemoryLow();
+}
+
+/*!
+  \internal
+*/
+void HbOogmWatcherPrivate::graphicsMemoryGood()
+{
+    qWarning("HbOogmWatcher::graphicsMemoryGood()");
+    if (mRenderMode == ESWRendering) {        
+        mRenderMode = EHWRendering;
+        HbIconLoader::global()->switchRenderingMode(mRenderMode);
+    }     
+    emit q_ptr->graphicsMemoryGood();
 }
 
 /*!  Registers an HbIconItem instance. Whenever graphics memory is
@@ -135,13 +154,4 @@ void HbOogmWatcher::unregisterIconItem(HbIconItem *item)
 {
     Q_D(HbOogmWatcher);
     d->mIconItems.removeOne(item);
-}
-
-/*!  To be called by the framework (HbInstance) when a mainwindow becomes
-  available.
- */
-void HbOogmWatcher::mainWindowReady()
-{
-    Q_D(HbOogmWatcher);
-    d->mainWindowReady();
 }

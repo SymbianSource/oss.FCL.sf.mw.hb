@@ -27,6 +27,7 @@
 #include <hbinputsettingproxy.h>
 #include <hbinputkeymapfactory.h>
 #include <hbinputpredictionengine.h>
+#include <hbinputbutton.h>
 
 #include "virtual12key.h"
 
@@ -43,7 +44,6 @@ public:
 
     bool buttonReleased(const QKeyEvent *keyEvent);
     bool buttonPressed(const QKeyEvent *keyEvent);
-    void _q_timeout();
 };
 
 HbInputPrediction12KeyThaiHandlerPrivate::HbInputPrediction12KeyThaiHandlerPrivate()
@@ -55,45 +55,40 @@ HbInputPrediction12KeyThaiHandlerPrivate::~HbInputPrediction12KeyThaiHandlerPriv
    
 }
 
-void HbInputPrediction12KeyThaiHandlerPrivate::_q_timeout()
-{
-	Q_Q(HbInputPrediction12KeyHandler);
-    // let's stop the timer first.
-    mTimer->stop();
-
-    if (mButtonDown) {
-		if(mLastKey == Qt::Key_0){
-			q->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-			q->commitFirstMappedNumber(mLastKey);		
-		} else if(mLastKey != Qt::Key_Asterisk) {
-			//Long key press number key is applicable to all keys so pass it to Base class
-			HbInputPrediction12KeyHandlerPrivate::_q_timeout();            
-        }
-    }
-}
-
 bool HbInputPrediction12KeyThaiHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
 {
+    Q_Q(HbInputPrediction12KeyThaiHandler);
+
     mLongPressHappened = false;
     HbInputFocusObject *focusObject = 0;
     focusObject = mInputMethod->focusObject();
     if (!focusObject) {
         return false;
     }
-	
+
     int buttonId = keyEvent->key();
 
+    if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
+        if (buttonId == Qt::Key_0) {
+			q->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
+			q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
+            mLongPressHappened = true;
+        } else if (buttonId != HbInputButton::ButtonKeyCodeAsterisk) {
+            return HbInputPrediction12KeyHandlerPrivate::buttonPressed(keyEvent);
+        }
+        if (mLongPressHappened) {
+            mLastKey = 0;
+            return true;
+        }        
+    }
+
     //Pass the event to base class except Shift key
-	if (buttonId == Qt::Key_Shift ) {		
+	if (buttonId == Qt::Key_Shift) {		
 	  mLastKey = buttonId;
 	  mButtonDown = true;
 	} else {
-		HbInputPrediction12KeyHandlerPrivate::buttonPressed(keyEvent);
+		return HbInputPrediction12KeyHandlerPrivate::buttonPressed(keyEvent);
 	}
-	// custom button should not start timer.
-    if ((buttonId & CUSTOM_INPUT_MASK) != CUSTOM_INPUT_MASK) {
-        mTimer->start(HbLongPressTimerTimeout);
-    }
     return false;
 }
 
@@ -106,22 +101,19 @@ bool HbInputPrediction12KeyThaiHandlerPrivate::buttonReleased(const QKeyEvent *k
     Q_Q(HbInputPrediction12KeyHandler);
     
     if(!mButtonDown || mLongPressHappened){
+        mLongPressHappened = false;
         return false;
     }
 
     int buttonId = keyEvent->key(); 
-    // it was a long press on sct swith button. so just return form here.
-    if (!mTimer->isActive() && buttonId == Qt::Key_Control) {
-        return true;
-    }
 
-	if (buttonId == Qt::Key_Asterisk && !mInputMethod->isSctModeActive()) {
+	if (buttonId == HbInputButton::ButtonKeyCodeAsterisk && !mInputMethod->isSctModeActive()) {
 		//Handle if key Asterisk pressed and SCT is not launched or else pass it to base handlers
 		if (q->HbInputPredictionHandler::filterEvent(keyEvent)) {
 			mButtonDown = false;
 			return true;
 		}
-    } else if ( buttonId == Qt::Key_Shift ) {
+    } else if ( buttonId == HbInputButton::ButtonKeyCodeShift ) {
 		//As we can't map charatcers to Shift key in keymapping, making use of "#" key i.e. Qt::Key_NumberSign
 		//in keymapping and manipulating event to Qt::Key_NumberSign when shift key is pressed
 		const QKeyEvent *event = new QKeyEvent(QEvent::KeyPress, Qt::Key_NumberSign, Qt::NoModifier);
@@ -185,8 +177,6 @@ bool HbInputPrediction12KeyThaiHandler::filterEvent(const QKeyEvent * event)
 	if (event->key() == Qt::Key_0 && d->mEngine->inputLength() >= 1 ) {
 		if(event->type() == QEvent::KeyPress) {
 			d->mButtonDown = true;
-			// start Long Press timer as zero key should be allowed to enter
-			d->mTimer->start(HbLongPressTimerTimeout);
 		} else if(event->type() == QEvent::KeyRelease) {
 			d->mTimer->stop();
 			d->mButtonDown = false;

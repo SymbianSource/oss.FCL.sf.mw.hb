@@ -26,7 +26,7 @@
 #include "hbtreeview_p.h"
 #include "hbtreeview.h"
 
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 
 const QString KDefaultLayoutOption = "default";
 

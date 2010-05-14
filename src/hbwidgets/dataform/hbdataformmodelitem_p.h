@@ -38,11 +38,14 @@ public:
     HbDataFormModelItemPrivate();
     ~HbDataFormModelItemPrivate();
     QString dirtyProperty();
+
+    void setModel(const QAbstractItemModel *model);
+    QAbstractItemModel* model() const;
+
 public:
 
     QList<HbDataFormModelItem*> mChildItems;
-    HbDataFormModelItem* mParentItem;
-    QString mKey;
+    HbDataFormModelItem* mParentItem;    
     QString mLabel;
     QString mIcon;
     QString mDescription;

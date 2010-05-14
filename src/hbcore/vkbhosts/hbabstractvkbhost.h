@@ -49,11 +49,9 @@ public: // From HbVkbHost
     void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner);
     void closeKeypad(bool animationAllowed = true);
     void minimizeKeypad(bool animationAllowed = true);
-    HbVkbStatus keypadStatus() const;
-    int priority() const;
+    HbVkbStatus keypadStatus() const;  
     HbVirtualKeyboard *activeKeypad() const;
-    QRectF applicationArea() const;
-    void preferredSizeChanged(const QSizeF& newSize);
+    QRectF applicationArea() const;  
     QSizeF keyboardArea() const;
     HbVkbStatus keypadStatusBeforeOrientationChange() const;
 
@@ -70,11 +68,7 @@ public slots:
     virtual void ensureCursorVisibility();
     virtual void orientationAboutToChange();
     virtual void orientationChanged(Qt::Orientation orientation);
-    virtual void openAnimValueChanged(qreal aValue);
-    virtual void closeAnimValueChanged(qreal aValue);
     virtual void animValueChanged(qreal aValue);
-    virtual void openFinished();
-    virtual void closeFinished();
     virtual void animationFinished(); 
     virtual void currentViewChanged(HbView*);
     virtual void stateTransitionCompleted();

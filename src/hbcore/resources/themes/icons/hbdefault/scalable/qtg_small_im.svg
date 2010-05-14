@@ -1,23 +1,23 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
+<defs>
+</defs>
 <rect fill="none" height="30" width="30"/>
 <path d="M6.924,27.143c-0.451,0-1.213-0.318-1.213-1.512v-3.766C2.71,19.804,1,16.859,1,13.726  C1,7.732,7.28,2.857,15,2.857s14,4.875,14,10.868s-6.28,10.869-14,10.869c-1.54,0-3.052-0.192-4.501-0.574L8.09,26.555  C7.725,26.939,7.321,27.143,6.924,27.143L6.924,27.143z" fill-opacity="0.6"/>
-<path d="M6.924,26.143c-0.131,0-0.213-0.2-0.213-0.512v-4.305l-0.077-0.049C3.688,19.395,2,16.643,2,13.726  c0-5.44,5.831-9.868,13-9.868c7.168,0,13,4.428,13,9.868c0,5.442-5.832,9.869-13,9.869c-1.618,0-3.201-0.226-4.706-0.669  l-0.105-0.031l-2.824,2.971C7.2,26.039,7.035,26.143,6.924,26.143L6.924,26.143z" fill="url(#SVGID_1_)"/>
-<path d="M15,4.785c6.961,0,12.646,4.18,12.969,9.405  C27.979,14.035,28,13.883,28,13.726c0-5.44-5.832-9.868-13-9.868c-7.169,0-13,4.428-13,9.868c0,0.149,0.023,0.296,0.033,0.446  C2.368,8.956,8.047,4.785,15,4.785z" fill="#FFFFFF" fill-opacity="0.3" stroke-opacity="0.3"/>
-<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="8.688"/>
-<rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="9.771"/>
-<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="12.688"/>
-<rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="13.771"/>
-<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="16.688"/>
-<rect fill-opacity="0.2" height="0.541" stroke-opacity="0.2" width="13" x="8.5" y="17.771"/>
-<rect fill="none" height="30" width="30"/>
-<defs>
 <linearGradient gradientTransform="matrix(1 0 0 1 -367 -507)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="382" x2="382" y1="511.0117" y2="533.0017">
-<stop offset="0" style="stop-color:#4EDEFF"/>
-<stop offset="1" style="stop-color:#048CC6"/>
+	<stop offset="0" style="stop-color:#4EDEFF"/>
+	<stop offset="1" style="stop-color:#048CC6"/>
 </linearGradient>
-</defs>
+<path d="M6.924,26.143c-0.131,0-0.213-0.2-0.213-0.512v-4.305l-0.077-0.049C3.688,19.395,2,16.643,2,13.726  c0-5.44,5.831-9.868,13-9.868c7.168,0,13,4.428,13,9.868c0,5.442-5.832,9.869-13,9.869c-1.618,0-3.201-0.226-4.706-0.669  l-0.105-0.031l-2.824,2.971C7.2,26.039,7.035,26.143,6.924,26.143L6.924,26.143z" fill="url(#SVGID_1_)"/>
+<path d="M15,4.785c6.961,0,12.646,4.18,12.969,9.405  C27.979,14.035,28,13.883,28,13.726c0-5.44-5.832-9.868-13-9.868c-7.169,0-13,4.428-13,9.868c0,0.149,0.023,0.296,0.033,0.446  C2.368,8.956,8.047,4.785,15,4.785z" enable-background="new    " fill="#FFFFFF" opacity="0.3"/>
+<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="8.688"/>
+<rect enable-background="new    " height="0.541" opacity="0.2" width="13" x="8.5" y="9.771"/>
+<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="12.688"/>
+<rect enable-background="new    " height="0.541" opacity="0.2" width="13" x="8.5" y="13.771"/>
+<rect fill="#FFFFFF" height="1.084" width="13" x="8.5" y="16.688"/>
+<rect enable-background="new    " height="0.541" opacity="0.2" width="13" x="8.5" y="17.771"/>
+<rect fill="none" height="30" width="30"/>
 </g>
 </svg>

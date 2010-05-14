@@ -106,7 +106,7 @@ public:
     // Constructor and destructor
     explicit HbDeviceDialogManagerPrivate(HbDeviceDialogManager *manager);
     virtual ~HbDeviceDialogManagerPrivate();
-
+    void init();
     void setMainWindow(HbMainWindow *mainWindow);
 
     // Device dialog client related API
@@ -121,6 +121,7 @@ public:
 
     // Device dialog control related API
     void moveToForeground(bool foreground);
+    void doMoveToForeground(bool foreground, int priority);
     void updateWindowRegion() const;
     void resetWindowRegion() const;
     bool showDialogs();
@@ -136,6 +137,7 @@ public:
     static void setDialogPriority(HbPopup *popup, HbDeviceDialogPlugin::DeviceDialogGroup group);
     static bool checkDialogInfo(const HbDeviceDialogPlugin::DeviceDialogInfo &deviceDialogInfo);
     void deleteDeviceDialog(int id);
+    bool eventFilter(QObject *obj, QEvent *event);
 
 public slots:
     void deviceDialogUpdate(const QVariantMap &data) const;

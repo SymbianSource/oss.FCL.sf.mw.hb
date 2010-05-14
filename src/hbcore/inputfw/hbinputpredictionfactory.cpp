@@ -46,7 +46,6 @@ A singleton factory class, which knows how to list and instantiate available inp
 \sa HbPredictionBase
 \sa HbPredictionEngine
 \sa HbPredictionEngineChinese
-\sa HbPredictionEngineJapanese
 */
 
 /// @cond

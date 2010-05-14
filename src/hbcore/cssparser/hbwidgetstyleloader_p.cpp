@@ -23,16 +23,16 @@
 **
 ****************************************************************************/
 
-#include <hbstyle.h>
-
+#ifndef HB_BIN_CSS
 #include "hbinstance_p.h"
+#include <hbstyle.h>
 #include "hbstyle_p.h"
-
+#include "hbcolortheme_p.h"
+#endif
 #include "hbwidgetstyleloader_p.h"
 #include "hbwidgetloader_p.h"
 #include "hblayeredstyleloader_p.h"
 #include "hbstyleloader.h"
-#include "hbcolortheme_p.h"
 #include "hbwidget.h"
 
 //#define WIDGETSTYLELOADER_DEBUG
@@ -235,7 +235,9 @@ bool HbWidgetStyleLoader::doAddFileSet(const QString &path,
 #endif
 	FileSet set(path, type, concern, priority);
 	mFileSets.append(set);
+    mFullyLoadedWidgets.clear();
 
+#ifndef HB_BIN_CSS
     // Style can be null in hbInstance construction face. 
     if (HbInstancePrivate::d_ptr()->mStyle) {
         HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
@@ -244,6 +246,7 @@ bool HbWidgetStyleLoader::doAddFileSet(const QString &path,
          || concern == HbLayeredStyleLoader::Concern_All) {
         HbColorTheme::instance()->flushVariableCache();
     }
+#endif
 
 #ifdef WIDGETSTYLELOADER_DEBUG
 	qDebug() << "WidgetStyleLoader now contains" << mFileSets.count() << "filters";
@@ -305,16 +308,18 @@ bool HbWidgetStyleLoader::doRemoveFileSet(
                     }
 			    }
     			mFileSets.removeAt(i);
+#ifndef HB_BIN_CSS
                 if (HbInstancePrivate::d_ptr()->mStyle) {
                     HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
                 }
                 if ( concern && (*concern == HbLayeredStyleLoader::Concern_Colors || 
                                  *concern == HbLayeredStyleLoader::Concern_All)) {
-                    HbColorTheme *colorThemeInstance = HbColorTheme::instance();
+                    HbColorTheme *colorThemeInstance = HbColorTheme::instance();                    
                     if (colorThemeInstance) {  // Check that the instance has not been destroyed.
                         colorThemeInstance->flushVariableCache();
                     }
                 }
+#endif
             }
 #ifdef WIDGETSTYLELOADER_DEBUG
             else {
@@ -345,6 +350,11 @@ void HbWidgetStyleLoader::loadCss(const HbWidget *widget)
 	if(!widget){
 		return;
 	}
+    const char *classNameChar = widget->metaObject()->className();
+    uint classNameHash = qHash(classNameChar);
+    if (mFullyLoadedWidgets.contains(classNameHash)) {
+        return;
+    }
 #ifdef WIDGETSTYLELOADER_DEBUG
 	qDebug() << "loadCssForWidget called for " << widget->metaObject()->className();
 #endif
@@ -420,6 +430,7 @@ void HbWidgetStyleLoader::loadCss(const HbWidget *widget)
 			}
 		}
 	}
+    mFullyLoadedWidgets.append(classNameHash);
 }
 
 
@@ -436,6 +447,7 @@ void HbWidgetStyleLoader::loadCss(const HbWidget *widget)
     \param layoutName, The layout name (previously extracted from CSS) to look for
     \param sectionName, The section name (previously extracted from CSS) to look for, if not defined then use the first section found
  */
+#ifndef HB_BIN_CSS
 bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutName, const QString &sectionName)
 {
 	if(!widget){
@@ -482,32 +494,30 @@ bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutNa
 #endif
             }
 			
-            if ( attemptToLoad ) {
-			    static HbWidgetLoader loader;
+            if ( attemptToLoad ) {                
+                static HbWidgetLoader loader;
 #ifdef WIDGETSTYLELOADER_DEBUG
-			    qDebug() << "Attempting to load file " << filename;
+                qDebug() << "Attempting to load file " << filename;
 #endif
                 HbMemoryManager::MemoryType type =
                     HbLayeredStyleLoader::sharingNeeded(mFileSets[c].priority)
                     ? HbMemoryManager::SharedMemory
                     : HbMemoryManager::HeapMemory;
                 if(loader.load(widget, filename, layoutName, sectionName, type)) {
-				    loaded = true;
-				    break;
-			    }
+                    loaded = true;
+                    break;
+                    }
+                }
+                meta = meta->superClass();
+                if(!meta){
+                    break;
+                }
+                className = meta->className();
             }
-			
-			meta = meta->superClass();
-			if(!meta){
-				break;
-			}
-			className = meta->className();
-		}
 	}
-
-	return loaded;
+    return loaded;
 }
-
+#endif
 
 /*!
 	For any filesets loaded with the given concern, the list of loaded CSS files is cleared causing 
@@ -530,6 +540,7 @@ void HbWidgetStyleLoader::clearConcernFileList(const HbLayeredStyleLoader::Conce
 #endif
 		}
 	}
+    mFullyLoadedWidgets.clear();
 }
 
 
@@ -557,4 +568,5 @@ void HbWidgetStyleLoader::clearLayerFileList(const HbLayeredStyleLoader::Concern
 #endif
 		}
 	}
+    mFullyLoadedWidgets.clear();
 }

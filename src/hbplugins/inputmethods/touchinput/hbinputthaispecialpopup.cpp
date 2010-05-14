@@ -29,12 +29,12 @@
 #include <QSignalMapper>
 
 #include <HbMainWindow>
-#include <hbinputtouchkeypadbutton.h>
 #include <hbgridview.h>
 #include <hbwidget.h>
 #include <hbdialog_p.h>
 #include <HbPopup>
 
+#include "hbinputtouchkeypadbutton.h"
 #include "hbinputthaispecialpopup.h"
 
 const QString HbAbcButtonObjName = "Popup abc";
@@ -71,7 +71,7 @@ class HbInputThaiSpecialPopupPrivate: public HbDialogPrivate
 public:
 	//Character classes
 	enum ThaiGlyphTypes {
-		HbThaiCharNon = 0,	//Not a Thai letter
+                HbThaiCharNon = 0,	//Not a Thai letter
 		HbThaiCharCons,		//Thai consonant
 		HbThaiCharLV,		//Leading vowel
 		HbThaiCharFV1,		//Following vowel, type 1
@@ -92,7 +92,7 @@ public:
 	QGraphicsGridLayout* mButtonLayout; 
 	QGraphicsWidget* mButtonWidget;
 	QList<HbTouchKeypadButton *> mPopupButtons;
-    QSignalMapper *mActionMapper;
+        QSignalMapper *mActionMapper;
 	QSignalMapper *mClickMapper;
 	QString mSpecialCharacterSet;
 	const HbKeymap *mKeymap;

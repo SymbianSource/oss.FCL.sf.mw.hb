@@ -30,7 +30,7 @@
 #include <hbiconloader_p.h>
 
 /*!
-	@beta
+    @stable
     @hbcore
     \class HbAction
     \brief HbAction extends QAction with exclusiveness.
@@ -102,36 +102,6 @@ HbAction::HbAction(const HbIcon &icon, const QString &text, QObject *parent)
 {
     Q_D(HbAction);
     d->icon = icon;
-}
-
-/*!
-    Constructs a new HbAction with softkey \a action and \a parent.
-
-    \deprecated HbAction::HbAction(Hb::SoftKeyAction, QObject *)
-    is deprecated.
-    Use HbAction::HbAction(Hb::NavigationAction, QObject *) instead.
-*/
-HbAction::HbAction(Hb::SoftKeyAction action, QObject* parent)
-    : QAction(parent), d_ptr(new HbActionPrivate)
-{
-    Q_D(HbAction);
-    switch (action) {
-        case Hb::QuitAction:
-            d->icon = HbIcon("qtg_mono_app_exit");
-            break;
-        case Hb::BackAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        case Hb::ConfirmAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        case Hb::DoneAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        default:
-            qWarning("HbAction: unknown action: %i", action);
-            break;
-    }
 }
 
 /*!

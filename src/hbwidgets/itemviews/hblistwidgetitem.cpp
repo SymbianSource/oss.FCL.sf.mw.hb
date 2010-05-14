@@ -38,17 +38,14 @@
     \brief HbListWidgetItem represents a list item. It is part of convenience list API together with HbListWidget. 
 
     As this is a convenience API it is supposed to be easy to use. For that reason complicated list items are not possible
-    to be created. 
+    to be created. HbListWidgetItem supports at maximum two text items and two icon items. 
+    Either primary text or primary icon must always be provided. Icons are shown only in default size.
 
-    A list item consists of three columns.
-
-    - First column has only one row and it may contain one icon or a text label.
-
-    - Middle column can have two rows and both rows can contain text.
-    
-    - The last column has only one row and it may contain one icon or a text label.
-
-    - Any column may be left empty. 
+    A view item created from this item consists of three columns at maximum.
+    - First column contains primary icon
+    - Middle column has one or two rows to show text(s)
+    - Last column contains secondary icon
+    - Any column can be empty 
 
     The following code snippet presents how to create an list item with icons in the left 
     and right columns and two rows of text in the middle column.
@@ -117,8 +114,14 @@ QVariant HbListWidgetItem::data(int role) const
 /*!
     Sets the item's data for the given role to the specified value.
     Can be used to store application-specific data in an item. 
-    This function cannot be used to set anything visible data.
- */
+
+    Specialised functions in section 'see also' are recommended setting user data. 
+
+    \sa setText()
+    \sa setSecondaryText()
+    \sa setIcon()
+    \sa setSecondaryIcon()
+*/
 void HbListWidgetItem::setData(const QVariant &value, int role)
 {
     d->setData(value,role);

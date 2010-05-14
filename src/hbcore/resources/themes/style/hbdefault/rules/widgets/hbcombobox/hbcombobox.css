@@ -3,9 +3,20 @@ HbComboBox
 {
     layout:combobox_layout_noneditable;
 }
+
 HbComboBox[editable]
 {
     layout:combobox_layout_editable;
+}
+
+HbComboBox:portrait
+{
+    max-rows-in-dropdown:8;
+}
+
+HbComboBox:landscape
+{
+    max-rows-in-dropdown:5;
 }
 
 HbComboBox::combobox_button

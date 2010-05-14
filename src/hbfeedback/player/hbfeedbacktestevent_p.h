@@ -30,7 +30,7 @@
 
 #include <QEvent>
 
-class HB_FEEDBACK_EXPORT HbFeedbackTestEvent : public QEvent
+class HB_AUTOTEST_EXPORT HbFeedbackTestEvent : public QEvent
 {
 public:
     static int eventId();

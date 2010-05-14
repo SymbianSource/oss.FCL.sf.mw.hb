@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptionlabel.h>
+#include <hbstyleoptionlabel_p.h>
 
 /*!
     \class HbStyleOptionLabel

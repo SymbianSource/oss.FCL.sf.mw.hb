@@ -233,33 +233,6 @@ void HbInputMethod::globalSecondaryInputLanguageChanged(const HbInputLanguage &n
 }
 
 /*!
-\deprecated HbInputMethod::activeHwKeyboardChanged(HbKeyboardType)
-    is deprecated.
-*/
-void HbInputMethod::activeHwKeyboardChanged(HbKeyboardType newKeyboard)
-{
-    Q_UNUSED(newKeyboard);
-    Q_D(HbInputMethod);
-
-    // Do here whatever needs to be done on HbInputMethod level, then
-    // call virtual ActiveKeyboardChanged() in case plugin needs to do something.
-    // ...
-    d->refreshState();
-}
-
-/*!
-\deprecated HbInputMethod::activeTouchKeyboardChanged(HbKeyboardType)
-    is deprecated.
-*/
-void HbInputMethod::activeTouchKeyboardChanged(HbKeyboardType newKeyboard)
-{
-    Q_UNUSED(newKeyboard);
-    Q_D(HbInputMethod);
-
-    d->refreshState();
-}
-
-/*!
 This slot is connected to the setting proxy activeKeyboard attribute. It will
 activate proper state when the signal is received.
 */
@@ -281,25 +254,6 @@ void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
             inputStateActivated(d->mInputState);
         }
     }
-}
-
-/*!
-\deprecated HbInputMethod::predictiveInputStateChanged(int newStatus)
-    is deprecated.
-*/
-void HbInputMethod::predictiveInputStateChanged(int newStatus)
-{
-    Q_UNUSED(newStatus);
-}
-
-/*!
-\deprecated HbInputMethod::predictiveInputStateChanged(HbKeyboardSettingFlags, bool)
-    is deprecated.
-*/
-void HbInputMethod::predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState)
-{
-    Q_UNUSED(keyboardType);
-    Q_UNUSED(newState);
 }
 
 /*!
@@ -373,7 +327,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
     bool readOnly = false;
     if (HbEditorInterface::isConnected(widget)) {
         HbEditorInterface eInt(widget);
-        if (eInt.constraints() & HbEditorConstraintIgnoreFocus) {
+        if (eInt.inputConstraints() & HbEditorConstraintIgnoreFocus) {
             readOnly = true;
         }
     }
@@ -426,28 +380,14 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
 /*!
 Checks if the destroyed widget is currently focused and clears the focus
 if needed. This method should not be overridden.
-
-\sa focusObjectDestroyed
 */
 void HbInputMethod::widgetDestroyed(QWidget* widget)
 {
     Q_D(HbInputMethod);
 
     if (d->mFocusObject && d->mFocusObject->object() == widget) {
-        releaseFocus();
-    }
-}
-
-/*!
-\deprecated HbInputMethod::focusObjectDestroyed(const HbInputFocusObject*)
-    is deprecated.
-*/
-void HbInputMethod::focusObjectDestroyed(const HbInputFocusObject* focusObject)
-{
-    Q_D(HbInputMethod);
-
-    if (focusObject && focusObject == d->mFocusObject) {
-        releaseFocus();
+        delete d->mFocusObject;
+        d->mFocusObject = 0;
     }
 }
 
@@ -526,25 +466,6 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
 }
 
 /*!
-\deprecated HbInputMethod::receiveText(const QString&)
-    is deprecated.
-*/
-void HbInputMethod::receiveText(const QString& string)
-{
-    Q_UNUSED(string);
-}
-
-/*!
-\deprecated HbInputMethod::candidatePopupClosed(int closingKey)
-    is deprecated.
-*/
-void HbInputMethod::candidatePopupClosed(int closingKey)
-{
-    Q_UNUSED(closingKey);
-    // Empty default implementation
-}
-
-/*!
 The framework calls this method when device-wide input language changes.
 The base class implementation is empty so any input method interested in
 language switch events should implement it. Note that this method reports
@@ -568,16 +489,6 @@ void HbInputMethod::secondaryInputLanguageChanged(const HbInputLanguage &aNewLan
 {
     // Empty default implementation.
     Q_UNUSED(aNewLanguage);
-}
-
-/*!
-\deprecated HbInputMethod::predictiveInputStatusChanged(int newStatus)
-    is deprecated.
-*/
-void HbInputMethod::predictiveInputStatusChanged(int newStatus)
-{
-    Q_UNUSED(newStatus);
-    // Empty default implementation.
 }
 
 /*!
@@ -725,18 +636,6 @@ void HbInputMethod::updateState()
 }
 
 /*!
-\deprecated HbInputMethod::releaseFocus()
-    is deprecated.
-*/
-void HbInputMethod::releaseFocus()
-{
-    Q_D(HbInputMethod);
-
-    delete d->mFocusObject;
-    d->mFocusObject = 0;
-}
-
-/*!
 Receives the screen orientation signal. Will determine correct input state for new
 orientation and find state handler for it.
 */
@@ -828,8 +727,7 @@ void HbInputMethod::forceUnfocus()
     HbInputMethod* active = activeInputMethod();
 
     if (active) {
-        active->focusLost(false);
-        active->releaseFocus();
+        active->focusLost(false);       
         delete active->d_ptr->mFocusObject;
         active->d_ptr->mFocusObject = 0;
     }
@@ -872,21 +770,15 @@ to this slot and it takes care of closing the input and resetting the input meth
 */
 void HbInputMethod::editorDeleted(QObject *obj)
 {
+    Q_D(HbInputMethod);
     Q_UNUSED(obj);
 
     focusLost();
-    releaseFocus();
-    reset();
-}
 
-/*!
-\deprecated HbInputMethod::orientationContextSwitchInProgress()
-    is deprecated.
-*/
-bool HbInputMethod::orientationContextSwitchInProgress()
-{
-    Q_D(HbInputMethod);
-    return d->mIsOrientationContextSwitchInProgress;
+    delete d->mFocusObject;
+    d->mFocusObject = 0;
+
+    reset();
 }
 
 // End of file

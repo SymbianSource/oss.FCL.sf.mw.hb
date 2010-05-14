@@ -30,10 +30,18 @@
 
 #include <QXmlStreamReader>
 #include <QFile>
+#include <QDir>
+#include <hbextendedlocale.h>
 
 QT_BEGIN_NAMESPACE
 class QIODevice;
 QT_END_NAMESPACE
+
+#ifdef Q_OS_SYMBIAN	
+	#define TYPEFACE_RESOURCE_FOLDER "z:\\resource\\fonts"
+#else
+	#define TYPEFACE_RESOURCE_FOLDER HB_RESOURCES_DIR
+#endif
 
 class HB_AUTOTEST_EXPORT HbTypefaceXmlParser : public QXmlStreamReader
 {
@@ -57,11 +65,13 @@ public:
     bool readMapping(QString &role, QString &family, bool &isBold);
     bool readMetric(int &textHeight, int &size, int &baseline);
     const QString metricsTypefaceFamily() const;
+	bool readAndPositionTypefaceSet();
     void close();
 
 private:
     bool readMapItem(QString &role, QString &family, bool &isBold);
     bool readMetricItem(int &textHeight, int &size, int &baseline);
+	bool matchLanguageAndCountry() const;
 
 private:
 	QString mFilePath;

@@ -34,8 +34,7 @@
     \brief HbSignalIndicator represents a signal indicator item.
 
     The signal indicator shows approximately the signal strength of the mobile network.
-    It is created and managed by the HbIndicatorGroup which in turn is part of the HbMainWindow's
-    HbDecoratorGroup.
+    It is created and managed by the HbStatusBar which in turn is part of the HbMainWindow.
 */
 
 // 0-33% for low, 34-66% for medium and 67-100% for high
@@ -45,19 +44,23 @@ HbSignalIndicatorPrivate::HbSignalIndicatorPrivate() :
     mLevelPercent(-1),
     mSignalBackgroundIcon(0),
     mSignalLevelIcon(0),
-    mSignalIcon(0),
-    mSystemNetworkInfo(new HbSystemNetworkInfo()),
-    mNetworkMode(HbSystemNetworkInfo::UnknownMode)
+    mSignalIcon(0)
+#ifdef HB_HAVE_QT_MOBILITY
+    ,mSystemNetworkInfo(new HbSystemInfo(0, false))
+    ,mNetworkMode(QSystemNetworkInfo::UnknownMode)
+#endif // HB_HAVE_QT_MOBILITY
 {
-
 }
 
 HbSignalIndicatorPrivate::~HbSignalIndicatorPrivate()
 {
+#ifdef HB_HAVE_QT_MOBILITY
     delete mSystemNetworkInfo;
+#endif // HB_HAVE_QT_MOBILITY
 }
 
-void HbSignalIndicatorPrivate::_q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode mode, int strength)
+#ifdef HB_HAVE_QT_MOBILITY
+void HbSignalIndicatorPrivate::_q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode mode, int strength)
 {
     Q_Q(HbSignalIndicator);
     if (mode != mNetworkMode) {
@@ -67,12 +70,13 @@ void HbSignalIndicatorPrivate::_q_setNetworkSignalStrength(HbSystemNetworkInfo::
     q->setLevel(strength);
 }
 
-void HbSignalIndicatorPrivate::_q_setNetworkMode(HbSystemNetworkInfo::NetworkMode mode)
+void HbSignalIndicatorPrivate::_q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode)
 {
     Q_Q(HbSignalIndicator);
     mNetworkMode = mode;
     q->updatePrimitives();
 }
+#endif // HB_HAVE_QT_MOBILITY
 
 // ======== MEMBER FUNCTIONS ========
 
@@ -83,6 +87,14 @@ HbSignalIndicator::HbSignalIndicator(QGraphicsItem *parent)
     : HbWidget(*new HbSignalIndicatorPrivate, parent)
 {
     createPrimitives();
+    updatePrimitives();
+#ifdef HB_HAVE_QT_MOBILITY
+    Q_D(HbSignalIndicator);
+    connect(d->mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(QSystemNetworkInfo::NetworkMode, int)), 
+        this, SLOT(_q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int)));
+    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(QSystemNetworkInfo::NetworkMode)), 
+        this, SLOT(_q_setNetworkMode(QSystemNetworkInfo::NetworkMode)));
+#endif // HB_HAVE_QT_MOBILITY
 }
 
 /*
@@ -95,12 +107,6 @@ HbSignalIndicator::~HbSignalIndicator()
 
 void HbSignalIndicator::delayedConstruction()
 {
-    Q_D(HbSignalIndicator);
-    connect(d->mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(HbSystemNetworkInfo::NetworkMode, int)), 
-        this, SLOT(_q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode, int)));
-    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(HbSystemNetworkInfo::NetworkMode)), 
-        this, SLOT(_q_setNetworkMode(HbSystemNetworkInfo::NetworkMode)));
-    updatePrimitives();
 }
 
 /*
@@ -151,7 +157,9 @@ void HbSignalIndicator::initStyleOption(HbStyleOptionSignalIndicator *option) co
     Q_D(const HbSignalIndicator);
 
     // style option should default to unknown mode if not set
+#ifdef HB_HAVE_QT_MOBILITY    
     option->networkMode = d->mNetworkMode;
+#endif // HB_HAVE_QT_MOBILITY    
 
     //signal level setting
     if (d->mLevelPercent >= 0 && d->mLevelPercent <= signalThreshold[0]) { // low

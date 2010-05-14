@@ -26,7 +26,7 @@
 #include "hbabstractbutton.h"
 #include "hbabstractbutton_p.h"
 #include "hbapplication.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbtooltip.h"
 #include "hbinstance.h"
 #include <QGraphicsSceneMouseEvent>

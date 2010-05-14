@@ -62,7 +62,7 @@
 /*!
     \brief Returns identifiers and localized names of all known languages.
       
-    \return Localized names and integer identifiers of languages supported in a device  
+    \return localized names and integer identifiers of languages supported in a device  
 */
 QHash<int, QString> readLanguageList()
 {
@@ -107,6 +107,7 @@ QHash<int, QString> readLanguageList()
     \brief Changes the system UI language.
       
     \param language identifier of the language  
+    \return true if operation was successful
 */
 bool setLocale( int language )
 {
@@ -134,7 +135,7 @@ bool setLocale( int language )
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
      
-    \return Localized names and integer identifiers of languages supported in a device  
+    \return localized names and integer identifiers of languages supported in a device  
 */
 QHash<int, QString> HbLanguageUtil::supportedLanguages()
 {
@@ -181,7 +182,7 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
      
-    \return Localized names and integer identifiers of known languages 
+    \return localized names and integer identifiers of known languages 
 */
 QHash<int, QString> HbLanguageUtil::allLanguages()
 {
@@ -259,7 +260,7 @@ bool HbLanguageUtil::changeLanguage( int language )
 }
 
 /*!
-    \brief Returns ID of current language. Localized name 
+    \brief Returns ID of current language. 
   
     \return identifier of current system language
 */ 

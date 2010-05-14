@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionmenuitem.h"
+#include "hbstyleoptionmenuitem_p.h"
 
 /*!
     \class HbStyleOptionMenuItem

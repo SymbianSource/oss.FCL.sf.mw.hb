@@ -51,11 +51,11 @@ public:
     IMPORT_C static CHbIndicatorSymbian* NewL();
     IMPORT_C ~CHbIndicatorSymbian();
 
-    TBool Activate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
-    TBool Deactivate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
+    IMPORT_C TBool Activate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
+    IMPORT_C TBool Deactivate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
 
-    TInt Error() const; 
-    void SetObserver(MHbIndicatorSymbianObserver* aObserver);
+    IMPORT_C TInt Error() const;
+    IMPORT_C void SetObserver(MHbIndicatorSymbianObserver* aObserver);
 
 private:
     CHbIndicatorSymbian();

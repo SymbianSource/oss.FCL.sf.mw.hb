@@ -57,7 +57,6 @@ public:
     static void listAvailableLanguageDatabasePlugins(QStringList& result, const QString& subfolder);
     static HbLanguageDatabaseInterface* languageDatabasePluginInstance(const QString& pluginFileName, const QString& subfolder);
 
-    static bool isInputPluginInPermanentMemory(const QString& pluginFileName);
     static void listSupportedInputLanguages(QList<HbInputLanguage>& results);
 
     static QWidget* createWrapperWidget(QGraphicsWidget* graphicsWidget);

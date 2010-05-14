@@ -27,6 +27,7 @@
 #define HBSWIPEGESTURELOGIC_P_H
 
 #include "hbgestures_p.h"
+#include "hbglobal.h"
 
 #include <QEvent>
 #include <QGestureRecognizer>
@@ -46,17 +47,23 @@ public:
             Qt::GestureState gestureState,
             HbSwipeGesture *gesture,
             QObject *watched,
-            QMouseEvent *me );
+            QMouseEvent *me);
+    QGestureRecognizer::Result handleMouseMove(
+            Qt::GestureState gestureState,
+            HbSwipeGesture *gesture,
+            QObject *watched,
+            QMouseEvent *me);
     QGestureRecognizer::Result handleMouseRelease(
             Qt::GestureState gestureState,
             HbSwipeGesture *gesture,
             QObject *watched,
-            QMouseEvent *me );    
+            QMouseEvent *me);
     QGestureRecognizer::Result recognize(
             Qt::GestureState gestureState,
             HbSwipeGesture *gesture,
             QObject *watched,
-            QEvent *event );
+            QEvent *event,
+            QTime currentTime);
 
     QTime mCurrentTime;    
 };

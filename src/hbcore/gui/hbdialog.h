@@ -28,7 +28,6 @@
 
 #include <hbglobal.h>
 #include <hbpopup.h>
-#include <hbstyleoptionpopup.h>
 
 class HbAction;
 class HbDialogPrivate;
@@ -57,7 +56,6 @@ public:
     int type() const { return Type; }
 
 public slots:
-    HbAction *exec();
     void open( QObject* receiver = 0, const char* member = 0 );
 
  signals:

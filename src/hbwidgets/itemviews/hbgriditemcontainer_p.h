@@ -26,7 +26,7 @@
 #define HBGRIDITEMCONTAINER_P_H
 
 #include <QObject>
-#include <hbabstractitemcontainer.h>
+#include <hbabstractitemcontainer_p.h>
 #include <hbabstractitemview.h>
 #include <hbgridlayout_p.h>
 
@@ -61,6 +61,8 @@ public:
     QModelIndex lastValidItemIndex() const;
     void setUniformItemSizes(bool enable);
 
+    virtual void resizeContainer();
+
 protected:
     HbGridItemContainer( HbGridItemContainerPrivate &dd, QGraphicsItem *parent = 0 );
     virtual QPointF recycleItems(const QPointF &delta);
@@ -71,6 +73,8 @@ protected:
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
 
     virtual HbAbstractViewItem *createDefaultPrototype() const;
+
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
 
 protected slots:
 

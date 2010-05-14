@@ -42,6 +42,7 @@ class HbSplashGenServer : public QObject
 public:
     HbSplashGenServer(HbSplashGenerator *generator);
     ~HbSplashGenServer();
+    bool startupSuccess() const;
 
 private slots:
     void onOutputDirContentsUpdated(const QString &dir, const QStringList &entries);

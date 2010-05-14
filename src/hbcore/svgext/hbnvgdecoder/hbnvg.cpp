@@ -27,7 +27,6 @@
 #include "hbnvg_p.h"
 #include "hbnvgutil_p.h"
 #include "hbnvgcsicon_p.h"
-#include "hbnvgtlvicon_p.h"
 #include "hbnvgiconfactory_p.h"
 #include "hbnvgicondata_p.h"
 #include "hbnvgexception_p.h"
@@ -45,7 +44,7 @@ const qint32 NvgOffsetReserved1       = 6;
 
 void HbNvgIconList::addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgIcon)
 {
-    if (type <= HbNvgIconFactory::NvgTlv) {
+    if (type <= HbNvgIconFactory::NvgCs) {
         if (icons[type]) {
             delete icons[type];
         }
@@ -55,7 +54,7 @@ void HbNvgIconList::addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon *
 
 HbNvgIcon * HbNvgIconList::getIcon(HbNvgIconFactory::HbNvgIconType type)
 {
-    if (type <= HbNvgIconFactory::NvgTlv) {
+    if (type <= HbNvgIconFactory::NvgCs) {
         return icons[type];
     }
     return 0;
@@ -63,8 +62,7 @@ HbNvgIcon * HbNvgIconList::getIcon(HbNvgIconFactory::HbNvgIconType type)
 
 HbNvgIconList::~HbNvgIconList()
 {
-    delete icons[HbNvgIconFactory::NvgCs];
-    delete icons[HbNvgIconFactory::NvgTlv];
+    delete icons[HbNvgIconFactory::NvgCs];   
 }
 
 HbNvgEnginePrivate::HbNvgEnginePrivate():

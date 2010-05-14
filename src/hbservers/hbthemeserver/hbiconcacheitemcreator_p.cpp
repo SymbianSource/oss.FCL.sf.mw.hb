@@ -82,31 +82,40 @@ QString HbIconCacheItemCreator::KSgimage = "SGIMAGE";
     \a key denotes the unique identifier for the cache item
     \a options indicate different ways of loading icons
     \a format indicates the icon format e.g. svg/nvg etc.\
-    \a gpuMemoryStatus indicates the global GPU memory status (GoodMemory state or FreeRAM state)
+    \a currentRenderingMode ThemeServer's current rendering mode state.
  */
 HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
         HbIconLoader::IconLoaderOptions options,
         const QString &format,
+        HbRenderingMode currentRenderingMode,
         bool isMultiPiece)
 {
 #ifndef Q_OS_SYMBIAN
     Q_UNUSED(isMultiPiece)
+    Q_UNUSED(currentRenderingMode)
 #endif
     QScopedPointer <HbIconCacheItem> tempIconCacheItem(new HbIconCacheItem);
     HbIconCacheItem* item = tempIconCacheItem.data();
     QScopedPointer <HbIconProcessor> rasterIcon;
     QScopedPointer <HbIconProcessor> vectorIcon;
+    
+    // Set the render mode to EHWRendering, only if the client is requesting a HW rendered icon
+    // and ThemeServer is in HW rendering mode
+    HbRenderingMode renderMode = ESWRendering;
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(renderMode)
+#endif   
+
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
+    if((key.renderMode == EHWRendering) && (currentRenderingMode == EHWRendering)) {
+        renderMode = EHWRendering;
+    }
+#endif    
     bool isIconCreated = false;
 
     if ((format == KSvg) || (format == KPic)) {
-
-#ifdef HB_NVG_TLV_ICON
-        rasterIcon.reset(new HbNvgIconProcessor(key, options, format));
-        vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
-#else
         rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
-#endif
-
+        
 #ifdef SVG_INTERMEDIATE_PIC
         vectorIcon.reset(new HbPicIconProcessor(key, options, format));
 #endif
@@ -114,15 +123,34 @@ HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
 #ifdef HB_NVG_CS_ICON
         if (!isMultiPiece) {
 #ifdef HB_SGIMAGE_ICON
-            if (HbThemeServerPrivate::gpuMemoryState()) {
-                rasterIcon.reset(new HbSgimageIconProcessor(key, options, format));
+            if(renderMode == ESWRendering){ 
+                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));                
+            }else {
+                if (HbThemeServerPrivate::gpuMemoryState()) {
+                    rasterIcon.reset(new HbSgimageIconProcessor( key, options, format));
+                }
+                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
             }
 #endif
-            vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
-        } else {
-            // multipieceIcon So make nvgiconimpl for .nvg files
-            // No raster icon data is created
-            vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
+            
+// if sgImage support is enabled by default remove this block
+#ifndef HB_SGIMAGE_ICON
+            if(renderMode == ESWRendering){
+                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));
+            } else {
+                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
+            }
+#endif
+// block end
+        }
+        else {
+            if(renderMode == ESWRendering){
+                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));
+            } else {
+                // multipieceIcon So make nvgiconimpl for .nvg files
+                // No raster icon data is created
+                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
+            }
         }
 #endif
     } else if (format == KBlob) {
@@ -186,13 +214,31 @@ HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
     created with some parameters either on the Gpu or the Cpu
     \a iconCacheItem denotes the cacheItem to be populated
     \a key unique identifier to identify the cache item
+    \a currentRenderingMode ThemeServer's current rendering mode state
 
  */
 void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem& iconCacheItem,
-        const HbIconKey &key)
+                                                const HbIconKey &key,
+                                                HbRenderingMode currentRenderingMode)
 {
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(currentRenderingMode)
+#endif
     QScopedPointer <HbIconProcessor> rasterIcon;
     QScopedPointer <HbIconProcessor> vectorIcon;
+    
+    // Set the render mode to EHWRendering, only if the client is requesting a HW rendered icon
+    // and ThemeServer is in HW rendering mode
+    HbRenderingMode renderMode = ESWRendering;
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(renderMode)
+#endif   
+
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    if((key.renderMode == EHWRendering) && (currentRenderingMode == EHWRendering)) {
+        renderMode = EHWRendering;
+    }
+#endif    
     bool isIconCreated = false;
     QString format = HbThemeServerUtils::formatFromPath(key.filename);
 
@@ -204,8 +250,12 @@ void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem& iconCacheItem,
         }
         if (format == KNvg) {
 #ifdef HB_SGIMAGE_ICON
-            if (HbThemeServerPrivate::gpuMemoryState()) {
-                rasterIcon.reset(new HbSgimageIconProcessor(key, iconCacheItem.iconOptions, format));
+            if(renderMode == EHWRendering){
+                if (HbThemeServerPrivate::gpuMemoryState()){
+                    rasterIcon.reset(new HbSgimageIconProcessor( key, iconCacheItem.iconOptions, format));
+                }
+            }else {
+                rasterIcon.reset(new HbPixmapIconProcessor( key, iconCacheItem.iconOptions, format));
             }
 #endif
 #ifdef NVG_ICON
@@ -250,21 +300,46 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
     const QString &format,
     const QVector<HbSharedIconInfo> &multiPieceIconInfo,
     HbMultiIconParams &multiPieceIconParams,
-    bool allNvg)
+    bool allNvg,
+    HbRenderingMode currentRenderingMode)
 {
 
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(currentRenderingMode)
+#endif   
+    
     HbIconCacheItem* item = 0;
     QScopedPointer <HbIconCacheItem> tempIconCacheItem;
     bool isIconCreated = false;
     QScopedPointer<HbIconProcessor> rasterIcon;
+    
+    // Set the render mode to EHWRendering, only if the client is requesting a HW rendered icon
+    // and ThemeServer is in HW rendering mode
+    HbRenderingMode renderMode = ESWRendering;
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(renderMode)
+#endif
 
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    if((finalIconKey.renderMode == EHWRendering) && (currentRenderingMode == EHWRendering)) {
+        renderMode = EHWRendering;
+    }
+#endif
     if (allNvg) {
 #ifdef HB_SGIMAGE_ICON
-        if (HbThemeServerPrivate::gpuMemoryState()) {
-            rasterIcon.reset(new HbSgimageIconProcessor(
-                                 finalIconKey,
-                                 (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options,
-                                 KSgimage));
+        if(renderMode == EHWRendering){ 
+            if (HbThemeServerPrivate::gpuMemoryState()) {
+                rasterIcon.reset(new HbSgimageIconProcessor(
+                                             finalIconKey,
+                                             (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options,
+                                             KSgimage));
+            }
+            
+        } else {
+            rasterIcon.reset(new HbPixmapIconProcessor( 
+                                finalIconKey, 
+                                (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options, 
+                                KNvg));
         }
 #else
         return item;

@@ -42,7 +42,6 @@ public:
     explicit HbGridView(QGraphicsItem *parent = 0);
     virtual ~HbGridView();
     HbAbstractViewItem *itemAt(int row, int column) const;
-    HbAbstractViewItem *itemAt(int index) const;
     void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);
 
     void setRowCount(int rowCount);

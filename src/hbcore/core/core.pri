@@ -30,11 +30,8 @@ DEPENDPATH += $$PWD
 PUBLIC_HEADERS += $$PWD/hbaction.h
 PUBLIC_HEADERS += $$PWD/hbapplication.h
 PUBLIC_HEADERS += $$PWD/hbevent.h
-PUBLIC_HEADERS += $$PWD/hbgesture.h
-PUBLIC_HEADERS += $$PWD/hbgesturefilter.h
 PUBLIC_HEADERS += $$PWD/hbglobal.h
 PUBLIC_HEADERS += $$PWD/hbgraphicsscene.h
-PUBLIC_HEADERS += $$PWD/hbgraphicsscenemouseevent.h
 PUBLIC_HEADERS += $$PWD/hbinstance.h
 PUBLIC_HEADERS += $$PWD/hbnamespace.h
 PUBLIC_HEADERS += $$PWD/hbs60events.h
@@ -53,8 +50,6 @@ PRIVATE_HEADERS += $$PWD/hbstring_p.h
 PRIVATE_HEADERS += $$PWD/hbvariant_p.h
 PRIVATE_HEADERS += $$PWD/hbstringvector_p.h
 PRIVATE_HEADERS += $$PWD/hbaction_p.h
-PRIVATE_HEADERS += $$PWD/hbgesture_p.h
-PRIVATE_HEADERS += $$PWD/hbgesturefilter_p.h
 PRIVATE_HEADERS += $$PWD/hbgraphicsscene_p.h
 PRIVATE_HEADERS += $$PWD/hbglobal_p.h
 PRIVATE_HEADERS += $$PWD/hbinstance_p.h
@@ -64,25 +59,25 @@ PRIVATE_HEADERS += $$PWD/hbtestabilityinterface_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeperf_p.h
 PRIVATE_HEADERS += $$PWD/hbstringdata_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeindex_p.h
+PRIVATE_HEADERS += $$PWD/hbsharedcache_p.h
 PRIVATE_HEADERS += $$PWD/hbmainwindoworientation_p.h
 PRIVATE_HEADERS += $$PWD/hborientationstatus_p.h
 PRIVATE_HEADERS += $$PWD/hbsensorlistener_p.h
 PRIVATE_HEADERS += $$PWD/hblocalechangenotifier_p.h
 PRIVATE_HEADERS += $$PWD/hbapplication_p.h
 PRIVATE_HEADERS += $$PWD/hbthemesystemeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbpluginloader_p.h
+PRIVATE_HEADERS += $$PWD/hbpluginloader_p_p.h
 symbian {
-	PRIVATE_HEADERS += $$PWD/hbcorepskeys_p.h
-	PRIVATE_HEADERS += $$PWD/hbsensornotifyhandler_p.h
+    PRIVATE_HEADERS += $$PWD/hbcorepskeys_p.h
+    PRIVATE_HEADERS += $$PWD/hbsensornotifyhandler_p.h
 }
 
 SOURCES += $$PWD/hbaction.cpp
 SOURCES += $$PWD/hbapplication.cpp
 SOURCES += $$PWD/hbevent.cpp
-SOURCES += $$PWD/hbgesture.cpp
-SOURCES += $$PWD/hbgesturefilter.cpp
 SOURCES += $$PWD/hbglobal.cpp
 SOURCES += $$PWD/hbgraphicsscene.cpp
-SOURCES += $$PWD/hbgraphicsscenemouseevent.cpp
 SOURCES += $$PWD/hbinstance.cpp
 SOURCES += $$PWD/hbnamespace.cpp
 SOURCES += $$PWD/hbstandarddirs.cpp
@@ -95,12 +90,13 @@ SOURCES += $$PWD/hbmultisegmentallocator_p.cpp
 SOURCES += $$PWD/hbstring_p.cpp
 SOURCES += $$PWD/hbvariant_p.cpp
 SOURCES += $$PWD/hbthemeindex.cpp
+SOURCES += $$PWD/hbsharedcache.cpp
 SOURCES += $$PWD/hbmainwindoworientation.cpp
 SOURCES += $$PWD/hborientationstatus.cpp
 SOURCES += $$PWD/hbsensorlistener.cpp
 SOURCES += $$PWD/hblocalechangenotifier_p.cpp
 SOURCES += $$PWD/hbthemesystemeffect.cpp
+SOURCES += $$PWD/hbpluginloader.cpp
 symbian {
     SOURCES += $$PWD/hbsensornotifyhandler_p.cpp
 }
-

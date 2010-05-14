@@ -24,12 +24,12 @@
 ****************************************************************************/
 
 #include "hbabstractitemview_p.h"
-#include "hbabstractitemcontainer_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 
 #include <hbabstractitemview.h>
 #include <hbabstractviewitem.h>
 #include <hbevent.h>
-#include <hbabstractitemcontainer.h>
+#include <hbabstractitemcontainer_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbinstance.h>
 #include <hbscrollbar.h>
@@ -38,8 +38,6 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QDebug>
-// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
-#include <hbabstractviewitem_p.h>
 
 #include <QGesture>
 #include <QGestureEvent>
@@ -139,16 +137,6 @@
 */
 
 /*!
-    \var HbAbstractItemView::ContiguousSelection
-    \deprecated HbAbstractItemView::ContiguousSelection
-       is deprecated.
-
-     When the user selects an item in the usual way, the selection is cleared and the new item selected.
-     However, if the user presses an item, moves the selection and releases it, all the items between
-     are selected or unselected, depending on the state of the first item.
-*/
-
-/*!
     \enum HbAbstractItemView::ItemAnimation
 
     animations in HbAbstractItemView that can be disabled. By default all animations are enabled.
@@ -203,7 +191,7 @@
         HbAbstractItemView::ScrollHint hint = EnsureVisible)
 
     Scrolls the view if necessary to ensure that the item at \a index is visible
-    according to hint. Default value just guarantees, that item will be fully visible. 
+    in a position according to \a hint. Default value just guarantees, that item will be fully visible. 
 */
 
 
@@ -211,25 +199,6 @@
     See also HbAbstractItemManager, HbAbstractViewItem, HbAbstractItemContainer.
 
 */
-
-/*!
-    \deprecated HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &, HbAbstractItemContainer *, QGraphicsItem *)
-        is deprecated. Use \a HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &, HbAbstractItemContainer *, HbModelIterator *, QGraphicsItem *).
-
-    Constructs a new HbAbstractItemView with \a parent.
-*/
-HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &dd,
-                                       HbAbstractItemContainer *container,
-                                       QGraphicsItem *parent)
-    : HbScrollArea(dd, parent)
-{
-    qWarning("HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &, HbAbstractItemContainer *, QGraphicsItem *) is deprecated! Use HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &, HbAbstractItemContainer *, HbModelIterator *, QGraphicsItem *).");
-    Q_D(HbAbstractItemView);
-    Q_ASSERT_X(container, "HbAbstractItemView constructor", "Container is null");
-
-    d->q_ptr = this;
-    d->init(container, new HbModelIterator());
-}
 
 /*!
     Constructs a new HbAbstractItemView with \a parent.
@@ -360,30 +329,6 @@ void HbAbstractItemView::setSelectionModel(QItemSelectionModel *selectionModel)
 }
 
 /*!
-    \deprecated HbAbstractItemView::setSelectionMode(HbAbstractItemView::SelectionMode, bool)
-        is deprecated. Use \a HbAbstractItemView::setSelectionMode(HbAbstractItemView::SelectionMode newMode)
-
-    If \a newMode is not same as current selection mode of view,
-    updates selection mode and all viewitems.
-    If \a resetSelection is true, it clears all existing selections. By default this value is true.
- */
-void HbAbstractItemView::setSelectionMode(SelectionMode newMode, bool resetSelection)
-{
-    qWarning("HbAbstractItemView::setSelectionMode(HbAbstractItemView::SelectionMode, bool) is deprecated! Use HbAbstractItemView::setSelectionMode(HbAbstractItemView::SelectionMode).");
-
-    Q_D(HbAbstractItemView);
-    if (d->mSelectionMode != newMode) {
-        d->mSelectionMode = newMode;
-
-        if (resetSelection) {
-            clearSelection();
-        }
-
-        d->updateItems();
-    }
-}
-
-/*!
     If \a newMode is not same as current selection mode of view,
     updates selection mode, all viewitems and clears all existing selections.
  */
@@ -407,8 +352,7 @@ void HbAbstractItemView::selectAll()
     Q_D(HbAbstractItemView);
     if (d->mModelIterator->model()
         && d->mSelectionModel 
-        && (d->mSelectionMode == MultiSelection 
-        ||  d->mSelectionMode == ContiguousSelection)) {
+        && d->mSelectionMode == MultiSelection) {
         QModelIndex firstIndex = d->mModelIterator->nextIndex(QModelIndex());
         QModelIndex lastIndex = d->mModelIterator->previousIndex(QModelIndex());
         d->mSelectionModel->select(QItemSelection(firstIndex, lastIndex), QItemSelectionModel::Select);
@@ -447,7 +391,7 @@ QModelIndex HbAbstractItemView::currentIndex() const
 }
 
 /*!
-   Sets Currentindex to \a index. The item is selected depending on the \a selectionFlag.
+   Sets current index to \a index. The item is selected depending on the \a selectionFlag.
    By default item is not selected. If current selection mode is NoSelection,
    item is not selected irrespective of the selection flag.
  */
@@ -539,7 +483,7 @@ bool HbAbstractItemView::event(QEvent *e)
         }
         result = true;
     } else if (e->type() == QEvent::LayoutRequest) {
-        d->refreshContainerGeometry();
+        d->mContainer->resizeContainer();
         if (d->mPostponedScrollIndex.isValid()) { 
            d->scrollTo(d->mPostponedScrollIndex, d->mPostponedScrollHint);
         } 
@@ -566,7 +510,7 @@ void HbAbstractItemView::orientationChanged(Qt::Orientation newOrientation)
     //Setting the uniform ites sizes to container again resets size caches.
     d->mContainer->setUniformItemSizes(d->mContainer->uniformItemSizes());
     d->mContainer->setPos(0,0);
-    d->refreshContainerGeometry();
+    d->mContainer->resizeContainer();
 
     d->updateScrollMetrics();
 
@@ -636,21 +580,6 @@ bool HbAbstractItemView::isVisible(const QModelIndex & index) const
 }
 
 /*!
-    \deprecated HbAbstractItemView::isVisible(HbAbstractViewItem*) const
-        is deprecated. Use isVisible \a HbAbstractItemView::isVisible(const QModelIndex&) const.
-
-    This is an overloaded member function, provided for convenience.
-    Returns true if item is fully or partially visible in view.
- */
-bool HbAbstractItemView::isVisible(HbAbstractViewItem *item) const
-{
-    qWarning("HbAbstractItemView::isVisible(HbAbstractViewItem*) const is deprecated! Use isVisible \a HbAbstractItemView::isVisible(const QModelIndex&) const");
-
-    Q_D(const HbAbstractItemView);
-    return d->visible(item, false);
-}
-
-/*!
     Base class implemmentation. Take care about scrollTo when it was
     called before view was visible (first scrollTo can be done after
     first layoutRequest).
@@ -694,20 +623,6 @@ QList<HbAbstractViewItem *> HbAbstractItemView::visibleItems() const
             visibleItems.append(d->mContainer->items().at(i));
     }
     return visibleItems;
-}
-
-/*!
-    \deprecated HbAbstractItemView::itemAtPosition(const QPointF&) const
-        is deprecated.
-
-    Returns a pointer to item at the coordinates.
- */
-HbAbstractViewItem *HbAbstractItemView::itemAtPosition(const QPointF& position) const
-{
-    qWarning("HbAbstractItemView::itemAtPosition(const QPointF&) const is deprecated!");
-
-    Q_D(const HbAbstractItemView);
-    return d->itemAt(position);
 }
 
 /*!
@@ -796,29 +711,12 @@ void HbAbstractItemView::currentIndexChanged(const QModelIndex &current, const Q
 
     if (current != d->mCurrentIndex) {
         d->mCurrentIndex = current;
-
-        HbAbstractViewItem* oldItem = d->mContainer->itemByIndex(previous);
-        HbAbstractViewItem* newItem = d->mContainer->itemByIndex(current);
-       
-        if (oldItem) {
-            oldItem->lostFocus();
-        } 
-        
+               
         if (previous.isValid()) {
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-           d->mContainer->setItemStateValue(previous, HbAbstractViewItem::FocusKey, false);
-#endif
            d->mContainer->setItemTransientStateValue(previous, "focused", false);
         }
-
-        if (newItem) {
-            newItem->receivedFocus();
-        } 
         
         if (d->mCurrentIndex.isValid()) {
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-            d->mContainer->setItemStateValue(d->mCurrentIndex, HbAbstractViewItem::FocusKey, true);
-#endif
             d->mContainer->setItemTransientStateValue(d->mCurrentIndex, "focused", true);
         }
 
@@ -848,11 +746,6 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged, modifiers); 
             }
         } 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-        d->mContainer->setItemStateValue(selectedIndexes.at(i),
-                                         HbAbstractViewItem::CheckStateKey,
-                                         Qt::Checked);
-#endif
         d->mContainer->setItemTransientStateValue(selectedIndexes.at(i),
                                          "checkState",
                                          Qt::Checked);
@@ -868,11 +761,6 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged);
             }
         } 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-        d->mContainer->setItemStateValue(deselectedIndexes.at(i),
-                                         HbAbstractViewItem::CheckStateKey,
-                                         Qt::Unchecked);
-#endif
         d->mContainer->setItemTransientStateValue(deselectedIndexes.at(i),
                                          "checkState",
                                          Qt::Unchecked);
@@ -1024,68 +912,6 @@ void HbAbstractItemView::emitReleased(const QModelIndex &modelIndex)
 }
 
 /*!
-    \deprecated HbAbstractItemView::indexCount() const
-        is deprecated. Use \a HbModelIterator::indexCount()
-
-    Returns the total model index count that can be traversed with nextIndex and previousIndex functions.
-*/
-int HbAbstractItemView::indexCount() const
-{
-    qWarning("HbAbstractItemView::indexCount() is deprecated! Use HbModelIterator::indexCount().");
-
-    Q_D(const HbAbstractItemView);
-    return d->mModelIterator->indexCount();
-}
-
-/*!
-    \deprecated HbAbstractItemView::indexPosition(const QModelIndex &) const
-        is deprecated. Use \a HbModelIterator::indexPosition(const QModelIndex &) const
-
-    Returns the position of \a index from the first index.
-*/
-int HbAbstractItemView::indexPosition(const QModelIndex &index) const
-{
-    qWarning("HbAbstractItemView::indexPosition(const QModelIndex &) is deprecated! Use HbModelIterator::indexPosition(const QModelIndex &).");
-
-    Q_D(const HbAbstractItemView);
-    return d->mModelIterator->indexPosition(index);
-}
-
-/*!
-    \deprecated HbAbstractItemView::nextIndex(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::nextIndex(const QModelIndex&) const
-
-    Returns the next model index from \a index. If QModelIndex() is given as a parameter
-    this should return the first model index.
-
-    \note Returned QModelIndex() is interpret so that there is no next index from given one.
-*/
-QModelIndex HbAbstractItemView::nextIndex(const QModelIndex &index) const
-{
-    qWarning("HbAbstractItemView::nextIndex(const QModelIndex&) is deprecated! Use HbModelIterator::nextIndex(const QModelIndex&).");
-
-    Q_D(const HbAbstractItemView);
-    return d->mModelIterator->nextIndex(index);
-}
-
-/*!
-    \deprecated HbAbstractItemView::previousIndex(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::previousIndex(const QModelIndex&) const
-
-    Returns the previous model index from \a index. If QModelIndex() is given as a parameter
-    this should return the last model index.
-
-    \note Returned QModelIndex() is interpret so that there is no previous index from given one.
-*/
-QModelIndex HbAbstractItemView::previousIndex(const QModelIndex &index) const
-{
-    qWarning("HbAbstractItemView::previousIndex(const QModelIndex&) is deprecated! Use HbModelIterator::previousIndex(const QModelIndex&).");
-
-    Q_D(const HbAbstractItemView);
-    return d->mModelIterator->previousIndex(index);
-}
-
-/*!
     \reimp
 */
 bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
@@ -1098,23 +924,10 @@ bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
         && !d->mContainer->items().isEmpty()) {
         newDelta = d->mContainer->recycleItems(delta);
         d->mAnimationInitialPosition = d->mAnimationInitialPosition + newDelta - delta; 
-        d->refreshContainerGeometry();
+        d->mContainer->resizeContainer();
     }
 
     return HbScrollArea::scrollByAmount(newDelta);
-}
-
-/*!
-    \deprecated HbAbstractItemView::container() const
-        is deprecated, because class HbAbstractItemContainer will be made private.
-
-    Returns the container widget.
-*/
-HbAbstractItemContainer *HbAbstractItemView::container() const
-{
-    qWarning("HbAbstractItemView::container() const is deprecated, because class HbAbstractItemContainer will be made private.");
-    Q_D(const HbAbstractItemView);
-    return d->mContainer;
 }
 
 /*!
@@ -1152,19 +965,6 @@ QVariant HbAbstractItemView::itemChange(GraphicsItemChange change, const QVarian
 
     }
     return HbScrollArea::itemChange(change, value);
-}
-
-/*!
-    \deprecated HbAbstractItemView::type() const
-        is deprecated.
-
-    \reimp
-*/
-int HbAbstractItemView::type() const
-{
-    qWarning("HbAbstractItemView::type() const is deprecated!");
-
-    return Type;
 }
 
 /*!
@@ -1271,6 +1071,13 @@ void HbAbstractItemView::gestureEvent(QGestureEvent *event)
     }
 }
 
+/*! 
+    This slot is called when touch down event occurs. Default implementation handles selection 
+    and calls emitPressed().
+
+    \sa HbAbstractViewItem::pressed(const QPointF &position)
+    \sa emitPressed()
+*/
 void HbAbstractItemView::itemPressed(const QPointF &pos)
 {
     Q_D(HbAbstractItemView);
@@ -1293,6 +1100,13 @@ void HbAbstractItemView::itemPressed(const QPointF &pos)
     emitPressed(item->modelIndex());
 }
 
+/*! 
+    This slot is called when touch release event occurs for view item.
+    Default implementation calls emitReleased().
+
+    \sa HbAbstractViewItem::released(const QPointF &position)
+    \sa emitReleased()
+*/
 void HbAbstractItemView::itemReleased(const QPointF &pos)
 {
     Q_UNUSED(pos);
@@ -1301,6 +1115,13 @@ void HbAbstractItemView::itemReleased(const QPointF &pos)
     emitReleased(item->modelIndex());
 }
 
+/*! 
+    This slot is called when view item is activated.
+    Default implementation handles selection and calls emitActivated().
+
+    \sa HbAbstractViewItem::itemActivated(const QPointF &position)
+    \sa emitActivated()
+*/
 void HbAbstractItemView::itemActivated(const QPointF &pos)
 {
     Q_D(HbAbstractItemView);
@@ -1319,12 +1140,39 @@ void HbAbstractItemView::itemActivated(const QPointF &pos)
     emitActivated(index);
 }
 
+/*! 
+    This slot is called when view item is long pressed and long press is enabled in itemview.
+    Default implementation calls longPressed().
+
+    \sa HbAbstractViewItem::longPressed(const QPointF &position)
+    \sa longPressEnabled()
+    \sa longPressed()
+*/
 void HbAbstractItemView::itemLongPressed(const QPointF &pos)
 {
+    Q_D(HbAbstractItemView);
+
     HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
+    QModelIndex index = item->modelIndex();
+
+    d->mSelectionModel->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
+
     emit longPressed(item, item->mapToScene(pos));
 }
 
+/*! 
+    This slot is called when concrete view item has been created. Default implementation connects
+    touch event releated signals of HbAbstractViewItem to respective slots in this class.
+
+    \sa HbAbstractViewItem::pressed(const QPointF &position)
+    \sa HbAbstractViewItem::released(const QPointF &position)
+    \sa HbAbstractViewItem::itemActivated(const QPointF &position)
+    \sa HbAbstractViewItem::longPressed(const QPointF &position)
+    \sa itemPressed()
+    \sa itemReleased()
+    \sa itemActivated()
+    \sa itemLongPressed()
+*/
 void HbAbstractItemView::itemCreated(HbAbstractViewItem *item)
 {
     QObject::connect(item, SIGNAL(pressed(QPointF)), this, SLOT(itemPressed(QPointF)));

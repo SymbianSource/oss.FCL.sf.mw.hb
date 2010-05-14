@@ -31,6 +31,10 @@
 #include <QChar>
 #include <QDebug>
 
+#ifdef HB_BIN_CSS
+#include "hbcssconverterutils_p.h"
+#endif
+
 static const int shared_null_offset = -2;
 static HbStringData *shared_null = 0;
 
@@ -40,6 +44,16 @@ HbStringData::HbStringData() :
     mCapacity(0),
     mRef(1)
 {
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mStartOffset);
+#endif
+}
+
+HbStringData::~HbStringData()
+{
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::unregisterOffsetHolder(&mStartOffset);
+#endif
 }
 
 HbStringData *getStringData(HbMemoryManager::MemoryType type, int offset, bool shared = false)
@@ -74,6 +88,10 @@ HbString::HbString(HbMemoryManager::MemoryType type)
     mDataOffset = manager->alloc(sizeof(HbStringData));
     HbStringData* data = HbMemoryUtils::getAddress<HbStringData>(mMemoryType, mDataOffset);
     new(data) HbStringData();
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -98,6 +116,10 @@ HbString::HbString(const QString& str, HbMemoryManager::MemoryType type)
     data->mLength = length;
     data->mCapacity = length;
     mDataOffset = dataOffset.release();
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -118,6 +140,10 @@ HbString::HbString(const HbString& other)
         mShared = false;
         data->mRef.ref();
     }
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
 }
 
 /*
@@ -125,6 +151,10 @@ HbString::HbString(const HbString& other)
 */
 HbString::~HbString()
 {
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::unregisterOffsetHolder(&mDataOffset);
+#endif
+
     GET_MEMORY_MANAGER(mMemoryType);
     // if the memory where the string is not writable it means it's client process, so do nothing
     if (!manager->isWritable() || mDataOffset == shared_null_offset) 

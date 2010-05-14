@@ -77,26 +77,10 @@ Returns true if virtual keypad is open on the screen.
 */
 
 /*!
-\fn virtual int HbVkbHost::priority() const
-\deprecated HbVkbHost::priority() const
-    is deprecated.
-Returns priority. When the framework searches virtual keyboard host for an editor, it traverses all of its parent
-widgets and returns host that has highest priority.
-*/
-
-/*!
 \fn virtual QSizeF HbVkbHost::keyboardArea() const
 Returns the size of a rectangular area of the screen where virtual keyboard will be displayed. If 
 virtual keyboard's preferredKeyboardSize method returns larger area than returned by this method,
 the vkb host will shrink keyboard to fit into this rectangle. 
-*/
-
-/*!
-\fn virtual void HbVkbHost::preferredSizeChanged(const QSizeF& newSize) = 0
-\deprecated HbVkbHost::preferredSizeChanged(const QSizeF&)
-    is deprecated.
-Virtual keyboard uses this method for notifying if its preferred size changes
-while the keyboard is on the screen.
 */
 
 /*!

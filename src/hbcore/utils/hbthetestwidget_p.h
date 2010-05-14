@@ -81,6 +81,7 @@ public slots:
     void setApplicationBackground(); // only for S60
     void showThemeServerMemoryInfo();
     void screenCapture(); // not working on HW
+    void createSharedMemoryReport() const;
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
@@ -88,6 +89,9 @@ protected:
 private slots:
     void doScreenCapture();
     void orientationChanged(Qt::Orientation newOrientation);
+
+private:
+    void showWarning(QString text);
 
 private:
     HbTheTestWidgetPrivate *d;

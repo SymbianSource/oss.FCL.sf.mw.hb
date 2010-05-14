@@ -38,7 +38,8 @@ public :
                      const QSizeF& keySize,
                      Qt::AspectRatioMode aspectRatioMode,
                      QIcon::Mode mode,
-                     bool mirrored);
+                     bool mirrored,
+                     HbRenderingMode renderMode);
     HbPixmapIconImpl(const QPixmap& pixmap, const QString& name = QString());
     ~HbPixmapIconImpl();
 

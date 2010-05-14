@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptioninputdialog.h"
+#include "hbstyleoptioninputdialog_p.h"
 
 /*!
     \class HbStyleOptionInputDialog

@@ -31,7 +31,6 @@
 #include <hbtheme.h>
 #include <hbstyle.h>
 #include <hbtypefaceinfo_p.h>
-#include <hboogmwatcher_p.h>
 #include "hbmainwindow_p.h"
 #include "hbdeviceprofile.h"
 #include "hbglobal_p.h"
@@ -62,7 +61,7 @@
 #endif
 
 /*!
-    @beta
+    @stable
     @hbcore
     \class HbInstance
     \brief HbInstance manages global settings and objects in the application.
@@ -132,24 +131,22 @@ HbInstancePrivate::HbInstancePrivate() :
 #endif //HB_TESTABILITY
 
     connect(mTheme, SIGNAL(changeFinished()), this, SLOT(updateScenes()));
-    
+
 #ifdef HB_TESTABILITY
     // Activate testability plugin if exists    
-    QString testabilityPlugin = "testability/testability";
-    QString testabilityPluginPostfix = ".dll";
-    
     QObject *plugin = 0;
-    
-#ifdef Q_OS_LINUX
-    testabilityPluginPostfix = ".so";
-    testabilityPlugin = "testability/libtestability";
-#endif //linux
 
-#ifdef Q_OS_MAC
-    testabilityPluginPostfix = ".dylib";
-    testabilityPlugin = "testability/libtestability";
-#endif //mac
-    
+#if defined(Q_OS_WIN) || defined(Q_OS_SYMBIAN)
+    QString testabilityPluginPostfix = ".dll";
+    QString testabilityPlugin = "testability/testability";
+#elif defined(Q_OS_MAC)
+    QString testabilityPluginPostfix = ".dylib";
+    QString testabilityPlugin = "testability/libtestability";
+#else
+    QString testabilityPluginPostfix = ".so";
+    QString testabilityPlugin = "testability/libtestability";
+#endif
+
     testabilityPlugin = QLibraryInfo::location(QLibraryInfo::PluginsPath) + QObject::tr("/") + testabilityPlugin + testabilityPluginPostfix;
 
 #ifdef Q_OS_SYMBIAN
@@ -260,7 +257,6 @@ void HbInstancePrivate::addWindow(HbMainWindow *window)
     HbCssInspectorWindow::instance()->refresh();
 #endif
 #endif
-    HbOogmWatcher::instance()->mainWindowReady();
     emit windowAdded(window);
 }
 
@@ -451,19 +447,6 @@ HbStyle *HbInstance::style() const
 HbTheme *HbInstance::theme() const
 {
     return d->mTheme;
-}
-
-/*!
-    Returns the instance of HbTypefaceInfo
-
-    \deprecated HbInstance::typefaceInfo() const
-    is deprecated. Use HbFontSpec instead.
-     
-*/
-
-HbTypefaceInfo *HbInstance::typefaceInfo() const
-{
-    return NULL;
 }
 
 /*!

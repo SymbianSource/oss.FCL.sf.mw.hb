@@ -43,13 +43,14 @@ struct HbIconKey
               Qt::AspectRatioMode aspectRatioM,
               QIcon::Mode m,
               bool mir,
-              const QColor &clr):
+              const QColor &clr, HbRenderingMode rMode):
             filename(file),
             size(s),
             aspectRatioMode(aspectRatioM),
             mode(m),
             mirrored(mir),
-            color(clr)
+            color(clr),
+			renderMode(rMode)
     {
     }
 
@@ -57,7 +58,8 @@ struct HbIconKey
     {
         // compare filename in the last when everything else is matching
         // to avoid unnecessary string comparisons
-        return qFuzzyCompare(size.width(), other.size.width())
+        return (renderMode == other.renderMode) 
+               && qFuzzyCompare(size.width(), other.size.width())
                && qFuzzyCompare(size.height(), other.size.height())
                && (aspectRatioMode == other.aspectRatioMode)
                && (mode == other.mode)
@@ -75,6 +77,7 @@ struct HbIconKey
             mirrored = other.mirrored;
             filename = other.filename;
             color = other.color;
+	        renderMode = other.renderMode;
         }
         return *this;
     }
@@ -85,6 +88,7 @@ struct HbIconKey
     QIcon::Mode mode;
     bool mirrored;
     QColor color;
+    HbRenderingMode renderMode;
 };
 
 inline uint qHash(const HbIconKey &key)

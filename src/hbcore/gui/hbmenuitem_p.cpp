@@ -29,7 +29,7 @@
 #include "hbmenu_p.h"
 #include "hbaction.h"
 #include "hbstyle.h"
-#include "hbstyleoptionmenuitem.h"
+#include "hbstyleoptionmenuitem_p.h"
 #include "hbframeitem.h"
 #include "hbtextitem.h"
 #include "hbevent.h"

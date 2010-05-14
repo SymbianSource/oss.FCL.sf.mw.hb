@@ -48,6 +48,8 @@
 #include "hbindicatorwin32_p.h"
 #endif // Q_OS_SYMBIAN
 
+const char* indicatorMenu = "com.nokia.hb.indicatormenu/1.0"; 
+
 //local symbian helper functions
 #if defined(Q_OS_SYMBIAN)
 TRect QRectToTRect(const QRectF &rect)
@@ -126,7 +128,8 @@ HbDeviceDialogManagerPrivate::HbDeviceDialogManagerPrivate(HbDeviceDialogManager
     // Server publishes it's status. Applications use it to delay showing of notification
     // dialogs when server is showing.
     mServerStatus.setStatus(HbDeviceDialogServerStatus::NoFlags);
-
+    qApp->installEventFilter(this);
+    init();
     TRACE_EXIT
 }
 
@@ -143,6 +146,27 @@ HbDeviceDialogManagerPrivate::~HbDeviceDialogManagerPrivate()
     mWindowRegion.Close();
 #endif
     delete mIndicatorPluginManager;
+    TRACE_EXIT
+}
+
+void HbDeviceDialogManagerPrivate::init()
+{
+    TRACE_ENTRY
+    // Performance optimization for indicator menu.  
+    bool recycled(true);
+    int error(0);
+
+    HbDeviceDialogInterface *deviceDialogIf =
+        mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), recycled, error);
+    if (deviceDialogIf) {
+        HbPopup *popup = deviceDialogIf->deviceDialogWidget();
+#if defined(Q_OS_SYMBIAN)
+        mIndicatorPluginManager->connectTo(popup);
+#else
+        HbIndicatorPrivate::pluginManager()->connectTo(popup);
+#endif
+        mPluginManager.freeWidget(deviceDialogIf);
+    }
     TRACE_EXIT
 }
 
@@ -187,8 +211,6 @@ int HbDeviceDialogManagerPrivate::showDeviceDialog(
     HbDeviceDialogsContainer::Dialog &dialog = mDialogs.add(deviceDialogIf, info);
     dialog.setVariable(HbDeviceDialogsContainer::Dialog::ClientTag, parameters.mClientTag);
     id = dialog.id();
-
-    mScene->addItem(popup);
 
     if (info.group == HbDeviceDialogPlugin::DeviceNotificationDialogGroup) {
         // Disable HbNotificationDialog sequential show feature. Server takes care of
@@ -301,20 +323,22 @@ void HbDeviceDialogManagerPrivate::moveToForeground(bool foreground)
     if (foreground) {
         if(!mMainWindow->isVisible()) {
             mMainWindow->showFullScreen();
-            RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();
-            const int positionForeground(0);
-            rootWindowGroup.SetOrdinalPosition(positionForeground,
-                ECoeWinPriorityAlwaysAtFront);
+            doMoveToForeground(foreground, ECoeWinPriorityAlwaysAtFront);
         }
     } else {
         if(mMainWindow->isVisible()) {
             mMainWindow->hide();
-            RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();
-            const int positionBackground(-1);
-            rootWindowGroup.SetOrdinalPosition(positionBackground, ECoeWinPriorityNormal);
+            doMoveToForeground(foreground, ECoeWinPriorityNormal);
         }
     }
     TRACE_EXIT
+}
+
+void HbDeviceDialogManagerPrivate::doMoveToForeground(bool foreground, int priority)
+{
+    const int positionForeground = foreground ? 0 : -1;
+    RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();                
+    rootWindowGroup.SetOrdinalPosition(positionForeground, priority);
 }
 
 void HbDeviceDialogManagerPrivate::updateWindowRegion() const
@@ -341,6 +365,12 @@ void HbDeviceDialogManagerPrivate::resetWindowRegion() const
 void HbDeviceDialogManagerPrivate::moveToForeground(bool foreground)
 {
     Q_UNUSED(foreground)
+}
+
+void HbDeviceDialogManagerPrivate::doMoveToForeground(bool foreground, int priority)
+{
+    Q_UNUSED(foreground)
+    Q_UNUSED(priority)            
 }
 
 void HbDeviceDialogManagerPrivate::updateWindowRegion() const
@@ -658,6 +688,9 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
 {
     TRACE_ENTRY
     HbDeviceDialogsContainer::Dialog &current = mDialogs.find(id);
+
+    bool securityDialog = current.flags() & (HbDeviceDialogsContainer::Dialog::SecurityGroup|HbDeviceDialogsContainer::Dialog::CriticalGroup);
+
     if (current.isValid()) {
         // If device dialog was cancelled by client or server, give reason
         int closeReason = HbDeviceDialogNoError;
@@ -672,10 +705,69 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
         mDialogs.remove(current);
         removeRegionRect(id);
     }
+
     showDialogs();
     setupWindowRegion();
     updateStatus();
+
+    if (!securityDialog) {
+        return;
+    }
+
+    // security or critical level active
+    const HbDeviceDialogsContainer::Dialog begin;
+    const HbDeviceDialogsContainer::Dialog::Flags securityGroup(
+        HbDeviceDialogsContainer::Dialog::SecurityGroup);
+    const HbDeviceDialogsContainer::Dialog::Flags criticalGroup(
+        HbDeviceDialogsContainer::Dialog::CriticalGroup);		
+    const HbDeviceDialogsContainer::Dialog::Flags showing(
+        HbDeviceDialogsContainer::Dialog::Showing);
+    
+    HbDeviceDialogsContainer::Dialog &dialog = mDialogs.next(begin, securityGroup|showing,
+        securityGroup|showing);
+    bool showingSecurity = dialog.isValid();
+    if (!showingSecurity) {
+		dialog = mDialogs.next(begin, criticalGroup|showing, criticalGroup|showing);
+		showingSecurity = dialog.isValid();
+    }
+
+    if (!showingSecurity) {
+        return;
+    }
+    // check are there more security|critical dialogs showing. If there is, do not
+    // goto background.
+    bool moreDialogs = mDialogs.next(dialog, securityGroup|showing,
+            securityGroup|showing).isValid();
+
+    if (!moreDialogs) {
+        moreDialogs = mDialogs.next(dialog, criticalGroup|showing,
+            criticalGroup|showing).isValid();
+    }
+
+    if (showingSecurity && !moreDialogs) {
+#if defined(Q_OS_SYMBIAN)
+        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);
+        mMainWindow->hide();        
+#endif        
+    }
     TRACE_EXIT
+}
+
+
+bool HbDeviceDialogManagerPrivate::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_UNUSED(obj)
+// activate to correct priority. e.g. Telephone application has gone to background and
+// we are in security level.	
+    if (event->type() == QEvent::ApplicationActivate) {
+#if defined(Q_OS_SYMBIAN)    
+        RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();
+        if (rootWindowGroup.OrdinalPriority() == ECoeWinPriorityAlwaysAtFront-1) {
+            moveToForeground(true);
+        }
+#endif // Q_OS_SYMBIAN         
+    }
+    return QObject::eventFilter(obj, event);
 }
 
 // Called by device dialog widget to inform manager of closed device dialog

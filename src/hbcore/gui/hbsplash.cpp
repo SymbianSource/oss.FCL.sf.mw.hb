@@ -143,19 +143,48 @@ static uchar *readSpl(File &f, const Params &params)
 class HbSplashSrvClient : public RSessionBase
 {
 public:
+    HbSplashSrvClient();
+    ~HbSplashSrvClient();
     bool Connect();
     bool getSplash(RFile &f, const QString &ori, const QString &appId, const QString &screenId);
+private:
+    RMutex mMutex;
+    bool mMutexOk;
 };
+
+HbSplashSrvClient::HbSplashSrvClient()
+{
+    _LIT(KHbSplashStartMutex, "hbsplstart");
+    mMutexOk = mMutex.OpenGlobal(KHbSplashStartMutex) == KErrNone;
+    if (!mMutexOk) {
+        mMutexOk = mMutex.CreateGlobal(KHbSplashStartMutex) == KErrNone;
+    }
+}
+
+HbSplashSrvClient::~HbSplashSrvClient()
+{
+    if (mMutexOk) {
+        if (mMutex.IsHeld()) {
+            mMutex.Signal();
+        }
+        mMutex.Close();
+    }
+}
 
 bool HbSplashSrvClient::Connect()
 {
+    if (mMutexOk) {
+        mMutex.Wait();
+    }
     TVersion ver(hbsplash_version_major, hbsplash_version_minor, hbsplash_version_build);
     int maxTries = 3;
+    bool ok = false;
     while (maxTries--) {
         TInt err = CreateSession(hbsplash_server_name, ver);
         qDebug("[hbsplash] CreateSession result: %d", err);
         if (err == KErrNone) {
-            return true;
+            ok = true;
+            break;
 /*
         } else if (err == KErrNotFound || err == KErrServerTerminated) {
             qDebug("[hbsplash] Server not running");
@@ -178,7 +207,7 @@ bool HbSplashSrvClient::Connect()
                 }
                 User::WaitForRequest(status);
                 server.Close();
-                if (status.Int() != KErrNone) {
+                if (status.Int() != KErrNone && status.Int() != KErrAlreadyExists) {
                     qWarning("[hbsplash] Rendezvous failed (%d)", status.Int());
                     break;
                 }
@@ -189,8 +218,13 @@ bool HbSplashSrvClient::Connect()
             break;
         }
     }
-    qWarning("[hbsplash] cannot connect to splashgen server");
-    return false;
+    if (!ok) {
+        qWarning("[hbsplash] cannot connect to splashgen server");
+    }
+    if (mMutexOk) {
+        mMutex.Signal();
+    }
+    return ok;
 }
 
 bool HbSplashSrvClient::getSplash(RFile &f, const QString &ori,

@@ -4,12 +4,13 @@
       <meshitem src="icon-1" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
       
       <meshitem src="text-1" srcEdge="LEFT" dst="icon-1" dstEdge="RIGHT" spacing="-var(hb-param-margin-gene-middle-horizontal)" />
+      <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-popup)" />
       <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP" spacing="-var(hb-param-margin-gene-middle-vertical)"/>
       <meshitem src="text-1" srcEdge="BOTTOM" dst="text-2" dstEdge="TOP" spacing="var(hb-param-margin-gene-middle-vertical)"/>
       
       <meshitem src="text-2" srcEdge="LEFT" dst="text-1" dstEdge="LEFT" />
       <meshitem src="text-2" srcEdge="RIGHT" dst="text-1" dstEdge="RIGHT" />
-      <meshitem src="text-2" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacing="var(hb-param-margin-middle-vertical)" />
+      <meshitem src="text-2" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacing="var(hb-param-margin-gene-middle-vertical)" />
       
       <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
       <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />

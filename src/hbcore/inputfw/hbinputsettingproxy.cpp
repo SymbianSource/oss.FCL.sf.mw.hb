@@ -367,7 +367,6 @@ method connects those signals to given object.
 
 \sa disconnectObservingObject
 \sa globalInputLanguageChanged
-\sa activeHwKeyboardChanged
 \sa predictiveInputStateChanged
 \sa orientationAboutToChange
 \sa orientationChanged
@@ -383,18 +382,8 @@ void HbInputSettingProxy::connectObservingObject(QObject* aObserver)
         connect(this, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalInputLanguageChanged(const HbInputLanguage &)));
         connect(this, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalSecondaryInputLanguageChanged(const HbInputLanguage &)));
         connect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
-        connect(this, SIGNAL(activeHwKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeHwKeyboardChanged(HbKeyboardType)));
-        connect(this, SIGNAL(activeTouchKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeTouchKeyboardChanged(HbKeyboardType)));
-        connect(this, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)));
         connect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
         connect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
-/* Setting listeners not implemented yet
-        connect(this, SIGNAL(characterPreviewStateForQwertyChanged(bool)), aObserver, SLOT(characterPreviewStateForQwertyChanged(bool)));
-        connect(this, SIGNAL(keypressTimeoutChanged(int)), aObserver, SLOT(keypressTimeoutChanged(int)));
-        connect(this, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags, bool)));
-        connect(this, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), aObserver, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
-        connect(this, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), aObserver, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
-*/
     }
 }
 
@@ -408,19 +397,9 @@ void HbInputSettingProxy::disconnectObservingObject(QObject* aObserver)
     if (aObserver) {
         disconnect(this, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalInputLanguageChanged(const HbInputLanguage &)));
         disconnect(this, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalSecondaryInputLanguageChanged(const HbInputLanguage &)));
-        disconnect(this, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)));
         disconnect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
-        disconnect(this, SIGNAL(activeHwKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeHwKeyboardChanged(HbKeyboardType)));
-        disconnect(this, SIGNAL(activeTouchKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeTouchKeyboardChanged(HbKeyboardType)));
         disconnect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
         disconnect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
-/* Setting listeners not implemented yet
-        disconnect(this, SIGNAL(characterPreviewStateForQwertyChanged(bool)), aObserver, SLOT(characterPreviewStateForQwertyChanged(bool)));
-        disconnect(this, SIGNAL(keypressTimeoutChanged(int)), aObserver, SLOT(keypressTimeoutChanged(int)));
-        disconnect(this, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), aObserver, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags, bool)));
-        disconnect(this, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), aObserver, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
-        disconnect(this, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), aObserver, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
-*/
     }
 }
 
@@ -474,8 +453,6 @@ void HbInputSettingProxy::availableHwKeyboard(QList<HbKeyboardType>& aListOfAvai
 {
     aListOfAvailableKeyboards.append(HbKeyboard12Key);
     aListOfAvailableKeyboards.append(HbKeyboardQwerty);
-
-//Read the prData and get the list of keyboards from the device profile
 }
 
 /*!
@@ -656,24 +633,6 @@ void HbInputSettingProxy::setActiveKeyboard(HbKeyboardType keyboard)
             emit activeKeyboardChanged(keyboard);
         }
     }
-}
-
-/*!
-\deprecated HbInputSettingProxy::predictiveInputStatus()
-    is deprecated. Use predictiveInputStatusForITUT or predictiveInputStatusForQwerty instead.
-*/
-int HbInputSettingProxy::predictiveInputStatus() const
-{
-    return predictiveInputStatusForActiveKeyboard();
-}
-
-/*!
-\deprecated HbInputSettingProxy::setPredictiveInputStatus(int newStatus)
-    is deprecated. Use setPredictiveInputStatusForITUT or setPredictiveInputStatusForQwerty instead.
-*/
-void HbInputSettingProxy::setPredictiveInputStatus(int newStatus)
-{
-    setPredictiveInputStatusForActiveKeyboard(newStatus);
 }
 
 /*!

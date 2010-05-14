@@ -119,26 +119,11 @@ public:
         return iLanguage.asString() + QString(" ") + QString::number(iMode) + QString(" ") + QString::number(iKeyboard);
     }
 
-public:
+private:
     HbInputModeType iMode;
     HbInputLanguage iLanguage;
     HbKeyboardType iKeyboard;
 };
-
-/*!
-\deprecated HbInputModeProperties::iMode
-    is deprecated. It will become private.
-*/
-
-/*!
-\deprecated HbInputModeProperties::iLanguage
-    is deprecated. It will become private.
-*/
-
-/*!
-\deprecated HbInputModeProperties::iKeyboard
-    is deprecated. It will become private.
-*/
 
 #endif // HB_INPUT_MODE_PROPERTIES_H
 

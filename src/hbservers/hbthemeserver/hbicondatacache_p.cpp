@@ -207,6 +207,7 @@ void HbIconDataCache::clear()
 
  */
 HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
+        HbRenderingMode currentRenderingMode,
         bool isMultiIconPiece)
 {
     HbIconCacheItem* item = 0;
@@ -248,7 +249,7 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
             (goodMemory && !isMultiIconPiece)) {
         if (item->vectorIconData.type == NVG) {
 
-            HbIconCacheItemCreator::createCacheItem(*item, key);
+            HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
             if (item->rasterIconData.type != INVALID_FORMAT) {
                 currentGpuCacheSize += item->rasterIconDataCost;
             }
@@ -290,7 +291,7 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
             (item->rasterIconData.type == SGIMAGE)) {
 
         if ((item->vectorIconDataCost < (maxCpuCacheLimit - currentCpuCacheSize))) {
-            HbIconCacheItemCreator::createCacheItem(*item, key);
+            HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
             if (item->vectorIconData.type != INVALID_FORMAT) {
                 currentCpuCacheSize += item->vectorIconDataCost;
             }
@@ -792,6 +793,36 @@ void HbIconDataCache::freeGpuRam(int bytes)
     } else {
         createGpuCacheSpace(gpuLruListSize);
     }
+    
+    // Iterate through the cache and remove any active SgImages, before the context
+    // is destroyed.
+    QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
+        for (QHash < HbIconKey,
+                HbIconCacheItem* >::const_iterator iter = cache->constBegin();
+                iter != itEnd;
+                ++iter) {
+            HbIconCacheItem* temp = iter.value();
+            if( temp->rasterIconData.type == SGIMAGE ){
+#ifdef HB_SGIMAGE_ICON
+                HbSgImageRenderer::removeSgImageFromHash(temp->rasterIconData.sgImageData.id);
+#endif
+                temp->rasterIconData.type = INVALID_FORMAT;
+                temp->gpuLink.setNext(0);
+                temp->gpuLink.setPrev(0);
+                currentGpuCacheSize -= temp->rasterIconDataCost;
+            }
+        }
+    
+}
+
+/*!
+    \fn HbIconDataCache::freeUnusedGpuResources()
+    This function internally calls createGpuCacheSpace() which will free up
+    all the unused sgImage icons.
+ */
+void HbIconDataCache::freeUnusedGpuResources()
+{
+    createGpuCacheSpace(gpuLruListSize);
 }
 
 QVector<const HbIconKey *> HbIconDataCache::getKeys(const QString &filename) const

@@ -464,45 +464,6 @@ void HbSliderPopup::setMinorTickLabels(const QStringList &minorTickLabels)
 }
 
 /*!
-    \deprecated HbSliderPopup::icon(HbSlider::SliderElement)
-        is deprecated.Please use elementIcons() instead.
-
-    Returns the icon of the \a element.
-
-    returns NULL if element does not exist or icon was not set for this element
-
-    \sa setIcon()
-*/
-HbIcon HbSliderPopup::icon(HbSlider::SliderElement element) const
-{
-    qDebug("HbSliderPopup::icon() is deprecated. Use elementIcons() instead.");
-    Q_D(const HbSliderPopup);
-    return(d->mSliderPopupContentWidget->slider->icon(element));
-}
-
-/*!
-    \deprecated HbSliderPopup::setIcon(HbSlider::SliderElement, const HbIcon&)
-        is deprecated.Please use setElementIcons() instead.
-
-    Sets the \a icon if the \a element.
-
-    Supported elements:
-    \li HbSlider::IncreaseElement
-    \li HbSlider::DecreaseElement
-    \li HbSlider::IconElement
-
-    \warning Setting icon to a non-existing element has no effect.
-
-    \sa icon() setElements()
-*/
-void HbSliderPopup::setIcon(HbSlider::SliderElement element, const HbIcon &icon)
-{
-    qDebug("HbSliderPopup::setIcon() is deprecated. Use setElementIcons() instead.");
-    Q_D( HbSliderPopup);
-    d->mSliderPopupContentWidget->slider->setIcon(element,icon);
-}
-
-/*!
     @beta
     Returns the icon of the \a element.
 
@@ -513,7 +474,7 @@ void HbSliderPopup::setIcon(HbSlider::SliderElement element, const HbIcon &icon)
 HbIcon HbSliderPopup::elementIcon(HbSlider::SliderElement element) const
 {
     Q_D(const HbSliderPopup);
-    return(d->mSliderPopupContentWidget->slider->icon(element));
+    return(d->mSliderPopupContentWidget->slider->elementIcon(element));
 }
 
 /*!
@@ -532,7 +493,7 @@ HbIcon HbSliderPopup::elementIcon(HbSlider::SliderElement element) const
 void HbSliderPopup::setElementIcon(HbSlider::SliderElement element, const HbIcon &icon)
 {
     Q_D( HbSliderPopup);
-    d->mSliderPopupContentWidget->slider->setIcon(element,icon);
+    d->mSliderPopupContentWidget->slider->setElementIcon(element,icon);
 }
 
 
@@ -609,43 +570,6 @@ void HbSliderPopup::setInvertedAppearance(bool inverted)
     Q_D(HbSliderPopup);
     d->mSliderPopupContentWidget->slider->setInvertedAppearance(inverted);
  }
-
-/*!
-    \deprecated HbSliderPopup::elements() const
-        is deprecated.Please use sliderElements() instead.
-
-    Returns the elements of the slider.
-
-    The slider contains only track element by default.
-
-    \sa setElements()
-*/
-QList<HbSlider::SliderElement> HbSliderPopup::elements() const
-{
-    qDebug("HbSliderPopup::elements() is deprecated. Use sliderElements() instead.");
-    Q_D(const HbSliderPopup);
-    return (d->mSliderPopupContentWidget->slider->elements());
-}
-
-/*!
-    \deprecated HbSliderPopup::setElements(const QList<HbSlider::SliderElement>&)
-        is deprecated.Please use setSliderElements instead.
-
-    Sets the elements of the slider.
-
-    \note Duplicate elements will be ignored.
-
-    \note element order cant be changed
-
-    \sa elements()
-*/
-void HbSliderPopup::setElements(const QList<HbSlider::SliderElement> &elements)
-{
-    qDebug("HbSliderPopup::setElements is deprecated. Use setSliderElements instead.");
-    Q_D(HbSliderPopup);
-    d->mSliderPopupContentWidget->slider->setElements(elements);
-
-}
 
 /*!
     Returns the list of slider elements as QVariant ( can be type-casted to HbSlider::SliderElement ).   

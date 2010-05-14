@@ -27,7 +27,7 @@
 #include "hbdialog_p.h"
 #include "hbinstance.h"
 #include "hbaction.h"
-#include "hbstyleoptionpopup.h"
+#include "hbstyleoptionpopup_p.h"
 #include "hbdeviceprofile.h"
 #include "hbevent.h"
 #include "hbtoolbar_p.h"
@@ -55,24 +55,24 @@
     @beta
     @hbcore
     \class HbDialog
-    \brief HbDialog is a base class for different popup notes in Hb library.
+    \brief HbDialog is a base class for different dialogs in Hb library.
 
-    \image html hbpopup.png A popup with a header widget, a list as a content widget, 
-    and two action buttons.
+    \image html hbpopup.png "A dialog with a header widget, a list as a content widget, and two action buttons."
 
-    HbDialog is a concrete class. The content for a custom popup is implemented in
-    a separate widget, which is set to the popup with method setContentWidget().
+    HbDialog is a concrete class. The content for a custom dialog is
+    implemented in a separate widget, which is set to the dialog with
+    method setContentWidget().
 
-    Lastly shown popup is always positioned in Z order on the the top of already visible popups.
-    A popup can be permanent or automatically dismissed after a time-out.
-    Modal popups interrupt any other user interaction outside of the popup while they are visible,
-    whereas non-modal popups do not.
 
-    An example of how to create a simple modal popup and show it.
+    An example of how to create a simple modal dialog and show it.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,13}
 
-    An example of how to create a non-modal popup and show it.
+    An example of how to handle dialog signals from previous example.
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,53}
+
+    An example of how to create a non-modal dialog and show it.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,26}
+
 */
 
 /*!
@@ -152,20 +152,9 @@ void HbDialogPrivate::doLayout()
 
 
 /*!
-* Constructs a popup with given  \a parent graphics item.\n
-* Note: popups with \a parent set as 0 are behaving as real popups. 
-* This is actually the intended use.
-*
-* However in some situation could be useful to embedd a popup into a QGraphicsItem.
-* In this case a non zero \a parent value must be passed.
-* Popups with parent items behaving just like any other QGraphicsWidget.
-* The following features are not supported (i.e. ignored) for popup with parents:
-*
-*       - modality
-*       - timeout
-*       - unfadedItems
-*       - dismissPolicy
-*       - signal aboutToClose
+ Constructs a dialog with given  \a parent graphics item.\n
+ Note: dialogs with \a parent set as 0 are behaving as real popups. 
+ This is actually the intended use. \sa HbPopup::HbPopup
 */
 HbDialog::HbDialog(QGraphicsItem *parent) :
     HbPopup(*new HbDialogPrivate, parent)
@@ -187,16 +176,15 @@ HbDialog::HbDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
 }
 
 /*!
-* Destroys the popup.
+ Destroys the popup.
 */
 HbDialog::~HbDialog()
 {
 }
 
 /*!
-@beta
-* It returns the widget which is being added to the heading area
-* \sa setHeadingWidget()
+ Returns the widget which is being added to the heading area
+ \sa setHeadingWidget()
 */
 QGraphicsWidget * HbDialog::headingWidget() const
 {
@@ -205,10 +193,9 @@ QGraphicsWidget * HbDialog::headingWidget() const
 }
 
 /*!
-@beta
-* Adds \a widget to the heading area. Ownership of the widget is transferred
-* to popup. If \a headingWidget is 0 the heading widget is removed.
-* \sa headingWidget()
+ Adds \a widget to the heading area. Ownership of the widget is transferred
+ to popup. If \a headingWidget is 0 the heading widget is removed.
+ \sa headingWidget()
 */
 void HbDialog::setHeadingWidget(QGraphicsWidget *headingWidget)
 {
@@ -218,9 +205,9 @@ void HbDialog::setHeadingWidget(QGraphicsWidget *headingWidget)
 }
 
 /*!
-* Returns the content widget property of the popup.
-* HbDialog only draws a bordered rect, the rest is drawn by the content widget.
-* \sa setContentWidget()
+ Returns the content widget property of the popup.
+ HbDialog only draws a bordered rect, the rest is drawn by the content widget.
+ \sa setContentWidget()
 */
 QGraphicsWidget *HbDialog::contentWidget() const
 {
@@ -229,11 +216,11 @@ QGraphicsWidget *HbDialog::contentWidget() const
 }
 
 /*!
-* Sets the content widget property of the popup.
-* HbDialog only draws a bordered rect, the rest is drawn by the content widget.
-* Ownership of the widget is transferred
-* to popup. If \a contentWidget is 0 the content widget is removed.
-* \sa contentWidget()
+ Sets the content widget property of the popup.
+ HbDialog only draws a bordered rect, the rest is drawn by the content widget.
+ Ownership of the widget is transferred
+ to popup. If \a contentWidget is 0 the content widget is removed.
+ \sa contentWidget()
 */
 void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
 {
@@ -243,7 +230,7 @@ void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
 }
 
 /*!
-\deprecated HbDialog::primaryAction() const
+ \deprecated HbDialog::primaryAction() const
        is deprecated.
  It returns the primary action added to the control area
  \sa setPrimaryAction()
@@ -256,7 +243,7 @@ HbAction* HbDialog::primaryAction() const
 }
 
 /*!
-\deprecated HbDialog::setPrimaryAction(HbAction*)
+ \deprecated HbDialog::setPrimaryAction(HbAction*)
            is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
  It adds the given action to the control area.
  It is added to the left side of the control area if the layout direction of the application
@@ -280,7 +267,7 @@ void HbDialog::setPrimaryAction(HbAction *action)
 }
 
 /*!
-\deprecated HbDialog::secondaryAction() const
+ \deprecated HbDialog::secondaryAction() const
             is deprecated.
  It returns the secondary action added to the control area
  \sa setSecondaryAction()
@@ -293,7 +280,7 @@ HbAction* HbDialog::secondaryAction() const
 }
 
 /*!
-\deprecated HbDialog::setSecondaryAction(HbAction*)
+ \deprecated HbDialog::setSecondaryAction(HbAction*)
            is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
  It adds the given action to the control area.
  It is added to the right side of the control area if the layout direction of the application
@@ -313,37 +300,14 @@ void HbDialog::setSecondaryAction(HbAction *action)
 }
 
 /*!
-\deprecated HbDialog::exec()
-           is deprecated.
- Please use HbDialog::open( QObject* receiver, const char* member ) instead.
 
- Executes the popup synchronously.
- Note: when popup is executed syncronously it is always modal.
-*/
-HbAction* HbDialog::exec()
-{
-    HB_DEPRECATED("HbDialog::exec is deprecated. Use HbDialog::show() or HbDialog::open() instead!");
-    Q_D(HbDialog);
+ Shows the dialog as modal dialog returning immediately.  
 
-    HbAction *action = 0;
-    QPointer<QObject> guard = this;
-    HbPopup::exec();
-    if (!guard.isNull()) {
-        action = d->closingAction;
-        d->closingAction = 0;
-    }
-    return action;
-}
+ Connects finished(HbAction*) signal to the slot specified by \a receiver and
+ \a member. The signal will be disconnected from the slot when the
+ popup is closed.
 
-/*!  @alpha 
-*
-* Shows the dialog as modal dialog returning immediately.  
-
-* Connects finished(HbAction*) signal to the slot specified by \a receiver and
-* \a member. The signal will be disconnected from the slot when the
-* popup is closed.
-*
-* For non modal popups, use show().  
+ For non modal popups, use show().  
 */
 
 void HbDialog::open( QObject* receiver, const char* member )
@@ -361,7 +325,7 @@ void HbDialog::open( QObject* receiver, const char* member )
 }
 
 /*!
-* \reimp
+ \reimp
 */
 //
 // Sets the focus to its content widget.

@@ -29,9 +29,8 @@
 // To enable-disable css parser related traces
 #undef CSS_PARSER_TRACES
 
-#include <hbglobal.h>
+#include "hbglobal.h"
 #include <hbthemeperf_p.h>
-
 #include <new>
 
 //Temporary for std::bad_alloc, till the macro HB_CHECK_PTR is replaced by q_check_ptr

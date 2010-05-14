@@ -27,6 +27,18 @@
 #include "hbpinchgesture.h"
 #include "hbpinchgesture_p.h"
 
+/*!
+    @hbcore
+    \class HbPinchGesture
+
+    \brief HbPinchGesture is an extension to Qt standard QPinchGesture
+    \sa QPinchGesture
+*/
+
+/*!
+    \brief HbPinchGesture constructor
+    \param parent Owner for gesture
+*/
 HbPinchGesture::HbPinchGesture(QObject *parent)
     : QPinchGesture(parent), d_ptr(new HbPinchGesturePrivate)
 
@@ -37,6 +49,11 @@ HbPinchGesture::HbPinchGesture(QObject *parent)
     setScaleFactor(1);
 }
 
+/*!
+    \brief HbPinchGesture constructor
+    \param dd Private data
+    \param parent Owner for gesture
+*/
 HbPinchGesture::HbPinchGesture(HbPinchGesturePrivate &dd, QObject *parent)
     : QPinchGesture(parent), d_ptr(&dd)
 {
@@ -46,11 +63,19 @@ HbPinchGesture::HbPinchGesture(HbPinchGesturePrivate &dd, QObject *parent)
     setScaleFactor(1);
 }
 
+/*!
+    \brief HbPinchGesture destructor
+*/
 HbPinchGesture::~HbPinchGesture()
 {
     delete d_ptr;
 }
 
+/*!
+    \property sceneTotalRotationAngle
+    \brief The total angle covered by the gesture in scene coordinates.
+    \sa QPinchGesture::totalRotationAngle()
+*/
 qreal HbPinchGesture::sceneTotalRotationAngle() const
 {
     Q_D(const HbPinchGesture);
@@ -63,6 +88,11 @@ void HbPinchGesture::setSceneTotalRotationAngle(qreal value)
     d->mSceneTotalRotationAngle = value;
 }
 
+/*!
+    \property sceneLastRotationAngle
+    \brief The last reported angle covered by the gesture motion in scene coordinates.
+    \sa QPinchGesture::lastRotationAngle()
+*/
 qreal HbPinchGesture::sceneLastRotationAngle() const
 {
     Q_D(const HbPinchGesture);
@@ -75,6 +105,11 @@ void HbPinchGesture::setSceneLastRotationAngle(qreal value)
     d->mSceneLastRotationAngle = value;
 }
 
+/*!
+    \property sceneRotationAngle
+    \brief The angle covered by the gesture motion in scene coordinates.
+    \sa QPinchGesture::rotationAngle()
+*/
 qreal HbPinchGesture::sceneRotationAngle() const
 {
     Q_D(const HbPinchGesture);
@@ -87,6 +122,11 @@ void HbPinchGesture::setSceneRotationAngle(qreal value)
     d->mSceneRotationAngle = value;
 }
 
+/*!
+    \property sceneStartCenterPoint
+    \brief The starting position of the center point in scene coordinates.
+    \sa QPinchGesture::startCenterPoint()
+*/
 QPointF HbPinchGesture::sceneStartCenterPoint() const
 {
     Q_D(const HbPinchGesture);
@@ -99,6 +139,11 @@ void HbPinchGesture::setSceneStartCenterPoint(const QPointF &value)
     d->mSceneStartCenterPoint = value;
 }
 
+/*!
+    \property sceneLastCenterPoint
+    \brief The last position of the center point recorded for this gesture in scene coordinates.
+    \sa QPinchGesture::lastCenterPoint()
+*/
 QPointF HbPinchGesture::sceneLastCenterPoint() const
 {
     Q_D(const HbPinchGesture);
@@ -111,6 +156,11 @@ void HbPinchGesture::setSceneLastCenterPoint(const QPointF &value)
     d->mSceneLastCenterPoint = value;
 }
 
+/*!
+    \property sceneCenterPoint
+    \brief The current center point in scene coordinates.
+    \sa QPinchGesture::centerPoint()
+*/
 QPointF HbPinchGesture::sceneCenterPoint() const
 {
     Q_D(const HbPinchGesture);

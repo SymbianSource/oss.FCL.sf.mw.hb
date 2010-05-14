@@ -132,14 +132,6 @@ HbVkbHost::HbVkbStatus HbVkbHostBridge::keypadStatus() const
 
 /*!
 \reimp
-*/
-int HbVkbHostBridge::priority() const
-{
-    return 0;
-}
-
-/*!
-\reimp
 */ 
 QSizeF HbVkbHostBridge::keyboardArea() const
 {
@@ -149,17 +141,6 @@ QSizeF HbVkbHostBridge::keyboardArea() const
     }
 
     return QSizeF();
-}
-
-/*!
-\reimp
-*/
-void HbVkbHostBridge::preferredSizeChanged(const QSizeF& newSize)
-{
-    Q_D(HbVkbHostBridge);
-    if (d->mActiveHost) {
-        d->mActiveHost->preferredSizeChanged(newSize);
-    }
 }
 
 /*!

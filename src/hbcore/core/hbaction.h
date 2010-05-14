@@ -48,7 +48,6 @@ public:
     explicit HbAction(QObject *parent = 0);
     explicit HbAction(const QString &text, QObject *parent = 0);
     explicit HbAction(const HbIcon &icon, const QString &text, QObject *parent = 0);
-    explicit HbAction(Hb::SoftKeyAction action, QObject* parent = 0);
     explicit HbAction(Hb::NavigationAction action, QObject* parent = 0);
     virtual ~HbAction();
 

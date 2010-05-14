@@ -33,7 +33,6 @@
 #include "hbmodeliterator.h"
 
 #include <QModelIndex>
-#include <hbgesture.h>
 #include <hbicon.h>
 #include <hbframedrawer.h>
 #include <hbscrollbar.h>
@@ -143,7 +142,8 @@ int HbListWidget::currentRow() const
 }
 
 /*!
-    Sets current \a row
+   Sets current \a row. This function sets current index into selection model. 
+   Selection is never changed.
  */
 void HbListWidget::setCurrentRow(int row)
 {

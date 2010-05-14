@@ -50,9 +50,7 @@ public:
     HbAbstractViewItem *createItem();
     void updateChildItems();
 
-    QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
-    virtual QRectF contiguousSelectionArea() const;
     virtual bool selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const;
 
 public slots:

@@ -39,7 +39,7 @@
 
 #include <hbglobal.h>
 #include <hbicon.h>
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
 class HB_AUTOTEST_EXPORT HbStyleOptionSliderElement : public HbStyleOption
 {

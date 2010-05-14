@@ -30,17 +30,11 @@
 #include <QObject>
 #include <hbglobal.h>
 
-/*!
-    \namespace HbFeedback
-    \brief The HbFeedback namespace lists the feedback effects supported 
-    by the current haptic software and hardware.
-*/
-
 #ifndef HB_DOXYGEN
 class HB_CORE_EXPORT HbFeedback
 {
     Q_GADGET
-    Q_ENUMS(Type InstantEffect ContinuousEffect TacticonEffect HitAreaType IntensityLevel Modality)
+    Q_ENUMS(Type InstantEffect ContinuousEffect IntensityLevel Modality)
     Q_FLAGS(Types Modalities)
 
 public:
@@ -49,28 +43,12 @@ namespace HbFeedback
 {
 #endif // HB_DOXYGEN
 
-    /*!
-        Three different types of feedback mechanisms are supported: instant,
-        continuous and hit area feedbacks.
-     */
-
     enum Type {
         TypeInstant = 0x001,
-        TypeContinuous = 0x002,
-        TypeHitArea = 0x004,
-        TypeTacticon = 0x008
+        TypeContinuous = 0x002
     };
 
     Q_DECLARE_FLAGS(Types, Type)
-
-    /*!
-        Instant feedback is fire&forget approach that initiates short
-        haptic and sound effect which lasts on average between 100-500
-        milliseconds. Each effect value corresponds to a certain haptic
-        and/or sound effect defined in the themes.
-
-        \sa HbInstantFeedback
-     */
 
     enum InstantEffect {
         None,
@@ -109,21 +87,10 @@ namespace HbFeedback
         NegativeTacticon,
         /* new standard instant feedbacks here */
         NumberOfInstantFeedbacks,
-        NoOverride, // utility effect
         InstantUser = 65535,
         /* user defined custom instant feedbacks */
         InstantMaxUser = 262140
     };
-
-    /*!
-        Continuous feedback has to be explicitly started, updated and
-        cancelled by the system and is used to provide ongoing feedback
-        whenever user is dragging slider handles or swiping flickable widgets
-        with her finger. Continuous feedback intensity can be varied
-        during playback between values 0 and 100.
-
-        \sa HbContinuousFeedback
-     */
 
     enum ContinuousEffect {
         ContinuousNone,
@@ -134,63 +101,17 @@ namespace HbFeedback
         ContinuousPinch,
         /* new standard continuous feedbacks here */
         NumberOfContinuousFeedbacks,
-        NoContinuousOverride, // utility effect
         ContinuousUser = 1000,
         /* user defined continuous instant feedbacks */
         ContinuousMaxUser = 65535
     };
 
-    /*!
-        \deprecated HbFeedback::TacticonEffect
-            is deprecated. Use HbFeedback::InstantEffect instead.
-
-        Tacticon feedback is a special kind of instant
-        feedback reserved for tacticon use cases.
-
-        \sa HbTacticonsFeedback
-     */
-
-    enum TacticonEffect {
-        TacticonNone,
-        TacticonPositive,
-        TacticonNeutral,
-        TacticonNegative,
-        /* new tacticon feedbacks here */
-        NumberOfTacticonFeedbacks
-    };
-
-    /*!
-        Minimum, smooth and maximum intensity values of continuous feedback.
-
-        \sa HbContinuousFeedback
-     */
     enum IntensityLevel {
         IntensityZero = 0,
         IntensitySmooth = 50,
         IntensityFull = 100
     };
 
-    /*!
-        Hit area feedback is a special type of low-latency instant
-        feedback that is initiated by preregistered hit area rectangles
-        in the windowing system that are hit area matched before the
-        touch events are even forwarded to the application windows.
-        Hit area feedback can be set to initiate either when finger or
-        stylus a.) presses down the screen or b.) is released from the
-        screen.
-
-        \sa HbHitAreaFeedback
-     */
-    enum HitAreaType {
-        MouseButtonPress,
-        MouseButtonRelease
-    };
-
-    /*!
-      \enum Modality
-      The available modalities for feedback effects.
-      Effects can be synthesized using one or several of the available modalities.
-    */
     enum Modality {
         All     = 0xFFFF,
         Audio   = 0x0001,
@@ -199,15 +120,6 @@ namespace HbFeedback
 
     Q_DECLARE_FLAGS(Modalities, Modality)
 
-    /*!
-        Timeout value has to be defined for each continuous feedback
-        to avoid situations where continuous feedback is never cancelled
-        and accidentally continues to play infinitely.
-
-        Recommended standard value is 300 milliseconds.
-
-        \sa HbContinuousFeedback
-     */
     static const int StandardFeedbackTimeout = 300;
 };
 
@@ -215,4 +127,3 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(HbFeedback::Types)
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbFeedback::Modalities)
 
 #endif // HBFEEDBACKNAMESPACE_H
-

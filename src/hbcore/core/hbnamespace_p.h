@@ -45,12 +45,9 @@ namespace HbPrivate
         ItemType_FadeItem,
         ItemType_LongPressVisualizer,
         ItemType_BatteryIndicator,
-        ItemType_Decorator,
         ItemType_IndicatorGroup,
         ItemType_IndicatorMenu,
-        ItemType_NaviPane, // deprecated
         ItemType_SignalIndicator,
-        ItemType_SoftKey, // deprecated
         ItemType_NavigationButton,
         ItemType_IndicatorButton,
         ItemType_TitlePane,
@@ -155,15 +152,6 @@ namespace HbPrivate
     static const qreal VKBValueUnit                          = FadingItemZValueUnit / 2;
     static const qreal SelectionControlHandlesValueUnit      = VKBValueUnit / 2;
 
-    enum SoftKeyId
-    {
-        PrimarySoftKey,
-        SecondarySoftKey,       
-        MiddleSoftKey,          
-
-        //Custom softkey id's start here.
-        CustomSoftKey = 0xFF    
-    };
 }
 
 #endif // HBNAMESPACE_P_H

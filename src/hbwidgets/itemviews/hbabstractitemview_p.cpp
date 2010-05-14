@@ -26,7 +26,7 @@
 #include "hbabstractitemview_p.h"
 #include "hbabstractitemview.h"
 #include "hbabstractviewitem.h"
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 #include "hbmodeliterator.h"
 
 #include <hbinstance.h>
@@ -34,6 +34,7 @@
 #include <hbapplication.h>
 #include <hbeffect.h>
 #include <hbpangesture.h>
+#include <hbwidgetfeedback.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QEvent>
@@ -427,6 +428,9 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                 }
                 return retVal;
             }
+            else if (!mDoingContiguousSelection){
+                HbWidgetFeedback::continuousTriggered(q, Hb::ContinuousScrolled);
+            }
             break;
         }
         case Qt::GestureFinished: 
@@ -436,7 +440,10 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                 stopAnimating();
                 mDoingContiguousSelection = false;
                 return true;
-            }               
+            }
+            else {
+                HbWidgetFeedback::continuousStopped(q, Hb::ContinuousScrolled);
+            }
             break;
         }
         default:
@@ -527,7 +534,7 @@ QPointF HbAbstractItemViewPrivate::pixelsToScroll(const HbAbstractViewItem *item
     QPointF result(0,0);
 
     if (item) {
-        refreshContainerGeometry();
+        mContainer->resizeContainer();
 
         QRectF itemRect = itemBoundingRect(item);
         QRectF viewRect = q->boundingRect();
@@ -722,33 +729,6 @@ HbAbstractViewItem *HbAbstractItemViewPrivate::itemAt(const QPointF& position) c
             return hitItem;
     }
     return hitItem;
-}
-
-/*!
-    
-*/
-void HbAbstractItemViewPrivate::refreshContainerGeometry()
-{
-    Q_Q(const HbAbstractItemView);
-
-    if (mContainer->layout())  {
-        if (!mContainer->layout()->isActivated()) {
-            // Make sure that the layout process has stopped.
-            mContainer->layout()->activate();
-        }
-    } 
-
-    QSizeF newSize = mContainer->effectiveSizeHint(Qt::PreferredSize);
-
-    if (!mScrollDirections.testFlag(Qt::Vertical)) {
-        newSize.setHeight(q->size().height());
-    } 
-    
-    if (!mScrollDirections.testFlag(Qt::Horizontal)) {
-        newSize.setWidth(q->size().width());
-    }
-       
-    mContainer->resize( newSize );    
 }
 
 
@@ -1001,8 +981,7 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::selectionFlags(
         case HbAbstractItemView::SingleSelection: 
             flags =  singleSelectionCommand(item, event);
             break;
-        case HbAbstractItemView::MultiSelection:
-        case HbAbstractItemView::ContiguousSelection: {
+        case HbAbstractItemView::MultiSelection: {
             flags = multiSelectionCommand(item, event);
             break;
         }
@@ -1038,7 +1017,10 @@ void HbAbstractItemViewPrivate::startAppearEffect(const QString &itemType, const
         }
     }
 
-    refreshContainerGeometry();
+
+    if (mContainer->layout()) {
+        mContainer->layout()->activate();
+    }
 
     HbEffect::start(items, itemType, effectEvent, q, "_q_animationFinished");
 }

@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptionnotificationdialog.h>
+#include <hbstyleoptionnotificationdialog_p.h>
 #include <hbdeviceprofile.h>
 
 #include "hbnotificationdialogcontent_p.h"
@@ -43,7 +43,9 @@ void HbNotificationDialogContent::setIcon(const HbIcon &icon)
     }
     mIcon = icon;
     updatePrimitives();
-    polishEvent();
+    if (isVisible()) {
+        polishEvent();
+    }
 }
 
 void HbNotificationDialogContent::setText(const QString &text)
@@ -55,7 +57,9 @@ void HbNotificationDialogContent::setText(const QString &text)
     }
     mText = text;
     updatePrimitives();
-    polishEvent();
+    if (isVisible()) {
+        polishEvent();
+    }
 }
 
 void HbNotificationDialogContent::setTitle(const QString &title)
@@ -68,7 +72,9 @@ void HbNotificationDialogContent::setTitle(const QString &title)
 
     mTitle = title;
     updatePrimitives();
-    polishEvent();
+    if (isVisible()) {
+        polishEvent();
+    }
 }
 
 void HbNotificationDialogContent::setTitleTextWrapping(Hb::TextWrapping wrapping)
@@ -76,7 +82,9 @@ void HbNotificationDialogContent::setTitleTextWrapping(Hb::TextWrapping wrapping
     if (mTitleWrapping != wrapping) {
         mTitleWrapping = wrapping;
         updatePrimitives();
-        polishEvent();
+        if (isVisible()) {
+            polishEvent();
+        }
     }
 }
 
@@ -179,5 +187,27 @@ void HbNotificationDialogContent::updatePrimitives()
     if (!mIcon.isNull()) {
         style()->updatePrimitive(mIconItem,
             HbStyle::P_NotificationDialog_icon, &option);
+    }
+}
+
+/*!
+    \reimp
+*/
+QGraphicsItem *HbNotificationDialogContent::primitive(const QString &itemName) const
+{
+    if (itemName == "") {
+        return 0;
+    } else {
+        if (itemName == "text") {
+            return mTextItem;
+        }
+        else if (itemName == "title") {
+            return mTitleItem;
+        }
+        else if (itemName == "icon") {
+            return mIconItem;
+        } else {
+            return 0;
+        }
     }
 }

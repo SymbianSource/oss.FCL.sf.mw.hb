@@ -38,8 +38,7 @@ class HB_WIDGETS_EXPORT HbMessageBox : public HbDialog
     Q_OBJECT
     Q_PROPERTY( QString text READ text WRITE setText )
     Q_PROPERTY( HbIcon icon READ icon WRITE setIcon )
-    Q_PROPERTY( Qt::Alignment iconAlignment READ iconAlignment WRITE setIconAlignment )
-	Q_PROPERTY( bool iconVisible READ iconVisible WRITE setIconVisible )
+    Q_PROPERTY( bool iconVisible READ iconVisible WRITE setIconVisible )
 public:
     enum MessageBoxType {
         MessageTypeInformation,
@@ -56,10 +55,7 @@ public:
     void setIcon(const HbIcon &icon);
     HbIcon icon() const;
 
-    void setIconAlignment(Qt::Alignment align);
-    Qt::Alignment iconAlignment() const;
-
-	void setIconVisible(bool visible);
+    void setIconVisible(bool visible);
     bool  iconVisible() const;
 
     QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
@@ -67,26 +63,9 @@ public:
     int type() const { return Type; }
 
 public:
-	static bool question(const QString &questionText,
-                                         const QString &primaryButtonText = tr("Yes"),
-                                         const QString &secondaryButtonText = tr("No"),
-                                         QGraphicsWidget *headWidget = 0,
-                                         QGraphicsScene *scene = 0,
-                                         QGraphicsItem *parent = 0 );
-	 
-    static void information(const QString &informationText,
-                                            QGraphicsWidget *headWidget = 0,
-                                            QGraphicsScene *scene = 0,
-                                            QGraphicsItem *parent = 0 );
-
-    static void warning(const QString &warningText,
-                                        QGraphicsWidget *headWidget = 0,
-                                        QGraphicsScene *scene = 0,
-                                        QGraphicsItem *parent = 0 );
-
-	static void question(const QString &questionText,
-                            QObject *receiver,
-                            const char *member,
+    static void question(const QString &questionText,
+                            QObject *receiver = 0,
+                            const char *member = 0,
                             const QString &primaryButtonText = tr("Yes"),
                             const QString &secondaryButtonText = tr("No"),
                             QGraphicsWidget *headWidget = 0,
@@ -94,15 +73,15 @@ public:
                             QGraphicsItem *parent = 0 );
 	 
     static void information(const QString &informationText,
-                            QObject *receiver,
-                            const char *member,
+                            QObject *receiver = 0,
+                            const char *member = 0,
                             QGraphicsWidget *headWidget = 0,
                             QGraphicsScene *scene = 0,
                             QGraphicsItem *parent = 0 );
 
     static void warning(const QString &warningText,
-                            QObject *receiver,
-                            const char *member,
+                            QObject *receiver = 0,
+                            const char *member = 0,
                             QGraphicsWidget *headWidget = 0,
                             QGraphicsScene *scene = 0,
                             QGraphicsItem *parent = 0 );
@@ -113,9 +92,9 @@ public slots:
 protected:
     HbMessageBox(HbMessageBoxPrivate &dd, QGraphicsItem *parent);
     void initStyleOption(HbStyleOptionMessageBox *option) const;
- 	void mousePressEvent(QGraphicsSceneMouseEvent *event );
+
 private:
-	Q_PRIVATE_SLOT(d_func(), void _q_closeOnGesture())
+    Q_PRIVATE_SLOT(d_func(), void _q_closeOnGesture())
     Q_DECLARE_PRIVATE_D(d_ptr, HbMessageBox)
     Q_DISABLE_COPY(HbMessageBox)    
 	

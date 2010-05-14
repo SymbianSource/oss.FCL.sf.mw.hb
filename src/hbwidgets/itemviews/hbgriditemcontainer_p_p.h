@@ -25,7 +25,7 @@
 #ifndef HBGRIDITEMCONTAINER_P_P_H
 #define HBGRIDITEMCONTAINER_P_P_H
 
-#include <hbabstractitemcontainer_p.h>
+#include <hbabstractitemcontainer_p_p.h>
 #include <hbgriditemcontainer_p.h>
 #include <hbapplication.h>
 

@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptiongridviewitem.h"
+#include "hbstyleoptiongridviewitem_p.h"
 
 /*!
     \class HbStyleOptionGridViewItem

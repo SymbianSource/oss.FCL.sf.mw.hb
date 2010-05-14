@@ -107,20 +107,36 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
         addedToStates = true;
     }
 
-    if (vgImage != VG_INVALID_HANDLE) {
-
+    if (vgImage != VG_INVALID_HANDLE) {    
+        QPainterPath oldPath;
+        bool clipped = painter->hasClipping();
+        
         if (!clipPath.isEmpty()) {
+            if (!clipped) {
+                painter->setClipping(true);
+            }
+            
+            QPainterPath intersect(clipPath);
+            if (clipped) {
+                oldPath = painter->clipPath();
+                intersect =  oldPath.intersected(clipPath);
+                if (intersect.isEmpty()) {
+                    return true;
+                }
+            }
+        
+            painter->setClipPath(intersect, Qt::ReplaceClip);
             painter->beginNativePainting();
         }
-
+        
         VGint imageMode      = vgGeti(VG_IMAGE_MODE);
         VGint matrixMode     = vgGeti(VG_MATRIX_MODE);
         VGPaint oldFillPaint = VG_INVALID_HANDLE;
         VGPaint oldStrkPaint = VG_INVALID_HANDLE;
         VGint   blendMode    = 0;
-
+        
         updatePainterTransformation(painter, topLeft);
-
+        
         qreal opacity = painter->opacity();
 
         if (opacity != lastOpacity || iconMode == QIcon::Selected) {
@@ -159,29 +175,7 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
             vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_MULTIPLY);
         }
 
-        VGint prevMask = 0;
-        VGPath vgpath = VG_INVALID_HANDLE;
-
-        if (!clipPath.isEmpty()) {
-
-            QPaintDevice *pdev = painter->paintEngine()->paintDevice();
-            int width = pdev->width();
-            int height = pdev->height();
-
-            vgMask(VG_INVALID_HANDLE, VG_CLEAR_MASK, 0, 0, width, height);
-
-            vgpath = painterPathToVGPath(clipPath);
-            vgRenderToMask(vgpath, VG_FILL_PATH, VG_UNION_MASK);
-
-            prevMask = vgGeti(VG_MASKING);
-            vgSeti(VG_MASKING, VG_TRUE);
-        }
-
         vgDrawImage(vgImage);
-
-        if (!clipPath.isEmpty()) {
-            vgSeti(VG_MASKING, VG_FALSE);
-        }
 
         vgSeti(VG_MATRIX_MODE, matrixMode);
         vgSeti(VG_IMAGE_MODE, imageMode);
@@ -197,14 +191,14 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
             vgSeti(VG_BLEND_MODE, blendMode);
         }
 
-        if (prevMask) {
-            vgSeti(VG_MASKING, prevMask);
-        }
-
         if (!clipPath.isEmpty()) {
-            vgDestroyPath(vgpath);
-            vgpath = VG_INVALID_HANDLE;
             painter->endNativePainting();
+            if (!clipped) {
+                painter->setClipPath(oldPath, Qt::NoClip);
+            } else {
+                painter->setClipPath(oldPath);
+            }
+            painter->setClipping(clipped);
         }
         return true;
     }
@@ -234,107 +228,5 @@ void HbVgImageIconRenderer::updatePainterTransformation(QPainter * painter, cons
     mat[7] = imageTransform.m32();
     mat[8] = imageTransform.m33();
     vgLoadMatrix(mat);
-}
-
-VGPath HbVgImageIconRenderer::painterPathToVGPath(const QPainterPath& path)
-{
-    int count = path.elementCount();
-
-    // Creating vgpath is needed else clipling is failing,
-    // vgpaintengine also doing the same way,
-    // optimising by storing the path as member was tried but not giving expected output
-    VGPath vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                                 VG_PATH_DATATYPE_F,
-                                 1.0f,        // scale
-                                 0.0f,        // bias
-                                 0,   // segmentCapacityHint
-                                 0,   // coordCapacityHint
-                                 VG_PATH_CAPABILITY_APPEND_TO);
-
-    if (count == 0) {
-        return vgpath;
-    }
-
-    const QPainterPath::Element *elements = &(path.elementAt(0));
-
-    // Sizes chosen so that drawRoundedRect() paths fit in these arrays.
-    QVarLengthArray<VGfloat, 48> coords;
-    QVarLengthArray<VGubyte, 20> segments;
-
-    int curvePos = 0;
-    QPointF temp;
-
-    // Keep track of the start and end of each sub-path.  QPainterPath
-    // does not have an "implicit close" flag like QVectorPath does.
-    // We therefore have to detect closed paths by looking for a LineTo
-    // element that connects back to the initial MoveTo element.
-    qreal startx = 0.0;
-    qreal starty = 0.0;
-    qreal endx = 0.0;
-    qreal endy = 0.0;
-    bool haveStart = false;
-    bool haveEnd = false;
-
-    // Convert the members of the element array.
-    for (int i = 0; i < count; ++i) {
-        switch (elements[i].type) {
-
-        case QPainterPath::MoveToElement: {
-            if (haveStart && haveEnd && startx == endx && starty == endy) {
-                // Implicitly close the previous sub-path.
-                segments.append(VG_CLOSE_PATH);
-            }
-            startx = elements[i].x;
-            starty = elements[i].y;
-            coords.append(startx);
-            coords.append(starty);
-            haveStart = true;
-            haveEnd = false;
-            segments.append(VG_MOVE_TO_ABS);
-        }
-        break;
-
-        case QPainterPath::LineToElement: {
-            endx = elements[i].x;
-            endy = elements[i].y;
-            coords.append(endx);
-            coords.append(endy);
-            haveEnd = true;
-            segments.append(VG_LINE_TO_ABS);
-        }
-        break;
-
-        case QPainterPath::CurveToElement: {
-            coords.append(elements[i].x);
-            coords.append(elements[i].y);
-            haveEnd = false;
-            curvePos = 2;
-        }
-        break;
-
-        case QPainterPath::CurveToDataElement: {
-            coords.append(elements[i].x);
-            coords.append(elements[i].y);
-            haveEnd = false;
-            curvePos += 2;
-            if (curvePos == 6) {
-                curvePos = 0;
-                segments.append(VG_CUBIC_TO_ABS);
-            }
-        }
-        break;
-
-        }
-    }
-
-    if ( haveStart && haveEnd && (startx == endx) && (starty == endy) ) {
-        // Implicitly close the last sub-path.
-        segments.append(VG_CLOSE_PATH);
-    }
-
-    vgAppendPathData(vgpath, segments.count(),
-                     segments.constData(), coords.constData());
-
-    return vgpath;
 }
 

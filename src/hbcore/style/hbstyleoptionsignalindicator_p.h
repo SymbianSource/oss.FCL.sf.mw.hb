@@ -26,10 +26,10 @@
 #ifndef HBSTYLEOPTIONSIGNALINDICATOR_H
 #define HBSTYLEOPTIONSIGNALINDICATOR_H
 
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
 // Deprecated
-class HB_CORE_EXPORT HbStyleOptionSignalIndicator : public HbStyleOption
+class HB_CORE_PRIVATE_EXPORT HbStyleOptionSignalIndicator : public HbStyleOption
 {
 public:
     HbStyleOptionSignalIndicator();

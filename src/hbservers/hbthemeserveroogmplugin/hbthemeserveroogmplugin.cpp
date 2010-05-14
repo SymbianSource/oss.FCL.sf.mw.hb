@@ -72,10 +72,9 @@ void CThemeSrvOogmPlugin::FreeRam(TInt aBytesToFree)
     }
 }
 
-void CThemeSrvOogmPlugin::FreeRam(TInt aBytesToFree, TBool)
+void CThemeSrvOogmPlugin::FreeRam(TInt aBytesToFree, TBool aUseSwRendering)
 {
-    //TODO: support for renderer switch
-    FreeRam(aBytesToFree);
+    oogmClient->FreeRam(aBytesToFree, aUseSwRendering);
 }
 
 // -----------------------------------------------------------------------------
@@ -87,11 +86,11 @@ void CThemeSrvOogmPlugin::MemoryGood()
     oogmClient->GoodMemory();
 }
 
-void CThemeSrvOogmPlugin::MemoryGood(TBool)
+void CThemeSrvOogmPlugin::MemoryGood(TBool aUsingSwRendering)
 {
-    //TODO: support for renderer switch
-    MemoryGood();
+    oogmClient->GoodMemory(aUsingSwRendering);
 }
+
 // -----------------------------------------------------------------------------
 // Creates plugin.
 // -----------------------------------------------------------------------------

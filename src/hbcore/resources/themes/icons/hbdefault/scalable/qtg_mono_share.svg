@@ -1,12 +1,21 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <g fill-opacity="0.5" stroke-opacity="0.5">
+
 <rect fill="none" height="30" width="30"/>
+
 </g>
+
 <circle cx="23" cy="6" r="4.5"/>
+
 <circle cx="23" cy="24" r="4.5"/>
+
 <circle cx="7" cy="15" r="4.5"/>
+
 <path d="M13.26,13.28l4.997-2.852c-0.685-0.73-1.203-1.617-1.493-2.604l-4.947,2.824c0.67,0.75,1.17,1.64,1.44,2.63z"/>
+
 <path d="M18.26,19.57l-4.996-2.852c-0.272,0.992-0.772,1.887-1.443,2.631l4.946,2.824c0.29-0.99,0.81-1.87,1.49-2.6z"/>
+
 </svg>

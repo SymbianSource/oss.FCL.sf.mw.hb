@@ -27,7 +27,7 @@
 #include "hblistitemcontainer_p_p.h"
 #include "hblistlayout_p.h"
 
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 #include "hbabstractitemview.h"
 #include "hblistviewitem.h"
 #include "hbmodeliterator.h"
@@ -146,7 +146,7 @@ qreal HbListItemContainerPrivate::itemHeight() const
 {
     qreal minHeight = 0.0;
     if (mItems.count() > 0) {
-        minHeight = mLayout->sizeHint(Qt::PreferredSize).height() / mItems.count();
+        minHeight = mLayout->effectiveSizeHint(Qt::PreferredSize).height() / mItems.count();
     }
 
     if (minHeight == 0.0) {
@@ -508,6 +508,43 @@ void HbListItemContainer::animationFinished(const HbEffect::EffectStatus &status
         }
     } else {
         item->deleteLater();
+    }
+}
+
+/*!
+    \reimp
+
+    All other sizehints are taken from list layout except preferred sizehint. List container preferred sizeHint 
+    width is maximum width and height is average item height times index count.
+*/
+QSizeF HbListItemContainer::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    Q_D(const HbListItemContainer);
+
+    if (which == Qt::PreferredSize) {
+        HbModelIterator *modelIterator = d->modelIterator();
+        if (modelIterator) {
+            return QSizeF(QWIDGETSIZE_MAX, d->itemHeight() * modelIterator->indexCount());
+        }
+    }
+
+    return HbAbstractItemContainer::sizeHint(which, constraint);
+}
+
+/*!
+    \reimp
+
+    Resizes the container to use view width (if present; otherwise 0)
+    and layout preferred height.
+*/
+void HbListItemContainer::resizeContainer()
+{
+    Q_D(HbListItemContainer);
+       
+    if (d->mItemView) {
+        resize(d->mItemView->size().width(), layout()->preferredHeight());
+    } else {
+        resize(0, layout()->preferredHeight());
     }
 }
 

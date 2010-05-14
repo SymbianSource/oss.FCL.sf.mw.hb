@@ -33,8 +33,6 @@
 
 class HbInstantFeedback;
 class HbContinuousFeedback;
-class HbTacticonFeedback;
-class HbHitAreaFeedback;
 class HbFeedbackBasePlayerPrivate;
 
 class HbFeedbackBasePlayer
@@ -44,19 +42,12 @@ public:
     ~HbFeedbackBasePlayer();
 
     void playInstantFeedback(const HbInstantFeedback& feedback);
-    void playTacticonFeedback(const HbTacticonFeedback& feedback);
 
     int startContinuousFeedback(const HbContinuousFeedback& feedback);
     void updateContinuousFeedback(int identifier, const HbContinuousFeedback& feedback);
     void cancelContinuousFeedback(int identifier);
     bool continuousFeedbackOngoing(int identifier);
     void cancelContinuousFeedbacks();
-
-    int insertHitArea(const HbHitAreaFeedback& feedback);
-    void updateHitArea(int identifier, const HbHitAreaFeedback& feedback);
-    void removeHitArea(int identifier);
-    bool hitAreaExists(int identifier);
-    void removeHitAreas();
 
     void print(QString trace);
 

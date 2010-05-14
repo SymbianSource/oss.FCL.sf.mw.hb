@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionlistviewitem.h"
+#include "hbstyleoptionlistviewitem_p.h"
 
 /*!
     \class HbStyleOptionListViewItem
@@ -61,30 +61,56 @@
     The itemNameIndex value is incremented by 1 before using it in HbStyle. 
     Thus itemNameIndex value 0 produces item name "text-1".
 
+    When index is 1, style option includes secondary text.
+
     Default value is 0.
 */
 
 /*!
     \var HbStyleOptionListViewItem::minimumLines
 
-    This variable holds minimum count of lines reserved for text.
-    Minimum row count for secondary text in middle column can be set using HbListViewItem::setSecondaryTextRowCount(). 
-    For other texts default value is always used.
+    This variable holds minimum count of lines reserved for secondary text (i.e. when index is 1).
+    Minimum row count for secondary text can be set using HbListViewItem::setSecondaryTextRowCount(). 
+    If minimum and maximum row counts are not set by application, default value is used.
 
-    Default value is 1. 
+    For other texts default value is always used. When default value is set, minimum count of lines are read from .css file during layouting the view item.
+    If multilineSecondaryTextSupported is false and text is secondary text, minimum and maximum line counts are forced to 1. 
+    These values cannot be overridden from .css during layouting.
 
+    Default value is -1. 
+
+    \sa HbStyleOptionListViewItem::index
+    \sa HbStyleOptionListViewItem::multilineSecondaryTextSupported
     \sa HbListViewItem::setSecondaryTextRowCount()
 */
 
 /*!
     \var HbStyleOptionListViewItem::maximumLines
 
-    This variable holds maximum count of lines reserved for secondary text.
-    Maximum row count for secondary text in middle column can be set using HbListViewItem::setSecondaryTextRowCount().
-    For other texts default value is always used.
+    This variable holds minimum count of lines reserved for secondary text (i.e. when index is 1).
+    Maximum row count for secondary text can be set using HbListViewItem::setSecondaryTextRowCount().
+    If minimum and maximum row counts are not set by application, default value is used.
 
-    Default value is 1.
+    For other texts default value is always used. When default value is set, maximum count of lines are read from .css file during layouting the view item.
+    If multilineSecondaryTextSupported is false and text is secondary text, minimum and maximum line counts are forced to 1. 
+    Then these values cannot be overridden from .css during layouting.
 
+    Default value is -1. 
+
+    \sa HbStyleOptionListViewItem::index
+    \sa HbStyleOptionListViewItem::multilineSecondaryTextSupported
+    \sa HbListViewItem::setSecondaryTextRowCount()
+*/
+
+/*!
+    \var HbStyleOptionListViewItem::multilineSecondaryTextSupported
+
+    This variable holds whether multine line secondary text is supported. 
+
+    Default value is true. 
+
+    \sa HbStyleOptionListViewItem::minimumLines
+    \sa HbStyleOptionListViewItem::maximumLines
     \sa HbListViewItem::setSecondaryTextRowCount()
 */
 
@@ -100,9 +126,9 @@ HbStyleOptionListViewItem::HbStyleOptionListViewItem() :
     HbStyleOptionAbstractViewItem(),
     role(Qt::DisplayRole),
     index(0),
-    minimumLines(1),
-    maximumLines(1)
-
+    minimumLines(-1),
+    maximumLines(-1),
+    multilineSecondaryTextSupported(true)
 {
     type = Type;
     version = Version;

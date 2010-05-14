@@ -55,11 +55,6 @@ public:
 
     virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);
 
-    virtual int indexCount() const;
-    virtual int indexPosition(const QModelIndex &index) const;
-    virtual QModelIndex nextIndex(const QModelIndex &index) const;
-    virtual QModelIndex previousIndex(const QModelIndex &index) const;
-
     void setExpanded(const QModelIndex &index, bool expanded);
     bool isExpanded(const QModelIndex &index) const;
 

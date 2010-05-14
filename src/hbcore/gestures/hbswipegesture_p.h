@@ -26,7 +26,9 @@
 #ifndef HBSWIPEGESTURE_P_H
 #define HBSWIPEGESTURE_P_H
 
+#include "hbpointrecorder_p.h"
 #include <hbglobal.h>
+
 #include <QPoint>
 #include <QGesture>
 
@@ -37,7 +39,10 @@ public:
     QPointF mSceneStartPos;
     QTime mStartTime;   
 
-    qreal mSceneSwipeAngle;       
+    qreal mSceneSwipeAngle;
+
+    HbPointRecorder mAxisX;
+    HbPointRecorder mAxisY;
 };
 
 #endif // HBSWIPEGESTURE_P_H

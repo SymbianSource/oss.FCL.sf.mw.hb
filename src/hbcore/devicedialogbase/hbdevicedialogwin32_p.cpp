@@ -55,7 +55,9 @@ HbDeviceDialogPrivate::HbDeviceDialogPrivate()
 
 HbDeviceDialogPrivate::~HbDeviceDialogPrivate()
 {
-    mDeviceDialogManager->deviceDialogClientClosing(reinterpret_cast<quintptr>(this));
+    if (mDeviceDialogManager) {
+        mDeviceDialogManager->deviceDialogClientClosing(reinterpret_cast<quintptr>(this));
+    }
     if (mEventLoop && mEventLoop->isRunning()) {
         mEventLoop->exit(HbDeviceDialog::CancelledError);
     }

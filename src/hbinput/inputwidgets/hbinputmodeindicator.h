@@ -28,7 +28,7 @@
 
 #include <hbwidget.h>
 #include <hbinputdef.h>
-#include <hbinputtouchkeypadbutton.h>
+#include <hbinputbutton.h>
 
 class HbInputModeIndicatorPrivate;
 
@@ -37,12 +37,11 @@ class HB_INPUT_EXPORT HbInputModeIndicator : public QObject
 {
     Q_OBJECT
 public:
-    HbInputModeIndicator(HbTouchKeypadButton& button, QGraphicsWidget* parent = 0);
+    HbInputModeIndicator(HbInputButton *button, QGraphicsWidget *parent = 0);
     virtual ~HbInputModeIndicator();
 
 public slots:
     void updateIndicator();
-    void udpdatePredictionStatus(int newStatus);
     void updatePredictionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
 
 private:

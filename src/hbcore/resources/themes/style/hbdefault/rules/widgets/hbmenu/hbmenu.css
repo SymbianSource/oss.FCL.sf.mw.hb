@@ -10,6 +10,8 @@ HbMenu::content
 	max-width: expr(var(hb-param-screen-short-edge)-9un);
 	min-width: expr((var(hb-param-screen-short-edge)-9un)/2);
 	max-height: 43un;
+	size-policy-vertical: expanding;
+	size-policy-horizontal: expanding;
 }
 
 HbMenu[menuType="1"]::content

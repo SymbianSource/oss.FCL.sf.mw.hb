@@ -34,8 +34,8 @@
 class HbKeymap;
 class QTimer;
 class HbInputVkbWidget;
-class Hb12KeyTouchKeypad;
-class HbInputSctPortrait;
+class Hb12KeyTouchKeyboard;
+class HbSctKeyboard;
 class HbInputThaiSpecialPopup;
 class HbCandidateList;
 class HbPredictionEngine;
@@ -92,19 +92,16 @@ public:
     void launchAutoCompletionPopup(const QStringList &candidates);
     void closeAutoCompletionPopup();
     void switchMode(int keyCode);
-	void showThaiSpecialCharacters(uint buttonId);
+    void showThaiSpecialCharacters(uint buttonId);
     void starKeySelected();
-	uint previousChar();
-	
-protected:
-    void predictiveInputStatusChanged(int newStatus);
+    uint previousChar();
+    HbKeyboardType currentKeyboardType() const;
 private:
     void openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimizedMode = false);
     void switchToAlphaMode(bool openAlphaInMinimizedMode = false);
     void setSpecialCharacters();
     void loadKeymap(const HbInputLanguage &newLanguage);
-    Hb12KeyTouchKeypad * construct12Keypad();
-    HbInputSctPortrait * constructSctKeypad();
+    Hb12KeyTouchKeyboard *construct12Keyboard();
     bool usePrediction() const;
 
 public slots:
@@ -112,29 +109,27 @@ public slots:
     void keypadOpened();
     void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod);
     void rockerDirection(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode);
-    void sctCharacterSelected(QString character);
     void orientationAboutToChange();
-    void candidatePopupClosed(int closingKey);
+    void candidatePopupClosed(int closingKey, const QString &candidate);
     void flickEvent(HbInputVkbWidget::HbFlickDirection direction);
     void mouseMovedOutOfButton();
     void smileySelected(QString smiley);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
-	void thaiSctCharacterSelected(QString sctChar);
+    void thaiSctCharacterSelected(QString sctChar);
 
 private:
     // mCurrentKeypad contains currently active keypad, we dont need to have
     // anyother variables to tell us which is current keypad
     QPointer<HbInputVkbWidget> mCurrentKeypad;
     // contains itut keypad
-    QPointer<Hb12KeyTouchKeypad> mItutKeypad;
+    QPointer<Hb12KeyTouchKeyboard> mItutKeypad;
     // contains sct keypad
-    QPointer<HbInputSctPortrait> mSctKeypad;
-	// contains Thai special characters
-	QPointer<HbInputThaiSpecialPopup> mThaiSpecialChar;
+    QPointer<HbSctKeyboard> mSctKeypad;
+    // contains Thai special characters
+    QPointer<HbInputThaiSpecialPopup> mThaiSpecialChar;
 
     //Owned by the keymap factory
     const HbKeymap* mKeymap;
-    HbInputVkbWidget::HbSctView mSctMode;
     bool mOrientationAboutToChange;
 
     // Owned
@@ -146,8 +141,8 @@ private:
     HbInputPrediction12KeyHandler *mPredictionModeHandler;
     HbInputBasic12KeyHandler *mBasicModeHandler;
     HbInputNumeric12KeyHandler *mNumericModeHandler;
-	HbInputBasic12KeyThaiHandler *mBasic12keyThaiHandler;
-	HbInputPrediction12KeyThaiHandler *mPrediction12keyThaiHandler;
+    HbInputBasic12KeyThaiHandler *mBasic12keyThaiHandler;
+    HbInputPrediction12KeyThaiHandler *mPrediction12keyThaiHandler;
 
     QPointer<HbVkbHost> mVkbHost;
     bool mKeyboardChangeAlreadyInprogress;

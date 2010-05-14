@@ -77,7 +77,6 @@ public:
     enum { Type = HbPrivate::ItemType_ProgressSliderHandle };
     int type() const { return Type; }
     void setHandleIcon(const HbIcon &icon);
-    HbIcon thumbIcon() const;
     void handleTrackRelease(QGraphicsSceneMouseEvent * event);
     void handleTrackPress(QGraphicsSceneMouseEvent * event);
     QVariant processItemChange(const QVariant &value);
@@ -85,7 +84,6 @@ public:
     QPointF normalizedPos(const QPointF&  pos,bool inverted) const;
     bool isHandlePressed() const;
     bool isHandleMoving() const;
-    HbProgressSlider::SliderState mSliderHandleState;
 
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 
@@ -105,12 +103,9 @@ private:
     QPointF mMousePressPos;
     QPointF mItemPosAtPress;
     QPointF mItemCurPos;
-    QSizeF mHandleSize;
     QGraphicsItem *mHandleIconItem; 
     QGraphicsItem *mTouchItem;
     HbIcon mHandleIcon;
-    uint mPlayThumb : 1;
-    uint mThumbEnabled;
 };
 
 #endif  //HBPROGRESSSLIDERHANDLE_P_H

@@ -35,7 +35,8 @@ class HbGroupBoxHeadingWidget;
 enum GroupBoxType{
         GroupBoxSimpleLabel = 0x01,
         GroupBoxRichLabel = 0x02,
-        GroupBoxCollapsingContainer = 0x03
+        GroupBoxCollapsingContainer = 0x03,
+        GroupBoxTypeUnknown = 0x04
     };
 	
 /*

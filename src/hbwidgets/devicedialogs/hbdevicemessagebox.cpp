@@ -90,7 +90,6 @@ void HbDeviceMessageBoxPrivate::initProperties()
     QString text;
     q_ptr->setText(text);
     q_ptr->setIconName(text);
-    q_ptr->setIconAlignment(Qt::AlignCenter);
     q_ptr->setIconVisible(true);
     q_ptr->setAnimationDefinition(text);
 
@@ -155,7 +154,6 @@ void HbDeviceMessageBoxPrivate::sendToServer(bool show)
         "type",
         "text",
         "iconName",
-        "iconAlignment",
         "iconVisible",
         "timeout",
         "dismissPolicy",
@@ -171,24 +169,18 @@ void HbDeviceMessageBoxPrivate::sendToServer(bool show)
             }
         }
     }
-
     static const char * const actionNames[] = {
-        "primaryActionText",
-        "secondaryActionText"
+        "acceptAction",
+        "rejectAction"
     };
-    static const char * const nullActionNames[] = {
-        "primaryActionNull",
-        "secondaryActionNull"
-    };
-
     for(int i = 0; i < NumActions; i++) {
         if (mActions[i].mFlags & Modified) {
             if (show || !(mActions[i].mFlags & SentToServer)) {
+                QString actionData; // empty removes action at the plugin
                 if (mActions[i].mAction) {
-                    parameters.insert(actionNames[i], mActions[i].mAction->text());
-                } else {
-                    parameters.insert(nullActionNames[i], true);
+                    actionData.append("t:").append(mActions[i].mAction->text());
                 }
+                parameters.insert(actionNames[i], actionData);
                 mActions[i].mFlags |= SentToServer;
             }
         }
@@ -342,42 +334,26 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     }
 }
 
-// Temporary until HbAction is deprecated out from device message box API
-// Tbd. remove when deprecation period ends
-HbAction *HbDeviceMessageBoxPrivate::toHbAction(QAction *action)
-{
-    // Upcast to HbAction
-    HbAction *hbAction = qobject_cast<HbAction*>(action);
-    // Warn if user has mixed HbAction and QAction APis
-    if (action != hbAction) {
-        //qWarning("HbDeviceMessageBox: HbAction API:s deprecated! Returning QAction instead of HbAction");
-        // Best option is to return QAction and hope caller doesn't use HbAction parts
-        hbAction = reinterpret_cast<HbAction*>(action);
-    }
-    return hbAction;
-}
-
 /*!
+    @stable
+    @hbwidgets
     \class HbDeviceMessageBox
-    \brief HbDeviceMessageBox is a device dialog version of HbMessageBox.
+    \brief HbDeviceMessageBox displays a message to the user, on top of any running applications, which the user must acknowledge to dismiss.
 
-    It displays a message box with text, icon or animation and optional reply button(s).
+    HbDeviceMessageBox is a device dialog version of HbMessageBox. It displays a message box with text, icon or animation and optional reply button(s).
+    It differs from HbMessageBox by excluding functions which handle concrete UI-component related information.
 
     Device dialogs are shown on top of any running applications and are always modal by nature.
 
-    HbDeviceMessageBox provides a similar kind of interface as HbMessageBox,
-    excluding functions which handle concrete UI-component related information.
-
-    A device message box is launched when exec() for synchronous dialog or show() for asynchronous
-    dialog is called. Launched dialog can be updated by setters. Because updating a dialog
-    requires interprocess communication, it's advisable to fully construct the device message box before
-    calling show(). Device message box is closed when user dismisses it with pressing a button, when
-    client calls close() or the dialog reaches timeout. If the system must close the device message
-    box while it is executing, it will have the same effect than having message box's secondary action
-    activated.
+    A device message box is launched when exec() is called for an synchronous dialog or show() is called for an asynchronous
+    dialog. The launched dialog can be updated by the setter metods. Because updating a dialog
+    requires interprocess communication, it is advisable to fully construct the device message box before
+    calling show(). The device message box is closed when the user dismisses it by pressing a button, when
+    the client calls close(), or when the dialog timeout expires. If the system must close the device message
+    box while it is executing, it will have the same effect as having the message box's secondary action    
 
     Static convenience functions are provided for launching message boxes.
-    Dialogs created by them contain a default property values appropriate for
+    Dialogs created by them contain default property values appropriate for
     the message box type and their contents cannot be updated. Information and
     warning convenience methods return immediately. Question waits for a message box
     to close.
@@ -385,7 +361,7 @@ HbAction *HbDeviceMessageBoxPrivate::toHbAction(QAction *action)
     Supported icon animation formats are following:
     - GIF (.gif)
     - MNG (.mng)
-        - Frame animations
+    - Frame animations (.axml)
 
     Sample code:
 
@@ -408,8 +384,6 @@ HbAction *HbDeviceMessageBoxPrivate::toHbAction(QAction *action)
     messageBox.setText("End game?");
     QString fileName("note_warning");
     messageBox.setIconName(fileName);
-    Qt::Alignment align(Qt::AlignLeft|Qt::AlignTop);
-    messageBox.setIconAlignment(align);
 
     QAction acceptAction("Ok", 0);
     messageBox.setAction(&acceptAction, HbDeviceMessageBox::AcceptButtonRole);
@@ -451,9 +425,6 @@ HbAction *HbDeviceMessageBoxPrivate::toHbAction(QAction *action)
     \endcode
 
     \sa HbMessageBox, HbDialog, HbDeviceDialog
-
-    @proto
-    @hbwidgets
 */
 
 /*!
@@ -559,46 +530,6 @@ void HbDeviceMessageBox::close()
     Executes the dialog synchronously.
 
     Returns a pointer to the action that was activated by the user, i.e. dialog's
-    primary or secondary action.
-
-    This functions starts a new event loop. Consider following caveats before using it
-    Stack usage increases. Depending on application program flow, several event
-    loops may get instantiated on top of each other. Application event processing continues while
-    exec() executes. When it returns application state may have changed. For example some
-    objects may have been deleted or application may have exited.
-
-    \sa primaryAction(), setPrimaryAction(), secondaryAction(), setSecondaryAction()
-
-    <b>Note that starting an event loop isn't compatible with gestures.</b> Therefore if an application
-    has an user interface, please don't use this function. Instead connect to signals and use
-    asynchronous show().
-
-    \deprecated HbDeviceMessageBox::exec()
-        is deprecated. Replaced by const QAction *HbDeviceMessageBox::exec() const.
-
-*/
-HbAction *HbDeviceMessageBox::exec()
-{
-    TRACE_ENTRY
-    HbDeviceMessageBox &box = const_cast<HbDeviceMessageBox&>(*this);
-    QAction *action;
-    QPointer<HbDeviceMessageBoxPrivate> guard = d_ptr;
-    box.d_ptr->exec();
-    if (guard.isNull()) {
-        action = 0;
-    } else if (box.d_ptr->mActions[HbDeviceMessageBoxPrivate::AcceptButton].mTriggered) {
-        action = box.d_ptr->mActions[HbDeviceMessageBoxPrivate::AcceptButton].mAction;
-    } else {
-        action = box.d_ptr->mActions[HbDeviceMessageBoxPrivate::RejectButton].mAction;
-    }
-    TRACE_EXIT
-    return HbDeviceMessageBoxPrivate::toHbAction(action);
-}
-
-/*!
-    Executes the dialog synchronously.
-
-    Returns a pointer to the action that was activated by the user, i.e. dialog's
     accept or reject action. Return 0 if object was deleted during a call.
 
     This functions starts a new event loop. Consider following caveats before using it
@@ -613,7 +544,7 @@ HbAction *HbDeviceMessageBox::exec()
 
     \sa action(), setAction()
 */
-const QAction *HbDeviceMessageBox::exec() const
+const QAction *HbDeviceMessageBox::exec()
 {
     TRACE_ENTRY
     const QAction *action;
@@ -722,10 +653,7 @@ bool HbDeviceMessageBox::question(
     if (!rejectButtonText.isNull()) {
         messageBox.setAction(new QAction(rejectButtonText, &messageBox), RejectButtonRole);
     }
-
-    // Tbd. Temporary until deprecated HbAction *HbDeviceMessageBox::exec() is removed.
-    const HbDeviceMessageBox &tmp = const_cast<const HbDeviceMessageBox&>(messageBox);
-    tmp.exec();
+    messageBox.exec();
     TRACE_EXIT
     // Return true if accept action was triggered
     return messageBox.isAcceptAction(messageBox.triggeredAction());
@@ -754,94 +682,6 @@ void HbDeviceMessageBox::warning(const QString &text)
 {
     TRACE_STATIC_ENTRY
     HbDeviceMessageBox(text, HbMessageBox::MessageTypeWarning).show();
-    TRACE_EXIT
-}
-
-/*!
-    Returns device message box primary action.
-
-    \sa setPrimaryAction()
-
-    \deprecated HbDeviceMessageBox::primaryAction() const
-        is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
-
-*/
-HbAction* HbDeviceMessageBox::primaryAction() const
-{
-    //qWarning("HbDeviceMessageBox: HbAction API:s deprecated! Use action()");
-    return HbDeviceMessageBoxPrivate::toHbAction(
-        d_ptr->mActions[HbDeviceMessageBoxPrivate::AcceptButton].mAction);
-}
-
-/*!
-    Sets the given action to the device message box.
-    Action is added to the left side of the dialog if the layout direction of the
-    application is left-to-right and in the vice-versa if the layout direction
-    of the application is right-to-left. Action can be set to null which means
-    that action and a button related to this action are removed from the dialog.
-    Only the text of the action is shown in the message box. Icon of the action
-    is not used. The message box does not take ownership of the given QAction.
-
-    HbDeviceMessageBox constructor sets a default action into the message box.
-
-    \param action Action or null. Ownership doesn't transfer.
-
-    \sa primaryAction()
-
-    \deprecated HbDeviceMessageBox::setPrimaryAction(HbAction*)
-        is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
-
-*/
-void HbDeviceMessageBox::setPrimaryAction(HbAction *action)
-{
-    TRACE_ENTRY
-    //qWarning("HbDeviceMessageBox: HbAction API:s deprecated! Use setAction()");
-    d_ptr->setAction(HbDeviceMessageBoxPrivate::AcceptButton, action);
-    d_ptr->scheduleUpdateEvent();
-    TRACE_EXIT
-}
-
-/*!
-    Returns device message box secondary action.
-
-    \sa setSecondaryAction()
-
-    \deprecated HbDeviceMessageBox::secondaryAction() const
-        is deprecated. Replaced by HbDeviceMessageBox::action(ActionRole role) const.
-
-*/
-HbAction* HbDeviceMessageBox::secondaryAction() const
-{
-    //qWarning("HbDeviceMessageBox: HbAction API:s deprecated! Use action()");
-    return HbDeviceMessageBoxPrivate::toHbAction(
-        d_ptr->mActions[HbDeviceMessageBoxPrivate::RejectButton].mAction);
-}
-
-/*!
-    Adds the given action to the device message box.
-    Action is added to the right side of the dialog if the layout direction of the
-    application is left-to-right and in the vice-versa if the layout direction
-    of the application is right-to-left. Action can be set to null which means
-    that action and a button related to this action are removed from the dialog.
-    Only the text of the action is shown in the message box. Icon of the action
-    is not used. The message box does not take ownership of given QAction.
-
-    HbDeviceMessageBox constructor sets a default action into question message
-    box. Information and warning message boxes don't have a default secondary action.
-
-    \param action Action or null.
-
-    \sa secondaryAction()
-
-    \deprecated HbDeviceMessageBox::setSecondaryAction(HbAction*)
-        is deprecated. HbDeviceMessageBox::setAction(QAction *action, ActionRole role).
-*/
-void HbDeviceMessageBox::setSecondaryAction(HbAction *action)
-{
-    TRACE_ENTRY
-    //qWarning("HbDeviceMessageBox: HbAction API:s deprecated! Use setAction()");
-    d_ptr->setAction(HbDeviceMessageBoxPrivate::RejectButton, action);
-    d_ptr->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
@@ -937,33 +777,6 @@ void HbDeviceMessageBox::setIconName(const QString &iconName)
 QString HbDeviceMessageBox::iconName() const
 {
     return d_ptr->mProperties[HbDeviceMessageBoxPrivate::IconName].mValue.toString();
-}
-
-/*!
-    Sets the icon's alignment in the icon area of the dialog.
-
-    \param align Qt defined alignment options can used.
-
-    \sa iconAlignment()
-*/
-void HbDeviceMessageBox::setIconAlignment(Qt::Alignment align)
-{
-    TRACE_ENTRY
-    d_ptr->setProperty(HbDeviceMessageBoxPrivate::IconAlignment, align);
-    TRACE_EXIT
-}
-
-/*!
-    Returns the icon alignment in the icon area of the dialog.
-
-    The default value is \c Qt::AlignCenter.
-
-    \sa setIconAlignment()
-*/
-Qt::Alignment HbDeviceMessageBox::iconAlignment() const
-{
-    return static_cast<Qt::Alignment>
-        (d_ptr->mProperties[HbDeviceMessageBoxPrivate::IconAlignment].mValue.toInt());
 }
 
 /*!

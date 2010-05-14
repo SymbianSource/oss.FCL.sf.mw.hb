@@ -26,10 +26,10 @@
 #ifndef HBSTYLEOPTIONSTATUSBAR_P_H
 #define HBSTYLEOPTIONSTATUSBAR_P_H
 
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
 // Deprecated
-class HB_CORE_EXPORT HbStyleOptionStatusBar : public HbStyleOption
+class HB_CORE_PRIVATE_EXPORT HbStyleOptionStatusBar : public HbStyleOption
 {
 public:
     HbStyleOptionStatusBar();

@@ -202,10 +202,10 @@ private:
     VGboolean               mDoFill;
     VGboolean               mDoStroke;
     VGPaint                 mGradPaintFill;
-    qint32                     mFillAlpha;
-    qint32                     mStrokeAlpha;
+    qint32                  mFillAlpha;
+    qint32                  mStrokeAlpha;
     VGPaint                 mGradPaintStroke;
-    qint32                     mCreatingNvgIcon;
+    qint32                  mCreatingNvgIcon;
     float                   mViewBoxX;
     float                   mViewBoxY;
     float                   mViewBoxW;
@@ -219,7 +219,6 @@ private:
     VGint                   mMatrixMode;
     VGfloat                 mImageMatrix[9];
     VGfloat                 mPathMatrix[9];
-    HbOpenVgHandleStore*    mOpenVgHandles;
     quint32                 mLastFillPaintType;
     quint32                 mLastStrokePaintType;
     quint32                 mLastFillPaintColor;

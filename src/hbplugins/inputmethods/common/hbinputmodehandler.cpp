@@ -101,24 +101,6 @@ void HbInputModeHandlerPrivate::getAndFilterCharactersBoundToKey(QStringList &sp
             spellList.append(mappedKey->characters(modifiers).at(i));
         }
     }
-
-    // filter characters.
-  /*  if (key < 0x0ff) {
-    QString charSet = mKeyData->specialCharacterData(mInputMethod->inputState().iKeyboardType);
-    if (charSet.contains(key, Qt::CaseSensitive)) {
-        QString mostUsedCharacters;
-        HbInputSettingProxy::instance()->mostUsedSpecialCharacters(HbMaxSctLineChars, mostUsedCharacters,
-            mInputMethod->focusObject()->editorInterface().filter());
-        spellList.clear();
-        if (!mostUsedCharacters.isNull()) {
-            for (int i=0; i<mostUsedCharacters.count(); i++){
-                QChar char1 = mostUsedCharacters[i];
-                spellList.append(char1);
-            }
-        }
-    }
-    }*/
-    return;
 }
 
 
@@ -273,7 +255,7 @@ void HbInputModeHandler::cursorPositionChanged(int oldPos, int newPos)
 /*!
  this function commits the first number found in the key.
 */
-void HbInputModeHandler::commitFirstMappedNumber(int key)
+void HbInputModeHandler::commitFirstMappedNumber(int key, HbKeyboardType type)
 {
     Q_D(HbInputModeHandler);
 
@@ -291,7 +273,7 @@ void HbInputModeHandler::commitFirstMappedNumber(int key)
 	 	}
 	}	
     QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(
-		d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), key),language, digitType);
+        d->mKeymap->keyForKeycode(type, key), language, digitType);
 	// when a number is to be entered, it should commit 
     // the previous string and then append the number to the string
     if (numChr != 0) {
@@ -303,12 +285,12 @@ void HbInputModeHandler::commitFirstMappedNumber(int key)
 Gets the character at index in a key and incriments the index by 1. Returns the Zeroth character if
 this function finds the index to be out of range and incriments index to 1.
 */
-QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key)
+QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key, HbKeyboardType type)
 {
     Q_D(HbInputModeHandler);
     HbModifiers modifiers = 0;
     int textCase = d->mInputMethod->inputState().textCase();
-    if (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic) {
+    if (type != HbKeyboardSctPortrait && (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic)) {
         modifiers |= HbModifierShiftPressed;
     }
     HbInputLanguage language = d->mInputMethod->inputState().language();
@@ -316,7 +298,7 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key)
     if (!d->mKeymap) {
         d->mKeymap = HbKeymapFactory::instance()->keymap(language);
     }
-    const HbMappedKey* mappedKey = d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), key);
+    const HbMappedKey* mappedKey = d->mKeymap->keyForKeycode(type, key);
     if (!mappedKey) {
         return 0;
     }
@@ -433,25 +415,20 @@ void HbInputModeHandler::setKeymap(const HbKeymap* keymap)
     d->mKeymap = keymap;
 }
 
-void HbInputModeHandler::characterPreviewAvailable(bool available)
-{
-    Q_UNUSED(available);
-}
-
 /*!
 Toggles prediction after doing a check if the editor allows it.
 */
 void HbInputModeHandler::togglePrediction()
 {
     Q_D(HbInputModeHandler);
-    int currentStatus = HbInputSettingProxy::instance()->predictiveInputStatus();
+    bool currentStatus = HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard();
     HbInputFocusObject* focusedObject = 0;
     focusedObject = d->mInputMethod->focusObject();
     bool isPredictionAllowed = focusedObject->editorInterface().isPredictionAllowed();
     if (currentStatus) {
-        HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
+        HbInputSettingProxy::instance()->setPredictiveInputStatusForActiveKeyboard(false);
     } else if (isPredictionAllowed) {
-        HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
+        HbInputSettingProxy::instance()->setPredictiveInputStatusForActiveKeyboard(true);
     }
 }
 

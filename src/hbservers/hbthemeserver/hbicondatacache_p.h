@@ -38,6 +38,7 @@ public:
     ~HbIconDataCache();
     void clear();
     HbIconCacheItem* getCacheItem(const HbIconKey &key ,
+                                  HbRenderingMode currentRenderingMode,
                                   bool isMultiIconPiece = false);
     bool insert(const HbIconKey &key,  HbIconCacheItem* item);
     bool remove(const HbIconKey&  key, bool keepInCache = true);
@@ -49,6 +50,7 @@ public:
     bool isItemCachableInCpu(const HbIconCacheItem* item)const;
     void memoryGood();
     void freeGpuRam(int bytes);
+    void freeUnusedGpuResources();
     QVector<const HbIconKey *> getKeys(const QString &filename) const;
 
 //Debug Code for Test Purpose

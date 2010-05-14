@@ -79,26 +79,32 @@ HbActionManager::~HbActionManager()
     Calculates and returns the position of the action 
     based on the container template.
 */
-int HbActionManager::position(QAction *aAction, QList<QAction *> actions) const
+int HbActionManager::position(QAction *aAction, QList<QAction *> actions, int maxPos) const
 {
-   if (actions.count() == 0) {
+    if (actions.count() == 0) {
         return 0;
     }
 
+    if (maxPos < 0) {
+        maxPos = actions.count();
+    }
     // try to downcast aAction. If that fails, return a fallback value
     HbAction* action = qobject_cast<HbAction *>(aAction);
     if (!action){
-        return actions.count();
+        return maxPos;
     }
 
     int index = templateIndex(action);
     if (index == -1) {
-        return actions.count();
+        return maxPos;
     }
 
     int pos(0);
     foreach (QAction *qaction, actions) {
         HbAction *containerAction = qobject_cast<HbAction *>(qaction);
+        if (!containerAction) {
+            break;
+        }
         int containerIndex = templateIndex(containerAction);
         if (index < containerIndex) {
             break;
@@ -106,6 +112,9 @@ int HbActionManager::position(QAction *aAction, QList<QAction *> actions) const
         else {
             pos++;
         }
+    }
+    if (pos > maxPos) {
+        pos = maxPos;
     }
     return pos;
 }

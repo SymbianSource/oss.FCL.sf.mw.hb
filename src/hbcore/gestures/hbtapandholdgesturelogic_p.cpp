@@ -306,7 +306,11 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::recognize(
         QObject *watched,
         QEvent *event )
 {
-    DEBUG() << "Entering" << gestureState << gesture << watched << event;
+    if (!gesture || !watched || !event )
+    {
+        DEBUG() << "WARNING: Ignoring tap and hold gesture because of invalid arguments from gesture fw.";
+        return QGestureRecognizer::Ignore;
+    }
 
     switch( event->type() )
     {

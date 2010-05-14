@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptiondataformviewitem.h>
+#include <hbstyleoptiondataformviewitem_p.h>
 
 /*!
     \class HbStyleOptionDataFormViewItem

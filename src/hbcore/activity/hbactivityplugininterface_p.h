@@ -44,6 +44,7 @@ public:
     virtual QList<QVariantHash> activities() = 0;
     virtual QVariant activityData(const QString &activityId) = 0;
     virtual bool waitActivity() = 0;
+    virtual QVariantHash parseCommandLine(const QStringList &commandLineParams) = 0;
 
 signals:
     // signal must be re-declared in the plugin implementation

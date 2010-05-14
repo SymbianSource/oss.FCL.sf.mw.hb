@@ -37,10 +37,8 @@
 
 #include "hbinstantfeedback.h"
 #include "hbcontinuousfeedback.h"
-#include "hbtacticonfeedback.h"
-#include "hbhitareafeedback.h"
 
-/*!
+/*
     Symbian-specific feedback class that wraps Symbian feedback APIs.
 */
 
@@ -58,16 +56,13 @@ public:
     inline CCoeControl* convertToSymbian(QWidget* window);
     inline TTouchLogicalFeedback convertToSymbian(HbFeedback::InstantEffect effect);
     inline TTacticonType convertTacticonToSymbian(HbFeedback::InstantEffect effect);
-    inline TTacticonType convertTacticonToSymbian(HbFeedback::TacticonEffect effect);
     inline TTouchContinuousFeedback convertToSymbian(HbFeedback::ContinuousEffect effect);
-    inline TTouchEventType convertToSymbian(HbFeedback::HitAreaType hitAreaType);
     inline TTouchFeedbackType convertToSymbian(HbFeedback::Modalities modalities);
 			
 public:
     MTouchFeedback *iFeedback;
     RTacticon iTacticon;
     TBool iTacticonReady;
-    QMap <int, QWidget*> registeredHitAreas;
     QMap <int, QWidget*> ongoingContinuousFeedbacks;
     int slidingValue;
 };
@@ -79,7 +74,7 @@ HbFeedbackBasePlayerPrivate::HbFeedbackBasePlayerPrivate() : slidingValue(0)
 HbFeedbackBasePlayerPrivate::~HbFeedbackBasePlayerPrivate() {
     
     MTouchFeedback::DestroyInstance();
-    registeredHitAreas.clear();
+
     iTacticon.Close();
     iTacticonReady = EFalse;
 }
@@ -240,27 +235,6 @@ TTacticonType HbFeedbackBasePlayerPrivate::convertTacticonToSymbian(HbFeedback::
     return type;
 }
 
-TTacticonType HbFeedbackBasePlayerPrivate::convertTacticonToSymbian(HbFeedback::TacticonEffect effect) {
-
-    TTacticonType type = ENoTacticon;
-    
-    switch (effect) {
-    
-    case HbFeedback::TacticonPositive:
-        type = EPositiveTacticon;
-        break;
-    case HbFeedback::TacticonNeutral:
-        type = ENeutralTacticon;
-        break;
-    case HbFeedback::TacticonNegative:
-        type = ENegativeTacticon;
-        break;
-    default:
-        break;
-    }
-    return type;
-}
-
 TTouchContinuousFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::ContinuousEffect effect) {
 
     TTouchContinuousFeedback continuousFeedbackSymbian = ETouchContinuousSmooth;
@@ -289,18 +263,6 @@ TTouchContinuousFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedbac
     return continuousFeedbackSymbian;
 }
 
-TTouchEventType HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::HitAreaType hitAreaType) {
-
-    TTouchEventType touchEventType = ETouchEventStylusDown;
-    
-    if ( hitAreaType == HbFeedback::MouseButtonPress ) {
-            touchEventType = ETouchEventStylusDown;
-    } else if (hitAreaType == HbFeedback::MouseButtonRelease ) {
-        // ETouchEventStylusUp not yet supported
-        touchEventType = ETouchEventStylusDown;
-    }
-    return touchEventType;
-}
 
 TTouchFeedbackType HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::Modalities modalities)
 {
@@ -335,23 +297,11 @@ HbFeedbackBasePlayer::HbFeedbackBasePlayer() : d(new HbFeedbackBasePlayerPrivate
 
 HbFeedbackBasePlayer::~HbFeedbackBasePlayer() {
 
-    removeHitAreas();
     cancelContinuousFeedbacks();
     delete d;
 }
 
-void HbFeedbackBasePlayer::removeHitAreas() {
 
-    // remove hit areas
-    QMapIterator<int, QWidget*> i(d->registeredHitAreas);
-
-    while (i.hasNext()) {
-        i.next();
-        removeHitArea( i.key());
-    }
-
-    d->registeredHitAreas.clear();
-}
 
 void HbFeedbackBasePlayer::cancelContinuousFeedbacks() {
 
@@ -386,13 +336,6 @@ void HbFeedbackBasePlayer::playInstantFeedback(const HbInstantFeedback& feedback
                 d->iFeedback->InstantFeedback(d->convertToSymbian(feedback.instantEffect()));
             }
         }
-    }
-}
-
-void HbFeedbackBasePlayer::playTacticonFeedback(const HbTacticonFeedback& feedback) {
-
-    if (d->iTacticonReady) {
-        d->iTacticon.PlayTacticon(d->convertTacticonToSymbian(feedback.tacticonEffect()));
     }
 }
 
@@ -453,52 +396,4 @@ bool HbFeedbackBasePlayer::continuousFeedbackOngoing(int identifier) {
     return feedbackOngoing;
 }
 
-int HbFeedbackBasePlayer::insertHitArea(const HbHitAreaFeedback& feedback) {
 
-    int identifier = -1;
-    CCoeControl* control = d->convertToSymbian(feedback.window());
-    if (d->iFeedback && control) {
-        identifier = d->getNewIdentifier();
-        TTouchLogicalFeedback logicalFeedback = d->convertToSymbian(feedback.instantEffect());
-        // current hit area implementation below does not yet support new logical feedbacks
-        if (logicalFeedback > ETouchFeedbackSensitive) {
-            logicalFeedback = ETouchFeedbackSensitive;
-        }
-
-        int errorValue = d->iFeedback->SetFeedbackArea(control, identifier,
-                         d->convertToSymbian(feedback.rect()),
-                         logicalFeedback,
-                         d->convertToSymbian(feedback.hitAreaType()));
-        if (errorValue >= 0) {
-            // no error
-            d->registeredHitAreas.insert(identifier, feedback.window());
-        }
-    }
-    return identifier;
-}
-
-void HbFeedbackBasePlayer::updateHitArea(int identifier, const HbHitAreaFeedback& feedback) {
-
-    CCoeControl* control = d->convertToSymbian(feedback.window());
-
-    if (d->iFeedback && control && d->registeredHitAreas.contains(identifier)) {
-        CCoeControl* storedControl = d->convertToSymbian(d->registeredHitAreas[identifier]);
-        if (storedControl == control) {
-            d->iFeedback->ChangeFeedbackArea(storedControl, identifier, d->convertToSymbian(feedback.rect()));
-        }
-    }
-}
-
-void HbFeedbackBasePlayer::removeHitArea(int identifier) {
-
-    if (d->iFeedback && d->registeredHitAreas.contains(identifier)) {
-        CCoeControl* storedControl = d->convertToSymbian(d->registeredHitAreas[identifier]);
-        d->iFeedback->RemoveFeedbackArea(storedControl, identifier);
-        d->registeredHitAreas.remove(identifier);
-    }
-}
-
-bool HbFeedbackBasePlayer::hitAreaExists(int identifier) {
-
-    return d->registeredHitAreas.contains(identifier);
-}

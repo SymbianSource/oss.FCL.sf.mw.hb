@@ -41,24 +41,21 @@ class HB_WIDGETS_EXPORT HbPushButton : public HbAbstractButton
     Q_PROPERTY( QString text READ text WRITE setText )
     Q_PROPERTY( QString additionalText READ additionalText WRITE setAdditionalText )
     Q_PROPERTY( HbIcon icon READ icon WRITE setIcon )
-    Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation )
     Q_PROPERTY( Qt::Alignment textAlignment READ textAlignment WRITE setTextAlignment )
-	Q_PROPERTY( Qt::Alignment additionalTextAlignment READ additionalTextAlignment WRITE setAdditionalTextAlignment )
+    Q_PROPERTY( Qt::Alignment additionalTextAlignment READ additionalTextAlignment WRITE setAdditionalTextAlignment )
     Q_PROPERTY( bool stretched READ isStretched WRITE setStretched )
 
 public:
     explicit HbPushButton( QGraphicsItem *parent = 0 );
     explicit HbPushButton( const QString &text, QGraphicsItem *parent = 0 );
     HbPushButton( const HbIcon &icon, const QString &text, QGraphicsItem *parent = 0 );
-    HbPushButton( const HbIcon &icon, const QString &text, Qt::Orientation orientation,
-        QGraphicsItem *parent = 0 );
     virtual ~HbPushButton( );
 
     void setBackground( const HbIcon &background );
     HbIcon background( ) const;
 
     void setFrameBackground( HbFrameDrawer *backgroundFrameDrawer );
-    HbFrameDrawer* frameBackground( ) const;
+    HbFrameDrawer *frameBackground( ) const;
 
     QString text( ) const;
     QString additionalText( ) const;
@@ -66,49 +63,54 @@ public:
     void setIcon( const HbIcon &icon );
     HbIcon icon( ) const;
 
-    void setOrientation( Qt::Orientation orientation );
-    Qt::Orientation orientation( ) const;
-
     void setTextAlignment( Qt::Alignment alignment );
     Qt::Alignment textAlignment ( ) const;
 
     void setAdditionalTextAlignment( Qt::Alignment alignment );
     Qt::Alignment additionalTextAlignment ( ) const;
-	
 
     void setStretched( bool stretched = true );
     bool isStretched( ) const;
 
-    QGraphicsItem* primitive( HbStyle::Primitive primitive ) const;
+    QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
-    enum { Type = Hb::ItemType_PushButton };
-    int type() const { return Type; }
+    enum { 
+        Type = Hb::ItemType_PushButton 
+    };
+
+    int type() const { 
+        return Type; 
+    }
 
 public slots:
+
     void setText( const QString &text );
     void setAdditionalText( const QString &additionalText );
     void recreatePrimitives();
     void updatePrimitives();
 
 signals:
+
     void longPress( QPointF );
 
 protected:
+
     HbPushButton( HbPushButtonPrivate &dd, QGraphicsItem *parent );
     void initStyleOption( HbStyleOptionPushButton *option ) const;
 
     void keyPressEvent( QKeyEvent *event );
     void keyReleaseEvent( QKeyEvent *event );
     void mousePressEvent( QGraphicsSceneMouseEvent *event );
+
 #ifndef HB_GESTURE_FW
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent( QGraphicsSceneMouseEvent *event );
 #endif
 
-    void gestureEvent(QGestureEvent *event);
+    void gestureEvent( QGestureEvent *event );
 
     void resizeEvent( QGraphicsSceneResizeEvent *event );
-    virtual void polish( HbStyleParameters& params );
+    virtual void polish( HbStyleParameters &params );
 
     void focusInEvent( QFocusEvent *event );
     void focusOutEvent( QFocusEvent *event );
@@ -117,6 +119,7 @@ protected:
     bool hitButton( const QPointF &pos ) const;
 
 private:
+
     Q_DECLARE_PRIVATE_D( d_ptr, HbPushButton )
     Q_DISABLE_COPY( HbPushButton )
     Q_PRIVATE_SLOT( d_func(),void _q_handleLongPress(QPointF) )

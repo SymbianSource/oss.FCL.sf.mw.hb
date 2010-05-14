@@ -47,9 +47,7 @@ public:
         Value,
         AutoClose,
         Text,
-        TextAlignment,
         IconName,
-        IconAlignment,
         AnimationDefinition,
         NumProperties
     };

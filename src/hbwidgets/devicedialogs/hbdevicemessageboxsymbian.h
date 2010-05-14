@@ -76,25 +76,18 @@ public:
     IMPORT_C void SetAnimationDefinitionL(const TDesC& aAnimationDefinition);
     IMPORT_C TPtrC AnimationDefinition() const;
 
-    IMPORT_C void SetIconAlignmentL(TInt aQtAlignment); // deprecated
-    IMPORT_C void SetIconAlignment(TInt aQtAlignment);
-    IMPORT_C TInt IconAlignment() const;
-
     void SetIconVisible(TBool aVisible);
     TBool IconVisible() const;
 
-    IMPORT_C void SetTimeoutL(TInt aTimeout); // deprecated
     IMPORT_C void SetTimeout(TInt aTimeout);
     IMPORT_C TInt Timeout() const;
 
-    IMPORT_C void SetDismissPolicyL(TInt aHbPopupDismissPolicy); // deprecated
     IMPORT_C void SetDismissPolicy(TInt aHbPopupDismissPolicy);
     IMPORT_C TInt DismissPolicy() const;
 
     IMPORT_C void SetButtonTextL(TButtonId aButton, const TDesC& aText);
     IMPORT_C const TPtrC ButtonText(TButtonId aButton) const;
 
-    IMPORT_C void SetButtonL(TButtonId aButton, TBool aEnable);  // deprecated
     IMPORT_C void SetButton(TButtonId aButton, TBool aEnable);
     IMPORT_C TBool HasButton(TButtonId aButton) const;
 

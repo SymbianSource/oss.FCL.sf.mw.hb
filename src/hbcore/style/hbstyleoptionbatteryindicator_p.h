@@ -26,9 +26,9 @@
 #ifndef HBSTYLEOPTIONBATTERYINDICATOR_P_H
 #define HBSTYLEOPTIONBATTERYINDICATOR_P_H
 
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
-class HB_CORE_EXPORT HbStyleOptionBatteryIndicator : public HbStyleOption
+class HB_CORE_PRIVATE_EXPORT HbStyleOptionBatteryIndicator : public HbStyleOption
 {
 public:
     HbStyleOptionBatteryIndicator();

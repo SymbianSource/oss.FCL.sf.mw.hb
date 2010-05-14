@@ -33,7 +33,8 @@ SOURCES  += $$PWD/hbwidgetfeedback.cpp \
             $$PWD/hbfeedbackplugin.cpp \
             $$PWD/hbfeedbackplugingroup.cpp \
             $$PWD/hbinstantinteractionevent.cpp \
-            $$PWD/hbcontinuousinteractionevent.cpp
+            $$PWD/hbcontinuousinteractionevent.cpp \
+            $$PWD/hbfeedbacknamespace.cpp
 
 PUBLIC_HEADERS += $$PWD/hbfeedbacknamespace.h \
                   $$PWD/hbwidgetfeedback.h \

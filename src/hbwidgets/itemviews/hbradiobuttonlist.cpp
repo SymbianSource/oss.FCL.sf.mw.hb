@@ -323,7 +323,7 @@ HbRadioButtonList::PreviewMode HbRadioButtonList::previewMode() const
     return d->mPreviewMode;
 }
 
-/*
+/*!
     \reimp
 */
 int HbRadioButtonList::type() const
@@ -424,6 +424,9 @@ QSizeF HbRadioButtonList::sizeHint(Qt::SizeHint which, const QSizeF &constraint)
     }
 }
 
+/*!
+    \reimp
+*/
 void HbRadioButtonList::rowsInserted(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbRadioButtonList);
@@ -435,12 +438,18 @@ void HbRadioButtonList::rowsInserted(const QModelIndex &parent, int start, int e
     updateGeometry();
 }
 
+/*!
+    \reimp
+*/
 void HbRadioButtonList::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     HbListView::rowsRemoved(parent,start,end);
     updateGeometry();
 }
 
+/*!
+    \reimp
+*/
 void HbRadioButtonList::reset()
 {
     HbListView::reset();

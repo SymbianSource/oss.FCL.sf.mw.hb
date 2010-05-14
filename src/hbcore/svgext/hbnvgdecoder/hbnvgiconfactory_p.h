@@ -32,8 +32,7 @@ class HbNvgIconFactory
 {
 public:
     enum HbNvgIconType {
-        NvgCs,
-        NvgTlv
+        NvgCs
     };
 
     static HbNvgIcon * create(HbNvgIconType type);

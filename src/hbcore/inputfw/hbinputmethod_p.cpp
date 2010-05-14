@@ -41,6 +41,7 @@
 /// @cond
 
 /*!
+\internal
 Destructs the object.
 */
 HbInputMethodPrivate::~HbInputMethodPrivate()
@@ -49,6 +50,7 @@ HbInputMethodPrivate::~HbInputMethodPrivate()
 }
 
 /*!
+\internal
 Returns input filter of the focused editor.
 */
 HbInputFilter *HbInputMethodPrivate::editorFilter() const
@@ -61,18 +63,20 @@ HbInputFilter *HbInputMethodPrivate::editorFilter() const
 }
 
 /*!
+\internal
 Returns constraint flags of the focused editor.
 */
 int HbInputMethodPrivate::editorConstraints() const
 {
     if (mFocusObject) {
-        return mFocusObject->editorInterface().constraints();
+        return mFocusObject->editorInterface().inputConstraints();
     }
 
     return 0;
 }
 
 /*!
+\internal
 Reads input state information from focused editor using editor interface and creates a local copy of it.
 Finds out correct values for those fields that have not been initialized by the client application.
 */
@@ -111,18 +115,20 @@ void HbInputMethodPrivate::inputStateFromEditor(HbInputState& result)
 }
 
 /*!
+\internal
 Transfers local copy of the input state back to the editor using editor interface.
 */
 void HbInputMethodPrivate::inputStateToEditor(const HbInputState& source)
 {
     if (mFocusObject) {
         mFocusObject->editorInterface().setLastFocusedState(source);
-        mFocusObject->editorInterface().setInputMode(source.inputMode());
+        mFocusObject->editorInterface().setMode(source.inputMode());
         mFocusObject->editorInterface().setTextCase(source.textCase());
     }
 }
 
 /*!
+\internal
 Returns input language for current input state. Ususally it is same as the global input language but
 in case of latin only -editors it may be english if the global input language isn't valid for latin only -editors.
 */
@@ -133,7 +139,7 @@ HbInputLanguage HbInputMethodPrivate::activeLanguage() const
     if (ret.undefined()) {
         ret = HbInputSettingProxy::instance()->globalInputLanguage();
         if (mFocusObject) {
-            if ((mFocusObject->editorInterface().constraints() & HbEditorConstraintLatinAlphabetOnly) &&
+            if ((mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintLatinAlphabetOnly) &&
                 !ret.isLatinAlphabetLanguage()) {
                 // This is latin alphabet flagged editor, but the language isn't
                 // latin alphabet language. Switch to english locally.
@@ -146,6 +152,7 @@ HbInputLanguage HbInputMethodPrivate::activeLanguage() const
 }
 
 /*!
+\internal
 Returns true if given input mode is valid in focused editor.
 */
 bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
@@ -160,7 +167,7 @@ bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
     }
 
     if (constraints & HbEditorConstraintFixedInputMode){
-        if (!mFocusObject || mFocusObject->editorInterface().inputMode() != mode) {
+        if (!mFocusObject || mFocusObject->editorInterface().mode() != mode) {
             // This is fixed mode editor but proposed mode is something else.
             // Reject.
             return false;
@@ -176,6 +183,7 @@ bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
 }
 
 /*!
+\internal
 Returns true if given state is valid in focused editor.
 */
 bool HbInputMethodPrivate::stateAllowedInEditor(const HbInputState& state)
@@ -202,53 +210,7 @@ bool HbInputMethodPrivate::stateAllowedInEditor(const HbInputState& state)
 }
 
 /*!
-Goes through the given list of input modes, generates input state for each mode and finds
-out if there is state handler for that state. If a handler is found, returns it and 
-fills 'state'parameter with values from generated state.
-*/
-HbInputMethod* HbInputMethodPrivate::findInitialStateHandler(const QVector<HbInputModeProperties>& modes,
-                                                             HbInputState& state)
-{
-    state = HbInputState();
-    HbInputMethod* master = 0;
-
-    HbInputState inState;
-
-    foreach (HbInputModeProperties mode, modes) {
-        if (modeAllowedInEditor(mode.inputMode())) {
-            stateFromMode(mode, inState);
-            master = HbInputModeCache::instance()->findStateHandler(inState);
-            if (master) {
-                state = inState;
-                break;
-            }
-        }
-    }
-
-    return master;
-} 
-
-/*!
-Creates input state from input mode.
-*/
-void HbInputMethodPrivate::stateFromMode(const HbInputModeProperties& mode, HbInputState& state)
-{
-    state.setKeyboard(activeKeyboard());
-    state.setInputMode(mode.inputMode());
-    state.setLanguage(mode.language());
-
-    if (state.language().isCaseSensitiveLanguage() && HbInputUtils::isCaseSensitiveMode(mode.inputMode())) {
-        if (automaticTextCaseNeeded()) {
-            state.setTextCase(HbTextCaseAutomatic);
-        } else {
-            state.setTextCase(HbTextCaseLower);
-        }
-    } else {
-        state.setTextCase(HbTextCaseNone);
-    }
-}
-
-/*!
+\internal
 Finds state handler for given input state.
 */
 HbInputMethod* HbInputMethodPrivate::findStateHandler(HbInputState& state)
@@ -264,6 +226,7 @@ HbInputMethod* HbInputMethodPrivate::findStateHandler(HbInputState& state)
 }
 
 /*!
+\internal
 Returns input language for current input state. Ususally it is same as the global input language but
 in case of latin only -editors it may be english if the global input language isn't valid for latin only -editors.
 */
@@ -277,10 +240,11 @@ HbInputLanguage HbInputMethodPrivate::findStateLanguage() const
         lang = QLocale::English;
     }   
     
-    return HbInputLanguage(lang);
+    return lang;
 }
 
 /*!
+\internal
 Returns true if auto-capitalisation is needed in current cursor position.
 */
 bool HbInputMethodPrivate::automaticTextCaseNeeded() const
@@ -336,6 +300,7 @@ bool HbInputMethodPrivate::automaticTextCaseNeeded() const
 }
 
 /*!
+\internal
 Returns true if the concept of text case applies to current input language and input state.
 */
 bool HbInputMethodPrivate::textCaseApplies() const
@@ -355,6 +320,7 @@ bool HbInputMethodPrivate::textCaseApplies() const
 }
 
 /*!
+\internal
 Returns the active keyboard.
 */
 HbKeyboardType HbInputMethodPrivate::activeKeyboard() const
@@ -369,6 +335,7 @@ HbKeyboardType HbInputMethodPrivate::activeKeyboard() const
 }
 
 /*!
+\internal
 Takes care of the part of focus in operation that is common to both QWidgets and QGraphicsWidgets.
 */
 void HbInputMethodPrivate::setFocusCommon()
@@ -438,6 +405,7 @@ void HbInputMethodPrivate::setFocusCommon()
 }
 
 /*!
+\internal
 Refreshes input state. Stores local edit state back to the editor and calls child class' inputMethodActived method.
 */
 void HbInputMethodPrivate::refreshState()
@@ -449,6 +417,7 @@ void HbInputMethodPrivate::refreshState()
 }
 
 /*!
+\internal
 Returns true if given focus object is same as currently focused or points to same editor instance.
 */
 bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject* focusObject) const
@@ -470,6 +439,7 @@ bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject* foc
 }
 
 /*!
+\internal
 Creates and returns new input context proxy.
 */
 QInputContext* HbInputMethodPrivate::newProxy()
@@ -478,6 +448,7 @@ QInputContext* HbInputMethodPrivate::newProxy()
 }
 
 /*!
+\internal
 Returns true if currently focused editor is fixed text case editor. 
 */
 bool HbInputMethodPrivate::isFixedCaseEditor() const
@@ -490,6 +461,7 @@ bool HbInputMethodPrivate::isFixedCaseEditor() const
 }
 
 /*!
+\internal
 Returns true if focused editor is lower case -only editor.
 */
 bool HbInputMethodPrivate::isLowerCaseOnlyEditor() const
@@ -502,6 +474,7 @@ bool HbInputMethodPrivate::isLowerCaseOnlyEditor() const
 }
 
 /*!
+\internal
 Returns true if focused editor is upper case -only editor.
 */
 bool HbInputMethodPrivate::isUpperCaseOnlyEditor() const
@@ -514,6 +487,7 @@ bool HbInputMethodPrivate::isUpperCaseOnlyEditor() const
 }
 
 /*!
+\internal
 This method is needed during context switch operation. It transfers relevant parts of input
 method's internal state to the input method that is about to assume control.
 */
@@ -547,6 +521,7 @@ void HbInputMethodPrivate::transfer(HbInputMethod* source)
 }
 
 /*!
+\internal
 Passes control to another input method instance.  Context switch
 happens when there is a need to change input state but currently active input method
 is not able to handle new input state. Framework then finds a new state handler and
@@ -589,7 +564,8 @@ void HbInputMethodPrivate::contextSwitch(HbInputMethod* toBeActive)
 }
 
 /*!
-Cosntructs the first input state for an editor that hasn't been focused before.
+\internal
+Constructs the first input state for an editor that hasn't been focused before.
 */
 void HbInputMethodPrivate::editorRootState(HbInputState &result) const
 { 
@@ -607,7 +583,8 @@ void HbInputMethodPrivate::editorRootState(HbInputState &result) const
 }
 
 /*!
-Reutunrs initial text case for an editor that hasn't been focused before.
+\internal
+Reuturns initial text case for an editor that hasn't been focused before.
 */
 HbTextCase HbInputMethodPrivate::initialTextCase(HbInputModeType inputMode) const
 {
@@ -651,6 +628,7 @@ HbTextCase HbInputMethodPrivate::initialTextCase(HbInputModeType inputMode) cons
 } 
 
 /*!
+\internal
 Finds the first input mode for an editor that hasn't been focus before.
 */
 HbInputModeType HbInputMethodPrivate::initialInputMode(const HbInputLanguage &language) const
@@ -658,9 +636,9 @@ HbInputModeType HbInputMethodPrivate::initialInputMode(const HbInputLanguage &la
     HbInputModeType ret = HbInputModeNone;
 
     if (mFocusObject) {        
-        if (mFocusObject->editorInterface().constraints() & HbEditorConstraintFixedInputMode) {
+        if (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintFixedInputMode) {
             // This is fixed mode editor, always trust what editor interface gives us.
-            ret = (HbInputModeType)mFocusObject->editorInterface().inputMode();
+            ret = (HbInputModeType)mFocusObject->editorInterface().mode();
         } else {
             // Editor doesn't have mode asigned. Propose default mode.                  
             Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
@@ -677,6 +655,7 @@ HbInputModeType HbInputMethodPrivate::initialInputMode(const HbInputLanguage &la
 }
 
 /*!
+\internal
 Constructs latin input state. Non-latin input methods that wish to switch to latin mode
 can use this input state as a parameter for activateState() method.
 */
@@ -689,6 +668,7 @@ void HbInputMethodPrivate::constructLatinState(HbInputState &result) const
 }
 
 /*!
+\internal
 Returns the default input mode for given language.
 */
 HbInputModeType HbInputMethodPrivate::defaultInputMode(const HbInputLanguage &inputLanguage) const
@@ -707,13 +687,14 @@ HbInputModeType HbInputMethodPrivate::defaultInputMode(const HbInputLanguage &in
 }
 
 /*!
+\internal
 A convenience method for setting up the editor as digits only editor.
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsDigitsOnlyEditor()
 {
     if(mFocusObject) {
-        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
-        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        mFocusObject->editorInterface().setMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
         if(!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbDigitsOnlyFilter::instance());
         }
@@ -722,13 +703,14 @@ void HbInputMethodPrivate::setUpFocusedObjectAsDigitsOnlyEditor()
 }
 
 /*!
+\internal
 A convenience method for setting up the editor as formatted only editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsFormattedNumberEditor()
 {
     if(mFocusObject) {
-        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
-        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        mFocusObject->editorInterface().setMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
         if(!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbFormattedNumbersFilter::instance());
         }
@@ -737,13 +719,14 @@ void HbInputMethodPrivate::setUpFocusedObjectAsFormattedNumberEditor()
 }
 
 /*!
+\internal
 A convenience method for setting up the editor as phone number editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsPhoneNumberEditor()
 {
     if(mFocusObject) {
-        mFocusObject->editorInterface().setInputMode(HbInputModeNumeric);
-        mFocusObject->editorInterface().setConstraints(HbEditorConstraintFixedInputMode);
+        mFocusObject->editorInterface().setMode(HbInputModeNumeric);
+        mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
         if(!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbPhoneNumberFilter::instance());
         }
@@ -752,13 +735,14 @@ void HbInputMethodPrivate::setUpFocusedObjectAsPhoneNumberEditor()
 }
 
 /*!
+\internal
 A convenience method for setting up the editor as email editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsEmailEditor()
 {
     if(mFocusObject) {
-        mFocusObject->editorInterface().setInputMode(HbInputModeNone);
-        mFocusObject->editorInterface().setConstraints(HbEditorConstraintLatinAlphabetOnly);
+        mFocusObject->editorInterface().setMode(HbInputModeNone);
+        mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintLatinAlphabetOnly);
         if(!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbEmailAddressFilter::instance());
         }
@@ -767,13 +751,14 @@ void HbInputMethodPrivate::setUpFocusedObjectAsEmailEditor()
     }
 }
 /*!
+\internal
 A convenience method for setting up the editor as url editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
 {
     if(mFocusObject) {
-        mFocusObject->editorInterface().setInputMode(HbInputModeNone);
-        mFocusObject->editorInterface().setConstraints(HbEditorConstraintLatinAlphabetOnly);
+        mFocusObject->editorInterface().setMode(HbInputModeNone);
+        mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintLatinAlphabetOnly);
         if(!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbUrlFilter::instance());
         }
@@ -781,7 +766,6 @@ void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
             | Qt::ImhPreferLowercase);
     }
 }
-
 
 /// @endcond
 

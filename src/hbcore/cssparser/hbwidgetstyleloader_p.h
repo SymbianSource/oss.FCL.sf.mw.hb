@@ -97,6 +97,7 @@ private:
 	};
 	
 	QList<FileSet> mFileSets;
+    QVector<uint> mFullyLoadedWidgets;
 };
 
 #endif // HBWIDGETSTYLELOADER_P_H

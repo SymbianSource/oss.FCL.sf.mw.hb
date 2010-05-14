@@ -37,6 +37,7 @@ hbAddLibrary(hbcore/HbCore)
 # Input
 SOURCES  += $$PWD/main.cpp 
 SOURCES  += $$PWD/hbthemeserver.cpp
+SOURCES  += $$PWD/hbthemeserverapplication.cpp
 SOURCES  += $$PWD/hbthemeserverutils.cpp
 SOURCES  += $$PWD/hbiconcacheitemcreator_p.cpp 
 SOURCES  += $$PWD/hbpixmapiconprocessor_p.cpp
@@ -45,6 +46,7 @@ SOURCES  += $$PWD/hbicondatacache_p.cpp
 SOURCES  += $$PWD/hbcache_p.cpp
 
 HEADERS += $$PWD/hbthemeserver_p.h
+HEADERS += $$PWD/hbthemeserverapplication_p.h
 HEADERS += $$PWD/hbthemeserverutils_p.h
 HEADERS += $$PWD/hbiconcacheitemcreator_p.h
 HEADERS += $$PWD/hbiconprocessor_p.h
@@ -58,30 +60,30 @@ HEADERS += $$PWD/hbdoublelinkedlistinline_p.h
 symbian:CONFIG += nvg
 
 symbian {
-	SOURCES  += $$PWD/hbthemeserver_symbian.cpp
-        HEADERS += $$PWD/hbthemeserver_symbian_p_p.h
-	    
-	nvg:DEFINES += HB_NVG_CS_ICON
-        sgimage:DEFINES += HB_SGIMAGE_ICON
+    SOURCES  += $$PWD/hbthemeserver_symbian.cpp
+    HEADERS += $$PWD/hbthemeserver_symbian_p_p.h
+    LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli -lefsrv
 
-        nvg {
-        	SOURCES  += $$PWD/hbnvgiconprocessor_p.cpp
-                HEADERS += $$PWD/hbnvgiconprocessor_p.h
-                LIBS += -llibopenvg -llibopenvgu -llibegl
-        }
-        LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli
-        sgimage {
-        	HEADERS += $$PWD/hbsgimageiconprocessor_p.h
-                HEADERS += $$PWD/hbsgimagerenderer_p.h
-                SOURCES  += $$PWD/hbsgimageiconprocessor_p.cpp
-                SOURCES  += $$PWD/hbsgimagerenderer.cpp
-                INCLUDEPATH += $${EPOCROOT}epoc32/include/platform #For SGImage Support
-                LIBS += -lsgresource #For SGImage Support
-                LIBS += -llibopenvg #For SGImage Support
-                LIBS += -llibopenvgu #For SGImage Support
-                LIBS += -llibegl #For SGImage Support
-        }
-    
+    nvg {
+        DEFINES += HB_NVG_CS_ICON
+        SOURCES  += $$PWD/hbnvgiconprocessor_p.cpp
+        HEADERS += $$PWD/hbnvgiconprocessor_p.h
+        LIBS += -llibopenvg -llibopenvgu -llibegl
+    }
+
+    sgimage {
+        DEFINES += HB_SGIMAGE_ICON
+        HEADERS += $$PWD/hbsgimageiconprocessor_p.h
+            HEADERS += $$PWD/hbsgimagerenderer_p.h
+            SOURCES  += $$PWD/hbsgimageiconprocessor_p.cpp
+            SOURCES  += $$PWD/hbsgimagerenderer.cpp
+            INCLUDEPATH += $${EPOCROOT}epoc32/include/platform #For SGImage Support
+            LIBS += -lsgresource #For SGImage Support
+            LIBS += -llibopenvg #For SGImage Support
+            LIBS += -llibopenvgu #For SGImage Support
+            LIBS += -llibegl #For SGImage Support
+    }
+
     myrssrules = \
     "hidden = KAppIsHidden;"
     RSS_RULES += myrssrules
@@ -90,7 +92,7 @@ symbian {
     MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/mw"
     TARGET.UID3 = 0x20022E82
     TARGET.EPOCHEAPSIZE = 0x20000 0xA00000
-    
+
     # AllFiles is needed to be able to access icon and effect files in
     # an application's private folder for example.
     TARGET.CAPABILITY = CAP_SERVER AllFiles

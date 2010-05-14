@@ -66,7 +66,8 @@ public:
             Qt::GestureState gestureState,
             HbPanGesture *gesture,
             QObject *watched,
-            QEvent *event );
+            QEvent *event,
+            QTime currentTime);
 
     QTime mCurrentTime;    
 };

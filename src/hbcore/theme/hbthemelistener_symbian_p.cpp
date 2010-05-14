@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <hbinstance.h>
 #include <hbtheme_p.h>
+#include <hbthemeutils_p.h>
 
 #ifdef THEME_LISTENER_TRACES
 #include <hbmemoryutils_p.h>
@@ -37,19 +38,15 @@
 #include "hbthemelistener_symbian_p.h"
 #include "hbthemecommon_symbian_p.h"
 
-// app uid of theme application
-const TInt KThemeName = 0;
-
 /**
  * Constructor
  */
 CHbThemeListenerPrivate::CHbThemeListenerPrivate(HbThemeClientPrivate *themeClient)
                       : CActive(EPriorityNormal), themeClient(themeClient)
 {
-    User::LeaveIfError(themeState.Attach(KServerUid3,KThemeName));
+    mRepository = CRepository::NewL(KServerUid3);
+    mRepository->NotifyRequest(HbThemeUtils::CurrentThemeSetting, iStatus);
     CActiveScheduler::Add(this);
-    // initial subscription
-    themeState.Subscribe(iStatus);
     SetActive();
 }
 
@@ -59,7 +56,7 @@ CHbThemeListenerPrivate::CHbThemeListenerPrivate(HbThemeClientPrivate *themeClie
 CHbThemeListenerPrivate::~CHbThemeListenerPrivate()
 {
     Cancel();
-    themeState.Close();
+    delete mRepository;
 }
 
 /**
@@ -70,22 +67,13 @@ void CHbThemeListenerPrivate::RunL()
 #ifdef THEME_LISTENER_TRACES
     qDebug() << "CHbThemeListenerPrivate::RunL: start\n appname"<<HbMemoryUtils::getCleanAppName();
 #endif
-    themeState.Subscribe(iStatus);
+    mRepository->NotifyRequest(HbThemeUtils::CurrentThemeSetting, iStatus);
     SetActive();    
-    // Added RProperty::Get() as workaround for QSettings bug on symbian
-    // bug: QSettings does not get synched if values are changes fast at server side
-    // @todo: XQsettingManager instead of QSetting for symbian
-    TBuf<80> name;
-    TInt r = themeState.Get(name);
-    QString str((QChar*)name.Ptr(),name.Length());
-#ifdef THEME_LISTENER_TRACES
-    if (r==KErrNone) {
-        qDebug() << "CHbThemeListenerPrivate::RunL: Get() Themename" <<str; 
-    } else {
-        qDebug() << "CHbThemeListenerPrivate::RunL: Get() Error!!!!!!!!";
+    TBuf<256> newTheme;
+    if (KErrNone == mRepository->Get(HbThemeUtils::CurrentThemeSetting, newTheme)) {
+        QString qnewTheme((QChar*)newTheme.Ptr(),newTheme.Length());
+        themeClient->handleThemeChange(qnewTheme);
     }
-#endif
-    themeClient->handleThemeChange(str);
 }
 
 
@@ -94,6 +82,6 @@ void CHbThemeListenerPrivate::RunL()
  */
 void CHbThemeListenerPrivate::DoCancel()
 {
-    themeState.Cancel();
+    mRepository->NotifyCancelAll();
 }
 

@@ -1,8 +1,5 @@
 <RCC>
     <qresource prefix="/">
     <file alias="typefaces.xml">variant/typefaces_s60.xml</file>
-    <file alias="typeface_metrics_series_60_sans.xml">variant/typeface_metrics_series_60_sans.xml</file>
-    <file alias="typeface_metrics_series_60_sans_titlesmbd.xml">variant/typeface_metrics_series_60_sans_titlesmbd.xml</file>
-    <file alias="typeface_metrics_series_60_zdigi.xml">variant/typeface_metrics_series_60_zdigi.xml</file>
     </qresource>
 </RCC>

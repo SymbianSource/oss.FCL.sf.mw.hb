@@ -26,35 +26,27 @@
 #include "hbcontinuousinteractionevent_p.h"
 
 /*!
-    @beta
-    @hbcore
-    \class HbContinuousInteractionEvent
-    
-    \brief Continuous interaction event contains widget interaction information. Feedback engines use that information to implement various feedback effects.
-
-    Gesture event's type is 
-    HbContinuousInteractionEvent::ContinuousInteraction - when user is in the middle of performing a continuous interaction.
-    HbContinuousInteractionEvent::ContinuousInteractionStop - when ongoing continuous interaction is stopped.
-    
-    \sa HbInstantInteractionEvent
-*/
-
-/*!
     \fn const HbWidget* HbContinuousInteractionEvent::widget() const
 
     Returns the widget being interacted with. Should never be null.
+
+    \internal
 */
 
 /*!
     \fn Hb::ContinuousInteraction HbContinuousInteractionEvent::interaction() const
 
-    Returns the type of continuous interaction, whether the widget was panned, flicked, etc.
+    Returns the type of continuous interaction.
+
+    \internal
 */
 
 /*!
     \fn QPointF HbContinuousInteractionEvent::delta() const
 
     Returns the movement vector of the continuous interaction.
+
+    \internal
 */
 
 const int HbContinuousInteractionEvent::ContinuousInteraction = registerEventType();
@@ -62,10 +54,16 @@ const int HbContinuousInteractionEvent::ContinuousInteractionStop = registerEven
 
 /*!
     Constructs a HbContinuousInteractionEvent with continuous interaction information.
+
+    Continuous interaction event contains widget interaction information. Feedback engines use that
+    information to implement various feedback effects.
+
     \param eventType either HbContinuousInteractionEvent::ContinuousInteraction or HbContinuousInteractionEvent::ContinuousInteractionStop.
     \param widget - widget being interacted with
     \param interaction - type of continuous interaction
     \param delta - movement vector of the continuous interaction
+
+    \internal
 */
 HbContinuousInteractionEvent::HbContinuousInteractionEvent(int eventType, const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta)
     : QEvent((QEvent::Type)eventType), m_widget(widget), m_interaction(interaction), m_delta(delta)
@@ -75,4 +73,3 @@ HbContinuousInteractionEvent::HbContinuousInteractionEvent(int eventType, const 
 HbContinuousInteractionEvent::~HbContinuousInteractionEvent()
 {
 }
-

@@ -30,6 +30,7 @@
 #include "hbpopup.h"
 #include "hbwidget_p.h"
 #include "hbnamespace_p.h"
+#include "hbvgmaskeffect_p.h"
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
 #endif // HB_EFFECTS
@@ -122,6 +123,7 @@ public:
     void calculateShape();
 
     static int timeoutValue(HbPopup::DefaultTimeout timeout);
+    void setTimeout(int msec);
 
     void forceHide();
     virtual void addPopupEffects();
@@ -131,7 +133,7 @@ public:
     QTimer *timeoutTimer();
     void doSetModal( bool modal );
     QString effectType;
-    QPainterPath *mPath;
+    HbVgMaskEffect *mVgMaskEffect;
 private:
     static bool popupEffectsLoaded;
     static HbPopupPrivate *d_ptr(HbPopup *popup) {

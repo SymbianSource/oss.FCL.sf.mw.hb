@@ -36,9 +36,6 @@
 #include "hbdataformmodelitem_p.h"
 #include "hbtreemodeliterator_p.h"
 
-// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
-#include <hbabstractviewitem_p.h>
-
 #include <QGraphicsSceneMouseEvent>
 #include <QCoreApplication>
 
@@ -207,133 +204,6 @@ void HbDataForm::scrollTo(const QModelIndex &index, ScrollHint hint)
     HbAbstractItemView::scrollTo(index, hint);
 }
 
-/*!
-    \deprecated HbDataForm::indexCount() const
-        is deprecated. Use \a HbModelIterator::indexCount() const
-
-    \reimp
-    Returns the number of children visible in the hierarchy. Children of collapsed parents are
-    not taken into account.
-*/
-int HbDataForm::indexCount() const
-{
-    qWarning("HbDataForm::indexCount() is deprecated! Use HbModelIterator::indexCount() const.");
-
-    Q_D(const HbDataForm);
-    int bufferSize = 0;
-    if (model()) {
-        QModelIndex root = rootIndex();
-        int rowCount = d->treeModelIterator()->childCount(root);
-        for (int row = 0; row < rowCount; ++row) {
-            bufferSize += d->childCount(d->treeModelIterator()->child(row, root));
-        }
-        bufferSize += rowCount;
-    }
-    return bufferSize;
-}
-
-/*!
-    \deprecated HbDataForm::nextIndex(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::nextIndex(const QModelIndex&) const
-
-    \reimp
-
-    Next index for valid index is determined in following way:
-
-    - If index has children and it is expanded then first child is returned
-    - Otherwise if index has next sibling then that is returned
-    - Otherwise next valid sibling for parent is returned
-    - Otherwise QModelIndex is returned
-*/
-QModelIndex HbDataForm::nextIndex(const QModelIndex &index) const
-{
-    qWarning("HbDataForm::nextIndex(const QModelIndex&) const is deprecated! Use HbModelIterator::nextIndex(const QModelIndex&).");
-
-    Q_D(const HbDataForm);
-    if (index.isValid() && index.column() == 0) {
-        QModelIndex result;
-        if (isExpanded(index)) {
-            result = index.child(0, 0);
-        }
-
-        if (!result.isValid()) {
-            result = index.sibling(index.row() + 1, 0);
-        }
-
-        if (!result.isValid()) {
-            QModelIndex parentIndex(index.parent());
-            while (!result.isValid()) {
-                if (parentIndex == rootIndex()) {
-                    break;
-                }
-                result = parentIndex.sibling(parentIndex.row() + 1, 0);
-                parentIndex = parentIndex.parent();
-            }
-        }
-        return result;
-    } else {
-        return d->treeModelIterator()->child(0, rootIndex());
-    }
-}
-
-
-/*!
-    \deprecated HbDataForm::previousIndex(const QModelIndex&) const
-        is deprecated. Use \a HbTreeModelIterator::previousIndex(const QModelIndex&) const
-
-    \reimp
-
-    Previous index for valid index is determined in following way:
-
-    - If index has previous sibling last child from it is returned
-    - Otherwise previous sibling is returned
-    - Otherwise parent index is returned
-    - Otherwise QModelIndex is returned
-*/
-QModelIndex HbDataForm::previousIndex(const QModelIndex &index) const
-{
-    qWarning("HbDataForm::previousIndex(const QModelIndex&) const is deprecated! Use HbModelIterator::previousIndex(const QModelIndex&) const.");
-
-    Q_D(const HbDataForm);
-    if (index.isValid() && index.column() == 0) {
-        QModelIndex result(index.sibling(index.row() - 1, 0));
-        if (result.isValid()) {
-            bool checkChild = true;
-            while (checkChild) {
-                if (isExpanded(result)) {
-                    result = result.child(model()->rowCount(result) - 1, 0);
-                } else {
-                    checkChild = false;
-                }
-            }
-        }
-        if (!result.isValid()) {
-            result = index.parent();
-            if (result == rootIndex()) {
-                result = QModelIndex();
-            }
-        }
-        return result;
-    } else {
-        QModelIndex result(
-                d->treeModelIterator()->child(
-                        d->treeModelIterator()->childCount(rootIndex())-1,
-                        rootIndex()));
-        QModelIndex childIndex;
-        bool checkChild = true;
-        while (checkChild) {
-            if (!isExpanded(result)) {
-                checkChild = false;
-            } else {
-                childIndex = d->treeModelIterator()->child(d->treeModelIterator()->childCount(result) - 1, result);
-                if (childIndex.isValid()) {
-                    result = childIndex;
-                }
-            }
-        }
-        return result;
-    }
-}
 
 /*!
     @beta
@@ -357,9 +227,6 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
             item->setExpanded(expanded);
         }
 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-       d->mContainer->setItemStateValue(index, HbDataFormViewItem::ExpansionKey, expanded);
-#endif
         d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
         d->mContainer->setModelIndexes();
     }
@@ -415,7 +282,7 @@ void HbDataForm::setHeading(const QString &heading)
 
     if(d->mHeadingWidget->mPageCombo || !d->mHeadingWidget->mDescription.isEmpty() || 
         !d->mHeadingWidget->mHeading.isEmpty()) {
-        static_cast<HbDataItemContainer*>(container())->setFormHeading(d->mHeadingWidget);
+        static_cast<HbDataItemContainer*>(d->mContainer)->setFormHeading(d->mHeadingWidget);
     }
     d->mHeadingWidget->callPolish();
 }
@@ -469,7 +336,7 @@ void HbDataForm::setDescription(const QString &description)
 
     if(d->mHeadingWidget->mPageCombo || !d->mHeadingWidget->mDescription.isEmpty() || 
         !d->mHeadingWidget->mHeading.isEmpty()) {
-        static_cast<HbDataItemContainer*>(container())->setFormHeading(d->mHeadingWidget);
+            static_cast<HbDataItemContainer*>(d->mContainer)->setFormHeading(d->mHeadingWidget);
     }
     d->mHeadingWidget->callPolish();
 }
@@ -517,27 +384,6 @@ QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
 }
 
 /*!
-    
-    \deprecated HbDataForm::dataFormViewItem(const QModelIndex&) const
-        is deprecated. Please use HbAbstractItemView::itemByIndex instead.
-
-    Returns HbDataFormViewItem for the correspoding \a index passed. Returns
-    NULL is index passed is invalid. If \a index passed is not visible then NULL is returned.
-    Ideally user should call this API when activate is called for \a index.    
-
-*/
-HbDataFormViewItem* HbDataForm::dataFormViewItem(const QModelIndex &index) const
-{
-    Q_D(const HbDataForm);
-    if(index.isValid()) {
-        return static_cast<HbDataFormViewItem*>(d->mContainer->itemByIndex(index));
-    } else {
-        return 0;
-    }
-}
-
-
-/*!
     \reimp
 
     If \a model passed is NULL then all values of data form are reset. Calls the
@@ -562,44 +408,7 @@ void HbDataForm::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototy
     HbAbstractItemView::setModel(model, prototype);
 }
 
-/*!
-    \deprecated HbDataForm::loadSettings() 
-        is deprecated. Please use HbDataFormViewItem::restore API instead..
-                
-    Updates the values on each HbDataItem's stored in central repository.
-    This function will be invoked when DataForm is shown .
 
-    \sa storeSettings 
-*/
-void HbDataForm::loadSettings()
-{
-    //Q_D(HbDataForm);
-
-    /*QList<HbAbstractViewItem *> items = d->mContainer->items();
-    foreach(HbAbstractViewItem* item, items) {
-        static_cast<HbDataFormViewItem*>(item)->load();
-    }*/
-}
-
-/*!
-     \deprecated HbDataForm::storeSettings() 
-        is deprecated. Please use HbDataFormViewItem::save instead.
-
-    Stores the values of each HbDataItem's in to the repository. This function invoked 
-    when DataForm is exited.
-
-    \sa loadSettings 
-*/
-void HbDataForm::storeSettings()
-{
-    Q_D(HbDataForm);
-
-    QList<HbAbstractViewItem *> items = d->mContainer->items();
-    foreach(HbAbstractViewItem* item, items) {
-        static_cast<HbDataFormViewItem*>(item)->store();
-    }
-
-}
 /*!
     \reimp
 */
@@ -609,22 +418,21 @@ void HbDataForm::dataChanged(const QModelIndex &topLeft, const QModelIndex &bott
     Q_UNUSED(bottomRight);
     if(topLeft.isValid()) {
 
-            HbDataFormViewItem* item = static_cast<HbDataFormViewItem*>(dataFormViewItem(topLeft));
+            HbDataFormViewItem* item = static_cast<HbDataFormViewItem*>(itemByIndex(topLeft));
             HbDataFormModelItem *modelItem = 
                         static_cast<HbDataFormModel *>(model())->itemFromIndex(topLeft);           
             HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(modelItem);
 
             if(item){
+                HbDataFormViewItemPrivate::d_ptr(item)->setEnabled( modelItem->isEnabled() );
                 if( modelItem_priv->dirtyProperty() == "LabelRole"      ||
                     modelItem_priv->dirtyProperty() == "DecorationRole" || 
                     modelItem_priv->dirtyProperty() == "DescriptionRole" ) {
 
-                         HbDataFormViewItemPrivate::d_ptr(item)->updateData();
-                         return;
+                     HbDataFormViewItemPrivate::d_ptr(item)->updateData();
+                     return;
                 }
-
-                item->load();                
-                HbDataFormViewItemPrivate::d_ptr(item)->setEnabled( modelItem->isEnabled() );          
+                item->restore();
             }
     }
 }
@@ -645,21 +453,7 @@ void HbDataForm::initStyleOption(HbStyleOptionDataForm *option)
 */
 void HbDataForm::rowsInserted(const QModelIndex &parent, int start, int end)
 {
-    Q_D(HbDataForm);
     HbAbstractItemView::rowsInserted(parent, start, end);
-    HbDataFormModelItem::DataItemType itemType = static_cast<HbDataFormModelItem::DataItemType>(
-        parent.data(HbDataFormModelItem::ItemTypeRole).toInt());
-    if(itemType == HbDataFormModelItem::GroupItem ||
-        itemType == HbDataFormModelItem::GroupPageItem ||
-        itemType == HbDataFormModelItem::FormPageItem ) {
-        HbDataGroup *item = static_cast<HbDataGroup*>(itemByIndex(parent));
-        if((item && item->isExpanded()) || parent == d->mModelIterator->rootIndex()) {
-            container()->setModelIndexes(parent);
-        }
-        
-    }else {
-        container()->setModelIndexes();
-    }
 }
 
 /*!

@@ -5,8 +5,9 @@
 	        <style>inoutquad</style>
 	        <keyframe at="0.0">0.0</keyframe>
 	        <keyframe at="1.0">1.0</keyframe>
-	        <start ref="visual.left">1.0</start>
-	        <end ref="screen.right">1</end>
+          <start ref="extrect.left">1.0</start>
+          <end ref="extrect.right">1</end>
+
 	    </param>
 	</visual>
 </layers>

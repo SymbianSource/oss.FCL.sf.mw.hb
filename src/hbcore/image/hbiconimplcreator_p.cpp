@@ -52,7 +52,8 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
                                          params.size,
                                          params.aspectRatioMode,
                                          params.mode,
-                                         (params.mirrored && !params.mirroredIconFound));
+                                         (params.mirrored && !params.mirroredIconFound),
+                                         params.renderMode);
 #endif
             break;
         case SGIMAGE:
@@ -62,7 +63,8 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
                                             params.size,
                                             params.aspectRatioMode,
                                             params.mode,
-                                            (params.mirrored && !params.mirroredIconFound));
+                                            (params.mirrored && !params.mirroredIconFound),
+                                            params.renderMode);
 #endif
             break;
         case OTHER_SUPPORTED_FORMATS:
@@ -71,7 +73,8 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
                                             params.size,
                                             params.aspectRatioMode,
                                             params.mode,
-                                            (params.mirrored && !params.mirroredIconFound));
+                                            (params.mirrored && !params.mirroredIconFound),
+                                            params.renderMode);
             break;
         default:
             break;

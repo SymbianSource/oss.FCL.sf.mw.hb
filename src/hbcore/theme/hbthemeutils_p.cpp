@@ -43,6 +43,7 @@
 #ifdef Q_OS_SYMBIAN
 #include "hbthemecommon_symbian_p.h"
 #include <e32std.h>
+#include <centralrepository.h>
 #endif
 
 // Standard folder names
@@ -55,15 +56,13 @@ const char *HbThemeUtils::operatorHierarchy = "operatortheme";
 const char *HbThemeUtils::appHierarchy = "apptheme";
 const char *HbThemeUtils::platformHierarchy = "themes";
 
-const char *operatorBasePathKey = "OperatorBasePath";
+const char *operatorNameKey = "OperatorName";
 static const char *themeSettingFile = "theme.theme";
 static const char *baseThemeVariable = "BaseTheme";
 static const char *defaultThemeVariable = "DefaultActiveTheme";
 
 // These are the used setting names corresponding to HbThemeUtils::Setting enumeration.
-// Value 0 is not used to be able to change the implementation to use Symbian's Cenrep if needed.
-static const QString settingNames[6] = {"", "currenttheme", "defaulttheme", "defaultthemedir", "basetheme", "operatorbasepath"};
-
+static const QString settingNames[6] = {"", "basetheme", "defaulttheme", "defaultthemedir", "currenttheme", "operatorbasepath"};
 static const char *getResourceFolderName(Hb::ResourceType resType)
 {
     switch(resType) {
@@ -106,13 +105,10 @@ public:
                     << HbHierarchy(HbThemeUtils::appHierarchy, HbLayeredStyleLoader::Priority_Application)
 #endif
                     << HbHierarchy(HbThemeUtils::platformHierarchy, HbLayeredStyleLoader::Priority_Theme);
-        // @todo: The operator name has been hard-coded here. Will be removed once it is decided on how to
-        // get the operator name.
-        operatorName = "myoperator";
     }
-    QString constructOperatorPath(const QString &basePath, const QString &resourcePath, const QString &fileName) const
+    QString constructOperatorPath(const QString &operatorPath, const QString &fileName) const
     {
-        return basePath + resourcePath + '/' + operatorName + '/' + fileName;
+        return operatorPath + '/' + fileName;
     }
     void initSettings();
 
@@ -128,23 +124,26 @@ public: // data
     QString defaultTheme;
     QString defaultThemeRootDir;
     QString baseTheme;
-    QString operatorBasePath;
+    QString operatorPath;
 };
 
 void HbThemeUtilsPrivate::initSettings()
 {
-    //server gets and stores the operator path to settings, clients only read it.
-    if (HbMemoryUtils::getCleanAppName()== THEME_SERVER_NAME) {
-        QStringList operatorPath;
-        operatorPath << QLatin1String(HbThemeUtils::operatorHierarchy) + '/';
-        operatorPath = HbStandardDirs::findExistingFolderList(operatorPath, QString(), Hb::IconResource);
-        if (operatorPath.size() > 0) {
-            operatorBasePath = operatorPath.at(0);
+    // read the operator name from settings
+    operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting).trimmed();
+    
+    // construct operator path
+    if (!operatorName.isEmpty()) {
+        QStringList operatorPaths;
+        operatorPaths << QLatin1String(HbThemeUtils::operatorHierarchy) + '/';
+        operatorPaths = HbStandardDirs::findExistingFolderList(operatorPaths, QString(), Hb::IconResource);
+        for (int i=0;i < operatorPaths.size();i++) {
+            if (operatorPaths[i] == operatorName) {
+            operatorPath = operatorPaths[i] + '/' + operatorName;
+            break;
+            }
         }
-        HbThemeUtils::setThemeSetting(HbThemeUtils::OperatorBasePathSetting, operatorBasePath);
-    } else {
-        operatorBasePath = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorBasePathSetting).trimmed();
-    }
+    }    
 }
 
 void HbThemeUtilsPrivate::readSettings()
@@ -155,14 +154,49 @@ void HbThemeUtilsPrivate::readSettings()
     // The only changing setting is currentThemeSetting and its value is updated in theme change event.
 
     if (!settingsRetrieved) {
+#ifdef Q_OS_SYMBIAN
+        CRepository *repository = 0;
+        TRAP_IGNORE(repository = CRepository::NewL(KServerUid3));
+        if (repository) {
+            TBuf<256> value;
+            if (KErrNone == repository->Get(HbThemeUtils::CurrentThemeSetting,value)) {
+                QString qvalue((QChar*)value.Ptr(),value.Length());
+                currentTheme = qvalue.trimmed();
+            }
+            value.Zero();            
+            if (KErrNone == repository->Get(HbThemeUtils::DefaultThemeSetting,value)) {
+                QString qvalue((QChar*)value.Ptr(),value.Length());
+                defaultTheme = qvalue.trimmed();
+            }
+            value.Zero();
+            if (KErrNone == repository->Get(HbThemeUtils::DefaultThemeRootDirSetting,value)) {
+                QString qvalue((QChar*)value.Ptr(),value.Length());
+                defaultThemeRootDir = qvalue.trimmed();
+            } else {
+                // Use the default value
+                defaultThemeRootDir = HbStandardDirs::themesDir();           
+            }
+            value.Zero();
+            if (KErrNone == repository->Get(HbThemeUtils::BaseThemeSetting,value)) {
+                QString qvalue((QChar*)value.Ptr(),value.Length());
+                baseTheme = qvalue.trimmed();
+            }
+            value.Zero();
+            if (KErrNone == repository->Get(HbThemeUtils::OperatorNameSetting,value)) {
+                QString qvalue((QChar*)value.Ptr(),value.Length());
+                operatorName = qvalue.trimmed();
+            }
+            delete repository;
+        }
+#else
         QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
 
         currentTheme = settings.value(settingNames[HbThemeUtils::CurrentThemeSetting]).toString();
         defaultTheme = settings.value(settingNames[HbThemeUtils::DefaultThemeSetting]).toString();
         defaultThemeRootDir = settings.value(settingNames[HbThemeUtils::DefaultThemeRootDirSetting]).toString();
         baseTheme = settings.value(settingNames[HbThemeUtils::BaseThemeSetting]).toString();
-        operatorBasePath = settings.value(settingNames[HbThemeUtils::OperatorBasePathSetting]).toString();
-
+        operatorName = settings.value(settingNames[HbThemeUtils::OperatorNameSetting]).toString();
+#endif
         settingsRetrieved = true;
     }
 }
@@ -237,7 +271,7 @@ bool HbThemeUtils::removeHierarchy(const QString &hierarchyName)
 
 QString HbThemeUtils::operatorBasePath()
 {
-    return d.operatorBasePath;
+    return d.operatorPath;
 }
 /* @ret hierarchy of themes in priority.
  */
@@ -266,9 +300,9 @@ QMap<int, QString> HbThemeUtils::constructHierarchyListWithPathInfo(const QStrin
     foreach (const HbHierarchy &hierarchy, d.hierarchies) {
         switch(hierarchy.layerPriority) {
         case HbLayeredStyleLoader::Priority_Operator:
-            if (!d.operatorBasePath.isEmpty()) {
+            if (!d.operatorPath.isEmpty()) {
                 hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
-                                                 d.constructOperatorPath(d.operatorBasePath, resourcePath, fileName));
+                                                 d.constructOperatorPath(operatorBasePath(), fileName));
             }
             break;
         case HbLayeredStyleLoader::Priority_Application:
@@ -313,7 +347,7 @@ const HbThemeInfo &HbThemeUtils::baseTheme()
         baseThemeInfo.name = getThemeSetting(BaseThemeSetting).trimmed();
         if ( baseThemeInfo.name.isEmpty() ) {
             // Settings not yet initialized
-            // Check if Base theme in rom set
+            // Check if Base theme is defined in theme.theme
             baseThemeInfo = getBaseThemeFromFile(HbStandardDirs::themesDir());
             if (baseThemeInfo.name.isEmpty()) {
                 // Base theme does not exists in rom
@@ -333,12 +367,13 @@ const HbThemeInfo &HbThemeUtils::baseTheme()
  */
 HbThemeInfo HbThemeUtils::defaultTheme()
 {
+
     // getting base theme makes sure that default theme was added in
     // QSettings, if it was not already done
     const HbThemeInfo &themeInfo = baseTheme(); 
 
     // Assuming the path of default theme and base theme are same
-    return HbThemeInfo(getThemeSetting(DefaultThemeSetting), themeInfo.rootDir);
+    return HbThemeInfo(getThemeSetting(DefaultThemeSetting), themeInfo.rootDir);    
 }
 
 QString HbThemeUtils::getThemeSetting(Setting setting)
@@ -355,8 +390,8 @@ QString HbThemeUtils::getThemeSetting(Setting setting)
             return d.defaultThemeRootDir;
         case BaseThemeSetting:
             return d.baseTheme;
-        case OperatorBasePathSetting:
-            return d.operatorBasePath;
+        case OperatorNameSetting:
+            return d.operatorName;
         default:
             return QString();
     }
@@ -364,9 +399,22 @@ QString HbThemeUtils::getThemeSetting(Setting setting)
 
 void HbThemeUtils::setThemeSetting(Setting setting, const QString &value)
 {
+#ifdef Q_OS_SYMBIAN
+    CRepository *repository = 0;
+    TRAP_IGNORE(repository = CRepository::NewL(KServerUid3));
+    if (repository) {
+        TPtrC valueptr(reinterpret_cast<const TUint16 *>(value.constData()));
+        if (KErrNotFound == repository->Set(setting,valueptr)) {
+            repository->Create(setting,valueptr);
+        }
+
+        delete repository;
+    }
+#else
     QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
     settings.setValue(settingNames[setting], QVariant(value));
     // Destructor of QSettings flushes the changed setting in the INI file.
+#endif
 }   
 
 /**
@@ -390,8 +438,8 @@ void HbThemeUtils::updateThemeSetting(Setting setting, const QString &value)
         case BaseThemeSetting:
             d.baseTheme = value;
             break;
-        case OperatorBasePathSetting:
-            d.operatorBasePath = value;
+        case OperatorNameSetting:
+            d.operatorName = value;
             break;
         default:
             break;
@@ -417,21 +465,29 @@ HbThemeInfo HbThemeUtils::getBaseThemeFromFile(const QString &rootDir)
             defaultTheme = themeInfo.name;
         }
 
-        // If there is any base theme
-        if (!themeInfo.name.isEmpty() && isThemeValid(HbThemeInfo(themeInfo.name,rootDir))) {
-            // Save these theme names in settings
-            setThemeSetting(BaseThemeSetting, themeInfo.name);
-            setThemeSetting(DefaultThemeRootDirSetting, rootDir);
-
-            // Store default theme also in settings, only if it is valid
-            if (themeInfo.name == defaultTheme || isThemeValid(HbThemeInfo(defaultTheme, rootDir))) {
-                setThemeSetting(DefaultThemeSetting, defaultTheme);
-            }
-            themeInfo.rootDir = rootDir;
-            d.settingsRetrieved = false;
-        }
+        // Save theme names in settings
+        saveBaseThemeSettings(themeInfo, defaultTheme, rootDir);
     }
     return themeInfo;
+}
+
+void HbThemeUtils::saveBaseThemeSettings(HbThemeInfo &baseThemeInfo,
+                                                const QString &defaultTheme,
+                                                const QString &rootDir)
+{
+    // If there is any base theme
+    if ((!baseThemeInfo.name.isEmpty()) && isThemeValid(HbThemeInfo(baseThemeInfo.name,rootDir))) {
+        // Save these theme names in settings
+        setThemeSetting(BaseThemeSetting, baseThemeInfo.name);
+        setThemeSetting(DefaultThemeRootDirSetting, rootDir);
+
+        // Store default theme also in settings, only if it is valid
+        if (baseThemeInfo.name == defaultTheme || isThemeValid(HbThemeInfo(defaultTheme, rootDir))) {
+            setThemeSetting(DefaultThemeSetting, defaultTheme);
+        }
+        baseThemeInfo.rootDir = rootDir;
+        d.settingsRetrieved = false;
+    }
 }
 
 /* checks whether the theme is valid
@@ -443,3 +499,47 @@ bool HbThemeUtils::isThemeValid(const HbThemeInfo &themeInfo)
     QFile themeIndexFile(themeInfo.rootDir + '/' + platformHierarchy + '/' + iconsResourceFolder + "/" + themeInfo.name + "/index.theme");
     return themeIndexFile.open(QIODevice::ReadOnly);
 }
+
+const HbThemeIndexInfo HbThemeUtils::getThemeIndexInfo(const HbThemeType &type)
+{
+    HbThemeIndexInfo info;
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(manager->base());
+    
+    switch(type) {
+    case BaseTheme:
+        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                       chunkHeader->baseThemeNameOffset));
+        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                        chunkHeader->baseThemePathOffset));
+        info.themeIndexOffset = chunkHeader->baseThemeIndexOffset;
+        break;
+    case OperatorC:
+        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                       chunkHeader->operatorThemeDriveCNameOffset));
+        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                        chunkHeader->operatorThemeDriveCPathOffset));
+        info.themeIndexOffset = chunkHeader->operatorThemeDriveCIndexOffset;
+        break;
+    case OperatorROM:
+        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                       chunkHeader->operatorThemeRomPathOffset));
+        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                        chunkHeader->operatorThemeRomPathOffset));
+        info.themeIndexOffset = chunkHeader->operatorThemeRomIndexOffset;
+        break;
+    case ActiveTheme:
+        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                       chunkHeader->activeThemeNameOffset));
+        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                        chunkHeader->activeThemePathOffset));
+        info.themeIndexOffset = chunkHeader->activeThemeIndexOffset;
+        break;
+    default:
+        break;
+    }
+    
+    return info;
+}
+
+

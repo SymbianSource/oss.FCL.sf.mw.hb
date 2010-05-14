@@ -112,17 +112,21 @@ bool HbTextRecord::recordFullCompare(HbTextRecord* rc1, HbTextRecord* rc2)
                 if (rc1->mSize == rc2->mSize) {
                     return true;
                 } else {
-                    qDebug() << "HbTextMeasurementUtilityPrivate::recordFullCompare: Sizes don't match";
+                    qDebug() << "HbTextMeasurementUtility::recordFullCompare: Sizes don't match";
                 }
             } else {
-                qDebug() << "HbTextMeasurementUtilityPrivate::recordFullCompare: Row counts don't match";
+                qDebug() << "HbTextMeasurementUtility::recordFullCompare: Row counts don't match";
             }
         } else {
-            qDebug() << "HbTextMeasurementUtilityPrivate::recordFullCompare: Fonts don't match";
+            qDebug() << "HbTextMeasurementUtility::recordFullCompare: Fonts don't match";
         }
     } else {
-        qDebug() << "HbTextMeasurementUtilityPrivate::recordFullCompare: Names don't match";
+        qDebug() << "HbTextMeasurementUtility::recordFullCompare: Names don't match";
     }
+    qDebug() << "HbTextMeasurementUtility::recordFullCompare: -- record1:"
+        << rc1->mRecordName << rc1->mFontSpec.role() << rc1->mFontSpec.textHeight() << rc1->mRowCount << rc1->mSize;
+    qDebug() << "HbTextMeasurementUtility::recordFullCompare: -- record2:"
+        << rc2->mRecordName << rc2->mFontSpec.role() << rc2->mFontSpec.textHeight() << rc2->mRowCount << rc2->mSize;
     return false;
 }
 
@@ -189,7 +193,7 @@ void HbTextMeasurementUtilityPrivate::writeEntry(
 bool HbTextMeasurementUtilityPrivate::validateRecords(HbDeviceProfile &profile)
 {
     if (records.isEmpty()){
-        qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: No result entries";
+        qDebug() << "HbTextMeasurementUtility::validateRecords: No result entries";
         return false;
     }
     QList<HbTextRecord*> temp;
@@ -204,18 +208,18 @@ bool HbTextMeasurementUtilityPrivate::validateRecords(HbDeviceProfile &profile)
             if (!temp[i]->mRecordName.compare(record->mRecordName)) {
                 // duplicate with same data
                 if (HbTextRecord::recordFullCompare(temp[i], record)) {
-                    qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Duplicate removed";
+                    qDebug() << "HbTextMeasurementUtility::validateRecords: Duplicate removed";
                     notFound = false;
 
                 // duplicate with same id and correct data
                 } else if ( !temp[i]->fontLogicalName().compare(KUnknown) &&
                 record->fontLogicalName().compare(KUnknown)) {
-                    qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Duplicate overwritten";
+                    qDebug() << "HbTextMeasurementUtility::validateRecords: Duplicate overwritten";
                     notFound = false;
                     temp[i] = record;
                 // duplicates
                 } else {
-                    qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Duplicate items found";
+                    qDebug() << "HbTextMeasurementUtility::validateRecords: Duplicate items found";
                     ret = false;
                 }
                 break;
@@ -229,14 +233,14 @@ bool HbTextMeasurementUtilityPrivate::validateRecords(HbDeviceProfile &profile)
     records = temp;
     foreach (const HbTextRecord *record, records) {
         if ( !record->fontLogicalName().compare(KUnknown) ) {
-            qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Result item" << record->mRecordName << "Fontspec is null";
+            qDebug() << "HbTextMeasurementUtility::validateRecords: Result item" << record->mRecordName << "Fontspec is null";
             ret = false;
         }
 
         if ( record->mSize.width() > profile.logicalSize().width() ) {
-            qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Result item" << record->mRecordName << "width is too wide";
-            qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Profile width: " << profile.logicalSize().width();
-            qDebug() << "HbTextMeasurementUtilityPrivate::validateRecords: Record width:" << record->mSize.width();
+            qDebug() << "HbTextMeasurementUtility::validateRecords: Result item" << record->mRecordName << "width is too wide";
+            qDebug() << "HbTextMeasurementUtility::validateRecords: Profile width: " << profile.logicalSize().width();
+            qDebug() << "HbTextMeasurementUtility::validateRecords: Record width:" << record->mSize.width();
             ret = false;
         }
     }

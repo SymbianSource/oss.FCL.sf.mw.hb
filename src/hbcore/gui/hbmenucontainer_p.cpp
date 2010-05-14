@@ -113,9 +113,9 @@ void HbMenuContainer::delayedLayout()
 {
     Q_D(HbMenuContainer);
     foreach (QAction *action, d->menu->actions()) {
+        QObject::connect(action, SIGNAL(triggered()), d->menu, SLOT(_q_onActionTriggered()));
         if (action->isVisible()) {
-            d->mVisibleActions.append(action);
-            QObject::connect(action, SIGNAL(triggered()), d->menu, SLOT(_q_onActionTriggered()));
+            d->mVisibleActions.append(action);            
             addItem(action);
         }
     }
@@ -135,7 +135,7 @@ void HbMenuContainer::addItem(QAction *action, HbMenuItem *item)
         d->actionManager = new HbActionManager(HbView::OptionsMenu, d->menu, d->menu->mainWindow() );
     }
     if (d->actionManager && castedAction) {
-        pos = d->actionManager->position(castedAction, d->menu->actions());
+        pos = d->actionManager->position(castedAction, d->mVisibleActions);
     } else {
         pos = d->mVisibleActions.indexOf(action);
     }

@@ -26,8 +26,12 @@
 #ifndef HBTHEMEINDEX_P_H
 #define HBTHEMEINDEX_P_H
 
+#include <hbnamespace.h>
+#include <hbthemecommon_p.h>
+
 #ifndef HB_BOOTSTRAPPED
 #include "hbglobal.h"
+#include "hbthemeutils_p.h"
 #else
 #define HB_CORE_PRIVATE_EXPORT
 #endif // HB_BOOTSTRAPPED
@@ -36,48 +40,99 @@
 #include <QDataStream>
 
 class HbThemeIndexItem;
-
-static const int ThemeIndexTableCountMax = 4;
+struct HbThemeIndexItemData;
 
 class HB_CORE_PRIVATE_EXPORT HbThemeIndex
 {
 public:
     HbThemeIndex(const char *baseAddress);
     ~HbThemeIndex();
-public:
+
     int itemCount();
-    const HbThemeIndexItem *itemArray();
-    const char *stringAreaStart();
+    bool validateItems(qint64 byteSize);
+
+    static quint32 hash(const QString &string);
+    const HbThemeIndexItemData *getItemData(const QString &itemName);
+
 private:
+    void init();
+    
     const char *mBaseAddress;
-    int mCount;
-    const HbThemeIndexItem *mItemArray;
-    const char *mStringAreaStart;
+    int mItemCount;
+    const HbThemeIndexItemData *mThemeItemDataArray;
+    bool initialized;
 };
 
-class HbThemeIndexItem
+
+struct HbThemeIndexItemData
+    {
+        enum Flag {
+            Default         = 0x00,
+            Mirrorable      = 0x01,
+            Locked          = 0x02
+        };
+
+        enum Type {
+            NotDefined      = 0,
+            SvgItem         = 1, // .svg
+            PngItem         = 2, // .png
+            MngItem         = 3, // .mng
+            GifItem         = 4, // .gif
+            XpmItem         = 5, // .xpm
+            JpgItem         = 6, // .jpg
+            NvgItem         = 7, // .nvg
+            SvgzItem        = 8, // .svgz
+            QpicItem        = 9, // .qpic
+            FxmlItem        = 10, // .fxml
+            AxmlItem        = 11 // .axml
+        };
+
+        HbThemeIndexItemData() :
+                itemType(NotDefined),
+                itemNameHash(0),
+                flags(Default),
+                mirroredItemType(NotDefined),
+                defaultWidth(-1),
+                defaultHeight(-1),
+                mirroredWidth(-1),
+                mirroredHeight(-1) {}
+
+        quint32 itemType; // from enum Type
+        quint32 itemNameHash;
+        quint32 flags; // from enum Flag
+
+        // These will go to every themable item, but overhead is still small
+        // because most of the items are icons
+        quint32 mirroredItemType; // from enum Type
+        qint32 defaultWidth;
+        qint32 defaultHeight;
+        qint32 mirroredWidth;
+        qint32 mirroredHeight;
+    };
+
+
+// Helper class for getting data out of HbThemeIndexItemData
+class HbThemeIndexResource
 {
 public:
-    HbThemeIndexItem() :
-        iconnameOffset(-1),
-        folderOffset(-1),
-        extOffset(-1),
-        mirroredExtOffset(-1),
-        defaultSize(),
-        mirroredDefaultSize()
-    {
-    }
-    
-    ~HbThemeIndexItem() {}
+    HbThemeIndexResource(const QString &resourceName);
+    ~HbThemeIndexResource();
 
-public:
-    // Offsets to char* from the theme index base address
-    int iconnameOffset;
-    int folderOffset;
-    int extOffset;
-    int mirroredExtOffset;
-    QSize defaultSize;
-    QSize mirroredDefaultSize;
+    bool isValid();
+    const QSize defaultItemSize();
+    const QSize mirroredItemSize();
+    bool isAutomaticallyMirrored();
+    bool isLocked();
+    QString fullFileName();
+    QString fullMirroredFileName();
+
+private:
+    void getResourceData();
+    const QString &resourceName;
+    const HbThemeIndexItemData *data; // not owned
+    QString basePath;
+    QString themeName;
+    HbThemeType type;
 };
 
 // Version number is always the first integer in the header so the code can use correct header
@@ -85,43 +140,9 @@ public:
 struct HbThemeIndexHeaderV1
 {
     // Theme index version, current latest one is 1
-    int version;
-    // Number of items in the theme index
-    int count;
+    quint32 version;
+    // Number of themable items (currently they are icons, effecs and animations)
+    quint32 itemCount;
 };
 
-/**
-* Contains shared chunk addresses for theme indexes for the active theme
-* and its parent themes starting from table1.
-* E.g. currentTheme is SfBlackTheme
-* => table1 points to SfBlackTheme theme index
-* => table2 points to its parent theme (base theme) index
-* => table3 and table4 are -1 because there are no more parents
-*/
-class HB_CORE_PRIVATE_EXPORT ThemeIndexTables
-{
-public:
-    inline ThemeIndexTables()
-    {
-        clear();
-    }
-
-    inline void clear()
-    {
-        tables[0] = -1;
-        tables[1] = -1;
-        tables[2] = -1;
-        tables[3] = -1;
-        tablesRetrieved = false;
-    }
-
-    bool isValid();
-    const HbThemeIndexItem *getItem(const QString &itemName, int &tableIndex);
-    
-public:
-    int tables[4];
-    QChar drives[4];
-    bool tablesRetrieved;
-};
-
-#endif // HBTHEMEINDEX_P_H 
+#endif //HBTHEMEINDEX_P_H

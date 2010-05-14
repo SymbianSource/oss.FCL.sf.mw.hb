@@ -61,19 +61,21 @@ def add_remove_part(part, add):
         if not part in HB_NOMAKE_PARTS:
             HB_NOMAKE_PARTS.append(part)
 
-def run_process(command, cwd=None):
+def run_process(args, cwd=None):
     code = 0
     output = ""
+    if os.name == "nt":
+        args = ["cmd.exe", "/C"] + args
     try:
         if cwd != None:
             oldcwd = os.getcwd()
             os.chdir(cwd)
         if sys.version_info[0] == 2 and sys.version_info[1] < 4:
-            process = popen2.Popen4(command)
+            process = popen2.Popen4(args)
             code = process.wait()
             output = process.fromchild.read()
         else:
-            process = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            process = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             (stdout, stderr) = process.communicate()
             code = process.returncode
             output = stdout + stderr
@@ -132,8 +134,29 @@ class OptionParser(optparse.OptionParser):
                                   "NOTE: Use '--prefix .' to configure a local setup. A local "
                                   "setup will install nothing else than the qmake "
                                   "feature file." % prefix)
+            group.add_option("--bin-dir", dest="bindir", metavar="dir",
+                             help="Install executables to <dir>. The default value is 'PREFIX/bin'.")
+            group.add_option("--lib-dir", dest="libdir", metavar="dir",
+                             help="Install libraries to <dir>. The default value is 'PREFIX/lib'.")
+            group.add_option("--doc-dir", dest="docdir", metavar="dir",
+                             help="Install documentation to <dir>. The default value is 'PREFIX/doc'.")
+            group.add_option("--include-dir", dest="includedir", metavar="dir",
+                             help="Install headers to <dir>. The default value is 'PREFIX/include'.")
+            group.add_option("--plugin-dir", dest="plugindir", metavar="dir",
+                             help="Install plugins to <dir>. The default value is 'PREFIX/plugins'.")
+            group.add_option("--resource-dir", dest="resourcedir", metavar="dir",
+                             help="Install resources to <dir>. The default value is 'PREFIX/resources'.")
+            group.add_option("--feature-dir", dest="featuredir", metavar="dir",
+                             help="Install qmake feature files to <dir>. The default value is 'QTDIR/mkspecs/features'.")
             self.add_option_group(group)
         self.set_defaults(prefix=None)
+        self.set_defaults(bindir=None)
+        self.set_defaults(libdir=None)
+        self.set_defaults(docdir=None)
+        self.set_defaults(includedir=None)
+        self.set_defaults(plugindir=None)
+        self.set_defaults(resourcedir=None)
+        self.set_defaults(featuredir=None)
 
         group = optparse.OptionGroup(self, "Configure options")
         group.add_option("--platform", dest="platform", metavar="platform",
@@ -177,6 +200,14 @@ class OptionParser(optparse.OptionParser):
         self.set_defaults(silent=False)
         self.set_defaults(fast=False)
         self.set_defaults(defines=None)
+
+        group = optparse.OptionGroup(self, "Host options")
+        group.add_option("--host-qmake-bin", dest="hostqmakebin", metavar="path",
+                         help="Specify the host qmake tool.")
+        group.add_option("--host-make-bin", dest="hostmakebin", metavar="path",
+                         help="Specify the host make tool (make, nmake, mingw32-make, gmake...).")
+        self.set_defaults(hostqmakebin=None)
+        self.set_defaults(hostmakebin=None)
 
         group = optparse.OptionGroup(self, "qmake options")
         group.add_option("--qmake-bin", dest="qmakebin", metavar="path",
@@ -278,10 +309,13 @@ class Platform:
         self._error = None
         self._qmake = qmake
         self._spec = None
+        self._version = None
+        self._features = None
+        self._qtdir = None
 
     def name(self):
         if not self._platform:
-            self._platform = self._detect_platform()
+            self._detect_qt()
         return self._platform
 
     def make(self):
@@ -290,20 +324,43 @@ class Platform:
         return self._make
 
     def qmake(self):
+        if not self._qmake:
+            self._detect_qt()
         return self._qmake
 
     def error(self):
         return self._error
 
     def spec(self):
+        if not self._spec:
+            self._detect_qt()
         return self._spec
 
-    def _detect_platform(self):
+    def version(self):
+        if not self._version:
+            self._detect_qt()
+        return self._version
+
+    def features(self):
+        if not self._features:
+            self._detect_qt()
+        return self._features
+
+    def qtdir(self):
+        if not self._qtdir:
+            self._detect_qt()
+        return self._qtdir
+
+    def _detect_qt(self):
         lines = list()
-        lines.append("symbian:message(symbian)\n")
-        lines.append("else:macx:message(macx)\n")
-        lines.append("else:unix:message(unix)\n")
-        lines.append("else:win32:message(win32)\n")
+        lines.append("symbian:message(platform:symbian)\n")
+        lines.append("else:macx:message(platform:macx)\n")
+        lines.append("else:unix:message(platform:unix)\n")
+        lines.append("else:win32:message(platform:win32)\n")
+
+        lines.append("message(version:$$[QT_VERSION])\n")
+        lines.append("message(libraries:$$[QT_INSTALL_LIBS])\n")
+        lines.append("message(features:$$[QMAKE_MKSPECS]/features)\n")
 
         try:
             if not os.path.exists("tmp"):
@@ -315,13 +372,10 @@ class Platform:
         except Exception, e:
             print(e)
             self._error = "Unable to write a temporary file. Make sure to configure in a writable directory."
-            return None
+            return
 
         # do not use .qmake.cache when detecting the platform
-        args = []
-        if os.name == "nt":
-            args += "cmd.exe", "/C"
-        args += [self._qmake, "-nocache", os.path.split(filepath)[1]]
+        args = [self._qmake, "-nocache", os.path.split(filepath)[1]]
         if self._spec:
             args += ["-spec", self._spec]
         (code, output) = run_process(args, "tmp")
@@ -330,10 +384,12 @@ class Platform:
             self._error = "Unable to execute %s" % self._qmake
             if self._qmake == "qmake":
                 self._error += ". Add qmake to PATH or pass --qmake-bin <path/to/qmake>."
-            return None
 
         try:
-            return re.match("Project MESSAGE: (\w+)", output).group(1)
+            self._platform = re.search("Project MESSAGE: platform:(\S+)", output).group(1)
+            self._version = re.search("Project MESSAGE: version:(\S+)", output).group(1)
+            self._qtdir = re.search("Project MESSAGE: libraries:(\S+)", output).group(1)
+            self._features = re.search("Project MESSAGE: features:(\S+)", output).group(1)
         except:
             self._error = "Unable to parse qmake output (%s)" % output.strip()
             if output.find("QMAKESPEC") != -1:
@@ -373,29 +429,45 @@ class ConfigTest:
         self._sourcedir = sourcedir
         self._builddir = builddir
 
-    def compile(self, test, patterns=None):
+    def compile(self, test):
         code = -1
         prevdir = os.getcwd()
         try:
+            basename = os.path.basename(test)
             sourcedir = os.path.join(self._sourcedir, test)
-            filepath = os.path.join(sourcedir, os.path.basename(sourcedir) + ".pro")
+            filepath = os.path.join(sourcedir, basename + ".pro")
             builddir = os.path.join(self._builddir, test)
 
+            # create build dir
             if not os.path.exists(builddir):
                 os.makedirs(builddir)
             os.chdir(builddir)
 
+            # run qmake & make
             args = [self._qmake, filepath]
             if self._spec:
                 args += ["-spec", self._spec]
             run_process(args)
-            (code, output) = run_process(self._make)
-            if code == 0 and patterns:
+            (code, output) = run_process([self._make])
+
+            # make return value is not reliable
+            if self._platform == "symbian":
+                # on symbian, check that no error patterns such as '***' can be found from build output
+                patterns = ["\\*\\*\\*", "Errors caused tool to abort"]
                 for pattern in patterns:
                     if re.search(pattern, output) != None:
                         code = -1
-                        break
+            else:
+                # on other platforms, check that the resulting executable exists
+                executable = os.path.join(builddir, "hbconftest_" + basename)
+                if os.name == "nt":
+                    executable.append(".exe")
+                if not os.path.exists(executable) or not os.access(executable, os.X_OK):
+                    code = -1
+
+            # clean
             run_process([self._make, "clean"])
+
         except:
             code = -1
         os.chdir(prevdir)
@@ -478,14 +550,9 @@ def main():
     sourcedir = os.path.abspath(sys.path[0])
 
     # default prefixes
-    symbianprefix = None
-    if platform.name() == "symbian":
-        if os.path.isdir("/s60"):
-            symbianprefix = "$${EPOCROOT}epoc32/include/hb"
-        else:
-            symbianprefix = "$${EPOCROOT}epoc32/include/mw/hb"
-    prefixes = { "symbian" : symbianprefix,
+    prefixes = { "symbian" : "$${EPOCROOT}epoc32",
                  "unix"    : "/usr/local/hb",
+                 "macx"    : "/usr/local/hb",
                  "win32"   : "C:/hb" }
 
     # parse command line options
@@ -499,6 +566,7 @@ def main():
     print("Configuring Hb...")
     print("INFO: Platform: %s" % platform.name())
     print("INFO: Make: %s" % platform.make())
+    print("INFO: Qt: %s in %s" % (platform.version(), platform.qtdir()))
 
     # warn about deprecated options
     if options.qtanimation != None:
@@ -538,10 +606,6 @@ def main():
         basedir = os.path.abspath(basedir)
 
     local = os.path.isdir(basedir) and (basedir == currentdir)
-    if not local:
-        resourcedir = basedir + "/resources"
-    else:
-        resourcedir = sourcedir + "/src/hbcore/resources"
 
     # generate local build wrapper headers
     synchb = "bin/synchb.py"
@@ -549,11 +613,6 @@ def main():
         synchb = "%s -v" % synchb
         print("INFO: Running %s" % synchb)
     os.system("python %s/%s -i %s -o %s" % (sourcedir, synchb, sourcedir, currentdir))
-
-    # write config
-    config = ConfigFile()
-    config.set_value("HB_INSTALL_DIR", ConfigFile.format_dir(basedir))
-    config.set_value("HB_RESOURCES_DIR", ConfigFile.format_dir(resourcedir))
 
     # generate a qrc for resources
     args = [os.path.join(sourcedir, "bin/resourcifier.py")]
@@ -571,43 +630,90 @@ def main():
     os.system("python %s" % " ".join(args))
 
     # compilation tests to detect available features
+    config = ConfigFile()
     test = ConfigTest(platform)
     test.setup(sourcedir, currentdir)
-    print("INFO: Detecting available features...")
-    patterns = { "symbian" : ["\\*\\*\\*", "Errors caused tool to abort"],
-                 "maemo"   : ["\\*\\*\\*"],
-                 "unix"    : ["\\*\\*\\*"],
-                 "win32"   : ["\\*\\*\\*"] }
+    print("\nDetecting available features...")
     if options.qtmobility == None:
-        options.qtmobility = test.compile("config.tests/all/mobility", patterns.get(platform.name(), None))
-        print("INFO:\tQt Mobility:\t\t\t%s" % options.qtmobility)
+        options.qtmobility = test.compile("config.tests/all/mobility")
     if options.qtmobility:
         config.add_value("DEFINES", "HB_HAVE_QT_MOBILITY")
+    print("INFO: Qt Mobility:\t\t\t%s" % options.qtmobility)
     if platform.name() == "symbian":
-        sgimagelite_result = test.compile("config.tests/symbian/sgimagelite", patterns.get(platform.name(), None))
+        sgimagelite_result = test.compile("config.tests/symbian/sgimagelite")
         if sgimagelite_result:
-            config.add_value("CONFIG", "sgimagelite_support")
-        print("INFO:\tSgImage-Lite:\t\t\t%s" % sgimagelite_result)
+            config.add_value("CONFIG", "sgimage")
+        print("INFO: SgImage-Lite:\t\t\t%s" % sgimagelite_result)
     if options.dui == None:
-        options.dui = test.compile("config.tests/maemo/dui", patterns.get(platform.name(), None))
-        print("INFO:\tDirect UI:\t\t\t%s" % options.dui)
+        options.dui = test.compile("config.tests/maemo/dui")
     if options.dui:
         config.add_value("CONFIG", "hb_maemo_dui")
         config.add_value("DEFINES", "HB_MAEMO_DUI")
+    print("INFO: Direct UI:\t\t\t%s" % options.dui)
 
-    config.set_value("HB_BIN_DIR", ConfigFile.format_dir(basedir + "/bin"))
-    config.set_value("HB_LIB_DIR", ConfigFile.format_dir(basedir + "/lib"))
-    config.set_value("HB_DOC_DIR", ConfigFile.format_dir(basedir + "/doc"))
-    if not options.developer and platform.name() == "symbian":
-        config.set_value("HB_INCLUDE_DIR", ConfigFile.format_dir(basedir))
-    else:
-        config.set_value("HB_INCLUDE_DIR", ConfigFile.format_dir(basedir + "/include"))
+    # directories
+    if options.bindir == None:
+        # TODO: symbian
+        options.bindir = basedir + "/bin"
+    if options.libdir == None:
+        # TODO: symbian
+        options.libdir = basedir + "/lib"
+    if options.docdir == None:
+        # TODO: symbian
+        options.docdir = basedir + "/doc"
+    if options.includedir == None:
+        if platform.name() == "symbian" and not options.developer:
+            if os.path.isdir("/s60"):
+                options.includedir = basedir + "/include/hb"
+            else:
+                options.includedir = basedir + "/include/mw/hb"
+        else:
+            options.includedir = basedir + "/include"
+    if options.plugindir == None:
+        if platform.name() == "symbian":
+            # TODO: fix to "$${EPOCROOT}resource/hb/plugins"
+            options.plugindir = "$${EPOCROOT}resource/qt/plugins/hb"
+        else:
+            options.plugindir = basedir + "/plugins"
+    if options.featuredir == None:
+        options.featuredir = platform.features()
+    if options.resourcedir == None:
+        # TODO: fix this, some components want to write resources...
+        #       thus, cannot point to the source tree!
+        if not local:
+            options.resourcedir = basedir + "/resources"
+        else:
+            options.resourcedir = sourcedir + "/src/hbcore/resources"
 
-    if platform.name() == "symbian":
-        plugins_dir = "$${EPOCROOT}resource/qt/plugins/hb"
-    else:
-        plugins_dir = basedir + "/plugins"
-    config.set_value("HB_PLUGINS_DIR", ConfigFile.format_dir(plugins_dir))
+    config.set_value("HB_INSTALL_DIR", ConfigFile.format_dir(basedir))
+    config.set_value("HB_BIN_DIR", ConfigFile.format_dir(options.bindir))
+    config.set_value("HB_LIB_DIR", ConfigFile.format_dir(options.libdir))
+    config.set_value("HB_DOC_DIR", ConfigFile.format_dir(options.docdir))
+    config.set_value("HB_INCLUDE_DIR", ConfigFile.format_dir(options.includedir))
+    config.set_value("HB_PLUGINS_DIR", ConfigFile.format_dir(options.plugindir))
+    config.set_value("HB_RESOURCES_DIR", ConfigFile.format_dir(options.resourcedir))
+    config.set_value("HB_FEATURES_DIR", ConfigFile.format_dir(options.featuredir))
+
+
+    if os.name == "posix" or os.name == "mac":
+        sharedmem = test.compile("config.tests/unix/sharedmemory")
+        if sharedmem:
+            (code, output) = run_process(["./hbconftest_sharedmemory"], "config.tests/unix/sharedmemory")
+            sharedmem = (code == 0)
+            if not sharedmem:
+                print("DEBUG:%s" % output)
+        print("INFO: Shared Memory:\t\t\t%s" % sharedmem)
+        if not sharedmem:
+            print("WARNING:The amount of available shared memory is too low!")
+            print "\tTry adjusting the shared memory configuration",
+            if os.path.exists("/proc/sys/kernel/shmmax"):
+                print "(/proc/sys/kernel/shmmax)"
+            elif os.path.exists("/etc/sysctl.conf"):
+                print "(/etc/sysctl.conf)"
+
+
+
+    # TODO: get rid of this!
     if platform.name() == "symbian":
         config.set_value("HB_PLUGINS_EXPORT_DIR", ConfigFile.format_dir("$${EPOCROOT}epoc32/winscw/c/resource/qt/plugins/hb"))
 
@@ -632,6 +738,7 @@ def main():
 
     config.set_value("HB_BUILD_DIR", ConfigFile.format_dir(currentdir))
     config.set_value("HB_SOURCE_DIR", ConfigFile.format_dir(sourcedir))
+    config.set_value("HB_MKSPECS_DIR", ConfigFile.format_dir(basedir + "/mkspecs"))
 
     if platform.name() == "symbian":
         if os.path.isdir("/s60"):
@@ -658,6 +765,10 @@ def main():
 
     for nomake in HB_NOMAKE_PARTS:
         config.add_value("HB_NOMAKE_PARTS", nomake)
+
+    if options.qmakeopt:
+        for qmakeopt in options.qmakeopt.split():
+            config._lines.append(qmakeopt + "\n")
 
     if local:
         config.add_value("CONFIG", "local")
@@ -700,13 +811,31 @@ def main():
     config._lines.append("}\n")
 
     # TODO: is there any better way to expose functions to the whole source tree?
-    config._lines.append("include(%s)\n" % (os.path.splitdrive(sourcedir)[1] + "/src/hbfunctions.prf"))
+    config._lines.append("include(%s)\n" % (os.path.splitdrive(sourcedir)[1] + "/mkspecs/hb_functions.prf"))
 
     if options.verbose:
         print("INFO: Writing .qmake.cache")
     if not config.write(".qmake.cache"):
         print("ERROR: Unable to write .qmake.cache.")
         return
+
+    # build host tools
+    if platform.name() == "symbian" or options.hostqmakebin != None or options.hostmakebin != None:
+        print("\nBuilding host tools...")
+        if options.hostqmakebin != None and options.hostmakebin != None:
+            profile = "%s/src/hbtools/hbtools.pro" % sourcedir
+            if os.path.exists(profile):
+                toolsdir = os.path.join(currentdir, "src/hbtools")
+                if not os.path.exists(toolsdir):
+                    os.makedirs(toolsdir)
+                os.chdir(toolsdir)
+                os.system("\"%s\" -config silent %s" % (options.hostqmakebin, profile))
+                os.system("\"%s\"" % (options.hostmakebin))
+                os.chdir(currentdir)
+        else:
+            print("WARNING: Cannot build host tools, because no --host-qmake-bin and/or")
+            print("         --host-make-bin was provided. Hb will attempt to run host")
+            print("         tools from PATH.")
 
     # run qmake
     if options.qmakebin:
@@ -722,7 +851,9 @@ def main():
     if options.qmakeopt:
         qmake = "%s \\\"%s\\\"" % (qmake, options.qmakeopt)
     if options.verbose:
-        print("INFO: Running %s" % qmake)
+        print("\nRunning %s -cache %s %s" % (qmake, cachefile, profile))
+    else:
+        print("\nRunning qmake...")
     try:
         ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
     except KeyboardInterrupt:
@@ -741,6 +872,10 @@ def main():
             if not os.path.exists(tsrcdir):
                 os.makedirs(tsrcdir)
             os.chdir(tsrcdir)
+            if options.verbose:
+                print("\nRunning %s %s" % (qmake, profile))
+            else:
+                print("\nRunning qmake in tsrc...")
             os.system("%s %s" % (qmake, profile))
             os.chdir(currentdir)
 

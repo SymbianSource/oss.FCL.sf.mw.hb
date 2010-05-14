@@ -6,7 +6,13 @@ HbLineEdit{
 HbLineEdit::text{
     left: -var(hb-param-margin-gene-middle-horizontal);
     right: var(hb-param-margin-gene-middle-horizontal);
-    top: -var(hb-param-margin-gene-middle-vertical);
-    bottom: var(hb-param-margin-gene-middle-vertical);
+    top: -expr(var(hb-param-margin-gene-top)-4px);
+    bottom: expr(var(hb-param-margin-gene-bottom)-4px);
 }
 
+/*
+  Added font information LineEdit in DataFormItem case , its needed to pass loc test of dataform "qtl_dataform_editor_sec".
+*/
+HbDataFormViewItem > HbLineEdit{
+    font-variant:secondary; /* still loclization id xls its not updated to have correct infor , temporary setting font to secondary  */
+}

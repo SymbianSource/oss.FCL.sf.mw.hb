@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <rect fill="none" height="30" width="30"/>
+
 <circle cx="4.665" cy="8.688" r="1"/>
+
 <rect height="2" width="3.999" x="13" y="2"/>
+
 <path d="M12,16v12h15v-12h-15zm13,10h-11v-8h11v8z"/>
+
 <polygon points="29,19.37,29,21.08,27.52,20.22,26.04,19.37,27.52,18.51,29,17.66"/>
+
 <path d="M7.396,14.34l3.281,1.894c0.109-0.018,0.216-0.033,0.322-0.059v-1.17h2.078c0.763-0.777,1.236-1.84,1.236-3.014,0-2.377-1.935-4.313-4.313-4.313s-4.313,1.936-4.313,4.313c0,1.396,0.677,2.627,1.708,3.415v-1.064zm2.604-4.666c1.275,0,2.313,1.039,2.313,2.313,0,1.275-1.038,2.313-2.313,2.313s-2.313-1.038-2.313-2.313c0.004-1.28,1.041-2.316,2.316-2.316z"/>
+
 <polygon points="7.396,16.99,3,16.99,3,6.986,17,6.986,17,15,19,15,19,4.986,1,4.986,1,18.99,7.396,18.99"/>
+
 <polygon points="10.99,17.57,8.396,16.07,8.396,20.87,8.396,25.67,10.99,24.17"/>
+
 <rect height="1" width="8.999" x="15" y="19.01"/>
+
 </svg>

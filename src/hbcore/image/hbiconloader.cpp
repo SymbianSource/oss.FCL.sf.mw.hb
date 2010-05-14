@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include <hbiconloader_p.h>
+#include "hbthemecommon_p.h"
 
 #include <QDir>
 #include <QCoreApplication>
@@ -112,9 +113,10 @@ public:
 
     /* This method is supposed to work the same way 
        as the FindIconHelper in the Icon Theme Spec: */
-    static QString findIconHelper(const QString &iconName,
+    static QString findSharedResourceHelper(const QString &resourceName,
                                   bool mirrored,
                                   bool& mirroredIconFound,
+                                  Hb::ResourceType itemType = Hb::IconResource,
                                   bool useThemeIndex = true);
 
     static QString findEffectHelper(const QString &effectName);
@@ -130,22 +132,13 @@ public:
                                    Qt::AspectRatioMode aspectRatioMode, 
                                    QIcon::Mode mode, 
                                    bool mirrored, 
-                                   const QColor &color);
+                                   const QColor &color,
+                                   HbRenderingMode renderMode);
 #endif
-
-private:
-    void createMirroredList();
 
 public: // data
     QString storedTheme;
 
-    /*
-    * List of icons that should be mirrored automatically in a mirrored layout.
-    * This is initially read from a config file "mirrored.txt".
-    */
-    QStringList mirroredList;
-    bool mirroredListCreated;
-        
     int sourceResolution;
     int resolution;
     qreal zoom;
@@ -173,7 +166,6 @@ private: // data
 
 HbIconLoaderPrivate::HbIconLoaderPrivate() :
         storedTheme(HbTheme::instance()->name()),
-        mirroredListCreated(false),
         sourceResolution(144), // This is about the resolution of a Nokia N95 8GB
         resolution(144),
         zoom(1.0),
@@ -233,103 +225,62 @@ QString HbIconLoader::formatFromPath(const QString &iconPath)
     return suffix;
 }
 
-QString HbIconLoaderPrivate::findIconHelper(const QString &iconName, bool mirrored, bool& mirroredIconFound, bool useThemeIndex)
+QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceName, bool mirrored, bool& mirroredIconFound, Hb::ResourceType itemType, bool useThemeIndex)
 {
     Q_UNUSED(useThemeIndex)
+    Q_UNUSED(itemType)
 
     mirroredIconFound = false;
     QString iconPath;
 
-    if (QDir::isRelativePath(iconName)) {
-        bool themeIndexUsed = false;
+    if (QDir::isRelativePath(resourceName)) {
 
 #ifdef Q_OS_SYMBIAN
         // Try to get themed icon information from theme index
-        ThemeIndexTables &themeIndex = hbInstance->theme()->d_ptr->themeIndex;
-        // Check if there is a valid theme index
-        if (useThemeIndex && themeIndex.isValid()) {
-            themeIndexUsed = true;
-        
-            int tableIndex;
-            const HbThemeIndexItem *item = themeIndex.getItem(iconName, tableIndex);
-        
-            if (item) {
-                const char *baseAddress = reinterpret_cast<const char *>(themeIndex.tables[tableIndex]);
-
-                QString fullfilename;
-            
-                // Add drive letter of the used theme if the path does not point to a QT resource
-                if (*(baseAddress + item->folderOffset) != ':') {
-                    fullfilename.append(themeIndex.drives[tableIndex]);
-                    fullfilename.append(':');
-                }
-                // Add folder
-                fullfilename.append(baseAddress + item->folderOffset);
-
-                if (mirrored) {
-                    if (item->mirroredExtOffset >= 0) {
-                        mirroredIconFound = true;
-                                        
-                        fullfilename.append("mirrored\\");
-                        fullfilename.append(iconName);
-                        fullfilename.append(baseAddress + item->mirroredExtOffset);
-
-                        #ifdef THEME_INDEX_TRACES
-                        qDebug() << "ThemeIndex: Resolved icon filename:" << fullfilename.toUtf8();
-                        #endif
-
-                        return fullfilename;
-                    } 
-                }
-            
-                fullfilename.append(iconName);
-                fullfilename.append(baseAddress + item->extOffset);
-
-                #ifdef THEME_INDEX_TRACES
-                qDebug() << "ThemeIndex: Resolved icon filename:" << fullfilename.toUtf8();
-                #endif
-
-                return fullfilename;
+        HbThemeIndexResource resource(resourceName);
+        if (resource.isValid()) {
+            if (mirrored) {
+                return resource.fullMirroredFileName();
+            } else {
+                return resource.fullFileName();
             }
         }
 #endif // Q_OS_SYMBIAN
 
         // If there was no theme index, search the icon in theme icon dirs (slow)
-        if (!themeIndexUsed) {
         foreach (const QString &dir, HbThemePrivate::instance()->iconDirectories()) {
-                if (mirrored) {
-                    // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
-                    iconPath =  HbStandardDirs::findResource( dir + "mirrored" + '/' + iconName, Hb::IconResource );
-                    if( !iconPath.isEmpty() ) {
-                        mirroredIconFound = true;
-                        break;
-                    }
-                }
-
-            iconPath =  HbStandardDirs::findResource( dir + iconName, Hb::IconResource );
-
-                // If the file was found in this dir, return the filename.
-            if ( !iconPath.isEmpty() ) {
+            if (mirrored) {
+                // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
+                iconPath =  HbStandardDirs::findResource( dir + "mirrored" + '/' + resourceName, Hb::IconResource );
+                if( !iconPath.isEmpty() ) {
+                    mirroredIconFound = true;
                     break;
                 }
+            }
+
+        iconPath =  HbStandardDirs::findResource( dir + resourceName, Hb::IconResource );
+
+            // If the file was found in this dir, return the filename.
+        if ( !iconPath.isEmpty() ) {
+                break;
             }
         }
     } else {
         // Absolute path. Do not scan through different theme directories.
-        QString iconNameCopy(iconName);
+        QString iconNameCopy(resourceName);
         if (mirrored) {
             // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
 
             // Find the directory part from the full filename
-            int index1 = iconName.lastIndexOf('/');
-            int index2 = iconName.lastIndexOf('\\');
-    
+            int index1 = resourceName.lastIndexOf('/');
+            int index2 = resourceName.lastIndexOf('\\');
+
             int index = index1 > index2 ? index1 : index2;
 
-            QString iconNameCopy(iconName);
+            QString iconNameCopy(resourceName);
 
             if (index > 0) {
-                iconNameCopy.insert(index+1, QString("mirrored\\"));
+                iconNameCopy.insert(index+1, QString("mirrored/"));
             }
             iconPath = HbStandardDirs::findResource(iconNameCopy, Hb::IconResource);
 
@@ -338,8 +289,8 @@ QString HbIconLoaderPrivate::findIconHelper(const QString &iconName, bool mirror
                 return iconPath;
             }
         }
-    
-        iconPath = HbStandardDirs::findResource(iconName, Hb::IconResource);
+
+        iconPath = HbStandardDirs::findResource(resourceName, Hb::IconResource);
     }
 
     return iconPath;
@@ -480,15 +431,17 @@ FindBestIconHelper(iconList, size, theme) {
 
 bool HbIconLoaderPrivate::isAutomaticallyMirrored(const QString &iconName)
 {
-    if (!mirroredListCreated) {
-        // Read the list of the mirrored icons from a file.
-        createMirroredList();
-        mirroredListCreated = true;
-    }
+    Q_UNUSED(iconName);
+    // only place to get mirroring information is from themeindex
+#ifdef Q_OS_SYMBIAN
+        // Try to get themed icon information from theme index
+        HbThemeIndexResource resource(iconName);
+        if (resource.isValid()) {
+            return resource.isAutomaticallyMirrored();
+        }
+#endif
 
-    // Check if the given icon name is found in the list of mirrored icons
-    QList<QString>::const_iterator j = qBinaryFind(mirroredList, iconName);
-    return (j != mirroredList.constEnd());
+    return false;
 }
 
 bool HbIconLoaderPrivate::isLayoutMirrored()
@@ -512,85 +465,12 @@ void HbIconLoaderPrivate::setLayoutMirrored(bool mirrored)
     layoutMirrored = mirrored ? Mirrored : NotMirrored;
 }
 
-void HbIconLoaderPrivate::createMirroredList()
-{
-    /* Todo: mirrored.txt will be refactored
-    // Find mirrored.txt file
-    QString filename = HbStandardDirs::findResource("themes/themes/mirrored.txt", Hb::ThemeResource);
-    if (filename.endsWith("mirrored.txt")) {
-        // Try to read file
-        QFile file(filename);
-        if (file.open(QIODevice::ReadOnly)) {
-            QString line;
-
-            while(!file.atEnd()) {        
-                QByteArray dirtyLine = file.readLine();
-                line = QString(dirtyLine).trimmed();
-                // Skip empty lines and comment lines
-                if (line.isEmpty() || line.at(0) == '#') {
-                    continue; 
-                }
-                mirroredList.append(line);
-            }
-
-        // Sort the list
-        qSort(mirroredList.begin(), mirroredList.end());
-        }
-    }
-    */
-    // button
-    mirroredList << "qtg_fr_btn_normal" << "qtg_fr_btn_pressed" << "qtg_fr_btn_latched" << "qtg_fr_btn_highlight";
-    mirroredList << "qtg_fr_btn_latched_highlight" << "qtg_fr_btn_disabled";
-
-    // form
-    mirroredList << "qtg_fr_form_value";
-
-    // grid
-    mirroredList << "qtg_fr_grid_normal" << "qtg_fr_grid_highlight" << "qtg_fr_grid_pressed";
-
-    // list
-    mirroredList << "qtg_fr_list_normal" << "qtg_fr_list_highlight" << "qtg_fr_list_pressed" << "qtg_fr_list_parent_normal";
-    mirroredList << "qtg_fr_convlist_sent_normal" << "qtg_fr_convlist_sent_highlight" << "qtg_fr_convlist_sent_pressed";
-    mirroredList << "qtg_fr_convlist_received_normal" << "qtg_fr_convlist_received_highlight" << "qtg_fr_convlist_received_pressed";
-
-    // popup
-    mirroredList << "qtg_fr_popup_list_normal" << "qtg_fr_popup_list_pressed" << "qtg_fr_popup_list_highlight" << "qtg_fr_popup_list_parent_normal";
-    mirroredList << "qtg_fr_popup_grid_normal" << "qtg_fr_popup_grid_pressed" << "qtg_fr_popup_grid_highlight" << "qtg_graf_dimming_image";
-    mirroredList << "qtg_fr_popup" << "qtg_fr_popup_secondary" << "qtg_fr_popup_preview";
-
-    // progressive slider
-    mirroredList << "qtg_fr_progslider_frame" << "qtg_fr_progslider_pressed" << "qtg_fr_progslider_loaded";
-    mirroredList << "qtg_fr_progslider_played" << "qtg_graf_progslider_handle_normal" << "qtg_graf_progslider_handle_pressed";
-
-    // slider
-    mirroredList << "qtg_fr_slider_v_frame" << "qtg_fr_slider_v_filled" << "qtg_graf_slider_v_handle_normal" << "qtg_graf_slider_v_tick_minor";
-    mirroredList << "qtg_graf_slider_v_tick_major" << "qtg_fr_slider_h_frame" << "qtg_fr_slider_h_filled" << "qtg_graf_slider_h_handle_normal";
-    mirroredList << "qtg_graf_slider_h_tick_minor" << "qtg_graf_slider_h_tick_major";
-
-    // tabs
-    mirroredList << "qtg_fr_tab_active" << "qtg_fr_tab_passive_normal" << "qtg_fr_tab_passive_pressed" << "qtg_fr_tab_mask";
-
-    // toolbar
-    mirroredList << "qtg_fr_tb_h_normal" << "qtg_fr_tb_h_pressed" << "qtg_fr_tb_h_latched" << "qtg_fr_tb_h_disabled";
-    mirroredList << "qtg_fr_tb_v_normal" << "qtg_fr_tb_v_pressed" << "qtg_fr_tb_v_latched" << "qtg_fr_tb_v_disabled";
-
-    // toolbar extension
-    mirroredList << "qtg_fr_tb_ext";
-
-    // scrollbar
-    mirroredList << "qtg_fr_scroll_v_handle" << "qtg_fr_scroll_v_frame" << "qtg_fr_scroll_h_handle" << "qtg_fr_scroll_h_frame";
-
-    // status pane
-    mirroredList << "qtg_fr_status_normal" << "qtg_fr_status_pressed" << "qtg_fr_status_latched" << "qtg_indi_status_options";
-
-    qSort(mirroredList.begin(), mirroredList.end());
-}
-
 #ifdef HB_ICONIMPL_CACHE
 QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName, const QSizeF &size,
-    Qt::AspectRatioMode aspectRatioMode, QIcon::Mode mode, bool mirrored, const QColor &color)
+    Qt::AspectRatioMode aspectRatioMode, QIcon::Mode mode, bool mirrored, const QColor &color,
+    HbRenderingMode renderMode)
 {
-    static const int paramArraySize = 7;
+    static const int paramArraySize = 8;
 
     // This uses QByteArray to improve performance compared to QString.
     // It allows appending stuff with less heap allocations and conversions compared to using QString.
@@ -616,6 +496,8 @@ QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName, cons
         temp[6] = 0;
     }
 
+    // Append render mode when creating cache key
+    temp[7] = renderMode;
     cacheKey.append((char*)&(temp[0]), sizeof(int)*paramArraySize);
 
     const QChar *iconNamePtr = iconName.constData();
@@ -635,11 +517,19 @@ HbIconLoader::HbIconLoader(const QString &appName, QObject *parent)
     setObjectName( appName );
     d = new HbIconLoaderPrivate();
 
+    // Set default rendering mode to EHWRendering    
+    renderMode = EHWRendering;
+
     // Delete the icon loader when the application is destroyed.
     connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(destroy()));
 
     connect(HbLayoutDirectionNotifier::instance(), SIGNAL(layoutDirectionChangeStarted()),
         this, SLOT(updateLayoutDirection()));
+
+#ifdef HB_TOOL_INTERFACE
+    // This enables partial theme updates.
+    connect(&hbInstance->theme()->d_ptr->iconTheme, SIGNAL(iconsUpdated(QStringList)), this, SLOT(themeChange(QStringList)));
+#endif
 }
 
 HbIconLoader::~HbIconLoader()
@@ -691,30 +581,24 @@ QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName
     // TODO: change this to simpler function call in Symbian OS env
     if (QDir::isRelativePath(iconName)) {
 #ifdef Q_OS_SYMBIAN
-
-        // Try to get themed icon default size from theme index
-        ThemeIndexTables &themeIndex = hbInstance->theme()->d_ptr->themeIndex;
-        // Check if there is a valid theme index
-        if (themeIndex.isValid()) {
-            int tableIndex;
-            const HbThemeIndexItem *item = themeIndex.getItem(iconName, tableIndex);
-            if (item) {
-                if (params.mirrored && item->mirroredDefaultSize.isValid()) {
-                    size = item->mirroredDefaultSize;
-                } else {
-                    size = item->defaultSize;
-                }
+        // Try to get themed icon information from theme index
+        HbThemeIndexResource resource(iconName);
+        if (resource.isValid()) {
+            // Try to get themed icon default size from theme index
+            if (params.mirrored && resource.mirroredItemSize().isValid()) {
+                size = resource.mirroredItemSize();
+            } else {
+                size = resource.defaultItemSize();
             }
             // Returns invalid size if there is a valid theme index, but the item was not found there.
             return size;
         } else {
-    		// Step 3: Theme index was not used, try to get icon's default size from theme server's default size cache.    		
-            params.iconFileName = resolveIconFileName(params);		
-		}
-
+            // Step 3: Theme index was not used, try to get icon's default size from theme server's default size cache.
+            params.iconFileName = resolveIconFileName(params);
+        }
 #else
         params.iconFileName = resolveIconFileName(params);
-#endif		
+#endif
     } else { // Absolute path, use it directly without resolving anything.
         params.iconFileName = iconName;
     }
@@ -779,7 +663,7 @@ bool HbIconLoader::iconsExist(const QString &iconName, const QStringList &suffix
     foreach (const QString &suffix, suffixList) {
         bool dummy = false;
 
-        QString path = HbIconLoaderPrivate::findIconHelper(name + suffix, false, dummy);
+        QString path = HbIconLoaderPrivate::findSharedResourceHelper(name + suffix, false, dummy);
         if (path.isEmpty()) {
             found = false;
             break;
@@ -823,6 +707,11 @@ int HbIconLoader::resolution() const
 void HbIconLoader::applyResolutionCorrection(QSizeF &size)
 {
     size = size * (qreal)(d->resolution) / (qreal)(d->sourceResolution) * d->zoom; 
+}
+
+void HbIconLoader::themeChange(const QStringList &updatedFiles)
+{
+    foreach (HbFrameDrawerPrivate *frameDrawer, this->frameDrawerInstanceList) frameDrawer->themeChange(updatedFiles);
 }
 
 void HbIconLoader::destroy()
@@ -897,12 +786,8 @@ void HbIconLoader::freeGpuIconData()
 /*!
   \internal
 
-  This is a wrapper for findIconHelper() (when the resource type is
-  Hb::EffectIcon). It is used for getting AXML and other content from the
-  themeserver.
-
-  If \a resType is Hb::EffectResource then the file is searched among the
-  effects in the theme.
+  This is a wrapper for findSharedResourceHelper(). It is used for getting 
+  resources from the themeserver.
 
   The return value is either same as \a name, when the file is not found in the
   theme, or the full path and name to the file found in the theme. In certain
@@ -912,24 +797,7 @@ void HbIconLoader::freeGpuIconData()
 QString HbIconLoader::findSharedResource(const QString &name, Hb::ResourceType resType)
 {
     bool temp;
-    if (resType == Hb::EffectResource) {
-        QMap<int, QString> effectHier = HbThemeUtils::constructHierarchyListWithPathInfo(
-            name, HbTheme::instance()->name(), Hb::EffectResource);
-        HbStandardDirs::findResourceList(effectHier, Hb::EffectResource);
-
-        // Just take the first value from the map. (note that maps are sorted by the key)
-        foreach (const QString &file, effectHier) {
-            return file;
-        }
-
-        // The map was empty, return empty string.
-        return QString();
-    } else {
-        // Assume icon case (png, svg, axml, etc.)
-
-        // TODO: theme index does not support currently axmls, so setting 'useThemeIndex' parameter to false
-        return HbIconLoaderPrivate::findIconHelper(name, false, temp, false);
-    }
+    return HbIconLoaderPrivate::findSharedResourceHelper(name, false, temp, resType);
 }
 
 /*!
@@ -986,8 +854,9 @@ QSizeF HbIconLoader::getAnimationDefaultSize(HbIconAnimationDefinition &def, HbI
 
     // Try to get the default size from server if the icon is not such that is loaded in client side.
     if (format != "MNG"
-            && format != "GIF"
-            && !params.iconName.startsWith(':')) {
+        && format != "GIF"
+        && !params.iconFileName.startsWith(':'))
+    {
         QSizeF defSize = HbThemeClient::global()->getSharedIconDefaultSize(params.iconFileName);
         if (defSize.isValid()) {
             return defSize;
@@ -1099,7 +968,7 @@ void HbIconLoader::loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingPa
 QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
 {
     // Search in theme (assume that we received a logical icon name).
-    QString iconPath = d->findIconHelper(params.cleanIconName, params.mirrored, params.mirroredIconFound);
+    QString iconPath = d->findSharedResourceHelper(params.cleanIconName, params.mirrored, params.mirroredIconFound);
     bool iconFound = !iconPath.isEmpty();
 #ifdef HB_ICON_TRACES
     qDebug() << params.cleanIconName << " => " << iconPath;
@@ -1114,7 +983,7 @@ QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
     // Use the 'unknown' icon, if needed, when the queried icon was not found.
     if (!iconFound) {
         if (params.options.testFlag(ReturnUnknownIcon)) {
-            iconPath = d->findIconHelper(s_unknown, false, params.mirroredIconFound);
+            iconPath = d->findSharedResourceHelper(s_unknown, false, params.mirroredIconFound);
         }
     }
 
@@ -1145,7 +1014,8 @@ HbIconImpl *HbIconLoader::getIconFromServer(HbIconLoadingParams &params)
                    params.mode,
                    (params.mirrored && !params.mirroredIconFound),
                    params.options,
-                   params.color);
+                   params.color,
+                   params.renderMode);
 
     //Creates HbIconImpl instance based on the type of data returned by themeserver.
     //HbIconImpl thus created could be any one of the following impl-types:
@@ -1384,6 +1254,45 @@ void HbIconLoader::loadPixmapIcon(HbIconLoadingParams &params, const QString &fo
 }
 
 /*!
+ * \fn void HbIconLoader::switchRenderingMode()
+ * 
+ * This function gets notified when the rendering mode of the application changes e.g
+ * ( Hardware - Software rendering or vice versa ). If the mode is changed from 
+ *  Hardware to Software, all Hardware rendered icons will release the GPU resources.
+ *  This function also initiates an IPC call to ThemeServer, so that the server 
+ *  can do its part of cleanup. 
+ *  \a newRenderMode new rendering mode of application 
+ */ 
+
+void HbIconLoader::switchRenderingMode(HbRenderingMode newRenderMode)
+{
+#ifndef Q_OS_SYMBIAN
+    Q_UNUSED(newRenderMode)
+#endif
+
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    if (newRenderMode != renderMode) {     
+        if (newRenderMode == ESWRendering) {
+            // switching from HW to SW mode  
+            freeGpuIconData();            
+        }        
+        if (HbThemeClient::global()->switchRenderingMode(newRenderMode)) {         
+            renderMode = newRenderMode;
+        }
+    }
+#endif
+}
+
+void HbIconLoader::updateRenderingMode(QPaintEngine::Type type)
+{
+    if (type == QPaintEngine::OpenVG) {
+        renderMode = EHWRendering;
+    } else {
+        renderMode = ESWRendering;
+    }
+}
+
+/*!
  * \fn HbIconImpl* HbIconLoader::loadIcon()
  * 
  * This function is responsible for loading a single-piece icon .
@@ -1443,6 +1352,7 @@ HbIconImpl *HbIconLoader::loadIcon(
     params.animationCreated = false;
     params.mirroringHandled = false;
     params.modeHandled = false;
+    params.renderMode = renderMode;
     resolveCleanIconName(params);
 
     // Step 1: Check if the icon has animation definition
@@ -1474,7 +1384,7 @@ HbIconImpl *HbIconLoader::loadIcon(
     
 #ifdef HB_ICONIMPL_CACHE
         QByteArray cacheKey = d->createCacheKeyFrom( params.iconName, params.size, params.aspectRatioMode,
-                        params.mode, params.mirrored, params.color );
+                        params.mode, params.mirrored, params.color, params.renderMode );
         //look up in the local iconImplCache. 
         //If found return the ptr directly
         if (iconImplCache.contains(cacheKey)) {
@@ -1619,7 +1529,7 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
 #if defined(HB_ICONIMPL_CACHE)
 
     QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconData.multiPartIconId, size,
-                          aspectRatioMode, mode, mirrored, color);
+                          aspectRatioMode, mode, mirrored, color, renderMode);
     //If consolidated icon found in the client's cache, increment ref-count and return
     if (iconImplCache.contains(cacheKey)) {
         HbIconImpl * ptr = iconImplCache.value(cacheKey);
@@ -1635,7 +1545,7 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
     QStringList iconPathList;
 
     for (int i = 0; i < listOfIcons.count(); i++) {
-        QString path = d->findIconHelper(listOfIcons.at(i), mirrored, mirroredIconFound);
+        QString path = d->findSharedResourceHelper(listOfIcons.at(i), mirrored, mirroredIconFound);
         if (!path.isEmpty()) {
             iconPathList.append(path);
         } else {
@@ -1651,7 +1561,7 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
     //the consolidated icon on themeserver
     iconInfo = HbThemeClient::global()->getMultiPartIconInfo(iconPathList,
                                                              multiPartIconData, size, aspectRatioMode, mode,
-                                                             (mirrored && !mirroredIconFound), options, color);
+                                                             (mirrored && !mirroredIconFound), options, color, renderMode);
 
 #ifdef HB_ICON_TRACES
     qDebug() << "HbIconLoader::getMultiPartIconInfo, offset from server: " << iconInfo.pixmapData.offset << iconPathList;
@@ -1707,7 +1617,8 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
                                    color,
                                    HbIconLoader::AnyType,
                                    HbIconLoader::AnyPurpose,
-                                   multiPieceImpls);
+                                   multiPieceImpls,
+                                   renderMode);  
 #else
         //For OS other than Symbian, call HbIconLoader::loadIcon to individually load icons
         for (int i = 0; i < count; i++) {
@@ -1745,8 +1656,9 @@ void HbIconLoader::unLoadIcon(HbIconImpl * icon, bool unloadedByServer)
                                                icon->iconAspectRatioMode(),
                                                icon->iconMode(),
                                                icon->isMirrored(),
-                                               icon->color()
-                                              );
+                                               icon->color(),
+                                               icon->iconRenderingMode()
+                                               );
         }
 #ifdef HB_ICONIMPL_CACHE
         int rem = iconImplCache.remove(iconImplCache.key(icon));
@@ -1798,15 +1710,16 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
                                 const QColor &color,
                                 HbIconLoader::IconDataType type,
                                 HbIconLoader::Purpose,
-                                QVector<HbIconImpl *> & iconImplList)
+                                QVector<HbIconImpl *> & iconImplList,
+                                HbRenderingMode currRenderMode)
 {
-	 Q_UNUSED(type);
-	 QVector<int> posList;
+    Q_UNUSED(type);
+    QVector<int> posList;
 #ifdef HB_ICONIMPL_CACHE
     // search the client cache first before asking the server
     for(int i = 0; i < multiPartIconList.count(); i++) {
         QByteArray cacheKey = d->createCacheKeyFrom( multiPartIconList[i], sizeList[i], aspectRatioMode,
-                        mode, mirrored, color );
+                        mode, mirrored, color, currRenderMode );
         //look up in the local iconImplCache. 
         //If found return the ptr directly
         HbIconImpl * ptr = 0;
@@ -1838,7 +1751,7 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
     int count = multiPartIconList.count();
     if (count > 0) {
         HbSharedIconInfoList iconInfoList = HbThemeClient::global()->getMultiIconInfo(multiPartIconList, sizeList,
-                                            aspectRatioMode, mode, mirrored, options, color);
+                                            aspectRatioMode, mode, mirrored, options, color, currRenderMode);
 
         HbIconImpl* impl = 0;
 
@@ -1859,7 +1772,7 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
 
 #ifdef HB_ICONIMPL_CACHE
                 QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconList[i], sizeList.at(i) , aspectRatioMode,
-                                      mode, mirrored, color);
+                                      mode, mirrored, color, currRenderMode);
                 iconImplCache.insert(cacheKey, impl);
 #ifdef HB_ICON_CACHE_DEBUG
                 qDebug() << "HbIconLoader::getMultiIconImplFromServer(): " << params.iconName << " inserted into impl-cache, ref-count now = " << impl->refCount();
@@ -1927,7 +1840,8 @@ void HbIconLoader::unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls)
                                             multiPieceImpls[0]->iconAspectRatioMode(),
                                             multiPieceImpls[0]->iconMode(),
                                             multiPieceImpls[0]->isMirrored(),
-                                            multiPieceImpls[0]->color()
+                                            multiPieceImpls[0]->color(),
+                                            multiPieceImpls[0]->iconRenderingMode()
                                             );
     }
 }

@@ -31,6 +31,9 @@
     service. The service queues and displays device dialogs according to client requests and
     system state. The service displays widgets in it's window (HbApplication window).
 
+    <b>Platform dependent.</b> Currently server is implemented only for Symbian platform. On other platforms,
+    device dialog are displayed on client's mainwindow.
+
     Device dialog widgets are created by plugins. The service loads a plugin to create and display
     a device dialog. A single plugin may implement several different dialogs or just one.
     Dialogs are identified by a string. By convention the string should follow
@@ -45,17 +48,18 @@
     numbers in type strings. It performs string comparison of the whole string when searching
     for a plugin.
 
-    Device dialogs are divided into three groups: generic device dialog, device notification dialog
-    and indicator groups. The group dictates how and when a dialog is shown. Each dialog
-    indicates which group it belongs to. The group need not be fixed. It may change depending on
-    create parameters.
+    Device dialogs are divided into five groups: generic, notification, indicator-menu, security
+    and critical groups. The group dictates how and when a dialog is shown. Generic and
+    notification dialogs are intended for application use. Indicator, security and critical dialogs are
+    for platform. Each dialog indicates which group it belongs to. The group need not be fixed.
+    It may change depending on create parameters.
 
     Device dialog groups may prioritize (queueing) device dialogs in respect to other groups.
     In addition each device dialog has an individual queueing priority that may affect how it is
     shown inside a group. Currently there is no queueing implemented for device dialogs. All
     dialogs are displayed in order requests are received. Z-order of dialogs on display is
-    determined by popup framework. Last dialog created is on top. Z-order may be changed by
-    dialog widget changing it's popup priority.
+    determined by popup framework. Last dialog created is on top. Device dialog framework
+    manipulates Z-order of dialogs. Device dialogs themselves should not change the popup Z-order.
 
     Device dialog widgets have to be derived from HbPopup either directly or by ancestry.
 
@@ -70,12 +74,8 @@
     HbDeviceDialogPlugin::SharedDeviceDialog.
     </div>
 
-    On S60, platform and third party plugins are run by separate servers with different
-    platform security capabilities. The capabilities are following.
-    - Platform plugins
-        - ProtServ, SwEvent, TrustedUI
-    - Third party plugins
-       - ProtServ, TrustedUI
+    <b>Symbian.</b>Plugins are run by a server with platform security capabilities ProtServ, SwEvent,
+    TrustedUI and ReadDeviceData.
 
     Plugins are responsible for maintaining system security for their own part. If plugin
     performs operations that may compromise security or want's to limit access to specific
@@ -85,12 +85,22 @@
     function returns false. In addition, HbDeviceDialogPlugin constructor has a check which
     allows only device dialog service to load plugins derived from it.
 
-    Device dialog plugins can be installed into a device by users. Tbd. This needs to be clarified.
+    <b>Symbian.</b>Device dialog plugins can be installed into a device. If a plugin doesn't have
+    required platform security capabilities it will not load. Plugins are searched from device's
+    local drives. The search order is rom-drives, non-removable drives and removable drives. Once
+    a pluging is found the search stops. This implies that plugins on rom drives cannot be
+    overriden by plugins on other drives.
 
-    Plugin location differs depending on platform. On Symbian, device dialog plugin stubs are
-    located in /resource/plugins/devicedialogs directory and executables in /sys/bin directory.
-    On Windows/Linux plugin executables are searched from application's current directory and
-    HB_PLUGINS_DIR/devicedialogs directory.
+    <b>Platform dependent.</b>Plugin location differs depending on platform. On Symbian, device dialog
+    plugin stubs (.qtplugin) are located in /resource/plugins/devicedialogs directory and executables
+    in /sys/bin directory. On other platforms plugin executables are searched from application's
+    current directory and HB_PLUGINS_DIR/devicedialogs directory.
+
+    Well behaving dialog widget should observe following rules:
+    - Should not create and show other dialogs
+    - No calls to show(), hide() or setVisible()
+    - Not setting popup Z-order
+    - No time consuming operations performed
 
     Creating a device dialog plugin and widget involves following steps.
     - Set in .pro file TEMPLATE = lib and CONFIG += hb plugin
@@ -101,7 +111,8 @@
         Q_OBJECT
     \endcode
     - Implement device dialog widget and HbDeviceDialogInterface interface. Declare and emit
-      deviceDialogClosed and optionally deviceDialogData signals.
+      deviceDialogClosed and optionally deviceDialogData signals. Do not call show(), hide() or
+      setVisible() in the plugin. Device dialog framework calls show() to display the widget.
     \code
     public:
         bool setDeviceDialogParameters(const QVariantMap &parameters);
@@ -178,7 +189,7 @@
 
     \sa HbDeviceDialogPluginInterface HbDeviceDialogInterface HbDeviceDialog HbPopup
 
-    \alpha
+    \stable
     \hbcore
 */
 
@@ -253,15 +264,7 @@
     attaching to a device dialog widget.
 */
 
-/*!
-    \var HbDeviceDialogPlugin::DeviceDialogFlag HbDeviceDialogPlugin::NoLocalisableData
-    If the flag is set, device dialog service does not try to find and localise strings
-    from the property set. If not set localisable strings are localised by the device
-    dialog service.
 
-    \deprecated HbDeviceDialogPlugin::NoLocalisableData
-        is deprecated. Will be removed as localization is always done by application.
-*/
 
 /*!
     \var HbDeviceDialogPlugin::DefaultPriority
@@ -414,7 +417,7 @@
 
     \sa HbDeviceDialogPlugin HbDeviceDialog
 
-    \alpha
+    \stable
     \hbcore
 */
 
@@ -482,7 +485,7 @@
     from HbDeviceDialogPlugin. This class declares createDeviceDialog() function which the plugin must
     implement.
 
-    \alpha
+    \stable
     \hbcore
 */
 

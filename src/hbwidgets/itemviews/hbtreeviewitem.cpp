@@ -27,11 +27,11 @@
 #include "hbtreeviewitem.h"
 #include "hbtreeview.h"
 #include "hbabstractitemview.h"
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 
 #include <hbnamespace.h>
 #include <hbstyle.h>
-#include <hbstyleoptiontreeviewitem.h>
+#include <hbstyleoptiontreeviewitem_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbtapgesture.h>
 #include <hbeffect.h>
@@ -57,26 +57,6 @@
     See HbListViewItem for commmon view item subclassing reference. 
 
 */
-
-/*!
-    \deprecated HbTreeViewItem::StateKey
-        is deprecated. Please use string based state keys.
-
-    \enum HbTreeViewItem::StateKey
-
-    HbTreeViewItem's user defined state keys.
-
-    \sa HbAbstractViewItem::transientState()
-*/
-
-/*!
-    \deprecated HbTreeViewItem::ExpansionKey
-        is deprecated. Please use string based state keys. This key is replaced by "expanded".
-
-    \var HbTreeViewItem::ExpansionKey
-    Predefined key for expansion/collapsion state of a view item. Default state is collapsed. 
-*/
-
 
 
 HbTreeViewItemPrivate::HbTreeViewItemPrivate(HbTreeViewItem *prototype) :
@@ -150,8 +130,7 @@ void HbTreeViewItemPrivate::tapTriggered(QGestureEvent *event)
         bool inSelectionArea = false;
         if (mSharedData->mItemView->selectionMode() == HbAbstractItemView::SingleSelection) {
             inSelectionArea = q->selectionAreaContains(position, HbAbstractViewItem::SingleSelection);
-        } else if (   mSharedData->mItemView->selectionMode() == HbAbstractItemView::MultiSelection
-                   || mSharedData->mItemView->selectionMode() == HbAbstractItemView::ContiguousSelection) {
+        } else if (mSharedData->mItemView->selectionMode() == HbAbstractItemView::MultiSelection) {
             inSelectionArea = q->selectionAreaContains(position, HbAbstractViewItem::MultiSelection);
         }
 
@@ -169,8 +148,8 @@ void HbTreeViewItemPrivate::tapTriggered(QGestureEvent *event)
             }
         }
 
-        HbWidgetFeedback::triggered(q, Hb::InstantReleased, modifiers);
-        q->setPressed(false);
+        HbWidgetFeedback::triggered(q, Hb::InstantClicked, modifiers);
+        setPressed(false, true);
 
         emit q->activated(position);
         emit q->released(position);
@@ -329,22 +308,6 @@ bool HbTreeViewItem::isExpanded() const
 }
 
 /*!
-     \deprecated HbTreeViewItem::state() const
-        is deprecated. Please use HbTreeViewItem::transientState() instead. 
-
-    \reimp
-*/
-QMap<int,QVariant> HbTreeViewItem::state() const
-{
-    Q_D(const HbTreeViewItem);
-    QMap<int,QVariant> state = HbListViewItem::state();
-    
-    state.insert(ExpansionKey, d->mExpanded);
-
-    return state;    
-}
-
-/*!
     \reimp
 */
 QHash<QString, QVariant> HbTreeViewItem::transientState() const
@@ -370,25 +333,6 @@ void HbTreeViewItem::setTransientState(const QHash<QString, QVariant> &state)
 }
 
 /*!
-     \deprecated HbTreeViewItem::setState(const QMap<int,QVariant> &)
-        is deprecated. Please use HbTreeViewItem::setState(const QHash<QString, QVariant> &state) instead. 
-
-    \reimp
-*/
-void HbTreeViewItem::setState(const QMap<int,QVariant> &state)
-{
-    Q_D(HbTreeViewItem);
-
-    HbListViewItem::setState(state);
-
-    if (state.contains(ExpansionKey)) {
-        d->mExpanded = state.value(ExpansionKey).toBool();
-    } else {
-        d->mExpanded = false;
-    }
-}
-
-/*!
     Initialize option with the values from this HbTreeViewItem. 
 
     This method is useful for subclasses when they need a HbStyleOptionTreeViewItem, 
@@ -401,25 +345,6 @@ void HbTreeViewItem::initStyleOption(HbStyleOptionTreeViewItem *option) const
     HbListViewItem::initStyleOption(option);
 
     option->expanded = d->mExpanded;
-}
-
-/*!
-
-    \deprecated HbTreeViewItem::primitive(HbStyle::Primitive)
-        is deprecated.
-
-    Provides access to primitives of HbTreeViewItem.
-    \param primitive is the type of the requested primitive. The available primitives are 
-    \c P_TreeViewItem_expandicon
- */
-QGraphicsItem *HbTreeViewItem::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbTreeViewItem);
-    if (primitive == HbStyle::P_TreeViewItem_expandicon) {
-        return d->mExpandItem;
-    } else {
-        return HbListViewItem::primitive(primitive);
-    }
 }
 
 /*!

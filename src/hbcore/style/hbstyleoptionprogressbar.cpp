@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 
-#include "hbstyleoptionprogressbar.h"
+#include "hbstyleoptionprogressbar_p.h"
 
 
 /*!

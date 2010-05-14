@@ -26,7 +26,7 @@
 #include <QtAlgorithms>
 
 #include <hbinputdef.h>
-#include <hblistdialog.h>
+#include <hbselectiondialog.h>
 #include <hblistwidgetitem.h>
 #include <hbinpututils.h>
 #include <hbinputsettingproxy.h>
@@ -51,7 +51,7 @@ Displays language selection dialog and returns selected language.
 */
 HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Language selectedLanguage, const QList<HbInputLanguage> languageList)
 {
-    HbListDialog* langDialog = new HbListDialog();
+    HbSelectionDialog* langDialog = new HbSelectionDialog();
     langDialog->setObjectName("Language dialog");
 
 #if QT_VERSION >= 0x040600
@@ -80,7 +80,7 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
         item = new HbListWidgetItem();
         item->setText(langName);
         if (language == currentLang ) {
-            QList<int> selected;
+            QList<QVariant> selected;
             selected.append(listItems.count());
             langDialog->setSelectedItems(selected);
         }
@@ -96,11 +96,11 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
     langDialog->setSelectionMode(HbAbstractItemView::SingleSelection);
     langDialog->setDismissPolicy(HbPopup::NoDismiss);
     langDialog->setModal(true);
-    langDialog->exec();
+    //langDialog->exec(); TODO
     //TODO: needed to check from action which button was pressed (ok, cancel)
     //HbAction* action = langDialog->exec();
     if (langDialog->selectedItems().count()) {
-        int selection = langDialog->selectedItems().at(0);
+        int selection = langDialog->selectedItems().at(0).toInt();
         HbInputLanguage result;
         if(languages.at(selection).language() == QLocale::Chinese) {
             result = languages.at(selection);
@@ -122,7 +122,7 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
 {
     Q_UNUSED(language);
 
-    HbListDialog* methodDialog = new HbListDialog();
+    HbSelectionDialog* methodDialog = new HbSelectionDialog();
     methodDialog->setObjectName("Input method dialog");
 
 #if QT_VERSION >= 0x040600
@@ -153,13 +153,13 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
     methodDialog->setSelectionMode(HbAbstractItemView::SingleSelection);
     methodDialog->setDismissPolicy(HbPopup::NoDismiss);
     methodDialog->setModal(true);
-    methodDialog->exec();
+    //methodDialog->exec(); TODO
     //TODO: needed to check from action which button was pressed (ok, cancel)
     //HbAction* action = langDialog->exec();
 
     HbInputMethodDescriptor result;
     if (methodDialog->selectedItems().count()) {
-        int selection = methodDialog->selectedItems().first();
+        int selection = methodDialog->selectedItems().first().toInt();
         if (selection == 0) {
            result.setDefault();
         } else {

@@ -154,6 +154,13 @@ public:
        mOffset = offset;
     }
 
+	// This function is here for being able to modify offset when
+	// cells in shared memory are moved.
+	difference_type *offsetPtr()
+	{
+		return &mOffset;
+	}
+
     HbMemoryManager::MemoryType memoryType() const
     {
         return mType;

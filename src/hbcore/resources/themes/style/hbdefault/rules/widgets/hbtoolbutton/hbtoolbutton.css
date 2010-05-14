@@ -54,6 +54,7 @@ HbToolBar > HbToolButton[orientation="1"]::text {
 
 HbToolButton[toolbutton_extension_layout]{
     fixed-width:expr(1/3*var(hb-param-screen-short-edge)-var(hb-param-margin-gene-popup-list)-var(hb-param-margin-gene-popup-list));
+    min-height:var(hb-param-widget-toolbar-height);
 }
 
 HbToolButton::text{
@@ -110,25 +111,6 @@ HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::text{
     text-height:var(hb-param-text-height-tiny);
     text-align:center center;
     text-line-count-max: 1;
-}
-
-HbSoftKey > HbToolButton[toolButtonStyle="1"]::icon{
-    left:-1.0un;
-    right:1.0un;
-    top:-1.0un;
-    bottom:1.0un;
-}
-HbSoftKey > HbToolButton::background{
-    left:0un;
-    right:0un;
-    top:0un;
-    bottom:0un;
-}
-HbSoftKey > HbToolButton::icon{
-    left:-1.5un;
-    right:1.5un;
-    top:-1.5un;
-    bottom:1.5un;
 }
 
 HbToolButton[dialogtoolbar]{

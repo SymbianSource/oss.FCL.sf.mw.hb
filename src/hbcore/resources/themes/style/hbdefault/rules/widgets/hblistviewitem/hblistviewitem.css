@@ -122,16 +122,26 @@ HbListViewItem::text-1{
 	font-variant: primary;
 	pref-width:-1;
 	text-align: left;
+	size-policy-horizontal: ignored;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
 }
 
 HbListViewItem::text-1[modelItemType="StandardItem"][stretchingStyle="StretchLandscape"]:landscape{
 	pref-width: 30.0un;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
 }
 
 HbListViewItem::text-1[modelItemType="SeparatorItem"]{
 	text-height: var(hb-param-text-height-secondary);
 	font-variant: secondary;
 	text-align: right;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
 }
 
 HbListViewItem::text-2{
@@ -139,10 +149,17 @@ HbListViewItem::text-2{
 	font-variant: secondary;
 	pref-width:-1;
 	text-align: left top;
+	size-policy-horizontal: ignored;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
 }
 
  HbListViewItem::text-2[stretchingStyle="StretchLandscape"]:landscape{
  	pref-width: 30.0un;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
  }
 
 HbListViewItem::text-3{
@@ -150,6 +167,9 @@ HbListViewItem::text-3{
 	fixed-width: 18.0un;
 	font-variant: secondary;
 	text-align: right;
+	text-line-count-min:1;
+	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
 }
 
 HbListViewItem::frame{
@@ -165,6 +185,9 @@ HbListViewItem::text-2[modelItemType="SeparatorItem"]{
 	minimum-width: 0.0un;
 	fixed-height: 0.0un;
 	fixed-width: 0.0un;
+        text-line-count-min: 1;
+        text-line-count-max: 1;
+        text-wrap-mode: no-wrap;
 }
 
 HbListViewItem::text-3[modelItemType="SeparatorItem"]{
@@ -172,6 +195,9 @@ HbListViewItem::text-3[modelItemType="SeparatorItem"]{
 	minimum-width: 0.0un;
 	fixed-height: 0.0un;
 	fixed-width: 0.0un;
+        text-line-count-min: 1;
+        text-line-count-max: 1;
+        text-wrap-mode: no-wrap;
 }
 
 HbListViewItem::icon-1[modelItemType="SeparatorItem"]{

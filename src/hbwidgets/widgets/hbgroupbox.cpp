@@ -23,12 +23,12 @@
 **
 ****************************************************************************/
 
-#include <hbgroupbox.h>
+#include "hbgroupbox.h"
 #include "hbgroupbox_p.h"
 #include "hbgroupboxheadingwidget_p.h"
 #include "hbgroupboxcontentwidget_p.h"
 #include <hbstyle.h>
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
@@ -51,7 +51,8 @@ QT_END_NAMESPACE
 HbGroupBoxPrivate::HbGroupBoxPrivate()
     :HbWidgetPrivate(),
     mContentWidget( 0 ),
-    mHeadingWidget( 0 )
+    mHeadingWidget( 0 ),
+    mGroupBoxType( GroupBoxTypeUnknown )
 {
 }
 
@@ -107,7 +108,7 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
         case GroupBoxSimpleLabel:
             {
             if(mHeadingWidget){
-				mHeadingWidget->setType(type);				
+                mHeadingWidget->setType(type);				
                 mHeadingWidget->setVisible(true);
              
             }else{
@@ -128,7 +129,7 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
 
             }
             if(mContentWidget){
-				mContentWidget->setType(type);
+                mContentWidget->setType(type);
                 mContentWidget->setVisible(true);
                 HbStyle::setItemName( mContentWidget , "contentwidget");
             }else{
@@ -140,7 +141,7 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
         case GroupBoxCollapsingContainer:
             {
             if((mHeadingWidget)){
-				mHeadingWidget->setType(type);
+                mHeadingWidget->setType(type);
                 mHeadingWidget->setVisible(true);                
             }else{
                 createHeadingWidget();
@@ -151,9 +152,9 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
                 if(!q->isCollapsed()){
                     mContentWidget->setVisible(true);
                     HbStyle::setItemName( mContentWidget , "contentwidget");
-				}else{
-					mContentWidget->setVisible(false);
-					HbStyle::setItemName( mContentWidget , "");
+                }else{
+                    mContentWidget->setVisible(false);
+                    HbStyle::setItemName( mContentWidget , "");
                 }
             }else{
                 createContentWidget();
@@ -280,19 +281,6 @@ HbGroupBox::HbGroupBox( QGraphicsItem *parent)
 {
     Q_D( HbGroupBox );
     d->q_ptr = this;
-}
-
-/*! Constructs a group box with the given \a title and \a parent.
-
-    \deprecated HbGroupBox::HbGroupBox(const QString&, QGraphicsItem*)
-        is deprecated.This version of overloaded constructor is deprecated and cease to exist in the near future    
- */
-HbGroupBox::HbGroupBox(const QString &titleText, QGraphicsItem *parent )
-    : HbWidget(*new HbGroupBoxPrivate, parent)
-{
-    Q_UNUSED(titleText);
-    Q_UNUSED(parent);
-    qDebug() << "this version of constructor is deprecated and will cease to exist in the near future."; 
 }
 
 /*!
@@ -585,7 +573,7 @@ HbWidget* HbGroupBox::contentWidget( ) const
     Q_D( const HbGroupBox );
     if(d->mContentWidget && d->mGroupBoxType != GroupBoxSimpleLabel)
         return d->mContentWidget->mContent; 
-    return NULL;
+    return 0;
 }
 
 /*!
@@ -613,9 +601,9 @@ QGraphicsItem* HbGroupBox::primitive(HbStyle::Primitive primitive) const
                 return d->mContentWidget->primitive(primitive);
             break;
         default:
-            return NULL;
+            return 0;
     }
-    return NULL;	
+    return 0;	
 }
 
 /*!
@@ -630,124 +618,6 @@ void HbGroupBox::updatePrimitives()
 
     if(d->mContentWidget)
         d->mContentWidget->updatePrimitives();
-}
-
-/*! 
-    Sets the group box title text
-
-    There is no default title text.
-
-    Note: titletext property is valid for simpleLabel & collapsing container type
-    If titletext is set on richLabel type groupBox, it will be ignored
-
-    \deprecated HbGroupBox::setTitleText(const QString&)
-        is deprecated.Please use HbGroupBox::setHeading(const QString&) instead
-
-    \sa titleText
-*/
-void HbGroupBox::setTitleText( const QString &text )
-{
-    qDebug() << "This API is deprecated, please use HbGroupBox::setHeading( const QString &text ) instead.";
-    setHeading(text);  
-}
-
-/*! 
-    Returns title text shown on group box
-
-    Note: If the groupBox type is RichLabel, then this will return NULL string
-
-    \deprecated HbGroupBox::titleText() const
-        is deprecated. Please use HbGroupBox::heading() const instead
-
-    \sa setTitleText 
-*/
-QString HbGroupBox::titleText( ) const
-{
-    qDebug() << "This API is deprecated, please use HbGroupBox::heading( ) instead.";
-    return heading();
-}
-
-/*! 
-    Sets the group box title widget
-
-    There is no default title widget.
-
-    Note: 1)if user set title text after this  \li setTitleText then,title widget will be set to null .
-     Either title text or title widget can be set, both cant se set.
-     2) GroupBox takes ownership of titlewidget and deletes the old title widget
-
-     \deprecated HbGroupBox::setTitleWidget(HbWidget*) 
-        is deprecated. TitleWidget concept is removed. GroupBox nomore supports widget in the heading part
-
-     \sa setTitleText \sa titleWidget
- */
-void HbGroupBox::setTitleWidget( HbWidget* widget )
-{
-   Q_UNUSED(widget);
-   qDebug() << "This API is deprecated and will cease to exist in the near future.";
-}
-
-/*! 
-    Returns group box title widget
-
-    There is no default title widget.
-
-    Note: If title text is set, then this will return HbLabel
-
-    \deprecated HbGroupBox::titleWidget() const
-        is deprecated. TitleWidget concept is removed. GroupBox nomore supports widget in the heading part
-
-    \sa setTitleWidget
- */
-HbWidget* HbGroupBox::titleWidget( ) const
-{
-    qDebug() << "This API is deprecated and will cease to exist in the near future.";
-    return NULL;
-}
-
-/*! 
-    Returns the alignment of the group box title.
-
-    The default alignment is Qt::AlignLeft.
-
-    \deprecated HbGroupBox::textAlignment() const
-        is deprecated. GroupBox heading will always be left aligned
-
-    \sa Qt::Alignment
- */
-Qt::Alignment HbGroupBox::textAlignment() const
-{
-    qDebug() << "This API is deprecated and will cease to exist in the near future.";
-    return NULL;
-}
-
-/*! 
-    Sets the alignment of the group box title.
-
-    Most styles place the title at the top of the frame. The horizontal
-    alignment of the title can be specified using single values from
-    the following list:
-
-    \list
-    \i Qt::AlignLeft aligns the title text on the left-hand side .
-    \i Qt::AlignRight aligns the title text on the right-hand side .
-    \i Qt::AlignHCenter aligns the title text with the horizontal center of the group box.
-    \endlist
-
-    The default alignment is Qt::AlignLeft.
-
-    Note: This API will not work if heading is set as widget \li setTitleWidget
-    This alignment is only of heading text \li setTitleText
-
-    \deprecated HbGroupBox::setTextAlignment(QFlags<Qt::AlignmentFlag>)
-        is deprecated. GroupBox heading will always be left aligned.
-
-    \sa Qt::Alignment
- */
-void HbGroupBox::setTextAlignment(Qt::Alignment alignment)
-{
-    Q_UNUSED(alignment);
-    qDebug() << "This API is deprecated and will cease to exist in the near future.";
 }
 
 #include "moc_hbgroupbox.cpp"

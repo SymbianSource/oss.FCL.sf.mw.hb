@@ -39,8 +39,6 @@
 #include "hbmainwindow_p.h"
 #include "hbnamespace.h"
 #include "hbnamespace_p.h"
-#include "hbsoftkey_p.h"
-#include "hbsoftkeygroup_p.h"
 #include "hbtitlebar_p.h"
 #include "hbstatusbar_p.h"
 #include "hbstyle.h"
@@ -61,6 +59,7 @@
 #include "hbscreen_p.h"
 #include "hbmainwindoworientation_p.h"
 #include "hbfeaturemanager_p.h"
+#include "hboogmwatcher_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <coecntrl.h>
@@ -68,7 +67,7 @@
 #endif
 
 /*!
-    @beta
+    @stable
     @hbcore
     \class HbMainWindow
 
@@ -140,15 +139,6 @@
     \fn void HbMainWindow::orientationChanged()
 
     This signal is emitted when animation related to orientation change has completed.
- */
-
-/*!
-    \deprecated HbMainWindow::currentViewIndexChanged(int)
-        is deprecated.
-
-    \fn void HbMainWindow::currentViewIndexChanged(int index)
-
-    This signal is emitted when the current view index changes.
  */
 
 /*!
@@ -267,6 +257,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 #if defined(Q_WS_S60) || defined(HB_Q_WS_MAEMO)
     setWindowState(Qt::WindowFullScreen);
 #endif//Q_WS_S60
+
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setFrameShape(QFrame::NoFrame);
@@ -300,7 +291,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     d->mEffectItem = d->mViewStackWidget;
     d->mClippingItem->setStackWidget(d->mViewStackWidget);
     connect(d->mViewStackWidget, SIGNAL(currentChanged(int)),
-            this, SLOT(_q_viewChanged(int)));
+            this, SLOT(_q_viewChanged()));
     connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget*)),
             this, SLOT(_q_viewRemoved(QGraphicsWidget*)));
 
@@ -320,14 +311,18 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 	d->mLayoutRect = rect;
     d->mRootItem->setGeometry(rect);
     d->mClippingItem->setGeometry(rect);
-
     setSceneRect(0, 0, pSize.width(), pSize.height());
-
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 
-    // Rest of the initialization is done later, see paintEvent().
-    
-    
+    // Initialize common translations. This must be done before
+    // creating any widget that can potentially use localized strings
+    // and therefore cannot be delayed.
+    d->initTranslations();
+
+    // Make sure the oogm watcher is initialized (so that wserv events
+    // are routed to it properly).
+    HbOogmWatcher::instance();
+
 #ifdef HB_GESTURE_FW
     // @todo remove after view auto-subscribes to gestures
     viewport()->grabGesture(Qt::TapGesture);
@@ -336,6 +331,9 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     viewport()->grabGesture(Qt::SwipeGesture);
     viewport()->grabGesture(Qt::PinchGesture);
 #endif
+
+
+    // Rest of the initialization is done later, see paintEvent().
 
 }
 
@@ -361,6 +359,7 @@ HbMainWindow::~HbMainWindow()
 
     HbInstancePrivate::d_ptr()->removeWindow(this);
     delete d_ptr;
+
     // to workaround problem when creating/destroying multiple hbmainwindow's in unit tests (win env)
     #ifdef Q_OS_WIN
         destroy();
@@ -480,23 +479,6 @@ void HbMainWindow::removeView(QGraphicsWidget *widget)
 }
 
 /*!
-    \deprecated HbMainWindow::removeView(int)
-        is deprecated. Use HbMainWindow::removeView(QGraphicsWidget *widget) instead!
-
-    Removes a view from a given \a index from the HbMainWindow object. The view is not deleted but returned to caller.
-
-    \return the removed widget.
-
-    \sa addView insertView
-*/
-QGraphicsWidget *HbMainWindow::removeView(int index)
-{
-    HB_DEPRECATED("HbMainWindow::removeView is deprecated. Use HbMainWindow::removeView(QGraphicsWidget *widget) instead!");
-    Q_D(HbMainWindow);
-    return d->mViewStackWidget->removeAt(index);
-}
-
-/*!
     Returns the current view of the HbMainWindow object.
     \return pointer to the current view object, or 0 if undefined.
 
@@ -556,71 +538,6 @@ void HbMainWindow::setCurrentView(HbView *view, bool animate, Hb::ViewSwitchFlag
                 QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
         }
     }
-}
-
-
-/*!
-    \deprecated HbMainWindow::currentViewIndex() const
-        is deprecated. Use HbMainWindow::currentView() instead!
-
-    Returns the current index of the HbMainWindow object.
-    \return current index, or -1 if undefined.
-
-    \sa setCurrentViewIndex setCurrentView currentView
-*/
-int HbMainWindow::currentViewIndex() const
-{
-    HB_DEPRECATED("HbMainWindow::currentViewIndex is deprecated. Use HbMainWindow::currentView() instead!");
-    Q_D(const HbMainWindow);
-    return d->mViewStackWidget->currentIndex();
-}
-
-/*!
-    \deprecated HbMainWindow::viewCount() const
-          is deprecated. Use HbMainWindow::views().count() instead!
-
-    Returns the count of view objects of the HbMainWindow object.
-    \return view object count.
-
-    \sa addView insertView
-*/
-int HbMainWindow::viewCount() const
-{
-    HB_DEPRECATED("HbMainWindow::viewCount is deprecated. Use HbMainWindow::views().count() instead!");
-    Q_D(const HbMainWindow);
-    return d->mViewStackWidget->count();
-}
-
-/*!
-   \deprecated HbMainWindow::indexOfView(HbView*) const
-        is deprecated. Use HbMainWindow::views().indexOf(view) instead!
-
-    Returns the index for a given \a view object of the HbMainWindow object.
-    \return index of a view object.
-
-    \sa currentViewIndex currentView
-*/
-int HbMainWindow::indexOfView(HbView *view) const
-{
-    HB_DEPRECATED("HbMainWindow::indexOfView is deprecated. Use HbMainWindow::views().indexOf(view) instead!");
-    Q_D(const HbMainWindow);
-    return d->mViewStackWidget->indexOf(view);
-}
-
-/*!
-    \deprecated HbMainWindow::viewAt(int) const
-        is deprecated. Use HbMainWindow::views() instead!
-
-    Returns \a view object for a given \a index of the HbMainWindow object.
-    \return view object.
-
-    \sa currentViewIndex currentView indexOfView
-*/
-HbView *HbMainWindow::viewAt(int index) const
-{
-    HB_DEPRECATED("HbMainWindow::viewAt is deprecated. Use HbMainWindow::views() instead!");
-    Q_D(const HbMainWindow);
-    return qobject_cast<HbView *>(d->mViewStackWidget->widgetAt(index));
 }
 
 /*!
@@ -692,92 +609,6 @@ void HbMainWindow::unsetOrientation(bool animate)
 }
 
 /*!
-  \deprecated HbMainWindow::showItems(QFlags<Hb::SceneItem>)
-        is deprecated. Use HbView::showItems instead.
-
-    Sets \a items to be visible in main window.
-
-    \sa isItemVisible() setItemVisible() hideItems() visibleItems()
-*/
-void HbMainWindow::showItems(Hb::SceneItems items)
-{
-    HB_DEPRECATED("HbMainWindow::showItems is deprecated! Use HbView::showItems instead.");
-    Q_D(HbMainWindow);
-    if (d->mVisibleItems ^ items) {
-        d->mVisibleItems |= items;
-        d->updateVisibleItems();
-    }
-}
-
-/*!
-    \deprecated HbMainWindow::hideItems(QFlags<Hb::SceneItem>)
-        is deprecated. Use HbView::hideItems instead.
-
-    Sets \a items to be invisible in main window.
-
-    \sa isItemVisible() setItemVisible() showItems() visibleItems()
-*/
-void HbMainWindow::hideItems(Hb::SceneItems items)
-{
-    HB_DEPRECATED("HbMainWindow::hideItems is deprecated! Use HbView::hideItems instead.");
-    Q_D(HbMainWindow);
-    if (d->mVisibleItems & items) {
-        d->mVisibleItems &= ~items;
-        d->updateVisibleItems();
-    }
-}
-
-/*!
-    \deprecated HbMainWindow::visibleItems() const
-        is deprecated. Use HbView::visibleItems instead.
-
-    Returns visible items.
-
-    \sa isItemVisible() setItemVisible() hideItems() showItems()
-
-*/
-Hb::SceneItems HbMainWindow::visibleItems() const
-{
-    HB_DEPRECATED("HbMainWindow::visibleItems is deprecated! Use HbView::visibleItems instead.");
-    Q_D(const HbMainWindow);
-    return d->mVisibleItems;
-}
-
-/*!
-    \deprecated HbMainWindow::isItemVisible(Hb::SceneItem) const
-        is deprecated. Use HbView::isItemVisible instead.
-
-    Returns \c true if \a item is set to be visible.
-
-    \sa setItemVisible() hideItems() showItems() visibleItems()
-
-*/
-bool HbMainWindow::isItemVisible(Hb::SceneItem item) const
-{
-    HB_DEPRECATED("HbMainWindow::isItemVisible is deprecated! Use HbView::isItemVisible instead.");
-    Q_D(const HbMainWindow);
-    return d->mVisibleItems & item;
-}
-
-/*!
-    \deprecated HbMainWindow::setItemVisible(Hb::SceneItem, bool) 
-        is deprecated. Use HbView::setItemVisible instead.
-
-    Sets \a item to be \a visible in main window.
-
-    \sa isItemVisible() hideItems() showItems() visibleItems()
-*/
-void HbMainWindow::setItemVisible(Hb::SceneItem item, bool visible)
-{
-    HB_DEPRECATED("HbMainWindow::setItemVisible is deprecated! Use HbView::setItemVisible instead.");
-    if (visible) {
-        showItems(item);
-    } else {
-        hideItems(item);
-    }
-}
-
-/*!
     Returns empty drawable window.
 
     Returned window is inherited from CCoeControl in Symbian platform
@@ -839,53 +670,6 @@ QRectF HbMainWindow::layoutRect() const
     Q_D(const HbMainWindow);
 	return d->mLayoutRect;
 }
-/*!
-    \deprecated HbMainWindow::setCurrentViewIndex(int)
-        is deprecated. Use setCurrentView() instead.
-
-    Sets the current view from a given \a index of the HbMainWindow object.
-
-    \sa currentView currentViewIndex setCurrentView
-*/
-void HbMainWindow::setCurrentViewIndex(int index)
-{
-    HB_DEPRECATED("HbMainWindow::setCurrentViewIndex is deprecated! Use setCurrentView() instead.");
-    Q_D(HbMainWindow);
-    QGraphicsWidget *widget = d->mViewStackWidget->widgetAt(index);
-    setCurrentView(qobject_cast<HbView*>(widget));
-}
-
-/*!
-    \deprecated HbMainWindow::nextView()
-        is deprecated. Use setCurrentView() instead.
-
-    Switches to next view (view with bigger index). 
-    If current view is last view it does nothing.
- */
-void HbMainWindow::nextView()
-{
-    HB_DEPRECATED("HbMainWindow::nextView is deprecated! Use setCurrentView() instead.");
-    int index = currentViewIndex()+1;
-    if( index<viewCount() ) {
-        setCurrentViewIndex(index);
-    }
-}
-
-/*!
-    \deprecated  HbMainWindow::previousView()
-        is deprecated. Use setCurrentView() instead.
-
-    Switches to previous view (view with smaller index). 
-    If current view is first view it does nothing.
- */
-void HbMainWindow::previousView()
-{
-    HB_DEPRECATED("HbMainWindow::previousView is deprecated! Use setCurrentView() instead.");
-    int index = currentViewIndex()-1;
-    if( index>=0 ) {
-        setCurrentViewIndex(index);
-    }
-}
 
 /*!
   Sets the \a name for the background image for the given \a orientation.  If
@@ -912,6 +696,31 @@ QString HbMainWindow::backgroundImageName(Qt::Orientation orientation) const
 {
     Q_D(const HbMainWindow);
     return d->mBgItem ? d->mBgItem->imageName(orientation) : QString();
+}
+
+/*!
+  Sets the animations enabled when the orientation is changed automatically.
+  By default animations are enabled.
+  
+  \sa automaticOrientationEffectEnabled()
+ */
+
+void HbMainWindow::setAutomaticOrientationEffectEnabled(bool enabled)
+{
+    Q_D(HbMainWindow);
+    d->mAutomaticOrientationChangeAnimation = enabled;
+}
+
+/*!
+  Returns boolean value to signify whether animations enabled/disabled during 
+  automatic orientation change. By default animations are enabled.
+
+  \sa setAutomaticOrientationEffectEnabled()
+ */
+bool HbMainWindow::automaticOrientationEffectEnabled() const
+{
+    Q_D(const HbMainWindow);
+    return d->mAutomaticOrientationChangeAnimation;
 }
 
 /*!

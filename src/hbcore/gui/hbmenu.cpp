@@ -129,7 +129,7 @@ void HbMenuPrivate::createMenuView()
 {
     Q_Q(HbMenu);
     if (!menuItemView && q->actions().count()){
-        menuItemView = new HbMenuListView(q, q);
+        menuItemView = new HbMenuListView(q, q);        
         HbStyle::setItemName(menuItemView, "content");
         //This optimises case of options menu which otherwise updates its primitives twice.
         if (menuType ==  HbMenu::OptionsMenu)
@@ -190,10 +190,10 @@ void HbMenuPrivate::actionAdded(QActionEvent *actionEvent)
 {
     if (delayMenuConstruction)
         return;
-    if (actionEvent->action()->isVisible()){
-        Q_Q(HbMenu);
-        createMenuView();
-        QObject::connect(actionEvent->action(), SIGNAL(triggered()), q, SLOT(_q_onActionTriggered()));
+    Q_Q(HbMenu);
+    QObject::connect(actionEvent->action(), SIGNAL(triggered()), q, SLOT(_q_onActionTriggered()));
+    if (actionEvent->action()->isVisible()){        
+        createMenuView();        
         menuItemView->addActionItem(actionEvent->action());
     }
 }
@@ -255,9 +255,9 @@ void HbMenuPrivate::openSubmenu(HbMenuItem *activeItem)
     if (!activeItem) {
         activeAction(activeItem);
     }
-
     if (activeItem && activeItem->action() && activeItem->action()->isEnabled()) {
         HbAction *hbAction = qobject_cast<HbAction *>(activeItem->action());
+        q->setActiveAction(hbAction);
         if (!hbAction)
             return;
         HbMenu *subMenu = hbAction->menu();
@@ -284,7 +284,10 @@ void HbMenuPrivate::_q_subMenuTimedOut()
         if ( activeSubMenu ) {
             activeSubMenu->disconnect();
         }
+        timedOut = true;
         q->close();
+    } else {
+        startTimeout();
     }
 }
 
@@ -304,7 +307,7 @@ void HbMenuPrivate::_q_handleMenuAfterOrientationChange()
 }
 
 /*!
-* closes the menu after Orientation change
+ closes the menu after Orientation change
 */
 void HbMenuPrivate::closeMenuAfterOrientationChange()
 {
@@ -518,100 +521,6 @@ HbMenu::~HbMenu()
     }
 }
 
-/*!
- \deprecated HbMenu::exec(HbAction*)
-         is deprecated. Please use
-  void HbMenu::open( QObject *receiver, const char *member ) or 
-  HbMenu::show() instead.
-
-    Executes the menu synchronously so that given \a action
-    is active.
-
-    \param action is the action that is active when the menu is shown.
-
-    Example usage:
-    \code
-    void MyGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
-    {
-        HbMenu menu();
-        menu.addAction(...);
-        ...
-        menu.setPreferredPos(event->scenePos(), HbPopup::BottomEdgeCenter);
-        menu.exec();
-    }
-    \endcode
-
-    \return the triggered HbAction in either the popup menu or one
-    of its sub-menus, or 0 if no item was triggered (normally because
-    the user closed or cancelled the menu).
- */
-HbAction *HbMenu::exec(HbAction *action)
-{
-    HB_DEPRECATED("HbMenu::exec is deprecated. Use HbMenu::show() or HbMenu::open() instead!");
-    Q_D(HbMenu);
-    if (actions().count() == 0) {
-        return 0;
-    }
-
-    if(!action)
-        action = qobject_cast<HbAction*>(actions().first());
-
-    setActiveAction(action);
-
-    // Reset state variables
-    d->resultAction = 0;
-    d->actionTriggered = false;
-
-    if (d->menuType == SubMenu && d->polished) {
-        d->setSubMenuPosition();
-    }
-    QPointer<HbMenu> menuAlive(this);
-    HbPopup::exec();
-
-    // HbMenu can be deleted while exec
-    if (menuAlive) {
-        return d->resultAction;
-    } else {
-        return 0;
-    }
-}
-
-/*!
-  \deprecated HbMenu::exec(const QPointF&, HbAction*)
-     is deprecated. Please use
-  void HbMenu::open( QObject *receiver, const char *member ) or 
-  HbMenu::show() and setPreferredPos() instead.
-
-    Executes the menu synchronously at \a pos so that given \a action
-    is active.
-
-    \param pos is the position at which the menu is shown.
-    \param action is the action that is active when the menu is shown.
-
-    Example usage:
-    \code
-    void MyGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
-    {
-        HbMenu menu();
-        menu.addAction(...);
-        ...
-        menu.exec(event->scenePos());
-    }
-    \endcode
-
-    \return the triggered HbAction in either the popup menu or one
-    of its sub-menus, or 0 if no item was triggered (normally because
-    the user closed or cancelled the menu).
- */
-HbAction *HbMenu::exec(const QPointF &pos, HbAction *action )
-{
-    Q_D(HbMenu);
-    if (d->menuType == ContextMenu) {
-        setPreferredPos(pos);
-    }
-    return exec(action);
-}
-
 void HbMenu::showEvent(QShowEvent *event)
 {
     Q_UNUSED(event);
@@ -722,8 +631,8 @@ HbAction *HbMenu::insertSeparator(HbAction *before)
 {
     HbAction *action = new HbAction(this);
     action->setSeparator(true);
-    action->setEnabled(false);
-    action->setVisible(false);
+    action->setEnabled(true);
+    action->setVisible(true);
     insertAction(before, action);
     return action;
 }
@@ -837,10 +746,7 @@ bool HbMenu::event(QEvent *event)
             return true;
         }
     }
-    if (event->type() == QEvent::LayoutRequest) {
-        if(d->menuItemView)
-            d->menuItemView->contentWidget()->adjustSize();
-    } else if (event->type() == QEvent::GraphicsSceneResize){
+    if (event->type() == QEvent::GraphicsSceneResize){
         if (d->mSubMenuItem)
             d->setSubMenuPosition();
     }
@@ -873,6 +779,7 @@ void HbMenu::polish(HbStyleParameters &params)
 
 QPainterPath HbMenu::shape() const
 {
+    /*
     QRectF sceneRect = mapRectToScene(QRectF(-0.5, -0.5, boundingRect().width() + 0.5, boundingRect().height() + 0.5));
     QRectF clipRect = sceneRect.intersected(QRectF(pos().x() - 0.5, pos().y() - 0.5, size().width() + 0.5, size().height() + 0.5));
 
@@ -880,11 +787,23 @@ QPainterPath HbMenu::shape() const
     path.addRect(mapRectFromScene(clipRect));
 
     return path.intersected(HbPopup::shape());
+    */
+    
+    return HbPopup::shape();
 }
 
-/*!  @alpha
- *
- * Opens the menu and returns immediately.
+/*!
+ 
+  Opens the menu and returns immediately.
+ 
+  Connects triggered(HbAction*) signal to the slot specified by \a
+  receiver and \a member. The signal will be disconnected when menu
+  is closed.
+ 
+   An example of how to create a simple context menu and show it
+   \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,54}
+ 
+ 
  */
 void HbMenu::open( QObject *receiver, const char *member )
 {

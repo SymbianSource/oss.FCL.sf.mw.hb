@@ -29,15 +29,10 @@ DEPENDPATH += $$PWD
 
 PRIVATE_HEADERS += $$PWD/hbbatteryindicator_p.h
 PRIVATE_HEADERS += $$PWD/hbbatteryindicator_p_p.h
-PRIVATE_HEADERS += $$PWD/hbdecorator_p.h
-PRIVATE_HEADERS += $$PWD/hbdecorator_p_p.h
 PRIVATE_HEADERS += $$PWD/hbindicatorgroup_p.h
 PRIVATE_HEADERS += $$PWD/hbindicatorgroup_p_p.h
 PRIVATE_HEADERS += $$PWD/hbsignalindicator_p.h
 PRIVATE_HEADERS += $$PWD/hbsignalindicator_p_p.h
-PRIVATE_HEADERS += $$PWD/hbsoftkey_p.h
-PRIVATE_HEADERS += $$PWD/hbsoftkey_p_p.h
-PRIVATE_HEADERS += $$PWD/hbsoftkeygroup_p.h
 PRIVATE_HEADERS += $$PWD/hbstatusbar_p.h
 PRIVATE_HEADERS += $$PWD/hbstatusbar_p_p.h
 PRIVATE_HEADERS += $$PWD/hbtitlebar_p.h
@@ -45,7 +40,7 @@ PRIVATE_HEADERS += $$PWD/hbtitlebar_p_p.h
 PRIVATE_HEADERS += $$PWD/hbtitlebarhandle_p.h
 PRIVATE_HEADERS += $$PWD/hbtitlepane_p.h
 PRIVATE_HEADERS += $$PWD/hbtitlepane_p_p.h
-PRIVATE_HEADERS += $$PWD/hbsysteminfo_p.h
+
 PRIVATE_HEADERS += $$PWD/hbnavigationbutton_p.h
 PRIVATE_HEADERS += $$PWD/hbnavigationbutton_p_p.h
 PRIVATE_HEADERS += $$PWD/hbindicatorbutton_p.h
@@ -53,59 +48,13 @@ PRIVATE_HEADERS += $$PWD/hbindicatorbutton_p_p.h
 PRIVATE_HEADERS += $$PWD/hbindicatorleveliconitem_p.h
 
 SOURCES += $$PWD/hbbatteryindicator.cpp
-SOURCES += $$PWD/hbdecorator.cpp
 SOURCES += $$PWD/hbindicatorgroup.cpp
 SOURCES += $$PWD/hbsignalindicator.cpp
-SOURCES += $$PWD/hbsoftkey.cpp
-SOURCES += $$PWD/hbsoftkeygroup.cpp
 SOURCES += $$PWD/hbstatusbar.cpp
 SOURCES += $$PWD/hbtitlebar.cpp
 SOURCES += $$PWD/hbtitlebarhandle.cpp
 SOURCES += $$PWD/hbtitlepane.cpp
-SOURCES += $$PWD/hbsysteminfo.cpp
+
 SOURCES += $$PWD/hbnavigationbutton.cpp
 SOURCES += $$PWD/hbindicatorbutton.cpp
 SOURCES += $$PWD/hbindicatorleveliconitem.cpp
-
-symbian {
-PRIVATE_HEADERS += $$PWD/hbsysteminfo_sym_p_p.h
-PRIVATE_HEADERS += $$PWD/hbbatterymonitor_sym_p.h
-PRIVATE_HEADERS += $$PWD/hbnetworksignalmonitor_sym_p.h
-PRIVATE_HEADERS += $$PWD/hbindicatormonitor_sym_p.h
-PRIVATE_HEADERS += $$PWD/hbnetworkmodemonitor_sym_p.h
-SOURCES += $$PWD/hbsysteminfo_sym.cpp
-SOURCES += $$PWD/hbbatterymonitor_sym.cpp
-SOURCES += $$PWD/hbnetworksignalmonitor_sym.cpp
-SOURCES += $$PWD/hbindicatormonitor_sym.cpp
-SOURCES += $$PWD/hbnetworkmodemonitor_sym.cpp
-
-LIBS += -letel3rdparty \
-    -lsysutil \
-    -lefsrv \
-    -lfeatdiscovery \
-    -letelmm \
-    -letel
-}
-
-win32* {
-PRIVATE_HEADERS += $$PWD/hbsysteminfo_win_p_p.h
-PRIVATE_HEADERS += $$PWD/hbwmihelper_win_p.h
-SOURCES += $$PWD/hbsysteminfo_win.cpp
-SOURCES += $$PWD/hbwmihelper_win.cpp
-
-!win32-g++ {
-LIBS += Ole32.lib \
-        Strmiids.lib \
-        Bthprops.lib \
-        User32.lib \
-        Gdi32.lib \
-        Ws2_32.lib \
-        Wbemuuid.lib \
-        Oleaut32.lib 
-}
-}
-
-unix:!symbian {
-PRIVATE_HEADERS += $$PWD/hbsysteminfo_linux_p_p.h
-SOURCES += $$PWD/hbsysteminfo_linux.cpp
-}

@@ -27,7 +27,7 @@
 #include "hblistview.h"
 
 #include "hblistviewitem.h"
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
 #include <hbpangesture.h>
@@ -110,7 +110,7 @@ void HbListViewPrivate::moveDraggedItemTo(const QPointF &mousePosition)
         }
 
         if (targetIndex.isValid()) {
-            // now drop
+            // reached a droppable spot
             HbWidgetFeedback::triggered(mDraggedItem,Hb::InstantDraggedOver);
 
             QPointF itemPos = itemBoundingRect(mDraggedItem).topLeft();
@@ -237,6 +237,8 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
         case Qt::GestureFinished: 
 		case Qt::GestureCanceled: {
             if (arrangeModeEnabled && mDraggedItem) {
+                // drop dragged item
+                HbWidgetFeedback::triggered(mDraggedItem,Hb::InstantReleased);
                 QObject::disconnect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(scrolling(QPointF)));
 
                 if (q->isScrolling()) {

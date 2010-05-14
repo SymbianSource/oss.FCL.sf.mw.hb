@@ -26,14 +26,11 @@
 #include "hbtreeitemcontainer_p.h"
 #include "hbtreeitemcontainer_p_p.h"
 #include "hbtreelayout_p.h"
-#include "hbabstractitemcontainer_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 #include "hbabstractitemview.h"
 #include "hbtreeviewitem.h"
 #include "hbapplication.h"
 #include "hbmodeliterator.h"
-
-// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
-#include <hbabstractviewitem_p.h>
 
 #include <qmath.h>
 
@@ -168,7 +165,7 @@ qreal HbTreeItemContainerPrivate::itemHeight() const
 {
     qreal minHeight = 0.0;
     if (mItems.count() > 0) {
-        minHeight = mLayout->sizeHint(Qt::PreferredSize).height() / mItems.count();
+        minHeight = mLayout->effectiveSizeHint(Qt::PreferredSize).height() / mItems.count();
     }
 
     if (minHeight == 0.0) {
@@ -572,6 +569,36 @@ void HbTreeItemContainer::animationFinished(const HbEffect::EffectStatus &status
     } else {
         item->deleteLater();
     }
+}
+
+/*!
+    \reimp
+
+    All other sizehints are taken from list layout except preferred sizehint. List container preferred sizeHint 
+    width is maximum width and height is average item height times index count.
+*/
+QSizeF HbTreeItemContainer::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    Q_D(const HbTreeItemContainer);
+
+    if (which == Qt::PreferredSize) {
+        HbModelIterator *modelIterator = d->modelIterator();
+        if (modelIterator) {
+            return QSizeF(QWIDGETSIZE_MAX, d->itemHeight() * modelIterator->indexCount());
+        }
+    }
+
+    return HbAbstractItemContainer::sizeHint(which, constraint);
+}
+
+/*!
+    \reimp
+
+    Resizes the container to use layout preferred size.
+*/
+void HbTreeItemContainer::resizeContainer()
+{      
+    resize(layout()->preferredSize());
 }
 
 #include "moc_hbtreeitemcontainer_p.cpp"

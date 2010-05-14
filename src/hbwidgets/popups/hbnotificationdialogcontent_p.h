@@ -52,6 +52,7 @@ public:
     int type() const { return Type; }
     void enableTouchActivation(bool enabled);
     bool isTouchActivating() const;
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots:
     virtual void updatePrimitives();

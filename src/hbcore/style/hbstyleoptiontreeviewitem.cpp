@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptiontreeviewitem.h"
+#include "hbstyleoptiontreeviewitem_p.h"
 
 /*!
     \class HbStyleOptionTreeViewItem

@@ -115,13 +115,13 @@ QRect HbAbstractFeedbackPrivate::mapWidgetToWindow(const QGraphicsItem* graphics
 
     Provides common methods for assigning the parent window and the feedback area for the feedback effect.
 
-    \sa HbInstantFeedback, HbContinuousFeedback, HbTacticonFeedback
+    \sa HbInstantFeedback, HbContinuousFeedback
 */
 
 /*!
     \fn HbFeedback::Type HbAbstractFeedback::type() const
 
-    Returns the haptic type of the feedback object. Every derived class has to define their a type.
+    Returns the haptic type of the feedback object. Each derived class has to define its type.
 */
 
 /*!
@@ -149,7 +149,8 @@ HbFeedback::Modalities HbAbstractFeedback::modalities() const
 /*!
     \fn bool HbAbstractFeedback::isLocated() const
 
-    Returns true if both the parent window and the feedback area rectange (in relation to the parent window) has been defined. Not all feedback objects have to be located.
+    Returns true if both the parent window and the feedback area rectange (in relation to the parent window)
+    has been defined. Not all feedback objects have to be located.
 
 */
 
@@ -161,7 +162,8 @@ bool HbAbstractFeedback::isLocated() const
 /*!
     \fn bool HbAbstractFeedback::isValid() const
 
-    Whether or not all the necessary parameters have been defined for the feedback object. What constitutes as valid differs between different types of feedback.
+    Checks if all the necessary parameters have been defined for the feedback object. What is considered 
+    valid differs between different types of feedback.
 */
 
 /*!
@@ -178,7 +180,7 @@ QRect HbAbstractFeedback::rect() const
 /*!
     \fn void HbAbstractFeedback::setRect(QRect rect)
 
-    Sets the feedback area rect in relation of it's parent widget.
+    Sets the feedback area rect in relation of its parent widget.
 */
 
 void HbAbstractFeedback::setRect(QRect rect)
@@ -203,7 +205,6 @@ HbAbstractFeedback::~HbAbstractFeedback()
 
 /*!
     Inherits feedback area rect from the given widget. Position is calculated relative to the parent window.
-
 */
 void HbAbstractFeedback::setRect(const QWidget* widget)
 {
@@ -213,7 +214,8 @@ void HbAbstractFeedback::setRect(const QWidget* widget)
 }
 
 /*!
-    Inherits feedback area rect from the graphics item in relation to the parent graphics view. Position is calculated relative to the window.
+    Inherits feedback area rect from the graphics item in relation to the parent graphics view.
+    Position is calculated relative to the window.
 */
 void HbAbstractFeedback::setRect(const QGraphicsItem* graphicsItem, const QGraphicsView* graphicsView)
 {
@@ -254,8 +256,8 @@ HbAbstractFeedback &HbAbstractFeedback::operator=(const HbAbstractFeedback & fee
 }
 
 /*!
-    Returns true if this feedback has the same configuration as the feedback \a
-    feedback; otherwise returns false.
+    Returns true if this feedback has the same parameters as the feedback
+    \a feedback, otherwise returns false.
 */
 bool HbAbstractFeedback::operator==(const HbAbstractFeedback &feedback) const
 {
@@ -265,8 +267,8 @@ bool HbAbstractFeedback::operator==(const HbAbstractFeedback &feedback) const
 }
 
 /*!
-    Returns true if this feedback has different configuration than the feedback \a
-    feedback; otherwise returns false.
+    Returns true if this feedback has different parameters than the feedback 
+    \a feedback; otherwise returns false.
 */
 bool HbAbstractFeedback::operator!=(const HbAbstractFeedback &feedback) const
 {

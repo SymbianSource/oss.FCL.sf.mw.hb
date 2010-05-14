@@ -809,7 +809,8 @@ QIcon & HbIcon::qicon() const
 
 /*!
 * Equality operator. It compares the icon names for all the state and mode combinations.
-* The sizes set for the icons are not used for the comparison.
+* It also compares the badges, the color and the mirroring mode of the icon. The sizes 
+* set for the icons are not used for the comparison.
 */
 bool HbIcon::operator==( const HbIcon &other ) const
 {
@@ -818,7 +819,8 @@ bool HbIcon::operator==( const HbIcon &other ) const
 
 /*!
 * Inequality operator. It compares the icon names for all the state and mode combinations.
-* The sizes set for the icons are not used for the comparison.
+* It also compares the badges, the color and the mirroring mode of the icon. The sizes 
+* set for the icons are not used for the comparison.
 */
 bool HbIcon::operator!=( const HbIcon &other ) const
 {
@@ -859,10 +861,16 @@ bool HbIcon::operator!=( const HbIcon &other ) const
         return true;
     }
 
-    if ( engine1->color() != engine2->color() )
+    if ( engine1->color() != engine2->color() ){
         return true;
-    else
-        return false;
+    }
+
+    // two icons are considered different if their mirroring modes are different
+    if ( engine1->mirroringMode() != engine2->mirroringMode() ){
+        return true;
+    }
+
+    return false;
 }
 
 /*!

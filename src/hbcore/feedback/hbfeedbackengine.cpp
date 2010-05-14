@@ -35,14 +35,16 @@
     @hbcore
     \class HbFeedbackEngine
     
-    \brief Base class for implementing haptic, sound and visual feedback effects, 
-    user action loggers and screenreaders. 
+    \brief Base class for implementing engines for different kinds of feedback effects.
     
-    The feedback engine receives interaction information from HbFeedbackManager as
-    interaction and continuous interaction events. All events are received in method event() and forwarded to the
-    corresponding virtual methods overridden by various engine implementations. Interaction information
-    is received by methods pressed(), released(), clicked(), keyRepeated(), longPressed(), draggedOver(), flicked(),
-    popupOpened(), popupClosed(), boundaryReached(), rotated90Degrees(), selectionChanged().
+    The feedback engine receives interaction information from HbFeedbackManager as interaction and continuous 
+    interaction events. All events are received in method event() and forwarded to the corresponding virtual 
+    methods overridden by various engine implementations.
+    
+    Instant interaction information is received by methods pressed(), released(), clicked(), keyRepeated(), 
+    longPressed(), draggedOver(), flicked(), popupOpened(), popupClosed(), boundaryReached(), rotated90Degrees(), 
+    selectionChanged() and multitouchActivated().
+    
     Continuous interaction information is received by methods continuousTriggered() and continuousStopped().
 
     \sa HbNameSpace, HbFeedbackManager, HbFeedbackPlugin
@@ -59,18 +61,17 @@ public:
 };
 
 /*!
-    Constructs HbFeedbackEngine. If you don't pass HbFeedbackManager
-    during construction, you need to provide it by calling setManager().
-
+    Constructor.
 */
 HbFeedbackEngine::HbFeedbackEngine() : d(new HbFeedbackEnginePrivate())
 {
 }
 
 /*!
-    Constructs the engine with required feedback manager.
+    Constructs the engine with required feedback manager. If the HbFeedbackManager object is not provided during construction,
+    it needs to be provided by calling setManager().
 
-    \param manager feedback manager which passes interaction information to the engine
+    \param manager feedback manager object which passes interaction information to the engine
 */
 HbFeedbackEngine::HbFeedbackEngine(HbFeedbackManager* manager) : d(new HbFeedbackEnginePrivate())
 {
@@ -78,7 +79,7 @@ HbFeedbackEngine::HbFeedbackEngine(HbFeedbackManager* manager) : d(new HbFeedbac
 }
 
 /*!
-    Destructor
+    Destructor.
 */
 HbFeedbackEngine::~HbFeedbackEngine()
 {
@@ -116,7 +117,7 @@ HbFeedbackManager* HbFeedbackEngine::manager() const
 }
 
 /*!
-    Enables the engine. When enabled, events received in method event() are forwarded to appropriate
+    Enables the engine. When enabled, events received in method event() are forwarded to corresponding
     virtual callback functions that different feedback engines can override.
 
     \param enabled sets the engine status either enabled or disabled
@@ -140,8 +141,8 @@ bool HbFeedbackEngine::receivesInteractions()
 }
 
 /*!
-    All events received by the QObject-based class come trough method event()
-    and are forwarded to the protected virtual methods corresponding to the interactions and gestures.
+    All events received by the QObject-based class come trough method event() and are forwarded to 
+    the virtual methods corresponding to the interactions.
 
     \param e the interaction event
 */
@@ -187,7 +188,7 @@ bool HbFeedbackEngine::event(QEvent* e)
 
     Always returns zero when called outside the scope of triggered callbacks.
 
-    \return extra specifier to interaction
+    \return extra modifier to the interaction
 */
 
 Hb::InteractionModifiers HbFeedbackEngine::modifiers()
@@ -206,7 +207,7 @@ Hb::InteractionModifiers HbFeedbackEngine::modifiers()
 
     \param widget widget being interacted with
     \param interaction the interaction
-    \param modifiers extra specifiers to the interaction
+    \param modifiers extra modifiers to the interaction
 */
 void HbFeedbackEngine::triggered(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers)
 {
@@ -316,7 +317,7 @@ void HbFeedbackEngine::released(const HbWidget *widget)
 /*!
     Called when the engine receives a click event from the feedback manager.
 
-    \param widget being handled.
+    \param widget being interacted with
 */
 void HbFeedbackEngine::clicked(const HbWidget *widget)
 {
@@ -388,8 +389,8 @@ void HbFeedbackEngine::popupClosed(const HbWidget *widget)
 
 /*!
     Called when the engine receives a "boundary reached" event from the feedback manager.
-    Boundary reached event should be initiated whenever user flicks, swipes, scrolls and 
-    pans reach the border of the scroll area.
+    Boundary reached event should be initiated whenever user flicks or pans so that the 
+    boundary of the scroll area is reached.
 
     \param widget the widget being interacted with
 */
@@ -399,7 +400,7 @@ void HbFeedbackEngine::boundaryReached(const HbWidget *widget)
 }
 
 /*!
-    Called when the engine receives a "rotate step" event from the feedback manager.
+    Called when the engine receives a "rotated 90 degrees" event from the feedback manager.
 
     \param widget the widget being interacted with
 */
@@ -444,7 +445,7 @@ void HbFeedbackEngine::continuousTriggered(const HbWidget *widget, Hb::Continuou
 
 /*!
     Called when the engine receives a "continuous interaction stop" event from the feedback manager.
-    This methods is needed for knowing when to stop continuous feedback effects started by the interaction.
+    This method indicates when to stop previously started continuous feedback effect.
 
     \param widget the widget being interacted with
     \param interaction the interaction in progress
@@ -454,4 +455,3 @@ void HbFeedbackEngine::continuousStopped(const HbWidget *widget, Hb::ContinuousI
     Q_UNUSED(widget);
     Q_UNUSED(interaction);
 }
-

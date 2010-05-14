@@ -27,10 +27,8 @@
 #include <QList>
 #include "hbinstantfeedback.h"
 #include "hbcontinuousfeedback.h"
-#include "hbtacticonfeedback.h"
-#include "hbhitareafeedback.h"
 
-/*!
+/*
     Test player is used to display feedback effects in desktop environment.
 */
 
@@ -42,35 +40,25 @@ public:
     ~HbFeedbackBasePlayerPrivate();
 
     int getNewContinuousIdentifier();
-    int getNewHitAreaIdentifier();
 
 public:
     QList<int> continuousIdentifiers;
-    QList<int> hitAreaIdentifiers;
     int slidingValueContinuous;
-    int slidingValueHitArea;
 };
 
-HbFeedbackBasePlayerPrivate::HbFeedbackBasePlayerPrivate() : slidingValueContinuous(0), slidingValueHitArea(0)
+HbFeedbackBasePlayerPrivate::HbFeedbackBasePlayerPrivate() : slidingValueContinuous(0)
 {
 }
 
 HbFeedbackBasePlayerPrivate::~HbFeedbackBasePlayerPrivate()
 {
     continuousIdentifiers.clear();
-    hitAreaIdentifiers.clear();
 }
 
 int HbFeedbackBasePlayerPrivate::getNewContinuousIdentifier()
 {
     slidingValueContinuous++;
     return slidingValueContinuous;
-}
-
-int HbFeedbackBasePlayerPrivate::getNewHitAreaIdentifier()
-{
-    slidingValueHitArea++;
-    return slidingValueHitArea;
 }
 
 HbFeedbackBasePlayer::HbFeedbackBasePlayer()
@@ -84,11 +72,6 @@ HbFeedbackBasePlayer::~HbFeedbackBasePlayer()
 }
 
 void HbFeedbackBasePlayer::playInstantFeedback(const HbInstantFeedback& feedback)
-{
-    Q_UNUSED(feedback)
-}
-
-void HbFeedbackBasePlayer::playTacticonFeedback(const HbTacticonFeedback& feedback)
 {
     Q_UNUSED(feedback)
 }
@@ -119,38 +102,7 @@ bool HbFeedbackBasePlayer::continuousFeedbackOngoing(int identifier)
     return d->continuousIdentifiers.contains(identifier);
 }
 
-int HbFeedbackBasePlayer::insertHitArea(const HbHitAreaFeedback& feedback)
-{
-    Q_UNUSED(feedback)
-    int identifier = d->getNewHitAreaIdentifier();
-    d->hitAreaIdentifiers.append(identifier);
-    return identifier;
-}
-
-void HbFeedbackBasePlayer::updateHitArea(int identifier, const HbHitAreaFeedback& feedback)
-{
-    Q_UNUSED(identifier)
-    Q_UNUSED(feedback)
-}
-
-void HbFeedbackBasePlayer::removeHitArea(int identifier)
-{
-    if (d->hitAreaIdentifiers.contains(identifier)) {
-        d->hitAreaIdentifiers.removeAll(identifier);
-    }
-}
-
-bool HbFeedbackBasePlayer::hitAreaExists(int identifier)
-{
-    return d->hitAreaIdentifiers.contains(identifier);
-}
-
 void HbFeedbackBasePlayer::cancelContinuousFeedbacks()
 {
     d->continuousIdentifiers.clear();
-}
-
-void HbFeedbackBasePlayer::removeHitAreas()
-{
-    d->hitAreaIdentifiers.clear();
 }

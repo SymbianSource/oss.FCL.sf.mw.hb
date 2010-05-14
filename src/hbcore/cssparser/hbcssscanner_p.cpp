@@ -23,6 +23,9 @@
 **
 ****************************************************************************/
 
+// namespace added to avoid symbol conflicts with QT.
+namespace HbQCss {
+
 // auto generated. DO NOT EDIT.
 class QCssScanner_Generated
 {
@@ -1127,4 +1130,6 @@ int QCssScanner_Generated::lex()
     }
     return token;
 }
+
+} // namespace
 

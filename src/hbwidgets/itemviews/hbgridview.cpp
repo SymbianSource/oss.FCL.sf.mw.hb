@@ -81,6 +81,10 @@ HbGridView::HbGridView(QGraphicsItem *parent) :
     d->init();
 }
 
+/*!
+    Constructs a grid view with a private class object \a dd, 
+    \a container and \a parent.
+ */
 HbGridView::HbGridView(HbGridViewPrivate &dd, HbAbstractItemContainer *container, QGraphicsItem *parent) :
     HbAbstractItemView(dd, container, new HbModelIterator(), parent)
 {
@@ -89,14 +93,17 @@ HbGridView::HbGridView(HbGridViewPrivate &dd, HbAbstractItemContainer *container
     d->init();
 }
 
+/*!
+    \reimp
+*/
 HbGridView::~HbGridView()
 {
 }
 
 /*!
- \property HbGridView::rowCount()
- \brief Returns the total number of rows in the view.
- \sa HbGridView::setRowCount()
+    Returns the total number of rows in the view.
+
+    \sa setRowCount()
  */
 int HbGridView::rowCount() const
 {
@@ -105,9 +112,9 @@ int HbGridView::rowCount() const
 }
 
 /*!
- \property HbGridView::setRowCount()
- \brief Sets the total number of rows to \a rowCount.
- \sa HbGridView::rowCount()
+    Sets the total number of rows to \a rowCount.
+
+    \sa HbGridView::rowCount()
  */
 void HbGridView::setRowCount(int rowCount)
 {
@@ -121,9 +128,9 @@ void HbGridView::setRowCount(int rowCount)
 }
 
 /*!
- \property HbGridView::columnCount
- \brief Returns the total number of columns in the view.
- \sa HbGridView::setColumnCount()
+    Returns the total number of columns in the view.
+
+    \sa setColumnCount()
  */
 int HbGridView::columnCount() const
 {
@@ -132,9 +139,9 @@ int HbGridView::columnCount() const
 }
 
 /*!
- \property HbGridView::setColumnCount
- \brief Sets the total number of columns to \a columnCount.
-  \sa HbGridView::columnCount()
+    Sets the total number of columns to \a columnCount.
+
+    \sa columnCount()
  */
 void HbGridView::setColumnCount(int columnCount)
 {
@@ -149,9 +156,9 @@ void HbGridView::setColumnCount(int columnCount)
 
 
 /*!
- \property HbGridView::iconVisible()
- \brief Returns true if icons are currently displayed in GridView.
- \sa HbGridView::setIconVisible()
+    Returns true if icons are currently displayed in GridView.
+ 
+    \sa setIconVisible()
  */
 bool HbGridView::iconVisible() const
 {
@@ -160,10 +167,11 @@ bool HbGridView::iconVisible() const
 }
 
 /*!
- \property HbGridView::setIconVisible()
- \brief Set visibility of icons in GridView to \a visible.
-        All view items are updated automatically.
- \sa HbGridView::iconVisible()
+    Set visibility of icons in grid view to \a visible. All view items are updated.
+
+    By default icons are visible.
+
+    \sa iconVisible()
  */
 void HbGridView::setIconVisible(bool visible)
 {
@@ -172,9 +180,9 @@ void HbGridView::setIconVisible(bool visible)
 }
 
 /*!
- \property HbGridView::textVisible()
- \brief  Returns visibility of labels in GridView.
- \sa HbGridView::setTextVisible()
+    Returns visibility of text in grid view.
+
+    \sa setTextVisible()
  */
 bool HbGridView::textVisible() const
 {
@@ -183,10 +191,11 @@ bool HbGridView::textVisible() const
 }
 
 /*!
- \property HbGridView::setTextVisible()
- \brief  Sets visibility of labels in GridView to \a visible.
-         All view items are updated automatically.
- \sa HbGridView::textVisible()
+    Sets visibility of text in grid view to \a visible. All view items are updated.
+
+    By default text is visible.
+
+    \sa HbGridView::textVisible()
  */
 void HbGridView::setTextVisible(bool visible)
 {
@@ -195,7 +204,7 @@ void HbGridView::setTextVisible(bool visible)
 }
 
 /*!
- Returns item at \a row and \a column.
+    Returns item at \a row and \a column.
  */
 HbAbstractViewItem *HbGridView::itemAt(int row, int column) const
 {
@@ -208,26 +217,6 @@ HbAbstractViewItem *HbGridView::itemAt(int row, int column) const
         return d->itemContainer()->itemByIndex(d->mModelIterator->index(index));
    }
    return 0;
-}
-
-/*!
- Returns item at \a index.
- Ownership of the item is not transferred.
-
- \deprecated HbGridView::itemAt(int) const
-     is deprecated. Please use HbAbstractItemView::itemByIndex(const QModelIndex &index) instead.
-
- \sa HbAbstractItemView::itemByIndex(const QModelIndex &index)
-
- */
-HbAbstractViewItem *HbGridView::itemAt(int index) const
-{
-    Q_D(const HbGridView);
-
-    if (d->mModelIterator->model()) {
-        return d->itemContainer()->itemByIndex(d->mModelIterator->index(index));
-    }
-    return 0;
 }
 
 /*!
@@ -258,7 +247,7 @@ void HbGridView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /*!
- \reimp
+    \reimp
  */
 void HbGridView::orientationAboutToBeChanged()
 {
@@ -267,7 +256,7 @@ void HbGridView::orientationAboutToBeChanged()
 }
 
 /*!
- \reimp
+    \reimp
  */
 void HbGridView::orientationChanged(Qt::Orientation newOrientation)
 {

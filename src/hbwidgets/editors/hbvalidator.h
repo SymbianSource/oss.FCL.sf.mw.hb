@@ -65,10 +65,6 @@ public:
 
     virtual void updateTextCursor(QTextCursor &cursor);
 
-    void addSeparator(const QString &str); // DEPRECATED
-    void setMasterValidator(QValidator *validator); // DEPRECATED
-    const QValidator *masterValidator() const;  // DEPRECATED
-
 protected:
     HbValidatorPrivate *const d_ptr;
     HbValidator(HbValidatorPrivate &dd, QObject *parent);

@@ -30,6 +30,7 @@
 #include <QTimeLine>
 #include <QGraphicsWidget>
 #include <QPointer>
+#include <QTranslator>
 
 #include "hbglobal.h"
 #include "hbmainwindow.h"
@@ -73,6 +74,7 @@ public:
     virtual ~HbMainWindowPrivate();
 
     void init();
+    void initTranslations();
 
     HbToolBar *toolBar() const;
     void addToolBarToLayout(HbToolBar *toolBar);
@@ -117,10 +119,8 @@ public:
     QGraphicsWidget *mEffectItem;
     Qt::Orientation mDefaultOrientation;
     qreal mOrientationAngle;
-    
     QList<QGraphicsItem*> mItemList;
     QList<QGraphicsItem*> mOrientationChangeEffectItems;
-
     bool mAutomaticOrientationSwitch;
     bool mUserOrientationSwitch;
     bool mOrientationChangeOngoing;
@@ -128,13 +128,10 @@ public:
     bool mGVOrientationChangeEffectEnabled;
     Qt::Orientation mOrientation;
     Qt::Orientation mRequestedOrientation;
-
     HbToolBar *mCurrentToolbar;
     HbDockWidget *mCurrentDockWidget;
-
     Hb::SceneItems mVisibleItems;
     bool mForceSetOrientation; // for resize case
-
     typedef QPointer<QGraphicsWidget> QGraphicsWidgetPtr;
     struct BroadcastItem {
         QEvent *mEvent;
@@ -142,23 +139,22 @@ public:
     };
     QMap<int, BroadcastItem> mBroadcastItems;
     HbDeviceProfile mCurrentProfile;
-
     bool mDelayedConstructionHandled;
-
     HbMainWindow *q_ptr;
     HbTheTestUtility *mTheTestUtility;
     HbGVWrapperItem mGVWrapperItem;
-
     bool mIdleEventHandled;
-	QRectF mLayoutRect;
-    
+    QRectF mLayoutRect;
     mutable HbDeviceProfile mAlternateProfile;
-	
-
+    QPointer<HbView> mMenuView;
+    bool mNotifyOrientationChange;
+    bool mOrientationChangeNotified;
+    bool mToolbarWasAdded;
+    bool mAutomaticOrientationChangeAnimation;
+    QTranslator mCommonTranslator;
 #ifdef Q_OS_SYMBIAN
     HbNativeWindow *mNativeWindow;
 #endif
-    QPointer<HbView> mMenuView;
 
     void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status);
     void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status);
@@ -166,7 +162,7 @@ public:
 
     void addOrientationChangeEffects();
     void addViewEffects();
-    void _q_viewChanged(int);
+    void _q_viewChanged();
     void _q_viewRemoved(QGraphicsWidget *widget);
     void _q_viewTitleChanged(const QString &title);
     void _q_viewToolBarChanged();
@@ -212,7 +208,7 @@ private:
     friend class HbMainWindowOrientation;
     friend class HbScreen;
     friend class HbSettingsWindow;
-	friend class TestHbSensorOrientation;
+    friend class TestHbSensorOrientation;
 };
 
 #endif // HBMAINWINDOW_P_H

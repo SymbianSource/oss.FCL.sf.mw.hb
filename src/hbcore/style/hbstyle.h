@@ -115,9 +115,6 @@ public:
         P_TitlePane_text,
         P_TitlePane_icon,
         P_TitleBar_toucharea,
-        P_IndicatorGroup_background,
-        P_IndicatorGroup_signalicon,    // deprecated
-        P_IndicatorGroup_batteryicon,   // deprecated
         P_SignalIndicator_icon,
         P_SignalLevel_background,
         P_SignalLevel_icon,
@@ -133,7 +130,6 @@ public:
         P_ProgressBar_waittrack,       
         P_ProgressBar_mintext,
         P_ProgressBar_maxtext,
-        P_Softkey_background, // deprecated
         P_NavigationButton_background,
         P_IndicatorButton_background,
         P_IndicatorButton_handleindication,

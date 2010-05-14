@@ -1,6 +1,7 @@
 HbTitleBar
 {
     layout:default;
+    mirroring: disabled;
 }
 
 HbTitleBar::status{

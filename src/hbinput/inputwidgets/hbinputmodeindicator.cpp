@@ -36,19 +36,19 @@
 
 class HbInputModeIndicatorPrivate
 {
-public:
-    HbInputModeIndicatorPrivate(HbTouchKeypadButton& button);
+public:   
+    HbInputModeIndicatorPrivate(HbInputButton *button);
     ~HbInputModeIndicatorPrivate();
 
     void updatePrediction();
-public:
-    HbTouchKeypadButton& mButton;
+
+public:  
+    HbInputButton *mButtonItem;
     QPointer<HbInputFocusObject> mFocusObject;
 };
 
-HbInputModeIndicatorPrivate::HbInputModeIndicatorPrivate(HbTouchKeypadButton& button)
-        : mButton(button),
-        mFocusObject(0)
+HbInputModeIndicatorPrivate::HbInputModeIndicatorPrivate(HbInputButton *button)
+ : mButtonItem(button), mFocusObject(0)
 {
     if (HbInputMethod::activeInputMethod()) {
         mFocusObject = HbInputMethod::activeInputMethod()->focusObject();
@@ -64,13 +64,20 @@ void HbInputModeIndicatorPrivate::updatePrediction()
     const QString predictionOnIcon("qtg_mono_predictive_text_on");
     const QString predictionOffIcon("qtg_mono_predictive_text_off");
 
-    //Do not update the indicator if prediction is not allowed in the editor  even though
-    //prediction is active.
-    if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard() &&  mFocusObject && 
-                                     mFocusObject->editorInterface().isPredictionAllowed()) {
-        mButton.setIcon(HbIcon(predictionOnIcon));
-    } else {
-        mButton.setIcon(HbIcon(predictionOffIcon));
+    QColor color;
+    if (mButtonItem && !mButtonItem->icon(HbInputButton::ButtonIconIndexPrimary).isNull()) {
+        color = mButtonItem->icon(HbInputButton::ButtonIconIndexPrimary).color();
+    }
+    HbIcon icon;
+    if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard() &&
+        mFocusObject && mFocusObject->editorInterface().isPredictionAllowed()) {
+        icon = HbIcon(predictionOnIcon);
+     } else {
+        icon = HbIcon(predictionOffIcon);
+    }
+    icon.setColor(color);
+    if (mButtonItem) {
+        mButtonItem->setIcon(icon, HbInputButton::ButtonIconIndexPrimary);
     }
 }
 
@@ -87,18 +94,15 @@ Implements automatic mechanism which updates the prediction icon of keypad butto
 \sa HbEditorInterface
 */
 
-/*!
-\deprecated HbInputModeIndicator::HbInputModeIndicator(HbTouchKeypadButton&, QGraphicsWidget*)
-    is deprecated. Use (upcoming) version without HbTouchKeypadButton parameter.
-*/
-HbInputModeIndicator::HbInputModeIndicator(HbTouchKeypadButton& button, QGraphicsWidget* parent)
+HbInputModeIndicator::HbInputModeIndicator(HbInputButton *button, QGraphicsWidget *parent)
     : QObject(parent)
 {
     mPrivate = new HbInputModeIndicatorPrivate(button);
     if (mPrivate->mFocusObject) {
-        connect( &mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
+        connect (&mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
     }
-    connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(updatePredictionStatus(HbKeyboardSettingFlags, bool)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)),
+            this, SLOT(updatePredictionStatus(HbKeyboardSettingFlags, bool)));
     updateIndicator(); // check mode of current editor
 }
 
@@ -129,17 +133,6 @@ void HbInputModeIndicator::updateIndicator()
     }
 
     mPrivate->updatePrediction();
-}
-
-/*!
-\deprecated HbInputModeIndicator::udpdatePredictionStatus(int)
-    is deprecated. Use updatePredictionStatus(bool) instead.
-
-Updates prediction status.
-*/
-void HbInputModeIndicator::udpdatePredictionStatus(int newStatus)
-{
-    Q_UNUSED(newStatus);
 }
 
 /*!

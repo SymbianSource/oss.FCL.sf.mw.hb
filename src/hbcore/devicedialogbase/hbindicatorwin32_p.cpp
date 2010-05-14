@@ -31,13 +31,14 @@
 #include "hbindicatorpluginmanager_p.h"
 #include "hbdevicedialogerrors_p.h"
 
+HbIndicatorPluginManager *HbIndicatorPrivate::mIndicatorPluginManager = 0;
+
 HbIndicatorPluginManager *HbIndicatorPrivate::pluginManager()
 {
-    static HbIndicatorPluginManager *manager;
-    if (!manager) {
-        manager = new HbIndicatorPluginManager();
+    if (!mIndicatorPluginManager) {
+        mIndicatorPluginManager = new HbIndicatorPluginManager();
     }
-    return manager;
+    return mIndicatorPluginManager;
 }
 
 // Indicators are implemented only for Symbian/S60 OS. All others use a stub which shows

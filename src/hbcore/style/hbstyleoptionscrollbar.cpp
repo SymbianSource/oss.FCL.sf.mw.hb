@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionscrollbar.h"
+#include "hbstyleoptionscrollbar_p.h"
 
 /*!
     \class HbStyleOptionScrollBar

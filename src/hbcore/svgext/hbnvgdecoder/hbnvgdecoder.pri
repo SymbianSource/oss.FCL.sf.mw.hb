@@ -30,15 +30,11 @@ DEPENDPATH += $$PWD
 PRIVATE_HEADERS += $$PWD/hbnvg_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgicon_p.h
 
-PRIVATE_HEADERS += $$PWD/hbtlvcommon_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgfittoviewbox_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgimagebinder_p.h 
-PRIVATE_HEADERS += $$PWD/hbtlviconcreator_p.h
-PRIVATE_HEADERS += $$PWD/hbtlvrenderer_p.h
-PRIVATE_HEADERS += $$PWD/hbtlviconrenderer_p.h
-PRIVATE_HEADERS += $$PWD/hbnvgtlvicon_p.h
+
 PRIVATE_HEADERS += $$PWD/hbnvgicondata_p.h
-PRIVATE_HEADERS += $$PWD/hbopenvghandlestore_p.h
+
 PRIVATE_HEADERS += $$PWD/hbnvgcsicon_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgiconfactory_p.h 
 PRIVATE_HEADERS += $$PWD/hbnvg_p_p.h
@@ -46,14 +42,8 @@ PRIVATE_HEADERS += $$PWD/hbnvgexception_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgenginepool_p.h
 
 SOURCES += $$PWD/hbnvgfittoviewbox.cpp
-#SOURCES += $$PWD/hbnvgfittoviewbox_p.inl
-SOURCES += $$PWD/hbnvgtlvicon.cpp
-SOURCES += $$PWD/hbtlviconcreator.cpp
-SOURCES += $$PWD/hbtlvrenderer.cpp
-SOURCES += $$PWD/hbtlviconrenderer.cpp
 SOURCES += $$PWD/hbnvgicondata.cpp
-#SOURCES += $$PWD/hbnvgicondata_p.inl
-SOURCES += $$PWD/hbopenvghandlestore.cpp
+
 SOURCES += $$PWD/hbnvgcsicon.cpp
 SOURCES += $$PWD/hbnvgiconfactory.cpp
 SOURCES += $$PWD/hbnvg.cpp

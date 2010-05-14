@@ -40,13 +40,13 @@
 #include <hbabstractedit.h>
 #include <hbpushbutton.h>
 #include <hbcolordialog.h>
+#include <hbcolorscheme.h>
 
 #include <QSharedData>
 #include <QTextCursor>
 #include <QPainter>
 
-HbFormatDialogPrivate::HbFormatDialogPrivate() :
-    editor(0)
+HbFormatDialogPrivate::HbFormatDialogPrivate() : editor(0)
 {}
 
 HbFormatDialogPrivate::~HbFormatDialogPrivate()
@@ -78,9 +78,15 @@ void HbFormatDialogPrivate::_q_setColor()
     QTextCursor cursor = editor->textCursor();
     QTextCharFormat fmt = cursor.charFormat();
     QColor color = fmt.foreground().color();
-    HbColorDialog dialog;
-    dialog.setInitialColor(color);
-    color = dialog.getColor();
+    QList<QColor> defaultColors;
+    HbColorDialog::getColor(defaultColors, color, q, SLOT(_q_colorSelected(const QColor &)));
+}
+
+void HbFormatDialogPrivate::_q_colorSelected(const QColor &color)
+{
+    Q_Q(HbFormatDialog);
+    QTextCursor cursor = editor->textCursor();
+    QTextCharFormat fmt = cursor.charFormat();
     if (!color.isValid())
         return;
     fmt.setForeground(color);
@@ -91,9 +97,11 @@ void HbFormatDialogPrivate::_q_setColor()
 void HbFormatDialogPrivate::colorChanged(const QColor &color)
 {
     HbIcon icon("qtg_graf_colorpicker_filled");
+    icon.setFlags(HbIcon::Colorized);
+    icon.setColor(HbColorScheme::color("qtc_button_normal"));
     HbIcon maskIcon("qtg_graf_colorpicker_mask");
     QPixmap maskPixmap = maskIcon.pixmap();
-    QPainter mp(&maskPixmap);
+    QPainter mp(&maskPixmap);    
     mp.setCompositionMode(QPainter::CompositionMode_SourceIn);
     mp.fillRect(maskPixmap.rect(),color);
     mp.setCompositionMode(QPainter::CompositionMode_DestinationOver);

@@ -42,6 +42,8 @@
 #define TYPEFACE_TEXTHEIGHT_ATT "textheight"
 #define TYPEFACE_SIZE_ATT "size"
 #define TYPEFACE_BASELINE_ATT "baseline"
+#define TYPEFACE_LANGUAGE_ATT "language"
+#define TYPEFACE_COUNTRY_ATT "country"
 
 
 #define TYPEFACE_ATT_VAL_BOLD "bold"
@@ -98,9 +100,22 @@ bool HbTypefaceXmlParser::init()
 	QString filePath(":typefaces.xml");
 
 	// If one has been set by API
-	if (!mFilePath.isEmpty()) {
+	if ( !mFilePath.isEmpty() ) {
 		filePath = mFilePath;
 	}
+	else {
+	// Check if resource directory has got the typefaces.xml file.
+	// If yes, then use the one present in the resource directory
+		QString resourceFilePath(TYPEFACE_RESOURCE_FOLDER);
+		resourceFilePath.append(QDir::separator());
+		resourceFilePath.append("typefaces.xml"); 
+
+		QFile *file = new QFile(resourceFilePath);
+		if( file && file->exists() ) {
+			filePath = resourceFilePath;
+		}
+		delete file;
+	}	
 
 	mFile = new QFile(filePath);
 	// Trying to see if the absolute path can be determined
@@ -135,6 +150,78 @@ bool HbTypefaceXmlParser::init()
 	}
 
 	return !error() && positioned;
+}
+
+/*!
+    Advances the read position of the parser to a point where it can read the <typeface_mapping> set.
+*/
+bool HbTypefaceXmlParser::readAndPositionTypefaceSet()
+{
+	Q_ASSERT(isStartElement() && name() == TYPEFACE_INFO);
+	bool positioned(false);
+	while (!atEnd() && !positioned) {
+    	QXmlStreamReader::TokenType type = readNext();
+        if(type == QXmlStreamReader::Invalid)
+            break;
+
+		if (isStartElement()) {
+			if (name() == TYPEFACE_SET) {
+				// find the correct language and country
+				positioned = matchLanguageAndCountry();
+			}
+		}
+	}
+	return positioned;
+}
+
+/*
+ * Parses information inside one <typeface_set> field.
+ */
+bool HbTypefaceXmlParser::matchLanguageAndCountry() const
+{
+	Q_ASSERT(isStartElement() && name() == TYPEFACE_SET);
+	QString language, country;
+	bool positioned(false);
+
+	HbExtendedLocale systemLocale = HbExtendedLocale::system();
+	QString attrName, typefaceLocaleName, systemLocaleName;
+	QXmlStreamAttributes attrs = attributes();
+
+	foreach (const QXmlStreamAttribute &attr, attrs) {
+		attrName = attr.name().toString();
+
+		if (attrName == TYPEFACE_LANGUAGE_ATT) {
+			language = attr.value().toString().toLower();
+		}
+		else if (attrName == TYPEFACE_COUNTRY_ATT) {
+			country = attr.value().toString().toUpper();
+		}
+		else {
+			qDebug("Unrecognized attribute");
+		}
+	}
+	
+
+	// Construct the locale with the typeface locale info
+	if (!language.isEmpty()) {
+		if (!country.isEmpty()) {
+			typefaceLocaleName = language + "_" + country;
+			systemLocaleName = systemLocale.name();
+		}
+		else {
+			typefaceLocaleName = language;
+			// Language is a lowercase, two-letter, ISO 639 language code
+			systemLocaleName = systemLocale.name().left(2);
+		}
+	}
+	else {
+		positioned = true;
+	}
+
+	if (!positioned && typefaceLocaleName.compare(systemLocaleName, Qt::CaseInsensitive) == 0) {
+		positioned = true;
+	}
+	return positioned;
 }
 
 /*!

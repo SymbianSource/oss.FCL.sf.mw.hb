@@ -31,6 +31,7 @@
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbsplashgen_server_symbian_p.h"
+#include "hbsplashdefs_p.h"
 #include <e32std.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
@@ -40,7 +41,7 @@ CApaApplication *appFactory()
 }
 #endif
 
-int main(int argc, char **argv)
+int runMain(int argc, char **argv, void *mutexToSignal)
 {
 #if defined(Q_OS_SYMBIAN)
     HbApplication app(appFactory, argc, argv, Hb::NoSplash);
@@ -57,6 +58,7 @@ int main(int argc, char **argv)
         RThread::RenameMe(hbsplash_server_name);
     }
 #else
+    Q_UNUSED(mutexToSignal);
     HbApplication app(argc, argv, Hb::NoSplash);
 #endif
 
@@ -77,7 +79,7 @@ int main(int argc, char **argv)
     qDebug("[hbsplashgenerator] initializing ui");
     QMainWindow mw;
     QPushButton *btnRegen = new QPushButton("Regenerate");
-    gen.connect(btnRegen, SIGNAL(clicked()), SLOT(regenerate()));
+    gen.connect(btnRegen, SIGNAL(clicked()), SLOT(uncachedRegenerate()));
     mw.setCentralWidget(btnRegen);
     mw.show();
 #endif
@@ -86,14 +88,77 @@ int main(int argc, char **argv)
 #ifdef Q_OS_SYMBIAN
     qDebug("[hbsplashgenerator] starting server");
     HbSplashGenServer server(&gen);
+    // If there was an error (or an instance is already running (it is
+    // possible in certain race conditions)) then exit right away.
+    if (!server.startupSuccess()) {
+        qDebug("[hbsplashgenerator] exiting due to failed server startup");
+        return 0;
+    }
 #endif
 
     qDebug("[hbsplashgenerator] starting generator");
     gen.start(forceRegen);
+
+#if defined(Q_OS_SYMBIAN)
+    if (mutexToSignal) {
+        qDebug("[hbsplashgenerator] signaling mutex");
+        static_cast<RMutex *>(mutexToSignal)->Signal();
+    }
+#endif
 
     qDebug("[hbsplashgenerator] entering event loop");
     int ret = app.exec();
 
     qDebug("[hbsplashgenerator] exiting");
     return ret;
+}
+
+int main(int argc, char **argv)
+{
+    bool canStart = true;
+    void *mutexToSignal = 0;
+#if defined(Q_OS_SYMBIAN)
+    RMutex mutex;
+    _LIT(KGlobalLockName, "hbsplgen");
+    bool mutexOk = mutex.OpenGlobal(KGlobalLockName) == KErrNone;
+    if (!mutexOk) {
+        mutexOk = mutex.CreateGlobal(KGlobalLockName) == KErrNone;
+    }
+    if (mutexOk) {
+        mutex.Wait();
+        mutexToSignal = &mutex;
+    } else {
+        qDebug("[hbsplashgenerator] failed to open/create mutex");
+    }
+    // Due to the mutex-based synchronization we should now be able to
+    // use TFindServer to safely check if there is another instance
+    // already running.
+    TFindServer findServer(hbsplash_server_name);
+    TFullName serverName;
+    if (findServer.Next(serverName) == KErrNone) {
+        qDebug("[hbsplashgenerator] found another instance, exiting");
+        canStart = false;
+        RProcess::Rendezvous(KErrAlreadyExists);
+    }
+#endif
+
+    int result = 0;
+    if (canStart) {
+        try {
+            result = runMain(argc, argv, mutexToSignal);
+        } catch (...) {
+            qDebug("[hbsplashgenerator] exiting due to exception in main()");
+        }
+    }
+
+#if defined(Q_OS_SYMBIAN)
+    if (mutexOk) {
+        if (mutex.IsHeld()) {
+            mutex.Signal();
+        }
+        mutex.Close();
+    }
+#endif
+
+    return result;
 }

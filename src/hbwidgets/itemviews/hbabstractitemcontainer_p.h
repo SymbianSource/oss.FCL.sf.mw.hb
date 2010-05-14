@@ -23,87 +23,99 @@
 **
 ****************************************************************************/
 
-#ifndef HBABSTRACTITEMCONTAINERPRIVATE_H
-#define HBABSTRACTITEMCONTAINERPRIVATE_H
+#ifndef HBABSTRACTITEMCONTAINER_P_H
+#define HBABSTRACTITEMCONTAINER_P_H
 
-#include "hbwidget_p.h"
-#include "hbabstractitemcontainer.h"
-#include "hbabstractviewitem.h"
+#include <hbwidget.h>
 
-#include <QPersistentModelIndex>
-
+class HbAbstractItemContainerPrivate;
+class QModelIndex;
 class HbAbstractViewItem;
 class HbAbstractItemView;
 
-#include <QHash>
-
-class HbAbstractItemContainerPrivate : public HbWidgetPrivate
+class HB_AUTOTEST_EXPORT HbAbstractItemContainer : public HbWidget
 {
-    Q_DECLARE_PUBLIC(HbAbstractItemContainer)
+    Q_OBJECT
 
 public:
+    explicit HbAbstractItemContainer(QGraphicsItem *parent = 0);
+    virtual ~HbAbstractItemContainer();
 
-    struct StateItem
-    {
-        QPersistentModelIndex index;
-        QMap<int,QVariant> state;
-    };
+    virtual void addItem(const QModelIndex &index, bool animate = false);
+    virtual void removeItem(const QModelIndex &index, bool animate = false);
+    virtual void removeItem(int pos, bool animate = false);
+    void removeItems();
 
-    HbAbstractItemContainerPrivate();
-    virtual ~HbAbstractItemContainerPrivate();
+    HbAbstractViewItem* itemByIndex(const QModelIndex &index) const;
+    QList<HbAbstractViewItem *> items() const;
 
-    QRectF itemBoundingRect(const QGraphicsItem *item) const;
+    virtual void reset();
 
-    void firstAndLastVisibleBufferIndex(int& firstVisibleBufferIndex,
-        int& lastVisibleBufferIndex,
-        const QRectF &viewRect,
+    HbAbstractItemView *itemView() const;
+    void setItemView(HbAbstractItemView *view);
+
+    virtual void setModelIndexes(const QModelIndex &startIndex = QModelIndex());
+
+    void firstAndLastVisibleModelIndex(
+        QModelIndex& firstVisibleModelIndex,
+        QModelIndex& lastVisibleModelIndex,
         bool fullyVisible = true) const;
 
-    bool visible(HbAbstractViewItem* item, const QRectF &viewRect, bool fullyVisible = true) const;
+    QList<HbAbstractViewItem *> itemPrototypes() const;
+    bool setItemPrototype(HbAbstractViewItem *prototype);
+    bool setItemPrototypes(const QList<HbAbstractViewItem *> &prototypes);
 
-    void deletePrototypes();
+    void setItemTransientState(const QModelIndex &index, QHash<QString,QVariant> state);
+    void setItemTransientStateValue(const QModelIndex &index, const QString &key, const QVariant &value);
 
-    int findStateItem(const QModelIndex &index) const;
+    QMap<int,QVariant> itemState(const QModelIndex &index) const;
+    QHash<QString, QVariant> itemTransientState(const QModelIndex &index) const;
 
-    void initPrototype(HbAbstractViewItem *prototype) const;
+    void removeItemTransientStates();
 
-    HbAbstractViewItem *createItem(const QModelIndex &index);
-    HbAbstractViewItem *itemPrototype(const QModelIndex& index) const;
+    void setItemRecycling(bool enabled);
+    bool itemRecycling() const;
 
-    virtual void updateItemBuffer();
-    void increaseBufferSize(int amount);
-    void decreaseBufferSize(int amount);
+    virtual void setUniformItemSizes(bool enable);
+    bool uniformItemSizes() const;
 
-    HbAbstractViewItem* item(const QModelIndex &index) const;
+    virtual bool eventFilter(QObject *obj, QEvent *event);
 
-    void doRemoveItem(HbAbstractViewItem *item, const QModelIndex &index, bool animate = false);
+    virtual void resizeContainer();
 
-    void deleteItem(HbAbstractViewItem *item, bool animate = false);
+signals:
 
-    virtual bool intoContainerBuffer(const QModelIndex &index) const; 
-    virtual int containerBufferIndexForModelIndex(const QModelIndex &index) const;
+    void itemCreated(HbAbstractViewItem *item);
 
-    virtual qreal getDiffWithoutScrollareaCompensation(const QPointF &delta) const;
+protected:
 
-    void restoreItemPosition(HbAbstractViewItem *item, const QPointF &position);
+    HbAbstractItemContainer(HbAbstractItemContainerPrivate &dd, QGraphicsItem *parent);
 
-    void insertItem(HbAbstractViewItem *item, int pos, const QModelIndex &index, bool animate);
+    virtual void itemAdded(int index, HbAbstractViewItem *item, bool animate) = 0;
+    virtual void itemRemoved(HbAbstractViewItem *item, bool animate) = 0;
 
-    mutable QList<HbAbstractViewItem*>  mPrototypes;
-    QList<StateItem> mItemStateList;
-    QHash<QPersistentModelIndex, QHash<QString, QVariant> > mItemStates;
+    virtual void viewResized(const QSizeF &size) = 0;
 
-    QList<HbAbstractViewItem*>  mItems;
-    HbAbstractItemView *mItemView;
+    virtual void setItemModelIndex(HbAbstractViewItem *item, const QModelIndex &index);
 
-    int mBufferSize;
-    bool mItemRecycling;
+    QVariant itemChange(GraphicsItemChange change, const QVariant & value) ;
 
-    bool mUniformItemSizes;
-    QPersistentModelIndex mFirstItemIndex;
-    static const int UpdateItemBufferEvent;
+    virtual QPointF recycleItems(const QPointF &delta);
+
+    void insertItem(int pos, const QModelIndex &index, bool animate = false);
+
+    virtual int maxItemCount() const;
+
+    virtual bool event(QEvent *e);
+
+    virtual HbAbstractViewItem *createDefaultPrototype() const = 0;
+
+private:
+    
+    Q_DECLARE_PRIVATE_D(d_ptr, HbAbstractItemContainer)
+    Q_DISABLE_COPY(HbAbstractItemContainer)
+
+    friend class HbAbstractItemView;
 };
 
-Q_DECLARE_METATYPE(HbAbstractItemContainerPrivate::StateItem)
-
-#endif /* HBABSTRACTITEMCONTAINERPRIVATE_H */
+#endif 

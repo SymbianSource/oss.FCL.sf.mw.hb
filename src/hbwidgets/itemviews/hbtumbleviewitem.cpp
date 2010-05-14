@@ -25,7 +25,7 @@
 #include "hbtumbleviewitem.h"
 
 #include "hblistviewitem_p.h"
-#include <hbstyleoptionlistviewitem.h>
+#include <hbstyleoptionlistviewitem_p.h>
 
 HbTumbleViewItem::HbTumbleViewItem(QGraphicsItem *parent) :
     HbListViewItem(parent)

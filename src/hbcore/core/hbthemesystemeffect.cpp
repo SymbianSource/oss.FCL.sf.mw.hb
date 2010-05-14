@@ -71,7 +71,7 @@ const EffectInfoEntry effectInfoArray[] = {
 const int effectInfoCount = sizeof(effectInfoArray) / sizeof(EffectInfoEntry);
 
 #ifdef Q_OS_SYMBIAN
-const TInt tfxPurpose = Qt::Window;
+//const TInt tfxPurpose = Qt::Window;
 #endif //Q_OS_SYMBIAN
 
 

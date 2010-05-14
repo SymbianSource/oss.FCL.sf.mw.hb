@@ -29,8 +29,6 @@
 #include <hbwidget_p.h>
 #include "hbindicatorgroup_p.h"
 
-class HbIndicatorPrivate;
-
 class HbIndicatorGroupPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbIndicatorGroup)
@@ -53,8 +51,6 @@ public:
 
     bool canAddIndicator(const IndicatorClientInfo &indicator) const;
 
-    void emitNotificationCount();
-
     void startAddingEffect();
     void startRemovingEffect();
 
@@ -63,12 +59,12 @@ public:
 private:
     HbIndicatorGroup::IndicatorType mIndicatorType;
     QList<QGraphicsItem*> mIcons;   
-    HbIndicatorPrivate *mIndicatorPrivate;
     QList<IndicatorClientInfo> mIndicators;
     bool mProgressAdded;
     bool mIndicatorAdded;
     QList<QPointF> mOriginalPos;
-    QStringList mRemovedIndicators;    
+    QStringList mRemovedIndicators;
+    bool mProgressAnimationFound;
 };
 
 #endif // HBINDICATORGROUP_P_P_H

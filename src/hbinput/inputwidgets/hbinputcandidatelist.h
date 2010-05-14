@@ -51,6 +51,7 @@ public:
 
 signals:
     void candidatePopupCancelled();
+    void candidateSelected(int key, const QString &candidate);
 
 protected:
     void closeEvent(QCloseEvent* event);

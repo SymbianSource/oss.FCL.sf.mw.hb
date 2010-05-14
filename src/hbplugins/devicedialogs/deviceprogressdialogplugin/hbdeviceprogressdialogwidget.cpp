@@ -31,6 +31,8 @@
 #include "hbdeviceprogressdialogwidget_p.h"
 #include "hbdeviceprogressdialogpluginerrors_p.h"
 
+static const char actionTextTag[] = "t:";
+
 // Constructor
 HbDeviceProgressDialogWidget::HbDeviceProgressDialogWidget(HbProgressDialog::ProgressDialogType progressDialogType,
     const QVariantMap &parameters) : HbProgressDialog(progressDialogType)
@@ -39,14 +41,14 @@ HbDeviceProgressDialogWidget::HbDeviceProgressDialogWidget(HbProgressDialog::Pro
     mLastError = NoError;
     mProgressDialogType = progressDialogType;
     mShowEventReceived = false;
-    mPrimaryAction = 0;
+    mAction = 0;
     resetProperties();
     constructDialog(parameters);
-    if (!mPrimaryAction) {
+    if (!mAction) {
         // If HbProgressDialog default button is used, connect into its triggered signal.
-        HbAction *action = primaryAction();
-        if (action) {
-            connect(action, SIGNAL(triggered()), SLOT(primaryActionTriggered()));
+        QAction *act = action(Cancel);
+        if (act) {
+            connect(act, SIGNAL(triggered()), SLOT(cancelTriggered()));
         }
     }
     setBackgroundFaded(true);
@@ -56,7 +58,7 @@ HbDeviceProgressDialogWidget::HbDeviceProgressDialogWidget(HbProgressDialog::Pro
 // Destructor
 HbDeviceProgressDialogWidget::~HbDeviceProgressDialogWidget()
 {
-    delete mPrimaryAction;
+    delete mAction;
 }
 
 // Set parameters
@@ -200,53 +202,66 @@ void HbDeviceProgressDialogWidget::setIconName(QString &iconName)
         setIcon(HbIcon(mIconName));
     }
     TRACE_EXIT
-    return;
 }
 
-QString HbDeviceProgressDialogWidget::primaryActionText() const
-{
-    HbAction *action = primaryAction();
-    return action ? action->text() : QString();
-}
-
-void HbDeviceProgressDialogWidget::setPrimaryActionText(QString &actionText)
+QString HbDeviceProgressDialogWidget::cancelAction() const
 {
     TRACE_ENTRY
-    HbAction *action = primaryAction();
-    if (action) {
-        action->setText(actionText);
-    } else {
-        if (!mPrimaryAction) {
-            mPrimaryAction = new HbAction(actionText);
-            connect(mPrimaryAction, SIGNAL(triggered()), this, SLOT(primaryActionTriggered()));
+    QAction *act = action(Cancel);
+	QString actionData;
+    if (act) {
+        actionData.append(actionTextTag);
+        actionData.append(act->text());
+    }
+    TRACE_EXIT
+    return actionData;
+}
+
+void HbDeviceProgressDialogWidget::setCancelAction(QString &actionData)
+{
+    TRACE_ENTRY
+    parseActionData(actionData); // parse data to get action text
+    if (!actionData.isNull()) {
+        // Setting action
+        QAction *act = action(Cancel);
+        if (act) {
+            act->setText(actionData);
         } else {
-            mPrimaryAction->setText(actionText);
+            if (!mAction) {
+                mAction = new HbAction(actionData, 0);
+                connect(mAction, SIGNAL(triggered()), this, SLOT(cancelTriggered()));
+            } else {
+                mAction->setText(actionData);
+            }
+            addAction(mAction);
         }
-        setPrimaryAction(mPrimaryAction);
-    }
-    TRACE_EXIT
-}
-
-bool HbDeviceProgressDialogWidget::primaryActionNull() const
-{
-    return primaryAction() == 0;
-}
-
-void HbDeviceProgressDialogWidget::setPrimaryActionNull(bool isNull)
-{
-    TRACE_ENTRY
-    if (isNull) {
+    } else { // Remove action
         // If there is a message box's default action, disconnect from it.
-        HbAction *action = primaryAction();
-        if (action && mPrimaryAction == 0) {
-            action->disconnect(SIGNAL(triggered()), this, SLOT(primaryActionTriggered()));
+        QAction *act = action(Cancel);
+        if (act && mAction == 0) {
+            act->disconnect(SIGNAL(triggered()), this, SLOT(cancelTriggered()));
         }
-        setPrimaryAction(0);
-    } else {
-        QString text = mPrimaryAction ? mPrimaryAction->text() : QString();
-        setPrimaryActionText(text);
+        if (act) {
+            removeAction(act);
+        }
     }
     TRACE_EXIT
+}
+
+QAction *HbDeviceProgressDialogWidget::action(ActionIndex index) const
+{
+    QList<QAction*> actionList = actions();
+    return actionList.count() > index ? actionList[index] : 0;
+}
+
+void HbDeviceProgressDialogWidget::parseActionData(QString &data)
+{
+    const QString textTag(actionTextTag);
+    if (data.startsWith(textTag)) {
+        data.remove(0, textTag.length());
+    } else {
+        data.clear();
+    }
 }
 
 QString HbDeviceProgressDialogWidget::animationDefinition() const
@@ -277,11 +292,11 @@ void HbDeviceProgressDialogWidget::showEvent(QShowEvent *event)
 }
 
 // Primary action triggered
-void HbDeviceProgressDialogWidget::primaryActionTriggered()
+void HbDeviceProgressDialogWidget::cancelTriggered()
 {
     TRACE_ENTRY
     QVariantMap data;
-    data.insert("act", "p");
+    data.insert("act", "c");
     emit deviceDialogData(data);
     TRACE_EXIT
 }

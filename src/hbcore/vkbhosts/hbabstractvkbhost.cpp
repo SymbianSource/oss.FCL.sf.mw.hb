@@ -149,6 +149,14 @@ bool HbAbstractVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus 
 
         // Check whether the cursor rectangle is inside visible area.
         if (!visibleArea.contains(microFocus)) {
+            QRectF realEditorGeometry = editorGeometry;
+            realEditorGeometry.adjust(0.0, HbCursorLineMargin, 0.0, -HbCursorLineMargin);
+            if (!realEditorGeometry.contains(microFocus)) {
+                // A sanity check. If the microFocus rectangle is outside the editor
+                // bounding rect, don't do anything. The situation in editor widget is not
+                // up to date.
+                return false;
+            }
             // The cursor is outside the visible area. Figure out how much and
             // to which direction the container has to be moved.
             if (microFocus.bottom() <= visibleArea.top()) {
@@ -343,7 +351,6 @@ void HbAbstractVkbHostPrivate::openKeypadWithoutAnimation()
 
             mKeypadStatus = HbVkbHost::HbVkbStatusOpened;
             mCallback->keyboardOpened(q_ptr);
-            q_ptr->openFinished();
         }
     }
 }
@@ -617,14 +624,6 @@ void HbAbstractVkbHost::closeKeypad(bool animationAllowed)
 }
 
 /*!
-\reimp
-*/
-int HbAbstractVkbHost::priority() const
-{
-    return 0;
-}
-
-/*!
 This slot is called every time an animation frame is drawn.
 */
 void HbAbstractVkbHost::animValueChanged(qreal value)
@@ -643,43 +642,9 @@ void HbAbstractVkbHost::animValueChanged(qreal value)
         }
     }
 
-    if (d->mCallback) {
+    if (d->mCallback && d->mKeypad) {
         d->mCallback->keyboardAnimationFrame(HbVirtualKeyboard::HbVkbAnimOpen, value);
     }
-}
-
-/*!
-\deprecated HbAbstractVkbHost::openAnimValueChanged(qreal)
-    is deprecated.
-*/
-void HbAbstractVkbHost::openAnimValueChanged(qreal value)
-{
-    Q_UNUSED(value);
-}
-
-/*!
-\deprecated HbAbstractVkbHost::closeAnimValueChanged(qreal)
-    is deprecated.
-*/
-void HbAbstractVkbHost::closeAnimValueChanged(qreal value)
-{
-    Q_UNUSED(value);
-}
-
-/*!
-\deprecated HbAbstractVkbHost::openFinished()
-    is deprecated.
-*/
-void HbAbstractVkbHost::openFinished()
-{
-}
-
-/*!
-\deprecated HbAbstractVkbHost::closeFinished()
-    is deprecated.
-*/
-void HbAbstractVkbHost::closeFinished()
-{
 }
 
 /*!
@@ -747,14 +712,6 @@ QSizeF HbAbstractVkbHost::keyboardArea() const
     }
 
     return QSizeF(0.0, 0.0);
-}
-
-/*!
-\reimp
-*/
-void HbAbstractVkbHost::preferredSizeChanged(const QSizeF& newSize)
-{
-    Q_UNUSED(newSize);
 }
 
 /*!

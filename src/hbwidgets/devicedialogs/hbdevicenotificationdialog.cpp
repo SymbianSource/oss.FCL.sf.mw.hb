@@ -32,6 +32,8 @@
 #include <QTimerEvent>
 
 /*!
+    @stable
+    @hbwidgets
     \class HbDeviceNotificationDialog
     \brief HbDeviceNotificationDialog is a non-modal dialog displayed on the top of
     running applications. Functionality is based on HbNotificationDialog and it uses
@@ -46,9 +48,18 @@
 
     Main use of HbDeviceNotificationDialog is to show information to user without user input.
 
-    \code
-    Following code snippet creates a device notification dialog containing title, text and icon.
+     \section _usecases HbDeviceNotificationDialog use cases
 
+    Use cases in this section:
+    - \ref _uc2
+    - \ref _uc2_001
+    - \ref _uc2_002
+
+    \subsection _uc2 Creating a device notification dialog
+
+    The following code snippet creates a device notification dialog containing title, text and icon.
+
+    \code
     QString iconName("C:/xxxx.png");
 
     HbDeviceNotificationDialog notificationDialog;
@@ -66,8 +77,10 @@
 
     When using convenience methods, it is not possible to receive user interaction events,
     because the HbDeviceNotificationDialog instance is destroyed when the call returns. Ownership
-    and handling of the dialog is transferred to HbDeviceDialog framework. Also dialog can not
-    be closed nor updated.
+    and handling of the dialog is transferred to HbDeviceDialog framework. In this case the dialog
+    can neither be closed nor updated programmatically.
+
+    \subsection _uc2_001 Receiving user interactions events
 
     Below is an example of receiving user interaction events from device notification dialog. With
     following example user is able to receive activated and close events. Note that
@@ -83,45 +96,43 @@
     mNotificationDialog->show();
     \endcode
 
-	HbDeviceNotificationDialog supports animations.
+    \subsection _uc2_002 Using animations in a device notification dialog
+
+    HbDeviceNotificationDialog supports animations.
     Supported formats are the following.
 
     - GIF (.gif)
     - MNG (.mng)
-	- Frame animations
+    - Frame animations (.axml)
 
-	There is a built-in support for GIF and MNG animations.
+    There is a built-in support for GIF and MNG animations.
 
-	Frame animations can be created by following way:
+    Frame animations can be used by first creating an animation definition file:
 
-	\code
-	Create an animation definition file.
+    \code
+    <animations>
+        <icon name="frame_anim_looping" playmode="loop">
+            <frame duration="100">c:\icon1.svg</frame>
+            <frame duration="200">c:\icon2.svg</frame>
+            <frame duration="300">c:\icon3.svg</frame>
+        </icon>
+    </animations>
+    \endcode
 
-	<animations>
-		<icon name="frame_anim_looping" playmode="loop">
-			<frame duration="100">c:\icon1.svg</frame>
-			<frame duration="200">c:\icon2.svg</frame>
-			<frame duration="300">c:\icon3.svg</frame>
-		</icon>
-	</animations>
+	After this, create a HbDeviceNotificationDialog as described above and
+	set the definition file and the logical name of the animation:
 
-	Create HbDeviceNotificationDialog in a way described before and
-	set definition file and animation's logical name.
+    \code
+    QString animationDefinitionXML("c:\animation.axml");
+    QString logicalIconName("frame_anim_looping");
 
-	QString animationDefinitionXML("c:\animation.axml");
-	QString logicalIconName("frame_anim_looping");
-
-	mNotificationDialog->setAnimationDefinition(animationDefinitionXML);
+    mNotificationDialog->setAnimationDefinition(animationDefinitionXML);
     mNotificationDialog->setIconName(logicalIconName);
+    \endcode
 
-	\endcode
-	\sa HbIconAnimationManager::addDefinitionFile
-	\note Animation definition files must be stored to a place where they
-	can be accessed.
-
-    \beta
-    \hbwidgets
-
+    \sa HbIconAnimationManager::addDefinitionFile
+    \note Animation definition files must be stored in a place where they can 
+    be accessed.
 */
 
 /*!
@@ -507,10 +518,12 @@ int HbDeviceNotificationDialog::timeout() const
 }
 
 /*!
-    Get title text wrapping setting.
+    Returns the style of text wrapping for the title.
 
-    \sa setTitleTextWrapping()
-*/
+    The default is Hb::TextWordWrap.
+
+     \sa setTitleTextWrapping()
+ */
 Hb::TextWrapping HbDeviceNotificationDialog::titleTextWrapping() const
 {
     TRACE_ENTRY
@@ -520,7 +533,7 @@ Hb::TextWrapping HbDeviceNotificationDialog::titleTextWrapping() const
 }
 
 /*!
-    Get title animation definition file name.
+    Returns the animation definition file name.
 
     \sa setAnimationDefinition()
 */

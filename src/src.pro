@@ -59,7 +59,7 @@ TEMPLATE = subdirs
 
 !contains(HB_NOMAKE_PARTS, hbservers) {
     hbservers.depends = hbcore hbwidgets hbutils
-    SUBDIRS *= hbcore hbwidgets
+    SUBDIRS *= hbcore hbwidgets hbutils
     SUBDIRS += hbservers
 }
 
@@ -69,7 +69,17 @@ TEMPLATE = subdirs
     SUBDIRS += hbplugins
 }
 
-# TODO: remove these line when others have suitable .pro files for styling
-astyle.recurse = hbcore hbservers hbwidgets hbutils
+!contains(HB_NOMAKE_PARTS, hbapps) {
+    hbapps.depends = hbcore hbwidgets hbutils
+    SUBDIRS *= hbcore hbwidgets hbutils
+    SUBDIRS += hbapps
+}
+
+# do not build host tools on symbian
+!symbian:!contains(HB_NOMAKE_PARTS, hbtools) {
+    hbtools.depends = hbcore hbwidgets hbutils
+    SUBDIRS *= hbcore hbwidgets hbutils
+    SUBDIRS += hbtools
+}
 
 include(hbcommon.pri)

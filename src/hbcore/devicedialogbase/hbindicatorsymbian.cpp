@@ -62,7 +62,7 @@
 
     \sa HbIndicator
 
-    \alpha
+    \stable
     \hbcore
 */
 

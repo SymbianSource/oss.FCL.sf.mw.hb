@@ -33,14 +33,16 @@
 #include <QDebug>
 
 /*!
+    @hbcore
     \class HbPanGesture
 
-    \brief HbPanGesture contains data and functionality for pan gesture.
+    \brief HbPanGesture is an extension to Qt standard QPanGesture
+    \sa QPanGesture
 */
 
 /*!
-    \brief
-    \return
+    \brief HbPanGesture constructor
+    \param parent Owner for gesture
 
 */
 HbPanGesture::HbPanGesture(QObject *parent) : QPanGesture(parent), d_ptr(new HbPanGesturePrivate)
@@ -49,8 +51,9 @@ HbPanGesture::HbPanGesture(QObject *parent) : QPanGesture(parent), d_ptr(new HbP
 }
 
 /*!
-    \brief
-    \return
+    \brief HbPanGesture constructor
+    \param dd Private data
+    \param parent Owner for gesture
 
 */
 HbPanGesture::HbPanGesture( HbPanGesturePrivate &dd, QObject *parent )
@@ -60,9 +63,7 @@ HbPanGesture::HbPanGesture( HbPanGesturePrivate &dd, QObject *parent )
 }
 
 /*!
-    \brief
-    \return
-
+    \brief HbPanGesture destructor
 */
 HbPanGesture::~HbPanGesture()
 {
@@ -70,9 +71,9 @@ HbPanGesture::~HbPanGesture()
 }
 
 /*!
-    \brief
-    \return
-
+    \property startPos
+    \brief Starting position for gesture in global coordinates.
+    \sa HbPanGesture::sceneStartPos
 */
 QPointF HbPanGesture::startPos() const
 {
@@ -80,11 +81,6 @@ QPointF HbPanGesture::startPos() const
     return d->mStartPos;
 }
 
-/*!
-    \brief
-    \return
-
-*/
 void HbPanGesture::setStartPos(const QPointF &startPos)
 {
     Q_D(HbPanGesture);
@@ -92,9 +88,9 @@ void HbPanGesture::setStartPos(const QPointF &startPos)
 }
 
 /*!
-    \brief
-    \return
-
+    \property velocity
+    \brief Panning velocity in global coordinates.
+    \sa HbPanGesture::sceneVelocity
 */
 QPointF HbPanGesture::velocity() const
 {
@@ -102,21 +98,15 @@ QPointF HbPanGesture::velocity() const
     return HbVelocityCalculator( d->mAxisX, d->mAxisY ).velocity(QTime::currentTime());
 }
 
-/*!
-    \brief
-    \return
-
-*/
 void HbPanGesture::setVelocity(const QPointF &)
 {
-    // Q_D(HbPanGesture);
-    // d->mVelocity = velocity;
+    Q_ASSERT(false);
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneLastOffset
+    \brief The total offset from start position to second last position in scene coordinates.
+    \sa QPanGesture::lastOffset()
 */
 QPointF HbPanGesture::sceneLastOffset() const
 {
@@ -124,11 +114,6 @@ QPointF HbPanGesture::sceneLastOffset() const
     return d->mSceneLastOffset;
 }
 
-/*!
-    \brief
-    \return
-
-*/
 void HbPanGesture::setSceneLastOffset(const QPointF &lastOffset)
 {
     Q_D(HbPanGesture);
@@ -136,9 +121,9 @@ void HbPanGesture::setSceneLastOffset(const QPointF &lastOffset)
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneOffset
+    \brief The total offset from start position to current position in scene coordinates.
+    \sa QPanGesture::offset()
 */
 QPointF HbPanGesture::sceneOffset() const
 {
@@ -146,11 +131,6 @@ QPointF HbPanGesture::sceneOffset() const
     return d->mSceneOffset;
 }
 
-/*!
-    \brief
-    \return
-
-*/
 void HbPanGesture::setSceneOffset(const QPointF &offset)
 {
     Q_D(HbPanGesture);
@@ -158,9 +138,9 @@ void HbPanGesture::setSceneOffset(const QPointF &offset)
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneStartPos
+    \brief Starting position for gesture in scene coordinates.
+    \sa HbPanGesture::startPos()
 */
 QPointF HbPanGesture::sceneStartPos() const
 {
@@ -168,11 +148,6 @@ QPointF HbPanGesture::sceneStartPos() const
     return d->mSceneStartPos;
 }
 
-/*!
-    \brief
-    \return
-
-*/
 void HbPanGesture::setSceneStartPos(const QPointF &startPos)
 {
     Q_D(HbPanGesture);
@@ -180,9 +155,9 @@ void HbPanGesture::setSceneStartPos(const QPointF &startPos)
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneVelocity
+    \brief Panning velocity in scene coordinates.
+    \sa HbPanGesture::velocity()
 */
 QPointF HbPanGesture::sceneVelocity() const
 {
@@ -191,21 +166,19 @@ QPointF HbPanGesture::sceneVelocity() const
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneAcceleration
+    \brief Panning acceleration in scene coordinates.
+    \sa QPanGesture::acceleration()
 */
 QPointF HbPanGesture::sceneAcceleration() const
 {
-    //Q_D(const HbPanGesture);
-    //return d->mSceneAcceleration;
     return QPointF(0,0);
 }
 
 /*!
-    \brief
-    \return
-
+    \property sceneDelta
+    \brief Distance between last two points in scene coordinates.
+    \sa QPanGesture::delta()
 */
 QPointF HbPanGesture::sceneDelta() const
 {

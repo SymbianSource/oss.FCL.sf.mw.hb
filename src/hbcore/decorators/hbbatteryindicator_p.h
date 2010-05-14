@@ -65,7 +65,9 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbBatteryIndicator)
     Q_DISABLE_COPY(HbBatteryIndicator)
 
-    Q_PRIVATE_SLOT(d_func(), void _q_setPowerState(HbSystemDeviceInfo::PowerState))
+#ifdef HB_HAVE_QT_MOBILITY
+    Q_PRIVATE_SLOT(d_func(), void _q_setPowerState(QSystemDeviceInfo::PowerState))
+#endif // HB_HAVE_QT_MOBILITY
 };
 
 #endif // HBBATTERYINDICATOR_H

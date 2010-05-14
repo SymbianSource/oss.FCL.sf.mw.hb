@@ -28,14 +28,10 @@
 #include "hbtreeitemcontainer_p.h"
 #include "hbtreeviewitem.h"
 #include "hbtreeitemselectionmodel_p.h"
-#include <hbwidgetfeedback.h>
 #include "hbtreemodeliterator_p.h"
 
 #include <QItemSelection>
 #include <QGraphicsSceneMouseEvent>
-
-// for QMAP_INT__ITEM_STATE_DEPRECATED's sake
-#include <hbabstractviewitem.h>
 
 /*!
     @alpha
@@ -167,74 +163,6 @@ void HbTreeView::scrollTo(const QModelIndex &index, ScrollHint hint)
         }
     }
     HbAbstractItemView::scrollTo(newIndex, hint);
-}
-
-/*!
-    \deprecated HbTreeView::indexCount() const
-        is deprecated. Use \a HbModelIterator::indexCount() const
-
-    \reimp
-
-    Children of collapsed parents are not taken into account.
-*/
-int HbTreeView::indexCount() const
-{
-    qWarning("HbTreeView::indexCount() const is deprecated! Use HbModelIterator::indexCount() const.");
-
-    return modelIterator()->indexCount();
-}
-
-/*!
-    \deprecated HbTreeView::indexPosition(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::indexPosition(const QModelIndex&) const
-
-    \reimp
-*/
-int HbTreeView::indexPosition(const QModelIndex &index) const
-{
-    qWarning("HbTreeView::indexPosition(const QModelIndex&) const is deprecated! Use HbModelIterator::indexPosition(const QModelIndex&) const.");
-
-    return modelIterator()->indexPosition(index);
-}
-
-/*!
-    \deprecated HbTreeView::nextIndex(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::nextIndex(const QModelIndex&) const
-
-    \reimp
-
-    Next index for valid index is determined in following way:
-
-    - If index has children and it is expanded then first child is returned
-    - Otherwise if index has next sibling then that is returned
-    - Otherwise next valid sibling for parent is returned
-    - Otherwise QModelIndex is returned
-*/
-QModelIndex HbTreeView::nextIndex(const QModelIndex &index) const
-{
-    qWarning("HbTreeView::nextIndex(const QModelIndex&) const is deprecated! Use HbModelIterator::nextIndex(const QModelIndex&) const.");
-
-    return modelIterator()->nextIndex(index);
-}
-
-/*!
-    \deprecated HbTreeView::previousIndex(const QModelIndex&) const
-        is deprecated. Use \a HbModelIterator::previousIndex(const QModelIndex&) const
-
-    \reimp
-
-    Previous index for valid index is determined in following way:
-
-    - If index has previous sibling last child from it is returned
-    - Otherwise previous sibling is returned
-    - Otherwise parent index is returned
-    - Otherwise QModelIndex is returned
-*/
-QModelIndex HbTreeView::previousIndex(const QModelIndex &index) const
-{
-    qWarning("HbTreeView::previousIndex(const QModelIndex&) const is deprecated! Use HbModelIterator::previousIndex(const QModelIndex&) const.");
-
-    return modelIterator()->previousIndex(index);
 }
 
 /*!
@@ -532,9 +460,6 @@ void HbTreeView::currentSelectionChanged(const QItemSelection &selected, const Q
                 item->setCheckState(iterator.value());
             } 
 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-            d->mContainer->setItemStateValue(iterator.key(), HbAbstractViewItem::CheckStateKey, iterator.value());
-#endif
             d->mContainer->setItemTransientStateValue(iterator.key(), "checkState", iterator.value());
             iterator++;
         }
@@ -546,7 +471,7 @@ void HbTreeView::currentSelectionChanged(const QItemSelection &selected, const Q
 /*!
     Sets the item referred to by \a index to either collapse or expanded, depending on the value of \a expanded.
 
-    \sa isExpanded
+    \sa isExpanded()
 */
 void HbTreeView::setExpanded(const QModelIndex &index, bool expanded)
 {
@@ -556,9 +481,6 @@ void HbTreeView::setExpanded(const QModelIndex &index, bool expanded)
         d->mInSetExpanded = true;
         d->treeModelIterator()->itemExpansionChanged(index);
 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-        d->mContainer->setItemStateValue(index, HbTreeViewItem::ExpansionKey, expanded);
-#endif
         d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
 
         int childCount = d->treeModelIterator()->childCount(index) - 1;
@@ -583,7 +505,7 @@ void HbTreeView::setExpanded(const QModelIndex &index, bool expanded)
 /*!
     Returns true if the model item \a index is expanded; otherwise returns false.
 
-    \sa setExpanded
+    \sa setExpanded()
 */
 bool HbTreeView::isExpanded(const QModelIndex &index) const
 {
@@ -604,12 +526,13 @@ bool HbTreeView::isExpanded(const QModelIndex &index) const
 
     If negative value is set, then indentation from style sheet is used.
 
-    \sa indentation
+    \sa indentation()
 */
 void HbTreeView::setIndentation(qreal indentation)
 {
-    Q_ASSERT_X(qobject_cast<HbTreeItemContainer*>(container()), "HbTreeView::setIndentation", "wrong container type");
-    qobject_cast<HbTreeItemContainer*>(container())->setIndentation(indentation);
+    Q_D(HbTreeView);
+    Q_ASSERT_X(qobject_cast<HbTreeItemContainer*>(d->mContainer), "HbTreeView::setIndentation", "wrong container type");
+    qobject_cast<HbTreeItemContainer*>(d->mContainer)->setIndentation(indentation);
 }
 
 /*!
@@ -618,12 +541,13 @@ void HbTreeView::setIndentation(qreal indentation)
 
     Default value is -1. In this case indentation from style sheet is used.
 
-    \sa setIndentation
+    \sa setIndentation()
 */
 qreal HbTreeView::indentation() const
 {
-    Q_ASSERT_X(qobject_cast<HbTreeItemContainer*>(container()), "HbTreeView::indentation", "wrong container type");
-    return qobject_cast<HbTreeItemContainer*>(container())->indentation();
+    Q_D(const HbTreeView);
+    Q_ASSERT_X(qobject_cast<HbTreeItemContainer*>(d->mContainer), "HbTreeView::indentation", "wrong container type");
+    return qobject_cast<HbTreeItemContainer*>(d->mContainer)->indentation();
 }
 
 /*!

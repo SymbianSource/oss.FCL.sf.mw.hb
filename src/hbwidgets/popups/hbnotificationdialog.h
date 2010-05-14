@@ -37,28 +37,15 @@ class HB_WIDGETS_EXPORT HbNotificationDialog : public HbDialog
     Q_OBJECT
     Q_PROPERTY(QString text READ text WRITE setText)
     Q_PROPERTY(QString title READ title WRITE setTitle)
-    Q_PROPERTY(int wrapMode READ wrapMode WRITE setWrapMode)     //deprecated
     Q_PROPERTY(HbIcon icon READ icon WRITE setIcon)
     Q_PROPERTY(Hb::TextWrapping titleTextWrapping READ titleTextWrapping WRITE setTitleTextWrapping)
     Q_PROPERTY(bool sequentialShow READ isSequentialShow WRITE setSequentialShow)
-
-public:
-
-    //deprecated
-    enum WrapMode
-    {
-        NoWrap = 0,
-        TitleWrapsTwoLines
-    };
 
 public:
     HbNotificationDialog();
     ~HbNotificationDialog();
 
     static void launchDialog(const QString &title, QGraphicsScene *scene = 0);
-
-    //deprecated.
-    static void launchDialog(const HbIcon &icon, QGraphicsScene *scene = 0);
     static void launchDialog(const QString &title, const QString &text, QGraphicsScene *scene = 0);
     static void launchDialog(const HbIcon &icon, const QString &title, const QString &text, QGraphicsScene *scene = 0);
 
@@ -74,12 +61,6 @@ public:
     QString text() const;
     HbIcon icon() const;
 
-    //deprecated
-    int wrapMode() const;
-
-    //deprecated
-    void setWrapMode(int mode);
-
     void setTitleTextWrapping(Hb::TextWrapping wrapping);
     Hb::TextWrapping titleTextWrapping() const;
 
@@ -88,6 +69,7 @@ public:
 
     enum { Type = Hb::ItemType_NotificationDialog };
     int type() const { return Type; }
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 signals:
     void activated();

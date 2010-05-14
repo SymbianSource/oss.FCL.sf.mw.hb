@@ -28,6 +28,8 @@
 #include "hbwidget_p.h"
 
 /*!
+    @stable
+    @hbcore
     \class HbStackedWidget
     \brief HbStackedWidget manages geometries of stacked layout contents.
     
@@ -39,7 +41,6 @@
     \snippet{stackedwidgetsample.cpp,1}
     
     \sa HbStackedLayout
-    \alpha
  */
 
 

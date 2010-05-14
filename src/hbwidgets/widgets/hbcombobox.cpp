@@ -29,7 +29,7 @@
 #include <hblistview.h>
 #include <hbtoucharea.h>
 #include <hbtextitem.h>
-#include <hbstyleoptioncombobox.h>
+#include <hbstyleoptioncombobox_p.h>
 #include <QStandardItemModel>
 #include <QDebug>
 
@@ -280,7 +280,7 @@ const HbValidator *HbComboBox::validator() const
     if( d->mEditable) {
         return d->mLineEdit->validator( );
     }
-    return NULL;
+    return 0;
 }
 
 /*!
@@ -311,30 +311,6 @@ int HbComboBox::count( ) const
         return d->mModel->rowCount( );
     }
     return 0;
-}
-
-/*!
-    \deprecated HbComboBox::insertPolicy() const
-    is deprecated.
-    \sa setInsertPolicy
-*/
-HbComboBox::InsertPolicy HbComboBox::insertPolicy( ) const
-{
-    Q_D( const HbComboBox );
-    qDebug() << "this is deprecated and will cease to exist in the near future.";
-    return d->insertPolicy;
-}
-
-/*!
-    \deprecated HbComboBox::setInsertPolicy(HbComboBox::InsertPolicy)
-    is deprecated.
-    \sa insertPolicy
-*/
-void HbComboBox::setInsertPolicy( InsertPolicy policy )
-{
-    Q_D( HbComboBox );
-    qDebug() << "this is deprecated and will cease to exist in the near future.";
-    d->insertPolicy = policy;
 }
 
 /*!
@@ -488,7 +464,7 @@ void HbComboBox::removeItem( int index )
                     if( d->mLineEdit ) {
                         d->mLineEdit->setText( QString() );
                     } else {
-                        d->mText = QString( );
+                        d->mText.clear();
                         HbStyleOptionComboBox comboBoxOption;
                         initStyleOption(&comboBoxOption);
                         style()->updatePrimitive( d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption);
@@ -635,7 +611,7 @@ void HbComboBox::clear( )
             if( d->mLineEdit ) {
                 d->mLineEdit->setText( QString() );
             } else {
-                d->mText = QString( );
+                d->mText.clear();
                 HbStyleOptionComboBox comboBoxOption;
                 initStyleOption(&comboBoxOption);
                 style()->updatePrimitive( d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption);

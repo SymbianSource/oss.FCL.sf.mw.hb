@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 #include "hbtreemodeliterator_p_p.h"
-#include "hbabstractitemcontainer_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 #include <QAbstractItemModel>
 
 HbTreeModelIteratorPrivate::HbTreeModelIteratorPrivate()

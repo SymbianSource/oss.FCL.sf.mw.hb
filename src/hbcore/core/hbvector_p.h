@@ -34,6 +34,17 @@
 #include "hbsmartpointer_p.h"
 #include "hbmemoryutils_p.h"
 
+#ifdef HB_BIN_CSS
+static const int HbVectorDefaultCapacity = 1;
+#else
+static const int HbVectorDefaultCapacity = 5;
+#endif
+
+#ifdef HB_BIN_CSS
+#include "hbcssconverterutils_p.h"
+#endif
+
+
 /**
 * const iterator class of HbVector
 */
@@ -228,7 +239,11 @@ public:
        GET_MEMORY_MANAGER(type);
        HbSmartOffset smartOffset(manager->alloc(sizeof(HbVectorData)), type );
        mData = new((char*)manager->base() + smartOffset.get()) HbVectorData(type);
-       smartOffset.release(); 
+       smartOffset.release();
+
+#ifdef HB_BIN_CSS
+       HbCssConverterUtils::registerOffsetHolder(mData.offsetPtr());
+#endif
    }
 
     HbVector(const HbVector<T> &other)
@@ -248,6 +263,10 @@ public:
        }
        Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory 
                 || mMemoryType == HbMemoryManager::HeapMemory);
+
+#ifdef HB_BIN_CSS
+       HbCssConverterUtils::registerOffsetHolder(mData.offsetPtr());
+#endif
     }
     
     ~HbVector()
@@ -259,7 +278,10 @@ public:
        if(mShared != true && !mData->mRef.deref()) {
            destroyData();
        }
-    
+
+#ifdef HB_BIN_CSS
+       HbCssConverterUtils::unregisterOffsetHolder(mData.offsetPtr());
+#endif
     }
     
     HbMemoryManager::MemoryType memoryType() const
@@ -601,7 +623,6 @@ private:
         DataPointer newData(0, mMemoryType);
         GET_MEMORY_MANAGER(mMemoryType)
         HbSmartOffset offset(manager->alloc(sizeof(HbVectorData)), mMemoryType);
-        qDebug() << tempData->mSize << "," << oldSize;
         newData = new ((char*)manager->base() + offset.get())
                         HbVectorData(mMemoryType, oldSize, newSize);
         mData = newData;
@@ -637,7 +658,13 @@ private:
             return (char*)mData->mStart.get() - (char*)manager->base();
         } else {
             // this statement can throw
-            int offset = manager->realloc(oldOffset, newSize * sizeof(T));
+            int offset = -1;
+            if (capacity() > 0) {
+                offset = manager->realloc(oldOffset, newSize * sizeof(T));
+            } else {
+                offset = manager->alloc(newSize * sizeof(T));
+            }
+
             return offset;
         }
    }
@@ -661,19 +688,28 @@ private : // Data
     {
         // The ctor of HbVectorData can throw owing to manager->alloc, we're not catching the exception
         // if any and simply allow to propagate it to caller.
-        HbVectorData(HbMemoryManager::MemoryType type, unsigned int size=0, unsigned int capacity = 5)
+        HbVectorData(HbMemoryManager::MemoryType type, unsigned int size=0, unsigned int capacity = 0)
             : mStart(0,type),
               mSize(size), 
               mCapacity(capacity),
               mRef(1)
         {
+#ifdef HB_BIN_CSS
+
+            HbCssConverterUtils::registerOffsetHolder(mStart.offsetPtr());
+#endif
             GET_MEMORY_MANAGER(type);
-            mStart = (T*) ((char*)manager->base() + manager->alloc(capacity*sizeof(T)));            
+            if (capacity > 0) {
+                mStart = (T*) ((char*)manager->base() + manager->alloc(capacity*sizeof(T)));
+            }
         }
 
         ~HbVectorData()
         { 
-            destroyAll();
+#ifdef HB_BIN_CSS	
+			HbCssConverterUtils::unregisterOffsetHolder(mStart.offsetPtr());
+#endif //HB_BIN_CSS
+			destroyAll();
         }
 
         void deAllocateAll(HbMemoryManager::MemoryType type)
@@ -799,9 +835,16 @@ void HbVector<T>::append(const value_type &value)
     } else {
         GET_MEMORY_MANAGER(mMemoryType);
         int offset = (char*)mData->mStart.get() - (char*)manager->base();
-        int newOffset = reAlloc(offset, 2 * mData->mCapacity, mData->mSize);
+#ifdef HB_BIN_CSS
+        int capacity = (mData->mCapacity == 0) ? HbVectorDefaultCapacity : mData->mCapacity + 1;
+        int newOffset = reAlloc(offset, capacity, mData->mSize);
+#else
+        int capacity = (mData->mCapacity == 0) ? HbVectorDefaultCapacity : mData->mCapacity * 2;
+        int newOffset = reAlloc(offset, capacity, mData->mSize);
+#endif
+        mData->mCapacity = capacity;
         mData->mStart.setOffset(newOffset);
-        mData->mCapacity *= 2;
+
 
         if(QTypeInfo<value_type>::isComplex) {
             Inserter it(mData->mStart + mData->mSize, mData->mStart + mData->mSize + 1);

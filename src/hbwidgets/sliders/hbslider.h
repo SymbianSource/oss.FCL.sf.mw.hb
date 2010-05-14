@@ -139,12 +139,6 @@ public:
     void setTickPosition(Hb::SliderTickPositions position);
     Hb::SliderTickPositions tickPosition() const;
 
-    void setElements(const QList<SliderElement> &elements);
-    QList<SliderElement> elements() const;
-
-    void setIcon(SliderElement element, const HbIcon &icon);
-    HbIcon icon(SliderElement element) const;   
-
     void setElementIcon(SliderElement element, const HbIcon &icon);
     HbIcon elementIcon(SliderElement element) const; 
     

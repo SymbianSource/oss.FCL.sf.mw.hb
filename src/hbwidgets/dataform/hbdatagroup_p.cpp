@@ -28,12 +28,10 @@
 
 #include "hbdatagroupheadingwidget_p.h"
 #include "hbstyleoptiondatagroup_p.h"
-#include "hbabstractitemcontainer_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 #include "hbdataform_p.h"
 #include "hbdatagroup_p_p.h"
 
-// For QMAP_INT__ITEM_STATE_DEPRECATED's sake. Removed when QMap<int,QVariant> based state item system is removed
-#include <hbabstractviewitem_p.h>
 
 #include <QStringListModel>
 #include <QCoreApplication>
@@ -118,9 +116,6 @@ void HbDataGroupPrivate::expand( bool expanded )
                 //get the group page index
                 QModelIndex groupPageIndex = mIndex.child(activePage,0);
                 if(groupPageIndex.isValid()) {                    
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-                   container->setItemStateValue(groupPageIndex, HbDataFormViewItem::ExpansionKey, true);
-#endif
                     container->setItemTransientStateValue(groupPageIndex, "expanded", true);
                 }
             }
@@ -130,9 +125,6 @@ void HbDataGroupPrivate::expand( bool expanded )
         }
     }
 
-#ifndef QMAP_INT__ITEM_STATE_DEPRECATED
-    container->setItemStateValue(mIndex.operator const QModelIndex & (), HbDataFormViewItem::ExpansionKey, expanded);
-#endif
     container->setItemTransientStateValue(mIndex, "expanded", expanded);
 }
 
@@ -324,10 +316,22 @@ bool HbDataGroup::setExpanded( bool expanded )
 bool HbDataGroup::isExpanded() const
 {
     Q_D(const HbDataGroup);
-    if(d->mGroupHeading) {
-        return d->mGroupHeading->mExpanded;
-	}
+    HbDataFormModelItem::DataItemType contentWidgetType =
+        static_cast<HbDataFormModelItem::DataItemType>(
+        (d->mIndex.data(HbDataFormModelItem::ItemTypeRole)).toInt());
+    if( contentWidgetType == HbDataFormModelItem::GroupItem ) {
+        if(d->mGroupHeading) {
+            return d->mGroupHeading->mExpanded;
+        }
+    } else if ( contentWidgetType == HbDataFormModelItem::GroupPageItem ) {
+        HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+            static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
+        if(container) {
+            return container->itemTransientState(d->mIndex).value("expanded").toBool();
+        }
+    }
     return false;
+
 }
 
 void HbDataGroup::updateGroupPageName(int index , const QString &page)

@@ -31,8 +31,6 @@
 #include <hbgroupbox.h>
 #include "hbgroupbox_p.h"
 
-class HbGestureSceneFilter;
-class HbGesture;
 class QGestureEvent;
 
 class HB_AUTOTEST_EXPORT HbGroupBoxContentWidget : public HbWidget

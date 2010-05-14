@@ -34,7 +34,6 @@ PUBLIC_HEADERS += $$PWD/hbdevicedialog.h
 PUBLIC_HEADERS += $$PWD/hbindicator.h
 PUBLIC_HEADERS += $$PWD/hbdevicedialogplugin.h
 PUBLIC_HEADERS += $$PWD/hbdevicedialoginterface.h
-PUBLIC_HEADERS += $$PWD/hbsymbiandevicedialog.h #deprecated
 PUBLIC_HEADERS += $$PWD/hbdevicedialogsymbian.h 
 PUBLIC_HEADERS += $$PWD/hbsymbianvariant.h
 PUBLIC_HEADERS += $$PWD/hbindicatorsymbian.h
@@ -53,7 +52,6 @@ PRIVATE_HEADERS += $$PWD/hbsymbianvariantconverter_p.h
 PRIVATE_HEADERS += $$PWD/hbdeleteguardsymbian_p.h
 
 SOURCES += $$PWD/hbsymbianvariant.cpp
-SOURCES += $$PWD/hbsymbiandevicedialog.cpp #deprecated
 SOURCES += $$PWD/hbdevicedialogsymbian.cpp 
 
 SOURCES += $$PWD/hbdevicedialogsym_p.cpp

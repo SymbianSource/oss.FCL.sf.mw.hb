@@ -45,7 +45,6 @@ public:
 public:
     QString currentTheme;
 	HbIconTheme iconTheme;
-    ThemeIndexTables themeIndex;
     HbTheme* q_ptr;
 
 };

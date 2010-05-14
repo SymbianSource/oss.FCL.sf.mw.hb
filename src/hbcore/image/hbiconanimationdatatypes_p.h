@@ -35,9 +35,7 @@
 class HbIconAnimationData
 {
 public:
-    HbIconAnimationData() : definitionFileName(0), def() {}
-public:
-    QString *definitionFileName;
+    QString definitionFileName;
     HbIconAnimationDefinition def;
 };
 

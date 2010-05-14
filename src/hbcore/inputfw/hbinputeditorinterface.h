@@ -49,18 +49,12 @@ public:
 
     HbTextCase textCase() const;
     void setTextCase(HbTextCase textCase);
-    int inputMode() const;
-    void setInputMode(int inputMode);
      HbInputModeType mode() const;
-     void setMode(HbInputModeType inputMode);
-    int constraints() const;
-    void setConstraints(int constraints);
+     void setMode(HbInputModeType inputMode);    
     HbEditorConstraints inputConstraints() const;
     void setInputConstraints(HbEditorConstraints constraints);
     HbInputFilter *filter() const;
     void setFilter(HbInputFilter *filter);
-    int localDigitType() const;
-    void setLocalDigitType(int digitType);
     HbInputDigitType digitType() const;
     void setDigitType(HbInputDigitType digitType);
     void addAction(HbAction *action);
@@ -81,8 +75,7 @@ public:
     QObject* editor() const;
     HbVkbHost *vkbHost() const;
 
-public:  // Convinience methods for setting up standard editor types.
-    void setUpAsPhoneNumberEditor();
+public:  // Convinience methods for setting up standard editor types.   
     void setUpAsCompletingEmailField();
     void setUpAsCompletingUrlField();
     void setUpAsLatinAlphabetOnlyEditor();

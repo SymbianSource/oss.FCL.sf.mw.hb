@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionpopup.h"
+#include "hbstyleoptionpopup_p.h"
 
 /*!
     \class HbStyleOptionPopup

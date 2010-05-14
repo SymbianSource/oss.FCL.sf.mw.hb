@@ -57,12 +57,14 @@ public:
 
     void paint(QPainter *painter);
 
-    void reset( bool resetFrameCount = true );
+    void reset(bool resetFrameCount = true, bool unloadedByServer = false);
     void resetMaskableIcon();    
     bool fillWholeRect() const;
     QString multiPartIconId() const;
     HbIconLoader::IconLoaderOptions iconLoaderOptions();
-    void unLoadIcon();
+    void unLoadIcon(bool unloadedByServer = false);
+
+    void themeChange(const QStringList &updatedFiles);
 
 private:
     void calculateShrinkedNinePieceCorners(

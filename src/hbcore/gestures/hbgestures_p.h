@@ -30,11 +30,11 @@
 #include <QObject>
 #include <QGraphicsView>
 
-const int HbDefaultPanThreshold = 20;
+const int HbDefaultPanThreshold = 30;
 const int HbDefaultTapRadius = HbDefaultPanThreshold-1;
 
-const qreal HbSwipeMinOffset = 150;
-const qreal HbSwipeMinSpeed = 0.6;
+const qreal HbSwipeMinOffset = 100;
+const qreal HbSwipeMinSpeed = 0.8;
 
 class HbGestureUtils
 {

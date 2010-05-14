@@ -42,6 +42,9 @@
     indicator, the framework calls accessAllowed() allowing the plugin to inspect client's security
     credentials. By returning false, the plugin denies client access.
 
+    Plugins are loaded by a Device Dialog server. For information on installing plugins, refer to
+    HbDeviceDialogPlugin documentation.
+
     here's an example of how to create a simple indicator plugin.
     If plugin implements only one indicator, the pluginInterface class can also inherit from
     HbIndicatorInterface. Example header-file:
@@ -55,9 +58,9 @@
     based on HbIndicatorInterface.
     \snippet{unit\unittest_hbindicator\codesnippetplugin\hbcodesnippetplugin.cpp,2}
 
-    \sa HbIndicator, HbIndicatorInterface
+    \sa HbIndicator, HbIndicatorInterface, HbDeviceDialogPlugin
 
-    \alpha
+    \stable
     \hbcore
 */
 
@@ -71,9 +74,6 @@
     \fn virtual bool HbIndicatorPluginInterface::accessAllowed(
         const QString &indicatorType, const QVariantMap &securityInfo) const
 
-    <b>Notice: This function has implementation until deprecation period ends.
-    After that it will be pure virtual.</b>
-
     Checks if client is allowed to activate or deactivate the indicator.  The
     implementation is operating system dependent. On Symbian this may involve checking client's
     platform security capabilities or secure ID for example.
@@ -84,26 +84,6 @@
     Should return true if client is allowed to activate and deactivate the indicator.
 
     \sa HbDeviceDialogPlugin::accessAllowed()
-*/
-
-/*!
-    \fn virtual bool HbIndicatorPluginInterface::accessAllowed(
-        const QString &indicatorType, const HbSecurityInfo *securityInfo) const
-
-    Checks if client is allowed to activate or deactivate the indicator.  The
-    implementation is operating system dependent. On Symbian this may involve checking client's
-    platform security capabilities or secure ID for example.
-
-    \a indicatorType contains indicator type.
-    \a securityInfo contains information for security check. Information is operating system dependent.
-
-    Should return true if client is allowed to activate and deactivate the indicator.
-
-    Note! Not implemented yet. Plugin implementors should always return true from this function.
-
-    \deprecated HbIndicatorPluginInterface::accessAllowed(const QString &, const HbSecurityInfo *) const
-        is deprecated. Replaced by IndicatorPluginInterface::accessAllowed(const QString &indicatorType, const QVariantMap &securityInfo) const
-
 */
 
 /*!

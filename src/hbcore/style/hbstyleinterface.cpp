@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 
-#include "hbstyleinterface.h"
+#include "hbstyleinterface_p.h"
 
 
 /*!

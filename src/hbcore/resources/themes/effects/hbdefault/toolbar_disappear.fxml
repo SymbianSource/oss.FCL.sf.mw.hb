@@ -6,7 +6,7 @@
           <keyframe at="0">0</keyframe>
           <keyframe at="0">0</keyframe>     
     <start ref="visual.top">1</start>
-    <end ref="screen.bottom">1</end>
+    <end ref="visual.bottom">1</end>
   </param>
 	</visual>
 </layers>

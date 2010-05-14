@@ -49,6 +49,7 @@ public:
     int type() const { return Type; }
 
     void resetMode();
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 signals:
     void launchPopup(const QPointF &pos);

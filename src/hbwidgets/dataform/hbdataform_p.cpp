@@ -74,7 +74,7 @@ void HbDataFormPrivate::init()
     protos.append(new HbDataGroup());
     q->setItemPrototypes(protos);
     q->setClampingStyle(HbScrollArea::BounceBackClamping);
-    q->setItemRecycling(true);
+    q->setItemRecycling(false);
     treeModelIterator()->setItemContainer(mContainer);
 }
 
@@ -120,7 +120,7 @@ void HbDataFormPrivate::addFormPage(const QString& page)
     // Create combobox if not created 
     if(!mHeadingWidget) {
         mHeadingWidget = new HbDataFormHeadingWidget();
-        static_cast<HbDataItemContainer*>(q->container())->setFormHeading(mHeadingWidget);        
+        static_cast<HbDataItemContainer*>(mContainer)->setFormHeading(mHeadingWidget);        
         QEvent polishEvent(QEvent::Polish);
         QCoreApplication::sendEvent(mHeadingWidget, &polishEvent);
     }
@@ -134,7 +134,7 @@ void HbDataFormPrivate::addFormPage(const QString& page)
         // setFormHeading to the layout
         if(mHeadingWidget->mPageCombo || !mHeadingWidget->mDescription.isEmpty() || 
             !mHeadingWidget->mHeading.isEmpty()) {
-            static_cast<HbDataItemContainer*>(q->container())->setFormHeading(mHeadingWidget);
+            static_cast<HbDataItemContainer*>(mContainer)->setFormHeading(mHeadingWidget);
         }
         QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
@@ -205,7 +205,7 @@ void HbDataFormPrivate::makeConnection(QModelIndex index)
         if(modelItem){
             QList<ItemSignal> signalList = mConnectionList.values(modelItem);
             if(signalList.count() > 0){
-                HbDataFormViewItem *viewItem = q->dataFormViewItem(index);
+                HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*>(q->itemByIndex(index));
                 if(viewItem){
                     HbWidget *contentWidget = viewItem->dataItemContentWidget();
                     if(contentWidget){
@@ -239,8 +239,8 @@ void HbDataFormPrivate::removeConnection(HbDataFormModelItem * modelItem,
             mConnectionList.remove(modelItem);
             if(signalList.count() > 0){
             QModelIndex index = 
-                static_cast<HbDataFormModel*>(modelItem->model())->indexFromItem(modelItem);
-                HbDataFormViewItem *viewItem = q->dataFormViewItem(index);
+                static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
+                HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*>(q->itemByIndex(index));
                 if(viewItem){
                     HbWidget *contentWidget = viewItem->dataItemContentWidget();
                     if(contentWidget){
@@ -272,12 +272,12 @@ void HbDataFormPrivate::connectNow(HbDataFormModelItem * modelItem,
                                    QObject *reciever, 
                                    QString slot)
 {
-    Q_Q( HbDataForm);
-    QModelIndex index = static_cast<HbDataFormModel*>(modelItem->model())->indexFromItem(modelItem);
-    Q_UNUSED(index);
+    Q_Q( HbDataForm);    
+    
     if(q->model()) {
+        QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
         if(modelItem){
-                HbDataFormViewItem *viewItem = q->dataFormViewItem(index);
+                HbDataFormViewItem *viewItem =static_cast<HbDataFormViewItem*>( q->itemByIndex(index) );
                 if(viewItem){
                     HbWidget *contentWidget = viewItem->dataItemContentWidget();
                         // Make connection
@@ -300,8 +300,8 @@ void HbDataFormPrivate::removeAllConnection()
             QList<ItemSignal> signalList = mConnectionList.values(item);
             mConnectionList.remove(item);
             if(signalList.count() > 0){
-                QModelIndex index = static_cast<HbDataFormModel*>(item->model())->indexFromItem(item);
-                HbDataFormViewItem *viewItem = q->dataFormViewItem(index);
+                QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(item);
+                HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*> (q->itemByIndex(index));
                 if(viewItem){
                     HbWidget *contentWidget = viewItem->dataItemContentWidget();
                     // disconnect signal and remove signal from list
@@ -327,8 +327,8 @@ void HbDataFormPrivate::removeAllConnection(HbDataFormModelItem *modelItem)
             QList<ItemSignal> signalList = mConnectionList.values(modelItem);
             mConnectionList.remove(modelItem);
             if(signalList.count() > 0){
-                QModelIndex index = static_cast<HbDataFormModel*>(modelItem->model())->indexFromItem(modelItem);
-                HbDataFormViewItem *viewItem = q->dataFormViewItem(index);
+                QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
+                HbDataFormViewItem *viewItem =static_cast<HbDataFormViewItem*>( q->itemByIndex(index));
                 if(viewItem){
                     HbWidget *contentWidget = viewItem->dataItemContentWidget();
                     // disconnect signal and remove signal from list

@@ -44,17 +44,6 @@ class HB_CORE_EXPORT HbVkbHost : public QObject
 
 public:
       /*!
-      \deprecated
-      Enumerates known virtual keyboard host priorities.
-      NOTE: all these values are deprecated.
-      */
-      enum HbVkbHostPriority {
-          HbVkbHostPriorityDefault = 1000,
-          HbVkbHostPriorityPopup = 2000,
-          HbVkbHostPriorityCustom = 5000 
-      };
-
-      /*!
       Enumerates different keypad states.
       */
       enum HbVkbStatus {
@@ -69,10 +58,8 @@ public:
     virtual void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner) = 0;
     virtual void closeKeypad(bool animationAllowed = true) = 0;
     virtual void minimizeKeypad(bool animationAllowed = true) = 0;
-    virtual HbVkbStatus keypadStatus() const = 0;
-    virtual int priority() const = 0; 
+    virtual HbVkbStatus keypadStatus() const = 0;  
     virtual QSizeF keyboardArea() const = 0;
-    virtual void preferredSizeChanged(const QSizeF& newSize) = 0;
     virtual HbVirtualKeyboard* activeKeypad() const = 0;
     virtual QRectF applicationArea() const = 0;
     virtual HbVkbStatus keypadStatusBeforeOrientationChange() const = 0;

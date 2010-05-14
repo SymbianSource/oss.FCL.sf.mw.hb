@@ -46,8 +46,7 @@ public:
         mFocusObject(0),
         mInputState(HbInputModeNone, HbTextCaseNone, HbKeyboardNone),        
         mFocusLocked(false),
-        mStateChangeInProgress(false),       
-        mIsOrientationContextSwitchInProgress(false)
+        mStateChangeInProgress(false)
     {}
     ~HbInputMethodPrivate();
 
@@ -58,8 +57,6 @@ public:
     HbInputLanguage activeLanguage() const;
     bool modeAllowedInEditor(HbInputModeType mode) const;
     bool stateAllowedInEditor(const HbInputState& state);
-    void stateFromMode(const HbInputModeProperties& mode, HbInputState& state);
-    HbInputMethod* findInitialStateHandler(const QVector<HbInputModeProperties>& modes, HbInputState& state);
     HbInputMethod* findStateHandler(HbInputState& startingState);
     HbInputLanguage findStateLanguage() const;
     bool automaticTextCaseNeeded() const;
@@ -91,9 +88,15 @@ public:
     HbInputFocusObject* mFocusObject;
     HbInputState mInputState;   
     bool mFocusLocked;
-    bool mStateChangeInProgress;  
-    bool mIsOrientationContextSwitchInProgress;
+    bool mStateChangeInProgress;
     QList<HbInputModeProperties> mInputModes;
+
+private: // For unit test.
+    static HbInputMethodPrivate *d_ptr(HbInputMethod *inputMethod) {
+        Q_ASSERT(inputMethod);
+        return inputMethod->d_func();
+    }
+    friend class TestHbInputMethodPrivate;
 };
 
 #endif // HB_INPUT_METHOD_P_H

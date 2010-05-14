@@ -64,7 +64,6 @@ public:
         Q_ASSERT(note);
         return note->d_func();
     }
-    HbAction *mAction;
     QTimeLine *mTimer;
     HbIcon mIcon;
     HbProgressDialogContentWidget* mContentWidget;

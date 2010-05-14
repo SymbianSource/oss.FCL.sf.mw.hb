@@ -42,9 +42,8 @@ class HB_WIDGETS_EXPORT HbDataFormModelItem
 
 public:
 
-    enum Roles {
-        KeyRole = Qt::UserRole + 1,
-        LabelRole,
+    enum Roles {       
+        LabelRole = Qt::UserRole + 1,
         ItemTypeRole,
         PropertyRole,
         DescriptionRole
@@ -80,10 +79,7 @@ public:
 
     HbDataFormModelItem* childAt(int index) const;
     int indexOf(const HbDataFormModelItem* child) const;
-    int childCount() const;
-
-    void setModel(const QAbstractItemModel *model);
-    QAbstractItemModel* model() const;
+    int childCount() const;    
 
     QVariant data(int role) const;
     void setData(int role, const QVariant &value);

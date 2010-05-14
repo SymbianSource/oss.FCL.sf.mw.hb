@@ -281,14 +281,14 @@ QStringList HbDocumentLoaderPluginManager::pluginPathList() const
 
 QString HbDocumentLoaderPluginManager::pluginFileNameFilter() const
 {
-#if defined(Q_OS_LINUX)
-    return QString("*.so");
-#elif defined(Q_OS_MAC)
+#if defined(Q_OS_MAC)
     return QString("*.dylib");
 #elif defined(Q_OS_WIN32)
     return QString("*plugin.dll");
-#else
+#elif defined(Q_OS_SYMBIAN)
     return QString("*.qtplugin");
+#else
+    return QString("*.so");
 #endif
 }
 
@@ -337,7 +337,7 @@ QPluginLoader *HbDocumentLoaderPluginManager::lookUpPlugin( const QString &plugi
     foreach( QPluginLoader *loader, mPlugins ) {
         const QFileInfo fileInfo( loader->fileName() );
         QString compareName;
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_UNIX) && !defined(Q_OS_SYMBIAN)
         compareName.append( "lib" );
 #endif
         compareName.append( plugin );
@@ -349,7 +349,7 @@ QPluginLoader *HbDocumentLoaderPluginManager::lookUpPlugin( const QString &plugi
     // not found -> try to find it.
     const QStringList pathList = pluginPathList();
     QString fileNameFilter;
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_UNIX) && !defined(Q_OS_SYMBIAN)
     fileNameFilter.append( "lib" );
 #endif
     fileNameFilter.append( plugin );

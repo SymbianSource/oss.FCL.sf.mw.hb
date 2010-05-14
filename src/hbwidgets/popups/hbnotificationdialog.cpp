@@ -44,7 +44,7 @@
 #include "hbeffectinternal_p.h"
 #endif
 
-#include <hbstyleoptionnotificationdialog.h>
+#include <hbstyleoptionnotificationdialog_p.h>
 #include "hbnotificationdialogcontent_p.h"
 
 #define H_MARGIN QString("hb-param-margin-gene-middle-horizontal")
@@ -86,48 +86,46 @@ static SequentialShow *sequentialShowInstance()
 }
 
 /*!
+    @beta
+    @hbwidgets
     \class HbNotificationDialog
-    \brief HbNotificationDialog is a non-modal dialog displayed on top of applications.
-    Notification dialog is a dialog that can be used for notifying users of the system
-    generated or user activated events in the UI. These notifications do not require
+    \brief HbNotificationDialog can be used to notify users of system
+    generated or user activated events in the UI.
+
+    HbNotificationDialog is a non-modal dialog displayed on top of applications.
+    These notifications do not require
     user input.
 
-    If wanted, some action can be activated with a tap to the notification dialog. The user
-    of notification dialog can do this by first enabling the touch activation with
+    Optionally, an action can be activated with a tap to the notification dialog. This is enabled
+    by first enabling the touch activation with
     enableTouchActivation() and then starting the action with the signal
-    HbNotificationDialog::activated()
+    HbNotificationDialog::activated().
 
     HbNotificationDialog is a concrete class. For the content, you can use the default content
-    widgets which provides two rows of text (title only, or title and text) and optionally an icon.
+    widgets which provides two rows of text (title spanning both lines, or title and text) and optionally an icon.
 	You can use the default content widget by invoking the HbNotificationDialog with its
-    static launch-methods or by using the methods setText, setTitle, setIcon.
+    static launch-methods or by using the methods setText(), setTitle() and setIcon().
 
-    Alternatively, you can create a separate widget, and set it to the dialog with inherited method
+    Alternatively, you can create a separate widget, and set it to the dialog with the inherited method
     HbNotificationDialog::setContentWidget().
 
-    To display a notification dialog, show() or exec() has to be called. By default, notifications
-    are synchronized with device dialogs. Showing of notification dialogs are delayed until there
+    To display a notification dialog, show() or open() must be called. By default, notifications
+    are synchronized with device dialogs. The display of notification dialogs is delayed until there
     are no device dialogs on display. Notifications are also synchronized with each other.
-    If several notifications are shown at the same time with show() function, they are shown
-    sequentially instead of on top of each other. Sequential show and device dialog
-    synchronization can be disabled by setSequentialShow() function.
-
-    \beta
-    \hbwidgets
+    If several notifications are shown at the same time with the show() function, they are shown
+    sequentially instead of on top of each other. The synchronization of dialogs and sequential display of dialogs 
+    can be disabled using the setSequentialShow() function.
 */
 
 /*!
     \fn void HbNotificationDialog::activated();
 
-    This signal is emitted when the dialog is closed with a pointer tap
+    This signal is emitted when the dialog is closed with a pointer tap.
  */
 
 /*!
-    \enum HbNotificationDialog::WrapMode
-    \deprecated HbNotificationDialog::WrapMode
-        is deprecated and will be removed in future.
-*/
-
+    Constructor.
+ */
 HbNotificationDialog::HbNotificationDialog() : HbDialog(*new HbNotificationDialogPrivate, 0)
 {
     Q_D(HbNotificationDialog);
@@ -143,8 +141,7 @@ HbNotificationDialog::HbNotificationDialog() : HbDialog(*new HbNotificationDialo
         setPreferredPos(QPointF(hMargin, vMargin));
     }
 
-    // todo: priority
-    d->setPriority(1);
+    //d->setPriority(1);
 
     setModal(false);
 
@@ -162,6 +159,9 @@ HbNotificationDialog::HbNotificationDialog() : HbDialog(*new HbNotificationDialo
 #endif
 }
 
+/*!
+    Destructor.
+ */
 HbNotificationDialog::~HbNotificationDialog()
 {
     Q_D(HbNotificationDialog);
@@ -172,7 +172,8 @@ HbNotificationDialog::~HbNotificationDialog()
 
 /*!
     Enable user interaction on dialog.
-    \param enable - When enabled, activated() signal is emitted on user action.
+    \param enabled - When enabled, the activated() signal is emitted on user action.
+
     \sa isTouchActivating()
 */
 void HbNotificationDialog::enableTouchActivation(bool enabled)
@@ -185,7 +186,8 @@ void HbNotificationDialog::enableTouchActivation(bool enabled)
 }
 
 /*!
-    returns true if the use interaction is enabled.
+    Returns true if user interaction is enabled.
+
     \sa enableTouchActivation()
 */
 bool HbNotificationDialog::isTouchActivating() const
@@ -195,8 +197,8 @@ bool HbNotificationDialog::isTouchActivating() const
 }
 
 /*!
- Convenience method for using HbNotificationDialog. Shows a notification dialog with
- the given parameters. The dialog is owned by HbNotificationDialog.
+    Convenience method for using HbNotificationDialog. Shows a notification dialog with
+    the given parameters. The dialog is owned by HbNotificationDialog.
 */
 void HbNotificationDialog::launchDialog(const QString &title, const QString &text, QGraphicsScene* scene)
 {
@@ -211,26 +213,8 @@ void HbNotificationDialog::launchDialog(const QString &title, const QString &tex
 }
 
 /*!
- Convenience method for using HbNotificationDialog. Shows a notification dialog with
- the given parameters. The dialog is owned by NotificationDialog.
-
- \deprecated HbNotificationDialog::launchDialog(const HbIcon&, QGraphicsScene*)
-     is deprecated. Showing only icon is not supported by the layout. Use other launchDialog-methods instead.
-*/
-void HbNotificationDialog::launchDialog(const HbIcon &icon, QGraphicsScene* scene)
-{
-    HbNotificationDialog *self = new HbNotificationDialog();
-    if (scene) {
-        scene->addItem(self);
-    }
-    self->setAttribute(Qt::WA_DeleteOnClose, true);
-    self->setIcon(icon);
-    self->show();
-}
-
-/*!
- Convenience method for using HbNotificationDialog. Shows a notification dialog with
- the given parameters. The dialog is owned by NotificationDialog.
+    Convenience method for using HbNotificationDialog. Shows a notification dialog with
+    the given parameters. The dialog is owned by NotificationDialog.
 */
 void HbNotificationDialog::launchDialog(const QString &title, QGraphicsScene* scene)
 {
@@ -244,8 +228,8 @@ void HbNotificationDialog::launchDialog(const QString &title, QGraphicsScene* sc
 }
 
 /*!
- Convenience method for using HbNotificationDialog. Shows a notification dialog with
- the given parameters. The dialog is owned by HbNotificationDialog.
+    Convenience method for using HbNotificationDialog. Shows a notification dialog with
+    the given parameters. The dialog is owned by HbNotificationDialog.
 */
 void HbNotificationDialog::launchDialog(const HbIcon &icon, const QString &title,
                                         const QString &text, QGraphicsScene* scene)
@@ -262,14 +246,11 @@ void HbNotificationDialog::launchDialog(const HbIcon &icon, const QString &title
 }
 
 /*!
-    \property HbNotificationDialog::title
-    \brief title text
+    Returns the title text.
 
     If a default content widget doesn't exist, it is created.
-*/
-/*!
- returns title text.
- \sa setTitle()
+
+    \sa setTitle()
 */
 QString HbNotificationDialog::title() const
 {
@@ -282,26 +263,24 @@ QString HbNotificationDialog::title() const
 }
 
 /*!
- set title text
- \sa title()
+    Set the dialog title text.
+
+    \sa title()
 */
 void HbNotificationDialog::setTitle(const QString& title)
 {
     Q_D(HbNotificationDialog);
     d->checkAndCreateContentWidget();
-    d->content->setTitle( title );
+    d->content->setTitle(title);
     d->setNotificationDialogContent();
 }
 
 /*!
-    \property HbNotificationDialog::text
-    \brief text for the dialog
+    Returns the text for the dialog.
 
     If a default content widget doesn't exist, it is created.
-*/
-/*!
- returns text for the dialog.
- \sa setText()
+
+    \sa setText()
 */
 QString HbNotificationDialog::text() const
 {
@@ -314,8 +293,9 @@ QString HbNotificationDialog::text() const
 }
 
 /*!
- set text for the dialog.
- \sa text()
+    Set the text for the dialog.
+
+    \sa text()
 */
 void HbNotificationDialog::setText(const QString& text)
 {
@@ -326,14 +306,11 @@ void HbNotificationDialog::setText(const QString& text)
 }
 
 /*!
-    \property HbNotificationDialog::icon
-    \brief icon
+    Returns the icon for the dialog.
 
     If a default content widget doesn't exist, it is created.
-*/
-/*!
- returns the icon.
- \sa setIcon()
+
+    \sa setIcon()
 */
 HbIcon HbNotificationDialog::icon() const
 {
@@ -346,8 +323,9 @@ HbIcon HbNotificationDialog::icon() const
 }
 
 /*!
- set the icon.
- \sa icon()
+    Set the icon.
+
+    \sa icon()
 */
 void HbNotificationDialog::setIcon(const HbIcon& icon)
 {
@@ -358,28 +336,12 @@ void HbNotificationDialog::setIcon(const HbIcon& icon)
 }
 
 /*!
-\deprecated HbNotificationDialog::setWrapMode(int)
-    is deprecated. Please use setTitleTextWrapping(Hb::TextWrapping wrapping) instead.
-*/
-void HbNotificationDialog::setWrapMode(int mode)
-{
-    if (mode == NoWrap) {
-        setTitleTextWrapping(Hb::TextNoWrap);
-    } else {
-        setTitleTextWrapping(Hb::TextWordWrap);
-    }
-}
+    Returns the style of text wrapping for the title.
+    
+    The title can wrap only if there is no other text for the dialog. The title can wrap to a maximum of two lines.
+    The default is Hb::TextWordWrap.
 
-/*!
-    \property HbNotificationDialog::titleTextWrapping
-    \brief sets the wrapping for title.
-
-    The title can wrap to two lines only if the text is empty.
-    \sa HbNotificationDialog::title, HbNotificationDialog::text
-*/
-/*!
-    Returns the wrapping mode. The title can wrap to two lines only if the text is empty.
-    \sa setTitleTextWrapping()
+    \sa setTitleTextWrapping(), HbNotificationDialog::title, HbNotificationDialog::text
 */
 Hb::TextWrapping HbNotificationDialog::titleTextWrapping() const
 {
@@ -388,9 +350,9 @@ Hb::TextWrapping HbNotificationDialog::titleTextWrapping() const
 }
 
 /*!
-    \brief sets the wrapping for title.
+    Sets whether the text for the title is wrapped.
 
-    The title can wrap to two lines only if the text is empty.
+    The title can wrap only if there is no text for the dialog. The title can wrap to a maximum of two lines.
     \sa titleTextWrapping()
 */
 void HbNotificationDialog::setTitleTextWrapping(Hb::TextWrapping wrapping)
@@ -406,13 +368,17 @@ void HbNotificationDialog::setTitleTextWrapping(Hb::TextWrapping wrapping)
 }
 
 /*!
-    Enables or disables sequential showing of Notification Dialog. Notification dialogs are by
-    default shown sequentially. Several dialogs displayed by show() at the same time are shown
-    one after another instead of on top of each other. Showing of the dialogs are also synchronized
-    with device dialogs by delaying until none of them are shown. With sequential show disabled,
+    Enables or disables sequential display of the Notification Dialog.
+
+    When enabled, notification dialogs are shown sequentially. If multiple calls to show() occur at the same time then the dialogs are displayed
+    in sequence instead of on top of each other. The display of the dialogs is also synchronized
+    with the device dialogs such that the notification dialogs do not appear until there are no device dialogs being displayed.
+
+    With sequential show disabled,
     HbNotificationDialog behaves like other popups. While a dialog is waiting to be shown,
-    setVisible(), hide() or show() has no effect. setSequentialShow(false) removes a dialog from the
-    wait queue.
+    setVisible(), hide() and show() have no effect. To remove a dialog from the wait queue, call setSequentialShow(false).
+
+    This setting is enabled by default. 
 
     \sa isSequentialShow()
 */
@@ -426,7 +392,7 @@ void HbNotificationDialog::setSequentialShow(bool sequentially)
 }
 
 /*!
-    Returns sequential show setting.
+    Returns the sequential show setting.
 
     \sa setSequentialShow()
 */
@@ -437,20 +403,29 @@ bool HbNotificationDialog::isSequentialShow() const
 }
 
 /*!
-\deprecated HbNotificationDialog::wrapMode() const
-    is deprecated. Please use titleTextWrapping() const instead.
-*/
-int HbNotificationDialog::wrapMode() const
-{
-    return NoWrap;
-}
-
-/*!
  Constructor required by the shared d-pointer paradigm.
 */
 HbNotificationDialog::HbNotificationDialog(HbNotificationDialogPrivate &dd, QGraphicsItem *parent) :
     HbDialog(dd, parent)
 {
+}
+
+/*!
+    \reimp
+*/
+QGraphicsItem *HbNotificationDialog::primitive(const QString &itemName) const
+{
+    Q_D(const HbNotificationDialog);
+    
+    if (itemName == "") {
+        return 0;
+    } else {
+        if(d->content) {
+            return d->content->primitive(itemName);
+        } else {
+             return HbWidget::primitive(itemName);
+        }
+    }
 }
 
 void HbNotificationDialog::gestureEvent(QGestureEvent *event)

@@ -25,7 +25,7 @@
 
 
 #include <hbdataformviewitem.h>
-#include <hbstyleoptiondataformviewitem.h>
+#include <hbstyleoptiondataformviewitem_p.h>
 
 #include "hbdataformmodelitem_p.h"
 #include "hbdataformviewitem_p.h"
@@ -133,37 +133,11 @@
 
     The signals emitted by this class are:
     \li itemShown(const QModelIndex&) This signal is emitted when ever this item becomes visible.
-    \deprecated HbDataFormViewItem::itemDestroyed(QPersistentModelIndex)
-        This signal is deprecated.
-
-    \deprecated HbDataFormViewItem::itemModified(QPersistentModelIndex, QVariant)
-        This signal is deprecated . Use dataChanged(QModelIndex,QModelIndex) signal of model instead 
-        and fetch the new value from corresponding modelItem.
-
+    
     Refer HbDataForm documentation for sample code.
 
     \sa HbDataForm, HbDataFormModel, HbDataFormModelItem
 */
-
-/*!
-    \deprecated HbDataFormViewItem::StateKey
-        is deprecated. Please use string based state keys.
-
-    \enum HbDataFormViewItem::StateKey
-
-    HbDataFormViewItem's user defined state keys.
-
-    \sa HbAbstractViewItem::transientState()
-*/
-
-/*!
-    \deprecated HbDataFormViewItem::ExpansionKey
-        is deprecated. Please use string based state keys. This key is replaced by "expanded".
-
-    \var HbDataFormViewItem::ExpansionKey
-    Predefined key for expansion/collapsion state of a view item. Default state is collapsed.
-*/
-
 
 /*!
     Constructs HbDataFormViewItem with given \a parent.
@@ -260,7 +234,7 @@ void HbDataFormViewItem::updateChildItems()
     //HbEffect::start( settingItem, HB_DATAFORMVIEWITEM_TYPE, "expanded" );  
 #endif
 
-    load( );
+    restore( );
 
     // Establish Signal Connections set in HbDataFormModel to th contentWidget of this item
     HbDataFormPrivate::d_ptr(
@@ -299,36 +273,6 @@ HbDataFormViewItem& HbDataFormViewItem::operator=(const HbDataFormViewItem &sour
     *d = *source.d_func();
     setProperty( "hasIcon", false );
     return *this;
-}
-
-/*!
-    \deprecated HbDataFormViewItem::load()
-        is deprecated. Please use HbDataFormViewItem::restore() instead.
-
-    Loads the data from the central repository and assign to the widget.
-    The property for loading and storing the data need to be initialized when the 
-    DataItem is created.
-
-    \sa store restore
-*/
-void HbDataFormViewItem::load()
-{
-    restore();
-}
-
-/*!
-    \deprecated HbDataFormViewItem::store()
-        is deprecated. Please use HbDataFormViewItem::save() instead.
-
-    Store the current data to the central repository .
-    The property for loading and storing the data need to be initialized when the 
-    DataItem is created 
-
-    \sa load save
-*/
-void HbDataFormViewItem::store()
-{
-    save();
 }
 
 /*!
@@ -403,8 +347,7 @@ void HbDataFormViewItem::save()
                 d->mSharedData->mItemView, SLOT( dataChanged( QModelIndex,QModelIndex ) ) );
 
             d->mModelItem->setContentWidgetData(
-                d->mProperty, d->mContentWidget->property(d->mProperty.toAscii( ).data( ) ) );
-            emit itemModified(d->mIndex, d->mContentWidget->property(d->mProperty.toAscii( ).data( )));
+                d->mProperty, d->mContentWidget->property(d->mProperty.toAscii( ).data( ) ) );            
 
             connect( d->mModel, SIGNAL( dataChanged( QModelIndex,QModelIndex ) ),
                 d->mSharedData->mItemView, SLOT( dataChanged( QModelIndex,QModelIndex ) ) );
@@ -462,39 +405,6 @@ bool HbDataFormViewItem::isExpanded() const
     return false;
 }
 
-/*!
-     \deprecated HbDataFormViewItem::state() 
-        is deprecated. 
-    
-    \reimp
-*/
-QMap<int,QVariant> HbDataFormViewItem::state() const
-{
-    return HbAbstractViewItem::state();
-}
-
-/*!
-    \deprecated HbDataFormViewItem::setState(const QMap<int, QVariant>&)
-        is deprecated. 
-
-    \reimp
-*/
-void HbDataFormViewItem::setState(const QMap<int,QVariant> &state)
-{
-    HbAbstractViewItem::setState(state);
-}
-
-/*!
-    \deprecated  HbDataFormViewItem::contentWidget() const
-        is deprecated. Use dataItemContentWidget() instead
-
-    Return the content widget of HbDataFormViewItem.    
-    \sa dataItemContentWidget
-*/
-HbWidget* HbDataFormViewItem::contentWidget()const
-{
-    return 0;
-}
 /*!
     This API is valid only if HbDataFormViewItem represents a data item. Returns the 
     content widget of data item. For example if data item is of type SliderItem then

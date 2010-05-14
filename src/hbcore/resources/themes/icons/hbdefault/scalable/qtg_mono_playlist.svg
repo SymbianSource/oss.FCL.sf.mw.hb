@@ -1,17 +1,26 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
-<rect fill="none" height="30" width="30"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
+]>
+<svg version="1.1"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
+<defs>
+</defs>
+<g opacity="0.5">
+	<rect fill="none" width="30" height="30"/>
 </g>
-<rect height="2" width="2" x="7" y="6"/>
-<rect height="2" width="9.941" x="10.059" y="6"/>
-<rect height="2" width="2" x="7" y="11"/>
-<rect height="2" width="9.941" x="10.059" y="11"/>
-<rect height="2" width="2" x="7" y="16"/>
-<rect height="2" width="9.941" x="10.059" y="16"/>
-<rect height="2" width="2" x="7" y="21"/>
-<rect height="2" width="9.941" x="10.059" y="21"/>
-<path d="M16.115,26H5V3h18v10c0.213,0,0.426,0.034,0.633,0.103L26,13.892V0H2v29h14.463C16.167,28.387,16,27.711,16,27  C16,26.657,16.043,26.324,16.115,26z"/>
-<path d="M23,15v9.3c-0.456-0.187-0.961-0.3-1.5-0.3c-1.934,0-3.5,1.343-3.5,3c0,1.656,1.566,3,3.5,3s3.5-1.344,3.5-3v-7.333L29,21  v-4L23,15z"/>
+<rect x="7" y="6" width="2" height="2"/>
+<rect x="10.059" y="6" width="9.941" height="2"/>
+<rect x="7" y="11" width="2" height="2"/>
+<rect x="10.059" y="11" width="9.941" height="2"/>
+<rect x="7" y="16" width="2" height="2"/>
+<rect x="10.059" y="16" width="9.941" height="2"/>
+<rect x="7" y="21" width="2" height="2"/>
+<rect x="10.059" y="21" width="9.941" height="2"/>
+<path d="M16.115,26H5V3h18v10c0.213,0,0.426,0.034,0.633,0.103L26,13.892V0H2v29h14.463C16.167,28.387,16,27.711,16,27
+	C16,26.657,16.043,26.324,16.115,26z"/>
+<path d="M23,15v9.3c-0.456-0.187-0.961-0.3-1.5-0.3c-1.934,0-3.5,1.343-3.5,3c0,1.656,1.566,3,3.5,3s3.5-1.344,3.5-3v-7.333L29,21
+	v-4L23,15z"/>
 </svg>

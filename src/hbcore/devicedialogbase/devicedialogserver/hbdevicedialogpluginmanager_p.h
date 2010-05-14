@@ -67,6 +67,10 @@ public:
     bool unloadPlugin(const QString &deviceDialogType);
     const HbDeviceDialogPlugin &plugin(const QString &deviceDialogType);
 
+    static QStringList pluginPathList(const QString &subDir, int &readOnlyPaths);
+    static QString pluginFileNameFilter();
+    static int trimPluginPathList(QStringList &pathList);
+
 private: // types
     struct PluginInfo {
         enum Flag {
@@ -97,9 +101,7 @@ private: // functions
 
     int findPlugin(const QString &deviceDialogType) const;
     void freeRecycleWidgets();
-    void updateCachePath(const QString &path);
-    static QStringList pluginPathList();
-    static QString pluginFileNameFilter();
+    void updateCachePath(const QString &path, bool updateReadOnly = false);
     static QStringList pluginKeys(QObject *pluginInstance);
 
 private slots:
@@ -114,6 +116,7 @@ private: // data
     bool mAllWidgetsDeleted;
     QTimer mDeleteTimer; // timer used to delete widgets
     HbPluginNameCache mNameCache;
+    QStringList mPluginPathList;
 };
 
 #endif // HBDEVICEDIALOGPLUGINMANAGER_P_H

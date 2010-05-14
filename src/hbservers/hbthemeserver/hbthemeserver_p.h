@@ -38,13 +38,11 @@ class HbThemeServer : public QMainWindow
 #endif
 {
 public:
-#ifdef Q_OS_SYMBIAN
-    HbThemeServer();
-#else
     HbThemeServer(QWidget *parent = 0);
-#endif
     ~HbThemeServer();
     bool startServer();
+    void stopServer();
+
 private:
 #ifndef Q_OS_SYMBIAN
     QLabel *statusLabel;

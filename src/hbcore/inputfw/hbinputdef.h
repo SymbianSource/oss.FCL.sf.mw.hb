@@ -75,9 +75,9 @@ enum HbKeyboardTypeFlag
     HbKeyboardVirtualQwerty 				= 0x00000002 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
     HbKeyboardSctPortrait   				= 0x00000003 | HbTouchInputMask,                       /**< Special character selection keypad for portrait view */
     HbKeyboardSctLandscape  				= 0x00000004 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
-    HbKeyboardHwr           				= 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask,     /**< Hand writing recognition keypad */
-	HbKeyboardThaiStarSctPortrait   		= 0x00000006 | HbTouchInputMask, 					   /**< Special character selection keypad for star key in Thai portrait view */
-	HbKeyboardThaiHashSctPortrait   		= 0x00000007 | HbTouchInputMask 					   /**< Special character selection keypad for hash key in Thai portrait view */
+    HbKeyboardHwr           				= 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask,    /**< Hand writing recognition keypad */
+    HbKeyboardThaiStarSctPortrait   	                = 0x00000006 | HbTouchInputMask,                       /**< Special character selection keypad for star key in Thai portrait view */
+    HbKeyboardThaiHashSctPortrait   	                = 0x00000007 | HbTouchInputMask                        /**< Special character selection keypad for hash key in Thai portrait view */
 };
 
 Q_DECLARE_FLAGS(HbKeyboardType, HbKeyboardTypeFlag)
@@ -120,10 +120,10 @@ enum HbInputModeTypeFlag
     HbInputModeIndicPhonetic           = 0x00000001 | HbIndicModeMask,     /**< Indic phonetic input mode */
 
     // Handwriting modes
-    HbInputModeHwrLatin                = 0x00000001 | HbHwrModeMask,       /**< Latin based hand writing recognition */
-    HbInputModeHwrLatinFull            = 0x00000002 | HbHwrModeMask,       /**< Latin based hand writing recognition, full screen */
-    HbInputModeHwrChinese              = 0x00000003 | HbHwrModeMask,       /**< Chinese hand writing recognition */ 
-    HbInputModeHwrChineseFull          = 0x00000004 | HbHwrModeMask,       /**< Chinese hand writing recognition, full screen */
+    HbInputModeHwrLatin                = 0x00000001 | HbHwrModeMask,                       /**< Latin based hand writing recognition */
+    HbInputModeHwrLatinFull            = 0x00000002 | HbHwrModeMask,                       /**< Latin based hand writing recognition, full screen */
+    HbInputModeHwrChinese              = 0x00000003 | HbHwrModeMask | HbChineseModeMask,   /**< Chinese hand writing recognition */
+    HbInputModeHwrChineseFull          = 0x00000004 | HbHwrModeMask | HbChineseModeMask,   /**< Chinese hand writing recognition, full screen */
           
     // Custom made mode that does not belong to any pre-existing category
     HbInputModeCustom                  = HbChineseModeMask - 1             /**< Custom input mode */
@@ -198,12 +198,10 @@ bits are set through editor interface class.
 enum HbEditorConstraint
 {
     HbEditorConstraintNone                 = 0,
-    HbEditorConstraintsNoSecondaryChannel  = 0x01,   /**< DEPRECATED */
-    HbEditorConstraintOnlySecondaryChannel = 0x02,   /**< DEPRECATED */
-    HbEditorConstraintAutoCompletingField  = 0x04,   /**< This is auto-completing editor. It remeber what has been typed previously to same editor class. */
-    HbEditorConstraintIgnoreFocus          = 0x08,   /**< Editor rejects input framework focus. */
-    HbEditorConstraintFixedInputMode       = 0x10,   /**< Editor doesn't allow initial input mode to be changed. */
-    HbEditorConstraintLatinAlphabetOnly    = 0x20    /**< Editor allows only languages and input modes that produce latin alphabets. */
+    HbEditorConstraintAutoCompletingField  = 0x01,   /**< This is auto-completing editor. It remebers what has been typed previously to same editor class. */
+    HbEditorConstraintIgnoreFocus          = 0x02,   /**< Editor rejects input framework focus. */
+    HbEditorConstraintFixedInputMode       = 0x04,   /**< Editor doesn't allow initial input mode to be changed. */
+    HbEditorConstraintLatinAlphabetOnly    = 0x08    /**< Editor allows only languages and input modes that produce latin alphabets. */
 };
 Q_DECLARE_FLAGS(HbEditorConstraints, HbEditorConstraint)
 

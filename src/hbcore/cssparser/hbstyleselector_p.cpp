@@ -24,7 +24,9 @@
 ****************************************************************************/
 
 #include "hbstyleselector_p.h"
+#ifndef HB_BIN_CSS
 #include <hbicon.h>
+#endif
 #include <QObject>
 #include <QGraphicsWidget>
 #include <QMetaProperty>
@@ -72,8 +74,6 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
     }
 
     AttributeValue aVal;
-    aVal.mValue1 = QString();
-    aVal.mValue2 = QString();
     aVal.mEmptyValue = false;
 
     QGraphicsWidget *widget = WIDGET(node);
@@ -105,8 +105,12 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
             } else if (value.type() == QVariant::Bool) {
                 aVal.mEmptyValue = !value.toBool();
             } else if (value.userType() == QMetaType::type("HbIcon")) {
+#ifdef HB_BIN_CSS
+                aVal.mEmptyValue = true;
+#else
                 HbIcon icon = value.value<HbIcon>();
                 aVal.mEmptyValue = icon.isNull();
+#endif
             }
             const QMetaProperty metaProperty = metaObject->property(metaObject->indexOfProperty(attr.name.toLatin1()));
             if (metaProperty.isEnumType()) {

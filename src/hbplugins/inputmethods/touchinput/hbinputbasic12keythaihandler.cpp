@@ -25,6 +25,7 @@
 
 #include "virtual12key.h"
 #include <QTimer>
+#include <hbinputbutton.h>
 #include "hbinputbasic12keythaihandler.h"
 #include "hbinputbasic12keyhandler_p.h"
 
@@ -37,9 +38,8 @@ public:
     ~HbInputBasic12KeyThaiHandlerPrivate();
 
 	void showThaiSpecialCharacters();
+    bool buttonPressed(const QKeyEvent *keyEvent);
     bool buttonReleased(const QKeyEvent *keyEvent);
-    void _q_timeout();
-
 };
 
 HbInputBasic12KeyThaiHandlerPrivate::HbInputBasic12KeyThaiHandlerPrivate()
@@ -52,6 +52,24 @@ HbInputBasic12KeyThaiHandlerPrivate::~HbInputBasic12KeyThaiHandlerPrivate()
 
 }
 
+/*!
+Handles the key press events from the VKB.
+*/
+bool HbInputBasic12KeyThaiHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
+{
+    if (keyEvent->isAutoRepeat() && mDownKey == keyEvent->key() &&
+        mDownKey == HbInputButton::ButtonKeyCodeAsterisk) {
+        //For Thai Language Launch Special Characters popup 
+	    mInputMethod->showThaiSpecialCharacters(mDownKey); 
+        mTimer->stop();
+        mLongPressHappened = true;
+        mDownKey = 0;
+        return true;
+    } else {
+        return HbInputBasic12KeyHandlerPrivate::buttonPressed(keyEvent);
+    }
+    return false;
+}
 
 /*!
 Handles the key release events from the VKB. Launches Thai special popup with key release event of
@@ -68,7 +86,8 @@ bool HbInputBasic12KeyThaiHandlerPrivate::buttonReleased(const QKeyEvent *keyEve
 		if (!focusObject || !mDownKey) {
 			return false;
 		}
-		if ( mLongPressHappened ){
+		if (mLongPressHappened) {
+            mLongPressHappened = false;
 			return false;
 		}
 		//Handle if Shift and Asterisk key release happen or else let's pass it to base class to handle
@@ -91,31 +110,6 @@ bool HbInputBasic12KeyThaiHandlerPrivate::buttonReleased(const QKeyEvent *keyEve
 		}
 	}
 	return false;
-}
-/*!
-Launches Thai special popup with long key press event of asterisk 
-*/
-void HbInputBasic12KeyThaiHandlerPrivate::_q_timeout()
-{
-    mTimer->stop();
-    mNumChr = 0;
-
-    HbInputFocusObject *focusedObject = 0;
-    focusedObject = mInputMethod->focusObject();
-    if (!focusedObject) {
-        return;
-    }
-
-    //Long key press number key is applicable to all keys except Asterisk
-    if (mDownKey && mDownKey == Qt::Key_Asterisk) {
-		//For Thai Language Launch Special Characters popup 
-		mInputMethod->showThaiSpecialCharacters(mDownKey); 
-	} else {
-		HbInputBasic12KeyHandlerPrivate::_q_timeout();
-	}
- 	mDownKey = 0;        
-    mCurrentChar = 0;
-    return;
 }
 
 HbInputBasic12KeyThaiHandler::HbInputBasic12KeyThaiHandler(HbInputAbstractMethod* inputMethod)

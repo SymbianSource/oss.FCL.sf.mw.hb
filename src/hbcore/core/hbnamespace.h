@@ -35,8 +35,8 @@
 class HB_CORE_EXPORT Hb
 {
     Q_GADGET
-    Q_ENUMS( SoftKeyId SoftKeyAction NavigationAction UiAttribute TouchGesture
-             ItemDataRole GraphicsItemType LogicalFontName SceneItem
+    Q_ENUMS( NavigationAction UiAttribute TouchGesture
+             ItemDataRole GraphicsItemType SceneItem
              InstantInteraction ContinuousInteraction InteractionModifier
              TextCursorVisibility SliderTickPosition ModelItemType TextWrapping
              ActivationReason )
@@ -53,29 +53,6 @@ namespace Hb
     static const int Key_SoftKeyPrimary    = Qt::Key_Launch0;
     static const int Key_SoftKeySecondary  = Qt::Key_Launch1;
     static const int Key_SoftKeyMiddle     = Qt::Key_Launch2;
-
-
-    // DEPRECATED - DO NOT USE - These are deprecated along with deprecation of softkey functions in HbMainWindow.
-    // This enumeration will become internal to Hb.
-    enum SoftKeyId
-    {
-        PrimarySoftKey,
-        SecondarySoftKey,       
-        MiddleSoftKey,          
-
-        //Custom softkey id's start here.
-        CustomSoftKey = 0xFF    
-    };
-
-    // DEPRECATED - DO NOT USE - These are deprecated along with deprecation of softkey functions in HbMainWindow.
-    // Use NavigationAction instead.
-    enum SoftKeyAction
-    {
-        QuitAction,
-        BackAction,
-        ConfirmAction,
-        DoneAction
-    };
 
     enum NavigationAction
     {
@@ -136,16 +113,10 @@ namespace Hb
         ItemType_NotificationDialog = QGraphicsItem::UserType+10000,
         ItemType_FrameItem,
         ItemType_GraphicsPixmapItem,
-        ItemType_FormViewItem,
-        ItemType_FormView,
-        ItemType_AbstractItemContainer,
         ItemType_AbstractItemView,
         ItemType_ListView,
-        ItemType_AbstractViewItem,
         ItemType_ListViewItem,
-        ItemType_ItemHighlight,
         ItemType_ListWidgetItem,
-        ItemType_ListWidgetViewItem,
         ItemType_GridViewItem,
         ItemType_Popup,
         ItemType_Dialog,
@@ -154,7 +125,6 @@ namespace Hb
         ItemType_AbstractButton,
         ItemType_AbstractItem,
         ItemType_AbstractSlider,
-        ItemType_Highlight,
         ItemType_IconItem,
         ItemType_Label,
         ItemType_AbstractEdit,
@@ -178,7 +148,6 @@ namespace Hb
         ItemType_ToolButton,
         ItemType_Widget,
         ItemType_View, 
-        ItemType_RoundRobinLabel,
         ItemType_ConfirmationQuery,
         ItemType_CheckBox,
         ItemType_MessageQuery,
@@ -218,6 +187,7 @@ namespace Hb
         ItemType_IndexFeedback,
         ItemType_SelectionDialog,
         ItemType_SelectionDialogContentWidget,
+        ItemType_InputButtonGroup,
         ItemType_Last = QGraphicsItem::UserType + 20000
     };
 
@@ -229,44 +199,13 @@ namespace Hb
     };
 
     Q_DECLARE_FLAGS(WidgetAttributes, WidgetAttribute)
-    
 
-    // DEPRECATED - DO NOT USE - These are deprecated along with deprecation of HbFontProvider
-    // Use HbFontSpec and the font roles defines in HbFontSpec API
-    enum LogicalFontName
-    {
-        FontUndefined = 0,
-        FontPrimary,
-        FontSecondary,
-        FontTitle,
-        FontPrimarySmall,
-        FontDigital
-    };
-
-   
     enum SceneItem {
         NoItem                = 0x00000000,
-        
-        // Deprecated
-        TitlePaneItem         = 0x00000001,
-        // Deprecated
-        NaviPaneItem          = 0x00000002,
         ToolBarItem           = 0x00000004,
-        // Deprecated
-        IndicatorItems        = 0x00000008,
         DockWidgetItem        = 0x00000010,
         TitleBarItem          = 0x00000020,
         StatusBarItem         = 0x00000040,
-
-        // Deprecated
-        PrimarySoftKeyItem    = 0x00010000,
-        // Deprecated
-        SecondarySoftKeyItem  = 0x00020000,
-        // Deprecated
-        MiddleSoftKeyItem     = 0x00040000,
-        // Deprecated
-        SoftKeyItems          = 0x00070000,
-
         AllItems              = 0xFFFFFFFF
     };
     
@@ -286,7 +225,8 @@ namespace Hb
         IconResource = 0,
         ThemeResource,
         EffectResource,
-        StyleSheetResource
+        StyleSheetResource,
+        AnimationResource
     };
 
     Q_DECLARE_FLAGS(SceneItems, SceneItem)
@@ -297,9 +237,6 @@ namespace Hb
         WindowFlagNoBackground    = 0x00000002,
         WindowFlagFixedVertical   = 0x00000004,
         WindowFlagFixedHorizontal = 0x00000008,
-
-        // Deprecated
-        WindowFlagNoSplash        = 0x00000010
     };
 
     Q_DECLARE_FLAGS(WindowFlags, WindowFlag)

@@ -23,9 +23,8 @@
 **
 ****************************************************************************/
 
-
 #include <hbprogressbar.h>
-#include <hbstyleoptionprogressbar.h>
+#include <hbstyleoptionprogressbar_p.h>
 #include "hbprogressbar_p.h"
 #include "hbglobal_p.h"
 
@@ -34,7 +33,6 @@
 #include "hbeffectinternal_p.h"
 #define HB_PRGRESSBAR_ITEM_TYPE "HB_PROGRESSBAR"
 #endif
-
 
 /*!
     @beta
@@ -161,6 +159,7 @@ void HbProgressBarPrivate::createTextPrimitives()
     mMinTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_mintext,q);
     mMaxTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_maxtext,q);
 }
+
 void HbProgressBarPrivate::setProgressValue(int value)
 {
    Q_Q(HbProgressBar);
@@ -189,6 +188,7 @@ void HbProgressBarPrivate::setProgressValue(int value)
     emit q->valueChanged(value);
     
 }
+
 /*
     \internal
     Sets the progressbar enabling/disabling
@@ -201,6 +201,7 @@ void HbProgressBarPrivate::setEnableFlag(bool flag)
 
     }
 }
+
 /*
     \internal
     Sets the progressbar range
@@ -222,7 +223,7 @@ void HbProgressBarPrivate::setRange(int minimum, int maximum)
         mProgressValue = mMaximum;
     }
 
-    if( (mMinimum == 0) && (mMaximum == 0) && (mType != HbProgressBar::RatingProgressBar) ) {
+    if( (mMinimum == 0) && (mMaximum == 0) ) {
         mWaitTrack->setVisible(true);
         mTrack->setVisible(false);
     } else {
@@ -230,7 +231,7 @@ void HbProgressBarPrivate::setRange(int minimum, int maximum)
         mTrack->setVisible(true);
     }
     q->updatePrimitives();
-}
+} 
 
 /*!
     \internal
@@ -273,24 +274,6 @@ void HbProgressBarPrivate::_q_delayedShow(HbEffect::EffectStatus status)
 #endif
 
 /*!
-    Constructs a progressbar of a given \a type and \a parent. The default type is SimpleProgressBar.
-
-    \deprecated HbProgressBar::HbProgressBar(HbProgressBar::ProgressBarType, QGraphicsItem*)
-        is deprecated. Please use HbProgressBar::HbProgressBar(QGraphicsItem *parent) instead.
-
-*/
-HbProgressBar::HbProgressBar(ProgressBarType type, QGraphicsItem *parent) : 
-    HbWidget(*new HbProgressBarPrivate, parent)
-{    
-    HB_DEPRECATED("HbProgressBar::HbProgressBar(HbProgressBar::ProgressBarType, QGraphicsItem*) is deprecated. Use HbProgressBar::HbProgressBar(QGraphicsItem *parent) instead.");
-
-    Q_D( HbProgressBar );
-    d->q_ptr = this;
-    d->init();
-    d->mType = type;
-}
-
-/*!
     @beta
     Constructor of  Progressbar.
     \param parent. Parent widget
@@ -304,29 +287,12 @@ HbProgressBar::HbProgressBar(QGraphicsItem *parent) :
     d->init();
 }
 
-/*!
-    \deprecated HbProgressBar::HbProgressBar(HbProgressBarPrivate&, HbProgressBar::ProgressBarType, QGraphicsItem*)
-        is deprecated. Please use HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent) instead.
-
-*/
-HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, ProgressBarType type, QGraphicsItem *parent) : 
-    HbWidget( dd, parent)
-{   
-    HB_DEPRECATED("HbProgressBar::HbProgressBar(HbProgressBarPrivate&, HbProgressBar::ProgressBarType, QGraphicsItem*) is deprecated. Use HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent) instead.");
-
-    Q_D( HbProgressBar );
-    d->init();
-    d->mType = type;
-}
-
-
 HbProgressBar::HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent) : 
     HbWidget( dd, parent)
 {   
     Q_D( HbProgressBar );
     d->init();
 }
-
 
 /*!
     @beta
@@ -473,7 +439,7 @@ void HbProgressBar::setMinText(const QString &text)
     if (d->mMinText != text) {
         d->mMinText = text;
         HbStyleOptionProgressBar progressBarOption;
-        initStyleOption(&progressBarOption);
+        progressBarOption.minText = d->mMinText;
         style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);
      }
 }
@@ -503,7 +469,7 @@ void HbProgressBar::setMaxText(const QString &text)
     if (d->mMaxText != text) {
         d->mMaxText = text;
         HbStyleOptionProgressBar progressBarOption;
-        initStyleOption(&progressBarOption);
+        progressBarOption.maxText = d->mMaxText;
         style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption);
     }
 }
@@ -704,7 +670,6 @@ void HbProgressBar::initStyleOption(HbStyleOptionProgressBar *option) const
     option->minText = d->mMinText;
     option->maxText = d->mMaxText;
     option->orientation = d->mOrientation;
-    option->isSlider=d->mType == HbProgressBar::RatingProgressBar;
     option->inverted = d->mInvertedAppearance;
     option->stopWaitAnimation = false;
     option->minMaxTextAlignment = d->mMinMaxTextAlignment;
@@ -797,4 +762,3 @@ void HbProgressBar::changeEvent(QEvent *event)
 }
 
 #include "moc_hbprogressbar.cpp"
-

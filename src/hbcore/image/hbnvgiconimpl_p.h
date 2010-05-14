@@ -49,7 +49,8 @@ public :
                   const QSizeF& keySize,
                   Qt::AspectRatioMode aspectRatioMode,
                   QIcon::Mode mode,
-                  bool mirrored);
+                  bool mirrored,
+                  HbRenderingMode renderMode);
 
     ~HbNvgIconImpl();
     QPixmap pixmap();

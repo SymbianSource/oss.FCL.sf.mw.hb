@@ -15,12 +15,12 @@ HbSliderHandle::icon
 /*touch area*/
 HbSliderControl[orientation="Horizontal"] > HbSliderHandle::toucharea
 {
-    fixed-width:4.0un;
+    fixed-width:expr(2*var(hb-param-widget-slider-thumb-width));
     fixed-height:var(hb-param-touch-area-gene-primary-medium);
 }
 
 HbSliderControl[orientation="Vertical"] > HbSliderHandle::toucharea
 {
     fixed-width:var(hb-param-touch-area-gene-primary-medium);
-    fixed-height:4.0un;
+    fixed-height:expr(2*var(hb-param-widget-slider-thumb-width));
 }

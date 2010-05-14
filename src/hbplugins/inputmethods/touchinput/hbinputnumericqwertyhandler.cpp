@@ -24,6 +24,7 @@
 ****************************************************************************/
 #include <hbinputmethod.h>
 #include <hbinputkeymapfactory.h>
+#include <hbinputbutton.h>
 
 #include "hbinputnumericqwertyhandler.h"
 #include "hbinputnumerichandler_p.h"
@@ -67,14 +68,18 @@ bool HbInputNumericQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
     }
 
     int buttonId = event->key();
+    if (!event->text().isEmpty()) {
+        buttonId = event->text().at(0).unicode();
+    }
+
     // currently we shift and control key are not clear as concept. So just ignoring
     // these buttons.
-    if (buttonId == Qt::Key_Shift || buttonId == Qt::Key_Control) {
+    if (buttonId == HbInputButton::ButtonKeyCodeShift || buttonId == HbInputButton::ButtonKeyCodeSymbol) {
         return false;
     }
 
     // Don't handle this
-    if (buttonId == Qt::Key_Backspace || buttonId == Qt::Key_Delete) {
+    if (buttonId == Qt::Key_Backspace || buttonId == HbInputButton::ButtonKeyCodeDelete) {
         return false;
     }
 

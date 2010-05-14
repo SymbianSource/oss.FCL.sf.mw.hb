@@ -47,7 +47,7 @@ HbIconAnimationParser::~HbIconAnimationParser()
 }
 
 bool HbIconAnimationParser::parseDefinitionFileShared(
-    QString *fileName, AnimHash &animations, const QString &realFileName)
+    const QString &fileName, AnimHash &animations, const QString &realFileName)
 {
 #ifdef HB_ICON_TRACES
     qDebug() << "HbIconAnimationParser: Trying to get" << realFileName << "via themeserver";
@@ -70,7 +70,7 @@ bool HbIconAnimationParser::parseDefinitionFileShared(
 }
 
 bool HbIconAnimationParser::parseDefinitionFile(
-    QString *fileName, AnimHash &animations, const QString &realFileName)
+    const QString &fileName, AnimHash &animations, const QString &realFileName)
 {
     QFile file(realFileName);
 
@@ -96,7 +96,7 @@ bool HbIconAnimationParser::parseDefinitionFile(
 }
 
 bool HbIconAnimationParser::doParseFile(
-    QString *fileName, AnimHash &animations)
+    const QString &fileName, AnimHash &animations)
 {
     bool ret = false;
 
@@ -122,7 +122,7 @@ bool HbIconAnimationParser::doParseFile(
 * Returns true if at least one animation definition was added in the hash.
 */
 bool HbIconAnimationParser::readAnimations(
-    QString *fileName, AnimHash &animations)
+    const QString &fileName, AnimHash &animations)
 {
     Q_ASSERT(isStartElement() && name() == "animations");
 

@@ -130,7 +130,7 @@ Returns true if the concept of "text case" can be applied to given input mode.
 For example Chinese and Japanese modes do not have text case.
 */
 bool HbInputUtils::isCaseSensitiveMode(HbInputModeType inputMode)
-{
+{     
     if (isChineseInputMode(inputMode)) {
         return false;
     }
@@ -190,16 +190,6 @@ HbLanguageDatabaseInterface* HbInputUtils::languageDatabasePluginInstance(const 
     }
 
     return res;
-}
-
-/*!
-\deprecated HbInputUtils::isInputPluginInPermanentMemory(const QString&)
-    is deprecated.
-*/
-bool HbInputUtils::isInputPluginInPermanentMemory(const QString& pluginFileName)
-{
-    Q_UNUSED(pluginFileName)
-    return false;
 }
 
 /*!

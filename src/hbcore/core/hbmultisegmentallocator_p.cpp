@@ -280,3 +280,57 @@ bool HbMultiSegmentAllocator::setFreeList(int index)
 
     return retVal;
 }
+
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+void HbMultiSegmentAllocator::writeReport(QTextStream &reportWriter)
+{
+    reportWriter << "***** (Sub)HbMultiSegmentAllocator report *****\n\n";
+    reportWriter << SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR << " bytes allocated for internal bookkeeping\n";
+    reportWriter << AMOUNT_OF_DIFFERENT_CHUNK_SIZES << " different chunk sizes (";
+    for (int i = 0; i < AMOUNT_OF_DIFFERENT_CHUNK_SIZES-1; i++) {
+        reportWriter << ChunkSizes[i] << ", ";
+    }
+    reportWriter << ChunkSizes[AMOUNT_OF_DIFFERENT_CHUNK_SIZES-1] << ")\n";
+    reportWriter << CHUNKS_IN_ONE_LIST << " chunks in one list\n\n";
+
+    // calculate all the data from chunklists
+    int totalMemoryReserved = 0; // all the memory needed from shared chunk
+    int totalBookkeepingMemory = 0; // all the space needed for internal bookkeeping
+    int totalAllocatedMemory = 0; // all the allocated memory visible for clients
+    for (int i = 0; i < AMOUNT_OF_DIFFERENT_CHUNK_SIZES; i++) {
+        int allocations = 0;
+        int listCount = 0;
+        ChunkListHeader *listHeader;
+        listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToChunkLists[i]);
+        for (;;) {
+            allocations += listHeader->allocatedChunks;
+            listCount++;
+            if (listHeader->nextListOffset != -1) {
+                listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeader->nextListOffset);
+            } else {
+                break;
+            }
+        }
+        reportWriter << "for chunk size " << ChunkSizes[i] << ", " << listCount << " list(s) used\n";
+        reportWriter << "and in these lists " << allocations << " chunks are allocated\n";
+        int totalSize = listCount * (sizeof(ChunkListHeader) + (sizeof(int)+ChunkSizes[i])*CHUNKS_IN_ONE_LIST);
+        totalMemoryReserved += totalSize;
+        reportWriter << "Total size reserved from shared chunk for these list(s): " << totalSize << " bytes\n";
+        int bookKeeping = listCount * (sizeof(ChunkListHeader) + sizeof(int)*CHUNKS_IN_ONE_LIST);
+        totalBookkeepingMemory += bookKeeping;
+        reportWriter << "  - bytes used for bookkeeping: " << bookKeeping << "\n";
+        reportWriter << "  - actual allocated bytes (in chunks, not in actual data, which might be less than chunk size): " << allocations*ChunkSizes[i] << "\n\n";
+        totalAllocatedMemory += allocations*ChunkSizes[i];
+    }
+
+    reportWriter << "*** HbMultiSegmentAllocator summary ***\n";
+    reportWriter << "Total memory reserved from shared chunk: " << totalMemoryReserved << " bytes\n";
+    reportWriter << "  - internal bookkeeping uses " << totalBookkeepingMemory << " bytes\n";
+    reportWriter << "  - actual memory allocated by clients: " << totalAllocatedMemory << " bytes\n";
+    int totalFragmentationPercent = (int)((float)(totalAllocatedMemory)/(float)(totalMemoryReserved)*100);
+    int usableFragmentationPercent = (int)((float)(totalAllocatedMemory)/(float)(totalMemoryReserved-totalBookkeepingMemory)*100);
+    reportWriter << "allocated memory / all memory reserved from shared chunk = " << totalFragmentationPercent << "%\n";
+    reportWriter << "allocated memory / all usable memory for client data = " << usableFragmentationPercent << "%\n";
+
+}
+#endif

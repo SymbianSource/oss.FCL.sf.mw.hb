@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 #include <hbcheckbox.h>
-#include <hbstyleoptioncheckbox.h>
+#include <hbstyleoptioncheckbox_p.h>
 #include "hbabstractbutton_p.h"
 #include "hbtooltip.h"
 
@@ -49,7 +49,7 @@ class HbCheckBoxSpacer: public HbWidgetBase
 
 public:
     HbCheckBoxSpacer( QGraphicsItem *parent = 0 );
-    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
+    QSizeF sizeHint(  Qt::SizeHint which, const QSizeF &constraint = QSizeF( ) ) const;
 };
 
 HbCheckBoxSpacer::HbCheckBoxSpacer( QGraphicsItem *parent )
@@ -59,14 +59,14 @@ HbCheckBoxSpacer::HbCheckBoxSpacer( QGraphicsItem *parent )
     //    setFlag( QGraphicsItem::ItemHasNoContents, true );
 }
 
-QSizeF HbCheckBoxSpacer::sizeHint(Qt::SizeHint which, const QSizeF &constraint ) const
+QSizeF HbCheckBoxSpacer::sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const
 {
     Q_UNUSED( constraint );
 
     if ( which == Qt::MaximumSize ) {
         return QSizeF( QWIDGETSIZE_MAX, QWIDGETSIZE_MAX );
     }
-    return QSizeF(0.f,0.f);
+    return QSizeF( 0.f, 0.f );
 }
 
 
@@ -75,13 +75,13 @@ QSizeF HbCheckBoxSpacer::sizeHint(Qt::SizeHint which, const QSizeF &constraint )
 */
 class HB_AUTOTEST_EXPORT HbCheckBoxPrivate : public HbAbstractButtonPrivate
 {
-    Q_DECLARE_PUBLIC(HbCheckBox)
+    Q_DECLARE_PUBLIC( HbCheckBox )
 
 public:
-    HbCheckBoxPrivate();
-    virtual ~HbCheckBoxPrivate();
+    HbCheckBoxPrivate( );
+    virtual ~HbCheckBoxPrivate( );
 
-    void createPrimitives();
+    void createPrimitives( );
 
 public:
     QString mText;
@@ -98,43 +98,43 @@ public:
   private class constructor
 */
 HbCheckBoxPrivate::HbCheckBoxPrivate():
-    mTextItem(0),
-    mIconItem(0), 
-    mTouchArea(0),
-    mTristate(false),
-    mNoChange(false),
-    mPublishedState(Qt::Unchecked)
+    mTextItem( 0 ),
+    mIconItem( 0 ), 
+    mTouchArea( 0 ),
+    mTristate( false ),
+    mNoChange( false ),
+    mPublishedState( Qt::Unchecked )
 {
     //adding effect for checkbox
 #ifdef HB_EFFECTS
-    HbEffectInternal::add(HB_CHECKBOX_TYPE,"checkbox_selected", "pressed");
+    HbEffectInternal::add( HB_CHECKBOX_TYPE,"checkbox_selected", "pressed" );
 #endif
 }
 
 /*
   private class destructor
 */
-HbCheckBoxPrivate::~HbCheckBoxPrivate()
+HbCheckBoxPrivate::~HbCheckBoxPrivate( )
 {
 }
 
 /*
   create primitive
 */
-void HbCheckBoxPrivate::createPrimitives()
+void HbCheckBoxPrivate::createPrimitives( )
 {
-    Q_Q(HbCheckBox);
-    if(!mTouchArea) {
-        mTouchArea = q->style()->createPrimitive(HbStyle::P_CheckBox_toucharea, q);
-        if(QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>(mTouchArea)) {
-            ta->grabGesture(Qt::TapGesture);
+    Q_Q( HbCheckBox );
+    if( !mTouchArea ) {
+        mTouchArea = q->style( )->createPrimitive( HbStyle::P_CheckBox_toucharea, q );
+        if( QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>( mTouchArea ) ) {
+            ta->grabGesture( Qt::TapGesture );
         }
     }
-    if (!mTextItem) {
-        mTextItem = q->style()->createPrimitive(HbStyle::P_CheckBox_text, q);
+    if ( !mTextItem ) {
+        mTextItem = q->style( )->createPrimitive( HbStyle::P_CheckBox_text, q );
         }
-    if (!mIconItem) {
-        mIconItem = q->style()->createPrimitive(HbStyle::P_CheckBox_icon, q);
+    if ( !mIconItem ) {
+        mIconItem = q->style( )->createPrimitive( HbStyle::P_CheckBox_icon, q );
     }
 }
 
@@ -194,18 +194,18 @@ void HbCheckBoxPrivate::createPrimitives()
     By default the state of check box will be Unchecked, text will
     be empty and tristate will be false.
 */
-HbCheckBox::HbCheckBox(QGraphicsItem *parent)
-    : HbAbstractButton(*new HbCheckBoxPrivate, parent)
+HbCheckBox::HbCheckBox( QGraphicsItem *parent )
+    : HbAbstractButton( *new HbCheckBoxPrivate, parent )
 {
-    Q_D(HbCheckBox);
+    Q_D( HbCheckBox );
     d->q_ptr = this;
-    setCheckable(true);
-    d->createPrimitives();
+    setCheckable( true );
+    d->createPrimitives( );
     // creattion of top and bottom spacer.
-    HbStyle::setItemName( new HbCheckBoxSpacer(this), "topSpacer" );
-    HbStyle::setItemName( new HbCheckBoxSpacer(this), "bottomSpacer" );
+    HbStyle::setItemName( new HbCheckBoxSpacer( this ), "topSpacer" );
+    HbStyle::setItemName( new HbCheckBoxSpacer( this ), "bottomSpacer" );
 #ifdef HB_GESTURE_FW
-    grabGesture(Qt::TapGesture);
+    grabGesture( Qt::TapGesture );
 #endif
 
 }
@@ -216,14 +216,14 @@ HbCheckBox::HbCheckBox(QGraphicsItem *parent)
     By default the state of check box will be Unchecked.
     Tristate will be false by default.
 */
-HbCheckBox::HbCheckBox(const QString &text, QGraphicsItem *parent )
-    : HbAbstractButton(*new HbCheckBoxPrivate, parent)
+HbCheckBox::HbCheckBox( const QString &text, QGraphicsItem *parent )
+    : HbAbstractButton( *new HbCheckBoxPrivate, parent )
 {
-    Q_D(HbCheckBox);
+    Q_D( HbCheckBox );
     d->q_ptr = this;
     d->mText = text;
-    setCheckable(true);
-    d->createPrimitives();
+    setCheckable( true );
+    d->createPrimitives( );
     // creattion of top and bottom spacer.
     HbStyle::setItemName( new HbCheckBoxSpacer(this), "topSpacer");
     HbStyle::setItemName( new HbCheckBoxSpacer(this), "bottomSpacer");
@@ -233,7 +233,7 @@ HbCheckBox::HbCheckBox(const QString &text, QGraphicsItem *parent )
 /*!
     Destructor.
 */
-HbCheckBox::~HbCheckBox()
+HbCheckBox::~HbCheckBox( )
 {
 }
 
@@ -245,14 +245,14 @@ HbCheckBox::~HbCheckBox()
 */
 void HbCheckBox::setText( const QString &text )
 {
-    Q_D(HbCheckBox);
-    if(d->mText != text){
+    Q_D( HbCheckBox );
+    if( d->mText != text ){
         d->mText = text;
         //updatePrimitives();
         if( d->mTextItem ){
             HbStyleOptionCheckBox checkBoxOption;
-            initStyleOption(&checkBoxOption);
-            style()->updatePrimitive(d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption);
+            initStyleOption( &checkBoxOption );
+            style( )->updatePrimitive( d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption );
         }
     }    
 }
@@ -262,9 +262,9 @@ void HbCheckBox::setText( const QString &text )
     Returns the text of checkbox.
     \sa setText()
 */
-QString HbCheckBox::text() const
+QString HbCheckBox::text( ) const
 {
-    Q_D(const HbCheckBox);
+    Q_D( const HbCheckBox );
     return d->mText;
 }
 
@@ -276,7 +276,7 @@ QString HbCheckBox::text() const
 */
 void HbCheckBox::setTristate( bool isTristate )
 {
-    Q_D(HbCheckBox);
+    Q_D( HbCheckBox );
     d->mTristate = isTristate;
 }
 
@@ -287,7 +287,7 @@ void HbCheckBox::setTristate( bool isTristate )
 */
 bool HbCheckBox::isTristate( ) const
 {
-    Q_D(const HbCheckBox);
+    Q_D( const HbCheckBox );
     return d->mTristate;
 }
 
@@ -297,8 +297,8 @@ bool HbCheckBox::isTristate( ) const
 */
 Qt::CheckState HbCheckBox::checkState() const
 {
-    Q_D(const HbCheckBox);
-    if (d->mTristate &&  d->mNoChange) {
+    Q_D( const HbCheckBox );
+    if ( d->mTristate &&  d->mNoChange ) {
         return Qt::PartiallyChecked;
     }
     return d->checked ? Qt::Checked : Qt::Unchecked;
@@ -314,11 +314,11 @@ Qt::CheckState HbCheckBox::checkState() const
     configure the check and unchecked icons. Style needs to be changed if
     user wants different icons.
 */
-QGraphicsItem* HbCheckBox::primitive(HbStyle::Primitive primitive) const
+QGraphicsItem *HbCheckBox::primitive( HbStyle::Primitive primitive ) const
 {
-    Q_D(const HbCheckBox);
+    Q_D( const HbCheckBox );
 
-    switch (primitive) {
+    switch ( primitive ) {
         case HbStyle::P_CheckBox_text:
             return d->mTextItem;
         case HbStyle::P_CheckBox_toucharea:
@@ -338,7 +338,7 @@ QGraphicsItem* HbCheckBox::primitive(HbStyle::Primitive primitive) const
 */
 void HbCheckBox::setCheckState( Qt::CheckState state )
 {
-    Q_D(HbCheckBox);
+    Q_D( HbCheckBox );
     if (state == Qt::PartiallyChecked) {
         d->mTristate = true;
         d->mNoChange = true;
@@ -346,35 +346,35 @@ void HbCheckBox::setCheckState( Qt::CheckState state )
         d->mNoChange = false;
     }
     d->blockRefresh = true;
-    setChecked(state != Qt::Unchecked);
+    setChecked( state != Qt::Unchecked );
     d->blockRefresh = false;
-    d->refresh();
+    d->refresh( );
 
-    if (state != d->mPublishedState) {
+    if ( state != d->mPublishedState ) {
         d->mPublishedState = state;
-        emit stateChanged(state);
+        emit stateChanged( state );
     }
 }
 
 /*!
     Updates the icon and text primitives.
 */
-void HbCheckBox::updatePrimitives()
+void HbCheckBox::updatePrimitives( )
 {
-    HbWidget::updatePrimitives();
-    Q_D(HbCheckBox);
+    HbWidget::updatePrimitives( );
+    Q_D( HbCheckBox );
 
     HbStyleOptionCheckBox checkBoxOption;
-    initStyleOption(&checkBoxOption);
+    initStyleOption( &checkBoxOption );
 
-    if (d->mTextItem) {
-        style()->updatePrimitive(d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption);
+    if ( d->mTextItem ) {
+        style( )->updatePrimitive( d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption );
     }
-    if (d->mIconItem) {
-        style()->updatePrimitive(d->mIconItem, HbStyle::P_CheckBox_icon, &checkBoxOption);
+    if ( d->mIconItem ) {
+        style( )->updatePrimitive( d->mIconItem, HbStyle::P_CheckBox_icon, &checkBoxOption );
     }
     if (d->mTouchArea) {
-        style()->updatePrimitive(d->mTouchArea, HbStyle::P_CheckBox_toucharea, &checkBoxOption);
+        style( )->updatePrimitive( d->mTouchArea, HbStyle::P_CheckBox_toucharea, &checkBoxOption );
     }
 }
 
@@ -383,25 +383,25 @@ void HbCheckBox::updatePrimitives()
 */
 void HbCheckBox::initStyleOption(HbStyleOptionCheckBox *option) const
 {
-    Q_D(const HbCheckBox);
+    Q_D( const HbCheckBox );
 
-    HbAbstractButton::initStyleOption(option);
+    HbAbstractButton::initStyleOption( option );
 
-    Q_ASSERT(option);
+    Q_ASSERT( option );
     option->text = d->mText;
-    if (d->mTristate && d->mNoChange){
-        option->state.operator = (QStyle::State_NoChange);
+    if ( d->mTristate && d->mNoChange ){
+        option->state.operator = ( QStyle::State_NoChange );
     } else {
-        option->state.operator = (d->checked ? QStyle::State_On : QStyle::State_Off);
+        option->state.operator = ( d->checked ? QStyle::State_On : QStyle::State_Off );
     }
 }
 
 /*!
     Updates the primitive as per new size.
 */
-void HbCheckBox::resizeEvent(QGraphicsSceneResizeEvent *event)
+void HbCheckBox::resizeEvent( QGraphicsSceneResizeEvent *event )
 {
-    HbAbstractButton::resizeEvent(event);
+    HbAbstractButton::resizeEvent( event );
 }
 
 /*!
@@ -410,9 +410,9 @@ void HbCheckBox::resizeEvent(QGraphicsSceneResizeEvent *event)
 bool HbCheckBox::hitButton( const QPointF &pos ) const
 {
     Q_D(const HbCheckBox);
-    QRectF compRect = d->mTouchArea->boundingRect();
-    compRect.translate(d->mTouchArea->pos());
-    return compRect.contains(pos);
+    QRectF compRect = d->mTouchArea->boundingRect( );
+    compRect.translate( d->mTouchArea->pos( ) );
+    return compRect.contains( pos );
 }
 
 /*!
@@ -422,13 +422,13 @@ void HbCheckBox::checkStateSet( )
 {
     Q_D(HbCheckBox);
     d->mNoChange = false;
-    Qt::CheckState state = checkState();
-    if (state != d->mPublishedState) {
+    Qt::CheckState state = checkState( );
+    if ( state != d->mPublishedState ) {
         #ifdef HB_EFFECTS
-            HbEffect::start(d->mIconItem, HB_CHECKBOX_TYPE, "pressed");
+            HbEffect::start( d->mIconItem, HB_CHECKBOX_TYPE, "pressed" );
         #endif
         d->mPublishedState = state;
-        emit stateChanged(state);
+        emit stateChanged( state );
     }
 }
 
@@ -437,40 +437,40 @@ void HbCheckBox::checkStateSet( )
 */
 void HbCheckBox::nextCheckState( )
 {
-    if( checkState() == Qt::PartiallyChecked ) {
-        HbAbstractButton::nextCheckState();
+    if( checkState( ) == Qt::PartiallyChecked ) {
+        HbAbstractButton::nextCheckState( );
     }
-    HbAbstractButton::nextCheckState();
-    HbCheckBox::checkStateSet();
+    HbAbstractButton::nextCheckState( );
+    HbCheckBox::checkStateSet( );
 }
 
 #ifndef HB_GESTURE_FW
 /*!
     \reimp.
 */
-void HbCheckBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+void HbCheckBox::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
-    HbAbstractButton::mouseReleaseEvent(event);
+    HbAbstractButton::mouseReleaseEvent( event );
     updatePrimitives();
 }
 
 /*!
     \reimp.
 */
-void HbCheckBox::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+void HbCheckBox::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 {
-    Q_UNUSED(event);
+    Q_UNUSED( event );
     // To show the tooltip on press,move outside and come back to same button.
     // check for hit pos 
     bool hit = hitButton( event->pos( ) );
     if ( hit ) {
-        HbToolTip::showText(toolTip(), this);
+        HbToolTip::showText( toolTip(), this );
     }   
 }
 #endif
 
 #ifdef HB_GESTURE_FW
-void HbCheckBox::gestureEvent(QGestureEvent *event)
+void HbCheckBox::gestureEvent( QGestureEvent *event )
 {
     HbAbstractButton::gestureEvent( event );
 }
@@ -480,21 +480,21 @@ void HbCheckBox::gestureEvent(QGestureEvent *event)
 */
 void HbCheckBox::keyPressEvent(QKeyEvent *keyEvent)
 {
-    switch (keyEvent->key()) {
+    switch ( keyEvent->key( ) ) {
     case Qt::Key_Select:
     case Qt::Key_Enter:
     case Qt::Key_Return:
-            HbAbstractButton::keyPressEvent(keyEvent);
+            HbAbstractButton::keyPressEvent( keyEvent );
         break;
     default:
-            HbAbstractButton::keyPressEvent(keyEvent);
+            HbAbstractButton::keyPressEvent( keyEvent );
     }
 }
 
 /*!
     \reimp
  */
-QVariant HbCheckBox::itemChange(GraphicsItemChange change, const QVariant &value)
+QVariant HbCheckBox::itemChange( GraphicsItemChange change, const QVariant &value )
 {
     switch ( change ) {
         case ItemEnabledHasChanged:

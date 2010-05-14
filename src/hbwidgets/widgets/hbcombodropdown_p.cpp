@@ -30,8 +30,8 @@
 
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
+#include <hbpangesture.h>
 #endif
-
 
 HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsItem *parent )
         :HbWidget( parent ),
@@ -40,14 +40,14 @@ HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsI
          vkbOpened( false ),
          backgroundPressed( false )
 {
-	setBackgroundItem( HbStyle::P_ComboBoxPopup_background );
+    setBackgroundItem( HbStyle::P_ComboBoxPopup_background );
     #if QT_VERSION >= 0x040600
         //this is to keep the focus in the previous widget.
         setFlag( QGraphicsItem::ItemIsPanel, true );
         setActive( false );
     #endif
-        //setFlag(QGraphicsItem::ItemIsPanel);
-        //setPanelModality(PanelModal);
+    //setFlag(QGraphicsItem::ItemIsPanel);
+    //setPanelModality(PanelModal);
 }
 
 HbComboDropDown::~HbComboDropDown( )
@@ -61,7 +61,7 @@ void HbComboDropDown::createList( )
    mList->setLongPressEnabled(false);
    HbComboListViewItem *protoType = new HbComboListViewItem(this);
    mList->setItemPrototype( protoType );
-   HbStyle::setItemName( mList , "list" );
+   HbStyle::setItemName( mList, "list" );
    mList->setUniformItemSizes( true );
    mList->setSelectionMode( HbAbstractItemView::SingleSelection );
 }
@@ -98,7 +98,7 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
         case QEvent::GraphicsSceneMouseRelease:
             {
                 if( !( this->isUnderMouse( ) ) && backgroundPressed ) {
-                    HbWidgetFeedback::triggered(this, Hb::InstantPopupClosed);
+                    HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
                     setVisible( false );
                     backgroundPressed = false;
                     accepted = true;
@@ -107,8 +107,14 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
             break;
         case QEvent::Gesture:
             {
-                if(!this->isUnderMouse()) {
-                    accepted = true;
+                if( !this->isUnderMouse() ) {
+                    //if its a pan gesture then don't accept the event so that list can be scrolled
+                    //even if mouse is outside drop down area
+                    if(QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {
+                        if( !qobject_cast<HbPanGesture *>( gestureEvent->gesture( Qt::PanGesture ) ) ) {
+                            accepted = true;
+                        }
+                    }
                 }
             }
             break;

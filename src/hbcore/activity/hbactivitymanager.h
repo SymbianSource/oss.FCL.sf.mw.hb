@@ -33,6 +33,7 @@
 #include <QString>
 
 #include <hbglobal.h>
+#include <hbnamespace.h>
 
 class HbActivityManagerPrivate;
 
@@ -50,7 +51,8 @@ public:
     QList<QVariantHash> activities() const;
     QVariant activityData(const QString &activityId) const;
     bool waitActivity();
-    
+    void parseCommandLine(const QStringList &commandLineParams, Hb::ActivationReason &reason, QString &id, QVariantHash &params) const;
+
 signals:
     void activityRequested(const QString &activityId);  
  

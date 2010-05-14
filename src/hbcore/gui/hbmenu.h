@@ -51,8 +51,6 @@ public:
         SubMenu
     };
 
-    HbAction *exec(const QPointF &pos, HbAction *action = 0);
-
     using HbPopup::addAction;
     HbAction *addAction(const QString &text);
     HbAction *addAction(const QString &text, const QObject *receiver, const char *member);
@@ -80,7 +78,6 @@ public:
     QPainterPath shape() const;
 
 public slots:
-    HbAction *exec(HbAction *action = 0);
     void open(QObject *receiver = 0, const char *member = 0);
 
 signals:

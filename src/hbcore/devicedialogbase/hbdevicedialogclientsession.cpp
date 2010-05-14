@@ -66,27 +66,13 @@ TInt RHbDeviceDialogClientSession::Connect(TRequestStatus *aStatus)
     }
 
     TInt error = KErrNone;
-    if (ServerRunning()) {
-        if (!Handle()) {
-            TVersion serverVersion(KHbServerMajor, KHbServerMinor, KHbServerBuild);
-            error = CreateSession(KHbServerName, serverVersion, KNumAsyncMessageSlots,
-                EIpcSession_Unsharable, 0, aStatus);
-        }
-    } else {
-        error = Connect();
-        User::RequestComplete(aStatus, error);
+    if (!Handle()) {
+        TVersion serverVersion(KHbServerMajor, KHbServerMinor, KHbServerBuild);
+        error = CreateSession(KHbServerName, serverVersion, KNumAsyncMessageSlots,
+            EIpcSession_Unsharable, 0, aStatus);
     }
     TRACE_EXIT
     return error;
-}
-
-TBool RHbDeviceDialogClientSession::ServerRunning() const
-{
-    TRACE_ENTRY
-    TFindServer findHbServer(KHbServerName);
-    TFullName name;
-    TRACE_EXIT
-    return findHbServer.Next(name) == KErrNone;
 }
 
 /*!
@@ -128,6 +114,15 @@ TInt RHbDeviceDialogClientSession::Connect()
     }
     TRACE_EXIT
     return error;
+}
+
+TBool RHbDeviceDialogClientSession::ServerRunning()
+{
+    TRACE_ENTRY
+    TFindServer findHbServer(KHbServerName);
+    TFullName name;
+    TRACE_EXIT
+    return findHbServer.Next(name) == KErrNone;
 }
 
 /*!

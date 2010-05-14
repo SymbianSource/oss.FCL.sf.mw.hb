@@ -50,7 +50,6 @@ public:
 
     HbStyle *style() const;
     HbTheme *theme() const;
-    HbTypefaceInfo *typefaceInfo() const;
 
     void addLibraryPath(const QString &path);
     void removeLibraryPath(const QString &path);

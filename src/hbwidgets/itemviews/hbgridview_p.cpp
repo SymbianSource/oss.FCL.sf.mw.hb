@@ -26,7 +26,6 @@
 #include <hbgridlayout_p.h>
 #include <hbgriditemcontainer_p.h>
 
-#include <hbgesturefilter.h>
 #include <hbgridviewitem.h>
 #include <hbscrollbar.h>
 

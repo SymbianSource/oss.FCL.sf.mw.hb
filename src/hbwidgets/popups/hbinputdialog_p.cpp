@@ -25,7 +25,7 @@
 
 #include "hbinputdialog_p.h"
 #include "hbinputdialogcontent_p.h"
-#include "hbstyleoptioninputdialog.h"
+#include "hbstyleoptioninputdialog_p.h"
 
 #include <hblineedit.h>
 #include <hbaction.h>
@@ -101,12 +101,6 @@ HbInputDialogPrivate::HbInputDialogPrivate() :
 
 HbInputDialogPrivate::~HbInputDialogPrivate()
 {
-    if(primaryAction){
-        delete primaryAction;
-    }
-    if(secondaryAction){
-        delete secondaryAction;
-    }
 }
 
 
@@ -123,11 +117,9 @@ void HbInputDialogPrivate::init()
     mContentWidget = new HbInputDialogContentWidget(this);
 
     q->setContentWidget(mContentWidget);
-    primaryAction = new HbAction(QString(q->tr("Ok")));
-    q->setPrimaryAction(primaryAction);
+    q->addAction(new HbAction(q->tr("Ok"), q));
 
-    secondaryAction = new HbAction(QString(q->tr("Cancel")));
-    q->setSecondaryAction(secondaryAction);
+    q->addAction(new HbAction(q->tr("Cancel"), q));
 
     q->setTimeout(HbPopup::NoTimeout); 
     q->setModal(true); // Dialog is modal  
@@ -183,13 +175,25 @@ void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputM
         }                     
     case HbInputDialog::IpInput:
         {
+            QString text = pEdit->text();
             mValid = new HbValidator;
             mValid->setDefaultSeparator(".");
-            mValid->addField(new QIntValidator(0, 255, 0), "127");
-            mValid->addField(new QIntValidator(0, 255, 0), "0");
-            mValid->addField(new QIntValidator(0, 255, 0), "0");
-            mValid->addField(new QIntValidator(0, 255, 0), "1");
+            QStringList list = text.split(".");
+            if (list.count() != 4 ) {
+                    mValid->setDefaultSeparator(".");
+                    mValid->addField(new QIntValidator(0, 255, 0), "127");
+                    mValid->addField(new QIntValidator(0, 255, 0), "0");
+                    mValid->addField(new QIntValidator(0, 255, 0), "0");
+                    mValid->addField(new QIntValidator(0, 255, 0), "1");
 
+            }
+            else {
+
+                    mValid->addField(new QIntValidator(0, 255, 0),list[0]);
+                    mValid->addField(new QIntValidator(0, 255, 0),list[1]);
+                    mValid->addField(new QIntValidator(0, 255, 0),list[2]);
+                    mValid->addField(new QIntValidator(0, 255, 0),list[3]);
+            }
             pEdit->setValidator(mValid);
             pEdit->setInputMethodHints(Qt::ImhDigitsOnly);
 
@@ -208,7 +212,7 @@ void HbInputDialogPrivate::setInputMode(HbInputDialog::InputMode mode,int row)
     }
     if(row == 0) {
         mPrimaryMode = mode;
-	    setInputMode(mContentWidget->mEdit1, mode);
+        setInputMode(mContentWidget->mEdit1, mode);
     } else {
         mSecondaryMode = mode;
         if(mContentWidget->mAdditionalRowVisible) {
@@ -222,7 +226,7 @@ void HbInputDialogPrivate::setPromptText(const QString& text,int row)
 {
     Q_Q(HbInputDialog);
     if(row > 1) {
-	    return;
+        return;
     }
     HbStyleOptionInputDialog option;
     if(row == 0) {
@@ -245,7 +249,7 @@ QString HbInputDialogPrivate::promptText(int row) const
         return QString();
     }
     if(row == 0) {
-	    return mPromptText;
+        return mPromptText;
     } else {
         return mPromptAdditionalText;
     }
@@ -258,7 +262,7 @@ void HbInputDialogPrivate::setText(const QString& text,int row)
         return;
     }
     if(row == 0) {
-	    mContentWidget->mEdit1->setText(text);
+        mContentWidget->mEdit1->setText(text);
     } else {
         mText = text;
         if(mContentWidget->mAdditionalRowVisible) {

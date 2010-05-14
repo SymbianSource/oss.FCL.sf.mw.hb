@@ -24,9 +24,12 @@
 ****************************************************************************/
 
 #include "hbmemorymanager_p.h"
-#include "hbheapmemorymanager_p.h"
 #include "hbsharedmemorymanager_p.h"
+#ifndef HB_BIN_CSS
+#include "hbheapmemorymanager_p.h"
 #include "hbsharedmemorymanagerut_p.h"
+#endif // HB_BIN_CSS
+
 #include "hbmemoryutils_p.h"
 
 #define SHARED_CONTAINER_UNITTEST_PREFIX "unittest_hbsharedcontainer_"
@@ -35,6 +38,7 @@
 /**
 * helper function to know whether process is a shared container unittest
 */
+#ifndef HB_BIN_CSS
 static bool isSharedContainerUnitTest()
 {
     static bool isSharedContainerUnit = false;
@@ -52,12 +56,15 @@ static bool isSharedContainerUnitTest()
     }
     return isSharedContainerUnit;
 }
-
+#endif
 /**
 * to get instance of hbmemory manager
 */
 HbMemoryManager * HbMemoryManager::instance( MemoryType type )
 {
+    Q_UNUSED(type)
+
+#ifndef HB_BIN_CSS
     switch(type) {
         case SharedMemory :
             if ( isSharedContainerUnitTest() )    {
@@ -65,11 +72,14 @@ HbMemoryManager * HbMemoryManager::instance( MemoryType type )
             } else {
                 return HbSharedMemoryManager::instance();
             }
-        case HeapMemory :
+        case HeapMemory :          
             return HbHeapMemoryManager::instance();
         default:
             return 0;
     }
+#else
+    return HbSharedMemoryManager::instance();
+#endif
 }
 
 /**
@@ -77,13 +87,20 @@ HbMemoryManager * HbMemoryManager::instance( MemoryType type )
 */
 void HbMemoryManager::releaseInstance( MemoryType type )
 {
+    Q_UNUSED(type)
+
+#ifndef HB_BIN_CSS
     if ( type == SharedMemory ) {
-        if ( isSharedContainerUnitTest() )    {
+        if ( isSharedContainerUnitTest() ) {
             HbSharedMemoryManagerUt::releaseInstance();
         } else {
             HbSharedMemoryManager::releaseInstance();
         }
+
     } else if ( type == HeapMemory ) {
         HbHeapMemoryManager::releaseInstance();
     }
+#else
+    return HbSharedMemoryManager::releaseInstance();
+#endif
 }

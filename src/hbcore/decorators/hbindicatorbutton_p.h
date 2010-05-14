@@ -31,6 +31,7 @@
 
 class HbIndicatorButtonPrivate;
 class HbStyleOptionIndicatorButton;
+struct IndicatorClientInfo;
 
 class HB_CORE_PRIVATE_EXPORT HbIndicatorButton : public HbToolButton
 {
@@ -51,7 +52,8 @@ public:
 public slots:
     virtual void createPrimitives();
     virtual void updatePrimitives();
-    void setIcon(int count);
+    void activate(const QList<IndicatorClientInfo> &clientInfo);
+    void deactivate(const QList<IndicatorClientInfo> &clientInfo);
 
 protected:
     virtual void initStyleOption(HbStyleOptionIndicatorButton *option) const;

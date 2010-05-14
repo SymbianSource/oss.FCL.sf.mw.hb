@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptioncombobox.h>
+#include <hbstyleoptioncombobox_p.h>
 
 /*!
     \class HbStyleOptionComboBox
@@ -41,8 +41,7 @@
     is deprecated. Styleoptions will not be public.
 */
 
-HbStyleOptionComboBox::HbStyleOptionComboBox() : HbStyleOption(HbSO_Combo),
-    text( )  //CRC: this is not required 
+HbStyleOptionComboBox::HbStyleOptionComboBox() : HbStyleOption(HbSO_Combo)
 {
     type = Type;
     version = Version;

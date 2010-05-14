@@ -1,11 +1,24 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
-<rect fill="none" height="30" width="30"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
+]>
+<svg version="1.1"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
+<defs>
+</defs>
+<g opacity="0.5">
+	<rect fill="none" width="30" height="30"/>
 </g>
-<path d="M12,24.028c1.14-1.123,2.367-2.026,3.658-2.688L17,20l-3.561-3.071L17,14l-5-5  v6.327l-2.996-2.645L8,13.645l3.563,3.284L8,20.253l1.004,0.961L12,18.57V24.028z M13.146,12.283l1.589,1.521l-1.589,1.522V12.283z   M13.146,18.57l1.589,1.521l-1.589,1.522V18.57z" fill-rule="evenodd"/>
-<path d="M10.428,28.235C9.914,27.583,9.889,26.7,10.3,26H5V8h15v12.065C20.332,20.035,20.665,20,21,20c0.673,0,1.339,0.083,2,0.203  V5H2v24h9.086C10.865,28.748,10.641,28.506,10.428,28.235z"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M12,24.028c1.14-1.123,2.367-2.026,3.658-2.688L17,20l-3.561-3.071L17,14l-5-5
+	v6.327l-2.996-2.645L8,13.645l3.563,3.284L8,20.253l1.004,0.961L12,18.57V24.028z M13.146,12.283l1.589,1.521l-1.589,1.522V12.283z
+	 M13.146,18.57l1.589,1.521l-1.589,1.522V18.57z"/>
+<path d="M10.428,28.235C9.914,27.583,9.889,26.7,10.3,26H5V8h15v12.065C20.332,20.035,20.665,20,21,20c0.673,0,1.339,0.083,2,0.203
+	V5H2v24h9.086C10.865,28.748,10.641,28.506,10.428,28.235z"/>
 <path d="M25,20.748c1.034,0.386,2.041,0.906,3,1.581V0H7v3h18V20.748z"/>
-<path d="M30,27c-2.454-3.123-5.586-5-9-5s-6.546,1.877-9,5h2.654  c0.695-0.709,1.521-1.386,2.463-1.921C17.047,25.376,17,25.682,17,26c0,2.21,1.792,4,4,4s4-1.79,4-4  c0-0.318-0.047-0.624-0.117-0.921c0.941,0.535,1.768,1.212,2.463,1.921H30z M21,28c-1.104,0-2-0.447-2-1s0.896-1,2-1s2,0.447,2,1  S22.104,28,21,28z" fill-rule="evenodd"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M30,27c-2.454-3.123-5.586-5-9-5s-6.546,1.877-9,5h2.654
+	c0.695-0.709,1.521-1.386,2.463-1.921C17.047,25.376,17,25.682,17,26c0,2.21,1.792,4,4,4s4-1.79,4-4
+	c0-0.318-0.047-0.624-0.117-0.921c0.941,0.535,1.768,1.212,2.463,1.921H30z M21,28c-1.104,0-2-0.447-2-1s0.896-1,2-1s2,0.447,2,1
+	S22.104,28,21,28z"/>
 </svg>

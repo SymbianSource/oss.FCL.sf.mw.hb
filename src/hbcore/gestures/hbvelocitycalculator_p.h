@@ -40,7 +40,7 @@ public:
     QPointF velocity( const QTime& time ) const;
 
 private:
-    qreal calculate_velocity( const HbPointRecorder& listX, const QTime& time ) const;
+    qreal calculate_velocity( const HbPointRecorder& list, const QTime& time ) const;
 
     const HbPointRecorder& mListX;
     const HbPointRecorder& mListY;

@@ -44,18 +44,19 @@
 
 HbContentWidget::HbContentWidget(HbMainWindow *mainWindow,QGraphicsItem *parent /*= 0*/):
     HbStackedWidget(parent),
-    viewSwitchRunning(false),
-    targetView(0),
-    hidingView(0),
-    mainWindow(mainWindow)
+    mViewSwitchRunning(false),
+    mTargetView(0),
+    mHidingView(0),
+    mMainWindow(mainWindow)
 {
 }
 
 QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    Q_UNUSED( constraint );
+    Q_UNUSED(constraint);
 
     QSizeF size;    
+
     switch (which) {
     case Qt::MinimumSize:
         size = QSizeF(0, 0);
@@ -76,6 +77,7 @@ QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) c
         size = QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
         break;
     }
+
     return size;
 }
 
@@ -86,7 +88,7 @@ void HbContentWidget::delayedConstruction()
 
 void HbContentWidget::setTargetView(HbView *view)
 {
-    targetView = view;
+    mTargetView = view;
 }
 
 QString HbContentWidget::getEffectEvent(const char *baseName,
@@ -132,7 +134,7 @@ QGraphicsWidget *HbContentWidget::getEffectTarget(HbView *view, Hb::ViewSwitchFl
     QGraphicsWidget *viewWidget = view->widget();
     QGraphicsWidget *effectTarget = viewWidget ? viewWidget : view;
     if (flags & Hb::ViewSwitchFullScreen) {
-        effectTarget = HbMainWindowPrivate::d_ptr(mainWindow)->mClippingItem;
+        effectTarget = HbMainWindowPrivate::d_ptr(mMainWindow)->mClippingItem;
         if (!(flags & Hb::ViewSwitchSequential)) {
             // The Parallel+FullScreen combination does not make sense
             // (e.g. cannot animate the one and only titlebar
@@ -153,15 +155,15 @@ void HbContentWidget::hideEffectFinished(HbEffect::EffectStatus status)
     // HideRegItemBeforeClearingEffect so no matter which comes first (clearing
     // of the effect or this notification), the item is hidden properly before
     // resetting the transform etc. and thus there is no flicker.
-    hidingView->setVisible(false);
+    mHidingView->setVisible(false);
     // Start the "show" phase if not yet started.
-    if (viewSwitchFlags & Hb::ViewSwitchSequential) {
+    if (mViewSwitchFlags & Hb::ViewSwitchSequential) {
         // Do not show targetView yet, leave it to the effect in order to
         // prevent flickering.
         if (status.reason != Hb::EffectCancelled) {
             runViewSwitchEffectShow();
         } else {
-            targetView->setVisible(true);
+            mTargetView->setVisible(true);
             viewSwitchEffectsFinished(status);
         }
     }
@@ -175,9 +177,10 @@ void HbContentWidget::viewSwitchEffectsFinished(HbEffect::EffectStatus status)
     Q_UNUSED(status);
     // Do not bother with item visibility here, the effect should manage it
     // properly because the ShowItemOnFirstUpdate flag was set.
-    viewSwitchRunning = false;
-    if (HbMainWindowPrivate::d_ptr(mainWindow)->mDelayedConstructionHandled) {
-        HbMainWindowPrivate::d_ptr(mainWindow)->_q_viewReady();
+    mViewSwitchRunning = false;
+    mMainWindow->setInteractive(true); // enable input events
+    if (HbMainWindowPrivate::d_ptr(mMainWindow)->mDelayedConstructionHandled) {
+        HbMainWindowPrivate::d_ptr(mMainWindow)->_q_viewReady();
     }
 }
 
@@ -189,21 +192,22 @@ void HbContentWidget::runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitch
     // Cancel all on-going effects. Relying on the cancel() calls made by the
     // start() functions would not be enough in all situations.
     HbEffectInternal::cancelAll(0, true); // ignore looping effects, those are not view switch effects and must not be stopped here
-    viewSwitchRunning = true;
+    mViewSwitchRunning = true;
 
     // Make the new view the current one right away. This must be done asap to prevent
     // messed up state in mainwindow, the stack widget, etc. due to events coming during
     // the view switch animation.
     // 2nd param (hideOld): We still want to see the old view (normally setCurrentWidget would hide it).
     // 3rd param (showNew): The new view is not yet needed (the effect will take care of making it visible).
-    setCurrentWidget(targetView, false, false);
+    setCurrentWidget(mTargetView, false, false);
     
-    hidingView = viewToHide;
-    viewSwitchFlags = flags;
+    mHidingView = viewToHide;
+    mViewSwitchFlags = flags;
 
     QGraphicsWidget *effectTarget = getEffectTarget(viewToHide, flags);
     if (effectTarget) {
-        QString event = getEffectEvent("hide", flags, viewToHide, targetView);
+        mMainWindow->setInteractive(false); // disable input while the effects are running
+        QString event = getEffectEvent("hide", flags, viewToHide, mTargetView);
         HbEffectInternal::EffectFlags effectFlags = 
             HbEffectInternal::ClearEffectWhenFinished // the effect must not be persistent
             | HbEffectInternal::HideRegItemBeforeClearingEffect; // to prevent unlikely, but possible flicker
@@ -221,13 +225,13 @@ void HbContentWidget::runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitch
 */
 void HbContentWidget::runViewSwitchEffectShow()
 {
-    QGraphicsWidget *effectTarget = getEffectTarget(targetView, viewSwitchFlags);
+    QGraphicsWidget *effectTarget = getEffectTarget(mTargetView, mViewSwitchFlags);
     if (effectTarget) {
-        QString event = getEffectEvent("show", viewSwitchFlags, hidingView, targetView);
+        QString event = getEffectEvent("show", mViewSwitchFlags, mHidingView, mTargetView);
         HbEffectInternal::EffectFlags effectFlags =
             HbEffectInternal::ClearEffectWhenFinished
             | HbEffectInternal::ShowItemOnFirstUpdate; // because targetView is not yet visible
-        HbEffectInternal::start(targetView, effectTarget, effectFlags,
+        HbEffectInternal::start(mTargetView, effectTarget, effectFlags,
                                 "HB_view", event, this, "viewSwitchEffectsFinished");
     }
 }

@@ -25,7 +25,7 @@
 #ifndef HBLISTITEMCONTAINER_P_P_H
 #define HBLISTITEMCONTAINER_P_P_H
 
-#include "hbabstractitemcontainer_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 
 class HbListLayout;
 class HbListItemContainer;

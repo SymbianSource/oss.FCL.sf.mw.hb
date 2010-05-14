@@ -28,7 +28,7 @@
 #include "hbslidercontrol_p_p.h"
 #include <hbwidgetfeedback.h>
 #include <hbstyle.h>
-#include <hbstyleoptionslider.h>
+#include <hbstyleoptionslider_p.h>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 

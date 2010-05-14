@@ -42,7 +42,6 @@ public: //constructor
 public:
     virtual void launchCandidatePopup(const QStringList &candidates);
     virtual void closeKeypad();
-    virtual void launchCharacterPreviewPane(int key);
     virtual void switchSpecialCharacterTable();
     virtual void selectSpecialCharacterTableMode();
     virtual void closeExactWordPopup();
@@ -55,6 +54,7 @@ public:
     virtual void getCandidatePositionAndSize(HbCandidateList *candidatePopup,
                     HbInputVkbWidget *currentKeypad, QPointF & pos,QSizeF & size);
 	virtual bool isSctModeActive() const;
+    virtual HbKeyboardType currentKeyboardType() const;
 private:
     Q_DISABLE_COPY(HbInputAbstractMethod)
 };

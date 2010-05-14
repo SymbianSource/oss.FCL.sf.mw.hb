@@ -69,6 +69,8 @@ symbian {
     LIBS        += -ltacticon
     INCLUDEPATH += $${EPOCROOT}epoc32/include/platform/mw
 
+    defFilePath = defs
+    
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022E9D

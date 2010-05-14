@@ -39,14 +39,12 @@ public:
     bool actionHandler(HbInputModeAction action);
     void processExactWord(QString exactWord);
     void sctCharacterSelected(QString character);
-    void characterPreviewAvailable(bool available);
     bool isActive() const; 
     void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0);
     void deleteOneCharacter();
     void smileySelected(QString smiley);
 public slots:
     void exactWordPopupClosed();
-    void charFromPreviewSelected(QString character);
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputPredictionQwertyHandler)
     Q_DISABLE_COPY(HbInputPredictionQwertyHandler)

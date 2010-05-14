@@ -38,7 +38,7 @@
 //
 
 #include <hbicon.h>
-#include <hbstyleoptiontoolbutton.h>
+#include <hbstyleoptiontoolbutton_p.h>
 #include <hbabstractbutton_p.h>
 #include <QPointer>
 
@@ -86,7 +86,7 @@ public:
     QSizeF mButtonSize;
 
 private:
-    // Provided for HbToolBar & HbSoftKey who have to access
+    // Provided for HbToolBar who have to access
     // HbToolButtonPrivate in order to hide the background
     // and/or set the toolbar position of the tool button.
     // NOTE: Still kept as private to track dependencies...
@@ -94,9 +94,7 @@ private:
         Q_ASSERT(button);
         return button->d_func();
     }
-    friend class HbSoftKey;
     friend class HbToolBar;
-    friend class HbSoftKeyPrivate;
     friend class HbToolBarPrivate; 
     friend class HbToolBarExtensionPrivate;
 };

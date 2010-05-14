@@ -379,7 +379,7 @@ void HbToolBarPrivate::createToolButton(QAction *Action, bool update)
                 actionManager = new HbActionManager(HbView::ToolBar, q, q->mainWindow());
             }
             if (actionManager){
-                index = actionManager->position(action, q->actions());
+                index = actionManager->position(action, q->actions(), mVisibleToolButtons.count());
             }
             
         }
@@ -471,6 +471,10 @@ void HbToolBarPrivate::startDisappearOrientEffect()
     if (!q->isVisible())
         return;
     QGraphicsItem *parentItem = q->parentItem();
+
+    if ( moreExtension && moreExtension->isVisible() ) {
+        moreExtension->hide();
+    }
 
     if (parentItem && q->orientation() == Qt::Horizontal) {
         QRectF extRect(0.0,

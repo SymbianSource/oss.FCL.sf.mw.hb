@@ -28,7 +28,7 @@
 #include "hbnamespace_p.h"
 #include <hbapplication.h>
 #include "hbtoolbutton_p.h"
-#include "hbstyleoptiontoolbutton.h"
+#include "hbstyleoptiontoolbutton_p.h"
 #include "hbcolorscheme.h"
 #include "hbtextitem.h"
 #include "hbpopup.h"
@@ -306,7 +306,13 @@ void HbTheTestWidget::textLayoutMeasure()
 {
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
     HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
-    measureUtility->measureItems();
+    if ( measureUtility->locTestMode() ) {
+        measureUtility->measureItems();
+    } else {
+        showWarning("Localization metrics run-time flag disabled!");
+    }
+#else
+    showWarning("Localization metrics compile-time flag disabled!");
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 }
 
@@ -314,13 +320,19 @@ void HbTheTestWidget::textLayoutWriteReport()
 {
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
     HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
-    HbDeviceProfile profile = HbDeviceProfile::profile(d->mMainWindow);
-    if (!HbApplication::applicationName().isEmpty()) {
-        measureUtility->writeReport(profile, HbApplication::applicationName());
+    if ( measureUtility->locTestMode() ) {
+        HbDeviceProfile profile = HbDeviceProfile::profile(d->mMainWindow);
+        if (!HbApplication::applicationName().isEmpty()) {
+            measureUtility->writeReport(profile, HbApplication::applicationName());
+        } else {
+            measureUtility->writeReport(profile, "unknown_application");
+        }
+        measureUtility->reset();
     } else {
-        measureUtility->writeReport(profile, "unknown_application");
+        showWarning("Localization metrics run-time flag disabled!");
     }
-    measureUtility->reset();
+#else
+    showWarning("Localization metrics compile-time flag disabled!");
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 }
 
@@ -349,13 +361,14 @@ void HbTheTestWidget::setApplicationBackground()
 
 void HbTheTestWidget::showThemeServerMemoryInfo()
 {
-    HbDialog popup;
-    popup.setTimeout(HbPopup::StandardTimeout);   
-    popup.setPreferredPos(QPointF(10,10));
-    
-    HbWidget widget;
-    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(Qt::Vertical);
-    widget.setLayout(layout);
+    HbDialog *dialog = new HbDialog();
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    dialog->setModal(false);
+    dialog->setBackgroundFaded(false);
+    dialog->setDismissPolicy(HbPopup::NoDismiss);
+    dialog->setTimeout(HbPopup::StandardTimeout);   
+    dialog->setPreferredPos(QPointF(10,10));
     
     int freeSharedMemory = HbThemeClient::global()->freeSharedMemory();
     int allocatedSharedMemory = HbThemeClient::global()->allocatedSharedMemory();
@@ -369,11 +382,21 @@ void HbTheTestWidget::showThemeServerMemoryInfo()
     message += " kB \n";
     HbTextItem *textItem = new HbTextItem(message);
     textItem->setTextColor(HbColorScheme::color("qtc_default_main_pane_normal"));
-    layout->addItem(textItem); 
+
+    QSizeF popupSize(50,50);
+    dialog->setMinimumSize(popupSize); // needed
     
-    popup.setContentsMargins(0,20,0,20);
-    popup.setContentWidget(&widget);
-    popup.exec();
+    dialog->setContentsMargins(5,15,5,15);
+    dialog->setContentWidget(textItem);
+
+    dialog->show();
+}
+
+void HbTheTestWidget::createSharedMemoryReport() const
+{
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+    HbThemeClient::global()->createMemoryReport();
+#endif
 }
 
 void HbTheTestWidget::screenCapture()
@@ -437,4 +460,19 @@ void HbTheTestWidget::doScreenCapture()
     screenPixmap.save(filePath.toLatin1(), format.toLatin1());
     setVisible(true);
 }
+
+void HbTheTestWidget::showWarning(QString text)
+{
+    HbTextItem *textItem = new HbTextItem(text);
+    textItem->setAlignment(Qt::AlignHCenter);
+    textItem->setFontSpec(HbFontSpec(HbFontSpec::Secondary));
+    textItem->setTextColor(HbColorScheme::color("qtc_popup_normal"));
+
+    HbDialog *dialog = new HbDialog();
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setContentWidget(textItem);
+    dialog->setContentsMargins(5,15,5,15);
+    dialog->show();
+}
+
 

@@ -5,7 +5,7 @@
 	        <style>outquad</style>
 	        <keyframe at="0.0">0.0</keyframe>
 	        <keyframe at="1.0">1.0</keyframe>
-	        <start ref="screen.bottom">1.0</start>
+	        <start ref="visual.bottom">1.0</start>
 	        <end ref="visual.top">1</end>
 	    </param>
 	</visual>

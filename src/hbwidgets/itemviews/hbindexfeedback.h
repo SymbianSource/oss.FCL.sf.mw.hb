@@ -68,8 +68,6 @@ public:
     void setItemView(HbAbstractItemView *itemView);
     HbAbstractItemView* itemView() const;
 
-    virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
-
 protected:
     virtual void polish( HbStyleParameters& params);
     virtual bool sceneEventFilter(QGraphicsItem* watched, QEvent* event);

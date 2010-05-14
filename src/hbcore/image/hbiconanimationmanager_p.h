@@ -30,7 +30,6 @@
 #include "hbiconanimationparser_p.h"
 #include "hbiconanimationdatatypes_p.h"
 #include <hbglobal.h>
-#include <QStringList>
 #include <QSet>
 
 class HbForegroundWatcher;
@@ -76,8 +75,6 @@ private:
 
     HbIconAnimationParser parser;
 
-    // Save some memory. Filenames are not duplicated in each item in AnimHash.
-    QStringList definitionFileNames;
     // Animation definitions are contained here
     AnimHash animations;
 

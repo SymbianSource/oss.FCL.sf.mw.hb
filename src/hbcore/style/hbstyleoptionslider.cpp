@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 
 /*!
     \class HbStyleOptionSlider

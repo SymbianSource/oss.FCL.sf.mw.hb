@@ -66,7 +66,7 @@ HbTranslator::HbTranslator(const QString &file): d(new HbTranslatorPrivate())
 /*!
     Searches translation file \a file from path \a path.
     \code
-    HbTranslator trans("/resource/qt/custom/", "customfile");
+    HbTranslator trans = new HbTranslator("/resource/qt/custom/", "customfile");
     \endcode
 */
 HbTranslator::HbTranslator(const QString &path, const QString &file): d(new HbTranslatorPrivate())

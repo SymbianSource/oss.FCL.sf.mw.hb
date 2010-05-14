@@ -30,7 +30,7 @@
 #include "hbnamespace_p.h"
 #include "hbsliderhandle_p.h"
 
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 #include "hbslidertickmarkslabel_p.h"
 #include "hbabstractbutton.h"
 #include <hbwidgetfeedback.h>
@@ -551,56 +551,6 @@ HbSlider::~HbSlider( )
 }
 
 /*!
-    \deprecated HbSlider::elements() const
-        is deprecated. Please use sliderElements() instead
-    Returns the elements of the slider.
-
-    The slider contains only track element by default.
-
-    \sa setElements( )
-*/
-QList<HbSlider::SliderElement> HbSlider::elements( ) const
-{
-    qDebug("HbSlider::elements() is deprecated. Use sliderElements() instead.");
-    Q_D( const HbSlider );
-    return d->elements;
-}
-
-/*!
-    \deprecated HbSlider::setElements(const QList<HbSlider::SliderElement>&)
-        is deprecated. Please use setSliderElements instead.
-    Sets the elements of the slider.
-
-    \note Duplicate elements will be ignored.
-
-    \note element order cant be changed
-
-    \sa elements( )
-*/
-void HbSlider::setElements( const QList<SliderElement> &elements )
-{
-    qDebug("HbSlider::setElements is deprecated. Use setSliderElements instead.");
-    Q_D( HbSlider );
-    bool oldElementRemoved = false;
-    foreach(HbSlider::SliderElement element,d->elements){
-        if(!elements.contains(element)&&d->elementItemMap.contains(element)) {
-            delete d->elementItemMap[element].item;
-            delete d->elementItemMap[element].touchItem;
-            d->elementItemMap.remove(element);
-            oldElementRemoved = true;
-        }
-    }
-    if(oldElementRemoved) {
-        repolish( );
-    }
-    d->elements = elements;
-    // this will delete unwanted element and create new element
-    d->updateElements( );
-    // repolish call is required because new elements might be added
-}
-
-
-/*!
     @proto
     Returns the list of slider elements as QVariant 
     
@@ -781,56 +731,6 @@ void HbSlider::setText( const QString &text )
         // sets text for tooltip also
         d->sliderControl->setToolTip( text );
         repolish();
-    }
-}
-
-/*!
-    \deprecated HbSlider::icon(HbSlider::SliderElement) const
-        is deprecated. Please use elementIcons() instead.
-    
-    Returns the icon of the \a element.
-
-    returns NULL if element does not exist or icon was not set for this element
-
-    \sa setIcon( )
-*/
-HbIcon HbSlider::icon( SliderElement element ) const
-{
-    qDebug("HbSlider::icon() is deprecated. Use elementIcons() instead.");
-    Q_D( const HbSlider );
-    return d->icons.value( element );
-}
-
-/*!
-    \deprecated HbSlider::setIcon(HbSlider::SliderElement, const HbIcon&)
-        is deprecated. Please use setElementIcons() instead.
-    
-    Sets the \a icon if the \a element.
-
-    Supported elements:
-    \li HbSlider::IncreaseElement
-    \li HbSlider::DecreaseElement
-    \li HbSlider::IconElement
-
-    \warning Setting icon to a non-existing element has no effect.
-
-    \sa icon( ) setElements( )
-*/
-void HbSlider::setIcon( SliderElement element, const HbIcon &icon )
-{
-    qDebug("HbSlider::setIcon() is deprecated. Use setElementIcons() instead.");
-    Q_D( HbSlider );
-    if ( element != TextElement &&!icon.isNull()) {
-        d->icons[element] = icon;
-        if ( d->elements.contains( element ) ) {
-            // create icon element if it was not existing
-            d->elementWidget( element ); 
-            // update icon primitive
-            
-        } 
-
-    } else {
-        qWarning( "HbSlider::setIcon: non-supported element or null icon passed" );
     }
 }
 

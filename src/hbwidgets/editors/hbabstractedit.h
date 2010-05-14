@@ -163,6 +163,7 @@ protected:
     virtual HbMenu* createContextMenu();
     void showContextMenu(QPointF position = QPointF(0,0));
     virtual QMimeData *createMimeDataFromSelection() const;
+    QString filterInputText(const QString &text);
     virtual bool canInsertFromMimeData(const QMimeData *source) const;
     virtual void insertFromMimeData(const QMimeData *source);
 

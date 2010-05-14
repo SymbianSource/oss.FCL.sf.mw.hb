@@ -32,6 +32,7 @@
 
 #include <QMetaObject>
 #include <QMetaEnum>
+#include <QDebug>
 
 #include <hbanchorlayout.h>
 #include <hbstackedlayout.h>
@@ -283,7 +284,10 @@ bool HbDocumentLoaderActions::pushProperty( const char *propertyName, const HbXm
     QVariant value;
     bool ok = variableToQVariant(variable, value);
     if (ok) {
-        current->setProperty( propertyName, value );
+        bool isQProperty = current->setProperty( propertyName, value );
+        if ( !isQProperty ) {
+            qWarning() << "DOCML warning: Dynamic property" << propertyName << "set. Property may have been removed from" << current->metaObject()->className();
+        }
     }
     return ok;
 }

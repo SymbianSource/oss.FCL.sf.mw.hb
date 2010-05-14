@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include <hbinputbutton.h>
+
 #include "hbinputnumerichandler_p.h"
 #include "hbinputabstractbase.h"
 
@@ -53,16 +55,15 @@ bool HbInputNumericHandler::filterEvent(const QKeyEvent *event)
     bool ret = true;
     switch (event->key()) {
     case Qt::Key_Backspace:
-    case Qt::Key_Delete: {
+    case HbInputButton::ButtonKeyCodeDelete: {
         QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);
         sendAndUpdate(keyEvent);
         // return false since the event is sent forward
         ret = false;
         break;
     }
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-    case Qt::Key_Space:
+    case HbInputButton::ButtonKeyCodeEnter:
+    case HbInputButton::ButtonKeyCodeSpace:
     case Qt::Key_Period:
     case Qt::Key_Comma: {
         QChar qc(event->key());

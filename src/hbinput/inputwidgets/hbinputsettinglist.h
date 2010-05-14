@@ -42,7 +42,6 @@ public:
     virtual ~HbInputSettingList();
 
 public:
-    void showSettingList();
     void updateSettingList();
     void setLanguageSelectionEnabled(bool disabled);
     void setPredictionSelectionEnabled(bool disabled);
@@ -53,9 +52,7 @@ public slots:
     void listItemActivated(HbListWidgetItem *item);
     void primaryLanguageChanged(const HbInputLanguage &newLanguage);
     void secondaryLanguageChanged(const HbInputLanguage &newLanguage);
-    void predictionStatusChanged(int newStatus);
     void predictionStatusChanged(HbKeyboardSettingFlags keyboardType, bool newStatus);
-    void saveSettings();
 
 signals:
     void inputMethodsButtonClicked();

@@ -35,6 +35,9 @@ PRIVATE_HEADERS += $$PWD/hbindicatorclientinfo_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogserver_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginnamecache_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogserverstatus_p.h
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+PRIVATE_HEADERS += $$PWD/hbsysteminfo_p.h
+}
 
 SOURCES += $$PWD/hbdevicedialogserver.cpp
 SOURCES += $$PWD/hbdevicedialogmanager.cpp
@@ -42,23 +45,39 @@ SOURCES += $$PWD/hbdevicedialogmanager_p.cpp
 SOURCES += $$PWD/hbdevicedialogscontainer.cpp
 SOURCES += $$PWD/hbdevicedialogpluginmanager.cpp
 SOURCES += $$PWD/hbpluginnamecache.cpp
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+SOURCES += $$PWD/hbsysteminfo_p.cpp
+}
 
 symbian {
 PRIVATE_HEADERS += $$PWD/hbdevicedialogserversym_p_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogsession_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogserverdefs_p.h
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+PRIVATE_HEADERS += $$PWD/hbsysteminfosym_p_p.h
+}
 
 SOURCES += $$PWD/hbdevicedialogserversym_p.cpp
 SOURCES += $$PWD/hbdevicedialogsession.cpp
 SOURCES += $$PWD/hbindicatorsessionhandler.cpp
 SOURCES += $$PWD/hbdevicedialogserverstatussym.cpp
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+SOURCES += $$PWD/hbsysteminfosym_p_p.cpp
+}
 }
 
 !symbian {
 PRIVATE_HEADERS += $$PWD/hbdevicedialogserverwin_p_p.h
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+PRIVATE_HEADERS += $$PWD/hbsysteminfowin_p_p.h
+}
 
 SOURCES += $$PWD/hbdevicedialogserverwin_p.cpp
 SOURCES += $$PWD/hbdevicedialogserverstatuswin.cpp
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+SOURCES += $$PWD/hbsysteminfowin_p_p.cpp
+}
+
 }
 
 symbian {

@@ -37,7 +37,6 @@
 
 #include "hbinputvkbwidget_p.h"
 #include "hbinputhwtoolcluster.h"
-#include "hbinputtouchkeypadbutton.h"
 #include "hbinputmodeindicator.h"
 
 const QString HbCustomButtonObjName = "Mini VKB custom button ";
@@ -67,14 +66,9 @@ public:
     HbHwToolClusterPrivate();
     ~HbHwToolClusterPrivate();
 public:
-    HbTouchKeypadButton *mLanguageButton;
-    HbTouchKeypadButton *mInputMethodButton;
-    HbTouchKeypadButton *mPredictionIndicatorButton;
 };
 
-HbHwToolClusterPrivate::HbHwToolClusterPrivate() : mLanguageButton(0),
-                mInputMethodButton(0),
-                mPredictionIndicatorButton(0)
+HbHwToolClusterPrivate::HbHwToolClusterPrivate()
 {
 }
 
@@ -104,34 +98,6 @@ Creates the layout of the mini touch keypad for hardware qwerty.
 */
 void HbHwToolCluster::createLayout()
 {
-    setupToolCluster();
-
-    Q_D(HbHwToolCluster);
-    // The layout is already created. So just return.
-    if ( d->mButtonLayout ) {
-        return;
-    }
-
-    d->mButtonLayout = new QGraphicsGridLayout();
-    setContentsMargins(0.0, 0.0, 0.0, 0.0);
-    d->mButtonLayout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
-    d->mButtonLayout->setHorizontalSpacing(HorizontalSpacing);
-    d->mButtonLayout->setVerticalSpacing(VerticalSpacing);
-    d->mButtonLayout->addItem(d->mSettingsButton, 0, 0);   // Settings key
-    d->mButtonLayout->addItem(d->mLanguageButton, 0, 1);   // language selection
-    d->mButtonLayout->addItem(d->mPredictionIndicatorButton, 0, 2);   // prediction indicator
-    d->mButtonLayout->addItem(d->mInputMethodButton, 0, 3);   //input method selection key
-    d->mButtonLayout->addItem(d->mApplicationButton, 0, 4);   // Application specific key
-
-    d->mSettingsButton->setObjectName( HbCustomButtonObjName + QString::number(1));
-    d->mApplicationButton->setObjectName( HbCustomButtonObjName + QString::number(2));
-    d->mLanguageButton->setObjectName( HbCustomButtonObjName + QString::number(3));
-    d->mInputMethodButton->setObjectName( HbCustomButtonObjName + QString::number(4));
-    d->mPredictionIndicatorButton->setObjectName( HbCustomButtonObjName + QString::number(5));
-
-    connect(d->mInputMethodButton, SIGNAL(clicked()), this, SLOT(showMethodDialog()));
-    connect(d->mLanguageButton, SIGNAL(clicked()), this, SLOT(showLanguageDialog()));
-    connect(d->mPredictionIndicatorButton, SIGNAL(clicked()), HbInputSettingProxy::instance(), SLOT(togglePrediction()));
 }
 
 
@@ -140,83 +106,6 @@ Creates the tools cluster for mini VKB layout.
 */
 void HbHwToolCluster::setupToolCluster()
 {
-    Q_D(HbHwToolCluster);
-    if(!d->mOwner || !d->mOwner->focusObject()) {
-        return;
-    }
-
-    // Create buttons if they do not exist
-    if (!d->mSettingsButton) {
-        d->mSettingsButton = new HbTouchKeypadButton(this, QString(""));
-        d->mSettingsButton->setIcon(HbIcon(settingsIcon));
-        d->mSettingsButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-        d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-
-        connect(d->mSettingsButton, SIGNAL(clicked()), this, SLOT(showSettingList()));
-    }
-    if(!d->mLanguageButton) {
-        d->mLanguageButton = new HbTouchKeypadButton(this, QString(""));
-        d->mLanguageButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-        d->mLanguageButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-    }
-
-    if(!d->mInputMethodButton) {
-        d->mInputMethodButton = new HbTouchKeypadButton(this, QString(""));
-        d->mInputMethodButton->setIcon(HbIcon(inputMethodIcon));
-        d->mInputMethodButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-        d->mInputMethodButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-    }
-
-    if(!d->mPredictionIndicatorButton) {
-        d->mPredictionIndicatorButton = new HbTouchKeypadButton(this, QString(""));
-        d->mPredictionIndicatorButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-        d->mPredictionIndicatorButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-        d->mInputModeIndicator = new HbInputModeIndicator(*d->mPredictionIndicatorButton, this);
-    } else {
-        d->mInputModeIndicator->updateIndicator();
-    }
-
-    if(d->mLanguageButton) {
-        // update language button text
-        QString langName = HbInputSettingProxy::instance()->globalInputLanguage().localisedName();
-        langName.truncate(3);
-        d->mLanguageButton->setText(langName);
-    }
-
-    // update prediction button status
-    if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard()) {
-        d->mPredictionIndicatorButton->setIcon(HbIcon(predictionOffIcon));
-    } else {
-        d->mPredictionIndicatorButton->setIcon(HbIcon(predictionOnIcon));
-    }
-
-    // If there's a application specific button defined, create new button with the properties
-    // or update the existing one. Otherwise create an empty button or clean the properties of an existing one.
-    if (!d->mOwner->focusObject()->editorInterface().actions().isEmpty()) {
-        QList<HbAction*> actions = d->mOwner->focusObject()->editorInterface().actions();
-        if (d->mApplicationButton) {
-            d->mApplicationButton->setText(actions.first()->text());
-            d->mApplicationButton->disconnect(SIGNAL(clicked()));
-        } else {
-            d->mApplicationButton = new HbTouchKeypadButton(this, actions.first()->text());
-            d->mApplicationButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-            d->mApplicationButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-        }
-        connect(d->mApplicationButton, SIGNAL(clicked()), actions.first(), SLOT(trigger()));
-        d->mApplicationButton->setIcon(actions.first()->icon());
-        d->mApplicationButton->setToolTip(actions.first()->toolTip());
-    } else {
-        if (d->mApplicationButton) {
-            d->mApplicationButton->disconnect(SIGNAL(clicked()));
-            d->mApplicationButton->setText(QString());
-            d->mApplicationButton->setIcon(HbIcon());
-            d->mApplicationButton->setToolTip(QString());
-        } else {
-            d->mApplicationButton = new HbTouchKeypadButton(this, QString());
-            d->mApplicationButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-            d->mApplicationButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-        }
-    }
 }
 
 /*!
@@ -273,16 +162,6 @@ QSizeF HbHwToolCluster::preferredKeyboardSize()
     }
 
     return ret;
-}
-
-/*!
-\deprecated HbHwToolCluster::showSettingsDialog()
-    is deprecated. Use showSettingsView instead.
-
-Shows the settings dialog
-*/
-void HbHwToolCluster::showSettingsDialog()
-{
 }
 
 /*!

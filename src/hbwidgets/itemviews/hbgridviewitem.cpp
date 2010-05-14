@@ -26,7 +26,7 @@
 #include "hbgridviewitem_p.h"
 #include <hbgridviewitem.h>
 #include "hbgridview_p.h"
-#include <hbstyleoptiongridviewitem.h>
+#include <hbstyleoptiongridviewitem_p.h>
 #include <QDebug>
 
 /*!
@@ -175,43 +175,6 @@ void HbGridViewItem::initStyleOption(HbStyleOptionGridViewItem *option) const
     HbAbstractViewItem::initStyleOption(option);
     option->icon = d->mIcon;
     option->text = d->mText;
-}
-
-/*!
-
-    \deprecated HbGridViewItem::primitive(HbStyle::Primitive)
-        is deprecated.
-
-  Provides access to primitives of HbGridViewItem. 
-  \param primitive is the type of the requested primitive. The available primitives are 
-  \c P_GridViewItem_text, \c P_GridViewItem_icon, \c P_ItemViewItem_checkbox and
-  \c P_GridViewItem_background.
- */
-QGraphicsItem * HbGridViewItem::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D( const HbGridViewItem );
-
-    if (primitive == HbStyle::P_GridViewItem_text) {
-        return d->mTextItem;
-    }
-    else if (primitive == HbStyle::P_GridViewItem_icon) {
-        return d->mIconItem;
-    }
-
-    return HbAbstractViewItem::primitive(primitive);
-}
-
-/*!
-    \deprecated HbGridViewItem::contiguousSelectionArea() const
-        is deprecated.
-
-    \reimp
- */
-QRectF HbGridViewItem::contiguousSelectionArea() const
-{
-    qWarning("QRectF HbGridViewItem::contiguousSelectionArea() const is deprecated!");
-
-    return QRect();
 }
 
 /*!

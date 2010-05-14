@@ -64,12 +64,14 @@ public:
 
     void setSplashScreenDir(const QString &dir) { mSplashScreenDir = dir; }
     void setSplashScreenDirContents(const QStringList &entries) { mSplashScreenDirEntries = entries; }
+    bool startupSuccess() const { return mStartupSuccess; }
 
     bool processGetSplash(const RMessage2 &message);
 
 private:
     bool transferHandle(const RMessage2 &message, const QString &fileName);
 
+    bool mStartupSuccess;
     RFs mFs;
     QString mSplashScreenDir;
     QStringList mSplashScreenDirEntries;
@@ -106,24 +108,31 @@ void HbSplashGenServer::onOutputDirContentsUpdated(const QString &dir, const QSt
     mServer->setSplashScreenDirContents(entries);
 }
 
+bool HbSplashGenServer::startupSuccess() const
+{
+    return mServer->startupSuccess();
+}
+
 HbSplashGenServerSymbian::HbSplashGenServerSymbian()
     : CServer2(CActive::EPriorityHigh)
 {
-    if (mFs.Connect() == KErrNone) {
+    TInt err = mFs.Connect();
+    if (err == KErrNone) {
         mFs.ShareProtected();
+        TRAP(err, StartL(hbsplash_server_name));
+        if (err == KErrNone) {
+            qDebug() << PRE << "server started";
+        } else {
+            qWarning() << PRE << "server start failed" << err;
+        }
     } else {
         qWarning() << PRE << "cannot connect to file server";
     }
-    TRAPD(err, StartL(hbsplash_server_name));
-    if (err == KErrNone) {
-        qDebug() << PRE << "server started";
-    } else {
-        qWarning() << PRE << "server start failed" << err;
-    }
+    mStartupSuccess = (err == KErrNone);
     // Now it is the right time to do the rendezvous. By default it would be
     // done too early so the custom appui disables FrameworkCallsRendezvous and
     // it is done here instead.
-    RProcess::Rendezvous(KErrNone);
+    RProcess::Rendezvous(err);
 }
 
 HbSplashGenServerSymbian::~HbSplashGenServerSymbian()

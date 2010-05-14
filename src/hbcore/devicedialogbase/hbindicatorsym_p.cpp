@@ -42,6 +42,8 @@ public:
     {
         TInt error = KErrNone;
         if (!IsActive()) {
+            // Async connect to prevent deadlock if application is started from a
+            // device dialog server plugin.
             iStatus = KRequestPending;
             error = iIndicator->mHbSession.Connect(&iStatus);
             if (error == KErrNone) {
@@ -50,15 +52,15 @@ public:
         }
         return error;
     }
-    void RunL() {
+    void RunL()
+    {
         if (iStatus == KErrNone) {
             iIndicator->Start();
         }
     }
     void DoCancel()
     {
-        TRequestStatus *rs = &iStatus;
-        User::RequestComplete(rs, KErrNone);
+    // No Cancel() available for RSessionBase::Connect()
     }
 private:
     HbIndicatorPrivate *iIndicator;
@@ -121,26 +123,33 @@ void HbIndicatorPrivate::initializeL(bool forListening)
 {
     TRACE_ENTRY
     TInt error = KErrNone;
+    bool asynchConnect = false;
     if (forListening) {
-        if (!iAsyncListener) {
-            iAsyncListener = new (ELeave) CAsyncListener(this);
+        CreateReceiveBufferL(DefaultReceiveBufferSize);
+        // If device dialog server is running, connect asynchronously. This is to
+        // prevent a deadlock if server plugin is starting an application.
+        asynchConnect = RHbDeviceDialogClientSession::ServerRunning();
+        if (asynchConnect){
+            if (!iAsyncListener) {
+                iAsyncListener = new (ELeave) CAsyncListener(this);
+            }
+            error = iAsyncListener->Start();
+        } else {
+            error = mHbSession.Connect();
         }
-        error = iAsyncListener->Start();
     } else {
         error = mHbSession.Connect();
     }
 
-    if ( error != KErrNone && error != KErrAlreadyExists) {
+    if (error != KErrNone) {
         TRACE("initialize error: " << error);
-        setError( HbDeviceDialogConnectError );
-        User::LeaveIfError( error );
-    }
-    else if (forListening){
-        iBuffer = HBufC8::NewL( 256 );
-        iDataPtr.Set( iBuffer->Des() );
-        iDataPtr.Zero();
+        setError(HbDeviceDialogConnectError);
+        User::Leave(error);
     }
     iInitialized = ETrue;
+    if (forListening && !asynchConnect) {
+        Start();
+    }
     TRACE_EXIT
 }
 
@@ -180,7 +189,7 @@ bool HbIndicatorPrivate::listening() const
 bool HbIndicatorPrivate::stopListen()
 {
     TRACE_ENTRY
-    //close connections to server.
+    // Close connections to server
     bool ok = false;
     if (iRequesting) {
         Close();
@@ -232,24 +241,22 @@ void HbIndicatorPrivate::RunL()
     iRequesting = EFalse;
     
     if (status >= 0 && iMsgType == EHbIndicatorUserActivated) {
-		iMsgType = -1;
-		if (status > 0) {
-			delete iBuffer;
-			iBuffer = NULL;
-			iBuffer = HBufC8::NewL(status);
-			iDataPtr.Set(iBuffer->Des());
-			TInt error = mHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData, iDataPtr, &iMsgTypePtr);							                
-		}
-		
-		QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
-		QDataStream stream(&resArray, QIODevice::ReadOnly);
-		QVariant var;
-		stream >> var;
-		
-		if (q_ptr && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0) {
-			QVariantMap map = var.toMap();
-			emit q_func()->userActivated(map.value("type").toString(), map.value("data").toMap());
-		} 			
+        iMsgType = -1;
+        if (status > 0) {
+            CreateReceiveBufferL(status);
+            TInt error = mHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData,
+                iDataPtr, &iMsgTypePtr);
+        }
+
+        QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
+        QDataStream stream(&resArray, QIODevice::ReadOnly);
+        QVariant var;
+        stream >> var;
+
+        if (q_ptr && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0) {
+            QVariantMap map = var.toMap();
+            emit q_func()->userActivated(map.value("type").toString(), map.value("data").toMap());
+        }
     } else if (status >= 0) {
         QByteArray resArray( (const char*) iDataPtr.Ptr(), iDataPtr.Size() );
         QDataStream stream( &resArray, QIODevice::ReadOnly);
@@ -301,11 +308,7 @@ void HbIndicatorPrivate::RunL()
 
         if ( status > 0 && iBuffer->Size() < status ) {
             // Resize buffer.
-            delete iBuffer;
-            iBuffer = NULL;
-
-            iBuffer = HBufC8::NewL( status );
-            iDataPtr.Set( iBuffer->Des() );
+            CreateReceiveBufferL(status);
         }
     } else {
         setError(status);
@@ -347,17 +350,16 @@ void HbIndicatorPrivate::Start()
 {
     TRACE_ENTRY
 
-    if ( !iRequesting && iInitialized && !IsActive() ) {
-		if (!iBuffer) {
-			iBuffer = HBufC8::NewL( 256 );
-			iDataPtr.Set( iBuffer->Des() );
-		}
-		iDataPtr.Zero();
+    if (!iRequesting && iInitialized && !IsActive()) {
+        if (!iBuffer) {
+            CreateReceiveBufferL(DefaultReceiveBufferSize);
+        }
+        iDataPtr.Zero();
         TPckg<TInt> pckg( iMsgType );
         iMsgTypePtr.Set( pckg ); //iMsgTypePtr is ignored in server side.
     
         mHbSession.SendASyncRequest( EHbSrvGetActivatedIndicatorsStart,
-                iDataPtr, iMsgTypePtr, iStatus );
+            iDataPtr, iMsgTypePtr, iStatus );
         SetActive();
         iRequesting = ETrue;
     }
@@ -368,7 +370,7 @@ void HbIndicatorPrivate::Continue()
 {
     TRACE_ENTRY
 
-    if ( !iRequesting && iInitialized && !IsActive() ) {
+    if (!iRequesting && iInitialized && !IsActive()) {
         TPckg<TInt> pckg( iMsgType );
         iMsgTypePtr.Set( pckg );
 
@@ -435,3 +437,10 @@ int HbIndicatorPrivate::sendActivateMessage(const QString &indicatorType,
     return result;
 }
 
+void HbIndicatorPrivate::CreateReceiveBufferL(int size)
+{
+    delete iBuffer; iBuffer = 0;
+    iBuffer = HBufC8::NewL(size);
+    iDataPtr.Set(iBuffer->Des());
+    iDataPtr.Zero();
+}

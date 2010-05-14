@@ -57,15 +57,11 @@
 HbProgressSliderHandle::HbProgressSliderHandle(HbHandleParent *parent) 
     :HbWidget(parent->parentGraphicsItem()),
     q(parent),
-    mHandleIcon(),
-    mPlayThumb(true),
-    mThumbEnabled(false)
+    mHandleIcon()
 {
     mFlags = 0;
     mFlags |= TextVisible;
-    mHandleSize = QSizeF(0,0);
 
-    mSliderHandleState = HbProgressSlider::SliderStatePlayNormal;
     HbStyle *style = static_cast<HbStyle*>(q->style());
 
     mHandleIconItem = style->createPrimitive(HbStyle::P_ProgressSliderHandle_icon,this);
@@ -108,13 +104,8 @@ void HbProgressSliderHandle::setHandleIcon(const HbIcon& icon)
     initStyleOption(&option);
 
     style->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
-    mThumbEnabled = true;
 }
 
-HbIcon HbProgressSliderHandle::thumbIcon() const
-{
-    return mHandleIcon;    
-}
 
 void HbProgressSliderHandle::gestureEvent(QGestureEvent *event)
 {
@@ -132,7 +123,7 @@ void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
     mFlags |= HbProgressSliderHandle::MousePressed;
 
     HbStyleOptionProgressSliderHandle option;
-	initStyleOption(&option);
+    initStyleOption(&option);
     option.pressedState = true;
     if (mHandleIconItem) {
         style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
@@ -143,10 +134,10 @@ void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
     if(q->textVisible()) {
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemPosAtPress,QSize(0,0)),q->textAlignment());
     }
-	else {
-		HbExtendedLocale locale;
-		HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
-	}
+    else {
+        HbExtendedLocale locale;
+        HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+    }
 
     HbWidgetFeedback::triggered(q->parentGraphicsWidget(), Hb::InstantPressed, Hb::ModifierSliderHandle);
 
@@ -159,7 +150,7 @@ void HbProgressSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     HbWidget::mouseReleaseEvent(event);
 
     HbStyleOptionProgressSliderHandle option;
-	initStyleOption(&option);
+    initStyleOption(&option);
     option.pressedState = false;
     if (mHandleIconItem) {
         style()->updatePrimitive(mHandleIconItem, HbStyle::P_ProgressSliderHandle_icon, &option);
@@ -176,7 +167,7 @@ void HbProgressSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     mFlags &= ~HbProgressSliderHandle::MousePressed;
     mFlags &=~HandleMoving;
     event->accept();
-	setHandlePosForValue(q->progressValue());   
+    setHandlePosForValue(q->progressValue());   
     q->emitSliderReleased();
 }
 
@@ -230,9 +221,9 @@ void HbProgressSliderHandle::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
     }
     else {
-		HbExtendedLocale locale;
-		HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
-	}
+        HbExtendedLocale locale;
+        HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+    }
     event->accept();
 
     q->emitSliderMoved(pointToValue(mItemCurPos));
@@ -418,6 +409,5 @@ void HbProgressSliderHandle::initStyleOption(HbStyleOptionProgressSliderHandle *
     HbWidget::initStyleOption(option);
     option->handleIcon = mHandleIcon;
     option->pressedState = false;
-    option->sliderHandleState = (HbStyleOptionProgressSliderHandle::SliderState) mSliderHandleState;
 }
 

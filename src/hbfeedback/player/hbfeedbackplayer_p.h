@@ -23,32 +23,41 @@
 **
 ****************************************************************************/
 
-#ifndef HBFEEDBACKPLAYERPRIVATE_H
-#define HBFEEDBACKPLAYERPRIVATE_H
+#ifndef HBFEEDBACKPLAYER_H
+#define HBFEEDBACKPLAYER_H
 
-#include "hbfeedbackplayer.h"
+#include <hbfeedbacknamespace.h>
+#include <QObject>
 
-#include <QString>
+class HbFeedbackSettings;
+class HbInstantFeedback;
+class HbContinuousFeedback;
+class HbFeedbackPlayerPrivate;
 
-class HbFeedbackBasePlayer;
+#define hbFeedbackPlayer HbFeedbackPlayer::instance()
 
-class HbFeedbackPlayerPrivate : public QObject
+class  HB_AUTOTEST_EXPORT HbFeedbackPlayer : public QObject
 {
     Q_OBJECT
 
 public:
-    HbFeedbackPlayerPrivate(HbFeedbackPlayer* parent);
-    ~HbFeedbackPlayerPrivate();
-    void init();
-
-protected slots:
-    void feedbackDisabled();
-    void feedbackTypeDisabled(HbFeedback::Type type);
+    static HbFeedbackPlayer* instance();
+    HbFeedbackPlayer();
+    virtual ~HbFeedbackPlayer();
 
 public:
-    HbFeedbackPlayer* parent;
-    HbFeedbackBasePlayer* basePlayer;
-    HbFeedbackSettings* feedbackSettings;
+    HbFeedbackSettings* settings();
+
+    void playInstantFeedback(const HbInstantFeedback& feedback);
+
+    int startContinuousFeedback(const HbContinuousFeedback& feedback);
+    void updateContinuousFeedback(int identifier, const HbContinuousFeedback& feedback);
+    void cancelContinuousFeedback(int identifier);
+    bool continuousFeedbackOngoing(int identifier);
+    void cancelContinuousFeedbacks();
+
+private:
+    HbFeedbackPlayerPrivate* const d;
 };
 
-#endif // HBFEEDBACKPLAYERPRIVATE_H
+#endif // HBFEEDBACKPLAYER_H

@@ -31,7 +31,7 @@
 #include <hbtumbleview.h>
 #include <hbtumbleviewitem.h>
 #include <hbevent.h>
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QStringListModel>

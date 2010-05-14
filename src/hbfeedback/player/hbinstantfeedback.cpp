@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 #include "hbinstantfeedback.h"
-#include "hbfeedbackplayer.h"
+#include "hbfeedbackplayer_p.h"
 
 #include <QGraphicsItem>
 #include <QGraphicsView>
@@ -46,20 +46,16 @@ public:
 
     \class HbInstantFeedback
 
-    \brief Tool class for instant feedback effects.
+    \brief Class for instant feedback effects.
 
-    Instant feedbacks are used to initiate fire&forget type of sound and haptic effects defined in the device themes.
-    Effects are used as a feedback indication to the user when she/he is navigating and interacting
-    with the device.
+    Instant feedbacks are used to initiate short, fire&forget type of feedback effects.
+    Effects are used as a feedback indication while the user is interacting with the device.
 */
 
 /*!
     \fn void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
 
-    Sets the instant effect that determines what kind of haptic and sound effects will
-    be played when calling HbFeedbackPlayer::playInstantFeedback() or when user touches the screen
-    over the hit area with the given instant effect. The actual effects are
-    defined in the device themes.
+    Sets the instant effect to be be played when calling HbFeedbackPlayer::playInstantFeedback().
 */
 
 void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
@@ -70,10 +66,8 @@ void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
 /*!
     \fn void HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
 
-    Returns the instant effect of the instant feedback object. Instant effect is used to determine what kind of
-    haptic and sound effects will be played when calling HbFeedbackPlayer::playInstantFeedback() or
-    when user touches the screen over the hit area with the given instant effect. The actual effects
-    are defined in the device themes.
+    Returns the instant effect of the instant feedback object. Instant effect represents the feedback 
+    effect to be played when calling HbFeedbackPlayer::playInstantFeedback().
 */
 
 HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
@@ -92,7 +86,6 @@ bool HbInstantFeedback::isValid() const
 {
     switch(d->cEffect) {
     case HbFeedback::None:
-    case HbFeedback::NoOverride:
         return false;
     default:
         return true;
@@ -131,18 +124,18 @@ HbInstantFeedback::~HbInstantFeedback()
 }
 
 /*!
-    Initiates the instant feedback effect.
+    Plays the instant feedback effect.
 */
 void HbInstantFeedback::play()
 {
-    HbFeedbackPlayer* player = HbFeedbackPlayer::instance();
-    if (player) {
-        player->playInstantFeedback(d->cEffect);
+    HbFeedbackPlayer* feedbackPlayer = HbFeedbackPlayer::instance();
+    if (feedbackPlayer) {
+        feedbackPlayer->playInstantFeedback(*this);
     }
 }
 
 /*!
-    Initiates the given instant feedback effect.
+    Plays the given instant feedback effect.
 */
 void HbInstantFeedback::play(HbFeedback::InstantEffect effect)
 {
@@ -164,8 +157,8 @@ HbInstantFeedback &HbInstantFeedback::operator=(const HbInstantFeedback & feedba
 }
 
 /*!
-    Returns true if this feedback has the same configuration as the feedback \a
-    feedback; otherwise returns false.
+    Returns true if this feedback has the same parameters as the feedback
+    \a feedback, otherwise returns false.
 */
 bool HbInstantFeedback::operator==(const HbInstantFeedback &feedback) const
 {
@@ -175,8 +168,8 @@ bool HbInstantFeedback::operator==(const HbInstantFeedback &feedback) const
 }
 
 /*!
-    Returns true if this feedback has different configuration than the feedback \a
-    feedback; otherwise returns false.
+    Returns true if this feedback has different parameters than the feedback
+    \a feedback, otherwise returns false.
 */
 bool HbInstantFeedback::operator!=(const HbInstantFeedback &feedback) const
 {

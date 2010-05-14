@@ -27,7 +27,7 @@
 #include "hbslidercontrol_p_p.h"
 #include "hbabstractslidercontrol_p.h"
 #include "hbsliderhandle_p.h"
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 #include "hbslidertickmarkslabel_p.h"
 #include "hbslidertickmarkslabel_p.h"
 #include <hbstyle.h>
@@ -1104,7 +1104,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             case Qt::GestureStarted: 
             case Qt::GestureUpdated:{
                 QPointF startPoint = event->mapToGraphicsScene(panGesture->offset()+panGesture->startPos( ) );
-                if( d->onHandle( startPoint)||isSliderDown( ) ) {
+                if( ( d->onHandle( startPoint) && d->grooveTouchArea->sceneBoundingRect( ).contains( startPoint))||isSliderDown( ) ) {
                     qreal handlePos = 0;
                     qreal span = 0;
                     QRectF bounds = boundingRect( );
@@ -1145,7 +1145,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                     HbWidgetFeedback::triggered( this, Hb::InstantPressed );
                     event->ignore();
                     break;
-                }
+                } 
             }
             case Qt::GestureFinished:
             case Qt::GestureCanceled: {
@@ -1155,6 +1155,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 d->handle->updatePrimitives();
                 d->handleMoving = false;
                 event->ignore();
+                HbAbstractSliderControl::gestureEvent(event);
             }
             default:
                 break;

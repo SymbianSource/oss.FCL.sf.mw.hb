@@ -317,13 +317,7 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
                 file.setFileName(absolutePath);
                 fileExists = file.open(QIODevice::ReadOnly);
                 file.close();
-                // E.g. in hardware absolutepath is not found...
-                // ToDo: mirrored.txt will be refactored
-                //if(name.endsWith("mirrored.txt") && !fileExists) {
-                //    return QString(":/themes/icons/hbdefault/mirrored.txt");       
-                //} else {
-                    return absolutePath;
-                //}
+                return absolutePath;
             }
         }
         else if (resType == Hb::EffectResource) {
@@ -394,7 +388,6 @@ void HbStandardDirs::findResourceList(QMap<int, QString> &pathList,
         }
     }
 }
-
 
 QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths, 
                                                    const QString &currentThemeName,

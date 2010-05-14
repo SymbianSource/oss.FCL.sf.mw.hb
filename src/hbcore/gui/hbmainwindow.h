@@ -43,11 +43,6 @@ class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
 {
     Q_OBJECT
 
-    //Deprecated
-    Q_PROPERTY(int currentViewIndex READ currentViewIndex WRITE setCurrentViewIndex)
-    //Deprecated
-    Q_PROPERTY(int viewCount READ viewCount)
-
     Q_PROPERTY(Qt::Orientation orientation 
                READ orientation
                WRITE setOrientation
@@ -57,17 +52,6 @@ class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
 public:
     explicit HbMainWindow(QWidget *parent = 0, Hb::WindowFlags windowFlags = Hb::WindowFlagNone);
     ~HbMainWindow();
-
-    // deprecated
-    QGraphicsWidget *removeView(int index);
-    // deprecated
-    int currentViewIndex() const;
-    // deprecated
-    int viewCount() const;
-    // deprecated
-    int indexOfView(HbView *view) const;
-    // deprecated
-    HbView *viewAt(int index) const;
 
     HbView *addView(QGraphicsWidget *widget = 0);
     HbView *insertView(int index, QGraphicsWidget *widget = 0);
@@ -79,18 +63,7 @@ public:
     Qt::Orientation orientation() const;
     void setOrientation(Qt::Orientation orientation, bool animate = true);
     void unsetOrientation(bool animate = true);
-    
-    // Deprecated
-    void showItems(Hb::SceneItems items);
-    // Deprecated
-    void hideItems(Hb::SceneItems items);
-    // Deprecated
-    Hb::SceneItems visibleItems() const;
-    // Deprecated
-    bool isItemVisible(Hb::SceneItem item)  const;
-    // Deprecated
-    void setItemVisible(Hb::SceneItem item, bool visible);
-    
+
     WId nativeBackgroundWindow();
     void resetNativeBackgroundWindow();
 
@@ -99,20 +72,13 @@ public:
     void setBackgroundImageName(Qt::Orientation orientation, const QString &name);
     QString backgroundImageName(Qt::Orientation orientation) const;
 
-public slots:
-    // Deprecated
-    void setCurrentViewIndex(int index);
-    // Deprecated
-    void nextView();
-    // Deprecated
-    void previousView();
+    void setAutomaticOrientationEffectEnabled(bool enabled = true);
+    bool automaticOrientationEffectEnabled() const;
 
+public slots:
     void broadcastEvent( int eventType );
 
 signals:
-    // deprecated
-    void currentViewIndexChanged(int index);
-
     void viewReady();
     void aboutToChangeView(HbView *oldView, HbView *newView);
     void currentViewChanged(HbView *view);
@@ -138,7 +104,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status))
     Q_PRIVATE_SLOT(d_func(), void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status))
     Q_PRIVATE_SLOT(d_func(), void orientationEffectFinished(const HbEffect::EffectStatus& status))
-    Q_PRIVATE_SLOT(d_func(), void _q_viewChanged(int))
+    Q_PRIVATE_SLOT(d_func(), void _q_viewChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_viewRemoved(QGraphicsWidget *))
     Q_PRIVATE_SLOT(d_func(), void _q_viewTitleChanged(const QString &))
     Q_PRIVATE_SLOT(d_func(), void _q_viewToolBarChanged())

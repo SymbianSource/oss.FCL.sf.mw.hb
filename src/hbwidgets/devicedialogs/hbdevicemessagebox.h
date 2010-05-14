@@ -38,9 +38,9 @@ class HB_WIDGETS_EXPORT HbDeviceMessageBox : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(HbMessageBox::MessageBoxType messageBoxType READ messageBoxType WRITE setMessageBoxType)
     Q_PROPERTY(QString text READ text WRITE setText)
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
-    Q_PROPERTY(Qt::Alignment iconAlignment READ iconAlignment WRITE setIconAlignment)
     Q_PROPERTY(bool iconVisible READ iconVisible WRITE setIconVisible)
     Q_PROPERTY(int timeout READ timeout WRITE setTimeout)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
@@ -72,10 +72,10 @@ public:
     void show();
     void update();
     void close();
-    HbAction *exec(); // deprecated
-    const QAction *exec() const; // tbd. remove const when HbAction *exec() is removed
+    const QAction *exec();
     const QAction *triggeredAction() const;
     bool isAcceptAction(const QAction *action) const;
+
     void setMessageBoxType(HbMessageBox::MessageBoxType type);
     HbMessageBox::MessageBoxType messageBoxType() const;
 
@@ -84,9 +84,6 @@ public:
 
     void setIconName(const QString &iconName);
     QString iconName() const;
-
-    void setIconAlignment(Qt::Alignment align);
-    Qt::Alignment iconAlignment() const;
 
     void setIconVisible(bool visible);
     bool iconVisible() const;
@@ -100,12 +97,6 @@ public:
 
     void setDismissPolicy(HbPopup::DismissPolicy dismissPolicy);
     HbPopup::DismissPolicy dismissPolicy() const;
-
-    HbAction *primaryAction() const; // deprecated
-    void setPrimaryAction(HbAction *action); // deprecated
-
-    HbAction *secondaryAction() const; // deprecated
-    void setSecondaryAction(HbAction *action); // deprecated
 
     void setAction(QAction *action, ActionRole role);
     QAction *action(ActionRole role) const;

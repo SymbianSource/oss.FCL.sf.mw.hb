@@ -28,7 +28,6 @@
 #include <QFile>
 #include "hbiconsource_p.h"
 #include "hbmemoryutils_p.h"
-#include <hbtlvwrapper_p.h>
 #include "hbthemeserverutils_p.h"
 
 
@@ -81,31 +80,20 @@ bool HbNvgIconProcessor::createIconData(const QString& iconPath)
         return false;
     }
     bool isDefaultSize =  iconKey.size.isNull();
-    if (iconType == "SVG") {
-        quint32 domhandle = 0;
-        defaultSize = (HbTlvWrapper::instance())->contentDimensions((QString&)iconPath, domhandle);
-        QSizeF renderSize = QSizeF(defaultSize);
-        if (!isDefaultSize) {
-            renderSize.scale(iconKey.size, iconKey.aspectRatioMode);
-        }
-        if (domhandle) {
-            byteArray = (HbTlvWrapper::instance())->getTlvEncodedDataFromDom(domhandle, renderSize, iconKey.aspectRatioMode);
-            size = renderSize.toSize();
-        }
-    } else {
-        HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
-        QByteArray *sourceByteArray = source->byteArray();
-        if( !sourceByteArray ) {
-            return false;
-        }
-        byteArray = *sourceByteArray;
-        QSizeF renderSize = source->defaultSize();
-        defaultSize = renderSize.toSize();
-        if (!isDefaultSize) {
-            renderSize.scale(iconKey.size, iconKey.aspectRatioMode);
-        }
-        size = renderSize.toSize();
+    
+    HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
+    QByteArray *sourceByteArray = source->byteArray();
+    if( !sourceByteArray ) {
+        return false;
     }
+    byteArray = *sourceByteArray;
+    QSizeF renderSize = source->defaultSize();
+    defaultSize = renderSize.toSize();
+    if (!isDefaultSize) {
+        renderSize.scale(iconKey.size, iconKey.aspectRatioMode);
+    }
+    size = renderSize.toSize();
+    
     return true;
 }
 

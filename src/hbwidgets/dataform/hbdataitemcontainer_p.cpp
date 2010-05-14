@@ -24,12 +24,13 @@
 ****************************************************************************/
 
 #include "hbdataitemcontainer_p.h"
-#include <hbabstractitemcontainer_p.h>
+#include <hbabstractitemcontainer_p_p.h>
 #include <hbdataformviewitem.h>
 #include <hbdataformmodelitem.h>
 #include "hbdatagroup_p.h"
 #include <hbdataform.h>
 #include "hblistlayout_p.h"
+#include "hbmodeliterator.h"
 
 #include <QCoreApplication>
 #include <QGraphicsScene>
@@ -145,27 +146,6 @@ void HbDataItemContainer::viewResized(const QSizeF &viewSize)
     mLayout->activate();
 }
 
-/*!
-    Assigns new model \a index to the given \a item. Item's current state is saved
-    and state for \a index is restored to item.
-*/
-void HbDataItemContainer::setItemModelIndex(HbAbstractViewItem *item, const QModelIndex &index)
-{
-    if (item && item->modelIndex() != index) {
-        HbAbstractItemContainer::setItemModelIndex(item, index);
-        int level = 0;
-        if (itemView()) {
-            QModelIndex parentIndex = item->modelIndex().parent();
-            QModelIndex rootIndex = itemView()->rootIndex();
-
-            while (parentIndex != rootIndex && parentIndex.isValid()) {
-                level++;
-                parentIndex = parentIndex.parent();
-            }
-        }
-    }
-}
-
 void HbDataItemContainer::setModelIndexes(const QModelIndex &startIndex )
 {
    Q_D(HbAbstractItemContainer);
@@ -184,7 +164,7 @@ void HbDataItemContainer::setModelIndexes(const QModelIndex &startIndex )
     if (d->mItems.count() < targetCount) {
         // New items needs to be added.
         while (d->mItems.count() < targetCount) {       
-            index = d->mItemView->nextIndex(index);
+            index = d->mItemView->modelIterator()->nextIndex(index);
             if (!index.isValid()) {
                 break;
             }              
@@ -206,28 +186,51 @@ void HbDataItemContainer::setModelIndexes(const QModelIndex &startIndex )
     }
 }
 
-/*!
-    Inserts item for \a index to \a pos.
-*/
-void HbDataItemContainer::insertItem(int pos, const QModelIndex &index, bool animate)
-{
-    Q_D(HbDataItemContainer);
-    HbAbstractViewItem *item = d->createItem(index);
-    HbDataFormModelItem::DataItemType itemType = 
-        static_cast<HbDataFormModelItem::DataItemType>(
-        index.data(HbDataFormModelItem::ItemTypeRole).toInt());
-    if (item) {
-        d->mItems.insert(pos, item);
-        itemAdded(pos, item, animate);
-        setItemModelIndex(item, index);
-        if (itemType == HbDataFormModelItem::GroupPageItem) {
-            item->setVisible(false);
-        } 
-    }
-}
-
 HbAbstractViewItem *HbDataItemContainer::createDefaultPrototype() const
 {
     return new HbDataFormViewItem();
+}
+
+/*!
+    \reimp
+
+    All other sizehints are taken from list layout except preferred sizehint. List container preferred sizeHint 
+    width is maximum width and height is average item height times index count.
+*/
+QSizeF HbDataItemContainer::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
+{
+    Q_D(const HbDataItemContainer);
+
+    if (which == Qt::PreferredSize) {
+        HbModelIterator *modelIterator = d->modelIterator();
+        if (modelIterator) {
+            qreal averageItemHeight = 0;
+            if (!d->mItems.isEmpty() && layout() ) {
+                averageItemHeight = layout()->effectiveSizeHint(Qt::PreferredSize).height() / d->mItems.count();
+            }
+
+            return QSizeF(layout()->effectiveSizeHint(Qt::PreferredSize).width(), 
+                averageItemHeight * modelIterator->indexCount());
+        }
+    }
+
+    return HbAbstractItemContainer::sizeHint(which, constraint);
+}
+
+/*!
+    \reimp
+
+    Resizes the container to use view width (if present; otherwise 0)
+    and layout preferred height.
+*/
+void HbDataItemContainer::resizeContainer()
+{
+    Q_D(HbDataItemContainer);
+       
+    if (d->mItemView) {
+        resize(d->mItemView->size().width(), layout()->preferredHeight());
+    } else {
+        resize(0, layout()->preferredHeight());
+    }
 }
 

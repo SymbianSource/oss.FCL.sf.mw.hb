@@ -35,8 +35,7 @@ class HbStyleOptionComboBox;
 class HB_WIDGETS_EXPORT HbComboBox : public HbWidget
 {
     Q_OBJECT
-    Q_ENUMS(InsertPolicy)
-    Q_PROPERTY( InsertPolicy insertPolicy READ insertPolicy WRITE setInsertPolicy )
+    Q_ENUMS( InsertPolicy )
     Q_PROPERTY( bool editable READ isEditable WRITE setEditable ) 
     Q_PROPERTY( int count READ count )
     Q_PROPERTY( QStringList items READ items WRITE setItems )
@@ -44,6 +43,7 @@ class HB_WIDGETS_EXPORT HbComboBox : public HbWidget
     Q_PROPERTY( QString currentText READ currentText )
 
 public:
+
     enum InsertPolicy {
         NoInsert,
         InsertAtTop,
@@ -63,7 +63,7 @@ public:
     void addItem( const QString &text, const QVariant &userData = QVariant() );
     void addItem( const HbIcon &icon, 
                   const QString &text,
-                  const QVariant &userData = QVariant() );
+                  const QVariant &userData = QVariant( ) );
 
     void addItems( const QStringList &texts );
 
@@ -71,13 +71,10 @@ public:
     void insertItem( int index,
                      const HbIcon &icon,
                      const QString &text,
-                     const QVariant & userData = QVariant() );
+                     const QVariant & userData = QVariant( ) );
     void insertItems( int index, const QStringList &texts );
 
     int count( ) const;
-
-    void setInsertPolicy( InsertPolicy policy );
-    InsertPolicy insertPolicy( ) const;
 
     void setItems( const QStringList &texts );
     QStringList items( ) const;
@@ -89,7 +86,7 @@ public:
     QString itemText( int index ) const;
             
     void setModel( QAbstractItemModel *model );
-    QAbstractItemModel* model( ) const;
+    QAbstractItemModel *model( ) const;
     
     void setEditable( bool editable );
     bool isEditable( ) const;
@@ -109,10 +106,11 @@ public:
     inline int findText( const QString &text,
         Qt::MatchFlags flags = Qt::MatchExactly|Qt::MatchCaseSensitive ) const
         { return findData( text, Qt::DisplayRole, flags ); }
+        
     int findData( const QVariant &data, int role = Qt::UserRole,
         Qt::MatchFlags flags = Qt::MatchExactly|Qt::MatchCaseSensitive ) const;
 
-    QGraphicsItem* primitive( HbStyle::Primitive primitive ) const;
+    QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
 public slots:
     void updatePrimitives( );
@@ -121,7 +119,6 @@ public slots:
     void setCurrentIndex( int index );
     void setEditText( const QString &text );
     
-
 signals:
     void currentIndexChanged( int index );
     void currentIndexChanged( const QString &text );

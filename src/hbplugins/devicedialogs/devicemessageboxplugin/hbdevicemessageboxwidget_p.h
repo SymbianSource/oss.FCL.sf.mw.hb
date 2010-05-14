@@ -35,16 +35,15 @@
 
 class HbDialog;
 class HbAction;
+class QAction;
 
 class HbDeviceMessageBoxWidget :
     public HbMessageBox, public HbDeviceDialogInterface
 {
     Q_OBJECT
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
-    Q_PROPERTY(QString primaryActionText READ primaryActionText WRITE setPrimaryActionText)
-    Q_PROPERTY(QString secondaryActionText READ secondaryActionText WRITE setSecondaryActionText)
-    Q_PROPERTY(bool primaryActionNull READ primaryActionNull WRITE setPrimaryActionNull)
-    Q_PROPERTY(bool secondaryActionNull READ secondaryActionNull WRITE setSecondaryActionNull)
+    Q_PROPERTY(QString acceptAction READ acceptAction WRITE setAcceptAction)
+    Q_PROPERTY(QString rejectAction READ rejectAction WRITE setRejectAction)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
 
 public:
@@ -57,28 +56,38 @@ public:
     HbDialog *deviceDialogWidget() const;
 
 public slots:
-    void primaryActionTriggered();
-    void secondaryActionTriggered();
+    void actionTriggered();
 
 private:
+    enum ActionIndex{
+        Accept = 0,
+        Reject,
+        NumActions
+    };
+    struct Action {
+        QAction *mAction;
+        bool mOwned;
+        bool mInDialog;
+    };
+
     bool constructDialog(const QVariantMap &parameters);
     bool checkProperties(const QVariantMap &parameters);
     void setProperties(const QVariantMap &parameters);
     void resetProperties();
     QString iconName() const;
     void setIconName(QString &iconName);
-    QString primaryActionText() const;
-    void setPrimaryActionText(QString &actionText);
-    QString secondaryActionText() const;
-    void setSecondaryActionText(QString &actionText);
-    bool primaryActionNull() const;
-    void setPrimaryActionNull(bool isNull);
-    bool secondaryActionNull() const;
-    void setSecondaryActionNull(bool isNull);
+    QString acceptAction() const;
+    void setAcceptAction(QString &actionData);
+    QString rejectAction() const;
+    void setRejectAction(QString &actionData);
     void hideEvent(QHideEvent *event);
     void showEvent(QShowEvent *event);
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;
+
+    static void parseActionData(QString &data);
+    QString actionData(ActionIndex index) const;
+    void setAction(ActionIndex index, QString &actionData);
 
 signals:
     void deviceDialogClosed();
@@ -89,8 +98,7 @@ private:
 
     int mLastError;
     QString mIconName;
-    HbAction *mPrimaryAction;
-    HbAction *mSecondaryAction;
+    Action mActions[NumActions];
     int mSendAction;
     bool mShowEventReceived;
     QString mAnimationDefinition;

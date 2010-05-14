@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptioncolorgridviewitem.h>
+#include <hbstyleoptioncolorgridviewitem_p.h>
 
 /*!
     \class HbStyleOptionColorGridViewItem

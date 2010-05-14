@@ -92,6 +92,11 @@ HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
     win32:INSTALLS += dlltarget
 }
 
+contains(DEFINES, HB_HAVE_QT_MOBILITY) {
+    CONFIG += mobility
+    MOBILITY += publishsubscribe systeminfo
+}
+
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbcore/*)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbcore/private/*)
 
@@ -100,6 +105,8 @@ TRANSLATIONS += i18n/translations/directorylocalizer_de_DE.ts
 TRANSLATIONS += i18n/translations/languages.ts
 
 symbian {
+    defFilePath = defs
+    
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022EDC
@@ -178,6 +185,9 @@ symbian {
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C3AE.txt"
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C3AE.txt"
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C3AE.txt"
+    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/20022E82.txt"
+    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/20022E82.txt"
+    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/20022E82.txt"
 }
 
 hb_maemo_dui {

@@ -33,20 +33,13 @@
 #include <QtGlobal>
 
 class HbIndicatorInterface;
-class HbSecurityInfo; // deprecated
 
 class HB_CORE_EXPORT HbIndicatorPluginInterface
 {
 public:
     virtual QStringList indicatorTypes() const = 0;
-    // Deprecated
     virtual bool accessAllowed(const QString &indicatorType,
-        const HbSecurityInfo *securityInfo) const /*= 0; implementation provided temporarily for deprecation period*/
-        {Q_UNUSED(indicatorType); Q_UNUSED(securityInfo); return true;}
-    // End deprecated
-    virtual bool accessAllowed(const QString &indicatorType,
-        const QVariantMap &securityInfo) const /*= 0; will be pure virtual when deprecation period ends*/
-        {Q_UNUSED(indicatorType); Q_UNUSED(securityInfo); return true;}
+        const QVariantMap &securityInfo) const = 0;
     virtual HbIndicatorInterface *createIndicator(const QString &indicatorType) = 0;
     virtual int error() const = 0;
     virtual ~HbIndicatorPluginInterface() {}

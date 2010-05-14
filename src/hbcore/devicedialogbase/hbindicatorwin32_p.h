@@ -88,6 +88,7 @@ public: // data
     int iLastError;
     bool iListening;
     QBasicTimer timer;
+    static HbIndicatorPluginManager *mIndicatorPluginManager;
 };
 
 #endif // HBINDICATORWIN32_P_H

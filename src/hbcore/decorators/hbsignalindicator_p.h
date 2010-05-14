@@ -61,8 +61,10 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbSignalIndicator)
     Q_DISABLE_COPY(HbSignalIndicator)
 
-    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode, int))
-    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkMode(HbSystemNetworkInfo::NetworkMode))
+#ifdef HB_HAVE_QT_MOBILITY
+    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int))
+    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode))
+#endif // HB_HAVE_QT_MOBILITY
 };
 
 #endif // HBSIGNALINDICATOR_H

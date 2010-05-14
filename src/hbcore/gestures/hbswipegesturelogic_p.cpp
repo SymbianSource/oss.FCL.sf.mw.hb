@@ -23,14 +23,16 @@
 **
 ****************************************************************************/
 
+#include "hbswipegesture.h"
+#include "hbswipegesture_p.h"
+#include "hbswipegesturelogic_p.h"
+#include "hbpointrecorder_p.h"
+#include "hbvelocitycalculator_p.h"
+
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QGraphicsView>
 #include <QMouseEvent>
-
-#include "hbswipegesture.h"
-#include "hbswipegesture_p.h"
-#include "hbswipegesturelogic_p.h"
 
 /*!
    @hbcore
@@ -100,12 +102,41 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMousePress(
     if (!(gestureState == Qt::NoGesture && me->button() == Qt::LeftButton)) {
         return QGestureRecognizer::Ignore;
     }
-    gesture->d_func()->mStartTime = QTime::currentTime();  
+    gesture->d_func()->mStartTime = mCurrentTime;
 
     gesture->d_func()->mStartPos = me->globalPos();
     gesture->d_func()->mSceneStartPos = HbGestureUtils::mapToScene(watched, me->globalPos());
 
     gesture->setHotSpot(me->globalPos());
+    gesture->d_ptr->mAxisX.clear();
+    gesture->d_ptr->mAxisY.clear();
+    gesture->d_ptr->mAxisX.record(me->globalPos().x(), mCurrentTime);
+    gesture->d_ptr->mAxisY.record(me->globalPos().y(), mCurrentTime);
+
+    return QGestureRecognizer::MayBeGesture;
+}
+
+/*!
+    \internal
+    \brief
+    \return
+
+*/
+QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseMove(
+        Qt::GestureState gestureState,
+        HbSwipeGesture *gesture,
+        QObject *watched,
+        QMouseEvent *me )
+{
+    Q_UNUSED(watched);
+    Q_UNUSED(gestureState);
+
+    if (!me->buttons().testFlag(Qt::LeftButton)){
+        return QGestureRecognizer::Ignore;
+    }
+
+    gesture->d_ptr->mAxisX.record(me->globalPos().x(), mCurrentTime);
+    gesture->d_ptr->mAxisY.record(me->globalPos().y(), mCurrentTime);
 
     return QGestureRecognizer::MayBeGesture;
 }
@@ -126,14 +157,23 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseRelease(
     Q_UNUSED(watched);
     Q_UNUSED(gestureState);
 
+    if (me->button() != Qt::LeftButton) {
+        return QGestureRecognizer::Ignore;
+    }
+
     QPointF totalOffset = me->globalPos() - gesture->d_func()->mStartPos.toPoint();
 
-    QPointF velocity = totalOffset / gesture->d_func()->mStartTime.elapsed();
+    int deltaTime = gesture->d_func()->mStartTime.msecsTo(mCurrentTime);
+    QPointF velocity = deltaTime != 0 ? totalOffset / deltaTime : QPointF(0,0);
 
     gesture->setSwipeAngle(QLineF(gesture->d_func()->mStartPos, me->globalPos()).angle());
     gesture->setSceneSwipeAngle(QLineF(gesture->d_func()->mSceneStartPos, HbGestureUtils::mapToScene(watched, me->globalPos())).angle());
 
-    if (totalOffset.manhattanLength() >= HbSwipeMinOffset && velocity.manhattanLength() >= HbSwipeMinSpeed && me->button() == Qt::LeftButton) {
+    bool movedEnough = totalOffset.manhattanLength() >= HbSwipeMinOffset;
+    bool fastEnough = velocity.manhattanLength() >= HbSwipeMinSpeed;
+    bool notStoppedAtEnd = HbVelocityCalculator(gesture->d_ptr->mAxisX, gesture->d_ptr->mAxisY).velocity(mCurrentTime) != QPointF(0,0);
+
+    if (movedEnough && fastEnough && notStoppedAtEnd) {
         return QGestureRecognizer::FinishGesture;
     } else {
         return QGestureRecognizer::Ignore;
@@ -150,10 +190,11 @@ QGestureRecognizer::Result HbSwipeGestureLogic::recognize(
         Qt::GestureState gestureState,
         HbSwipeGesture *gesture,
         QObject *watched,
-        QEvent *event )
+        QEvent *event,
+        QTime currentTime)
 {
     // Record the time right away.
-    mCurrentTime = QTime::currentTime();
+    mCurrentTime = currentTime;
     
     if ( isMouseEvent(event->type()) )
     {
@@ -165,10 +206,8 @@ QGestureRecognizer::Result HbSwipeGestureLogic::recognize(
             return handleMousePress(gestureState, gesture, watched, me);
 
         case QEvent::MouseMove:
-            if (me->buttons().testFlag(Qt::LeftButton))
-                return QGestureRecognizer::MayBeGesture;
-            else
-                return QGestureRecognizer::Ignore;
+            return handleMouseMove(gestureState, gesture, watched, me);
+
         case QEvent::MouseButtonRelease:
             return handleMouseRelease(gestureState, gesture, watched, me);
 

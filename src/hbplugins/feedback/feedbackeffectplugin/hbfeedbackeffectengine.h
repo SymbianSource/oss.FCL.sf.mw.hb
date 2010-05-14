@@ -34,6 +34,8 @@
 class QGraphicsItem;
 class HbAbstractViewItem;
 class HbWidget;
+class HbInstantFeedback;
+class HbContinuousFeedback;
 
 class HbFeedbackEffectEngine : public HbFeedbackEngine
 {
@@ -74,10 +76,13 @@ protected:
     QString modalitiesOverrideProperty(Hb::ContinuousInteraction interaction);
 
 private:
-    QMap<const HbWidget*, int> continuousFeedbacks;
+    QMap<const HbWidget*, HbContinuousFeedback*> continuousFeedbacks;
     QList<int> oldVisibleIndexes;
     const HbWidget* activelyScrollingItemView;
     QList<const HbWidget*> boundaryWidgets;
+    int previousCursorPosition;
+
+    HbInstantFeedback* instantFeedback;
 
     struct Override {
         const HbWidget* widget;
@@ -93,8 +98,6 @@ private:
     };
     Override overrider;
 
-
-    int previousCursorPosition;
 };
 
 #endif // HBFEEDBACKEFFECTENGINE_H

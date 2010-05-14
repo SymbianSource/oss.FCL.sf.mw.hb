@@ -59,7 +59,7 @@ public:
     HbActionManager(HbView::ActionContainer container, QObject *parent, HbMainWindow *mainWindow);
     ~HbActionManager();
 
-    int position(QAction *action, QList<QAction *> actions) const;
+    int position(QAction *action, QList<QAction *> actions, int maxPos = -1) const;
     void addItem(HbAction::CommandRole role);
     QAction *orderedAction(int index, QList<QAction *> actions);
 

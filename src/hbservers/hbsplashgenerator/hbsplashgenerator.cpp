@@ -43,6 +43,7 @@
 #include <QPainter>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSet>
 #include <QTranslator>
 #include <QLocale>
@@ -54,7 +55,7 @@ const char *last_file_count_key = "lastfilecount";
 const char *last_output_dir_key = "lastoutdir";
 
 HbSplashGenerator::HbSplashGenerator()
-    : mBusy(false), mMainWindow(0), mFirstRegenerate(true),
+    : mBusy(false), mForceRegen(false), mMainWindow(0), mFirstRegenerate(true),
       mSettings("Nokia", "HbSplash")
 {
     // Effects on decorators (started when they are shown) would ruin
@@ -73,9 +74,9 @@ static QString orientationName(Qt::Orientation orientation)
 {
     switch (orientation) {
     case Qt::Horizontal:
-        return QString("lsc");
+        return QLatin1String("lsc");
     case Qt::Vertical:
-        return QString("prt");
+        return QLatin1String("prt");
     default:
         return QString();
     }
@@ -102,6 +103,13 @@ int HbSplashGenerator::updateOutputDirContents(const QString &outDir)
 
 void HbSplashGenerator::start(bool forceRegen)
 {
+    mForceRegen = forceRegen;
+    QTimer::singleShot(5000, this, SLOT(doStart()));
+}
+
+void HbSplashGenerator::doStart()
+{
+    qDebug() << PRE << "accessing theme";
     // Start listening to the theme-change-finished signal.
     HbTheme *theme = hbInstance->theme();
     connect(theme, SIGNAL(changeFinished()), SLOT(regenerate()));
@@ -131,7 +139,7 @@ void HbSplashGenerator::start(bool forceRegen)
     int currentFileCount = updateOutputDirContents(currentOutputDir);
     qDebug() << PRE << "last regen:" << lastTheme << lastLang << lastFileCount << lastOutputDir
              << "current:" << currentTheme << currentLang << currentFileCount << currentOutputDir;
-    if (forceRegen
+    if (mForceRegen
         || currentTheme != lastTheme
         || currentLang != lastLang
         || currentFileCount != lastFileCount
@@ -139,6 +147,14 @@ void HbSplashGenerator::start(bool forceRegen)
     {
         QMetaObject::invokeMethod(this, "regenerate", Qt::QueuedConnection);
     }
+}
+
+void HbSplashGenerator::uncachedRegenerate()
+{
+    // Same as regenerate() but no caching is used so every file is
+    // parsed again.
+    mParsedSplashmls.clear();
+    regenerate();
 }
 
 void HbSplashGenerator::regenerate()
@@ -186,6 +202,19 @@ void HbSplashGenerator::regenerate()
     }
 }
 
+void HbSplashGenerator::regenerateOne(const QString &splashmlFileName)
+{
+    mQueue.clear();
+    QueueItem item(hbInstance->theme()->name(), Qt::Vertical);
+    item.mWorkDirForSingleFileRegen = QFileInfo(splashmlFileName).path(); // e.g. for translations
+    parseSplashml(splashmlFileName, item);
+    item.mDocmlFileName = QDir(item.mWorkDirForSingleFileRegen).filePath(item.mDocmlFileName);
+    mQueue.enqueue(item); // generate it regardless of the fixed orientation setting
+    item.mOrientation = Qt::Horizontal;
+    mQueue.enqueue(item);
+    QMetaObject::invokeMethod(this, "processQueue", Qt::QueuedConnection);
+}
+
 QImage HbSplashGenerator::renderView()
 {
     log("renderView()", mItem.mThemeName, mItem.mOrientation);
@@ -221,6 +250,7 @@ void HbSplashGenerator::processQueue()
         QString outDir = hbsplash_output_dir();
         mSettings.setValue(last_file_count_key, updateOutputDirContents(outDir));
         mSettings.setValue(last_output_dir_key, outDir);
+        emit finished();
         qDebug() << PRE << "processQueue() over";
         return;
     }
@@ -436,27 +466,7 @@ void HbSplashGenerator::queueAppSpecificItems(const QString &themeName, Qt::Orie
                 continue;
             }
             QueueItem item(themeName, orientation);
-            QFile f(fullName);
-            bool ok = f.open(QIODevice::ReadOnly);
-            if (ok) {
-                QXmlStreamReader xml(&f);
-                bool docOk = false;
-                while (!xml.atEnd()) {
-                    QXmlStreamReader::TokenType token = xml.readNext();
-                    if (token == QXmlStreamReader::Invalid) {
-                        qWarning() << PRE << fullName << xml.errorString();
-                        ok = false;
-                        break;
-                    } else if (token == QXmlStreamReader::StartElement
-                               && xml.name() == QLatin1String("hbsplash"))
-                    {
-                        docOk = true;
-                    } else if (docOk) {
-                        processSplashml(xml, item);
-                    }
-                }
-                f.close();
-            }
+            bool ok = parseSplashml(fullName, item);
             if (ok
                 && !item.mAppId.isEmpty()
                 && !item.mDocmlWidgetName.isEmpty()
@@ -469,10 +479,42 @@ void HbSplashGenerator::queueAppSpecificItems(const QString &themeName, Qt::Orie
                 addSplashmlItemToQueue(item);
                 mParsedSplashmls.insert(fullName, item);
             } else {
-                qWarning() << PRE << "Unable to parse" << fullName;
+                qWarning() << PRE << "unable to parse" << fullName;
             }
         }
     }
+}
+
+inline void reportSplashmlError(const QString &fullFileName, int lineNumber, const QString &msg)
+{
+    qWarning("%s", qPrintable(QString(QLatin1String("%1 \"%2\":%3: %4"))
+                              .arg(PRE).arg(fullFileName).arg(lineNumber).arg(msg)));
+}
+
+bool HbSplashGenerator::parseSplashml(const QString &fullFileName, QueueItem &item)
+{
+    QFile f(fullFileName);
+    bool ok = f.open(QIODevice::ReadOnly);
+    if (ok) {
+        QXmlStreamReader xml(&f);
+        bool docOk = false;
+        while (!xml.atEnd()) {
+            QXmlStreamReader::TokenType token = xml.readNext();
+            if (token == QXmlStreamReader::Invalid) {
+                reportSplashmlError(fullFileName, xml.lineNumber(), xml.errorString());
+                ok = false;
+                break;
+            } else if (token == QXmlStreamReader::StartElement
+                       && xml.name() == QLatin1String("hbsplash"))
+            {
+                docOk = true;
+            } else if (docOk) {
+                parseSplashmlElements(xml, item, fullFileName);
+            }
+        }
+        f.close();
+    }
+    return ok;
 }
 
 inline bool readBool(QXmlStreamReader &xml)
@@ -481,7 +523,9 @@ inline bool readBool(QXmlStreamReader &xml)
     return text == QLatin1String("true") || text == QLatin1String("1");
 }
 
-void HbSplashGenerator::processSplashml(QXmlStreamReader &xml, QueueItem &item)
+void HbSplashGenerator::parseSplashmlElements(QXmlStreamReader &xml,
+                                              QueueItem &item,
+                                              const QString &fullFileName)
 {
     if (xml.isStartElement()) {
         QStringRef name = xml.name();
@@ -558,7 +602,8 @@ void HbSplashGenerator::processSplashml(QXmlStreamReader &xml, QueueItem &item)
                 item.mItemBgGraphics.append(req);
             }
         } else {
-            qWarning() << PRE << "unknown element" << name;
+            reportSplashmlError(fullFileName, xml.lineNumber(),
+                                QLatin1String("unknown element: ") + name.toString());
         }
     }
 }
@@ -645,7 +690,7 @@ void HbSplashGenerator::setupAppSpecificWindow()
             qWarning() << PRE << "widget creation failed from" << mItem;
         }
     } else {
-        qWarning() << PRE << "Unable to parse" << mItem.mDocmlFileName;
+        qWarning() << PRE << "unable to parse" << mItem.mDocmlFileName;
     }
 }
 
@@ -769,6 +814,9 @@ void HbSplashGenerator::addTranslator(const QString &name)
     QTranslator *translator = new QTranslator;
     bool ok = false;
     QStringList dirNames(hbsplash_translation_dirs());
+    if (!mItem.mWorkDirForSingleFileRegen.isEmpty()) {
+        dirNames.append(mItem.mWorkDirForSingleFileRegen);
+    }
     foreach (const QString &dirName, dirNames) {
         QDir dir(dirName);
         QString fullName = dir.filePath(name + '_' + lang);
@@ -776,7 +824,7 @@ void HbSplashGenerator::addTranslator(const QString &name)
         // may still pick up another suitable file based on this name.
         if (translator->load(fullName)) {
             QCoreApplication::installTranslator(translator);
-            qDebug() << PRE << "Translator installed:" << fullName;
+            qDebug() << PRE << "translator installed:" << fullName;
             ok = true;
             break;
         }
@@ -784,7 +832,7 @@ void HbSplashGenerator::addTranslator(const QString &name)
     if (ok) {
         mTranslators.append(translator);
     } else {
-        qWarning() << PRE << "Unable to find translations based on name" << name;
+        qWarning() << PRE << "unable to find translations based on name" << name;
         delete translator;
     }
 }

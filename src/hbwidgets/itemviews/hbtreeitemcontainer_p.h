@@ -48,6 +48,8 @@ public:
     QPointF recycleItems(const QPointF &delta);
     int maxItemCount() const;
 
+    virtual void resizeContainer();
+
 protected:
 
     HbTreeItemContainer(HbTreeItemContainerPrivate &dd, QGraphicsItem *parent);
@@ -62,6 +64,8 @@ protected:
 
     virtual HbAbstractViewItem *createDefaultPrototype() const;
 
+    virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
+	
 protected slots:
     void animationFinished(const HbEffect::EffectStatus &status);
 

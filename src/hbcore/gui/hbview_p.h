@@ -58,7 +58,6 @@ public:
     bool mVisibleItemsSet;
     bool mFullscreen;
     bool mVisited; //to be used by HbMainWindow for performance optimization
-    HbView::HbTitleBarFlags mTitleBarFlags; // Deprecated
     HbView::HbViewFlags mViewFlags;
 
     HbViewActionManager *actionManager;

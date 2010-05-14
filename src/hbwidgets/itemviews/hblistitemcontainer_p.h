@@ -26,7 +26,7 @@
 #define HBLISTITEMCONTAINER_P_H
 
 #include <hbeffect.h>
-#include <hbabstractitemcontainer.h>
+#include <hbabstractitemcontainer_p.h>
 
 class HbListItemContainerPrivate;
 
@@ -54,9 +54,13 @@ protected:
 
     virtual HbAbstractViewItem *createDefaultPrototype() const;
 
+    virtual void resizeContainer();
+
 protected slots:
 
     void animationFinished(const HbEffect::EffectStatus &status);
+
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbListItemContainer)

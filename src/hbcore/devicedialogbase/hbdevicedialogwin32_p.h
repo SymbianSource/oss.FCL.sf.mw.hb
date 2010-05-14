@@ -51,7 +51,7 @@
 // We mean it.
 //
 
-class HbDeviceDialogPrivate : public QObject
+class HB_AUTOTEST_EXPORT HbDeviceDialogPrivate : public QObject
 {
     Q_OBJECT
 

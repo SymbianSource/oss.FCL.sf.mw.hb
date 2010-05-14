@@ -23,10 +23,11 @@
 **
 ****************************************************************************/
 #include "hbcolorgridviewitem_p.h"
-#include <hbstyleoptioncolorgridviewitem.h>
+#include <hbstyleoptioncolorgridviewitem_p.h>
 #include <hbgridviewitem_p.h>
 #include <hbcolorscheme.h>
 #include <hbiconitem.h>
+#include <hbevent.h>
 
 class HbColorGridViewItemPrivate: public HbGridViewItemPrivate
 {
@@ -99,8 +100,8 @@ void HbColorGridViewItemPrivate::createPrimitives()
         q->style()->setItemName( mColorItem, "cg-color-icon" );
     }
     if(!mCheckMarkItem) {
-            mCheckMarkItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_checkIcon, q);
-            q->style()->setItemName( mCheckMarkItem, "cg-selection-icon" );
+        mCheckMarkItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_checkIcon, q);
+        q->style()->setItemName( mCheckMarkItem, "cg-selection-icon" );
     }
 
     if (!mFrameBackGround) {
@@ -134,7 +135,6 @@ void HbColorGridViewItemPrivate::updatePrimitives()
             mCheckMarkItem->hide();
         }
     }
-    
 }
 
 void HbColorGridViewItemPrivate::updateChildItems()
@@ -148,6 +148,12 @@ HbColorGridViewItem::HbColorGridViewItem(QGraphicsItem *parent) :
 {
     Q_D( HbColorGridViewItem );
     d->q_ptr = this;   
+    /* HbWidget::polish() will eventually call
+       HbStylePrivate::updateThemedItems() which will overwrite our
+       carefully set colors. Fortunately, call is behind flag.
+     */
+    d->themingPending = false;
+
 }
 
 
@@ -156,6 +162,12 @@ HbColorGridViewItem::HbColorGridViewItem(HbColorGridViewItemPrivate &dd, QGraphi
 {
     Q_D( HbColorGridViewItem );
     d->q_ptr = this; 
+    /* HbWidget::polish() will eventually call
+       HbStylePrivate::updateThemedItems() which will overwrite our
+       carefully set colors. Fortunately, call is behind flag.
+     */
+    d->themingPending = false;
+
 }
 
 /*!
@@ -167,6 +179,12 @@ HbColorGridViewItem::HbColorGridViewItem(const HbColorGridViewItem &source) :
 {
     Q_D( HbColorGridViewItem );
     d->q_ptr = this;  
+    /* HbWidget::polish() will eventually call
+       HbStylePrivate::updateThemedItems() which will overwrite our
+       carefully set colors. Fortunately, call is behind flag.
+     */
+    d->themingPending = false;
+
 }
 
 
@@ -226,7 +244,6 @@ void HbColorGridViewItem::initStyleOption(HbStyleOptionColorGridViewItem *option
     
     option->color = d->mIndex.data(HbColorGridViewItem::ColorRole).value<QColor>(); 
     option->borderColor = HbColorScheme::color("qtc_popup_grid_normal");
-    //    option->background = ;
 }
 
 void HbColorGridViewItem::resizeEvent ( QGraphicsSceneResizeEvent * event )

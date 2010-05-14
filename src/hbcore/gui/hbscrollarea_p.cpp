@@ -25,12 +25,11 @@
 
 #include "hbscrollarea_p.h"
 #include "hbscrollarea.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbinstance.h"
 #include "hbpangesture.h"
 #include <hbscrollbar_p.h>
 
-#include <hbgesture.h>
 #include <hbscrollbar.h>
 #include <hbwidgetfeedback.h>
 
@@ -269,6 +268,10 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
                 HbWidgetFeedback::triggered(q, Hb::InstantBoundaryReached);
             }
         }
+        stopScrolling(); 
+        // must return here, otherwise mIsScrolling will be false
+        // below and scrollingStarted will be emitted
+        return currentPosition != newPosition;
     } else {
         mBoundaryReached = false;
     }
@@ -635,7 +638,11 @@ void HbScrollAreaPrivate::adjustContent()
 
     QRectF contentsBoundingRect = mContents->boundingRect();
     QPointF alignedPosition = mContents->pos();
-    if (mResetAlignment) {
+    bool xAlignmentNeeded = (!mAbleToScrollX && ((-alignedPosition.x() < leftBoundary()) ||
+                                                 -alignedPosition.x() > rightBoundary()));
+    bool yAlignmentNeeded = (!mAbleToScrollY && ((-alignedPosition.y() < topBoundary()) ||
+                                                 -alignedPosition.y() > bottomBoundary()));
+    if (mResetAlignment || xAlignmentNeeded || yAlignmentNeeded) {
         if (mAlignment & Qt::AlignHCenter) {
             alignedPosition.setX((scrollAreaBoundingRect.width() - contentsBoundingRect.width()) / 2.0);
         } else if (mAlignment & Qt::AlignRight) {

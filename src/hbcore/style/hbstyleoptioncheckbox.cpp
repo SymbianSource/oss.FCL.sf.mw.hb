@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptioncheckbox.h>
+#include <hbstyleoptioncheckbox_p.h>
 
 
 /*!

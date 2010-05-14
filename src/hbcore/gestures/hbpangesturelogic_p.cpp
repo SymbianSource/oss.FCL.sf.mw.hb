@@ -32,8 +32,6 @@
 #include "hbpangesture_p.h"
 #include "hbpangesturelogic_p.h"
 
-const int KPanStopTime = 30;
-const int KVelocitySampleTime = 30;
 const int KPanThreshold = 20;
 
 /*!
@@ -126,6 +124,10 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
     gesture->d_ptr->mSceneLastOffset     = HbGestureUtils::mapToScene(watched, QPointF(0,0));
     gesture->d_ptr->mLastTimeStamp = mCurrentTime;
         
+    gesture->d_ptr->mAxisX.resetRecorder(HbDefaultPanThreshold);
+    gesture->d_ptr->mAxisY.resetRecorder(HbDefaultPanThreshold);
+    gesture->d_ptr->mSceneAxisX.resetRecorder(HbDefaultPanThreshold);
+    gesture->d_ptr->mSceneAxisY.resetRecorder(HbDefaultPanThreshold);
     gesture->d_ptr->mAxisX.record( me->globalPos().x(), mCurrentTime );
     gesture->d_ptr->mAxisY.record( me->globalPos().y(), mCurrentTime );
     gesture->d_ptr->mSceneAxisX.record( scenePos.x(), mCurrentTime );
@@ -218,10 +220,11 @@ QGestureRecognizer::Result HbPanGestureLogic::recognize(
         Qt::GestureState gestureState,
         HbPanGesture *gesture,
         QObject *watched,
-        QEvent *event )
+        QEvent *event,
+        QTime currentTime)
 {
     // Record the time right away.
-    mCurrentTime = QTime::currentTime();
+    mCurrentTime = currentTime;
     
     if ( isMouseEvent(event->type()) )
     {

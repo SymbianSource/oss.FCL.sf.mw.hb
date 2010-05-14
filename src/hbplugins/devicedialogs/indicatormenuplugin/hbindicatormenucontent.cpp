@@ -23,11 +23,8 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptionindicatormenu.h>
 #include <hbindicatorinterface.h>
 #include "hbindicatormenucontent_p.h"
-#include "hbindicatormenuclock_p.h"
-#include "hbindicatormenudate_p.h"
 
 static const int ListWidgetItemIndicatorTypeRole = Hb::UserRole;
 static const int DefaultItemsVisible = 6;
@@ -46,22 +43,8 @@ HbAbstractViewItem *HbIndicatorListItem::createItem()
     return item;
 }
 
-void HbIndicatorListItem::updateChildItems()
-{
-    QModelIndex index(modelIndex());
-    bool itemContainsLink = false;
-    HbIndicatorInterface *indicator =
-            HbIndicatorMenuContent::indicatorFromIndex(index);
-    if (indicator && indicator->interactionTypes().testFlag(
-            HbIndicatorInterface::InteractionActivated)){
-        itemContainsLink = true;
-    }
-    setProperty("link", itemContainsLink);
-    HbListViewItem::updateChildItems();
-}
-
 IndicatorList::IndicatorList(HbIndicatorMenuContent *content) :
-        HbListView(content), mContent(content), mUpdateListSize(false)
+        HbListView(content), mUpdateListSize(false)
 {
     setItemRecycling(true);
     setUniformItemSizes(true);
@@ -71,9 +54,9 @@ void IndicatorList::rowsInserted(
         const QModelIndex &parent, int start, int end)
 {
     HbListView::rowsInserted(parent, start, end);
-    if (static_cast<QGraphicsItem*>(this)->isVisible()) {
-        updateGeometry();
+    if (mUpdateListSize == false) {
         mUpdateListSize = true;
+        updateGeometry();
     }
 }
 
@@ -81,9 +64,9 @@ void IndicatorList::rowsRemoved(
         const QModelIndex &parent,int start,int end)
 {
     HbListView::rowsRemoved(parent, start, end);
-    if (static_cast<QGraphicsItem*>(this)->isVisible()) {
-        updateGeometry();
+    if (mUpdateListSize == false) {
         mUpdateListSize = true;
+        updateGeometry();
     }
 }
 
@@ -91,9 +74,9 @@ void IndicatorList::dataChanged(const QModelIndex &topLeft,
                                 const QModelIndex &bottomRight)
 {
     HbListView::dataChanged(topLeft, bottomRight);
-    if (static_cast<QGraphicsItem*>(this)->isVisible()) {
-        updateGeometry();
+    if (mUpdateListSize == false) {
         mUpdateListSize = true;
+        updateGeometry();
     }
 }
 
@@ -131,8 +114,10 @@ QSizeF IndicatorList::sizeHint(Qt::SizeHint which, const QSizeF & constraint) co
 void IndicatorList::showEvent(QShowEvent *event)
 {
     Q_UNUSED(event)
-    updateGeometry();
-    mUpdateListSize = true;
+    if (mUpdateListSize == false) {
+        mUpdateListSize = true;
+        updateGeometry();
+    }
 }
 
 /*!
@@ -145,12 +130,6 @@ HbIndicatorMenuContent::HbIndicatorMenuContent(QGraphicsItem *parent) :
         mGroupTypeIndeces[i] = 0;
     }
 
-    mHeaderBackground = style()->createPrimitive(HbStyle::P_Popup_heading_frame, this);
-
-    mClock = new HbIndicatorMenuClock(this);
-    mDate = new HbIndicatorMenuDate(this);
-    connect(mClock, SIGNAL(dateChanged()), mDate, SLOT(updateDate()));
-
     mIndicatorList = new IndicatorList(this);
     mIndicatorList->setItemPrototype(new HbIndicatorListItem(this));
     mIndicatorList->setModel(&indicatorModel);
@@ -161,18 +140,12 @@ HbIndicatorMenuContent::HbIndicatorMenuContent(QGraphicsItem *parent) :
     connect(mIndicatorList, SIGNAL(scrollingEnded()),
             this, SLOT(indicatorlist_scrollingEnded()));
 
-    HbStyle::setItemName(mHeaderBackground, "background");
-    HbStyle::setItemName(mClock, "clock");
-    HbStyle::setItemName(mDate, "date");
     HbStyle::setItemName(mIndicatorList, "list");
-
-    updatePrimitives();
 }
 
 HbIndicatorMenuContent::~HbIndicatorMenuContent()
 {
 }
-
 
 int HbIndicatorMenuContent::indicatorCount() const
 {
@@ -181,15 +154,7 @@ int HbIndicatorMenuContent::indicatorCount() const
 
 void HbIndicatorMenuContent::updatePrimitives()
 {
-    HbStyleOptionPopup option;
-    if (mHeaderBackground->hasFocus()) {
-        option.headingMode = QIcon::Selected;
-    } else if (mHeaderBackground->isSelected()) {
-        option.headingMode = QIcon::Active;
-    } else {
-        option.headingMode = QIcon::Normal;
-    }
-    style()->updatePrimitive(mHeaderBackground, HbStyle::P_Popup_heading_frame, &option);
+    repolish();
 }
 
 void HbIndicatorMenuContent::itemActivated(const QModelIndex &modelIndex)
@@ -203,16 +168,19 @@ void HbIndicatorMenuContent::itemActivated(const QModelIndex &modelIndex)
 }
 
 void HbIndicatorMenuContent::indicatorsActivated(
-        QList<HbIndicatorInterface*> activatedIndicators)
+    QList<HbIndicatorInterface*> activatedIndicators)
 {
     foreach(HbIndicatorInterface *indicator, activatedIndicators) {
         indicatorActivated(indicator);
     }
 }
 
-void HbIndicatorMenuContent::indicatorActivated(
-        HbIndicatorInterface *activatedIndicator)
+void HbIndicatorMenuContent::indicatorActivated(HbIndicatorInterface *activatedIndicator)
 {
+    if (!hasMenuData(*activatedIndicator)) {
+        return;
+    }
+
     QStandardItem *item = new QStandardItem();
     HbIndicatorInterface::Category category = activatedIndicator->category();
 
@@ -238,9 +206,7 @@ void HbIndicatorMenuContent::indicatorActivated(
     repolish();
 }
 
-void HbIndicatorMenuContent::setData(
-        HbIndicatorInterface *source,
-        const QModelIndex &modelIndex)
+void HbIndicatorMenuContent::setData(HbIndicatorInterface *source, const QModelIndex &modelIndex)
 {
     QString primaryText = source->indicatorData(
         HbIndicatorInterface::PrimaryTextRole).toString();
@@ -262,8 +228,7 @@ void HbIndicatorMenuContent::setData(
     }
 }
 
-void HbIndicatorMenuContent::indicatorRemoved(
-        HbIndicatorInterface *indicatorRemoved)
+void HbIndicatorMenuContent::indicatorRemoved(HbIndicatorInterface *indicatorRemoved)
 {
     int index = listIndexFromIndicator(indicatorRemoved);
     if (index >= 0) {
@@ -274,12 +239,6 @@ void HbIndicatorMenuContent::indicatorRemoved(
         mGroupTypeIndeces[i]--;
     }
     repolish();
-}
-
-void HbIndicatorMenuContent::initStyleOption(
-        HbStyleOptionIndicatorMenu *option) const
-{
-    HbWidget::initStyleOption(option);
 }
 
 //data changed inside indicator.
@@ -293,6 +252,7 @@ void HbIndicatorMenuContent::indicatorUpdated()
             setData(senderIndicator, indicatorModel.item(index)->index());
         }
     }
+    repolish();
 }
 
 void HbIndicatorMenuContent::indicatorlist_scrollingStarted()
@@ -305,17 +265,15 @@ void HbIndicatorMenuContent::indicatorlist_scrollingEnded()
     emit userActivityEnded();
 }
 
-HbIndicatorInterface *HbIndicatorMenuContent::indicatorFromIndex(
-        const QModelIndex &modelIndex)
+HbIndicatorInterface *HbIndicatorMenuContent::indicatorFromIndex(const QModelIndex &modelIndex)
 {
     QObject *ind_ptr =
         modelIndex.data(ListWidgetItemIndicatorTypeRole).value<QObject*>();
     return qobject_cast<HbIndicatorInterface*>(ind_ptr);
 }
 
-int HbIndicatorMenuContent::listIndexFromIndicator(
-        HbIndicatorInterface *indicator) {
-
+int HbIndicatorMenuContent::listIndexFromIndicator(HbIndicatorInterface *indicator) 
+{
     int index = -1;
     int rowCount = mIndicatorList->model()->rowCount();
     for(int i = 0; i < rowCount; ++i) {
@@ -328,5 +286,16 @@ int HbIndicatorMenuContent::listIndexFromIndicator(
         }
     }
     return index;
+}
+
+bool HbIndicatorMenuContent::hasMenuData(const HbIndicatorInterface &indicator) const
+{
+    if (!indicator.indicatorData(HbIndicatorInterface::PrimaryTextRole).toString().isEmpty() 
+        || !indicator.indicatorData(HbIndicatorInterface::SecondaryTextRole).toString().isEmpty() 
+        || !indicator.indicatorData(HbIndicatorInterface::DecorationNameRole).toString().isEmpty()) {
+        return true;
+    }
+
+    return false;
 }
 

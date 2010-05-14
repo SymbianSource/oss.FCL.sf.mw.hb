@@ -25,6 +25,7 @@
 
 #include <QApplication>
 #include <QGraphicsLayout>
+#include <QLocale>
 #include <QDebug>
 #include "hbgraphicsscene.h"
 #include "hbindicatorbutton_p.h"
@@ -91,7 +92,11 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mDelayedConstructionHandled(false),
     q_ptr(0),
     mTheTestUtility(0),
-    mIdleEventHandled(false)
+    mIdleEventHandled(false),
+    mNotifyOrientationChange(false),
+    mOrientationChangeNotified(false),
+    mToolbarWasAdded(false),
+    mAutomaticOrientationChangeAnimation(true)
 #ifdef Q_OS_SYMBIAN
     ,
     mNativeWindow(0)
@@ -117,11 +122,21 @@ void HbMainWindowPrivate::init()
     Q_Q(HbMainWindow);
 
     mGVWrapperItem.setMainWindow(*q);
-    if (HbDeviceProfile::profile(q).touch()) {
-        // Touch devices doesn't have visible primary or middle soft key
-        mVisibleItems &= ~Hb::MiddleSoftKeyItem;
-        mVisibleItems &= ~Hb::PrimarySoftKeyItem;
+}
+
+void HbMainWindowPrivate::initTranslations()
+{
+#ifdef Q_OS_SYMBIAN
+    QString lang = QLocale::system().name();
+    // Use Z drive. Anything else is insecure as anyone could install
+    // a fake common translation to C drive for example.
+    QString name = QLatin1String("Z:/resource/qt/translations/common_") + lang;
+    if (mCommonTranslator.load(name)) {
+        QCoreApplication::installTranslator(&mCommonTranslator);
+    } else {
+        qWarning("initTranslations: Failed to load translator based on name %s", qPrintable(name));
     }
+#endif
 }
 
 HbToolBar *HbMainWindowPrivate::toolBar() const
@@ -142,8 +157,12 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
         // Add new toolbar
         if (toolBar) {
             toolBar->setParentItem(0);
-            if (toolBar->scene() != mScene && (q->isItemVisible(Hb::ToolBarItem))) { // check just to avoid warnings
-                // update the toolbar to use the current orientation and layout direction
+            HbView *currentView = q->currentView();
+            if (toolBar->scene() != mScene
+                && currentView
+                && currentView->isItemVisible(Hb::ToolBarItem)) { // check just to avoid warnings
+                // Update the toolbar to use the current orientation
+                // and layout direction.
                 if (toolBar->layoutDirection() != q->layoutDirection() &&
                     !toolBar->testAttribute(Qt::WA_SetLayoutDirection)){
 
@@ -152,8 +171,17 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
                 }                
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(toolBar);
                 toolBarD->mDoLayout = false;
-                if (mViewStackWidget->isSwitchingViews()) {
+                // No "appear" effect when changing views or when the first
+                // toolbar is shown. The latter is needed to prevent bad UX when
+                // a splash screen containing a toolbar is shown before the
+                // mainwindow. Note that this mToolbarWasAdded check is only
+                // effective when one adds a toolbar with actions in it, it can
+                // be circumvented by setting an empty toolbar and then adding
+                // actions to it later. In that case the appear effect will be
+                // used normally.
+                if (mViewStackWidget->isSwitchingViews() || !mToolbarWasAdded) {
                     toolBarD->suppressNextAppearEffect();
+                    mToolbarWasAdded = true;
                 }
                 mScene->addItem(toolBar); // top level
             }
@@ -188,14 +216,17 @@ void HbMainWindowPrivate::addDockWidgetToLayout(HbDockWidget *dockWidget)
     Q_Q(HbMainWindow);
     if (mCurrentDockWidget != dockWidget) {
 
-        // Remove old toolbar
+        // Remove old dock
         removeDockWidgetFromLayout(mCurrentDockWidget);
 
-        // Add new toolbar
+        // Add new dock
         if (dockWidget) {
             dockWidget->setParentItem(0);
-            if (dockWidget->scene() != mScene && (q->isItemVisible(Hb::DockWidgetItem))) { // check just to avoid warnings
-                mScene->addItem(dockWidget); // top level
+            if (dockWidget->scene() != mScene) {
+                HbView* currentView = q->currentView();
+                if (currentView && currentView->isItemVisible(Hb::DockWidgetItem)) {
+                    mScene->addItem(dockWidget); // top level
+                }
             }
             
             dockWidget->setZValue(HbPrivate::DockWidgetZValue);
@@ -241,6 +272,8 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         // cancel all effects
         HbEffectInternal::cancelAll();
         mOrientationChangeOngoing = true;
+        mNotifyOrientationChange = false;
+        mOrientationChangeNotified = false;
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
       }
@@ -409,17 +442,18 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
     // re-layouting, skip if size does not change
     if (mClippingItem->size() != newSize) {
         mClippingItem->resize(newSize);
-		mLayoutRect = QRectF(QPointF(0,0), newSize);
-        
-    // reset transformation
-    q->resetTransform(); 
+        mLayoutRect = QRectF(QPointF(0,0), newSize);
 
-    // if not default rotation, rotate to the defined angle no matter what the effect did
-    if( mOrientation != mDefaultOrientation)
-        q->rotate(mOrientationAngle);
+        // reset transformation
+        q->resetTransform();
+
+        // if not default rotation, rotate to the defined angle no matter what the effect did
+        if( mOrientation != mDefaultOrientation)
+            q->rotate(mOrientationAngle);
 
         // handle actual orientation change only if the orientation really changes (not just a resize)
-        if (mOrientationChangeOngoing) {
+        if (mOrientationChangeOngoing || mNotifyOrientationChange) {
+            mOrientationChangeNotified = true;
             // signal only if layout changes (=orientation changes)
             // Background item is re-layouted from device profile changed event
             emit q->orientationChanged(mOrientation);
@@ -430,6 +464,7 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
             HbInputSettingProxy::instance()->setScreenOrientation(mOrientation);
         }
     }
+    mNotifyOrientationChange = false;
 }
 
 void HbMainWindowPrivate::rootItemFirstPhaseDone(const HbEffect::EffectStatus& status)
@@ -457,15 +492,16 @@ void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus& s
     HbEffect::enable(&mGVWrapperItem);
 
     postIdleEvent(HbMainWindowPrivate::IdleOrientationFinalEvent);
+    mNotifyOrientationChange = !mOrientationChangeNotified && mOrientationChangeOngoing;
     mOrientationChangeOngoing = false;
 }
-	
+
 void HbMainWindowPrivate::addOrientationChangeEffects()
 {
     // Effects for root item
     // If effect loading fails, remove both effects.
-	bool ret = HbEffectInternal::add(mEffectItem, "rootitem_orientation_firstPhase", "rootItemFirstPhase");
-	bool ret2 = HbEffectInternal::add(mEffectItem, "rootitem_orientation_finalPhase", "rootItemFinalPhase");
+    bool ret = HbEffectInternal::add(mEffectItem, "rootitem_orientation_firstPhase", "rootItemFirstPhase");
+    bool ret2 = HbEffectInternal::add(mEffectItem, "rootitem_orientation_finalPhase", "rootItemFinalPhase");
     
     if (!ret || !ret2)
         HbEffectInternal::remove(mEffectItem);
@@ -519,7 +555,7 @@ void HbMainWindowPrivate::addViewEffects()
 /*
     Updates UI according to current view and sync it with the tab bar.
 */
-void HbMainWindowPrivate::_q_viewChanged(int index)
+void HbMainWindowPrivate::_q_viewChanged()
 {
     Q_Q(HbMainWindow);
 
@@ -543,7 +579,6 @@ void HbMainWindowPrivate::_q_viewChanged(int index)
         mTitleBar->titlePane()->setText(QString());
     }
 
-    emit q->currentViewIndexChanged(index);
     emit q->currentViewChanged(view);
 }
 
@@ -575,7 +610,7 @@ void HbMainWindowPrivate::_q_viewToolBarChanged()
     Q_Q(HbMainWindow);
     HbView *view = qobject_cast<HbView *>(q->sender());
     if (view) {
-        if(view == q->currentView()) {
+        if (view == q->currentView()) {
             addToolBarToLayout(HbViewPrivate::d_ptr(view)->toolBar);
         }
     }
@@ -906,8 +941,10 @@ void HbMainWindowPrivate::_q_delayedConstruction()
                 mClippingItem, SLOT(decoratorVisibilityChanged()));
 
         mStatusBar->delayedConstruction();
-        connect(mStatusBar, SIGNAL(notificationCountChanged(int)),
-                mTitleBar, SIGNAL(notificationCountChanged(int)));
+        connect(mStatusBar, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
+                mTitleBar, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
+        connect(mStatusBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
+                mTitleBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
 
         mFadeItem = new HbFadeItem;
         mFadeItem->setZValue(HbPrivate::FadingItemZValue);

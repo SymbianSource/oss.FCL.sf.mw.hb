@@ -171,8 +171,12 @@ enum Property {
     HbAspectRatio,
     HbPreferredWidth,
     HbPreferredHeight,
+    HbPreferredSize,
     HbFixedWidth,
     HbFixedHeight,
+    HbFixedSize,
+    HbMinimumSize,
+    HbMaximumSize,
     HbSizePolicy,
     HbSizePolicyHorizontal,
     HbSizePolicyVertical,
@@ -1057,10 +1061,9 @@ enum StyleSheetOrigin {
 
 struct WidgetStyleRules 
 {
-WidgetStyleRules(const QString &widgetname = "", HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-        : widgetName(type), styleRules(type), portraitRules(type), landscapeRules(type)
+WidgetStyleRules(uint widgetNameHash, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+        : classNameHash(widgetNameHash), styleRules(type), portraitRules(type), landscapeRules(type)
     { 
-        widgetName = widgetname; 
     }
 #ifdef CSS_PARSER_TRACES
     bool supportsPrinting() const {return true;}
@@ -1068,7 +1071,6 @@ WidgetStyleRules(const QString &widgetname = "", HbMemoryManager::MemoryType typ
     void print() const
     {
         qDebug() <<"==============WidgetStyleRules::Print():Begin==================";
-        qDebug() << "WidgetName = " << widgetName;
         qDebug() << "Generic rules:";
         styleRules.print();
         qDebug() << "Portrait rules:";
@@ -1079,7 +1081,7 @@ WidgetStyleRules(const QString &widgetname = "", HbMemoryManager::MemoryType typ
     }
 #endif
     // Data
-    HbString widgetName;
+	uint classNameHash;
     HbVector<StyleRule> styleRules;
     HbVector<StyleRule> portraitRules;
     HbVector<StyleRule> landscapeRules;
@@ -1146,13 +1148,12 @@ StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type)
 #endif
 
     // Utility functions
-    WidgetStyleRules* widgetStack(const QString &className) const
+    WidgetStyleRules* widgetStack(uint classNameHash) const
     {
         for (int i=0; i<widgetRules.count(); i++) {
-          QString stackName = widgetRules.at(i).widgetName;
-          if (strcmp(stackName.toLatin1().data(), className.toLatin1().data()) == 0) {
-              return &(widgetRules.at(i));
-          }
+            if (classNameHash == widgetRules.at(i).classNameHash) {
+                return &(widgetRules.at(i));
+            }
         }
         return 0;
     }
@@ -1212,7 +1213,7 @@ public:
     void removeStyleSheet( StyleSheet* styleSheet );
 
     QVector<StyleSheet*> styleSheets;
-    QHash<QString, QVector<StyleSheet*> > widgetSheets;
+    QHash<uint, QVector<StyleSheet*> > widgetSheets;
     QString medium;
 private:
     void matchRules(NodePtr node, const HbVector<StyleRule> &rules, StyleSheetOrigin origin,

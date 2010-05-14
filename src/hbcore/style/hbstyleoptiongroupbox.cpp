@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptiongroupbox.h>
+#include <hbstyleoptiongroupbox_p.h>
 
 
 /*!

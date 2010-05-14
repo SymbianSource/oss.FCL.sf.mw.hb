@@ -24,15 +24,35 @@
 ****************************************************************************/
 
 /*!
+    @stable
+    @hbcore
     \class HbDeviceDialog
-    \brief HbDeviceDialog displays dialogs on top of applications
+    \brief HbDeviceDialog displays a dialog on top of all running applications
+    
+    Device Dialogs are used to display information, queries and alerts for the device rather than
+    for an application. Some example device dialogs are:
+    - Low battery
+    - Low memory
+    - Incoming bluetooth message
+    - Text message received
+    
+    Due to the importance of these dialogs they are
+    displayed on top of all applications. The HbDeviceDialog class provides the client
+    interface for creating these dialogs. This differs from other dialog classes such as 
+    HbMessageBox in that 
+    HbDeviceDialog is not a widget but is the interface to a framework that handles the dialogs.
+    
+    \section _framework Device Dialog Framework
+    
+    Any application is able to generate device dialogs. However, in
+    order to display the dialogs on top of all applications, the device dialog framework 
+    uses a server. To display a dialog an application uses the HbDeviceDialog client interface to send requests for
+    dialogs to the server. The HbDeviceDialog class can also be used or extended as part of a set of specialization classes
+    to create different device dialog types. 
+    
+    Device dialog widgets are implemented in plugins loaded by the server.
 
-    HbDeviceDialog is a concrete class. It can be used directly or as a part of
-    specialization classes for different device dialog types. It's not a widget but interfaces
-    to a device dialog service which is responsible for displaying device dialogs.
-    Device dialog widgets are implemented in plugins loaded by the service.
-
-    Below is a runtime view of device dialog framework.
+    Shown below is a runtime view of the device dialog framework.
 
     \dot
     digraph G {
@@ -105,111 +125,160 @@
     }
     \enddot
 
+    <b>Platform dependent.</b> Currently server is implemented only for Symbian platform. On other platforms,
+    device dialog are displayed on client's mainwindow.
+
     HbDeviceDialog has no dependencies to other parts of the framework. Only to Qt. Thus it can be used
     also from engine components that have no user interface.
 
-    There are three classes of device dialogs. Generic device dialogs which are displayed on top
-    of all applications (incoming call is an exception). Examples of these are "Low memory"
-    message box and "Receive message via bluetooth" query. Device notification dialogs are
-    notifications displayed in a top left corner of a display. Examples are "New message" and
-    "Low battery" notifications. Universal indicator menu shows enhanced status indicator
+    \section _types Types of device dialogs
+
+    There are three classes of device dialogs:
+     -# Generic device dialogs are displayed on top
+    of all applications, except in the case of an incoming call. Examples of these are a "Low memory"
+    message box and a "Receive message via bluetooth?" query. 
+     -# Device notification dialogs are
+    notifications displayed in the top left corner of the display. Examples are "New message" and
+    "Low battery" notifications. 
+     -# The Universal indicator menu shows enhanced status indicator
     information.
 
-    Generic device dialogs and indicator menu interrupt current foreground application.
-    User cannot interact with the application with a touch or keyboard until the dialog
-    is dismissed. Device notification dialog behaves differently allowing interaction with the
+    Generic device dialogs and the indicator menu interrupt the current foreground application.
+    The user cannot interact with the application with a touch or keyboard until the dialog
+    is dismissed. Device notification dialogs behave differently allowing interaction with the
     current foreground application.
 
     Device dialog widgets are constructed dynamically by the device dialog service. Construction
     takes two parameters: a type and a set of parameters appropriate to the dialog type.
-    Widgets are implemented by plugins. Device dialog type is an unique string identifying the
+    The device dialog type is a unique string identifying the
     dialog. A search is made to find a plugin that can instantiate the requested
     dialog. The service loads the plugin and creates an instance of the widget.
 
-    Parameter set is encapsulated in QMap<QString, QVariant>. Each device dialog implementation has
-    a default value for all parameters. Only parameters that differ from the default needs to be
+    The parameter set is encapsulated in QMap<QString, QVariant>. Each device dialog implementation has
+    a default value for all parameters. Only parameters that differ from the default need to be
     given. Parameters are <name, value> pairs. How the parameters are used depends on
     the plugin implementing the dialog. Suggested usage is <name, value> used as property
     name and value pairs of the dialog implementation. This makes it easy to set properties using
     QObject::setProperty(const char*, const QVariant&). If data types supported by QVariant are
     not suitable for a specific device dialog, Q_DECLARE_METATYPE can be used to add data types.
 
-    Data can be sent to a device dialog after it has been launched using update() function. Data
-    sent by the dialog is received by dataReceived signal. A copy of the last data received
-    is held by the class and can be fetched by a receivedData() function. This allows to receive
-    data without having to connect to a signal by waiting for a dialog to close and then
+    %Data can be sent to a device dialog after it has been launched using the update() function. %Data
+    sent by the dialog is received by the dataReceived signal. A copy of the last data received
+    is held by the class and can be fetched by a call to the receivedData() function. This allows data to be received
+    without having to connect to a signal by waiting for a dialog to close and then
     getting the received data.
 
     It is possible to launch multiple device dialogs from a single HbDeviceDialog object.
-    However if there is a need to update a dialog or receive data from it, only the last one
-    launched is able to do it. In this case instantiate HbDeviceDialog class for each device dialog
+    However if there is a need to update a dialog or receive data from it, only the last dialog
+    launched supports this. In this case instantiate the HbDeviceDialog class for each device dialog
     that needs communication (update or data receive) after a launch.
 
-    HbDeviceDialog::show() method returns after device dialog service has accepted the dialog.
+    HbDeviceDialog::show() method returns after the device dialog service has accepted the dialog.
     The service decides when the dialog is actually displayed. If there is no need to receive
-    data from the dialog widget, HbDeviceDialog object can be destroyed after show method returns
-    (can be allocated in a stack). A function is provided to wait for device dialog to be dismissed
+    data from the dialog widget, the HbDeviceDialog object can be destroyed after the show() method returns
+    (can be allocated in a stack). A function is provided to wait for the device dialog to be dismissed,
     making the dialog display synchronous.
 
     If any signals of HbDeviceDialog are connected, then the instance needs to exist until the
-    dialog is dismissed. In this case device dialog service will close all dialogs
+    dialog is dismissed. In this case the device dialog service will close all dialogs
     launched by the instance when it is deleted making it inappropriate to allocate HbDeviceDialog
     into a stack.
 
     Several clients can share the same device dialog widget by agreeing on an unique tag. See
     HbDeviceDialogWidgetPlugin for more information.
 
-    When HbDeviceDialog object is created, it can reserve a communication channel to device dialog
+    When the HbDeviceDialog object is created, it can reserve a communication channel to the device dialog
     service or the channel creation may be delayed until show(). This is controlled by a constructor
-    flag. Default is the delayed resource reservation.
+    flag. The default is the delayed resource reservation.
 
-    HbDeviceDialog class is not thread safe. If cancel() needs to called across threads, a queued
+    The HbDeviceDialog class is not thread safe. If cancel() needs to called across threads, a queued
     signal slot connection can be used.
+    
+    \section _usecases Using the HbDeviceDialog class
+    
+    The code below launches a device dialog and continues execution
+    \code
+    // Launch a device dialog and continue execution.
+
+    HbDeviceDialog deviceDialog;
+    QVariantMap parameters;
+    parameters.insertMulti(QString("text"), QVariant(QString("Warning text")));
+    const char *deviceDialogType = "hb.devdlg.examplemessagebox/1.0";
+    deviceDialog.show(QString(deviceDialogType), parameters);
+    \endcode
+
+    The code below demonstrates how to use HbDeviceDialog as a member variable and connect signals before launching the device dialog
+    \code
+    // Connect signals and launch a device dialog.
+
+    connect(mDeviceDialog, SIGNAL(dataReceived(QVariantMap)),
+        this, SLOT(dataReceived(QVariantMap)));
+    connect(mDeviceDialog, SIGNAL(deviceDialogClosed()), this, SLOT(deviceDialogClosed()));
+    connect(mDeviceDialog, SIGNAL(error(int)), this, SLOT(error(int)));
+    QVariantMap parameters;
+    mDeviceDialog.show(QString("hb.devdlg.examplequery/1.0"), parameters);
+    \endcode    
+    
+    The code below shows how to wait until a dialog has closed
+    \code
+    // Below code launches a query and then waits for it to close.
+
+    // Launch query
+    HbDeviceDialog deviceDialog;
+    QVariantMap parameters;
+    deviceDialog.show(QString("hb.devdlg.samplequery/1.0"), parameters);
+    // Wait for note to close
+    deviceDialog.waitForClosed();
+    // Get data the dialog sent
+    QVariantMap data = deviceDialog.receivedData();
+    \endcode
 
     \sa HbDeviceDialogPlugin
-
-    \beta
-    \hbcore
 */
 
 /*!
     \enum HbDeviceDialog::DeviceDialogError
     Defines device dialog error codes and ranges.
 */
+
 /*!
     \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::FrameworkErrors
-    Start of an error range for errors originating from device dialog framework (client or server).
+    Start of an error range for errors originating from the device dialog framework (client or server).
 */
+
 /*!
     \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::PluginErrors
-    Start of an error range for errors originating from device dialog plugins. The framework passes
+    Start of an error range for errors originating from the device dialog plugins. The framework passes
     these from the plugin unmodified.
 */
+
 /*!
     \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::ErrorTypeMask
-    Mask for error type part of the error code.
+    Mask for the error type part of the error code.
 */
+
 /*!
     \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::CancelledError
     Operation was cancelled by cancel().
 */
-/*!
-    \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::SystemCancelledError
-    Operation was cancelled by device dialog framework.
-*/
 
 /*!
-    \enum HbDeviceDialog::DeviceDialogFlags
-    Defines construct flags.
+    \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::SystemCancelledError
+    Operation was cancelled by the device dialog framework.
 */
-/*!
-    \var HbDeviceDialog::DeviceDialogFlags HbDeviceDialog::NoDeviceDialogFlags
-    No flags specified.
-*/
+
 /*!
     \var HbDeviceDialog::DeviceDialogFlags HbDeviceDialog::NoFlags
     No flags specified.
 */
+
+/*!
+    \enum HbDeviceDialog::DeviceDialogFlag
+    Defines construct flags.
+        
+    The DeviceDialogFlags type is a typedef for QFlags<DeviceDialogFlag>. It stores an OR combination of the DeviceDialogFlag values.
+*/
+
 /*!
     \var HbDeviceDialog::DeviceDialogFlags HbDeviceDialog::ImmediateResourceReservationFlag
     Reserves resources immediately instead of delaying until show() is called.
@@ -218,7 +287,9 @@
 /*!
      \fn void HbDeviceDialog::dataReceived(QVariantMap data)
 
-      This signal is emitted when data is received from a device dialog. \a data contains data from
+      This signal is emitted when data is received from a device dialog.
+      
+      \a data contains data from
       the dialog. The structure and meaning of the data is a contract between the dialog and
       a client. Suggested usage is a set of signal names and parameters.
 */
@@ -227,8 +298,8 @@
     \fn void HbDeviceDialog::deviceDialogClosed()
 
     This signal is emitted when a device dialog is closed. Any data sent by the dialog is indicated by
-    the dataReceived() signal. If the signal is not connected, latest data received is saved and
-    can be retrieved by a receivedData() function.
+    the dataReceived() signal. If the signal is not connected, the latest data received is saved and
+    can be retrieved using the receivedData() function.
 
     \sa dataReceived() receivedData()
 */
@@ -236,7 +307,9 @@
 /*!
     \fn void HbDeviceDialog::error(int error)
 
-    This signal is emitted when an error has occurred. \a error contains an error code.
+    This signal is emitted when an error has occurred.
+    
+    \a error contains an error code.
 */
 
 #include "hbdevicedialog.h"
@@ -252,10 +325,14 @@
 #endif // defined(Q_OS_SYMBIAN)
 
 /*!
-    Constructs an object. \a f contains construct flags. \a parent is a parent pointer.
-    HbDeviceDialog can be allocated into a stack if no signals are to be connected. Device dialog
+    Constructor. 
+    
+    \param f Contains the construct flags. See DeviceDialogFlag
+    \param parent The parent pointer.
+    
+    HbDeviceDialog can be allocated on the stack if no signals are to be connected. The Device dialog
     service keeps dialogs launched when the object goes out of scope. If any signals
-    are connected, device dialog service will clean all dialogs launched when the instance is
+    are connected, the device dialog service will clean all dialogs launched when the instance is
     deleted. In this case the object must remain in existence until the dialog widget is
     dismissed.
 */
@@ -267,6 +344,9 @@ HbDeviceDialog::HbDeviceDialog(DeviceDialogFlags f, QObject *parent) :
     d->init(f);
 }
 
+/*!
+ Constructor required by the shared d-pointer paradigm.
+*/
 HbDeviceDialog::HbDeviceDialog(HbDeviceDialogPrivate &dd, DeviceDialogFlags f, QObject *parent) :
     QObject(parent), d_ptr(&dd)
 {
@@ -275,41 +355,25 @@ HbDeviceDialog::HbDeviceDialog(HbDeviceDialogPrivate &dd, DeviceDialogFlags f, Q
     d->init(f);
 }
 
+/*!
+    Destructor.
+*/
 HbDeviceDialog::~HbDeviceDialog()
 {
     delete d_ptr;
 }
 
 /*!
-    Shows a device dialog using a device dialog service. The function returns immediately after the
-    service has accepted the dialog. Returns true if dialog was accepted, false if error occurred.
+    Shows a device dialog using the device dialog service.
+    
+    The function returns immediately after the
+    service has accepted the dialog. Returns \c true if the dialog was accepted, \c false if an error occurred.
     The service decides when the dialog is actually displayed.
 
-    \arg deviceDialogType identifies a device dialog to be displayed by a name.
-    \arg parameters defines properties of the dialog.
+    \param deviceDialogType Identifies a device dialog to be displayed by a name.
+    \param parameters Defines properties of the dialog.
 
     \sa update(), waitForClosed(), cancel()
-
-    \code
-    // Below code launches a device dialog and continues execution.
-
-    HbDeviceDialog deviceDialog;
-    QVariantMap parameters;
-    parameters.insertMulti(QString("text"), QVariant(QString("Warning text")));
-    const char *deviceDialogType = "hb.devdlg.examplemessagebox/1.0";
-    deviceDialog.show(QString(deviceDialogType), parameters);
-    \endcode
-
-    \code
-    // Below code has HbDeviceDialog as a member variable. It connects signals and launches a device dialog.
-
-    connect(mDeviceDialog, SIGNAL(dataReceived(QVariantMap)),
-        this, SLOT(dataReceived(QVariantMap)));
-    connect(mDeviceDialog, SIGNAL(deviceDialogClosed()), this, SLOT(deviceDialogClosed()));
-    connect(mDeviceDialog, SIGNAL(error(int)), this, SLOT(error(int)));
-    QVariantMap parameters;
-    mDeviceDialog.show(QString("hb.devdlg.examplequery/1.0"), parameters);
-    \endcode
 */
 bool HbDeviceDialog::show(const QString &deviceDialogType, const QVariantMap &parameters)
 {
@@ -317,10 +381,11 @@ bool HbDeviceDialog::show(const QString &deviceDialogType, const QVariantMap &pa
 }
 
 /*!
-    Updates device dialog parameters by a set of new values. show() must be called before an
-    update() can be called. If multiple dialogs have been launched by a single HbDeviceDialog
-    instance, the last dialog launched receives the update. Returns true on success and false
-    if error occurred.
+    Updates device dialog parameters by a set of new values. You must call show() before calling
+    update(). If multiple dialogs have been launched by a single HbDeviceDialog
+    instance, the last dialog launched receives the update. 
+    
+    \return Returns \c true on success and \c false if an error occurred.
 
     \sa show()
 */
@@ -330,32 +395,25 @@ bool HbDeviceDialog::update(const QVariantMap &parameters)
 }
 
 /*!
-    Waits for a device dialog to be displayed and dismissed. \a flags specifies flags passed to
-    QEventLoop::exec() function. Returns true on success and false if error occurred.
+    Waits for a device dialog to be displayed and subsequently dismissed.
+    
+    \a flags specifies the flags passed to the
+    QEventLoop::exec() function. 
 
-    The wait is implemented by starting a new event loop. Consider following caveats before using
-    this function. Stack usage increases. Depending on application program flow, several event
-    loops may get instantiated on top of each other. Application event processing continues while
-    waitForClosed() executes. When it returns application state may have changed. For example some
-    objects may have been deleted or application may have exited.
+    The wait is implemented by starting a new event loop. The following potential problems should be considered before using
+    this function: 
+    - Stack usage increases.
+    - Depending on the application program flow, several event
+    loops may get instantiated on top of each other. 
+    - Application event processing continues while
+    waitForClosed() executes. 
+    - When the function returns, the application state may have changed. For example some
+    objects may have been deleted or the application may have exited.
 
     <b>Note that starting an event loop isn't compatible with gestures.</b> Therefore if an application
-    has an user interface, please don't use this function. Instead connect to signals.
-
+    has a user interface, please don't use this function. Instead connect to signals.
+    \return Returns \c true on success and \c false if an error occurred.
     \sa cancel()
-
-    \code
-    // Below code launches a query and then waits for it to close.
-
-    // Launch query
-    HbDeviceDialog deviceDialog;
-    QVariantMap parameters;
-    deviceDialog.show(QString("hb.devdlg.samplequery/1.0"), parameters);
-    // Wait for note to close
-    deviceDialog.waitForClosed();
-    // Get data the dialog sent
-    QVariantMap data = deviceDialog.receivedData();
-    \endcode
 */
 bool HbDeviceDialog::waitForClosed(QEventLoop::ProcessEventsFlag flags)
 {
@@ -363,9 +421,11 @@ bool HbDeviceDialog::waitForClosed(QEventLoop::ProcessEventsFlag flags)
 }
 
 /*!
-    Returns the latest data received from a device dialog. This function can be called instead of
-    connecting to dataReceived() signal. If dataReceived() signal has connections, latest data is
-    not saved and this function returns empty data structure.
+    Returns the latest data received from a device dialog.
+
+    This function can be called instead of
+    connecting to the dataReceived() signal. If the dataReceived() signal has connections, the latest data is
+    not saved and this function returns an empty data structure.
 
     \sa waitForClosed()
 */
@@ -375,7 +435,9 @@ QVariantMap HbDeviceDialog::receivedData() const
 }
 
 /*!
-    Returns a last error. Last error is cleared when any other API function than error() is called.
+    Returns the last error.
+
+    The last error is cleared when any other API function except error() is called.
 */
 int HbDeviceDialog::error() const
 {
@@ -383,11 +445,15 @@ int HbDeviceDialog::error() const
 }
 
 /*!
-    Cancels a device dialog. The dialog is removed from the device dialog service. Does nothing if
-    the dialog has already been dismissed. Removes dialog if it's waiting to be displayed or
-    currently on display. If multiple dialogs have been launched by a single HbDeviceDialog
-    instance, the last dialog launched is cancelled. deviceDialogClosed() signal is emitted if
-    a dialog was closed. Returns true on success and false if error occurred.
+    Cancels a device dialog and removes the dialog from the device dialog service.
+
+    Removes the dialog if the dialog is waiting to be displayed or
+    currently on display. Has no effect if
+    the dialog has already been dismissed. If multiple dialogs have been launched by a single HbDeviceDialog
+    instance, the last dialog launched is cancelled. The deviceDialogClosed() signal is emitted if
+    a dialog was closed.
+
+    \return Returns \c true on success and \c false if an error occurred.
 
     \sa show(), deviceDialogClosed()
 */

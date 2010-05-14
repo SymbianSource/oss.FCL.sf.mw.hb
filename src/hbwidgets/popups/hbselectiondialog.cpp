@@ -98,9 +98,9 @@ void HbSelectionDialog::showEvent(QShowEvent *event)
 */
 void HbSelectionDialog::setSelectionMode(HbAbstractItemView::SelectionMode mode)
 {
-	Q_D(HbSelectionDialog);
-	
-	d->setSelectionMode(mode);
+    Q_D(HbSelectionDialog);
+    
+    d->setSelectionMode(mode);
 }
 
 /*!
@@ -108,11 +108,11 @@ void HbSelectionDialog::setSelectionMode(HbAbstractItemView::SelectionMode mode)
     Returns current SelectionMode of the list.Default value is \a NoSelection.
 
     \sa setSelectionMode()
-*/	
+*/    
 HbAbstractItemView::SelectionMode HbSelectionDialog::selectionMode() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->mSelectionMode;
+    Q_D(const HbSelectionDialog);
+    return d->mSelectionMode;
 }
 
 /*!
@@ -123,11 +123,11 @@ HbAbstractItemView::SelectionMode HbSelectionDialog::selectionMode() const
     \param currentIndex. A currentIndex is the index of default selection
 
     \sa stringItems()
-*/	
+*/    
 void HbSelectionDialog::setStringItems(const QStringList &items,int currentIndex)
 {
-	Q_D(HbSelectionDialog);
-	d->setStringItems(items,currentIndex);
+    Q_D(HbSelectionDialog);
+    d->setStringItems(items,currentIndex);
 }
 
 /*!
@@ -135,11 +135,11 @@ void HbSelectionDialog::setStringItems(const QStringList &items,int currentIndex
     Returns list of string list items earlier set by setStringItems().
 
     \sa setStringItems()
-*/	
+*/    
 QStringList HbSelectionDialog::stringItems() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->stringItems();
+    Q_D(const HbSelectionDialog);
+    return d->stringItems();
 }
 
 /*!
@@ -153,8 +153,8 @@ QStringList HbSelectionDialog::stringItems() const
  */
 QList<QVariant> HbSelectionDialog::selectedItems() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->selectedItems();
+    Q_D(const HbSelectionDialog);
+    return d->selectedItems();
 }
 
 /*!
@@ -169,8 +169,8 @@ QList<QVariant> HbSelectionDialog::selectedItems() const
 */
 void HbSelectionDialog::setSelectedItems(const QList<QVariant> items) 
 {
-	Q_D(HbSelectionDialog);
-	d->setSelectedItems(items);
+    Q_D(HbSelectionDialog);
+    d->setSelectedItems(items);
 }
 
 /*!
@@ -184,8 +184,8 @@ void HbSelectionDialog::setSelectedItems(const QList<QVariant> items)
  */
 QModelIndexList HbSelectionDialog::selectedModelIndexes() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->selectedModelIndexes();
+    Q_D(const HbSelectionDialog);
+    return d->selectedModelIndexes();
 }
 
 /*!
@@ -201,11 +201,11 @@ QModelIndexList HbSelectionDialog::selectedModelIndexes() const
     \param currentIndex
 
     \sa widgetItems();
-*/	
+*/    
 void HbSelectionDialog::setWidgetItems(const QList<HbListWidgetItem*> &items,bool transferOwnership,int currentIndex)
 {
-	Q_D(HbSelectionDialog);
-	d->setWidgetItems(items,transferOwnership,currentIndex);
+    Q_D(HbSelectionDialog);
+    d->setWidgetItems(items,transferOwnership,currentIndex);
 }
 
 /*!
@@ -213,11 +213,11 @@ void HbSelectionDialog::setWidgetItems(const QList<HbListWidgetItem*> &items,boo
     Returns list of custom list items earlier set by setWidgetItems().
     
     \sa setWidgetItems().
-*/	
+*/    
 QList<HbListWidgetItem*> HbSelectionDialog::widgetItems() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->widgetItems();
+    Q_D(const HbSelectionDialog);
+    return d->widgetItems();
 }
 
 /*!
@@ -227,11 +227,11 @@ QList<HbListWidgetItem*> HbSelectionDialog::widgetItems() const
     \param model. 
 
     \sa model()
-*/	
+*/    
 void HbSelectionDialog::setModel(QAbstractItemModel* model)
 {
-	Q_D(HbSelectionDialog);
-	d->setModel(model);
+    Q_D(HbSelectionDialog);
+    d->setModel(model);
 }
 
 /*!
@@ -239,11 +239,11 @@ void HbSelectionDialog::setModel(QAbstractItemModel* model)
     Returns model eariler set by setModel().
 
     \sa setModel()
-*/	
+*/    
 QAbstractItemModel* HbSelectionDialog::model() const
 {
-	Q_D(const HbSelectionDialog);
-	return d->model();
+    Q_D(const HbSelectionDialog);
+    return d->model();
 }
 
 

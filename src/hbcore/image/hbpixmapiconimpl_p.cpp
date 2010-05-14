@@ -44,13 +44,15 @@ HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString& name,
                                    const QSizeF& keySize,
                                    Qt::AspectRatioMode aspectRatioMode,
                                    QIcon::Mode mode,
-                                   bool mirrored):
+                                   bool mirrored,
+                                   HbRenderingMode renderMode):
         HbIconImpl(iconData,
                    name,
                    keySize,
                    aspectRatioMode,
                    mode,
-                   mirrored),
+                   mirrored,
+                   renderMode),
         pixmapIconRenderer(0)
 {
     retrievePixmapData();

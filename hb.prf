@@ -30,6 +30,7 @@ QT *= core gui svg network
 symbian:CONFIG += symbian_i18n skin_icon
 
 include(hb_install.prf)
+#include(docml2bin.prf)
 
 CONFIG(debug, debug|release) {
     win32:SUFFIX = d

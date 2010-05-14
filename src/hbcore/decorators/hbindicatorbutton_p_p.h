@@ -40,13 +40,20 @@ public:
     void init();
     void showIndicatorMenu();
 
+    void addIndicators(const QList<IndicatorClientInfo> &clientInfo);
+    void removeIndicators(const QList<IndicatorClientInfo> &clientInfo);
+    int findIndicator(const IndicatorClientInfo &indicator) const;
+    void updateIcon();
+
 private:
 
     QGraphicsItem *handleIcon;
     HbAction *defaultAction;
-    HbAction *notificationAction;
+    HbAction *newEventAction;
 
     HbDeviceDialog *deviceDialog;
+
+    QList<IndicatorClientInfo> mIndicators;
 };
 
 #endif // HBINDICATORBUTTON_P_P_H

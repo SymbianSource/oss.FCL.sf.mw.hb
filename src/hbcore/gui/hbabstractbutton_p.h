@@ -40,8 +40,6 @@
 #include <QBasicTimer>
 #include "hbwidget_p.h"
 
-class HbGestureSceneFilter;
-
 class HB_CORE_PRIVATE_EXPORT HbAbstractButtonPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbAbstractButton )

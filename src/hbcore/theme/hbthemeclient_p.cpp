@@ -29,14 +29,13 @@
 #include "hbmemoryutils_p.h"
 
 static HbThemeClient *clientInst=0;
-static int sharedCacheOffset = -1;
 
 /**
  * Constructor
  */
 HbThemeClient::HbThemeClient():d_ptr(new HbThemeClientPrivate)
 {
-    
+
 }
 
 /**
@@ -68,30 +67,32 @@ QSizeF HbThemeClient::getSharedIconDefaultSize(const QString &iconPath)
  * \a options
  * \a color
  *
- 
+
  */
-HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath , 
+HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
                                                   const QSizeF &size,
                                                   Qt::AspectRatioMode aspectRatioMode,
                                                   QIcon::Mode mode,
                                                   bool mirrored,
                                                   HbIconLoader::IconLoaderOptions options,
-                                                  const QColor &color)
+                                                  const QColor &color,
+                                                  HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
     return d->getSharedIconInfo(iconPath,
                                 size,
-                                aspectRatioMode, 
-                                mode, 
-                                mirrored, 
+                                aspectRatioMode,
+                                mode,
+                                mirrored,
                                 options,
-                                color);
+                                color,
+                                renderMode);
 }
 
 /**
  * HbThemeClient::getSharedBlob()
- * 
- * \a name 
+ *
+ * \a name
  */
 QByteArray HbThemeClient::getSharedBlob(const QString &name)
 {
@@ -102,7 +103,8 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
         QIcon::Normal,
         false,
         HbIconLoader::NoOptions,
-        QColor());
+        QColor(),
+        ESWRendering);
     return info.type == BLOB
         ? QByteArray::fromRawData(HbMemoryUtils::getAddress<char>(
                                       HbMemoryManager::SharedMemory,
@@ -110,25 +112,20 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
                                   info.blobData.dataSize)
         : QByteArray();
 }
-  
-    
-    HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPartIconList, 
+
+
+    HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPartIconList,
                         const HbMultiPartSizeData  &multiPartIconData ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
                         HbIconLoader::IconLoaderOptions options,
-                        const QColor &color)
+                        const QColor &color,
+                        HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
-    return d->getMultiPartIconInfo(multiPartIconList, multiPartIconData, size, aspectRatioMode, mode, mirrored, options, color);
-}
-
-void HbThemeClient::getThemeIndexTables(ThemeIndexTables &tables)
-{
-    Q_D(HbThemeClient);
-    d->getThemeIndexTables(tables);
+    return d->getMultiPartIconInfo(multiPartIconList, multiPartIconData, size, aspectRatioMode, mode, mirrored, options, color, renderMode);
 }
 
 /**
@@ -136,12 +133,12 @@ void HbThemeClient::getThemeIndexTables(ThemeIndexTables &tables)
  *
  * \a fielName  css filename
  * \a priority  layer priority
- */  
+ */
 HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
 {
     int offset = -1;
     if( HbLayeredStyleLoader::Priority_Core == priority ) {
-        offset = sharedCacheItemOffset(fileName);
+        offset = sharedCacheItemOffset(HbSharedCache::Stylesheet, fileName);
     }
     if ( -1 != offset ) {
         HbCss::StyleSheet *styleSheet = HbMemoryUtils::getAddress<HbCss::StyleSheet>(HbMemoryManager::SharedMemory,offset);
@@ -157,10 +154,10 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName, H
  * \a fileName
  * \a layout
  * \a section
- */  
+ */
 HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
 {
-    int offset = sharedCacheItemOffset(fileName + layout + section);
+    int offset = sharedCacheItemOffset(HbSharedCache::LayoutDefinition, fileName + layout + section);
     if ( -1 != offset ) {
        HbWidgetLoader::LayoutDefinition *layoutDefs =
            HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(HbMemoryManager::SharedMemory,offset);
@@ -171,7 +168,7 @@ HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QStri
 }
 /**
  * HbThemeClient::deviceProfiles()
- */ 
+ */
 HbDeviceProfileList *HbThemeClient::deviceProfiles()
 {
     Q_D(HbThemeClient);
@@ -179,17 +176,14 @@ HbDeviceProfileList *HbThemeClient::deviceProfiles()
 }
 
 /**
- * HbThemeClient::globalCacheOffset()
- *
+ * HbThemeClient::typefaceInfo()
  */
-int HbThemeClient::globalCacheOffset()
+HbTypefaceInfoVector *HbThemeClient::typefaceInfo()
 {
-    if ( -1 == sharedCacheOffset ) {
-        Q_D(HbThemeClient);
-        sharedCacheOffset = d->globalCacheOffset();
-    }
-    return sharedCacheOffset;
+    Q_D(HbThemeClient);
+    return d->typefaceInfo();
 }
+
 
 /**
  * HbThemeClient::notifyForegroundLostToServer()
@@ -205,10 +199,10 @@ void HbThemeClient::notifyForegroundLostToServer()
  * HbThemeClient::getSharedEffect()
  *
  * \a filePath
- */ 
+ */
 HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
 {
-    int offset = sharedCacheItemOffset(filePath);
+    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePath);
     if ( -1 != offset ) {
        HbEffectFxmlData  *effectFxmlData = HbMemoryUtils::getAddress<HbEffectFxmlData>(HbMemoryManager::SharedMemory,offset);
        return effectFxmlData;
@@ -221,10 +215,10 @@ HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
  * HbThemeClient::addSharedEffect()
  *
  * \a filePath
- */ 
+ */
 bool HbThemeClient::addSharedEffect(const QString& filePath)
 {
-    int offset = sharedCacheItemOffset(filePath);
+    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePath);
     if ( -1 != offset ) {
         // effect already added.
         return true;
@@ -243,22 +237,24 @@ bool HbThemeClient::addSharedEffect(const QString& filePath)
  * \a mirrored
  * \a options
  * \a color
- 
+
  */
-void HbThemeClient::unloadIcon(const QString& iconPath , 
+void HbThemeClient::unloadIcon(const QString& iconPath ,
                                const QSizeF &size,
                                Qt::AspectRatioMode aspectRatioMode,
                                QIcon::Mode mode,
                                bool mirrored,
-                               const QColor &color)
+                               const QColor &color,
+                               HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
     return d->unloadIcon(iconPath,
                          size,
-                         aspectRatioMode, 
-                         mode, 
-                         mirrored, 
-                         color);
+                         aspectRatioMode,
+                         mode,
+                         mirrored,
+                         color,
+                         renderMode);
 }
 
 /**
@@ -271,20 +267,22 @@ void HbThemeClient::unloadIcon(const QString& iconPath ,
  * \a mirrored
  * \a color
  */
-void HbThemeClient::unLoadMultiIcon(const QStringList& iconPathList, 
+void HbThemeClient::unLoadMultiIcon(const QStringList& iconPathList,
                     const QVector<QSizeF> &sizeList,
                     Qt::AspectRatioMode aspectRatioMode,
                     QIcon::Mode mode,
                     bool mirrored,
-                    const QColor &color)
+                    const QColor &color,
+                    HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
     return d->unLoadMultiIcon(iconPathList,
                          sizeList,
-                         aspectRatioMode, 
-                         mode, 
-                         mirrored, 
-                         color);
+                         aspectRatioMode,
+                         mode,
+                         mirrored,
+                         color,
+                         renderMode);
 }
 
 /**
@@ -331,23 +329,10 @@ void HbThemeClient::releaseInstance()
  * \param key
  *
  */
-int HbThemeClient::sharedCacheItemOffset(const QString & key)
+int HbThemeClient::sharedCacheItemOffset(HbSharedCache::ItemType type, const QString & key)
 {
-    if ( -1 == sharedCacheOffset ) {
-        // No IPC call happened so far for the globalCacheOffset
-        globalCacheOffset();
-    }
-    if ( -1 != sharedCacheOffset ) {
-        HbSharedCache *sharedCache = HbMemoryUtils::getAddress<HbSharedCache>(HbMemoryManager::SharedMemory,sharedCacheOffset);
-        int count = sharedCache->count();
-        for(int i = 0; i < count ; i++ ) {
-            if (sharedCache->at(i).key == key) {
-                return sharedCache->at(i).offset;
-            }
-        }
-    }
-    // item not found in the secondary cache.
-    return -1;
+    HbSharedCache *cache = HbSharedCache::instance();
+    return cache->offset(type, key);
 }
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -372,10 +357,11 @@ HbSharedIconInfoList HbThemeClient::getMultiIconInfo(const QStringList &multiPar
                         QIcon::Mode mode,
                         bool mirrored,
                         HbIconLoader::IconLoaderOptions options,
-                        const QColor &color)
+                        const QColor &color,
+                        HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
-    return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode, mirrored, options, color);
+    return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode, mirrored, options, color, renderMode);
 }
 
 /**
@@ -408,3 +394,12 @@ int HbThemeClient::allocatedHeapMemory()
     return d->allocatedHeapMemory();
 }
 
+/**
+ * switchRenderingMode  IPC sent to themeserver
+ *
+ */
+bool HbThemeClient::switchRenderingMode(HbRenderingMode renderMode)
+{
+    Q_D(HbThemeClient);    
+    return d->switchRenderingMode(renderMode);    
+}

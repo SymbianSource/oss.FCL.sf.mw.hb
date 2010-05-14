@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionprogressslider.h"
+#include "hbstyleoptionprogressslider_p.h"
 
 /*!
     \class HbStyleOptionProgressSlider
@@ -35,6 +35,7 @@ HbStyleOptionProgressSlider::HbStyleOptionProgressSlider()
     type = Type;
     version = Version;
 	pressedState = false;
+	disableState = false;
 }
 
 HbStyleOptionProgressSlider::HbStyleOptionProgressSlider(const HbStyleOptionProgressSlider &other) :

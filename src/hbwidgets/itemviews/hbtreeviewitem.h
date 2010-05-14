@@ -48,11 +48,6 @@ class HB_WIDGETS_EXPORT HbTreeViewItem : public HbListViewItem
 
 public:
 
-    enum StateKey
-    { 
-        ExpansionKey = 10
-    };
-
     explicit HbTreeViewItem(QGraphicsItem *parent=0);
     virtual ~HbTreeViewItem();
 
@@ -66,13 +61,8 @@ public:
     virtual QHash<QString, QVariant> transientState() const;
     virtual void setTransientState(const QHash<QString, QVariant> &state);
 
-    virtual QMap<int,QVariant> state() const;
-    virtual void setState(const QMap<int,QVariant> &state);
-
     void setExpanded(bool expanded);
     bool isExpanded() const;
-
-    virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
     void setUserExpandable(bool expandable);
     bool isUserExpandable() const;

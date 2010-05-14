@@ -34,19 +34,22 @@ enum IndicatorState { IndicatorActivated = 0, IndicatorUpdated, IndicatorDeactiv
 
 struct IndicatorClientInfo {
     inline IndicatorClientInfo() :
-        category(HbIndicatorInterface::SettingCategory) {}
+        category(HbIndicatorInterface::SettingCategory), hasMenuData(true) {}
 
     inline IndicatorClientInfo(const QString &type,
         const QString &iconPath,
-        HbIndicatorInterface::Category category) :
+        HbIndicatorInterface::Category category,
+        bool hasMenuData) :
             type(type),
             iconPath(iconPath),
-            category(category) {}
+            category(category),
+            hasMenuData(hasMenuData){}
 
     inline IndicatorClientInfo(const IndicatorClientInfo &copySource) :
         type(copySource.type),
         iconPath(copySource.iconPath),
-        category(copySource.category) {}
+        category(copySource.category),
+        hasMenuData(copySource.hasMenuData){}
 
     inline bool isValid() const {
         return !iconPath.isEmpty();
@@ -55,6 +58,7 @@ struct IndicatorClientInfo {
     QString type;
     QString iconPath;
     HbIndicatorInterface::Category category;
+    bool hasMenuData;
 };
 
 inline QDataStream& operator << (QDataStream &outStream,
@@ -63,6 +67,7 @@ inline QDataStream& operator << (QDataStream &outStream,
     outStream << obj.type;
     outStream << obj.iconPath;
     outStream << obj.category;
+    outStream << obj.hasMenuData;
     return outStream;
 }
 
@@ -74,6 +79,7 @@ inline QDataStream& operator >> (QDataStream &inStream,
     int category;
     inStream >> category;
     obj.category= static_cast<HbIndicatorInterface::Category>(category);
+    inStream >> obj.hasMenuData;
     return inStream;
 }
 

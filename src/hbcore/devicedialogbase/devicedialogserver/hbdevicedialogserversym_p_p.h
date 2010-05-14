@@ -26,6 +26,7 @@
 #define HBDEVICEDIALOGSERVERSYM_P_P_H
 
 #include <e32base.h>
+#include <e32property.h>
 #include <QVariantMap>
 
 #include "hbdevicedialogserver_p.h"
@@ -33,6 +34,9 @@
 
 class HbDeviceDialogSession;
 class HbIndicatorSessionHandler;
+#ifdef HB_HAVE_QT_MOBILITY
+class HbSystemInfo;
+#endif // HB_HAVE_QT_MOBILITY
 
 class HbDeviceDialogServerPrivate: public CPolicyServer
 {
@@ -79,6 +83,10 @@ public:
     RPointerArray<HbDeviceDialogSession> iSessionList;
     RPointerArray<HbIndicatorSessionHandler> iIndicatorSessionList;
     int mSessionCount;
+    
+#ifdef HB_HAVE_QT_MOBILITY
+    HbSystemInfo *mDeviceInfo;
+#endif // HB_HAVE_QT_MOBILITY     
     // CPeriodic *mExitTimer; Not used as server not closing automatically
 };
 

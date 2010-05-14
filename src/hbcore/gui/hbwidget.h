@@ -120,9 +120,6 @@ public:
     void setBackgroundItem(QGraphicsItem *item, int zValue = -1);
     QGraphicsItem *backgroundItem() const;
 
-    virtual HbFeedback::InstantEffect overrideFeedback(Hb::InstantInteraction interaction) const; // deprecated
-    virtual HbFeedback::ContinuousEffect overrideContinuousFeedback(Hb::ContinuousInteraction interaction, int *intensity) const; // deprecated
-
 public slots:
     virtual void recreatePrimitives();
     virtual void updatePrimitives();

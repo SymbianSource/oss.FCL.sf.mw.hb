@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionmessagebox.h"
+#include "hbstyleoptionmessagebox_p.h"
 
 /*!
 	\this class is deprecated.

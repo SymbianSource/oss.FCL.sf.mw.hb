@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionnotificationdialog.h"
+#include "hbstyleoptionnotificationdialog_p.h"
 
 /*!
     \class HbStyleOptionNotificationDialog

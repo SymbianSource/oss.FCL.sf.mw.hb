@@ -35,15 +35,9 @@ _LIT(KDialogValue, "value");
 _LIT(KDialogAutoClose, "autoClose");
 _LIT(KDialogText, "text");
 _LIT(KDialogIconName, "iconName");
-_LIT(KDialogTextAlign, "textAlignment");
-_LIT(KDialogIconAlign, "iconAlignment");
-_LIT(KPrimaryActionText, "primaryActionText");
-_LIT(KPrimaryActionNull, "primaryActionNull");
+_LIT(KCancelAction, "cancelAction");
 _LIT(KPluginIdentifier, "com.nokia.hb.deviceprogressdialog/1.0");
 _LIT(KAnimationDefinition, "animationDefinition");
-
-const TInt KAlignCenterLeft = 0x0080 | 0x0001;  //Qt::AlignVCenter | Qt::AlignLeft
-const TInt KAlignCenter = 0x0080 | 0x0004;      //Qt::AlignCenter
 
 NONSHARABLE_CLASS(CHbDeviceProgressDialogSymbianPrivate) : public CBase,
                                                            public MHbDeviceDialogObserver
@@ -61,6 +55,7 @@ public:
     void AddVariantL(const TDesC& aKey, const TAny* aData,
             CHbSymbianVariant::TType aDataType, CHbSymbianVariantMap* map);
     const CHbSymbianVariant* Variant(const TDesC& aKey) const;
+    static HBufC *CreateActionDataLC(TBool aNull, const TDesC &text);
 
 public: // MHbDeviceDialogObserver
     void DataReceived(CHbSymbianVariantMap& aData);
@@ -82,9 +77,6 @@ public: // data
     TBool iAutoClose;
     TInt iType;
     TInt iProgressValue;
-    TInt iTextAlign;
-    TInt iIconAlign;
-    TBool iWrap;
     RBuf iText;
     RBuf iIconName;
     RBuf iAnimationDefinition;
@@ -142,8 +134,6 @@ void CHbDeviceProgressDialogSymbianPrivate::ShowL()
     AddVariantL(KDialogMinimum, &iMinimum, CHbSymbianVariant::EInt, iVariantMap);
     AddVariantL(KDialogAutoClose, &iAutoClose, CHbSymbianVariant::EBool, iVariantMap);
     AddVariantL(KDialogValue, &iProgressValue, CHbSymbianVariant::EInt, iVariantMap);
-    AddVariantL(KDialogTextAlign, &iTextAlign, CHbSymbianVariant::EInt, iVariantMap);
-    AddVariantL(KDialogIconAlign, &iIconAlign, CHbSymbianVariant::EInt, iVariantMap);
 
     if (iText.Length() > 0)
         {
@@ -161,15 +151,9 @@ void CHbDeviceProgressDialogSymbianPrivate::ShowL()
         {
         iButton.iFlags.iTextModified = false;
         iButton.iFlags.iIsNullModified = false;
-        TBool isNull = iButton.iFlags.iIsNull;
-        if (isNull)
-            {
-            AddVariantL(KPrimaryActionNull, &isNull, CHbSymbianVariant::EBool, iVariantMap);
-            }
-        else
-            {
-            AddVariantL(KPrimaryActionText, &iButton.iText, CHbSymbianVariant::EDes, iVariantMap);
-            }
+        HBufC *actionData = CreateActionDataLC(iButton.iFlags.iIsNull, iButton.iText);
+        AddVariantL(KCancelAction, actionData, CHbSymbianVariant::EDes, iVariantMap);
+        CleanupStack::PopAndDestroy(); // actionData
         }
     iButton.iFlags.iPressed = false;
     User::LeaveIfError(iDeviceDialog->Show(KPluginIdentifier, *iVariantMap, this));
@@ -221,20 +205,6 @@ void CHbDeviceProgressDialogSymbianPrivate::UpdateL()
         AddVariantL(KDialogValue, &iProgressValue, CHbSymbianVariant::EInt, map);
         }
 
-    variant = Variant(KDialogTextAlign);
-    if (variant && *variant->Value<TInt>() != iTextAlign)
-        {
-        AddVariantL(KDialogTextAlign, &iTextAlign, CHbSymbianVariant::EInt, iVariantMap);
-        AddVariantL(KDialogTextAlign, &iTextAlign, CHbSymbianVariant::EInt, map);
-        }
-
-    variant = Variant(KDialogIconAlign);
-    if (variant && *variant->Value<TInt>() != iIconAlign)
-        {
-        AddVariantL(KDialogIconAlign, &iIconAlign, CHbSymbianVariant::EInt, iVariantMap);
-        AddVariantL(KDialogIconAlign, &iIconAlign, CHbSymbianVariant::EInt, map);
-        }
-
     variant = Variant(KDialogText);
     if (variant && iText == *variant->Value<TDesC>())
         {
@@ -260,15 +230,9 @@ void CHbDeviceProgressDialogSymbianPrivate::UpdateL()
         {
         iButton.iFlags.iTextModified = false;
         iButton.iFlags.iIsNullModified = false;
-        TBool isNull = iButton.iFlags.iIsNull;
-        if (isNull)
-            {
-            AddVariantL(KPrimaryActionNull, &isNull, CHbSymbianVariant::EBool, iVariantMap);
-            }
-        else
-            {
-            AddVariantL(KPrimaryActionText, &iButton.iText, CHbSymbianVariant::EDes, iVariantMap);
-            }
+        HBufC *actionData = CreateActionDataLC(iButton.iFlags.iIsNull, iButton.iText);
+        AddVariantL(KCancelAction, actionData, CHbSymbianVariant::EDes, iVariantMap);
+        CleanupStack::PopAndDestroy(); // actionData
         }
 
     User::LeaveIfError(iDeviceDialog->Update(*map));
@@ -283,8 +247,8 @@ void CHbDeviceProgressDialogSymbianPrivate::DataReceived(CHbSymbianVariantMap& a
     if (variant)
         {
         const TDesC *value = variant->Value<const TDesC>();
-        _LIT(KPrimary, "p");
-        if (value && *value == KPrimary)
+        _LIT(KCancel, "c");
+        if (value && *value == KCancel)
             {
             iButton.iFlags.iPressed = true;
             if (iObserver)
@@ -328,6 +292,26 @@ const CHbSymbianVariant* CHbDeviceProgressDialogSymbianPrivate::Variant(const TD
     {
     return iVariantMap->Get(aKey);
     }
+
+// Pack into a string a data for cancel button
+HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, const TDesC &text)
+{
+    HBufC *actionData;
+    if (aNull)
+        {
+        actionData = HBufC::NewL(0);
+        }
+    else
+        {
+        _LIT(KtextTag, "t:");
+        actionData = HBufC::NewL(text.Length() + KtextTag().Length());
+        TPtr ptr = actionData->Des();
+        ptr.Append(KtextTag);
+        ptr.Append(text);
+        }
+    CleanupStack::PushL(actionData);
+    return actionData;
+}
 
 /*!
     \class MHbDeviceProgressDialogObserver
@@ -444,7 +428,7 @@ const CHbSymbianVariant* CHbDeviceProgressDialogSymbianPrivate::Variant(const TD
 	can be accessed.
 
     \sa HbDeviceProgressDialog, HbDeviceDialog
-    \proto
+    \stable
     \hbwidgets
 */
 /*!
@@ -501,18 +485,6 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::ShowL()
 EXPORT_C void CHbDeviceProgressDialogSymbian::UpdateL()
     {
     d->UpdateL();
-    }
-
-/*!
-    Cancels and closes the dialog.
-
-    \deprecated CHbDeviceProgressDialogSymbian::Cancel()
-        is deprecated. Replaced by CHbDeviceProgressDialogSymbian::Close().
-
-*/
-EXPORT_C void CHbDeviceProgressDialogSymbian::Cancel()
-    {
-    d->Close();
     }
 
 /*!
@@ -738,77 +710,6 @@ EXPORT_C TPtrC CHbDeviceProgressDialogSymbian::AnimationDefinition() const
 	}
 
 /*!
-    Sets the text alignment.
-    \param aAlign Qt defined alignment options can used.
-    \sa TextAlignment()
-*/
-EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextAlignment(TInt aAlign)
-    {
-    d->iTextAlign = aAlign;
-    }
-
-/*!
-    Returns the text alignment.
-
-    The default value is Qt::AlignLeft|Qt::AlignVCenter.
-    \sa SetTextAlignment()
-*/
-EXPORT_C TInt CHbDeviceProgressDialogSymbian::TextAlignment() const
-    {
-    return d->iTextAlign;
-    }
-
-/*!
-    Sets the icon alignment.
-    \param aAlign Qt defined alignment options can used.
-    \sa IconAlignment()
-*/
-EXPORT_C void CHbDeviceProgressDialogSymbian::SetIconAlignment(TInt aAlign)
-    {
-    d->iIconAlign = aAlign;
-    }
-
-/*!
-    Returns the icon alignment.
-
-    The default value is Qt::AlignCenter.
-    \sa SetIconAlignment()
-*/
-EXPORT_C TInt CHbDeviceProgressDialogSymbian::IconAlignment() const
-    {
-    return d->iIconAlign;
-    }
-
-/*!
-    Sets the text wrapping.
-    \param aWrap When set, the text is drawn with Qt::TextWordWrap enabled meaning that
-    lines breaks are at appropriate point, e.g. at word boundaries.
-    \sa TextWrapping()
-
-    \deprecated CHbDeviceProgressDialogSymbian::SetTextWrapping(int)
-        is deprecated. Will be removed.
-
-*/
-EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextWrapping(TBool aWrap)
-    {
-    d->iWrap = aWrap;
-    }
-
-/*!
-    Returns the text wrapping setting.
-
-    The default value is true.
-    \sa SetTextWrapping()
-
-    \deprecated CHbDeviceProgressDialogSymbian::TextWrapping() const
-        is deprecated. Will be removed.
-*/
-EXPORT_C TBool CHbDeviceProgressDialogSymbian::TextWrapping() const
-    {
-    return d->iWrap;
-    }
-
-/*!
     Sets progress dialog box button text. The dialog gets updated next time ShowL() or UpdateL()
     is called.
 
@@ -891,7 +792,4 @@ void CHbDeviceProgressDialogSymbian::ConstructL(TType aType)
     d->ConstructL(this);
     SetProgressType(aType);
     SetProgressValue(0);
-    SetTextAlignment(KAlignCenterLeft);
-    SetIconAlignment(KAlignCenter);
-    SetTextWrapping(ETrue);
     }

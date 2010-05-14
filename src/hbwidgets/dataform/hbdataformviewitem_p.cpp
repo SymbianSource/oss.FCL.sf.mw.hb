@@ -39,7 +39,7 @@
 #include <hblineedit.h>
 #include <hbradiobuttonlist.h>
 #include <hbcombobox.h>
-#include <hbstyleoptiondataformviewitem.h>
+#include <hbstyleoptiondataformviewitem_p.h>
 #include <hbselectiondialog.h>
 #include <hbpushbutton.h>
 #include <hbaction.h>
@@ -59,6 +59,7 @@ HbToggleItem::HbToggleItem( QGraphicsItem* parent ): HbWidget( parent )
     mButton = new HbPushButton( );
 
     QGraphicsLinearLayout* layout = new QGraphicsLinearLayout( Qt::Horizontal );
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->addItem( mButton );
     
     setLayout( layout );
@@ -149,6 +150,7 @@ HbRadioItem::HbRadioItem( QGraphicsItem* parent ):
         SIGNAL(itemModified(QPersistentModelIndex, QVariant)));
     if(!layout) {
         layout = new QGraphicsLinearLayout( Qt::Vertical );
+        layout->setContentsMargins(0, 0, 0, 0);
     }
     setLayout( layout );
 }
@@ -354,7 +356,7 @@ void HbRadioItem::updateModel( int index )
 
 void HbRadioItem::dialogClosed(HbAction* action)
 {
-    if(action->text() == "Ok") {
+    if(( action ) && ( action->text() == "Ok" )) {
         // store the selected item to model
         updateModel(mRadioButtonList->selected());        
     }
@@ -373,6 +375,7 @@ HbMultiSelectionItem::HbMultiSelectionItem( QGraphicsItem* parent ):
     // when clicked on the item        
     mViewItem = static_cast<HbDataFormViewItem*>(parent);
     layout = new QGraphicsLinearLayout(Qt::Horizontal);
+    layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
     
     mModel = static_cast<HbDataFormModel*>(
@@ -470,7 +473,7 @@ void HbMultiSelectionItem::makePopup()
         mButton->setTextAlignment(Qt::AlignLeft);
         layout->addItem(mButton);
     }
-    QObject::connect(mButton, SIGNAL(released()), this, SLOT(launchMultiSelectionList()));
+    QObject::connect(mButton, SIGNAL(clicked()), this, SLOT(launchMultiSelectionList()));
 }
 
 void HbMultiSelectionItem::changeMode()
@@ -558,7 +561,7 @@ void HbMultiSelectionItem::launchMultiSelectionList()
 
 void HbMultiSelectionItem::dialogClosed(HbAction* action)
 {
-    if( action->text() == "Ok") {
+    if(( action ) && ( action->text() == "Ok" )) {
         //fetch the selected items
         mSelectedItems = mSelectionDialog->selectedItems();
         QString newValue("");
@@ -923,7 +926,7 @@ void HbDataFormViewItemPrivate::createContentWidget()
         case HbDataFormModelItem::SliderItem:
         case HbDataFormModelItem::VolumeSliderItem: {
                 mContentWidget = new HbSlider( Qt::Horizontal, q );
-                mProperty.append( "sliderPosition" );            
+                mProperty.append( "value" );            
                 QObject::connect( mContentWidget, SIGNAL(valueChanged(int)), q,SLOT(save()) );
                 HbStyle::setItemName( mContentWidget, "dataItem_ContentWidget" );                
             }
@@ -983,9 +986,19 @@ void HbDataFormViewItemPrivate::createContentWidget()
             }
             break;
     }
-    //background primitive should get created.
+    //background primitive should get created because if none of the other primitives are created
+    //then createPrimitive and updatePrimitive will never get called and hence background
+    //will not be visible
     createPrimitives();
-    updatePrimitives();
+
+    //update only the background primitive
+    HbStyleOptionDataFormViewItem options;
+    q->initStyleOption(&options);
+    if( mBackgroundItem ) {
+        q->style()->updatePrimitive(
+            mBackgroundItem, HbStyle::P_DataItem_background, &options );
+    }
+
     if ( mContentWidget ) {
         QEvent polishEvent( QEvent::Polish );
         QCoreApplication::sendEvent( mContentWidget, &polishEvent );

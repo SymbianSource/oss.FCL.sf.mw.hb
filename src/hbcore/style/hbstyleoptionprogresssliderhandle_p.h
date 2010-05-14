@@ -28,9 +28,9 @@
 
 #include <hbglobal.h>
 #include <hbicon.h>
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 
-class HB_CORE_EXPORT HbStyleOptionProgressSliderHandle : public  HbStyleOption
+class HB_CORE_PRIVATE_EXPORT HbStyleOptionProgressSliderHandle : public  HbStyleOption
 {
 public:
     HbStyleOptionProgressSliderHandle();

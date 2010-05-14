@@ -94,6 +94,7 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
 #endif
     QApplication::instance()->installEventFilter(this);
     HbSleepModeListener::instance(); // make sure the instance is created
+    connect(&mSleepModeTimer, SIGNAL(timeout()), this, SLOT(handleSensors()));
 }
 
 void HbForegroundWatcher::setSensorListener(HbSensorListener *sensorListener)
@@ -168,6 +169,19 @@ void HbForegroundWatcher::handleAboutToQuit()
 /*!
   \internal
 */
+void HbForegroundWatcher::handleSensors()
+{
+    if (!mLights && mSensorListener && mSensorListener->isEnabled()) {
+        mSensorListener->enableSensors(false, true);
+    }
+    if (mLights && mSensorListener && !mSensorListener->isEnabled()) {
+        mSensorListener->enableSensors(true, true);
+    }
+}
+
+/*!
+  \internal
+*/
 bool HbForegroundWatcher::eventFilter(QObject *obj, QEvent *event)
 {
     // Some of the events we get here are broadcast to all widgets so we must be
@@ -179,19 +193,16 @@ bool HbForegroundWatcher::eventFilter(QObject *obj, QEvent *event)
             HbEffectInternal::stopEffects();
             emit stopAnimation();
         }
-        if (mSensorListener && mSensorListener->isEnabled()) {
-            mSensorListener->enableSensors(false, true);
-        }
         mLights = false;
+        mSleepModeTimer.start(2000);
     } else if (event->type() == HbEvent::SleepModeExit && !mLights) {
         if (mForeground) {
             HbEffectInternal::resumeEffects();
             emit resumeAnimation();
         }
-        if (mSensorListener && !mSensorListener->isEnabled()) {
-            mSensorListener->enableSensors(true, true);
-        }
+        mSleepModeTimer.stop();
         mLights = true;
+        handleSensors();
     } else if (event->type() == QEvent::ApplicationActivate && !mForeground) {
 #ifndef Q_OS_SYMBIAN
         HandleGainingForeground();

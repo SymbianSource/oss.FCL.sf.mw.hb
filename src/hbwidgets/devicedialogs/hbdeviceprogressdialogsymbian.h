@@ -48,7 +48,6 @@ public:
 
     IMPORT_C void ShowL();
     IMPORT_C void UpdateL();
-    IMPORT_C void Cancel(); // deprecated
     IMPORT_C void Close();
 
     IMPORT_C void SetRange(TInt aMin, TInt aMax);
@@ -76,15 +75,6 @@ public:
 
     IMPORT_C void SetAnimationDefinitionL(const TDesC& aAnimationDefinition);
     IMPORT_C TPtrC AnimationDefinition() const;
-
-    IMPORT_C void SetTextAlignment(TInt aAlign);
-    IMPORT_C TInt TextAlignment() const;
-
-    IMPORT_C void SetIconAlignment(TInt aAlign);
-    IMPORT_C TInt IconAlignment() const;
-
-    IMPORT_C void SetTextWrapping(TBool aWrap); // deprecated
-    IMPORT_C TBool TextWrapping() const; // deprecated
 
     IMPORT_C void SetButtonTextL(const TDesC& aText);
     IMPORT_C const TPtrC ButtonText() const;

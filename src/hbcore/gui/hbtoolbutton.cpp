@@ -26,7 +26,7 @@
 #include "hbtoolbutton.h"
 #include "hbtoolbutton_p.h"
 #include "hbtooltip.h"
-#include "hbstyleoptiontoolbutton.h"
+#include "hbstyleoptiontoolbutton_p.h"
 #include "hbtoolbarextension.h"
 #include "hbtoolbarextension_p.h"
 #include "hbaction.h"
@@ -454,12 +454,20 @@ void HbToolButton::updatePrimitives()
         setChecked(d->action->isChecked());
         setEnabled(d->action->isEnabled());
         HbAction *hbAction = qobject_cast<HbAction *>(d->action);
-        if (hbAction && (!hbAction->toolTip().isEmpty()) && (hbAction->toolTip() != toolTip())) {
+        if (hbAction && hbAction->toolTip() != toolTip()) {
+            // by default, HbAction does not have tooltip. If QAction
+            // does not have tooltip, it returns button text. This is
+            // here to enable empty tooltip text by using HbAction.
             setToolTip(hbAction->toolTip());
         } else if(!hbAction && d->action->toolTip() != toolTip()) {
             setToolTip(d->action->toolTip());
         }
         setVisible(d->action->isVisible());
+    } else {
+        setCheckable(false);
+        setChecked(false);
+        setEnabled(false);
+        setToolTip(QString());
     }
 
     initStyleOption(&option);
@@ -473,8 +481,14 @@ void HbToolButton::updatePrimitives()
     if (d->iconItem) {
         style()->updatePrimitive(d->iconItem, HbStyle::P_ToolButton_icon, &option);
         if (d->action && d->action->icon().flags() & HbIcon::Colorized) {
-            static_cast<HbIconItem *>(d->iconItem)->setFlags(HbIcon::Colorized);
+            static_cast<HbIconItem *>(d->iconItem)->setFlags(HbIcon::Colorized);            
         }
+        if (d->action && d->action->icon().mirroringMode() != HbIcon::Default) {
+            HbIconItem *iconItem = static_cast<HbIconItem *>(d->iconItem);
+            iconItem->setMirroringMode( d->action->icon().mirroringMode() );
+        }
+
+
     }
 }
 

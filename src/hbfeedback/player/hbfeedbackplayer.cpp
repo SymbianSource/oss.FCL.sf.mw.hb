@@ -23,13 +23,12 @@
 **
 ****************************************************************************/
 
-#include "hbfeedbackplayer.h"
 #include "hbfeedbackplayer_p.h"
+#include "hbfeedbackplayer_p_p.h"
 
-#include "hbinstantfeedback.h"
-#include "hbcontinuousfeedback.h"
-#include "hbtacticonfeedback.h"
-#include "hbhitareafeedback.h"
+#include <hbinstantfeedback.h>
+#include <hbcontinuousfeedback.h>
+#include <hbfeedbacksettings.h>
 #include "hbfeedbackplayer_stub_p.h"
 
 #ifdef FEEDBACK_TEST_EVENT
@@ -60,11 +59,9 @@ HbFeedbackPlayerPrivate::~HbFeedbackPlayerPrivate()
 
 void HbFeedbackPlayerPrivate::init()
 {
-    feedbackSettings = new HbFeedbackSettings();
+    feedbackSettings = new HbFeedbackSettings(this);
     connect(feedbackSettings, SIGNAL(feedbackDisabled()),
             this, SLOT(feedbackDisabled()));
-    connect(feedbackSettings, SIGNAL(feedbackTypeDisabled(HbFeedback::Type)),
-            this, SLOT(feedbackTypeDisabled(HbFeedback::Type)));
 
     basePlayer = new HbFeedbackBasePlayer();
 }
@@ -73,60 +70,23 @@ void HbFeedbackPlayerPrivate::feedbackDisabled()
 {
     if (basePlayer) {
         basePlayer->cancelContinuousFeedbacks();
-        basePlayer->removeHitAreas();
     }
 }
-
-void HbFeedbackPlayerPrivate::feedbackTypeDisabled(HbFeedback::Type type)
-{
-    if (basePlayer) {
-        switch (type) {
-            case HbFeedback::TypeContinuous:
-                basePlayer->cancelContinuousFeedbacks();
-                break;
-
-            case HbFeedback::TypeHitArea:
-                basePlayer->removeHitAreas();
-                break;
-            case HbFeedback::TypeInstant:
-            case HbFeedback::TypeTacticon:
-            default:
-                break;
-        }
-    }
-}
-
-/*!
-    @beta
-    @hbfeedback
-    \class HbFeedbackPlayer
-
-    \brief Feedback player is used to initiate various haptic and sound feedback effects for the device.
-
-    Current player supports four kinds of effects: instant feedback, continuous feedback, tacticon feedback
-    and hit area feedback effects. Separate HbFeedbackSettings interface is reserved for applications wanting
-    to limit or disable feedback effects emitted by the interface. See \ref feedback "Feedback Player" for
-    more information on the design of the player.
-
-    \sa HbInstantFeedback, HbContinuousFeedback, HbTacticonFeedback, HbHitAreaFeedback, HbFeedbackSettings.
-    
-    \deprecated HbFeedbackPlayer
-        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
-        
-    \sa HbInstantFeedback, HbContinuousFeedback
-*/
-
 
 Q_GLOBAL_STATIC(HbFeedbackPlayer, feedbackPlayerGlobal);
 
-/*!
+/*!  
+    \internal
+
     Constructor.
-    
-    \deprecated HbFeedbackPlayer::HbFeedbackPlayer()
-        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
-        
-    \sa HbInstantFeedback, HbContinuousFeedback
-    
+
+    Feedback player is used to initiate various haptic and sound feedback effects for the device.
+
+    Current player supports instant feedback and continuous feedback effects. Separate HbFeedbackSettings 
+    interface is reserved for applications wanting to limit or disable feedback effect playing.
+
+    \sa HbInstantFeedback, HbContinuousFeedback, HbFeedbackSettings
+
 */
 HbFeedbackPlayer::HbFeedbackPlayer() : d(new HbFeedbackPlayerPrivate(this))
 {
@@ -134,11 +94,9 @@ HbFeedbackPlayer::HbFeedbackPlayer() : d(new HbFeedbackPlayerPrivate(this))
 }
 
 /*!
+    \internal
     Destructor.
-    
-    \deprecated HbFeedbackPlayer::~HbFeedbackPlayer()
-        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
-        
+
     \sa HbInstantFeedback, HbContinuousFeedback
 */
 HbFeedbackPlayer::~HbFeedbackPlayer()
@@ -147,10 +105,8 @@ HbFeedbackPlayer::~HbFeedbackPlayer()
 }
 
 /*!
+    \internal
     Returns the handle to the global instance.
-    
-    \deprecated HbFeedbackPlayer::instance()
-        is deprecated. Use HbInstantFeedback and HbContinuousFeedback classes instead.
         
     \sa HbInstantFeedback, HbContinuousFeedback
 */
@@ -160,33 +116,28 @@ HbFeedbackPlayer* HbFeedbackPlayer::instance()
 }
 
 /*!
+    \internal
     Returns a reference to the feedback settings interface.
-    
-    \deprecated HbFeedbackPlayer::settings()
-        is deprecated. Use HbFeedbackSettings::instance() to access feedback settings.
         
     \sa HbFeedbackSettings
 
 */
-HbFeedbackSettings& HbFeedbackPlayer::settings()
+HbFeedbackSettings* HbFeedbackPlayer::settings()
 {
-    return *d->feedbackSettings;
+    return d->feedbackSettings;
 }
 
 /*!
+    \internal
     Triggers instant feedback effects.
 
     \param feedback instant feedback object
     \sa HbInstantFeedback
-    
-    \deprecated HbFeedbackPlayer::playInstantFeedback(const HbInstantFeedback&)
-        is deprecated. Use HbInstantFeedback::play() instead.
-        
-    \sa HbInstantFeedback
+
 */
 void HbFeedbackPlayer::playInstantFeedback(const HbInstantFeedback& feedback)
 {
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeInstant)) {
+    if (feedback.isValid() && d->feedbackSettings->isFeedbackEnabled()) {
         if (d->basePlayer)  {
                 d->basePlayer->playInstantFeedback(feedback);
             }
@@ -198,46 +149,18 @@ void HbFeedbackPlayer::playInstantFeedback(const HbInstantFeedback& feedback)
 }
 
 /*!
-    Triggers tacticon feedback effects.
-
-    \param feedback tacticon feedback object
-    \sa HbTacticonFeedback
-
-    \deprecated HbFeedbackPlayer::playTacticonFeedback(const HbTacticonFeedback&)
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-void HbFeedbackPlayer::playTacticonFeedback(const HbTacticonFeedback& feedback)
-{
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeTacticon)) {
-        if (d->basePlayer)  {
-            d->basePlayer->playTacticonFeedback(feedback);
-#ifdef FEEDBACK_TEST_EVENT
-            HbFeedbackTestEvent te(feedback);
-            qApp->sendEvent(this, &te);
-#endif
-        }
-    }
-}
-
-/*!
+    \internal
     Starts a continuous feedback effect.
 
     \param feedback continuous feedback object
     \return identifier The identifier for the started effect.
 
     \sa HbContinuousFeedback
-    
-    \deprecated HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback&)
-        is deprecated. Use HbContinuousFeedback::play instead.
-        
-    \sa HbContinuousFeedback
 */
 int HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback& feedback)
 {
     int identifier(-1);
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeContinuous)) {
+    if (feedback.isValid() && d->feedbackSettings->isFeedbackEnabled()) {
         if (d->basePlayer)  {
             identifier = d->basePlayer->startContinuousFeedback(feedback);
 #ifdef FEEDBACK_TEST_EVENT
@@ -254,6 +177,7 @@ int HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback& feedba
 }
 
 /*!
+    \internal
     Updates an ongoing continuous feedback effect.
 
     \param identifier The identifier for the ongoing effect.
@@ -261,14 +185,10 @@ int HbFeedbackPlayer::startContinuousFeedback(const HbContinuousFeedback& feedba
 
     \sa HbContinuousFeedback
     
-    \deprecated HbFeedbackPlayer::updateContinuousFeedback(int, const HbContinuousFeedback&)
-        is deprecated.
-        
-    \sa HbContinuousFeedback
 */
 void HbFeedbackPlayer::updateContinuousFeedback(int identifier, const HbContinuousFeedback& feedback)
 {
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeContinuous)) {
+    if (feedback.isValid() && d->feedbackSettings->isFeedbackEnabled()) {
         if (d->basePlayer)  {
             d->basePlayer->updateContinuousFeedback(identifier, feedback);
 #ifdef FEEDBACK_TEST_EVENT
@@ -283,13 +203,11 @@ void HbFeedbackPlayer::updateContinuousFeedback(int identifier, const HbContinuo
 }
 
 /*!
+    \internal
     Cancels an ongoing continuous feedback effect.
 
     \param identifier The identifier for the ongoing effect.
     
-    \deprecated HbFeedbackPlayer::cancelContinuousFeedback(int)
-        is deprecated. Use HbContinuousFeedback::stop() instead.
-        
     \sa HbContinuousFeedback
 */
 void HbFeedbackPlayer::cancelContinuousFeedback(int identifier)
@@ -307,10 +225,8 @@ void HbFeedbackPlayer::cancelContinuousFeedback(int identifier)
 }
 
 /*!
+    \internal
     Cancels all ongoing continuous feedback effects.
-    
-    \deprecated HbFeedbackPlayer::cancelContinuousFeedbacks()
-        is deprecated.
         
     \sa HbContinuousFeedback
 */
@@ -322,15 +238,13 @@ void HbFeedbackPlayer::cancelContinuousFeedbacks()
 }
 
 /*!
+    \internal
     Checks if the given continuous feedback effect is currently running.
 
     \param identifier The identifier for the ongoing effect.
 
     \return true, if the effect is ongoing.
     
-    \deprecated HbFeedbackPlayer::continuousFeedbackOngoing(int)
-        is deprecated. Use HbContinuousFeedback::isPlaying() instead.
-        
     \sa HbContinuousFeedback
 */
 bool HbFeedbackPlayer::continuousFeedbackOngoing(int identifier)
@@ -341,123 +255,3 @@ bool HbFeedbackPlayer::continuousFeedbackOngoing(int identifier)
     }
     return feedbackOngoing;
 }
-
-/*!
-    Inserts a hit area to the specified window.
-
-    \param feedback hit area feedback object
-    \return The identifier for the inserted hit area.
-    \sa HbHitAreaFeedback
-
-    \deprecated HbFeedbackPlayer::insertHitArea(const HbHitAreaFeedback&)
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-int HbFeedbackPlayer::insertHitArea(const HbHitAreaFeedback& feedback)
-{
-    int identifier(-1);
-
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeHitArea)) {
-        if (d->basePlayer) {
-            identifier = d->basePlayer->insertHitArea(feedback);
-#ifdef FEEDBACK_TEST_EVENT
-            HbFeedbackTestEvent te(feedback, HbFeedbackTestEvent::Start, identifier);
-            qApp->sendEvent(this, &te);
-#endif
-        }
-    } else if (!feedback.isLocated()) {
-        qWarning("HbFeedbackPlayer::insertHitArea: Hit area missing required parameters parent window and/or rectangle.");
-    }
-
-    return identifier;
-}
-
-/*!
-    Update the specified hit area.
-
-    \param identifier Identifier for the hit area.
-    \param feedback hit area feedback object
-    \sa HbHitAreaFeedback
-
-    \deprecated HbFeedbackPlayer::updateHitArea(int, const HbHitAreaFeedback&)
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-void HbFeedbackPlayer::updateHitArea(int identifier, const HbHitAreaFeedback& feedback)
-{
-    if (feedback.isValid() && d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeHitArea)) {
-        if (d->basePlayer) {
-            d->basePlayer->updateHitArea(identifier, feedback);
-#ifdef FEEDBACK_TEST_EVENT
-            HbFeedbackTestEvent te(feedback, HbFeedbackTestEvent::Update, identifier);
-            qApp->sendEvent(this, &te);
-#endif
-        }
-    } else if (!feedback.isLocated()) {
-        qWarning("HbFeedbackPlayer::updateHitArea: Hit area missing required parameters parent window and/or rectangle.");
-    }
-}
-
-/*!
-    Remove the specified hit area.
-    \param identifier The identifer for the hit area to be removed.
-    \sa HbHitAreaFeedback
-
-    \deprecated HbFeedbackPlayer::removeHitArea(int)
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-void HbFeedbackPlayer::removeHitArea(int identifier)
-{
-    if (d->basePlayer) {
-        d->basePlayer->removeHitArea(identifier);
-#ifdef FEEDBACK_TEST_EVENT
-        HbHitAreaFeedback feedback;
-        HbFeedbackTestEvent te(feedback, HbFeedbackTestEvent::Stop, identifier);
-        qApp->sendEvent(this, &te);
-#endif
-    }
-}
-
-/*!
-    Remove all registered hit areas.
-
-    \deprecated HbFeedbackPlayer::removeHitAreas()
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-void HbFeedbackPlayer::removeHitAreas()
-{
-    if (d->basePlayer) {
-        d->basePlayer->removeHitAreas();
-    }
-}
-
-/*!
-    Check if the specified hit area still exists.
-
-    \param identifier The identifier for the hit area.
-    \return True, if the hit area exists.
-
-    \deprecated HbFeedbackPlayer::hitAreaExists(int)
-        is deprecated. Please use HbInstantFeedback instead.
-
-    \sa HbInstantFeedback
-*/
-bool HbFeedbackPlayer::hitAreaExists(int identifier)
-{
-    bool hitAreaExists = false;
-
-    if (d->feedbackSettings->isFeedbackAllowed(HbFeedback::TypeHitArea)) {
-        if (d->basePlayer) {
-            hitAreaExists = d->basePlayer->hitAreaExists(identifier);
-        }
-    }
-
-    return hitAreaExists;
-}
-

@@ -23,48 +23,47 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionslider.h"
+#include "hbstyleoptionslider_p.h"
 #include "hbstyleoptionsliderelement_p.h"
-#include "hbstyleoptionpushbutton.h"
-#include "hbstyleoptiontoolbutton.h"
-#include "hbstyleoptiontooltip.h"
-#include "hbstyleoptionprogressbar.h"
-#include "hbstyleoptionabstractviewitem.h"
-#include "hbstyleoptionlistviewitem.h"
-#include "hbstyleoptionmenuitem.h"
-#include "hbstyleoptionlabel.h"
-#include "hbstyleoptionscrollbar.h"
-#include "hbstyleoptiontoolbarextension.h"
-#include "hbstyleoptiongridviewitem.h"
-#include "hbstyleoptioncheckbox.h"
+#include "hbstyleoptionpushbutton_p.h"
+#include "hbstyleoptiontoolbutton_p.h"
+#include "hbstyleoptiontooltip_p.h"
+#include "hbstyleoptionprogressbar_p.h"
+#include "hbstyleoptionabstractviewitem_p.h"
+#include "hbstyleoptionlistviewitem_p.h"
+#include "hbstyleoptionmenuitem_p.h"
+#include "hbstyleoptionlabel_p.h"
+#include "hbstyleoptionscrollbar_p.h"
+#include "hbstyleoptiongridviewitem_p.h"
+#include "hbstyleoptioncheckbox_p.h"
 #include "hbiconloader_p.h"
-#include "hbstyleoptiontitlepane.h"
+#include "hbstyleoptiontitlepane_p.h"
 #include "hbstyleoptionstatusbar_p.h"
-#include "hbstyleoptionindicatorgroup.h"
-#include "hbstyleoptionprogressdialog.h"
-#include "hbstyleoptionnotificationdialog.h"
-#include "hbstyleoptiontreeviewitem.h"
-#include "hbstyleoptioncolorgridviewitem.h"
-#include "hbstyleoptionmessagebox.h"
-#include "hbstyleoptionsoftkey.h"   // deprecated
-#include "hbstyleoptionnavigationbutton.h"
-#include "hbstyleoptionindicatorbutton.h"
+#include "hbstyleoptionindicatorgroup_p.h"
+#include "hbstyleoptionprogressdialog_p.h"
+#include "hbstyleoptionnotificationdialog_p.h"
+#include "hbstyleoptiontreeviewitem_p.h"
+#include "hbstyleoptioncolorgridviewitem_p.h"
+#include "hbstyleoptionmessagebox_p.h"
+#include "hbstyleoptionnavigationbutton_p.h"
+#include "hbstyleoptionindicatorbutton_p.h"
 #include "hbstyleoptionsignalindicator_p.h"
 #include "hbstyleoptionbatteryindicator_p.h"
 #include "hbstyle_p.h"
 #include "hbstyleloader.h"
 #include "hbwidgetloader_p.h"
-#include "hbstyleoptionratingslider.h"
-#include "hbstyleoptiondataformviewitem.h"
+#include "hbwidget_p.h"
+#include "hbstyleoptionratingslider_p.h"
+#include "hbstyleoptiondataformviewitem_p.h"
 #include "hbstyleoptiondatagroup_p.h"
 #include "hbstyleoptiondatagroupheadingwidget_p.h"
-#include "hbstyleoptiondataform.h"
-#include "hbstyleoptiongroupbox.h"
-#include "hbstyleoptionindexfeedback.h"
-#include "hbstyleoptioncombobox.h"
-#include "hbstyleoptioninputdialog.h"
+#include "hbstyleoptiondataform_p.h"
+#include "hbstyleoptiongroupbox_p.h"
+#include "hbstyleoptionindexfeedback_p.h"
+#include "hbstyleoptioncombobox_p.h"
+#include "hbstyleoptioninputdialog_p.h"
 #include "hbstyleoptionprogresssliderhandle_p.h"
-#include "hbstyleoptionprogressslider.h"
+#include "hbstyleoptionprogressslider_p.h"
 
 #include <hbicon.h>
 #include <hbstyle.h>
@@ -88,8 +87,8 @@
 #include <hbindicatorleveliconitem_p.h>
 
 #include <hbglobal.h>
-#include <QPluginLoader>
-#include <hbstyleinterface.h>
+#include <hbpluginloader_p.h>
+#include "hbstyleinterface_p.h"
 #include <hbstyleparameters.h>
 
 #include "hbstyleselector_p.h"
@@ -113,7 +112,6 @@
 //Uncomment next define(s) in order to get more debug prints.
 //Similar define exists also in the engine side.
 //#define HBSTYLE_DEBUG
-#define HBSTYLE_DEBUG_FONT
 
 /*!
     @beta
@@ -814,6 +812,7 @@ HbStyle::~HbStyle()
 }
 
 /*!
+
     \deprecated HbStyle::registerPlugin(const QString&)
     is deprecated. Style plugins are not supported anymore.
 
@@ -847,31 +846,27 @@ int HbStyle::registerPlugin(const QString &pluginName)
     }
 
     // load the plugin
-    QPluginLoader* loader = new QPluginLoader(pluginName);
-    if (loader == 0)
+    HbPluginLoader* loader = new HbPluginLoader(pluginName);
+    if (!loader)
         return -1;
 
     // get the instance pointer
     QObject* pluginInstance = loader->instance();
-    if (pluginInstance == 0) {
-        delete loader;
+    if (!pluginInstance) {
 
         // try the additional paths
-        QFileInfo fileInfo( pluginName );
-        foreach( QString additionalPath, hbInstance->libraryPaths() ) {
+        QFileInfo fileInfo(pluginName);
+        foreach (QString additionalPath, hbInstance->libraryPaths()) {
             const QDir pluginDir(additionalPath);
-            loader = new QPluginLoader(pluginDir.absoluteFilePath(fileInfo.fileName()));
-            if ( loader ) {
-                pluginInstance = loader->instance();
-                if ( !pluginInstance ) {
-                    delete loader;
-                } else {
-                    break;
-                }
+            loader->setPluginName(pluginDir.absoluteFilePath(fileInfo.fileName()));
+            pluginInstance = loader->instance();
+            if (pluginInstance) {
+                break;
             }
         }
 
-        if ( !pluginInstance ) {
+        if (!pluginInstance) {
+            delete loader;
             return -1;
         }
     }
@@ -916,6 +911,7 @@ int HbStyle::registerPlugin(const QString &pluginName)
 
 
 /*!
+
     \deprecated HbStyle::unregisterPlugin(const QString&)
     is deprecated. Style plugins are not supported anymore.
 
@@ -1025,7 +1021,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_GroupBoxHeading_icon:
             case P_Label_icon:
             case P_GridViewItem_icon: {
-                HbIconItem *item = new HbIconItem(HbIcon(),parent);
+                HbIconItem *item = q_check_ptr(new HbIconItem(HbIcon(),parent));
                 setItemName(item, QLatin1String("icon"));
                 return item; 
                 }
@@ -1340,10 +1336,8 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(n, QLatin1String("background"));
                 return n;
             }
-            case P_Softkey_background:  // deprecated
             case P_NavigationButton_background:
             case P_IndicatorButton_background:
-            case P_IndicatorGroup_background:   // deprecated
             {
                 HbIconItem *n = new HbIconItem(HbIcon(), parent);
                 n->setZValue(-1);
@@ -1384,7 +1378,6 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(n, QLatin1String("icon4"));
                 return n;
             }
-            case P_IndicatorGroup_signalicon: // deprecated
             case P_SignalIndicator_icon:
             {
                 HbIconItem *n = new HbIconItem(parent);
@@ -1394,7 +1387,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             }
             case P_SignalLevel_background:
             {
-                HbIconItem *n = new HbIconItem(parent);
+                HbIndicatorLevelIconItem *n = new HbIndicatorLevelIconItem(parent);
                 n->setZValue(-1);
                 setItemName(n, QLatin1String("background"));
                 return n;
@@ -1405,7 +1398,6 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(n, QLatin1String("levelicon"));
                 return n;
             }
-            case P_IndicatorGroup_batteryicon: // deprecated
             case P_BatteryIndicator_icon:
             {
                 HbIconItem *n = new HbIconItem(parent);
@@ -1415,7 +1407,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             }
             case P_BatteryLevel_background:
             {
-                HbIconItem *n = new HbIconItem(parent);
+                HbIndicatorLevelIconItem *n = new HbIndicatorLevelIconItem(parent);
                 n->setZValue(-1);
                 setItemName(n, QLatin1String("background"));
                 return n;
@@ -1430,7 +1422,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 {
                     HbFrameItem *n = new HbFrameItem(parent);
                     n->setZValue(-1);
-                    setItemName(n, QLatin1String("frame"));
+                    setItemName(n, QLatin1String("background"));
                     return n;
                 }
             case P_LineEdit_frame_normal:
@@ -1460,7 +1452,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             {
                 HbFrameItem *n = new HbFrameItem(parent);
                 n->setZValue(-1);
-                setItemName(n, QLatin1String("statusbar"));
+                setItemName(n, QLatin1String("background"));
                 return n;
             }
             case P_StatusBar_timetext:
@@ -1522,7 +1514,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
 
             case P_ItemViewItem_radiobutton:
             case P_ItemViewItem_selection: {
-                HbIconItem *iconItem = new HbIconItem(parent);
+                HbIconItem *iconItem = q_check_ptr(new HbIconItem(parent));
                 setItemName(iconItem, QLatin1String("selection-icon"));
                 return iconItem;
             }
@@ -1534,6 +1526,9 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             case P_NotificationDialog_text:{
                 HbTextItem *n = new HbTextItem(parent);
                 setItemName(n, QLatin1String("text"));
+                n->setMinimumLines(1);
+                n->setMaximumLines(1);
+                n->setTextWrapping(Hb::TextNoWrap);
                 return n;
             }
             case P_NotificationDialog_title:{
@@ -1556,38 +1551,32 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             }
 
             case P_ItemViewItem_background: {
-                HbIconItem *iconItem = new HbIconItem(parent);
+                HbIconItem *iconItem = q_check_ptr(new HbIconItem(parent));
                 setItemName(iconItem, QLatin1String("background"));
                 return iconItem;
             }
 
             case P_ListViewItem_text: {
-                HbTextItem *textItem = new HbTextItem(parent);
-                textItem->setMinimumLines(1);
-                textItem->setMaximumLines(1);
-                textItem->setTextWrapping(Hb::TextNoWrap);
+                HbTextItem *textItem = q_check_ptr(new HbTextItem(parent));
+
                 return textItem;
             }
 
             case P_ListViewItem_richtext: {
-                HbRichTextItem *textItem = new HbRichTextItem(parent);
+                HbRichTextItem *textItem = q_check_ptr(new HbRichTextItem(parent));
                 return textItem;
             }
 
             case P_GridViewItem_text: {
-                HbTextItem *textItem = new HbTextItem(parent);
+                HbTextItem *textItem = q_check_ptr(new HbTextItem(parent));
                 // caching do not work properly - text is not refreshed immediatelly
                 //textItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
                 setItemName(textItem, QLatin1String("text"));
-                textItem->setMinimumLines(1);
-                textItem->setMaximumLines(1);
-                textItem->setTextWrapping(Hb::TextNoWrap);
-                textItem->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Preferred );
                 return textItem;
             }
 
             case P_ListViewItem_icon:
-                return new HbIconItem(parent);
+                return q_check_ptr(new HbIconItem(parent));
 
             case P_ColorGridViewItem_colorIcon:
                 return new HbIconItem("qtg_graf_colorpicker_mask", parent);
@@ -1597,7 +1586,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 return new HbIconItem("qtg_small_tick", parent);
 
             case P_TreeViewItem_expandicon: {
-                HbIconItem *iconItem = new HbIconItem(parent);
+                HbIconItem *iconItem = q_check_ptr(new HbIconItem(parent));
                 setItemName(iconItem, QLatin1String("subitem-indicator"));
                 return iconItem;
             }
@@ -1625,15 +1614,15 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 return n;
             }
             case P_ItemViewItem_focus: {
-                HbFrameItem *item = new HbFrameItem(parent);
-                setItemName(item, QLatin1String("focus-indicator"));
+                HbFrameItem *item = q_check_ptr(new HbFrameItem(parent));
+                //setItemName(item, QLatin1String("focus-indicator"));
                 return item;
             }
             case P_ItemHighlight_background: 
                 return new HbFrameItem(parent);
 
             case P_ItemViewItem_frame: {
-                HbFrameItem *item = new HbFrameItem(parent);
+                HbFrameItem *item = q_check_ptr(new HbFrameItem(parent));
                 setItemName(item,"frame");
                 return item;
             }
@@ -1667,7 +1656,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
             }
             case P_ItemViewItem_touchmultiselection:
             {
-                HbTouchArea *area = new HbTouchArea(parent);
+                HbTouchArea *area = q_check_ptr(new HbTouchArea(parent));
                 setItemName(area, "multiselection-toucharea");
                 return area;
             }
@@ -1759,9 +1748,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                         qstyleoption_cast<const HbStyleOptionGroupBox*>(option)) {
                             HbIconItem *iconItem = static_cast<HbIconItem*>(item);
                             if (opt->collapsed) {
-                                iconItem->setIconName(QLatin1String("qtg_small_collapse"));
-                            } else {
                                 iconItem->setIconName(QLatin1String("qtg_small_expand"));
+                            } else {
+                                iconItem->setIconName(QLatin1String("qtg_small_collapse"));
                             }
                     }
                     break;
@@ -1772,9 +1761,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                             qstyleoption_cast<const HbStyleOptionDataGroupHeadingWidget*>(option)) {
                         HbIconItem *iconItem = static_cast<HbIconItem*>(item);
                         if (opt->expanded) {
-                            iconItem->setIconName(QLatin1String("qtg_small_expand"));
-                        } else {
                             iconItem->setIconName(QLatin1String("qtg_small_collapse"));
+                        } else {
+                            iconItem->setIconName(QLatin1String("qtg_small_expand"));
                         }
                     }
                 break;
@@ -2129,57 +2118,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                 break;
             }
-            case P_IndicatorGroup_background: { // deprecated
-                const HbStyleOptionIndicatorGroup *opt = qstyleoption_cast<const HbStyleOptionIndicatorGroup *>(option);
-
-                if (opt) {
-                    HbIconItem *iconItem = static_cast<HbIconItem*>( item );
-                    iconItem->setAspectRatioMode(Qt::IgnoreAspectRatio);
-                    if (opt->direction == Qt::LeftToRight) {
-                        if (opt->mode == QIcon::Active) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_l"));
-                            }
-                        } else if (opt->mode == QIcon::Selected) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_latched_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_latched_l"));
-                            }
-                        } else {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_l"));
-                            }
-                        }
-                    } else {
-                        if (opt->mode == QIcon::Active) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_r"));
-                            }
-                        } else if (opt->mode == QIcon::Selected) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_latched_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_latched_r"));
-                            }
-                        } else {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_r"));
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-
+            
             case P_IndicatorGroup_icon1: 
             case P_IndicatorGroup_icon2: 
             case P_IndicatorGroup_icon3: 
@@ -2202,8 +2141,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 break;
             }
 
-            case P_SignalIndicator_icon:
-            case P_IndicatorGroup_signalicon: { // deprecated
+            case P_SignalIndicator_icon: {
                 const HbStyleOptionSignalIndicator *opt = qstyleoption_cast<const HbStyleOptionSignalIndicator *>(option);
                 if (opt) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
@@ -2231,9 +2169,13 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 break;
             }
             case P_SignalLevel_background: {
-                if (option) {
-                    HbIconItem *iconItem = static_cast<HbIconItem*>(item);
+                const HbStyleOptionSignalIndicator *opt = qstyleoption_cast<const HbStyleOptionSignalIndicator *>(option);
+                if (opt) {
+                    HbIndicatorLevelIconItem *iconItem = static_cast<HbIndicatorLevelIconItem*>(item);
                     iconItem->setIconName("qtg_graf_signal_bg");
+                    iconItem->setValue(100 - opt->signalValue);
+                    iconItem->setDirection(HbIndicatorLevelIconItem::RightToLeft);
+                    iconItem->update();
                 }
                 break;
             }
@@ -2260,11 +2202,11 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                     iconItem->setValue(opt->signalValue);
                     iconItem->setDirection(HbIndicatorLevelIconItem::LeftToRight);
+                    iconItem->update();
                 }
                 break;
             }
-            case P_BatteryIndicator_icon:
-            case P_IndicatorGroup_batteryicon: { // deprecated
+            case P_BatteryIndicator_icon: {
                 if (option) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
                     iconItem->setIconName("qtg_status_battery");
@@ -2272,9 +2214,13 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 break;
             }
             case P_BatteryLevel_background: {
-                if (option) {
-                    HbIconItem *iconItem = static_cast<HbIconItem*>(item);
+                const HbStyleOptionBatteryIndicator *opt = qstyleoption_cast<const HbStyleOptionBatteryIndicator *>(option);
+                if (opt) {
+                    HbIndicatorLevelIconItem *iconItem = static_cast<HbIndicatorLevelIconItem*>(item);
                     iconItem->setIconName("qtg_graf_battery_bg");
+                    iconItem->setValue(100 - opt->batteryValue);
+                    iconItem->setDirection(HbIndicatorLevelIconItem::LeftToRight);
+                    iconItem->update();
                 }
                 break;
             }
@@ -2301,61 +2247,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     }
                     iconItem->setValue(opt->batteryValue);
                     iconItem->setDirection(HbIndicatorLevelIconItem::RightToLeft);
-                }
-                break;
-            }
-            case P_Softkey_background:{ // deprecated
-                const HbStyleOptionSoftKey *opt = qstyleoption_cast<const HbStyleOptionSoftKey *>(option);
-
-                if (opt) {
-
-                    switch (opt->mKey)
-                        {
-                        case Hb::PrimarySoftKey:
-                            // does not exist...
-                            break;
-                        case Hb::SecondarySoftKey:
-                            {
-                                if (opt) {
-                                    HbIconItem *iconItem = static_cast<HbIconItem*>( item );
-                                    if (opt->direction == Qt::LeftToRight) {
-                                        if (opt->transparent) {
-                                            if (opt->mode == QIcon::Active) {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_r"));
-                                            } else {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_r"));
-                                            }
-                                        } else {
-                                            if (opt->mode == QIcon::Active) {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_r"));
-                                            } else {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_r"));
-                                            }
-                                         }
-                                    } else {
-                                        if (opt->transparent) {
-                                            if (opt->mode == QIcon::Active) {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_l"));
-                                            } else {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_l"));
-                                            }
-                                        } else {
-                                            if (opt->mode == QIcon::Active) {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_l"));
-                                            } else {
-                                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_l"));
-                                            }
-                                         }
-                                    }
-                                }
-                            }
-                            break;
-                        case Hb::MiddleSoftKey:
-                            // does not exist...
-                            break;
-                        default:
-                            break;
-                        }
+                    iconItem->update();
                 }
                 break;
             }
@@ -2365,34 +2257,18 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     if (opt) {
                         HbIconItem *iconItem = static_cast<HbIconItem*>( item );
                         iconItem->setAspectRatioMode(Qt::IgnoreAspectRatio);
-                        if (opt->direction == Qt::LeftToRight) {
-                            if (opt->transparent) {
-                                if (opt->mode == QIcon::Active) {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_r"));
-                                } else {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_r"));
-                                }
+                        if (opt->transparent) {
+                            if (opt->mode == QIcon::Active) {
+                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_r"));
                             } else {
-                                if (opt->mode == QIcon::Active) {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_r"));
-                                } else {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_r"));
-                                }
-                             }
+                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_r"));
+                            }
                         } else {
-                            if (opt->transparent) {
-                                if (opt->mode == QIcon::Active) {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_l"));
-                                } else {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_l"));
-                                }
+                            if (opt->mode == QIcon::Active) {
+                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_r"));
                             } else {
-                                if (opt->mode == QIcon::Active) {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_l"));
-                                } else {
-                                    iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_l"));
-                                }
-                             }
+                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_r"));
+                            }
                         }
                     }
                 break;
@@ -2403,45 +2279,23 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (opt) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>( item );
                     iconItem->setAspectRatioMode(Qt::IgnoreAspectRatio);
-                    if (opt->direction == Qt::LeftToRight) {
-                        if (opt->mode == QIcon::Active) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_l"));
-                            }
-                        } else if (opt->mode == QIcon::Selected) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_latched_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_latched_l"));
-                            }
+                    if (opt->mode == QIcon::Active) {
+                        if (opt->transparent) {
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_l"));
                         } else {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_l"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_l"));
-                            }
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_l"));
+                        }
+                    } else if (opt->mode == QIcon::Selected) {
+                        if (opt->transparent) {
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_latched_l"));
+                        } else {
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_latched_l"));
                         }
                     } else {
-                        if (opt->mode == QIcon::Active) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_pressed_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_pressed_r"));
-                            }
-                        } else if (opt->mode == QIcon::Selected) {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_latched_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_latched_r"));
-                            }
+                        if (opt->transparent) {
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_l"));
                         } else {
-                            if (opt->transparent) {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_trans_normal_r"));
-                            } else {
-                                iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_r"));
-                            }
+                            iconItem->setIconName(QLatin1String("qtg_fr_titlebar_normal_l"));
                         }
                     }
                 }
@@ -3266,17 +3120,34 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const HbStyleOptionListViewItem *opt = qstyleoption_cast<const HbStyleOptionListViewItem *>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
                     
-                    // needs set word wrapping explicitly, if multiple lines supported
                     if (opt->index == 1) {
-                        Hb::TextWrapping wrapping = Hb::TextNoWrap;
-                        if (    opt->minimumLines != 1
-                            ||  opt->maximumLines != 1) {
-                            wrapping = Hb::TextWordWrap;
+                        if (opt->multilineSecondaryTextSupported) {
+                            if (opt->minimumLines != -1) {
+                                // min & max secondary text row counts set by app
+                                Hb::TextWrapping wrapping = Hb::TextNoWrap;
+                                if (    opt->minimumLines != 1
+                                    ||  opt->maximumLines != 1) {
+                                    wrapping = Hb::TextWordWrap;
+                                }
+                                textItem->setTextWrapping(wrapping);
+                                textItem->setMinimumLines(opt->minimumLines);
+                                textItem->setMaximumLines(opt->maximumLines);
+                            } else {
+                                // min & max secondary text row counts not set by app. Allow setting those from .css
+                                // Needed when multilineSecondaryTextSupported changed from FALSE to TRUE and
+                                // min & max secondary text row counts has not bee set by app
+                                HbWidgetBasePrivate *widgetBasePrivate = d->widgetBasePrivate(textItem);
+                                widgetBasePrivate->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
+                                widgetBasePrivate->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
+                                widgetBasePrivate->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
+                            }
+                        } else {
+                            // min & max secondary text row counts must always be 1. They cannot be overridden by .css
+                            textItem->setTextWrapping(Hb::TextNoWrap);
+                            textItem->setMinimumLines(1);
+                            textItem->setMaximumLines(1);
                         }
-                        textItem->setTextWrapping(wrapping);
-                        textItem->setMinimumLines(opt->minimumLines);
-                        textItem->setMaximumLines(opt->maximumLines);
-                    }
+                    } // else - default values from .css still in use
                     setItemName(textItem, QLatin1String("text-") + QString::number(opt->index + 1));
                     textItem->setText(opt->content.value<QString>());
                 }
@@ -3346,7 +3217,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const  HbStyleOptionGridViewItem*opt = qstyleoption_cast<const HbStyleOptionGridViewItem*>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
                     textItem->setAlignment(Qt::AlignCenter);
-                    textItem->setTextWrapping(Hb::TextWrapAnywhere);
                     textItem->setText(opt->text);
                 }
                 break;
@@ -3440,12 +3310,17 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const HbStyleOptionProgressSlider *opt = qstyleoption_cast<const HbStyleOptionProgressSlider *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
                     frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
-                    if(opt->pressedState) {
-                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_pressed"));
-                    }
-                    else {
-                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_normal"));
-                    }
+                   	if (opt->disableState ) { 
+                        frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_disabled"));
+					}
+					else {
+					     if(opt->pressedState) {
+                               frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_pressed"));
+                         }
+                         else {
+                               frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_frame_normal"));
+                         }
+					}
                     frameItem->frameDrawer().setFillWholeRect(true);       
                     frameItem->update();
                     }
@@ -3657,9 +3532,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const HbStyleOptionTreeViewItem *opt = qstyleoption_cast<const HbStyleOptionTreeViewItem *>(option)) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
                     if (opt->expanded) {
-                        iconItem->setIconName(opt->insidePopup ? QLatin1String("qtg_mono_expand") : QLatin1String("qtg_small_expand"));
-                    } else {
                         iconItem->setIconName(opt->insidePopup ? QLatin1String("qtg_mono_collapse") : QLatin1String("qtg_small_collapse"));
+                    } else {
+                        iconItem->setIconName(opt->insidePopup ? QLatin1String("qtg_mono_expand") : QLatin1String("qtg_small_expand"));
                     }
                 }
                 break;
@@ -3942,28 +3817,6 @@ void HbStylePrivate::polishItem(
 
     HbWidgetBase *hbWidget = qobject_cast<HbWidgetBase*>(gWidget);
     if ( hbWidget ) {
-#ifdef HBSTYLE_DEBUG_FONT
-        QString debugName;
-        bool isHbGroupBoxHeadingWidget(false);
-        if (!name.isEmpty()) {
-            QGraphicsItem* debugParent = hbWidget->parentItem();
-            if (debugParent->isWidget()) {
-                debugName = static_cast<QGraphicsWidget*>(debugParent)->metaObject()->className();
-                if (debugName == "HbGroupBoxHeadingWidget") {
-                    isHbGroupBoxHeadingWidget = true;
-                }
-            }
-            debugName.append("::");
-            debugName.append(name);
-        } else {
-            debugName = widget->metaObject()->className();
-        }
-        if ( isHbGroupBoxHeadingWidget ) {
-            qDebug() << "HbStyle::polishItem :" << debugName;
-            qDebug() << "HbStyle::polishItem : -- Number of maching CSS declarations: " << decl.count();
-        }
-
-#endif
         HbWidgetBasePrivate* hbWidget_p = HbWidgetBasePrivate::d_ptr(hbWidget);
         QFont font;
         HbFontSpec fontSpec;
@@ -3971,22 +3824,19 @@ void HbStylePrivate::polishItem(
         if (extractor.extractFont(&font, &fontSpec, &dummy)) {
             if ( !fontSpec.isNull() ) {
                 if ( font == QFont() ) {
-#ifdef HBSTYLE_DEBUG_FONT
-                    if ( isHbGroupBoxHeadingWidget )
+#ifdef HBSTYLE_DEBUG
                     qDebug() << "HbStyle::polishItem : -- Setting fontspec: " << fontSpec.role();
 #endif
                     hbWidget->setFontSpec(fontSpec);
                 } else {
-#ifdef HBSTYLE_DEBUG_FONT
-                    if ( isHbGroupBoxHeadingWidget )
+#ifdef HBSTYLE_DEBUG
                     qDebug() << "HbStyle::polishItem : -- Setting fontspec with overrides: "
                              << fontSpec.role() << font;
 #endif
                     hbWidget->setFont(fontSpec.font().resolve(font));
                 }
             } else {
-#ifdef HBSTYLE_DEBUG_FONT
-                if ( isHbGroupBoxHeadingWidget )
+#ifdef HBSTYLE_DEBUG
                 qDebug() << "HbStyle::polishItem : -- Setting explicit font: " << font;
 #endif
                 hbWidget->setFont(font);
@@ -4267,22 +4117,9 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
 #ifdef HBSTYLE_DEBUG
     qDebug() << "HbStyle::polish : Polishing" << widget->metaObject()->className();
 #endif
-#ifdef HBSTYLE_DEBUG_FONT
-    bool isHbGroupBoxHeadingWidget(false);
-    if (QString(widget->metaObject()->className()) == "HbGroupBoxHeadingWidget") {
-        isHbGroupBoxHeadingWidget = true;
-        QVariant gbtype = widget->property( "groupBoxType" );
-        qDebug() << "HbStyle::polish : Polishing HbGroupBoxHeadingWidget, type" << gbtype.toInt();
-    }
-#endif
 
     HbLayeredStyleLoader *styleLoader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Layouts);
     if(!styleLoader){
-#ifdef HBSTYLE_DEBUG_FONT
-    if (isHbGroupBoxHeadingWidget) {
-        qDebug() << "HbStyle::polish : HbLayeredStyleLoader returned a null pointer.";
-    }
-#endif
 #ifdef HBSTYLE_DEBUG
         qDebug() << "HbStyle::polish : HbLayeredStyleLoader returned a null pointer.";
 #endif
@@ -4306,23 +4143,13 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
         styleRules = styleLoader->styleRulesForNode(n, profile.orientation());
     }
 
-#ifdef HBSTYLE_DEBUG_FONT
-    if (isHbGroupBoxHeadingWidget) {
-        qDebug() << "HbStyle::polish : Number of style rules:" << styleRules.count();
-    }
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::polish : Number of style rules:" << styleRules.count();
 #endif
     if (!styleRules.count()) {
-#ifdef HBSTYLE_DEBUG
-        qDebug() << "HbStyle::polish : No style rules found.";
-#endif
         return;
     }
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", widget, profile);
-#ifdef HBSTYLE_DEBUG_FONT
-    if (isHbGroupBoxHeadingWidget) {
-        qDebug() << "HbStyle::polish : Number of maching CSS declarations: " << decl.count();
-    }
-#endif
 #ifdef HBSTYLE_DEBUG
     qDebug() << "HbStyle::polish : Number of maching CSS declarations: " << decl.count();
 #endif
@@ -4340,15 +4167,6 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     }
 
     bool layoutDefined = extractor.extractLayout(&layoutName, &sectionName);
-#ifdef HBSTYLE_DEBUG_FONT
-    if (isHbGroupBoxHeadingWidget) {
-        if (!layoutDefined) {
-            qDebug() << "HbStyle::polish : Couldn't find layout name for the widget.";
-        } else {
-            qDebug() << "HbStyle::polish : Layout name: " << layoutName;
-        }
-    }
-#endif
 #ifdef HBSTYLE_DEBUG
     if (!layoutDefined) {
         qDebug() << "HbStyle::polish : Couldn't find layout name for the widget.";
@@ -4369,11 +4187,6 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
 #endif
             HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
             if ( !loader->loadWidgetML(widget, layoutName, sectionName)) {
-#ifdef HBSTYLE_DEBUG_FONT
-                if (isHbGroupBoxHeadingWidget) {
-                    qDebug() << "HbStyle::polish : Failed to load WidgetML";
-                }
-#endif
 #ifdef HBSTYLE_DEBUG
                 qDebug() << "HbStyle::polish : Failed to load WidgetML";
 #endif
@@ -4878,5 +4691,11 @@ void HbStylePrivate::clearStyleSheetCaches()
     styleRulesCache.clear();
     colorParameters.clear();
 }
+
+HbWidgetBasePrivate *HbStylePrivate::widgetBasePrivate(HbWidgetBase *widgetBase) const
+{
+    return HbWidgetBasePrivate::d_ptr(widgetBase);
+}
+
 
 #include "moc_hbstyle.cpp"

@@ -71,6 +71,7 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbFormatDialog)
     Q_PRIVATE_SLOT(d_func(), void _q_setColor())
     Q_PRIVATE_SLOT(d_func(), void _q_setAlignment(bool))
+    Q_PRIVATE_SLOT(d_func(), void _q_colorSelected(QColor))
 };
 
 typedef QPointer <HbFormatDialog> HbFormatDialogPointer;

@@ -38,15 +38,15 @@
 //
 
 #include <QObject>
-#include <QPluginLoader>
 #include <QHash>
 #include <QVector>
 #include <hbstyle.h>
 #include "hbcssparser_p.h"
-#include "hbwidget_p.h"
 
 class HbWidget;
+class HbPluginLoader;
 class HbStyleInterface;
+class HbWidgetBasePrivate;
 
 class HbStylePluginInfo
 {
@@ -59,7 +59,7 @@ public:
 class HbStyleInterfaceInfo
 {
 public: 
-    QPluginLoader* loader;
+    HbPluginLoader* loader;
     int primitiveBaseId;
 };
 
@@ -87,6 +87,8 @@ public:
 
     void _q_onThemeChanged();
     void clearStyleSheetCaches();
+
+    HbWidgetBasePrivate *widgetBasePrivate(HbWidgetBase *widgetBase) const;
 
     HbStyle* q_ptr;
 

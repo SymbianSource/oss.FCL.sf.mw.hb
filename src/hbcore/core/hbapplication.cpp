@@ -27,8 +27,6 @@
 #include "hbapplication_p.h"
 #include "hbsplashscreen.h"
 #include "hbactivitymanager.h"
-#include "hbactivitycommandlineparser_p.h"
-#include "hbiconloader_p.h"
 #include <QTime>
 #include <QUrl>
 
@@ -241,28 +239,31 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
     if (event->type() != QSymbianEvent::WindowServerEvent) {
         return QApplication::symbianEventFilter(event);
     }
+
+    // Do not add system critical functionality here (or to HbApplication in general).
+    // Orbit apps may not necessarily have a HbApplication instance.
+    // Some may use QApplication and all features must work in those cases too.
+
     const TWsEvent *aEvent = event->windowServerEvent();
     switch (aEvent->Type()) {
          // In case of EEventScreenDeviceChanged-event, the current screen
          // ratio is checked and orientation is set accordingly. 
-        case EEventScreenDeviceChanged:{
-
-        QList<HbMainWindow*> windows = hbInstance->allMainWindows();
-        RWindow *win = static_cast<RWindow *>(windows.at(0)->effectiveWinId()->DrawableWindow());
+        case EEventScreenDeviceChanged:
+        {
+            QList<HbMainWindow*> windows = hbInstance->allMainWindows();
+            RWindow *win = static_cast<RWindow *>(windows.at(0)->effectiveWinId()->DrawableWindow());
                
-       TSize rWinSize;
-       if (win)
-           rWinSize = win->Size();
-             
-        // fix for emulator / changing modes
-        QSize nSize( (int)rWinSize.iWidth, (int)rWinSize.iHeight );
-        foreach (HbMainWindow* w, windows) {
-                    w->resize(nSize);
-                }
-            
+            TSize rWinSize;
+            if (win)
+                rWinSize = win->Size();
 
+            // fix for emulator / changing modes
+            QSize nSize( (int)rWinSize.iWidth, (int)rWinSize.iHeight );
+            foreach (HbMainWindow* w, windows) {
+                w->resize(nSize);
+            }
         }
-            return false; //continue handling in QApplication::s60ProcessEvent
+        return false; //continue handling in QApplication::s60ProcessEvent
         case KChangeDirection:{
             TUint8* dataptr = aEvent->EventData();
             switch(*dataptr){
@@ -292,16 +293,6 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
             }
             }
             return false;
-        case EEventWindowVisibilityChanged:{
-                // Get the Visiblity notification from the window server.
-                const TWsVisibilityChangedEvent *visChangedEvent = aEvent->VisibilityChanged();
-                if ( visChangedEvent->iFlags & TWsVisibilityChangedEvent::ENotVisible ) {
-                    // App is not visible
-                    HbIconLoader *loader = HbIconLoader::global();
-                    loader->handleForegroundLost();
-                }
-            }
-            return QApplication::symbianEventFilter(event);
         case KChangeTouchAreaVis:{
                 TUint8* dataptr = aEvent->EventData();
                 HbTouchAreaPrivate::setOutlineDrawing(*dataptr == 1);
@@ -336,9 +327,9 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
 HbApplicationPrivate::HbApplicationPrivate(HbApplication *parent)
     : QObject(parent), q_ptr(parent), mActivateReason(Hb::ActivationReasonNormal)
 {
-    HbActivityCommandLineParser::parseUri(qApp->arguments(), mActivateReason, mActivateId, mActivateParams);
     mActivityManager = new HbActivityManager(this);
     connect(mActivityManager, SIGNAL(activityRequested(QString)), this, SLOT(prepareActivityData(QString)));
+    mActivityManager->parseCommandLine(qApp->arguments(), mActivateReason, mActivateId, mActivateParams);
 }
 
 HbApplicationPrivate::~HbApplicationPrivate()

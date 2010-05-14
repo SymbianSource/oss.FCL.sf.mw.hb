@@ -43,10 +43,7 @@ class HB_WIDGETS_EXPORT HbDeviceProgressDialog : public QObject
     Q_PROPERTY(HbProgressDialog::ProgressDialogType progressType
         READ progressType WRITE setProgressType)
     Q_PROPERTY(QString text READ text WRITE setText)
-    Q_PROPERTY(Qt::Alignment textAlignment READ textAlignment WRITE setTextAlignment)
-    Q_PROPERTY(bool textWrapping READ textWrapping WRITE setTextWrapping) // deprecated
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
-    Q_PROPERTY(Qt::Alignment iconAlignment READ iconAlignment WRITE setIconAlignment)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
 
 public:
@@ -61,7 +58,6 @@ public:
 
     void show();
     void update();
-    void cancel(); // deprecated
     void close();
     const QAction *triggeredAction() const;
 
@@ -83,17 +79,8 @@ public:
     void setText(const QString &text);
     QString text() const;
 
-    void setTextAlignment(Qt::Alignment align);
-    Qt::Alignment textAlignment() const;
-
-    void setTextWrapping(bool wrap); // deprecated
-    bool textWrapping() const; // deprecated
-
     void setIconName(const QString &iconName);
     QString iconName() const;
-
-    void setIconAlignment(Qt::Alignment align);
-    Qt::Alignment iconAlignment() const;
 
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;

@@ -33,6 +33,7 @@
 #include <QStringList>
 #include <QIcon> //krazy:exclude=qclasses
 #include <QFlags>
+#include <QPaintEngine>
 
 class HbFrameDrawerPrivate;
 class HbIconLoaderPrivate;
@@ -137,7 +138,8 @@ public:
 
     QString findSharedResource(const QString &name,
                                Hb::ResourceType resType = Hb::IconResource);
-
+    void switchRenderingMode(HbRenderingMode newRenderMode);
+    void updateRenderingMode(QPaintEngine::Type type);
     void storeIconEngineInfo( HbIconEngine *iconEngine );
     void removeIconEngineInfo( HbIconEngine *iconEngine );
     
@@ -153,6 +155,7 @@ signals:
     void defaultSizeAdjustmentChanged();
 
 private slots:
+    void themeChange( const QStringList &updatedFiles );
     void destroy();
     void updateLayoutDirection();
 
@@ -172,7 +175,8 @@ private:
                                     const QColor &color,
                                     HbIconLoader::IconDataType type,
                                     HbIconLoader::Purpose,
-                                    QVector<HbIconImpl *> & iconImplList);
+                                    QVector<HbIconImpl *> & iconImplList,
+                                    HbRenderingMode renderMode);
    
     void loadSvgIcon(HbIconLoadingParams &params);
     void loadPictureIcon(HbIconLoadingParams &params);
@@ -187,6 +191,7 @@ private:
 private:
     Q_DISABLE_COPY (HbIconLoader)
     HbIconLoaderPrivate *d;
+    HbRenderingMode renderMode;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbIconLoader::IconLoaderOptions)

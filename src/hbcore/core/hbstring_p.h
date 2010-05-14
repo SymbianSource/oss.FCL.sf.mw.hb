@@ -30,6 +30,7 @@
 #include "hbmemoryutils_p.h"
 
 #ifdef CSS_PARSER_TRACES
+#include "hbstringdata_p.h"
 #include <QByteArray>
 #include <QDebug>
 #endif // CSS_PARSER_TRACES
@@ -85,10 +86,12 @@ public:
     }
     void print() const
     {
-        GET_MEMORY_MANAGER(mMemoryType)
-        HbStringData * mData = HbMemoryUtils::getAddress<HbStringData>( mMemoryType, mDataOffset);
-        qDebug() << QString::fromRawData( (QChar*)((char*)manager->base() 
-                                           + mData->mStartOffset), mData->mLength );
+        if (mDataOffset != -1 && mDataOffset != -2) {
+            GET_MEMORY_MANAGER(mMemoryType)
+            HbStringData * mData = HbMemoryUtils::getAddress<HbStringData>( mMemoryType, mDataOffset);
+            qDebug() << QString::fromRawData( (QChar*)((char*)manager->base() 
+                                               + mData->mStartOffset), mData->mLength );
+        }
     }
 #endif //CSS_PARSER_TRACES
 

@@ -30,6 +30,20 @@
 #include <QPointF>
 #include <QVariant>
 
+/*!
+    @hbcore
+    \class HbSwipeGesture
+
+    \brief HbSwipeGesture is an extension to Qt standard HbSwipeGesture
+    \sa QSwipeGesture
+*/
+
+const int KHbDirectionThreshold = 45; // degrees
+
+/*!
+    \brief HbSwipeGesture constructor
+    \param parent Owner for gesture
+*/
 HbSwipeGesture::HbSwipeGesture(QObject *parent)
     : QSwipeGesture(parent), d_ptr(new HbSwipeGesturePrivate)
 
@@ -37,37 +51,60 @@ HbSwipeGesture::HbSwipeGesture(QObject *parent)
     d_ptr->mSceneSwipeAngle = 0;
 }
 
+/*!
+    \brief HbSwipeGesture constructor
+    \param dd Private data
+    \param parent Owner for gesture
+*/
 HbSwipeGesture::HbSwipeGesture(HbSwipeGesturePrivate &dd, QObject *parent)
     : QSwipeGesture(parent), d_ptr(&dd)
 {
 
 }
 
+/*!
+    \brief HbSwipeGesture destructor
+*/
 HbSwipeGesture::~HbSwipeGesture()
 {
     delete d_ptr;
 }
 
+/*!
+    \property sceneHorizontalDirection
+    \brief Horizontal direction of swipe in scene coordinates.
+
+    \sa QSwipeGesture::horizontalDirection()
+*/
 QSwipeGesture::SwipeDirection HbSwipeGesture::sceneHorizontalDirection() const
 {
-    if (d_ptr->mSceneSwipeAngle < 0 || d_ptr->mSceneSwipeAngle == 90 || d_ptr->mSceneSwipeAngle == 270)
-        return QSwipeGesture::NoDirection;
-    else if (d_ptr->mSceneSwipeAngle < 90 || d_ptr->mSceneSwipeAngle > 270)
+    if ((d_ptr->mSceneSwipeAngle <= 90 - KHbDirectionThreshold && d_ptr->mSceneSwipeAngle >= 0) || d_ptr->mSceneSwipeAngle >= 270 + KHbDirectionThreshold)
         return QSwipeGesture::Right;
-    else
+    else if (d_ptr->mSceneSwipeAngle >= 90 + KHbDirectionThreshold && d_ptr->mSceneSwipeAngle <= 270 - KHbDirectionThreshold)
         return QSwipeGesture::Left;
+    else
+        return QSwipeGesture::NoDirection;
 }
-
+/*!
+    \property sceneVerticalDirection
+    \brief Vertical direction of swipe in scene coordinates.
+    \sa QSwipeGesture::verticalDirection()
+*/
 QSwipeGesture::SwipeDirection HbSwipeGesture::sceneVerticalDirection() const
 {    
-    if (d_ptr->mSceneSwipeAngle <= 0 || d_ptr->mSceneSwipeAngle == 180)
-        return QSwipeGesture::NoDirection;
-    else if (d_ptr->mSceneSwipeAngle < 180)
+    if (d_ptr->mSceneSwipeAngle < 180 - KHbDirectionThreshold && d_ptr->mSceneSwipeAngle > 0 + KHbDirectionThreshold)
         return QSwipeGesture::Up;
-    else
+    else if (d_ptr->mSceneSwipeAngle > 180 + KHbDirectionThreshold && d_ptr->mSceneSwipeAngle < 360 - KHbDirectionThreshold)
         return QSwipeGesture::Down;
+    else
+        return QSwipeGesture::NoDirection;
 }
 
+/*!
+    \property sceneSwipeAngle
+    \brief Angle for swipe in scene coordinates.
+    \sa QSwipeGesture::swipeAngle()
+*/
 qreal HbSwipeGesture::sceneSwipeAngle() const
 {
     return d_ptr->mSceneSwipeAngle;
@@ -82,8 +119,6 @@ void HbSwipeGesture::setSceneSwipeAngle(qreal value)
 /*!
     \deprecated
     \property speed
-
-    Stores the speed of the swipe gesture in pixels per milliseconds.
 */
 qreal HbSwipeGesture::speed() const
 {    
@@ -100,9 +135,6 @@ void HbSwipeGesture::setSpeed(qreal speed)
 /*!
     \deprecated
     \property touchPointCount
-
-    Stores the number of touchpoints used in the swipe
-
 */
 int HbSwipeGesture::touchPointCount() const
 {

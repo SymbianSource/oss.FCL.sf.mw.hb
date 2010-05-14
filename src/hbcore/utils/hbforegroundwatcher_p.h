@@ -27,6 +27,7 @@
 #define HBFOREGROUNDWATCHER_P_H
 
 #include <QObject>
+#include <QTimer>
 #include <hbglobal.h>
 
 #ifdef Q_OS_SYMBIAN
@@ -61,6 +62,7 @@ public: // from MCoeForegroundObserver
 
 private slots:
     void handleAboutToQuit();
+    void handleSensors();
 
 private:
     HbForegroundWatcher(QObject *parent = 0);
@@ -68,6 +70,7 @@ private:
 
     bool mForeground;
     bool mLights;
+    QTimer mSleepModeTimer;
     HbSensorListener *mSensorListener;
     CCoeEnv *mStaticEnv;
 };

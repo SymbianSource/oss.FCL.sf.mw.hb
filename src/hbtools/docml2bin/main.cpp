@@ -55,7 +55,9 @@ int main(int argc, char *argv[])
     if (argc <= 2) {
         showHelp();
     } else {
+        //bool backup = false;
         QString source, target;
+        //QStringList restore;
         QStringList args(app.arguments());
 
         for (int n = 0; n < args.count(); n++) {
@@ -65,10 +67,45 @@ int main(int argc, char *argv[])
             } else if (args[n].toLower() == "-t") {
                 target = args[n+1];
                 n++;
-            } 
+            /*
+            } else if (args[n].toLower() == "--backup-and-replace") {
+                backup = true;
+            } else if (args[n].toLower() == "-restore") {
+                n++;
+                while (n < args.count()) {
+                    restore.append( args[n] );
+                    n++;
+                }
+            */
+            }
         }
+        /*
+        if (restore.count()) {
+            for (int i = 0; i < restore.count(); i++) {
+                QString orig = restore.at(i) + ".orig";
+                if ( QFile::exists(orig) ) {
+                    QFile::remove(restore.at(i));
+                    QFile origFile(orig);
+                    origFile.rename(restore.at(i));
+                }
+            }
+            return 0;
+        }
+        */
 
         if (source.length() > 0) {
+            /*
+            if (backup) {
+                QString orig = source + ".orig";
+                if ( QFile::exists(orig) ) {
+                    QFile::remove(orig);
+                }
+                QFile origFile(source);
+                origFile.rename(orig);
+                target = source;
+                source = orig;
+            }
+            */
             if (!QFile::exists(source)) {
                 std::cout << "Error: file " << source.toStdString() << " does not exist.\n";
             } else {
@@ -78,15 +115,11 @@ int main(int argc, char *argv[])
                     if (!target.length()) {
                         target = source + ".bin";
                     }
-                    if (QFile::exists(target)) {
-                        std::cout << "Error: target file already exists.\n";
-                    } else {
-                        QFile targetFile(target);
-                        if (targetFile.open(QIODevice::WriteOnly)) {
-                            HbDocumentLoader loader;
-                            loader.createBinary( &sourceFile, &targetFile );
-                            targetFile.close();
-                        }
+                    QFile targetFile(target);
+                    if (targetFile.open(QIODevice::WriteOnly)) {
+                        HbDocumentLoader loader;
+                        loader.createBinary( &sourceFile, &targetFile );
+                        targetFile.close();
                     }
                     sourceFile.close();
                 }

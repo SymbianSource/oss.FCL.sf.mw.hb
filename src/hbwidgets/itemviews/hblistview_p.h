@@ -52,9 +52,7 @@ class HbListView;
 class HbListViewItem;
 class HbScrollBar;
 class HbListLayout;
-class HbGestureSceneFilter;
 class HbListHighlight;
-class HbGesture;
 
 class HbListViewPrivate : public HbAbstractItemViewPrivate
 {

@@ -32,9 +32,12 @@
 #include <hbiconanimationmanager.h>
 #include <hbiconanimator.h>
 #include <hbwidgetfeedback.h>
+#include <hbnamespace_p.h>
 #include <QGraphicsScene>
 
 /*!
+  @stable
+  @hbcore
   \class HbLongPressVisualizer
 
   \brief Displays the long press animation, that is, the small animated icon
@@ -107,6 +110,7 @@ void HbLongPressVisualizerPrivate::start(const QPointF &pos, int delayMs, const 
         mIconItem = new HbIconItem("qtg_anim_longtap");
         mIconItem->hide();
         mIconItem->setSize(mIconItem->defaultSize());
+        mIconItem->setZValue(HbPrivate::PopupZValueRangeEnd + 5000);
     }
     QGraphicsScene *targetScene = mainWindow->scene();
     QGraphicsScene *oldScene = mIconItem->scene();

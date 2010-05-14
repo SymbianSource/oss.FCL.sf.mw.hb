@@ -29,23 +29,12 @@
 #include <hbglobal.h>
 #include <QObject>
 #include <QList>
+#include "hboogmwatcher_p.h"
+#include "hbthemecommon_p.h"
 
-#include <bldvariant.hrh>
-#ifdef SYMBIAN_BUILD_GCE
-#define HB_OOGM_ALF
-#endif
-
-#ifdef HB_OOGM_ALF
-#include <alf/alfcompositionutility.h>
-#endif
-
-class HbOogmWatcher;
 class HbIconItem;
 
 class HB_AUTOTEST_EXPORT HbOogmWatcherPrivate : public QObject
-#ifdef HB_OOGM_ALF
-, public MAlfCompositionObserver
-#endif
 {
     Q_OBJECT
 
@@ -53,30 +42,15 @@ public:
     Q_DECLARE_PUBLIC(HbOogmWatcher)
 
     HbOogmWatcherPrivate();
-    ~HbOogmWatcherPrivate();
 
-public slots:
-    void setupListener();
-
-public:
     void graphicsMemoryLow();
-    void mainWindowReady();
+    void graphicsMemoryGood();
+
+    static HbOogmWatcherPrivate *d_ptr(HbOogmWatcher *w) { return w->d_ptr; }
 
     HbOogmWatcher *q_ptr;
     QList<HbIconItem *> mIconItems;
-    bool mInitialized;
-
-#ifdef HB_OOGM_ALF
-    CAlfCompositionSource *mCompositionSource;
-
-    // from MAlfCompositionObserver
-    void FrameReady(TInt) { }
-    void CompositionTargetHidden() { }
-    void CompositionTargetVisible() { }
-    void GraphicsMemoryGood() { }
-    void RunningLowOnGraphicsMemory();
-#endif
-
+    HbRenderingMode mRenderMode;
 };
 
 #endif

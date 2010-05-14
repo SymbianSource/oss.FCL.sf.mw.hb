@@ -31,8 +31,10 @@
 #include "hbwidgetloader_p.h"
 #include "hbcssparser_p.h"
 #include "hbdeviceprofiledatabase_p.h"
+#include "hbtypefaceinfodatabase_p.h"
 #include "hblayeredstyleloader_p.h"
 #include "hbthemeindex_p.h"
+#include "hbsharedcache_p.h"
 #include <QByteArray>
 
 class HbThemeClientPrivate;
@@ -47,62 +49,66 @@ public:
 
     QSizeF getSharedIconDefaultSize(const QString &iconPath);
 
-    HbSharedIconInfo getSharedIconInfo(const QString& iconPath , 
+    HbSharedIconInfo getSharedIconInfo(const QString& iconPath ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
                         HbIconLoader::IconLoaderOptions options,
-                        const QColor &color);
+                        const QColor &color,
+                        HbRenderingMode renderMode );
 
     QByteArray getSharedBlob(const QString &name);
 
     HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section);
 
     HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
-    
+
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
-    
+
     bool addSharedEffect(const QString& filePath);
 
     HbDeviceProfileList *deviceProfiles();
-
-    int globalCacheOffset();
+    HbTypefaceInfoVector *typefaceInfo();
 
     void notifyForegroundLostToServer();
 
-    void unloadIcon(const QString& iconPath , 
+    void unloadIcon(const QString& iconPath ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
-                        const QColor &color);
-    
-    void unLoadMultiIcon(const QStringList& iconPathList, 
+                        const QColor &color,
+                        HbRenderingMode renderMode);
+
+    void unLoadMultiIcon(const QStringList& iconPathList,
                         const QVector<QSizeF> &sizeList,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
-                        const QColor &color);
+                        const QColor &color,
+                        HbRenderingMode renderMode);
 
-    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList, 
+    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
                         const HbMultiPartSizeData &multiPartIconData ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
                         HbIconLoader::IconLoaderOptions options,
-                        const QColor &color);
-    
-    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,                                                             
+                        const QColor &color,
+                        HbRenderingMode renderMode);
+
+    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
                             const QVector<QSizeF>  &sizeList ,
                             Qt::AspectRatioMode aspectRatioMode,
                             QIcon::Mode mode,
                             bool mirrored,
                             HbIconLoader::IconLoaderOptions options,
-                            const QColor &color);
-
-    void getThemeIndexTables(ThemeIndexTables &tables);
+                            const QColor &color,
+                            HbRenderingMode renderMode);
+							
+    bool switchRenderingMode(HbRenderingMode renderMode);
 
     bool clientConnected() const;
 
@@ -120,7 +126,7 @@ public:
     ~HbThemeClient();
 private:
     HbThemeClient();
-    int sharedCacheItemOffset(const QString &key);
+    int sharedCacheItemOffset(HbSharedCache::ItemType type, const QString &key);
     HbThemeClientPrivate *d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbThemeClient)
 };

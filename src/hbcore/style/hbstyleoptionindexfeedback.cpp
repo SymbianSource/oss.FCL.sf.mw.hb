@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptionindexfeedback.h>
+#include <hbstyleoptionindexfeedback_p.h>
 
 /*!
     \class HbStyleOptionIndexFeedback

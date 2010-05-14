@@ -32,6 +32,7 @@
 class HbStatusBarPrivate;
 class HbStyleOptionStatusBar;
 class HbView;
+struct IndicatorClientInfo;
 
 class HB_CORE_PRIVATE_EXPORT HbStatusBar : public HbWidget
 {
@@ -47,6 +48,7 @@ public:
     int type() const { return Type; }
 
     void propertiesChanged();
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots:
     virtual void createPrimitives();
@@ -54,7 +56,8 @@ public slots:
     void currentViewChanged(HbView *view);
 
 signals:
-    void notificationCountChanged(int count);
+    void activated(const QList<IndicatorClientInfo> &clientInfo);
+    void deactivated(const QList<IndicatorClientInfo> &clientInfo);
 
 protected:
     void initStyleOption(HbStyleOptionStatusBar *option) const;

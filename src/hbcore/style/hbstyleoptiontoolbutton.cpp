@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptiontoolbutton.h>
+#include <hbstyleoptiontoolbutton_p.h>
 
 /*!
     \class HbStyleOptionToolButton

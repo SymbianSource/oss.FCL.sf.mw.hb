@@ -40,12 +40,12 @@ public:
     static HbOogmWatcher *instance();
     ~HbOogmWatcher();
     void notifyGraphicsMemoryLow();
-    void mainWindowReady();
     void registerIconItem(HbIconItem *item);
     void unregisterIconItem(HbIconItem *item);
 
 signals:
-    void graphicsMemoryNeeded();
+    void graphicsMemoryLow();
+    void graphicsMemoryGood();
     void iconCleanupDone(int count);
 
 private:

@@ -44,7 +44,6 @@
 class HbThemeServerSession;
 struct HbIconKey;
 class HbIconSource;
-class ThemeIndexTables;
 class CHbThemeChangeNotificationListener;
 
 // reasons for server panic
@@ -97,16 +96,18 @@ public :
     void clearCssCache();
     void MemoryGood();
     void FreeGpuRam(int bytes);
-
+    void freeUnusedGpuResources();
+    
     void insertIconDefaultSizeCacheItem(const QString &key, const QSizeF &item);
     QSizeF iconDefaultSizeCacheItem(const QString &key);
 
     void doCleanup();
     static bool gpuMemoryState();
 
-    void getThemeIndexTables(ThemeIndexTables &tables);
     void openCurrentIndexFile();
-    void resolveCurrentThemeDrive();	
+    bool resolveThemePath(const QString &themeName, QString &themePath);
+    HbRenderingMode currentRenderingMode() const;
+    void setCurrentRenderingMode(HbRenderingMode currentMode);
     void HandleThemeSelection( const QString& themeName);
 
     int freeSharedMemory();
@@ -141,28 +142,21 @@ public :
 #endif
 
 private:
-    void processThemeIndex(const QString &theme, const QChar drive);
-    QString themeIndexKey(const QString &theme, const QChar drive);
-    void removeOldThemeIndexes();
+    void createThemeIndex(const QString &themePath, const HbThemeType &themetype);
 
 public:
     RProperty iThemeProperty;
     QString iCurrentThemeName;
-    QChar currentThemeDrive;
+    QString iCurrentThemePath;
     QFile currentIndexfile;
 private:
     void ConstructL();
     HbIconDataCache * cache;
     HbCache* cssCache;
     QHash<QString, QSizeF> iconDefaultSizes;
-    // String key is in format "<drive_capitalized>:<themename>"
-    // E.g. "Z:hbdefault"
-    QMap<QString, int> themeIndexes;
-    QString baseThemeIndexKey;
-    QString lastThemeIndexKey;
-	
-    static bool gpuGoodMemoryState;	
-    
+
+    static bool gpuGoodMemoryState;
+    HbRenderingMode renderMode;
     QStringList romThemeNames;
     CHbThemeChangeNotificationListener * iListener;
 };
@@ -187,7 +181,6 @@ public:
     void HandleStyleSheetLookupL(const RMessage2 & aMessage);
     void HandleWidgetMLLookupL(const RMessage2& aMessage);
     void HandleDeviceProfilesReqL(const RMessage2& aMessage);
-    void HandleSecondaryCacheOffsetReqL(const RMessage2& aMessage);
     void HandleEffectAddAndFileLookupL(const RMessage2 &aMessage);
     void HandleThemeSelectionL(const RMessage2 & aMessage);
     QColor GetColorFromRgba(TUint32 aRgba, bool aColorFlag);
@@ -210,11 +203,13 @@ public:
     void IconInfoL(const TIconListParams &frameItemParams,
                    const int noOfPieces,
                    HbSharedIconInfoList &iconInfoList);
+    void HandleTypefaceReqL(const RMessage2& aMessage);
     void unLoadIcon(const RMessage2& aMessage);
     void unloadMultiIcon(const RMessage2& aMessage);
     void freeClientGpuResources();
     void ClearSessionData();
-
+    void freeGpuResources();
+    void SwitchRenderingMode(HbRenderingMode aRenderMode);
 protected:
     TIconParams ReadMessageAndRetrieveParams(const RMessage2 & aMessage);
     void PanicClient(const RMessage2 & aMessage, TInt aPanic) const;
@@ -243,18 +238,18 @@ public:
 protected: // From CActive
     void RunL();
     void DoCancel();
-    
+
 private:
     CHbThemeChangeNotificationListener(HbThemeServerPrivate& aObserver);
     void ConstructL();
     bool parseData( TDesC& requestData, HbThemeServerRequest& etype, TDes& data);
-    
-        
+
+
 private: // data
     RProperty themeRequestProp;
     HbThemeServerPrivate& iObserver;
 };
 
 
-#endif // HBTHEMESERVER_SYMBIAN_P_H 
+#endif // HBTHEMESERVER_SYMBIAN_P_H
 

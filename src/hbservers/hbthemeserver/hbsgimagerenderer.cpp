@@ -24,6 +24,8 @@
 ****************************************************************************/
 
 #include "hbsgimagerenderer_p.h"
+#include "hbnvg_p.h"
+
 #include <QDebug>
 QHash<unsigned long long, RSgImage*> HbSgImageRenderer::sgImageHash;
 
@@ -39,7 +41,8 @@ HbSgImageRenderer::HbSgImageRenderer() :
         currentSurface(EGL_NO_SURFACE),
         eglContext(EGL_NO_CONTEXT),
         eglConfig(0),
-        init(false)        
+        init(false),
+        engine(0)
 {
 #ifdef HB_ICON_CACHE_DEBUG
     eglQueryProfilingData = 0;
@@ -74,6 +77,7 @@ bool HbSgImageRenderer::initialize()
         if (error != KErrNone) {
             return false;
         }
+        engine = new HbNvgEngine;
     }
 
     init = true;
@@ -83,6 +87,7 @@ bool HbSgImageRenderer::initialize()
 void HbSgImageRenderer::terminate()
 {
     if (init) {
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (eglContext != EGL_NO_CONTEXT) {
             eglDestroyContext(display, eglContext);
             eglContext = EGL_NO_CONTEXT;
@@ -91,8 +96,10 @@ void HbSgImageRenderer::terminate()
         sgDriver.Close();
 
         eglTerminate(display);
+        eglReleaseThread();
         display = EGL_NO_DISPLAY;
-
+        delete engine;
+        engine = 0;
         init = false;
     }
 }
@@ -117,7 +124,7 @@ bool HbSgImageRenderer::createContext(RSgImage * sgImage)
 
     eglContext = eglCreateContext(display, eglConfig, EGL_NO_CONTEXT, 0);
 
-    return true;
+    return eglContext != EGL_NO_CONTEXT;
 }
 
 bool HbSgImageRenderer::beginRendering(RSgImage * sgImage)

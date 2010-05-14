@@ -38,10 +38,6 @@ public:
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
     void sctCharacterSelected(QString character);
-    void characterPreviewAvailable(bool available);
-
-public slots:
-    void charFromPreviewSelected(QString character);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputBasicQwertyHandler)

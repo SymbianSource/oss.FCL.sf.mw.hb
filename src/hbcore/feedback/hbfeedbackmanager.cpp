@@ -45,8 +45,8 @@ static int continuousRunningIndex;
 
     \class HbFeedbackManager
 
-    \brief Feedback manager forwards interaction information from the widgets to feedback engine plugins.
-    Feedback engine plugins decide what kind of feedback effects will be played. Widgets don't use 
+    \brief Feedback manager forwards interaction information from the widgets to the feedback engine plugins.
+    Feedback engine plugins decide what kind of feedback effects will be played. Widgets are not to use the
     HbFeedbackManager directly but through HbWidgetFeedback convenience class.
 */
 
@@ -106,7 +106,7 @@ HbFeedbackManager::~HbFeedbackManager()
 /*!
     Returns feedback manager singleton object responsible for initiating feedback effects.
 
-    \return HbFeedbackManager returns feedback manager singleton object
+    \return HbFeedbackManager the feedback manager singleton object
 */
 HbFeedbackManager* HbFeedbackManager::instance()
 {
@@ -118,7 +118,7 @@ HbFeedbackManager* HbFeedbackManager::instance()
 
     \param widget the widget being interacted with
     \param interaction the interaction
-    \param modifiers extra specifiers to the interaction
+    \param modifiers extra modifiers to the interaction
 */
 void HbFeedbackManager::triggered(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers)
 {
@@ -135,7 +135,7 @@ void HbFeedbackManager::triggered(const HbWidget *widget, Hb::InstantInteraction
 }
 
 /*!
-    Mediates continuous interaction triggers to all active feedback plugins.
+    Mediates continuous interaction triggers to all active feedback engine plugins.
 
     \param widget the widget being interacted with
     \param interaction the continuous interaction in progress
@@ -157,8 +157,7 @@ void HbFeedbackManager::continuousTriggered(const HbWidget *widget, Hb::Continuo
 
 /*!
     Mediates a "continuous interaction stop" triggers to all active feedback engine plugins.
-    This methods is needed for knowing when to stop continuous feedback effects started by 
-    the continuous interaction.
+    This method indicates when the previously started continuous feedback interaction is stopped.
 
     \param widget the widget being interacted with
     \param interaction the continuous interaction in progress
@@ -265,4 +264,3 @@ HbFeedbackPluginGroup& HbFeedbackManager::plugins()
 {
     return *d->pluginGroup;
 }
-

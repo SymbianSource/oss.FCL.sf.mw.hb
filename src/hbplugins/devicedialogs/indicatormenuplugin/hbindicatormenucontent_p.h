@@ -32,27 +32,20 @@
 #include <hbwidget.h>
 #include <hblistview.h>
 #include <hblistviewitem.h>
-
 #include <hbglobal.h>
-#include <hbstyle.h>
 
 class HbIconItem;
 class HbTextItem;
 class HbListView;
 class HbIndicatorInterface;
 class HbListWidgetItem;
-class HbStyleOptionIndicatorMenu;
 class HbIndicatorMenuContent;
-class HbIndicatorMenuClock;
-class HbIndicatorMenuDate;
-
 class HbIndicatorListItem : public HbListViewItem
 {
     Q_OBJECT
 public:
     explicit HbIndicatorListItem(QGraphicsItem *parent=0);
     HbAbstractViewItem *createItem();
-    void updateChildItems();
 };
 
 class IndicatorList : public HbListView
@@ -72,7 +65,6 @@ protected:
     void showEvent(QShowEvent *event);
 
 private:
-    HbIndicatorMenuContent *mContent;
     mutable bool mUpdateListSize;
     mutable QSizeF mSize;
 };
@@ -109,9 +101,6 @@ public slots:
     void indicatorActivated(HbIndicatorInterface *activatedIndicator);
     void indicatorRemoved(HbIndicatorInterface *indicatorRemoved);
 
-protected:
-    void initStyleOption(HbStyleOptionIndicatorMenu *option) const;
-
 protected slots:
     void indicatorUpdated();
     void indicatorlist_scrollingStarted();
@@ -121,14 +110,12 @@ private:
     void setData(HbIndicatorInterface *source,
                  const QModelIndex &modelIndex);
     int listIndexFromIndicator(HbIndicatorInterface *indicator);
+    bool hasMenuData(const HbIndicatorInterface &indicator) const;
 
 private:
     int mGroupTypeIndeces[IndicatorTypes]; //index with HbIndicatorInterface::GroupType
                                            //to get the index to the list
                                            //where the indicator should be added.
-    HbIndicatorMenuClock *mClock;
-    HbIndicatorMenuDate *mDate;
-    QGraphicsItem *mHeaderBackground;
     HbListView *mIndicatorList;
     QStandardItemModel indicatorModel;
 };

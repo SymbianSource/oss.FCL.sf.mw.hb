@@ -1,7 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+
 <rect fill="none" height="30" width="30"/>
+
 <path d="M8,15c0-1.931,0.799-3.666,2.069-4.932l3.517,3.518,1.061-10.25-10.26,1.054,3.539,3.538c-1.811,1.809-2.933,4.308-2.933,7.068,0,5.021,3.705,9.166,8.528,9.88l0.309-2.984c-3.31-0.56-5.84-3.44-5.84-6.9z"/>
+
 <path d="M16.41,16.41l-1.061,10.25,10.25-1.061-3.538-3.539c1.82-1.8,2.94-4.3,2.94-7.06,0-5.021-3.705-9.166-8.528-9.88l-0.309,2.984c3.31,0.557,5.84,3.436,5.84,6.896,0,1.93-0.793,3.673-2.061,4.939l-3.53-3.53z"/>
+
 </svg>

@@ -34,7 +34,6 @@
 #include <qbrush.h>
 #include <qimagereader.h>
 #include <qgraphicswidget.h>
-#include <hbfontspec.h>
 
 //QT_BEGIN_NAMESPACE
 
@@ -145,6 +144,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "column-narrow-width", HbColumnNarrowWidth },
     { "column-wide-width", HbColumnWideWidth },
     { "fixed-height", HbFixedHeight },
+    { "fixed-size", HbFixedSize },
     { "fixed-width", HbFixedWidth },
     { "float", Float },
     { "font", Font },
@@ -171,8 +171,10 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "margin-top", MarginTop },
     { "margin-top-weight", HbTopMarginWeight },
     { "max-height", MaximumHeight },
+    { "max-size", HbMaximumSize },
     { "max-width", MaximumWidth },
     { "min-height", MinimumHeight },
+    { "min-size", HbMinimumSize },
     { "min-width", MinimumWidth },
     { "mirroring", Mirroring }, // deprecated
     { "outline", Outline },
@@ -194,6 +196,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "page-break-before", PageBreakBefore },
     { "position", Position },
     { "pref-height", HbPreferredHeight },
+    { "pref-size", HbPreferredSize },
     { "pref-width", HbPreferredWidth },
     { "right", Right },
     { "section", HbSection },
@@ -426,6 +429,7 @@ static quint64 findKnownValue(const QString &name, const HbCssKnownValue *start,
     return prop->id;
 }
 
+#ifndef HB_BIN_CSS
 ///////////////////////////////////////////////////////////////////////////////
 // Value Extractor
 ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbDeviceProfile &profile, const QPalette &pal)
@@ -604,8 +608,6 @@ QSizePolicy::Policy ValueExtractor::asPolicy(const Value& v)
     return pol;
 }
 
-
-
 int ValueExtractor::lengthValue(const Declaration &decl)
 {
     if (decl.values.count() < 1)
@@ -663,6 +665,34 @@ bool ValueExtractor::extractGeometry(GeometryValues &geomValues)
             break;
         case HbSizePolicyVertical:
             geomValues.mSizePolicy.setVerticalPolicy(asPolicy(decl.values.at(0)));
+            flags|=ExtractedPolVer;
+            break;
+        case HbMinimumSize:
+            geomValues.mMinW = asReal(decl.values.at(0));
+            geomValues.mMinH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mMinW;
+            flags|=ExtractedMinW;
+            flags|=ExtractedMinH;
+            break;
+        case HbMaximumSize:
+            geomValues.mMaxW = asReal(decl.values.at(0));
+            geomValues.mMaxH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mMaxW;
+            flags|=ExtractedMaxW;
+            flags|=ExtractedMaxH;
+            break;
+        case HbPreferredSize:
+            geomValues.mPrefW = asReal(decl.values.at(0));
+            geomValues.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mPrefW;
+            flags|=ExtractedPrefW;
+            flags|=ExtractedPrefH;
+            break;
+        case HbFixedSize:
+            geomValues.mPrefW = asReal(decl.values.at(0));
+            geomValues.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mPrefW;
+            geomValues.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed);
+            geomValues.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed);
+            flags|=ExtractedPrefW;
+            flags|=ExtractedPrefH;
+            flags|=ExtractedPolHor;
             flags|=ExtractedPolVer;
             break;
         default: continue;
@@ -893,7 +923,7 @@ bool ValueExtractor::extractOutline(qreal *borders, QBrush *colors, BorderStyle 
 
     return hit;
 }
-
+#endif
 static Qt::Alignment parseAlignment(const Value *values, int count)
 {
     Qt::Alignment a[2] = { 0, 0 };
@@ -1110,7 +1140,7 @@ static BorderStyle parseStyleValue(Value v)
 
     return BorderStyle_Unknown;
 }
-
+#ifndef HB_BIN_CSS
 void ValueExtractor::borderValue(const Declaration &decl, qreal *width, HbCss::BorderStyle *style, QBrush *color)
 {
     *width = 0;
@@ -1864,7 +1894,7 @@ bool ValueExtractor::extractColor( QColor *col ) const
     }
     return hit;
 }
-
+#endif
 
 QColor Declaration::colorValue(const QPalette &pal) const
 {
@@ -2270,12 +2300,13 @@ int StyleSelector::inheritanceDepth(NodePtr node, HbString &elementName) const
     if (elementName == GLOBAL_CSS_SELECTOR)
         return 0;
 
-    static QHash<QString, int> depths;
-    if (depths.contains(elementName)) {
-        return depths[elementName];
+    const uint nameHash = qHash(elementName.constData());
+    static QHash<uint, int> depths;
+    if (depths.contains(nameHash)) {
+        return depths[nameHash];
     } else {
         int result = nodeNameEquals(node, elementName);
-        depths[elementName] = result;
+        depths[nameHash] = result;
         return result;
     }
 }
@@ -2394,11 +2425,12 @@ QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(NodePtr node, con
     bool firstLoop = true;
     while(count--){
         const QString &className = classNames.at(count);
-        QVectorIterator<StyleSheet*> iter(widgetSheets[className]);
+        uint classNameHash = qHash(className);
+        QVectorIterator<StyleSheet*> iter(widgetSheets[classNameHash]);
         while (iter.hasNext()) {
             const StyleSheet *styleSheet = iter.next();
             if(styleSheet) {
-                WidgetStyleRules* widgetStack = styleSheet->widgetStack(className);
+                WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
                 if (widgetStack) {
                     matchRules(node, widgetStack->styleRules, styleSheet->origin, styleSheet->depth, &weightedRules, false);
                     // Append orientation-specific rules
@@ -2443,11 +2475,12 @@ bool StyleSelector::hasOrientationSpecificStyleRules(NodePtr node) const
     int count = classNames.count();
     while (count--) {
         const QString &className = classNames.at(count);
-        QVectorIterator<StyleSheet*> iter(widgetSheets[className]);
+        uint classNameHash = qHash(className);
+        QVectorIterator<StyleSheet*> iter(widgetSheets[classNameHash]);
         while (iter.hasNext()) {
             const StyleSheet *styleSheet = iter.next();
             if (styleSheet) {
-                WidgetStyleRules* widgetStack = styleSheet->widgetStack(className);
+                WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
                 if (widgetStack) {
                     if (widgetStack->portraitRules.count() ||
                             widgetStack->landscapeRules.count()) {
@@ -2538,14 +2571,14 @@ void StyleSelector::addStyleSheet( StyleSheet* styleSheet )
 {
     styleSheets.append(styleSheet);
     foreach (const HbCss::WidgetStyleRules &wsr, styleSheet->widgetRules) {
-        widgetSheets[wsr.widgetName].append(styleSheet);
+        widgetSheets[wsr.classNameHash].append(styleSheet);
     }
 }
 
 void StyleSelector::removeStyleSheet( StyleSheet* styleSheet )
 {
     styleSheets.remove(styleSheets.indexOf(styleSheet));
-    QHash<QString, QVector<HbCss::StyleSheet*> >::iterator iter = widgetSheets.begin();
+    QHash<uint, QVector<HbCss::StyleSheet*> >::iterator iter = widgetSheets.begin();
     while (iter != widgetSheets.end()) {
         int index = iter.value().indexOf(styleSheet);
         if (index != -1) {
@@ -2609,7 +2642,7 @@ QString Scanner::preprocess(const QString &input, bool *hasEscapeSequences)
     return output;
 }
 
-int QCssScanner_Generated::handleCommentStart()
+int HbQCss::QCssScanner_Generated::handleCommentStart()
 {
     while (pos < input.size() - 1) {
         if (input.at(pos) == QLatin1Char('*')
@@ -2624,7 +2657,7 @@ int QCssScanner_Generated::handleCommentStart()
 
 void Scanner::scan(const QString &preprocessedInput, QVector<Symbol> *symbols)
 {
-    QCssScanner_Generated scanner(preprocessedInput);
+    HbQCss::QCssScanner_Generated scanner(preprocessedInput);
     Symbol sym;
     int tok = scanner.lex();
     while (tok != -1) {
@@ -2782,13 +2815,14 @@ bool Parser::parse(StyleSheet *styleSheet)
 
 void Parser::addRuleToWidgetStack(StyleSheet *sheet, const QString &stackName, StyleRule &rule)
 {
-    WidgetStyleRules* widgetStack = sheet->widgetStack(stackName);
+    uint stackNameHash = qHash(stackName);
+    WidgetStyleRules* widgetStack = sheet->widgetStack(stackNameHash);
 
     if (!widgetStack) {
 #ifdef CSSSTACKS_DEBUG
         qDebug() << "Creating stack for classname" << stackName;
 #endif
-        HbCss::WidgetStyleRules rules(stackName, sheet->memoryType);
+        HbCss::WidgetStyleRules rules(stackNameHash, sheet->memoryType);
         widgetStack = sheet->addWidgetStack(rules);
     }
 

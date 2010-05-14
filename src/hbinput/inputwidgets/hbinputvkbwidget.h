@@ -36,10 +36,11 @@ const int HbRepeatTimeoutShort = 150;
 
 const QString backgroundGraphics("qtg_fr_input_v_bg");
 const QString HbInputVkbHandleIcon("qtg_graf_input_v_swipe");
-const qreal HbCloseHandleHeight = 20.0;
+const qreal HbCloseHandleHeight = 0;
+const qreal HbCloseHandleHeightInUnits = 2.23;
+const qreal HbCloseHandleWidthInUnits = 18.8;
 
 class HbInputVkbWidgetPrivate;
-class HbAction;
 class HbInputMethod;
 class HbView;
 class HbKeymap;
@@ -74,7 +75,6 @@ public:
 
     HbInputVkbWidget(QGraphicsItem *parent = 0);
     virtual ~HbInputVkbWidget();
-    virtual HbFlickDirection flickDirection();
 
 public: // From HbVirtualKeyboard
     QWidget* asWidget();
@@ -93,7 +93,9 @@ public: // From HbVirtualKeyboard
     virtual void setMode(HbKeypadMode mode, HbModifiers modifiers);
     virtual HbKeypadMode mode() const;
     virtual HbModifiers modifiers() const;
-    virtual void setupToolCluster();
+
+    virtual void setContentItem(QGraphicsLayoutItem *item);
+    virtual QGraphicsLayoutItem *contentItem() const;
 
     virtual void setRockerVisible(bool visible);
     virtual bool isRockerVisible() const;
@@ -103,10 +105,10 @@ public: // From HbVirtualKeyboard
     virtual QList<HbKeyPressProbability> probableKeypresses();
     virtual void animKeyboardChange();
 
+    HbFlickDirection flickDirection();
 
 protected: // From QGraphicsItem
     virtual QPainterPath shape () const;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
     virtual void changeEvent(QEvent *event);
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
     virtual int type() const {return Hb::ItemType_InputVkbWidget;}
@@ -115,25 +117,24 @@ protected: // From QGraphicsItem
 
 protected:
     // layout
-    virtual QGraphicsLayout *keypadLayout();
     QSizeF keypadButtonAreaSize();
 
 public slots:
     void showSettingList();
-    void executeSettingsDialog();
     void showSettingsView();
     void closeSettingsView();
     void executeMethodDialog();
     void closeSettingList();
-    void mappedKeyPress(int buttonId);
-    void mappedKeyRelease(int buttonId);
     void settingsClosed();
-    void togglePredictionStatus();
     void showSmileyPicker(int rows, int columns);
-
-    void refreshApplicationButton();
     void keypadLanguageChangeAnimationUpdate(qreal value);
     void keypadLanguageChangeFinished();
+
+    virtual void sendKeyPressEvent(const QKeyEvent &event);
+    virtual void sendKeyDoublePressEvent(const QKeyEvent &event);
+    virtual void sendKeyReleaseEvent(const QKeyEvent &event);
+    virtual void sendLongPressEvent(const QKeyEvent &event);
+    virtual void sendKeyChangeEvent(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent);
 
 signals:
     void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod closeMethod);

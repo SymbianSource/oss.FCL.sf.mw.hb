@@ -52,9 +52,12 @@ public: // From base classes
     virtual void removeAt(int index);
 
     virtual void setGeometry( const QRectF &rect );
-    virtual QSizeF sizeHint ( Qt::SizeHint which, const QSizeF &constraint = QSizeF( ) ) const;
-
     virtual void invalidate();
+
+protected:
+
+    virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
+
 private:
     HbListLayoutPrivate *d;
 };

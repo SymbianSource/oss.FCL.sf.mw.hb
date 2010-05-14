@@ -27,33 +27,42 @@
 #define HBPOINTRECORDER_P_H
 
 #include "hbglobal.h"
+#include "hbgestures_p.h"
 
 #include <QList>
-#include <QTime>
+#include <QPair>
 
-class HB_CORE_PRIVATE_EXPORT HbPointRecorder
+#include <QSet>
+
+class QTime;
+typedef QPair<qreal, QTime> HbPointTime;
+
+class HB_CORE_PRIVATE_EXPORT HbPointRecorder : public QList<HbPointTime>
 {
 public:
     HbPointRecorder();
     ~HbPointRecorder();
 
-    void record(qreal point, QTime time);
+    void record(qreal pos, const QTime &time);
+    void resetRecorder(qreal threshold);
+
     qreal lastPoint() const;
     const QTime& lastTime() const;
     bool dirChanged(qreal point) const;
-    void clear();    
-    bool isEmpty() const;
-    QList<qreal> getLastPoints( int number ) const;
-    QList<QTime> getLastTimes( int number ) const;
+    HbPointTime operator[](int index) const;
+    QList<HbPointTime> getLastRecords( int number ) const;
 
-    // TODO RECONSIDER THE WHOLE DESIGN
-    QList<qreal> mPoints;
-    QList<QTime> mTimes;
-private:
-    template <class T> QList<T> getLastItems( QList<T> list, int number ) const;
-
-
-
+    qreal mThreshold;
 };
+
+inline uint qHash(const QTime &)
+{
+    return 0;
+}
+
+inline uint qHash(const qreal)
+{
+    return 0;
+}
 
 #endif // HBPOINTRECORDER_P_H

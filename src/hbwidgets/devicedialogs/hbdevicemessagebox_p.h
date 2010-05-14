@@ -40,7 +40,6 @@ class HbDeviceMessageBoxPrivate : public QObject
         Type,
         Text,
         IconName,
-        IconAlignment,
         IconVisible,
         Timeout,
         DismissPolicy,
@@ -88,7 +87,6 @@ public:
 
     static int timeoutValue(HbPopup::DefaultTimeout timeout);
     static ActionSelector actionSelector(HbDeviceMessageBox::ActionRole role);
-    static HbAction *toHbAction(QAction *action);
 
     void scheduleUpdateEvent();
     void timerEvent(QTimerEvent *event);

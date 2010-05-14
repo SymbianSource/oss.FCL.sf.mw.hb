@@ -110,7 +110,12 @@ bool HbGraphicsScenePrivate::focusChangeEvent(const QKeyEvent *event)
     QGraphicsItem *item(q->focusItem());
     bool cont(true);
     bool result(false);
-    HbWidget *widget = static_cast<HbWidget *>(item);
+
+    HbWidget *widget(0);
+
+    if (item) {
+        widget = qobject_cast<HbWidget *>(item->toGraphicsObject());
+    }
 
     while (cont) {
         result = cont = false;
@@ -118,7 +123,8 @@ bool HbGraphicsScenePrivate::focusChangeEvent(const QKeyEvent *event)
            focusGroup = widget->d_func()->focusGroup;
 
             if (!focusGroup) {
-                widget = static_cast<HbWidget *>(widget->parentItem());
+                item = widget->parentItem();
+                widget =  item ? qobject_cast<HbWidget *>(item->toGraphicsObject()) : 0;
             }
       }
 
@@ -143,7 +149,8 @@ bool HbGraphicsScenePrivate::focusChangeEvent(const QKeyEvent *event)
         if (!result) {
             cont = true;
             focusGroup = 0;
-            widget = static_cast<HbWidget *>(widget->parentItem());
+            item = widget->parentItem();
+            widget =  item ? qobject_cast<HbWidget *>(item->toGraphicsObject()) : 0;
         }
     }
     return result;

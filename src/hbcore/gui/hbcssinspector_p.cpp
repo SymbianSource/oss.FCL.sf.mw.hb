@@ -129,16 +129,23 @@ static QString convertMeasurementToText(const QGraphicsItem *item, qreal hint)
     return hintText;
 }
 
+static QString convertEffectiveSizeHintToText(const QGraphicsWidget *item, Qt::SizeHint which)
+{
+    QString hintText("(");
+    const QSizeF &size = item->effectiveSizeHint(which);
+    hintText += convertMeasurementToText(item, size.width()) + ",";
+    hintText += convertMeasurementToText(item, size.height()) + ")";
+    return hintText;
+}
+
 static QString cssItemHintText(const QGraphicsItem *item)
 {
     QString sizeHint;
     if (item->isWidget()) {
-        const QGraphicsLayout *layout = (static_cast<const QGraphicsWidget *>(item))->layout();
-        if(layout) {
-            sizeHint += "(" + convertMeasurementToText( item, layout->minimumWidth() ) + "," + convertMeasurementToText( item, layout->minimumHeight() ) + ")|";
-            sizeHint += "(" + convertMeasurementToText( item, layout->preferredWidth() ) + "," + convertMeasurementToText( item, layout->preferredHeight() ) +")|";
-            sizeHint += "(" + convertMeasurementToText( item, layout->maximumWidth() ) + "," +convertMeasurementToText( item, layout->maximumHeight() ) + ")";
-        }
+        const QGraphicsWidget *widget = static_cast<const QGraphicsWidget*>(item);
+        sizeHint += convertEffectiveSizeHintToText(widget, Qt::MinimumSize)+"|";
+        sizeHint += convertEffectiveSizeHintToText(widget, Qt::PreferredSize)+"|";
+        sizeHint += convertEffectiveSizeHintToText(widget, Qt::MaximumSize);
     }
     return sizeHint;
 }
@@ -147,13 +154,12 @@ static QRectF cssItemHintRect(const QGraphicsItem *item)
 {
     QRectF hintRect;
     if (item->isWidget()) {
-            if (item->isWidget()) {
-                const QGraphicsLayout *layout = (static_cast<const QGraphicsWidget *>(item))->layout();
-                if(layout) {
-                    hintRect.setWidth(layout->preferredWidth());
-                    hintRect.setHeight(layout->preferredHeight());
-                }
-            }
+        if (item->isWidget()) {
+            const QGraphicsWidget *widget = static_cast<const QGraphicsWidget*>(item);
+            const QSizeF &size = widget->effectiveSizeHint(Qt::PreferredSize);
+            hintRect.setWidth(size.width());
+            hintRect.setHeight(size.height());
+        }
     }
     return hintRect;
 }

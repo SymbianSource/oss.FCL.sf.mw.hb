@@ -66,15 +66,6 @@ void HbInputAbstractMethod::closeKeypad()
 }
 
 // ---------------------------------------------------------------------------
-// HbInputAbstractMethod::launchCharacterPreviewPane
-//
-// ---------------------------------------------------------------------------
-void HbInputAbstractMethod::launchCharacterPreviewPane(int key)
-{
-    Q_UNUSED(key);
-}
-
-// ---------------------------------------------------------------------------
 // HbInputAbstractMethod::switchSpecialCharacterTable
 //
 // ---------------------------------------------------------------------------
@@ -175,4 +166,8 @@ bool HbInputAbstractMethod::isSctModeActive() const
 	return false;
 }
 
+HbKeyboardType HbInputAbstractMethod::currentKeyboardType() const
+{
+    return HbKeyboardNone;
+}
    

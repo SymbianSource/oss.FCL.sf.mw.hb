@@ -168,10 +168,6 @@ void HbThemePrivate::handleThemeChange(const QString &str)
         HbThemeUtils::updateThemeSetting(HbThemeUtils::CurrentThemeSetting, newTheme);
     }
 
-    // Clear the theme index table offsets as the theme has changed.
-    // New offsets will be retrieved from server when the index is accessed.
-    themeIndex.clear();
-
     iconTheme.setCurrentTheme(newTheme);
     HbColorTheme::instance()->setCurrentTheme(newTheme);
     HbEffectTheme::instance()->setCurrentTheme(newTheme);

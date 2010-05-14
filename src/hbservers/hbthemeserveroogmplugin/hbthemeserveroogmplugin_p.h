@@ -52,7 +52,7 @@ public:
     void MemoryGood();
     
     virtual void FreeRam(TInt aBytesToFree, TBool aUseSwRendering);
-    virtual void MemoryGood(TBool aUseSwRendering);
+    virtual void MemoryGood(TBool aUsingSwRendering);
 
 private: //data members
     HbThemeClientOogm* oogmClient; 

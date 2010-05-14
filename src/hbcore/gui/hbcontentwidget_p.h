@@ -44,7 +44,7 @@ public:
     void delayedConstruction();
     void setTargetView(HbView *view);
     void runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitchFlags flags);
-    bool isSwitchingViews() const { return viewSwitchRunning; }
+    bool isSwitchingViews() const { return mViewSwitchRunning; }
 
 private slots:
     void hideEffectFinished(HbEffect::EffectStatus status);
@@ -61,11 +61,11 @@ private:
     QGraphicsWidget *getEffectTarget(HbView *view, Hb::ViewSwitchFlags flags);
     void runViewSwitchEffectShow();
 
-    bool viewSwitchRunning;
-    HbView *targetView;
-    HbView *hidingView;
-    Hb::ViewSwitchFlags viewSwitchFlags;
-    HbMainWindow *mainWindow;
+    bool mViewSwitchRunning;
+    HbView *mTargetView;
+    HbView *mHidingView;
+    Hb::ViewSwitchFlags mViewSwitchFlags;
+    HbMainWindow *mMainWindow;
 };
 
 #endif // HBCONTENTWIDGET_P_H

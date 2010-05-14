@@ -69,7 +69,7 @@ HbDataFormViewItem::dataItem_Label[!hasIcon]:portrait
 HbDataFormViewItem::dataItem_ContentWidget:portrait
 {
     top:-var(hb-param-margin-gene-middle-vertical);
-    left:-var(hb-param-margin-indentation);
+    left:-var(hb-param-margin-gene-left);
     right:var(hb-param-margin-gene-right);
     bottom:var(hb-param-margin-gene-middle-vertical);
 }

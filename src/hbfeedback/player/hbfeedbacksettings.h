@@ -47,20 +47,12 @@ public:
     void disableFeedback();
     bool isFeedbackEnabled();
 
-    void enableType(HbFeedback::Type type); // deprecated
-    void disableType(HbFeedback::Type type); // deprecated
-    bool isTypeEnabled(HbFeedback::Type type); // deprecated
-
-    bool isFeedbackAllowed(HbFeedback::Type type); // deprecated
-
 signals:
     void feedbackEnabled();
     void feedbackDisabled();
-    void feedbackTypeEnabled(HbFeedback::Type type); // deprecated
-    void feedbackTypeDisabled(HbFeedback::Type type); // deprecated
 
 private:
-    HbFeedbackSettingsPrivate* const d;
+    HbFeedbackSettingsPrivate* d;
 };
 
 #endif // HBFEEDBACKSETTINGS_H

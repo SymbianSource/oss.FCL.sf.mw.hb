@@ -26,7 +26,7 @@
 #include "hbpushbutton.h"
 #include "hbpushbutton_p.h"
 #include "hbstyle.h"
-#include "hbstyleoptionpushbutton.h"
+#include "hbstyleoptionpushbutton_p.h"
 #include "hbframedrawerpool_p.h"
 #include "hbnamespace.h"
 #ifdef HB_EFFECTS
@@ -133,7 +133,6 @@ HbPushButtonPrivate::HbPushButtonPrivate() :
     iconItem(0),
     frameItem(0),
     focusItem(0),
-    orientation(Qt::Vertical),
     backgroundFrameDrawer(0),
     longPressTimer(0),
     textAlignment(Qt::AlignHCenter | Qt::AlignVCenter ),
@@ -194,7 +193,7 @@ void HbPushButtonPrivate::createPrimitives()
             iconItem = q->style()->createPrimitive( HbStyle::P_PushButton_icon, q);
         }
     } else {
-        if( iconItem ){
+        if( iconItem ) {
             delete iconItem;
         }
         iconItem = 0;
@@ -211,10 +210,10 @@ void HbPushButtonPrivate::createPrimitives()
     }
 
     if( !focusItem ) {
-    focusItem = q->style()->createPrimitive(HbStyle::P_PushButton_focus, q);
-    //focus primitive is will not be visible by default, 
-    //only in case of keyboard focus events it will be Visible.
-    focusItem->setVisible( false );
+        focusItem = q->style()->createPrimitive(HbStyle::P_PushButton_focus, q);
+        //focus primitive is will not be visible by default, 
+        //only in case of keyboard focus events it will be Visible.
+        focusItem->setVisible( false );
     }
 }
 
@@ -231,18 +230,18 @@ void HbPushButtonPrivate::_q_handleLongPress(QPointF point)
 
 void HbPushButtonPrivate::_q_handleLongKeyPress( )
 {
-    Q_Q(HbPushButton);
-    if(!longPress){
+    Q_Q( HbPushButton );
+    if(!longPress) {
         longPress = true;
-        emit q->longPress( q->pos() );
+        emit q->longPress( q->pos( ) );
     }
 }
 
 void HbPushButtonPrivate::initialize()
 {
-    Q_Q(HbPushButton);
+    Q_Q( HbPushButton );
     q_ptr = q;
-    createPrimitives();
+    createPrimitives( );
 }
 
 /*!
@@ -252,10 +251,10 @@ void HbPushButtonPrivate::initialize()
 HbPushButton::HbPushButton( QGraphicsItem *parent )
     : HbAbstractButton( *new HbPushButtonPrivate, parent )
 {
-    Q_D(HbPushButton);
-    d->initialize();
+    Q_D( HbPushButton );
+    d->initialize( );
 
-    setProperty("state", "normal");
+    setProperty( "state", "normal" );
      
 }
 
@@ -263,14 +262,14 @@ HbPushButton::HbPushButton( QGraphicsItem *parent )
     @beta
     Constructs a new HbPushButton with \a text and \a parent.
  */
-HbPushButton::HbPushButton(const QString &text, QGraphicsItem *parent)
-    : HbAbstractButton(*new HbPushButtonPrivate, parent)
+HbPushButton::HbPushButton( const QString &text, QGraphicsItem *parent )
+    : HbAbstractButton( *new HbPushButtonPrivate, parent )
 {
-    Q_D(HbPushButton);
+    Q_D( HbPushButton );
     d->text = text;
-    d->initialize();
+    d->initialize( );
 
-    setProperty("state", "normal");
+    setProperty( "state", "normal" );
      
 
 }
@@ -282,38 +281,19 @@ HbPushButton::HbPushButton(const QString &text, QGraphicsItem *parent)
 HbPushButton::HbPushButton( const HbIcon &icon, const QString &text, QGraphicsItem *parent )
     : HbAbstractButton( *new HbPushButtonPrivate, parent )
 {
-    Q_D(HbPushButton);
+    Q_D( HbPushButton );
     d->icon = icon;
     d->text = text;
-    d->initialize();
+    d->initialize( );
 
-    setProperty("state", "normal");
+    setProperty( "state", "normal" );
 
-}
-
-/*!
-    \deprecated HbPushButton::HbPushButton(const HbIcon&, const QString&, Qt::Orientation, QGraphicsItem*)
-        is deprecated.
-    Constructs a new HbPushButton with \a icon, \a text \a orientation and \a parent.
- */
-HbPushButton::HbPushButton( const HbIcon &icon, const QString &text,
-    Qt::Orientation orientation, QGraphicsItem *parent )
-    : HbAbstractButton( *new HbPushButtonPrivate, parent )
-{
-    Q_D(HbPushButton);
-    d->icon = icon;
-    d->text = text;
-    d->initialize();
-    d->orientation = orientation;
-
-    setProperty("state", "normal");
-            
 }
 
 /*!
     Destructs the push button.
  */
-HbPushButton::~HbPushButton()
+HbPushButton::~HbPushButton( )
 {
 
 }
@@ -328,10 +308,7 @@ HbPushButton::~HbPushButton()
  */
 void  HbPushButton::setBackground( const HbIcon &background )
 {
-    Q_D(HbPushButton);
-    if( !d->frameItem ) {
-       d->createPrimitives();
-    }
+    Q_D( HbPushButton );
     if ( d->background != background ) {
         d->background = background;
         d->backgroundFrameDrawer = 0;
@@ -347,9 +324,9 @@ void  HbPushButton::setBackground( const HbIcon &background )
 
     \sa setBackground()
  */
-HbIcon HbPushButton::background() const
+HbIcon HbPushButton::background( ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
     return d->background;
 }
 
@@ -364,16 +341,13 @@ HbIcon HbPushButton::background() const
  */
 void  HbPushButton::setFrameBackground( HbFrameDrawer *backgroundFrameDrawer )
 {
-    Q_D(HbPushButton);
-    if (d->backgroundFrameDrawer != backgroundFrameDrawer) {
-        if( !d->frameItem ) {
-            d->createPrimitives();
-        }
-        d->backgroundFrameDrawer=backgroundFrameDrawer;
-        d->background=HbIcon();
+    Q_D( HbPushButton );
+    if ( d->backgroundFrameDrawer != backgroundFrameDrawer ) {
+        d->backgroundFrameDrawer = backgroundFrameDrawer;
+        d->background = HbIcon( );
         HbStyleOptionPushButton buttonOption;
         initStyleOption( &buttonOption );
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        style( )->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
 }
 
@@ -383,9 +357,9 @@ void  HbPushButton::setFrameBackground( HbFrameDrawer *backgroundFrameDrawer )
 
     \sa setBackground()
  */
-HbFrameDrawer* HbPushButton::frameBackground() const
+HbFrameDrawer *HbPushButton::frameBackground( ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
     return ( d->backgroundFrameDrawer );
 }
 
@@ -398,19 +372,19 @@ HbFrameDrawer* HbPushButton::frameBackground() const
  */
 void HbPushButton::setText( const QString &text )
 {
-    Q_D(HbPushButton);
+    Q_D( HbPushButton );
     if ( d->text != text ) {
         bool doPolish = text.isEmpty() || d->text.isEmpty();
         d->text = text;
-        d->createPrimitives();
+        d->createPrimitives( );
         //updatePrimitives();
-        if( d->textItem ){
+        if( d->textItem ) {
             HbStyleOptionPushButton buttonOption;
-            initStyleOption(&buttonOption);
-            style()->updatePrimitive( d->textItem, HbStyle::P_PushButton_text, &buttonOption);
+            initStyleOption( &buttonOption );
+            style( )->updatePrimitive( d->textItem, HbStyle::P_PushButton_text, &buttonOption);
         }
         if(doPolish) {
-            repolish();
+            repolish( );
         }
     }
 }
@@ -422,9 +396,9 @@ void HbPushButton::setText( const QString &text )
 
     \sa setText()
  */
-QString HbPushButton::text() const
+QString HbPushButton::text( ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
     return d->text;
 }
 
@@ -440,16 +414,16 @@ QString HbPushButton::text() const
  */
 void HbPushButton::setAdditionalText( const QString &additionalText )
 {
-    Q_D(HbPushButton);
+    Q_D( HbPushButton );
     if ( d->additionalText != additionalText ) {
         bool doPolish = additionalText.isEmpty() || d->additionalText.isEmpty();
         d->additionalText = additionalText;
-        d->createPrimitives();
+        d->createPrimitives( );
         // updatePrimitives();
-        if(d->additionalTextItem){
+        if( d->additionalTextItem ) {
             HbStyleOptionPushButton buttonOption;
-            initStyleOption(&buttonOption);
-            style()->updatePrimitive( d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption);
+            initStyleOption( &buttonOption );
+            style( )->updatePrimitive( d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption);
         }
         if( doPolish ) {
             repolish();
@@ -463,9 +437,9 @@ void HbPushButton::setAdditionalText( const QString &additionalText )
 
     \sa setAdditionalText()
  */
-QString HbPushButton::additionalText() const
+QString HbPushButton::additionalText( ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
     return d->additionalText;
 }
 
@@ -477,22 +451,22 @@ QString HbPushButton::additionalText() const
 
     \sa icon()
  */
-void HbPushButton::setIcon(const HbIcon &icon)
+void HbPushButton::setIcon( const HbIcon &icon )
 {
     Q_D(HbPushButton);
 
     if ( d->icon != icon ) {
-        bool doPolish = icon.isNull() || d->icon.isNull();
+        bool doPolish = icon.isNull( ) || d->icon.isNull();
         d->icon = icon;
-        d->createPrimitives();
+        d->createPrimitives( );
         //updatePrimitives();
-        if(d->iconItem ){
+        if( d->iconItem ) {
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
             style()->updatePrimitive( d->iconItem, HbStyle::P_PushButton_icon, &buttonOption );
 
         }
-        if( doPolish ){
+        if( doPolish ) {
             repolish();
         }
     }
@@ -504,66 +478,30 @@ void HbPushButton::setIcon(const HbIcon &icon)
     \sa setIcon()
  */
 
-HbIcon HbPushButton::icon() const
+HbIcon HbPushButton::icon( ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
     return d->icon;
 }
 
-
 /*!
-    \deprecated HbPushButton::setOrientation( Qt::Orientation )
-        is deprecated. Please use HbPushButton::setStretched(bool) instead 
-
-    Set the orientation.Default orientation is Qt::Vertical.
-    In case of icon ,text and additional text it has to be set to Qt::Horizontal.
-    In case of additionalText and text it has to be set to Qt:Vertical.
-    \sa orientation()
-*/
-void HbPushButton::setOrientation( Qt::Orientation orientation )
-{
-    Q_D(HbPushButton);
-    if( d->orientation != orientation ) {
-        d->orientation = orientation;
-        // calling setStretchedMode internaly this api is going to be depricated.
-        bool stretched = 
-            (d->orientation == Qt::Vertical)?(false):(true);
-        setStretched( stretched );        
-    }
-    qDebug()<<"This api is deprecated use HbPushButton::setStretched( bool stretched )";
-}
-
-/*!
-    \deprecated HbPushButton::orientation() const
-        is deprecated.Please use bool HbPushButton::isStretched() const instead 
-
-    Returns orientation of button
-    \sa setOrientation ()
-*/
-Qt::Orientation HbPushButton::orientation() const
-{
-    Q_D(const HbPushButton);
-    qDebug()<<"This api is deprecated use bool HbPushButton::isStretched() const";
-    return d->orientation;    
-}
-
-/*!
+    @beta
     Set the text alignment for primarytext  and additional text.
     The default alignment is Qt::AlignHCenter | Qt::AlignVCenter.
     \sa textAlignment()
 */
 void HbPushButton::setTextAlignment( Qt::Alignment alignment )
 {
-    Q_D(HbPushButton); 
+    Q_D( HbPushButton ); 
 
     //HbWidgetBase* textItem = static_cast<HbWidgetBase*>(d->textItem);		
-    if(!d->textItem){
+    if( !d->textItem ) {
         //need to create text item if user call alignment api before setText.
-        d->textItem = style()->createPrimitive( HbStyle::P_PushButton_text, this);
+        d->textItem = style( )->createPrimitive( HbStyle::P_PushButton_text, this);
     }
     //HbWidgetBasePrivate *textItem_p = HbWidgetBasePrivate::d_ptr(textItem);	
     // check for textitem and api protection flag
-    if(alignment != d->textAlignment ){
+    if( alignment != d->textAlignment ){
         //take the alignment 
         d->textAlignment = alignment;
         //set the api protection flag 
@@ -578,6 +516,7 @@ void HbPushButton::setTextAlignment( Qt::Alignment alignment )
 }
 
 /*!
+    @beta
     Returns the text alignment for primary text and additional text
     \sa setTextAlignment()
 */
@@ -589,21 +528,22 @@ Qt::Alignment HbPushButton::textAlignment( ) const
 
 
 /*!
+    @beta
     Set the text alignment for additional text.
     The default alignment is Qt::AlignHCenter | Qt::AlignVCenter.
     \sa additionalTextAlignment()
 */
 void HbPushButton::setAdditionalTextAlignment( Qt::Alignment alignment )
 {
-    Q_D(HbPushButton); 
+    Q_D( HbPushButton ); 
 
     //HbWidgetBase* additionalTextItem = static_cast<HbWidgetBase*>(d->additionalTextItem);	
-    if(!d->additionalTextItem){
+    if(!d->additionalTextItem) {
         //need to create text item if user call alignment api before setAdditionalText.
-        d->additionalTextItem = style()->createPrimitive( HbStyle::P_PushButton_additionaltext, this);
+        d->additionalTextItem = style( )->createPrimitive( HbStyle::P_PushButton_additionaltext, this);
     }
     // check for textitem and api protection flag
-    if(alignment != d->additionalTextAlignment ){
+    if( alignment != d->additionalTextAlignment ) {
         //take the alignment 
         d->additionalTextAlignment = alignment;
         //set the api protection flag 
@@ -611,12 +551,13 @@ void HbPushButton::setAdditionalTextAlignment( Qt::Alignment alignment )
         d->hasAdditionalTextAlignment = true;
         HbStyleOptionPushButton buttonOption;            
         initStyleOption( &buttonOption );
-        style()->updatePrimitive( 
+        style( )->updatePrimitive( 
         d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption );
     }
 }
 
 /*!
+    @beta
     Returns the text alignment for additional text
     \sa setAdditionalTextAlignment()
 */
@@ -627,6 +568,7 @@ Qt::Alignment HbPushButton::additionalTextAlignment( ) const
 }
 
 /*!
+    @beta
     Sets the stretched layout for button by default it set to true. setStretched true/false.
     For the case icon and text with value false will appear icon and text vertically aligned.
     and with value true will appear icon and text horizontally aligned.
@@ -648,6 +590,7 @@ void HbPushButton::setStretched( bool stretched )
 }
 
 /*!
+    @beta
     Returns the whether button has streteched layout or not.
     \sa setStretched ()
 */
@@ -664,11 +607,11 @@ bool HbPushButton::isStretched() const
 
     \reimp
  */
-QGraphicsItem* HbPushButton::primitive( HbStyle::Primitive primitive ) const
+QGraphicsItem *HbPushButton::primitive( HbStyle::Primitive primitive ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
 
-    switch (primitive) {
+    switch ( primitive ) {
         case HbStyle::P_PushButton_background:
             return d->frameItem;
         case HbStyle::P_PushButton_icon:
@@ -691,7 +634,7 @@ QGraphicsItem* HbPushButton::primitive( HbStyle::Primitive primitive ) const
  */
 void HbPushButton::recreatePrimitives()
 {
-   Q_D(HbPushButton);
+   Q_D( HbPushButton );
    HbWidget::recreatePrimitives();
 
    delete d->frameItem;
@@ -707,16 +650,16 @@ void HbPushButton::recreatePrimitives()
    delete d->focusItem;
    d->focusItem = 0;
    
-   d->createPrimitives();
-   setFrameBackground(0);
+   d->createPrimitives( );
+   setFrameBackground( 0 );
 }
 /*!
     \reimp
  */
 void HbPushButton::updatePrimitives()
 {
-    Q_D(HbPushButton);
-    HbWidget::updatePrimitives();
+    Q_D( HbPushButton );
+    HbWidget::updatePrimitives( );
 
     HbStyleOptionPushButton buttonOption;
     initStyleOption(&buttonOption);
@@ -725,15 +668,15 @@ void HbPushButton::updatePrimitives()
     }
     if ( d->touchArea ) {
         style()->updatePrimitive( d->touchArea, HbStyle::P_PushButton_toucharea, &buttonOption );
-    }	
-    if( d->additionalTextItem ){
+    }
+    if( d->additionalTextItem ) {
         style()->updatePrimitive(
             d->additionalTextItem,HbStyle::P_PushButton_additionaltext,&buttonOption );
     }
     if ( d->iconItem) {
         style()->updatePrimitive( d->iconItem, HbStyle::P_PushButton_icon, &buttonOption );
     }
-    if ( d->frameItem ){
+    if ( d->frameItem ) {
         style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
     // update will happen only for keyevents when focusItem will be visible.
@@ -745,7 +688,7 @@ void HbPushButton::updatePrimitives()
 /*!
     \internal
  */
-HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem * parent) :
+HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem *parent) :
     HbAbstractButton(dd, parent)
 {
 }
@@ -755,9 +698,9 @@ HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem * parent) :
     This method is useful for subclasses when they need a HbStyleOptionPushButton,
     but don't want to fill in all the information themselves.
  */
-void HbPushButton::initStyleOption(HbStyleOptionPushButton *option) const
+void HbPushButton::initStyleOption( HbStyleOptionPushButton *option ) const
 {
-    Q_D(const HbPushButton);
+    Q_D( const HbPushButton );
 
     HbAbstractButton::initStyleOption(option);
 
@@ -771,11 +714,11 @@ void HbPushButton::initStyleOption(HbStyleOptionPushButton *option) const
     option->additionalTextAlignment = d->additionalTextAlignment;
     option->hasTextAlignment = d->hasTextAlignment;
     option->hasAdditionalTextAlignment = d->hasAdditionalTextAlignment;
-    if(option->backgroundFrameDrawer) {
-        HbFrameDrawerPool::release(option->backgroundFrameDrawer);
+    if( option->backgroundFrameDrawer ) {
+        HbFrameDrawerPool::release( option->backgroundFrameDrawer );
         option->backgroundFrameDrawer = 0;
     }
-    option->backgroundFrameDrawer=( d->backgroundFrameDrawer );
+    option->backgroundFrameDrawer = ( d->backgroundFrameDrawer );
 }
 
 /*!
@@ -783,18 +726,18 @@ void HbPushButton::initStyleOption(HbStyleOptionPushButton *option) const
  */
 void HbPushButton::keyPressEvent(QKeyEvent *event)
 {
-    Q_D(HbPushButton);
+    Q_D( HbPushButton );
 
-    switch (event->key()) {
+    switch ( event->key() ) {
         case Qt::Key_Select:
         case Qt::Key_Enter:
         case Qt::Key_Return:{
-                if (!event->isAutoRepeat() && !d->autoRepeat && !d->longPressTimer) {
+                if (!event->isAutoRepeat( ) && !d->autoRepeat && !d->longPressTimer) {
                     d->longPressTimer = new QTimer();
                     d->longPressTimer->setInterval(300);
-                    connect( d->longPressTimer, SIGNAL(timeout()), this, SLOT(_q_handleLongKeyPress()) );
+                    connect( d->longPressTimer, SIGNAL( timeout() ), this, SLOT(_q_handleLongKeyPress()) );
                     d->longPressTimer->start();
-                }else{
+                }else {
                     #ifdef HB_EFFECTS
                         HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
                     #endif
@@ -850,21 +793,21 @@ void HbPushButton::keyReleaseEvent(QKeyEvent *event)
 void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
 #ifndef HB_GESTURE_FW
-    Q_D(HbPushButton);
-    HbAbstractButton::mousePressEvent(event);
+    Q_D( HbPushButton );
+    HbAbstractButton::mousePressEvent( event );
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );
-    if( d->frameItem ){
+    if( d->frameItem ) {
         style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
 #ifdef HB_EFFECTS
-    if ( hitButton(event->pos()) ){
+    if ( hitButton(event->pos()) ) {
         HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
     }
 #endif
-    setProperty("state", "pressed");    
+    setProperty( "state", "pressed" );    
 #else
-    Q_UNUSED(event)
+    Q_UNUSED( event )
 #endif
 }
 
@@ -872,46 +815,46 @@ void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
 /*!
     \reimp
  */
-void HbPushButton::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+void HbPushButton::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
-    Q_D(HbPushButton);
-    HbAbstractButton::mouseReleaseEvent(event);
+    Q_D( HbPushButton );
+    HbAbstractButton::mouseReleaseEvent( event );
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );     
-    if( d->frameItem ){
+    if( d->frameItem ) {
         style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
 #ifdef HB_EFFECTS
-    if ( hitButton(event->pos()) ){
+    if ( hitButton(event->pos()) ) {
         HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
     }
 #endif
-    setProperty("state", "normal"); 
+    setProperty( "state", "normal" ); 
 }
 
 /*!
     \reimp
  */
-void HbPushButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+void HbPushButton::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 {
-    Q_D(HbPushButton);
-    HbAbstractButton::mouseMoveEvent(event);
+    Q_D( HbPushButton );
+    HbAbstractButton::mouseMoveEvent( event );
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );
-    if( d->frameItem ){
+    if( d->frameItem ) {
         style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
     }
     if (d->down) {
-        setProperty("state", "pressed");
+        setProperty( "state", "pressed" );
     } else {
-        setProperty("state", "normal");
+        setProperty( "state", "normal" );
     }
 }
 #endif
 
 
 #ifdef HB_GESTURE_FW
-void HbPushButton::gestureEvent(QGestureEvent *event)
+void HbPushButton::gestureEvent( QGestureEvent *event )
 {
     Q_D(HbPushButton);
     if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
@@ -920,30 +863,30 @@ void HbPushButton::gestureEvent(QGestureEvent *event)
 #ifdef HB_EFFECTS
                 HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
 #endif
-                if(d->checkable && !d->checked){
-                    setProperty("state", "latched");
-                }else if(!d->checkable){
-                    setProperty("state", "pressed");
+                if( d->checkable && !d->checked) {
+                    setProperty( "state", "latched" );
+                }else if(!d->checkable) {
+                    setProperty( "state", "pressed" );
                 }
             }
             break;
         case Qt::GestureUpdated:
             if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
                 d->longPress = true;
-                emit longPress(event->mapToGraphicsScene(tap->position()));
+                emit longPress( event->mapToGraphicsScene(tap->position()) );
             }
             break;
         case Qt::GestureCanceled:
-            setProperty("state", "normal");
+            setProperty( "state", "normal" );
             break;
         case Qt::GestureFinished:{
 #ifdef HB_EFFECTS
                 HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
 #endif
-                if( d->checkable && !d->checked){
-                    setProperty("state", "latched");
+                if( d->checkable && !d->checked) {
+                    setProperty( "state", "latched" );
                 }else {                    
-                    setProperty("state", "normal");
+                    setProperty( "state", "normal" );
                 }
 
             }
@@ -953,7 +896,7 @@ void HbPushButton::gestureEvent(QGestureEvent *event)
         }
     }
 
-    HbAbstractButton::gestureEvent(event);
+    HbAbstractButton::gestureEvent( event );
 
 }
 #endif
@@ -962,20 +905,20 @@ void HbPushButton::gestureEvent(QGestureEvent *event)
 /*!
     \reimp
  */
-void HbPushButton::resizeEvent(QGraphicsSceneResizeEvent *event)
+void HbPushButton::resizeEvent( QGraphicsSceneResizeEvent *event )
 {
-    HbAbstractButton::resizeEvent(event);
+    HbAbstractButton::resizeEvent( event );
 }
 /*!
   reimp
 
 */
-void HbPushButton::polish( HbStyleParameters& params )
+void HbPushButton::polish( HbStyleParameters &params )
 {
     Q_D( HbPushButton );
-    if(d->stretched && (d->textItem && d->additionalTextItem && !d->iconItem)){
+    if( d->stretched && ( d->textItem && d->additionalTextItem && !d->iconItem ) ) {
         d->stretched = false;
-        qWarning()<<"Warning::Invalid Layout: Text and additonalText horizontal appearance not supported";
+        qWarning() << "Warning::Invalid Layout: Text and additonalText horizontal appearance not supported";
     }
     HbAbstractButton::polish( params );
 }
@@ -984,14 +927,14 @@ void HbPushButton::polish( HbStyleParameters& params )
 /*!
     \reimp
  */
-void HbPushButton::focusInEvent(QFocusEvent *event)
+void HbPushButton::focusInEvent( QFocusEvent *event )
 {
-    Q_D(HbPushButton);
-    if((event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason) 
+    Q_D( HbPushButton );
+    if( ( event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason ) 
         && ( d->navigationKeyPress ) ) {
-        if(d->focusItem) {
-            d->focusItem->setVisible(true);
-            if( hasFocus()){
+        if( d->focusItem ) {
+            d->focusItem->setVisible( true );
+            if( hasFocus() ) {
                 HbStyleOptionPushButton buttonOption;
                 initStyleOption( &buttonOption );
                 style()->updatePrimitive( d->focusItem,HbStyle::P_PushButton_focus, &buttonOption );
@@ -1000,19 +943,19 @@ void HbPushButton::focusInEvent(QFocusEvent *event)
             d->focusItem = style()->createPrimitive(HbStyle::P_PushButton_focus, this);
         }
     }
-    HbAbstractButton::focusInEvent(event);
+    HbAbstractButton::focusInEvent( event );
 }
 
 /*!
     \reimp
  */
-void HbPushButton::focusOutEvent(QFocusEvent *event)
+void HbPushButton::focusOutEvent( QFocusEvent *event )
 {
-    Q_D(HbPushButton);
-    if(d->focusItem) {
-        d->focusItem->setVisible(false);
+    Q_D( HbPushButton );
+    if( d->focusItem ) {
+        d->focusItem->setVisible( false );
     }
-    HbAbstractButton::focusOutEvent(event);
+    HbAbstractButton::focusOutEvent( event );
 }
 
 /*!
@@ -1039,7 +982,7 @@ QVariant HbPushButton::itemChange(GraphicsItemChange change, const QVariant &val
 /*!
   Overloaded hit detection to include touch area
  */
-bool HbPushButton::hitButton(const QPointF &pos) const
+bool HbPushButton::hitButton( const QPointF &pos ) const
 {
     Q_D( const HbPushButton );
     QRectF compRect = d->touchArea->boundingRect( );

@@ -35,6 +35,7 @@
 #include <hbmainwindow.h>
 #include <hbinstance.h>
 #include <hbeffect.h>
+#include <hbinputbutton.h>
 
 #include "virtual12key.h"
 
@@ -114,8 +115,8 @@ void HbInputSpellQuery::dialogClosed(HbAction* action)
 	// action is null when input query is closed externally , for example by calling
 	// HbDialog::close() function.
 	if (action) {
-		isOk = (action->text() == primaryAction()->text())? true : false;
-		isCancel = (action->text() == secondaryAction()->text())? true:false;
+		isOk = (action->text() == actions().at(0)->text())? true : false;
+		isCancel = (action->text() == actions().at(1)->text())? true:false;
 	} else {
 		isExternalClose = true;
 	}
@@ -214,47 +215,9 @@ void HbInputPrediction12KeyHandlerPrivate::chopQMarkAndUpdateEditor()
     }
 }
 
-void HbInputPrediction12KeyHandlerPrivate::_q_timeout()
-{
-    qDebug("HbInputPrediction12KeyHandlerPrivate::_q_timeout()");
-    Q_Q(HbInputPrediction12KeyHandler);
-
-    // let's stop the timer first.
-    mTimer->stop();
-
-    //Long key press number key is applicable to all keys
-    if (mButtonDown) {	
-        if (mLastKey == Qt::Key_Asterisk) {
-			//Remove the "?" mark if present
-            chopQMarkAndUpdateEditor();
-            mInputMethod->switchMode(mLastKey);
-        } else if (mLastKey == Qt::Key_Shift) {
-            mInputMethod->switchMode(Qt::Key_Shift);
-            mLongPressHappened = true;
-        } else if (mLastKey == Qt::Key_Control) {
-            //Remove the "?" mark if present
-            chopQMarkAndUpdateEditor();
-            mInputMethod->selectSpecialCharacterTableMode();
-        } else {
-            //With a long key press of a key, numbers are supposed to be entered.
-            //When the existing input (along with the short key press input of the
-            //existing key) results in tail (i.e. autocompletion), we need to accept
-            //the short key press as well as the tail. In case of ? delete the questionmark and add the number value.          
-            //mTailShowing = false;            
-            // Delete "?" entered
-            if (!mCanContinuePrediction) {
-                deleteOneCharacter();
-            }
-			if (mLastKey != Qt::Key_Delete) {
-				q->commitFirstMappedNumber(mLastKey);
-			}
-            mLongPressHappened = true;
-        }
-    }
-}
-
 bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
 {
+    Q_Q(HbInputPrediction12KeyHandler);
     mLongPressHappened = false;
     HbInputFocusObject *focusObject = 0;
     focusObject = mInputMethod->focusObject();
@@ -264,33 +227,58 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
 
     int buttonId = keyEvent->key();
 
-    
-    if (buttonId == Qt::Key_Control) {
-        mLastKey = buttonId;
-        mButtonDown = true;
-        mTimer->start(HbLongPressTimerTimeout);
-        return true;
-    } else if (buttonId == Qt::Key_Shift) {		
-    // if we get a second consequtive shift key press, 
-    // we want to handle it in buttonRelease
+    if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
+        if (buttonId == HbInputButton::ButtonKeyCodeAsterisk) {
+            if (!mCanContinuePrediction) {
+                mInputMethod->switchMode(buttonId);
+            } else {
+                //Remove the "?" mark if present
+                chopQMarkAndUpdateEditor();
+                mInputMethod->selectSpecialCharacterTableMode();
+            }
+            mLongPressHappened = true;
+        } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
+            mInputMethod->switchMode(HbInputButton::ButtonKeyCodeShift);
+            mLongPressHappened = true;
+        } else if (buttonId == HbInputButton::ButtonKeyCodeSymbol) {
+            //Remove the "?" mark if present
+            chopQMarkAndUpdateEditor();
+            mInputMethod->selectSpecialCharacterTableMode();
+            mLongPressHappened = true;
+        } else {
+            //With a long key press of a key, numbers are supposed to be entered.
+            //When the existing input (along with the short key press input of the
+            //existing key) results in tail (i.e. autocompletion), we need to accept
+            //the short key press as well as the tail. In case of ? delete the questionmark and add the number value.          
+            //mTailShowing = false;            
+            // Delete "?" entered
+            if (!mCanContinuePrediction) {
+                deleteOneCharacter();
+                mLongPressHappened = true;
+            }
+			if (buttonId != HbInputButton::ButtonKeyCodeDelete) {
+				q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
+                mLongPressHappened = true;
+			}
+        }
+
+        if (mLongPressHappened) {
+            mLastKey = 0;
+            return true;
+        }
+    }
+
+    if (buttonId == HbInputButton::ButtonKeyCodeShift) {		
+        // if we get a second consequtive shift key press, 
+        // we want to handle it in buttonRelease
         if (mTimer->isActive() && (mLastKey == buttonId)){
             mShiftKeyDoubleTap = true;
         }
-        if (!mTimer->isActive()) {            		
-            mTimer->start(HbLongPressTimerTimeout);
-        }
-        mLastKey = buttonId;
-        mButtonDown = true;
-        return true;
     }
 
     mLastKey = buttonId;
     mButtonDown = true;
     
-    // custom button should not start timer.
-    if ((buttonId & CUSTOM_INPUT_MASK) != CUSTOM_INPUT_MASK) {
-        mTimer->start(HbLongPressTimerTimeout);
-    }
     return false;
 }
 
@@ -309,14 +297,11 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     // since button is released we can set buttonDown back to false.
     mButtonDown = false;
     int buttonId = keyEvent->key(); 
-    // it was a long press on sct swith button. so just return form here.
-    if (!mTimer->isActive() && buttonId == Qt::Key_Control) {
-        return true;
-    }
 
     // Sym key is handled in this class it self, so not passing it to 
     // the base mode handlers.	
-    if ( buttonId == Qt::Key_Control) {
+    if (buttonId == HbInputButton::ButtonKeyCodeSymbol ||
+        buttonId == HbInputButton::ButtonKeyCodeAlphabet) {
         //Remove the "?" mark if present
         chopQMarkAndUpdateEditor();
         mInputMethod->switchMode(buttonId);
@@ -328,7 +313,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
 	- Behavior of Short Press of Asterisk Key when not in inline editing state 
 		- Should launch SCT
 	*/
-    else if (buttonId == Qt::Key_Asterisk ) {
+    else if (buttonId == HbInputButton::ButtonKeyCodeAsterisk ) {
 		if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {			
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);
@@ -340,11 +325,11 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
 			mInputMethod->starKeySelected();
         return true;
     }	
-    else if (buttonId == Qt::Key_Return) {
+    else if (buttonId == HbInputButton::ButtonKeyCodeEnter) {
         mInputMethod->closeKeypad();
         return true;
     }
-    if (buttonId == Qt::Key_Shift) {
+    if (buttonId == HbInputButton::ButtonKeyCodeShift) {
         // single tap of shift key toggles prediction status in case insensitive languages
         if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage()) {
             HbInputSettingProxy::instance()->togglePrediction();
@@ -371,10 +356,16 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
             } else {
                 updateTextCase();
                 if( !mTimer->isActive()){
-                    mTimer->start();
+                    mTimer->start(HbMultiTapTimerTimeout);
                 }
             }
         }
+        return true;
+    }
+
+    if (buttonId != HbInputButton::ButtonKeyCodeDelete &&
+        mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
+        q->sctCharacterSelected(QChar(buttonId));
         return true;
     }
 
@@ -428,7 +419,7 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
         int eventKey = event->key();
         switch(eventKey) {
         case Qt::Key_0:        
-        case Qt::Key_Space: {
+        case HbInputButton::ButtonKeyCodeSpace: {
             if(d->mCandidates->size() && focusObject) {
                 //Remove the "?" mark
                 (*d->mCandidates)[d->mBestGuessLocation].chop(1);
@@ -437,7 +428,7 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
                 }
             }
             break;
-        case Qt::Key_Shift: {
+        case HbInputButton::ButtonKeyCodeShift: {
             if(event->type() == QEvent::KeyRelease && d->mShiftKeyDoubleTap) {
                 //Remove the "?" mark
                 deleteOneCharacter();
@@ -445,11 +436,10 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
             }
         //For the following set of keys, it does not matter.
         case Qt::Key_Backspace:
-        case Qt::Key_Delete:
-        case Qt::Key_Return:
-        case Qt::Key_Enter:
-		case Qt::Key_Asterisk:
-        case Qt::Key_Control:
+        case HbInputButton::ButtonKeyCodeDelete:
+        case HbInputButton::ButtonKeyCodeEnter:
+		case HbInputButton::ButtonKeyCodeAsterisk:
+        case HbInputButton::ButtonKeyCodeControl:
             break;
         /* Behavior for other keys i.e. from key1 to key9 - 
         To start the long press timer as we need to handle long press functionality i.e Enter corresponding number mapped to a key */
@@ -467,8 +457,6 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
             } else {
                 d->mButtonDown = true;			
                 d->mLastKey = event->key();		
-                // start Long Press timer as corresponding number mapped to a key should be allowed to enter
-                d->mTimer->start(HbLongPressTimerTimeout);					
             }
             return true;
         }

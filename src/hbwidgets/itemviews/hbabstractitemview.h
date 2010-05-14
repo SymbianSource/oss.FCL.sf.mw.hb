@@ -58,8 +58,7 @@ public:
     {
         NoSelection,
         SingleSelection,
-        MultiSelection,
-        ContiguousSelection
+        MultiSelection
     };
 
     enum ScrollHint
@@ -87,9 +86,6 @@ public:
 public:
     virtual ~HbAbstractItemView();
 
-    enum { Type = Hb::ItemType_AbstractItemView };
-    int type() const;
-
     virtual void setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype = 0);
     QAbstractItemModel *model() const;
     
@@ -105,7 +101,6 @@ public:
     
     QModelIndex rootIndex() const;
     
-    void setSelectionMode(SelectionMode newMode, bool resetSelection);
     void setSelectionMode(SelectionMode newMode);
     SelectionMode selectionMode() const;
 
@@ -114,7 +109,6 @@ public:
 
     using HbScrollArea::isVisible;
     bool isVisible(const QModelIndex &index) const;
-    bool isVisible(HbAbstractViewItem *item) const;  
 
     HbAbstractViewItem *currentViewItem() const;
 
@@ -122,14 +116,6 @@ public:
 
     virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible) = 0;
     QList<HbAbstractViewItem *> visibleItems() const;
-
-    HbAbstractViewItem *itemAtPosition(const QPointF& position) const;
-
-    virtual int indexCount() const;
-    virtual int indexPosition(const QModelIndex &index) const;
-
-    virtual QModelIndex nextIndex(const QModelIndex &index) const;
-    virtual QModelIndex previousIndex(const QModelIndex &index) const;
 
     QString layoutName() const;
     void setLayoutName(const QString &layoutName);
@@ -163,10 +149,6 @@ signals:
 protected:
     HbAbstractItemView(HbAbstractItemViewPrivate &dd,
                        HbAbstractItemContainer *container,
-                       QGraphicsItem *parent = 0);
-
-    HbAbstractItemView(HbAbstractItemViewPrivate &dd,
-                       HbAbstractItemContainer *container,
                        HbModelIterator *modelIterator,
                        QGraphicsItem *parent = 0);
     virtual QItemSelectionModel::SelectionFlags selectionCommand( 
@@ -180,8 +162,6 @@ protected:
     virtual void emitReleased(const QModelIndex &modelIndex);
 
     virtual bool scrollByAmount(const QPointF &delta);
-
-    HbAbstractItemContainer *container() const;
 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     bool sceneEventFilter(QGraphicsItem *watched, QEvent *event);

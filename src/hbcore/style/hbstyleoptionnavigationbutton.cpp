@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionnavigationbutton.h"
+#include "hbstyleoptionnavigationbutton_p.h"
 
 /*!
     \class HbStyleOptionNavigationButton

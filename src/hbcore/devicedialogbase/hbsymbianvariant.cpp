@@ -258,7 +258,7 @@ void* CHbSymbianVariantPrivate::Data() {
  The data passed to the constructor is copied to the CHbSymbianVariant.
 
  \sa CHbSymbianVariantMap, CHbDeviceDialog
- \proto
+ \stable
 
  \hbcore
 
@@ -427,7 +427,7 @@ public:
   It replicates QVariantMap functionality to Symbian native programming side.
 
   \sa CHbSymbianVariant, CHbDeviceDialog
-  \proto
+  \stable
 */
 
 /*!

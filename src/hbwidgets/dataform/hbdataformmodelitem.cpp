@@ -49,6 +49,26 @@ QString HbDataFormModelItemPrivate::dirtyProperty()
 {
     return mDirtyProperty;
 }
+
+
+void HbDataFormModelItemPrivate::setModel(const QAbstractItemModel *model)
+{
+    Q_Q(HbDataFormModelItem);
+
+    mModel = const_cast<QAbstractItemModel*>(model);
+    int count = q->childCount();    
+    for (int index = 0; index < count ; index++) {
+        HbDataFormModelItem* item = mChildItems.at(index);
+        HbDataFormModelItemPrivate::d_ptr(item)->setModel(model);         
+    }
+     
+}
+
+QAbstractItemModel* HbDataFormModelItemPrivate::model() const
+{   
+    return mModel;
+}
+
 /*!
     @beta
     @hbwidgets
@@ -86,15 +106,6 @@ QString HbDataFormModelItemPrivate::dirtyProperty()
 
     This enum defines the Roles supported by dataForm.Any data from application 
     can be added through these Roles.
- */
-
-/*!
-    \deprecated HbDataFormModelItem::KeyRole
-        is deprecated.Please remove the reference to this Role.
-
-    \var HbDataFormModelItem::KeyRole
-    KeyRole: This Role is used for the key string for the data item. This will be used 
-    for storing and loading the data from central repository.
  */
 
 /*!
@@ -367,7 +378,7 @@ void HbDataFormModelItem::appendChild(HbDataFormModelItem *child)
     if(child){
         child->setParent(this);
         if(d->mModel) {
-            child->setModel(d->mModel);
+            HbDataFormModelItemPrivate::d_ptr(child)->setModel(d->mModel);
             HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
             model->d_func()->rowsAboutToBeInserted(this, d->mChildItems.count(), d->mChildItems.count());
             d->mChildItems.append(child);
@@ -391,8 +402,8 @@ void HbDataFormModelItem::insertChild(int index, HbDataFormModelItem *child)
 
     if(child) {
         child->setParent(this);
-        if(d->mModel) {
-            child->setModel(model());
+        if(d->mModel) {            
+            HbDataFormModelItemPrivate::d_ptr(child)->setModel(d->mModel);
             HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
             model->d_func()->rowsAboutToBeInserted(this, index, index);
             d->mChildItems.insert(index,child);
@@ -415,11 +426,18 @@ void HbDataFormModelItem::insertChildren(int row , int count ,
     Q_D(HbDataFormModelItem);
     HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
 
-    model->d_func()->rowsAboutToBeInserted(this, row, row + count - 1);
-    for(int index = 0; index < count; index++) {
+    if(model) {
+        model->d_func()->rowsAboutToBeInserted(this, row, row + count - 1);
+        for(int index = 0; index < count; index++) {
         d->mChildItems.insert(row + index, items.at(index));
+        }
+        model->d_func()->rowsInserted();
     }
-    model->d_func()->rowsInserted();
+    else {
+        for(int index = 0; index < count; index++) {
+        d->mChildItems.insert(row + index, items.at(index));
+        }
+    }
 
 }
 
@@ -435,13 +453,23 @@ void HbDataFormModelItem::removeChild(int index)
     Q_D(HbDataFormModelItem);
 
     HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
-    model->d_func()->rowsAboutToBeRemoved(this, index, index);
-    HbDataFormModelItem *item = d->mChildItems.takeAt(index);
-    if ( item ) {
-        delete item;
-        item = 0;
+    if(model) {
+        model->d_func()->rowsAboutToBeRemoved(this, index, index);
+        HbDataFormModelItem *item = d->mChildItems.takeAt(index);
+        if ( item ) {
+            delete item;
+            item = 0;
+        }
+        model->d_func()->rowsRemoved();
     }
-    model->d_func()->rowsRemoved();
+    else {
+        HbDataFormModelItem *item = d->mChildItems.takeAt(index);
+        if ( item ) {
+            delete item;
+            item = 0;
+        }
+    }
+   
 }
 
 /*!
@@ -514,9 +542,7 @@ int HbDataFormModelItem::childCount() const
 QVariant HbDataFormModelItem::data(int role ) const
 {
     Q_D(const HbDataFormModelItem);
-    if(role == KeyRole) {
-        return d->mKey;
-    } else if (role == LabelRole) {
+    if (role == LabelRole) {
         return d->mLabel;
     } else if (role == ItemTypeRole) {
         return d->mItemType;
@@ -544,9 +570,7 @@ QVariant HbDataFormModelItem::data(int role ) const
  void HbDataFormModelItem::setData(int role ,const QVariant &value)
 {
     Q_D(HbDataFormModelItem);
-    if(role == KeyRole) {
-        d->mKey = value.toString();
-    } else if (role == LabelRole) {
+   if (role == LabelRole) {
         d->mLabel = value.toString();
         d->mDirtyProperty = "LabelRole";
     } else if (role == ItemTypeRole) {
@@ -569,7 +593,7 @@ QVariant HbDataFormModelItem::data(int role ) const
         d->mItemData.insert(role,value);       
     }
 
-    HbDataFormModel* data_model = static_cast<HbDataFormModel*>(model());
+    HbDataFormModel* data_model = static_cast<HbDataFormModel*>(d->mModel);
     if(data_model){
         QModelIndex index = data_model->indexFromItem(this);
         emit data_model->dataChanged(index, index);
@@ -600,7 +624,7 @@ void HbDataFormModelItem::setContentWidgetData(
     d->mProperties.insert(propertyName,value);
     d->mDirtyProperty = propertyName;
 
-    HbDataFormModel *data_model = static_cast<HbDataFormModel*>(model());
+    HbDataFormModel *data_model = static_cast<HbDataFormModel*>(d->mModel);
     if(data_model) {
         QModelIndex index = data_model->indexFromItem(this);
         emit data_model->dataChanged(index, index);
@@ -703,35 +727,6 @@ QString HbDataFormModelItem::icon() const
     return data(Qt::DecorationRole).toString();
 }
 
-
-/*!
-    \deprecated HbDataFormModelItem::setModel(const QAbstractItemModel*)
-        is deprecated. Please remove all refernces to this API.
-
-    Sets the given \a model to the item's model. Also sets the Model to Child Items.
-*/
-void HbDataFormModelItem::setModel(const QAbstractItemModel *model)
-{
-     Q_D(HbDataFormModelItem);
-     d->mModel = const_cast<QAbstractItemModel*>(model);
-     int count = childCount();    
-     for (int index = 0; index < count ; index++) {
-         d->mChildItems.at(index)->setModel(model);
-     }
-     
-}
-
-/*!
-    \deprecated HbDataFormModelItem::model() const
-        is deprecated. Please remove all refernces to this API.
-
-    Returns the model of the item.
-*/
-QAbstractItemModel* HbDataFormModelItem::model() const
-{
-    Q_D(const HbDataFormModelItem);
-    return d->mModel;
-}
 /*
 QHash<QString, QVariant> HbDataFormModelItem::getContentWidgetValues()
 {
@@ -755,7 +750,7 @@ void HbDataFormModelItem::setEnabled(bool enabled)
         } else {
             d->mFlags &= ~Qt::ItemIsEnabled;
         }
-        HbDataFormModel* data_model = static_cast<HbDataFormModel*>(model());
+        HbDataFormModel* data_model = static_cast<HbDataFormModel*>(d->mModel);
         if(data_model){
             QModelIndex index = data_model->indexFromItem(this);
             emit data_model->dataChanged(index, index);

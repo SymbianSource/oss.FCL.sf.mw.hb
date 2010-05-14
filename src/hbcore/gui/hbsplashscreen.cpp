@@ -50,6 +50,8 @@
 #endif
 
 /*!
+  @stable
+  @hbcore
   \class HbSplashScreen
 
   \brief Shows a splash screen suitable for the current application.

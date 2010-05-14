@@ -48,7 +48,6 @@ public:  // From HbVirtualKeyboard
     void setupToolCluster();
     
 public slots:
-    void showSettingsDialog();
     void showMethodDialog();
     void showLanguageDialog();
 

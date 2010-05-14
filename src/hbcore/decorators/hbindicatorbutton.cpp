@@ -31,18 +31,25 @@
 
 #include "hbindicatorbutton_p.h"
 #include "hbindicatorbutton_p_p.h"
-#include "hbstyleoptionindicatorbutton.h"
+#include "hbstyleoptionindicatorbutton_p.h"
+
+#if defined(Q_OS_SYMBIAN)
+#include "hbindicatorsym_p.h"
+#else
+#include "hbindicatorwin32_p.h"
+#endif // defined(Q_OS_SYMBIAN)
 
 static const char noteIndicatorType[] = {"com.nokia.hb.indicatormenu/1.0"};
 
-HbIndicatorButtonPrivate::HbIndicatorButtonPrivate()
+HbIndicatorButtonPrivate::HbIndicatorButtonPrivate() :
+    handleIcon(0), defaultAction(0), newEventAction(0), deviceDialog(0)
 {
 
 }
 
 HbIndicatorButtonPrivate::~HbIndicatorButtonPrivate()
 {
-
+    delete deviceDialog;
 }
 
 void HbIndicatorButtonPrivate::init()
@@ -52,13 +59,66 @@ void HbIndicatorButtonPrivate::init()
 
 void HbIndicatorButtonPrivate::showIndicatorMenu()
 {
-    //HbDeviceDialog *deviceDialog = new HbDeviceDialog();
+    if (mIndicators.count() > 0) {
+        QVariantMap parametersMap;
+        QString noteType(noteIndicatorType);
 
-    QVariantMap parametersMap;
-    QString noteType(noteIndicatorType);
+        parametersMap.clear();
+        deviceDialog->show(noteType, parametersMap);
+    }
+}
 
-    parametersMap.clear();
-    deviceDialog->show(noteType, parametersMap);
+void HbIndicatorButtonPrivate::addIndicators(const QList<IndicatorClientInfo> &clientInfo)
+{
+    for (int i = 0; i < clientInfo.size(); ++i) {
+        if (clientInfo.at(i).hasMenuData) {
+            mIndicators.prepend(clientInfo.at(i));
+        }
+    }
+
+    updateIcon();
+}
+
+void HbIndicatorButtonPrivate::removeIndicators(const QList<IndicatorClientInfo> &clientInfo)
+{
+    for (int i = 0; i < clientInfo.size(); ++i) {
+        int index = findIndicator(clientInfo.at(i));
+        if (index >= 0) {
+            mIndicators.removeAt(index);
+        }
+    }
+
+    updateIcon();
+}
+
+int HbIndicatorButtonPrivate::findIndicator(const IndicatorClientInfo &indicator) const
+{
+    int index = -1;
+    for (int i = 0; i < mIndicators.size(); ++i) {
+        if (mIndicators.at(i).type == indicator.type) {
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
+void HbIndicatorButtonPrivate::updateIcon()
+{
+    Q_Q(HbIndicatorButton);
+    bool newEvent(false);
+    for (int i = 0; i < mIndicators.size(); ++i) {
+        if (mIndicators.at(i).category == HbIndicatorInterface::NotificationCategory
+            || mIndicators.at(i).category == HbIndicatorInterface::ProgressCategory) {
+            newEvent = true;
+            break;
+        }
+    }
+    if (newEvent) {
+        q->setAction(newEventAction);
+    } else {
+        q->setAction(defaultAction);
+    }
 }
 
 HbIndicatorButton::HbIndicatorButton(QGraphicsItem *parent) 
@@ -66,6 +126,11 @@ HbIndicatorButton::HbIndicatorButton(QGraphicsItem *parent)
 {
     Q_D(HbIndicatorButton);
     d->init(); 
+
+    // add default actions
+    d->defaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "IndicatorMenu", this);
+    d->newEventAction = new HbAction(HbIcon("qtg_mono_new_event"), "IndicatorMenu", this);
+    setAction(d->defaultAction);
 
     createPrimitives();
 }
@@ -78,15 +143,11 @@ HbIndicatorButton::~HbIndicatorButton()
 void HbIndicatorButton::delayedConstruction()
 {
     Q_D(HbIndicatorButton);
-    // add default actions
-    d->defaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "IndicatorMenu", this);
-    d->notificationAction = new HbAction(HbIcon("qtg_mono_new_event"), "IndicatorMenu", this);
-    setAction(d->defaultAction);
 
     connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
     connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
 
-    d->deviceDialog = new HbDeviceDialog();
+    d->deviceDialog = new HbDeviceDialog(HbDeviceDialog::ImmediateResourceReservationFlag);
 }
 
 void HbIndicatorButton::showHandleIndication(bool show)
@@ -108,6 +169,7 @@ void HbIndicatorButton::createPrimitives()
 {
     Q_D(HbIndicatorButton);
     d->handleIcon = style()->createPrimitive(HbStyle::P_IndicatorButton_handleindication, this);
+    d->handleIcon->setVisible(false);
     setBackgroundItem(HbStyle::P_IndicatorButton_background); // calls updatePrimitives()
 }
 
@@ -121,14 +183,16 @@ void HbIndicatorButton::updatePrimitives()
     HbToolButton::updatePrimitives();
 }
 
-void HbIndicatorButton::setIcon(int count)
+void HbIndicatorButton::activate(const QList<IndicatorClientInfo> &clientInfo)
 {
     Q_D(HbIndicatorButton);
-    if (count == 0) {
-        setAction(d->defaultAction);
-    } else {
-        setAction(d->notificationAction);
-    }
+    d->addIndicators(clientInfo);
+}
+
+void HbIndicatorButton::deactivate(const QList<IndicatorClientInfo> &clientInfo)
+{
+    Q_D(HbIndicatorButton);
+    d->removeIndicators(clientInfo);
 }
 
 void HbIndicatorButton::initStyleOption(HbStyleOptionIndicatorButton *option) const

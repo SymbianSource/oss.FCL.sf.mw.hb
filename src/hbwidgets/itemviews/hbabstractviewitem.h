@@ -57,19 +57,9 @@ public:
         MultiSelection,
         ContiguousSelection
     };
-
-    enum StateKey
-    { 
-        FocusKey,
-        CheckStateKey,
-        UserKey = 100
-    };
-    
+   
     explicit HbAbstractViewItem(QGraphicsItem *parent=0);
     virtual ~HbAbstractViewItem();
-
-    enum { Type = Hb::ItemType_AbstractViewItem };
-    int type() const;
 
     virtual HbAbstractViewItem *createItem() = 0;
     virtual void updateChildItems();
@@ -82,28 +72,17 @@ public:
 
     HbAbstractItemView *itemView() const;
     void setItemView(HbAbstractItemView *itemView);
-    
-    bool isFocused() const;
-    virtual void receivedFocus();
-    virtual void lostFocus();
 
     virtual QHash<QString, QVariant> transientState() const;
     virtual void setTransientState(const QHash<QString, QVariant> &state);
 
-    virtual QMap<int,QVariant> state() const;
-    virtual void setState(const QMap<int,QVariant> &state);
     virtual bool selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const;
-
-    virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
 
     void setCheckState(Qt::CheckState state);
     Qt::CheckState checkState() const;
 
     void setDefaultFrame(const HbFrameBackground &frame);
     HbFrameBackground defaultFrame() const;
-
-    void setPressed(bool pressed, bool animate=true);
-    bool isPressed() const;
 
     Hb::ModelItemType modelItemType() const;
 
@@ -127,10 +106,6 @@ protected:
 
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     virtual bool event(QEvent *e);
-
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
     virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
 

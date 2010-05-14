@@ -42,6 +42,12 @@
 #include "hbvgimageiconrenderer_p.h"
 #include "hbpixmapiconrenderer_p.h"
 
+#define EGL_DESTROY_SURFACE(display, surface) \
+    if (surface != EGL_NO_SURFACE) { eglDestroySurface(display, surface); }
+
+#define EGL_DESTROY_CONTEXT(display, context) \
+    if (context != EGL_NO_CONTEXT) { eglDestroyContext(display, context); }
+            
 // Constants
 static const int HB_BITS_PER_COLOR =    8;
 
@@ -50,13 +56,15 @@ HbNvgIconImpl::HbNvgIconImpl(const HbSharedIconInfo &iconData,
                              const QSizeF& keySize,
                              Qt::AspectRatioMode aspectRatioMode,
                              QIcon::Mode mode,
-                             bool mirrored):
+                             bool mirrored,
+                             HbRenderingMode renderMode):
         HbIconImpl(iconData,
                    name,
                    keySize,
                    aspectRatioMode,
                    mode,
-                   mirrored),
+                   mirrored,
+                   renderMode),
         readyToRender(false),
         specialCaseApplied(false),
         nvgEngine(NULL),
@@ -181,7 +189,7 @@ VGImage HbNvgIconImpl::createVGImageFromNVG(EGLDisplay display,
 
     QSize iconSize(width, height);
 
-    vgSeti(VG_RENDERING_QUALITY, VG_RENDERING_QUALITY_BETTER);
+    vgSeti(VG_RENDERING_QUALITY, VG_RENDERING_QUALITY_FASTER);
 
     HbNvgEngine::HbNvgErrorType errorType = drawNVGIcon(iconSize, *nvgEngine);
 
@@ -250,7 +258,7 @@ QPixmap HbNvgIconImpl::pixmap()
         return currentPixmap;
     }
 
-    if (currentWriteSurface == EGL_NO_SURFACE) {
+    if (currentReadSurface == EGL_NO_SURFACE) {
          //pixmap is called without EGL being initialized
 
         const EGLint attribList2[] = {
@@ -269,11 +277,27 @@ QPixmap HbNvgIconImpl::pixmap()
     VGImage surfaceImage;
     HbNvgEngine localNvgEngine;
 
+    EGLContext newContext = EGL_NO_CONTEXT;
+    if (eglContext == EGL_NO_CONTEXT) {
+        newContext = eglCreateContext(display, config, EGL_NO_CONTEXT, 0);
+        if (newContext == EGL_NO_CONTEXT) {            
+            EGL_DESTROY_SURFACE(display, dummySurface);
+            return currentPixmap;
+        }
+    }
+    
     if (dummySurface) {
+        if (eglMakeCurrent(display, dummySurface, dummySurface,
+                           newContext) == EGL_FALSE) {
+            EGL_DESTROY_SURFACE(display, dummySurface);     
+            EGL_DESTROY_CONTEXT(display, newContext);
+            return currentPixmap;
+        }
+        
         surfaceImage = createVGImageFromNVG(display,
                                             dummySurface,
                                             dummySurface,
-                                            eglContext,
+                                            newContext,
                                             width,
                                             height,
                                             true,
@@ -290,22 +314,30 @@ QPixmap HbNvgIconImpl::pixmap()
     }
 
     if (surfaceImage == VG_INVALID_HANDLE) {
+        EGL_DESTROY_SURFACE(display, dummySurface);     
+        EGL_DESTROY_CONTEXT(display, newContext);
         return currentPixmap;
     }
-
-    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-    if (dummySurface != EGL_NO_SURFACE) {
-        eglDestroySurface(display, dummySurface);
-    }
-
-    prevEGLState.restore();
-
-    QImage image(width, height, QImage::Format_ARGB32_Premultiplied);
-    vgGetImageSubData(surfaceImage, image.bits(), image.bytesPerLine(),
-                      VG_sARGB_8888_PRE, 0, 0, width, height);
-
+    vgFinish();
+    QImage image;
+    if (newContext) {
+        image = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+        vgGetImageSubData(surfaceImage, image.bits(), image.bytesPerLine(),
+                          VG_sARGB_8888_PRE, 0, 0, width, height);
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    } else {
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);    
+        prevEGLState.restore();    
+        image = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+        vgGetImageSubData(surfaceImage, image.bits(), image.bytesPerLine(),
+                          VG_sARGB_8888_PRE, 0, 0, width, height);
+    }    
+    
     vgDestroyImage(surfaceImage);
+
+    EGL_DESTROY_SURFACE(display, dummySurface);
+    EGL_DESTROY_CONTEXT(display, newContext);
+
     currentPixmap = QPixmap::fromImage(image);
     return currentPixmap;
 }
@@ -456,24 +488,14 @@ void HbNvgIconImpl::paint(QPainter* painter,
         return;
     }
 
-    QPainterPath intersect;
-    if (!clipPath.isEmpty()) {
-        QPainterPath piecePath;
-        piecePath.addRect(rect);
-        intersect = clipPath.intersected(piecePath);
-        QRectF intRect = intersect.boundingRect();
-        if (intersect.isEmpty()) {
-            return;
-        }
-    }
-
     if ((iconColor.isValid()) || (mode != QIcon::Normal) ||
             multiPieceIcon || painter->opacity() != 1.0) {
-        if (drawRasterizedIcon(painter, topLeft, renderSize, intersect)) {
+        if (drawRasterizedIcon(painter, topLeft, renderSize, clipPath)) {
             return;
         }
     }
-
+    
+    vgSeti(VG_RENDERING_QUALITY, VG_RENDERING_QUALITY_FASTER);
     drawNVGIcon(painter, topLeft, renderSize, settings);
 }
 

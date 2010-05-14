@@ -31,7 +31,7 @@
     \brief HbIndicatorInterface is an abstract base class
     for all indicator implementations
 
-    Indicators are displayed in the status indicator area and/or in universal indicator menu.
+    Indicators are displayed in the status indicator area and/or in indicator menu.
     Applications can create custom indicators by implementing this abstract class and HbIndicatorPluginInterface.
     Each indicator is identified by its type-string (See indicatorType). Clients use HbIndicator-class to activate
     and deactivate indicators.
@@ -54,30 +54,8 @@
 
     \sa HbIndicatorPluginInterface, HbIndicator
 
-    \alpha
+    \stable
     \hbcore
-*/
-
-/*!
-    \enum HbIndicatorInterface::GroupPriority
-    Defines indicator group priority. This determines where the indicator is shown: in indicator area or only
-    in indicator menu etc.
-
-    \deprecated HbIndicatorInterface::GroupPriority
-        is deprecated. Please use HbIndicatorInterface::Category instead.
-*/
-/*!
-    \var HbIndicatorInterface::GroupPriority HbIndicatorInterface::GroupPriorityHigh
-    High priority indicators are visible in the status area as long as the process is ongoing.
-*/
-/*!
-    \var HbIndicatorInterface::GroupPriority HbIndicatorInterface::GroupPriorityAverage
-    Average priority indicators are used together with notifications (discreet popup)
-    The indicator will appear shortly in the status pane.
-*/
-/*!
-    \var HbIndicatorInterface::GroupPriority HbIndicatorInterface::GroupPriorityLow
-    Low priority indicators are shown only in universal indicator menu.
 */
 
 /*! 
@@ -120,39 +98,31 @@
     An indicator has set of data elements associated with it, each with its own role.
 */
 /*!
-    \var HbIndicatorInterface::DataRole HbIndicatorInterface::IconNameRole
-    Indicator icon path role. This is the primary icon shown in indicator status area. If there's no data
-    for this role, the icon path is retrieved using DataRole::DecorationPathRole instead. The icon must be located 
-    in a directory, where all possible client applications are able to read it. 
-    The icon cannot be located in the plugin's resources. 
-*/
-/*!
     \var HbIndicatorInterface::DataRole HbIndicatorInterface::DecorationNameRole
-    role to the icon path, which is used as a decoration in universal indicator menu.
+    Role to the icon path, which is used as a decoration in indicator menu.
+    The icon must be located in a directory, where all possible client applications are able to read it. 
+    The icon cannot be located in the plugin's resources. 
 */
 
 /*!
     \var HbIndicatorInterface::DataRole HbIndicatorInterface::MonoDecorationNameRole
-    role to the icon path, which is used as a decoration in the status bar area.
+    Role to the icon path, which is used as a decoration in the status bar area.
+    The icon must be located in a directory, where all possible client applications are able to read it. 
+    The icon cannot be located in the plugin's resources. 
+    For the progress indicators this MonoDecorationNameRole is not used and the progress indicator
+    is not configurable.
 */
 
 /*!
     \var HbIndicatorInterface::DataRole HbIndicatorInterface::PrimaryTextRole
-    Primary indicator text shown in universal indicator menu.
+    Primary indicator text shown in indicator menu.
 */
 
 /*!
     \var HbIndicatorInterface::DataRole HbIndicatorInterface::SecondaryTextRole
-    Secondary indicator text shown in universal indicator menu.
+    Secondary indicator text shown in indicator menu.
 */
 
-/*!
-    \var HbIndicatorInterface::DataRole HbIndicatorInterface::TextRole
-    Indicator text shown in universal indicator popup.
-
-    \deprecated HbIndicatorInterface::TextRole
-        is deprecated. Please use HbIndicatorInterface::PrimaryTextRole instead.
-*/
 
 /*!
     \enum HbIndicatorInterface::RequestType
@@ -170,16 +140,9 @@
 /*!
     \fn virtual QVariant HbIndicatorInterface::indicatorData(int role) const = 0
 
-    Returns the data stored under the given role. The indicator should at least have data elements for
-    HbIndicatorInterface::TextRole and HbIndicatorInterface::DecorationNameRole. If data element for
-    HbIndicatorInterface::IconNameRole doesn't exist, the same icon retrieved by \c DecorationNameRole
-    is used both in status indicator area and universal indicator popup.  If the indicator is
-    low priority indicator, it is shown only in universal indicator popup, and data element for
-    \c IconNameRole is ignored
-
-    \a role the data role for the indicator. A value from the HbIndicatorInterface::DataRole - enum.
-
-    For the roles not supported by the plugin, invalid QVariant should be returned.
+    Returns the data stored under the given role.
+    For the roles not supported by the plugin, empty QVariant (QVariant()) should be returned.
+    \sa HbIndicatorInterface::DataRole.
 */
 
 /*!
@@ -212,27 +175,12 @@ public:
     {
         this->indicatorType = indicatorType;
         this->category = category;
-        this->groupPriority = HbIndicatorInterface::GroupPriorityHigh; //temp
-        this->interactionTypes = interactionTypes;
-    }
-
-    //deprecated
-    void init(const QString &indicatorType,
-        HbIndicatorInterface::GroupPriority groupPriority,
-        HbIndicatorInterface::InteractionTypes interactionTypes)
-    {
-        this->indicatorType = indicatorType;
-        this->groupPriority = groupPriority;
-        this->category = (groupPriority == HbIndicatorInterface::GroupPriorityLow)
-                      ? HbIndicatorInterface::SettingCategory
-                          : HbIndicatorInterface::NotificationCategory;
         this->interactionTypes = interactionTypes;
     }
 
 public:
     QString indicatorType;
     HbIndicatorInterface::Category category;
-    HbIndicatorInterface::GroupPriority groupPriority; //deprecated
     HbIndicatorInterface::InteractionTypes interactionTypes;
 };
 
@@ -269,17 +217,6 @@ HbIndicatorInterface::InteractionTypes HbIndicatorInterface::interactionTypes() 
 HbIndicatorInterface::Category HbIndicatorInterface::category() const
 {
     return d->category;
-}
-
-/*!
-    \deprecated HbIndicatorInterface::groupPriority() const
-        is deprecated. Please use HbIndicatorInterface::category() instead.
-
-    returns the priority group the indicator belongs to.
-   */
-HbIndicatorInterface::GroupPriority HbIndicatorInterface::groupPriority() const
-{
-    return d->groupPriority;
 }
 
 /*!
@@ -334,26 +271,6 @@ HbIndicatorInterface::HbIndicatorInterface(const QString &indicatorType,
     d(new HbIndicatorInterfacePrivate())
 {
     d->init(indicatorType, category, interactionTypes);
-}
-
-/*!
-    Constructs an indicator.
-
-    \a indicatorType contains the type of the indicator,
-    \a indicatorGroup indicator group priority the object belongs to,
-    \a interactionTypes interaction type flags for the object
-
-    \deprecated HbIndicatorInterface::HbIndicatorInterface(const QString&, HbIndicatorInterface::GroupPriority, HbIndicatorInterface::InteractionTypes)
-        is deprecated, use the other constructor.
-
-    \deprecated HbIndicatorInterface::HbIndicatorInterface__sub_object(const QString&, HbIndicatorInterface::GroupPriority, QFlags<HbIndicatorInterface::InteractionType>)
-
-*/
-HbIndicatorInterface::HbIndicatorInterface(const QString &indicatorType,
-    GroupPriority indicatorGroup, InteractionTypes interactionTypes) :
-    d(new HbIndicatorInterfacePrivate())
-{
-    d->init(indicatorType, indicatorGroup, interactionTypes);
 }
 
 /*!

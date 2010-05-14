@@ -55,6 +55,7 @@ public:
 
     ~HbThemeServerPrivate();
     bool start();
+    void stop();
 
     bool insertIconCacheItem(const HbIconKey &key, HbIconCacheItem *item);
     HbIconCacheItem* iconCacheItem(const HbIconKey &key);
@@ -81,6 +82,9 @@ public:
     int freeSharedMemory() const;
     int allocatedSharedMemory() const;
 
+	HbRenderingMode currentRenderingMode() const;
+    void setCurrentRenderingMode(HbRenderingMode currentMode);
+
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     int cacheIconCount() const;
@@ -103,7 +107,9 @@ public:
 
 private slots:
     void newClientConnected();
+    void clienDisconnected();
     void removeFromList();
+    bool listen();
 
 public:
     QHash<QString, HbCacheItem*> themePriorityItems;
@@ -117,6 +123,7 @@ private:
     QList<HbThemeServerSession*> sessionList;
     HbIconDataCache *iconCache;
     HbCache *cssCache;
+	HbRenderingMode renderMode;
 };
 
 class HbThemeServerSession : public QObject

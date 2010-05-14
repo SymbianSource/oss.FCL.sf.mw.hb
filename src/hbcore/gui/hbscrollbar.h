@@ -53,9 +53,7 @@ public:
     int type() const { return Type; }
 
     bool isInteractive() const;
-    void setInteractive( bool enabled );
-
-    bool interactive() const; // deprecated
+    void setInteractive( bool enabled );    
 
     QRectF boundingRect() const;
 public slots:

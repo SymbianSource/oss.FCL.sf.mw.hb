@@ -32,6 +32,7 @@
 
 #include "hblayeredstyleloader_p.h"
 #include "hbthemecommon_p.h"
+#include "hbsharedcache_p.h"
 #include "hbiconloader_p.h"
 #include "hbcssparser_p.h"
 #include "hbcache_p.h"
@@ -44,20 +45,17 @@ class HbThemeServerUtils
 public:
     static HbIconSource *getIconSource(const QString &filename);
     static QString formatFromPath(const QString &iconPath);
-    static int getSharedStylesheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority);
+    static int getSharedStylesheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority,
+                                   bool *inSharedCache = 0);
     static bool parseCssFile(HbCss::Parser &parser, const QString &fileName, int &cssOffset);
     static void cleanupUnusedCss(HbCache *cache);
     static int getSharedEffect(const QString &fileName);
     static int getSharedLayoutDefinition(const QString & fileName, const QString &layout, const QString &section);
     static void createDeviceProfileDatabase();
-    static HbSharedCache *createSharedCache();
-    static int sharedCacheOffset();
     static bool removeSharedEffect(const QString &fileName);
     static void clearSharedEffects();
 
 private:
-    static int sharedCacheItemOffset(const QString &key);
-    static int serverSecondaryCacheOffset;
 };
 
 #endif // HBTHEMESERVERUTILS_P_H

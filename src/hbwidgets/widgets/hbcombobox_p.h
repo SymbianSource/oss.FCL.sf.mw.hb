@@ -110,6 +110,8 @@ public:
     bool mHasUpEffect;
     QString mText;
     qreal mListItemHeight;
+    int mDropDownRowsInPortrait;
+    int mDropDownRowsInLandscape;
 };
 
 class HbComboListViewItem : public HbListViewItem

@@ -1,11 +1,19 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <polygon points="24.67,22.22,5.854,22.22,9.92,28.73,11.92,27.48,10.11,24.58,10.12,24.58,10.12,24.58,24.67,24.58"/>
+
 <polygon points="20.6,13.21,18.6,14.46,20.41,17.37,5.854,17.37,5.854,19.72,24.67,19.72"/>
+
 <polygon fill="none" points="11.36,4.258,14.17,6.627,14.17,3.692,11.36,3.692"/>
+
 <polygon fill="none" points="16.28,3.692,16.28,6.661,19.16,4.277,19.16,3.692"/>
+
 <path d="M9.249,1.578v3.663l4.917,4.154v5.738h2.115v-5.728l4.992-4.128v-3.696h-12.02zm7.031,5.083v-2.969h2.879v0.585l-2.88,2.384zm-2.11-0.034l-2.807-2.369v-0.566h2.804v2.935h0.006z"/>
+
 <rect fill="none" height="29.03" width="29.03" x="0.746" y="0.639"/>
+
 <rect fill="none" height="29.03" width="29.03" x="0.746" y="0.639"/>
+
 </svg>

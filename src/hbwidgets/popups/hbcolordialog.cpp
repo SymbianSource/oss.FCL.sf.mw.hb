@@ -63,8 +63,9 @@ public:
         if ( receiver ) {
             QObject::connect(mGridView, SIGNAL(activated(QModelIndex)), receiver, method);
         }
-
+        mGridView->setClampingStyle(HbScrollArea::StrictClamping);
         return mGridView;
+        
     }
 };
 
@@ -101,6 +102,7 @@ void HbColorDialogPrivate::init()
     q->setBackgroundFaded(false);
     q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
     mColorModel=new QStandardItemModel();
+    mGridView->setModel(mColorModel);
 }
 
 void HbColorDialogPrivate::_q_setCurrentSelectedColor(const QModelIndex &index)
@@ -408,76 +410,6 @@ void HbColorDialog::getColor( const QList<QColor> &colorList,
 }
 
 /*!
-  \deprecated HbColorDialog::getColor(const QList<QColor>&, const QColor&, bool, bool*, QGraphicsScene*, QGraphicsItem*)
-  is deprecated. Please use void HbColorDialog::getColor( const QList<QColor> &colorList, 
-  const QColor &initialColor, QObject* receiver, const char* member, bool isNoneBlockVisible, 
-  QGraphicsScene *scene, QGraphicsItem *parent ) instead.
-
-  
-  Launches color dialog to allow the user to choose a color.
-  
-  The \a colorList is list of colors specified by application to be shown in dialog.
-  
-  If \a initialColor is the default color to be highlighted on dialog's launch.By default first color in dialog is highlighted.
-  
-  
-  If \a isNoneBlockVisible is specified by application for NoneBlock visibility. 
-  
-  \a isNoneSelected is out parameter, indicates whether none is selected or not.
-  
-  \a parent is the parent of the dialog.
-    
-*/
-QColor HbColorDialog::getColor(const QList<QColor> &colorList, const QColor &initialColor,
-                               bool isNoneBlockVisible, bool *isNoneSelected, QGraphicsScene *scene, QGraphicsItem *parent)
-{
-    HbColorDialog dlg(parent);
-
-    if (scene && !parent) {
-        scene->addItem(&dlg);
-    }
-
-    dlg.addColors(colorList);
-    dlg.setInitialColor(initialColor);
-    dlg.setNoneBlockVisible(isNoneBlockVisible);
-    dlg.exec();
-
-    if(isNoneSelected) {
-        *isNoneSelected=dlg.isNoneSelected();
-    }
-    return dlg.currentColor();
-
-}
-
-/*!
-  \deprecated HbColorDialog::getColor(bool, bool*, QGraphicsScene*, QGraphicsItem*)
-        is deprecated. Please use
-    
-  void HbColorDialog::getColor( const QList<QColor> &colorList, 
-  const QColor &initialColor,
-  QObject* receiver,
-  const char* member,
-  bool isNoneBlockVisible, 
-  QGraphicsScene *scene, 
-  QGraphicsItem *parent )
-  instead.
-
-  Launches color dialog to allow the user to choose a color.
-  It shows default set of colors provided by graphics team and first color is highlighted.
-
-  If \a isNoneBlockVisible is specified by application for NoneBlock visibility. 
-
-  \a isNoneSelected is out parameter, indicates whether none is selected or not.
-
-  \a parent is the parent of the dialog.
-    
-*/
-QColor HbColorDialog::getColor(bool isNoneBlockVisible, bool *isNoneSelected, QGraphicsScene *scene, QGraphicsItem *parent)
-{
-    return getColor(QList<QColor> (), QString(), isNoneBlockVisible, isNoneSelected, scene, parent);
-}
-
-/*!
   @beta
   reimplements the showEvent.
   Its required to indicate the highlighted item.
@@ -549,6 +481,7 @@ void HbColorDialog::polish(HbStyleParameters &params)
     }
     d->mCurrentItem = qgraphicsitem_cast<HbColorGridViewItem*>(d->mGridView->itemByIndex(currentIndex));
 }
+
 
 #include "moc_hbcolordialog.cpp"
 #include "hbcolordialog.moc"

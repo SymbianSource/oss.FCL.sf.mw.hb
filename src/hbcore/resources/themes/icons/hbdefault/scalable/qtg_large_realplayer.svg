@@ -1,17 +1,19 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
+<defs>
+</defs>
 <rect fill="none" height="60" width="60"/>
 <linearGradient gradientTransform="matrix(1 0 0 1 2188 -2893)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2158.0015" x2="-2158.0015" y1="2911.3418" y2="2988.4666">
-<stop offset="0" style="stop-color:#3686FF"/>
-<stop offset="1" style="stop-color:#051F7D"/>
+	<stop offset="0" style="stop-color:#3686FF"/>
+	<stop offset="1" style="stop-color:#051F7D"/>
 </linearGradient>
 <path d="M29.989,9.401c-12.723,0-27.991,5.928-27.991,15.61c0,11.406,21.403,16.235,27.033,16.047  c1.939-0.063,0.797,1.191,0.338,1.966c-1.484,2.496-3.174,5.655-3.559,6.277c-0.367,0.592-0.082,1.634,0.76,1.188  c0,0,21.877-12.897,26.304-16.107c5.597-4.42,5.114-9.44,5.114-9.44C57.988,15.388,42.713,9.401,29.989,9.401z" fill="url(#SVGID_1_)"/>
 <path d="M33.668,40.274c-1.676,0.981-2.034,0.396-1.618-0.241c0.214-0.32,0.832-1.389,1.536-2.744  c0.399-0.764-0.004-0.859-0.254-0.866c-13.586,0-24.254-5.016-24.254-11.035c0-6.994,11.57-11.017,20.814-11.07v0.002  c9.253,0,21.043,4.012,21.004,11.021c-0.031,4.989-7.414,9.531-7.414,9.531C43.431,34.902,33.668,40.274,33.668,40.274" fill="#FFFFFF"/>
 <linearGradient gradientTransform="matrix(1 0 0 1 2188 -2893)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-2156.4209" x2="-2156.4209" y1="2893.4824" y2="2946.6184">
-<stop offset="0" style="stop-color:#3686FF"/>
-<stop offset="1" style="stop-color:#051F7D"/>
+	<stop offset="0" style="stop-color:#3686FF"/>
+	<stop offset="1" style="stop-color:#051F7D"/>
 </linearGradient>
 <path d="M40.174,18.697c-0.61-0.152-1.26-0.206-2.379-0.206c-3.188,0.093-5.209,2.449-5.209,2.449l0.58-2.12  h-6.534l-3.647,13.545h6.742l1.529-5.656c0.782-2.851,2.217-3.786,5.074-3.786c0.49,0,1,0.034,1.5,0.111L40.174,18.697z" fill="url(#SVGID_2_)"/>
 <rect fill="none" height="60" width="60"/>

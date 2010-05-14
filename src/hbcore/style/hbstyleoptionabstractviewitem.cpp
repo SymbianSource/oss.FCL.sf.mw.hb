@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionabstractviewitem.h"
+#include "hbstyleoptionabstractviewitem_p.h"
 
 #include <hbnamespace.h>
 

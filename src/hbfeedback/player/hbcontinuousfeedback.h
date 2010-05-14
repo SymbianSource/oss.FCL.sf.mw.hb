@@ -42,7 +42,7 @@ public:
         return HbFeedback::TypeContinuous;
     }
 
-    bool isValid() const; // deprecated
+    bool isValid() const;
 
     HbFeedback::ContinuousEffect continuousEffect() const;
     int intensity() const;

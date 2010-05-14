@@ -41,10 +41,6 @@ class HB_WIDGETS_EXPORT HbDataFormViewItem : public HbAbstractViewItem
     
 public:
 
-    enum StateKey {
-        ExpansionKey = 10
-    };
-
     explicit HbDataFormViewItem(QGraphicsItem *parent = 0);
     virtual ~HbDataFormViewItem();
 
@@ -60,24 +56,16 @@ public:
     void setExpanded(bool expanded);
     bool isExpanded() const;
     
-    void setState(const QMap<int,QVariant> &state);
-    QMap<int,QVariant> state() const;
-
-    HbWidget* contentWidget() const;
     HbWidget* dataItemContentWidget()const;
 
 public slots:
-    virtual void load();
-    virtual void store();
 
     virtual void restore();
     virtual void save();
 
 signals:
-    void itemShown(const QModelIndex&);
-    void itemDestroyed(QPersistentModelIndex);
-    void itemModified(QPersistentModelIndex, QVariant);
-
+    void itemShown(const QModelIndex&);  
+   
 protected:
     HbDataFormViewItem(HbDataFormViewItemPrivate &dd, QGraphicsItem *parent = 0);
     HbDataFormViewItem(const HbDataFormViewItem &source);

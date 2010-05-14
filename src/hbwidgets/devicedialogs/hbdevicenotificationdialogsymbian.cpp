@@ -277,7 +277,7 @@ void CHbDeviceNotificationDialogSymbianPrivate::DeviceDialogClosed(TInt aComplet
 	\note Animation definition files must be stored to a place where they
 	can be accessed.    
     
-    \proto
+    \stable
     \hbwidgets
 */
 
@@ -449,15 +449,6 @@ EXPORT_C const TPtrC CHbDeviceNotificationDialogSymbian::Title() const
     }
     
 /*!
-    \deprecated CHbDeviceNotificationDialogSymbian::EnableTouchActivationL(int)
-        is deprecated. Use CHbDeviceNotificationDialogSymbian::EnableTouchActivation(TBool aEnable) instead.
-*/
-EXPORT_C void CHbDeviceNotificationDialogSymbian::EnableTouchActivationL(TBool aEnable)
-    {
-    EnableTouchActivation(aEnable);
-    }
-
-/*!
     Enable user interaction on dialog. Setting is not set, if Show() or Update()
     is not called.
     \param aEnable - When enabled, activation event is notified via observer interface.
@@ -478,15 +469,6 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::EnableTouchActivation(TBool aE
 EXPORT_C TBool CHbDeviceNotificationDialogSymbian::IsTouchActivating() const
     {        
     return d->iEnable; 
-    }
-
-/*!
-    \deprecated CHbDeviceNotificationDialogSymbian::SetTimeoutL(int)
-        is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTimeout(TInt aTimeout) instead.
-*/
-EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTimeoutL(TInt aTimeout)
-    {
-    SetTimeout(aTimeout);       
     }
 
 /*!
@@ -511,17 +493,6 @@ EXPORT_C TInt CHbDeviceNotificationDialogSymbian::Timeout() const
     {    
     return d->iTimeout;
     }
-
-/*!
-    \deprecated CHbDeviceNotificationDialogSymbian::SetTitleTextWrappingL(CHbDeviceNotificationDialogSymbian::TextWrapping)
-        is deprecated. Use CHbDeviceNotificationDialogSymbian::SetTitleTextWrapping(TextWrapping aWrapping) instead.
-
-*/
-EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTitleTextWrappingL(
-    TextWrapping aWrapping)
-    {
-    SetTitleTextWrapping(aWrapping);
-    } 
 
 /*!
     Set dialog title text wrapping. Text wrapping is not set, if Show() or Update()

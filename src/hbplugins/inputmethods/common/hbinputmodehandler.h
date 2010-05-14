@@ -83,14 +83,13 @@ public:
     virtual bool filterEvent(const QEvent * event);
 
     // Utility functions.
-    void commitFirstMappedNumber(int key);
+    void commitFirstMappedNumber(int key, HbKeyboardType type);
     void getAndFilterCharactersBoundToKey(QStringList &list, Qt::Key key);
-    QChar getNthCharacterInKey(int &index, int key);
+    QChar getNthCharacterInKey(int &index, int key, HbKeyboardType type);
     virtual void commitAndAppendString(const QString& string);
     virtual void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0, bool isAsync = false);
     void sendAndUpdate(QEvent &event);
     virtual void setKeymap(const HbKeymap* keymap);
-    virtual void characterPreviewAvailable(bool available);
 	void togglePrediction();
 
 signals:
@@ -117,8 +116,6 @@ private:
     Q_PRIVATE_SLOT(d_func(), virtual void _q_timeout())
 };
 
-// long press constant.
-const int HbLongPressTimerTimeout = 600;
 // multi tap constant
 const int HbMultiTapTimerTimeout = 600;
 

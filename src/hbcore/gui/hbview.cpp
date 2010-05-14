@@ -35,69 +35,84 @@
 #include "hbmainwindow_p.h"
 #include "hbtitlebar_p.h"
 #include "hbstatusbar_p.h"
-#include "hbsoftkeygroup_p.h"
 #include "hbscreen_p.h"
 #include "hbviewactionmanager_p.h"
 #include "hbglobal_p.h"
 #include <QPointer>
 
 /*!
-    @beta
+    @stable
     @hbcore
 	\class HbView
-	\brief HbView is a base class for all the views that can be set to HbMainWindow.
-	
-	HbView is a QGraphicsWidget, which contains a title, an icon, a menu and
-	a tool bar for one view in HbMainWindow.
-	
-	HbMainWindow will handle updating title, icon, menu and tool bar, when
-	the view is activated. Title is used in application's title pane area.
-	
-	HbView handles the visibility of tool bar, though HbMainWindow will
-	reparent it when ever view comes active.
-	
-	Example 1 for creating a simple view
-	
-	\include view1/main.cpp
-	
-	Example 2 for creating view with title, icon, menu, toolbar and a widget.
-	
-	\include view2/main.cpp
+	\brief The HbView class defines one screen of user interface content.
+    
+    The screen area of a mobile device is small, so an application's user interface is often composed of a set of separate screens of content or "views". Each view can contain a number of widgets. A view can also contain a title, an icon (not used at present), a menu and a toolbar. These additional components are called decorators and together they make up the "chrome" of the interface.
+    
+    An application will have a number of views to present different kinds of information to the user. You can add multiple views to the \link HbMainWindow main window \endlink of your application and then manage them through the main window object. When a view is activated, the main window handles the updating of the view contents, i.e. the title, icon, menu and toolbar. The view object itself handles the visibility of the toolbar, but the main window will repaint it whenever the view is activated.
 
-    \sa HbMenu
+    \image html hbview_wireframes.png "Wireframes of two different views in a messaging application"
+
+   
+    \section _usecases_hbview Using the HbView class
+    In general, the actual widgets, menu and toolbar that make up the content of a view will be designed with a UI layout tool. This means you do not need to use code to place each widget into the layout but instead load the layout from a file with HbDocumentLoader. Once the view is populated with widgets, you can manipulate them and connect their signals to methods in your application.
+
+    See the HbMainWindow class for information about switching between different views.
+
+    \subsection _uc_001_hbview Hiding and showing the chrome 
+    The chrome, (i.e. title, menu and toolbar of the view) can be hidden to allow your application to fill the whole screen. Also, individual components of the chrome can be hidden if desired.
+
+    \code 
+    // Hide all the chrome items
+    myView.setContentFullScreen(true)
+
+    // Show all the chrome items
+    myView.setContentFullScreen(false)
+
+    // Hide the toolbar
+    myView.hideItems(Hb::SceneItem::ToolBarItem)
+
+    // Show the toolbar
+    myView.showItems(Hb::SceneItem::ToolBarItem)
+    \endcode
+
+    \subsection _uc_002_hbview Creating a simple view
+    This code snippet shows the most basic way to create an application with a single view.
+
+    \code
+    #include <hbapplication.h>
+    #include <hbmainwindow.h>
+    #include <hbview.h>
+
+    int main(int argc, char *argv[])
+    {
+        HbApplication app(argc, argv);
+        HbMainWindow window;
+
+        HbView *view = new HbView();
+        view->setTitle("My View");
+
+        window.addView(view);
+
+        window.show();
+        return app.exec();
+    }
+    \endcode
+
+    \section _methodgroups_hbview Methods and properties grouped
+    \li \b Chrome: setViewFlags(), showItems(), hideItems(), visibleItems(), isItemVisible(), setItemVisible(), unsetVisibleItems(),visibleItemsChanged() [signal], setContentFullScreen(), contentFullScreenChanged() [signal], isContentFullScreen(), contentFullScreen [property]
+    \li \b Title: title(), setTitle(), titleChanged() [signal], title [property]
+    \li \b Icon: icon(), setIcon(), iconChanged() [signal], icon [property]
+    \li \b Menu: menu(), setMenu(), takeMenu()
+    \li \b Toolbar: toolBar(), setToolBar(), toolBarChanged() [signal], takeToolBar()
+    \li \b Actions: addAction(), setNavigationAction()
+    \li \b Event: event()
+    \li \b TitleBar: setTitleBarVisible()
+    \li \b StatusBar: setStatusBarVisible()
+    \li \b DockWidget: dockWidget(), setDockWidget(), dockWidgetChanged() [signal]
+    \li \b Widget: widget(), setWidget(), takeWidget()
+
+    \sa HbApplication, HbMainWindow, HbDocumentLoader, HbMenu, HbToolBar, HbDockWidget
  */
-/*!
-    \deprecated HbView::HbTitleBarFlag
-        is deprecated. Use HbView::::HbViewFlag instead.
-    \enum HbView::HbTitleBarFlag
-    Defines policy for showing the HbTitleBar in the current HbView.
-*/
-/*!
-    \var HbView::TitleBarFlagNone 
-    Titlebar is shown with the default attributes.
-*/
-/*!
-    \var HbView::TitleBarMinimizable When this flag is set, there will be an
-    indication in titlebar showing the possibility to minimize (swipe out of the
-    screen) titlebar.  */
-/*!
-    \var HbView::TitleBarMinimized
-    When this flag is set, the titlebar is shown in minimized state.
-*/
-/*!
-    \var HbView::TitleBarHidden When this flag is set, the titlebar is not shown
-    at all, so that even the titlebar handle is not shown and it is not possible
-    to maximize the titlebar.  */
-/*!
-    \var HbView::TitleBarTransparent When this flag is set, the titlebar is
-    shown normally, but as transparent. This flag is normally used in
-    combination with TitleBarFloating flag.  */
-/*!
-    \var HbView::TitleBarFloating When this flag is set, the titlebar is shown
-    on top of underlying content. Setting this flag also changes application
-    area to start from the top of the screen. This flag is normally used in
-    combination with TitleBarTransparent flag.  */
-
 /*!
     \enum HbView::HbViewFlag
     Defines policy for showing the HbTitleBar in the current HbView.
@@ -108,60 +123,111 @@
 */
 /*!
     \var HbView::ViewTitleBarMinimizable
-    When this flag is set, there will be an indication in titlebar showing the possibility to minimize (swipe out of the screen) titlebar.
+    When this flag is set, there will be an indication in the titlebar showing the possibility to minimize the titlebar, e.g. swipe it off the screen.
 */
 /*!
     \var HbView::ViewTitleBarMinimized
-    When this flag is set, the titlebar is shown in minimized state.
+    Show the title bar in minimized state.
 */
 /*!
     \var HbView::ViewTitleBarHidden
-    When this flag is set, the titlebar is not shown at all, so that even the titlebar handle is not shown and it is not possible to maximize the titlebar.
+    Do not show the title bar at all. The title bar handle is not shown and it is not possible to maximize the title bar.
 */
 /*!
     \var HbView::ViewTitleBarTransparent
-    When this flag is set, the titlebar is shown normally, but as transparent. This flag is normally used in combination with ViewTitleBarFloating flag.
+    Show normal style title bar but make it transparent. This flag is normally used in combination with TitleBarFloating flag.
 */
 /*!
     \var HbView::ViewTitleBarFloating
-    When this flag is set, the titlebar is shown on top of underlying content. Setting this flag also changes application area to start from the top of the screen. This flag is normally used in combination with TitleBarTransparent flag.
+    Show the title bar floating on top of the underlying content. Setting this flag also make the application area start from the top of the screen. This flag is normally used in combination with TitleBarTransparent flag.
 */
 /*!
     \var HbView::ViewStatusBarHidden
-    When this flag is set, the statusbar is not shown at all. This flag is normally used in combination with ViewTitleBarHidden flag.
+    Do not show the statusbar at all. This flag is normally used in combination with the ViewTitleBarHidden flag.
 */
 /*!
     \var HbView::ViewStatusBarTransparent
-    When this flag is set, the statusbar is shown normally, but as transparent. This flag is normally used in combination with ViewStatusBarFloating flag.
+    Show the statusbar with normal content but transparent. This flag is normally used in combination with ViewStatusBarFloating flag.
 */
 /*!
     \var HbView::ViewStatusBarFloating
-    When this flag is set, the statusbar is shown on top of underlying content. Setting this flag also changes application area to start from the top of the screen. This flag is normally used in combination with ViewStatusBarTransparent flag.
+    Show the statusbar on top of the underlying content. Setting this flag also changes the application area to start from the top of the screen. This flag is normally used in combination with the ViewStatusBarTransparent flag.
+*/
+
+/*!
+    \enum HbView::ActionContainer
+    Defines the default container when you add actions to a view.
+    
+    \sa navigationAction()
+*/
+/*!
+    \var HbView::NotSpecified
+    Indicate that no particular action container is preferred.
+*/
+/*!
+    \var HbView::OptionsMenu
+    Indicate that the options menu is the preferred location for an action.
+*/
+/*!
+    \var HbView::ToolBar
+    Indicate that the tool bar is the preferred location for an action.
 */
 
 /*!
     \fn void HbView::titleChanged(const QString &title)
 
-    This signal is emitted when the title changes.
+    This signal is emitted when the title is replaced by a different title.
+    
+    \sa setTitle()
  */
 
 /*!
     \fn void HbView::iconChanged(const HbIcon &icon)
 
-    This signal is emitted when the icon changes.
+    This signal is emitted when the icon is replaced by a different icon.
+    
+    \sa setIcon()
  */
 
 /*!
     \fn void HbView::toolBarChanged()
 
-    This signal is emitted when tool bar changes.
+    This signal is emitted when toolbar is replaced by a different toolbar.
+    
+    \sa setToolBar()
  */
 
 /*!
-    \reimp
+   \fn void HbView::visibleItemsChanged()
+ 
+   This signal is emitted when items in the chrome (e.g. toolbar, menu) are made visible or hidden.
+   
+   \sa visibleItems()
+*/
+
+/*!
+   \fn void HbView::contentFullScreenChanged()
+ 
+   This signal is emitted when the view is set to occupy the whole screen.
+   
+   \sa setContentFullScreen()
+*/
+
+/*!
+   \fn void HbView::dockWidgetChanged()
+ 
+   This signal is emitted when the dock widget is replaced by a different dock widget.
+   
+   \sa setDockWidget()
+*/
+
+/*!
     \fn int HbView::type() const
  */
 
+/*!
+    \internal
+ */
 HbViewPrivate::HbViewPrivate()
     : mLayout(0), 
       menu(0), 
@@ -172,7 +238,6 @@ HbViewPrivate::HbViewPrivate()
       mVisibleItemsSet(false),
       mFullscreen(false),
       mVisited(false),
-      mTitleBarFlags(HbView::TitleBarFlagNone),
       mViewFlags(HbView::ViewFlagNone),
       actionManager(0),
       preferredActionContainer(HbView::NotSpecified),
@@ -181,12 +246,15 @@ HbViewPrivate::HbViewPrivate()
 {
 }
 
+/*!
+    \internal
+ */
 HbViewPrivate::~HbViewPrivate()
 {
 }
 
 /*!
-    Constructs a view with given \a parent.
+    Constructs a view with the given \a parent.
 */
 HbView::HbView(QGraphicsItem *parent) :
     HbWidget(*new HbViewPrivate, parent)
@@ -206,7 +274,7 @@ HbView::HbView( HbViewPrivate &dd, QGraphicsItem *parent ):
 }
 
 /*!
-    Destructs the view.
+    Destructor.
 */
 HbView::~HbView()
 {
@@ -223,9 +291,7 @@ HbView::~HbView()
 }
 
 /*!
-    Returns the title of the view.
-
-    The default value is a null string.
+  Returns the title of the view. If no title has been defined, the return value is a null string.
 
     \sa setTitle()
  */
@@ -250,8 +316,7 @@ void HbView::setTitle(const QString &title)
 }
 
 /*!
-    Returns the icon of the view.
-
+    Returns the icon associated with the view.
     The default value is a null icon.
 
     \sa setIcon(), HbIcon::isNull()
@@ -263,7 +328,7 @@ HbIcon HbView::icon() const
 }
 
 /*!
-    Sets the icon of the view. The icon is associated with view.
+    Sets the icon associated with the view.
 
     \sa icon()
  */
@@ -277,7 +342,7 @@ void HbView::setIcon(const HbIcon &icon)
 }
 
 /*!
-    Returns the menu for the view. This function creates and returns an empty menu if it does not exist.
+    Returns the menu for the view. This function creates and returns an empty menu if one does not already exist.
 
     Ownership is not transferred.
 
@@ -296,9 +361,9 @@ HbMenu *HbView::menu() const
 }
 
 /*!
-    Sets the menu for the view. Setting the menu to 0 will remove it from the view.
+    Sets the menu for the view. Setting the menu to 0 will remove any existing menu from the view.
 
-    Takes the ownership of the \a menu.
+    The view takes ownership of the \a menu.
 
     \sa HbMenu menu()
 */
@@ -316,12 +381,17 @@ void HbView::setMenu(HbMenu *menu)
                 d->menu->setLayoutDirection(mainWindow()->layoutDirection());
             }
         }
+        // Titlebar must be informed
+        if (mainWindow()) {
+            HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar->propertiesChanged();
+        }
     }
 }
 
 /*!
-    Returns the tool bar for the view. This function creates and returns an empty tool bar if it does not exist.
-    The toolBarChanged() signal is not emitted if a new tool bar is created.
+    Returns the toolbar for the view. If the view does not already have a toolbar, an 
+	empty toolbar is created and returned to the caller but the toolBarChanged() 
+	signal is not emitted.
 
     Ownership is not transferred.
 
@@ -338,9 +408,9 @@ HbToolBar *HbView::toolBar() const
 }
 
 /*!
-    Sets the toolbar for the view. Setting the tool bar to 0 will remove it from the view.
+    Sets the toolbar for the view. Setting the toolbar to 0 will remove it from the view.
 
-    Takes the ownership of the \a toolBar, though it is not a parent.
+    The view takes ownership of the toolbar, but the view is not set as the parent.
 
     \sa HbToolBar toolBar()
 */
@@ -357,11 +427,11 @@ void HbView::setToolBar(HbToolBar *toolBar)
 }
 
 /*!
-Removes the HbToolBar, which is set to view and returns it.
-The ownership of the \a HbToolBar is transferred to the caller.
+Removes the toolbar from the view and returns it to the caller.
+Ownership of the toolbar is transferred to the caller.
 
-\note This function is particularly useful if one wants to switch between
-different views without deleting previous toolbar.
+\note This function is particularly useful if you want to switch to a 
+different view and keep the same toolbar.
 
     \sa setToolBar()
 */
@@ -381,8 +451,8 @@ HbToolBar* HbView::takeToolBar()
 
 
 /*!
-    Returns the dock widget for the view. This function creates and returns an empty dock widget if it does not exist.
-    The dockWidgetChanged() signal is not emitted if a new dock widget is created.
+    Returns the dock widget belonging to the view. If the view does not have a dock widget, an empty dock widget is created and returned.
+    The dockWidgetChanged() signal is not emitted when a new dock widget is created by this method.
 
     Ownership is not transferred.
 
@@ -399,9 +469,9 @@ HbDockWidget *HbView::dockWidget() const
 }
 
 /*!
-    Sets the dock widget for the view. Setting the dock widget to 0 will remove it from the view.
+    Sets the dock widget for the view. Setting the dock widget to \c 0 will remove it from the view.
 
-    Takes the ownership of the \a dockWidget, though it is not a parent.
+    This does take ownership of the \a dockWidget, but does not become the parent.
 
     \sa HbDockWidget dockWidget()
 */
@@ -418,9 +488,9 @@ void HbView::setDockWidget(HbDockWidget *dockWidget)
 }
 
 /*!
-    Returns the widget if set, otherwise \c 0.
+    Returns the widget that makes up the view. If the widget has not been set, this method will return 0.
 
-    \sa setWidget widget takeWidget
+    \sa setWidget takeWidget
 */
 QGraphicsWidget *HbView::widget() const
 {
@@ -429,10 +499,9 @@ QGraphicsWidget *HbView::widget() const
 }
 
 /*!
-    Sets the widget to be \a widget. Setting the widget to 0 will remove it from the view. Already set
-    widget is deleted.
+    Sets the widget that makes up the view. Setting the \a widget value to 0 will delete the current widget.
 
-    Takes the ownership of the \a widget.
+    The view takes the ownership of the \a widget.
 
     \sa widget takeWidget
 */
@@ -464,15 +533,14 @@ void HbView::setWidget(QGraphicsWidget *widget)
 }
 
 /*!
-Removes the QGraphicsWidget, which is set to view and returns it. 
-The ownership of the \a widget is transferred to the caller.
+Removes the widget that makes up the view and returns the widget to the caller.
+Ownership of the widget is transferred to the caller.
 
-\note This function is particularly useful if one wants to switch between
-different widgets inside a view without deleting them.
+\note This function is particularly useful if you want to use 
+different widgets in a view without deleting them.
 
 \sa widget() setWidget()
 */
-
 QGraphicsWidget *HbView::takeWidget()
 {
     Q_D(HbView);
@@ -492,10 +560,11 @@ QGraphicsWidget *HbView::takeWidget()
 }
 
 /*!
-    Sets \a items to be visible in this view. Changes will be visible
-    instantly if the view is currently active, otherwise next time when
-    view is activated. View's visibility flag overrides the similar
-    setting in HbMainWindow.
+    Makes the given scene items visible in this view. Changes are visible
+    instantly if the view is active, otherwise they will be shown the next time the
+    view is activated.
+    
+    The flag values in \a items override the corresponding settings in HbMainWindow.
     
     \sa hideItems() setItemVisible() isItemVisible() unsetVisibleItems() visibleItems() isContentFullScreen() setContentFullScreen()
 */
@@ -507,7 +576,6 @@ void HbView::showItems(Hb::SceneItems items)
 
     if (items & Hb::TitleBarItem) {
         d->mViewFlags &= ~HbView::ViewTitleBarHidden;
-        d->mTitleBarFlags &= ~HbView::TitleBarHidden;
     }
     if (items & Hb::StatusBarItem) {
         d->mViewFlags &= ~HbView::ViewStatusBarHidden;
@@ -517,11 +585,13 @@ void HbView::showItems(Hb::SceneItems items)
 }
 
 /*!
-    Sets \a items to be invisible in this view. Changes will be visible
-    instantly if the view is currently active, otherwise next time when
-    view is activated. View's visibility flag overrides the similar
-    setting in HbMainWindow.
+    Hides the given scene items in this view. Changes are visible
+    instantly if the view is active, otherwise they will be shown the next time the
+    view is activated.
+
+    The flag values in \a items override the corresponding settings in HbMainWindow.
     
+        
     \sa showItems() setItemVisible() isItemVisible() unsetVisibleItems() visibleItems() isContentFullScreen() setContentFullScreen()
 */
 void HbView::hideItems(Hb::SceneItems items)
@@ -532,7 +602,6 @@ void HbView::hideItems(Hb::SceneItems items)
 
     if (items & Hb::TitleBarItem) {
         d->mViewFlags |= HbView::ViewTitleBarHidden;
-        d->mTitleBarFlags |= HbView::TitleBarHidden;
     }
     if (items & Hb::StatusBarItem) {
         d->mViewFlags |= HbView::ViewStatusBarHidden;
@@ -542,7 +611,7 @@ void HbView::hideItems(Hb::SceneItems items)
 }
 
 /*!
-    Returns visible items of this view.
+    Returns the scene items that are visible in this view.
 
     \sa isItemVisible() setItemVisible() hideItems() showItems() unsetVisibleItems() isContentFullScreen() setContentFullScreen()
     
@@ -558,7 +627,7 @@ Hb::SceneItems HbView::visibleItems() const
 }
 
 /*!
-    Returns \c true if \a item is set to be visible.
+    Returns \c true if \a item is set to be visible, otherwise returns \c false.
 
     \sa setItemVisible() hideItems() showItems() unsetVisibleItems() visibleItems() isContentFullScreen() setContentFullScreen()
     
@@ -570,11 +639,14 @@ bool HbView::isItemVisible(Hb::SceneItem item) const
 }
 
 /*!
-    Sets \a item to be \a visible in this view. Changes will be visible
-    instantly if the view is currently active, otherwise next time when
-    view is activated. View's visibility flag overrides the similar
-    setting in HbMainWindow.
-    
+    Shows or hides the given scene item for the view. If \a visible is \c true,
+    then the given \a item is shown. If \a visible is \c false, then
+    the given \a item is hidden.
+	Changes are visible instantly if the view is active, otherwise they will be shown the next time the
+    view is activated.    
+
+    This overrides the corresponding scene item settings in HbMainWindow.
+           
     \sa isItemVisible() hideItems() showItems() unsetVisibleItems() visibleItems() isContentFullScreen() setContentFullScreen()
 */
 void HbView::setItemVisible(Hb::SceneItem item, bool visible)
@@ -582,26 +654,6 @@ void HbView::setItemVisible(Hb::SceneItem item, bool visible)
     Q_D(HbView);
     visible ? d->mVisibleItems |= item : d->mVisibleItems &= ~item;
     d->mVisibleItemsSet = true;
-
-    emit visibleItemsChanged();
-}
-
-/*!
-    \deprecated HbView::unsetVisibleItems()
-        is deprecated.
-
-    Resets the view specific definition of visible items and
-    uses the HbMainWindow's default visible items. Changes will be visible
-    instantly if the view is currently active, otherwise next time when
-    view is activated.
-    
-    \sa setItemVisible() isItemVisible() hideItems() showItems() visibleItems() isContentFullScreen() setContentFullScreen()
-*/
-void HbView::unsetVisibleItems()
-{
-    HB_DEPRECATED("HbMainWindow::unsetVisibleItems is deprecated!");
-    Q_D(HbView);
-    d->mVisibleItemsSet = false;
 
     emit visibleItemsChanged();
 }
@@ -618,10 +670,10 @@ bool HbView::isContentFullScreen() const
 }
 
 /*!
-    Sets the view to use full content area for drawing. Decorators like
-    signal bar, title pane etc can be shown on top of view content area.
-    Changes will be visible instantly if the view is currently active, 
-    otherwise next time when view is activated.
+    Makes the view content fill the whole screen area. The decorators that make up the chrome (such as 
+    signal bar, title pane etc.) can still be shown on top of view content.
+	Changes are visible instantly if the view is active, otherwise they will
+	be shown the next time the view is activated.    
 
     \sa isContentFullScreen() setItemVisible() isItemVisible() hideItems() showItems() visibleItems()
 */
@@ -635,50 +687,15 @@ void HbView::setContentFullScreen(bool enable)
 }
 
 /*!
-    \deprecated HbView::titleBarFlags() const
-        is deprecated. Use HbView::viewFlags() instead.
+    Returns the view flags bit vector.
+    This consists of values specified in HbViewFlag.
 
-    Returns titlebar flags bit vector.
-    It consists of bits specified in HbTitleBarFlag.
-
-    \sa setTitleBarFlags()
-*/
-HbView::HbTitleBarFlags HbView::titleBarFlags() const
-{
-    Q_D(const HbView);
-    int statusBarFlagMask = ViewStatusBarHidden | ViewStatusBarTransparent | ViewStatusBarFloating;
-    int flags(d->mViewFlags & ~statusBarFlagMask);
-    return HbView::HbTitleBarFlags(flags);
-}
-
-/*!
-    Returns view flags bit vector.
-    It consists of bits specified in HbViewFlag.
-
-    \sa setTitleBarFlags()
+    \sa setViewFlags()
 */
 HbView::HbViewFlags HbView::viewFlags() const
 {
     Q_D(const HbView);
     return d->mViewFlags;
-}
-
-/*!
-    \deprecated HbView::setTitleBarFlags(HbView::HbTitleBarFlags flags)
-        is deprecated. Use HbView::setViewFlags(HbView::HbViewFlags flags) instead.
-
-    Sets the titlebar flags bit vector. It consists of bits specified
-    in HbTitleBarFlag. These flags can be set before the view is
-    added to the main window or while the view is active.
-
-    \sa titleBarFlags()
-*/
-void HbView::setTitleBarFlags(HbView::HbTitleBarFlags flags)
-{
-    const int statusBarFlagMask = ViewStatusBarHidden | ViewStatusBarTransparent | ViewStatusBarFloating;
-
-    Q_D(HbView);
-    setViewFlags(HbView::HbViewFlags((d->mViewFlags & statusBarFlagMask) | flags));
 }
 
 /*!
@@ -700,13 +717,13 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
 
         // Statusbar-animation
         bool statusBarAnimating = false;
-        HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;        
-        if ((d->mViewFlags & HbView::ViewStatusBarHidden) && statusBar->isVisible()) {
+        HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;
+        if ((d->mViewFlags & HbView::ViewStatusBarHidden) && !(originalFlags & HbView::ViewStatusBarHidden)) {
 #ifdef HB_EFFECTS
             HbEffect::start(statusBar, "statusbar", "disappear", this, "statusBarEffectFinished");
 #endif // HB_EFFECTS
             statusBarAnimating = true;
-        } else if (!(d->mViewFlags & HbView::ViewStatusBarHidden) && !statusBar->isVisible()) {
+        } else if (!(d->mViewFlags & HbView::ViewStatusBarHidden) && (originalFlags & HbView::ViewStatusBarHidden)) {
 #ifdef HB_EFFECTS
             HbEffect::start(statusBar, "statusbar", "appear", this, "statusBarEffectFinished");
 #endif // HB_EFFECTS
@@ -716,14 +733,14 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
         // Titlebar-animation
         bool titleBarAnimating = false;
         HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar;
-        if ((d->mViewFlags & HbView::ViewTitleBarHidden) && titleBar->isVisible()) {
+        if ((d->mViewFlags & HbView::ViewTitleBarHidden) && !(originalFlags & HbView::ViewTitleBarHidden)) {
 #ifdef HB_EFFECTS
-            HbEffect::start(titleBar, "titleBar", "disappear", this, "titleBarEffectFinished");
+            HbEffect::start(titleBar, "titlebar", "disappear", this, "titleBarEffectFinished");
 #endif // HB_EFFECTS
             titleBarAnimating = true;
-        } else if (!(d->mViewFlags & HbView::ViewTitleBarHidden) && !titleBar->isVisible()) {
+        } else if (!(d->mViewFlags & HbView::ViewTitleBarHidden) && (originalFlags & HbView::ViewTitleBarHidden)) {
 #ifdef HB_EFFECTS
-            HbEffect::start(titleBar, "titleBar", "appear", this, "titleBarEffectFinished");
+            HbEffect::start(titleBar, "titlebar", "appear", this, "titleBarEffectFinished");
 #endif // HB_EFFECTS
             titleBarAnimating = true;
         }
@@ -773,7 +790,12 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
 }
 
 /*!
-    Changes titlebar's visibility with pre-defined effect.
+    Changes the titlebar's visibility and uses the pre-defined effect.
+
+\note This is a convenience function which uses setViewFlags() to (un)set
+the HbView::ViewTitleBarHidden flag.
+
+\sa setViewFlags()
 */
 void HbView::setTitleBarVisible(bool visible)
 {
@@ -786,7 +808,12 @@ void HbView::setTitleBarVisible(bool visible)
 }
 
 /*!
-    Changes statusbar's visibility with pre-defined effect.
+    Changes the statusbar's visibility and uses the pre-defined effect.
+
+\note This is a convenience function which uses setViewFlags() to (un)set
+the HbView::ViewStatusBarHidden flag.
+
+\sa setViewFlags()
 */
 void HbView::setStatusBarVisible(bool visible)
 {
@@ -801,12 +828,15 @@ void HbView::setStatusBarVisible(bool visible)
 /*!
     \overload
 
-    The function adds \a action to preferred container's list of actions.  The
-    ownership of \a action is not transferred.  The preferred container
-    specifies the action container (options menu, toolbar) where the action is
-    placed. If the container is the toolbar and the maximum toolbar button count
-    is exceeded then the action may be moved to the options menu (if there are
-    enough more prioritized actions).
+
+    This adds the \a action to the list of actions in the view. You specify a preferred container 
+    in the UI where you would like the action to be added, e.g. the options menu or the toolbar. 
+    However, if you choose the toolbar as the preferred container but no more buttons can fit in the 
+    the toolbar, then the action might be moved to the options menu or it might displace another item in the toolbar. 
+    The result depends on the prioties of the actions already in the toolbar compared with the priority of 
+    the action you are adding.
+    
+    Ownership of the \a action is not transferred.
 */
 void HbView::addAction(HbAction *action, ActionContainer preferredActionContainer)
 {
@@ -816,7 +846,6 @@ void HbView::addAction(HbAction *action, ActionContainer preferredActionContaine
 }
 
 /*!
-    \reimp
  */
 bool HbView::event(QEvent *event)
 {
@@ -849,11 +878,11 @@ bool HbView::event(QEvent *event)
 }
 
 /*!
-Removes the HbMenu, which is set to view and returns it. 
-The ownership of the \a HbMenu is transferred to the caller.
+Removes the menu from the view and returns it to the caller.
+Ownership of the menu is transferred to the caller.
 
-\note This function is particularly useful if one wants to switch between
-different views without deleting previous menu.
+\note This function is particularly useful if you want to switch between
+different views without deleting the menu.
 
     \sa setMenu()
 */
@@ -868,6 +897,11 @@ HbMenu* HbView::takeMenu()
         menu->setParentItem(0);
     }
 
+    // Titlebar must be informed
+    if (mainWindow()) {
+        HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar->propertiesChanged();
+    }
+
     return menu;
 }
 
@@ -877,13 +911,20 @@ HbMenu* HbView::takeMenu()
  */
 void HbView::titleBarEffectFinished(const HbEffect::EffectStatus &status)
 {   
-    if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
-        || status.reason == Hb::EffectNotStarted) {
-        HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar->propertiesChanged();
-        HbMainWindowPrivate::d_ptr(mainWindow())->mClippingItem->decoratorVisibilityChanged();
+    Q_D(HbView);
+
+    HbMainWindow *mw = mainWindow();
+
+    if (d->mNavigationActionSet) {
+        HbMainWindowPrivate::d_ptr(mw)->mTitleBar->setNavigationAction(d->mNavigationAction);
+    } else {
+        HbMainWindowPrivate::d_ptr(mw)->mTitleBar->setDefaultNavigationAction();
     }
-    if (mainWindow()) {
-        HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar;
+    HbMainWindowPrivate::d_ptr(mw)->mTitleBar->propertiesChanged();
+    HbMainWindowPrivate::d_ptr(mw)->mClippingItem->decoratorVisibilityChanged();
+
+    if (mw) {
+        HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mw)->mTitleBar;
         if (titleBar) {
             if (status.effectEvent == "disappear") {
                 titleBar->setVisible(false);
@@ -895,21 +936,21 @@ void HbView::titleBarEffectFinished(const HbEffect::EffectStatus &status)
 }
 
 /*
-    Handles effect finished event for title bar animation    
+    Handles the effect finished event for title bar animation    
  */
 void HbView::statusBarEffectFinished(const HbEffect::EffectStatus &status)
 {   
-    HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;
+    HbMainWindow *mw = mainWindow();
+
+    HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mw)->mStatusBar;
     if (!statusBar) {
         return;
     }
 
-    if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
-        || status.reason == Hb::EffectNotStarted) {
-        statusBar->propertiesChanged();
-        HbMainWindowPrivate::d_ptr(mainWindow())->mClippingItem->decoratorVisibilityChanged();
-    }
-    if (mainWindow()) {    
+    statusBar->propertiesChanged();
+    HbMainWindowPrivate::d_ptr(mw)->mClippingItem->decoratorVisibilityChanged();
+
+    if (mw) {    
         if (status.effectEvent == "disappear") {
             statusBar->setVisible(false);
         } else {
@@ -920,9 +961,10 @@ void HbView::statusBarEffectFinished(const HbEffect::EffectStatus &status)
 #endif // HB_EFFECTS
 
 /*!
-  Returns the currently set navigation action or 0 if there is none.
+  Returns the current navigation action. If no navigation action has been set, then
+  0 is returned.
 
-  If setNavigationAction() was not called before for this view at all then the
+  If setNavigationAction() has not been called for this view, then the
   default action will be returned.
   
   \sa setNavigationAction()
@@ -945,11 +987,11 @@ HbAction *HbView::navigationAction() const
 }
 
 /*!
-  Sets the navigation action, that is, the action that is associated with the
+  Sets the navigation action, i.e., the action associated with the
   button that is typically located in the top-right corner. By default the
   action is the "quit" action.
 
-  \a action can also be 0 in which case the previous navigation action is
+  If you set the \a action to 0, the previous navigation action is
   unset and no new one will be set.
 
   Ownership of \a action is not taken.

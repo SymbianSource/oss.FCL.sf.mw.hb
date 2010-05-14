@@ -34,8 +34,7 @@
     \brief HbBatteryIndicator represents a battery indicator item.
 
     The battery indicator shows approximately how much charge is left in the battery of the device.
-    It is created and managed by the HbIndicatorGroup which in turn is part of the HbMainWindow's
-    HbDecoratorGroup.
+    It is created and managed by the HbStatusBar which in turn is part of the HbMainWindow.
  */
 
 // 0-33% for low, 34-66% for medium and 67-100% for high
@@ -46,23 +45,28 @@ HbBatteryIndicatorPrivate::HbBatteryIndicatorPrivate() :
     mBatteryBackgroundIcon(0),
     mBatteryLevelIcon(0),
     mBatteryIcon(0),
-    mSystemDeviceInfo(new HbSystemDeviceInfo()),
+#ifdef HB_HAVE_QT_MOBILITY
+    mSystemDeviceInfo(new HbSystemInfo(0, false)),
+#endif // HB_HAVE_QT_MOBILITY
     mChargingOn(false)
 {
 }
 
 HbBatteryIndicatorPrivate::~HbBatteryIndicatorPrivate()
 {
+#ifdef HB_HAVE_QT_MOBILITY
     delete mSystemDeviceInfo;
+#endif // HB_HAVE_QT_MOBILITY
 }
 
 /*
     Handles signal for changing the power state.
 */
-void HbBatteryIndicatorPrivate::_q_setPowerState(HbSystemDeviceInfo::PowerState powerState)
+#ifdef HB_HAVE_QT_MOBILITY
+void HbBatteryIndicatorPrivate::_q_setPowerState(QSystemDeviceInfo::PowerState powerState)
 {
     Q_Q(HbBatteryIndicator);
-    if (powerState == HbSystemDeviceInfo::WallPowerChargingBattery) {
+    if (powerState == QSystemDeviceInfo::WallPowerChargingBattery) {        
         q->setLevel(0);
         mChargingOn = true;
         if (mChargingTimer.isActive()) {
@@ -75,6 +79,7 @@ void HbBatteryIndicatorPrivate::_q_setPowerState(HbSystemDeviceInfo::PowerState 
         q->setLevel(mSystemDeviceInfo->batteryLevel());
     }
 }
+#endif // HB_HAVE_QT_MOBILITY
 
 // ======== MEMBER FUNCTIONS ========
 
@@ -86,6 +91,14 @@ HbBatteryIndicator::HbBatteryIndicator(QGraphicsItem *parent)
     : HbWidget(*new HbBatteryIndicatorPrivate, parent)
 {
     createPrimitives();
+    updatePrimitives();
+
+#ifdef HB_HAVE_QT_MOBILITY
+	Q_D(HbBatteryIndicator);
+    connect(d->mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)), this, SLOT(setLevel(int)));
+    connect(d->mSystemDeviceInfo, SIGNAL(powerStateChanged(QSystemDeviceInfo::PowerState)), this, 
+        SLOT(_q_setPowerState(QSystemDeviceInfo::PowerState)));
+#endif // HB_HAVE_QT_MOBILITY
 }
 
 /*
@@ -101,10 +114,7 @@ HbBatteryIndicator::~HbBatteryIndicator()
  */
 void HbBatteryIndicator::delayedConstruction()
 {
-    Q_D(HbBatteryIndicator);
-    connect(d->mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)), this, SLOT(setLevel(int)));
-    connect(d->mSystemDeviceInfo, SIGNAL(powerStateChanged(HbSystemDeviceInfo::PowerState)), this, 
-        SLOT(_q_setPowerState(HbSystemDeviceInfo::PowerState))); 
+
 }
 
 void HbBatteryIndicator::createPrimitives()
@@ -156,7 +166,10 @@ void HbBatteryIndicator::timerEvent(QTimerEvent *event)
     Q_D(HbBatteryIndicator);
     if (event->timerId() == d->mChargingTimer.timerId()) {
         int step(4);
-        int currentLevel = d->mSystemDeviceInfo->batteryLevel();
+        int currentLevel(0);
+#ifdef HB_HAVE_QT_MOBILITY        
+        currentLevel = d->mSystemDeviceInfo->batteryLevel();
+#endif // HB_HAVE_QT_MOBILITY        
         if (currentLevel < batteryThreshold[0]) {
             currentLevel = batteryThreshold[0] - 1;
             step = 2;

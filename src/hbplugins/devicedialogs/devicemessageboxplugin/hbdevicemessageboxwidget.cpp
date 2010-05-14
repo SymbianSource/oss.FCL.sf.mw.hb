@@ -30,6 +30,8 @@
 #include "hbdevicemessageboxwidget_p.h"
 #include "hbdevicemessageboxpluginerrors_p.h"
 
+static const char actionTextTag[] = "t:";
+
 // Constructor
 HbDeviceMessageBoxWidget::HbDeviceMessageBoxWidget(
     HbMessageBox::MessageBoxType type, const QVariantMap &parameters) : HbMessageBox(type)
@@ -37,33 +39,30 @@ HbDeviceMessageBoxWidget::HbDeviceMessageBoxWidget(
     TRACE_ENTRY
     mLastError = NoError;
     mShowEventReceived = false;
-    mPrimaryAction = 0;
-    mSecondaryAction = 0;
+    QList<QAction*> actList = actions();
+    for(int i = 0; i < NumActions; i++) {
+        mActions[i].mAction = 0;
+        mActions[i].mOwned = false; // we haven't created the action
+        mActions[i].mInDialog = false; // action has not been inserted to the dialog
+        if (i < actList.count()) {
+            mActions[i].mAction = actList[i];
+            mActions[i].mInDialog = true;
+            connect(mActions[i].mAction, SIGNAL(triggered()), SLOT(actionTriggered()));
+        }
+    }
     resetProperties();
     constructDialog(parameters);
-    if (!mPrimaryAction) {
-        // If default button provided by HbMessageBox is used, connect into its triggered signal.
-        HbAction *action = primaryAction();
-        if (action) {
-            connect(action, SIGNAL(triggered()), SLOT(primaryActionTriggered()));
-        }
-    }
-    if (!mSecondaryAction) {
-        // If default button provided by HbMessageBox is used, connect into its triggered signal.
-        HbAction *action = secondaryAction();
-        if (action) {
-            connect(action, SIGNAL(triggered()), SLOT(secondaryActionTriggered()));
-        }
-    }
-
     TRACE_EXIT
 }
 
 // Destructor
 HbDeviceMessageBoxWidget::~HbDeviceMessageBoxWidget()
 {
-    delete mPrimaryAction;
-    delete mSecondaryAction;
+    for(int i = 0; i < NumActions; i++) {
+        if (mActions[i].mOwned) {
+            delete mActions[i].mAction;
+        }
+    }
 }
 
 // Set parameters
@@ -199,95 +198,27 @@ void HbDeviceMessageBoxWidget::setIconName(QString &iconName)
     return;
 }
 
-QString HbDeviceMessageBoxWidget::primaryActionText() const
+QString HbDeviceMessageBoxWidget::acceptAction() const
 {
-    HbAction *action = primaryAction();
-    return action ? action->text() : QString();
+    return actionData(Accept);
 }
 
-void HbDeviceMessageBoxWidget::setPrimaryActionText(QString &actionText)
+void HbDeviceMessageBoxWidget::setAcceptAction(QString &actionData)
 {
     TRACE_ENTRY
-    HbAction *action = primaryAction();
-    if (action) {
-        action->setText(actionText);
-    } else {
-        if (!mPrimaryAction) {
-            mPrimaryAction = new HbAction(actionText);
-            connect(mPrimaryAction, SIGNAL(triggered()), this, SLOT(primaryActionTriggered()));
-        } else {
-            mPrimaryAction->setText(actionText);
-        }
-        setPrimaryAction(mPrimaryAction);
-    }
+    setAction(Accept, actionData);
     TRACE_EXIT
 }
 
-QString HbDeviceMessageBoxWidget::secondaryActionText() const
+QString HbDeviceMessageBoxWidget::rejectAction() const
 {
-    HbAction *action = secondaryAction();
-    return action ? action->text() : QString();
+    return actionData(Reject);
 }
 
-void HbDeviceMessageBoxWidget::setSecondaryActionText(QString &actionText)
+void HbDeviceMessageBoxWidget::setRejectAction(QString &actionData)
 {
     TRACE_ENTRY
-    HbAction *action = secondaryAction();
-    if (action) {
-        action->setText(actionText);
-    } else {
-        if (!mSecondaryAction) {
-            mSecondaryAction = new HbAction(actionText);
-            connect(mSecondaryAction, SIGNAL(triggered()), this, SLOT(secondaryActionTriggered()));
-        } else {
-            mSecondaryAction->setText(actionText);
-        }
-        setSecondaryAction(mSecondaryAction);
-    }
-    TRACE_EXIT
-}
-
-bool HbDeviceMessageBoxWidget::primaryActionNull() const
-{
-    return primaryAction() == 0;
-}
-
-void HbDeviceMessageBoxWidget::setPrimaryActionNull(bool isNull)
-{
-    TRACE_ENTRY
-    if (isNull) {
-        // If there is a message box's default action, disconnect from it.
-        HbAction *action = primaryAction();
-        if (action && mPrimaryAction == 0) {
-            action->disconnect(SIGNAL(triggered()), this, SLOT(primaryActionTriggered()));
-        }
-        setPrimaryAction(0);
-    } else {
-        QString text = mPrimaryAction ? mPrimaryAction->text() : QString();
-        setPrimaryActionText(text);
-    }
-    TRACE_EXIT
-}
-
-bool HbDeviceMessageBoxWidget::secondaryActionNull() const
-{
-    return secondaryAction() == 0;
-}
-
-void HbDeviceMessageBoxWidget::setSecondaryActionNull(bool isNull)
-{
-    TRACE_ENTRY
-    if (isNull) {
-        // If there is a message box's default action, disconnect from it.
-        HbAction *action = secondaryAction();
-        if (action && mSecondaryAction == 0) {
-            action->disconnect(SIGNAL(triggered()), this, SLOT(secondaryActionTriggered()));
-        }
-        setSecondaryAction(0);
-    } else {
-        QString text = mSecondaryAction ? mSecondaryAction->text() : QString();
-        setSecondaryActionText(text);
-    }
+    setAction(Reject, actionData);
     TRACE_EXIT
 }
 
@@ -318,24 +249,71 @@ QString HbDeviceMessageBoxWidget::animationDefinition() const
     return mAnimationDefinition;
 }
 
-// Primary action triggered
-void HbDeviceMessageBoxWidget::primaryActionTriggered()
+// Action (accept or reject) was triggered
+void HbDeviceMessageBoxWidget::actionTriggered()
 {
     TRACE_ENTRY
+    bool accepted = (sender() == mActions[Accept].mAction);
     QVariantMap data;
-    data.insert("act", "p");
+    data.insert("act", accepted ? "p" : "s");
     emit deviceDialogData(data);
     mSendAction = false;
     TRACE_EXIT
 }
 
-// Secondary action triggered
-void HbDeviceMessageBoxWidget::secondaryActionTriggered()
+// Parse action data and return button text
+void HbDeviceMessageBoxWidget::parseActionData(QString &data)
 {
-    TRACE_ENTRY
-    QVariantMap data;
-    data.insert("act", "s");
-    emit deviceDialogData(data);
-    mSendAction = false;
-    TRACE_EXIT
+    const QString textTag(actionTextTag);
+    if (data.startsWith(textTag)) {
+        data.remove(0, textTag.length());
+    } else {
+        data.clear();
+    }
+}
+
+// Pack action into a string
+QString HbDeviceMessageBoxWidget::actionData(ActionIndex index) const
+{
+    QAction *act = mActions[index].mInDialog ? mActions[index].mAction : 0;
+    QString actionData;
+    if (act) {
+        actionData.append(actionTextTag);
+        actionData.append(act->text());
+    }
+    return actionData;
+}
+
+// Set action
+void HbDeviceMessageBoxWidget::setAction(ActionIndex index, QString &actionData)
+{
+    parseActionData(actionData); // parse data to get action text
+    if (!actionData.isNull()) {
+        // Setting action
+        QAction *act = mActions[index].mAction;
+        if (act) {
+            act->setText(actionData);
+        } else {
+            // Create action
+            mActions[index].mAction = new HbAction(actionData, 0);
+            mActions[index].mOwned = true;
+            //connect(mActions[index].mAction, SIGNAL(triggered()), this, SLOT(actionTriggered()));
+        }
+        // Add action to dialog if it's not there
+        if (!mActions[index].mInDialog) {
+            mActions[index].mInDialog = true;
+            QAction *before = 0;
+            if (index == Accept && mActions[Reject].mInDialog) {
+                before = mActions[Reject].mAction; // insert to table head
+            }
+            insertAction(before, mActions[index].mAction);
+            connect(mActions[index].mAction, SIGNAL(triggered()), this, SLOT(actionTriggered()));
+        }
+    } else { // Remove action
+        mActions[index].mInDialog = false;
+        if (mActions[index].mAction) {
+            removeAction(mActions[index].mAction);
+            mActions[index].mAction->disconnect(SIGNAL(triggered()), this, SLOT(actionTriggered()));
+        }
+    }
 }

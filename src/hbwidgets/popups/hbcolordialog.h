@@ -53,13 +53,6 @@ public:
 
     bool isNoneSelected() const;
 
-    static QColor getColor(bool isNoneBlockVisible = false, bool *isNoneSelected = 0,
-        QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-
-    static QColor getColor(const QList<QColor> &colorList, const QColor &initialColor,
-        bool isNoneBlockVisible = false, bool *isNoneSelected = 0,
-        QGraphicsScene *scene = 0, QGraphicsItem *parent = 0);
-
     static void getColor( const QList<QColor> &colorList, 
                           const QColor &initialColor, 
                           QObject* receiver,

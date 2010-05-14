@@ -44,7 +44,7 @@ class HB_AUTOTEST_EXPORT HbStringData
 {
 public:
     HbStringData();
-    ~HbStringData() {}
+    ~HbStringData();
 public:
     int mStartOffset;
     int mLength;

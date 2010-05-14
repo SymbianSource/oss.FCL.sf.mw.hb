@@ -1,12 +1,21 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <g fill-opacity="0.5" stroke-opacity="0.5">
+
 <rect fill="none" height="30" width="30"/>
+
 </g>
+
 <path d="M25,22.28v1.72h-4.914c-0.518,0.064-1.04,0.109-1.57,0.109-0.535,0-1.061-0.044-1.582-0.109h-4.455l-3,3h18.52v-7.275c-0.213,0.248-0.428,0.496-0.662,0.729-0.71,0.72-1.5,1.32-2.34,1.83z"/>
+
 <path d="M5,6h2.348c0.539-1.081,1.244-2.093,2.107-3h-7.455v18.75l3-3.001v-12.75z"/>
+
 <rect height="2" transform="matrix(-0.7071 -0.7071 0.7071 -0.7071 -15.0422 48.8201)" width="4.999" x="0.09" y="26.52"/>
+
 <path d="M10.72,21.52l1.499-1.498c4.112,3.081,9.965,2.763,13.7-0.977,4.102-4.101,4.102-10.75,0-14.85-4.1-4.102-10.75-4.102-14.85,0-3.739,3.738-4.058,9.591-0.977,13.7l-1.49,1.5-0.707-0.707-4.949,4.95,3.535,3.535,4.95-4.95-0.71-0.69zm2.48-15.21c2.924-2.925,7.682-2.924,10.6,0s2.925,7.682,0,10.6c-2.924,2.925-7.683,2.924-10.6,0-2.93-2.91-2.93-7.674,0-10.6z"/>
+
 <polygon points="17,16,20,16,20,13,23,13,23,10,20,10,20,7,17,7,17,10,14,10,14,13,17,13"/>
+
 </svg>

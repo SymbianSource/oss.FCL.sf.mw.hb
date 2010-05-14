@@ -1,20 +1,22 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
+<defs>
+</defs>
 <rect fill="none" height="30" width="30"/>
 <rect fill-opacity="0.6" height="9.111" transform="matrix(-0.2588 0.9659 -0.9659 -0.2588 20.7431 4.1604)" width="16.223" x="0.664" y="5.483"/>
 <linearGradient gradientTransform="matrix(0.9659 0.2588 -0.2588 0.9659 -33.6532 76.8338)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="24.6367" x2="22.6711" y1="-83.0146" y2="-67.3022">
-<stop offset="0" style="stop-color:#DE8029"/>
-<stop offset="0.2606" style="stop-color:#DE4E29"/>
-<stop offset="1" style="stop-color:#D82E09"/>
+	<stop offset="0" style="stop-color:#DE8029"/>
+	<stop offset="0.2606" style="stop-color:#DE4E29"/>
+	<stop offset="1" style="stop-color:#D82E09"/>
 </linearGradient>
 <polygon fill="url(#SVGID_1_)" points="10.369,17.828 3.5,15.987 7.182,2.249 14.05,4.09 "/>
 <rect fill-opacity="0.6" height="9.11" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 45.0957 18.5742)" width="19.778" x="8.812" y="14.072"/>
 <linearGradient gradientTransform="matrix(0.7071 0.7071 -0.7071 0.7071 -141.4365 187.3474)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-4.9067" x2="-7.3346" y1="-241.8184" y2="-222.4105">
-<stop offset="0" style="stop-color:#DE8029"/>
-<stop offset="0.2606" style="stop-color:#DE4E29"/>
-<stop offset="1" style="stop-color:#D82E09"/>
+	<stop offset="0" style="stop-color:#DE8029"/>
+	<stop offset="0.2606" style="stop-color:#DE4E29"/>
+	<stop offset="1" style="stop-color:#D82E09"/>
 </linearGradient>
 <polygon fill="url(#SVGID_2_)" points="14.93,27.427 9.902,22.398 22.473,9.827 27.5,14.855 "/>
 <rect fill="none" height="30" width="30" x="0"/>

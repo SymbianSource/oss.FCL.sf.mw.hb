@@ -67,8 +67,6 @@ public:
     void setActiveKeyboard(HbKeyboardType keyboard);
     void setActiveHwKeyboard(HbKeyboardType keyboard);
     void setActiveTouchKeyboard(HbKeyboardType keyboard);
-    int predictiveInputStatus() const;
-    void setPredictiveInputStatus(int newStatus);
     bool predictiveInputStatus(HbKeyboardSettingFlags keyboardType) const;
     void setPredictiveInputStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
     bool predictiveInputStatusForActiveKeyboard() const;

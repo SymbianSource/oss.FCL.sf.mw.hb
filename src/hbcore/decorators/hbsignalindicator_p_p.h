@@ -28,7 +28,10 @@
 
 #include <hbwidget_p.h>
 #include "hbsignalindicator_p.h"
+
+#ifdef HB_HAVE_QT_MOBILITY
 #include "hbsysteminfo_p.h"
+#endif // HB_HAVE_QT_MOBILITY
 
 class HbSignalIndicatorPrivate : public HbWidgetPrivate
 {
@@ -38,8 +41,10 @@ public:
     HbSignalIndicatorPrivate();
     virtual ~HbSignalIndicatorPrivate();
 
-    void _q_setNetworkSignalStrength(HbSystemNetworkInfo::NetworkMode mode, int strength);
-    void _q_setNetworkMode(HbSystemNetworkInfo::NetworkMode mode);
+#ifdef HB_HAVE_QT_MOBILITY
+    void _q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode mode, int strength);
+    void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode);
+#endif // HB_HAVE_QT_MOBILITY
 
 private:
     int mLevelPercent;
@@ -48,9 +53,10 @@ private:
     QGraphicsItem *mSignalLevelIcon;
     QGraphicsItem *mSignalIcon;
 
-    HbSystemNetworkInfo* mSystemNetworkInfo;
-    HbSystemNetworkInfo::NetworkMode mNetworkMode;
-
+#ifdef HB_HAVE_QT_MOBILITY
+    HbSystemInfo *mSystemNetworkInfo;
+    QSystemNetworkInfo::NetworkMode mNetworkMode;
+#endif // HB_HAVE_QT_MOBILITY
 };
 
 #endif // HBSIGNALINDICATOR_P_P_H

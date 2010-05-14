@@ -28,6 +28,7 @@
 
 #include <e32base.h>
 #include <e32property.h> 
+#include <centralrepository.h>
 
 class CHbThemeListenerPrivate:public CActive
 {
@@ -40,7 +41,7 @@ private:
     void DoCancel();
 private:
     HbThemeClientPrivate *themeClient;
-    RProperty themeState;
+    CRepository *mRepository;
 };
 
 #endif /*HBTHEMELISTENER_P_H_ */

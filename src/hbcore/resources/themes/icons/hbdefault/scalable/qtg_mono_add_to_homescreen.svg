@@ -1,9 +1,20 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
-<rect fill="none" height="30" width="30"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
+]>
+<svg version="1.1"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
+<defs>
+</defs>
+<g opacity="0.5">
+	<rect fill="none" width="30" height="30"/>
 </g>
-<path d="M24,1h-9.591c0.565,0.601,1.06,1.269,1.454,2H25v18H11v-4.677c-0.636,0.253-1.306,0.436-2,0.547V26c0,1.65,1.35,3,3,3h12  c1.65,0,3-1.35,3-3V4C27,2.35,25.65,1,24,1z M14,26h-3v-2h3V26z M18,27c-1.104,0-2-0.896-2-2s0.896-2,2-2c1.105,0,2,0.896,2,2  S19.105,27,18,27z M25,26h-3v-2h3V26z"/>
-<path d="M15,7.5C15,3.364,11.636,0,7.5,0S0,3.364,0,7.5S3.364,15,7.5,15S15,11.636,15,7.5z M2,7.5c0-1.521,0.621-2.898,1.621-3.896  C5.354,3.878,6.706,5.257,6.945,7H4l3.983,5.976C7.824,12.989,7.663,13,7.5,13C4.467,13,2,10.532,2,7.5z M8.018,12.974L12,7H8.973  C8.787,4.948,7.568,3.19,5.838,2.258C6.363,2.091,6.921,2,7.5,2C10.533,2,13,4.468,13,7.5C13,10.357,10.809,12.712,8.018,12.974z"/>
+<path d="M24,1h-9.591c0.565,0.601,1.06,1.269,1.454,2H25v18H11v-4.677c-0.636,0.253-1.306,0.436-2,0.547V26c0,1.65,1.35,3,3,3h12
+	c1.65,0,3-1.35,3-3V4C27,2.35,25.65,1,24,1z M14,26h-3v-2h3V26z M18,27c-1.104,0-2-0.896-2-2s0.896-2,2-2c1.105,0,2,0.896,2,2
+	S19.105,27,18,27z M25,26h-3v-2h3V26z"/>
+<path d="M15,7.5C15,3.364,11.636,0,7.5,0S0,3.364,0,7.5S3.364,15,7.5,15S15,11.636,15,7.5z M2,7.5c0-1.521,0.621-2.898,1.621-3.896
+	C5.354,3.878,6.706,5.257,6.945,7H4l3.983,5.976C7.824,12.989,7.663,13,7.5,13C4.467,13,2,10.532,2,7.5z M8.018,12.974L12,7H8.973
+	C8.787,4.948,7.568,3.19,5.838,2.258C6.363,2.091,6.921,2,7.5,2C10.533,2,13,4.468,13,7.5C13,10.357,10.809,12.712,8.018,12.974z"/>
 </svg>

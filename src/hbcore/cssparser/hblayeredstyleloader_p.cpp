@@ -24,7 +24,9 @@
 ****************************************************************************/
 #include "hblayeredstyleloader_p.h"
 #include "hbwidgetstyleloader_p.h"
+#ifndef HB_BIN_CSS
 #include <hbwidget.h>
+#endif
 
 #include <QDir>
 #include <QTextStream>
@@ -32,14 +34,20 @@
 #include <QtDebug>
 
 //#define LAYEREDSTYLELOADER_DEBUG
+#ifndef HB_BIN_CSS
+#define HB_USETHEMESERVER
+#endif
+
 #include "hbvector_p.h"
 #include "hbmemorymanager_p.h"
 #include "hbmemoryutils_p.h"
+#ifdef HB_USETHEMESERVER
 #include "hbthemeclient_p.h"
+#endif
 #include "hbtheme.h"
+#ifndef HB_BIN_CSS
 #include "hbtheme_p.h"
-#include "hbthemeclient_p.h"
-#include "hbinstance.h"
+#endif
 #include "hbthemeperf_p.h"
 #include "hbcssformatter_p.h"
 
@@ -140,7 +148,9 @@ int HbLayeredStyleLoader::load(const QString &fileName, LayerPriority priority, 
             QTime time;
             time.start();
 #endif
+#ifdef HB_USETHEMESERVER
             styleSheet = HbThemeClient::global()->getSharedStyleSheet(fileName,priority);
+#endif
 #ifdef LAYEREDSTYLELOADER_DEBUG
             qDebug() << "Time elapsed in getting the shared stylesheet "<< fileName << " is : %d ms" <<time.elapsed();
 #endif
@@ -387,7 +397,7 @@ bool HbLayeredStyleLoader::hasOrientationSpecificStyleRules(HbStyleSelector::Nod
     QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
 
-    QVectorIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(LayerList());
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -425,7 +435,7 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::declarationsForNode(HbStyleSe
     QVector<QVector<HbCss::WeightedDeclaration> > weightedDeclsList;
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
 
-    QVectorIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(LayerList());
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -473,7 +483,7 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
     QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
 
-    QVectorIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(LayerList());
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -504,6 +514,7 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
     qDebug() << "Style rules for" << widget->metaObject()->className();
     qDebug("\n%s", HbCssFormatter::weightedStyleRulesToString(weightedRules).toLatin1().constData());
 #endif
+    rules.reserve(count);
     for (int j = 0; j < weightedRules.count(); j++) {
         rules += weightedRules.at(j).second;
     }
@@ -518,7 +529,7 @@ void HbLayeredStyleLoader::variableRuleSets(QHash<QString, HbCss::Declaration> *
 {
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
     
-    QVectorIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(LayerList());
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -566,27 +577,22 @@ bool HbLayeredStyleLoader::findInDefaultVariables(const QString& variableName, H
      
      \return List of all layer priorities in use
 */
-QVector<HbLayeredStyleLoader::LayerPriority> HbLayeredStyleLoader::LayerList() const
+QList<HbLayeredStyleLoader::LayerPriority> HbLayeredStyleLoader::LayerList() const
 {
-    QVector<LayerPriority> result;
-    
-    QMap<LayerPriority, int> uniqueLayers;
-    QList<LayerPriority> allLayers = mStyleLayers.keys();
+    QList<LayerPriority> mergedLayers = mStyleLayers.keys();
     HbLayeredStyleLoader *allStack = getStack(Concern_All);
     if (allStack) {
-        allLayers << allStack->mStyleLayers.keys();
+        QList<LayerPriority> allLayers = allStack->mStyleLayers.keys();
+        for (int i=0; i<allLayers.count(); i++) {
+            const LayerPriority &layer = allLayers.at(i);
+            if (!mergedLayers.contains(layer)) {
+                mergedLayers.append(layer);
+            }
+        }
     }
-    QListIterator<LayerPriority> iter(allLayers);
-    while (iter.hasNext()) {
-        uniqueLayers.insert(iter.next(), 0);
-    }
-    
-    QMapIterator<LayerPriority, int> mapIt(uniqueLayers);
-    while (mapIt.hasNext()) {
-        mapIt.next();
-        result << mapIt.key();
-    }
-    return result;
+    qSort(mergedLayers);
+
+    return mergedLayers;
 }
 
 
@@ -632,7 +638,7 @@ bool HbLayeredStyleLoader::saveBinary(const QString& fileName,
         int widgetstack_count = defaultSs->widgetRules.count();
         stream << widgetstack_count;
         foreach (const HbCss::WidgetStyleRules &rules, defaultSs->widgetRules) {
-            stream << rules.widgetName;
+            stream << rules.classNameHash;
             saveStyleRules(stream, &rules.styleRules);
             saveStyleRules(stream, &rules.portraitRules);
             saveStyleRules(stream, &rules.landscapeRules);
@@ -689,10 +695,10 @@ bool HbLayeredStyleLoader::loadBinary(const QString& fileName, HbCss::StyleSheet
         stream >> widgetstacks_count;
         for (int stack = 0; stack < widgetstacks_count; stack++) {
             // Create the widget stack if necessary
-            QString widgetname;
-            stream >> widgetname;
+            uint classNameHash;
+            stream >> classNameHash;
 
-            HbCss::WidgetStyleRules rules(widgetname, sheet->memoryType);
+            HbCss::WidgetStyleRules rules(classNameHash, sheet->memoryType);
             HbCss::WidgetStyleRules* addedStack = sheet->addWidgetStack(rules);
 
             loadStyleRules(stream, addedStack->styleRules);

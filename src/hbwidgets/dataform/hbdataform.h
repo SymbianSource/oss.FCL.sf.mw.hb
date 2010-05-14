@@ -52,10 +52,6 @@ public:
 
     virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);
 
-    virtual int indexCount() const;
-    virtual QModelIndex nextIndex(const QModelIndex &index) const;
-    virtual QModelIndex previousIndex(const QModelIndex &index) const;
-
     void setExpanded(const QModelIndex &index, bool expanded);
     bool isExpanded(const QModelIndex &index) const;
 
@@ -67,8 +63,6 @@ public:
 
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 
-    HbDataFormViewItem* dataFormViewItem(const QModelIndex &index) const;
-
     virtual void setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype = 0);
 
     void addConnection(HbDataFormModelItem *item, const char* signal, 
@@ -77,10 +71,6 @@ public:
         QObject *receiver, const char* slot);
     void removeAllConnection();
     void removeAllConnection(HbDataFormModelItem *item);
-
-public slots:
-    void loadSettings();
-    void storeSettings();
 
 signals:
     void itemShown(const QModelIndex &index);

@@ -31,6 +31,8 @@
 #include <sgresource/sgimage.h>
 #include <hbthemecommon_symbian_p.h>
 
+class HbNvgEngine;
+
 #ifdef HB_ICON_CACHE_DEBUG
 typedef EGLBoolean (*NOK_resource_profiling)(EGLDisplay, EGLint, EGLint*, EGLint, EGLint*);
 #endif
@@ -41,12 +43,14 @@ public:
 
     HbSgImageRenderer();
     ~HbSgImageRenderer();
+    HbNvgEngine * nvgEngine() { return engine;}
     bool initialize();
     bool beginRendering(RSgImage * sgImage);
     void endRendering();    
     static HbSgImageRenderer *global();
     static void addSgImageToHash(unsigned long long id, RSgImage* sgImage);
     static void removeSgImageFromHash(unsigned long long id);
+    void terminate();
 
 #ifdef HB_ICON_CACHE_DEBUG
     unsigned long totalGPUMemory();
@@ -54,8 +58,7 @@ public:
 #endif
     
 private:
-    
-    void terminate();
+
     bool createContext(RSgImage * sgImage);
     
 #ifdef HB_ICON_CACHE_DEBUG
@@ -72,6 +75,7 @@ private:
     bool        init;
     RSgDriver sgDriver;
     static QHash<unsigned long long, RSgImage*> sgImageHash;
+    HbNvgEngine *engine;
 };
 
 #endif

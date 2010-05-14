@@ -40,9 +40,8 @@ class HbDeviceProgressDialogWidget : public HbProgressDialog, public HbDeviceDia
 {
     Q_OBJECT
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
-    Q_PROPERTY(QString primaryActionText READ primaryActionText WRITE setPrimaryActionText)
-    Q_PROPERTY(bool primaryActionNull READ primaryActionNull WRITE setPrimaryActionNull)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
+    Q_PROPERTY(QString cancelAction READ cancelAction WRITE setCancelAction)
 
 public:
     HbDeviceProgressDialogWidget(HbProgressDialog::ProgressDialogType progressDialogType, const QVariantMap &parameters);
@@ -55,24 +54,27 @@ public:
     static bool getDialogType(HbProgressDialog::ProgressDialogType &dialogType, QVariantMap &parameters);
 
 public slots:
-    void primaryActionTriggered();
+    void cancelTriggered();
 
 private:
+    enum ActionIndex{
+        Cancel = 0
+    };
     bool constructDialog(const QVariantMap &parameters);
     bool checkProperties(const QVariantMap& parameters);
     void setProperties(const QVariantMap& parameters);
     void resetProperties();
     QString iconName() const;
     void setIconName(QString &iconName);
-    QString primaryActionText() const;
-    void setPrimaryActionText(QString &actionText);
-    bool primaryActionNull() const;
-    void setPrimaryActionNull(bool isNull);
+    QString cancelAction() const;
+    void setCancelAction(QString &actionData);
     void hideEvent(QHideEvent *event);
     void showEvent(QShowEvent *event);
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;
 
+    QAction *action(ActionIndex index) const;
+    static void parseActionData(QString &data);
 signals:
     void deviceDialogClosed();
     void deviceDialogData(QVariantMap data);
@@ -82,7 +84,7 @@ private:
 
     int mLastError;
     QString mIconName;
-    HbAction *mPrimaryAction;
+    HbAction *mAction;
     HbProgressDialog::ProgressDialogType mProgressDialogType;
     bool mShowEventReceived;
     QString mAnimationDefinition;

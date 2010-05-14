@@ -33,6 +33,7 @@ PUBLIC_HEADERS += $$PWD/hbsmileytheme.h
 
 PRIVATE_HEADERS += $$PWD/hbdeviceprofile_p.h
 PRIVATE_HEADERS += $$PWD/hbtypefaceinfo_p.h
+PRIVATE_HEADERS += $$PWD/hbtypefaceinfodatabase_p.h
 PRIVATE_HEADERS += $$PWD/hbdeviceprofiledatabase_p.h
 PRIVATE_HEADERS += $$PWD/hbdeviceprofilemanager_p.h
 PRIVATE_HEADERS += $$PWD/hbdeviceprofilereader_p.h
@@ -84,6 +85,7 @@ SOURCES += $$PWD/hbthetestwidget_p.cpp
 SOURCES += $$PWD/hbthetestutility_p.cpp
 SOURCES += $$PWD/hbtextutils_p.cpp
 SOURCES += $$PWD/hbtypefaceinfo.cpp
+SOURCES += $$PWD/hbtypefaceinfodatabase_p.cpp
 SOURCES += $$PWD/hbtypefacexmlparser.cpp
 SOURCES += $$PWD/hbscreenmode_p.cpp
 SOURCES += $$PWD/hbdevicemodeinfo_p.cpp

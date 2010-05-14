@@ -35,7 +35,7 @@
 #include "hbactivityplugininterface_p.h"
 
 /*!
-    @beta
+    @stable
     @hbcore
     \class HbActivityManager
     \brief HbActivityManager is an access point for Activities features.
@@ -69,38 +69,34 @@ HbActivityManagerPrivate::~HbActivityManagerPrivate()
 HbActivityPluginInterface *HbActivityManagerPrivate::activityPlugin() const
 {
     if (!mActivityPlugin) {
-        QStringList pluginPathList;
-#if defined(Q_OS_SYMBIAN)
-        QStringList cDriveList;
-        QStringList romList;
-
-        foreach (const QString &libraryPath, qApp->libraryPaths()) {
-            QString absolutePath = QDir(libraryPath).absolutePath();
-            cDriveList << absolutePath.replace(0, 1, 'C');
-            romList << absolutePath.replace(0, 1, 'Z');
-        }
-        pluginPathList << cDriveList << romList;
+        foreach (const QString &path, QCoreApplication::libraryPaths()) {
+            QString pluginPath;
+            QString libPath = QDir(path).filePath(QLatin1String("hbactivityplugin"));
+#ifdef Q_OS_SYMBIAN
+            libPath += QLatin1String(".qtplugin");
+            QLibrary library(libPath);           
+            if (QFile::exists(libPath) && library.load()) {
+                library.unload();
+                pluginPath = libPath;
+            }
 #else
-        pluginPathList << qApp->libraryPaths();
-#endif
-
-        foreach (const QString &path, pluginPathList) {
-            QDir dir(path);
-            QString filePath = dir.filePath("hbactivityplugin");
-            QLibrary library(filePath);
+            QLibrary library(libPath);           
             if (library.load()) {
-                QPluginLoader loader(dir.filePath(library.fileName()));
-                QObject *pluginInstance = loader.instance();
-                if (pluginInstance) {
-                    mActivityPlugin = qobject_cast<HbActivityPluginInterface*>(pluginInstance);
-                    if (mActivityPlugin) {
-                        q->connect(pluginInstance, SIGNAL(activityRequested(QString)), q, SIGNAL(activityRequested(QString)));
-                    } else {
+                library.unload();
+                pluginPath = library.fileName();
+            }     
+#endif      
+            QPluginLoader loader(pluginPath);
+            QObject *pluginInstance = loader.instance();
+            if (pluginInstance) {
+                mActivityPlugin = qobject_cast<HbActivityPluginInterface*>(pluginInstance);
+                if (mActivityPlugin) {
+                    q->connect(pluginInstance, SIGNAL(activityRequested(QString)), q, SIGNAL(activityRequested(QString)));
+                } else {
 #if defined(Q_OS_SYMBIAN)
-                        qWarning("Cannot load activity plugin. Features related to activities won't be available.");
+                    qWarning("Cannot load activity plugin. Features related to activities won't be available.");
 #endif
-                        loader.unload();
-                    }
+                    loader.unload();
                 }
             }
         }
@@ -187,6 +183,22 @@ bool HbActivityManagerPrivate::waitActivity()
 }
 
 /*!
+\internal
+*/
+void HbActivityManagerPrivate::parseCommandLine(const QStringList &commandLineParams, Hb::ActivationReason &reason, QString &id, QVariantHash &params) const
+{
+    HbActivityPluginInterface *plugin = activityPlugin();
+    if (plugin) {
+        QVariantHash activityParams = plugin->parseCommandLine(commandLineParams);
+        if (!activityParams.isEmpty()) {
+            reason = Hb::ActivationReasonActivity;
+            id = activityParams.value("activityname").toString();
+            params = activityParams;
+        }
+    }
+}
+
+/*!
     Constructor
     \a parent. Parent of this object.
  */
@@ -266,3 +278,18 @@ bool HbActivityManager::waitActivity()
     return d->waitActivity();
 }
 
+/*!
+    Searches \a commandLineArguments for pair of "-activity" marker and
+    activity URI, which should have following syntax:
+
+    appto://UID3?activityname=activity-name-value&key1=value
+
+    If both marker and valid URI are found, \a reason is set to
+    Hb::ActivationReasonActivity, and \a activityId and \a parameters are
+    filled with parsed values.
+*/
+void HbActivityManager::parseCommandLine(const QStringList &commandLineParams, Hb::ActivationReason &reason, QString &id, QVariantHash &params) const
+{
+    Q_D(const HbActivityManager);
+    d->parseCommandLine(commandLineParams, reason, id, params);
+}

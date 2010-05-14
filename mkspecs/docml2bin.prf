@@ -1,0 +1,19 @@
+include(hb_install.prf)
+include(hb_functions.prf)
+
+QMAKE_DOCML2BIN = $$hbNativePath($${HB_BIN_DIR}/docml2bin)
+ 
+docml2bin.input = DOCML
+docml2bin.output = ${QMAKE_FILE_IN}.bin
+docml2bin.commands = "$$QMAKE_DOCML2BIN" -s "${QMAKE_FILE_IN}" -t "${QMAKE_FILE_OUT}"
+docml2bin.name = DOCML2BIN ${QMAKE_FILE_IN}
+docml2bin.CONFIG = no_link
+
+rcc.depends += compiler_docml2bin_make_all
+
+## how to add ".bin" for each variable?
+#rcc.depends += for(DOCMLFILE, $$list(DOCML)) { DOCMLFILE }
+#rcc.depends += $${first(DOCML)}.bin
+#rcc.depends += $${last(DOCML)}.bin
+
+QMAKE_EXTRA_COMPILERS += docml2bin

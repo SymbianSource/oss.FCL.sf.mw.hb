@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 
-#include "hbstyleoptionratingslider.h"
+#include "hbstyleoptionratingslider_p.h"
 
 
 /*!

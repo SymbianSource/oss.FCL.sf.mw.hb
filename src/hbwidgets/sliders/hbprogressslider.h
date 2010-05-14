@@ -36,44 +36,13 @@ class HB_WIDGETS_EXPORT HbProgressSlider : public HbProgressBar
 {
     Q_OBJECT
     Q_PROPERTY(int sliderValue READ sliderValue WRITE setSliderValue)
-     /* Deprecated */
-    Q_PROPERTY(HbIcon thumbIcon READ thumbIcon WRITE setThumbIcon)
     Q_PROPERTY(QString sliderToolTip READ sliderToolTip WRITE setSliderToolTip)
-    Q_PROPERTY(SliderState state READ sliderState WRITE setSliderState)
     Q_PROPERTY(QString handleIcon READ handleIcon WRITE setHandleIcon)
-    Q_ENUMS(SliderState)
-
-    /* Deprecated */
-    Q_PROPERTY(QString handleToolTip READ handleToolTip WRITE setHandleToolTip)
-    Q_PROPERTY(HandleState state READ handleState WRITE setHandleState)    
 
 public:
 
-    /* Deprecated */
-    enum HandleState
-    {
-        PlayNormal,
-        PlayPressed,
-        PauseNormal,
-        PausePressed
-    };
-
-    /* Deprecated */
-    enum SliderState
-    {
-        SliderStatePlayNormal,
-        SliderStatePlayPressed,
-        SliderStatePauseNormal,
-        SliderStatePausePressed
-    };
-
     HbProgressSlider(QGraphicsItem *parent = 0);
     ~HbProgressSlider();
-
-    /* Deprecated */
-    void setThumbIcon(const HbIcon &icon);
-    /* Deprecated */
-    HbIcon thumbIcon() const;
 
     enum { Type = Hb::ItemType_ProgressSlider };
     int type() const { return Type; }
@@ -85,21 +54,8 @@ public:
     int sliderValue() const;
     bool isSliderDown() const;
 
-    /* Deprecated*/
-    void setHandleToolTip(const QString &text);
-    /* Deprecated*/
-    QString handleToolTip() const;
-
-    /* Deprecated*/
-    void setHandleState(HbProgressSlider::HandleState state);
-    /* Deprecated*/
-    HbProgressSlider::HandleState handleState() const;
-
     void setSliderToolTip(const QString &text);
     QString sliderToolTip() const;
-
-    void setSliderState(HbProgressSlider::SliderState state);
-    HbProgressSlider::SliderState sliderState() const;
 
     void setHandleIcon(const QString& handlePath );
     QString handleIcon() const;

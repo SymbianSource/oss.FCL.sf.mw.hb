@@ -35,6 +35,7 @@
 #include "hbevent.h"
 #include "hbmainwindow_p.h"
 #include <QGraphicsLayout>
+#include <qcoreapplication.h>
 
 /*!
   \class HbScreen
@@ -262,6 +263,7 @@ void HbScreen::decoratorVisibilityChanged()
         HbToolBarPrivate::d_ptr(mTb)->mDoLayout = false;
     }
     repolish();
+    QCoreApplication::sendPostedEvents(this, QEvent::Polish);
 }
 
 void HbScreen::currentViewChanged(HbView* view)

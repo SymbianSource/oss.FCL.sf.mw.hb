@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionpushbutton.h"
+#include "hbstyleoptionpushbutton_p.h"
 #include "hbicon.h"
 
 /*!

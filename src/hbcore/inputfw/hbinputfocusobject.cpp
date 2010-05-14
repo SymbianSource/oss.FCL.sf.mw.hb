@@ -35,8 +35,7 @@
 #include "hbinputeditorinterface.h"
 #include "hbinputvkbhost.h"
 #include "hbinputstandardfilters.h"
-
-const qreal HbInputVkbZPlaneEpsilon = 0.5;
+#include "hbnamespace_p.h"
 
 /*!
 @alpha
@@ -234,26 +233,6 @@ HbEditorInterface& HbInputFocusObject::editorInterface() const
 }
 
 /*!
-\deprecated HbInputFocusObject::cursorLeft(int)
-  is deprecated. Use HbInputFocusObject::cursorLeft(Qt::KeyboardModifiers modifiers) instead.
-Sends left arrow key press to focused editor.
-*/
-void HbInputFocusObject::cursorLeft(int modifiers)
-{
-    cursorLeft(static_cast<Qt::KeyboardModifiers>(modifiers));
-}
-
-/*!
-\deprecated HbInputFocusObject::cursorRight(int)
-  is deprecated. Use HbInputFocusObject::cursorRight(Qt::KeyboardModifiers modifiers) instead.
-Sends right arrow key press to focused editor.
-*/
-void HbInputFocusObject::cursorRight(int modifiers)
-{
-    cursorRight(static_cast<Qt::KeyboardModifiers>(modifiers));
-}
-
-/*!
 Sends left arrow key press to focused editor.
 */
 void HbInputFocusObject::cursorLeft(Qt::KeyboardModifiers modifiers)
@@ -395,7 +374,7 @@ qreal HbInputFocusObject::findVkbZValue() const
             result += parent->zValue();
         }
 
-        return result + HbInputVkbZPlaneEpsilon;
+        return result + HbPrivate::VKBValueUnit;
     }
 
     return 0.0;

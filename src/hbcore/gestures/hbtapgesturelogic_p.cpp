@@ -211,6 +211,12 @@ QGestureRecognizer::Result HbTapGestureLogic::recognize(
         QObject *watched,
         QEvent *event )
 {
+    if (!gesture || !watched || !event )
+    {
+        DEBUG() << "WARNING: Ignoring tap gesture because of invalid arguments from gesture fw.";
+        return QGestureRecognizer::Ignore;
+    }
+
     switch(event->type())
     {
     case QEvent::MouseButtonDblClick:

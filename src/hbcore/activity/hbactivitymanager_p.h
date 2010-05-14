@@ -42,7 +42,8 @@ public:
     QList<QVariantHash> activities() const;
     QVariant activityData(const QString &activityId) const;
     bool waitActivity();
-    
+    void parseCommandLine(const QStringList &commandLineParams, Hb::ActivationReason &reason, QString &id, QVariantHash &params) const;
+
 private:
     HbActivityPluginInterface *activityPlugin() const;
     

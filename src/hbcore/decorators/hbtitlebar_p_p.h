@@ -31,8 +31,6 @@
 
 class HbIndicatorButton;
 class HbMainWindow;
-class HbGestureSceneFilter;
-class HbGesture;
 class HbNavigationButton;
 class HbTitleBarHandle;
 
@@ -53,9 +51,6 @@ public:
     HbTitlePane *mTitlePane;
     HbNavigationButton *mNavigationButton;
     HbIndicatorButton *mIndicatorButton;
-    HbGestureSceneFilter *mTitleBarFilter;
-    HbGesture *mTitleBarGestureLeft;
-    HbGesture *mTitleBarGestureRight;
     HbTitleBarHandle *mTitleBarHandle;
     QGraphicsItem *mTouchAreaItem;
     HbAction *mDefaultNavigationAction;

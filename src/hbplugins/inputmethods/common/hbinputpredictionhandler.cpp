@@ -33,6 +33,7 @@
 #include <hbinputvkbhost.h>
 #include <hbcolorscheme.h>
 #include <hbinpututils.h>
+#include <hbinputbutton.h>
 #include "../touchinput/virtualqwerty.h"
 
 #include "hbinputpredictionhandler_p.h"
@@ -150,9 +151,9 @@ void HbInputPredictionHandlerPrivate::candidatePopupClosed(int closingKey, const
     }
 
     QString commitString  = activatedText;
-    if (closingKey == Qt::Key_0 || closingKey == Qt::Key_Space) {
+    if (closingKey == Qt::Key_0 || closingKey == HbInputButton::ButtonKeyCodeSpace) {
         commitString = activatedText+' ';
-    } else if (closingKey == Qt::Key_Enter || closingKey == Qt::Key_Return) {
+    } else if (closingKey == HbInputButton::ButtonKeyCodeEnter) {
         commitString = activatedText;
         commit(commitString);
         commitString = '\n';
@@ -265,7 +266,7 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
     mCanContinuePrediction = true;
     switch (event->key()) {
     case Qt::Key_Backspace:
-    case Qt::Key_Delete:
+    case HbInputButton::ButtonKeyCodeDelete:
         {
             QString currentSelection = focusObject->inputMethodQuery(Qt::ImCurrentSelection).toString();
             if(currentSelection.length()) {
@@ -322,9 +323,8 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
             ret = true;
         }
         break;
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-    case Qt::Key_Space:
+    case HbInputButton::ButtonKeyCodeEnter:
+    case HbInputButton::ButtonKeyCodeSpace:
     case Qt::Key_0: {//Space
             // A space means we have to commit the candidates when we are in predictive mode.
             QChar qc(event->key());
@@ -353,7 +353,11 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
                 if ( HbTextCaseUpper == currentTextCase || HbTextCaseAutomatic == currentTextCase ) {
                     mModifiers |= Qt::ShiftModifier;
                 }
-                mEngine->appendKeyPress(event->key(), mModifiers, mInputMethod->inputState().textCase(), this);
+                if (event->text().isEmpty()) {
+                    mEngine->appendKeyPress(event->key(), mModifiers, mInputMethod->inputState().textCase(), this);
+                } else {
+                    mEngine->appendCharacter(event->text().at(0), mInputMethod->inputState().textCase(), this);
+                }
                 bool isCustomWord = false;
                 mEngine->updateCandidates(mBestGuessLocation, isCustomWord);
                 //The engine can not predict the word, it is a custom word. Now engine returns a

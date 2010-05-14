@@ -86,7 +86,7 @@ public:
     void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
     
 private:
-    QVector<LayerPriority> LayerList() const;
+    QList<LayerPriority> LayerList() const;
     bool loadBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
     bool saveBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
     void saveDeclarations(QDataStream & stream,HbVector<HbCss::Declaration>* decls );

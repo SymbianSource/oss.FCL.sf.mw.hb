@@ -28,7 +28,7 @@
 #include "hbfocusgroup_p.h"
 #include "hbevent.h"
 #include "hbinstance.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbstyleparameters.h"
 #include "hbgraphicsscene.h"
 #include "hbgraphicsscene_p.h"
@@ -1367,43 +1367,3 @@ HbStyle::Primitive HbWidget::focusHighlight(HbWidget::FocusHighlight highlightTy
     }
     return primitive;
 }
-
-/*! 
-    
-    \deprecated HbWidget::overrideFeedback(Hb::InstantInteraction) const
-        is deprecated. Effect overriding is done via properties.
-
-    Default implementation of a virtual method for overriding instant feedback effects.
-    Returns HbFeedback::NoOverride by default.
-    Widgets can reimplement this method to override the default feedback effects (if
-    there is a strong need not to use the default ones).
-
-    \param interaction the interaction event triggered by the widget
-*/
-HbFeedback::InstantEffect HbWidget::overrideFeedback(Hb::InstantInteraction interaction) const {
-    Q_UNUSED(interaction);
-
-    return HbFeedback::NoOverride;
-}
-
-/*! 
-
-    \deprecated HbWidget::overrideContinuousFeedback(Hb::ContinuousInteraction, int*) const
-        is deprecated. Effect overriding is done via properties.
-
-    Default implementation of a virtual method for overriding continuous feedback effects.
-    Returns HbFeedback::NoContinuousOverride by default.
-    Widgets can reimplement this method to override the default continuous feedbacks
-    and/or their intensity (if there is a strong need not to use the default ones).
-
-    \param interaction  the interaction event triggered by the widget
-    \param intensity    the default intensity of the effect; can be overriden to any value
-                        between HbFeedback::IntensityZero, HbFeedback::IntensityFull
-*/
-HbFeedback::ContinuousEffect HbWidget::overrideContinuousFeedback(Hb::ContinuousInteraction interaction, int *intensity) const {
-    Q_UNUSED(interaction);
-    Q_UNUSED(intensity);
-
-    return HbFeedback::NoContinuousOverride;
-}
-

@@ -33,7 +33,7 @@
 #include <hbtextitem.h>
 #include <hbrichtextitem.h>
 #include <hbstyle.h>
-#include <hbstyleoptionlistviewitem.h>
+#include <hbstyleoptionlistviewitem_p.h>
 
 #include <QPersistentModelIndex>
 #include <QVariant>
@@ -416,20 +416,13 @@ void HbListViewItem::updatePrimitives()
         if (item) {
             styleOption.index = i;
             styleOption.content = d->mStringList.at(i);
+            styleOption.multilineSecondaryTextSupported = d->isMultilineSupported();
 
-            int minimumLines = 1;
-            int maximumLines = 1;
-            if (    i == 1
-                &&  d->isMultilineSupported()) {
+            if (i == 1) {
                 // criteria of secondary text in middle column is fullfilled
-                minimumLines = sd->mMinimumSecondaryTextRowCount;
-                maximumLines = sd->mMaximumSecondaryTextRowCount;
-            }
-            // must always set some value to limit count of lines,
-            // because by default HbTextItem gives text as much as space it wants
-            styleOption.minimumLines = minimumLines;
-            styleOption.maximumLines = maximumLines;
-
+                styleOption.minimumLines = sd->mMinimumSecondaryTextRowCount;
+                styleOption.maximumLines = sd->mMaximumSecondaryTextRowCount;
+            } 
             style()->updatePrimitive(item, d->displayPrimitive(), &styleOption);
         }
     }
@@ -518,7 +511,7 @@ void HbListViewItem::setStretchingStyle(StretchingStyle style)
     HB_SDD(HbListViewItem);
     if (style != sd->mStretchingStyle) {
         sd->mStretchingStyle = style;
-        if (d->isLandscape()) {
+        if (d->isLandscape()) { 
             // secondary text multiline change!
             d->updateCloneItems(false);
             d->repolishCloneItems();
@@ -543,7 +536,8 @@ HbListViewItem::GraphicsSize HbListViewItem::graphicsSize() const
     Sets the graphics size as a \a size.  
     
     This method will change the used graphics size for all view items.
-    \note When graphics size HbListViewItem::Thumbnail is  set, multiline secondary texts are not supported.
+    \note When graphics size HbListViewItem::Thumbnail or HbListViewItem::WideThumbnail is set,
+    multiline secondary texts are not supported.
 
     \sa graphicsSize
     \sa setSecondaryTextRowCount
@@ -552,7 +546,8 @@ void HbListViewItem::setGraphicsSize(GraphicsSize size)
 {
     HB_SDD(HbListViewItem);
     if (size != sd->mGraphicsSize) {
-        bool thumbnailChange = (size == Thumbnail) | (sd->mGraphicsSize == Thumbnail);
+        bool thumbnailChange = (size == Thumbnail) | (sd->mGraphicsSize == Thumbnail) 
+                                | (size == WideThumbnail) | (sd->mGraphicsSize == WideThumbnail);
         sd->mGraphicsSize = size;
         if (   thumbnailChange
             && !d->isStretching()) {
@@ -564,30 +559,38 @@ void HbListViewItem::setGraphicsSize(GraphicsSize size)
 }
 
 /*!
-    Returns the secondary text item maximum and minimum row counts.
+    Returns secondary text item maximum and minimum row counts. 
+	The default maximum row count is 1 and minimum row count is 1.
 
-    The default maximum row count is 1 and minimum row count is 1.
+    \note This function does not return values from .css although they were effective. 
 
     \sa setSecondaryTextRowCount
 */
 void HbListViewItem::getSecondaryTextRowCount(int &minimum, int &maximum) const
 {
     HB_SDD(const HbListViewItem);
-    minimum = sd->mMinimumSecondaryTextRowCount;
-    maximum = sd->mMaximumSecondaryTextRowCount;
+    minimum = 1;
+    maximum = 1;
+    if (sd->mMinimumSecondaryTextRowCount != -1) {
+        minimum = sd->mMinimumSecondaryTextRowCount;
+        maximum = sd->mMaximumSecondaryTextRowCount;
+    }
 }
 
 /*!
     Sets the secondary text item \a maximum row count and \a minimum row count.
-
     This method will change these values for all view items.
 
-    \note If HbListViewItem::GraphicsSize is HbListViewItem::Thumbnail or HbListViewItem::StretchingStyle
-    is HbListViewItem::StretchLandscape in landscape mode only one row secondary text is supported. \a minimum and
-    \a maximum are applied only when graphics size is not HbListViewItem::Thumbnail and
-    stretching style is not HbListViewItem::StretchLandscape in landscape mode. 
+    Default value is 1 for both minimum and maximum line counts. 
+    If default values are used wrapping mode, minimum and maximum line counts are read from .css file. 
+    When non default value are set by this function, wrapping mode of text item is 
+    automatically set to Hb::TextWordWrap.
 
-    \note If Qt::TextFormat is Qt::RichText, multiline secondary texts are note supported.
+    \note \a minimum and \a maximum are applied only when graphics size is not HbListViewItem::Thumbnail or 
+    HbListViewItem::WideThumbnail and
+    stretching style is not HbListViewItem::StretchLandscape in landscape mode. Otherwise only one row secondary text is used.
+
+    \note If Qt::TextFormat is Qt::RichText, multiline secondary texts are not supported.
 
     \sa setTextFormat
     \sa secondaryTextRowCount
@@ -624,8 +627,7 @@ void HbListViewItem::setSecondaryTextRowCount(int minimum, int maximum)
 */
 void HbListViewItem::polish(HbStyleParameters& params)
 {
-    HB_SDD(HbListViewItem);
-
+    Q_D( HbListViewItem );
     setProperty("icon-1", (bool)d->mDecorationRoleItems.value(0));
     setProperty("icon-2", (bool)d->mDecorationRoleItems.value(1));
 
@@ -633,7 +635,6 @@ void HbListViewItem::polish(HbStyleParameters& params)
     setProperty("text-2", (bool)d->mDisplayRoleTextItems.value(1));
     setProperty("text-3", (bool)d->mDisplayRoleTextItems.value(2));
 
-    setProperty("maximumSecondaryTextRowCount", sd->mMaximumSecondaryTextRowCount);
     if (itemView() && itemView()->selectionMode() != HbListView::NoSelection) {
         setProperty("selectionMode", true);
     } else {

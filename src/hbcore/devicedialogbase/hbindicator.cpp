@@ -45,7 +45,7 @@
     
     \sa HbIndicatorPluginInterface
 
-    \alpha
+    \stable
     \hbcore
 */
 

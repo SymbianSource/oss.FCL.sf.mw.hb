@@ -42,14 +42,10 @@ hbAddLibrary(hbwidgets/HbWidgets)
 HEADERS += $$PWD/hbindicatormenucontent_p.h
 HEADERS += $$PWD/hbindicatormenuplugin_p.h
 HEADERS += $$PWD/hbindicatormenu_p.h
-HEADERS += $$PWD/hbindicatormenuclock_p.h
-HEADERS += $$PWD/hbindicatormenudate_p.h
 
 SOURCES += $$PWD/hbindicatormenucontent.cpp
 SOURCES += $$PWD/hbindicatormenuplugin.cpp
 SOURCES += $$PWD/hbindicatormenu.cpp
-SOURCES += $$PWD/hbindicatormenuclock.cpp
-SOURCES += $$PWD/hbindicatormenudate.cpp
 
 symbian {
     TARGET.EPOCALLOWDLLDATA = 1

@@ -24,70 +24,53 @@
 ****************************************************************************/
 
 #include "hboogmwatcher_sym_p.h"
-#include <hbinstance.h>
-#include <hbmainwindow.h>
-#include <coecntrl.h>
+#include "hbiconloader_p.h"
+#include <QApplication>
+#include <QSymbianEvent>
 #include <e32debug.h>
-#include <QMetaObject>
+#include <w32std.h>
+
+// Constants copied from goommonitorplugin.hrh.  Including the file is
+// not possible because older versions of the file do not have the
+// constants and thus would cause a build break with older Symbian
+// envs which is not desirable.
+#define KGoomMemoryLowEvent 0x10282DBF
+#define KGoomMemoryGoodEvent 0x20026790
+
+static QCoreApplication::EventFilter prevEventFilter;
+
+static bool goomEventFilter(void *message, long *result)
+{
+    QSymbianEvent *symEvent = static_cast<QSymbianEvent *>(message);
+    if (symEvent->type() == QSymbianEvent::WindowServerEvent) {
+        const TWsEvent *wsEvent = symEvent->windowServerEvent();
+        switch (wsEvent->Type()) {
+
+        case KGoomMemoryLowEvent:
+            RDebug::Printf("HbOogmWatcher: Goom memory low event");
+            HbOogmWatcherPrivate::d_ptr(HbOogmWatcher::instance())->graphicsMemoryLow();
+            break;
+
+        case KGoomMemoryGoodEvent:
+            RDebug::Printf("HbOogmWatcher: Goom memory good event");
+            HbOogmWatcherPrivate::d_ptr(HbOogmWatcher::instance())->graphicsMemoryGood();
+            break;
+
+        case EEventWindowVisibilityChanged:
+            if (wsEvent->VisibilityChanged()->iFlags & TWsVisibilityChangedEvent::ENotVisible) {
+                HbIconLoader::global()->handleForegroundLost();
+            }
+            break;
+        }
+    }
+    // If there was an event filter set previously then call it. Otherwise
+    // return false (let through any events, even the ones handled above).
+    return prevEventFilter ? prevEventFilter(message, result) : false;
+}
 
 HbOogmWatcherPrivate::HbOogmWatcherPrivate()
 {
-#ifdef HB_OOGM_ALF
-    mInitialized = false;
-    setupListener(); // there may be no mainwindow at this point but we must try anyway
-#endif
+    // Standard app event filtering is not suitable here, must use
+    // setEventFilter to catch the symbian events.
+    prevEventFilter = qApp->setEventFilter(goomEventFilter);
 }
-
-void HbOogmWatcherPrivate::mainWindowReady()
-{
-    // This function is invoked by the framework when a mainwindow is registered to the
-    // HbInstance. It has to invoke setupListener() asynchronously otherwise the creation
-    // of the CAlfCompositionSource may fail.
-    if (!mInitialized) {
-        QMetaObject::invokeMethod(this, "setupListener", Qt::QueuedConnection);
-    }
-}
-
-void HbOogmWatcherPrivate::setupListener()
-{
-#ifdef HB_OOGM_ALF
-    mCompositionSource = 0;
-    QList<HbMainWindow *> mainWindows = hbInstance->allMainWindows();
-    if (!mainWindows.isEmpty()) {
-        RWindow *win = static_cast<RWindow *>(mainWindows.at(0)->effectiveWinId()->DrawableWindow());
-        TInt err = win ? KErrNone : KErrNotFound;
-        if (win)
-            TRAP(err, mCompositionSource = CAlfCompositionSource::NewL(*win));
-        if (err == KErrNone) {
-            TRAP(err, mCompositionSource->AddCompositionObserverL(*this));
-            if (err != KErrNone) {
-                RDebug::Printf("HbOogmWatcher: Cannot add composition observer (%d)", err);
-                delete mCompositionSource;
-                mCompositionSource = 0;
-            } else {
-                mInitialized = true;
-                RDebug::Printf("HbOogmWatcher: Initialized successfully");
-            }
-        } else {
-            RDebug::Printf("HbOogmWatcher: Cannot create CAlfCompositionSource (%d, RWindow=%x)", err, (int) win);
-        }
-    } else {
-        RDebug::Printf("HbOogmWatcher: No mainwindows available");
-    }
-#endif
-}
-
-HbOogmWatcherPrivate::~HbOogmWatcherPrivate()
-{
-#ifdef HB_OOGM_ALF
-    delete mCompositionSource;
-#endif
-}
-
-#ifdef HB_OOGM_ALF
-void HbOogmWatcherPrivate::RunningLowOnGraphicsMemory()
-{
-    RDebug::Printf("HbOogmWatcher: RunningLowOnGraphicsMemory()");
-    graphicsMemoryLow();
-}
-#endif

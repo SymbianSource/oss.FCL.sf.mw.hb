@@ -28,7 +28,9 @@
 
 #include <hbwidget_p.h>
 #include "hbbatteryindicator_p.h"
-#include "hbsysteminfo_p.h"
+#ifdef HB_HAVE_QT_MOBILITY
+#include <hbsysteminfo_p.h>
+#endif // HB_HAVE_QT_MOBILITY
 
 class HbBatteryIndicatorPrivate : public HbWidgetPrivate
 {
@@ -37,16 +39,18 @@ class HbBatteryIndicatorPrivate : public HbWidgetPrivate
 public:
     HbBatteryIndicatorPrivate();
     virtual ~HbBatteryIndicatorPrivate();
-
-    void _q_setPowerState(HbSystemDeviceInfo::PowerState powerState);
-
+#ifdef HB_HAVE_QT_MOBILITY
+    void _q_setPowerState(QSystemDeviceInfo::PowerState powerState);
+#endif // HB_HAVE_QT_MOBILITY
 private:
     int mLevelPercent;
     QGraphicsItem *mBatteryBackgroundIcon;
     QGraphicsItem *mBatteryLevelIcon;
     QGraphicsItem *mBatteryIcon;
 
-    HbSystemDeviceInfo* mSystemDeviceInfo;
+#ifdef HB_HAVE_QT_MOBILITY
+    HbSystemInfo *mSystemDeviceInfo;
+#endif // HB_HAVE_QT_MOBILITY
 
     QBasicTimer mChargingTimer;
     bool mChargingOn;

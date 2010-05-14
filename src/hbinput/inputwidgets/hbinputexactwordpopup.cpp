@@ -35,7 +35,7 @@
 #include "hbdeviceprofile.h"
 #include "hbdialog.h"
 #include "hblabel.h"
-#include "hbstyleoptionlabel.h"
+#include "hbstyleoptionlabel_p.h"
 #include "hbinputexactwordpopup.h"
 #include "hbiconitem.h"
 #include "hbinputsettingproxy.h"

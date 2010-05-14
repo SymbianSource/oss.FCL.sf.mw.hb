@@ -25,8 +25,9 @@
 
 #include "hbtitlepane_p.h"
 #include "hbtitlepane_p_p.h"
+#include "hbevent.h"
 
-#include <hbstyleoptiontitlepane.h>
+#include <hbstyleoptiontitlepane_p.h>
 #include <hbapplication.h>
 #include <hbwidgetfeedback.h>
 #include <hbmainwindow.h>
@@ -65,7 +66,6 @@ void HbTitlePanePrivate::delayedConstruction()
     Q_Q(HbTitlePane);
     q->grabGesture(Qt::TapGesture);
     q->grabGesture(Qt::PanGesture);
-    updatePrimitives();
 }
 
 void HbTitlePanePrivate::init()
@@ -87,10 +87,9 @@ void HbTitlePanePrivate::createPrimitives()
 {
     Q_Q(HbTitlePane);
 
-    q->setBackgroundItem(HbStyle::P_TitlePane_background);
     mTextItem = q->style()->createPrimitive(HbStyle::P_TitlePane_text, q);
-
     mIcon = q->style()->createPrimitive(HbStyle::P_TitlePane_icon, q);
+    q->setBackgroundItem(HbStyle::P_TitlePane_background); // calls updatePrimitives
 }
 
 void HbTitlePanePrivate::updatePrimitives()
@@ -335,7 +334,9 @@ void HbTitlePane::polish(HbStyleParameters &params)
 bool HbTitlePane::eventFilter(QObject *object, QEvent *event)
 {
     Q_UNUSED(object);
-    if (event->type() == QEvent::ActionAdded || event->type() == QEvent::ActionRemoved) {
+    if (event->type() == QEvent::ActionAdded || event->type() == QEvent::ActionRemoved
+        || event->type() == HbEvent::WindowLayoutDirectionChanged)
+    {
        repolish();
     }
     return false;
@@ -362,4 +363,27 @@ QVariant HbTitlePane::itemChange(GraphicsItemChange change, const QVariant & val
             break;
     }
     return HbWidget::itemChange(change, value);
+}
+
+/*!
+    \reimp
+*/
+QGraphicsItem *HbTitlePane::primitive(const QString &itemName) const
+{
+    Q_D(const HbTitlePane);
+    if (itemName == "") {
+        return 0;
+    } else {
+        if (itemName == "background") {
+            return this->backgroundItem();
+        }
+        else if (itemName == "text") {
+            return d->mTextItem;
+        }
+        else if (itemName == "icon") {
+            return d->mIcon;
+        } else {
+            return 0;
+        }
+    }
 }

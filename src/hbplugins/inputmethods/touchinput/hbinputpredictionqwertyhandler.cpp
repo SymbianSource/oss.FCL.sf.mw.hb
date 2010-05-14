@@ -26,6 +26,7 @@
 #include <hbinputmethod.h>
 #include <hbinputkeymapfactory.h>
 #include <hbinputpredictionengine.h>
+#include <hbinputbutton.h>
 
 #include "hbinputpredictionqwertyhandler.h"
 #include "hbinputpredictionhandler_p.h"
@@ -43,20 +44,19 @@ public:
     bool buttonPressed(const QKeyEvent *event);
     bool buttonReleased(const QKeyEvent *event);
     void init();
-    void _q_timeout();
 
 public:
     int mButton;    
     HbFnState mFnState;
     bool mExactPopupLaunched;
-    bool mPreviewAvailable;
+    bool mLongPressHappened;
 };
 
 HbInputPredictionQwertyHandlerPrivate::HbInputPredictionQwertyHandlerPrivate()
 :mButton(0),    
     mFnState(HbFnOff),
     mExactPopupLaunched(false),
-    mPreviewAvailable(false)
+    mLongPressHappened(false)
 {
 }
 
@@ -68,27 +68,6 @@ void HbInputPredictionQwertyHandlerPrivate::init()
 {
 }
 
-void HbInputPredictionQwertyHandlerPrivate::_q_timeout()
-{
-    qDebug("HbInputPredictionQwertyHandler::timeout called");
-    mTimer->stop();
-    QStringList spellList;
-    
-	//If long key press of shift key is received, just return
-    if (mButton == Qt::Key_Shift) {
-        return;
-    }
-    else if (mButton == Qt::Key_Control) {
-        mInputMethod->selectSpecialCharacterTableMode();
-    }
-
-    //If long key press of shift key, space key and enter key is received, don't
-    if (mButton) {
-        mInputMethod->launchCharacterPreviewPane(mButton);
-    }
-}
-
-
 bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
 {
     Q_Q(HbInputPredictionQwertyHandler);
@@ -99,18 +78,13 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
         return false;
     }
 
-    int key = event->key();
-    
-    // If the timer is not active and it is alpha mode, it is a long press
-    // and handled in another function. So just return.
-    if (mTimer->isActive()) {
-        mTimer->stop();
-    } else if (key == Qt::Key_Control) {
-        return true;  
-    } else if (!(key & 0xffff0000) && mPreviewAvailable) {
+    if (mLongPressHappened) {
+        mLongPressHappened = false;
         return false;
     }
 
+    int key = event->key();
+    
     bool ret = true;
     switch(key) {    
     case Qt::Key_Alt:  //Fn
@@ -122,7 +96,7 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
                 mFnState = HbFnOff;
             }
         break;
-    case Qt::Key_Shift: {
+    case HbInputButton::ButtonKeyCodeShift: {
 			HbTextCase currentTextCase = (HbTextCase)focusObject->editorInterface().textCase();
 			HbInputLanguage language = mInputMethod->inputState().language();
 
@@ -151,7 +125,8 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
 			mInputMethod->activateState(state);
         }
         break;
-    case Qt::Key_Control: { // Ctrl/Chr
+    case HbInputButton::ButtonKeyCodeSymbol: { // Ctrl/Chr
+    case HbInputButton::ButtonKeyCodeAlphabet:
             mInputMethod->switchSpecialCharacterTable();
         }
         break;
@@ -169,6 +144,13 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
                 modifiers |= Qt::ShiftModifier;
             }
 
+            if (key != HbInputButton::ButtonKeyCodeDelete &&
+                key != HbInputButton::ButtonKeyCodeEnter &&
+                mInputMethod->currentKeyboardType() == HbKeyboardSctLandscape) {
+                q->sctCharacterSelected(QChar(key));
+                return true;
+            }
+
             // let's pass it to the base class.
             ret = q->HbInputPredictionHandler::filterEvent(event);
 
@@ -181,9 +163,18 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
 
 bool HbInputPredictionQwertyHandlerPrivate::buttonPressed(const QKeyEvent *event)
 {
+    if (event->isAutoRepeat() && mButton == event->key()) {
+        if (mButton == HbInputButton::ButtonKeyCodeSymbol) {
+            mInputMethod->selectSpecialCharacterTableMode();
+            mLongPressHappened = true;
+        }
+        if (mLongPressHappened) {
+            mButton = 0;        
+            return true;
+        }
+    }
+        
     mButton = event->key();
-    mTimer->start(HbLongPressTimerTimeout);
-    mPreviewAvailable = false;
     return false;
 }
 
@@ -210,14 +201,10 @@ bool HbInputPredictionQwertyHandler::actionHandler(HbInputModeAction action)
     switch (action) {
         case HbInputModeActionCancelButtonPress:
         case HbInputModeActionReset:
-            if (d->mTimer->isActive()) {
-                d->mTimer->stop();
-            }
             break;
         case HbInputModeActionFocusRecieved:
             HbInputPredictionHandler::actionHandler(HbInputModeActionSetCandidateList);
             HbInputPredictionHandler::actionHandler(HbInputModeActionSetKeypad);
-            d->mTimer->stop();
             break;
         case HbInputModeActionFocusLost:
             HbInputPredictionHandler::actionHandler(HbInputModeActionFocusLost);
@@ -277,18 +264,6 @@ void HbInputPredictionQwertyHandler::deleteOneCharacter()
 }
 
 /*!
-this SLOT is called when a character on character previe pane is selected.
-*/
-void HbInputPredictionQwertyHandler::charFromPreviewSelected(QString character)
-{
-	Q_D(HbInputPredictionQwertyHandler);
-    if(character.size() > 0) {
-        appendUnicodeCharacter(character[0]);
-		d->mInputMethod->updateState();
-    }
-}
-
-/*!
  this function is called by HbPredictionHandler when HbPredictionHandler encounters a exact word.
 */
 void HbInputPredictionQwertyHandler::processExactWord(QString exactWord)
@@ -319,11 +294,6 @@ void HbInputPredictionQwertyHandler::sctCharacterSelected(QString character)
 void HbInputPredictionQwertyHandler::smileySelected(QString smiley)
 {
     HbInputPredictionHandler::smileySelected(smiley);
-}
-void HbInputPredictionQwertyHandler::characterPreviewAvailable(bool available)
-{
-    Q_D(HbInputPredictionQwertyHandler);
-    d->mPreviewAvailable = available;
 }
 
 /*!

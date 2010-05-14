@@ -23,11 +23,11 @@
 **
 ****************************************************************************/
 
-#include <QTimer>
+#include <hbiconanimationmanager.h>
 
 #include "hbindicatorgroup_p.h"
 #include "hbindicatorgroup_p_p.h"
-#include "hbstyleoptionindicatorgroup.h"
+#include "hbstyleoptionindicatorgroup_p.h"
 
 #include "hbiconitem.h"
 
@@ -39,30 +39,17 @@
 
 HbIndicatorGroupPrivate::HbIndicatorGroupPrivate() :
     mIndicatorType(HbIndicatorGroup::NotificationType),
-    mIndicatorPrivate(0), mProgressAdded(false), mIndicatorAdded(false)
+    mProgressAdded(false), mIndicatorAdded(false), mProgressAnimationFound(false)
 {
 }
 
 HbIndicatorGroupPrivate::~HbIndicatorGroupPrivate()
 {
-     mIndicatorPrivate->stopListen();     
-     delete mIndicatorPrivate;
-
      mIndicators.clear();
 }
 
 void HbIndicatorGroupPrivate::delayedConstruction()
 {
-    Q_Q(HbIndicatorGroup);
-    q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
-        q, SLOT(activate(const QList<IndicatorClientInfo> &)));
-    q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
-        q, SLOT(update(const QList<IndicatorClientInfo> &)));
-    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
-        q, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
-    q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
-        q, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
-
 #ifdef HB_EFFECTS
     HbEffect::add(
         QStringList() << "indicator" << "indicator" << "indicator" << "indicator",
@@ -70,16 +57,13 @@ void HbIndicatorGroupPrivate::delayedConstruction()
         QStringList() << "appear" << "disappear" <<  "move_right" << "move_left");
 #endif
 
-    QTimer::singleShot(0, q, SLOT(startListen()));
+    mProgressAnimationFound = HbIconAnimationManager::global()->addDefinitionFile("qtg_status_progress.axml");
 }
 
 void HbIndicatorGroupPrivate::init()
 {
     Q_Q(HbIndicatorGroup);
     q->createPrimitives();
-
-    mIndicatorPrivate = new HbIndicatorPrivate;
-    mIndicatorPrivate->init();
 }
 
 int HbIndicatorGroupPrivate::setIconName(HbStyleOptionIndicatorGroup &option, int index)
@@ -96,7 +80,11 @@ int HbIndicatorGroupPrivate::setIconName(HbStyleOptionIndicatorGroup &option, in
     if (mIndicators.count() > index) {
         if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
             if (!mProgressAdded) {
-                option.iconName = "qtg_status_progress";
+                if (mProgressAnimationFound) {
+                    option.iconName = "qtg_status_progress";
+                } else {
+                    option.iconName = "qtg_status_progress_1";
+                }
                 mProgressAdded = true;
             }
         } else {
@@ -117,7 +105,6 @@ void HbIndicatorGroupPrivate::addIndicators(const QList<IndicatorClientInfo> &cl
             mIndicatorAdded = true;
         }
     }
-    emitNotificationCount();
 }
 
 void HbIndicatorGroupPrivate::updateIndicators(const QList<IndicatorClientInfo> &clientInfo)
@@ -136,7 +123,6 @@ void HbIndicatorGroupPrivate::removeIndicators(const QList<IndicatorClientInfo> 
     for (int i = 0; i < clientInfo.size(); ++i) {
         removeIndicator(clientInfo.at(i));
     }
-    emitNotificationCount();
 }
 
 int HbIndicatorGroupPrivate::findIndicator(const IndicatorClientInfo &indicator) const
@@ -156,7 +142,11 @@ void HbIndicatorGroupPrivate::removeIndicator(const IndicatorClientInfo &indicat
     int index = findIndicator(indicator);
     if (index >= 0) {
         if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
-            mRemovedIndicators.append("qtg_status_progress");
+            if (mProgressAnimationFound) {
+                mRemovedIndicators.append("qtg_status_progress");
+            } else {
+                mRemovedIndicators.append("qtg_status_progress_1");
+            }
         } else {
             mRemovedIndicators.append(mIndicators.at(index).iconPath);
         }
@@ -183,14 +173,6 @@ bool HbIndicatorGroupPrivate::canAddIndicator(const IndicatorClientInfo &indicat
         canAdd = true;
     }
     return canAdd;
-}
-
-void HbIndicatorGroupPrivate::emitNotificationCount()
-{
-    Q_Q(HbIndicatorGroup);
-    if (mIndicatorType == HbIndicatorGroup::NotificationType) {
-        emit q->notificationCountChanged(mIndicators.size());
-    }
 }
 
 void HbIndicatorGroupPrivate::startAddingEffect()
@@ -362,19 +344,6 @@ void HbIndicatorGroup::deactivate(const QList<IndicatorClientInfo> &clientInfo)
     if (d->mRemovedIndicators.count() > 0) {
         d->startRemovingEffect();
     }
-}
-
-void HbIndicatorGroup::startListen()
-{
-    Q_D(HbIndicatorGroup);
-    d->mIndicatorPrivate->startListen();
-
-#ifdef HB_EFFECTS
-    HbEffect::add(
-        QStringList() << "indicator" << "indicator" << "indicator" << "indicator",
-        QStringList() << "indicator_appear" <<  "indicator_disappear" << "indicator_move_right" << "indicator_move_left",
-        QStringList() << "appear" << "disappear" <<  "move_right" << "move_left");
-#endif
 }
 
 void HbIndicatorGroup::initStyleOption(HbStyleOptionIndicatorGroup *option) const

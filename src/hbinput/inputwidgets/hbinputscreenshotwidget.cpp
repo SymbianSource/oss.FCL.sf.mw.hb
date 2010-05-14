@@ -25,9 +25,9 @@
 #include <QPixmap>
 #include <QPainter>
 
-#include <hbframedrawer.h>
 #include <hbeffect.h>
 #include <hbwidget_p.h>
+#include "hbframedrawerpool_p.h"
 
 #include "hbinputscreenshotwidget.h"
 #include "hbinputvkbwidget.h"
@@ -58,17 +58,19 @@ public:
 
     QPixmap mPixmap;
     HbFrameDrawer *mIconDrawer;
+    qreal mCloseHandleHeight;
+    qreal mCloseHandleWidth;
 
 };
 
 HbInputScreenshotWidgetPrivate::HbInputScreenshotWidgetPrivate()
+ : mIconDrawer(0), mCloseHandleHeight(0), mCloseHandleWidth(0)
 {
-    mIconDrawer = new HbFrameDrawer();
 }
 
 HbInputScreenshotWidgetPrivate::~HbInputScreenshotWidgetPrivate()
 {
-    delete mIconDrawer;
+    HbFrameDrawerPool::release(mIconDrawer);
 }
 
 
@@ -107,6 +109,16 @@ void HbInputScreenshotWidget::setScreenshot(QPixmap &pixmap)
 {
     Q_D(HbInputScreenshotWidget);
     d->mPixmap = pixmap;
+
+    if (!d->mPixmap.isNull()) {
+        HbFrameDrawerPool::release(d->mIconDrawer);
+
+        qreal unitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
+        d->mCloseHandleHeight = HbCloseHandleHeightInUnits * unitValue;
+        d->mCloseHandleWidth = HbCloseHandleWidthInUnits * unitValue;
+        QSizeF handleSize = QSizeF(d->mCloseHandleWidth, d->mCloseHandleHeight);
+        d->mIconDrawer = HbFrameDrawerPool::get(HbInputVkbHandleIcon, HbFrameDrawer::OnePiece, handleSize);
+    }
 }
 
 /*!
@@ -135,14 +147,19 @@ void HbInputScreenshotWidget::paint(QPainter* painter, const QStyleOptionGraphic
 
     Q_D(HbInputScreenshotWidget);
     if (!d->mPixmap.isNull()){
-        d->mIconDrawer->setFrameType(HbFrameDrawer::OnePiece);
         QRectF rect = boundingRect();
-        rect.setLeft(rect.width()/2 - HbCloseHandleHeight*3);
-        rect.setWidth(HbCloseHandleHeight*6);
-        rect.setHeight(HbCloseHandleHeight);
-		d->mIconDrawer->setFrameGraphicsName(HbInputVkbHandleIcon);
+
+        painter->save();
+        painter->translate(rect.width() / 2 - d->mCloseHandleWidth / 2, 0);
+        rect.setWidth(d->mCloseHandleWidth);
+        rect.setHeight(d->mCloseHandleHeight);
         d->mIconDrawer->paint(painter, rect);
-    	painter->drawPixmap(0, (int)HbCloseHandleHeight, d->mPixmap);
+        painter->restore();
+
+        painter->save();
+        painter->translate(0, d->mCloseHandleHeight);
+    	painter->drawPixmap(0, 0, d->mPixmap);
+        painter->restore();
     }
 }
 

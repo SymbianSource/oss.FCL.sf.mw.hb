@@ -55,6 +55,8 @@ public:
     void SetModified(bool aModified){mFlags.mModified = aModified;}
     bool Valid() const{return mFlags.mValid;}
     void SetValid(bool aValid){mFlags.mValid = aValid;}
+    bool IsNullAction() const{return mFlags.mNullAction;}
+    void SetNullAction(bool aNull){mFlags.mNullAction = aNull;}
     TType Type() const{return mType;}
     void SetType(TType aType){mType = aType;}
 private:
@@ -64,6 +66,7 @@ private:
         HBufC *mString;
     } mValue;
     struct {
+        bool mNullAction:1; // marks action (button) null
         bool mValid:1; // property value has has been set
         bool mModified:1; // property has been modified
     } mFlags;
@@ -75,13 +78,10 @@ public:
     enum TPropertyId {
         EFirstIntProperty,
         EType = EFirstIntProperty,
-        EIconAlignment,
         EIconVisible,
         ETimeout,
         EDismissPolicy,
-        EAcceptNull,
-        ERejectNull,
-        ELastIntProperty = ERejectNull,
+        ELastIntProperty = EDismissPolicy,
         EFirstStringProperty,
         EText = EFirstStringProperty,
         EIconName,
@@ -91,7 +91,6 @@ public:
         ELastStringProperty = EAnimationDefinition,
         ENumProperties
     };
-
     void ConstructL(CHbDeviceMessageBoxSymbian::TType aType,
         MHbDeviceMessageBoxObserver *aObserver);
     ~CHbDeviceMessageBoxPrivate();
@@ -106,6 +105,7 @@ public:
     bool WaitForClosed();
     static const TPtrC PropertyName(TPropertyId aId);
     static TPropertyId ButtonPropertyId(TPropertyId aId, CHbDeviceMessageBoxSymbian::TButtonId aButtonId);
+    static HBufC *CreateActionDataLC(TBool aNull, const TDesC &text);
 
 public: // MHbDeviceDialogObserver
     void DataReceived(CHbSymbianVariantMap& aData);
@@ -141,6 +141,7 @@ void TMessageBoxProperty::Init(TType aType)
         mValue.mInt = 0;
     }
     mType = aType;
+    mFlags.mNullAction = false;
     mFlags.mValid = false;
     mFlags.mModified = false;
 }
@@ -246,8 +247,6 @@ void CHbDeviceMessageBoxPrivate::InitProperties(CHbDeviceMessageBoxSymbian::TTyp
 
     // Set properties to default values
     mProperties[EType].Set(aType);
-    const TInt alignCenter = 0x0080 | 0x0004; // Qt::AlignCenter
-    mProperties[EIconAlignment].Set(alignCenter);
     mProperties[EIconVisible].Set(ETrue);
 
     switch(aType) {
@@ -258,10 +257,8 @@ void CHbDeviceMessageBoxPrivate::InitProperties(CHbDeviceMessageBoxSymbian::TTyp
         const TInt KTapAnywhere = 0x03; // HbPopup::TapAnywhere
         mProperties[EDismissPolicy].Set(KTapAnywhere);
 
-        // Plugin sets accept button by default
-        mProperties[ERejectNull].Set(true);
-        mProperties[ERejectNull].SetModified(false);
-        mProperties[ERejectNull].SetValid(false);
+        // Plugin has accept button by default
+        mProperties[ERejectText].SetNullAction(true);
         break;
     }
     case CHbDeviceMessageBoxSymbian::EQuestion: {
@@ -303,8 +300,10 @@ void CHbDeviceMessageBoxPrivate::SetPropertyValue(TPropertyId aId, TInt aValue)
 void CHbDeviceMessageBoxPrivate::SetButtonNull(CHbDeviceMessageBoxSymbian::TButtonId aButtonId,
     bool aValue)
 {
-    TPropertyId id = ButtonPropertyId(EAcceptNull, aButtonId);
-    mProperties[id].Set(aValue);
+    TPropertyId id = ButtonPropertyId(EAcceptText, aButtonId);
+    mProperties[id].SetNullAction(aValue);
+    mProperties[id].SetValid(true);
+    mProperties[id].SetModified(true);
 }
 
 // Set button text property
@@ -323,14 +322,8 @@ void CHbDeviceMessageBoxPrivate::SendToServerL(bool aShow)
       return;
     }
 
-    // Accept and reject button exists property gates sending button text.
-    // If button exists but button text is not sent, the plugin uses a default
-    // button.
-    int ignoreMask = mProperties[EAcceptNull].IntValue() ? (1 << EAcceptText) : 0;
-    ignoreMask |= mProperties[ERejectNull].IntValue() ? (1 << ERejectText) : 0;
-
-
     // If this is update but no properties have been mofified, return
+    const TInt ignoreMask = 0;
     if (!aShow && !PropertiesModified(ignoreMask)) {
         return;
     }
@@ -342,9 +335,13 @@ void CHbDeviceMessageBoxPrivate::SendToServerL(bool aShow)
         TMessageBoxProperty &property = mProperties[i];
         // ShowL() send all valid properties. Update only sends modified properties.
         bool sendProperty = aShow ? property.Valid() : property.Modified();
-        if (sendProperty && (ignoreMask & 1) == 0) {
+        if (sendProperty) {
             CHbSymbianVariant* parameter;
-            if (property.Type() == TMessageBoxProperty::EIntProperty) {
+            if (i == EAcceptText || i == ERejectText) {
+                HBufC *actionData = CreateActionDataLC(property.IsNullAction(), property.StringValue());
+                parameter = CHbSymbianVariant::NewL(actionData, CHbSymbianVariant::EDes);
+                CleanupStack::PopAndDestroy(); // actionData
+            } else if (property.Type() == TMessageBoxProperty::EIntProperty) {
                 TInt value = property.IntValue();
                 parameter = CHbSymbianVariant::NewL(&value, CHbSymbianVariant::EInt);
             } else {
@@ -357,7 +354,6 @@ void CHbDeviceMessageBoxPrivate::SendToServerL(bool aShow)
             CleanupStack::Pop(); // parameter
             property.SetModified(false);
         }
-        ignoreMask >>= 1;
     }
 
     _LIT(KDeviceDialogType, "com.nokia.hb.devicemessagebox/1.0");
@@ -398,16 +394,13 @@ const TPtrC CHbDeviceMessageBoxPrivate::PropertyName(TPropertyId aId)
 {
     static const wchar_t * const names[] = {
         L"type",
-        L"iconAlignment",
         L"iconVisible",
         L"timeout",
         L"dismissPolicy",
-        L"primaryActionNull",
-        L"secondaryActionNull",
         L"text",
         L"iconName",
-        L"primaryActionText",
-        L"secondaryActionText",
+        L"acceptAction",
+        L"rejectAction",
         L"animationDefinition"
     };
     __ASSERT_DEBUG(aId >= 0 && aId < sizeof(names)/sizeof(names[0]), Panic(EPropertyPanic));
@@ -422,14 +415,29 @@ CHbDeviceMessageBoxPrivate::TPropertyId CHbDeviceMessageBoxPrivate::ButtonProper
     __ASSERT_DEBUG(aButtonId == CHbDeviceMessageBoxSymbian::EAcceptButton ||
         aButtonId == CHbDeviceMessageBoxSymbian::ERejectButton, Panic(EButtonIdPanic));
     switch(aId) {
-    case EAcceptNull:
-        return aButtonId == CHbDeviceMessageBoxSymbian::EAcceptButton ? EAcceptNull : ERejectNull;
     case EAcceptText:
         return aButtonId == CHbDeviceMessageBoxSymbian::EAcceptButton ? EAcceptText : ERejectText;
     default:
         Panic(EPropertyPanic);
         return aId; // suppress warning
     }
+}
+
+// Pack into a string a data for a button
+HBufC *CHbDeviceMessageBoxPrivate::CreateActionDataLC(TBool aNull, const TDesC &text)
+{
+    HBufC *actionData;
+    if (aNull) {
+        actionData = HBufC::NewL(0);
+    } else {
+        _LIT(KtextTag, "t:");
+        actionData = HBufC::NewL(text.Length() + KtextTag().Length());
+        TPtr ptr = actionData->Des();
+        ptr.Append(KtextTag);
+        ptr.Append(text);
+    }
+    CleanupStack::PushL(actionData);
+    return actionData;
 }
 
 // Observer, data received from device message box
@@ -561,9 +569,6 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     iMessageBox->SetTextL(KText);
     _LIT(KIconName, "qtg_small_smiley_wondering");
     iMessageBox->SetIconNameL(KIconName);
-    const TInt KAlignLeft = 0x0001; // Qt::AlignLeft
-    const TInt KAlignTop = 0x0020; // Qt::AlignTop;
-    iMessageBox->SetIconAlignment(KAlignLeft | KAlignTop);
 
     _LIT(KAcceptText, "Yes");
     iMessageBox->SetButtonTextL(CHbDeviceMessageBoxSymbian::EAcceptButton, KAcceptText);
@@ -600,7 +605,7 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
 
     \sa HbDeviceMessageBox, HbMessageBox, MHbDeviceMessageBoxObserver
 
-    @proto
+    @stable
     @hbwidgets
 */
 
@@ -905,47 +910,6 @@ EXPORT_C TPtrC CHbDeviceMessageBoxSymbian::AnimationDefinition() const
 }
 
 /*!
-    Sets message box icon alignment. The message box gets updated next time ShowL() or UpdateL()
-    is called.
-
-    \param aQtAlignment Icon alignment. Values are Qt::Alignment flags.
-
-    \sa Qt::Alignment, IconAlignment()
-*/
-/*!
-    \deprecated CHbDeviceMessageBoxSymbian::SetIconAlignmentL(int)
-        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetIconAlignment(TInt aQtAlignment).
-
-*/
-EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconAlignmentL(TInt aQtAlignment)
-{
-    d->SetPropertyValue(CHbDeviceMessageBoxPrivate::EIconAlignment, aQtAlignment);
-}
-
-/*!
-    Sets message box icon alignment. The message box gets updated next time ShowL() or UpdateL()
-    is called.
-
-    \param aQtAlignment Icon alignment. Values are Qt::Alignment flags.
-
-    \sa Qt::Alignment, IconAlignment()
-*/
-EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconAlignment(TInt aQtAlignment)
-{
-    d->SetPropertyValue(CHbDeviceMessageBoxPrivate::EIconAlignment, aQtAlignment);
-}
-
-/*!
-    Returns message box icon alignment. Returned values are Qt::Alignment flags.
-
-    \sa Qt::Alignment, SetIconAlignment()
-*/
-EXPORT_C TInt CHbDeviceMessageBoxSymbian::IconAlignment() const
-{
-    return d->mProperties[CHbDeviceMessageBoxPrivate::EIconAlignment].IntValue();
-}
-
-/*!
     Sets message box icon visibility. The message box gets updated next time ShowL() or UpdateL()
     is called.
 
@@ -976,24 +940,6 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::IconVisible() const
 
     \sa Timeout()
 */
-/*!
-    \deprecated CHbDeviceMessageBoxSymbian::SetTimeoutL(int)
-        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout).
-
-*/
-EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeoutL(TInt aTimeout)
-{
-    d->SetPropertyValue(CHbDeviceMessageBoxPrivate::ETimeout, aTimeout);
-}
-
-/*!
-    Sets message box timeout. The message box gets updated next time ShowL() or UpdateL()
-    is called.
-
-    \param aTimeout Timeout in milliseconds. Zero denotes no timeout.
-
-    \sa Timeout()
-*/
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout)
 {
     d->SetPropertyValue(CHbDeviceMessageBoxPrivate::ETimeout, aTimeout);
@@ -1007,25 +953,6 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout)
 EXPORT_C TInt CHbDeviceMessageBoxSymbian::Timeout() const
 {
     return d->mProperties[CHbDeviceMessageBoxPrivate::ETimeout].IntValue();
-}
-
-/*!
-    Sets message box dismiss policy. The message box gets updated next time ShowL() or UpdateL()
-    is called.
-
-    \param aHbPopupDismissPolicy Dismiss policy. Values are HbPopup::DismissPolicy flags.
-
-    \sa HbPopup::DismissPolicy, DismissPolicy()
-*/
-/*!
-    \deprecated CHbDeviceMessageBoxSymbian::SetDismissPolicyL(int)
-        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetDismissPolicy(TInt aHbPopupDismissPolicy).
-
-*/
-EXPORT_C void CHbDeviceMessageBoxSymbian::SetDismissPolicyL(TInt aHbPopupDismissPolicy)
-{
-    d->SetPropertyValue(CHbDeviceMessageBoxPrivate::EDismissPolicy,
-        aHbPopupDismissPolicy);
 }
 
 /*!
@@ -1090,25 +1017,6 @@ EXPORT_C const TPtrC CHbDeviceMessageBoxSymbian::ButtonText(TButtonId aButton) c
 
     \sa HasButton()
 */
-/*!
-    \deprecated CHbDeviceMessageBoxSymbian::SetButtonL(CHbDeviceMessageBoxSymbian::TButtonId, int)
-        is deprecated. Replaced by CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEnable).
-
-*/
-EXPORT_C void CHbDeviceMessageBoxSymbian::SetButtonL(TButtonId aButton, TBool aEnable)
-{
-    d->SetButtonNull(aButton, !aEnable);
-}
-
-/*!
-    Sets message box button presence. The message box gets updated next time ShowL() or UpdateL()
-    is called.
-
-    \param aButton Selects the button.
-    \param aEnable True enables (makes visible) message box button.
-
-    \sa HasButton()
-*/
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEnable)
 {
     d->SetButtonNull(aButton, !aEnable);
@@ -1125,8 +1033,8 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::HasButton(TButtonId aButton) const
 {
     CHbDeviceMessageBoxPrivate::TPropertyId id =
         CHbDeviceMessageBoxPrivate::ButtonPropertyId(
-            CHbDeviceMessageBoxPrivate::EAcceptNull, aButton);
-    return !d->mProperties[id].IntValue();
+            CHbDeviceMessageBoxPrivate::EAcceptText, aButton);
+    return !d->mProperties[id].IsNullAction();
 }
 
 /*!

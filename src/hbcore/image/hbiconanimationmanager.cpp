@@ -65,12 +65,14 @@ HbIconAnimationManagerPrivate::~HbIconAnimationManagerPrivate()
 bool HbIconAnimationManagerPrivate::addDefinitionFile(const QString &definitionFileName)
 {
     // Stop right away if the file has already been added.
-    if (definitionFileNames.contains(definitionFileName)) {
-        return true;
+    foreach (const QString &iconName, animations.keys()) {
+        if (animations.operator[](iconName).definitionFileName == definitionFileName) {
+            return true;
+        }
     }
 
     // Check if there is a file with the given name in the current theme.
-    QString pathInTheme = HbIconLoader::global()->findSharedResource(definitionFileName);
+    QString pathInTheme = HbIconLoader::global()->findSharedResource(definitionFileName, Hb::AnimationResource);
 #ifdef HB_ICON_TRACES
     qDebug() << definitionFileName << " => " << pathInTheme;
 #endif
@@ -79,22 +81,17 @@ bool HbIconAnimationManagerPrivate::addDefinitionFile(const QString &definitionF
     // realFileName will point to the name with the full path.
     const QString *realFileName = pathInTheme.isEmpty() ? &definitionFileName : &pathInTheme;
 
-    // Add filename in the list.
-    definitionFileNames.append(definitionFileName);
-    allDefNames.insert(definitionFileName);
-
     // Parse the filename and add entries in the hash table, first try the themeserver.
-    bool ret = parser.parseDefinitionFileShared(&definitionFileNames.last(),
+    bool ret = parser.parseDefinitionFileShared(definitionFileName,
                                                 animations, *realFileName);
     if (!ret) {
         // If themeserver did not return anything then try the file locally.
-        ret = parser.parseDefinitionFile(&definitionFileNames.last(),
+        ret = parser.parseDefinitionFile(definitionFileName,
                                          animations, *realFileName);
     }
 
-    // If parsing failed, remove the definition filename string from the list
-    if (!ret) {
-        definitionFileNames.removeLast();
+    if (ret) {
+        allDefNames.insert(definitionFileName);
     }
 
     return ret;
@@ -111,9 +108,8 @@ void HbIconAnimationManagerPrivate::addDefinition(
     animations.remove(iconName);
     // Add new definition
     HbIconAnimationData data;
-    data.definitionFileName = 0;
+    data.definitionFileName.clear();
     data.def = definition;
-
     animations.insert(iconName, data);
 }
 
@@ -125,15 +121,13 @@ void HbIconAnimationManagerPrivate::removeDefinitionFile(const QString &definiti
     AnimHash::iterator i = animations.begin();
     while (i != animations.end()) {
         const HbIconAnimationData &data = *i;
-        if (data.definitionFileName && *(data.definitionFileName) == definitionFileName) {
+        if (data.definitionFileName == definitionFileName) {
             // Remove definition from hash and move iterator to next item
             i = animations.erase(i);
         } else {
             ++i;
         }
     }
-    // Remove the filename string from the list also
-    definitionFileNames.removeOne(definitionFileName);
 }
 
 /*!
@@ -150,7 +144,7 @@ void HbIconAnimationManagerPrivate::removeDefinition(const QString &iconName)
 HbIconAnimationDefinition HbIconAnimationManagerPrivate::getDefinition(const QString &iconName)
 {
     // This returns default constructed list if not found in hash    
-    return animations.value(iconName).def;
+    return animations.operator[](iconName).def;
 }
 
 /*!
@@ -212,16 +206,13 @@ void HbIconAnimationManagerPrivate::handleThemeChangeFinished()
     // one).
     foreach (const QString &iconName, animations.keys()) {
         // Do not remove animations that were not created from files.
-        if (animations.value(iconName).definitionFileName) {
+        if (!animations.operator[](iconName).definitionFileName.isEmpty()) {
             animations.remove(iconName);
         }
     }
-    definitionFileNames.clear();
-    //
-    // Cannot use definitionFileNames here because it is cleared upon every
-    // theme change. Use allDefNames which contains all the names passed to
-    // addDefinitionFile() since the creation of this instance. This enables to
-    // work properly also in the following situation:
+    // Use allDefNames which contains all the names passed to
+    // addDefinitionFile() since the creation of this instance. This
+    // enables to work properly also in the following situation:
     //
     // 1. addDefinitionFile(somethingFromTheme)
     //

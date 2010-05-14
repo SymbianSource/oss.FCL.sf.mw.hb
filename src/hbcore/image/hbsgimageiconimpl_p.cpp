@@ -43,18 +43,29 @@ typedef EGLImageKHR(*pfnEglCreateImageKHR)(EGLDisplay, EGLContext,
 typedef EGLBoolean(*pfnEglDestroyImageKHR)(EGLDisplay, EGLImageKHR);
 typedef VGImage(*pfnVgCreateEGLImageTargetKHR)(VGeglImageKHR);
 
+// Constants
+static const int HB_BITS_PER_COLOR =    8;
+
+#define EGL_DESTROY_SURFACE(display, surface) \
+    if (surface != EGL_NO_SURFACE) { eglDestroySurface(display, surface); }
+
+#define EGL_DESTROY_CONTEXT(display, context) \
+    if (context != EGL_NO_CONTEXT) { eglDestroyContext(display, context); }
+
 HbSgimageIconImpl::HbSgimageIconImpl(const HbSharedIconInfo &iconData,
                                      const QString& name,
                                      const QSizeF& keySize,
                                      Qt::AspectRatioMode aspectRatioMode,
                                      QIcon::Mode mode,
-                                     bool mirrored):
+                                     bool mirrored,
+                                     HbRenderingMode renderMode):
         HbIconImpl(iconData,
                    name,
                    keySize,
                    aspectRatioMode,
                    mode,
-                   mirrored),
+                   mirrored,
+                   renderMode),
         vgImageRenderer(0),
         pixmapIconRenderer(0)
 {
@@ -77,8 +88,79 @@ QPixmap HbSgimageIconImpl::pixmap()
         return currentPixmap;
     }
 
+    EGLDisplay display = eglGetCurrentDisplay();
+    if (display == EGL_NO_DISPLAY) {
+        display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        eglInitialize(display, 0, 0);
+
+        if (eglBindAPI(EGL_OPENVG_API) == EGL_FALSE) {
+            return currentPixmap;
+        }
+    }
+    EGLContext eglContextPrev = eglGetCurrentContext();
+    EGLSurface eglSurfacePrevDraw = eglGetCurrentSurface(EGL_DRAW);
+    EGLSurface eglSurfacePrevRead = eglGetCurrentSurface(EGL_READ);
+
+    EGLContext eglContext = eglContextPrev;
+    EGLSurface eglSurface = eglSurfacePrevDraw;
+    
+    EGLContext eglNewContext = EGL_NO_CONTEXT;
+    EGLContext eglNewSurface = EGL_NO_SURFACE;
+    
+    if (eglContext == EGL_NO_CONTEXT) {
+        EGLConfig config;
+    
+        EGLint    numConfigs;
+    
+        const EGLint attribList[] = {
+            EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
+            EGL_SURFACE_TYPE, EGL_PBUFFER_BIT | EGL_VG_ALPHA_FORMAT_PRE_BIT,
+            EGL_RED_SIZE, HB_BITS_PER_COLOR,
+            EGL_GREEN_SIZE, HB_BITS_PER_COLOR,
+            EGL_BLUE_SIZE, HB_BITS_PER_COLOR,
+            EGL_ALPHA_SIZE, HB_BITS_PER_COLOR,
+            EGL_NONE
+        };
+    
+        if (eglChooseConfig(display, attribList, &config, 1, &numConfigs) == EGL_FALSE) {
+            return currentPixmap;
+        }
+        
+        if (eglSurface == EGL_NO_SURFACE) {
+             //pixmap is called without EGL being initialized
+
+            const EGLint attribList2[] = {
+                EGL_WIDTH, contentSize.width(),
+                EGL_HEIGHT, contentSize.height(),
+                EGL_NONE
+            };
+
+            eglNewSurface = eglSurface = eglCreatePbufferSurface(display, config, attribList2);
+            if (eglSurface == EGL_NO_SURFACE) {
+                return currentPixmap;
+            }
+        }
+        eglNewContext = eglContext = eglCreateContext(display, config, EGL_NO_CONTEXT, 0);
+        if (eglContext == EGL_NO_CONTEXT) {            
+            EGL_DESTROY_SURFACE(display, eglNewSurface);
+            return currentPixmap;
+        }
+        if (eglMakeCurrent(display, eglSurface, eglSurface,
+                eglContext) == EGL_FALSE) {
+            EGL_DESTROY_SURFACE(display, eglNewSurface);     
+            EGL_DESTROY_CONTEXT(display, eglNewContext);
+            return currentPixmap;
+        }
+    }
+    
+    
     VGImage localVgImage = getVgImageFromSgImage();
     if (localVgImage == VG_INVALID_HANDLE) {
+        EGL_DESTROY_SURFACE(display, eglNewSurface);     
+        EGL_DESTROY_CONTEXT(display, eglNewContext);
+        if (eglContextPrev) {
+            eglMakeCurrent(display, eglSurfacePrevDraw, eglSurfacePrevRead, eglContextPrev);
+        }
         return currentPixmap;
     }
 
@@ -99,6 +181,15 @@ QPixmap HbSgimageIconImpl::pixmap()
 
     vgDestroyImage(localVgImage);
 
+    if (eglNewContext != EGL_NO_CONTEXT || eglNewSurface != EGL_NO_SURFACE) {
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        EGL_DESTROY_SURFACE(display, eglNewSurface);     
+        EGL_DESTROY_CONTEXT(display, eglNewContext);
+    }
+    
+    if (eglContextPrev) {
+        eglMakeCurrent(display, eglSurfacePrevDraw, eglSurfacePrevRead, eglContextPrev);
+    }
     return currentPixmap;
 }
 

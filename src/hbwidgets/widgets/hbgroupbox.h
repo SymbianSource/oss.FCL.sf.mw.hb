@@ -33,70 +33,48 @@ class HbGroupBoxPrivate;
 class HB_WIDGETS_EXPORT HbGroupBox : public HbWidget
 {
     Q_OBJECT
-    //Deprecated
-    Q_PROPERTY(QString titleText READ titleText WRITE setTitleText)
-    //Deprecated
-    Q_PROPERTY(Qt::Alignment textAlignment READ textAlignment WRITE setTextAlignment)
-	
-    Q_PROPERTY(QString heading READ heading WRITE setHeading)
-    Q_PROPERTY(bool collapsable READ isCollapsable WRITE setCollapsable)
-    Q_PROPERTY(bool collapsed READ isCollapsed WRITE setCollapsed)    
-    Q_PROPERTY(bool marqueeHeading READ marqueeHeading WRITE setMarqueeHeading)    
+    Q_PROPERTY( QString heading READ heading WRITE setHeading )
+    Q_PROPERTY( bool collapsable READ isCollapsable WRITE setCollapsable )
+    Q_PROPERTY( bool collapsed READ isCollapsed WRITE setCollapsed )    
+    Q_PROPERTY( bool marqueeHeading READ marqueeHeading WRITE setMarqueeHeading )    
 
 public:
-    explicit HbGroupBox(QGraphicsItem *parent = 0);
-    //Deprecated
-    explicit HbGroupBox( const QString &titleText, QGraphicsItem *parent = 0 );
-    ~HbGroupBox();
+    explicit HbGroupBox( QGraphicsItem *parent = 0 );
+    ~HbGroupBox( );
 
-    void setHeading(const QString &text);
-    QString heading() const;   
-	
-    bool isCollapsable() const;		
-    bool isCollapsed() const;
+    void setHeading( const QString &text );
+    QString heading( ) const;   
 
-    void setMarqueeHeading(bool marquee = false);
-    bool marqueeHeading() const;
+    bool isCollapsable( ) const;
+    bool isCollapsed( ) const;
+
+    void setMarqueeHeading( bool marquee = false );
+    bool marqueeHeading( ) const;
     
-    void setContentWidget(HbWidget* widget);
-    HbWidget* contentWidget() const;
+    void setContentWidget( HbWidget *widget );
+    HbWidget *contentWidget( ) const;
 
-    virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
+    virtual QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
-    enum {Type = Hb::ItemType_GroupBox};
-    int type() const { return Type; }
-
-    //Deprecated
-    void setTitleText(const QString &text);
-    //Deprecated
-    QString titleText() const;
-
-    //Deprecated
-    void setTitleWidget( HbWidget* widget );
-    //Deprecated
-    HbWidget* titleWidget( ) const;
-
-    //Deprecated
-    Qt::Alignment textAlignment() const;
-    //Deprecated
-    void setTextAlignment(Qt::Alignment alignment);
+    enum { Type = Hb::ItemType_GroupBox };
+    int type( ) const { return Type; }
 
 public slots:
-    void updatePrimitives();
-    void setCollapsed(bool collapsed = true);
-    void setCollapsable(bool collapsable = true);	
+    void updatePrimitives( );
+    void setCollapsed( bool collapsed = true );
+    void setCollapsable( bool collapsable = true );
 
-signals:
-    void clicked();						  
+    signals:
+    void clicked(); 
     void longPress(const QPointF &delta); 
     void toggled(bool state);
 
 protected:
-    HbGroupBox(HbGroupBoxPrivate &dd, QGraphicsItem *parent);
+    HbGroupBox( HbGroupBoxPrivate &dd, QGraphicsItem *parent );
 
 private:
-    Q_DECLARE_PRIVATE_D(d_ptr, HbGroupBox)
-    Q_DISABLE_COPY(HbGroupBox)
+    Q_DECLARE_PRIVATE_D( d_ptr, HbGroupBox )
+    Q_DISABLE_COPY( HbGroupBox )
 };
 
 #endif  //HbGroupBox_H

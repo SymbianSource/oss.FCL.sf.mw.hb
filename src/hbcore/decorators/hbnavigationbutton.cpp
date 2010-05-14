@@ -30,7 +30,7 @@
 
 #include "hbnavigationbutton_p.h"
 #include "hbnavigationbutton_p_p.h"
-#include "hbstyleoptionnavigationbutton.h"
+#include "hbstyleoptionnavigationbutton_p.h"
 #include "hbmainwindow_p.h"
 
 HbNavigationButtonPrivate::HbNavigationButtonPrivate()

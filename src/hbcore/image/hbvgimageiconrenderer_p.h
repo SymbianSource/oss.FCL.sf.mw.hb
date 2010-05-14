@@ -75,7 +75,6 @@ public:
 
 private:
     void applyIconProperties();
-    VGPath painterPathToVGPath(const QPainterPath& path);
     void updatePainterTransformation(QPainter * painter, const QPointF & pos);
 
     VGImage vgImage;

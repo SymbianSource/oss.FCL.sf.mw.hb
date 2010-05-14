@@ -36,7 +36,7 @@ class HbEglStates;
 class HbVgImageIconRenderer;
 class HbPixmapIconRenderer;
 
-class HB_AUTOTEST_EXPORT HbSgimageIconImpl : public HbIconImpl
+class HbSgimageIconImpl : public HbIconImpl
 {
 public :
     HbSgimageIconImpl(const HbSharedIconInfo &iconData,
@@ -44,7 +44,8 @@ public :
                       const QSizeF& keySize,
                       Qt::AspectRatioMode aspectRatioMode,
                       QIcon::Mode mode,
-                      bool mirrored);
+                      bool mirrored,
+                      HbRenderingMode renderMode);
 
     ~HbSgimageIconImpl();
     QPixmap pixmap();

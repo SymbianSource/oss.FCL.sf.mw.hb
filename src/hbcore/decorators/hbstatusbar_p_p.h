@@ -32,6 +32,7 @@
 class HbSignalIndicator;
 class HbBatteryIndicator;
 class HbIndicatorGroup;
+class HbIndicatorPrivate;
 
 class HbStatusBarPrivate : public HbWidgetPrivate
 {
@@ -39,6 +40,7 @@ class HbStatusBarPrivate : public HbWidgetPrivate
 
 public:
     HbStatusBarPrivate();
+    virtual ~HbStatusBarPrivate();
 
     void delayedConstruction();
 	void init();
@@ -55,6 +57,8 @@ public:
 
     HbMainWindow *mMainWindow;
     int mPreviousProperties;
+
+    HbIndicatorPrivate *mIndicatorPrivate;
 };
 
 

@@ -59,8 +59,6 @@ public:
     QString editorTextSelection();
     QString editorSurroundingText();
     HbEditorInterface& editorInterface() const;
-    void cursorLeft(int modifiers);
-    void cursorRight(int modifiers);
     void cursorLeft(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void cursorRight(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void releaseFocus();

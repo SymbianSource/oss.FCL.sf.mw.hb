@@ -1,12 +1,21 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <polygon points="11.78,7.626,21.26,7.626,21.26,10.94,29,5.971,21.26,1,21.26,4.313,8.463,4.313"/>
+
 <polygon points="5.789,9.937,5.789,16.08,9.228,16.08,9.228,13.38"/>
+
 <polygon points="23.21,19.06,23.21,13.92,19.77,13.92,19.77,15.62"/>
+
 <polygon points="18.23,22.37,7.737,22.37,7.737,19.06,0,24.03,7.737,29,7.737,25.69,21.54,25.69"/>
+
 <rect height="39.4" transform="matrix(0.7066 -0.7076 0.7076 0.7066 -6.2267 15.051)" width="1.867" x="14.1" y="-4.667"/>
+
 <g fill-opacity="0.5" stroke-opacity="0.5">
+
 <rect fill="none" height="30" width="30"/>
+
 </g>
+
 </svg>

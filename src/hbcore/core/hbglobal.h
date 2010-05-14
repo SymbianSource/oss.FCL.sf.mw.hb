@@ -76,8 +76,8 @@ HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead \
 #    define HB_FEEDBACK_EXPORT Q_DECL_IMPORT
 #  endif // BUILD_HB_FEEDBACK
 
-#  ifdef HB_DEVELOPER
-#    if defined(BUILD_HB_CORE) || defined(BUILD_HB_WIDGETS)
+#  if defined(HB_DEVELOPER) || defined (Q_OS_SYMBIAN)
+#    if defined(BUILD_HB_CORE) || defined(BUILD_HB_WIDGETS) || defined(BUILD_HB_FEEDBACK)
 #      define HB_AUTOTEST_EXPORT Q_DECL_EXPORT
 #    else
 #      define HB_AUTOTEST_EXPORT Q_DECL_IMPORT

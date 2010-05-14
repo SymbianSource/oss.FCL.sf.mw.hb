@@ -54,12 +54,12 @@ public:
 private:
     struct HbVariantData 
     {
-        HbVariantData()
-            : mDataType(Invalid),
-              stringSize(0),
-              mRef(1)
-        {
-        }
+        HbVariantData();
+        ~HbVariantData();
+
+        Type dataType() const {return mDataType;}
+        void setDataType(Type dataType);
+
         union Data
         {
             int i;
@@ -67,9 +67,10 @@ private:
             int offset;
         } mData;
 
-        Type mDataType;
         int stringSize;
         QAtomicInt mRef;
+    private:
+        Type mDataType;
     };
 
 public:
@@ -90,7 +91,7 @@ public:
     Type type()
     {
         HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-        return data->mDataType;
+        return data->dataType();
     }
 
 #ifdef CSS_PARSER_TRACES
@@ -142,8 +143,8 @@ private:
     }
     static bool reservesMemory(const HbVariantData *data)
     {
-        return data->mDataType == HbVariant::String
-               || data->mDataType == HbVariant::Color;
+        return data->dataType() == HbVariant::String
+               || data->dataType() == HbVariant::Color;
     }
     void freeMemory(HbVariantData *data)
     {

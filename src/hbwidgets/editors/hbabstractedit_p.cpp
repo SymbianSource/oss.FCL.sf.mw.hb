@@ -36,7 +36,7 @@
 
 #include "hbabstractedit_p.h"
 #include "hbabstractedit.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbscrollarea.h"
 #include "hbvalidator.h"
 #include "hbmeshlayout_p.h"

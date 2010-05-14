@@ -107,7 +107,7 @@ HbListView::~HbListView()
 {
 }
 
-/*
+/*!
     Returns the first item prototype from the list of item prototypes 
     after trying to convert it as HbListViewItem.
 
@@ -120,8 +120,8 @@ HbListViewItem *HbListView::listItemPrototype() const
 }
 
 
-/*
-    Scrolls the view if necessary to ensure that the item at \a index is visible.
+/*!
+    \reimp
 */
 void HbListView::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
@@ -201,7 +201,7 @@ int HbListView::type() const
 }
 
 /*!
-    Returns the current arrange mode
+    Returns true if view is in arrange mode. False otherwise.
  */
 bool HbListView::arrangeMode() const
 {
@@ -220,7 +220,7 @@ HbAbstractViewItem *HbListView::draggedItem() const
 }
 
 /*!
-    Tries to change the arrageMode. ArrangeMode is the mode where drag and drop 
+    Tries to set the view to arrange mode. Arrange mode is the mode where drag and drop 
     for arranging the items inside the list is supported instead of the normal 
     mouse event handling. 
     Setting the arrange mode to true will fail if lists selection mode is set. Selection 
@@ -353,6 +353,9 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
     }
 }
 
+/*!
+    \reimp
+*/
 void HbListView::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
@@ -394,6 +397,7 @@ void HbListView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bott
 
 /*!
     \reimp
+
     Handles change concerning multiline support of secondary texts at orientation switch
 */
 void HbListView::orientationChanged(Qt::Orientation newOrientation)

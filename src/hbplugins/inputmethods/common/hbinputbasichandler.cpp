@@ -25,6 +25,7 @@
 
 #include <hbinputkeymap.h>
 #include <hbinputpredictionfactory.h>
+#include <hbinputbutton.h>
 
 #include "hbinputbasichandler_p.h"
 #include "hbinputpredictionengine.h"
@@ -51,7 +52,7 @@ void HbInputBasicHandlerPrivate::setUpAutoCompleter()
         return;
     }
     // Check if this is auto completion field and set it up if it is.
-    if (focusObject->editorInterface().constraints() & HbEditorConstraintAutoCompletingField) {
+    if (focusObject->editorInterface().inputConstraints() & HbEditorConstraintAutoCompletingField) {
         if (!mAutoCompleter) {
             mAutoCompleter = HbPredictionFactory::instance()->createEngine(HbAutoCompleteVendorIdString);
         }
@@ -73,7 +74,7 @@ void HbInputBasicHandlerPrivate::refreshAutoCompleter()
         return;
     }
 
-    if (focusObject->editorInterface().constraints() & HbEditorConstraintAutoCompletingField &&
+    if (focusObject->editorInterface().inputConstraints() & HbEditorConstraintAutoCompletingField &&
         mAutoCompleter) {
         mAutoCompleter->setWord(focusObject->editorSurroundingText());
         mInputMethod->launchAutoCompletionPopup(mAutoCompleter->candidateList());
@@ -103,7 +104,7 @@ void HbInputBasicHandlerPrivate::autoCompletionPopupClosed(QString currentCandid
         return;
     }
 
-    if (focusObject->editorInterface().constraints() & HbEditorConstraintAutoCompletingField) {
+    if (focusObject->editorInterface().inputConstraints() & HbEditorConstraintAutoCompletingField) {
         if (mAutoCompleter) {
             int inputLength = mAutoCompleter->inputLength();
 
@@ -153,7 +154,7 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
     bool ret = true;
     switch (event->key()) {
     case Qt::Key_Backspace:
-    case Qt::Key_Delete: {
+    case HbInputButton::ButtonKeyCodeDelete: {
         QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);
         sendAndUpdate(keyEvent);
         // pass event to auto completer.
@@ -162,9 +163,8 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
         ret = false;
         break;
     }
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-    case Qt::Key_Space: {
+    case HbInputButton::ButtonKeyCodeEnter:
+    case HbInputButton::ButtonKeyCodeSpace: {
         QChar qc(event->key());
         if (qc == Qt::Key_Enter || qc == Qt::Key_Return) {
             qc = QChar('\n');  // Editor expects normal line feed.
@@ -172,23 +172,6 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
         commitAndUpdate(qc);
         }
         break;
-    case Qt::Key_Period:
-    case Qt::Key_Comma: {
-        QString qc(event->key());
-        HbModifier modifier = HbModifierNone;
-        int currentTextCase = focusObject->editorInterface().textCase();
-        if ( HbTextCaseUpper == currentTextCase || HbTextCaseAutomatic == currentTextCase ) {
-            modifier = HbModifierShiftPressed;
-        }
-        // If shift is pressed, the shifted characters should
-        // be input.
-        const HbMappedKey* mappedKey = d->mKeymap->keyForKeycode(d->mInputMethod->inputState().keyboard(), event->key());
-        if (mappedKey) {
-            qc = mappedKey->characters(modifier).left(1);
-        }
-        commitAndUpdate(qc);
-        break;
-    }
     default:
         ret = HbInputModeHandler::filterEvent(event);
         break;

@@ -39,8 +39,7 @@ class HbNvgIconList
 public:
     HbNvgIconList() 
 	{
-        icons[HbNvgIconFactory::NvgCs] = 0;
-        icons[HbNvgIconFactory::NvgTlv] = 0;
+        icons[HbNvgIconFactory::NvgCs] = 0;        
     }
 
     void addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgIcon);
@@ -50,7 +49,7 @@ public:
     ~HbNvgIconList();
 
 private:
-    HbNvgIcon * icons[HbNvgIconFactory::NvgTlv + 1];
+    HbNvgIcon * icons[HbNvgIconFactory::NvgCs + 1];
 };
 
 class HbNvgEnginePrivate
@@ -88,9 +87,7 @@ public :
     void clearBackground();
 
 private :
-    void doDrawNvg(const QByteArray &buffer, const QSize &size);
-
-    qint32 drawTlv(const QByteArray &buffer, const QSize &targetSize);
+    void doDrawNvg(const QByteArray &buffer, const QSize &size);    
 
     qint32 drawCsIcon(const QByteArray &buffer, const QSize &targetSize);
 

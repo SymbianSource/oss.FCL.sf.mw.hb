@@ -30,7 +30,7 @@
 \class HbVirtualKeyboard
 \brief Abstract base class for virtual keyboards.
 
-This class is an abstract base class for virtual keyaboards. This class is
+This class is an abstract base class for virtual keyaboards. It is
 not reponsible for the visual appearance of the keyboard, but contains methods that HbVkbHost
 class needs when interacting with the keyboard. The actual Qt widget inheriting from this
 class will fill and layout the keyboard contents.

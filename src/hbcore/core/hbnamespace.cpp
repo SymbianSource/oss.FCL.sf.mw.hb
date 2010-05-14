@@ -26,8 +26,8 @@
 #include <hbnamespace.h>
 
 /*!
-	   @beta
-     @hbcore
+    @beta
+    @hbcore
     \namespace Hb
     \brief The Hb namespace contains miscellaneous identifiers used throughout the Hb library.
 */
@@ -187,24 +187,11 @@
         This enum describes the (list) item content visibility values available in LibHb.
      */
 
-/*!
-    \enum LogicalFontName
-        Logical fonts
-    \deprecated Hb::LogicalFontName
-    is deprecated. Use HbFontSpec instead.
-        
-     */
-
  /*!
     \enum SceneItem
         LibHb's built-in scene items.
 
         This enum describes the scene items available in LibHb.
-        \deprecated Hb::NaviPaneItem
-        \deprecated Hb::PrimarySoftKeyItem
-        \deprecated Hb::SecondarySoftKeyItem
-        \deprecated Hb::MiddleSoftKeyItem
-        \deprecated Hb::SoftKeyItems
      */
 
  /*!
@@ -586,50 +573,5 @@
     \var Hb::ActivationReason Hb::ActivationReasonNormal
     Application was started by other means.
  */ 
-
-/*!
-    \deprecated Hb::ItemType_FormViewItem
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_FormView
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_AbstractItemContainer
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_AbstractItemView
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_AbstractViewItem
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_ItemHighlight
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_ListWidgetViewItem
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_Highlight
-        is deprecated.
-*/
-
-/*!
-    \deprecated Hb::ItemType_RoundRobinLabel
-        is deprecated.
-*/
 
 

@@ -33,6 +33,7 @@
 #include "hblayeredstyleloader_p.h"
 #include "hbdeviceprofile_p.h"
 #include "hbthemeindex_p.h"
+#include "hbtypefaceinfodatabase_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #ifdef HB_SGIMAGE_ICON
@@ -49,7 +50,7 @@ class HbEffectFxmlData;
 class QLocalSocket;
 #endif
 
-class HB_AUTOTEST_EXPORT HbThemeClientPrivate : 
+class HB_AUTOTEST_EXPORT HbThemeClientPrivate :
 #ifdef Q_OS_SYMBIAN
 public RSessionBase
 #else
@@ -73,65 +74,71 @@ public QObject
                                        QIcon::Mode mode,
                                        bool mirrored,
                                        HbIconLoader::IconLoaderOptions options,
-                                       const QColor &color);						
-   
+                                       const QColor &color,
+                                       HbRenderingMode renderMode);						
+
     HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName, const QString &layout, const QString &section);
-   
+
     HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
-    
+
     HbDeviceProfileList *deviceProfiles();
 
-    int globalCacheOffset();
+    HbTypefaceInfoVector *typefaceInfo();
 
     bool addSharedEffect(const QString& filePath);
-    
-    void unloadIcon(const QString& iconPath , 
+
+    void unloadIcon(const QString& iconPath ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
-                        const QColor &color);
+                        const QColor &color,
+                        HbRenderingMode renderMode);
 
-    void unLoadMultiIcon(const QStringList& iconPathList, 
+    void unLoadMultiIcon(const QStringList& iconPathList,
                     const QVector<QSizeF> &sizeList,
                     Qt::AspectRatioMode aspectRatioMode,
                     QIcon::Mode mode,
                     bool mirrored,
-                    const QColor &color);   
-    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList, 
+                    const QColor &color,
+                    HbRenderingMode renderMode);   
+    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
                         const HbMultiPartSizeData &multiPartIconData,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
                         bool mirrored,
                         HbIconLoader::IconLoaderOptions options,
-                        const QColor &color);
-    
-    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList, 
+                        const QColor &color,
+                        HbRenderingMode renderMode);
+
+    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
                                         const QVector<QSizeF>  &sizeList ,
                                         Qt::AspectRatioMode aspectRatioMode,
                                         QIcon::Mode mode,
                                         bool mirrored,
                                         HbIconLoader::IconLoaderOptions options,
-                                        const QColor &color);
-   
+                                        const QColor &color,
+                                        HbRenderingMode renderMode);
     void notifyForegroundLostToServer();
-    
-    void getThemeIndexTables(ThemeIndexTables &tables);
-
+    bool switchRenderingMode(HbRenderingMode renderMode);
     int freeSharedMemory();
     int allocatedSharedMemory();
     int allocatedHeapMemory();
 
     ~HbThemeClientPrivate();
     bool event(QEvent *e);
-    
-#ifndef Q_OS_SYMBIAN	
+
+#ifdef HB_THEME_SERVER_MEMORY_REPORT
+    void createMemoryReport() const;
+#endif
+
+#ifndef Q_OS_SYMBIAN
 public slots:
     void changeTheme();
-#endif	
+#endif
 
 public:
     bool clientConnected;
@@ -143,7 +150,7 @@ private:
     TInt CreateServerProcess();
 #else
     void readIconInfo(QDataStream &dataStream, HbSharedIconInfo &iconInfo);
-#endif	
+#endif
 
 private:
 #ifdef Q_OS_SYMBIAN
@@ -156,7 +163,7 @@ private:
 
 #else
     QLocalSocket* localSocket;
-#endif	
+#endif
 };
 
 #endif // HBTHEMECLIENT_P_P_H

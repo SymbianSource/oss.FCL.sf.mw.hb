@@ -66,7 +66,6 @@ public:
     void widgetDestroyed(QWidget* widget);
     void setFocusWidget(QWidget* widget);
 
-    void focusObjectDestroyed(const HbInputFocusObject* focusObject);
     HbInputState inputState() const;
 
     bool activateState(const HbInputState& state);
@@ -78,12 +77,9 @@ public:
 protected:
     virtual void inputStateActivated(const HbInputState& newState);
     virtual void inputLanguageChanged(const HbInputLanguage &newLanguage);
-    virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
-    virtual void predictiveInputStatusChanged(int newStatus);
+    virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);  
     bool stateChangeInProgress() const;
-    bool orientationContextSwitchInProgress();
 
-    void releaseFocus();
     HbInputLanguage activeLanguage() const;
 
     bool modeAllowedInEditor(HbInputModeType mode) const;
@@ -94,13 +90,7 @@ protected:
 public slots:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
     void globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
-    void activeHwKeyboardChanged(HbKeyboardType newKeyboard);
-    void activeTouchKeyboardChanged(HbKeyboardType newKeyboard);
-    void activeKeyboardChanged(HbKeyboardType newKeyboard);
-    void predictiveInputStateChanged(int newState);
-    virtual void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
-    void receiveText(const QString& string);
-    virtual void candidatePopupClosed(int closingKey = 0);
+    void activeKeyboardChanged(HbKeyboardType newKeyboard);     
     void orientationChanged(Qt::Orientation orientation);
     virtual void orientationAboutToChange();
     void editorDeleted(QObject *obj);

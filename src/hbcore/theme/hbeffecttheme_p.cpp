@@ -26,11 +26,19 @@
 #include <QDebug>
 #include <QDir>
 
+#include "hbthemecommon_p.h"
 #include "hbstandarddirs_p.h"
 #include "hbinstance.h"
 #include "hbeffecttheme_p.h"
 #include "hbthemeutils_p.h"
 #include "hbeffectinternal_p.h"
+#include "hbthemeindex_p.h"
+#include "hbtheme.h"
+#include "hbtheme_p.h"
+
+#ifdef Q_OS_SYMBIAN
+static const char *effectFileSuffix = ".fxml";
+#endif
 
 class HB_AUTOTEST_EXPORT HbEffectThemePrivate
 {
@@ -38,7 +46,7 @@ public:
     HbEffectThemePrivate();
     ~HbEffectThemePrivate();
 
-    void initialise(const QString &dir);
+    void initialise(const QString &themeName);
     QString mThemeName;
     QStringList mDirList;
     QStringList mListOfExistingFolders;
@@ -47,8 +55,9 @@ public:
 void HbEffectThemePrivate::initialise(const QString &themeName)
 {
     mThemeName = themeName;
+
     QMap<int, QString> maplist = HbThemeUtils::constructHierarchyListWithPathInfo(
-        QString(), mThemeName, Hb::EffectResource);
+    QString(), mThemeName, Hb::EffectResource);
         
     mDirList.clear();
         
@@ -57,8 +66,7 @@ void HbEffectThemePrivate::initialise(const QString &themeName)
         mDirList.append(list.at(i));
     }
 
-    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName, 
-                                                                    Hb::EffectResource);
+    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName, Hb::EffectResource);
 }
 
 HbEffectThemePrivate::HbEffectThemePrivate()
@@ -80,10 +88,28 @@ HbEffectTheme *HbEffectTheme::instance()
 
 QString HbEffectTheme::getEffectXml(const QString &fileNameLogical, bool &fromTheme) const 
 {
-    fromTheme = false;
+#ifdef THEME_INDEX_TRACES
+    qDebug() <<  "ThemeIndex: getEffectXml effect: " << fileNameLogical;
+#endif  
+    
+#ifdef Q_OS_SYMBIAN
+    // Try to get themed icon information from theme index
+    QString resourceName(fileNameLogical);
+    resourceName.append(effectFileSuffix);
+
+    HbThemeIndexResource resource(resourceName);
+    if (resource.isValid()) {
+        return resource.fullFileName();
+    }
+#endif // Q_OS_SYMBIAN
+    
     // Assuming logical name will not have '.' and full filepath will
     // always have some extension.
     if (!fileNameLogical.contains('.')) {
+        #ifdef THEME_INDEX_TRACES
+        qDebug() <<  "ThemeIndex: getEffectXml index not used, do a lookup from file system!";
+        #endif  
+
         foreach (const QString &dir, d_ptr->mListOfExistingFolders) {
             QString candidateFullName = dir + fileNameLogical + ".fxml";
             QFile resource(candidateFullName);

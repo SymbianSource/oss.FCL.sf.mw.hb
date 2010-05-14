@@ -26,7 +26,7 @@
 #include "hbnamespace_p.h"
 #include <hbmessagebox.h>
 #include "hbmessagebox_p.h"
-#include <hbstyleoptionmessagebox.h>
+#include <hbstyleoptionmessagebox_p.h>
 #include <hbmainwindow.h>
 #include <hbaction.h>
 #include <hblineedit.h>
@@ -43,38 +43,52 @@ class HbStyle;
 class HbMessageBoxEditor : public HbLineEdit
 {
 public:
-	HbMessageBoxEditor(QGraphicsItem* parent =0) : HbLineEdit(parent)
-	{
+    HbMessageBoxEditor(QGraphicsItem* parent =0) : HbLineEdit(parent),mText()
+    {
         setReadOnly(true);
         setCursorVisibility(Hb::TextCursorHidden);
-		HbScrollArea *scroll = scrollArea();
-		scroll->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
-		clearContextMenuFlag(Hb::ShowTextContextMenuOnLongPress);
-		clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);
-		primitive(HbStyle::P_LineEdit_frame_normal)->setVisible(false);		
-		primitive(HbStyle::P_LineEdit_frame_highlight)->setVisible(false);		
-	}
+        HbScrollArea *scroll = scrollArea();
+        scroll->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
+        clearContextMenuFlag(Hb::ShowTextContextMenuOnLongPress);
+        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);
+        primitive(HbStyle::P_LineEdit_frame_normal)->setVisible(false);        
+        primitive(HbStyle::P_LineEdit_frame_highlight)->setVisible(false);        
+    }
 
-	HbScrollBar * getScrollBar() const
-	{
-		HbScrollArea *scroll = scrollArea();
-		return scroll->verticalScrollBar();
-	}
+    HbScrollBar * getScrollBar() const
+    {
+        HbScrollArea *scroll = scrollArea();
+        return scroll->verticalScrollBar();
+    }
 
-	void focusInEvent(QFocusEvent * event)
-	{
-		Q_UNUSED(event);		 
-	}
-	void focusOutEvent(QFocusEvent * event)
-	{
-		Q_UNUSED(event);
-	}
+    void focusInEvent(QFocusEvent * event)
+    {
+        Q_UNUSED(event);         
+    }
+    void focusOutEvent(QFocusEvent * event)
+    {
+        Q_UNUSED(event);
+    }
+
+    void setHtmlText(const QString &text)
+    {
+        mText = text;
+        setHtml(text);
+    }
+
+    QString htmlText() const
+    {
+        return mText;
+    }
+private:
+    QString mText;
 
 };
 
 class HbMessageBoxContentWidget : public HbWidget
 {
     Q_OBJECT
+
 public:
     HbMessageBoxPrivate *d;
     HbMessageBoxEditor *mTextEdit;
@@ -101,10 +115,9 @@ public:
 HbMessageBoxPrivate::HbMessageBoxPrivate() :
     HbDialogPrivate(),
     mIcon(),
-    mIconAlignment(Qt::AlignCenter),
-	mMessageBoxContentWidget(0),
-	mMessageBoxType(HbMessageBox::MessageTypeInformation),
-	mIconVisible(true)
+    mMessageBoxContentWidget(0),
+    mMessageBoxType(HbMessageBox::MessageTypeInformation),
+    mIconVisible(true)
 {
 }
 
@@ -128,68 +141,93 @@ void HbMessageBoxPrivate::init()
 
     switch(mMessageBoxType) {
     case HbMessageBox::MessageTypeInformation:
-	case HbMessageBox::MessageTypeWarning:
-		mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
+    case HbMessageBox::MessageTypeWarning:
+        mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
         q->setContentWidget( mMessageBoxContentWidget );
-		q->setDismissPolicy(HbPopup::NoDismiss);
-		q->setTimeout(HbPopup::NoTimeout);      
-		q->setPrimaryAction(new HbAction(q->tr("OK"), q));
+        q->setDismissPolicy(HbPopup::NoDismiss);
+        q->setTimeout(HbPopup::NoTimeout);      
+        q->addAction(new HbAction(q->tr("OK"),q));
         break;
 
     case HbMessageBox::MessageTypeQuestion:
-		mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
+        mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
         q->setContentWidget( mMessageBoxContentWidget );
-		q->setDismissPolicy(HbPopup::NoDismiss);
-		q->setTimeout(HbPopup::NoTimeout);       
-		q->setPrimaryAction(new HbAction(q->tr("Yes"), q));
-        q->setSecondaryAction(new HbAction(q->tr("No"), q));
+        q->setDismissPolicy(HbPopup::NoDismiss);
+        q->setTimeout(HbPopup::NoTimeout);       
+        q->addAction(new HbAction(q->tr("Yes"),q));
+        q->addAction(new HbAction(q->tr("No"),q));
         break;
     }
 
 }
 
-
 /*!
     @beta
     
     \class HbMessageBox
-    \brief HbMessageBox is a graphics widget which shows text message and an icon.
+    \brief HbMessageBox is a convenience modal dialog class, using which a simple information, a question, or a simple warning can be shown to the user.
 
-    HbMessageBox is derived from HbDialog that provides most of functionality such as
-    modality, and timeouts.
+    Using HbMessageBox, the following dialogs can be created:
 
-	HbMessageBox can used to show dialogs which contains a question ,information and warning.
-	By default HbMessageBox launches a information dialog.
+    <b>Information:</b> a statement to the user to which they may respond by acknowledging the information ('OK').<br>
+    <b>Question:</b> a query to the user requiring a response. User needs to select between two alternatives, the positive or negative (For example: 'Delete Mailbox?' 'Yes'/'No').<br>
+    <b>Warning:</b> a statement to the user to which they may respond by acknowledging the warning ('OK').<br>
+    
+    By default, Message box launches an information dialog which contains a description text and user actions visualized as command buttons.
 
-	example code to show a information messagebox:
+    Default properties for the MessageBox (warning, information and question dialogs) are:
+
+    Description text: Text shown to the user as information. The amount of text rows is not limited, but after five rows the text starts scrolling.
+    Icon: Default icons are available for each dialog type using the MessageBox template. Changing the default icons is not recommended.
+    Action buttons (one or two): one button for information and warning MessageBox, two buttons for question MessageBox.
+    
+    All the three dialogs(information, warning, question) supported by MessageBox are by default modal in nature, with
+    a dismiss policy of NoDismiss, timeout policy of NoTimeout, and with a BackgroundFade property on.
+
+    Example code for launching MessageBox using static convenience functions:
+
     \code
-    HbMessageBox *box = new HbMessageBox("This is a information note");
-	box->setAttribute(Qt::WA_DeleteOnClose);
-	box->open();
+    //Information MessageBox
+    HbMessageBox::information(informationText, this, SLOT(onDialogClose(HbAction*)), headWidget, scene, parent);
+
+    //Warning MessageBox
+    HbMessageBox::warning(warningText, this, SLOT(onDialogClose(HbAction*)), headWidget, scene, parent);
+
+    //Question MessageBox
+    HbMessageBox::question(questionText, this, SLOT(onDialogClose(HbAction*)), primaryButtonText, secondaryButtonText, headWidget, scene, parent);
     \endcode
 
-	example code to show a information messagebox with two action keys:
+    Example code to show an information messagebox:
+
     \code
-    HbMessageBox *box = new HbMessageBox("This will delete XX . Continue ? ");
-	box->setSecondaryAction(new HbAction("Cancel"));
-	box->setAttribute(Qt::WA_DeleteOnClose);
-	box->open();
+    HbMessageBox *box = new HbMessageBox("This is an information dialog.");
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->open();
     \endcode
 
-	example code to show a qustion messagebox with a return value based action
+    Example code to show an information messagebox with two action buttons:
+    \code
+    HbMessageBox *box = new HbMessageBox("XX will be deleted. Do you want to Continue ? ");
+
+    //Add new action.
+    box->addAction(new HbAction(HbWidget::tr("Cancel"), q));
+
+    box->setAttribute(Qt::WA_DeleteOnClose);
+
+    box->open();
+    \endcode
+
+    Example code to show a question messagebox with a return value based action
     \code
     HbMessageBox *box = new HbMessageBox(" Delete file IC0002 ? ",HbMessageBox::MessageTypeQuestion);
-	box->setAttribute(Qt::WA_DeleteOnClose);
-	box->open(this,SLOT(dialogClosed(HbAction*)));
-    \endcode
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->open(this,SLOT(dialogClosed(HbAction*)));
 
-	The declaration of SLOT is as shown below
-
-	\code
-	void dialogClosed(HbAction *action)
+    //Slot implementation
+    void dialogClosed(HbAction *action)
     {
         HbMessageBox *dlg = static_cast<HbMessageBox*>(sender());
-        if(action == dlg->primaryAction())
+        if(action == dlg->actions().at(0)) 
         {
             // Delete file 
         }
@@ -198,29 +236,25 @@ void HbMessageBoxPrivate::init()
            // Cancellation is done.Dont delete the file
         }
      }
-	 \endcode
+     \endcode     
 
     \enum HbMessageBox::MessageBoxType
 
-    \value \b MessageTypeInformation creates a dialog which will have some information for the user.
-		MessageBox will have Ok button and will not be auto dissmissed. The user need to press
-		Ok to dismiss.
+    \value \b MessageTypeInformation creates a modal information dialog, which by default will have one OK button 
+        for the user to dismiss the dialog.
 
-    \value \b MessageTypeWarning is a simple message dialog with warning icon. The user needs to press Ok
-        to dismiss. 
+    \value \b MessageTypeWarning creates a simple modal dialog with a warning icon and a description text. 
+        Dialog by default will have one OK button, for the user to dismiss the dialog. 
 
-    \value \b MessageTypeQuestion Shows a message dialog with question icon. The user can either confirm or
-		reject the dialog. 
+    \value \b MessageTypeQuestion Shows a modal dialog with question icon and a description text. The user can either confirm or
+        reject the dialog. By default dialog supports two buttons, using which user can dismiss the dialog. 
 
 */
 
-
-
 /*!
-    @beta
-    Constructor.
-	\param type An optional parameter.The type of messagebox.information/warning/question
-    \param parent An optional parameter.
+    Constructs a MessageBox with \a type and a \a parent.
+    \param type User can create information/warning/question dialogs by passing appropriate MessageBoxType.
+    \param parent parent item to MessageBox
 
 */
 HbMessageBox::HbMessageBox(MessageBoxType type,QGraphicsItem *parent) : 
@@ -232,13 +266,11 @@ HbMessageBox::HbMessageBox(MessageBoxType type,QGraphicsItem *parent) :
     d->init();
 }
 
-
 /*!
-    @beta
-    Constructs a new HbMessageBox with \a text and \a parent.
-	\param text The text for the MessageBox.
-	\param type An optional parameter.The type of messagebox.information/warning/question
-	\param parent An optional parameter.
+    Constructs a new MessageBox with \a text and \a parent.
+    \param text The descriptive text for the MessageBox.
+    \param type Messagebox type can be MessageTypeInformation, MessageTypeQuestion, MessageTypeWarning
+    \param parent parent item to MessageBox.
  */
 HbMessageBox::HbMessageBox(const QString &text,MessageBoxType type, QGraphicsItem *parent)
     : HbDialog(*new HbMessageBoxPrivate, parent)
@@ -246,21 +278,17 @@ HbMessageBox::HbMessageBox(const QString &text,MessageBoxType type, QGraphicsIte
     Q_D(HbMessageBox);
     d->mMessageBoxType = type;
     d->q_ptr = this;
-	d->init();
-	d->mMessageBoxContentWidget->mTextEdit->setText(text);
+    d->init();
+    d->mMessageBoxContentWidget->mTextEdit->setHtmlText(text);
 }
 
-
 /*!
-    @beta
     destructor
-
 */
 HbMessageBox::~HbMessageBox()
 {
 
 }
-
 
 /*!
     \internal
@@ -273,9 +301,7 @@ HbMessageBox::HbMessageBox(HbMessageBoxPrivate &dd, QGraphicsItem *parent) :
     d->init();
 }
 
-
 /*!
-
     \deprecated HbMessageBox::primitive(HbStyle::Primitive)
         is deprecated.
 
@@ -295,27 +321,19 @@ QGraphicsItem *HbMessageBox::primitive(HbStyle::Primitive primitive) const
     }
 }
 
-
 /*!
-    @beta
     \reimp
-    Initializes \a option with the values from this HbMessageBox.
 */
 void HbMessageBox::initStyleOption(HbStyleOptionMessageBox *option) const
 {
     Q_D(const HbMessageBox);
     HbDialog::initStyleOption(option);
     option->icon = d->mIcon;
-    option->iconAlignment = d->mIconAlignment;
     option->messageBoxType = d->mMessageBoxType;
 }
 
-
-
 /*!
-    @beta
-    updatePrimitives.
-
+   \reimp
 */
 void HbMessageBox::updatePrimitives()
 {
@@ -329,39 +347,33 @@ void HbMessageBox::updatePrimitives()
    
 }
 
-
 /*!
-    @beta
-    Sets text of the messagebox.
-    \param text This is the text for the MessageBox
-	\sa text()
+    Sets the descriptive text for the messagebox.
+    \param text Descriptive text for the MessageBox
+    \sa text()
 */
 void HbMessageBox::setText(const QString &text)
 {
     Q_D(HbMessageBox);
-	if ( text !=  d->mMessageBoxContentWidget->mTextEdit->text() ) {
-		d->mMessageBoxContentWidget->mTextEdit->setText(text);
+    if ( text !=  d->mMessageBoxContentWidget->mTextEdit->htmlText() ) {
+        d->mMessageBoxContentWidget->mTextEdit->setHtmlText(text);
     }
 }
 
 /*!
-    @beta
-    Returns text of the messagebox.
+    Returns descriptive text from the messagebox.
     \sa setText()
 */
-
 QString HbMessageBox::text() const
 {
     Q_D(const HbMessageBox);
-	return d->mMessageBoxContentWidget->mTextEdit->text();
+    return d->mMessageBoxContentWidget->mTextEdit->htmlText();
 }
 
-
 /*!
-    @beta
-    Sets a custon Icon for the MessageBox. Not recommended to change the icon unless there is a real use case.
+    Sets a custom Icon for the MessageBox. Not recommended to change the icon unless there is a real use case.
     \icon An icon instance
-	\sa icon()
+    \sa icon()
 */
 void HbMessageBox::setIcon(const HbIcon &icon)
 {
@@ -373,12 +385,10 @@ void HbMessageBox::setIcon(const HbIcon &icon)
             initStyleOption(&option);
             style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, HbStyle::P_MessageBox_icon, &option);
         }
-	}
+    }
 }
 
-
 /*!
-    @beta
     Returns icon of the messagebox.
     \sa setIcon()
 */
@@ -387,204 +397,58 @@ HbIcon HbMessageBox::icon() const
     Q_D(const HbMessageBox);
     return d->mIcon;
 }
-/*!
 
-    \deprecated HbMessageBox::setIconAlignment(Qt::Alignment)
-        is deprecated.   
 
-    There is no icon alignment support
-*/
-void HbMessageBox::setIconAlignment( Qt::Alignment align )
-{
-    Q_D(HbMessageBox);
-	HB_DEPRECATED("HbMessageBox::setIconAlignment is deprecated.");
-    if (align != d->mIconAlignment){
-        d->mIconAlignment = align;
-        if (d->mMessageBoxContentWidget->mIconItem) {
-            HbStyleOptionMessageBox option;
-            initStyleOption(&option);
-            style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, HbStyle::P_MessageBox_icon, &option);
-        }
-    }
-}
 /*!
-    @beta
-    Sets wheather icon is visible or not.By default the icon is visible.
+    sets the icon \a visible property to true or false.
 
     \param visible the visibility flag
-	\sa iconVisible()
+    \sa iconVisible()
 
 */
 void HbMessageBox::setIconVisible(bool visible)
 {
-	Q_D(HbMessageBox);
-	if(visible != d->mIconVisible) {
-		if(visible) {
-			d->mMessageBoxContentWidget->mIconItem->show();
-			d->mMessageBoxContentWidget->setProperty("hasIcon",true);
-		}
-		else {
-			d->mMessageBoxContentWidget->mIconItem->hide();
-			d->mMessageBoxContentWidget->setProperty("hasIcon",false);
-		}
+    Q_D(HbMessageBox);
+    if(visible != d->mIconVisible) {
+        if(visible) {
+            d->mMessageBoxContentWidget->mIconItem->show();
+            d->mMessageBoxContentWidget->setProperty("hasIcon",true);
+        }
+        else {
+            d->mMessageBoxContentWidget->mIconItem->hide();
+            d->mMessageBoxContentWidget->setProperty("hasIcon",false);
+        }
 
-		d->mIconVisible = visible;
-		repolish();
-	}
+        d->mIconVisible = visible;
+        repolish();
+    }
 }
+
 /*!
-    @beta
-    Returns the icon visibilty flag
-	\sa setIconVisible()
+    Returns the icon visibilty flag. Icon visibility is true by default.
+    \sa setIconVisible()
 */   
 
 bool  HbMessageBox::iconVisible() const
 {
-	Q_D(const HbMessageBox);
-	return d->mIconVisible;
-
-}
-
-/*!
-
-    \deprecated HbMessageBox::iconAlignment() const
-        is deprecated.   
-
-	There is no icon alignment support
-*/
-
-Qt::Alignment HbMessageBox::iconAlignment() const
-{
     Q_D(const HbMessageBox);
-	HB_DEPRECATED("HbMessageBox::iconAlignment is deprecated.");
-    return d->mIconAlignment;
-}
-/*!
-    \deprecated HbMessageBox::mousePressEvent(QGraphicsSceneMouseEvent *)
-        is deprecated.
+    return d->mIconVisible;
 
+}
+
+
+/*!
+    This is a convenience function for showing a question dialog with \a questionText and buttons with specified \a primaryButtonText and
+    \a secondaryButtonText. 
+    \param questionText descriptive text for the messagebox
+    \param receiver Object which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.
+    \param primaryButtonText text for the primary button.
+    \param secondaryButtonText text for the secondary button.
+    \param headWidget the heading widget, where the user can set a title, Null by default.
+    \param scene the scene for the MessageBox. Null by default.
+    \param parent the parent widget. Null by default.
 */
-void HbMessageBox::mousePressEvent(QGraphicsSceneMouseEvent *event )
-{
-    HB_DEPRECATED("HbMessageBox::mousePressEvent is deprecated.");
-    HbDialog::mousePressEvent(event);
-    event->accept();
-}
-
-
-/*!
-    \deprecated HbMessageBox::question(const QString &,const QString &,const QString &,QGraphicsWidget *,QGraphicsScene *,QGraphicsItem*)
-        is deprecated. Deprecating due to migration from exec() to open call. Please use the other available question API.
-
-    This is a convenient function to show a default message box with the question and buttons specified.
-    this will return true when first button is clicked. false on the second.
-    a heading widget can be set ex:
-    \code
-        HbMessageBox::question("are you sure?","yes","no",new HbLabel("Delete Confirm"));
-    \endcode
-*/
-bool HbMessageBox::question(const QString &questionText,
-                                            const QString &primaryButtonText,
-                                            const QString &secondaryButtonText,
-                                            QGraphicsWidget *headWidget,
-                                            QGraphicsScene *scene,
-                                            QGraphicsItem *parent)
-{	
-    HB_DEPRECATED("HbMessageBox::question is deprecated. Please use HbMessageBox::question(const QString&,const QString&,QGraphicsWidget*,QGraphicsScene*,QGraphicsItem*) instead");
-    
-    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeQuestion, parent);
-    if (scene) {
-        scene->addItem(messageBox);
-    }
-    messageBox->setText(questionText);
-	
-    HbAction *primaryAction = new HbAction(primaryButtonText);
-    messageBox->setPrimaryAction(primaryAction);
-
-    HbAction *secondaryAction = new HbAction(secondaryButtonText);
-    messageBox->setSecondaryAction(secondaryAction);
-    if(headWidget) {
-        messageBox->setHeadingWidget(headWidget);
-    }
-    HbAction *action = messageBox->exec(); 
-
-    if (action == messageBox->primaryAction() ){
-       return true;
-    }
-    else {
-       return false;
-    }
-}
-     
-/*!
-    \deprecated HbMessageBox::information(const QString &,QGraphicsWidget*,QGraphicsScene*,QGraphicsItem*)
-        is deprecated. Please use the other available HbMessageBox::information(...) API.
-
-    This is a convenient function to show a default message box with the with informationText.
-    optionally a heading widget can be set ex:
-    \code
-        HbMessageBox::information("new message received",new HbLabel("incoming message"));
-    \endcode
-*/       
-void HbMessageBox::information(const QString &informationText,
-                                               QGraphicsWidget *headWidget,
-                                               QGraphicsScene *scene,
-                                               QGraphicsItem *parent)
-{
-    HB_DEPRECATED("HbMessageBox::information is deprecated. Please use HbMessageBox::information(const QString&, QObject*, const char*, QGraphicsWidget*,QGraphicsScene*, QGraphicsItem*) instead.");
-
-    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeInformation, parent);
-    if (scene) {
-        scene->addItem(messageBox);
-    }
-    messageBox->setText(informationText);
-    if(headWidget) {
-        messageBox->setHeadingWidget(headWidget);
-    }
-	messageBox->exec();
-}
-                                                                                              
-/*!
-    \deprecated HbMessageBox::warning(const QString &,QGraphicsWidget *,QGraphicsScene*,QGraphicsItem*)
-        is deprecated. Deprecated as part of moving exec to open call. Please use the other warning API.
-
-    This is a convenient function to show a warning message box.
-    optionally a heading widget can be set ex:
-    \code
-        HbMessageBox::warning("charge the phone",new HbLabel("battery low!"));
-    \endcode
-*/                                                                                            
-void HbMessageBox::warning(const QString &warningText,
-                                           QGraphicsWidget *headWidget,
-                                           QGraphicsScene *scene,
-                                           QGraphicsItem *parent)
-{
-    HB_DEPRECATED("HbMessageBox::warning is deprecated. Use HbMessageBox::warning(const QString&, QObject*, const char*,QGraphicsWidget*, QGraphicsScene*, QGraphicsItem *) ");
-
-    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeWarning, parent);
-    if (scene) {
-        scene->addItem(messageBox);
-    }
-    messageBox->setText(warningText);
-    if(headWidget) {
-        messageBox->setHeadingWidget(headWidget);
-    }
-	messageBox->exec();
-}
-/*!
-    @beta
-    This is a convenient function to show a default message box with the question and buttons specified.
-    this will return true when first button is clicked. false on the second.
-    \param questionText the text for the messagebox
-	\param receiver the reciever of the slot
-	\param member the slot
-	\param primaryButtonText string for the primary button text
-	\param secondaryButtonText string for the secondary button text
-	\param headWidget the heading widget
-	\param scene the scene 
-	\param parent the parent widget
-*/
-
 void HbMessageBox::question(const QString &questionText,
                                             QObject *receiver,
                                             const char *member,
@@ -593,18 +457,21 @@ void HbMessageBox::question(const QString &questionText,
                                             QGraphicsWidget *headWidget,
                                             QGraphicsScene *scene,
                                             QGraphicsItem *parent)
-{	
+{    
     HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeQuestion, parent);
     if (scene && !parent) {
         scene->addItem(messageBox);
     }
     messageBox->setText(questionText);
-	
-    HbAction *primaryAction = new HbAction(primaryButtonText,messageBox);
-    messageBox->setPrimaryAction(primaryAction);
+    
+    if((messageBox->actions().count() > 0) && messageBox->actions().at(0)){
+        messageBox->actions().at(0)->setText(primaryButtonText);
+    }
 
-    HbAction *secondaryAction = new HbAction(secondaryButtonText,messageBox);
-    messageBox->setSecondaryAction(secondaryAction);
+    if((messageBox->actions().count() > 1) && messageBox->actions().at(1)){
+        messageBox->actions().at(1)->setText(secondaryButtonText);
+    }
+
     if(headWidget) {
         messageBox->setHeadingWidget(headWidget);
     }
@@ -613,17 +480,14 @@ void HbMessageBox::question(const QString &questionText,
 }
      
 /*!
-    @beta
-    This is a convenient function to show a default message box with the information and buttons specified.
-    this will return true when first button is clicked. false on the second.
-    \param informationText the text for the messagebox
-	\param receiver the reciever of the slot
-	\param member the slot
-	\param headWidget the heading widget
-	\param scene the scene 
-	\param parent the parent widget
+    This is a convenience function for showing an information dialog with a descriptive text and a default OK button.
+    \param informationText Descriptive text for the information dialog.
+    \param receiver Which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.
+    \param headWidget This can used by the user to set a title widget. Null by default.
+    \param scene the scene for the MessageBox, Null by default.
+    \param parent the parent widget. Null by default
 */
-     
 void HbMessageBox::information(const QString &informationText,
                                                QObject *receiver,
                                                const char *member,
@@ -644,17 +508,14 @@ void HbMessageBox::information(const QString &informationText,
 }
                                                                                               
 /*!
-    @beta
-    This is a convenient function to show a default message box with the information and buttons specified.
-    this will return true when first button is clicked. false on the second.
-    \param warningText the text for the messagebox
-	\param receiver the reciever of the slot
-	\param member the slot
-	\param headWidget the heading widget
-	\param scene the scene 
-	\param parent the parent widget
+    This is a convenience function for showing a warning dialog with a descriptive text and an OK button.
+    \param warningText Descriptive text for the warning dialog.
+    \param receiver Which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.
+    \param headWidget This can used by the user to set a title widget, Null by default.
+    \param scene the scene for the messagebox, Null by default.
+    \param parent the parent widget, Null by default.
 */
-                                                                                          
 void HbMessageBox::warning(const QString &warningText,
                                            QObject *receiver,
                                            const char *member,

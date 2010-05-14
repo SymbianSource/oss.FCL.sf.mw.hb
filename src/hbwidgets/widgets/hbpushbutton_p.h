@@ -74,7 +74,6 @@ public:
     QString additionalText;
     HbIcon icon;
     HbIcon background;
-    Qt::Orientation orientation;
     HbFrameDrawer *backgroundFrameDrawer;
     QTimer *longPressTimer;
     Qt::Alignment textAlignment;

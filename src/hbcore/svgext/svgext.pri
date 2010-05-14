@@ -28,4 +28,3 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 include(hbnvgdecoder/hbnvgdecoder.pri)
-include(hbtlvwrapper/hbtlvwrapper.pri)

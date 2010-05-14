@@ -66,18 +66,31 @@ HbTapGesturePrivate::HbTapGesturePrivate(): mTapStyleHint(HbTapGesture::Tap), mT
 
 */
 
+/*!
+    \brief HbTapGesture constructor
+    \param parent Parent for the gesture
+*/
 HbTapGesture::HbTapGesture(QObject *parent)
     : QTapGesture(parent), d_ptr(new HbTapGesturePrivate)
 {
     DEBUG() << "Creating" << this;
 }
 
+/*!
+    \brief HbTapGesture constructor
+    \param dd Custom private data
+    \param parent Parent for the gesture
+
+*/
 HbTapGesture::HbTapGesture( HbTapGesturePrivate &dd, QObject *parent )
     : QTapGesture(parent), d_ptr( &dd )
 {
     DEBUG() << "Creating" << this;
 }
 
+/*!
+    \brief HbTapGesture destructor
+*/
 HbTapGesture::~HbTapGesture()
 {
     DEBUG() << "Deleting" << this;
@@ -85,11 +98,8 @@ HbTapGesture::~HbTapGesture()
 }
 
 /*!
-
     \property startPos
-
-    Stores the starting position of the tap gesture in screen coordinates.
-
+    \brief Stores the starting position of the tap gesture in screen coordinates.
 */
 QPointF HbTapGesture::startPos() const
 {
@@ -104,11 +114,8 @@ void HbTapGesture::setStartPos(const QPointF &startPos)
 }
 
 /*!
-
     \property sceneStartPos
-
-    Stores the starting position of the tap gesture in scene coordinates.
-
+    \brief Stores the starting position of the tap gesture in scene coordinates.
 */
 QPointF HbTapGesture::sceneStartPos() const
 {
@@ -123,11 +130,9 @@ void HbTapGesture::setSceneStartPos(const QPointF &startPos)
 }
 
 /*!
-
-    \property startPos
-
-    Stores the starting position of the tap gesture in scene coordinates.
-
+    \property scenePosition
+    \brief Stores the current position of the tap gesture in scene coordinates.
+    \sa QTapGesture::position()
 */
 QPointF HbTapGesture::scenePosition() const
 {
@@ -143,6 +148,7 @@ void HbTapGesture::setScenePosition(const QPointF &startPos)
 
 /*!
     \property tapStyleHint
+    \brief Indicates whether tap is normal tap or long press.
 
     TapStyleHint is by default Tap and in case of long press, the gesture
     update event is sent and TapStyleHint changed to TapAndHold.

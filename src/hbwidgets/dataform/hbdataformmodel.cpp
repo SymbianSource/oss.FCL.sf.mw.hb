@@ -27,6 +27,7 @@
 #include <hbdataformmodel.h>
 
 #include "hbdataformmodel_p.h"
+#include "hbdataformmodelitem_p.h"
 
 /*
     \internal
@@ -138,7 +139,7 @@ HbDataFormModel::HbDataFormModel(QObject *parent)
 {
     Q_D(HbDataFormModel);
     d->q_ptr = this; 
-    d->mRoot->setModel(this);
+    HbDataFormModelItemPrivate::d_ptr(d->mRoot)->setModel(this);   
 }
 
 HbDataFormModel::~HbDataFormModel()
@@ -369,27 +370,6 @@ void HbDataFormModel::insertDataFormItem(int index, HbDataFormModelItem *data,
 
 
 /*!
-   \deprecated  HbDataFormModel::insertRows(int, int, const QModelIndex&)
-        is deprecated. Please use other insert and additem API's in HbDataFormModel instead.
-*/
-bool HbDataFormModel::insertRows(int row, int count, const QModelIndex &index)
-{
-    Q_D(HbDataFormModel);
-    HbDataFormModelItem *item = index.isValid() ? itemFromIndex(index) : d->mRoot;
-    if (item == 0) {
-        return false;
-    }
-
-    QList<HbDataFormModelItem*> items;
-    for(int i =0 ; i < count ; i ++) {
-        items.append(new HbDataFormModelItem());
-    }
-    item->insertChildren(row,count,items);
-    return true;
-}
-
-
-/*!
     @beta
 
     Removes and deletes the model item from the model at the given \a index. The visualization
@@ -419,7 +399,7 @@ bool HbDataFormModel::removeItem(HbDataFormModelItem *item)
         return false;
     }
     HbDataFormModelItem* parent = const_cast<HbDataFormModelItem*>(item->parent());
-    if ( item->model() != this ) {
+    if ( HbDataFormModelItemPrivate::d_ptr(item)->model() != this ) {
                return false;
     }
     
@@ -591,7 +571,8 @@ void HbDataFormModel::clear()
     Q_D(HbDataFormModel);
     removeItem(invisibleRootItem());
     d->mRoot = new HbDataFormModelItem();
-    d->mRoot->setModel(this);
+    HbDataFormModelItemPrivate::d_ptr(d->mRoot)->setModel(this);
+    
     reset();
 }
 

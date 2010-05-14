@@ -37,18 +37,12 @@
 # define DEBUG qDebug
 #endif
 
-// Number of points through considered relevant to calculate speed.
-const int KHbPoints = 4;
-
-// Number to used to adjust the speed to look better for eyes. Simulates mass effect.
-const qreal KHbAdjust = 4.0;
-
 const int KHbSampleTime = 80; // ms
-const int KHbStopTime = 30; // ms
+const int KHbStopTime = 70; // ms
 
 /*!
    @hbcore
-   \internal
+   \internals
    \class HbVelocityCalculator
 
    \brief Class to calculate velocity from point.
@@ -100,55 +94,24 @@ qreal HbVelocityCalculator::calculate_velocity(
 {
     Q_UNUSED(time)
 
+    if (list.count() < 2) {
+        return 0.0;
+    }
+
+    DEBUG() << "Stationary time: " << list.lastTime().msecsTo(time);
+    if (list.lastTime().msecsTo(time) > KHbStopTime) {
+        return 0.0;
+    }
+
     // Accumulate the distance from previous point until we have sufficient sample
     qreal delta = 0.0;
     int timeDelta = 0;
-    if (!(list.mTimes.count() > 1 && list.mPoints.count() > 1) ||
-        (list.mTimes.last().msec()-time.msec() > KHbStopTime)) {
-        return 0.0;
-    }
-    int i = list.mTimes.count();
+    int i = list.count();
     while (timeDelta < KHbSampleTime && i > 0) {
         i--;
-        timeDelta = time.msec() - list.mTimes.at(i).msec();
+        timeDelta = list.at(i).second.msecsTo(time);
     }
-    delta = list.mPoints.last() - list.mPoints.at(i);
+    delta = list.lastPoint() - list.at(i).first;
 
-    return delta / (qreal)(list.mTimes.at(i).msecsTo(time));
-    /*// Make decisions based on the last few points.
-    QList<int> points = list.getLastPoints( KHbPoints );
-    QList<QTime> times = list.getLastTimes( KHbPoints );
-    qreal velocity = 0.0;
-
-    // In case of empty list or in case the sizes of the list are different
-    // consider this movement being stopped.
-    if ( !points.length() || points.length() != times.length() )
-    {
-        DEBUG() << "Cancelling velocity calculation, because points.length() == " << points.length() << " and times.length() == " << times.length();
-        return velocity;
-
-    }
-    else
-    {
-        DEBUG() << "Number of points recorded: " << points.length();
-    }
-
-    // Sum the velocities between timedeltas to get the final speed.
-    qreal avg_dt = 0.0;
-    for ( int i = 0; i<points.length()-1; i++)
-    {
-        qreal t = times[i].msecsTo(times[i+1]);
-        avg_dt += t;
-        velocity += ( points[i+1] - points[i] ) / t;
-        velocity /= 2.0;
-    }
-    avg_dt /= times.length();
-
-    // Calculate time between release and last update point.
-    qreal dt = list.lastTime().msecsTo(time);
-
-    if ( !dt ) { dt = avg_dt; }
-
-    // Scale the velocity correctly and adjust it with magic.
-    return velocity * dt / KHbAdjust;*/
+    return delta / (qreal)(list.at(i).second.msecsTo(time));
 }

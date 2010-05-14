@@ -64,7 +64,7 @@
 #include <hbprogressslider.h>
 #include <hbinputdialog.h>
 #include <hbcolordialog.h>
-#include <hblistdialog.h>
+#include <hbselectiondialog.h>
 #include <hbcombobox.h>
 #include <hbgroupbox.h>
 #include <hbtreeview.h>
@@ -223,8 +223,8 @@ QObject *HbDocumentLoaderFactory::create(const QString& type, const QString& nam
     CHECK_OBJECT_0(HbTextEdit)
     CHECK_OBJECT_0(HbCheckBox)
     CHECK_OBJECT_0(HbProgressSlider)
-    CHECK_OBJECT_0(HbListDialog)
     CHECK_OBJECT_0(HbColorDialog)
+    CHECK_OBJECT_0(HbSelectionDialog)
     CHECK_OBJECT_0(HbRatingSlider)
     CHECK_OBJECT_0(HbInputDialog)
     CHECK_OBJECT_0(HbMessageBox)

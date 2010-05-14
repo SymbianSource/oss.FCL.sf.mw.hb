@@ -33,12 +33,14 @@
 #include <hbinputvkbwidget.h>
 
 class QTimer;
-class HbQwertyKeyboard;
+class HbQwertyNumericKeyboard;
+class HbQwerty10x4Keyboard;
+class HbQwerty11x4Keyboard;
 class HbKeyMapData;
 class HbPredictionEngine;
 class HbCandidateList;
 class HbExactWordPopup;
-class HbInputSctLandscape;
+class HbSctKeyboard;
 
 class HbInputModeHandler;
 class HbInputBasicQwertyHandler;
@@ -62,7 +64,6 @@ public: // From QInputContext
     bool filterEvent(const QEvent* event);
 
 public slots:
-    void sctCharacterSelected(QString aChar);
     void orientationAboutToChange();
     void rockerDirection(int aDirection, HbInputVirtualRocker::RockerSelectionMode aSelectionMode);
     // keypad related slots
@@ -72,12 +73,12 @@ public slots:
     void mouseMovedOutOfButton();
     void smileySelected(QString smiley);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void candidatePopupClosed(int closingKey, const QString& candidate);
 
 public: // From HbInputMethod
     void focusReceived();
     void focusLost(bool focusSwitch);
-    void inputStateActivated(const HbInputState& aNewState);
-    void candidatePopupClosed(int closingKey);
+    void inputStateActivated(const HbInputState& aNewState);   
     void inputLanguageChanged(const HbInputLanguage &aNewLanguage);
     void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
     int displaySpecialCharacterTable(QObject* aReceiver);
@@ -92,16 +93,13 @@ public:
     void launchCandidatePopup(const QStringList &candidates);
 
     void closeKeypad();
-    void launchCharacterPreviewPane(int key);
     void switchSpecialCharacterTable();
     void selectSpecialCharacterTableMode();
     void closeExactWordPopup();
     void launchExactWordPopup(QString exactWord);
     void closeAutoCompletionPopup();
     void launchAutoCompletionPopup(const QStringList &candidates);
-
-protected:
-    void predictiveInputStatusChanged(int newStatus);
+    HbKeyboardType currentKeyboardType() const;
 
 private slots:
     void candidatePopupCancelled();
@@ -116,18 +114,20 @@ private:
 
 private:
     void openKeypad(HbInputVkbWidget * keypadToOpen, bool inMinimizedMode = false);
-    HbQwertyKeyboard* constructKeypad(HbKeypadMode currentInputType);
+    HbInputVkbWidget *constructKeyboard(HbKeypadMode currentInputType);
 
 private:
     // mCurrentKeypad contains currently active keypad, we dont need to have
     // anyother variables to tell us which is current keypad
     QPointer<HbInputVkbWidget> mCurrentKeypad;
     // contains qwerty alpha keypad
-    QPointer<HbQwertyKeyboard> mQwertyAlphaKeypad;
+    QPointer<HbInputVkbWidget> mQwertyAlphaKeypad;
+    QPointer<HbQwerty10x4Keyboard> mQwerty10x4Keypad;
+    QPointer<HbQwerty11x4Keyboard> mQwerty11x4Keypad;
     // contains qwerty numeric keypad
-    QPointer<HbQwertyKeyboard> mQwertyNumericKeypad;
+    QPointer<HbQwertyNumericKeyboard> mQwertyNumericKeypad;
     // contains sct keypad
-    QPointer<HbInputSctLandscape> mSctKeypad;
+    QPointer<HbSctKeyboard> mSctKeypad;
 
     const HbKeymap *mKeymap;
     HbFnState mFnState;
@@ -136,7 +136,6 @@ private:
     HbExactWordPopup *mExactWordPopup;
     HbCandidateList *mCandidatePopup;
     bool mOrientationAboutToChange;
-    HbInputVkbWidget::HbSctView mSctMode;
     int mShiftKeyState;
     // mode handlers
     HbInputModeHandler *mActiveModeHandler;

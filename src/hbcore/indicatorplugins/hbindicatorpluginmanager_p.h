@@ -110,16 +110,17 @@ private:
     QString statusAreaIconPath(
             const HbIndicatorInterface *indicator) const;
 
-    void updateCachePath(const QString &path);
-    static QStringList pluginPathList();
-    static QString pluginFileNameFilter();
+    void updateCachePath(const QString &path, bool updateReadOnly = false);
     static QStringList pluginKeys(QObject *pluginInstance);
+
+    bool hasMenuData(const HbIndicatorInterface &indicator) const;
 
 private:
     Q_DISABLE_COPY(HbIndicatorPluginManager)
 
     QList<PluginInfo> mPlugins;
     HbPluginNameCache mNameCache;
+    QStringList mPluginPathList;
 };
 
 #endif // HBINDICATORPLUGINMANAGER_H

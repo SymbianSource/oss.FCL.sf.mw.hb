@@ -1705,7 +1705,7 @@ HbExtendedLocale::WeekDay HbExtendedLocale::startOfWeek() const
 bool HbExtendedLocale::setStartOfWeek(WeekDay day)
     {
 #if defined(Q_OS_SYMBIAN)
-    if((day < HbExtendedLocale::Monday) && (day > HbExtendedLocale::Monday ))
+    if((day < HbExtendedLocale::Monday) || (day > HbExtendedLocale::Sunday ))
         return false;
     
     _symbianLocale.LoadSystemSettings();

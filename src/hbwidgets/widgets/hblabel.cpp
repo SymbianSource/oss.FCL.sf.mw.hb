@@ -35,7 +35,7 @@
 #include "hbinstance.h"
 #include "hbcolorscheme.h"
 #include "hbwidget_p.h"
-#include "hbstyleoptionlabel.h"
+#include "hbstyleoptionlabel_p.h"
 #include "hbwidgetbase.h"
 
 /*!

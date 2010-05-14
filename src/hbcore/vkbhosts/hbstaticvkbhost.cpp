@@ -88,13 +88,5 @@ HbStaticVkbHost::~HbStaticVkbHost()
 {
 }
 
-/*!
-\reimp
-*/
-int HbStaticVkbHost::priority() const
-{   
-    return 0;
-}
-
 // End of file
 

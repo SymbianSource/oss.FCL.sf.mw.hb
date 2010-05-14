@@ -44,7 +44,6 @@ public:
 
     bool buttonReleased(const QKeyEvent *keyEvent);
     bool buttonPressed(const QKeyEvent *keyEvent);
-    void _q_timeout();
     void cancelButtonPress();
     void chopQMarkAndUpdateEditor();
 public:

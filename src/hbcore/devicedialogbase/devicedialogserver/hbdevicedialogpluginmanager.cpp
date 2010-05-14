@@ -35,6 +35,10 @@
 #include <QDir>
 #include <QApplication>
 
+#if defined(Q_OS_SYMBIAN)
+#include <coemain.h>
+#include <f32file.h>
+#endif // Q_OS_SYMBIAN
 /*
     \class HbDeviceDialogPluginManager
     \brief HbDeviceDialogPluginManager manages loading and unloading of device dialog plugins
@@ -66,11 +70,13 @@ HbDeviceDialogPluginManager::HbDeviceDialogPluginManager(Flags flags, QObject *p
     connect(&mDeleteTimer, SIGNAL(timeout()), this, SLOT(deleteWidgets()));
 
     // Get list of plugin directories to watch/scan
-    const QStringList pathList = pluginPathList();
-    for (int i = 0; i < pathList.length(); i++) {
-        updateCachePath(pathList.at(i));
-    }
+    int readOnlyPaths;
+    mPluginPathList = pluginPathList("/devicedialogs/", readOnlyPaths);
 
+    // Scan only read-only drives at startup to ensure installed plugins cannot affect device boot
+    for(int i = 0; i < readOnlyPaths; i++) {
+        updateCachePath(mPluginPathList.at(i), true);
+    }
     TRACE_EXIT
 }
 
@@ -284,12 +290,11 @@ const HbDeviceDialogPlugin &HbDeviceDialogPluginManager::plugin(
 void HbDeviceDialogPluginManager::scanPlugins(PluginScanCallback func, const QString &deviceDialogType, bool stopIfFound)
 {
     TRACE_ENTRY
-    const QStringList pathList = pluginPathList();
     const QString fileNameFilter = pluginFileNameFilter();
 
-    foreach (const QString &path, pathList) {
+    foreach(const QString &path, mPluginPathList) {
         QDir pluginDir(path, fileNameFilter, QDir::NoSort, QDir::Files | QDir::Readable);
-        foreach (const QString &fileName, pluginDir.entryList()) {
+        foreach(const QString &fileName, pluginDir.entryList()) {
             if (scanPlugin(func, deviceDialogType, pluginDir.absoluteFilePath(fileName)) &&
                 stopIfFound) {
                 break;
@@ -411,7 +416,7 @@ void HbDeviceDialogPluginManager::freeRecycleWidgets()
 }
 
 // Update plugin name cache watch/scan list
-void HbDeviceDialogPluginManager::updateCachePath(const QString &path)
+void HbDeviceDialogPluginManager::updateCachePath(const QString &path, bool updateReadOnly)
 {
     QString dirPath = HbPluginNameCache::directoryPath(path);
     QFileInfo fileInfo(dirPath);
@@ -420,7 +425,9 @@ void HbDeviceDialogPluginManager::updateCachePath(const QString &path)
         if (fileInfo.isWritable()) {
             mNameCache.addWatchPath(dirPath);
         } else {
-            mNameCache.scanDirectory(dirPath);
+            if (updateReadOnly) {
+                mNameCache.scanDirectory(dirPath);
+            }
         }
     } else {
         mNameCache.removeWatchPath(dirPath);
@@ -428,27 +435,25 @@ void HbDeviceDialogPluginManager::updateCachePath(const QString &path)
 }
 
 //Generate directory path list to search plugins
-QStringList HbDeviceDialogPluginManager::pluginPathList()
+QStringList HbDeviceDialogPluginManager::pluginPathList(const QString &subDir, int &readOnlyPaths)
 {
     QStringList pluginPathList;
 
 #if defined(Q_OS_SYMBIAN)
-    const QString pluginRelativePath("resource/plugins/devicedialogs/");
+    QString pluginRelativePath("resource/plugins");
+    pluginRelativePath.append(subDir);
 
     QFileInfoList driveInfoList = QDir::drives();
 
-    foreach (const QFileInfo &driveInfo, driveInfoList) {
+    foreach(const QFileInfo &driveInfo, driveInfoList) {
         const QString drive = driveInfo.absolutePath();
-        if (drive.startsWith("z:", Qt::CaseInsensitive) ||
-            drive.startsWith("c:", Qt::CaseInsensitive)) {
-            QString path(drive + pluginRelativePath);
-            pluginPathList << path;
-        }
+        QString path(drive + pluginRelativePath);
+        pluginPathList << path;
     }
 #elif defined(Q_OS_WIN32) || defined(Q_OS_UNIX)
-    pluginPathList << qApp->applicationDirPath() + '/' << HB_PLUGINS_DIR"/devicedialogs/";
+    pluginPathList << qApp->applicationDirPath() + '/' << HB_PLUGINS_DIR + subDir;
 #endif
-
+    readOnlyPaths = trimPluginPathList(pluginPathList);
     // Plugin name caching differentiates directory and file names by trailing slash in a name
     for (int i = 0; i < pluginPathList.length(); i++) {
         Q_ASSERT(pluginPathList.at(i).endsWith('/'));
@@ -508,4 +513,78 @@ void HbDeviceDialogPluginManager::deleteWidgets()
 void HbDeviceDialogPluginManager::allWidgetsDeleted()
 {
     mAllWidgetsDeleted = true;
+}
+
+// Trim plugin search path list from all possible drives. Returns number of read only paths
+// at head of path list.
+int HbDeviceDialogPluginManager::trimPluginPathList(QStringList &pathList)
+{
+#if defined(Q_OS_SYMBIAN)
+    // Get list of disk drives
+    TDriveList driveList;
+    RFs &fs = CCoeEnv::Static()->FsSession();
+    int error = fs.DriveList(driveList);
+    Q_ASSERT(error == KErrNone);
+
+    // Put pathlist into search order. Rom-drives first, then internal and local removable drives.
+    // Remote drives are not supported for plugins.
+    int numRomDrives = 0;
+    int numInternalDrives = 0;
+    int numRemovableDrives = 0;
+    int count = pathList.count();
+    for(int i = 0; i < count; i++) {
+        QChar c(pathList.at(i).at(0).toLower());
+        int driveIndex = c.toAscii() - 'a';
+        TDriveInfo driveInfo;
+        error = fs.Drive(driveInfo, EDriveA + driveIndex);
+        Q_ASSERT(error == KErrNone);
+        if (driveInfo.iDriveAtt == (KDriveAttInternal|KDriveAttRom)) {
+            if (i != numRomDrives) {
+              const QString tmp(pathList.at(i));
+              pathList.removeAt(i);
+              pathList.insert(numRomDrives, tmp);
+            }
+            numRomDrives++;
+        } else if (driveInfo.iDriveAtt == (KDriveAttInternal|KDriveAttLocal)) {
+              int newPlace = numRomDrives + numInternalDrives;
+              if (i != newPlace) {
+                  const QString tmp(pathList.at(i));
+                  pathList.removeAt(i);
+                  pathList.insert(newPlace, tmp);
+              }
+              numInternalDrives++;
+        } else if (driveInfo.iDriveAtt & (KDriveAttInternal|KDriveAttRemovable)) {
+            int newPlace = numRomDrives + numInternalDrives + numRemovableDrives;
+            if (i != newPlace) {
+                const QString tmp(pathList.at(i));
+                pathList.removeAt(i);
+                pathList.insert(newPlace, tmp);
+            }
+            numRemovableDrives++;
+        }
+    }
+    // Cut other drives off the list
+    for(int i = numRomDrives + numInternalDrives + numRemovableDrives; i < count; i++) {
+        pathList.removeLast();
+    }
+
+    // Ensure alphanumeric order
+    if (numRomDrives > 1) {
+        QStringList::iterator begin = pathList.begin();
+        qSort(begin, begin + numRomDrives);
+    }
+    if (numInternalDrives > 1) {
+        QStringList::iterator begin = pathList.begin() + numRomDrives;
+        qSort(begin, begin + numInternalDrives);
+    }
+    if (numRemovableDrives > 1) {
+        QStringList::iterator begin = pathList.begin() + numRomDrives + numInternalDrives;
+        qSort(begin, begin + numRemovableDrives);
+    }
+
+    return numRomDrives;
+#else // Q_OS_SYMBIAN
+    Q_UNUSED(pathList)
+    return 0;
+#endif // Q_OS_SYMBIAN
 }

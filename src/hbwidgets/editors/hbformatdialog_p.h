@@ -58,6 +58,7 @@ public:
     void colorChanged(const QColor &);
     void setAlignment(Qt::Alignment);
     void _q_setAlignment(bool);
+    void _q_colorSelected(const QColor &);
     HbAbstractEdit *editor;
 
     QGraphicsGridLayout* layout;

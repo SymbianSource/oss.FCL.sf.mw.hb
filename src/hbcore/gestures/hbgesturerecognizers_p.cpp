@@ -32,6 +32,7 @@
 #include "hbswipegesture.h"
 
 #include <QGesture>
+#include <QTime>
 
 //#define RECOGNIZERS_DEBUG
 #ifdef RECOGNIZERS_DEBUG
@@ -90,7 +91,7 @@ QGestureRecognizer::Result HbPanGestureRecognizer::recognize(QGesture *state, QO
     // this is to enable testability within logic classes.
     // QGesture contains gesture state, which cannot be modified by
     // anything else, but QGestureManager itself.
-    return HbPanGestureLogic::recognize(state->state(), static_cast<HbPanGesture *>(state), watched, event);
+    return HbPanGestureLogic::recognize(state->state(), static_cast<HbPanGesture *>(state), watched, event, QTime::currentTime());
 }
 
 /*!
@@ -355,7 +356,7 @@ QGestureRecognizer::Result HbSwipeGestureRecognizer::recognize(QGesture *state, 
     // this is to enable testability within logic classes.
     // QGesture contains gesture state, which cannot be modified by
     // anything else, but QGestureManager itself.
-    return HbSwipeGestureLogic::recognize(state->state(), static_cast<HbSwipeGesture *>(state), watched, event);
+    return HbSwipeGestureLogic::recognize(state->state(), static_cast<HbSwipeGesture *>(state), watched, event, QTime::currentTime());
 }
 
 /*!

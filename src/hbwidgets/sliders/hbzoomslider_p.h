@@ -27,7 +27,7 @@
 #define HBZOOMSLIDER_H
 
 #include <hbslider.h>
-#include <hbstyleoptionslider.h>
+#include <hbstyleoptionslider_p.h>
 #include "hbnamespace_p.h"
 
 class HbZoomSliderPrivate;

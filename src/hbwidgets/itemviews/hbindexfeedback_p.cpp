@@ -30,13 +30,13 @@
 #include <hbabstractitemview.h>
 #include <hbabstractviewitem.h>
 #include <hbstyle.h>
-#include <hbabstractitemcontainer.h>
+#include <hbabstractitemcontainer_p.h>
 #include <hbapplication.h>
 
 #include <hbeffect.h>
 #include <hbeffectinternal_p.h>
 
-#include <hbstyleoptionindexfeedback.h>
+#include <hbstyleoptionindexfeedback_p.h>
 
 #include <QTimer>
 #include <QSize>

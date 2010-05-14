@@ -29,7 +29,7 @@
 #include "hbabstractitemview.h"
 
 #include <hbscrollbar.h>
-#include <hbstyleoptionindexfeedback.h>
+#include <hbstyleoptionindexfeedback_p.h>
 #include <hbstyleparameters.h>
 #include <hbstyle.h>
 #include <hbdeviceprofile.h>
@@ -235,41 +235,6 @@ HbAbstractItemView* HbIndexFeedback::itemView() const
 
     return d->mItemView;
 }
-
-/*!
-
-    \deprecated HbIndexFeedback::primitive(HbStyle::Primitive)
-        is deprecated.
-
-    Returns the primitives used in HbIndexFeedback.
-
-    \param primitive The primitive type requested.
-
-    \return A pointer for the primitive requested.
-*/
-QGraphicsItem* HbIndexFeedback::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D( const HbIndexFeedback );
-
-    QGraphicsItem* retVal = HbWidget::primitive(primitive);
-
-    switch (primitive) {
-        case HbStyle::P_IndexFeedback_popup_text:
-            retVal = d->mTextItem;
-            break;
-            
-        case HbStyle::P_IndexFeedback_popup_background:
-            retVal = d->mPopupItem;
-            break;
-
-        default:
-            qt_noop();
-            break;
-    }
-
-    return retVal;
-}
-
 
 /*
     A scene event filter.  It's purpose is to call calculatePopupRects on

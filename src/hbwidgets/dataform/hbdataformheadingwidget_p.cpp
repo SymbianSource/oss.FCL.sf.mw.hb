@@ -26,7 +26,7 @@
 #include "hbdataformheadingwidget_p.h"
 
 #include <hbcombobox.h>
-#include <hbstyleoptiondataform.h>
+#include <hbstyleoptiondataform_p.h>
 #include <QGraphicsItem>
 
 

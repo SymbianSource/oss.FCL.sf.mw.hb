@@ -63,6 +63,13 @@
 #define USE_NAME_CACHE_THREAD 1
 #endif
 
+// Uncomment to monitor plugin installation directories and updating plugin name cache on directory
+// changes. Otherwise name cache is updated when cache miss occurs.
+// Currently directory monitoring is disabled in order slightly improve security. Plugin is not
+// executed automatically after installation to get type strings. Instead application must trigger
+// a plugin scan and name cache miss to get plugin executed.
+//#define MONITOR_INSTALLATION_DIRS 1
+
 // Thread that scans directories and keeps the cache current
 class HbPluginNameCacheThread : public QThread
 {
@@ -167,6 +174,9 @@ void HbPluginNameCacheThread::doDirectoryScan(const QString &path)
 {
     TRACE_ENTRY_ARGS(path)
 
+    // Invalidate cache contents for the path
+    mNameCache.removePath(path);
+
     QString fileNameFilter = mPluginFileNameFilter();
 
     QDir pluginDir(path, fileNameFilter, QDir::NoSort, QDir::Files | QDir::Readable);
@@ -182,7 +192,6 @@ void HbPluginNameCacheThread::doDirectoryScan(const QString &path)
         if (pluginInstance) {
             // If plugin type is correct, plugin file name and keys are saved into a cache
             mNameCache.insert(mGetPluginKeys(pluginInstance), absolutePath);
-
         }
         loader->unload();
         delete loader;
@@ -234,7 +243,9 @@ void HbPluginNameCache::addWatchPath(const QString &path)
     QString dirPath = directoryPath(path);
     TRACE(dirPath)
     if (!dirPath.isEmpty()) {
+#ifdef MONITOR_INSTALLATION_DIRS
         mWatcher.addPath(dirPath); // start watching
+#endif // MONITOR_INSTALLATION_DIRS
         directoryChanged(dirPath); // scan directory
     }
 }
@@ -246,6 +257,7 @@ void HbPluginNameCache::removeWatchPath(const QString &path)
     QString dirPath = directoryPath(path);
     TRACE(dirPath)
     if (!dirPath.isEmpty()) {
+#ifdef MONITOR_INSTALLATION_DIRS
 #if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
         const Qt::CaseSensitivity cs = Qt::CaseSensitive;
 #else
@@ -253,6 +265,9 @@ void HbPluginNameCache::removeWatchPath(const QString &path)
 #endif // Q_OS_LINUX || Q_OS_MAC
         if (mWatcher.directories().contains(dirPath, cs)) {
             mWatcher.removePath(dirPath);
+#else // MONITOR_INSTALLATION_DIRS
+        {
+#endif // MONITOR_INSTALLATION_DIRS
             mThread->cancelScan(dirPath);
             removePath(path);
         }
@@ -311,8 +326,11 @@ void HbPluginNameCache::insert(const QStringList &keys, const QString &filePath)
     TRACE_ENTRY_ARGS("keys" << keys << "filePath" << filePath)
     QMutexLocker(&mThread->lock());
     for (int i = 0; i < keys.size(); ++i) {
-        // New entry is added into a cache or existing one is updated
-        mCache.insert(keys.at(i), filePath);
+        // New entry is added into a cache. If the key is already present, value is not
+        // updated. This is to prevent overriding an existing plugin.
+        if (!mCache.contains(keys.at(i))) {
+            mCache.insert(keys.at(i), filePath);
+        }
     }
 }
 
@@ -363,8 +381,6 @@ void HbPluginNameCache::directoryChanged(const QString &path)
 {
     TRACE_ENTRY_ARGS(path)
 
-    // Invalidate cache contents for the path
-    removePath(path);
     mThread->scanDirectory(path);
 
     TRACE_EXIT

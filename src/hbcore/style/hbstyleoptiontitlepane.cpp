@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptiontitlepane.h"
+#include "hbstyleoptiontitlepane_p.h"
 
 /*!
     \class HbStyleOptionTitlePane

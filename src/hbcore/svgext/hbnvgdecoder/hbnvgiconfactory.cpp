@@ -25,7 +25,6 @@
 
 #include "hbnvgiconfactory_p.h"
 #include "hbnvgcsicon_p.h"
-#include "hbnvgtlvicon_p.h"
 #include "hbnvgexception_p.h"
 
 HbNvgIcon * HbNvgIconFactory::create(HbNvgIconFactory::HbNvgIconType type)
@@ -34,8 +33,6 @@ HbNvgIcon * HbNvgIconFactory::create(HbNvgIconFactory::HbNvgIconType type)
 
     if (type == NvgCs) {
         icon = new HbNvgCsIcon();
-    } else if (type == NvgTlv) {
-        icon = new HbNvgTlvIcon();
     } else {
         throw HbNvgException(HbNvgEngine::NvgErrNotSupported);
     }

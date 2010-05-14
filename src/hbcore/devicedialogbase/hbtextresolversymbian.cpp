@@ -324,7 +324,9 @@ QString HbTextResolverSymbianPrivate::ConvertToQString(const TDesC& aMessageId, 
     
     HBufC* tmp = HbTextResolverSymbian::LoadL(KTextTest3, intarray, 1);
     \endcode
-    
+
+    \stable
+    \hbcore
 */
 
 /*!

@@ -1,0 +1,89 @@
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="30" x2="30" y1="37.82" y2="57.77">
+
+<stop offset="0" stop-color="#707070"/>
+
+<stop offset="0.7939" stop-color="#080808"/>
+
+<stop offset="1" stop-color="#585858"/>
+
+</linearGradient>
+<path d="M12.21,58c-0.875,0-1.592-0.717-1.592-1.593l-1.599-12.65c0-0.876,0.684-1.814,1.518-2.085l10.38-3.372c0.834-0.271,2.232-0.492,3.107-0.492h11.94c0.875,0,2.273,0.222,3.107,0.492l10.38,3.372c0.832,0.271,1.514,1.209,1.514,2.085l-1.592,12.64c0,0.876-0.717,1.593-1.594,1.593h-35.59z" fill="url(#SVGID_1_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="30" x2="30" y1="38.61" y2="56.99">
+
+<stop offset="0" stop-color="#4D4D4D"/>
+
+<stop offset="1" stop-color="#1A1A1A"/>
+
+</linearGradient>
+<path d="M12.21,57.2c-0.438,0-0.795-0.357-0.795-0.796l-1.602-12.64c0-0.532,0.461-1.164,0.965-1.328l10.37-3.367c0.771-0.249,2.084-0.457,2.877-0.457h11.94c0.793,0,2.104,0.208,2.861,0.454l10.4,3.376c0.488,0.158,0.949,0.79,0.949,1.322l-1.594,12.64c0,0.438-0.357,0.796-0.797,0.796h-35.59z" fill="url(#SVGID_2_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="30" x2="30" y1="40.2" y2="55.43">
+
+<stop offset="0" stop-color="#707070"/>
+
+<stop offset="1" stop-color="#323232"/>
+
+</linearGradient>
+<path d="M13,55.61l-1.59-11.7,10.2-3.314c0.639-0.207,1.783-0.392,2.418-0.392h11.94c0.635,0,1.764,0.179,2.369,0.376l10.25,3.332-1.592,11.7h-34.01z" fill="url(#SVGID_3_)"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="25.52" x2="34.48" y1="8.511" y2="8.511">
+
+<stop offset="0" stop-color="#A8B1B3"/>
+
+<stop offset="0.3818" stop-color="#FFFFFF"/>
+
+<stop offset="0.7091" stop-color="#686E70"/>
+
+<stop offset="1" stop-color="#A6B0B3"/>
+
+</linearGradient>
+<polygon fill="url(#SVGID_4_)" points="30.48,2,29.45,2,25.52,5.596,25.52,15.02,34.48,15.02,34.48,5.596"/>
+<polygon fill="#FFFFFF" fill-opacity="0.6" points="30.48,2,29.45,2,25.52,5.596,25.52,6.391,29.45,2.796,30.48,2.796,34.48,6.391,34.48,5.596" stroke-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="24.82" x2="35.18" y1="26.08" y2="26.08">
+
+<stop offset="0" stop-color="#A8B1B3"/>
+
+<stop offset="0.3818" stop-color="#FFFFFF"/>
+
+<stop offset="0.7091" stop-color="#686E70"/>
+
+<stop offset="1" stop-color="#A6B0B3"/>
+
+</linearGradient>
+<rect fill="url(#SVGID_5_)" height="23.46" width="10.35" x="24.82" y="14.35"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="24.82" x2="35.18" y1="22.17" y2="22.17">
+
+<stop offset="0" stop-color="#4D4D4D"/>
+
+<stop offset="0.3818" stop-color="#7A7A7A"/>
+
+<stop offset="0.7091" stop-color="#1A1A1A"/>
+
+<stop offset="1" stop-color="#4D4D4D"/>
+
+</linearGradient>
+<rect fill="url(#SVGID_6_)" height="4.777" width="10.35" x="24.82" y="19.78"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_7_" x1="24.82" x2="35.18" y1="29.07" y2="29.07">
+
+<stop offset="0" stop-color="#4D4D4D"/>
+
+<stop offset="0.3818" stop-color="#7A7A7A"/>
+
+<stop offset="0.7091" stop-color="#1A1A1A"/>
+
+<stop offset="1" stop-color="#4D4D4D"/>
+
+</linearGradient>
+<rect fill="url(#SVGID_7_)" height="2.388" width="10.35" x="24.82" y="27.88"/>
+<rect fill="#FFFFFF" fill-opacity="0.3" height="0.797" stroke-opacity="0.3" width="10.35" x="24.82" y="30.27"/>
+<rect fill-opacity="0.3" height="0.796" stroke-opacity="0.3" width="10.35" x="24.82" y="36.98"/>
+<rect fill-opacity="0.15" height="0.796" stroke-opacity="0.15" width="10.35" x="24.82" y="36.19"/>
+<rect fill="#FFFFFF" fill-opacity="0.3" height="0.796" stroke-opacity="0.3" width="10.35" x="24.82" y="24.56"/>
+<rect fill="#FFFFFF" fill-opacity="0.6" height="0.797" stroke-opacity="0.6" width="10.35" x="24.82" y="14.35"/>
+<rect fill="#FFFFFF" fill-opacity="0.15" height="0.797" stroke-opacity="0.15" width="10.35" x="24.82" y="15.95"/>
+<rect fill="#FFFFFF" fill-opacity="0.3" height="0.796" stroke-opacity="0.3" width="10.35" x="24.82" y="15.15"/>
+<rect fill="none" height="60" width="60"/>
+</g>
+</svg>

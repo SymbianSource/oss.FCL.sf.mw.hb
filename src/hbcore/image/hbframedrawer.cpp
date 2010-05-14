@@ -922,9 +922,9 @@ bool HbFrameDrawerPrivate::hasBorderWidths() const
 /*!
 \internal
 */
-void HbFrameDrawerPrivate::reset( bool resetFrameCount )
+void HbFrameDrawerPrivate::reset(bool resetFrameCount, bool unloadedByServer)
 {
-    unLoadIcon();
+    unLoadIcon(unloadedByServer);
     if ( resetFrameCount ) {
         frameParts = 0;
     }
@@ -1020,13 +1020,13 @@ QString HbFrameDrawerPrivate::multiPartIconId() const
     return id;
 }
 
-void HbFrameDrawerPrivate::unLoadIcon()
+void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
 {
     HbIconLoader *loader = HbIconLoader::global();
     if (icon) {
         //If a consolidated (stitched) icon was created on the themeserver, then
         //HbIconLoader::unloadIcon() is used to unload it.
-        loader->unLoadIcon(icon->iconImpl());
+        loader->unLoadIcon(icon->iconImpl(),unloadedByServer);
         icon->dispose();
         icon = 0;
     }
@@ -1052,6 +1052,26 @@ void HbFrameDrawerPrivate::unLoadIcon()
      }
     fallbackIconList.clear();  // vector of HbIconImpl*
     fallbackMaskableIconList.clear(); // vector of HbMaskableIconImpl*
+}
+
+void HbFrameDrawerPrivate::themeChange( const QStringList &updatedFiles)
+{
+    bool unloadIcons = false;
+    if (updatedFiles.count() == 0 || (icon && updatedFiles.contains(icon->iconFileName()))) {
+        unloadIcons = true;
+    } else {
+        HbMaskableIconImpl *fallbackIcon;
+        foreach (fallbackIcon, fallbackMaskableIconList) {
+            if (fallbackIcon && updatedFiles.contains(fallbackIcon->iconFileName())) {
+                unloadIcons = true;
+                break;
+            }
+        }
+    }
+
+    if (unloadIcons) {
+        unLoadIcon(true);
+    }
 }
 
 /*! Constructs a new frame drawer item with the cacheFlag enabled  by default.
@@ -1287,7 +1307,10 @@ void HbFrameDrawer::paint(QPainter *painter, const QRectF &rect) const
     // Rasterize the frame parts now if that has not been done yet.
     if (d->icon && (rect.toRect().size() !=  d->prevRect.size())) {
         d->reset(); 
-    } 
+    }    
+    
+    // update the rendering mode
+    HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());    
     d->prepareFrameIcon();
     d->prevRect = rect.toRect();
     // Paint the frame
@@ -1530,7 +1553,10 @@ QSize HbFrameDrawer::frameSize() const
 */
 void HbFrameDrawer::themeChanged()
 {
-    d->reset();
+#ifndef HB_TOOL_INTERFACE
+    // This needs to be disabled to prevent full theme updates when using partial updates with tools.
+    d->reset(true, true);
+#endif
 }
 
 /*!

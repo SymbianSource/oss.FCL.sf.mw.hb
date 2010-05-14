@@ -107,30 +107,6 @@ void HbEditorInterface::setTextCase(HbTextCase textCase)
 }
 
 /*!
-\deprecated HbEditorInterface::inputMode() const
-  is deprecated. Use mode() instead.
-Returns active editor input mode. Returned value is HbInputMethodType.
-
-\sa setInputMode
-*/
-int HbEditorInterface::inputMode() const
-{
-    return mode();
-}
-
-/*!
-\deprecated HbEditorInterface::setInputMode(int)
-  is deprecated. Use setMode() instead.
-Sets active editor input mode.
-
-\sa inputMode
-*/
-void HbEditorInterface::setInputMode(int inputMode)
-{
-    setMode(static_cast<HbInputModeType>(inputMode));
-}
-
-/*!
 Returns active editor input mode.
 
 \sa setInputMode
@@ -160,31 +136,6 @@ void HbEditorInterface::setMode(HbInputModeType inputMode)
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
-}
-
-/*!
-\deprecated HbEditorInterface::constraints() const
-  is deprecated. Use inputConstraints() instead.
-Returns editor constraints. Returned value is a bit vector consisting of
-HbEditorConstraint bits.
-
-\sa setConstraints
-*/
-int HbEditorInterface::constraints() const
-{
-    return inputConstraints();
-}
-
-/*!
-\deprecated HbEditorInterface::setConstraints(int)
-  is deprecated. Use setInputConstraints() instead.
-Sets editor constraints.
-
-\sa constraints
-*/
-void HbEditorInterface::setConstraints(int constraints)
-{
-    setInputConstraints(static_cast<HbEditorConstraints>(constraints));
 }
 
 /*!
@@ -253,31 +204,6 @@ void HbEditorInterface::setFilter(HbInputFilter *filter)
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
-}
-
-/*!
-\deprecated HbEditorInterface::localDigitType() const
-  is deprecated. Use digitType() instead.
-Returns local digit type setting. If this value is set, it will override device wide
-digit type setting. Returned value is HbInputDigitType.
-
-\sa setLocalDigitType
-*/
-int HbEditorInterface::localDigitType() const
-{
-    return digitType();
-}
-
-/*!
-\deprecated HbEditorInterface::setLocalDigitType(int)
-  is deprecated. Use setDigitType() instead.
-Sets local digit type.
-
-\sa localDigitType
-*/
-void HbEditorInterface::setLocalDigitType(int digitType)
-{
-    setDigitType(static_cast<HbInputDigitType>(digitType));
 }
 
 /*!
@@ -627,28 +553,16 @@ void HbEditorInterface::setLastFocusedState(const HbInputState &state)
 }
 
 /*!
-\deprecated void HbEditorInterface::setUpAsPhoneNumberEditor()
-        is deprecated. Instead use setInputMethodHints() of QGraphicsItem(HbAbstractEdit) to setup editor.
-*/
-void HbEditorInterface::setUpAsPhoneNumberEditor()
-{
-    setInputMode(HbInputModeNumeric);
-    mPrivate->setInputMethodHints(Qt::ImhDialableCharactersOnly | Qt::ImhNoPredictiveText);
-    setConstraints(HbEditorConstraintFixedInputMode);
-    setFilter(HbPhoneNumberFilter::instance());
-}
-
-/*!
 A convinience method for setting up the editor as completing email field.
 */
 void HbEditorInterface::setUpAsCompletingEmailField()
 {
-    setInputMode(HbInputModeNone);
-    setConstraints(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField);
+    setMode(HbInputModeNone);
+    setInputConstraints((HbEditorConstraint)(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField));
     setFilter(HbEmailAddressFilter::instance());
     setEditorClass(HbInputEditorClassEmail);
     setExtraDictionaryId(HbInputEditorClassEmail);
-    setLocalDigitType(HbDigitTypeNone);
+    setDigitType(HbDigitTypeNone);
     mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
 }
 
@@ -657,12 +571,12 @@ A convinience method for setting up the editor as completing url field.
 */
 void HbEditorInterface::setUpAsCompletingUrlField()
 {
-    setInputMode(HbInputModeNone);
-    setConstraints(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField);
+    setMode(HbInputModeNone);
+    setInputConstraints((HbEditorConstraint)(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField));
     setFilter(HbUrlFilter::instance());
     setEditorClass(HbInputEditorClassUrl);
     setExtraDictionaryId(HbInputEditorClassUrl);
-    setLocalDigitType(HbDigitTypeNone);
+    setDigitType(HbDigitTypeNone);
     mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
 }
 
@@ -678,8 +592,8 @@ That's why this method disables predictive input by default.
 */
 void HbEditorInterface::setUpAsLatinAlphabetOnlyEditor()
 {
-    setInputMode(HbInputModeNone);
-    setConstraints(HbEditorConstraintLatinAlphabetOnly);
+    setMode(HbInputModeNone);
+    setInputConstraints(HbEditorConstraintLatinAlphabetOnly);
     mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText);
 }
 

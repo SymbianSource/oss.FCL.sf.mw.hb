@@ -1,10 +1,17 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
+<g opacity="0.5">
+
 <rect fill="none" height="30" width="30" x="0.003"/>
+
 </g>
+
 <path d="M1,3v24h28v-24h-28zm25,21h-22v-18h22v18z"/>
+
 <path d="M9.762,14.38c0.957,0,1.555-0.098,1.793-0.293,0.236-0.195,0.355-0.494,0.355-0.898,0-0.354-0.096-0.621-0.285-0.801-0.191-0.178-0.475-0.268-0.852-0.268-0.332,0-0.799,0.082-1.402,0.248h-0.01v-0.86c0.613-0.152,1.166-0.229,1.66-0.229,0.746,0,1.307,0.148,1.68,0.449,0.375,0.299,0.563,0.748,0.563,1.348,0,0.412-0.113,0.768-0.338,1.066-0.225,0.297-0.547,0.508-0.967,0.633,0.457,0.08,0.805,0.271,1.047,0.572,0.244,0.303,0.365,0.68,0.365,1.131,0,0.746-0.219,1.305-0.652,1.678-0.436,0.373-1.086,0.559-1.955,0.559-0.521,0-1.055-0.076-1.602-0.229v-0.85h0.01c0.637,0.157,1.141,0.237,1.508,0.237,0.443,0,0.775-0.11,0.998-0.334,0.225-0.224,0.336-0.558,0.336-1.004,0-0.479-0.135-0.822-0.4-1.029-0.268-0.209-0.885-0.313-1.852-0.313v-0.829z"/>
+
 <path d="M20.84,11.36v7.28h-1.328v-5.04l-1.373,2.617h-0.56l-1.38-2.62v5.039h-1.334v-7.28h1.123l1.871,3.559,1.869-3.559h1.11z"/>
+
 </svg>

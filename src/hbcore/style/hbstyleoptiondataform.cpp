@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbstyleoptiondataform.h>
+#include <hbstyleoptiondataform_p.h>
 
 
 /*!

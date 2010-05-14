@@ -72,6 +72,8 @@ hbAddLibrary(hbwidgets/HbWidgets)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbutils/private/*)
 
 symbian {
+    defFilePath = defs
+    
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022F34

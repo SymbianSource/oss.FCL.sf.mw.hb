@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptionprogressdialog.h"
+#include "hbstyleoptionprogressdialog_p.h"
 
 /*!
     \class HbStyleOptionProgressDialog

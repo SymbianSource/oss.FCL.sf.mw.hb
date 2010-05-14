@@ -311,29 +311,29 @@ void HbFormatDialog::setStyleBullet(bool toggled)
 {
     Q_D(HbFormatDialog);
 
-    QTextCursor cursor = d->editor->textCursor();
+    int indent;
     QTextListFormat::Style style;
+    QTextCursor cursor = d->editor->textCursor();
+
+    cursor.beginEditBlock();
     if (toggled) {
+        indent = 1;
         style = QTextListFormat::ListDisc;
     } else {
+        indent = 0;
         style = QTextListFormat::ListStyleUndefined;
     }
-    QTextBlockFormat blockFmt;
-    cursor.beginEditBlock();
-    blockFmt = cursor.blockFormat();
     QTextListFormat listFmt;
-    int indent = blockFmt.indent() + 1;
     if (cursor.currentList()) {
         listFmt = cursor.currentList()->format();
-        if (!toggled)
-            indent = 0;
-     } else {
-        blockFmt.setIndent(0);
-        cursor.setBlockFormat(blockFmt);
     }
     listFmt.setIndent(indent);
     listFmt.setStyle(style);
-    cursor.createList(listFmt);
+    if (!cursor.currentList()) {
+        cursor.createList(listFmt);
+    } else {
+        cursor.currentList()->setFormat(listFmt);
+    }
     cursor.endEditBlock();
 }
 

@@ -78,6 +78,12 @@
     \fn int HbToolBar::type() const
  */
 
+/*!
+    \fn void HbToolBar::addAction(QAction *action)
+    Adds a new action to the toolbar. It's appended to the end
+    of the toolbar. Toolbar doesn't take ownership of the QAction.
+  */
+
 // ======== MEMBER FUNCTIONS ========
 
 /*!
@@ -127,7 +133,7 @@ HbToolBar::~HbToolBar()
     \overload
 
     Creates a new action with the given \a text. This action is added to
-    the end of the toolbar.
+    the end of the toolbar. Toolbar retains ownership of the action.
 */
 HbAction *HbToolBar::addAction( const QString &text )
 {
@@ -140,7 +146,7 @@ HbAction *HbToolBar::addAction( const QString &text )
     \overload
 
     Creates a new action with the given \a icon and \a text. This
-    action is added to the end of the toolbar.
+    action is added to the end of the toolbar. Toolbar retains ownership of the action.
 */
 HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text )
 {
@@ -155,7 +161,7 @@ HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text )
     Creates a new action with the given \a text. This action is added to
     the end of the toolbar. The action's \link HbAction::triggered()
     triggered()\endlink signal is connected to \a member in \a
-    receiver.
+    receiver. Toolbar retains ownership of the action.
 */
 HbAction *HbToolBar::addAction( const QString &text, const QObject *receiver, const char *member )
 {
@@ -171,7 +177,7 @@ HbAction *HbToolBar::addAction( const QString &text, const QObject *receiver, co
     Creates a new action with the icon \a icon and text \a text. This
     action is added to the end of the toolbar. The action's \link
     HbAction::triggered() triggered()\endlink signal is connected to \a
-    member in \a receiver.
+    member in \a receiver. Toolbar retains ownership of the action.
 */
 HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text, const QObject *receiver, const char *member )
 {
@@ -234,16 +240,6 @@ void HbToolBar::setOrientation( Qt::Orientation orientation )
 }
 
 /*!
-    \deprecated HbToolBar::unsetOrientation()
-            is deprecated.
- */
-void HbToolBar::unsetOrientation()
-{
-    //Q_D(HbToolBar);
-
-}
-
-/*!
     Emits areaChanged() whenever the tool bar's visibility or position changes.
 */
 QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value )
@@ -252,16 +248,18 @@ QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value
     QVariant result = HbWidget::itemChange(change, value);
 
     switch (change) {
+    case ItemVisibleHasChanged:
+        if (d->emitVisibilityChangeSignal && value.toBool()) {
+            QMetaObject::invokeMethod(&d->core, "visibilityChanged", Qt::DirectConnection);
+            d->emitVisibilityChangeSignal = false;
+        }
+        break;
     case ItemVisibleChange:
         if (d->mOrientationEffectsRunning)
             return result;
         if (value.toBool()) {
             if (d->mDoLayout && d->mDoLayoutPending) {
                 d->doLayout();
-            }
-            if (d->emitVisibilityChangeSignal && value.toBool()) {
-                QMetaObject::invokeMethod(&d->core, "visibilityChanged", Qt::QueuedConnection);
-                d->emitVisibilityChangeSignal = false;
             }
             if (!d->mDialogToolBar) {
                 d->doLazyInit();
@@ -312,11 +310,6 @@ void HbToolBar::changeEvent( QEvent *event )
     if (event->type() == QEvent::LayoutDirectionChange) {
         d->updateToolBarExtensions();
         d->updateButtonsLayoutDirection();
-    }
-
-    if (event->type() == QEvent::ParentChange && parentItem()) {
-        setPos(-1000, -1000);   // Not very nice workaround to toolbar flicker problem.
-                                // We will find a better solution later.
     }
 
     QGraphicsWidget::changeEvent(event);

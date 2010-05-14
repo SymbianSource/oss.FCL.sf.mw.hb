@@ -26,11 +26,11 @@
 #ifndef HBSTYLEOPTIONDATAGROUPHEADINGWIDGET_H
 #define HBSTYLEOPTIONDATAGROUPHEADINGWIDGET_H
 
-#include <hbstyleoption.h>
+#include <hbstyleoption_p.h>
 #include <hbicon.h>
 
 // Deprecated
-class HB_CORE_EXPORT HbStyleOptionDataGroupHeadingWidget : public HbStyleOption
+class HB_CORE_PRIVATE_EXPORT HbStyleOptionDataGroupHeadingWidget : public HbStyleOption
 {
 public:
     HbStyleOptionDataGroupHeadingWidget();

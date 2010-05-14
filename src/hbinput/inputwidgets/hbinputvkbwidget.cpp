@@ -29,8 +29,8 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsProxyWidget>
 #include <QTimeLine>
-#include <QGraphicsGridLayout>
 #include <QGraphicsScene>
+#include <QGraphicsGridLayout>
 #include <QGraphicsLinearLayout>
 
 #include <hbapplication.h>
@@ -38,11 +38,8 @@
 #include <hbaction.h>
 #include <hbview.h>
 #include <hbwidget.h>
-#include <hbpushbutton.h>
-#include <hbinputsettingproxy.h>
 #include <hbdialog.h>
 #include <hbeffect.h>
-#include <hbstackedwidget.h>
 #include <hbframedrawer.h>
 #include <hbevent.h>
 #include <hbdataform.h>
@@ -58,22 +55,20 @@
 #include <hbinputkeymapfactory.h>
 #include <hbwidgetfeedback.h>
 #include <hbinputpredictionfactory.h>
+#include <hbinputbuttongroup.h>
+#include <hbinputbutton.h>
 #include <HbSwipeGesture>
 #include <HbTapGesture>
 #include "hbinputvirtualrocker.h"
 #include "hbinputvkbwidget.h"
 #include "hbinputvkbwidget_p.h"
-#include "hbinputtouchkeypadbutton.h"
 #include "hbinputsettinglist.h"
 #include "hbinputmodeindicator.h"
 #include <hbfeedbackmanager.h>
 #include "hbinputsmileypicker.h"
 #include "hbinputscreenshotwidget.h"
-const qreal HbMouseDragDelta = 0.4;
-const qreal HbRockerWidth = 50.0;
 
-const int MaxSweepTime = 500;
-const int SweepLength = 150;
+const qreal HbRockerWidth = 50.0;
 
 
 /*!
@@ -105,8 +100,6 @@ mMode(EModeAbc),
 mKeymap(0),
 mModifiers(0),
 mInputModeIndicator(0),
-mApplicationButton(0),
-mSettingsButton(0),
 mSettingList(0),
 mButtonLayout(0),
 mRocker(0),
@@ -148,6 +141,28 @@ HbInputVkbWidgetPrivate::~HbInputVkbWidgetPrivate()
     delete mScreenshotWidget;
 }
 
+void HbInputVkbWidgetPrivate::initLayout()
+{
+    Q_Q(HbInputVkbWidget);
+
+    mLayout = new QGraphicsLinearLayout(Qt::Vertical);
+    mLayout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
+    mLayout->setSpacing(0.0);
+
+    qreal unitValue = HbDeviceProfile::profile(q->mainWindow()).unitValue();
+    mCloseHandleHeight = HbCloseHandleHeightInUnits * unitValue;
+    mCloseHandleWidth = HbCloseHandleWidthInUnits * unitValue;
+
+    mCloseHandle = new QGraphicsWidget();
+    mCloseHandle->setObjectName("vkbHandle");
+    mCloseHandle->setMinimumHeight(mCloseHandleHeight);
+    mCloseHandle->setMaximumHeight(mCloseHandleHeight);
+    mLayout->addItem(mCloseHandle);
+
+    q->setContentItem(new HbInputButtonGroup());
+    q->setLayout(mLayout);
+}
+
 void HbInputVkbWidgetPrivate::init()
 {
     Q_Q(HbInputVkbWidget);
@@ -168,7 +183,7 @@ void HbInputVkbWidgetPrivate::init()
     mBackgroundDrawer->setFrameGraphicsName(backgroundGraphics);
     mBackgroundDrawer->setFrameType(HbFrameDrawer::ThreePiecesVertical);
     mBackgroundDrawer->setFillWholeRect(true);
-    mBackgroundDrawer->setBorderWidths(0.0, HbCloseHandleHeight, 0.0, HbCloseHandleHeight);
+    mBackgroundDrawer->setBorderWidths(0.0, mCloseHandleHeight, 0.0, mCloseHandleHeight);
 
     mIconDrawer = new HbFrameDrawer();
     mIconDrawer->setFrameType(HbFrameDrawer::OnePiece);
@@ -242,8 +257,85 @@ void HbInputVkbWidgetPrivate::redirectMouseReleaseEvent(QGraphicsSceneMouseEvent
     q_ptr->mouseReleaseEvent(aEvent);
 }
 
-void HbInputVkbWidgetPrivate::applyEditorConstraints() {
+void HbInputVkbWidgetPrivate::applyEditorConstraints()
+{
     // no default implementaiton as of now.
+}
+
+void HbInputVkbWidgetPrivate::updateKeyCodes()
+{
+    Q_Q(HbInputVkbWidget);
+
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    if (buttonGroup) {
+        int key = 0;
+        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        for (int i = 0; i < buttons.count(); ++i) {
+            if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
+                HbInputButton *item = buttons.at(i);
+
+                const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
+                if (keyboardMap && key < keyboardMap->keys.count()) {
+                    item->setKeyCode(keyboardMap->keys.at(key)->keycode.unicode());
+                } else {
+                    item->setKeyCode(-1);
+                }
+                ++key;
+            }
+        }
+    }
+}
+
+void HbInputVkbWidgetPrivate::updateButtons()
+{
+    Q_Q(HbInputVkbWidget);
+
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    if (buttonGroup) {
+        int key = 0;
+        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        for (int i = 0; i < buttons.count(); ++i) {
+            if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
+                HbInputButton *item = buttons.at(i);
+
+                const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
+                if (keyboardMap && key < keyboardMap->keys.count()) {
+                    QString keydata = keyboardMap->keys.at(key)->characters(mModifiers);
+                    item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
+
+                    QString mappedCharacters;
+                    keydata.append(keyboardMap->keys.at(key)->characters(mModifiers | HbModifierFnPressed));
+                    for (int i = 0; i < keydata.length(); ++i) {
+                        if (mOwner->focusObject() &&
+                            mOwner->focusObject()->characterAllowedInEditor(keydata.at(i))) {
+                            mappedCharacters.append(keydata.at(i));
+                        }
+                    }
+                    item->setMappedCharacters(mappedCharacters);
+                } else {
+                    item->setText("", HbInputButton::ButtonTextIndexPrimary);
+                    item->setMappedCharacters("");
+                }
+                ++key;
+            }
+        }
+        buttonGroup->setButtons(buttons);
+    }
+}
+
+void HbInputVkbWidgetPrivate::settingListPosition(QPointF &position, HbPopup::Placement &placement)
+{
+    Q_Q(HbInputVkbWidget);
+
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    if (buttonGroup) {
+        HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
+        if (item) {
+            position.setX(buttonGroup->scenePos().x() + item->boundingRect().x() + item->boundingRect().width());
+            position.setY(buttonGroup->scenePos().y() + item->boundingRect().y());
+            placement = HbPopup::BottomRightCorner;
+        }
+    }
 }
 
 void HbInputVkbWidgetPrivate::setRockerPosition()
@@ -256,10 +348,6 @@ void HbInputVkbWidgetPrivate::setRockerPosition()
         (padArea.height() * 0.5) - (mRocker->size().height() * 0.5));
     point.setY(point.y() + mCloseHandleHeight);
 
-    if (q->keypadLayout() && q->keypadLayout()->geometry().height()) {
-        point.setX(((padArea.width() * 0.5) - (mRocker->size().width() * 0.5)));
-        point.setY(((q->keypadLayout()->geometry().height() * 0.5) - (mRocker->size().height() * 0.5) + mCloseHandleHeight));
-    }
     mRocker->setPos(point);
 }
 
@@ -332,6 +420,7 @@ HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem* parent)
 {
     Q_D(HbInputVkbWidget);
     d->q_ptr = this;
+    d->initLayout();
     d->init();
 
     setFocusPolicy(Qt::ClickFocus);
@@ -354,6 +443,7 @@ HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate& dd, QGraphicsItem* p
 {
     Q_D(HbInputVkbWidget);
     d->q_ptr = this;
+    d->initLayout();
     d->init();
 
     setFocusPolicy(Qt::ClickFocus);
@@ -415,36 +505,6 @@ void HbInputVkbWidget::keyboardMinimized(HbVkbHost *host)
 }
 
 /*!
-\deprecated HbInputVkbWidget::mousePressEvent(QGraphicsSceneMouseEvent*)
-    is deprecated.
-*/
-void HbInputVkbWidget::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-    Q_UNUSED(event);
-}
-
-/*!
-\deprecated HbInputVkbWidget::mappedKeyPress(int)
-    is deprecated.
-*/
-void HbInputVkbWidget::mappedKeyPress(int buttonid)
-{
-    Q_D(HbInputVkbWidget);
-    d->handleStandardButtonPress(buttonid);
-}
-
-/*!
-\deprecated HbInputVkbWidget::mappedKeyRelease(int)
-    is deprecated.
-*/
-void HbInputVkbWidget::mappedKeyRelease(int buttonid)
-{
-    Q_D(HbInputVkbWidget);
-    d->handleStandardButtonRelease(buttonid);
-}
-
-
-/*!
 The paint method. Draws the widget.
 */
 void HbInputVkbWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -459,10 +519,51 @@ void HbInputVkbWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
         d->mBackgroundDrawer->paint(painter, rect);
     }
 
-    rect.setLeft(rect.width()/2 - d->mCloseHandleHeight*3);
-    rect.setWidth(d->mCloseHandleHeight*6);
+    painter->save();
+    painter->translate(rect.width() / 2 - d->mCloseHandleWidth / 2, 0);
+    rect.setWidth(d->mCloseHandleWidth);
     rect.setHeight(d->mCloseHandleHeight);
     d->mIconDrawer->paint(painter, rect);
+    painter->restore();
+}
+
+/*!
+Sets the content item which will fill the content area of this widget. Content item is
+a single input button group by default.
+If null is given then the old content item is deleted and content area is cleared.
+Takes ownership of the given item.
+
+\sa updateKeyCodes
+\sa updateButtons
+\sa setKeyboardDimmed
+\sa probableKeypresses
+*/
+void HbInputVkbWidget::setContentItem(QGraphicsLayoutItem *item)
+{
+    Q_D(HbInputVkbWidget);
+    if (d->mLayout->count() > 1) {
+        QGraphicsLayoutItem *oldItem = d->mLayout->itemAt(d->mLayout->count() - 1);
+        d->mLayout->removeItem(oldItem);
+        delete oldItem;
+    }
+    if (item) {
+        d->mLayout->addItem(item);
+    }
+}
+
+/*!
+Returns current content item or null if not set.
+Ownership is not transferred.
+*/
+QGraphicsLayoutItem *HbInputVkbWidget::contentItem() const
+{
+    Q_D(const HbInputVkbWidget);
+
+    QGraphicsLayoutItem *item(0);
+    if (d->mLayout->count() > 1) {
+        item = d->mLayout->itemAt(d->mLayout->count() - 1);
+    }
+    return item;
 }
 
 /*!
@@ -511,8 +612,20 @@ Sets the keypad to given mode. Possible values are EModeAbc, EModeNumeric and EM
 void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
 {
     Q_D(HbInputVkbWidget);
-    d->mModifiers = modifiers;
     d->mMode = mode;
+    d->mModifiers = modifiers;
+
+    d->updateButtons();
+    d->applyEditorConstraints();
+
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    if (buttonGroup && d->mOwner->focusObject()) {
+        buttonGroup->setCustomButtonActions(d->mOwner->focusObject()->editorInterface().actions());
+    }
+
+    if (d->mInputModeIndicator) {
+        d->mInputModeIndicator->updateIndicator();
+    }
 }
 
 /*!
@@ -524,6 +637,14 @@ void HbInputVkbWidget::setKeymap(const HbKeymap* keymap)
     Q_D(HbInputVkbWidget);
     if (keymap) {
         d->mKeymap = keymap;
+        d->updateKeyCodes();
+
+        HbInputState newState = d->mOwner->inputState();
+        if (newState.textCase() == HbTextCaseUpper || newState.textCase() == HbTextCaseAutomatic) {
+            setMode(d->mMode, HbModifierShiftPressed);
+        } else {
+            setMode(d->mMode, HbModifierNone);
+        }
     }
 }
 
@@ -536,32 +657,10 @@ void HbInputVkbWidget::aboutToOpen(HbVkbHost *host)
 
     d->mCurrentHost = host;
 
-    if (!d->mLayout) {
-        // get preferred size from vkbhost and set it to vkb.
-        // Keypad buttons will flicker while vkb opening (when we open keypad for first time )
-        // if we dont set size to vkb before seting layout to vkb.
-        resize(preferredKeyboardSize());
-        d->mLayout = new QGraphicsLinearLayout(Qt::Vertical);
-        d->mLayout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
-        d->mLayout->setSpacing(0.0);
-
-        setLayout(d->mLayout);
-
-        d->mCloseHandle = new QGraphicsWidget();
-        d->mCloseHandle->setObjectName("vkbHandle");
-        d->mCloseHandleHeight = (int)HbCloseHandleHeight;
-        d->mCloseHandle->setMinimumHeight(d->mCloseHandleHeight);
-        d->mCloseHandle->setMaximumHeight(d->mCloseHandleHeight);
-
-        d->mLayout->addItem(d->mCloseHandle);
-        d->mLayout->addItem(keypadLayout());
-    }
-
-
     if (d->mOwner && d->mOwner->focusObject()) {
         qreal vkbZValue = d->mOwner->focusObject()->findVkbZValue();
         setZValue(vkbZValue);
-        d->mRocker->setZValue(vkbZValue+0.5);
+        d->mRocker->setZValue(vkbZValue + 0.5);
     }
 
     show();
@@ -587,21 +686,10 @@ Enables or disabled all buttons in the keyboard that have not been disabled dire
 */
 void HbInputVkbWidget::setKeyboardDimmed(bool dimmed)
 {
-    Q_D(HbInputVkbWidget);
-    d->mKeyboardDimmed = dimmed;
-    if (keypadLayout()) {
-        int itemCount = keypadLayout()->count();
-        for (int i=0; i<itemCount; i++) {
-            HbTouchKeypadButton* button = static_cast<HbTouchKeypadButton*>(keypadLayout()->itemAt(i));
-            button->setFade(dimmed);
-        }
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    if (buttonGroup) {
+        buttonGroup->setEnabled(!dimmed);
     }
-    if (!dimmed) {
-        // when we undimmed the keyboard, all the buttons will be enabled by default.
-        // we need to call applyEditorConstraints on the keyboard to apply constraints
-        d->applyEditorConstraints();
-    }
-
 }
 
 /*!
@@ -630,10 +718,19 @@ void HbInputVkbWidget::showSettingList()
         d->mSettingList->setPredictionSelectionEnabled(false);
     }
 
-    d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonLatched);
-    qreal x = d->mSettingsButton->scenePos().x() + d->mSettingsButton->rect().width();
-    qreal y = d->mSettingsButton->scenePos().y();
-    d->mSettingList->setPreferredPos(QPointF(x, y), HbPopup::BottomRightCorner);
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    if (buttonGroup) {
+        HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
+        if (item) {
+            item->setState(HbInputButton::ButtonStateLatched);
+            buttonGroup->setButton(item, HbInputButton::ButtonKeyCodeSettings);
+        }
+    }
+
+    QPointF position;
+    HbPopup::Placement placement;
+    d->settingListPosition(position, placement);
+    d->mSettingList->setPreferredPos(position, placement);
     d->mSettingList->updateSettingList();
     d->mSettingList->open(this, SLOT(settingsClosed()));
 }
@@ -645,7 +742,14 @@ void HbInputVkbWidget::settingsClosed()
 {
     Q_D(HbInputVkbWidget);
 
-    d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    if (buttonGroup) {
+        HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
+        if (item) {
+            item->setState(HbInputButton::ButtonStateReleased);
+            buttonGroup->setButton(item, HbInputButton::ButtonKeyCodeSettings);
+        }
+    }
 
     d->mSettingsListOpen = false;
     if ( d->mAnimateWhenDialogCloses ) {
@@ -663,26 +767,6 @@ void HbInputVkbWidget::closeSettingList()
 {
     Q_D(HbInputVkbWidget);
     d->mSettingList->close();
-    d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-}
-
-/*!
-\deprecated HbInputVkbWidget::togglePredictionStatus()
-    is deprecated.
-*/
-void HbInputVkbWidget::togglePredictionStatus()
-{
-    closeSettingList();
-    HbInputSettingProxy::instance()->togglePrediction();
-    update();
-}
-
-/*!
-\deprecated HbInputVkbWidget::executeSettingsDialog()
-    is deprecated. Use showSettingsView instead.
-*/
-void HbInputVkbWidget::executeSettingsDialog()
-{
 }
 
 /*!
@@ -738,16 +822,6 @@ void HbInputVkbWidget::executeMethodDialog()
     if (!method.isEmpty() && d->mOwner) {
         d->mOwner->activateInputMethod(method);
     }
-}
-
-/*!
-\deprecated HbInputVkbWidget::keypadLayout()
-    is deprecated.
-*/
-QGraphicsLayout *HbInputVkbWidget::keypadLayout()
-{
-    Q_D(HbInputVkbWidget);
-    return d->mButtonLayout;
 }
 
 /*!
@@ -820,163 +894,19 @@ void HbInputVkbWidget::setBackgroundDrawing(bool backgroundEnabled)
     d->mDrawbackground = backgroundEnabled;
 }
 
+
 /*!
 Returns all possible keys those the user could have intended to press
 for the last registered touch along with their corresponding probability.
-One issue of thecurrent API implementation is that it does not always
-sum up the probabilities to 1.0, but sometimes it returns.999999899 etc.
-Need to be careful about it!
 */
 QList<HbKeyPressProbability> HbInputVkbWidget::probableKeypresses()
 {
-    Q_D(HbInputVkbWidget);
-
-    QList<HbKeyPressProbability> probableKeys;
-    int totalItems = d->mButtonLayout->count();
-    QRectF buttonRect = d->mMostRecentlyAccessedButton->geometry();
-    //The overlaying rectangle is the test rectangle that is used for finding
-    //intersactions with other buttons.
-    QRectF overlayingRect(d->mMostRecentlyClickedLocation.x()-buttonRect.width()/2,d->mMostRecentlyClickedLocation.y()-buttonRect.height()/2, buttonRect.width(), buttonRect.height());
-    QPainterPath path(overlayingRect.topLeft());
-    path.addRect(overlayingRect);
-    for(int count=0; count < totalItems; count++) {
-        QGraphicsItem *item = d->mButtonLayout->itemAt(count)->graphicsItem();
-        QPainterPath testPath = item->mapFromScene(path);
-        HbTouchKeypadButton *buttonItem = 0;
-        if(item->isWidget()){
-            buttonItem =  qobject_cast<HbTouchKeypadButton *>(static_cast<QGraphicsWidget *>(item));
-        }
-        if(!buttonItem) {
-            continue;
-        }
-
-        //Checkif the button collides with the path, if yes,it means that the colliding
-        //key also could have been clicked by the user. The probability of the button being
-        //clickedin that case willdependon the area of the intersaction rectangle.
-        if(buttonItem->collidesWithPath(testPath)) {
-            //Initiallylet the intersaction be same as the overlaying rectangle,later we will
-            //shrink the rectangle and find the actual intersected rectangle.
-            QRectF intersactionRect = overlayingRect;
-            //The overlaying rectangle is in scene coordinates, map it to the item coordinates.
-            intersactionRect.moveTopLeft(buttonItem->mapFromScene(overlayingRect.topLeft()));
-            int width = (int)intersactionRect.width();
-            int height = (int)intersactionRect.height();
-            qreal probability = 0.0;
-            //Shrink based on the size of the intersaction
-            if (intersactionRect.topLeft().x() > 0) {
-                width -= (int)intersactionRect.topLeft().x();
-            } else {
-                width += (int)intersactionRect.topLeft().x();
-            }
-            if (intersactionRect.topLeft().y() > 0) {
-                height -= (int)intersactionRect.topLeft().y();
-            } else {
-                height += (int)intersactionRect.topLeft().y();
-            }
-            //The probabilty of the key is based on the intersaction area.
-            probability = (height * width) / (intersactionRect.width()* intersactionRect.height());
-            HbKeyPressProbability probablekey;
-            probablekey.keycode = d->keyCode(buttonItem);
-            probablekey.probability = probability;
-
-            if(probablekey.keycode && (probablekey.probability>0)) {
-                probableKeys.append(probablekey);
-            }
-        }
+    QList<HbKeyPressProbability> probabilities;
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    if (buttonGroup) {
+        probabilities = buttonGroup->buttonProbabilities(); 
     }
-    //Normalize makes sure that all probability summation is 1.0.
-    d->normalizeProbabilities(probableKeys);
-    return probableKeys;
-}
-
-/*!
-\deprecated HbInputVkbWidget::setupToolCluster()
-    is deprecated.
-*/
-void HbInputVkbWidget::setupToolCluster()
-{
-    Q_D(HbInputVkbWidget);
-    if(!d->mOwner || !d->mOwner->focusObject()) {
-        return;
-    }
-
-    // Create settings button if it does not exist
-    if (!d->mSettingsButton) {
-        d->mSettingsButton = new HbTouchKeypadButton(this, QString(""));
-        d->mInputModeIndicator = new HbInputModeIndicator(*d->mSettingsButton, this);
-        d->mSettingsButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-        d->mSettingsButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-
-        connect(d->mSettingsButton, SIGNAL(clicked()), this, SLOT(showSettingList()));
-
-        connect(d->mSettingsButton, SIGNAL(pressed()), d->mPressMapper, SLOT(map()));
-        connect(d->mSettingsButton, SIGNAL(released()), d->mReleaseMapper, SLOT(map()));
-        d->mPressMapper->setMapping(d->mSettingsButton, -1);
-        d->mReleaseMapper->setMapping(d->mSettingsButton, -1);
-    } else {
-        d->mInputModeIndicator->updateIndicator();
-    }
-
-    // If there's a application specific button defined, create new button with the properties
-    // or update the existing one. Otherwise create an empty button or clean the properties of an existing one.
-    if (!d->mOwner->focusObject()->editorInterface().actions().isEmpty()) {
-        QList<HbAction*> actions = d->mOwner->focusObject()->editorInterface().actions();
-        if (d->mApplicationButtonAction != actions.first()) {
-            if (d->mApplicationButton) {
-                d->mApplicationButton->setText(actions.first()->text());
-                d->mApplicationButton->setIcon(actions.first()->icon());
-                d->mApplicationButton->disconnect(SIGNAL(clicked()));
-                d->mApplicationButton->disconnect(SIGNAL(pressed()));
-                d->mApplicationButton->disconnect(SIGNAL(released()));
-
-                // disconnects old signal
-                disconnect(d->mApplicationButtonAction, SIGNAL(changed()), this, SLOT(refreshApplicationButton()));
-                disconnect(d->mApplicationButton, SIGNAL(clicked()), d->mApplicationButtonAction, SLOT(trigger()));
-            } else {
-                d->mApplicationButton = new HbTouchKeypadButton(this, actions.first()->icon(), actions.first()->text());
-            }
-            d->mApplicationButtonAction = actions.first();
-            // Connect to enabling signal and check its value
-            connect(actions.first(), SIGNAL(changed()), this, SLOT(refreshApplicationButton()));
-
-            if (actions.first()->isEnabled()) {
-                // action is enabled
-                connect(d->mApplicationButton, SIGNAL(clicked()), d->mApplicationButtonAction, SLOT(trigger()));
-
-                connect(d->mApplicationButton, SIGNAL(pressed()), d->mPressMapper, SLOT(map()));
-                connect(d->mApplicationButton, SIGNAL(released()), d->mReleaseMapper, SLOT(map()));
-                d->mPressMapper->setMapping(d->mApplicationButton, -1);
-                d->mReleaseMapper->setMapping(d->mApplicationButton, -1);
-
-                d->mApplicationButton->setToolTip(actions.first()->toolTip());
-                d->mApplicationButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-                d->mApplicationButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-            } else {
-                // action is disabled
-                d->mApplicationButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFnInActive);
-                d->mApplicationButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonPressed);
-            }
-            d->mApplicationButton->setToolTip(actions.first()->toolTip());
-        }
-    } else {
-        if (d->mApplicationButton) {
-            if (d->mApplicationButtonAction) {
-                disconnect(d->mApplicationButtonAction, SIGNAL(changed()), this, SLOT(refreshApplicationButton()));
-            }
-            d->mApplicationButton->disconnect(SIGNAL(clicked()));
-            d->mApplicationButton->disconnect(SIGNAL(pressed()));
-            d->mApplicationButton->disconnect(SIGNAL(released()));
-            d->mApplicationButton->setText(QString());
-            d->mApplicationButton->setIcon(HbIcon());
-            d->mApplicationButton->setToolTip(QString());
-            d->mApplicationButtonAction = 0;
-        } else {
-            d->mApplicationButton = new HbTouchKeypadButton(this, QString());
-            d->mApplicationButton->setButtonType(HbTouchKeypadButton::HbTouchButtonFunction);
-            d->mApplicationButton->setBackgroundAttributes(HbTouchKeypadButton::HbTouchButtonReleased);
-        }
-        d->mApplicationButtonAction = 0;
-    }
+    return probabilities;
 }
 
 /*!
@@ -1034,13 +964,14 @@ void HbInputVkbWidget::showSmileyPicker(int rows, int columns)
         d->mSmileyPicker->setGeometry(QRectF(0, pos().y(), geometry().width(),
             geometry().height()));
         d->mSmileyPicker->show();
+
+        HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+        if (buttonGroup) {
+            buttonGroup->cancelButtonPress();
+        }
     }
 }
 
-/*!
-\deprecated HbInputVkbWidget::flickDirection()
-    is deprecated.
-*/
 HbInputVkbWidget::HbFlickDirection HbInputVkbWidget::flickDirection()
 {
     Q_D(HbInputVkbWidget);
@@ -1048,27 +979,68 @@ HbInputVkbWidget::HbFlickDirection HbInputVkbWidget::flickDirection()
 }
 
 /*!
-\deprecated HbInputVkbWidget::refreshApplicationButton()
-    is deprecated.
+Sends key event to owning input method.
 */
-void HbInputVkbWidget::refreshApplicationButton()
+void HbInputVkbWidget::sendKeyPressEvent(const QKeyEvent &event)
 {
     Q_D(HbInputVkbWidget);
 
-    d->mApplicationButton->setText(d->mApplicationButtonAction->text());
-    d->mApplicationButton->setIcon(d->mApplicationButtonAction->icon());
+    if (d->mOwner) {
+        d->mOwner->filterEvent(&event);
+    }
+}
 
-    if (d->mApplicationButton->getButtonType() == HbTouchKeypadButton::HbTouchButtonFnInActive
-        && d->mApplicationButtonAction->isEnabled()) {
-        // action has been enabled
-        connect(d->mApplicationButton, SIGNAL(clicked()), d->mApplicationButtonAction, SLOT(trigger()));
-        d->mApplicationButton->setToolTip(d->mApplicationButtonAction->toolTip());
-        d->mApplicationButton->setFade(false);
-    } else if (d->mApplicationButton->getButtonType() == HbTouchKeypadButton::HbTouchButtonFunction
-        && !d->mApplicationButtonAction->isEnabled()) {
-        // action has been disabled
-        d->mApplicationButton->disconnect(SIGNAL(clicked()));
-        d->mApplicationButton->setFade(true);
+/*!
+Sends key event to owning input method.
+*/
+void HbInputVkbWidget::sendKeyDoublePressEvent(const QKeyEvent &event)
+{
+    Q_D(HbInputVkbWidget);
+
+    if (d->mOwner) {
+        d->mOwner->filterEvent(&event);
+    }
+}
+
+/*!
+Sends key event to owning input method.
+*/
+void HbInputVkbWidget::sendKeyReleaseEvent(const QKeyEvent &event)
+{
+    Q_D(HbInputVkbWidget);
+
+    if (event.key() == HbInputButton::ButtonKeyCodeSettings) {
+        showSettingList();
+    } else {
+        if (d->mOwner) {
+            d->mOwner->filterEvent(&event);
+        }
+    }
+}
+
+/*!
+Sends key event to owning input method.
+*/
+void HbInputVkbWidget::sendLongPressEvent(const QKeyEvent &event)
+{
+    Q_D(HbInputVkbWidget);
+
+    if (d->mOwner) {
+        d->mOwner->filterEvent(&event);
+    }
+}
+
+/*!
+Sends key event to owning input method.
+Releae event is ignored.
+*/
+void HbInputVkbWidget::sendKeyChangeEvent(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent)
+{
+    Q_D(HbInputVkbWidget);
+    Q_UNUSED(releaseEvent);
+
+    if (d->mOwner) {
+        d->mOwner->filterEvent(&pressEvent);
     }
 }
 
@@ -1077,7 +1049,7 @@ void HbInputVkbWidget::keypadLanguageChangeAnimationUpdate(qreal value)
     Q_D(HbInputVkbWidget);
 
     int direction = 1;
-    if (flickDirection() == HbFlickDirectionLeft) {
+    if (d->mFlickDirection == HbFlickDirectionLeft) {
         direction = -1;
     }
 
@@ -1167,13 +1139,13 @@ void HbInputVkbWidget::gestureEvent(QGestureEvent *event)
         if (gesture->state() == Qt::GestureFinished) {
             HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
             // vertical swipes
-            if (gesture->sceneSwipeAngle() > 250 && gesture->sceneSwipeAngle() < 290 &&
-                    gesture->sceneVerticalDirection() == QSwipeGesture::Down) {
+            if (gesture->sceneVerticalDirection() == QSwipeGesture::Down) {
                 d->mFlickDirection = HbFlickDirectionDown;
+                emit flickEvent(d->mFlickDirection);
                 emit keypadCloseEventDetected(HbVkbCloseMethodCloseGesture);
-            } else if (gesture->sceneSwipeAngle() > 70 && gesture->sceneSwipeAngle() < 110 &&
-                           gesture->sceneVerticalDirection() == QSwipeGesture::Up) {
+            } else if (gesture->sceneVerticalDirection() == QSwipeGesture::Up) {
                 d->mFlickDirection = HbFlickDirectionUp;
+                emit flickEvent(d->mFlickDirection);
                 d->mCurrentHost->openKeypad(d->mCurrentHost->activeKeypad(), d->mOwner);
             } else {
                 d->mFlickDirection = (HbInputVkbWidget::HbFlickDirection)gesture->sceneHorizontalDirection();

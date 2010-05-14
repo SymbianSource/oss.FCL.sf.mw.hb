@@ -76,7 +76,7 @@ void HbThemeClientOogm::Close()
 * see goomconfig.xml as what is the threshold that triggers a call to this API.
 */
 
-void HbThemeClientOogm::FreeRam(int bytes)
+void HbThemeClientOogm::FreeRam(TInt bytes)
 {
     if (!connected) {
         ConnectToServer();
@@ -112,3 +112,49 @@ void  HbThemeClientOogm::GoodMemory()
     }
 }
 
+/*!
+* Sends FreeRam request to HbThemeserver.
+* see goomconfig.xml as what is the threshold that triggers a call to this API.
+*/
+
+void HbThemeClientOogm::FreeRam(TInt bytes, TBool aUseSwRendering)
+{
+    if (!connected) {
+        ConnectToServer();
+    }
+        
+    if (connected) {
+        HbFreeRamNotificationData  freeRamData;
+        freeRamData.bytesToFree = bytes;
+        freeRamData.useSwRendering = aUseSwRendering;
+        
+        TPckg<HbFreeRamNotificationData> data(freeRamData);
+        TIpcArgs args(&data, 0);
+
+        TInt err = SendReceive(EFreeRam, args);
+        if (KErrNone != err) {
+            RDebug::Print(_L("ThemeServerPlugin: Free RAM notification sent to ThemeServer"));
+        }
+    }
+}
+
+/*!
+* Sends MemoryGood request to HbThemeserver.
+* see goomconfig.xml as what is the threshold that triggers a call to this API.
+*/
+
+void  HbThemeClientOogm::GoodMemory(TBool isUsingSwRendering)
+{
+    if (!connected) {
+        ConnectToServer();
+    }
+
+    if (connected) {
+    		TPckg<TBool> usingSwRendering(isUsingSwRendering);
+    		TIpcArgs args(&usingSwRendering, 0);
+        TInt err = SendReceive(EMemoryGood, args);
+        if (KErrNone != err) {
+            RDebug::Print(_L("ThemeServerPlugin: Good Memory notification sent to ThemeServer"));
+        }
+    }
+}

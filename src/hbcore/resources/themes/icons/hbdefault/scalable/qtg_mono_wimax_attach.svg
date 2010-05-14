@@ -1,18 +1,33 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<svg baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+
 <rect fill="none" height="29.03" width="29.03" x="0.323" y="0.016"/>
+
 <polygon points="5.432,6.967,7.365,6.967,7.48,10.68,9.261,6.967,10.81,6.967,10.81,10.68,12.47,6.967,14.52,6.967,11.43,12.77,9.61,12.77,9.57,9.16,7.947,12.77,6.091,12.77"/>
+
 <path d="M17.54,6.166c0-0.615-0.674-1.112-1.508-1.112-0.833,0-1.508,0.498-1.508,1.112,0,0.33,0.195,0.625,0.503,0.829v5.772h2.009v-5.774c0.32-0.204,0.51-0.5,0.51-0.83z"/>
+
 <path d="M12.14,6.755s1.063-2.185,3.905-2.185c2.841,0,3.887,2.146,3.887,2.146s-0.521-2.784-3.944-2.784c-3.43,0-3.85,2.823-3.85,2.823z"/>
+
 <path d="M10.98,6.136s1.237-2.978,5.064-2.978c3.826,0,4.813,2.938,4.813,2.938s-0.889-3.711-4.87-3.711c-3.97,0-5,3.751-5,3.751z"/>
+
 <polygon points="9.66,22.52,9.664,22.52,8.199,20.17,5.432,20.17,9.497,26.68,11.48,25.44,10.79,24.34"/>
+
 <polygon points="10.48,20.16,11.94,22.52,15.93,22.52,14.47,20.16"/>
+
 <polygon points="16.74,20.16,18.21,22.52,22.22,22.52,20.76,20.16"/>
+
 <polygon points="23.03,20.16,24.25,22.12,24.25,20.16"/>
+
 <polygon points="19.97,15.31,21.43,17.67,24.25,17.67,20.18,11.16,18.18,12.41,19.99,15.31"/>
+
 <polygon points="19.16,17.67,17.69,15.31,13.74,15.31,15.2,17.67"/>
+
 <polygon points="12.92,17.67,11.46,15.31,7.463,15.31,8.928,17.67"/>
+
 <polygon points="5.432,15.7,5.432,17.67,6.651,17.67"/>
+
 <rect fill="none" height="29.03" width="29.03" x="0.323" y="0.016"/>
+
 </svg>

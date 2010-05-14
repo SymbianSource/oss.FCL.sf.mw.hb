@@ -39,7 +39,7 @@ class HB_CORE_EXPORT HbToolBar : public HbWidget
 {
     Q_OBJECT
 
-    Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation RESET unsetOrientation )
+    Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation)
 
 public:
     explicit HbToolBar( QGraphicsItem *parent = 0 );
@@ -62,7 +62,6 @@ public:
 
 public slots:
     void setOrientation(Qt::Orientation orientation);
-    void unsetOrientation();
 
 protected:
     HbToolBar( HbToolBarPrivate &dd, QGraphicsItem *parent = 0 );

@@ -51,7 +51,8 @@ public:
                const QSizeF& keySize,
                Qt::AspectRatioMode aspectRatioMode,
                QIcon::Mode mode,
-               bool mirrored):
+               bool mirrored,
+               HbRenderingMode renderMode):
                     sharedIconData(iconData),
                     fileName(name),
                     cacheKeySize(keySize),
@@ -61,7 +62,9 @@ public:
                     defaultIconSize(QSize(0,0)),
                     createdOnServer(true),
                     iconRefCount(1),
-                    multiPieceIcon(false)
+                    multiPieceIcon(false),
+                    renderMode(renderMode)
+                    
     {
     }
 
@@ -154,6 +157,11 @@ public:
     {
         Q_UNUSED(data);
     }
+    
+    HbRenderingMode iconRenderingMode() const
+    {
+        return renderMode;
+    }
 
 protected:
     virtual ~HbIconImpl()
@@ -171,6 +179,7 @@ protected:
     uint iconRefCount;
     QColor iconColor;
     bool multiPieceIcon;
+    HbRenderingMode renderMode;
 };
 
 #endif // HBICONIMPL_P_H

@@ -26,8 +26,6 @@
 #ifndef HBSHAREDMEMORYALLOCATORS_P_H
 #define HBSHAREDMEMORYALLOCATORS_P_H
 
-//#include <hbglobal.h>
-//#include <hbthemeperf_p.h>
 #include "hbthemecommon_p.h"
 
 #define ALIGN_SIZE 4
@@ -76,9 +74,10 @@ public:
     int alloc(int size);
     int allocatedSize(int offset);
     void free(int offset);
-	void initialize(QSharedMemory *sharedChunk,
+    void initialize(QSharedMemory *sharedChunk,
         const unsigned int offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0);
+    int size();
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     void writeReport(QTextStream &reportWriter);
 #endif

@@ -31,6 +31,9 @@
 #include "hbdevicedialogserversym_p_p.h"
 #include "hbdevicedialogsession_p.h"
 #include "hbdevicedialogserverdefs_p.h"
+#ifdef HB_HAVE_QT_MOBILITY
+#include "hbsysteminfo_p.h"
+#endif // HB_HAVE_QT_MOBILITY
 
 /*!
     \class HbDeviceDialogServerPrivate
@@ -47,6 +50,9 @@ HbDeviceDialogServerPrivate::HbDeviceDialogServerPrivate()
     mSessionCount = 0;
     // No need for timer until server automatic close will be again enabled
     // mExitTimer = CPeriodic::New(CActive::EPriorityLow);
+#ifdef HB_HAVE_QT_MOBILITY
+    mDeviceInfo = new HbSystemInfo(0, true);
+#endif // HB_HAVE_QT_MOBILITY   
     TRACE_EXIT
 }
 
@@ -55,6 +61,10 @@ HbDeviceDialogServerPrivate::HbDeviceDialogServerPrivate()
  */
 HbDeviceDialogServerPrivate::~HbDeviceDialogServerPrivate()
 {
+#ifdef HB_HAVE_QT_MOBILITY
+    delete mDeviceInfo;
+#endif // HB_HAVE_QT_MOBILITY     
+    
     // delete mExitTimer;
 }
 

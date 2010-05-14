@@ -51,10 +51,6 @@ Q_GLOBAL_STATIC(HbServerCache, effCache)
 typedef QHash<QString, int> ServerHashForLayoutDefs;
 Q_GLOBAL_STATIC(ServerHashForLayoutDefs, layoutDefsCache)
 
-HbSharedCache *sharedCache = 0;
-int HbThemeServerUtils::serverSecondaryCacheOffset = -1;
-static const int NumberOfSharedCacheItems = 50;
-
 static const int ICON_SOURCES_MAX_SIZE = 8;
 static QList<HbIconSource *> iconSources; // cache of recently used icon sources
 
@@ -107,31 +103,37 @@ QString HbThemeServerUtils::formatFromPath(const QString &iconPath)
  * \return offset of the shared style sheet in the shared memory, -1 if error
  *
  */
-int HbThemeServerUtils::getSharedStylesheet(const QString & fileName, HbLayeredStyleLoader::LayerPriority priority)
+int HbThemeServerUtils::getSharedStylesheet(const QString &fileName,
+                                            HbLayeredStyleLoader::LayerPriority priority,
+                                            bool *inSharedCache)
 {
+    int cssOffset = -1;
+    HbSharedCache *sharedCache = 0;
+    if (priority == HbLayeredStyleLoader::Priority_Core) {
+        sharedCache = HbSharedCache::instance();
+        cssOffset = sharedCache->offset(HbSharedCache::Stylesheet, fileName);
+        if (inSharedCache) {
+            *inSharedCache = (cssOffset >= 0) ? true : false;
+        }
+    } else if (inSharedCache) {
+        *inSharedCache = false;
+    }
+
 #ifdef THEME_SERVER_TRACES
     qDebug() << "In " << Q_FUNC_INFO;
 #endif // THEME_SERVER_TRACES
-    int cssOffset = -1;
-    if (QFile::exists(fileName)) {
-        HbCss::Parser parser;
-        if (!parseCssFile(parser, fileName, cssOffset)) {
-            if (parser.errorCode == HbCss::Parser::OutOfMemoryError) {
-                return OUT_OF_MEMORY_ERROR;
+    if (cssOffset < 0) {
+        if (QFile::exists(fileName)) {
+            HbCss::Parser parser;
+            if (!parseCssFile(parser, fileName, cssOffset)) {
+                if (parser.errorCode == HbCss::Parser::OutOfMemoryError) {
+                    return OUT_OF_MEMORY_ERROR;
+                }
             }
         }
-    }
-    // add the filename and css offset to the secondary cache.
-    if ((priority == HbLayeredStyleLoader::Priority_Core) && sharedCache && cssOffset != -1) {
-        // no need to check if this item is already present in the
-        // cache as the parsing of the file happens only once
-        // in the server side.
-        try {
-            HbSharedCacheItem cacheItem(fileName, cssOffset);
-            sharedCache->append(cacheItem);
-        } catch (std::exception &) {
+        if (sharedCache) { //sharedCache valid only when priority is Priority_Core
+            sharedCache->add(HbSharedCache::Stylesheet, fileName, cssOffset);
         }
-
     }
     return cssOffset;
 }
@@ -220,19 +222,11 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
 
     if (loader.loadLayoutDefinition(layoutDef, &file, layout, section)) {
         layoutDefsCache()->insert(key, layoutDefOffset);
-        // add the filename and css offset to the secondary cache.
-        if (sharedCache) {
-            // no need to check if this item is already present in the
-            // cache as the parsing of the file happens only once
-            // in the server side.
-            try {
-                HbSharedCacheItem cacheItem(key, layoutDefOffset);
-                sharedCache->append(cacheItem);
-            } catch (std::bad_alloc &badAlloc) {
-                // item is not appended.
-                Q_UNUSED(badAlloc)
-            }
-        }
+        // add the filename and css offset to the shared cache.
+        // no need to check if this item is already present in the
+        // cache as the parsing of the file happens only once
+        // in the server side.
+        HbSharedCache::instance()->add(HbSharedCache::LayoutDefinition, key, layoutDefOffset);
     } else {
         // load failed
         layoutDef->~LayoutDefinition();
@@ -252,44 +246,6 @@ void HbThemeServerUtils::createDeviceProfileDatabase()
 }
 
 /**
- * Creates/Returns the Shared Cache.
- *
- */
-HbSharedCache *HbThemeServerUtils::createSharedCache()
-{
-    if (!sharedCache) {
-        // secondary cache is not created. Create it.
-        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
-        try {
-            serverSecondaryCacheOffset = manager->alloc(sizeof(HbSharedCache));
-            sharedCache = new((char*)manager->base() +  serverSecondaryCacheOffset)
-            HbSharedCache(HbMemoryManager::SharedMemory);
-            // reserving memory so that realloc calls will be minimized in future.
-            sharedCache->reserve(NumberOfSharedCacheItems);
-        } catch (std::exception &) {
-            if (serverSecondaryCacheOffset != -1) {
-                if (sharedCache) {
-                    sharedCache->~HbSharedCache();
-                    sharedCache = 0;
-                }
-                manager->free(serverSecondaryCacheOffset);
-                serverSecondaryCacheOffset = -1;
-            }
-        }
-    }
-    return sharedCache;
-}
-
-/**
- * Returns the Secondary Cache Offset.
- *
- */
-int HbThemeServerUtils::sharedCacheOffset()
-{
-    return serverSecondaryCacheOffset;
-}
-
-/**
  * Removes fxml document from the shared memory and effects cache
  *
  * \param fileName of the removed fxml file
@@ -299,17 +255,7 @@ bool HbThemeServerUtils::removeSharedEffect(const QString &fileName)
 {
     if (effCache()->contains(fileName)) {
         effCache()->remove(fileName);
-
-        if (sharedCache) {
-            int count = sharedCache->count();
-            for (int i = 0; i < count ; i++) {
-                QString cacheKey = sharedCache->at(i).key;
-                if (fileName == cacheKey) {
-                    sharedCache->remove(i,1);
-                    break;
-                }
-            }
-        }
+        HbSharedCache::instance()->remove(HbSharedCache::Effect, fileName);
         return true;
     }
     return false;
@@ -321,20 +267,10 @@ bool HbThemeServerUtils::removeSharedEffect(const QString &fileName)
  */
 void HbThemeServerUtils::clearSharedEffects()
 {
+    HbSharedCache *cache = HbSharedCache::instance();
     HbServerCache::const_iterator iterEnd(effCache()->constEnd());
-    for (HbServerCache::const_iterator iter = effCache()->constBegin();
-            iter != iterEnd;
-            ++iter) {
-        if (sharedCache) {
-            int count = sharedCache->count();
-            for (int i = 0; i < count ; i++) {
-                QString cacheKey = sharedCache->at(i).key;
-                if (cacheKey == iter.key()) {
-                    sharedCache->remove(i,1);
-                    break;
-                }
-            }
-        }
+    for (HbServerCache::const_iterator iter = effCache()->constBegin();iter != iterEnd;++iter) {
+        cache->remove(HbSharedCache::Effect, iter.key());
     }
     effCache()->clear();
 }
@@ -411,16 +347,10 @@ int HbThemeServerUtils::getSharedEffect(const QString &fileName)
         }
 
         // add the filename and css offset to the secondary cache.
-        if (sharedCache) {
-            // no need to check if this item is already present in the
-            // cache as the parsing of the file happens only once
-            // in the server side.
-            try {
-                HbSharedCacheItem cacheItem(fileName, effOffset);
-                sharedCache->append(cacheItem);
-            } catch (std::exception &) {
-            }
-        }
+        // no need to check if this item is already present in the
+        // cache as the parsing of the file happens only once
+        // in the server side.
+        HbSharedCache::instance()->add(HbSharedCache::Effect, fileName, effOffset);
     }
 
 #ifdef THEME_SERVER_TRACES
@@ -454,21 +384,3 @@ void HbThemeServerUtils::cleanupUnusedCss(HbCache *cache)
     }
 }
 
-/**
- * sharedCacheItemOffset  function returns the offset of the cache item
- * for the given key
- * \param key
- *
- */
-int HbThemeServerUtils::sharedCacheItemOffset(const QString & key)
-{
-    if (sharedCache) {
-        int count = sharedCache->count();
-        for (int i = 0; i < count ; i++) {
-            if (key == sharedCache->at(i).key) {
-                return sharedCache->at(i).offset;
-            }
-        }
-    }
-    return -1;
-}

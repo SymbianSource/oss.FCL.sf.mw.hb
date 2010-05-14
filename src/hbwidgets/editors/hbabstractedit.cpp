@@ -28,7 +28,7 @@
 
 #include "hbvalidator.h"
 #include "hbstyle.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbwidget.h"
 #include "hbscrollarea.h"
 #include "hbevent.h"
@@ -1012,18 +1012,18 @@ void HbAbstractEdit::insertFromMimeData(const QMimeData *source)
 #ifndef QT_NO_TEXTHTMLPARSER
     if (source->hasFormat(QLatin1String("application/x-qrichtext"))) {
         QString richtext = QString::fromUtf8(source->data(QLatin1String("application/x-qrichtext")));
-        richtext.prepend(QLatin1String("<meta name=\"qrichtext\" content=\"1\" />"));
-        fragment = QTextDocumentFragment::fromHtml(richtext, d->doc);
+        richtext.prepend(QLatin1String("<meta name=\"qrichtext\" content=\"1\" />"));        
+        fragment = QTextDocumentFragment::fromHtml(filterInputText(richtext), d->doc);
         hasData = true;
     } else if (source->hasHtml()) {
-        fragment = QTextDocumentFragment::fromHtml(source->html(), d->doc);
+        fragment = QTextDocumentFragment::fromHtml(filterInputText(source->html()), d->doc);
         hasData = true;
     } else
 #endif //QT_NO_TEXTHTMLPARSER
     {
         QString text = source->text();
         if (!text.isNull()) {
-            fragment = QTextDocumentFragment::fromPlainText(text);
+            fragment = QTextDocumentFragment::fromPlainText(filterInputText(text));
             hasData = true;
         }
     }
@@ -1327,9 +1327,8 @@ void HbAbstractEdit::showContextMenu(QPointF position)
 
     emit aboutToShowContextMenu(menu, d->tapPosition);
 
-    d->minimizeInputPanel();
-
     if(menu->actions().count() > 0){
+        d->minimizeInputPanel();
         menu->setPreferredPos(position);
         menu->show();
     }
@@ -1710,4 +1709,23 @@ void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
     } else {
         event->ignore();
     }
+}
+
+/*!
+  Returns the filtered text, or \a text if no input filter attached to editor.
+*/
+QString HbAbstractEdit::filterInputText(const QString &text)
+{
+    HbEditorInterface editorInterface(this);
+    HbInputFilter *inputFilter = editorInterface.filter();
+    if (!text.isEmpty() && inputFilter) {
+        QString filteredText;
+        foreach(QChar c, text) {
+            if (inputFilter->filter(c)) {
+                filteredText.append(c);
+            }
+        }
+        return filteredText;
+    }
+    return text;
 }

@@ -34,28 +34,28 @@
 class HbStyleOptionGroupBox;
 class QGestureEvent;
 
-
 class HB_AUTOTEST_EXPORT HbGroupBoxHeadingWidget : public HbWidget
 {
     Q_OBJECT
 
 public:
-    HbGroupBoxHeadingWidget(QGraphicsItem *parent = 0);
-    ~HbGroupBoxHeadingWidget();
 
-    void init();
-    void createPrimitives();
-    void updatePrimitives();
+    HbGroupBoxHeadingWidget( QGraphicsItem *parent = 0 );
+    ~HbGroupBoxHeadingWidget( );
 
-    void createConnection();
-    void setType(GroupBoxType type);
-    void setHeading(const QString &text);
-    void setMarqueeHeading(bool marquee);
+    void init( );
+    void createPrimitives( );
+    void updatePrimitives( );
 
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
+    void createConnection( );
+    void setType( GroupBoxType type );
+    void setHeading( const QString &text );
+    void setMarqueeHeading( bool marquee );
+
+    QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
     enum { Type = HbPrivate::ItemType_GroupBoxHeadingWidget };
-    int type() const { return Type; }
+    int type( ) const { return Type; }
 
 public:
     QGraphicsItem *mIconItem;
@@ -74,12 +74,12 @@ signals:
     void clicked( bool checked = false );
 
 protected:
-    void initStyleOption(HbStyleOptionGroupBox *option) const;
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void initStyleOption( HbStyleOptionGroupBox *option ) const;
+    QVariant itemChange( GraphicsItemChange change, const QVariant &value );
+    void mousePressEvent( QGraphicsSceneMouseEvent *event );
+    void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
 #ifdef HB_GESTURE_FW
-    void gestureEvent(QGestureEvent *event);
+    void gestureEvent( QGestureEvent *event );
 #endif 
 };
 

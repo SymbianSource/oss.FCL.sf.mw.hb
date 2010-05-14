@@ -25,9 +25,12 @@
 
 #include "hbpointrecorder_p.h"
 
+#include <QPair>
+#include <QTime>
 #include <QDebug>
-//#define VELOCITY_DEBUG
-#ifndef VELOCITY_DEBUG
+
+//#define POINT_DEBUG
+#ifndef POINT_DEBUG
 # define DEBUG if (0) qDebug
 #else
 # define DEBUG qDebug
@@ -49,6 +52,8 @@
 
 */
 HbPointRecorder::HbPointRecorder()
+    :
+    mThreshold(0)
 {
 }
 
@@ -64,66 +69,61 @@ HbPointRecorder::~HbPointRecorder()
 
 /*!
     \internal
+    \brief Clears all data from the recorder
+    \param threshold set used threshold to detect movement and stops
+*/
+void HbPointRecorder::resetRecorder(qreal threshold)
+{
+    mThreshold = threshold;
+    clear();
+}
+
+/*!
+    \internal
     \brief Records point to list with timestamp.
     \param point Point to be recorded.
     \param time Time to be recorded.
     \return Nothing.
 
 */
-void HbPointRecorder::record(qreal point, QTime time)
+void HbPointRecorder::record(qreal point, const QTime &time)
 {
-    // No point to record a point, if timestamp is less or equal with previous.
-    if ( !isEmpty() && lastTime().msecsTo(time) == 0 )
-    {
-        DEBUG() << "Ignoring point, because no difference in time stamps.";
-        return;
+    // Empty list always accepts first point without tests.
+    if ( !isEmpty() ) {
+        // No point to record a point, if timestamp is less or equal with previous.
+        if ( lastTime().msecsTo(time) == 0 ) {
+            DEBUG() << "Ignoring point, because no difference in time stamps.";
+            return;
+        }
+
+        // Don't tolerate points, which are too close to previously recorded point.
+        if ( qAbs(lastPoint() - point) < mThreshold ) {
+            DEBUG() << "Ignoring point, because it is withing threshold of previous point";
+            return;
+        }
     }
 
     // In case the list contains two or more points, direction can be
     // determined. Each new point added needs to be checked for direction
     // change.
-    if ( mPoints.length() > 1 )
-    {
+    if ( length() > 1 ) {
         // Clear list, on direction change. Leave the last recorded point
         // to the list, as it can be considered as first point for new direction.
-        if ( dirChanged( point ) )
-        {
-            qreal tempPoint = lastPoint();
-            QTime tempTime = lastTime();
-
+        if ( dirChanged( point ) ) {
+            HbPointTime temp = last();
             clear();
-
-            mPoints.append( tempPoint );
-            mTimes.append( tempTime );
+            append(temp);
         }
     }
 
     // Finally check, if the position has changed. Don't record point, when no position
     // change.
-    if ( isEmpty() || point != lastPoint() )
-    {
+    if ( isEmpty() || point != lastPoint() ) {
         // Add point and time to list.
-        mPoints.append( point );
-        mTimes.append( time );
-    }
-    else
-    {
+        append(HbPointTime(point, time));
+    } else {
         DEBUG() << "Ignoring point, because it equals previous.";
     }
-}
-
-/*!
-    \internal
-    \brief
-    \return True, when no recorded items.
-
-*/
-bool HbPointRecorder::isEmpty() const
-{
-    // This situation should be impossible to even happen, but in case
-    // the lists are out of sync. The result of empty list dictates the
-    // result of this test.
-    return !mTimes.length() && !mPoints.length();
 }
 
 /*!
@@ -135,7 +135,7 @@ bool HbPointRecorder::isEmpty() const
 qreal HbPointRecorder::lastPoint() const
 {
     Q_ASSERT(!isEmpty());
-    return mPoints.last();
+    return last().first;
 }
 
 /*!
@@ -147,7 +147,7 @@ qreal HbPointRecorder::lastPoint() const
 const QTime& HbPointRecorder::lastTime() const
 {
     Q_ASSERT(!isEmpty());
-    return mTimes.last();
+    return last().second;
 }
 
 /*!
@@ -158,10 +158,16 @@ const QTime& HbPointRecorder::lastTime() const
 */
 bool HbPointRecorder::dirChanged( qreal point ) const
 {
-    qreal x0 = mPoints.at(mPoints.length()-2);
-    qreal x1 = mPoints.at(mPoints.length()-1);
-    qreal dir0 = x1 - x0;
-    qreal dir1 = point - x1;
+    // Without direction, the direction cannot really change
+    if ( length() < 2 ) { return false; }
+
+    qreal pos0 = (*this)[-2].first;
+    qreal pos1 = (*this)[-1].first;
+    qreal dir0 = pos1 - pos0;
+    qreal dir1 = point - pos1;
+
+    // Don't react on movement, when changes happen within threshold
+    if ( qAbs(dir1) <= mThreshold ) { return false; }
 
     // Check for '+' and '-' -signs in directions. Opposite signs means
     // direction change.
@@ -170,59 +176,31 @@ bool HbPointRecorder::dirChanged( qreal point ) const
 
 /*!
     \internal
-    \param T type of items in the list.
-    \brief Returns given number of items from the end.
-    \return List of items.
+    \brief Operator to access the list.
 
-    This function gets items from the given list from the end by the
-    amount of items specified by 'number' parameter. In case, when the
-    length of the list is less than required number of items, complete
-    list is provided instead.
+    Supports negative values, which will define order from the end.
 */
-template <class T>
-QList<T> HbPointRecorder::getLastItems( QList<T> list, int number ) const
+HbPointTime HbPointRecorder::operator[]( int number ) const
 {
-    if ( list.length() <= number )
-    {
-        return list;
+    // Let's trust, that QList::at() takes care of validity checks.
+    if ( number < 0 ) {
+        number = count() + number;
     }
-    else
-    {
-        QList<T> tempList;
-        for ( int i = list.length(); --i >= list.length()-number; )
-        {
-            tempList.insert(0, list.at(i));
-        }
-        return tempList;
+    return at(number);
+}
+
+
+/*!
+    \internal
+    \copydoc HbPointRecorder::getLastRecords
+*/
+QList<HbPointTime> HbPointRecorder::getLastRecords( int number ) const
+{
+    QList<HbPointTime> recordings;
+    number = number > count() ? count() : number;
+    for (int i=count()-number; i < count(); i++) {
+        recordings.append((*this)[i]);
     }
-}
 
-/*!
-    \internal
-    \copydoc HbPointRecorder::getLastItems
-*/
-QList<qreal> HbPointRecorder::getLastPoints( int number ) const
-{
-    return getLastItems(mPoints, number);
-}
-
-/*!
-    \internal
-    \copydoc HbPointRecorder::getLastItems
-*/
-QList<QTime> HbPointRecorder::getLastTimes( int number ) const
-{
-    return getLastItems(mTimes, number);
-}
-
-/*!
-    \internal
-    \brief
-    \return Last recorded timestamp.
-
-*/
-void HbPointRecorder::clear()
-{
-    mPoints.clear();
-    mTimes.clear();
+    return recordings;
 }

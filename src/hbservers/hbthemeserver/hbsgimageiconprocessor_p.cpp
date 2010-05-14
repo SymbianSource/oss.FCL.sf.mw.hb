@@ -36,7 +36,6 @@
 
 
 
-static HbNvgEngine nvgEngine;
 HbSgImageRenderer* HbSgimageIconProcessor::sgImageRenderer = HbSgImageRenderer::global();
 
 struct HbSgImageClosure
@@ -327,10 +326,10 @@ bool HbSgimageIconProcessor::renderNvg(const QByteArray& byteArray, const QRect&
     }
 
     NvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(aspectRatioMode);
-    nvgEngine.setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
-    nvgEngine.enableMirroring(mirrored);
+    sgImageRenderer->nvgEngine()->setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
+    sgImageRenderer->nvgEngine()->enableMirroring(mirrored);
 
-    HbNvgEngine::HbNvgErrorType errorType = nvgEngine.drawNvg(byteArray, size);
+    HbNvgEngine::HbNvgErrorType errorType = sgImageRenderer->nvgEngine()->drawNvg(byteArray, size);
     return errorType == HbNvgEngine::NvgErrNone;
 }
 

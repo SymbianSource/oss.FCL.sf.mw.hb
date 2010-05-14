@@ -38,7 +38,13 @@
 #endif
 
 #define THEME_SERVER_NAME "hbthemeserver"
+#define BIN_CSS_APP "hbbincssmaker"
+#define BIN_CSS_APP_SYMBIAN "hbbincssmaker_symbian"
+#ifdef HB_BIN_CSS
+#define HB_THEME_SHARED_PIXMAP_CHUNK "themeserver_tool_chunk"
+#else
 #define HB_THEME_SHARED_PIXMAP_CHUNK "themeserver_chunk"
+#endif
 #define ORGANIZATION "Nokia"
 #define THEME_COMPONENT "Hb Themes"
 #define CURRENT_THEME_KEY "CurrentTheme"
@@ -50,23 +56,58 @@
 // To enable/disable debug messages for theme index functionality
 #undef THEME_INDEX_TRACES
 
+#undef CSSBIN_TRACES
+
 // To enable memory report creation (memory usage, fragmentation etc.)
 #undef HB_THEME_SERVER_MEMORY_REPORT
+// To enable full memory report including all allocs, frees and reallocs
+#undef HB_THEME_SERVER_FULL_MEMORY_REPORT
+
+#ifdef HB_THEME_SERVER_FULL_MEMORY_REPORT
+#define HB_THEME_SERVER_MEMORY_REPORT
+#endif
+
 // If master trace macro is defined, define also other theme traces
 #ifdef THEME_SERVER_TRACES
 #define THEME_INDEX_TRACES
+#define CSSBIN_TRACES
 #endif
-
 
 // To enable fute testing for cache
 //#define HB_ICON_CACHE_DEBUG
 
-const unsigned int INITIALIZED_CHUNK_IDENTIFIER = 0x54535256; //'TSRV'
+
+enum HbThemeType {
+    BaseTheme   = 0,
+    OperatorC   = 1,
+    OperatorROM = 2,
+    ActiveTheme = 3
+};
+
+const quint32 INITIALIZED_CHUNK_IDENTIFIER = 0x54535256; //'TSRV'
 struct HbSharedChunkHeader
 {
-    unsigned int identifier;
-    unsigned int mainAllocatorOffset;
-    unsigned int subAllocatorOffset;
+    quint32 identifier;
+    quint32 mainAllocatorOffset;
+    quint32 subAllocatorOffset;
+    quint32 sharedCacheOffset;	
+    // Base theme offsets
+    quint32 baseThemePathOffset;
+    quint32 baseThemeNameOffset;
+    quint32 baseThemeIndexOffset;
+    // Operator theme in C-drive offsets
+    quint32 operatorThemeDriveCPathOffset;
+    quint32 operatorThemeDriveCNameOffset;
+    quint32 operatorThemeDriveCIndexOffset;
+    // Operator theme in ROM offsets
+    quint32 operatorThemeRomPathOffset;
+    quint32 operatorThemeRomNameOffset;
+    quint32 operatorThemeRomIndexOffset;
+    // Active theme offsets
+    quint32 activeThemePathOffset;
+    quint32 activeThemeNameOffset;
+    quint32 activeThemeIndexOffset;
+
 };
 
 enum LayerPriority {
@@ -109,6 +150,7 @@ struct HbMultiIconParams
     QColor color;
     int rgba;
     bool colorflag;
+    int renderMode;
 };
 
 
@@ -117,7 +159,7 @@ enum HbIconFormatType {
     NVG,
     PIC,
     SVG,
-	SGIMAGE,
+    SGIMAGE,
     BLOB,
     OTHER_SUPPORTED_FORMATS
 };
@@ -133,14 +175,14 @@ struct HbSharedPixmapInfo
 };
 
 struct HbSharedNVGInfo
-{		
+{
     int offset;
     int dataSize;
     int width;
     int height;
     int defaultWidth;
     int defaultHeight;
-    
+
 };
 
 struct HbSharedPICInfo
@@ -157,7 +199,7 @@ struct HbSharedSgimageInfo
 {
     unsigned long long id;
     int width;
-    int height; 
+    int height;
     int defaultWidth;
     int defaultHeight;
 };
@@ -171,18 +213,18 @@ struct HbSharedBLOBInfo
 struct HbSharedIconInfo
 {
     HbIconFormatType type;
-    
-    union 
+
+    union
     {
-    	HbSharedPixmapInfo pixmapData;
-    	HbSharedNVGInfo nvgData;
-    	HbSharedPICInfo picData;
-		HbSharedSgimageInfo sgImageData;
+        HbSharedPixmapInfo pixmapData;
+        HbSharedNVGInfo nvgData;
+        HbSharedPICInfo picData;
+        HbSharedSgimageInfo sgImageData;
         HbSharedBLOBInfo blobData;
-    };	
-    
+    };
+
     HbSharedIconInfo():type(INVALID_FORMAT){}
-          
+
 };
 
 struct HbSharedIconInfoList
@@ -194,9 +236,9 @@ struct HbSharedStyleSheetInfo
 {
     int offset;
     int refCount;
-    HbSharedStyleSheetInfo(): 
+    HbSharedStyleSheetInfo():
         offset(-1),
-        refCount(0)    
+        refCount(0)
     {}
 };
 
@@ -223,22 +265,12 @@ struct HbSecondaryCacheInfo
     HbSecondaryCacheInfo() : offset(-1) {}
 };
 
-struct HbSharedCacheItem {
-    HbString key;
-    int offset;
-    HbSharedCacheItem():key(HbMemoryManager::SharedMemory),offset(-1)
-    {
-    }
-    HbSharedCacheItem(const QString &cacheKey,
-                   int cacheOffset):key(cacheKey,HbMemoryManager::SharedMemory),
-                                    offset(cacheOffset)
-    {
-    }
-};
 
-// Currently HbVector is used. This one should be replaced with the Map/Hash
-// data structure.
-typedef HbVector<HbSharedCacheItem> HbSharedCache;
+struct HbTypefaceDataInfo
+{
+    int offset;
+    HbTypefaceDataInfo() : offset(-1) {}
+};
 
 // Function codes (opcodes) used in message passing between client and server
 enum HbThemeServerRequest
@@ -252,7 +284,6 @@ enum HbThemeServerRequest
      EMultiIcon,
      EWidgetMLLookup,
      EDeviceProfileOffset,
-     ESecondaryCacheOffset,
      ENotifyForegroundLost,
  #ifdef HB_ICON_CACHE_DEBUG
      EIconCleanUp,
@@ -284,20 +315,33 @@ enum HbThemeServerRequest
      ERefCount,
 #endif
      EThemeContentUpdate,
-	 EEffectLookupFilePath,
-	 EEffectAdd,
+     EEffectLookupFilePath,
+     EEffectAdd,
      EUnloadIcon,
      EUnloadMultiIcon,
      EMemoryGood,
      EFreeRam,
+     ERenderModeSwitch,
      EThemeServerStop,
-     EThemeIndex,
      EFreeSharedMem,
      EAllocatedSharedMem,
-     EAllocatedHeapMem
+     EAllocatedHeapMem,
+     ETypefaceOffset
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
      ,ECreateMemoryReport
 #endif
     };
+//Rendering Modes
+enum HbRenderingMode
+{
+	ESWRendering,
+	EHWRendering
+};
+
+struct HbFreeRamNotificationData
+{
+	int bytesToFree;
+	bool useSwRendering;
+};	
 
 #endif /* HBTHEMECOMMON_P_H */

@@ -73,7 +73,6 @@ public:
     HbDataFormModelItem* invisibleRootItem() const;  
     void clear();
 
-    virtual bool insertRows(int row, int count, const QModelIndex &index = QModelIndex());
     virtual bool removeRows(int row, int count, const QModelIndex &index);
 
     virtual QModelIndex parent(const QModelIndex &index) const;

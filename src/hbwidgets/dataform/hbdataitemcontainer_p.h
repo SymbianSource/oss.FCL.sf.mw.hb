@@ -25,7 +25,7 @@
 #ifndef HBDATAITEMCONTAINER_P_H
 #define HBDATAITEMCONTAINER_P_H
 
-#include <hbabstractitemcontainer.h>
+#include <hbabstractitemcontainer_p.h>
 
 class HbDataItemContainerPrivate;
 class HbListLayout;
@@ -44,17 +44,16 @@ public:
     enum { Type = Hb::ItemType_DataItemContainer};
     int type() const { return Type; }
 
+    virtual void resizeContainer();
+
 protected:
     virtual void itemAdded(int index, HbAbstractViewItem *item, bool animate = false);
     virtual void itemRemoved(HbAbstractViewItem *item, bool animate = false);
     virtual void viewResized(const QSizeF &size);
-    virtual void setItemModelIndex(HbAbstractViewItem *item, const QModelIndex &index);
     virtual void setModelIndexes(const QModelIndex &startIndex = QModelIndex());
-    void insertItem(int pos, const QModelIndex &index, bool animate = false);
-
-
     virtual HbAbstractViewItem *createDefaultPrototype() const;
 
+    virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataItemContainer)
     Q_DISABLE_COPY(HbDataItemContainer)

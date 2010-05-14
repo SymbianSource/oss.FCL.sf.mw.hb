@@ -59,6 +59,8 @@ struct HbIconLoadingParams {
     QString iconFileName;
     // Pixmap where the icon is rasterized
     QPixmap canvasPixmap;
+    // Icon's rendering mode ( Hardware / Software )
+    HbRenderingMode renderMode;
 };
 
 class HB_AUTOTEST_EXPORT HbIconImplCreator

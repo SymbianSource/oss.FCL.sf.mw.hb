@@ -92,7 +92,7 @@ HbFeedbackEffectUtils::WidgetFamily HbFeedbackEffectUtils::widgetFamily(const Hb
 
         case HbPrivate::ItemType_TitlePane:
 
-        case Hb::ItemType_InputCharacterButton:
+        case Hb::ItemType_InputButtonGroup:
 
         case Hb::ItemType_InputFunctionButton:
 
@@ -102,30 +102,18 @@ HbFeedbackEffectUtils::WidgetFamily HbFeedbackEffectUtils::widgetFamily(const Hb
             break;
 
         case Hb::ItemType_MenuItem:
-
-        case Hb::ItemType_FormViewItem:
-        
-        case Hb::ItemType_FormView:
-        
-        case Hb::ItemType_AbstractItemContainer:
-        
+       
         case Hb::ItemType_AbstractItemView:
-
+              	
         case Hb::ItemType_ListView:
 
-        case Hb::ItemType_AbstractViewItem:
-        
         case Hb::ItemType_ListViewItem:
 
-        case Hb::ItemType_ItemHighlight:
-        
+        case Hb::ItemType_TreeViewItem:
+
         case Hb::ItemType_ListWidgetItem:
         
-        case Hb::ItemType_ListWidgetViewItem:
-
         case Hb::ItemType_RadioButtonList:
-
-        case Hb::ItemType_RoundRobinLabel:
 
         case Hb::ItemType_CarouselView:
         
@@ -258,7 +246,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             }
             
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputCharacterButton) {
+            if (widget->type() == Hb::ItemType_InputButtonGroup) {
                 effect = HbFeedback::SensitiveKeypad;
             } 
             else if (widget->type() == Hb::ItemType_InputFunctionButton) {
@@ -342,8 +330,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             // checkable item is checked with a press
             switch (itemView->selectionMode()) {
                 case HbAbstractItemView::SingleSelection:
-                case HbAbstractItemView::MultiSelection:
-                case HbAbstractItemView::ContiguousSelection: {
+                case HbAbstractItemView::MultiSelection: {
                     effect = HbFeedback::None;
                     break;
                 }
@@ -432,7 +419,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             }
 
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputCharacterButton
+            if (widget->type() == Hb::ItemType_InputButtonGroup
              || widget->type() == Hb::ItemType_InputFunctionButton) {
                 effect = HbFeedback::SensitiveKeypad;
             } else if (widget->type() == Hb::ItemType_CheckBox) {
@@ -501,8 +488,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
                 case HbAbstractItemView::SingleSelection:
                     effect = HbFeedback::Checkbox; // deferred from press
                     break;
-                case HbAbstractItemView::MultiSelection: 
-                case HbAbstractItemView::ContiguousSelection: {
+                case HbAbstractItemView::MultiSelection: {
                     effect = HbFeedback::None;
                     break;
                 }
@@ -558,7 +544,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyRepeat(const HbWidg
             effect = HbFeedback::SensitiveButton;
 
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputCharacterButton
+            if (widget->type() == Hb::ItemType_InputButtonGroup
              || widget->type() == Hb::ItemType_InputFunctionButton) {
                 effect = HbFeedback::SensitiveKeypad;
             }
@@ -603,7 +589,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnDrag(const HbWidget *w
     if (const HbAbstractViewItem * viewItem = qobject_cast<const HbAbstractViewItem *>(widget)) {
         const HbAbstractItemView* itemView = viewItem->itemView();
         if (itemView) {
-            if (itemView->selectionMode() == HbAbstractItemView::ContiguousSelection) {
+            if (itemView->selectionMode() == HbAbstractItemView::MultiSelection) {
                 effect = HbFeedback::MultipleCheckbox;
             }
             else if (const HbListView * listView = qobject_cast<const HbListView *>(itemView)) {
@@ -730,10 +716,6 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const
                     break;
                 }
                 case HbAbstractItemView::MultiSelection: {
-                    effect = HbFeedback::Checkbox;
-                    break;
-                }
-                case HbAbstractItemView::ContiguousSelection: {
                     effect = HbFeedback::MultipleCheckbox;
                     break;
                 }
@@ -881,28 +863,62 @@ HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget *widget,
     HbFeedback::Modalities modalities = 0;
 
     switch( interaction ) {
-    case Hb::InstantPressed :
-    case Hb::InstantMultitouchActivated:
-        modalities |= HbFeedback::Tactile;
-        modalities |= HbFeedback::Audio;
+
+    case Hb::InstantPressed:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
         break;
+
     case Hb::InstantReleased:
-    case Hb::InstantLongPressed:
-    case Hb::InstantKeyRepeated:
-    case Hb::InstantDraggedOver:
-    case Hb::InstantFlicked:
-    case Hb::InstantRotated90Degrees:
-    case Hb::InstantPopupOpened:
-    case Hb::InstantPopupClosed:
-    case Hb::InstantSelectionChanged:
         modalities =  HbFeedback::Tactile;
         break;
+
     case Hb::InstantClicked:
         modalities = HbFeedback::Tactile;
         if(widget->type() == Hb::ItemType_CheckBox) {
             modalities |= HbFeedback::Audio;
         }
         break;
+
+    case Hb::InstantKeyRepeated:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
+        break;
+
+    case Hb::InstantLongPressed:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
+        break;
+
+    case Hb::InstantDraggedOver:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
+        break;
+
+    case Hb::InstantFlicked:
+        modalities =  HbFeedback::Tactile;
+        break;
+
+    case Hb::InstantPopupOpened:
+        modalities =  HbFeedback::Tactile;
+        break;
+
+    case Hb::InstantPopupClosed:
+        modalities =  HbFeedback::Tactile;
+        break;
+
+    case Hb::InstantBoundaryReached:
+        modalities =  HbFeedback::Tactile;
+        break;
+
+    case Hb::InstantRotated90Degrees:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
+        break;
+
+    case Hb::InstantSelectionChanged:
+        modalities =  HbFeedback::Tactile;
+        break;
+
+    case Hb::InstantMultitouchActivated:
+        modalities = HbFeedback::Tactile | HbFeedback::Audio;
+        break;
+
     default:
         modalities = HbFeedback::Tactile;
         break;
@@ -911,7 +927,7 @@ HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget *widget,
 }
 
 /*!
-  Returns the default modalities to be used when playing feedback effect asociated with this \a widget, \a interaction, \a modifiers.
+  Returns the default modalities to be used when playing feedback effect asociated with this \a widget, continuous \a interaction, \a modifiers.
 */
 HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget * widget, Hb::ContinuousInteraction interaction, Hb::InteractionModifiers modifiers )
 {

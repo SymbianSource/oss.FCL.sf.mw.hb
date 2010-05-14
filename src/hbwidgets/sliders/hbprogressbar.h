@@ -35,7 +35,6 @@ class HbStyleOptionProgressBar;
 class HB_WIDGETS_EXPORT HbProgressBar : public HbWidget
 {
     Q_OBJECT
-    Q_ENUMS(ProgressBarType)
     Q_PROPERTY(int progressValue READ progressValue WRITE setProgressValue)
     Q_PROPERTY(bool invertedAppearance READ invertedAppearance WRITE setInvertedAppearance)
     Q_PROPERTY(int maximum READ maximum WRITE setMaximum)
@@ -47,10 +46,8 @@ class HB_WIDGETS_EXPORT HbProgressBar : public HbWidget
     Q_PROPERTY(Qt::Alignment minMaxTextAlignment READ minMaxTextAlignment WRITE setMinMaxTextAlignment)
 
 public:
-    enum ProgressBarType {SimpleProgressBar, RatingProgressBar };
 
-    explicit HbProgressBar(ProgressBarType type = SimpleProgressBar, QGraphicsItem *parent = 0);
-    explicit HbProgressBar(QGraphicsItem *parent);
+    explicit HbProgressBar(QGraphicsItem *parent= 0);
     ~HbProgressBar();    
 
     bool invertedAppearance() const;
@@ -92,8 +89,7 @@ signals:
     void valueChanged(int value);
 
 protected:
-    HbProgressBar(HbProgressBarPrivate &dd, ProgressBarType type=SimpleProgressBar, QGraphicsItem *parent = 0);
-    HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent);
+    HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent = 0);
     void initStyleOption(HbStyleOptionProgressBar *option) const;
     void closeEvent ( QCloseEvent * event );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);

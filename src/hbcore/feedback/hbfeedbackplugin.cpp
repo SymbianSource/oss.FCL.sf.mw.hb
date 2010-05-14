@@ -56,7 +56,7 @@ HbFeedbackPluginPrivate::~HbFeedbackPluginPrivate()
 
     \brief Base class for all feedback plugins.
 
-    Implements abstract interface HbFeedbackPluginInterface and derives from QObject. All plugins
+    Implements abstract interface HbFeedbackPluginInterface and derives from QObject. All feedback plugins
     are expected to derive from HbFeedbackPlugin.
 */
 
@@ -111,4 +111,3 @@ void HbFeedbackPlugin::setFeatureName(const QString& featureName)
 {
     d->m_featureName = featureName;
 }
-

@@ -1,19 +1,6 @@
 HbIndicatorMenuContent
 {
     layout:menucontent;
+    fixed-width:expr(var(hb-param-screen-short-edge)-9.0un);
+    max-height:expr(var(hb-param-screen-height)-var(hb-param-widget-chrome-height)-var(hb-param-margin-gene-screen));
 }
-
-HbIndicatorMenuContent::background
-{
-    fixed-width: expr(var(hb-param-screen-width)-9.0un);
-    fixed-height: expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-middle-vertical));
-}
-
-HbIndicatorMenuContent::date
-{
-    font-variant: secondary;
-    fixed-height: var(hb-param-text-height-secondary);
-    text-align: right;
-    vertical-align: bottom;
-}
-

@@ -35,7 +35,7 @@
 //
 
 #include "hbselectioncontrol_p.h"
-#include "hbstyleoption.h"
+#include "hbstyleoption_p.h"
 #include "hbeffect.h"
 #include "hbdialog_p.h"
 #include "hbabstractedit.h"
@@ -96,7 +96,6 @@ public:
 
     HbAbstractEdit *mEdit;
     QGraphicsItem *mTopLevelAncestor;
-    QPointF mMouseOffset;
 
     QGraphicsItem *mSelectionStartHandle;
     QGraphicsItem *mSelectionEndHandle;
@@ -300,7 +299,6 @@ void HbSelectionControlPrivate::panGestureStarted(HbPanGesture *gesture)
     // Find out which handle is being moved
     if (mSelectionStartTouchArea->contains(q->mapToItem(mSelectionStartTouchArea, point))) {
         mPressed = HbSelectionControl::SelectionStartHandle;
-        mMouseOffset = mSelectionStartHandle->pos() - point;
     }
     if (mSelectionEndTouchArea->contains(q->mapToItem(mSelectionEndTouchArea, point))) {
         bool useArea = true;
@@ -322,7 +320,6 @@ void HbSelectionControlPrivate::panGestureStarted(HbPanGesture *gesture)
         }
         if (useArea) {
             mPressed = HbSelectionControl::SelectionEndHandle;
-            mMouseOffset = mSelectionEndHandle->pos() - point;
         }
     }
 
@@ -379,11 +376,23 @@ void HbSelectionControlPrivate::panGestureUpdated(HbPanGesture *gesture)
 {
     Q_Q(HbSelectionControl);
 
+    QRectF docRect = QRectF(mEdit->mapFromItem(HbAbstractEditPrivate::d_ptr(mEdit)->canvas->parentItem(),
+                            HbAbstractEditPrivate::d_ptr(mEdit)->canvas->pos()),
+                            HbAbstractEditPrivate::d_ptr(mEdit)->doc->size());
+    
     QPointF editPos = mEdit->mapFromScene(gesture->sceneStartPos() + gesture->sceneOffset());
+    QPointF origEditPos = editPos;
+    bool outsideCanvas = !docRect.contains(origEditPos);
+
+    // Constrain editPos within docRect
+    editPos = QPointF(qMin(qMax(editPos.x(),docRect.left()),docRect.right()),
+                      qMin(qMax(editPos.y(),docRect.top()),docRect.bottom()));
 
     QRectF handleRect = mSelectionStartHandle->boundingRect();
-    handleRect.moveTopLeft(editPos + mMouseOffset);
 
+    handleRect.moveCenter(editPos);
+
+    // Set hitTestPos based on which handle was grabbed
     QPointF hitTestPos = handleRect.center();
 
     if (mPressed == HbSelectionControl::SelectionStartHandle) {
@@ -392,13 +401,24 @@ void HbSelectionControlPrivate::panGestureUpdated(HbPanGesture *gesture)
         hitTestPos.setY(handleRect.top()-1);
     }
 
-    QTextCursor cursor = mEdit->textCursor();
+    // Override hitTestPos if origEditPos was outside the canvas
+    if (outsideCanvas) {
+        if (origEditPos.y() < docRect.top()) {
+            hitTestPos.setY(handleRect.bottom()+1);
+        } else if (docRect.bottom() < origEditPos.y()) {
+            hitTestPos.setY(handleRect.top()-1);
+        }
+    }
+
+    QTextCursor cursor;
+    cursor = mEdit->textCursor();
     // Hit test for the center of current selection touch area
     int hitPos = HbAbstractEditPrivate::d_ptr(mEdit)->hitTest(hitTestPos,Qt::FuzzyHit);
+
+    // if no valid hit pos or empty selection return
     if (hitPos == -1 || hitPos == cursor.anchor()) {
         return;
     }
-
 
     bool handlesMoved(false);
     if (hitPos != cursor.position()) {

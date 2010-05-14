@@ -42,14 +42,11 @@ class HbDockWidget;
 class HB_CORE_EXPORT HbView : public HbWidget
 {
     Q_OBJECT
-    Q_ENUMS(HbTitleBarFlag)
-    Q_FLAGS(HbTitleBarFlags)
     Q_ENUMS(HbViewFlag)
     Q_FLAGS(HbViewFlags)
     Q_PROPERTY(QString title READ title WRITE setTitle)
     Q_PROPERTY(HbIcon icon READ icon WRITE setIcon)
     Q_PROPERTY(bool contentFullScreen READ isContentFullScreen WRITE setContentFullScreen)
-    Q_PROPERTY(HbTitleBarFlags titleBarFlags READ titleBarFlags WRITE setTitleBarFlags)
 
 public:
 
@@ -66,18 +63,6 @@ public:
         ViewStatusBarFloating       = 0x80
     };
     Q_DECLARE_FLAGS(HbViewFlags, HbViewFlag)
-
-    // Deprecated
-    enum HbTitleBarFlag
-    {
-        TitleBarFlagNone        = 0,
-        TitleBarMinimizable     = 0x00000001, 
-        TitleBarMinimized       = 0x00000002, 
-        TitleBarHidden          = 0x00000004, 
-        TitleBarTransparent     = 0x00000008,
-        TitleBarFloating        = 0x00000010
-    };
-    Q_DECLARE_FLAGS(HbTitleBarFlags, HbTitleBarFlag) // Deprecated 
 
     explicit HbView(QGraphicsItem *parent = 0);
     virtual ~HbView();
@@ -108,11 +93,7 @@ public:
     bool isItemVisible(Hb::SceneItem item)  const;
     void setItemVisible(Hb::SceneItem item, bool visible);
 
-    // Deprecated
-    void unsetVisibleItems();
-
     bool isContentFullScreen() const;
-    HbTitleBarFlags titleBarFlags() const;  // Deprecated
     HbViewFlags viewFlags() const;
     void setTitleBarVisible(bool visible);
     void setStatusBarVisible(bool visible);
@@ -134,7 +115,6 @@ public:
 public slots:
     void setTitle(const QString &title);
     void setContentFullScreen(bool enable = true);
-    void setTitleBarFlags(HbTitleBarFlags flags = TitleBarFlagNone); // Deprecated
     void setViewFlags(HbViewFlags flags = ViewFlagNone);
 
 signals:
@@ -160,7 +140,5 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbView)
     Q_DISABLE_COPY(HbView)
 };
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(HbView::HbTitleBarFlags)
 
 #endif // HBVIEW_H

@@ -28,39 +28,34 @@
 
 const int HbInstantInteractionEvent::InstantInteraction = registerEventType();
 
-/*!
-    @beta
-    @hbcore
-
-    \class HbInstantInteractionEvent
-    \brief  Interaction event contains widget interaction information. Feedback engines use this
-    information to implement various feedback effects.
-    
-    HbInstantInteractionEvent::InstantInteraction - QEvent type for interaction events.
-
-    Continuous interactions are called gestures.
-
-    \sa HbContinuousInteractionEvent
-*/
 
 /*!
     \fn const HbWidget* HbInstantInteractionEvent::widget() const
 
     Returns the widget being interacted with. Should never be null.
+
+    \internal
 */
 
 /*!
     \fn Hb::InstantInteraction HbInstantInteractionEvent::interaction() const
 
-    Returns the type of interaction, whether the widget was pressed, released, etc.
+    Returns the type of instant interaction
+
+    \internal
 */
 
 /*!
     Constructs HbInstantInteractionEvent with interaction information.
 
+    Interaction event contains widget interaction information. Feedback engines use this
+    information to implement various feedback effects.
+
     \param widget the widget being interacted with
     \param interaction the interaction
     \param modifiers optional modifiers associated to the interaction
+
+    \internal
 */
 
 HbInstantInteractionEvent::HbInstantInteractionEvent(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers)

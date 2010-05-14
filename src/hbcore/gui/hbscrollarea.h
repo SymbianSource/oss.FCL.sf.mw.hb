@@ -29,7 +29,6 @@
 #include <hbwidget.h>
 
 class HbScrollAreaPrivate;
-class HbGestureSceneFilter;
 class HbScrollBar;
 
 #ifdef HB_GESTURE_FW

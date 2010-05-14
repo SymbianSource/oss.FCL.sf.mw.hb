@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include "hbstyleoptiontooltip.h"
+#include "hbstyleoptiontooltip_p.h"
 
 /*!
     \class HbStyleOptionToolTip

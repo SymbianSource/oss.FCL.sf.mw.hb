@@ -22,3 +22,13 @@ HbTitlePane::icon
 	fixed-width: var(hb-param-graphic-size-secondary);
 	fixed-height: var(hb-param-graphic-size-secondary);
 }
+
+HbTitlePane::left-to-right
+{
+	layout-direction: left-to-right;
+}
+
+HbTitlePane::right-to-left
+{
+	layout-direction: right-to-left;
+}

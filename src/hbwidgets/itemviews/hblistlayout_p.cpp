@@ -28,7 +28,7 @@
 #include "hblayoututils_p.h"
 
 #include "hbwidgetbase.h"
-#include "hbabstractitemcontainer.h"
+#include "hbabstractitemcontainer_p.h"
 
 #include <QWidget> // for QWIDGETSIZE_MAX
 #include <QDebug>

@@ -23,11 +23,11 @@
 **
 ****************************************************************************/
 
-#include <QTimer>
 #include <hbinputpredictionengine.h>
 #include <hbinputmethod.h>
 #include <hbinputkeymap.h>
 #include <hbinputkeymapfactory.h>
+#include <hbinputbutton.h>
 
 #include "hbinputabstractbase.h"
 #include "hbinputbasicqwertyhandler.h"
@@ -45,12 +45,11 @@ public:
     // button related operations.
     bool buttonPressed(const QKeyEvent *event);
     bool buttonReleased(const QKeyEvent *event);
-    void _q_timeout();
 
 public:
     HbFnState mFnState;
     int mButton;
-    bool mPreviewAvailable;
+    bool mLongPressHappened;
     QChar mPrevDeadKey;
     HbInputFocusObject *mCurrentlyFocused;
 };
@@ -58,7 +57,7 @@ public:
 HbInputBasicQwertyHandlerPrivate::HbInputBasicQwertyHandlerPrivate()
 :mFnState(HbFnOff),
 mButton(0),
-mPreviewAvailable(false),
+mLongPressHappened(0),
 mPrevDeadKey(0),
 mCurrentlyFocused(0)
 {
@@ -75,9 +74,17 @@ void HbInputBasicQwertyHandlerPrivate::init()
 bool HbInputBasicQwertyHandlerPrivate::buttonPressed(const QKeyEvent * event)
 {
     if (!mKeymap->isDeadKey(event->key())) {
+        if (event->isAutoRepeat() && mButton == event->key()) {
+            if (mButton == HbInputButton::ButtonKeyCodeSymbol) {
+                mInputMethod->selectSpecialCharacterTableMode();
+                mLongPressHappened = true;
+            }
+            if (mLongPressHappened) {
+                mButton = 0;
+                return true;
+            }
+        }
         mButton = event->key();
-        mTimer->start(HbLongPressTimerTimeout);
-        mPreviewAvailable = false;
     } 
     return false;
 }
@@ -85,17 +92,18 @@ bool HbInputBasicQwertyHandlerPrivate::buttonPressed(const QKeyEvent * event)
 bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
 {
     Q_Q(HbInputBasicQwertyHandler);
+    mButton = 0;
+
     int buttonId = event->key();
+    if (!event->text().isEmpty()) {
+        buttonId = event->text().at(0).unicode();
+    }
+
     QChar firstChar = 0;
     QChar secondChar = 0;
 
-    // If the timer is not active and it is alpha mode, it is a long press
-    // and handled in another function. So just return.
-    if (mTimer->isActive()) {
-        mTimer->stop();
-    } else if (buttonId == Qt::Key_Control) {
-        return false;
-    } else if (!(buttonId & 0xffff0000) && mPreviewAvailable) {
+    if (mLongPressHappened) {
+        mLongPressHappened = false;
         return false;
     }
 
@@ -106,7 +114,7 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
         return false;
     }
     int currentTextCase = focusObject->editorInterface().textCase();
-    const HbMappedKey *mappedKey = mKeymap->keyForKeycode(HbKeyboardVirtualQwerty, event->key());
+    const HbMappedKey *mappedKey = mKeymap->keyForKeycode(mInputMethod->currentKeyboardType(), buttonId);
     QChar newChar;
     if (mFnState == HbFnNext) {
         newChar = (mappedKey->characters(HbModifierFnPressed)).at(0);
@@ -127,21 +135,25 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
         }
     }
 
-    if (!mPrevDeadKey.isNull()) {
-        if (event->key() != Qt::Key_Shift && event->key() != Qt::Key_Alt) {
-            mKeymap->combineCharacter(mPrevDeadKey, newChar, firstChar, secondChar );
-            mPrevDeadKey = 0;
-            if (firstChar.isNull() && secondChar.isNull()) {
+    if (mInputMethod->currentKeyboardType() != HbKeyboardSctLandscape) {
+        if (!mPrevDeadKey.isNull()) {
+            if (buttonId != HbInputButton::ButtonKeyCodeShift && buttonId != Qt::Key_Alt) {
+                mKeymap->combineCharacter(mPrevDeadKey, newChar, firstChar, secondChar );
+                mPrevDeadKey = 0;
+                if (firstChar.isNull() && secondChar.isNull()) {
+                    return true;
+                }
+            }
+        } else {
+            if (mKeymap->isDeadKey(newChar.unicode())) {
+                mPrevDeadKey = newChar.unicode();
                 return true;
+            } else {
+                firstChar = newChar;
             }
         }
     } else {
-        if (mKeymap->isDeadKey(newChar.unicode())) {
-            mPrevDeadKey = newChar.unicode();
-            return true;
-        } else {
-            firstChar = newChar;
-        }
+        firstChar = newChar;
     }
 
     bool ret = false;
@@ -156,7 +168,7 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
         }
         ret = true;
         break;
-    case Qt::Key_Shift: {
+    case HbInputButton::ButtonKeyCodeShift: {
             HbTextCase currentTextCase = focusObject->editorInterface().textCase();
             HbInputLanguage language = mInputMethod->inputState().language();
             
@@ -186,7 +198,8 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
             ret = true;
         }
         break;
-    case Qt::Key_Control:   // Ctrl/Chr
+    case HbInputButton::ButtonKeyCodeSymbol:   // Ctrl/Chr
+    case HbInputButton::ButtonKeyCodeAlphabet:
         mInputMethod->switchSpecialCharacterTable();
         ret = true;
         break;
@@ -197,7 +210,7 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
             return true;
         }
 
-        if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        if (event->key() == HbInputButton::ButtonKeyCodeDelete || event->key() == Qt::Key_Backspace) {
             return false;
         }
 
@@ -234,25 +247,6 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
     return ret;
 }
 
-void HbInputBasicQwertyHandlerPrivate::_q_timeout()
-{
-    mTimer->stop();
-
-    //If long key press of shift key is received, just return
-    if (mButton == Qt::Key_Shift) {
-        return;
-    } else if (mButton == Qt::Key_Control) {
-        mInputMethod->selectSpecialCharacterTableMode();
-    }
-    QStringList spellList;
-    //If long key press of shift key, space key and enter key is received, don't
-    if (mButton) {
-        mInputMethod->launchCharacterPreviewPane(mButton);
-    }
-
-    return;
-}
-
 HbInputBasicQwertyHandler::HbInputBasicQwertyHandler(HbInputAbstractMethod* inputMethod)
 :HbInputBasicHandler(* new HbInputBasicQwertyHandlerPrivate, inputMethod)
 {
@@ -285,8 +279,7 @@ returns true if in inline edit.
 */
 bool HbInputBasicQwertyHandler::isComposing() const
 {   
-    Q_D(const HbInputBasicQwertyHandler);
-    return d->mTimer->isActive();
+    return false;
 }
 
 /*!
@@ -301,22 +294,15 @@ bool HbInputBasicQwertyHandler::actionHandler(HbInputModeAction action)
     switch (action) {
     case HbInputModeActionCancelButtonPress:
     case HbInputModeActionReset:
-        if (d->mTimer->isActive()) {
-            d->mTimer->stop();
-        }
+        d->mButton = 0;
         break;
     case HbInputModeActionFocusRecieved:
-        if (d->mTimer->isActive()) {
-            d->mTimer->stop(); 
-        }
+        d->mButton = 0;
         // set up auto completer
         setUpAutoCompleter();
     break;
     case HbInputModeActionFocusLost:
-        // We should add the commit autocompleting text when focus lost happens
-         if (d->mTimer->isActive()) {
-            d->mTimer->stop(); 
-        }
+        d->mButton = 0;
         if (d->mCurrentlyFocused != focusObject) {
             d->mCurrentlyFocused = focusObject;
             addWordInAutoCompleter();
@@ -329,25 +315,8 @@ bool HbInputBasicQwertyHandler::actionHandler(HbInputModeAction action)
     return ret;
 }
 
-/*!
-this SLOT is called by input plugin when there is a character selected from character preview pane.
-*/
-void HbInputBasicQwertyHandler::charFromPreviewSelected(QString characters)
-{
-    Q_D(HbInputBasicQwertyHandler);
-    if(characters.size() > 0) {
-        sctCharacterSelected(characters.at(0));
-        d->mInputMethod->updateState();
-    }
-}
-
 void HbInputBasicQwertyHandler::sctCharacterSelected(QString character)
 {
     HbInputModeHandler::sctCharacterSelected(character);
 }
 
-void HbInputBasicQwertyHandler::characterPreviewAvailable(bool available)
-{
-    Q_D(HbInputBasicQwertyHandler);
-    d->mPreviewAvailable = available;
-}

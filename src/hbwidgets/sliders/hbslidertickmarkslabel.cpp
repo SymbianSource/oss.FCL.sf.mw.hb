@@ -29,7 +29,7 @@
 #include "hbwidget_p.h"
 #include <hbinstance.h>
 #include <hbstyle.h>
-#include <hbstyleoptionslider.h>
+#include <hbstyleoptionslider_p.h>
 #include <hbapplication.h>
 #include <hbtextitem.h>
 #include <QList>

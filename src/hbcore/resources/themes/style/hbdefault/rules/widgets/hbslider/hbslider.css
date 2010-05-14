@@ -6,7 +6,7 @@ HbSlider[orientation="Horizontal"][TickLabelPresent]
 HbSlider[orientation="Horizontal"][!TickLabelPresent]
 {
     layout:slider_horizontal_withoutticklabel;
-    min-height:4.0un;
+    min-height:expr(2*var(hb-param-widget-slider-thumb-width));    
 }
 /*HbVolumeSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
 {
@@ -49,7 +49,7 @@ HbSlider[orientation="Vertical"][TickLabelPresent]
 HbSlider[orientation="Vertical"][!TickLabelPresent]
 {
     layout:slider_vertical_withoutticklabel;
-    min-width:4.0un;
+    min-width:expr(2*var(hb-param-widget-slider-thumb-width));
 }
 
 

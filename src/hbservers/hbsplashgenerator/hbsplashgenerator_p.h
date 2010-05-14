@@ -58,11 +58,15 @@ public:
 
 signals:
     void outputDirContentsUpdated(const QString &dir, const QStringList &entries);
+    void finished();
 
 public slots:
     void regenerate();
+    void uncachedRegenerate();
+    void regenerateOne(const QString &splashmlFileName);
 
 private slots:
+    void doStart();
     void processQueue();
     void processWindow();
     void onDirectoryChanged(const QString &path);
@@ -96,6 +100,7 @@ public:
             QString mOrientation;
         };
         QList<ItemBgGraphicsRequest> mItemBgGraphics;
+        QString mWorkDirForSingleFileRegen;
     };
 
 private:
@@ -106,7 +111,8 @@ private:
     bool saveSpl(const QString &nameWithoutExt, const QImage &image);
     void addSplashmlItemToQueue(const QueueItem &item);
     void queueAppSpecificItems(const QString &themeName, Qt::Orientation orientation);
-    void processSplashml(QXmlStreamReader &xml, QueueItem &item);
+    bool parseSplashml(const QString &fullFileName, QueueItem &item);
+    void parseSplashmlElements(QXmlStreamReader &xml, QueueItem &item, const QString &fullFileName);
     void setupAppSpecificWindow();
     void setupNameBasedWidgetProps(HbDocumentLoader &loader);
     void finishWindow();
@@ -115,6 +121,7 @@ private:
     int updateOutputDirContents(const QString &outDir);
 
     bool mBusy;
+    bool mForceRegen;
     HbMainWindow *mMainWindow;
     QQueue<QueueItem> mQueue;
     QueueItem mItem;

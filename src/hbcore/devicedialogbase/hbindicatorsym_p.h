@@ -51,6 +51,11 @@ class HB_AUTOTEST_EXPORT HbIndicatorPrivate : public QObject,
 {
     Q_OBJECT
 
+private: // types
+    enum {
+        DefaultReceiveBufferSize = 256
+    };
+
 public: // methods
 
     HbIndicatorPrivate();
@@ -83,6 +88,7 @@ private:
     void Continue();
     void Close();
     TBool sendActivateMessage(const QString &indicatorType, TBool activate, const QVariant& data);
+    void CreateReceiveBufferL(int size);
 
 private: // data
 

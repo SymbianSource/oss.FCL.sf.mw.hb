@@ -25,7 +25,7 @@
 
 #include <hbprogressdialog.h>
 #include <hbprogressdialog_p.h>
-#include <hbstyleoptionprogressdialog.h>
+#include <hbstyleoptionprogressdialog_p.h>
 
 #include <hbnamespace_p.h>
 #include <hbaction.h>
@@ -34,7 +34,7 @@
 #include <QGraphicsItem>
 
 /*
-    internal
+    \internal
     HbProgressDialogContentWidget class
 
     HbProgressDialogContentWidget is internal to HbProgressDialog and is the content widget to progressDialog
@@ -70,18 +70,18 @@ class HbProgressDialogContentWidget : public HbWidget
 };
 
 /*!
-    internal
+    \internal
 
     HbProgressDialogPrivate class constructor
 */
-HbProgressDialogPrivate::HbProgressDialogPrivate() :mAction(0),mTimer(0),mIcon(0),mContentWidget(0),
+HbProgressDialogPrivate::HbProgressDialogPrivate() :mTimer(0),mIcon(0),mContentWidget(0),
                                                     mMinDuration(0),mDelayTime(0),mTextString(QString()),
                                                     mAlign(Qt::AlignTop|Qt::AlignLeft)
 {
 }
 
 /*!
-    internal
+    \internal
 
     HbProgressDialogPrivate class destructor
 */
@@ -90,9 +90,9 @@ HbProgressDialogPrivate::~HbProgressDialogPrivate()
 }
 
 /*!
-    internal
+    \internal
 
-    initialises HbProgressDialogPrivate class 
+    Initializes HbProgressDialogPrivate class 
 */
 void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
 {
@@ -111,9 +111,9 @@ void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
         mContentWidget->mProgressBar->setRange(0,100);
     }
     
-    mAction = new HbAction(q->tr("Cancel"));
-    QObject::connect(mAction, SIGNAL(triggered()), q, SLOT(_q_userCancel()));
-    q->setPrimaryAction(mAction);
+    HbAction *action = new HbAction(q->tr("Cancel"), q);
+    QObject::connect(action, SIGNAL(triggered()), q, SLOT(_q_userCancel()));
+    q->addAction(action);
     
     mMinDuration = 1500;
     mDelayTime = 1000;
@@ -124,12 +124,11 @@ void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
 
     q->setTimeout(HbPopup::NoTimeout);
     q->setDismissPolicy(HbPopup::NoDismiss);
-    q->setModal(false);
     q->hide();
 }
 
 /*
-    internal
+    \internal
 
     createPrimitives.
  */
@@ -138,7 +137,7 @@ void HbProgressDialogPrivate::createPrimitives()
     Q_Q(HbProgressDialog);
 
     if( !mContentWidget->mProgressBar ){
-            mContentWidget->mProgressBar = new HbProgressBar(HbProgressBar::SimpleProgressBar,mContentWidget);
+            mContentWidget->mProgressBar = new HbProgressBar(mContentWidget);
             HbStyle::setItemName(mContentWidget->mProgressBar, "pbar");
     }
 
@@ -161,10 +160,10 @@ void HbProgressDialogPrivate::createPrimitives()
 }
 
 /*!
-    internal
+    \internal
 
-    private slot which stops the timer and 
-    dismisses the dialog
+    Private slot for, when user clicks on cancel button. This stops the timer and 
+    dismisses the dialog.
 */
 void HbProgressDialogPrivate::_q_userCancel()
 {
@@ -176,9 +175,9 @@ void HbProgressDialogPrivate::_q_userCancel()
 }
 
 /*!
-    internal
+    \internal
 
-    private slot which stops the timer and 
+    Private slot which stops the timer and 
     dismisses the dialog
 */
 void HbProgressDialogPrivate::_q_finished()
@@ -203,10 +202,9 @@ void HbProgressDialogPrivate::_q_finished()
 }
 
 /*!
-    internal
+    \internal
 
-    private slot which stops the timer and 
-    dismisses the dialog
+    Private slot, for when progress value changes. When maximum value, stop the timer and close the dialog.
 */
 void HbProgressDialogPrivate::_q_progressValueChanged(int value)
 {
@@ -233,7 +231,7 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
     \class HbProgressDialog
     \brief HbProgressDialog provides feedback on the progress of a slow operation.
 
-    \image html hbprogressnote.png  A progress dialog.
+    \image html hbprogressdialog.png  A progress dialog.
 
     ProgressDialog widget displays that a process is active and also the completion level of the process to the user.
 
@@ -444,7 +442,7 @@ void HbProgressDialog::setRange(int min,int max)
 
 /*!
     @beta
-    Returns the value of the progressbar within the note.
+    Returns the value of the progressbar within the dialog.
 
     This value is constrained as follows:
     \b minimum <= \c value <= \b maximum.
@@ -460,7 +458,7 @@ int HbProgressDialog::progressValue() const
 
 /*!
     @beta
-    Sets the value of the progressbar within the progress dialog.
+    Sets the value for the progressbar within the progress dialog.
     After the timeline has been started the value is updated automatically.
     Use this function only if the timer is not used.
 
@@ -482,7 +480,7 @@ void HbProgressDialog::setProgressValue(int value)
 /*!
     @beta
     Closes the dialog while emitting the cancelled() signal. This function is called when 
-    user presses the Cancel button or then the timer expires.
+    user presses the Cancel button or when the timer expires.
  */
 void HbProgressDialog::cancel() 
 {
@@ -519,6 +517,9 @@ QGraphicsItem* HbProgressDialog::primitive(HbStyle::Primitive primitive) const
     The type of the progress dialog can be specified with one of the values:
     \li HbProgressDialog::ProgressDialog
     \li HbProgressDialog::WaitDialog
+
+    \param type type for the progress dialog.
+
     \sa progressDialogType()
  */
 void HbProgressDialog::setProgressDialogType(HbProgressDialog::ProgressDialogType type)
@@ -550,8 +551,8 @@ HbProgressDialog::ProgressDialogType HbProgressDialog::progressDialogType() cons
 
 /*!
     @beta
-    Shows the progress dialog after a delay(say 1sec). This is a convenient slot.
-    if user cancels progress dialog before delay getting expired, then progress dialog wont be shown at all 
+    Shows the progress dialog after a delay, say 1sec. This is a convenient slot for the user.
+    if user cancels progress dialog before delay getting expired, then progress dialog wont be shown at all.
  */
 void HbProgressDialog::delayedShow()
 {
@@ -565,6 +566,7 @@ void HbProgressDialog::delayedShow()
 /*!
     @beta
     Returns the auto close flag.
+    \return autoclose flag.
     \sa setAutoClose()
  */
 bool HbProgressDialog::autoClose () const 
@@ -577,6 +579,7 @@ bool HbProgressDialog::autoClose () const
 /*!
     @beta
     Sets the auto close flag.
+    \param close based on which autoclose flag is set or reset.
     \sa autoClose()
  */
 void HbProgressDialog::setAutoClose ( bool close )
@@ -588,9 +591,7 @@ void HbProgressDialog::setAutoClose ( bool close )
 }
 
 /*!
-    Initializes \a option with the values from this HbProgressDialog. 
-    This method is useful for subclasses when they need a HbStyleOptionProgressDialog,
-    but don't want to fill in all the information themselves.
+    \reimp
  */
 void HbProgressDialog::initStyleOption(HbStyleOptionProgressDialog *option) const
 {
@@ -621,9 +622,8 @@ void HbProgressDialog::showEvent(QShowEvent *event)
  */
 void HbProgressDialog::closeEvent ( QCloseEvent * event )
 {
-    Q_D(HbProgressDialog);
-    
-    d->mAction->setToolTip("");
+    Q_D(HbProgressDialog);    
+
     if(d->flags.testFlag(HbProgressDialogPrivate::Closetimer)){
         d->flags |= HbProgressDialogPrivate::Closepending;
         event->setAccepted(false);
@@ -720,89 +720,6 @@ HbIcon HbProgressDialog::icon() const
     return d->mIcon;
 }
 
-
-/*!
-    \deprecated HbProgressDialog::setTextAlignment( Qt::Alignment )
-        is deprecated.
-
-    Sets the text alignment.
-    \param align Qt defined alignment options can used.
-
-    The default value is Qt::AlignLeft|Qt::AlignVCenter
-
-    \sa mTextAlignment()
-*/
-void HbProgressDialog::setTextAlignment( Qt::Alignment align )
-{
-    Q_D(HbProgressDialog);
-    
-    if (align != d->mAlign ){
-        d->mAlign = align;
-        if(d->mContentWidget->mTextItem)
-        {
-            HbStyleOptionProgressDialog progressDialogOption;
-            initStyleOption(&progressDialogOption);
-            style()->updatePrimitive(d->mContentWidget->mTextItem, HbStyle::P_ProgressDialog_text, &progressDialogOption); 
-        }
-    }
-}
-
-/*!
-    \deprecated HbProgressDialog::textAlignment() const
-        is deprecated.
-
-    Returns the text alignment.
-
-    \sa setTextAlignment()
-*/
-Qt::Alignment HbProgressDialog::textAlignment() const
-{
-    Q_D(const HbProgressDialog);
-    
-    return d->mAlign;
-}
-
-/*!
-   \deprecated HbProgressDialog::setIconAlignment( Qt::Alignment )
-        is deprecated.
-
-    Sets the icon alignment.
-
-    \param align Qt defined alignment options can used.
-
-    The default value is Qt::AlignCenter.
-
-    \sa mIconAlignment()
-*/
-void HbProgressDialog::setIconAlignment( Qt::Alignment align )
-{
-    Q_D(HbProgressDialog);
-    
-    if (align != d->mIconAlignment){
-        d->mIconAlignment = align;
-        if (d->mContentWidget->mIconItem) {
-            HbStyleOptionProgressDialog progressDialogOption;
-            initStyleOption(&progressDialogOption);
-            style()->updatePrimitive(d->mContentWidget->mIconItem, HbStyle::P_ProgressDialog_icon, &progressDialogOption);
-        }
-    }
-}
-
-
-/*!
-    \deprecated HbProgressDialog::iconAlignment() const
-        is deprecated.
-
-    Returns the icon alignment.
-
-    \sa setIconAlignment()
-*/
-Qt::Alignment HbProgressDialog::iconAlignment() const
-{
-    Q_D(const HbProgressDialog);
-
-    return d->mIconAlignment;
-}
 
 #include "moc_hbprogressdialog.cpp"
 #include "hbprogressdialog.moc"

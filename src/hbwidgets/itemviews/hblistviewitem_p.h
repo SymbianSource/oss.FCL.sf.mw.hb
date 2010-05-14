@@ -45,8 +45,8 @@ class HbListViewItemShared : public HbAbstractViewItemShared
             mTextFormat(Qt::PlainText),
             mStretchingStyle(HbListViewItem::NoStretching),
             mGraphicsSize(HbListViewItem::MediumIcon),
-            mMinimumSecondaryTextRowCount(1),
-            mMaximumSecondaryTextRowCount(1)
+            mMinimumSecondaryTextRowCount(-1),
+            mMaximumSecondaryTextRowCount(-1)
         {
         }
 

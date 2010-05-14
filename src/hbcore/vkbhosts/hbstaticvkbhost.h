@@ -39,8 +39,6 @@ public:
     explicit HbStaticVkbHost(HbWidget *target);
     ~HbStaticVkbHost();
 
-    int priority() const;
-
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbStaticVkbHost)
     Q_DISABLE_COPY(HbStaticVkbHost)

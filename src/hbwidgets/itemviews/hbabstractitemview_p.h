@@ -103,8 +103,6 @@ public:
     
     HbAbstractViewItem* viewItem(QGraphicsItem *item) const;
 
-    void refreshContainerGeometry();
-
     QRectF itemBoundingRect(const QGraphicsItem *item) const;
 
     void updateItems();

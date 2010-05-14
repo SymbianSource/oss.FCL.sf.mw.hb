@@ -44,7 +44,7 @@ public:
     void emitSliderReleased();
     void setProgressValue(int value);
     void emitSliderMoved(int newValue);
-	void setEnableFlag(bool flag);
+	   void setEnableFlag(bool flag);
     QRectF boundingRect() const;
     HbStyle* style() const;
     QGraphicsItem* parentGraphicsItem() const;
@@ -63,9 +63,7 @@ private:
     QGraphicsItem *mSliderGraphicItem;
     int mSliderValue;
     bool mDownState;
-    HbIcon thumbIcon;
     QString mTooltipText;
-    HbProgressSlider::SliderState state;
     QString mHandlePath;
 };
 

@@ -82,6 +82,8 @@ public:
      };
     HbInputVkbWidgetPrivate();
     virtual ~HbInputVkbWidgetPrivate();
+
+    virtual void initLayout();
     virtual void init();
 
     virtual int keyCode(int buttonId);
@@ -97,6 +99,9 @@ public:
     void redirectMouseReleaseEvent(QGraphicsSceneMouseEvent *aEvent);
 
     virtual void applyEditorConstraints();
+    virtual void updateKeyCodes();
+    virtual void updateButtons();
+    virtual void settingListPosition(QPointF &position, HbPopup::Placement &placement);
 
     virtual void setRockerPosition();
 
@@ -120,7 +125,7 @@ public:
 
     HbModifiers mModifiers;
 
-    HbInputModeIndicator* mInputModeIndicator;
+    HbInputModeIndicator *mInputModeIndicator;
 
     QPointer<HbTouchKeypadButton> mApplicationButton;
     QPointer<HbAction> mApplicationButtonAction;
@@ -158,7 +163,8 @@ public:
     bool mAnimateWhenDialogCloses;
     HbQwertyKeyboardSize mKeyboardSize;
     int mCloseHandleHeight;
-    QGraphicsWidget *mCloseHandle; 
+    int mCloseHandleWidth;
+    QGraphicsWidget *mCloseHandle;
     HbView *mSettingView;
     HbView *mCurrentView;
     bool mKeyboardDimmed;

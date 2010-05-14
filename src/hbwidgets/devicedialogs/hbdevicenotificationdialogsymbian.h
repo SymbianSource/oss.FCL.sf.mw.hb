@@ -75,15 +75,12 @@ public:
     IMPORT_C void SetTitleL(const TDesC& aTitle);
     IMPORT_C const TPtrC Title() const;
     
-    IMPORT_C void EnableTouchActivationL(TBool aEnable); // deprecated
     IMPORT_C void EnableTouchActivation(TBool aEnable);
     IMPORT_C TBool IsTouchActivating() const;
         
-    IMPORT_C void SetTimeoutL(TInt aTimeout); // deprecated
     IMPORT_C void SetTimeout(TInt aTimeout);
     IMPORT_C TInt Timeout() const;
     
-    IMPORT_C void SetTitleTextWrappingL(TextWrapping aWrapping); // deprecated
     IMPORT_C void SetTitleTextWrapping(TextWrapping aWrapping); 
     IMPORT_C TextWrapping TitleTextWrapping() const;
     

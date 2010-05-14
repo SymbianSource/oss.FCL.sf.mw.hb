@@ -27,16 +27,312 @@
 #include "hbthemeindex_p.h"
 #ifndef HB_BOOTSTRAPPED
 #include "hbthemeclient_p.h"
+#include "hbinstance.h"
 #endif // HB_BOOTSTRAPPED
+
+
+HbThemeIndexResource::HbThemeIndexResource(const QString &resourceName) :
+    resourceName(resourceName),
+    data(0)
+{
+#ifndef HB_BOOTSTRAPPED
+    getResourceData();
+#endif // HB_BOOTSTRAPPED
+}
+
+void HbThemeIndexResource::getResourceData()
+{
+#ifndef HB_BOOTSTRAPPED
+#ifdef THEME_INDEX_TRACES
+    qDebug() << "HbThemeIndexResource::getResourceData(: get item for" << resourceName.toUtf8();
+#endif
+    // Theme index tables are always valid in shared memory
+
+    // Try to find themable item with following logic:
+    // If item is locked in base theme
+    //     Select item from base theme
+    // Else if item is found from C-drive operator theme
+    //     Select item from C-drive operator theme
+    // Else if item is found from ROM operator theme
+    //    Select item from ROM operator theme
+    // Else if item is found from active theme
+    //    Select item from active theme
+    // Else
+    //    Select item from base theme
+
+    type = BaseTheme; // This is the default, even we couldn't find themable resource
+
+    // First check base theme, which should be always valid
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
+    if (info.themeIndexOffset == 0) { // This shouldn't happen, as there must be valid base theme
+        return; // Data will be 0
+    }
+    
+    const char *baseAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                              info.themeIndexOffset);
+    HbThemeIndex baseIndex(baseAddress);
+    const HbThemeIndexItemData *baseItemData = baseIndex.getItemData(resourceName);
+
+    if (!baseItemData) { // If the item is not found from base theme, it can't be found elsewhere
+        return; // Data will be 0
+    }
+
+    if (baseItemData->flags & HbThemeIndexItemData::Locked) {
+        basePath = info.path;
+        themeName = info.name;
+        data = baseItemData;
+        return;
+    }
+
+    // Base wasn't locked, next check operator theme in C-drive
+    info = HbThemeUtils::getThemeIndexInfo(OperatorC);
+    if (info.themeIndexOffset > 0) {
+        const char *operatorCAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                       info.themeIndexOffset);
+        HbThemeIndex operatorCIndex(operatorCAddress);
+        const HbThemeIndexItemData *operatorCItemData = operatorCIndex.getItemData(resourceName);
+
+        if (operatorCItemData) { // Found, use it
+            type = OperatorC;
+            basePath = info.path;
+            themeName = info.name;
+            data = operatorCItemData;
+            return;
+        }
+    }
+
+    // Not found from operator theme in C-drive, next check operator theme in ROM
+    info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
+    if (info.themeIndexOffset > 0) {
+        const char *operatorZAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                       info.themeIndexOffset);
+        HbThemeIndex operatorZIndex(operatorZAddress);
+        const HbThemeIndexItemData *operatorZItemData = operatorZIndex.getItemData(resourceName);
+
+        if (operatorZItemData) { // Found, use it
+            type = OperatorROM;
+            basePath = info.path;
+            themeName = info.name;
+            data = operatorZItemData;
+            return;
+        }
+    }
+
+    // Not found from operator themes, try active theme
+    info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+    if (info.themeIndexOffset > 0) {
+        const char *activeThemeAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                         info.themeIndexOffset);
+        HbThemeIndex activeThemeIndex(activeThemeAddress);
+        const HbThemeIndexItemData *activeThemeItemData = activeThemeIndex.getItemData(resourceName);
+
+        if (activeThemeItemData) { // Found, use it
+            type = ActiveTheme;
+            basePath = info.path;
+            themeName = info.name;
+            data = activeThemeItemData;
+            return;
+        }
+    }
+
+    // Not found from active theme, use base
+    info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
+    basePath = info.path;
+    themeName = info.name;
+    data = baseItemData;
+    return;
+#endif // HB_BOOTSTRAPPED
+}
+
+
+HbThemeIndexResource::~HbThemeIndexResource()
+{
+}
+
+bool HbThemeIndexResource::isValid()
+{
+    if (data) {
+        return true;
+    }
+    return false;
+}
+
+const QSize HbThemeIndexResource::defaultItemSize()
+{
+    if (data) {
+        return QSize(data->defaultWidth, data->defaultHeight);
+    }
+    return QSize();
+}
+
+const QSize HbThemeIndexResource::mirroredItemSize()
+{
+    if (data) {
+        return QSize(data->mirroredWidth, data->mirroredHeight);
+    }
+    return QSize();
+}
+
+bool HbThemeIndexResource::isAutomaticallyMirrored()
+{
+    if (data) {
+        return (data->flags & HbThemeIndexItemData::Mirrorable);
+    }
+    return false;
+}
+
+bool HbThemeIndexResource::isLocked()
+{
+    if (data) {
+        return (data->flags & HbThemeIndexItemData::Locked);
+    }
+    return false;
+}
+
+QString HbThemeIndexResource::fullFileName()
+{
+    if (!data) {
+        return QString();
+    }
+
+    QString fullName = basePath;
+    switch (data->itemType) {
+        case HbThemeIndexItemData::SvgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".svg";
+            break;
+            }
+        case HbThemeIndexItemData::PngItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".png";
+            break;
+            }
+        case HbThemeIndexItemData::MngItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".mng";
+            break;
+            }
+        case HbThemeIndexItemData::GifItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".gif";
+            break;
+            }
+        case HbThemeIndexItemData::XpmItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".xpm";
+            break;
+            }
+        case HbThemeIndexItemData::JpgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".jpg";
+            break;
+            }
+        case HbThemeIndexItemData::NvgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".nvg";
+            break;
+            }
+        case HbThemeIndexItemData::SvgzItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".svgz";
+            break;
+            }
+        case HbThemeIndexItemData::QpicItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".qpic";
+            break;
+            }
+        case HbThemeIndexItemData::AxmlItem:
+            {
+            fullName = fullName + "/animations/" + themeName + "/" + resourceName;
+            break;
+            }
+        case HbThemeIndexItemData::FxmlItem:
+            {
+            fullName = fullName + "/effects/" + themeName + "/" + resourceName;
+            break;
+            }
+        default:
+            {
+            break;
+            }
+        }
+
+    return fullName;
+}
+
+QString HbThemeIndexResource::fullMirroredFileName()
+{
+    if (!data) {
+        return QString();
+    }
+
+    QString fullName = basePath;
+    switch (data->mirroredItemType) {
+        case HbThemeIndexItemData::SvgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svg";
+            break;
+            }
+        case HbThemeIndexItemData::PngItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".png";
+            break;
+            }
+        case HbThemeIndexItemData::MngItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".mng";
+            break;
+            }
+        case HbThemeIndexItemData::GifItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".gif";
+            break;
+            }
+        case HbThemeIndexItemData::XpmItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".xpm";
+            break;
+            }
+        case HbThemeIndexItemData::JpgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".jpg";
+            break;
+            }
+        case HbThemeIndexItemData::NvgItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".nvg";
+            break;
+            }
+        case HbThemeIndexItemData::SvgzItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svgz";
+            break;
+            }
+        case HbThemeIndexItemData::QpicItem:
+            {
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".qpic";
+            break;
+            }
+        default:
+            {
+            return fullFileName(); // There was no mirrored icon, return normal icon
+            break;
+            }
+        }
+
+    return fullName;
+}
+
 
 // Class HbThemeIndex has the logic of handling different versions of
 // the theme index file formats.
 
 HbThemeIndex::HbThemeIndex(const char *baseAddress) :
     mBaseAddress(baseAddress),
-    mCount(0),
-    mItemArray(0),
-    mStringAreaStart(0)
+    mItemCount(0),
+    mThemeItemDataArray(0),
+    initialized(false)
 {
 }
 
@@ -44,54 +340,53 @@ HbThemeIndex::~HbThemeIndex()
 {
 }
 
-int HbThemeIndex::itemCount()
+void HbThemeIndex::init()
 {
-    if (!mCount) {
-        //int version = *(reinterpret_cast<const int *>(mBaseAddress));
-        // Assumes version 1 for now
-        const HbThemeIndexHeaderV1 *header = reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
-        mCount = header->count;
-    }
+    //int version = *(reinterpret_cast<const int *>(mBaseAddress));
+    // Assumes version 1 for now
+    const HbThemeIndexHeaderV1 *header = reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
+    mItemCount = header->itemCount;
+    mThemeItemDataArray = reinterpret_cast<const HbThemeIndexItemData *>(mBaseAddress + sizeof(HbThemeIndexHeaderV1));
 
-    return mCount;
+    initialized = true;
 }
 
-const HbThemeIndexItem *HbThemeIndex::itemArray()
+quint32 HbThemeIndex::hash(const QString &string)
 {
-    if (!mItemArray) {
-        // Assumes version 1 for now
-        mItemArray = reinterpret_cast<const HbThemeIndexItem *>(mBaseAddress + sizeof(HbThemeIndexHeaderV1));
-    }
-    return mItemArray;
-}
+    quint32 hashValue = 0;
+    quint32 c;
+    QByteArray array = string.toLatin1();
+    char *data = array.data();
+    c = *data++;
 
-const char *HbThemeIndex::stringAreaStart()
-{
-    if (!mStringAreaStart) {
-        // Assumes version 1 for now
-        mStringAreaStart = mBaseAddress + sizeof(HbThemeIndexHeaderV1) + itemCount() * sizeof(HbThemeIndexItem);
+    while (c) {
+        hashValue = c + (hashValue << 6) + (hashValue << 16) - hashValue;
+        c = *data++;
     }
 
-    return mStringAreaStart;
+    return hashValue;
 }
 
-const HbThemeIndexItem *binaryFind(const QString &itemName, const char* themeIndexBase, const HbThemeIndexItem *itemArray, int count)
+const HbThemeIndexItemData *HbThemeIndex::getItemData(const QString &itemName)
 {
+    if (!initialized) {
+        init();
+    }
+
+    quint32 hashValue = hash(itemName);
     int begin = 0;
-    int end = count - 1;
+    int end = mItemCount - 1;
+
+    const HbThemeIndexItemData *retItem = 0;
 
     // binary search
     while (begin <= end) {
         int mid = begin + (end-begin)/2;
-        // Fast string comparison, no unnecessary mem copy
-        int comparison = itemName.compare(QLatin1String(themeIndexBase + itemArray[mid].iconnameOffset));
-        // If the item was found, we're done.
-        if (!comparison) {
-            return &itemArray[mid];
-        }
-        
-        // Is the target in lower or upper half?
-        else if (comparison < 0) {
+
+        if (mThemeItemDataArray[mid].itemNameHash == hashValue) {
+            retItem = &mThemeItemDataArray[mid];
+            return retItem;
+        } else if (hashValue < mThemeItemDataArray[mid].itemNameHash) {
             end = mid - 1;
         } else {
             begin = mid + 1;
@@ -99,58 +394,58 @@ const HbThemeIndexItem *binaryFind(const QString &itemName, const char* themeInd
     }   
 
     // Did not find the target, return 0.
-    return 0;
+    return retItem;
 }
 
-/**
-* Returns true if the current theme has a valid theme index included in it.
-*/
-bool ThemeIndexTables::isValid()
+int HbThemeIndex::itemCount()
 {
-#ifndef HB_BOOTSTRAPPED
-    // Retrieve tables from server if not done yet
-    if (!tablesRetrieved) {
-        HbThemeClient::global()->getThemeIndexTables(*this);
-        tablesRetrieved = true;
-
-#ifdef THEME_INDEX_TRACES
-        qDebug() << "ThemeIndex: retrieved index tables, table[0] =" << tables[0] << "table[1] =" << tables[1];
-
-#endif // THEME_INDEX_TRACES
-
+    if (!initialized) {
+        init();
     }
-#endif // HB_BOOTSTRAPPED
-    return tables[0] >= 0;
+
+    return mItemCount;
 }
 
-const HbThemeIndexItem *ThemeIndexTables::getItem(const QString &itemName, int &tableIndex)
+bool HbThemeIndex::validateItems(qint64 byteSize)
 {
-    if (isValid()) {
-        // Check the current theme index and its parents 
-        for (int i = 0; i < ThemeIndexTableCountMax; ++i) {
-            int usedTable = tables[i];
-            if (usedTable < 0) {
-                break;
-            }
-        
-            const char *baseAddress = reinterpret_cast<const char *>(usedTable);
-            HbThemeIndex index(baseAddress);
-            // Check the table
-            int count = index.itemCount();
-            const HbThemeIndexItem *itemArray = index.itemArray();
-    
-            // Get the correct item from the table using binary find
-            const HbThemeIndexItem *item = binaryFind(itemName, baseAddress, itemArray, count);
-    
-            if (item) {
-                tableIndex = i;
-#ifdef THEME_INDEX_TRACES
-                qDebug() << "ThemeIndex: Returned item for" << itemName.toUtf8() << "from table" << tableIndex;
-#endif
-                return item;
-            }
+    if (!initialized) {
+        init();
+    }
+
+    bool indexOK = false;
+
+    if (sizeof(HbThemeIndexHeaderV1)
+        + (mItemCount * sizeof(HbThemeIndexItemData)) == byteSize) {
+        indexOK = true;
+    }
+
+    #ifdef THEME_INDEX_TRACES
+    if (!indexOK) {
+        qDebug() <<  "ThemeIndex: Index file corrupted!";
+    }
+    #endif    
+
+    /* Todo: fix
+    // Validate items
+    for (int i = 0; i < mItemCount; i++) {
+        const HbThemeIndexItem *item = mThemeItemArray++;
+        if (!item ||
+            item->itemNameOffset < stringAreaStart || item->itemNameOffset >= byteSize ||
+            item->itemFolderOffset < stringAreaStart || item->itemFolderOffset >= byteSize ||
+            item->extOffset < stringAreaStart || item->extOffset >= byteSize ||
+            (item->mirroredExtOffset != -1 &&
+            (item->mirroredExtOffset < stringAreaStart || item->mirroredExtOffset >= byteSize))) {
+
+            indexOK = false;
+            break;
         }
     }
-    
-    return 0;
+*/
+    #ifdef THEME_INDEX_TRACES
+    if (!indexOK) {
+        qDebug() <<  "ThemeIndex: Icons NOK! Stopping validation.";
+    }
+    #endif
+
+    return indexOK;
 }
