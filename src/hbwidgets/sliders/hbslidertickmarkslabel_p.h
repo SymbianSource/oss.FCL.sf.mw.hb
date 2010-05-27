@@ -33,6 +33,8 @@
 
 class QStyleOption;
 class HbSliderTickmarksLabelPrivate;
+class QEvent;
+
 
 class HB_AUTOTEST_EXPORT HbSliderTickmarksLabel : public HbWidget
 {
@@ -42,8 +44,6 @@ public:
     explicit HbSliderTickmarksLabel( QGraphicsItem *parent = 0 );
     ~HbSliderTickmarksLabel();
 
-   /* virtual void paint( QPainter *painter, const QStyleOptionGraphicsItem *option, 
-        QWidget *widget );*/
     virtual void resizeEvent(QGraphicsSceneResizeEvent *event);
 
     enum {Type = HbPrivate::ItemType_SliderTickmarksLabel };
@@ -52,7 +52,8 @@ public:
     void updateTickLabels( );
     void setTickPosition(Hb::SliderTickPositions position);
     void setLabelSize();
-    void createText(bool create);
+    virtual bool event ( QEvent * event );
+
 
 
 protected:

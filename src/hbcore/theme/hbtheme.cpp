@@ -25,17 +25,16 @@
 #include "hbtheme.h"
 #include "hbtheme_p.h"
 #include "hbthemeclient_p.h"
-#include <qglobal.h>
-#include <QSettings>
 #include "hbstandarddirs_p.h"
 #include "hbicontheme_p.h"
-#include "hbcolortheme_p.h"
 #include "hbthemeutils_p.h"
 #include "hbiconloader_p.h"
 #include "hbcolortheme_p_p.h"
 #include "hbcolortheme_p.h"
 #include "hbeffecttheme_p.h"
 #include "hbeffectinternal_p.h"
+#include <QSettings>
+
 /*!
     @stable
     @hbcore
@@ -74,7 +73,7 @@
 /*!
     Returns static instance
  */
-HbTheme* HbTheme::instance()
+HbTheme *HbTheme::instance()
 {
     static HbTheme theInstance;
     return &theInstance;
@@ -124,7 +123,7 @@ HbThemePrivate::HbThemePrivate()
     // Condition added to check if the client itself is server.
     if(THEME_SERVER_NAME != HbMemoryUtils::getCleanAppName()) {
         if(!HbThemeClient::global()->connectToServer()) {
-	    	qWarning()<<"ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
+            qWarning() << "ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
         }
     }
 }

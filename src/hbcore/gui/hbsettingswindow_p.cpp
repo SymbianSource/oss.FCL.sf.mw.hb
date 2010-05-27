@@ -86,6 +86,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
 {
     mLights = true;
     mAnimation = true;
+    mCustomViewPortSize = false;
 
     windowComboBox = new QComboBox(this);
     windowComboBox->hide();
@@ -99,8 +100,8 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     mLights = true;
     HbIcon icon("qtg_mono_light");
     mLightsButton = new QPushButton(icon.pixmap(), "", this);
-
     mAnimationButton = new QPushButton(tr("&Animation on"), this);
+    mViewPortSizeButton = new QPushButton(tr("&Set custom ViewPortSize"),this);
 
     resolutionComboBox->addItems(HbDeviceProfile::profileNames());
     directionComboBox->addItems(QStringList() << tr("Left to right") << tr("Right to left"));
@@ -118,6 +119,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     connect(mUnsetOrientationButton, SIGNAL(pressed()), SLOT(unsetOrientation()));
     connect(mLightsButton, SIGNAL(pressed()), SLOT(toggleLights()));
     connect(mAnimationButton, SIGNAL(pressed()), SLOT(toggleAnimation()));
+    connect(mViewPortSizeButton, SIGNAL(pressed()), SLOT(resizeViewPort()));
 
     QVBoxLayout *boxLayout = new QVBoxLayout(this);
     
@@ -127,6 +129,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     layout->addRow(tr("&Resolution"), resolutionComboBox);
     layout->addRow(tr("&Direction"), directionComboBox);
     layout->addRow(tr("&Drag to resize"), dragToResizeComboBox);
+    layout->addRow(mViewPortSizeButton);
 
     mainGroup->setLayout(layout);
     boxLayout->addWidget(mainGroup);
@@ -388,3 +391,22 @@ void HbSettingsWindow::toggleAnimation()
     }
 
 }
+
+void HbSettingsWindow::resizeViewPort()
+{
+    HbMainWindow *window = hbInstance->allMainWindows().at(0);
+    if (!mCustomViewPortSize) {
+        mViewPortOriginalSize = window->size();
+        QSizeF newSize = mViewPortOriginalSize;
+        newSize.scale(mViewPortOriginalSize.width(),mViewPortOriginalSize.height()-150,Qt::IgnoreAspectRatio);
+        HbMainWindowPrivate::d_ptr(window)->setViewportSize(newSize);
+        mCustomViewPortSize = true;
+        mViewPortSizeButton->setText(tr("&Set original ViewPortSize"));
+    } else {
+        HbMainWindowPrivate::d_ptr(window)->setViewportSize(mViewPortOriginalSize);
+        mCustomViewPortSize = false;
+        mViewPortSizeButton->setText(tr("&Set custom ViewPortSize"));
+    }
+
+}
+

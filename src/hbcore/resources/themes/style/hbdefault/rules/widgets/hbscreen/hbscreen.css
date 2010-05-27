@@ -81,6 +81,20 @@ HbScreen::titlebar[titleBarMinimizable="false"]{
     fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));
 }
 
+HbScreen::titlebar[titleBarMinimizable="true"]::right-to-left{
+    left: 0un;
+    right: -expr((1/3)*var(hb-param-widget-chrome-height));
+    top: 0un;
+    fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));
+}
+
+HbScreen::titlebar[titleBarMinimizable="false"]::right-to-left{
+    left: 0un;
+    right: 0un;
+    top: 0un;
+    fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));
+}
+
 HbScreen::navi{
 	fixed-height: 7.5un;
 	size-policy-horizontal:preferred;

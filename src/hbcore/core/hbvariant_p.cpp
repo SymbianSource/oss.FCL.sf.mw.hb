@@ -85,7 +85,7 @@ void HbVariant::detach()
         newData->setDataType(data->dataType());
 
         if ( data->dataType() == String ) {
-            HbSmartOffset dataOffset(manager->alloc( data->stringSize*sizeof(QChar)));
+            HbSmartOffset dataOffset(manager->alloc(data->stringSize * sizeof(QChar)));
 #ifdef HB_BIN_CSS
                 HbCssConverterUtils::registerOffsetHolder(&(newData->mData.offset));
 #endif
@@ -107,7 +107,6 @@ void HbVariant::detach()
         mShared = false;
     }
 }
-
 
 /*
 * C'tor
@@ -185,7 +184,6 @@ HbVariant::HbVariant( const char *val, HbMemoryManager::MemoryType type )
 #endif
 }
 
-
 /*
 * C'tor taking QColor
 */
@@ -203,14 +201,14 @@ HbVariant::HbVariant( const QColor &col, HbMemoryManager::MemoryType type )
 /*
 * copy C'tor
 */
-
 HbVariant::HbVariant( const HbVariant &other )
 {
 
     mMemoryType = other.mMemoryType;
     GET_MEMORY_MANAGER(other.mMemoryType)
 
-    HbVariantData* data = HbMemoryUtils::getAddress<HbVariantData>( mMemoryType, other.mDataOffset );
+    HbVariantData *data = HbMemoryUtils::getAddress<HbVariantData>(mMemoryType,
+                                                                   other.mDataOffset);
     mDataOffset = other.mDataOffset;
 
     if ( !manager->isWritable() || other.mShared == true ) {
@@ -235,13 +233,14 @@ HbVariant::~HbVariant()
 {
     GET_MEMORY_MANAGER(mMemoryType);
     // if the memory where the variant is not writable it means it's client process, so do nothing
-    if( !manager->isWritable() ) 
+    if(!manager->isWritable() ) {
         return;
-    HbVariantData *data= getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
-    if( mShared != true && !data->mRef.deref() ) {
+    }
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    if(!mShared&& !data->mRef.deref()) {
         clear();
         data->~HbVariantData();
-        HbMemoryUtils::freeMemory( mMemoryType, mDataOffset );
+        HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
     }
 
 #ifdef HB_BIN_CSS
@@ -299,11 +298,11 @@ QString HbVariant::toString() const
 */
 QString HbVariant::getString() const
 {
-    HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
    
     if (data->mData.offset != -1) { 
-        QChar* dataPtr = getAddress<QChar>( mMemoryType, data->mData.offset, mShared );
-        return QString::fromRawData( dataPtr, data->stringSize );
+        QChar *dataPtr = getAddress<QChar>(mMemoryType, data->mData.offset, mShared);
+        return QString::fromRawData(dataPtr, data->stringSize);
     } else { // data->mData.offset == -1 is empty String Variant.
         return QString("");
     }
@@ -436,7 +435,7 @@ void HbVariant::fillColorData( const QColor &col )
 /*
 * = operator taking int 
 */
-HbVariant& HbVariant::operator=(int val)
+HbVariant & HbVariant::operator=(int val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
@@ -450,7 +449,7 @@ HbVariant& HbVariant::operator=(int val)
 /*
 * = operator taking double 
 */
-HbVariant& HbVariant::operator=(double val)
+HbVariant & HbVariant::operator=(double val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
@@ -464,7 +463,7 @@ HbVariant& HbVariant::operator=(double val)
 /*
 * = operator taking QString 
 */
-HbVariant& HbVariant::operator=(const QString& val)
+HbVariant & HbVariant::operator=(const QString &val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillStringData(val.constData(), val.length());
@@ -474,7 +473,7 @@ HbVariant& HbVariant::operator=(const QString& val)
 /*
 * = operator taking HbString 
 */
-HbVariant& HbVariant::operator=(const HbString& val)
+HbVariant & HbVariant::operator=(const HbString &val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillStringData(val.constData(), val.length());
@@ -484,7 +483,7 @@ HbVariant& HbVariant::operator=(const HbString& val)
 /*
 * = operator taking QColor 
 */
-HbVariant& HbVariant::operator=(const QColor& col)
+HbVariant &HbVariant::operator=(const QColor &col)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillColorData(col);
@@ -492,7 +491,7 @@ HbVariant& HbVariant::operator=(const QColor& col)
 }
 
 /*
-* = operator taking QStringList 
+* = operator taking QStringList
 */
 HbVariant& HbVariant::operator=(const QStringList& /*strList*/)
 {
@@ -503,31 +502,28 @@ HbVariant& HbVariant::operator=(const QStringList& /*strList*/)
 /*
 * = operator taking HbVariant 
 */
-HbVariant& HbVariant::operator=(const HbVariant &other)
+HbVariant &HbVariant::operator=(const HbVariant &other)
 {
     GET_MEMORY_MANAGER(mMemoryType)
     if(!manager->isWritable()) {
         Q_ASSERT(false);
     }
 
-    HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset, other.mShared);
+    HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset,
+                                                         other.mShared);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
     if(other.mMemoryType != mMemoryType || other.mShared == true) {
-        if(mShared != true) {
-            if(data->mRef == 1) {
-                clear();
-                data->~HbVariantData();
-                HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
-            }else {
-                data->mRef.deref();
-            }
+        if(!mShared && !data->mRef.deref()) {
+            clear();
+            data->~HbVariantData();
+            HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
         }
         mShared = true;
         mMemoryType = HbMemoryManager::HeapMemory;
     } else {
         otherData->mRef.ref();
-        if(mShared != true && !data->mRef.deref() ) {
+        if(!mShared&& !data->mRef.deref()) {
             clear();
             data->~HbVariantData();
             HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
@@ -536,7 +532,8 @@ HbVariant& HbVariant::operator=(const HbVariant &other)
         mMemoryType = other.mMemoryType;
     }
     mDataOffset = other.mDataOffset;
-    Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
+    Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory
+             || mMemoryType == HbMemoryManager::HeapMemory);
     return *this;
 }
 
@@ -694,7 +691,6 @@ HbVariant::operator QVariant() const
         return QVariant();
     }
 }
-
 
 /*
 * clears the variant, frees any alocated memory

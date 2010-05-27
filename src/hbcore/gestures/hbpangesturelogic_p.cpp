@@ -28,11 +28,10 @@
 #include <QGraphicsView>
 #include <QMouseEvent>
 
+#include <hbdeviceprofile.h>
 #include "hbpangesture.h"
 #include "hbpangesture_p.h"
 #include "hbpangesturelogic_p.h"
-
-const int KPanThreshold = 20;
 
 /*!
    @hbcore
@@ -123,11 +122,14 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
     gesture->d_ptr->mSceneOffset         = HbGestureUtils::mapToScene(watched, QPointF(0,0));
     gesture->d_ptr->mSceneLastOffset     = HbGestureUtils::mapToScene(watched, QPointF(0,0));
     gesture->d_ptr->mLastTimeStamp = mCurrentTime;
-        
-    gesture->d_ptr->mAxisX.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mAxisY.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mSceneAxisX.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mSceneAxisY.resetRecorder(HbDefaultPanThreshold);
+          
+    qreal defaultThreshold = HbDefaultPanThreshold * HbDeviceProfile::current().ppmValue();
+    gesture->d_ptr->mThresholdSquare = defaultThreshold * defaultThreshold;
+
+    gesture->d_ptr->mAxisX.resetRecorder(defaultThreshold);
+    gesture->d_ptr->mAxisY.resetRecorder(defaultThreshold);
+    gesture->d_ptr->mSceneAxisX.resetRecorder(defaultThreshold);
+    gesture->d_ptr->mSceneAxisY.resetRecorder(defaultThreshold);
     gesture->d_ptr->mAxisX.record( me->globalPos().x(), mCurrentTime );
     gesture->d_ptr->mAxisY.record( me->globalPos().y(), mCurrentTime );
     gesture->d_ptr->mSceneAxisX.record( scenePos.x(), mCurrentTime );
@@ -155,7 +157,7 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
 
     QPointF offset = me->globalPos() - gesture->startPos().toPoint();
 
-    if (gestureState == Qt::NoGesture && offset.manhattanLength() <= KPanThreshold )
+    if (gestureState == Qt::NoGesture && (offset.x() * offset.x() + offset.y() * offset.y()) <= gesture->d_ptr->mThresholdSquare)
     {
         return QGestureRecognizer::MayBeGesture;
     }

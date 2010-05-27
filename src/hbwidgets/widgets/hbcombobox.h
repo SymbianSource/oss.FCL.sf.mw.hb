@@ -57,21 +57,22 @@ public:
     explicit HbComboBox( QGraphicsItem *parent = 0 );
     virtual ~HbComboBox( );
 
-    enum { Type = Hb::ItemType_ComboBox };
-    int type( ) const { return Type; }
+    enum {
+        Type = Hb::ItemType_ComboBox
+    };
+    int type( ) const {
+        return Type; 
+    }
 
     void addItem( const QString &text, const QVariant &userData = QVariant() );
-    void addItem( const HbIcon &icon, 
-                  const QString &text,
-                  const QVariant &userData = QVariant( ) );
+    void addItem( const HbIcon &icon, const QString &text,
+        const QVariant &userData = QVariant( ) );
 
     void addItems( const QStringList &texts );
 
     void insertItem( int index, const QString &text, const QVariant &userData = QVariant() );
-    void insertItem( int index,
-                     const HbIcon &icon,
-                     const QString &text,
-                     const QVariant & userData = QVariant( ) );
+    void insertItem( int index, const HbIcon &icon, const QString &text,
+        const QVariant & userData = QVariant( ) );
     void insertItems( int index, const QStringList &texts );
 
     int count( ) const;
@@ -84,10 +85,10 @@ public:
 
     void setItemText( int index, const QString &text );
     QString itemText( int index ) const;
-            
+
     void setModel( QAbstractItemModel *model );
     QAbstractItemModel *model( ) const;
-    
+
     void setEditable( bool editable );
     bool isEditable( ) const;
 
@@ -96,17 +97,18 @@ public:
 
     void setValidator( HbValidator *validator );
     const HbValidator *validator( ) const;
-    
+
     QString currentText( ) const;
-    
+
     int currentIndex( ) const;
-    
+
     void removeItem( int index );
 
     inline int findText( const QString &text,
-        Qt::MatchFlags flags = Qt::MatchExactly|Qt::MatchCaseSensitive ) const
-        { return findData( text, Qt::DisplayRole, flags ); }
-        
+        Qt::MatchFlags flags = Qt::MatchExactly|Qt::MatchCaseSensitive ) const {
+            return findData( text, Qt::DisplayRole, flags );
+    }
+
     int findData( const QVariant &data, int role = Qt::UserRole,
         Qt::MatchFlags flags = Qt::MatchExactly|Qt::MatchCaseSensitive ) const;
 
@@ -118,11 +120,12 @@ public slots:
     void clearEditText( );
     void setCurrentIndex( int index );
     void setEditText( const QString &text );
-    
+
 signals:
     void currentIndexChanged( int index );
     void currentIndexChanged( const QString &text );
     void editTextChanged( const QString &text );
+    void editingFinished( );
 
 protected:
     HbComboBox( HbComboBoxPrivate &dd, QGraphicsItem *parent = 0 );

@@ -27,8 +27,9 @@
 #define HBSHAREDMEMORYALLOCATORS_P_H
 
 #include "hbthemecommon_p.h"
+#include <QSharedMemory>
 
-#define ALIGN_SIZE 4
+static const int ALIGN_SIZE = 4;
 #define ALIGN(x) ((x + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1))
 
 // space for multisegment allocator bookkeeping - to be allocated from shared memory
@@ -45,8 +46,6 @@ static const int MAIN_ALLOCATOR_IDENTIFIER = 0x80000000;
 
 // max. amount of different chunk sizes in multisegment allocator
 static const int AMOUNT_OF_DIFFERENT_CHUNK_SIZES = 8;
-
-class QSharedMemory;
 
 class HB_CORE_PRIVATE_EXPORT HbSharedMemoryAllocator
 {
@@ -122,6 +121,11 @@ private:
     void deleteLengthNode(unsigned int *root, TreeNode *node, bool splayed);
 
     void *toPointer(unsigned int offset) const;
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
+    }
 
 private:
     QSharedMemory *chunk;
@@ -171,6 +175,11 @@ private:
     // helper methods
     void addList(int index, int offset);
     bool setFreeList(int index);
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
+    }
 
 private:
     QSharedMemory *chunk;

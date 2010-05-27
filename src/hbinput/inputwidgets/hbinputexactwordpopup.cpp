@@ -28,9 +28,6 @@
 #include <QIcon>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLinearLayout>
-#if QT_VERSION >= 0x040600
-#include <QGraphicsDropShadowEffect>
-#endif
 
 #include "hbdeviceprofile.h"
 #include "hbdialog.h"
@@ -130,14 +127,9 @@ HbExactWordPopup::HbExactWordPopup(QGraphicsWidget *parent, HbExactWordPopupIndi
     setModal(false);
 
 #if QT_VERSION >= 0x040600
-    // Make sure the excat word popup never steals focus.
+    // Make sure the exact word popup never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-
-    // enable drop shadow for the preview pane
-    QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
-    effect->setBlurRadius(8);
-    setGraphicsEffect(effect);
 #endif
 
     d->mOption = new HbStyleOptionLabel();

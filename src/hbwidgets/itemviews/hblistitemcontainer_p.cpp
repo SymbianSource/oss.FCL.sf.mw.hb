@@ -30,6 +30,7 @@
 #include "hbabstractitemcontainer_p.h"
 #include "hbabstractitemview.h"
 #include "hblistviewitem.h"
+#include "hblistview.h"
 #include "hbmodeliterator.h"
 
 #include <qmath.h>
@@ -129,7 +130,7 @@ HbAbstractViewItem *HbListItemContainerPrivate::shiftUpItem(QPointF& delta)
 bool HbListItemContainerPrivate::intoContainerBuffer(const QModelIndex &index) const
 {   
     if (!mItems.isEmpty() 
-        && mItems.first()->modelIndex().row() <= index.row()   
+        && mItems.first()->modelIndex().row() <= index.row()
         && mItems.last()->modelIndex().row() >= index.row()){
         return true;
     } else {
@@ -237,22 +238,29 @@ void HbListItemContainer::removeItem(const QModelIndex &index, bool animate)
     if (animate) {
         Q_D(HbListItemContainer);
 
-        int itemCount = d->mItems.count();
-        HbAbstractViewItem *item = 0;
-        for (int i = 0; i < itemCount; ++i) {
-            item = d->mItems.at(i);
-            if (item->modelIndex() == index) {
-                QPair<HbAbstractViewItem *, int> pair(item, i);
-                d->mAnimatedItems.append(pair);
-            }
-        }
-
-        if (!item) {
+        HbAbstractViewItem *viewItem = d->item(index);
+        if (viewItem) {
+            QPair<HbAbstractViewItem *, int> pair(viewItem, d->mapToLayoutIndex(d->mItems.indexOf(viewItem)));
+            d->mAnimatedItems.append(pair);
+        } else {
             return;
         }
     }
 
     HbAbstractItemContainer::removeItem(index, animate);
+}
+
+/*!
+    Sets the modelIndexes of \a count container items starting from item at \a containerStartRow row of the container
+	to model's indexes starting from \a modelStartRow
+*/
+void HbListItemContainer::setItemModelIndexes(int containerStartRow, int modelStartRow, int count)
+{
+    Q_D(HbListItemContainer);
+
+    for (int i = 0; i <= count; ++i) {
+        setItemModelIndex(d->mItems.at(containerStartRow + i), d->mItemView->modelIterator()->index(modelStartRow + i));
+    }
 }
 
 /*!

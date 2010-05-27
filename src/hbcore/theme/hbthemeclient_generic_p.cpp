@@ -38,20 +38,23 @@
 #include "hbthemecommon_p.h"
 #include "hbmemorymanager_p.h"
 
-#define WAIT_TIME_TO_CONNECT_TO_SERVER 500
-#define WAIT_TIME_TO_START_SERVER 5000
+static const int WAIT_TIME_TO_CONNECT_TO_SERVER = 500;
+static const int WAIT_TIME_TO_START_SERVER = 5000;
 #if defined(Q_OS_SYMBIAN) || defined(Q_OS_WIN)
 static const QString SERVERFILENAME = QLatin1String("hbthemeserver.exe");
 #else
 static const QString SERVERFILENAME = QLatin1String("hbthemeserver");
 #endif
-static const QString SERVERFILEPATH = QLatin1String(HB_BIN_DIR) + QDir::separator() + SERVERFILENAME;
+static const QString SERVERFILEPATH = QLatin1String(HB_BIN_DIR)
+                                      + QDir::separator() + SERVERFILENAME;
 static const QStringList SERVERARGUMENTS = QStringList() << QLatin1String("-start");
 
 /**
  * Constructor
  */
-HbThemeClientPrivate::HbThemeClientPrivate():clientConnected( false ),localSocket( new QLocalSocket() )
+HbThemeClientPrivate::HbThemeClientPrivate() :
+        clientConnected(false),
+        localSocket(new QLocalSocket())
 {
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO ;
@@ -83,7 +86,8 @@ bool HbThemeClientPrivate::connectToServer()
             success = newProcess->waitForStarted(WAIT_TIME_TO_START_SERVER);
         }
 #ifdef THEME_SERVER_TRACES
-        qDebug() << Q_FUNC_INFO << "Server Start Status: " << success << "Error = " << newProcess->error ();
+        qDebug() << Q_FUNC_INFO << "Server Start Status: " << success
+                 << "Error = " << newProcess->error();
 #endif
 
         // If server started
@@ -91,12 +95,12 @@ bool HbThemeClientPrivate::connectToServer()
             // ToDo: This is to wait for server to start running. Logic needs to be improved.
             newProcess->waitForFinished(3000);
 #ifdef THEME_SERVER_TRACES
-            qDebug() <<Q_FUNC_INFO<< " Server Start Wait is over" ;
+            qDebug() << Q_FUNC_INFO << " Server Start Wait is over" ;
 #endif
             localSocket->connectToServer(THEME_SERVER_NAME);
             success = localSocket->waitForConnected();
 #ifdef THEME_SERVER_TRACES
-            qDebug() <<Q_FUNC_INFO<< "socketconnected : "<<success;
+            qDebug() << Q_FUNC_INFO << "socketconnected : " << success;
 #endif
         }
     }
@@ -116,7 +120,7 @@ HbThemeClientPrivate::~HbThemeClientPrivate()
     delete localSocket;
 }
 
-QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString& iconPath)
+QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString &iconPath)
 {
     // Not implemented atm...
     Q_UNUSED(iconPath)
@@ -126,7 +130,7 @@ QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString& iconPath)
 /**
  * HbThemeClientPrivate::getSharedIconInfo()
  */
-HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath ,
+HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString &iconPath,
                                                          const QSizeF &size,
                                                          Qt::AspectRatioMode aspectRatioMode,
                                                          QIcon::Mode mode,
@@ -166,7 +170,7 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
     localSocket->flush();
     localSocket->waitForReadyRead();
 #ifdef THEME_SERVER_TRACES
-    qDebug() <<"image req : " <<iconPath;
+    qDebug() << "image req : " << iconPath;
 #endif
     QByteArray inputByteArray = localSocket->readAll();
     QDataStream inputDataStream(inputByteArray);
@@ -188,8 +192,7 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection==request){
+    } else if (EThemeSelection==request){
         // Asked for pixmap, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -202,7 +205,6 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
             }
         }
     }
-
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     return iconInfo;
@@ -213,8 +215,8 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
  *
  * Returns the layout definition for the given file name,layout name,section name
 */
-
-HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(
+        const QString &fileName, const QString &layout, const QString &section)
 {
     if ( !clientConnected ) {
         return 0;
@@ -224,7 +226,7 @@ HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(cons
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EWidgetMLLookup;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << fileName;
     outputDataStream << layout;
     outputDataStream << section;
@@ -236,23 +238,23 @@ HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(cons
     localSocket->waitForReadyRead();
 
     QByteArray inputByteArray = localSocket->readAll();
-    QDataStream inputDataStream(&inputByteArray,QIODevice::ReadOnly);
+    QDataStream inputDataStream(&inputByteArray, QIODevice::ReadOnly);
     HbThemeServerRequest request;
     int temp;
     int sharedMLOffset = -1;
     inputDataStream >> temp;
-    request = (HbThemeServerRequest)temp;
+    request = static_cast<HbThemeServerRequest>(temp);
 
-     if (EWidgetMLLookup==request) {
+     if (EWidgetMLLookup == request) {
         inputDataStream >> sharedMLOffset;
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
-            request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            request = static_cast<HbThemeServerRequest>(temp);
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }else if (EThemeSelection==request){
+    } else if (EThemeSelection == request){
         QString themeName;
         inputDataStream >> themeName;
         QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
@@ -264,7 +266,6 @@ HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(cons
             }
         }
     }
-
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
 
@@ -279,7 +280,8 @@ HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(cons
 /**
  * HbThemeClientPrivate::getSharedStyleSheet()
  */
-HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
+HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(
+        const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
 {
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO;
@@ -293,7 +295,7 @@ HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &file
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EStyleSheetLookup;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << fileName;
     outputDataStream << priority;
 
@@ -302,7 +304,7 @@ HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &file
     localSocket->flush();
     localSocket->waitForReadyRead();
 #ifdef THEME_SERVER_TRACES
-    qDebug() <<"stylesheet req : " <<fileName;
+    qDebug() << "stylesheet req : " << fileName;
 #endif
     QByteArray inputByteArray = localSocket->readAll();
     QDataStream inputDataStream(inputByteArray);
@@ -311,9 +313,8 @@ HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &file
 
     //-1 represents invalid offset
     int cssOffset = -1;
-
     inputDataStream >> temp;
-    request = (HbThemeServerRequest)temp;
+    request = static_cast<HbThemeServerRequest>(temp);
 
     // Need to handle the situation when both themechange
     // request and stylesheet lookup info comes at the same time
@@ -328,8 +329,7 @@ HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &file
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection==request){
+    } else if (EThemeSelection==request){
         // Asked for stylesheet, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -371,8 +371,7 @@ HbDeviceProfileList *HbThemeClientPrivate::deviceProfiles()
     QByteArray outputByteArray;
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EDeviceProfileOffset;
-
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     localSocket->write(outputByteArray);
@@ -386,7 +385,6 @@ HbDeviceProfileList *HbThemeClientPrivate::deviceProfiles()
 
     //-1 represents invalid offset
     int deviceProfileOffset = -1;
-
     inputDataStream >> temp;
     request = (HbThemeServerRequest)temp;
 
@@ -399,9 +397,9 @@ HbDeviceProfileList *HbThemeClientPrivate::deviceProfiles()
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }else if (EThemeSelection==request){
+    } else if (EThemeSelection==request){
         // Asked for DeviceProfiles Offset, got theme change request..
-		// clean theme name
+        // clean theme name
         QString themeName;
         inputDataStream >> themeName;
         QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
@@ -443,7 +441,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EEffectLookupFilePath;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << filePath;
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
@@ -452,7 +450,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
     localSocket->waitForReadyRead();
 
 #ifdef THEME_SERVER_TRACES
-    qDebug() <<"EEffectLookupFilePath req : " <<filePath;
+    qDebug() << "EEffectLookupFilePath req : " << filePath;
 #endif
 
     QByteArray inputByteArray = localSocket->readAll();
@@ -462,7 +460,6 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
 
     //-1 represents invalid offset
     int effectOffset = -1;
-
     inputDataStream >> temp;
     request = (HbThemeServerRequest)temp;
 
@@ -470,17 +467,16 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
     // request and effect lookup info comes at the same time
     // Just posting the ThemeChanged event so that it can be handled
     // as next event and current effect load is not interrupted
-    if (request==EEffectLookupFilePath) {
+    if (request == EEffectLookupFilePath) {
         inputDataStream >> effectOffset;
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection==request){
+    } else if (EThemeSelection == request){
         // Asked for effect, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -488,7 +484,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EEffectLookupFilePath==request) {
+            if (EEffectLookupFilePath == request) {
                 inputDataStream >> effectOffset;
             }
         }
@@ -501,8 +497,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
     if (effectOffset >= 0) {
         return HbMemoryUtils::getAddress<HbEffectFxmlData>(
             HbMemoryManager::SharedMemory, effectOffset);
-    }
-    else {
+    } else {
         return 0;
     }
 }
@@ -510,7 +505,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
 /**
  * HbThemeClientPrivate::addSharedEffect()
  */
-bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
+bool HbThemeClientPrivate::addSharedEffect(const QString &filePath)
 {
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO;
@@ -523,7 +518,7 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EEffectAdd;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << filePath;
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
@@ -532,19 +527,16 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
     localSocket->waitForReadyRead();
 
 #ifdef THEME_SERVER_TRACES
-    qDebug() <<"effectAdd req : " <<filePath;
+    qDebug() << "effectAdd req : " << filePath;
 #endif
-
     QByteArray inputByteArray = localSocket->readAll();
     QDataStream inputDataStream(inputByteArray);
     HbThemeServerRequest request;
     int temp;
-
     //-1 represents an error adding file to server
     int effectAddReply = -1;
-
     inputDataStream >> temp;
-    request = (HbThemeServerRequest)temp;
+    request = static_cast<HbThemeServerRequest>(temp);
 
 
     //TODO how to really handle situation when adding an effect when theme changes??
@@ -553,17 +545,17 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
     // request and effect lookup info comes at the same time
     // Just posting the ThemeChanged event so that it can be handled
     // as next event and current effect load is not interrupted
-    if (request==EEffectAdd) {
+    if (request == EEffectAdd) {
         inputDataStream >> effectAddReply;
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
     }
-    else if (EThemeSelection==request){
+    else if (EThemeSelection == request){
         // Asked for effect, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -571,7 +563,7 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EEffectAdd==request) {
+            if (EEffectAdd == request) {
                 inputDataStream >> effectAddReply;
             }
         }
@@ -580,10 +572,7 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
 
-    if(effectAddReply >= 0)
-        return true;
-    else
-        return false;
+    return (effectAddReply >= 0);
 }
 
 /**
@@ -601,14 +590,14 @@ void HbThemeClientPrivate::changeTheme()
     inputDataStream >> request;
 
 #ifdef THEME_SERVER_TRACES
-    qDebug() << Q_FUNC_INFO << "recognizer: "<<request;
+    qDebug() << Q_FUNC_INFO << "recognizer: " << request;
 #endif
 
-    if(EThemeSelection==request) {
+    if(EThemeSelection == request) {
         QString themeName;
         inputDataStream >> themeName;
 #ifdef THEME_SERVER_TRACES
-        qDebug() << Q_FUNC_INFO <<"themeName is : " <<themeName;
+        qDebug() << Q_FUNC_INFO << "themeName is : " << themeName;
 #endif
         handleThemeChange(themeName);
     }
@@ -662,7 +651,7 @@ void HbThemeClientPrivate::readIconInfo(QDataStream &dataStream, HbSharedIconInf
 void HbThemeClientPrivate::handleThemeChange(const QString &themeName)
 {
 #ifdef THEME_SERVER_TRACES
-    qDebug() << Q_FUNC_INFO <<"themeChanged(): called";
+    qDebug() << Q_FUNC_INFO << "themeChanged(): called";
 #endif
     hbInstance->theme()->d_ptr->handleThemeChange(themeName);
 }
@@ -682,12 +671,12 @@ bool HbThemeClientPrivate::event(QEvent *e)
 /**
  * HbThemeClientPrivate::unloadIcon()
  */
-void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
+void HbThemeClientPrivate::unloadIcon(const QString &iconPath,
                                       const QSizeF &size,
                                       Qt::AspectRatioMode aspectRatioMode,
                                       QIcon::Mode mode,
                                       bool mirrored,
-                                      const QColor& color,
+                                      const QColor &color,
                                       HbRenderingMode renderMode)
 {
     if ( !clientConnected ) {
@@ -698,7 +687,7 @@ void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType;
     requestType = EUnloadIcon;
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << iconPath;
     outputDataStream << size;
     outputDataStream << aspectRatioMode;
@@ -726,17 +715,17 @@ void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
     // request and Reference count decrement comes at the same time
     // Just posting the ThemeChnaged event so that it can be handled
     // as next event and current pixmap load is not interrupted
-    if (EUnloadIcon ==request) {
+    if (EUnloadIcon == request) {
 
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
     }
-    else if (EThemeSelection==request){
+    else if (EThemeSelection == request){
         // Asked for reference count decrement got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -760,7 +749,7 @@ void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
  *
  * unload multiple icons
 */
-void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
+void HbThemeClientPrivate::unLoadMultiIcon(const QStringList &iconPathList,
                 const QVector<QSizeF> &sizeList,
                 Qt::AspectRatioMode aspectRatioMode,
                 QIcon::Mode mode,
@@ -768,6 +757,8 @@ void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
                 const QColor &color,
                 HbRenderingMode renderMode)
 {
+    // TODO: this request is currently not implemented in server side.
+
     if ( !clientConnected ) {
         return;
     }
@@ -807,17 +798,15 @@ void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
     // request and Reference count decrement comes at the same time
     // Just posting the ThemeChnaged event so that it can be handled
     // as next event and current pixmap load is not interrupted
-    if (EUnloadMultiIcon ==request) {
-
+    if (EUnloadMultiIcon == request) {
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
-            request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            request = static_cast<HbThemeServerRequest>(temp);
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection==request){
+    } else if (EThemeSelection == request){
         // Asked for reference count decrement got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -830,23 +819,20 @@ void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
             }
         }
     }
-
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
 }
 
-
-
-HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &multiPartIconList,
-                                                            const HbMultiPartSizeData &multiPartIconData ,
-                                                            const QSizeF &size,
-                                                            Qt::AspectRatioMode aspectRatioMode,
-                                                            QIcon::Mode mode,
-                                                            bool mirrored,
-                                                            HbIconLoader::IconLoaderOptions options,
-                                                            const QColor &color,
-                                                            HbRenderingMode renderMode)
-
+HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(
+        const QStringList &multiPartIconList,
+        const HbMultiPartSizeData &multiPartIconData,
+        const QSizeF &size,
+        Qt::AspectRatioMode aspectRatioMode,
+        QIcon::Mode mode,
+        bool mirrored,
+        HbIconLoader::IconLoaderOptions options,
+        const QColor &color,
+        HbRenderingMode renderMode)
 {
 
 #ifdef THEME_SERVER_TRACES
@@ -858,12 +844,11 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
         return iconInfo;
     }
 
-
-     int noOfPieces = 1;
-     if (multiPartIconData.multiPartIconId.contains("_3PV",Qt::CaseInsensitive)
-          || multiPartIconData.multiPartIconId.contains("_3PH",Qt::CaseInsensitive)) {
+    int noOfPieces = 1;
+    if (multiPartIconData.multiPartIconId.contains("_3PV", Qt::CaseInsensitive)
+          || multiPartIconData.multiPartIconId.contains("_3PH", Qt::CaseInsensitive)) {
         noOfPieces = 3;
-    } else if (multiPartIconData.multiPartIconId.contains("_9P",Qt::CaseInsensitive)) {
+    } else if (multiPartIconData.multiPartIconId.contains("_9P", Qt::CaseInsensitive)) {
         noOfPieces = 9;
     }
 
@@ -871,18 +856,16 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType;
     requestType = EMultiPieceIcon;
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
     outputDataStream << multiPartIconList;
     outputDataStream << multiPartIconData.multiPartIconId;
 
     for (int i = 0; i< noOfPieces; i++) {
         outputDataStream << multiPartIconData.sources[i];
     }
-
     for (int i = 0; i < noOfPieces; i++) {
         outputDataStream << multiPartIconData.targets[i];
     }
-
     for (int i = 0; i < noOfPieces; i++) {
         outputDataStream << multiPartIconData.pixmapSizes[i];
     }
@@ -912,6 +895,7 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
     // Just posting the ThemeChnaged event so that it can be handled
     // as next event and current pixmap load is not interrupted
     if (EMultiPieceIcon == request) {
+        inputDataStream >> temp; // Read the EIconLookup request identifier
         readIconInfo(inputDataStream, iconInfo);
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
@@ -920,8 +904,7 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection == request) {
+    } else if (EThemeSelection == request) {
         // Asked for pixmap, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -929,7 +912,8 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EMultiPieceIcon==request) {
+            if (EMultiPieceIcon == request) {
+                inputDataStream >> temp; // Read the EIconLookup request identifier
                 readIconInfo(inputDataStream, iconInfo);
             }
         }
@@ -944,14 +928,15 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
  * getMultiIconInfo  function returns a list of HbSharedIconInfo
  * for the given list of frameitems.
  */
-HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &multiPartIconList,
-                                                            const QVector<QSizeF> &sizeList,
-                                                            Qt::AspectRatioMode aspectRatioMode,
-                                                            QIcon::Mode mode,
-                                                            bool mirrored,
-                                                            HbIconLoader::IconLoaderOptions options,
-                                                            const QColor &color,
-                                                            HbRenderingMode renderMode)
+HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(
+        const QStringList &multiPartIconList,
+        const QVector<QSizeF> &sizeList,
+        Qt::AspectRatioMode aspectRatioMode,
+        QIcon::Mode mode,
+        bool mirrored,
+        HbIconLoader::IconLoaderOptions options,
+        const QColor &color,
+        HbRenderingMode renderMode)
 {
     HbSharedIconInfoList sharedIconInfoList;
 
@@ -977,6 +962,7 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
     outputDataStream << options;
     outputDataStream << color;
     outputDataStream << renderMode;
+
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     localSocket->write(outputByteArray);
     localSocket->flush();
@@ -993,12 +979,13 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
 
     // Need to handle the situation when both themechange
     // request and pixmap info comes at the same time
-    // Just posting the ThemeChnaged event so that it can be handled
+    // Just posting the ThemeChanged event so that it can be handled
     // as next event and current pixmap load is not interrupted
     if (EMultiIcon == request) {
-		for (int i = 0; i< noOfPieces; i++) {
-			readIconInfo(inputDataStream, sharedIconInfoList.icon[i]);
-		}
+        for (int i = 0; i< noOfPieces; i++) {
+            inputDataStream >> temp; // Read the EIconLookup request identifier
+            readIconInfo(inputDataStream, sharedIconInfoList.icon[i]);
+        }
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
@@ -1006,8 +993,7 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }
-    else if (EThemeSelection == request) {
+    } else if (EThemeSelection == request) {
         // Asked for pixmap, got theme change request.. clean theme name
         QString themeName;
         inputDataStream >> themeName;
@@ -1015,17 +1001,17 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EMultiIcon==request) {
-                for (int i = 0; i< noOfPieces; i++) {
-			        readIconInfo(inputDataStream, sharedIconInfoList.icon[i]);
-		        }
+            if (EMultiIcon == request) {
+                for (int i = 0; i < noOfPieces; i++) {
+                    inputDataStream >> temp; // Read the EIconLookup request identifier
+                    readIconInfo(inputDataStream, sharedIconInfoList.icon[i]);
+                }
             }
         }
     }
 
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
-
     return sharedIconInfoList;
 }
 
@@ -1044,7 +1030,6 @@ int HbThemeClientPrivate::freeSharedMemory()
 #ifdef THEME_SERVER_TRACES
         qDebug() << Q_FUNC_INFO;
 #endif
-
     QByteArray outputByteArray;
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EFreeSharedMem;
@@ -1060,7 +1045,6 @@ int HbThemeClientPrivate::freeSharedMemory()
     QDataStream inputDataStream(inputByteArray);
     HbThemeServerRequest request;
     int temp;
-
     int freeSharedMem = 0;
 
     inputDataStream >> temp;
@@ -1071,18 +1055,18 @@ int HbThemeClientPrivate::freeSharedMemory()
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }else if (EThemeSelection == request){
+    } else if (EThemeSelection == request){
         QString themeName;
         inputDataStream >> themeName;
         QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EFreeSharedMem== request) {
+            if (EFreeSharedMem == request) {
                 inputDataStream >> freeSharedMem;
             }
         }
@@ -1105,7 +1089,7 @@ int HbThemeClientPrivate::allocatedSharedMemory()
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = EAllocatedSharedMem;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     localSocket->write(outputByteArray);
@@ -1116,7 +1100,6 @@ int HbThemeClientPrivate::allocatedSharedMemory()
     QDataStream inputDataStream(inputByteArray);
     HbThemeServerRequest request;
     int temp;
-
     int allocatedSharedMem = 0;
 
     inputDataStream >> temp;
@@ -1127,7 +1110,7 @@ int HbThemeClientPrivate::allocatedSharedMemory()
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
@@ -1138,7 +1121,7 @@ int HbThemeClientPrivate::allocatedSharedMemory()
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EAllocatedSharedMem== request) {
+            if (EAllocatedSharedMem == request) {
                 inputDataStream >> allocatedSharedMem;
             }
         }
@@ -1180,14 +1163,13 @@ void HbThemeClientPrivate::createMemoryReport() const
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = ECreateMemoryReport;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     localSocket->write(outputByteArray);
     localSocket->flush();
 }
 #endif
-
 
 /**
  * HbThemeClientPrivate::typefaceInfo()
@@ -1197,7 +1179,6 @@ HbTypefaceInfoVector *HbThemeClientPrivate::typefaceInfo()
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO;
 #endif
-
     if ( !clientConnected ) {
         return 0;
     }
@@ -1206,7 +1187,7 @@ HbTypefaceInfoVector *HbThemeClientPrivate::typefaceInfo()
     QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
     HbThemeServerRequest requestType = ETypefaceOffset;
 
-    outputDataStream << (int)requestType;
+    outputDataStream << int(requestType);
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     localSocket->write(outputByteArray);
@@ -1229,11 +1210,11 @@ HbTypefaceInfoVector *HbThemeClientPrivate::typefaceInfo()
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (EThemeSelection==request) {
+            if (EThemeSelection == request) {
                 QCoreApplication::postEvent(this, new HbEvent(HbEvent::ThemeChanged));
             }
         }
-    }else if (EThemeSelection==request){
+    }else if (EThemeSelection == request){
         // Asked for Typeface Offset, got theme change request..
         // clean theme name
         QString themeName;
@@ -1242,7 +1223,7 @@ HbTypefaceInfoVector *HbThemeClientPrivate::typefaceInfo()
         if (!inputDataStream.atEnd()) {
             inputDataStream >> temp;
             request = (HbThemeServerRequest)temp;
-            if (ETypefaceOffset== request) {
+            if (ETypefaceOffset == request) {
                 inputDataStream >> typefaceOffset;
             }
         }

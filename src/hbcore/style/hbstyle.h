@@ -229,8 +229,10 @@ public:
     static void setItemName( QGraphicsItem *item, const QString &name );
     static QString itemName( const QGraphicsItem *item );
 
-    bool parameter(const QString &parameter, qreal &value, const HbDeviceProfile &profile = HbDeviceProfile()) const;
-    void parameters(HbStyleParameters &parameters, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+    bool parameter(const QString &param, qreal &value, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+    void parameters(HbStyleParameters &params, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+
+    void widgetParameters(HbStyleParameters &params, HbWidget* widget) const;
 
 protected:
     friend class HbWidget;

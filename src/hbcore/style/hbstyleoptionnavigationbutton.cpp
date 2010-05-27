@@ -25,31 +25,18 @@
 
 #include "hbstyleoptionnavigationbutton_p.h"
 
-/*!
+/*
     \class HbStyleOptionNavigationButton
     \brief HbStyleOptionNavigationButton has the style component for the navigation button
 */
 
-
-
-/*!
-
-    \deprecated HbStyleOptionNavigationButton::HbStyleOptionNavigationButton()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNavigationButton::HbStyleOptionNavigationButton() : 
     HbStyleOption(), mode(QIcon::Normal), transparent(false)
 {
     type = Type;
     version = Version;
 }
-/*!
 
-    \deprecated HbStyleOptionNavigationButton::HbStyleOptionNavigationButton(const HbStyleOptionNavigationButton&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNavigationButton::HbStyleOptionNavigationButton(const HbStyleOptionNavigationButton &other) :
     HbStyleOption(other), mode(other.mode), transparent(other.transparent)
 {

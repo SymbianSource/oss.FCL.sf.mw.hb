@@ -34,20 +34,18 @@
 #endif
 
 HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsItem *parent )
-        :HbWidget( parent ),
-         mList( 0 ),
-         comboPrivate( comboBoxPrivate ),
-         vkbOpened( false ),
-         backgroundPressed( false )
+    :HbWidget( parent ),
+     mList( 0 ),
+     comboPrivate( comboBoxPrivate ),
+     vkbOpened( false ),
+     backgroundPressed( false )
 {
     setBackgroundItem( HbStyle::P_ComboBoxPopup_background );
     #if QT_VERSION >= 0x040600
-        //this is to keep the focus in the previous widget.
-        setFlag( QGraphicsItem::ItemIsPanel, true );
-        setActive( false );
+    //this is to keep the focus in the previous widget.
+    setFlag( QGraphicsItem::ItemIsPanel, true );
+    setActive( false );
     #endif
-    //setFlag(QGraphicsItem::ItemIsPanel);
-    //setPanelModality(PanelModal);
 }
 
 HbComboDropDown::~HbComboDropDown( )
@@ -58,8 +56,8 @@ HbComboDropDown::~HbComboDropDown( )
 void HbComboDropDown::createList( )
 {
    mList = new HbListView( this );
-   mList->setLongPressEnabled(false);
-   HbComboListViewItem *protoType = new HbComboListViewItem(this);
+   mList->setLongPressEnabled( false );
+   HbComboListViewItem *protoType = new HbComboListViewItem( this );
    mList->setItemPrototype( protoType );
    HbStyle::setItemName( mList, "list" );
    mList->setUniformItemSizes( true );
@@ -69,13 +67,13 @@ void HbComboDropDown::createList( )
 void HbComboDropDown::keypadOpened( )
 {
     vkbOpened = true;
-    comboPrivate->vkbOpened();
+    comboPrivate->vkbOpened( );
 }
 
 void HbComboDropDown::keypadClosed( )
 {
     vkbOpened = false;
-    comboPrivate->vkbClosed();
+    comboPrivate->vkbClosed( );
 }
 
 bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
@@ -90,28 +88,21 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
         case QEvent::GraphicsSceneMouseDoubleClick:
             {
                 if( !( this->isUnderMouse( ) ) ) {
-                    backgroundPressed = true;
-                    accepted = true;
-                }
-            }
-            break;
-        case QEvent::GraphicsSceneMouseRelease:
-            {
-                if( !( this->isUnderMouse( ) ) && backgroundPressed ) {
                     HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
                     setVisible( false );
-                    backgroundPressed = false;
+                    backgroundPressed = true;
                     accepted = true;
                 }
             }
             break;
         case QEvent::Gesture:
             {
-                if( !this->isUnderMouse() ) {
+                if( !this->isUnderMouse( ) ) {
                     //if its a pan gesture then don't accept the event so that list can be scrolled
                     //even if mouse is outside drop down area
-                    if(QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {
-                        if( !qobject_cast<HbPanGesture *>( gestureEvent->gesture( Qt::PanGesture ) ) ) {
+                    if( QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {
+                        if( !qobject_cast<HbPanGesture *>( 
+                                gestureEvent->gesture( Qt::PanGesture ) ) ) {
                             accepted = true;
                         }
                     }
@@ -122,7 +113,6 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
             break;
         }
     }
-
     return accepted;
 }
 

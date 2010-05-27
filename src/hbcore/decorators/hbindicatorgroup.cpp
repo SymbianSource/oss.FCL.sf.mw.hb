@@ -30,6 +30,7 @@
 #include "hbstyleoptionindicatorgroup_p.h"
 
 #include "hbiconitem.h"
+#include "hbiconanimator.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbindicatorsym_p.h"
@@ -278,6 +279,17 @@ void HbIndicatorGroup::delayedConstruction()
 {
    Q_D(HbIndicatorGroup);
    d->delayedConstruction();
+}
+
+void HbIndicatorGroup::currentViewChanged(HbView *view)
+{
+    Q_D(HbIndicatorGroup);
+    for (int i = 0; i < d->mIcons.size(); ++i) {
+        HbIconItem *iconItem = dynamic_cast<HbIconItem *>(d->mIcons.at(i));
+        if (iconItem) {
+            iconItem->animator().setOwnerView(view);
+        }
+    }
 }
 
 void HbIndicatorGroup::createPrimitives()

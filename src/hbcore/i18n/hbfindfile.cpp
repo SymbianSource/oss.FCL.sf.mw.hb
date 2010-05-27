@@ -31,8 +31,9 @@
 #include <QString>
 #include <QCoreApplication>
 #include <QFileInfo>
-
 #include <hbfindfile.h>
+#include <qbasicatomic.h>
+#include <QDir>
 
 /*!
     @beta
@@ -40,26 +41,42 @@
     \class HbFindFile
     \brief Checks from which drive a certain file is found.
     Scans drives through and adds drive information to \a str if file is found.
+    
+    \attention Cross-Platform API
 
     \param str is file and path beginning with "/"
     \param defaultDrive is drive letter which should be checked first. Default value is null.
-    \return true if file is found. Otherwise return false.
+    
+    \return True if file is found. Otherwise return false.
 */
 bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
 {
-    QString file = str;
-#if defined(Q_OS_WIN32)
-    file = "C:" + str;
-#endif
-#if !defined(Q_OS_SYMBIAN)
-    QFileInfo info(file);
-    if (info.exists()) {
-        str = file;
+#ifdef Q_OS_SYMBIAN
+    RFs& fs = CCoeEnv::Static()->FsSession();
+    TFindFile ff(fs);
+    TPtrC fName((ushort*)(str.constData()),str.length());
+    QString dNameString;
+    
+    if (!defaultDrive.isNull()) {
+        dNameString.append(defaultDrive);
+        dNameString += QString(":");
+    }    
+    dNameString += QString("\\");    
+    TPtrC dName((ushort*)(dNameString.constData()),dNameString.length());
+    TInt err=ff.FindByDir(fName, dName);
+    if (err==KErrNone) {
+        TParse p;
+        p.Set(ff.File(), 0,0);
+        TPtrC ptrC = p.Drive();
+        QString str2 = QString::fromRawData((QChar*)(ushort*)ptrC.Ptr(),ptrC.Length()); 
+        str.prepend(str2);
         return true;
+    }    
+    else {
+        return false;
     }
-    return false;
-#endif
-
+#else
+    QString file = str;
     if (!defaultDrive.isNull()) {
         file = defaultDrive + QString(":") + str;
         QFileInfo info(file);
@@ -82,24 +99,78 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
         }
     }
     return false;
+#endif
+    
 }
 
-/*!
-    Returns available drives in device (Symbian). Empty for other platforms.
-*/
-QString HbFindFile::availableDrives()
+class AvailableDrives : public QString
 {
-    QString drives = "";
-#if defined(Q_OS_SYMBIAN)
+public:
+    AvailableDrives();    
+};
+
+AvailableDrives::AvailableDrives() {
+#ifdef Q_OS_SYMBIAN    
     RFs& fs = CCoeEnv::Static()->FsSession();
     TDriveList driveList;
     fs.DriveList(driveList);
     TChar driveLetter;
-    for (TInt driveNumber = EDriveA; driveNumber <= EDriveZ; driveNumber++) {
+    
+    // add first C and then Y..A and then Z.
+    TInt driveNumber;
+    if (driveList[EDriveC]) {        
+        driveNumber = EDriveC;
         fs.DriveToChar(driveNumber, driveLetter);
-        QChar c = static_cast<QChar>(driveLetter);
-        drives.append(c);
+        QChar cC = static_cast<QChar>(driveLetter);    
+        this->append(cC);
     }
-#endif
-    return drives;
+    for (driveNumber = EDriveY; driveNumber >= EDriveA; driveNumber--) {
+        if (driveNumber == EDriveC) {
+            continue;
+        }
+        else {
+            if (driveList[driveNumber]) {
+                fs.DriveToChar(driveNumber, driveLetter);
+                QChar c = static_cast<QChar>(driveLetter);
+                this->append(c);
+            }    
+        }    
+    }
+    if (driveList[EDriveZ]) {    
+        driveNumber = EDriveZ;
+        fs.DriveToChar(driveNumber, driveLetter);
+        QChar cZ = static_cast<QChar>(driveLetter);
+        this->append(cZ);
+    }
+
+    
+#else            
+     QFileInfoList fil = QDir::drives();
+     for (int j=0; j< fil.length(); j++) {
+         QString fp = fil.at(j).filePath();
+         
+         if ((!fp.isEmpty()) && (fp[0] != '/') && (fp[0] != '\\')) {                
+         this->append(fp[0]);
+         }        
+     }
+#endif     
+}
+
+Q_GLOBAL_STATIC(AvailableDrives, gs_AvailableDrives)
+
+/*!
+    \attention Cross-Platform API
+    
+    \returns Available drive(s) if platform supports (Eg. Symbian, Windows...). 
+    If platform doesn't support drive(s) (Eg. Linux) then empty QString is returned. 
+*/
+QString HbFindFile::availableDrives()
+{
+     QString *str = gs_AvailableDrives();
+     if (str) {
+         return *str;         
+     }
+     else {
+         return QString(); 
+     }
 }

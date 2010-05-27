@@ -141,19 +141,15 @@ HbEffectGroup *HbEffectFactory::createEffect(
                 // Create a scale effect
                 effect = new HbEffectScale(params, targetItem, group);
                 effectsCreated |= scaleBit;
-            }
-            if (!(effectsCreated & rotateBit) && isRotateParameter(paramName)) {
+            } else if (!(effectsCreated & rotateBit) && isRotateParameter(paramName)) {
                 // Create a rotate effect
                 effect = new HbEffectRotate(params, targetItem, group);
                 effectsCreated |= rotateBit;
-            }
-            if (!(effectsCreated & opacityBit) && isOpacityParameter(paramName)) {
+            } else if (!(effectsCreated & opacityBit) && isOpacityParameter(paramName)) {
                 // Create an opacity effect
                 effect = new HbEffectOpacity(params, targetItem, group);
                 effectsCreated |= opacityBit;
-            }
-
-            if (!(effectsCreated & translateBit) && isTranslateParameter(paramName)) {
+            } else if (!(effectsCreated & translateBit) && isTranslateParameter(paramName)) {
                 // Create a translate effect
                 effect = new HbEffectTranslate(params, targetItem, group);
                 effectsCreated |= translateBit;

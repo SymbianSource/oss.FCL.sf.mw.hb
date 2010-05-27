@@ -85,7 +85,7 @@ void HbMultiSegmentAllocator::initialize(QSharedMemory *sharedChunk,
         } while (index <= limit);
     }
 
-    header = (MultiAllocatorHeader*)((unsigned char*)(chunk->data()) + offset);
+    header = address<MultiAllocatorHeader>(offset);
     if (header->identifier == INITIALIZED_MULTISEGMENTALLOCATOR_IDENTIFIER) {
         return; // already initialized
     }
@@ -93,12 +93,14 @@ void HbMultiSegmentAllocator::initialize(QSharedMemory *sharedChunk,
     // every chunk list have space for 512 chunks
     ChunkListHeader *listHeader;
     for (int i = 0; i < AMOUNT_OF_DIFFERENT_CHUNK_SIZES; i++) {
-        header->offsetsToChunkLists[i] = mainAllocator->alloc(sizeof(ChunkListHeader) + (sizeof(int)+ChunkSizes[i])*CHUNKS_IN_ONE_LIST);
+        header->offsetsToChunkLists[i] = mainAllocator->alloc(sizeof(ChunkListHeader)
+                                                              + (sizeof(int) + ChunkSizes[i])
+                                                              * CHUNKS_IN_ONE_LIST);
         header->offsetsToFreeChunkLists[i] = header->offsetsToChunkLists[i];
-        listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToChunkLists[i]);
+        listHeader = address<ChunkListHeader>(header->offsetsToChunkLists[i]);
         listHeader->chunkListIndex = i;
         listHeader->freedChunkCursor = -1;
-        listHeader->allocCursor = header->offsetsToChunkLists[i]+sizeof(ChunkListHeader);
+        listHeader->allocCursor = header->offsetsToChunkLists[i] + sizeof(ChunkListHeader);
         listHeader->previousListOffset = -1;
         listHeader->nextListOffset = -1;
         listHeader->allocatedChunks = 0;
@@ -135,23 +137,20 @@ int HbMultiSegmentAllocator::alloc(int size)
 
     // first find out correct list of chunks
     int i = indexTable[size];
-
-    // qDebug() << "HbMultiSegmentAllocator::alloc, with size " << size << " chunkList " << i << " used\n";
-
     int dataOffset = -1;
     int *metaData = 0;
     // this should always point to list with free chunks
-    ChunkListHeader *listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToFreeChunkLists[i]);
+    ChunkListHeader *listHeader = address<ChunkListHeader>(header->offsetsToFreeChunkLists[i]);
 
     if (listHeader->freedChunkCursor >= 0) { // freedChunkCursor points to freed chunk
         dataOffset = listHeader->freedChunkCursor + sizeof(int);
-        metaData = (int*)((unsigned char*)(chunk->data())+listHeader->freedChunkCursor);
+        metaData = address<int>(listHeader->freedChunkCursor);
         listHeader->freedChunkCursor = *metaData; // point to next freed chunk
     } else { // no chunks freed -> allocate in order
         dataOffset = listHeader->allocCursor + sizeof(int);
-        metaData = (int*)((unsigned char*)(chunk->data())+listHeader->allocCursor);
+        metaData = address<int>(listHeader->allocCursor);
         // we will never allocate from full list, so allocCursor is always valid
-        listHeader->allocCursor += ChunkSizes[listHeader->chunkListIndex]+sizeof(int);
+        listHeader->allocCursor += ChunkSizes[listHeader->chunkListIndex] + sizeof(int);
     }
 
     // for allocated chunks metadata is:
@@ -163,7 +162,9 @@ int HbMultiSegmentAllocator::alloc(int size)
         if (!setFreeList(listHeader->chunkListIndex)) {
             // there is no list(s) with free chunks, so add new list
             addList(listHeader->chunkListIndex,
-                mainAllocator->alloc((sizeof(ChunkListHeader)+sizeof(int)+ChunkSizes[listHeader->chunkListIndex])*CHUNKS_IN_ONE_LIST));
+                mainAllocator->alloc((sizeof(ChunkListHeader) + sizeof(int)
+                                      + ChunkSizes[listHeader->chunkListIndex])
+                                        * CHUNKS_IN_ONE_LIST));
         }
     }
 
@@ -176,19 +177,19 @@ int HbMultiSegmentAllocator::alloc(int size)
 void HbMultiSegmentAllocator::free(int offset)
 {
     // metadata has offset to list's header
-    int *metaData = (int*)((unsigned char*)(chunk->data())+offset-sizeof(int));
+    int *metaData = address<int>(offset - sizeof(int));
     int listHeaderOffset = *metaData;
-    ChunkListHeader *listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeaderOffset);
+    ChunkListHeader *listHeader = address<ChunkListHeader>(listHeaderOffset);
     listHeader->allocatedChunks--;
     if (listHeader->allocatedChunks == 0) {
         // if there are multiple lists, this list could be released
         ChunkListHeader *previous = 0;
         if (listHeader->previousListOffset > -1) {
-            previous = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeader->previousListOffset);
+            previous = address<ChunkListHeader>(listHeader->previousListOffset);
         }
         ChunkListHeader *next = 0;
         if (listHeader->nextListOffset > -1) {
-            next = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeader->nextListOffset);
+            next = address<ChunkListHeader>(listHeader->nextListOffset);
         }
 
         if (previous || next) {
@@ -212,12 +213,12 @@ void HbMultiSegmentAllocator::free(int offset)
         } else {
             // only list can't be freed
             *metaData = listHeader->freedChunkCursor;
-            listHeader->freedChunkCursor = offset-sizeof(int);
+            listHeader->freedChunkCursor = offset - sizeof(int);
         }
     } else {
         // this list is not yet empty
         *metaData = listHeader->freedChunkCursor;
-        listHeader->freedChunkCursor = offset-sizeof(int);
+        listHeader->freedChunkCursor = offset - sizeof(int);
     }
 }
 
@@ -229,8 +230,8 @@ void HbMultiSegmentAllocator::free(int offset)
  */
 int HbMultiSegmentAllocator::allocatedSize(int offset)
 {
-    int *metaData = (int*)((unsigned char*)(chunk->data())+offset-sizeof(int));
-    ChunkListHeader *listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + *metaData);
+    int *metaData = address<int>(offset - sizeof(int));
+    ChunkListHeader *listHeader = address<ChunkListHeader>(*metaData);
     // not actual size in alloc(), but the size of chunk, where this data is stored
     return ChunkSizes[listHeader->chunkListIndex];
 }
@@ -241,12 +242,12 @@ int HbMultiSegmentAllocator::allocatedSize(int offset)
 */
 void HbMultiSegmentAllocator::addList(int index, int offset)
 {
-    ChunkListHeader *newListHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + offset);
-    ChunkListHeader *oldListHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToChunkLists[index]);
+    ChunkListHeader *newListHeader = address<ChunkListHeader>(offset);
+    ChunkListHeader *oldListHeader = address<ChunkListHeader>(header->offsetsToChunkLists[index]);
     // when this method is called, there will be at least one list,
     // so oldListHeader is valid and also all the lists are full
     newListHeader->allocatedChunks = 0;
-    newListHeader->allocCursor = offset+sizeof(ChunkListHeader);
+    newListHeader->allocCursor = offset + sizeof(ChunkListHeader);
     newListHeader->chunkListIndex = index;
     newListHeader->freedChunkCursor = -1;
     newListHeader->previousListOffset = -1;
@@ -263,11 +264,12 @@ void HbMultiSegmentAllocator::addList(int index, int offset)
 bool HbMultiSegmentAllocator::setFreeList(int index)
 {
     ChunkListHeader *listHeader;
-    listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToChunkLists[index]);
+    listHeader = address<ChunkListHeader>(header->offsetsToChunkLists[index]);
     bool retVal = false;
     for (;;) {
         if (listHeader->allocatedChunks < CHUNKS_IN_ONE_LIST) {
-            int offset = (int)((char*)(listHeader)-(char*)(chunk->data()));
+            int offset = static_cast<int>(reinterpret_cast<char*>(listHeader)
+                                          - reinterpret_cast<char*>(chunk->data()));
             header->offsetsToFreeChunkLists[index] = offset;
             retVal = true;
             break;
@@ -275,9 +277,8 @@ bool HbMultiSegmentAllocator::setFreeList(int index)
         if (listHeader->nextListOffset == -1) {
             break;
         }
-        listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeader->nextListOffset);
+        listHeader = address<ChunkListHeader>(listHeader->nextListOffset);
     }
-
     return retVal;
 }
 
@@ -285,7 +286,8 @@ bool HbMultiSegmentAllocator::setFreeList(int index)
 void HbMultiSegmentAllocator::writeReport(QTextStream &reportWriter)
 {
     reportWriter << "***** (Sub)HbMultiSegmentAllocator report *****\n\n";
-    reportWriter << SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR << " bytes allocated for internal bookkeeping\n";
+    reportWriter << SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR
+                 << " bytes allocated for internal bookkeeping\n";
     reportWriter << AMOUNT_OF_DIFFERENT_CHUNK_SIZES << " different chunk sizes (";
     for (int i = 0; i < AMOUNT_OF_DIFFERENT_CHUNK_SIZES-1; i++) {
         reportWriter << ChunkSizes[i] << ", ";
@@ -301,36 +303,47 @@ void HbMultiSegmentAllocator::writeReport(QTextStream &reportWriter)
         int allocations = 0;
         int listCount = 0;
         ChunkListHeader *listHeader;
-        listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + header->offsetsToChunkLists[i]);
+        listHeader = address<ChunkListHeader>(header->offsetsToChunkLists[i]);
         for (;;) {
             allocations += listHeader->allocatedChunks;
             listCount++;
             if (listHeader->nextListOffset != -1) {
-                listHeader = (ChunkListHeader*)((unsigned char*)(chunk->data()) + listHeader->nextListOffset);
+                listHeader = address<ChunkListHeader>(listHeader->nextListOffset);
             } else {
                 break;
             }
         }
-        reportWriter << "for chunk size " << ChunkSizes[i] << ", " << listCount << " list(s) used\n";
+        reportWriter << "for chunk size " << ChunkSizes[i] << ", "
+                     << listCount << " list(s) used\n";
         reportWriter << "and in these lists " << allocations << " chunks are allocated\n";
-        int totalSize = listCount * (sizeof(ChunkListHeader) + (sizeof(int)+ChunkSizes[i])*CHUNKS_IN_ONE_LIST);
+        int totalSize = listCount * (sizeof(ChunkListHeader) + (sizeof(int) + ChunkSizes[i])
+                        * CHUNKS_IN_ONE_LIST);
         totalMemoryReserved += totalSize;
-        reportWriter << "Total size reserved from shared chunk for these list(s): " << totalSize << " bytes\n";
-        int bookKeeping = listCount * (sizeof(ChunkListHeader) + sizeof(int)*CHUNKS_IN_ONE_LIST);
+        reportWriter << "Total size reserved from shared chunk for these list(s): "
+                     << totalSize << " bytes\n";
+        int bookKeeping = listCount * (sizeof(ChunkListHeader) + sizeof(int) * CHUNKS_IN_ONE_LIST);
         totalBookkeepingMemory += bookKeeping;
         reportWriter << "  - bytes used for bookkeeping: " << bookKeeping << "\n";
-        reportWriter << "  - actual allocated bytes (in chunks, not in actual data, which might be less than chunk size): " << allocations*ChunkSizes[i] << "\n\n";
+        reportWriter << "  - actual allocated bytes (in chunks, not in actual data, which might be less than chunk size): "
+                     << allocations * ChunkSizes[i] << "\n\n";
         totalAllocatedMemory += allocations*ChunkSizes[i];
     }
 
     reportWriter << "*** HbMultiSegmentAllocator summary ***\n";
-    reportWriter << "Total memory reserved from shared chunk: " << totalMemoryReserved << " bytes\n";
+    reportWriter << "Total memory reserved from shared chunk: "
+                 << totalMemoryReserved << " bytes\n";
     reportWriter << "  - internal bookkeeping uses " << totalBookkeepingMemory << " bytes\n";
-    reportWriter << "  - actual memory allocated by clients: " << totalAllocatedMemory << " bytes\n";
-    int totalFragmentationPercent = (int)((float)(totalAllocatedMemory)/(float)(totalMemoryReserved)*100);
-    int usableFragmentationPercent = (int)((float)(totalAllocatedMemory)/(float)(totalMemoryReserved-totalBookkeepingMemory)*100);
-    reportWriter << "allocated memory / all memory reserved from shared chunk = " << totalFragmentationPercent << "%\n";
-    reportWriter << "allocated memory / all usable memory for client data = " << usableFragmentationPercent << "%\n";
+    reportWriter << "  - actual memory allocated by clients: "
+                 << totalAllocatedMemory << " bytes\n";
+    int totalFragmentationPercent = int(float(totalAllocatedMemory)
+                                        / float(totalMemoryReserved) * 100);
+    int usableFragmentationPercent = int(float(totalAllocatedMemory)
+                                         / float(totalMemoryReserved - totalBookkeepingMemory)
+                                         * 100);
+    reportWriter << "allocated memory / all memory reserved from shared chunk = "
+                 << totalFragmentationPercent << "%\n";
+    reportWriter << "allocated memory / all usable memory for client data = "
+                 << usableFragmentationPercent << "%\n";
 
 }
 #endif

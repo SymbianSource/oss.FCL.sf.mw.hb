@@ -47,7 +47,7 @@
 #define HbDeltaHeight 3.0
 #define MAXUDBWORDSIZE 64
 
-HbInputSpellQuery::HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner) : mOwner(owner)
+HbInputSpellQuery::HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner) : mOwner(owner), mPrimaryAction(0)
 {
 }
 
@@ -97,36 +97,37 @@ void HbInputSpellQuery::launch(QString editorText)
     //setAttribute(Qt::WA_DeleteOnClose);
     mDidHandleFinish = false;
     open(this,SLOT(dialogClosed(HbAction*)));
+    mPrimaryAction = qobject_cast<HbAction*>(actions().first());
 }
 
 void HbInputSpellQuery::dialogClosed(HbAction* action)
 {
-	//There are multiple dialog closed event received. This will make sure we handle finish
-	//only once
-	if(mDidHandleFinish) {
+    //There are multiple dialog closed event received. This will make sure we handle finish
+    //only once
+    if(mDidHandleFinish) {
         return;
     } else {
         mDidHandleFinish = true;
     }
 	
-	bool isOk = false;
-	bool isCancel = false;
-	bool isExternalClose = false;
-	// action is null when input query is closed externally , for example by calling
-	// HbDialog::close() function.
-	if (action) {
-		isOk = (action->text() == actions().at(0)->text())? true : false;
-		isCancel = (action->text() == actions().at(1)->text())? true:false;
-	} else {
-		isExternalClose = true;
-	}
+    bool isOk = false;
+    bool isCancel = false;
+    bool isExternalClose = false;
+    // action is null when input query is closed externally , for example by calling
+    // HbDialog::close() function.
+    if (action) {
+       isOk = mPrimaryAction == action ? true : false;
+       isCancel = mPrimaryAction != action ? true : false;
+    } else {
+        isExternalClose = true;
+    }
     
-	//Need to disable effects as asynchronous hide will commit the word otherwise.
-	HbEffect::disable(this);
-	hide();
-	HbEffect::enable(this);  
+    //Need to disable effects as asynchronous hide will commit the word otherwise.
+    HbEffect::disable(this);
+    hide();
+    HbEffect::enable(this);  
 	
-	HbInputFocusObject *newFocusObject = new HbInputFocusObject(mSavedFocusObject);
+    HbInputFocusObject *newFocusObject = new HbInputFocusObject(mSavedFocusObject);
     newFocusObject->releaseFocus();
     newFocusObject->setFocus();
     

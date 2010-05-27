@@ -123,6 +123,7 @@ HbVolumeSliderPrivate::~HbVolumeSliderPrivate( )
 void HbVolumeSliderPrivate::init( )
 {
     Q_Q( HbVolumeSlider );
+    sliderControl->setToolTipVisible(false);
     q->connect( q, SIGNAL( valueChanged( int ) ), q, SLOT( _q_valueChanged( int ) ) );
     q->connect( q, SIGNAL( iconToggled( bool ) ), q, SLOT( _q_muteToggled( bool ) ) );
     QList<HbSlider::SliderElement> elements;

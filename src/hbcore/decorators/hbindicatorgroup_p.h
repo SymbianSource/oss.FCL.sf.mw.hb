@@ -36,6 +36,7 @@
 class HbIndicatorGroupPrivate;
 class HbStyleOptionIndicatorGroup;
 struct IndicatorClientInfo;
+class HbView;
 
 class HB_CORE_PRIVATE_EXPORT HbIndicatorGroup : public HbWidget
 {
@@ -55,6 +56,8 @@ public:
     virtual ~HbIndicatorGroup();
 
     void delayedConstruction();
+
+    void currentViewChanged(HbView *view);
 
 public slots:
     virtual void createPrimitives();

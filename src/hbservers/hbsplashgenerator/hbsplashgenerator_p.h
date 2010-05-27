@@ -33,7 +33,6 @@
 #include <QTime>
 #include <QColor>
 #include <QHash>
-#include <QSettings>
 #include <QDebug>
 #include <QXmlStreamReader>
 #include <QFileSystemWatcher>
@@ -41,6 +40,7 @@
 
 QT_BEGIN_NAMESPACE
 class QTranslator;
+class QSettings;
 QT_END_NAMESPACE
 
 class HbMainWindow;
@@ -57,13 +57,14 @@ public:
     void start(bool forceRegen);
 
 signals:
+    void regenerateStarted();
     void outputDirContentsUpdated(const QString &dir, const QStringList &entries);
     void finished();
 
 public slots:
     void regenerate();
     void uncachedRegenerate();
-    void regenerateOne(const QString &splashmlFileName);
+    void regenerateOne(const QString &splashmlFileName, const QString &customTrDir = QString());
 
 private slots:
     void doStart();
@@ -100,15 +101,17 @@ public:
             QString mOrientation;
         };
         QList<ItemBgGraphicsRequest> mItemBgGraphics;
-        QString mWorkDirForSingleFileRegen;
+        QStringList mCustomTrDirs;
+        quint32 mFlagsToStore;
     };
 
 private:
+    void ensureMainWindow();
     void takeScreenshot();
     void cleanup();
     QImage renderView();
     QString splashFileName();
-    bool saveSpl(const QString &nameWithoutExt, const QImage &image);
+    bool saveSpl(const QString &nameWithoutExt, const QImage &image, quint32 extra);
     void addSplashmlItemToQueue(const QueueItem &item);
     void queueAppSpecificItems(const QString &themeName, Qt::Orientation orientation);
     bool parseSplashml(const QString &fullFileName, QueueItem &item);
@@ -116,6 +119,7 @@ private:
     void setupAppSpecificWindow();
     void setupNameBasedWidgetProps(HbDocumentLoader &loader);
     void finishWindow();
+    void setStatusBarElementsVisible(bool visible);
     void addTranslator(const QString &name);
     void clearTranslators();
     int updateOutputDirContents(const QString &outDir);
@@ -129,7 +133,7 @@ private:
     QTime mItemTime;
     bool mFirstRegenerate;
     QHash<QString, QueueItem> mParsedSplashmls;
-    QSettings mSettings;
+    QSettings *mSettings;
     QFileSystemWatcher mFsWatcher;
 };
 

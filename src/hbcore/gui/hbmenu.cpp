@@ -779,17 +779,14 @@ void HbMenu::polish(HbStyleParameters &params)
 
 QPainterPath HbMenu::shape() const
 {
-    /*
-    QRectF sceneRect = mapRectToScene(QRectF(-0.5, -0.5, boundingRect().width() + 0.5, boundingRect().height() + 0.5));
+    /*QRectF sceneRect = mapRectToScene(QRectF(-0.5, -0.5, boundingRect().width() + 0.5, boundingRect().height() + 0.5));
     QRectF clipRect = sceneRect.intersected(QRectF(pos().x() - 0.5, pos().y() - 0.5, size().width() + 0.5, size().height() + 0.5));
 
     QPainterPath path;
     path.addRect(mapRectFromScene(clipRect));
 
-    return path.intersected(HbPopup::shape());
-    */
-    
-    return HbPopup::shape();
+    return path.intersected(HbPopup::shape());*/
+	return HbPopup::shape();
 }
 
 /*!

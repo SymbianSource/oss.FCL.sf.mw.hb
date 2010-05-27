@@ -45,12 +45,15 @@ class HbThemeServerUtils
 public:
     static HbIconSource *getIconSource(const QString &filename);
     static QString formatFromPath(const QString &iconPath);
-    static int getSharedStylesheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority,
+    static int getSharedStylesheet(const QString &fileName,
+                                   HbLayeredStyleLoader::LayerPriority priority,
                                    bool *inSharedCache = 0);
     static bool parseCssFile(HbCss::Parser &parser, const QString &fileName, int &cssOffset);
     static void cleanupUnusedCss(HbCache *cache);
     static int getSharedEffect(const QString &fileName);
-    static int getSharedLayoutDefinition(const QString & fileName, const QString &layout, const QString &section);
+    static int getSharedLayoutDefinition(const QString & fileName,
+                                         const QString &layout,
+                                         const QString &section);
     static void createDeviceProfileDatabase();
     static bool removeSharedEffect(const QString &fileName);
     static void clearSharedEffects();
@@ -59,4 +62,3 @@ private:
 };
 
 #endif // HBTHEMESERVERUTILS_P_H
-

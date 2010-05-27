@@ -129,6 +129,7 @@ protected:
     HbView( HbViewPrivate &dd, QGraphicsItem *parent );
 
     bool event(QEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
 #ifdef HB_EFFECTS

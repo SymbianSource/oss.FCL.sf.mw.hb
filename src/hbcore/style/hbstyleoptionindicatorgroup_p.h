@@ -29,7 +29,7 @@
 #include <hbstyleoption_p.h>
 #include <QIcon>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionIndicatorGroup : public HbStyleOption
 {
 public:

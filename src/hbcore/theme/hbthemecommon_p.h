@@ -38,6 +38,7 @@
 #endif
 
 #define THEME_SERVER_NAME "hbthemeserver"
+#define SHARED_MEMORY_MANAGER_UNIT_TEST "unittest_hbsharedmemorymanager"
 #define BIN_CSS_APP "hbbincssmaker"
 #define BIN_CSS_APP_SYMBIAN "hbbincssmaker_symbian"
 #ifdef HB_BIN_CSS
@@ -273,8 +274,7 @@ struct HbTypefaceDataInfo
 };
 
 // Function codes (opcodes) used in message passing between client and server
-enum HbThemeServerRequest
-    {
+enum HbThemeServerRequest {
      EInvalidServerRequest = 0,
      EIconLookup = 1,
      EIconDefaultSize,
@@ -330,18 +330,17 @@ enum HbThemeServerRequest
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
      ,ECreateMemoryReport
 #endif
-    };
+ };
 //Rendering Modes
-enum HbRenderingMode
-{
-	ESWRendering,
-	EHWRendering
+enum HbRenderingMode {
+    ESWRendering,
+    EHWRendering
 };
 
 struct HbFreeRamNotificationData
 {
-	int bytesToFree;
-	bool useSwRendering;
+    int bytesToFree;
+    bool useSwRendering;
 };	
 
 #endif /* HBTHEMECOMMON_P_H */

@@ -44,7 +44,7 @@ public:
     explicit HbIconItem(QGraphicsItem *parent = 0);
     virtual ~HbIconItem();
 
-    void setIcon(const HbIcon &icon, bool takeIconSettings = false);
+    void setIcon(const HbIcon &icon, bool reserved = false);
     void setSize(const QSizeF &size);
     void setAspectRatioMode(Qt::AspectRatioMode mode);
     void setAlignment(Qt::Alignment alignment);

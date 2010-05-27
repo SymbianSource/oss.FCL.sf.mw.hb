@@ -31,6 +31,7 @@
 
 class HbIconAnimator;
 class HbBadgeIcon;
+
 class HbIconPrivate : public QSharedData
 {
 public:
@@ -48,6 +49,8 @@ public:
     bool removeBadge(const HbIcon& badge);
     void removeAllBadges();
     bool isBadged() const;
+    void setThemedColor(const QColor &color);
+    QColor themedColor() const;
 
 private:
     // disabled
@@ -55,6 +58,7 @@ private:
 
 public:
     static HbIconPrivate *d_ptr(HbIcon *icon) { return icon->d.data(); }
+    static HbIconPrivate *d_ptr_detached(HbIcon *icon) { icon->d.detach(); return icon->d.data(); }
     
     QSizeF size;
     HbIconEngine *engine; // this is 0 if HbIcon was copy constructed from QIcon.

@@ -24,7 +24,6 @@
 ****************************************************************************/
 
 #include <hbdevicedialog.h>
-#include <hbaction.h>
 #include <hbdevicedialogtrace_p.h>
 #include "hbdevicemessagebox.h"
 #include "hbdevicemessagebox_p.h"
@@ -42,6 +41,7 @@ HbDeviceMessageBoxPrivate::HbDeviceMessageBoxPrivate() : QObject(),
     TRACE_ENTRY
     for(int i = 0; i < NumActions; i++) {
         mDefaultActions[i] = 0;
+        mActions[i].mAction = 0;
     }
     TRACE_EXIT
 }
@@ -85,7 +85,9 @@ void HbDeviceMessageBoxPrivate::initProperties()
     for(int i = 0; i < NumProperties; i++) {
         mProperties[i].mFlags = NoFlags;
     }
-    clearActions();
+    for(int i = 0; i < NumActions; i++) {
+        clearAction(mActions[i]);
+    }
 
     QString text;
     q_ptr->setText(text);
@@ -93,30 +95,38 @@ void HbDeviceMessageBoxPrivate::initProperties()
     q_ptr->setIconVisible(true);
     q_ptr->setAnimationDefinition(text);
 
+    bool useActions[NumActions];
+    for(int i = 0; i < NumActions; i++) {
+        useActions[i] = false;
+    }
+
     switch(mProperties[Type].mValue.toInt()) {
     case HbMessageBox::MessageTypeInformation:
     case HbMessageBox::MessageTypeWarning:
         q_ptr->setDismissPolicy(HbPopup::TapAnywhere);
         q_ptr->setTimeout(timeoutValue(HbPopup::StandardTimeout));
-        // Use default primary button, secondary button is empty
-        if (!mDefaultActions[AcceptButton]) {
-            mDefaultActions[AcceptButton] = new HbAction(0);
-        }
-        mActions[AcceptButton].mAction = mDefaultActions[AcceptButton];
+        // Use default accept button, reject button is empty
+        useActions[AcceptButton] = true;
         break;
     case HbMessageBox::MessageTypeQuestion:
         q_ptr->setTimeout(HbPopup::NoTimeout);
         q_ptr->setDismissPolicy(HbPopup::NoDismiss);
-        // Use default primary and secondary buttons
-        for(int i = 0; i < NumActions; i++) {
-            if (!mDefaultActions[i]) {
-                mDefaultActions[i] = new HbAction(0);
-            }
-            mActions[i].mAction = mDefaultActions[i];
-        }
+        // Use default accept and reject buttons
+        useActions[AcceptButton] = true;
+        useActions[RejectButton] = true;
         break;
     default:
         Q_ASSERT(false);
+    }
+
+    for(int i = 0; i < NumActions; i++) {
+        if (useActions[i]) {
+            if (!mDefaultActions[i]) {
+                mDefaultActions[i] = new QAction(0);
+            }
+            mActions[i].mAction = mDefaultActions[i];
+            connect(mActions[i].mAction, SIGNAL(changed()), SLOT(actionChanged()));
+        }
     }
 }
 
@@ -124,8 +134,14 @@ void HbDeviceMessageBoxPrivate::setAction(ActionSelector select, QAction *action
 {
     TRACE_ENTRY
     Action &dialogAction = mActions[select];
+    bool saveTriggered = dialogAction.mTriggered;
+    clearAction(dialogAction);
+    dialogAction.mTriggered = saveTriggered;
     dialogAction.mFlags = Modified;
     dialogAction.mAction = action;
+    if (dialogAction.mAction) {
+        connect(dialogAction.mAction, SIGNAL(changed()), SLOT(actionChanged()));
+    }
     TRACE_EXIT
 }
 
@@ -216,14 +232,16 @@ bool HbDeviceMessageBoxPrivate::propertiesModified() const
     return false;
 }
 
-// Clear actions
-void HbDeviceMessageBoxPrivate::clearActions()
+// Clear action
+void HbDeviceMessageBoxPrivate::clearAction(Action &action)
 {
-    for(int i = 0; i < NumActions; i++) {
-        mActions[i].mAction = 0;
-        mActions[i].mFlags = NoFlags;
-        mActions[i].mTriggered = false;
+    if (action.mAction) {
+        disconnect(action.mAction, SIGNAL(changed()), this, SLOT(actionChanged()));
     }
+    action.mAction = 0;
+    action.mFlags = NoFlags;
+    action.mTriggered = false;
+
 }
 
 void HbDeviceMessageBoxPrivate::close()
@@ -262,6 +280,18 @@ void HbDeviceMessageBoxPrivate::triggerAction(QVariantMap data)
         }
     }
     TRACE_EXIT
+}
+
+void HbDeviceMessageBoxPrivate::actionChanged()
+{
+    QObject *action = sender();
+    for(int i = 0; i < NumActions; i++) {
+        if (mActions[i].mAction == action) {
+            mActions[i].mFlags = Modified;
+            scheduleUpdateEvent();
+            break;
+        }
+    }
 }
 
 void HbDeviceMessageBoxPrivate::setProperty(PropertySelector propertySelector, int value)
@@ -385,6 +415,11 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     QString fileName("note_warning");
     messageBox.setIconName(fileName);
 
+    // Change button text
+    messageBox.action(HbDeviceMessageBox::AcceptButtonRole)->setText("Ok");
+    messageBox.action(HbDeviceMessageBox::RejectButtonRole)->setText("Cancel");
+
+    // Set new actions (buttons)
     QAction acceptAction("Ok", 0);
     messageBox.setAction(&acceptAction, HbDeviceMessageBox::AcceptButtonRole);
     QAction rejectAction("Cancel", 0);

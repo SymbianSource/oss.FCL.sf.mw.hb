@@ -275,7 +275,7 @@ public:
        // if the memory where the vector is not writable it means it's client process, so do nothing
        if(!mData || !manager->isWritable()) 
            return;
-       if(mShared != true && !mData->mRef.deref()) {
+       if(!mShared && !mData->mRef.deref()) {
            destroyData();
        }
 
@@ -553,12 +553,8 @@ public:
         // and decision making is required very clear for all the scenarios.
         if (other.mMemoryType != mMemoryType || other.mShared == true || mShared == true ) 
         {
-            if(mShared != true) {
-                if(mData->mRef == 1) {
-                    destroyData();
-                }else {
-                    mData->mRef.deref();
-                }
+            if(!mShared && !mData->mRef.deref()) {
+                destroyData();
             }
             mShared = true;
             // Here assumption is that two memory type will be different in
@@ -627,8 +623,8 @@ private:
                         HbVectorData(mMemoryType, oldSize, newSize);
         mData = newData;
         offset.release();
-        if(!mShared) {
-            tempData->mRef.deref();
+        if(!mShared && !tempData->mRef.deref()) {
+            destroyData();
         }
 
         if(QTypeInfo<value_type>::isComplex) {

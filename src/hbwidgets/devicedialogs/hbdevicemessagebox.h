@@ -31,7 +31,6 @@
 #include <hbmessagebox.h>
 
 class HbDeviceMessageBoxPrivate;
-class HbAction;
 class QAction;
 
 class HB_WIDGETS_EXPORT HbDeviceMessageBox : public QObject

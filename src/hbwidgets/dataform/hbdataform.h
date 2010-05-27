@@ -72,6 +72,7 @@ public:
     void removeAllConnection();
     void removeAllConnection(HbDataFormModelItem *item);
 
+
 signals:
     void itemShown(const QModelIndex &index);
 
@@ -93,6 +94,7 @@ private:
     Q_DISABLE_COPY(HbDataForm)
     Q_PRIVATE_SLOT(d_func(), void _q_page_changed(int))
     Q_PRIVATE_SLOT(d_func(), void _q_item_displayed(const QModelIndex&))
+    
     friend class HbDataFormViewItem;
 };
 

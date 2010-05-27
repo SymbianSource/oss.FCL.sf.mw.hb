@@ -61,6 +61,7 @@ void HbDataGroupPrivate::init( )
 
 void HbDataGroupPrivate::expand( bool expanded )
 {
+    Q_Q(HbDataGroup);
     HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
         static_cast<QGraphicsWidget *>( mSharedData->mItemView->contentWidget( ) ) );
     HbDataFormModelItem::DataItemType itemType = static_cast<HbDataFormModelItem::DataItemType>(
@@ -115,6 +116,8 @@ void HbDataGroupPrivate::expand( bool expanded )
                 }
                 //get the group page index
                 QModelIndex groupPageIndex = mIndex.child(activePage,0);
+                q->emitActivated(groupPageIndex);
+                
                 if(groupPageIndex.isValid()) {                    
                     container->setItemTransientStateValue(groupPageIndex, "expanded", true);
                 }
@@ -265,7 +268,14 @@ bool HbDataGroup::setExpanded( bool expanded )
     Q_D(HbDataGroup);
     HB_SD(HbAbstractViewItem);
     HbAbstractItemContainer *container = 0;
-
+    HbDataFormModelItem::DataItemType itemType = 
+            static_cast<HbDataFormModelItem::DataItemType>(
+            d->mIndex.data(HbDataFormModelItem::ItemTypeRole).toInt());
+    //emit activated signal for newly expanded group page
+    if(expanded && (itemType == HbDataFormModelItem::GroupPageItem || 
+        itemType == HbDataFormModelItem::FormPageItem)) {
+        emitActivated(modelIndex());
+    }
     if(d->mSharedData->mItemView) {
         container = qobject_cast<HbAbstractItemContainer *>(
             static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
@@ -277,9 +287,6 @@ bool HbDataGroup::setExpanded( bool expanded )
 
         //if some one exlicitly calls setExpanded for data group then primitives needs to be
         //updated.
-        HbDataFormModelItem::DataItemType itemType = 
-            static_cast<HbDataFormModelItem::DataItemType>(
-            d->mIndex.data(HbDataFormModelItem::ItemTypeRole).toInt());
         if(itemType == HbDataFormModelItem::GroupItem){
             if(d->mPageCombo) {
                 if(expanded) {
@@ -521,3 +528,10 @@ void HbDataGroup::pressStateChanged(bool value, bool animate)
     Q_UNUSED(animate);
 }
 
+void HbDataGroup::emitActivated(const QModelIndex &index )const
+{
+    HbDataForm  *form = static_cast<HbDataForm*>(itemView());
+    if(form) {
+        HbDataFormPrivate::d_ptr(form)->emitActivated(index);
+    }
+}

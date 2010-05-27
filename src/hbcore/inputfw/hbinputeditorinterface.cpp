@@ -133,6 +133,10 @@ void HbEditorInterface::setMode(HbInputModeType inputMode)
     if (mPrivate) {
         mPrivate->lock();
         mPrivate->mInputMode = inputMode;
+        if (mPrivate->mLastFocusedState.inputMode() != HbInputModeNone) {
+            // Update also the last known input state, otherwise it won't really change.
+            mPrivate->mLastFocusedState.setInputMode(inputMode);
+        }
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }

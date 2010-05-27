@@ -116,10 +116,12 @@ void HbToggleItem::toggleValue()
     QString additionalTxt = 
         mModelItem->contentWidgetData( QString("additionalText") ).toString();
     QString txt = mModelItem->contentWidgetData(QString("text")).toString();
+    HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(mModelItem); 
+    // Dont want to emit datachanged for this property so calling private function
+    modelItem_priv->setContentWidgetData( QString("additionalText"), txt );
+    // will emit datachanged
     mModelItem->setContentWidgetData( QString("text"), additionalTxt );
     emit valueChanged(mViewItem->modelIndex(), additionalTxt);
-    // HbPushButton will not be updated with Additional Text when modelChanged signal is emitted
-    mModelItem->setContentWidgetData( QString("additionalText"), txt );
 }
 
 /*  
@@ -424,7 +426,7 @@ void HbMultiSelectionItem::makeSelection()
             int selectionindex = mSelectedItems.at( i ).toInt();
             if( selectionindex< mItems.count()) {
                 if( i > 0) {// dont add ; in the starting of the string
-                    newValue.append( ";" );
+                    newValue.append( "," );
                 }
                 newValue.append( mItems.at( mSelectedItems.at( i ).toInt() ) );
             } 
@@ -551,6 +553,10 @@ void HbMultiSelectionItem::launchMultiSelectionList()
 {
     if(!mSelectionDialog ) {
         mSelectionDialog = new HbSelectionDialog();
+        QObject::connect(mSelectionDialog, SIGNAL(aboutToShow()),this ,SIGNAL(aboutToShow()));
+        QObject::connect(mSelectionDialog, SIGNAL(aboutToHide()),this ,SIGNAL(aboutToHide()));
+        QObject::connect(mSelectionDialog, SIGNAL(aboutToClose()),this ,SIGNAL(aboutToClose()));
+        QObject::connect(mSelectionDialog, SIGNAL(finished(HbAction*)),this ,SIGNAL(finished(HbAction*)));
         mSelectionDialog->setSelectionMode( HbAbstractItemView::MultiSelection );
         mSelectionDialog->setStringItems( mItems, -1 ); 
         mSelectionDialog->setSelectedItems( mSelectedItems );
@@ -575,7 +581,7 @@ void HbMultiSelectionItem::dialogClosed(HbAction* action)
             mSelectedItems.append(selection.at(i));
             newValue.append(mSelectionDialog->stringItems().at(selection.at(i)));
             if( i != selection.count() - 1 ) {
-                newValue.append( ";" );
+                newValue.append( "," );
             }
         }        
         mButton->setText( newValue );
@@ -916,11 +922,10 @@ QString HbDataFormViewItemPrivate::icon() const
 void HbDataFormViewItemPrivate::createContentWidget()
 {
     Q_Q(HbDataFormViewItem);
-    
+
     QObject::connect(q, SIGNAL(itemShown(const QModelIndex&)), 
-                mSharedData->mItemView, SIGNAL(activated(const QModelIndex&)));
-    QObject::connect(q, SIGNAL(itemShown(const QModelIndex&)), 
-                mSharedData->mItemView, SIGNAL(itemShown(const QModelIndex&)));
+                mSharedData->mItemView, SIGNAL(itemShown(const QModelIndex&)));   
+
     switch( mType ) {
         // following are standard data item
         case HbDataFormModelItem::SliderItem:

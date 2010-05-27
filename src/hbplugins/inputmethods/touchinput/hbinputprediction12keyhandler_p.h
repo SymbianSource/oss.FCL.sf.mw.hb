@@ -60,8 +60,8 @@ class HbInputSpellQuery : public HbInputDialog
 Q_OBJECT
 public:
     HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner);
-	void getPositionAndSize(QPointF & pos,QSizeF & size, QRectF &geom);
-	void launch(QString editorText);
+    void getPositionAndSize(QPointF & pos,QSizeF & size, QRectF &geom);
+    void launch(QString editorText);
 public slots:
     void dialogClosed(HbAction* action);    
 private:
@@ -70,5 +70,6 @@ private:
     QPointer<QObject> mSavedFocusObject;
     HbInputPrediction12KeyHandlerPrivate* mOwner;
     QString mSavedEditorText;
+    HbAction *mPrimaryAction;
 };
 #endif //HB_INPUT_PREDICTION_12KEY_HANDLER_PRIVATE

@@ -23,12 +23,12 @@
 **
 ****************************************************************************/
 
+#include <QDebug>
 #include <QPainter>
 #include <QTextLayout>
 #include <QGraphicsSceneMouseEvent>
 #include <QTouchEvent>
 #include <QTimer>
-#include <QGraphicsDropShadowEffect>
 
 #include <hbmainwindow.h>
 #include <hbaction.h>
@@ -328,7 +328,7 @@ void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
         qreal cellHeight = q->boundingRect().height() / mGridSize.height();
 
         QFont font = HbFontSpec(HbFontSpec::Primary).font();
-        font.setPixelSize(fontSize(ButtonTextTypeLabel));
+	  font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
         QFontMetricsF fontMetrics(font);
         qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexPrimary));
 
@@ -348,10 +348,6 @@ void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
         if (q->parentItem()) {
             group->setZValue(q->parentItem()->zValue() + 1);
         }
-        
-        QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
-        effect->setBlurRadius(8);
-        group->setGraphicsEffect(effect);
 
         group->setButtonBorderSize(0);
         HbFrameDrawer *drawer = HbFrameDrawerPool::get(HbPreviewBackground, HbFrameDrawer::ThreePiecesHorizontal, QSizeF(width, height));
@@ -389,9 +385,6 @@ void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * co
             mCharacterSelectionPreview->setActive(false);
             qreal margin = HbPreviewMarginInUnits * mUnitValue * 0.5;
             mCharacterSelectionPreview->setContentsMargins(margin, 0, margin, 0);
-            QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
-            effect->setBlurRadius(8);
-            mCharacterSelectionPreview->setGraphicsEffect(effect);
         }
 
         HbInputButtonGroup *group = new HbInputButtonGroup(QSize(item->mappedCharacters().count(), 1));
@@ -405,7 +398,7 @@ void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * co
         qreal cellHeight = q->boundingRect().height() / mGridSize.height();
 
         QFont font = HbFontSpec(HbFontSpec::Primary).font();
-        font.setPixelSize(fontSize(ButtonTextTypeLabel));
+	  font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
         QFontMetricsF fontMetrics(font);
         qreal textWidth = fontMetrics.width(item->mappedCharacters());
 
@@ -723,9 +716,9 @@ void HbInputButtonGroupPrivate::createPrimarySingleTextLayout(int index, const Q
 
     int typeIndex = index % HbTextTypeCount / HbInputButton::ButtonStateCount;
     if (typeIndex == HbInputButton::ButtonTypeLabel) {
-        font.setPixelSize(fontSize(ButtonTextTypeLabel));
+      font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
     } else {
-        font.setPixelSize(fontSize(ButtonTextTypeSingle));
+      font.setPixelSize(int(fontSize(ButtonTextTypeSingle)));
     }
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
@@ -768,7 +761,7 @@ void HbInputButtonGroupPrivate::createPrimaryTextLayout(int index, const QHash<i
     qreal cellHeight = size.height() / mGridSize.height();
 
     QFont font = HbFontSpec(HbFontSpec::Primary).font();
-    font.setPixelSize(fontSize(ButtonTextTypePrimary));
+      font.setPixelSize(int(fontSize(ButtonTextTypePrimary)));
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
     QFontMetricsF fontMetrics(font);
@@ -806,7 +799,7 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
     qreal cellHeight = size.height() / mGridSize.height();
 
     QFont font = HbFontSpec(HbFontSpec::Primary).font();
-    font.setPixelSize(fontSize(ButtonTextTypeSecondaryFirstRow));
+      font.setPixelSize(int(fontSize(ButtonTextTypeSecondaryFirstRow)));
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
     QFontMetricsF fontMetrics(font);
@@ -1118,7 +1111,9 @@ void HbInputButtonGroup::setButton(HbInputButton *data, int index)
             d->mButtonData.removeAt(index);
         }
     } else {
-        d->mButtonData.append(data);
+        if (data) {
+            d->mButtonData.append(data);
+        }
     }
     setButtons(d->mButtonData);
 }
@@ -1136,7 +1131,10 @@ void HbInputButtonGroup::setButton(HbInputButton *data, int column, int row)
 {
     Q_D(HbInputButtonGroup);
 
-    int index = d->mButtonGridPositions.value(QPair<int, int>(column, row));
+    int index = -1;
+    if (d->mButtonGridPositions.contains(QPair<int, int>(column, row))) {
+        index = d->mButtonGridPositions.value(QPair<int, int>(column, row));
+    }
     setButton(data, index);
 }
 
@@ -1207,7 +1205,10 @@ HbInputButton *HbInputButtonGroup::button(int column, int row) const
 {
     Q_D(const HbInputButtonGroup);
     
-    int index = d->mButtonGridPositions.value(QPair<int, int>(column, row));
+    int index = -1;
+    if (d->mButtonGridPositions.contains(QPair<int, int>(column, row))) {
+        index = d->mButtonGridPositions.value(QPair<int, int>(column, row));
+    }
     return button(index);
 }
 

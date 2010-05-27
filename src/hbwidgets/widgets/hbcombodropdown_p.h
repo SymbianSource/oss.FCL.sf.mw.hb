@@ -35,8 +35,8 @@ class  HbComboDropDown : public HbWidget
     Q_OBJECT
 public:
     explicit HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsItem *parent = 0 );
-    virtual ~HbComboDropDown();
-    void createList();
+    virtual ~HbComboDropDown( );
+    void createList( );
     HbListView *mList;
     HbComboBoxPrivate *comboPrivate;
 

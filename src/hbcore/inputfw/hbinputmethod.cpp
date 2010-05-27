@@ -241,7 +241,9 @@ void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
     if (!isActiveMethod()) {
         return;
     }
+
     Q_D(HbInputMethod);
+
     d->mInputState.setKeyboard(newKeyboard);
     HbInputMethod* stateHandler = d->findStateHandler(d->mInputState);
     if (stateHandler) {

@@ -32,13 +32,13 @@
 #include "hbsharedmemorymanager_p.h"
 #include "hbtypefaceinfodatabase_p.h"
 
-
 #include <QHash>
 #include <QImage>
 #include <QSharedMemory>
 #include <QDebug>
 #include <QProcess>
 #include <QFile>
+#include <QFileInfo>
 #include <QPainter>
 #include <QSettings>
 #include <QSizeF>
@@ -63,15 +63,9 @@
 
 static const TInt KThemeName = 0;
 
-// Publish/Subscribe themeRequestProp specific
-static _LIT_SECURITY_POLICY_PASS(KAllowAllPolicy);
-static _LIT_SECURITY_POLICY_C1(KThemeChangerPolicy,ECapabilityWriteDeviceData);
+const QString KOperatorCPath = "C:/resource/hb/operatorTheme/icons/";
+const QString KOperatorZPath = "Z:/resource/hb/operatorTheme/icons/";
 
-
-const QString operatorCPath = "C:/resource/hb/operatorTheme/icons/";
-const QString operatorZPath = "Z:/resource/hb/operatorTheme/icons/";
-
-static HbThemeServerPrivate *TheServer = 0;
 bool HbThemeServerPrivate::gpuGoodMemoryState = true;
 // This is used as parent theme always regardless of the active theme
 
@@ -93,7 +87,7 @@ HbThemeServerPrivate * HbThemeServerPrivate::NewL(CActive::TPriority aActiveObje
     HbThemeServerPrivate* self = new(ELeave) HbThemeServerPrivate(aActiveObjectPriority);
     CleanupStack::PushL(self);
     self->ConstructL();
-    CleanupStack::Pop(); // self
+    CleanupStack::Pop(self);
     return self;
 }
 
@@ -131,7 +125,11 @@ void HbThemeServerPrivate::ConstructL()
     HbThemeSystemEffect::handleThemeChange(iCurrentThemeName);
 
     // Open index file to prevent uninstallation of the active theme
-    openCurrentIndexFile();
+    if (!openCurrentIndexFile()) {
+        // theme doesn't exist activate default theme
+        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
+        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
+    }
     cache = 0;
     cssCache = 0;
 
@@ -157,16 +155,16 @@ void HbThemeServerPrivate::ConstructL()
     QString basePath;
     resolveThemePath(HbThemeUtils::getThemeSetting(HbThemeUtils::BaseThemeSetting), basePath);
     createThemeIndex(basePath, BaseTheme);
-    // Process operator Drive C theme index
+    // Process operator theme indexes
     QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
     if (!operatorName.isEmpty()) {
         QString operatorPath;
-        operatorPath.append(operatorCPath);
+        operatorPath.append(KOperatorCPath);
         operatorPath.append(operatorName);
         createThemeIndex(operatorPath, OperatorC);
         // Process operator Drive Z theme index
         QString operatorROMPath;
-        operatorROMPath.append(operatorZPath);    
+        operatorROMPath.append(KOperatorZPath);
         operatorROMPath.append(operatorName);
         createThemeIndex(operatorROMPath, OperatorROM);
     }
@@ -180,7 +178,7 @@ void HbThemeServerPrivate::ConstructL()
 #endif
 
     // Start the splash screen generator app.
-    //QProcess::startDetached("hbsplashgenerator.exe");
+    QProcess::startDetached("hbsplashgenerator.exe");
 }
 
 /**
@@ -194,21 +192,18 @@ By default, the session is not sharable, which is what we want here
 so no second parameter is passed to the CServer2 constructor.
 */
 HbThemeServerPrivate::HbThemeServerPrivate(CActive::TPriority aActiveObjectPriority)
-    : CServer2( aActiveObjectPriority )
+    : CServer2( aActiveObjectPriority ), iWatcher(0)
 {
-    // Set server pointer in static variable
-    TheServer = this;
-
     // Set up the listener to listen for Publish events
     TRAPD(err, iListener = CHbThemeChangeNotificationListener::NewL(*this));
     if (err) {
         qWarning( "HbThemeServerPrivate::HbThemeServerPrivate: CHbThemeChangeNotificationListener::NewL failed = %d", err );
     } else {
-        TRAPD( err, iListener->startListening());
+        TRAPD(err, iListener->startListeningL());
         if (err) {
              qWarning( "HbThemeServerPrivate::HbThemeServerPrivate: iListener->startListening failed = %d", err );
          }
-    }
+    }    
 }
 
 /**
@@ -226,26 +221,41 @@ HbThemeServerPrivate::~HbThemeServerPrivate()
     }
     // Delete the listener for Publish/Subscribe
     delete iListener;
+    // Delete file watcher
+    if (iWatcher) {
+        delete iWatcher;
+    }
 }
 
-HbThemeServerPrivate *HbThemeServerPrivate::Instance()
-{
-    return TheServer;
-}
-
-void HbThemeServerPrivate::openCurrentIndexFile()
+/*
+ * Returns FALSE if file doesn't exist, TRUE otherwise
+ */
+bool HbThemeServerPrivate::openCurrentIndexFile()
 {
     // Open index file to prevent uninstallation of the active theme
-    if (!iCurrentThemePath.isEmpty() && iCurrentThemePath[0] != 'Z') {
+    if (!iCurrentThemePath.isEmpty() && iCurrentThemePath[0] != 'z' && 
+        iCurrentThemePath[0] != 'Z' && iCurrentThemePath[0] != ':') {
         QString indexFileName;
         indexFileName.append(iCurrentThemePath);
-        indexFileName.append("\\index.theme");
-
-        currentIndexfile.setFileName(indexFileName);
+        indexFileName.append("/index.theme");
+        
+        QFile currentIndexfile(indexFileName);
         if(!currentIndexfile.open(QIODevice::ReadOnly)) {
             qWarning()<< "HbSymbianThemeServer: No Index file found in the new theme, How did this happen ??";
+            return false;
+        } else {
+            currentIndexfile.close();
+            if (!iWatcher) {
+                // Set up the file watcher for active theme changes
+                TRAP_IGNORE(iWatcher = CHbThemeWatcher::NewL(*this));
+            }
+            // Start watching in case of mmc ejection
+            if (iWatcher) {
+                iWatcher->startWatchingL(indexFileName);
+            }
         }
     }
+    return true;
 }
 
 bool HbThemeServerPrivate::resolveThemePath(const QString &themeName, QString &themePath)
@@ -326,15 +336,18 @@ void HbThemeServerPrivate::HandleThemeSelection( const QString& themeName)
     #endif
 
     
-    currentIndexfile.close();
     // Open index file to prevent uninstallation of the active theme
-    openCurrentIndexFile();
+    if (!openCurrentIndexFile()) {
+        // theme doesn't exist activate default theme
+        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
+        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
+    }
 
     // Process operator Drive C theme index
     QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
     if (!operatorName.isEmpty()) {
         QString operatorPath;
-        operatorPath.append(operatorCPath);
+        operatorPath.append(KOperatorCPath);
         operatorPath.append(operatorName);
         createThemeIndex(operatorPath, OperatorC);
     }
@@ -344,7 +357,7 @@ void HbThemeServerPrivate::HandleThemeSelection( const QString& themeName)
     // Clear cached icons and session data
     clearIconCache();
     iSessionIter.SetToFirst();
-    while(iSessionIter != NULL) {
+    while(iSessionIter) {
         HbThemeServerSession &session = reinterpret_cast<HbThemeServerSession &>(*iSessionIter);
         session.ClearSessionData();
         iSessionIter++;
@@ -752,13 +765,13 @@ void HbThemeServerPrivate::createThemeIndex(const QString &themePath, const HbTh
         qint64 byteSize = indexFile.size();
 
         #ifdef THEME_INDEX_TRACES
-        qDebug() <<  "ThemeIndex: " << theme.toUtf8() << " index file size:" << byteSize;
+        qDebug() <<  "ThemeIndex: " << themeName.toUtf8() << " index file size:" << byteSize;
         #endif
 
         int offset = manager->alloc(byteSize);
         if (offset >= 0) {
             #ifdef THEME_INDEX_TRACES
-            qDebug() <<  "ThemeIndex: memory allocated for theme: " << theme.toUtf8();
+            qDebug() <<  "ThemeIndex: memory allocated for theme: " << themeName.toUtf8();
             #endif
 
             // Read the theme index in the shared chunk
@@ -768,23 +781,23 @@ void HbThemeServerPrivate::createThemeIndex(const QString &themePath, const HbTh
             indexFile.close();
 
             #ifdef THEME_INDEX_TRACES
-            qDebug() <<  "ThemeIndex: Reading themeindex for theme" << theme.toUtf8() << "... Done!";
+            qDebug() <<  "ThemeIndex: Reading themeindex for theme" << themeName.toUtf8() << "... Done!";
             #endif
 
             // Verify theme index contents if it is not located in ROM,
             // so that it does not have over-indexing offsets which might
             // crash all the clients trying to read from it.
 
-            if (themePath[0] != 'Z') {
+            if (themePath[0] != 'z' && themePath[0] != 'Z') {
                 #ifdef THEME_INDEX_TRACES
-                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << theme.toUtf8();
+                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << themeName.toUtf8();
                 #endif
 
                 HbThemeIndex index(address);
                 indexOK = index.validateItems(byteSize);
 
                 #ifdef THEME_INDEX_TRACES
-                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << theme.toUtf8() << " done! Result: " << indexOK;
+                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << themeName.toUtf8() << " done! Result: " << indexOK;
                 #endif
             }
 
@@ -922,10 +935,10 @@ void HbThemeServerSession::ServiceL(const RMessage2& aMessage)
 
     TRAPD(err, DispatchMessageL(aMessage));
     aMessage.Complete(err);
-    QString er;
-    er.setNum(err);
 
 #ifdef THEME_SERVER_TRACES
+    QString er;
+    er.setNum(err);
     qDebug() << "completed DispatchMessageL error code is " + er;
 #endif
 
@@ -1228,6 +1241,7 @@ void HbThemeServerSession::SwitchRenderingMode(HbRenderingMode aRenderMode)
     } 
 #endif
 }
+
 /**
  * HandleStyleSheetLookupL
  */
@@ -1240,7 +1254,7 @@ void HbThemeServerSession::HandleStyleSheetLookupL(const RMessage2& aMessage)
         return;
     }
 
-    TBuf<256> fileName;
+    TFileName fileName;
     aMessage.ReadL(0, fileName, 0);
     TBuf<256> layerPriorityBuf;
     aMessage.ReadL(1, layerPriorityBuf, 0);
@@ -1291,6 +1305,9 @@ void HbThemeServerSession::HandleStyleSheetLookupL(const RMessage2& aMessage)
     aMessage.WriteL(2, data);
 }
 
+static const TInt KMaxLayoutName = 256;
+static const TInt KMaxSectionName = 256;
+
 /**
  * HandleWidgetMLLookUp
  */
@@ -1300,11 +1317,11 @@ void HbThemeServerSession::HandleWidgetMLLookupL(const RMessage2& aMessage)
         return;
     }
 
-    TBuf<256> fileName;
+    TFileName fileName;
     aMessage.ReadL(0, fileName, 0);
-    TBuf<256> layoutName;
+    TBuf<KMaxLayoutName> layoutName;
     aMessage.ReadL(1, layoutName, 0);
-    TBuf<256> sectionName;
+    TBuf<KMaxSectionName> sectionName;
     aMessage.ReadL(2, sectionName, 0);
 
     QString wmlFileName((QChar*)fileName.Ptr(), fileName.Length());
@@ -1433,10 +1450,10 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
     } else {
         QT_TRY {
             QString format = HbThemeServerUtils::formatFromPath(key.filename);
-	        QScopedPointer <HbIconCacheItem> tempIconCacheItem(HbIconCacheItemCreator::createCacheItem( key,
-                                                                    (HbIconLoader::IconLoaderOptions)params.options,                                                                    
-                                                                    format,
-                                                                    iServer->currentRenderingMode()));
+                QScopedPointer <HbIconCacheItem> tempIconCacheItem(
+                    HbIconCacheItemCreator::createCacheItem(key,
+                        static_cast<HbIconLoader::IconLoaderOptions>(params.options),
+                        format, iServer->currentRenderingMode()));
             cacheItem = tempIconCacheItem.data();
             if (cacheItem) {
                 if (cacheItem->rasterIconData.type != INVALID_FORMAT) {
@@ -1524,6 +1541,17 @@ QColor HbThemeServerSession::GetColorFromRgba(TUint32 aRgba, bool aColorFlag)
     return color;
 }
 
+inline
+QSize convert(const TSize &size)
+{
+    return QSize(size.iWidth, size.iHeight);
+}
+inline
+QRect convert(const TRect &rect)
+{
+    return QRect(QPoint(rect.iTl.iX, rect.iTl.iY), QPoint(rect.iBr.iX, rect.iBr.iY));
+}
+
 /**
  * HbThemeServerPrivate::GetSharedMultiIconInfoL
   Creates a consolidated icon of the frame item pieces ,
@@ -1544,12 +1572,12 @@ void HbThemeServerSession::GetSharedMultiIconInfoL(const RMessage2& aMessage)
     fullPath = fullPath.left(index + 1);
     iconId.prepend(fullPath);
     HbIconKey finalIconKey(iconId,
-                           (QSizeF)params.size,
-                           (Qt::AspectRatioMode)params.aspectRatioMode,
-                           (QIcon::Mode)params.mode,
-                           (bool)params.mirrored,
+                           params.size,
+                           static_cast<Qt::AspectRatioMode>(params.aspectRatioMode),
+                           static_cast<QIcon::Mode>(params.mode),
+                           params.mirrored,
                            color,
-                           (HbRenderingMode)params.renderMode);
+                           static_cast<HbRenderingMode>(params.renderMode));
 
     if (!IconInfoFromSingleIcon(finalIconKey, stitchedData)) {
         HbMultiIconParams frameItemParams;
@@ -1561,20 +1589,20 @@ void HbThemeServerSession::GetSharedMultiIconInfoL(const RMessage2& aMessage)
         }
 
         frameItemParams.multiPartIconId = iconId;
-        frameItemParams.aspectRatioMode = (Qt::AspectRatioMode)params.aspectRatioMode;
+        frameItemParams.aspectRatioMode = params.aspectRatioMode;
         frameItemParams.colorflag = params.colorflag;
-        frameItemParams.mirrored = (bool)params.mirrored;
+        frameItemParams.mirrored = params.mirrored;
         frameItemParams.options = params.options;
         frameItemParams.rgba = params.rgba;
-        frameItemParams.mode = (QIcon::Mode)params.mode;
-        frameItemParams.size = (QSizeF)params.size;
+        frameItemParams.mode = params.mode;
+        frameItemParams.size = params.size;
         frameItemParams.color = color;
         frameItemParams.renderMode = params.renderMode;
         QT_TRY {
             for (int i = 0; i < noOfPieces; i++) {
-                frameItemParams.multiPartIconData.pixmapSizes[i] = (QSize &)params.pixmapSizes[i];
-                frameItemParams.multiPartIconData.targets[i] = (QRect &)params.targets[i];
-                frameItemParams.multiPartIconData.sources[i] = (QRect &)params.sources[i];
+                frameItemParams.multiPartIconData.pixmapSizes[i] = convert(params.pixmapSizes[i]);
+                frameItemParams.multiPartIconData.targets[i] = convert(params.targets[i]);
+                frameItemParams.multiPartIconData.sources[i] = convert(params.sources[i]);
                 QString pieceName((QChar*)params.multiPartIconList[i].Ptr(), params.multiPartIconList[i].Length());
                 frameItemParams.multiPartIconList.append(pieceName);
             }
@@ -1971,15 +1999,15 @@ void HbThemeServerSession::unloadMultiIcon(const RMessage2& aMessage)
     aMessage.ReadL(0, paramPckg, 0);
 
     QColor color = GetColorFromRgba(params.rgba, params.colorflag);
-    Qt::AspectRatioMode aspectRatioMode = (Qt::AspectRatioMode)params.aspectRatioMode;
-    QIcon::Mode mode = (QIcon::Mode)params.mode;
+    Qt::AspectRatioMode aspectRatioMode = static_cast<Qt::AspectRatioMode>(params.aspectRatioMode);
+    QIcon::Mode mode = static_cast<QIcon::Mode>(params.mode);
     TBool mirrored = params.mirrored;
 
     TInt iconCount = params.iconCount;
     for (int i = 0; i < iconCount; i++) {
         QString filename((QChar*)params.iconList[i].Ptr(), params.iconList[i].Length());
         HbIconKey key(filename, params.sizeList[i], aspectRatioMode, mode, mirrored, color, 
-                                (HbRenderingMode)params.renderMode);
+                                static_cast<HbRenderingMode>(params.renderMode));
         iServer->CleanupSessionIconItem(key);
         sessionData.removeOne(key);
     }
@@ -2061,7 +2089,7 @@ int HbThemeServerPrivate::iconRefCount(const RMessage2& aMessage)
                   (Qt::AspectRatioMode)params.aspectRatioMode,
                   (QIcon::Mode)params.mode, params.mirrored, color, (HbRenderingMode)params.renderMode);
 
-    HbIconCacheItem* cacheItem = cache->value(key);//iconCacheItem(key);
+    HbIconCacheItem* cacheItem = cache->value(key);
     if(cacheItem)
         refCount =  cacheItem->refCount;
     else
@@ -2071,132 +2099,3 @@ int HbThemeServerPrivate::iconRefCount(const RMessage2& aMessage)
 #endif
 
 #endif
-
-CHbThemeChangeNotificationListener* CHbThemeChangeNotificationListener::NewL(HbThemeServerPrivate& aObserver)
-{
-    CHbThemeChangeNotificationListener* self = new (ELeave) CHbThemeChangeNotificationListener(aObserver);
-    CleanupStack::PushL(self);
-    self->ConstructL();
-    CleanupStack::Pop();
-    return self;
-}
-
-CHbThemeChangeNotificationListener::CHbThemeChangeNotificationListener(HbThemeServerPrivate& aObserver)
-    :CActive(EPriorityStandard),iObserver(aObserver)
-{
-
-}
-
-void CHbThemeChangeNotificationListener::ConstructL()
-{
-    TInt err = RProperty::Define( KServerUid3, KNewThemeForThemeChanger, RProperty::ELargeText, KAllowAllPolicy, KThemeChangerPolicy );
-     if ( err != KErrAlreadyExists ) {
-         User::LeaveIfError( err );
-     }
-    err = themeRequestProp.Attach(KServerUid3, KNewThemeForThemeChanger );
-    User::LeaveIfError(err);
-
-    CActiveScheduler::Add(this);
-}
-
-CHbThemeChangeNotificationListener::~CHbThemeChangeNotificationListener()
-{
-    stopListening();
-}
-
-void CHbThemeChangeNotificationListener::startListening()
-{
-    if (IsActive()) {
-         return; //do nothing if allready listening
-    }
-
-    User::LeaveIfError(themeRequestProp.Attach(KServerUid3,KNewThemeForThemeChanger));
-    //Subscribe for updates
-    themeRequestProp.Subscribe(iStatus);
-
-    SetActive();
-
-}
-
-void CHbThemeChangeNotificationListener::stopListening()
-{
-     Cancel(); // cancel
-     if(IsActive()) { // only if already listening
-        themeRequestProp.Close(); // Close the handle since it is not needed anymore
-   }
-}
-
-/*
- * Returns TRUE if parsing succeeded, FALSE otherwise
- */
-bool CHbThemeChangeNotificationListener::parseData( TDesC& requestData, HbThemeServerRequest& etype, TDes& data)
-{
-    TInt result = 0;
-    const TChar delimiter = ':';
-    // initialize return value as failed
-    bool bSuccess = false;
-
-    result = requestData.Locate( delimiter );
-    if( KErrNotFound != result ) {
-        TInt len = requestData.Length();
-        const TDesC& typestr = requestData.Mid( 0, result);
-        TLex atype ( typestr );
-        TInt iType;
-        atype.Val( iType );
-        etype = static_cast<HbThemeServerRequest>(iType);
-        data.Copy( requestData.Mid( result + 1, len - result - 1 ) );
-        bSuccess = true;
-    } else {
-        bSuccess = false;
-    }
-
-    return bSuccess;
-}
-
-void CHbThemeChangeNotificationListener::RunL()
-{
-    // Subscribe first to make sure we don't miss any
-    // when handling this one.
-    themeRequestProp.Subscribe(iStatus);
-
-    SetActive();
-
-    TBuf<256> requestData;
-    TInt ret = themeRequestProp.Get(requestData);
-    switch (ret) {
-        case KErrNone:
-            {
-                QString qrequestData((QChar*)requestData.Ptr(),requestData.Length());
-                HbThemeServerRequest etype = EInvalidServerRequest;
-                TBuf<256> data;
-                ///Parse the data from the Publisher
-                bool bSuccess = parseData( requestData, etype, data);
-                if( bSuccess && EThemeSelection == etype) {
-                    QString str((QChar*)data.Ptr(),data.Length());
-                    str = str.trimmed();
-                    iObserver.HandleThemeSelection( str );
-                }
-            }
-            break;
-        case KErrPermissionDenied:
-            qDebug() << "KErrPermissionDenied";
-            break;
-        case KErrNotFound:
-            qDebug() << "KErrNotFound";
-            break;
-        case KErrArgument:
-            qDebug() << "KErrArgument";
-            break;
-        case KErrOverflow:
-            qDebug() << "KErrOverflow";
-            break;
-    }
-}
-
-void CHbThemeChangeNotificationListener::DoCancel()
-{
-    themeRequestProp.Cancel();
-}
-
-
-

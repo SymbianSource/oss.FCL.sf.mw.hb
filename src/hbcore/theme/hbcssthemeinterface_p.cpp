@@ -32,8 +32,7 @@
  \class HbCssThemeInterface
  \brief HbCssThemeInterface is an internal class.
  *
- */
- 
+ */ 
  
  /*!
  * \fn HbCssThemeInterface::initialise(const QStringList& list,bool loadAllFiles,bool enableBinarySupport =false)
@@ -42,39 +41,38 @@
  * \a loadAllFiles ,On application launch all files are loaded and on theme change unchanged files are not loaded.
  * \a enableBinarySupport optional flag for using the binary functionality
  */
-void HbCssThemeInterface::initialise(const QMap<int,QString> & list,bool loadAllFiles,
+void HbCssThemeInterface::initialise(const QMap<int, QString> &list, bool loadAllFiles,
                                      bool enableBinarySupport)
 {
     int handle;
     flushVariableCache();
-    HbLayeredStyleLoader *loader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+    HbLayeredStyleLoader *loader =
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
     
     //first unload the layers, for which the contents are different after theme change
     if (handles.size() != 0)  {
         QMap<int,HbLayeredStyleLoader::LayerPriority>::const_iterator itr;
         for (itr = handles.constBegin(); itr != handles.constEnd(); ++itr){
-            loader->unload(itr.key(),itr.value());
+            loader->unload(itr.key(), itr.value());
         }
         handles.clear();
     }
 
-    QMap<int,QString>::const_iterator i;
+    QMap<int, QString>::const_iterator i;
     for (i = list.constBegin(); i != list.constEnd(); ++i){
+        HbLayeredStyleLoader::LayerPriority layerPriority =
+                static_cast<HbLayeredStyleLoader::LayerPriority>(i.key());
         if(loadAllFiles) {
-            handle =loader->load(i.value(),(HbLayeredStyleLoader::LayerPriority) i.key(),enableBinarySupport);
-            if (((HbLayeredStyleLoader::LayerPriority) i.key() != HbLayeredStyleLoader::Priority_Core) &&  ((HbLayeredStyleLoader::LayerPriority) i.key() != HbLayeredStyleLoader::Priority_Operator )) {
-                handles.insertMulti(handle, (HbLayeredStyleLoader::LayerPriority) i.key());
+            handle = loader->load(i.value(), layerPriority, enableBinarySupport);
+            if (layerPriority != HbLayeredStyleLoader::Priority_Core
+                && layerPriority != HbLayeredStyleLoader::Priority_Operator) {
+                handles.insertMulti(handle, layerPriority);
             }
-
+        } else if (layerPriority != HbLayeredStyleLoader::Priority_Core
+                   && layerPriority != HbLayeredStyleLoader::Priority_Operator) {
+                handle = loader->load(i.value(), layerPriority, enableBinarySupport);
+                handles.insertMulti(handle, layerPriority);
         }
-        else{
-            if (((HbLayeredStyleLoader::LayerPriority) i.key() != HbLayeredStyleLoader::Priority_Core) &&  ((HbLayeredStyleLoader::LayerPriority) i.key() != HbLayeredStyleLoader::Priority_Operator )) {
-                handle = loader->load(i.value(),(HbLayeredStyleLoader::LayerPriority) i.key(),enableBinarySupport);
-                handles.insertMulti(handle, (HbLayeredStyleLoader::LayerPriority) i.key());
-            }
-
-        }
-
     }
 }
 
@@ -84,7 +82,8 @@ void HbCssThemeInterface::initialise(const QMap<int,QString> & list,bool loadAll
  */
 void HbCssThemeInterface::flush()
 {
-    HbLayeredStyleLoader *loader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+    HbLayeredStyleLoader *loader =
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
     loader->clear();
     flushVariableCache();
 }
@@ -109,9 +108,11 @@ HbCss::Value HbCssThemeInterface::findAttribute(
     n.ptr = (void *)w;
     HbCss::Value value;
 
-    HbLayeredStyleLoader *loader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+    HbLayeredStyleLoader *loader =
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
     HbDeviceProfile profile(HbDeviceProfile::profile(w));
-    HbCss::ValueExtractor valueExtractor(loader->declarationsForNode(n, profile.orientation()), true);
+    HbCss::ValueExtractor valueExtractor(
+            loader->declarationsForNode(n, profile.orientation()), true);
     valueExtractor.extractValue(attribute, value);
     
     if ( value.type == Value::Variable) {
@@ -131,7 +132,8 @@ HbCss::Value HbCssThemeInterface::findVariable(
         const QString& variableName) const
 {
     if ( mVariables.isEmpty() ) {
-        HbLayeredStyleLoader *loader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+        HbLayeredStyleLoader *loader =
+                HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
         loader->variableRuleSets(&mVariables);
     }
 
@@ -146,4 +148,3 @@ HbCss::Value HbCssThemeInterface::findVariable(
 
     return value;
 }
-

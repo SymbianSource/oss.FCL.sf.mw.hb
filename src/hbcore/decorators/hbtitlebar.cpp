@@ -77,6 +77,8 @@ void HbTitleBarPrivate::delayedConstruction()
         mIndicatorButton, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
     q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
     q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));  
+
+    q->setFlag(QGraphicsItem::ItemIsPanel, true);
 }
 
 void HbTitleBarPrivate::init()

@@ -123,11 +123,20 @@ void HbDataFormModelPrivate::rowsRemoved()
     HbDataFormModel is derived from QAbstractItemModel. So applications can use,
     QAbstractItemModel API's to create their datamodel. HbDataFormModel also provides
     convenience API's specific to HbDataForm. These convinience API's are useful in creating 
-    form page, group, group page and data item.
+    FormPageItem, GroupItem, GroupPageItem and data item.
 
     A HbDataForm can be used to display the contents of the model.
-    HbDataFormModel also has Apis to return modelindex of the items and vice-versa.
+    HbDataFormModel also has APIs to return modelindex of the items and vice-versa.
     So applications can individually modify the items data and set it to the HbDataForm.
+
+    The signals emitted by HbDataFormModel
+    \li dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) emitted when the 
+    HbDataFormModel is updated \atopLeft and \abottomRight will be same since every node has only one column.
+    User can connect to this signal and can fetch the instance of HbDataFormViewItem from HbDataForm 
+    using the API dataFormViewItem(const QModelIndex &index) or user can fetch HbDataFormModelItem using API 
+    itemFromIndex(const QModelIndex &index) in HbDataFormModel .When user updates model using 
+    setContentWidgetData API provided in HbDataFormModelItem class, then DataForm takes care of updating the 
+    corresponding item's visualization.
  */
 
 /*!
@@ -142,6 +151,9 @@ HbDataFormModel::HbDataFormModel(QObject *parent)
     HbDataFormModelItemPrivate::d_ptr(d->mRoot)->setModel(this);   
 }
 
+/*!
+    Destructor.    
+*/
 HbDataFormModel::~HbDataFormModel()
 {
     Q_D(HbDataFormModel);
@@ -152,7 +164,7 @@ HbDataFormModel::~HbDataFormModel()
 /*!
     @beta
 
-    Appends FormPageItem and return pointer to newly created HbDataFormModelItem.
+    Appends FormPageItem and returns pointer to newly created HbDataFormModelItem.
     The parent of FormPageItem is always model's root item. The DataItemType is set
     as FormPageItem.
 
@@ -239,7 +251,7 @@ HbDataFormModelItem* HbDataFormModel::appendDataFormItem(
     This is a convenience API. If user wants then he can create HbDataFormModelItem 
     individually and then add that item in model using this API.
     If the \a data is of FormpageItemtype then parent is not considered. FormPage Items are always added
-    to rootItem. Also GroupPage Item has to be inserted in GroupItem.
+    to rootItem. Also GroupPageItem has to be inserted only in GroupItem.
 
     \a data Child item to be inserted.
     \a parent Parent of DataFormViewItem
@@ -418,7 +430,7 @@ bool HbDataFormModel::removeItem(HbDataFormModelItem *item)
 }
 
 /*!
-  \reimp
+    \reimp
 */
 bool HbDataFormModel::removeRows(int row, int count, const QModelIndex &index)
 {   
@@ -432,7 +444,7 @@ bool HbDataFormModel::removeRows(int row, int count, const QModelIndex &index)
 }
 
 /*!
-  \reimp
+    \reimp
     Column value should be 0 as DataForm has only one column.If the value is not 0
     function returns invalid index.
     If index is not valid then rootItem's index is considered.
@@ -626,7 +638,8 @@ QModelIndex HbDataFormModel::indexFromItem(const HbDataFormModelItem* item) cons
     return QModelIndex();
 }
 
-/*! @beta
+/*!
+    @beta
 
     Returns the HbDataFormModelItem at given \a row and with given parent /a index.
 */

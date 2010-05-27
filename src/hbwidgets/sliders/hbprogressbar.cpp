@@ -40,53 +40,65 @@
     \class HbProgressBar
 
     \brief HbProgressBar widget provides a vertical and horizontal progress bar.
-    An infinite progressbar is also available.
-
-    A progress bar is used to give the user an indication of the progress of an operation and to 
-    reassure them that the application is still running.
-
-    The progress bar uses the concept of steps. User can set it up by specifying the minimum and 
-    maximum possible step values, and it will display the percentage of steps that have been completed
-    when you later give it the current step value. 
     
-    The percentage is calculated by dividing the progress (progressValue() - minimum()) divided by maximum() - minimum().
+    \image html progressbar.png  "A Progress Bar with Min-Max text at bottom"
+    \image html infiniteprogressbar.png  "An infinite progres bar"
 
-    User can specify the minimum and maximum number of steps with setMinimum() and setMaximum() APIs. 
-    The current number of steps is set with setProgressValue(). 
+    The HbProgressBar widget provides a horizontal or vertical progress bar.
 
-    If minimum and maximum both are set to 0, the bar shows a busy indicator instead of a percentage of steps.
-    This is useful, for example, when using ftp or http to download items when they are unable to 
-    determine the size of the item being downloaded.
-
-    ProgressBar also supports adding text . min max text pair is also supported which is commonly 
-    used for progress indication for music.
+    A progress bar is used to give the user an indication of the progress of an operation and to reassure them that 
+    the application is still running. The progress bar uses the concept of steps. You set it up by specifying the 
+    minimum and maximum possible step values, and it will display the percentage of steps that have been completed 
+    when you later give it the current step value. The percentage is calculated by dividing the 
+    progress (value() - minimum()) divided by maximum() - minimum().
     
-    \image html hbprogressbartext.png Left Aligned Text, Min Max Text.
+    By default the min value is 0 and max value is 100.If minimum and maximum both are set to 0, the bar shows a busy indicator 
+    instead of a percentage of steps.
 
+    ProgressBar also supports adding text . Min-Max text pair is also supported which is commonly 
+    used for progress indication for music. 
+    
     Progress bar provides below signal.
 
     \li valueChanged(int value) Emitted when the value of the progressbar is changed.
-*/
-
-/*!
-    @beta
-    \fn void HbProgressBar::valueChanged(int value)
-    
-    Emitted when the value of the progressbar is changed.
-*/
 
 
-/*!
-    @beta
-    \reimp
-    \fn int HbProgressBar::type() const
- */
+    Example code for creating normal ProgressBar:
+    \code
+    HbProgressBar *pb = new HbProgressBar();
+    pb->setMinimum(0);
+    pb->setMaximum(500);
+    pb->setProgressValue(175);
+    \endcode
 
-/*!
-    @beta
-    \enum HbProgressBar::ProgressBarType
+    Example code for creating infinite ProgressBar:
+    \code
+    HbProgressBar *pb = new HbProgressBar();
+    pb->setMinimum(0);
+    pb->setMaximum(0);
+    \endcode
 
-    This enum defines available progress bar types.
+    Example code for creating normal ProgressBar with Min-Max text at Top:
+    \code
+    HbProgressBar *pb = new HbProgressBar();
+    pb->setMinimum(0);
+    pb->setMaximum(500);
+    pb->setProgressValue(175);
+    pb->setMinMaxTextVisible(true);
+    pb->setMinMaxTextAlignment(Qt::AlignTop);// The possible options are Qt::AlignTop ,Qt::AlignBottom ,Qt::AlignCenter
+    pb->setminText("0");
+    pb->setmaxText("500");
+
+    \endcode
+
+    Example code for creating vertical normal ProgressBar:
+    \code
+    HbProgressBar *pb = new HbProgressBar();
+    pb->setOrientation(Qt::Vertical);
+    pb->setMinimum(0);
+    pb->setMaximum(500);
+    pb->setProgressValue(175);
+    \endcode
 */
 
 
@@ -275,8 +287,9 @@ void HbProgressBarPrivate::_q_delayedShow(HbEffect::EffectStatus status)
 
 /*!
     @beta
-    Constructor of  Progressbar.
-    \param parent. Parent widget
+   Constructs a progress bar with the given parent.
+   By default, the minimum step value is set to 0, and the maximum to 100.
+   \param parent The parent of ProgressBar
 
 */
 HbProgressBar::HbProgressBar(QGraphicsItem *parent) : 
@@ -305,7 +318,6 @@ HbProgressBar::~HbProgressBar()
 /*!
     @beta
     Return the inverted appearence property. 
-
     \sa setInvertedAppearance()
 */
 bool HbProgressBar::invertedAppearance() const 
@@ -346,7 +358,7 @@ int HbProgressBar::maximum() const
     @beta
     Sets the maximum value of the progressbar. By default it is 100. 
 
-    \param maximum the max value
+    \param maximum the maximum value
 
     \sa maximum()
 */
@@ -372,7 +384,7 @@ int HbProgressBar::minimum() const
     @beta
     Sets the minimum value of the progressbar. By default it is 0. 
 
-    \param maximum the max value
+    \param minimum the minimum value
 
     \sa minimum()
 */
@@ -410,14 +422,13 @@ void HbProgressBar::setProgressValue(int value)
 /*!
     @beta
     This function is provided for convenience.
-
     Sets the progress bar's minimum and its maximum.
 
     If  maximum is smaller than minimum, minimum becomes the only valid legal
     value.
 
-     \param minimum the minimum value
-     \param maximum the maximum value
+    \param minimum the minimum value
+    \param maximum the maximum value
 */
 void HbProgressBar::setRange(int minimum, int maximum) 
 {
@@ -427,7 +438,8 @@ void HbProgressBar::setRange(int minimum, int maximum)
 
 /*!
     @beta
-    Sets the min text string. 
+    A text can be shown at top,bottom or left-right of the progressbar near minimum and maximum.
+    This will set the text near the minimum point.
 
     \param text mintext string
 
@@ -457,7 +469,8 @@ QString HbProgressBar::minText() const
 
 /*!
     @beta
-    Sets the max text string. 
+    A text can be shown at top,bottom or left-right of the progressbar near minimum and maximum.
+    This will set the text near the minimum point.
 
     \param text max text string
 
@@ -596,8 +609,8 @@ Qt::Orientation HbProgressBar::orientation() const
 }
 
 /*!
-    Returns the pointer for \a primitive passed.
-    Will return NULL if \a primitive passed is invalid
+    \deprecated HbProgressBar::primitive(HbStyle::Primitive)
+        is deprecated.
 */
 QGraphicsItem* HbProgressBar::primitive(HbStyle::Primitive primitive) const
 {
@@ -653,10 +666,8 @@ void HbProgressBar::updatePrimitives()
 }
 
 /*!
-    Initializes \a option with the values from this HbProgressBar. This method 
-    is useful for subclasses when they need a HbStyleOptionProgressBar, but don't
-    want to fill in all the information themselves.
- */
+    \reimp
+*/
 
 void HbProgressBar::initStyleOption(HbStyleOptionProgressBar *option) const
 {

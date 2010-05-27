@@ -50,7 +50,7 @@ HbCache::~HbCache()
     \a key denotes the unique identifier for the cache item whose value is to be returned
 
  */
-HbCacheItem* HbCache::value(const QString& key) const
+HbCacheItem* HbCache::value(const QString &key) const
 {
     return cache.value(key, 0);
 }
@@ -62,9 +62,9 @@ HbCacheItem* HbCache::value(const QString& key) const
     \a key denotes the unique identifier for the cache item that is to be searched in the cache.
 
  */
-HbCacheItem* HbCache::cacheItem(const QString& key)
+HbCacheItem* HbCache::cacheItem(const QString &key)
 {
-    HbCacheItem* item = 0;
+    HbCacheItem *item = 0;
     if (!cache.contains(key)) {
         return 0;
     }
@@ -86,12 +86,12 @@ HbCacheItem* HbCache::cacheItem(const QString& key)
     \a key denotes the unique identifier for the cache item that is to be searched in the cache.
     \a item represents the cache-item to be inserted.
  */
-bool HbCache::insert(const QString& key, HbCacheItem* item)
+bool HbCache::insert(const QString &key, HbCacheItem *item)
 {
     if (!item) {
         return false;
     }
-    cache.insert(key, const_cast<HbCacheItem*>(item));
+    cache.insert(key, const_cast<HbCacheItem *>(item));
     item->refCount++;
     //if item is also present in LRU list, remove it from there to avoid
     // deletion following LRU policy
@@ -109,12 +109,12 @@ bool HbCache::insert(const QString& key, HbCacheItem* item)
     unused-resources list for removal later in case of OOM scenario.
     \a key denotes the unique identifier for the cache item that is to be searched in the cache.
  */
-bool HbCache::remove(const QString&  key)
+bool HbCache::remove(const QString &key)
 {
     if (key.isEmpty() || !cache.contains(key)) {
         return false;
     }
-    HbCacheItem* item = cache[key];
+    HbCacheItem *item = cache[key];
     //reference count can obviously be never less than zero, meaning that for all the
     //css files stored with server-css-cache, there would be minimum zero client (app)
     //associated
@@ -152,7 +152,7 @@ QList<HbCacheItem*> &HbCache::lruList()
     \fn HbCache::cacheHandle()
     Returns a handle to the cache which holds (css-file-name, cacheItem) key-value pair.
  */
-QHash<QString, HbCacheItem*> &HbCache::cacheHandle()
+QHash<QString, HbCacheItem *> &HbCache::cacheHandle()
 {
     return cache;
 }
@@ -167,7 +167,7 @@ void HbCache::clear()
     for (QHash<QString, HbCacheItem*>::const_iterator iter = cache.constBegin();
             iter != itEnd;
             ++iter) {
-        HbCacheItem* temp = iter.value();
+        HbCacheItem *temp = iter.value();
         manager->free(temp->offset);
         delete temp;
     }

@@ -383,7 +383,14 @@ bool HbTextMeasurementUtility::writeReport(HbDeviceProfile &profile, const QStri
         dir.mkpath(filePath);
     }
 
-    filePath.append(domainName);
+    // Make sure there are no illegal characters in "domainName"
+    QString tempName = domainName;
+    tempName.remove(QRegExp("[^a-zA-Z0-9]"));
+    if (tempName.isEmpty()) {
+        tempName = "unknown";
+    }
+
+    filePath.append(tempName);
     filePath.append('_');
     filePath.append(profile.name());
     filePath.append('_');

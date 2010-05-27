@@ -477,7 +477,7 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mAmPmPicker = new HbTumbleView(q);
                 mAmPmModel = new QStringListModel(q);
                 mAmPmPicker->setModel(mAmPmModel);
-                //mAmPmPicker->setLoopingEnabled(true);
+                mAmPmPicker->setLoopingEnabled(true);
                 mLayout->addItem(mAmPmPicker);
                 mAmPmPicker->primitive("highlight")->hide();
                 mAmPmPicker->primitive("separator")->show();
@@ -489,9 +489,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mDayPicker = new HbTumbleView(q);
                 mDayModel = new QStringListModel(q);
                 mDayPicker->setModel(mDayModel);
-                //mDayPicker->setLoopingEnabled(true);
+                mDayPicker->setLoopingEnabled(true);
                 mLayout->addItem(mDayPicker);
-                mDayPicker->primitive("highlight")->hide();
                 mDayPicker->primitive("separator")->show();
                 lastAdded = mDayPicker;
                 break;
@@ -500,9 +499,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mMonthPicker = new HbTumbleView(q);
                 mMonthModel = new QStringListModel(q);
                 mMonthPicker->setModel(mMonthModel);
-                //mMonthPicker->setLoopingEnabled(true);
+                mMonthPicker->setLoopingEnabled(true);
                 mLayout->addItem(mMonthPicker);
-                mMonthPicker->primitive("highlight")->hide();
                 mMonthPicker->primitive("separator")->show();
                 lastAdded = mMonthPicker;
                 break;
@@ -512,9 +510,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mYearPicker = new HbTumbleView(q);
                 mYearModel = new QStringListModel(q);
                 mYearPicker->setModel(mYearModel);
-                //mYearPicker->setLoopingEnabled(true);
+                mYearPicker->setLoopingEnabled(true);
                 mLayout->addItem(mYearPicker);
-                mYearPicker->primitive("highlight")->hide();
                 mYearPicker->primitive("separator")->show();
                 lastAdded = mYearPicker;
                 break;
@@ -523,9 +520,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mSecondPicker = new HbTumbleView(q);
                 mSecondModel = new QStringListModel(q);
                 mSecondPicker->setModel(mSecondModel);
-                //mSecondPicker->setLoopingEnabled(false);
+                mSecondPicker->setLoopingEnabled(true);
                 mLayout->addItem(mSecondPicker);
-                mSecondPicker->primitive("highlight")->hide();
                 mSecondPicker->primitive("separator")->show();
                 lastAdded = mSecondPicker;
                 break;
@@ -534,9 +530,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mMinutePicker = new HbTumbleView(q);
                 mMinuteModel = new QStringListModel(q);
                 mMinutePicker->setModel(mMinuteModel);
-                //mMinutePicker->setLoopingEnabled(false);
+                mMinutePicker->setLoopingEnabled(true);
                 mLayout->addItem(mMinutePicker);
-                mMinutePicker->primitive("highlight")->hide();
                 mMinutePicker->primitive("separator")->show();
                 lastAdded = mMinutePicker;
                 break;
@@ -546,9 +541,8 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
                 mHourPicker = new HbTumbleView(q);
                 mHourModel = new QStringListModel(q);
                 mHourPicker->setModel(mHourModel);
-                //mHourPicker->setLoopingEnabled(true);
+                mHourPicker->setLoopingEnabled(true);
                 mLayout->addItem(mHourPicker);
-                mHourPicker->primitive("highlight")->hide();
                 mHourPicker->primitive("separator")->show();
                 lastAdded = mHourPicker;
                 break;
@@ -556,6 +550,12 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
             default:
                 break;
         }
+        
+        if(lastAdded){
+            lastAdded->primitive("highlight")->hide();
+            lastAdded->primitive("separator")->show();
+        }
+
     }
 
     //For the last added tumble view, hide the separator.
@@ -818,9 +818,28 @@ void HbDateTimePickerPrivate::setDateTime(const QDateTime &newDate)
         if(mHourPicker) {
             mHourPicker->setSelected(newDateTime.time().hour()-mHourOffset);
         }
+
         if(mMinutePicker) {
-            mMinutePicker->setSelected(newDateTime.time().minute()-mMinuteOffset);
+            int index = newDateTime.time().minute()-mMinuteOffset;
+            if(mIntervals[QDateTimeEdit::MinuteSection] > 1){
+                for(int i = 0; i < mMinuteModel->rowCount(); i++){
+
+                    if(mMinuteModel->index(i,0).data().toInt() <= newDateTime.time().minute()){
+                        index = i;
+                    }
+                    else{
+                        break;
+                    }
+
+                    //TODO: if minute is not in the model data then nearest value should be selected.
+                }
+            }
+            else{
+                index = newDateTime.time().minute()-mMinuteOffset;
+            }
+            mMinutePicker->setSelected(index);
         }
+
         if(mSecondPicker) {
 #ifdef HBDATETIMEPICKER_DEBUG
             qDebug() << "setDateTime before: secondOffset=" << mSecondOffset << " time=" << newDateTime.time();
@@ -1013,13 +1032,45 @@ void HbDateTimePickerPrivate::setMinuteRange(int start,int end)
         newIndex = end-start;
     }
 
-    resizeModel(mMinuteModel,
-            mMinuteOffset,mMinuteOffset+mMinuteModel->rowCount()-1,
-            start,end,
-            &HbDateTimePickerPrivate::localeMinute, mIntervals[QDateTimeEdit::MinuteSection]);
+    //Store the value before resizing the model.
+    int value = mMinuteModel->index(mMinutePicker->selected()).data().toInt();
+
+    if(mIntervals[QDateTimeEdit::MinuteSection] > 1){ 
+        if((mIntervals[QDateTimeEdit::MinuteSection] <= mMinimumDate.time().minute()) &&
+            !isMinimumHour()){
+                int i = 0;
+                for(i = start; i > 0; i -= mIntervals[QDateTimeEdit::MinuteSection]){
+
+                }
+
+                start = i;
+        }
+        else{
+            start = mMinimumDate.time().minute();
+        }
+    }
+
+    resizeModel(mMinuteModel, mMinuteOffset,mMinuteModel->index(mMinuteModel->rowCount() - 1).data().toInt()/*mMinuteOffset+mMinuteModel->mMinuteModel->rowCount()-1*/,
+        start,end,
+        &HbDateTimePickerPrivate::localeMinute, mIntervals[QDateTimeEdit::MinuteSection]);
     mMinuteOffset = start;
 
-    mMinutePicker->setSelected(newIndex);
+    //Select the nearest value when the range is set.
+    int index = newIndex;
+    if(mIntervals[QDateTimeEdit::MinuteSection] > 1){
+        for(int i = 0; i < mMinuteModel->rowCount(); i++){
+
+            if(mMinuteModel->index(i,0).data().toInt() <= value){
+                index = i;
+            }
+            else{
+                break;
+            }
+        }
+    }
+    mMinutePicker->setSelected(index);
+
+    mDateTime.setTime(QTime(mDateTime.time().hour(), localeMinute(mMinuteModel->index(index,0).data().toInt()).toInt(), mDateTime.time().second()));
 
     //check if minute is valid
     if(mDateTime.time().minute() < start) {
@@ -1145,25 +1196,23 @@ void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
             int newStart, int newEnd,
             QString (HbDateTimePickerPrivate::*localeFunc)(int), int interval)
 {
-    if(interval > 1){
-        model->removeRows(0, model->rowCount());
-    }
-
     if((model->rowCount() == 0) && (newEnd-newStart>=0)) {
         //initialize condition
-
+        int previous = newStart;
         for(int i=0;i<=newEnd-newStart;i++) {
-            //model->setData(index,(this->*localeFunc)(i+newStart));//TODO:add a readable typedef
             QString text;
 
             if(interval > 1){
-                if(((newStart + interval) * i) <= newEnd){
+
+                if(previous <= newEnd){
                     model->insertRow(i);
-                    text = (this->*localeFunc)(!((newStart + interval)*i) ? newStart : (newStart + interval)*i);
+                    text = (this->*localeFunc)(previous);
                 }
                 else{
                     break;
                 }
+
+                previous += interval;
             }
             else{
                 model->insertRow(i);
@@ -1188,31 +1237,120 @@ void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
     }
 
     if(newStart < oldStart) {
-        model->insertRows(0,oldStart-newStart);
+        int previous = newStart;
+
         for(int i=0;i<oldStart-newStart;++i) {
+            QString text;
+
+            if(interval > 1){
+
+                if(previous < oldStart){
+                    model->insertRow(i);
+                    text = (this->*localeFunc)(previous);
+                }
+                else{
+                    break;
+                }
+
+                previous += interval;
+            }
+            else{
+                model->insertRow(i);
+                text = (this->*localeFunc)(i+newStart);
+            }
+
             QModelIndex index=model->index(i,0);
             if(index.isValid()) {
-                model->setData(index,(this->*localeFunc)(i+newStart));
+                model->setData(index,text);
             }
         }
     }
     if(newEnd > oldEnd) {
+
         int rowCount = model->rowCount(); 
-        model->insertRows(rowCount,newEnd-oldEnd);
+        int previous = oldEnd+interval;
         for(int i=0;i<newEnd-oldEnd;++i) {
+            QString text;
+
+            if(interval > 1){
+
+                if(previous <= newEnd){
+                    model->insertRows(rowCount+i,1);
+                    text = (this->*localeFunc)(previous);
+                }
+                else{
+                    break;
+                }
+
+                previous += interval;
+            }
+            else{
+                model->insertRows(rowCount+i,1);
+                text = (this->*localeFunc)(oldEnd+i+1);
+            }
+
             QModelIndex index=model->index(rowCount+i,0);
             if(index.isValid()) {
-                model->setData(index,(this->*localeFunc)(oldEnd+i+1));
+                model->setData(index,text);
             }
         }
     }
 
     if(newStart > oldStart) {
-        model->removeRows(0,newStart-oldStart);
+        if(interval > 1){
+            for(int i = oldStart; i < newStart; i += interval){
+                model->removeRows(0, 1);
+            }
+        }
+        else{
+            model->removeRows(0,newStart-oldStart);
+        }
     }
 
     if(oldEnd > newEnd) {
-        model->removeRows((model->rowCount()-(oldEnd-newEnd)),oldEnd-newEnd);
+        if(interval > 1){
+            for(int i = oldEnd; i > newEnd; i -= interval){
+                model->removeRows(model->rowCount()-1, 1);
+            }
+        }
+        else{
+            model->removeRows((model->rowCount()-(oldEnd-newEnd)),oldEnd-newEnd);
+        }
+    }
+
+    if(interval > 1){
+        //Check if there's any mismatch between actual rows in the model and the supposed rows.
+        int previous = newStart;
+        int actualRowCount = 0;
+        for(actualRowCount=0;actualRowCount<=newEnd-newStart;actualRowCount++) {
+            if(previous <= newEnd){
+            }
+            else{
+                break;
+            }
+
+            previous += interval;
+        }
+
+        if(actualRowCount > model->rowCount()){
+            model->insertRows(model->rowCount(), actualRowCount - model->rowCount());
+        }
+        else if( actualRowCount < model->rowCount()){
+            model->removeRows(model->rowCount()-1, model->rowCount() - actualRowCount);
+        }
+
+        //Populate the data in the model.
+        previous = newStart;
+        for(int i = 0; i < model->rowCount(); i++)
+        {
+            if(previous <= newEnd){
+                model->setData(model->index(i), (this->*localeFunc)(previous));
+            }
+            else{
+                break;
+            }
+            previous += interval;
+        }
     }
 }
 
@@ -1482,10 +1620,12 @@ void HbDateTimePickerPrivate::_q_hoursChanged(int index)
 
 void HbDateTimePickerPrivate::_q_minutesChanged(int index)
 {
+    bool *bOk = false;
 #ifdef HBDATETIMEPICKER_DEBUG
     qDebug() << "_q_minutesChanged:" << index;
+    qDebug() << mLocale.toInt(mMinuteModel->index(mMinuteOffset+index,0).data().toString(),bOk, 10);
 #endif
-	QTime newTime(mDateTime.time().hour(),mLocale.toInt(mMinuteModel->index(mMinuteOffset+index,0).data().toString()),mDateTime.time().second());
+	QTime newTime(mDateTime.time().hour(),mLocale.toInt(mMinuteModel->index(index,0).data().toString(),bOk, 10),mDateTime.time().second());
     if(newTime.isValid()) {
         mDateTime.setTime(newTime);
     }

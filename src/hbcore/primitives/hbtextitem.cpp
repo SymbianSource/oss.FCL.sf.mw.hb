@@ -53,8 +53,6 @@ const qreal KFadeTolerance = 1.0;
 HbTextItemPrivate::HbTextItemPrivate () :
     mAlignment(Qt::AlignLeft | Qt::AlignVCenter),
     mElideMode(Qt::ElideNone),
-    mDontPrint(false),
-    mDontClip(false),
     mInvalidateShownText(true),
     mOffsetPos(0,0),
     mPaintFaded(false),
@@ -73,7 +71,7 @@ void HbTextItemPrivate::init(QGraphicsItem *)
     Q_Q(HbTextItem);
 
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    q->setFlag(QGraphicsItem::ItemClipsToShape, !mDontClip);
+    q->setFlag(QGraphicsItem::ItemClipsToShape, false);
     q->setFlag(QGraphicsItem::ItemIsSelectable, false);
     q->setFlag(QGraphicsItem::ItemIsFocusable,  false);
 
@@ -272,8 +270,12 @@ int HbTextItemPrivate::textFlagsFromTextOption() const
         break;
     }
 
-    if(mDontClip)  flags |= Qt::TextDontClip;
-    if(mDontPrint) flags |= Qt::TextDontPrint;
+    if(q_ptr->flags().testFlag(QGraphicsItem::ItemClipsToShape)) {
+        flags |= Qt::TextDontClip;
+    }
+    if(!q_ptr->isVisible()) { // or ItemHasNoContents?
+        flags |= Qt::TextDontPrint;
+    }
 
     return flags;
 }
@@ -418,96 +420,102 @@ inline void HbTextItemPrivate::setPainterPen(QPainter *painter,
 }
 
 /*
-    This method paint each line in tree pieces.
-    In each piece uses different pen.
-    When fade effect is not needed on some end centerPen is used.
+    This method paints single piece of text layout.
+    If line contains criticalX value then fadePen is used for painting in other
+    case normalPen is used.
  */
-int HbTextItemPrivate::paintFaded(QPainter *painter,
+void HbTextItemPrivate::paintArea(QPainter *painter,
                                   int firstItemToPaint,
-                                  const QPen& leftPen,
-                                  const QPen& centerPen,
-                                  const QPen& rightPen,
-                                  const QRectF& area ) const
+                                  int lastItemToPaint,
+                                  const QPen& normalPen,
+                                  const QPen& fadePen,
+                                  qreal criticalX) const
 {
-    Q_Q(const HbTextItem);
-
-    const int n = mTextLayout.lineCount();
-    const qreal leftBorder = q->contentsRect().left()-KFadeTolerance;
-    const qreal rightBorder = q->contentsRect().right()+KFadeTolerance;
-
-    QRectF leftRect(area);
-    leftRect.setRight(mFadeFromRect.left());
-    QRectF centerRect(area);
-    centerRect.moveLeft(leftRect.right());
-    centerRect.setRight(mFadeFromRect.right());
-    QRectF rightRect(area);
-    rightRect.setLeft(centerRect.right());
-
-    qreal maxY = area.bottom();
-
-    for(int i=firstItemToPaint; i<n; ++i) {
+    for(int i=firstItemToPaint; i<=lastItemToPaint; ++i) {
         QTextLine line = mTextLayout.lineAt(i);
         QRectF lineRect = line.naturalTextRect();
         lineRect.translate(mOffsetPos);
 
 #ifdef HB_FADE_EFFECT_WORKAROUND_ON_PHONE
-        const QPointF gradientOffset(
-                QPointF(lineRect.left(),
-                        lineRect.top()+line.ascent())
-                );
+        const QPointF gradientOffset(lineRect.left(),
+                                     lineRect.top()+line.ascent());
+
+        if (lineRect.left()<criticalX && lineRect.right()>criticalX) {
+            setPainterPen(painter, fadePen, gradientOffset);
+        } else {
+            setPainterPen(painter, normalPen, gradientOffset);
+        }
+#else
+        if (lineRect.left()<criticalX && lineRect.right()>criticalX) {
+            painter->setPen(fadePen);
+        } else {
+            painter->setPen(normalPen);
+        }
 #endif // HB_FADE_EFFECT_WORKAROUND_ON_PHONE
 
-        QRectF currentCenter(centerRect);
+        line.draw(painter, mOffsetPos);
+    } // for i
+}
 
-        if(lineRect.top()>maxY) {
-            // stop painting line by line
-            return i; // current line won't be painted at all
-        }
+/*
+    This method is used to draw center part of lines.
+    It is also used to calculate range of lines needed for painting in this range.
+ */
+int HbTextItemPrivate::paintArea(QPainter *painter,
+              int firstItemToPaint,
+              const QPen& normalPen,
+              qreal lastValidY) const
+{
+    int i;
+    const int n = mTextLayout.lineCount();
 
-        if(lineRect.left()<leftBorder) {
-#ifdef HB_FADE_EFFECT_WORKAROUND_ON_PHONE
-            setPainterPen(painter, leftPen, gradientOffset);
-#else
-            painter->setPen(leftPen);
+#ifndef HB_FADE_EFFECT_WORKAROUND_ON_PHONE
+    painter->setPen(normalPen);
 #endif
-            painter->setClipRect(leftRect);
-            line.draw(painter, mOffsetPos);
-        } else {
-            // no fade on this end so extend currentCenter
-            currentCenter.setLeft(leftRect.left());
-        }
 
-        if(lineRect.right()>rightBorder) {
+    for(i=firstItemToPaint; i<n; ++i) {
+        QTextLine line = mTextLayout.lineAt(i);
+        QRectF lineRect = line.naturalTextRect();
+        lineRect.translate(mOffsetPos);
+
+        if (lineRect.top()>lastValidY) {
+            return i;
+        }
 #ifdef HB_FADE_EFFECT_WORKAROUND_ON_PHONE
-            setPainterPen(painter, rightPen, gradientOffset);
-#else
-            painter->setPen(rightPen);
-#endif
-            painter->setClipRect(rightRect);
-            line.draw(painter, mOffsetPos);
-        } else {
-            // no fade on this end so extend currentCenter
-            currentCenter.setRight(rightRect.right());
-        }
+        const QPointF gradientOffset(lineRect.left(),
+                                     lineRect.top()+line.ascent());
 
-        if(currentCenter.width()>0) {
-#ifdef HB_FADE_EFFECT_WORKAROUND_ON_PHONE
-            setPainterPen(painter, centerPen, gradientOffset);
-#else
-            painter->setPen(centerPen);
-#endif
-            painter->setClipRect(currentCenter);
-            line.draw(painter, mOffsetPos);
-        }
+        setPainterPen(painter, normalPen, gradientOffset);
+#endif // HB_FADE_EFFECT_WORKAROUND_ON_PHONE
 
-        if(lineRect.bottom()>maxY) {
-            // stop painting line by line
-            return i; // current line has been painted partially
-        }
-    } // for loop
+        line.draw(painter, mOffsetPos);
 
-    return n;
-} // paintFaded()
+        if (lineRect.bottom()>lastValidY) {
+            return i;
+        }
+    } // for i
+    return n-1;
+}
+
+bool HbTextItemPrivate::setClipPath(QPainter *painter,
+                                    const QRectF& rect,
+                                    const QPainterPath& initialCliping) const
+{
+    if (initialCliping.isEmpty()) {
+        painter->setClipRect(rect);
+    } else {
+        QPainterPath newPath(rect.topLeft());
+        newPath.addRect(rect);
+
+        if (!initialCliping.intersects(newPath)) {
+            return false; // dont paint
+        }
+        newPath = initialCliping.intersected(newPath);
+
+        painter->setClipPath(newPath);
+    }
+    return true;
+}
 
 void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
 {
@@ -515,6 +523,7 @@ void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
 
     QLinearGradient gradient;
     setupGradient(&gradient, q->textColor());
+    const QPainterPath initialClipPath = painter->clipPath();
 
     const QRectF contentRect = q->contentsRect();
     int i=0;
@@ -534,19 +543,32 @@ void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
     if(mTextLayout.lineAt(0).y()+mOffsetPos.y()<contentRect.top()) {
         centerRect.setTop(mFadeFromRect.top());
 
-        // top left gradient (//):
-        QPointF from(mFadeFromRect.topLeft());
-        gradient.setStart(from.x()-mCornerFadeX, from.y()-mCornerFadeY);
-        gradient.setFinalStop(from);
-        QBrush leftBrush(gradient);
-        QPen leftPen;
-        leftPen.setBrush(leftBrush);
-
         // top center gradient (==):
+        QPointF from(mFadeFromRect.topLeft());
         gradient.setStart(mFadeFromRect.left(),mFadeToRect.top());
+        gradient.setFinalStop(from);
         QBrush centerBrush(gradient);
         QPen centerPen;
         centerPen.setBrush(centerBrush);
+
+        if (setClipPath(painter,
+                        QRectF(gradient.start(), mFadeFromRect.topRight()),
+                        initialClipPath)) {
+            i = paintArea(painter, 0, centerPen, from.y());
+        } else {
+            i = 0;
+        }
+
+        // top left gradient (//):
+        gradient.setStart(from.x()-mCornerFadeX, from.y()-mCornerFadeY);
+        QBrush leftBrush(gradient);
+        QPen leftPen;
+        leftPen.setBrush(leftBrush);
+        if (setClipPath(painter,
+                        QRectF(mFadeToRect.topLeft(), mFadeFromRect.topLeft()),
+                        initialClipPath)) {
+            paintArea(painter, 0, i, centerPen, leftPen, contentRect.left()-KFadeTolerance);
+        }
 
         // top right gradient (\\):
         from = mFadeFromRect.topRight();
@@ -556,52 +578,94 @@ void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
         QPen rightPen;
         rightPen.setBrush(rightBrush);
 
-        QRectF clipTo(mFadeToRect);
-        clipTo.setBottom(mFadeFromRect.top());
-        i = paintFaded(painter, 0, leftPen, centerPen, rightPen, clipTo);
+        if (setClipPath(painter,
+                        QRectF(mFadeToRect.topRight(), mFadeFromRect.topRight()),
+                        initialClipPath)) {
+            paintArea(painter, 0, i, centerPen, rightPen, contentRect.right()+KFadeTolerance);
+        }
     }
 
+    bool paintBottom = false;
     if(mTextLayout.lineAt(n-1).naturalTextRect().bottom()+mOffsetPos.y()>contentRect.bottom()) {
         // bottom fade is needed here
         centerRect.setBottom(mFadeFromRect.bottom());
+        paintBottom = true;
     }
 
     // paint center part
     {
+        int startFrom = i;
+        QPen centerPen(q->textColor());
+        if (setClipPath(painter,
+                        QRectF(QPointF(mFadeFromRect.left(), centerRect.top()),
+                               QPointF(mFadeFromRect.right(), centerRect.bottom())),
+                        initialClipPath)) {
+            // center with no gradient:
+            i = paintArea(painter, i, centerPen, centerRect.bottom());
+        }
+
         // left gradient | ||
         gradient.setStart(mFadeToRect.left(), mFadeFromRect.top());
         gradient.setFinalStop(mFadeFromRect.topLeft());
         QBrush leftBrush(gradient);
         QPen leftPen;
         leftPen.setBrush(leftBrush);
+        if (setClipPath(painter,
+                        QRectF(centerRect.topLeft(),
+                               QPointF(mFadeFromRect.left(),
+                                       centerRect.bottom())),
+                        initialClipPath)) {
+            paintArea(painter, startFrom, i, centerPen, leftPen, contentRect.left()-KFadeTolerance);
+        }
 
-        // center with no gradient:
-        QPen centerPen(q->textColor());
-
-        // top right gradient || |
+        // right gradient || |
         gradient.setStart(mFadeToRect.right(), mFadeFromRect.top());
         gradient.setFinalStop(mFadeFromRect.topRight());
         QBrush rightBrush(gradient);
         QPen rightPen;
         rightPen.setBrush(rightBrush);
-        i = paintFaded(painter, i, leftPen, centerPen, rightPen, centerRect);
+
+        if (setClipPath(painter,
+                        QRectF(QPointF(mFadeFromRect.right(), centerRect.top()),
+                               centerRect.bottomRight()),
+                        initialClipPath)) {
+            paintArea(painter, startFrom, i, centerPen, rightPen, contentRect.right()+KFadeTolerance);
+        }
     }
 
     // need to draw bottom as faded? is some lines remained?
-    if(i<n) {
-        // bottom left gradient (\\):
-        QPointF from(mFadeFromRect.bottomLeft());
-        gradient.setStart(from.x()-mCornerFadeX, from.y()+mCornerFadeY);
-        gradient.setFinalStop(from);
-        QBrush leftBrush(gradient);
-        QPen leftPen;
-        leftPen.setBrush(leftBrush);
+    if (paintBottom) {
+        int startFrom = i;
 
         // bottom center gradient (==):
+        QPointF from(mFadeFromRect.bottomLeft());
+        gradient.setFinalStop(from);
         gradient.setStart(mFadeFromRect.left(),mFadeToRect.bottom());
         QBrush centerBrush(gradient);
         QPen centerPen;
         centerPen.setBrush(centerBrush);
+
+        if (setClipPath(painter,
+                        QRectF(mFadeFromRect.bottomLeft(),
+                               QPointF(mFadeFromRect.right(), mFadeToRect.bottom())),
+                        initialClipPath)) {
+            // center with no gradient:
+            i = paintArea(painter, i, centerPen, mFadeToRect.bottom());
+        }
+
+        // bottom left gradient (\\):
+        gradient.setStart(from.x()-mCornerFadeX, from.y()+mCornerFadeY);
+        QBrush leftBrush(gradient);
+        QPen leftPen;
+        leftPen.setBrush(leftBrush);
+
+        if (setClipPath(painter,
+                        QRectF(mFadeFromRect.bottomLeft(),
+                               mFadeToRect.bottomLeft()),
+                        initialClipPath)) {
+            // center with no gradient:
+            paintArea(painter, startFrom, i, centerPen, leftPen, contentRect.left()-KFadeTolerance);
+        }
 
         // bottom right gradient (//):
         from = mFadeFromRect.bottomRight();
@@ -611,10 +675,17 @@ void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
         QPen rightPen;
         rightPen.setBrush(rightBrush);
 
-        QRectF clipTo(mFadeToRect);
-        clipTo.setTop(mFadeFromRect.bottom());
-        i = paintFaded(painter, 0, leftPen, centerPen, rightPen, clipTo);
+        if (setClipPath(painter,
+                        QRectF(mFadeFromRect.bottomRight(),
+                               mFadeToRect.bottomRight()),
+                        initialClipPath)) {
+            // center with no gradient:
+            paintArea(painter, startFrom, i, centerPen, rightPen, contentRect.right()+KFadeTolerance);
+        }
     }
+
+    // restoring initial clipping region
+    painter->setClipPath(initialClipPath);
 }
 
 void HbTextItemPrivate::setFadeLengths(qreal xLength, qreal yLength)
@@ -654,7 +725,7 @@ QRectF HbTextItemPrivate::layoutBoundingRect () const
 QRectF HbTextItemPrivate::boundingRect (const QRectF& contentsRect) const
 {
     QRectF result(layoutBoundingRect());
-    if(!mDontClip) {
+    if(q_ptr->flags().testFlag(QGraphicsItem::ItemClipsToShape)) {
         // clip
         QRectF clippedTo = contentsRect;
 
@@ -898,6 +969,11 @@ void HbTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
+    // optimalization:
+    if (option->exposedRect.isEmpty()) {
+        return;
+    }
+
     // Save painter's state
     QPen oldPen = painter->pen();
 
@@ -910,19 +986,19 @@ void HbTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
         painter->drawRect(rect);
     }
 
-    if(!d->mDontPrint) {
-        painter->setPen(textColor());
 
-        Q_ASSERT(d->mPaintFaded == d->fadeNeeded(contentsRect()));
-        if(!d->mDontClip && d->mPaintFaded ) {
-            d->paintWithFadeEffect(painter);
-        } else {
-            d->mTextLayout.draw(painter,
-                                d->mOffsetPos,
-                                QVector<QTextLayout::FormatRange>(),
-                                d->mDontClip?QRectF():contentsRect());
-        }
+    painter->setPen(textColor());
+
+    Q_ASSERT(d->mPaintFaded == d->fadeNeeded(contentsRect()));
+    if(d->mPaintFaded ) {
+        d->paintWithFadeEffect(painter);
+    } else {
+        d->mTextLayout.draw(painter,
+                            d->mOffsetPos,
+                            QVector<QTextLayout::FormatRange>(),
+                            flags().testFlag(ItemClipsToShape)?contentsRect():QRectF());
     }
+
 
     // Restore painter's state
     painter->setPen(oldPen);
@@ -1153,53 +1229,46 @@ Hb::TextWrapping HbTextItem::textWrapping() const
     Shows (default) or hides text.
     Size hint remains unchanged (same as when text is visible).
 
-    \sa HbTextItem::isVisible()
+    Equvalent of QGraphicsItem::setVisible(bool)
  */
 void HbTextItem::setTextVisible(bool isVisible)
 {
-    Q_D(HbTextItem);
-    if( d->mDontPrint == isVisible ) {
-        d->mDontPrint = !isVisible;
-        update();
-    }
+    setVisible(isVisible);
 }
 
 /*!
     Returns if text is visible.
 
     \sa HbTextItem::setTextVisible(bool)
+
+    Equvalent of QGraphicsItem::isVisible()
  */
 bool HbTextItem::isTextVisible() const
 {
-    Q_D(const HbTextItem);
-    return !d->mDontPrint;
+    return isVisible();
 }
 
 /*!
-    enables (default) or disables text clipping when item geometry is too small.
+    enables (default) od disables text cliping when item geometry is to small.
 
     \sa HbTextItem::isTextClip()
+
+    Equvalent of QGraphicsItem::setFlag(QGraphicsItem::ItemClipsToShape, clipping)
  */
 void HbTextItem::setTextClip(bool clipping)
 {
-    Q_D(HbTextItem);
-    if( d->mDontClip == clipping ) {
-        prepareGeometryChange();
-        d->mDontClip = !clipping;
-        setFlag(QGraphicsItem::ItemClipsToShape, clipping);
-        update();
-    }
+    setFlag(QGraphicsItem::ItemClipsToShape, clipping);
 }
 
 /*!
-    Returns true if text is clipped when item geometry is too small.
-
+    Returns true if text is cliped when item geometry is to small.
     \sa HbTextItem::setTextClip(bool)
+
+    Equvalent of QGraphicsItem::flags().testFlag(QGraphicsItem::ItemClipsToShape)
  */
 bool HbTextItem::isTextClip() const
 {
-    Q_D(const HbTextItem);
-    return !d->mDontClip;
+    return flags().testFlag(ItemClipsToShape);
 }
 
 /*!

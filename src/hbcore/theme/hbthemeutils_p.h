@@ -39,8 +39,9 @@ struct HbHierarchy
 {
     HbHierarchy() {}
     HbHierarchy(QString name,
-                HbLayeredStyleLoader::LayerPriority layerPriority) : name(name),
-                                                                     layerPriority(layerPriority) {}
+                HbLayeredStyleLoader::LayerPriority layerPriority)
+                    : name(name),
+                      layerPriority(layerPriority) {}
     QString name;
     HbLayeredStyleLoader::LayerPriority layerPriority;
 };
@@ -50,7 +51,7 @@ struct HbThemeInfo
     HbThemeInfo()
     {
     }
-    HbThemeInfo(const QString &themeName, const QString &dir):name(themeName),rootDir(dir)
+    HbThemeInfo(const QString &themeName, const QString &dir) : name(themeName), rootDir(dir)
     {
     }
     QString name;
@@ -60,8 +61,8 @@ struct HbThemeInfo
 struct HbThemeIndexInfo
 {
     HbThemeIndexInfo() :
-        name(QString("")),
-        path(QString("")),
+        name(),
+        path(),
         themeIndexOffset(0)
     {
     }
@@ -75,7 +76,6 @@ struct HbThemeIndexInfo
     QString path;
     quint32 themeIndexOffset;
 };
-
 
 class HB_CORE_PRIVATE_EXPORT HbThemeUtils
 {
@@ -93,8 +93,7 @@ public:
                                         const QString &currentTheme,
                                         const Hb::ResourceType resType );
 
-    enum Setting
-    {
+    enum Setting {
         BaseThemeSetting = 0x1,
         DefaultThemeSetting = 0x2,
         DefaultThemeRootDirSetting = 0x3,
@@ -105,13 +104,11 @@ public:
     static QString getThemeSetting(Setting setting);
     static void setThemeSetting(Setting setting, const QString &value);
     static void updateThemeSetting(Setting setting, const QString &value);
-    
-
     static const HbThemeInfo &baseTheme();
     static HbThemeInfo defaultTheme();
     static bool isThemeValid(const HbThemeInfo &themeInfo);
 
-    static const HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
+    static HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
     
     // Standard folder names
     static const char *iconsResourceFolder;

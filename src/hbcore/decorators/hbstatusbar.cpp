@@ -53,7 +53,6 @@ const int clockUpdateDelay = 10000; // 10 s
  */
 
 HbStatusBarPrivate::HbStatusBarPrivate() : 
-    mTimeText(),
     mTimeTextItem(0),
     mSignalIndicator(0),
     mBatteryIndicator(0),
@@ -102,9 +101,17 @@ void HbStatusBarPrivate::delayedConstruction()
         q, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+        q, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
 
     mClockTimerId = q->startTimer(clockUpdateDelay);
     mIndicatorPrivate->startListen();
+
+    q->grabGesture(Qt::TapGesture);
+    q->grabGesture(Qt::TapAndHoldGesture);
+    q->grabGesture(Qt::PanGesture);
+    q->grabGesture(Qt::SwipeGesture);
+    q->grabGesture(Qt::PinchGesture);
 }
 
 void HbStatusBarPrivate::init()
@@ -225,6 +232,9 @@ void HbStatusBar::currentViewChanged(HbView *view)
         return;
     }
 
+    d->mNotificationIndicatorGroup->currentViewChanged(view);
+    d->mSettingsIndicatorGroup->currentViewChanged(view);
+
     // only do repolish if properties have changed
     if (d->mPreviousProperties != view->viewFlags()) {
         d->mPreviousProperties = view->viewFlags();
@@ -286,3 +296,13 @@ QGraphicsItem *HbStatusBar::primitive(const QString &itemName) const
         }
     }
 }
+
+/*!
+    \reimp
+*/
+void HbStatusBar::gestureEvent(QGestureEvent *event)
+{
+    Q_UNUSED(event);
+    // all gesture events accepted by default
+}
+

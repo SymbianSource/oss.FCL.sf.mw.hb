@@ -116,9 +116,8 @@ void HbPanGestureRecognizer::reset(QGesture *state)
     \return
 
 */
-HbTapGestureRecognizer::HbTapGestureRecognizer(int tapRadius)
-{
-    HbTapGestureLogic::mTapRadius = tapRadius;
+HbTapGestureRecognizer::HbTapGestureRecognizer()
+{    
     DEBUG() << "Creating HbTapGestureRecognizer" << this;
 }
 
@@ -140,7 +139,7 @@ HbTapGestureRecognizer::~HbTapGestureRecognizer()
 
 */
 QGesture* HbTapGestureRecognizer::create(QObject *)
-{
+{    
     return new HbTapGesture;
 }
 
@@ -182,12 +181,11 @@ void HbTapGestureRecognizer::reset(QGesture *state)
     \return
 
 */
-HbTapAndHoldGestureRecognizer::HbTapAndHoldGestureRecognizer(int tapRadius)
+HbTapAndHoldGestureRecognizer::HbTapAndHoldGestureRecognizer()
     :
     QGestureRecognizer(),
     HbTapAndHoldGestureLogic()
-{
-    HbTapAndHoldGestureLogic::mTapRadius = tapRadius;
+{    
     DEBUG() << "Creating HbTapAndHoldGestureRecognizer" << this;
 }
 
@@ -209,7 +207,7 @@ HbTapAndHoldGestureRecognizer::~HbTapAndHoldGestureRecognizer()
 
 */
 QGesture* HbTapAndHoldGestureRecognizer::create(QObject *)
-{
+{    
     return new HbTapAndHoldGesture;
 }
 

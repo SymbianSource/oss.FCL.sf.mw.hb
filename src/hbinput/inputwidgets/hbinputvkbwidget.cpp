@@ -150,8 +150,8 @@ void HbInputVkbWidgetPrivate::initLayout()
     mLayout->setSpacing(0.0);
 
     qreal unitValue = HbDeviceProfile::profile(q->mainWindow()).unitValue();
-    mCloseHandleHeight = HbCloseHandleHeightInUnits * unitValue;
-    mCloseHandleWidth = HbCloseHandleWidthInUnits * unitValue;
+    mCloseHandleHeight = (int)(HbCloseHandleHeightInUnits * unitValue);
+    mCloseHandleWidth = (int)(HbCloseHandleWidthInUnits * unitValue);
 
     mCloseHandle = new QGraphicsWidget();
     mCloseHandle->setObjectName("vkbHandle");
@@ -357,6 +357,7 @@ void HbInputVkbWidgetPrivate::captureScreenshot()
 
     if (!mScreenshotWidget) {
         mScreenshotWidget = new HbInputScreenshotWidget();
+        mScreenshotWidget->setZValue(q->zValue());
         mScreenshotWidget->setGeometry(q->geometry());
         q->mainWindow()->scene()->addItem(mScreenshotWidget);
     }
@@ -710,12 +711,19 @@ void HbInputVkbWidget::showSettingList()
     }
 
     HbInputFocusObject *focusObject = d->mOwner->focusObject();
-    if (focusObject &&
-        focusObject->editorInterface().isPredictionAllowed() &&
-        predFactory->predictionEngineForLanguage(HbInputSettingProxy::instance()->globalInputLanguage())) {
-        d->mSettingList->setPredictionSelectionEnabled(true);
-    } else {
-        d->mSettingList->setPredictionSelectionEnabled(false);
+    if (focusObject) {
+        if (focusObject->editorInterface().inputConstraints() & HbEditorConstraintLatinAlphabetOnly) {
+            d->mSettingList->setLanguageSelectionEnabled(false);
+        } else {
+            d->mSettingList->setLanguageSelectionEnabled(true);
+        }
+
+        if (focusObject->editorInterface().isPredictionAllowed() &&
+            predFactory->predictionEngineForLanguage(HbInputSettingProxy::instance()->globalInputLanguage())) {
+            d->mSettingList->setPredictionSelectionEnabled(true);
+        } else {
+            d->mSettingList->setPredictionSelectionEnabled(false);
+        }
     }
 
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
@@ -777,6 +785,7 @@ void HbInputVkbWidget::showSettingsView()
     Q_D(HbInputVkbWidget);
 
     closeSettingList();
+    hide();
 
     d->mSettingView = new HbView(this);
     d->mSettingView->setTitle(tr("Input Settings"));
@@ -793,6 +802,7 @@ void HbInputVkbWidget::showSettingsView()
     settingWidget->initializeWidget();
 
     d->mCurrentView = mainWindow()->currentView();
+    mainWindow()->clearFocus();
     mainWindow()->setCurrentView(d->mSettingView);
 }
 

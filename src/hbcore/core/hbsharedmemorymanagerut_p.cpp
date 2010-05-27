@@ -28,8 +28,8 @@
 #include <QString>
 #include <QDebug>
 
-
 #include "hbthemecommon_p.h"
+#include "hbsharedcache_p.h"
 
 #define HB_THEME_SHARED_AUTOTEST_CHUNK "hbthemesharedautotest"
 
@@ -74,6 +74,17 @@ bool HbSharedMemoryManagerUt::initialize()
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
+
+            // Create empty shared cache for unit test purposes
+            HbSharedCache *cachePtr = createSharedCache(0, 0, 0);
+            if (cachePtr) {
+                const QString &appName = HbMemoryUtils::getCleanAppName();
+                if (appName == THEME_SERVER_NAME) {
+                    cachePtr->initServer();
+                } else {
+                    cachePtr->initClient();
+                }
+            }
         }
 		success = true;
 	}

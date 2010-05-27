@@ -319,9 +319,8 @@ void HbSliderHandle::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 */
 void HbSliderHandle::gestureEvent(QGestureEvent *event)
-{
+{  
     Q_UNUSED(event);
-    // HbWidgetBase::gestureEvent() ignores, overriding to accept
 }
 
 /*!

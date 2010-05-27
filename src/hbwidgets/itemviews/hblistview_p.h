@@ -68,7 +68,7 @@ public:
 
     virtual bool panTriggered(QGestureEvent *event);
 
-    virtual bool animationEnabled(bool insertOperation);
+
 public:
     bool mArrangeMode;
     QPersistentModelIndex mDraggedItemIndex;
@@ -79,6 +79,7 @@ public:
     QPointF mLastScrollPos;
     QTransform mOriginalTransform;
 
+    bool mMoveOngoing;
     bool mOriginalFriction;    
 };
 

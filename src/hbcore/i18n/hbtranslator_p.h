@@ -33,8 +33,12 @@ class HB_CORE_PRIVATE_EXPORT HbTranslatorPrivate
 public:
 	void installTranslator(const QString &name, const QString &path);
 	bool languageDowngrade(QString &lang);
+	HbTranslatorPrivate(): translatorData(0), commonData(0){}
+	~HbTranslatorPrivate()  { delete [] translatorData; delete [] commonData; }
     QTranslator translator;
     QTranslator common;
+    uchar *translatorData;
+    uchar *commonData;
 };
 
 #endif

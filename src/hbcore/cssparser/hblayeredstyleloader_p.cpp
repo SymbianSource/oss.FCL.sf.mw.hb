@@ -192,6 +192,8 @@ int HbLayeredStyleLoader::load(const QString &fileName, LayerPriority priority, 
 #ifdef LAYEREDSTYLELOADER_DEBUG
     qDebug("Handle returned: %x", handle);
 #endif
+
+    updateLayersListIfRequired(priority);
     return handle;
 }
 
@@ -224,6 +226,7 @@ int HbLayeredStyleLoader::load(QIODevice *device, LayerPriority priority)
         }
     }
 
+    updateLayersListIfRequired(priority);
     return handle;
 }
 
@@ -395,9 +398,9 @@ bool HbLayeredStyleLoader::hasOrientationSpecificStyleRules(HbStyleSelector::Nod
     loader->loadCss(widget);
     
     QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
-    HbLayeredStyleLoader *allStack = getStack(Concern_All);
+    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
 
-    QListIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -433,9 +436,9 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::declarationsForNode(HbStyleSe
     loader->loadCss(widget);
     
     QVector<QVector<HbCss::WeightedDeclaration> > weightedDeclsList;
-    HbLayeredStyleLoader *allStack = getStack(Concern_All);
+    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
 
-    QListIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -481,9 +484,9 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
     loader->loadCss(widget);
     
     QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
-    HbLayeredStyleLoader *allStack = getStack(Concern_All);
+    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
 
-    QListIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -527,9 +530,9 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
 */
 void HbLayeredStyleLoader::variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const
 {
-    HbLayeredStyleLoader *allStack = getStack(Concern_All);
+    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
     
-    QListIterator<LayerPriority> iter(LayerList());
+    QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
@@ -573,26 +576,33 @@ bool HbLayeredStyleLoader::findInDefaultVariables(const QString& variableName, H
 
 
 /*!
-     Gets the list of all priority layers in use in this or the 'All' stack
+     Updates the cached list of used layers to include the specified layer.
+     If this is the All stack, all other stacks' used lists are also updated 
+     to include this layer.
      
-     \return List of all layer priorities in use
+     \param The LayerPriority to add if not already present
 */
-QList<HbLayeredStyleLoader::LayerPriority> HbLayeredStyleLoader::LayerList() const
+void HbLayeredStyleLoader::updateLayersListIfRequired(LayerPriority priority)
 {
-    QList<LayerPriority> mergedLayers = mStyleLayers.keys();
-    HbLayeredStyleLoader *allStack = getStack(Concern_All);
-    if (allStack) {
-        QList<LayerPriority> allLayers = allStack->mStyleLayers.keys();
-        for (int i=0; i<allLayers.count(); i++) {
-            const LayerPriority &layer = allLayers.at(i);
-            if (!mergedLayers.contains(layer)) {
-                mergedLayers.append(layer);
+    if (mUsedLayers.contains(priority)) {
+        return;
+    }
+    if (mConcern != Concern_All) {
+        mUsedLayers.append(priority);
+        qSort(mUsedLayers);
+    } else {
+        ConcernStacks *stacks = globalConcernStacks();
+        if (stacks) {
+            QMap<Concern, HbLayeredStyleLoader>::iterator iter = stacks->begin();
+            while (iter != stacks->end()) {
+                if (!iter->mUsedLayers.contains(priority)) {
+                    iter->mUsedLayers.append(priority);
+                    qSort(iter->mUsedLayers);
+                }
+                ++iter;
             }
         }
     }
-    qSort(mergedLayers);
-
-    return mergedLayers;
 }
 
 

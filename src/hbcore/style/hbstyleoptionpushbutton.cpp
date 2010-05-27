@@ -26,19 +26,11 @@
 #include "hbstyleoptionpushbutton_p.h"
 #include "hbicon.h"
 
-/*!
+/*
     \class HbStyleOptionPushButton
     \brief HbStyleOptionPushButton has the style component for push button primitives
 */
 
-
-
-/*!
-
-    \deprecated HbStyleOptionPushButton::HbStyleOptionPushButton()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionPushButton::HbStyleOptionPushButton()
     : background(), icon(), text(),backgroundFrameDrawer(0)
 {
@@ -46,13 +38,6 @@ HbStyleOptionPushButton::HbStyleOptionPushButton()
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionPushButton::HbStyleOptionPushButton(const HbStyleOptionPushButton&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionPushButton::HbStyleOptionPushButton(const HbStyleOptionPushButton &other) :
     HbStyleOption(other), background(other.background), icon(other.icon), text(other.text),backgroundFrameDrawer(other.backgroundFrameDrawer)
 {

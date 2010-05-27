@@ -56,6 +56,9 @@ int runMain(int argc, char **argv, void *mutexToSignal)
         wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
         RThread::RenameMe(hbsplash_server_name);
+        RProcess process;
+        process.SetPriority(EPriorityForeground);
+        process.Close();
     }
 #else
     Q_UNUSED(mutexToSignal);
@@ -88,8 +91,7 @@ int runMain(int argc, char **argv, void *mutexToSignal)
 #ifdef Q_OS_SYMBIAN
     qDebug("[hbsplashgenerator] starting server");
     HbSplashGenServer server(&gen);
-    // If there was an error (or an instance is already running (it is
-    // possible in certain race conditions)) then exit right away.
+    // If there was an error then exit right away.
     if (!server.startupSuccess()) {
         qDebug("[hbsplashgenerator] exiting due to failed server startup");
         return 0;

@@ -112,6 +112,16 @@ int HbDeviceDialogManager::updateDeviceDialog(
 
 /*!
     \internal
+    Publish current orientation to PS-key
+    Returns error code if updating fails. 0 if updating succeeds.
+*/
+int HbDeviceDialogManager::publishOrientation(int orientation)
+{
+    return d->publishOrientation(orientation);
+}
+
+/*!
+    \internal
     Instructs HbDeviceDialogManager to close a concrete device dialog widget.
     Widget is identified by identifier.
 

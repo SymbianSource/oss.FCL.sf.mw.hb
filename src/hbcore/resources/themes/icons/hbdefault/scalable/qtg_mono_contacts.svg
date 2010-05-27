@@ -1,20 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
-	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
-]>
-<svg version="1.1"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
-	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
-<defs>
-</defs>
-<g opacity="0.5">
-	<rect fill="none" width="30" height="30"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
 </g>
 <path d="M5,2v2H3v2h2v3H3v2h2v3H3v2h2v3H3v2h2v3H3v2h2v2h22V2H5z M24,25H8V5h16V25z"/>
-<path d="M14.371,15.227c0.002,0.086,0.007,0.53,0.001,0.614c-0.004,0.058-0.024,0.12-0.046,0.183c0-0.001,0.001-0.002,0.001-0.002
-	h3.347c0,0,0,0.001,0.001,0.001c-0.021-0.062-0.042-0.124-0.046-0.182c-0.007-0.09,0-0.523,0.001-0.614
-	c0.621-0.418,1.056-0.91,1.382-1.553c0.606-1.187,0.282-3.984,0.282-3.984C19.294,8.45,17.647,7,16.395,7H15.6
-	c-1.254,0-2.902,1.45-2.902,2.689c0,0-0.287,2.783,0.278,3.981C13.288,14.325,13.735,14.809,14.371,15.227z"/>
+<path d="M14.371,15.227c0.002,0.086,0.007,0.53,0.001,0.614c-0.004,0.058-0.024,0.12-0.046,0.183c0-0.001,0.001-0.002,0.001-0.002  h3.347c0,0,0,0.001,0.001,0.001c-0.021-0.062-0.042-0.124-0.046-0.182c-0.007-0.09,0-0.523,0.001-0.614  c0.621-0.418,1.056-0.91,1.382-1.553c0.606-1.187,0.282-3.984,0.282-3.984C19.294,8.45,17.647,7,16.395,7H15.6  c-1.254,0-2.902,1.45-2.902,2.689c0,0-0.287,2.783,0.278,3.981C13.288,14.325,13.735,14.809,14.371,15.227z"/>
 <path d="M22,19.5c-0.169-0.222-3.088-1.801-4.056-3.02L16,21l-1.943-4.521c-0.968,1.22-3.888,2.797-4.057,3.019V23h12V19.5z"/>
 </svg>

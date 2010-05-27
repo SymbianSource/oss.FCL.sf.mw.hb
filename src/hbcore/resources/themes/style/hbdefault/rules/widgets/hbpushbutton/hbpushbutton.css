@@ -1,5 +1,6 @@
-HbPushButton{
+ HbPushButton{
     layout:icon_button;
+    min-width:expr(var(hb-param-margin-gene-left)+var(hb-param-margin-gene-right)+var(hb-param-graphic-size-function));
 }
 
 /*
@@ -7,9 +8,7 @@ HbPushButton{
 */
 HbPushButton[!icon][!text][!additionalText]{
     min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+var(hb-param-text-height-secondary));
-    min-width:expr(var(hb-param-margin-gene-left)+var(hb-param-margin-gene-right)+var(hb-param-graphic-size-function));
 }
-
 
 /*
 	specifying the min-height for icon only layout as icon has pref-height. 
@@ -17,12 +16,12 @@ HbPushButton[!icon][!text][!additionalText]{
 */
 HbPushButton[icon][!text][!additionalText]{
     layout:icon_button;
-    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+var(hb-param-text-height-secondary));
-    min-width:expr(var(hb-param-margin-gene-left)+var(hb-param-margin-gene-right)+var(hb-param-graphic-size-function));
+    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+var(hb-param-text-height-secondary));/* we are specifying pref -height for icon ,so need to see what could be min height so that it will suits for all usecases*/
 }
 
 HbPushButton[text][!icon][!additionalText]{
     layout:text_button;
+    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+var(hb-param-text-height-secondary));
 }
 /*
 	specifying the min-height for icon + text vertical layout as icon has pref-height. 
@@ -30,24 +29,27 @@ HbPushButton[text][!icon][!additionalText]{
 
 HbPushButton[!stretched][icon][text][!additionalText]{
     layout:icon_text_Vertical;
-    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+var(hb-param-text-height-secondary));
-    /*min-width:expr(var(hb-param-margin-gene-left) + var(hb-param-margin-gene-right) + var(hb-param-graphic-size-function));*/
+    min-height:expr(var(hb-param-margin-gene-center-align)+var(hb-param-margin-gene-center-align)+var(hb-param-margin-gene-middle-vertical)+var(hb-param-text-height-tiny)); /* we are using pref height for icon, so not included in calculation*/
 }
 
 HbPushButton[stretched][icon][text][!additionalText]{
     layout:icon_text_Horizontal;
+    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+ var(hb-param-graphic-size-function));
 }
 
 HbPushButton[!stretched][icon][text][additionalText]{
-    layout:icon_text_additionalText_vertical;  
+    layout:icon_text_additionalText_vertical;
+    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+ var(hb-param-graphic-size-primary-large));  
 }
 
 HbPushButton[stretched][icon][text][additionalText]{
     layout:icon_text_additionalText_horizontal;
+    min-height:expr(var(hb-param-margin-gene-top)+var(hb-param-margin-gene-bottom)+ var(hb-param-graphic-size-function));
 }
 
 HbPushButton[!stretched][additionalText][text][!icon]{
-    layout:text_additionalText_vertical;    
+    layout:text_additionalText_vertical;
+    min-height:expr(var(hb-param-margin-gene-center-align)+var(hb-param-margin-gene-center-align)+var(hb-param-margin-gene-middle-vertical)+var(hb-param-text-height-title)+var(hb-param-text-height-tiny));   
 }
 
 /*

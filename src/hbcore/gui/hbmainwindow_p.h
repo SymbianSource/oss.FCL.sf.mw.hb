@@ -41,6 +41,10 @@
 #include "hbdeviceprofile.h"
 #include "hbeffect.h"
 #include "hbeffectinternal_p.h"
+#ifdef Q_OS_SYMBIAN
+#include <hbdevicedialogclientsession_p.h>
+#include <hbdevicedialogconnecthelper_p.h>
+#endif 
 
 class HbBackgroundItem;
 class HbGraphicsScene;
@@ -98,6 +102,7 @@ public:
     void updateRotationEffects();
     void addBackgroundItem();
     void removeBackgroundItem();
+    void initFadeItem();
 
     void postIdleEvent(int eventId);
 
@@ -118,6 +123,7 @@ public:
     QGraphicsWidget *mRootItem;
     QGraphicsWidget *mEffectItem;
     Qt::Orientation mDefaultOrientation;
+    int mPendingOrientationValue;
     qreal mOrientationAngle;
     QList<QGraphicsItem*> mItemList;
     QList<QGraphicsItem*> mOrientationChangeEffectItems;
@@ -126,6 +132,7 @@ public:
     bool mOrientationChangeOngoing;
     bool mAnimateOrientationSwitch;
     bool mGVOrientationChangeEffectEnabled;
+    bool mPendingPsPublish;    
     Qt::Orientation mOrientation;
     Qt::Orientation mRequestedOrientation;
     HbToolBar *mCurrentToolbar;
@@ -154,8 +161,9 @@ public:
     QTranslator mCommonTranslator;
 #ifdef Q_OS_SYMBIAN
     HbNativeWindow *mNativeWindow;
+    RHbDeviceDialogClientSession *mDevDlgClientSession;
+    HbDeviceDialogConnectHelper *mDevDlgConnectHelper;
 #endif
-
     void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status);
     void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status);
     void orientationEffectFinished(const HbEffect::EffectStatus& status);
@@ -182,33 +190,26 @@ public:
     static const int IdleOrientationEvent;
     static const int IdleOrientationFinalEvent;
 
+    void setViewportSize(const QSizeF& newSize);
+    QSizeF viewPortSize() const;
+
+    static HbMainWindowPrivate *d_ptr(HbMainWindow *mainWindow) {
+        Q_ASSERT(mainWindow);
+        return mainWindow->d_func();
+    }
+
 signals:
     void idleEventDispatched();
 
 public slots:
     void menuClosed();
+#ifdef Q_OS_SYMBIAN  
+    void updateForegroundOrientationPSKey();
+    void deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession);
+#endif
 
-private:
-    static HbMainWindowPrivate *d_ptr(HbMainWindow *mainWindow) {
-        Q_ASSERT(mainWindow);
-        return mainWindow->d_func();
-    }
-    friend class HbPopupManagerPrivate;
-    friend class HbInstance;
-    friend class HbInstancePrivate;
-    friend class HbDeviceProfileManager;
-    friend class HbDeviceProfile;
-    friend class HbView;
-    friend class HbVgEffectPrivate;
-    friend class HbContentWidget;
-    friend class HbSplashGenerator;
-    friend class TestHbDeviceProfile;
-    friend class TestHbGridView;
-    friend class TestHbMainWindow;
-    friend class HbMainWindowOrientation;
-    friend class HbScreen;
-    friend class HbSettingsWindow;
-    friend class TestHbSensorOrientation;
+	friend class HbForegroundWatcher;
+	friend class HbDeviceDialogConnectHelperPrivate;
 };
 
 #endif // HBMAINWINDOW_P_H

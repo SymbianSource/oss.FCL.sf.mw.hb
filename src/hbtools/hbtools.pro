@@ -27,7 +27,9 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS += hbthemeindexer hbbincssmaker
+SUBDIRS += hbthemeindexer
+SUBDIRS += hbbincssmaker
+SUBDIRS += docml2bin
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)
 

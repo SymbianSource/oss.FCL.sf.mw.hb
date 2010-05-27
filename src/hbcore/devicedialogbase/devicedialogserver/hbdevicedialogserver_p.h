@@ -81,6 +81,7 @@ public:
     void setMainWindow(HbMainWindow *mainWindow);
     int showDeviceDialog(DialogParameters &parameters);
     int updateDeviceDialog(int identifier, const QVariantMap &data);
+    int publishOrientation(int orientation);
     int closeDeviceDialog(int identifier);
     void deviceDialogClientClosing(quintptr sessionTag);
     int activateIndicator(IndicatorParameters &parameters);

@@ -24,30 +24,10 @@
 ****************************************************************************/
 
 #include "hbsplashscreen.h"
+#include "hbsplashscreen_generic_p.h"
 #include "hbsplash_p.h"
 #include <QPainter>
-#include <QImage>
 #include <QApplication>
-#include <QWidget>
-#include <QPixmap>
-
-// To play nice with GPU resources it may be beneficial to avoid using QWidget
-// for showing the splash screen. (each top-level widget results in creating a
-// new window surface which consumes gpu memory) Instead, we can create & show a
-// CCoeControl which draws using the traditional Symbian GC methods. (And thus
-// uses the "legacy" surface which is still available currently. However if some
-// day it is removed then this solution will not work anymore.)
-#ifdef Q_OS_SYMBIAN
-// Do not enable for now, may cause some flickering.
-// The system transition effects may not like this solution anyway.
-//#define HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-#endif
-
-#ifdef HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-#include <coecntrl.h>
-#include <fbs.h>
-#include <w32std.h>
-#endif
 
 /*!
   @stable
@@ -90,50 +70,6 @@
   result the splash screen will also be forced to horizontal orientation.
 */
 
-class HbSplashScreenInterface
-{
-public:
-    virtual ~HbSplashScreenInterface() {}
-    virtual void start(HbSplashScreen::Flags flags) = 0;
-    virtual void release() = 0;
-};
-
-class HbSplashScreenGeneric : public QWidget, public HbSplashScreenInterface
-{
-public:
-    HbSplashScreenGeneric();
-    ~HbSplashScreenGeneric();
-
-    void start(HbSplashScreen::Flags flags);
-    void release();
-
-private:
-    void paintEvent(QPaintEvent *event);
-    void repaint();
-
-    uchar *mImageData;
-    QPixmap mContents;
-};
-
-#ifdef HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-
-class HbSplashScreenSymbian : public CCoeControl, public HbSplashScreenInterface
-{
-public:
-    HbSplashScreenSymbian();
-    ~HbSplashScreenSymbian();
-
-    void start(HbSplashScreen::Flags flags);
-    void release();
-
-private:
-    void Draw(const TRect &rect) const;
-
-    CFbsBitmap *mContents;
-};
-
-#endif // HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-
 static HbSplashScreenInterface *splashScreen = 0;
 
 struct RequestProps {
@@ -153,13 +89,7 @@ Q_GLOBAL_STATIC(RequestProps, requestProps)
 void HbSplashScreen::start(Flags flags)
 {
     if (!splashScreen) {
-        splashScreen =
-#ifdef HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-            new HbSplashScreenSymbian
-#else
-            new HbSplashScreenGeneric
-#endif
-            ;
+        splashScreen = new HbSplashScreenGeneric;
     }
     splashScreen->start(flags | requestProps()->mSplashFlags);
 }
@@ -244,6 +174,8 @@ void HbSplashScreen::setScreenId(const QString &screenId)
     requestProps()->mScreenId = screenId;
 }
 
+const int auto_stop_interval = 10000; // 10 sec
+
 HbSplashScreenGeneric::HbSplashScreenGeneric()
     : QWidget(0, Qt::SplashScreen), mImageData(0)
 {
@@ -251,7 +183,10 @@ HbSplashScreenGeneric::HbSplashScreenGeneric()
 
 HbSplashScreenGeneric::~HbSplashScreenGeneric()
 {
-    delete mImageData;
+    if (mImageData) {
+        qDebug("[hbsplash] destroying splash screen");
+        delete mImageData;
+    }
 }
 
 void HbSplashScreenGeneric::release()
@@ -269,12 +204,12 @@ void HbSplashScreenGeneric::start(HbSplashScreen::Flags flags)
             mImageData = HbSplash::load(w, h, bpl, fmt, flags,
                                         props->mAppId, props->mScreenId);
             if (mImageData) {
-                QImage img(mImageData, w, h, bpl, fmt);
-                mContents = QPixmap::fromImage(img);
+                mContents = QImage(mImageData, w, h, bpl, fmt);
                 resize(mContents.size());
             }
         }
         if (!mContents.isNull()) {
+            qDebug("[hbsplash] splash screen initialized");
 #ifdef Q_OS_SYMBIAN
             showFullScreen();
 #else
@@ -282,6 +217,14 @@ void HbSplashScreenGeneric::start(HbSplashScreen::Flags flags)
 #endif
             QApplication::processEvents();
             QApplication::flush();
+            // The splash screen must be destroyed automatically when
+            // loosing foreground.
+            if (QApplication::instance()) {
+                QApplication::instance()->installEventFilter(this);
+            }
+            // The splash screen must be destroyed automatically after
+            // a certain amount of time.
+            mTimerId = startTimer(auto_stop_interval);
         }
     } catch (const std::bad_alloc &) {
     }
@@ -291,7 +234,7 @@ void HbSplashScreenGeneric::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
-    painter.drawPixmap(QPointF(0, 0), mContents);
+    painter.drawImage(QPointF(0, 0), mContents);
 }
 
 void HbSplashScreenGeneric::repaint()
@@ -300,84 +243,23 @@ void HbSplashScreenGeneric::repaint()
     QApplication::flush();
 }
 
-#ifdef HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE
-
-HbSplashScreenSymbian::HbSplashScreenSymbian()
-    : mContents(0)
+void HbSplashScreenGeneric::timerEvent(QTimerEvent *event)
 {
-}
-
-HbSplashScreenSymbian::~HbSplashScreenSymbian()
-{
-    delete mContents;
-}
-
-void HbSplashScreenSymbian::release()
-{
-    delete this;
-}
-
-static uchar *fbsBitmapAllocFunc(int w, int h, int bpl, QImage::Format fmt, void *param)
-{
-    if (fmt != QImage::Format_ARGB32_Premultiplied) {
-        qWarning("HbSplash: fbsBitmapAllocFunc: unsupported format %d", fmt);
-        return 0;
-    }
-    TDisplayMode mode = EColor16MAP;
-    CFbsBitmap *bmp = static_cast<CFbsBitmap *>(param);
-    if (bmp->Create(TSize(w, h), mode) == KErrNone) {
-        int bmpBpl = CFbsBitmap::ScanLineLength(w, mode);
-        if (bpl == bmpBpl) {
-            return reinterpret_cast<uchar *>(bmp->DataAddress());
-        } else {
-            qWarning("HbSplash: fbsBitmapAllocFunc: bpl mismatch (%d - %d)", bpl, bmpBpl);
-        }
+    if (event->timerId() == mTimerId) {
+        qDebug("[hbsplash] timeout while splash screen is active");
+        deleteLater();
+        splashScreen = 0;
     } else {
-        qWarning("HbSplash: fbsBitmapAllocFunc: bitmap Create() failed");
+        QWidget::timerEvent(event);
     }
-    return 0;
 }
 
-void HbSplashScreenSymbian::start(HbSplashScreen::Flags flags)
+bool HbSplashScreenGeneric::eventFilter(QObject *obj, QEvent *event)
 {
-    try {
-        if (!mContents) {
-            mContents = new CFbsBitmap;
-            int w, h, bpl;
-            QImage::Format fmt;
-            RequestProps *props = requestProps();
-            if (HbSplash::load(w, h, bpl, fmt, flags,
-                               props->mAppId, props->mScreenId,
-                               fbsBitmapAllocFunc, mContents))
-            {
-                TRect rect(TPoint(0, 0), TSize(w, h));
-                TRAPD(err, {
-                        CreateWindowL();
-                        RWindow *window = static_cast<RWindow *>(DrawableWindow());
-                        window->SetSurfaceTransparency(ETrue);
-                        SetRect(rect);
-                        ActivateL(); });
-                if (err == KErrNone) {
-                    MakeVisible(ETrue);
-                    DrawNow();
-                } else {
-                    qWarning("HbSplash: symbian control init failed (%d)", err);
-                }
-            } else {
-                delete mContents;
-                mContents = 0;
-            }
-        }
-    } catch (const std::bad_alloc &) {
+    if (event->type() == QEvent::ApplicationDeactivate) {
+        qDebug("[hbsplash] foreground lost while splash screen is active");
+        deleteLater();
+        splashScreen = 0;
     }
+    return QWidget::eventFilter(obj, event);
 }
-
-void HbSplashScreenSymbian::Draw(const TRect &rect) const
-{
-    Q_UNUSED(rect);
-    if (mContents) {
-        SystemGc().BitBlt(TPoint(0, 0), mContents);
-    }
-}
-
-#endif // HB_SPLASH_USE_SYMBIAN_LEGACY_SURFACE

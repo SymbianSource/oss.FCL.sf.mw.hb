@@ -27,33 +27,18 @@
 #include "hbstyleoptionratingslider_p.h"
 
 
-/*!
+/*
     \class HbStyleOptionProgressBar
     \brief HbStyleOptionProgressBar has the style component for progress bar primitives
 
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionRatingSlider::HbStyleOptionRatingSlider()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionRatingSlider::HbStyleOptionRatingSlider()
  {
     type = Type;
     version = Version;
 }
 
-
-
-/*!
-
-    \deprecated HbStyleOptionRatingSlider::HbStyleOptionRatingSlider(const HbStyleOptionRatingSlider&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionRatingSlider::HbStyleOptionRatingSlider(const HbStyleOptionRatingSlider &other) :
     HbStyleOption(other),
     progressValue(other.progressValue),

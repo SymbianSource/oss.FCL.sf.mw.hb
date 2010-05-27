@@ -2,14 +2,14 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 60 30" width="60px" x="0px" y="0px">
 <rect fill="none" height="30" width="60" x="0"/>
-<linearGradient gradientTransform="matrix(0 -1 1 0 4272.5005 -1555.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-1570.5" x2="-1570.5" y1="-4272.5" y2="-4212.5">
+<linearGradient gradientTransform="matrix(0 -1 -1 0 -1478.5 -1555.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-1570.5005" x2="-1570.5005" y1="-1538.4995" y2="-1478.4995">
 <stop offset="0" style="stop-color:#3C3C3C"/>
 <stop offset="1" style="stop-color:#1E1E1E"/>
 </linearGradient>
 <rect fill="url(#SVGID_1_)" fill-opacity="0.7" height="30" stroke-opacity="0.7" width="60"/>
-<linearGradient gradientTransform="matrix(0 -1 1 0 4272.5005 -1555.5)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-1570.5" x2="-1570.5" y1="-4272.5" y2="-4212.624">
+<linearGradient gradientTransform="matrix(0 -1 -1 0 -1478.5 -1555.5)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="-1570.5005" x2="-1570.5005" y1="-1538.4995" y2="-1478.6234">
 <stop offset="0" style="stop-color:#66B8CC"/>
 <stop offset="1" style="stop-color:#3F89A9"/>
 </linearGradient>
-<polygon fill="url(#SVGID_2_)" points="0,0 0,30 3,30 3,3 57,3 57,30 60,30 60,0 "/>
+<polygon fill="url(#SVGID_2_)" points="60,0 60,30 57,30 57,3 3,3 3,30 0,30 0,0 "/>
 </svg>

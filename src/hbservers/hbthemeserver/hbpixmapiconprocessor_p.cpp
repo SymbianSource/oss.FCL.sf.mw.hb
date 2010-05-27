@@ -37,8 +37,8 @@
 #include "hbthemeserverutils_p.h"
 
 #if defined (Q_OS_SYMBIAN)
-#include <VG/openvg.h>
-#include <VG/vgcontext_symbian.h>
+#include <vg/openvg.h>
+#include <vg/vgcontext_symbian.h>
 #endif //Q_OS_SYMBIAN
 
 /*!

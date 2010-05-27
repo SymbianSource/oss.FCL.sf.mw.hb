@@ -59,6 +59,8 @@ public:
     HbPointRecorder mAxisY;
     HbPointRecorder mSceneAxisX;
     HbPointRecorder mSceneAxisY;
+
+    qreal mThresholdSquare;
 };
 
 #endif // HBPANGESTURE_P_H

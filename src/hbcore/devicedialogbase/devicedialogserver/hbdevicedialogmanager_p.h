@@ -50,6 +50,7 @@ public:
     // Device dialog client related API
     int showDeviceDialog(HbDeviceDialogServer::DialogParameters &parameters);
     int updateDeviceDialog(int identifier, const QVariantMap &parameters);
+    int publishOrientation(int orientation);
     int closeDeviceDialog(int identifier);
     void deviceDialogClientClosing(quintptr clientTag);
     int activateIndicator(HbDeviceDialogServer::IndicatorParameters &parameters);

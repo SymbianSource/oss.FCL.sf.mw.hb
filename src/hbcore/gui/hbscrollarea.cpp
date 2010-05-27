@@ -815,6 +815,7 @@ void HbScrollArea::gestureEvent(QGestureEvent *event)
         if (gesture->state() == Qt::GestureStarted) {
             if (d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
                 d->stopAnimating();
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierScrolling);
                 event->accept(gesture);
             } else {
                 event->ignore(gesture);

@@ -45,14 +45,17 @@ HbProgressTrackItem::HbProgressTrackItem(HbFrameDrawer *drawer, QGraphicsItem *p
     maximum = 0;
     value = 0;
     maskWidth = 0;
+    mDiff = maximum - minimum;
 }
 void HbProgressTrackItem::setMinimum(int min)
 {
     minimum = min;
+    mDiff = maximum - minimum;
 }
 void HbProgressTrackItem::setMaximum(int max )
 {
     maximum = max;
+    mDiff = maximum - minimum;
 }
 void HbProgressTrackItem::setValue(int val )
 {
@@ -79,30 +82,30 @@ void HbProgressTrackItem::paint ( QPainter * painter, const QStyleOptionGraphics
     if(boundingRect()!= parentItem()->boundingRect()){
          setGeometry(parentItem()->boundingRect());
     }
-    QSize size = parentItem()->boundingRect().size().toSize();
+ /*   QSize size = parentItem()->boundingRect().size().toSize();
     if(size.width() == 0 || size.height() == 0){
         size.setWidth((int)boundingRect().width());
         size.setHeight((int)boundingRect().height());
-    }
+    }*/
     QRectF maskRect;
     if(maximum != minimum) {
         if(maskWidth == 0) {
             if(mOrientation == Qt::Horizontal){
                 qreal left = (qreal)boundingRect().topLeft().x();
                 if(inverted) {
-                    left = (qreal)boundingRect().width()* ((maximum - value)/(qreal) (maximum - minimum));
+                    left = (qreal)boundingRect().width()* ((maximum - value)/(qreal) (mDiff));
                 }
                 maskRect = QRectF(
                         left,
                         (qreal)boundingRect().topLeft().y(),
-                        (qreal)boundingRect().width()* ((value -  minimum)/(qreal) (maximum - minimum)),
+                        (qreal)boundingRect().width()* ((value -  minimum)/(qreal) (mDiff)),
                         (qreal)boundingRect().height()
                     );
 
             }
             else{
             
-				qreal start = boundingRect().bottom() -(qreal)boundingRect().height()*((value -  minimum)/(qreal) (maximum - minimum));
+				qreal start = boundingRect().bottom() -(qreal)boundingRect().height()*((value -  minimum)/(qreal) (mDiff));
 				 maskRect = QRectF(
                         (qreal)boundingRect().topLeft().x(),
                         start,

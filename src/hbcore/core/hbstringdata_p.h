@@ -32,11 +32,12 @@
 template<typename T>
 T * getAddress(HbMemoryManager::MemoryType type, int offset, bool shared)
 {
-    T * data = 0;
-    if( shared == true )
-        data = HbMemoryUtils::getAddress<T>( HbMemoryManager::SharedMemory, offset );
-    else
-        data = HbMemoryUtils::getAddress<T>( type, offset );
+    T *data = 0;
+    if( shared == true ) {
+        data = HbMemoryUtils::getAddress<T>(HbMemoryManager::SharedMemory, offset);
+    } else {
+        data = HbMemoryUtils::getAddress<T>(type, offset);
+    }
     return data;
 }
 

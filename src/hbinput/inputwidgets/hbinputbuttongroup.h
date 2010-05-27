@@ -37,6 +37,7 @@ class HbFrameDrawer;
 class HB_INPUT_EXPORT HbInputButtonGroup : public HbWidget
 {
     Q_OBJECT
+    Q_PROPERTY(bool enabled READ isEnabled WRITE setEnabled)
 
 public:
     explicit HbInputButtonGroup(QGraphicsItem *parent = 0);

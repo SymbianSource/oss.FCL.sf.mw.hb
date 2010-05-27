@@ -38,7 +38,7 @@
     - Also '+' and '-' characters are supported.
     - Decimal separator needs to be a dot '.' always.
     - Any other characters than above descripted are not allowed.
-    - If grouping fails for some reason then return value is empty QString (NULL).
+    - If grouping fails for some reason then return value is empty QString.
     - At the moment currency mark is not added to return value (formatCurrency).
     - Grouping for phone numbers is not activated yet.    
 
@@ -50,11 +50,14 @@
 
 /*!
     Static function for creating a (generic) number group.
+    
+    \attention Cross-Platform API
 
     \param number Source number for grouping.
     \param country Format for number converting. 
     If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-    \return Modified string.
+
+    \return modified string.
 */
 QString HbNumberGrouping::formatGeneric( const QString &number,
 							  			 QLocale::Country country )				  			 
@@ -73,11 +76,14 @@ QString HbNumberGrouping::formatGeneric( const QString &number,
 
 /*!
     Static function for creating a currency group.
+    
+    \attention Cross-Platform API
 
     \param number Source number for grouping.
     \param country Format for number converting.
     If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-    \return Modified string.
+
+    \return modified string.
 */
 QString HbNumberGrouping::formatCurrency( const QString &number,
 							  			  QLocale::Country country )				  			 
@@ -97,10 +103,13 @@ QString HbNumberGrouping::formatCurrency( const QString &number,
 /*!
     Static function for creating a phone number group.
 
+    \attention Cross-Platform API
+
     \param number Source number for grouping.
     \param country Format for number converting.
     If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-    \return Modified string.
+
+    \return modified string.
 */
 QString HbNumberGrouping::formatPhoneNumber( const QString &number,
 							  			     QLocale::Country country )				  			 

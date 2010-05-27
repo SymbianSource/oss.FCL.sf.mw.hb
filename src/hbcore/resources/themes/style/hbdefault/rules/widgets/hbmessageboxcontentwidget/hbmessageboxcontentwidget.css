@@ -6,6 +6,8 @@ HbMessageBoxContentWidget[hasIcon="true"]{
 HbMessageBoxContentWidget[hasIcon="false"]{
     layout: text_layout;
 }
+
+
 HbMessageBoxContentWidget::text {
 	top: -var(hb-param-margin-gene-popup);
 	bottom: var(hb-param-margin-gene-popup);
@@ -15,9 +17,17 @@ HbMessageBoxContentWidget::text {
     text-height:var(hb-param-text-height-primary);
     text-line-count-max: 5;
     text-line-count-min: 3;
-	text-align: left;
+	text-align: left;	
 }
 
+HbMessageBoxContentWidget::text[hasIcon="true"]
+{
+	fixed-width: expr(var(hb-param-screen-short-edge)-4*var(hb-param-margin-gene-screen)-var(hb-param-graphic-size-primary-large))
+}
+HbMessageBoxContentWidget::text[hasIcon="false"]
+{
+	fixed-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen))
+}
 HbMessageBoxContentWidget::icon
 {
 	top: -var(hb-param-margin-gene-popup);

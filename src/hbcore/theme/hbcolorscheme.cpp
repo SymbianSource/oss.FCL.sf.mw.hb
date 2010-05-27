@@ -68,13 +68,6 @@
 #include <hbcolorscheme.h>
 #include "hbcolortheme_p.h"
 
-/*!
-Constructor
-*/
-HbColorScheme::HbColorScheme()
-{
-}
-
 QColor HbColorScheme::color( const QString &colorRole )
 {
     return HbColorTheme::instance()->color(colorRole);

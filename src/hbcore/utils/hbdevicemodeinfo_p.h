@@ -36,7 +36,7 @@ class HbScreenMode;
 class HB_AUTOTEST_EXPORT HbDeviceModeInfo
     {
 public:
-    HbDeviceModeInfo();
+    HbDeviceModeInfo(const QString &wsIniFile = QString());
     ~HbDeviceModeInfo();
     
     QList<int> modeNumbers() const;

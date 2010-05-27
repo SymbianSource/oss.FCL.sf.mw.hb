@@ -194,10 +194,14 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbSlider)
     Q_DISABLE_COPY(HbSlider)
+    friend class HbSliderTickmarks;
+    friend class HbSliderTickmarksLabel;
+
 #ifdef HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void  _q_startIconPressedEffect()) 
     Q_PRIVATE_SLOT(d_func(), void  _q_startIconReleasedEffect()) 
     Q_PRIVATE_SLOT(d_func(), void  _q_startTextClickEffect()) 
+
 #endif
 };
 

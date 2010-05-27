@@ -77,9 +77,12 @@ public QObject
                                        const QColor &color,
                                        HbRenderingMode renderMode);						
 
-    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName, const QString &layout, const QString &section);
+    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,
+                                                          const QString &layout,
+                                                          const QString &section);
 
-    HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
+    HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath,
+                                           HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
 

@@ -3,10 +3,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="20px" version="1.1" viewBox="0 0 20 20" width="20px" x="0px" y="0px">
 <rect fill="none" height="20" width="20"/>
 <rect fill="none" height="20" width="20"/>
-<path d="M5,6c0-2.757,2.243-5,5-5s5,2.243,5,5v14H5V6z" fill="url(#SVGID_1_)"/>
-<path d="M10,2C7.794,2,6,3.795,6,6v14H5V6c0-2.757,2.243-5,5-5s5,2.243,5,5v14h-1V6  C14,3.795,12.206,2,10,2z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M15,6c0-2.757-2.244-5-5-5C7.242,1,5,3.243,5,6v14h10V6z" fill="url(#SVGID_1_)"/>
+<path d="M10,2c2.205,0,4,1.795,4,4v14h1V6c0-2.757-2.244-5-5-5C7.242,1,5,3.243,5,6v14h1V6  C6,3.795,7.793,2,10,2z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientTransform="matrix(0 1 1 0 -2297 2235)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2224.5005" x2="-2224.5005" y1="2302" y2="2312">
+<linearGradient gradientTransform="matrix(0 1 -1 0 -1686 2235)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2224.5005" x2="-2224.5005" y1="-1700.9995" y2="-1690.9995">
 <stop offset="0" style="stop-color:#66B8CC"/>
 <stop offset="1" style="stop-color:#3F89A9"/>
 </linearGradient>

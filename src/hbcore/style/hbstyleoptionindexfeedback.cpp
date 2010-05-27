@@ -25,39 +25,32 @@
 
 #include <hbstyleoptionindexfeedback_p.h>
 
-/*!
+/*
     \class HbStyleOptionIndexFeedback
     \brief HbStyleOptionIndexFeedback hsa the style components for index feedback primatives.
 */
 
-/*!
+/*
     \var HbStyleOptionIndexFeedback::text
     Text shown in the indexFeedbackPopup, if not NULL.
 */
 
-/*!
+/*
     \var HbStyleOptionIndexFeedback::fontSpec
     The font specification for text used in the index feedback.
 */
 
-/*!
+/*
     \var HbStyleOptionIndexFeedback::textRect
     \brief The bounding rect for the text when displaying the index feedback.
 */
 
-/*!
+/*
     \var HbStyleOptionIndexFeedback::popupRect
     \brief The bounding rect for the popup background when displaying index feedback.
 */
 
 
-
-/*!
-
-    \deprecated HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback() : 
     fontSpec(HbFontSpec::Primary)
 {
@@ -65,12 +58,6 @@ HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback() :
     version = Version;
 }
 
-/*!
-
-    \deprecated HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback(const HbStyleOptionIndexFeedback&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndexFeedback::HbStyleOptionIndexFeedback(const HbStyleOptionIndexFeedback &other) :
     HbStyleOption(other),
     text(other.text),

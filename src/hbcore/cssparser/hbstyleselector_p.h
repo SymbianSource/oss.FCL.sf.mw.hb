@@ -52,7 +52,7 @@ private:
         QString mValue2;
         bool mEmptyValue;
     };
-    mutable QHash<const QGraphicsWidget *, QHash<QString, AttributeValue> > mAttributeCache;
+    mutable QHash<const QGraphicsWidget *, QHash<uint, AttributeValue> > mAttributeCache;
 
 };
 

@@ -62,6 +62,7 @@ public:
     void addFormPage(const QString& page);
     void removeFormPage(const QString& page);
     void _q_page_changed(int index);
+
     void _q_item_displayed(const QModelIndex &index);
     void makeConnection(QModelIndex index);
     void connectNow(HbDataFormModelItem * modelItem, QString signal, 
@@ -73,6 +74,7 @@ public:
     void removeAllConnection();
     void removeAllConnection(HbDataFormModelItem *item);
     inline HbTreeModelIterator *treeModelIterator() const;
+    void emitActivated(const QModelIndex &modelIndex);
 
 public:
     HbDataFormHeadingWidget* mHeadingWidget;

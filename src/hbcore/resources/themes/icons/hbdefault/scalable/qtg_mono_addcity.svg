@@ -1,21 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
-	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
-]>
-<svg version="1.1"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
-	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
-<defs>
-</defs>
-<rect fill="none" width="30" height="30"/>
-<rect x="5" y="5" width="4" height="3"/>
-<rect x="5" y="10" width="4" height="3"/>
-<rect x="5" y="15" width="4" height="3"/>
-<path d="M13.025,23H3V3h11v2h-3v3h3v2h-3v3h3v2h-3v3h3v0.283c0.877-1.76,2.274-3.215,4-4.146V14h0.283c1.272-0.634,2.701-1,4.217-1
-	c1.627,0,3.16,0.412,4.5,1.137V11H17V0H0v26h13.677C13.304,25.063,13.08,24.055,13.025,23z"/>
-<path d="M22.5,15c-4.136,0-7.5,3.364-7.5,7.5s3.364,7.5,7.5,7.5s7.5-3.364,7.5-7.5S26.636,15,22.5,15z M22.5,28
-	c-3.033,0-5.5-2.468-5.5-5.5s2.467-5.5,5.5-5.5s5.5,2.468,5.5,5.5S25.533,28,22.5,28z"/>
-<rect x="18" y="21" width="9" height="3"/>
-<rect x="21" y="18" width="3" height="9"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<rect fill="none" height="30" width="30"/>
+<rect height="3" width="4" x="5" y="5"/>
+<rect height="3" width="4" x="5" y="10"/>
+<rect height="3" width="4" x="5" y="15"/>
+<path d="M13.025,23H3V3h11v2h-3v3h3v2h-3v3h3v2h-3v3h3v0.283c0.877-1.76,2.274-3.215,4-4.146V14h0.283c1.272-0.634,2.701-1,4.217-1  c1.627,0,3.16,0.412,4.5,1.137V11H17V0H0v26h13.677C13.304,25.063,13.08,24.055,13.025,23z"/>
+<path d="M22.5,15c-4.136,0-7.5,3.364-7.5,7.5s3.364,7.5,7.5,7.5s7.5-3.364,7.5-7.5S26.636,15,22.5,15z M22.5,28  c-3.033,0-5.5-2.468-5.5-5.5s2.467-5.5,5.5-5.5s5.5,2.468,5.5,5.5S25.533,28,22.5,28z"/>
+<rect height="3" width="9" x="18" y="21"/>
+<rect height="9" width="3" x="21" y="18"/>
 </svg>

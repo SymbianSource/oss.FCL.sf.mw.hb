@@ -47,6 +47,9 @@ public:
     QString imageName(Qt::Orientation orientation) const;
     QString defaultImageName(Qt::Orientation orientation) const;
 
+    void setImageMode(Hb::BackgroundImageMode mode);
+    Hb::BackgroundImageMode imageMode() const;
+
     void updateBackgroundImage();
 
 private:
@@ -58,6 +61,7 @@ private:
     HbMainWindow *mMainWindow;
     QString mPrtImageName;
     QString mLscImageName;
+    Hb::BackgroundImageMode mImageMode;
 };
 
 #endif // HBBACKGROUNDITEM_H

@@ -28,6 +28,7 @@
 #include "hbtapandholdgesture_p.h"
 #include "hbtapandholdgesturelogic_p.h"
 
+#include <hbdeviceprofile.h>
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QGraphicsView>
@@ -84,12 +85,14 @@ bool HbTapAndHoldGestureLogic::outsideThreshold(HbTapAndHoldGesture *gesture)
     QPointF startPos = gesture->property("startPos").toPointF();
     QPointF lastPos = gesture->property("position").toPointF();
 
-    int movementThreshold = HbTapAndHoldGestureLogic::mTapRadius;
+    QPointF delta = lastPos - startPos;
+
+    int movementThresholdSquare = mTapRadius * mTapRadius;
     if ( gesture->property("tapRadius").isValid() ) {
-        movementThreshold = gesture->property("tapRadius").toInt();
+        movementThresholdSquare = gesture->property("tapRadius").toInt() * gesture->property("tapRadius").toInt();
     }
 
-    return QLineF(startPos, lastPos).length() > movementThreshold;
+    return (delta.x() * delta.x() + delta.y() * delta.y()) > movementThresholdSquare;
 };
 
 /*!
@@ -157,7 +160,8 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMousePress(
     gesture->setProperty("position", me->globalPos());
     gesture->setProperty("scenePosition", HbGestureUtils::mapToScene(watched, me->globalPos()));
     gesture->priv->mTimerID = startTimer(gesture, HOLDTAP_ACTIVATION_USECS);
-    
+    mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
+
     DEBUG() << gesture << QGestureRecognizer::MayBeGesture;
     return QGestureRecognizer::MayBeGesture;
 }

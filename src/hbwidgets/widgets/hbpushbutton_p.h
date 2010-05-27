@@ -60,7 +60,6 @@ public:
 
     void createPrimitives();
     void initialize();
-    void _q_handleLongPress(QPointF point);
     void _q_handleLongKeyPress( );
 
     QGraphicsItem *textItem;

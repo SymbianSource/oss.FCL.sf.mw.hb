@@ -150,6 +150,7 @@ public:
                                        const QStyleOptionGraphicsItem &option) const;
 
     void updatePlaceholderDocProperties();
+    void filterInputText(QString &text) const;
 
     void _q_updateRequest(QRectF rect);
     void _q_updateBlock(QTextBlock block);

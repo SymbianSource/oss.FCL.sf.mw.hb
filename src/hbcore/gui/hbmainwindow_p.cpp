@@ -52,11 +52,15 @@
 #include "hbscreen_p.h"
 #include "hbbackgrounditem_p.h"
 #include "hbforegroundwatcher_p.h"
-
+#include "hbcorepskeys_p.h"
+#include "hbmainwindoworientation_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include "hbnativewindow_sym_p.h"
-#endif
+#include "hbdevicedialogserverdefs_p.h"
+
+const TUid deviceDialogUid = {0x20022FC5};
+#endif //Q_OS_SYMBIAN
 
 const int HbMainWindowPrivate::IdleEvent = QEvent::registerEventType();
 const int HbMainWindowPrivate::IdleOrientationEvent = QEvent::registerEventType();
@@ -79,10 +83,13 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mTitleBar(0),
     mStatusBar(0),
     mFadeItem(0),
-    mRootItem(0),    
+    mRootItem(0),   
+    mPendingOrientationValue(0),
     mAutomaticOrientationSwitch(true),
     mUserOrientationSwitch(false),
     mOrientationChangeOngoing(false),
+    mGVOrientationChangeEffectEnabled(false),
+    mPendingPsPublish(false),
     mOrientation(Qt::Vertical),
     mRequestedOrientation(Qt::Vertical),
     mCurrentToolbar(0),
@@ -99,7 +106,8 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mAutomaticOrientationChangeAnimation(true)
 #ifdef Q_OS_SYMBIAN
     ,
-    mNativeWindow(0)
+    mNativeWindow(0),
+    mDevDlgClientSession(0)
 #endif
 {   
 }
@@ -253,20 +261,25 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
 {
     Q_Q(HbMainWindow);
     mRequestedOrientation = orientation;
-
+      
     if (mOrientationChangeOngoing) {
+        if (!mForceSetOrientation && !mUserOrientationSwitch) {
+            return;
+        } else {
+            HbEffectInternal::cancelAll();
+        }
+    }
+   
+    if (mOrientation == orientation && !mForceSetOrientation && mEffectItem) {
         return;
     }
-    if ( (mOrientation == orientation) && !mForceSetOrientation && mEffectItem) {
-        return;
-    }
-
+       
     // skip transition if graphicsview is not visible
     mAnimateOrientationSwitch = animate;
 
     if (!q->isVisible())
         mAnimateOrientationSwitch = false;
-
+    
     // calling due to resize, orientation remains the same -> no signalling
     if ( !((mOrientation == orientation) && mForceSetOrientation) ) {
         // cancel all effects
@@ -277,9 +290,9 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
       }
-
+    
     mOrientation = orientation;
-          
+              
     if (!mAnimateOrientationSwitch) {
         HbEffect::disable(mEffectItem);
         HbEffect::disable(&mGVWrapperItem);
@@ -293,7 +306,11 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
 
     //For mirroring case
     changeSceneSize();
-    
+        
+#ifdef Q_OS_SYMBIAN    
+    updateForegroundOrientationPSKey();
+#endif 
+
     HbEffect::start(mEffectItem, "rootItemFirstPhase", q, "rootItemFirstPhaseDone");
 
     if (mAnimateOrientationSwitch) {
@@ -696,10 +713,9 @@ void HbMainWindowPrivate::_q_contentFullScreenChanged()
 */
 void HbMainWindowPrivate::fadeScreen(qreal zValue)
 {
-    if (mFadeItem) {
-        mFadeItem->setZValue(zValue);
-        mFadeItem->show();
-    }
+    initFadeItem();
+    mFadeItem->setZValue(zValue);
+    mFadeItem->show();
 }
 
 /*
@@ -709,8 +725,20 @@ void HbMainWindowPrivate::fadeScreen(qreal zValue)
 */
 void HbMainWindowPrivate::unfadeScreen()
 {
-    if (mFadeItem) {
+    initFadeItem();
+    mFadeItem->hide();
+}
+
+/*
+    Creates the fade item.
+*/
+void HbMainWindowPrivate::initFadeItem()
+{
+    if (!mFadeItem) {
+        mFadeItem = new HbFadeItem;
+        mFadeItem->setZValue(HbPrivate::FadingItemZValue);
         mFadeItem->hide();
+        mScene->addItem(mFadeItem);
     }
 }
 
@@ -946,11 +974,15 @@ void HbMainWindowPrivate::_q_delayedConstruction()
         connect(mStatusBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
                 mTitleBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
 
-        mFadeItem = new HbFadeItem;
-        mFadeItem->setZValue(HbPrivate::FadingItemZValue);
-        mFadeItem->hide();
-        mScene->addItem(mFadeItem);
+        initFadeItem();
 
+#ifdef Q_OS_SYMBIAN                
+        mDevDlgConnectHelper = new HbDeviceDialogConnectHelper(this);    
+        connect(mDevDlgConnectHelper, SIGNAL(sessionEstablished(RHbDeviceDialogClientSession *)),
+                this, SLOT(deviceDialogConnectionReady(RHbDeviceDialogClientSession *)));
+        mDevDlgConnectHelper->connect();        
+#endif //Q_OS_SYMBIAN
+        
         _q_viewReady();
 
         postIdleEvent(HbMainWindowPrivate::IdleEvent);
@@ -992,5 +1024,53 @@ void HbMainWindowPrivate::removeBackgroundItem()
     }
 }
 
+void HbMainWindowPrivate::setViewportSize(const QSizeF& newSize)
+{
+    mClippingItem->resize(newSize);
+    mLayoutRect = QRectF(QPointF(0,0), newSize);
+    mViewStackWidget->resize(newSize);
+}
 
+QSizeF HbMainWindowPrivate::viewPortSize() const
+{
+    return mClippingItem->size();
+}
+
+#ifdef Q_OS_SYMBIAN
+void HbMainWindowPrivate::updateForegroundOrientationPSKey()
+{
+    // check current process is not devicedialog
+    RProcess process;
+    if (process.SecureId().iId != deviceDialogUid.iUid) {    
+        if (mDevDlgClientSession && !mPendingPsPublish) {    
+            int orie = mOrientation;
+            if (!mAutomaticOrientationSwitch)
+                orie |= KHbFixedOrientationMask;              
+            mDevDlgClientSession->SendSyncRequest( EHbSrvPublishOrientation, orie );
+        }
+        else if (mDevDlgClientSession && mPendingPsPublish) {
+            mDevDlgClientSession->SendSyncRequest( EHbSrvPublishOrientation, mPendingOrientationValue );
+            mPendingPsPublish = false;
+            mPendingOrientationValue = 0;
+        }
+        else if (!mDevDlgClientSession && !mPendingPsPublish) {
+            mPendingOrientationValue = mOrientation;
+            if (!mAutomaticOrientationSwitch)  
+                mPendingOrientationValue |= KHbFixedOrientationMask;            
+            mPendingPsPublish = true; 
+        }    
+    }
+    process.Close();    
+}
+#endif
+
+#ifdef Q_OS_SYMBIAN
+void HbMainWindowPrivate::deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession)
+{
+    mDevDlgClientSession = clientSession; 
+    if (mPendingPsPublish)
+        updateForegroundOrientationPSKey();
+}
+    
+#endif //Q_OS_SYMBIAN
 // end of file

@@ -31,7 +31,7 @@
 
 #include <QModelIndex>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionAbstractViewItem : public HbStyleOption
 {
 public:

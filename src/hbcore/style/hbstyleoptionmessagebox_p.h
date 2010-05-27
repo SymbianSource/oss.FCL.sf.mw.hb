@@ -30,7 +30,7 @@
 #include <hbstyleoptionpopup_p.h>
 #include <hbicon.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionMessageBox : public HbStyleOptionPopup
 {
 public:

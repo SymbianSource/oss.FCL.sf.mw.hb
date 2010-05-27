@@ -143,7 +143,8 @@ int HbThemeServerUtils::getSharedStylesheet(const QString &fileName,
  *
  * Returns false in case Css file has some error or there is not enough memory
  */
-bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &fileName, int &cssOffset)
+bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &fileName,
+                                      int &cssOffset)
 {
     bool retVal = false;
     // 1. Create a styleSheet in shared memory
@@ -153,7 +154,8 @@ bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &file
     HbCss::StyleSheet *styleSheet = 0;
     try {
         cssOffset = manager->alloc(sizeof(HbCss::StyleSheet));
-        styleSheet = new((char*)manager->base() + cssOffset) HbCss::StyleSheet(HbMemoryManager::SharedMemory);
+        styleSheet = new(static_cast<char *>(manager->base()) + cssOffset)
+                     HbCss::StyleSheet(HbMemoryManager::SharedMemory);
     } catch (std::bad_alloc &) {
         if (cssOffset != -1) {
             // if manager->alloc in the previous try block suceeds but creation of
@@ -184,7 +186,8 @@ bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &file
   Returns of the offset for the given filename,layout and section name.
  */
 
-int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, const QString &layout, const QString &section)
+int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, const QString &layout,
+                                                  const QString &section)
 {
     int layoutDefOffset = -1;
     // check in the cache.
@@ -203,7 +206,6 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
 #ifdef THEME_SERVER_TRACES
     qDebug() << "Trying to load: " << fileName << "::" << layout << "::" << section;
 #endif // THEME_SERVER_TRACES
-
 
     HbWidgetLoader::LayoutDefinition *layoutDef(0);
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
@@ -308,7 +310,8 @@ int HbThemeServerUtils::getSharedEffect(const QString &fileName)
         HbEffectFxmlData *data = 0;
         try {
             effOffset = manager->alloc(sizeof(HbEffectFxmlData));
-            data = new((char*)manager->base() + effOffset) HbEffectFxmlData(HbMemoryManager::SharedMemory);
+            data = new(static_cast<char*>(manager->base()) + effOffset)
+                   HbEffectFxmlData(HbMemoryManager::SharedMemory);
         } catch (std::exception &) {
             if (effOffset != -1) {
                 // if manager->alloc in the previous try block suceeds but creation of

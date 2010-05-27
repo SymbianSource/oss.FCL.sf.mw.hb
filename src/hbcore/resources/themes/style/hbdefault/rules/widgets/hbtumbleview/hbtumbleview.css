@@ -6,12 +6,12 @@
 HbTumbleView[scrollDirections="Horizontal"]
 {	
 	layout:tumble-layout;
-	min-width: 1un;
+	min-width: 1un;/*Need this for uniform tumbler widths, when grouped together*/
 }
 HbTumbleView[scrollDirections="Vertical"]
 {	
 	layout:tumble-layout;
-	min-width: 1un;
+	min-width: 1un;/*Need this for uniform tumbler widths, when grouped together*/
 }
 
 HbTumbleView::highlight {

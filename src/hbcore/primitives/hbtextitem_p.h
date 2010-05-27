@@ -76,12 +76,34 @@ public:
                              const QPen& pen,
                              const QPointF& lineBegin);
 
+    void paintArea(QPainter *painter,
+                  int firstItemToPaint,
+                  int lastItemToPaint,
+                  const QPen& normalPen,
+                  const QPen& fadePen,
+                  qreal criticalX) const;
+
+    int paintArea(QPainter *painter,
+                  int firstItemToPaint,
+                  const QPen& normalPen,
+                  qreal lastValidY) const;
+
+    int paintHorizontalSection(QPainter *painter,
+                               int firstItemToPaint,
+                               QLinearGradient& gradient,
+                               qreal startY,
+                               qreal stopY) const;
+
     int paintFaded(QPainter *painter,
                     int firstItemToPaint,
                     const QPen& leftPen,
                     const QPen& centerPen,
                     const QPen& rightPen,
-                    const QRectF& area ) const;
+                    const QPainterPath& area ) const;
+
+    bool setClipPath(QPainter *painter,
+                     const QRectF& rect,
+                     const QPainterPath& initialCliping) const;
 
     void paintWithFadeEffect(QPainter *painter) const;
 
@@ -93,8 +115,6 @@ public:
     QString mText;
     Qt::Alignment mAlignment;
     Qt::TextElideMode mElideMode;
-    bool mDontPrint;  // needed to fake text flags
-    bool mDontClip;   // needed to fake text flags
 
     bool mInvalidateShownText;
     QRectF mOldContentsRect;

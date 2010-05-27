@@ -78,6 +78,9 @@ public:
     void setColor(const QColor &color);
     QColor color() const;
 
+    void setThemedColor(const QColor &color);
+    QColor themedColor() const;
+
     void paint(QPainter *painter,
                const QRect &rect,
                QIcon::Mode mode,
@@ -101,6 +104,7 @@ public:
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;
     HbIconFormatType iconFormatType() const;    
+
 private:
     void ensureSignalConnections();
     QPixmap getPixmapFromAnimation() const;
@@ -114,8 +118,16 @@ private:
 
     HbIconAnimation *animation() const;
 
+public:
+    enum ClearingFlag {
+        ResetIconSize = 0x01,
+        KeepDefaultSize = 0x02,
+        UnloadedByServer = 0x04
+    };
+    Q_DECLARE_FLAGS(ClearingFlags, ClearingFlag)
+
 public slots:
-    void clearStoredIconContent(bool resetIconSize = false, bool unloadedByServer = false);
+    void clearStoredIconContent(ClearingFlags flags = 0);
     void clearStoredNonAnimIconContent();
 
 private slots:
@@ -130,5 +142,7 @@ private slots:
 private:
     HbIconEnginePrivate *d;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbIconEngine::ClearingFlags)
 
 #endif // HBICONENGINE_P_H

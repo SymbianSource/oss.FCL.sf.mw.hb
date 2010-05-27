@@ -67,6 +67,8 @@ int HbStyleSelector::nodeNameEquals(NodePtr node, const HbString& name) const
     return level;
 }
     
+const uint CLASS_HASH = qHash(QString("class"));
+
 bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelector &attr) const
 {
     if (isNullNode(node)) {
@@ -78,8 +80,8 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
 
     QGraphicsWidget *widget = WIDGET(node);
 
-    QHash<QString, AttributeValue> &cache = mAttributeCache[widget];
-    QHash<QString, AttributeValue>::const_iterator cacheIt = cache.constFind(attr.name);
+    QHash<uint, AttributeValue> &cache = mAttributeCache[widget];
+    QHash<uint, AttributeValue>::const_iterator cacheIt = cache.constFind(attr.nameHash);
     if (cacheIt != cache.constEnd()) {
         aVal = cacheIt.value();
     } else {
@@ -87,11 +89,10 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
 
         QVariant value = widget->property(attr.name.toLatin1());
         if (!value.isValid()) {
-            if (attr.name == QLatin1String("class")) {
+            if (attr.nameHash == CLASS_HASH) {
                 QString className = QString::fromLatin1(metaObject
                     ->className());
-                if (className.contains(QLatin1Char(':')))
-                    className.replace(QLatin1Char(':'), QLatin1Char('-'));
+                className.replace(QLatin1Char(':'), QLatin1Char('-'));
                 aVal.mValue1 = className;
             } else {
                 // Requested property not found.
@@ -117,7 +118,7 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
                 aVal.mValue2 = metaProperty.enumerator().valueToKey(value.toInt());
             }
         }
-        cache[attr.name] = aVal;
+        cache[attr.nameHash] = aVal;
     }
 
     bool match(false);

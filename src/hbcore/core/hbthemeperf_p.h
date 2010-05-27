@@ -36,10 +36,10 @@
 #else
 #include <QDebug>
 #define HB_START_SHAREDMEMORY_PRINT(str) unsigned int startMemory =  manager->memoryConsumed(); \
-                      qDebug() << str << "SharedMemory Consumed" << "In" << Q_FUNC_INFO << startMemory;             
+        qDebug() << str << "SharedMemory Consumed" << "In" << Q_FUNC_INFO << startMemory;
 #define HB_END_SHAREDMEMORY_PRINT(str) unsigned int endMemory = manager->memoryConsumed(); \
-                      qDebug() << str << "SharedMemory Consumed" << "In" << Q_FUNC_INFO << endMemory;  \
-                      qDebug() << " Difference  : " << endMemory - startMemory;  
+        qDebug() << str << "SharedMemory Consumed" << "In" << Q_FUNC_INFO << endMemory;  \
+        qDebug() << " Difference  : " << endMemory - startMemory;
 #endif // HB_PERF_MEM
 
 
@@ -69,9 +69,9 @@
 #else
 #include <QDateTime>
 #include <QDebug>
-#define HB_START_TIME() 	QTime time; \
-                            	time.start();
-#define HB_END_TIME(str,val)   qDebug() << str << val << " time in ms: " << time.elapsed() << "ms";
+#define HB_START_TIME()     QTime time; \
+                            time.start();
+#define HB_END_TIME(str,val) qDebug() << str << val << " time in ms: " << time.elapsed() << "ms";
 #endif   //HB_PERF_TIME
 
 

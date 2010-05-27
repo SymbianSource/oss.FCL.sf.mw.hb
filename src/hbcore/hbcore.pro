@@ -163,7 +163,6 @@ symbian {
     LIBS += -lapparc
     LIBS += -lavkon
     LIBS += -lbafl
-    LIBS += -lalfdecoderserverclient
     LIBS += -lSensrvClient
     LIBS += -lsensrvutil
     LIBS += -lcentralrepository

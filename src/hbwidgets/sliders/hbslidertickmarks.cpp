@@ -25,14 +25,25 @@
 
 #include "hbslidertickmarks_p.h"
 #include "hbwidget_p.h"
-#include "hbslidercontrol_p.h"
 #include "hbsliderhandle_p.h"
+#include "hbslider_p.h"
 #include <hbstyle.h>
 #include <hbstyleoptionslider_p.h>
 #include <hbstyle.h>
 #include <hbapplication.h>
 #include <hbiconitem.h>
+#include <hbslider.h>
 #include <QList>
+#include <QGraphicsItem>
+#include <QGraphicsSceneEvent>
+#include <QGraphicsScene>
+
+
+#ifdef HB_EFFECTS
+#include "hbeffect.h"
+#include "hbeffectinternal_p.h"
+#define HB_SLIDER_TYPE "HB_SLIDER"
+#endif
 
 
 
@@ -46,11 +57,10 @@ class HbSliderTickmarksPrivate : public HbWidgetPrivate
 public:
     HbSliderTickmarksPrivate();
     void createTicks( );
-    void updateTickSize( );
     HbStyleOptionSlider sliderOption;
     QList<QGraphicsWidget *> tickmarkmajorIcons;
     QList<QGraphicsWidget *> tickmarkminorIcons;
-    HbSliderControl *sliderControl;
+    HbSlider *slider;
     Hb::SliderTickPositions tickPosition;
     bool createIcons;
     int majorTickWidth;
@@ -63,7 +73,7 @@ public:
  HbSliderTickmarksPrivate::HbSliderTickmarksPrivate() :HbWidgetPrivate(){
     tickmarkmajorIcons.clear();
     tickmarkminorIcons.clear();
-    sliderControl = 0;
+    slider = 0;
     tickPosition = Hb::NoSliderTicks;
     createIcons = true;
     majorTickWidth = 0;
@@ -79,10 +89,10 @@ void  HbSliderTickmarksPrivate::createTicks(  )
     if(!createIcons){
         return;
     }
-    int minimum = sliderControl->minimum();
-    int maximum = sliderControl->maximum();
-    int majorTickInterval = sliderControl->majorTickInterval ( );
-    int minorTickInterval = sliderControl->minorTickInterval ( );
+    int minimum = slider->minimum();
+    int maximum = slider->maximum();
+    int majorTickInterval = slider->majorTickInterval ( );
+    int minorTickInterval = slider->minorTickInterval ( );
     if (majorTickInterval) {
         int totalMajorTicks = ((maximum-minimum)/majorTickInterval)+1;
         int majorIconListLength =  tickmarkmajorIcons.length();
@@ -128,19 +138,6 @@ void  HbSliderTickmarksPrivate::createTicks(  )
     q->setProperty("state", "normal"); 
 }
 
-void HbSliderTickmarksPrivate::updateTickSize()
-{
-    for(int i=0;i<tickmarkmajorIcons.length();i++) {
-        tickmarkmajorIcons.at(i)->setMinimumSize(majorTickWidth,majorTickHeight);
-        tickmarkmajorIcons.at(i)->setMaximumSize(majorTickWidth,majorTickHeight);
-    }
-    for(int i=0;i<tickmarkminorIcons.length();i++) {
-        tickmarkminorIcons.at(i)->setMinimumSize(minorTickWidth,minorTickHeight);
-        tickmarkminorIcons.at(i)->setMaximumSize(minorTickWidth,minorTickHeight);
-    }
-
-
-}
 
 void HbSliderTickmarks::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
@@ -163,7 +160,7 @@ HbSliderTickmarks::HbSliderTickmarks( QGraphicsItem *parent )
 {
     Q_D( HbSliderTickmarks );
     d->q_ptr = this;
-    d->sliderControl=dynamic_cast<HbSliderControl*>( parentItem() );
+    d->slider=dynamic_cast<HbSlider*>( parentItem() );
     d->createTicks();
 }
 
@@ -174,26 +171,7 @@ HbSliderTickmarks::~HbSliderTickmarks()
 {
 }
 
-void HbSliderTickmarks::createIcons( bool create ) 
-{
 
-    Q_D(HbSliderTickmarks);
-    d->createIcons = create;
-    if (!create) {
-        while ( d->tickmarkmajorIcons.length() > 0) {
-            QGraphicsWidget *iconItem = d->tickmarkmajorIcons.at(0);
-            d->tickmarkmajorIcons.removeAll(iconItem);
-            delete iconItem;
-        }
-        while ( d->tickmarkminorIcons.length() > 0) {
-            QGraphicsWidget *iconItem = d->tickmarkminorIcons.at(0);
-            d->tickmarkminorIcons.removeAll(iconItem);
-            delete iconItem;
-        }
-    } else {
-        d->createTicks();
-    }
- }
 /*!
     updates the ticks whenever there is change in position or number of ticks
 */
@@ -205,22 +183,27 @@ void HbSliderTickmarks::updateTicks( )
         return;
     }
     d->createTicks();
-    d->updateTickSize();
-    int minimum = d->sliderControl->minimum();
-    int maximum = d->sliderControl->maximum();
-    int majorTickInterval = d->sliderControl->majorTickInterval ( );
-    int minorTickInterval = d->sliderControl->minorTickInterval ( );
+    int minimum = d->slider->minimum();
+    int maximum = d->slider->maximum();
+    int majorTickInterval = d->slider->majorTickInterval ( );
+    int minorTickInterval = d->slider->minorTickInterval ( );
     qreal span = 0;
-    bool rtlLayout = (((d->sliderControl->orientation()!=Qt::Vertical)&&
+    bool rtlLayout = (((d->slider->orientation()!=Qt::Vertical)&&
         (HbApplication::layoutDirection() == Qt::LeftToRight))?false:true);
-    HbSliderHandle *handle = dynamic_cast <HbSliderHandle *> (d->sliderControl->primitive (HbStyle::P_Slider_thumb));
-    if ( d->sliderControl->orientation() == Qt::Horizontal) {
-        span = d->sliderControl->size().width();
-        span-=handle->size().width();
+    HbSliderPrivate *sliderPrivate = dynamic_cast<HbSliderPrivate*>(HbSliderPrivate::d_ptr(d->slider));
+    QSizeF handleSize(0.0,0.0);
+    if( sliderPrivate) {
+        handleSize = sliderPrivate->getHandleSize( );
+    } else {
+        return;
     }
-    if ( d->sliderControl->orientation() == Qt::Vertical) {
-        span = d->sliderControl->size().height();
-        span-=handle->size().height();
+    if ( d->slider->orientation() == Qt::Horizontal) {
+        span = boundingRect().width();
+        span-=handleSize.width();
+    }
+    if ( d->slider->orientation() == Qt::Vertical) {
+        span = boundingRect().height();
+        span-=handleSize.height();
     }
     if (majorTickInterval) {
         int totalMajorTicks = ((maximum-minimum)/majorTickInterval)+1;
@@ -228,22 +211,20 @@ void HbSliderTickmarks::updateTicks( )
              QGraphicsWidget *iconItem = d->tickmarkmajorIcons.at ( i);
              HbStyleOptionSlider opt;
              initStyleOption(&opt);
-             opt.orientation = d->sliderControl->orientation();
+             opt.orientation = d->slider->orientation();
              style()->updatePrimitive(iconItem,HbStyle::P_SliderTickMark_majoricon,&opt);
             int pos = QStyle::sliderPositionFromValue( minimum, maximum,
                 minimum+majorTickInterval*i,static_cast<int>( span ), rtlLayout );
 
-            if ( d->sliderControl->orientation() == Qt::Horizontal) {
-                qreal correctedPosX = handle->size().width()/2+pos; 
-                qreal correctedPosY = 0;
-                iconItem->setPos ( correctedPosX,correctedPosY );
-                iconItem->update();
+            qreal correctedPosX = 0;
+            qreal correctedPosY = 0;
+            if ( d->slider->orientation() == Qt::Horizontal) {
+                correctedPosX = handleSize.width()/2+pos; 
             } else {
-                qreal correctedPosY = handle->size().height()/2+pos;
-                qreal correctedPosX =0;
-                iconItem->setPos ( correctedPosX,correctedPosY );
-                iconItem->update();
+                correctedPosY = handleSize.height()/2+pos;
             }
+            iconItem->setGeometry (QRectF( correctedPosX,correctedPosY ,d->majorTickWidth,d->majorTickHeight));
+            iconItem->update();
         }
     }
     if (minorTickInterval) {
@@ -259,24 +240,20 @@ void HbSliderTickmarks::updateTicks( )
             minorIndex++;
             HbStyleOptionSlider opt;
             initStyleOption(&opt);
-            opt.orientation = d->sliderControl->orientation();
+            opt.orientation = d->slider->orientation();
             style()->updatePrimitive(iconItem,HbStyle::P_SliderTickMark_minoricon,&opt);
             int pos = QStyle::sliderPositionFromValue( minimum, maximum,
                 minimum+minorTickInterval*i,static_cast<int>( span ), rtlLayout );
- 
-            if ( d->sliderControl->orientation() == Qt::Horizontal) {
-                qreal correctedPosX = handle->size().width()/2+pos; 
-                qreal correctedPosY = 0;
-                iconItem->setPos ( correctedPosX,correctedPosY );
-                iconItem->update();
+            qreal correctedPosX = 0;
+            qreal correctedPosY = 0;
 
+            if ( d->slider->orientation() == Qt::Horizontal) {
+                correctedPosX = handleSize.width()/2+pos; 
             } else {
-                qreal correctedPosY = handle->size().height()/2+pos;
-                qreal correctedPosX =0;
-                iconItem->setPos ( correctedPosX,correctedPosY );
-                iconItem->update();
-
+                correctedPosY = handleSize.height()/2+pos;
             }
+            iconItem->setGeometry (QRectF( correctedPosX,correctedPosY ,d->majorTickWidth,d->majorTickHeight));
+            iconItem->update();
         }
     }
  }

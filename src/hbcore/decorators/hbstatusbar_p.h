@@ -62,6 +62,7 @@ signals:
 protected:
     void initStyleOption(HbStyleOptionStatusBar *option) const;
     void timerEvent(QTimerEvent *event);
+    void gestureEvent(QGestureEvent* e);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbStatusBar)

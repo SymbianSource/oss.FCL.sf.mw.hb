@@ -1,7 +1,7 @@
 HbTitleBar
 {
     layout:default;
-    mirroring: disabled;
+    layout-direction: left-to-right;
 }
 
 HbTitleBar::status{

@@ -1013,10 +1013,10 @@ void HbAbstractEdit::insertFromMimeData(const QMimeData *source)
     if (source->hasFormat(QLatin1String("application/x-qrichtext"))) {
         QString richtext = QString::fromUtf8(source->data(QLatin1String("application/x-qrichtext")));
         richtext.prepend(QLatin1String("<meta name=\"qrichtext\" content=\"1\" />"));        
-        fragment = QTextDocumentFragment::fromHtml(filterInputText(richtext), d->doc);
+        fragment = QTextDocumentFragment::fromHtml(richtext, d->doc);
         hasData = true;
     } else if (source->hasHtml()) {
-        fragment = QTextDocumentFragment::fromHtml(filterInputText(source->html()), d->doc);
+        fragment = QTextDocumentFragment::fromHtml(source->html(), d->doc);
         hasData = true;
     } else
 #endif //QT_NO_TEXTHTMLPARSER
@@ -1716,16 +1716,8 @@ void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
 */
 QString HbAbstractEdit::filterInputText(const QString &text)
 {
-    HbEditorInterface editorInterface(this);
-    HbInputFilter *inputFilter = editorInterface.filter();
-    if (!text.isEmpty() && inputFilter) {
-        QString filteredText;
-        foreach(QChar c, text) {
-            if (inputFilter->filter(c)) {
-                filteredText.append(c);
-            }
-        }
-        return filteredText;
-    }
-    return text;
+    Q_D(HbAbstractEdit);
+    QString filteredText(text);
+    d->filterInputText(filteredText);
+    return filteredText;
 }

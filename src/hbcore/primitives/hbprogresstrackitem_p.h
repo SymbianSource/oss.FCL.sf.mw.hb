@@ -46,6 +46,7 @@ public:
     bool inverted;
     qreal maskWidth;
     Qt::Orientation mOrientation;
+    int mDiff;
 };
 
 #endif // HBPROGRESSTRACKITEM_P_H

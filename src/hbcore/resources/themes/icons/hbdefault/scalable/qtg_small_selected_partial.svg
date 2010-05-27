@@ -1,49 +1,28 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<g>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15" x2="15" y1="1.219" y2="29.44">
-
 <stop offset="0" stop-color="#E0E1E2"/>
-
 <stop offset="1" stop-color="#FFFFFF"/>
-
 </linearGradient>
-
 <rect fill="url(#SVGID_1_)" height="28" width="28" x="1" y="1"/>
-
 <path d="M1,1v28h2v-24c0-0.55,0.45-1,1-1h22c0.55,0,1,0.45,1,1v24h2v-28h-28z" fill-opacity="0.05" stroke-opacity="0.05"/>
-
 <path d="M1,1v28h1v-25c0-0.55,0.45-1,1-1h24c0.55,0,1,0.45,1,1v25h1v-28h-28z" fill-opacity="0.1" stroke-opacity="0.1"/>
-
 <rect fill-opacity="0.1" height="1" stroke-opacity="0.1" width="28" x="1" y="1"/>
-
 <path d="M0,0v30h30v-30h-30zm29,29h-28v-28h28v28z" fill-opacity="0.6" stroke-opacity="0.6"/>
-
 <rect fill-opacity="0.4" height="18" stroke-opacity="0.4" width="18" x="6" y="6"/>
-
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="15" x2="15" y1="7.125" y2="23.25">
-
 <stop offset="0" stop-color="#A0F800"/>
-
 <stop offset="1" stop-color="#319E00"/>
-
 </linearGradient>
-
 <rect fill="url(#SVGID_2_)" height="16" width="16" x="7" y="7"/>
-
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="15" x2="15" y1="7" y2="23">
-
 <stop offset="0" stop-color="#D6FF8C"/>
-
 <stop offset="0.3394" stop-color="#7AD900"/>
-
 <stop offset="0.6182" stop-color="#5BC000"/>
-
 <stop offset="1" stop-color="#96DB00"/>
-
 </linearGradient>
-
 <path d="M22,8v14h-14v-14h14m1-1h-16v16h16v-16z" fill="url(#SVGID_3_)"/>
-
+</g>
 </svg>

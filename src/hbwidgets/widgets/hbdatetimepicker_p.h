@@ -163,7 +163,6 @@ public:
         int newStart, int newEnd,
         QString (HbDateTimePickerPrivate::*localeFuncPtr)(int), int interval = 1);
 
-
     void createPrimitives();
     void deleteAndNull(HbTumbleView*& t) {
         delete t;t=0;

@@ -30,7 +30,7 @@
 #include <hbglobal.h>
 #include <QVariant>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionTreeViewItem : public HbStyleOptionListViewItem
 {
 public:

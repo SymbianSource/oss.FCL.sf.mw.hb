@@ -345,8 +345,18 @@ namespace Hb
         ActivationReasonService,
         ActivationReasonNormal
     };
-    
+
+    enum BackgroundImageMode {
+        ScaleBackgroundToFit = 0,
+        ScaleBackgroundToFitWithoutExpanding,
+        StretchBackgroundToFit,
+        KeepOriginalBackgroundSize,
+        KeepOriginalBackgroundSizeIfSmaller,
+        DoNotDrawBackground,
+        NBackgroundImageModes
+    };
 };
+
 Q_DECLARE_METATYPE(Hb::GraphicsItemType)
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Hb::UiAttributes)
@@ -360,4 +370,3 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(Hb::TextContextMenuFlags)
 Q_DECLARE_OPERATORS_FOR_FLAGS(Hb::InteractionModifiers)
 
 #endif // HBNAMESPACE_H
-

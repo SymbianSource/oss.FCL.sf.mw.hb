@@ -79,10 +79,12 @@ PRIVATE_HEADERS += $$PWD/hbwidgetbase_p.h
 PRIVATE_HEADERS += $$PWD/hbwidgetsequentialshow_p.h
 PRIVATE_HEADERS += $$PWD/hbnativewindow_sym_p.h
 PRIVATE_HEADERS += $$PWD/hbsplash_p.h
+PRIVATE_HEADERS += $$PWD/hbsplash_direct_symbian_p.h
 PRIVATE_HEADERS += $$PWD/hbfadeitem_p.h
 PRIVATE_HEADERS += $$PWD/hbcontentwidget_p.h
 PRIVATE_HEADERS += $$PWD/hbscreen_p.h
 PRIVATE_HEADERS += $$PWD/hbsplashdefs_p.h
+PRIVATE_HEADERS += $$PWD/hbsplashscreen_generic_p.h
 PRIVATE_HEADERS += $$PWD/hblongpressvisualizer_p.h
 
 SOURCES += $$PWD/hbabstractbutton.cpp

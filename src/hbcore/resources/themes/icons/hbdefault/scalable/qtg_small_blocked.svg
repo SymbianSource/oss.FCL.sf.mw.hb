@@ -1,19 +1,17 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<defs>
-</defs>
-<path d="M15,0.502c-8.009,0-14.5,6.489-14.5,14.499s6.491,14.5,14.5,14.5c8.009,0,14.5-6.49,14.5-14.5  S23.009,0.502,15,0.502z" opacity="0.35"/>
+<path d="M15,0.502c-8.009,0-14.5,6.489-14.5,14.499s6.491,14.5,14.5,14.5c8.009,0,14.5-6.49,14.5-14.5  S23.009,0.502,15,0.502z" fill-opacity="0.35" stroke-opacity="0.35"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 -282.4805 -376.0195)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="297.4795" x2="297.4795" y1="-381.5396" y2="-400.9155">
-	<stop offset="0" style="stop-color:#EBEBEB"/>
-	<stop offset="1" style="stop-color:#FFFFFF"/>
+<stop offset="0" style="stop-color:#EBEBEB"/>
+<stop offset="1" style="stop-color:#FFFFFF"/>
 </linearGradient>
 <path d="M15,1.502c-7.457,0-13.5,6.042-13.5,13.499s6.043,13.5,13.5,13.5c7.456,0,13.5-6.043,13.5-13.5  S22.456,1.502,15,1.502z" fill="url(#SVGID_1_)"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 -282.4805 -376.0195)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="297.4795" x2="297.4795" y1="-377.5215" y2="-404.4265">
-	<stop offset="0" style="stop-color:#FF7236"/>
-	<stop offset="0.7939" style="stop-color:#BA1212"/>
-	<stop offset="1" style="stop-color:#E8522A"/>
+<stop offset="0" style="stop-color:#FF7236"/>
+<stop offset="0.7939" style="stop-color:#BA1212"/>
+<stop offset="1" style="stop-color:#E8522A"/>
 </linearGradient>
 <path d="M15,1.502c-7.457,0-13.5,6.042-13.5,13.499s6.043,13.5,13.5,13.5c7.456,0,13.5-6.043,13.5-13.5  S22.456,1.502,15,1.502z M15,5.024c1.9,0,3.673,0.543,5.187,1.47L6.493,20.189c-0.928-1.514-1.471-3.285-1.471-5.188  C5.022,9.5,9.498,5.024,15,5.024z M15,24.979c-1.901,0-3.672-0.544-5.187-1.47L23.508,9.813c0.926,1.513,1.471,3.286,1.471,5.186  C24.979,20.503,20.503,24.979,15,24.979z" fill="url(#SVGID_2_)"/>
 <rect fill="none" height="30.001" width="30"/>

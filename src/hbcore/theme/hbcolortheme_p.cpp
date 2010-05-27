@@ -40,7 +40,7 @@ HbColorThemePrivate::HbColorThemePrivate()
     
 }
 
-void HbColorThemePrivate::setCurrentTheme(const QString& themeName)
+void HbColorThemePrivate::setCurrentTheme(const QString &themeName)
 {
     // If new theme is different from earlier set theme
     if (currentTheme != themeName) {
@@ -58,17 +58,19 @@ void HbColorThemePrivate::setCurrentTheme(const QString& themeName)
 void HbColorThemePrivate::reloadColorFiles(bool sender)
 {
     QMap<int,QString> hierarchyVariableListWithPathInfo =
-            HbThemeUtils::constructHierarchyListWithPathInfo("variables/color/hbcolorgroup.css", currentTheme, Hb::StyleSheetResource);
-    HbStandardDirs::findResourceList(hierarchyVariableListWithPathInfo,Hb::StyleSheetResource, true);
+            HbThemeUtils::constructHierarchyListWithPathInfo(
+                    "variables/color/hbcolorgroup.css", currentTheme, Hb::StyleSheetResource);
+    HbStandardDirs::findResourceList(hierarchyVariableListWithPathInfo,
+                                     Hb::StyleSheetResource, true);
 
 #ifdef THEME_SERVER_TRACES    
     qDebug() << "CSS files:";
-    foreach ( const QString& file, hierarchyVariableListWithPathInfo )
+    foreach(const QString &file, hierarchyVariableListWithPathInfo) {
         qDebug() << file;
+    }
 #endif // THEME_SERVER_TRACES
 
     cssif.initialise(hierarchyVariableListWithPathInfo, sender);
-
 }
 
 /*!
@@ -149,7 +151,7 @@ HbColorTheme::~HbColorTheme ()
  *
  *  \a themeName    name of the new theme to be set
  */
-void HbColorTheme::setCurrentTheme ( const QString& themeName )
+void HbColorTheme::setCurrentTheme(const QString &themeName)
 {
     Q_D(HbColorTheme);
     d->setCurrentTheme(themeName);

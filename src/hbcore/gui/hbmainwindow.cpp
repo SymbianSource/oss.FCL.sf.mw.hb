@@ -63,6 +63,7 @@
 
 #ifdef Q_OS_SYMBIAN
 #include <coecntrl.h>
+#include <w32std.h>
 #include "hbnativewindow_sym_p.h"
 #endif
 
@@ -92,14 +93,13 @@
     really visible.
 
     HbMainWindow has a signalling mechanism for helping control the
-    application's view construction. viewReady()-signal is emitted
-    when view's internal construction is completed and basic parts of
-    view are already drawn. Same signal is also emitted when current
-    view is switched. This helps applications to split the view
-    construction to reasonable tasks.  For example the lower priority
-    tasks like opening network connection or preparing other currently
-    hidden application views can happen on background when first view
-    is already drawn.
+    application's view construction. The viewReady() signal is emitted when a
+    view's internal construction is completed and basic parts of view are
+    already drawn. Same signal is also emitted when current view has
+    changed. This helps applications to split the view construction to
+    reasonable tasks.  For example the lower priority tasks like opening network
+    connection or preparing other currently hidden application views can happen
+    on background when first view is already drawn.
 
     Example of simple Hb application constructing HbMainWindow:
 
@@ -172,6 +172,21 @@
     This signal is emitted first time when window content is drawn on screen.
     It will only be emitted again when current view is changed and drawn on screen.
 
+    This means that this signal is emitted in the following cases:
+
+    - When the mainwindow is fully constructed, this happens shortly after
+      painting it for the first time.
+
+    - When a new view is added using addView() or insertView() after the
+      mainwindow is fully constructed and the newly added view becomes the
+      current view. It will not be emitted when calling addView() or
+      insertView() before showing the mainwindow or entering the event loop
+      because in that case the signal will anyway be emitted later, when the
+      mainwindow becomes ready. It is also not emitted when the newly added view
+      does not become the current view.
+
+    - When the current view is changed using setCurrentView().
+
     If the view switch is animated, the signal is emitted only after the effect has
     completed.
 
@@ -213,8 +228,6 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     d->q_ptr = this;
 
     // No need for any default (e.g. blank white) background for this window.
-    // Setting this attribute is mandatory in order to have a flicker-less
-    // startup (both with and without splash screen).
     setAttribute(Qt::WA_NoSystemBackground);
 
     // Continue with basic initialization. Note: Prefer doing everything that is
@@ -408,6 +421,12 @@ HbView *HbMainWindow::addView(QGraphicsWidget *widget)
 
     d->mViewStackWidget->insertWidget(-1, view);
 
+    // If the newly added view becomes the current one then emit the viewReady
+    // signal (unless the delayed construction is still pending).
+    if (d->mDelayedConstructionHandled && currentView() == view) {
+        QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+    }
+
     return view;
 }
 
@@ -436,7 +455,14 @@ HbView *HbMainWindow::insertView(int index, QGraphicsWidget *widget)
             view->setWidget(widget);
         }
     }
+
     d->mViewStackWidget->insertWidget(index, view);
+
+    // If the newly inserted view becomes the current one then emit the
+    // viewReady signal (unless the delayed construction is still pending).
+    if (d->mDelayedConstructionHandled && currentView() == view) {
+        QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+    }
 
     return view;
 }
@@ -534,8 +560,9 @@ void HbMainWindow::setCurrentView(HbView *view, bool animate, Hb::ViewSwitchFlag
             // If animation is disabled or there is no view set currently then change
             // without animation.
             d->mViewStackWidget->setCurrentWidget(view);
-            if (d->mDelayedConstructionHandled)
+            if (d->mDelayedConstructionHandled) {
                 QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+            }
         }
     }
 }
@@ -699,6 +726,35 @@ QString HbMainWindow::backgroundImageName(Qt::Orientation orientation) const
 }
 
 /*!
+  Sets the background image drawing mode. This setting controls how
+  the background image is displayed.
+
+  By default the mode is set to Hb::ScaleBackgroundToFit.
+
+  \sa backgroundImageMode()
+  \sa Hb::BackgroundImageMode
+ */
+void HbMainWindow::setBackgroundImageMode(Hb::BackgroundImageMode mode)
+{
+    Q_D(HbMainWindow);
+    if (d->mBgItem) {
+        d->mBgItem->setImageMode(mode);
+    }
+}
+
+/*!
+  Returns the currently set background image drawing mode.
+
+  \sa setBackgroundImageMode()
+  \sa Hb::BackgroundImageMode
+ */
+Hb::BackgroundImageMode HbMainWindow::backgroundImageMode() const
+{
+    Q_D(const HbMainWindow);
+    return d->mBgItem ? d->mBgItem->imageMode() : Hb::ScaleBackgroundToFit;
+}
+
+/*!
   Sets the animations enabled when the orientation is changed automatically.
   By default animations are enabled.
   
@@ -857,6 +913,13 @@ void HbMainWindow::customEvent( QEvent *event )
             }
             // get rid of the splash screen widget (it is not visible to the user anyway at this point)
             HbSplashScreen::destroy();
+#ifdef Q_OS_SYMBIAN
+            // disable surface transparency unless we were really asked to be transparent
+            if (!testAttribute(Qt::WA_TranslucentBackground)) {
+                RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
+                window->SetSurfaceTransparency(false);
+            }
+#endif
         }
         // Notify that mainwindow is (most probably) ready.
         // The signal must be emitted always, even when there was no need to do anything.
@@ -913,6 +976,21 @@ void HbMainWindow::paintEvent(QPaintEvent *event)
     }
 
     QGraphicsView::paintEvent(event);
+}
+
+void HbMainWindow::showEvent(QShowEvent *event)
+{
+#ifdef Q_OS_SYMBIAN
+    // Enable surface transparency if QWidget did not do it already. This is a
+    // workaround for having non-transparent surfaces filled automatically with
+    // black color. The showEvent is a suitable place because the native control
+    // is already created at this point, but it is not too late either.
+    if (!testAttribute(Qt::WA_TranslucentBackground)) {
+        RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
+        window->SetSurfaceTransparency(true);
+    }
+#endif
+    QGraphicsView::showEvent(event);
 }
 
 /*!

@@ -739,11 +739,7 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         if (item) {
             item->setCheckState(Qt::Checked);
             if (!d->mClearingSelection) {
-                Hb::InteractionModifiers modifiers = 0;
-                if (d->mIsScrolling) {
-                    modifiers |= Hb::ModifierScrolling;
-                }
-                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged, modifiers); 
+                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged); 
             }
         } 
         d->mContainer->setItemTransientStateValue(selectedIndexes.at(i),

@@ -121,6 +121,16 @@ int HbDeviceDialogServer::updateDeviceDialog(int identifier, const QVariantMap &
 /*!
     \internal
 
+    Publish current orientation to PS-key
+*/
+int HbDeviceDialogServer::publishOrientation(int orientation)
+{
+    return iManager->publishOrientation( orientation );
+}
+
+/*!
+    \internal
+
     Calls HbDeviceDialogManager to close device dialog. On return the status of the call is received.
 
     identifier identifies the device dialog.

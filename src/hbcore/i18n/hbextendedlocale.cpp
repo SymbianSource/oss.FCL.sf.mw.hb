@@ -115,15 +115,18 @@ QT_END_NAMESPACE
 
 /*!
     Returns the date separator, which can occur in four different positions:
-    Beginning of the expression
-    Between the first and second part
-    Between the second and third part
-    At the end of the expression
-    Some of the positions may contain an empty string if a separator is not used in that position in the locale in question
+    Beginning of the expression;
+    Between the first and second part;
+    Between the second and third part;
+    At the end of the expression;
+    Some of the positions may contain an empty string if a separator is not used in that position in the locale in question.
+    
+    \attention Symbian specific API
 
-    \return one of the four characters used to separate the day,
+    \return Symbian - One of the four characters used to separate the day,
     month and year components of the date according to the
-    system locale.
+    system locale    
+    \return other platforms - Empty QChar or '\' (depending on index)
 
     \param index Index of the separator (0-3)
  */
@@ -147,6 +150,8 @@ QChar HbExtendedLocale::dateSeparator( int index ) const
     month and year components of the date according to the
     system locale.
  
+    \attention Symbian specific API
+
     \param ch Character to set,
     \param index Index of the separator (0-3)
  
@@ -171,11 +176,14 @@ bool HbExtendedLocale::setDateSeparator( const QChar ch, const int index )
 }
 
 /*!
-    Retrieves the time separator (for example, colon or full stop)
+    Retrieves the time separator (for example, colon or full stop).
     
-    \return one of the four characters used to separate the hour,
+    \attention Symbian specific API
+
+    \return Symbian - One of the four characters used to separate the hour,
     minute and second components of the date according to the
-    system locale.
+    system locale    
+    \return other platforms - Empty QChar or ':' (depending on index) 
 
     \param index Index of the separator (0-3)
  */
@@ -197,6 +205,8 @@ QChar HbExtendedLocale::timeSeparator( int index ) const
 /*!
     Sets one of the four characters used to separate the hour,
     minute and second components of the date.
+
+    \attention Symbian specific API
 
     \param ch Character to set,
     \param index Index of the separator (0-3)
@@ -229,15 +239,19 @@ bool HbExtendedLocale::setTimeSeparator( const QChar ch, const int index )
     or year-month-day (used, for example, in Japanese, Chinese and Swedish)
     This enum defines the order of date components.
 
-      \value American American order (mm/dd/yyyy)
-      \value European European order (dd/mm/yyyy)
-      \value Japanese Japanese order (yyyy/mm/dd)
+    \value American American order (mm/dd/yyyy)
+    \value European European order (dd/mm/yyyy)
+    \value Japanese Japanese order (yyyy/mm/dd)
 
     \sa dateStyle(), setDateStyle()
  */
 
 /*!
-    \return date style from system locale. The date style is returned according to DateStyle.
+    Returns date style from system locale. The date style is returned according to DateStyle. 
+    
+    \attention Symbian specific API
+    
+    \return date style for Symbian and HbExtendedLocale::American for other platforms    
  */
 HbExtendedLocale::DateStyle HbExtendedLocale::dateStyle() const
 {
@@ -265,6 +279,8 @@ HbExtendedLocale::DateStyle HbExtendedLocale::dateStyle() const
 /*!
     Sets date style to system locale.
     The date style is chosen according to the \a style parameter.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
  */
@@ -301,14 +317,18 @@ bool HbExtendedLocale::setDateStyle( const DateStyle style )
     \enum HbExtendedLocale::TimeStyle
 
     Finds out if the 12-hour or the 24-hour clock is used
-     \value Time12 12 hour clock style
-     \value Time24 24 hour clock style
+    \value Time12 12 hour clock style
+    \value Time24 24 hour clock style
 
     \sa timeStyle(), setTimeStyle()
  */
 
 /*!
-    \return time style from system locale. The time style is returned according to TimeStyle.
+    Returns time style from system locale. The time style is returned according to TimeStyle.  
+    
+    \attention Symbian specific API
+    
+    \return time style for Symbian and HbExtendedLocale::Time12 for other platforms    
  */
 HbExtendedLocale::TimeStyle HbExtendedLocale::timeStyle() const
 {
@@ -331,6 +351,8 @@ HbExtendedLocale::TimeStyle HbExtendedLocale::timeStyle() const
 /*!
     Sets time style to system locale.
     The time style is chosen according to the \a style parameter.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
  */
@@ -360,9 +382,12 @@ bool HbExtendedLocale::setTimeStyle( const TimeStyle style )
 
 
 /*!
-    Finds out if the AM/PM symbol is separated by a space from the time expression
+    Finds out if the AM/PM symbol is separated by a space from the time expression.
+    
+    \attention Symbian specific API
 
-    \return true if space is inserted between the time and the preceding or trailing am/pm text; otherwise returns false.
+    \return Symbian - True if space is inserted between the time and the preceding or trailing am/pm text; otherwise returns false.   
+    \return other platforms - true
  */
 bool HbExtendedLocale::amPmSpace() const
 {
@@ -376,6 +401,8 @@ bool HbExtendedLocale::amPmSpace() const
 
 /*!
     Sets whether a \a space is inserted between the time and the preceding or trailing am/pm text.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
  */
@@ -396,7 +423,7 @@ bool HbExtendedLocale::setAmPmSpace( const bool space )
     \enum HbExtendedLocale::SymbolPos
 
     \value Before
-     \value After
+    \value After
 
     Retrieves the position of the AM/PM symbol (before or after the time expression)
     \sa amPmSymbolPosition(), setAmPmSymbolPosition()
@@ -404,7 +431,11 @@ bool HbExtendedLocale::setAmPmSpace( const bool space )
  */
 
 /*!
-    \return Before if am/pm text is positioned before time; otherwise returns After.
+    Returns HbExtendedLocale::Before if am/pm text is positioned before time; otherwise returns HbExtendedLocale::After.
+    
+    \attention Symbian specific API
+
+    \return After/Before for Symbian and HbExtendedLocale::After for other platforms
  */
 HbExtendedLocale::SymbolPos HbExtendedLocale::amPmSymbolPosition() const
 {
@@ -419,12 +450,13 @@ HbExtendedLocale::SymbolPos HbExtendedLocale::amPmSymbolPosition() const
 #else
     return HbExtendedLocale::After;
 #endif
-    return HbExtendedLocale::After;
 }
 
 /*!
     Sets the am/pm text position.
     The position is chosen according to the \a position parameter.
+    
+    \attention Symbian specific API
 
     \return true for Symbian if succesfull and false for other OS
  */
@@ -462,10 +494,13 @@ bool HbExtendedLocale::setAmPmSymbolPosition( const SymbolPos position )
  */
 
 /*!
-    Retrives the  measurement system (if metric or imperial units are in use) 
+    Retrives the  measurement system (if metric or imperial units are in use). 
+    
+    \attention Symbian specific API
 
-    \return short unit distance format from system locale. Format is specified by UnitsFormat.
- */
+    \return Symbian - Short unit distance format from system locale. Format is specified by UnitsFormat.
+    \return other platforms - QLocale::MetricSystem
+*/
 QLocale::MeasurementSystem HbExtendedLocale::unitsDistanceShort() const
 {
 #if defined(Q_OS_SYMBIAN)
@@ -486,6 +521,8 @@ QLocale::MeasurementSystem HbExtendedLocale::unitsDistanceShort() const
 /*!
     Sets short unit distance \a format to system locale.
 
+    \attention Symbian specific API
+    
     \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setUnitsDistanceShort( const QLocale::MeasurementSystem format )
@@ -514,7 +551,11 @@ bool HbExtendedLocale::setUnitsDistanceShort( const QLocale::MeasurementSystem f
 }
 
 /*!
-    \return long unit distance format from system locale. Format is specified by UnitsFormat.
+    Returns long unit distance format from system locale. Format is specified by UnitsFormat.
+
+    \attention Symbian specific API
+
+    \return long unit distance format for Symbian and QLocale::MetricSystem for other platforms
  */
 QLocale::MeasurementSystem HbExtendedLocale::unitsDistanceLong() const
 {
@@ -535,6 +576,8 @@ QLocale::MeasurementSystem HbExtendedLocale::unitsDistanceLong() const
 
 /*!
     Sets long unit distance \a format to system locale.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
  */
@@ -564,8 +607,10 @@ bool HbExtendedLocale::setUnitsDistanceLong( const QLocale::MeasurementSystem fo
 
 /*!
     Sets general unit distance \a format to system locale.
+    
+    \attention Symbian specific API
 
-    \return true for Symbian and -1 for other OS
+    \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setUnitsGeneral( const QLocale::MeasurementSystem format )
 {
@@ -607,8 +652,12 @@ bool HbExtendedLocale::setUnitsGeneral( const QLocale::MeasurementSystem format 
  */
 
 /*!
-    \return the negative currency format from system locale.
- */
+    Returns the negative currency format from system locale.
+    
+    \attention Symbian specific API
+    
+    \return the negative currency format for Symbian and HbExtendedLocale::LeadingMinusSign for other platforms
+*/
 HbExtendedLocale::NegativeCurrencyFormat HbExtendedLocale::negativeCurrencyFormat() const
 {
 #if defined(Q_OS_SYMBIAN)
@@ -632,6 +681,8 @@ HbExtendedLocale::NegativeCurrencyFormat HbExtendedLocale::negativeCurrencyForma
 
 /*!
     Sets negative currency \a format to system locale.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
  */
@@ -666,7 +717,11 @@ bool HbExtendedLocale::setNegativeCurrencyFormat( const NegativeCurrencyFormat f
 
 /*!
     Finds out if the currency symbol is separated by a space from the amount.
-    \return true if negative currency values have a space between the currency symbol and the value; otherwise returns false.
+    
+    \attention Symbian specific API
+    
+    \return Symbian - True if negative currency values have a space between the currency symbol and the value; otherwise returns false.
+    \return other platforms - false
  */
 bool HbExtendedLocale::negativeCurrencySpace() const
 {
@@ -681,6 +736,8 @@ bool HbExtendedLocale::negativeCurrencySpace() const
 /*!
     Sets whether negative currency values have a space between the currency symbol and the value.
     
+    \attention Symbian specific API
+
     \param space True to set a flag which indicates that negative currency values should have
            the space between the value and the symbol. False to unset it. 
     
@@ -703,9 +760,12 @@ bool HbExtendedLocale::setNegativeCurrencySpace( const bool space )
     Finds out if the currency symbol is placed on the opposite side with negative 
     currencies compared to where it is placed with non-negative currencies.
 
-    \return true if in negative currency values, the position of the currency
+    \attention Symbian specific API
+
+    \return Symbian - True if in negative currency values, the position of the currency
     symbol is set to be the opposite of the position used for non-negative
     values; otherwise returns false.
+    \return other platforms - false
 */
 bool HbExtendedLocale::negativeCurrencySymbolOpposite() const
 {
@@ -721,6 +781,8 @@ bool HbExtendedLocale::negativeCurrencySymbolOpposite() const
     Sets whether the position of the currency symbol for negative currency
     values should be the \a opposite of the position used for
     non-negative values.
+
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
 */
@@ -741,8 +803,10 @@ bool HbExtendedLocale::setNegativeCurrencySymbolOpposite( const bool opposite )
     Finds out if currency triads are used (the grouping of digits in large numbers, for example, 123 456 789).
     The Symbian OS only supports the grouping of currency amounts.
 
-    \return true if currency triads are allowed in currency values; otherwise returns false.
-    
+    \attention Symbian specific API
+
+    \return Symbian - True if currency triads are allowed in currency values; otherwise returns false.
+    \return other platforms - false    
  */
 bool HbExtendedLocale::currencyTriadsAllowed() const
 {
@@ -757,7 +821,9 @@ bool HbExtendedLocale::currencyTriadsAllowed() const
 /*!
     Sets whether triads are \a allowed in currency values.
 
-    \return true for Symbian and false for other CS
+    \attention Symbian specific API
+
+    \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setCurrencyTriadsAllowed( const bool allowed )
 {
@@ -774,10 +840,15 @@ bool HbExtendedLocale::setCurrencyTriadsAllowed( const bool allowed )
 
 
 /*!
-     \return true if a space is inserted between the currency symbol and
-     a positive currency value; otherwise returns false.
+    Returns boolean which tells if currency format contains a space.
+      
+    \attention Symbian specific API
 
-     \note For negative currency values, the space can be inserted using
+    \return Symbian - True if a space is inserted between the currency symbol and
+    a positive currency value; otherwise returns false.
+    \return other platforms - false    
+
+    \note For negative currency values, the space can be inserted using
            setNegativeCurrencySpace().
  */
 bool HbExtendedLocale::currencySpace() const
@@ -794,7 +865,9 @@ bool HbExtendedLocale::currencySpace() const
      Sets whether a \a space is inserted between the currency symbol and the
      currency amount.
 
-     \return true for Symbian and false for other OS
+    \attention Symbian specific API
+
+    \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setCurrencySpace( const bool space )
 {
@@ -813,7 +886,10 @@ bool HbExtendedLocale::setCurrencySpace( const bool space )
 /*!
     The currency symbol may contain a different number of characters in different countries/regions.
     Example: œ, $, Ft, kn, Euro symbol
-    \return the currency symbol.
+    
+    \attention Symbian specific API
+
+    \return the currency symbol for Symbian and empty QString for other platforms
  */
 QString HbExtendedLocale::currencySymbol() const
 {
@@ -829,6 +905,8 @@ QString HbExtendedLocale::currencySymbol() const
 /*!
     Sets the currency \a symbol.
 
+    \attention Symbian specific API
+    
     \return true for Symbian if succesfull and false for other OS
  */
 bool HbExtendedLocale::setCurrencySymbol( const QString &symbol )
@@ -850,9 +928,13 @@ bool HbExtendedLocale::setCurrencySymbol( const QString &symbol )
 
 /*!
     Retrieves position of the currency symbol (before or after the amount).
-     \return the currency symbol position.
+    
+    \attention Symbian specific API
+    
+    \return Symbian - the currency symbol position
+    \return other platforms - HbExtendedLocale::Before
 
-     \note For negative currency values, this position may be reversed using 
+    \note For negative currency values, this position may be reversed using 
            SetNegativeCurrencySymbolOpposite().
  */
 HbExtendedLocale::SymbolPos HbExtendedLocale::currencySymbolPosition() const
@@ -873,9 +955,11 @@ HbExtendedLocale::SymbolPos HbExtendedLocale::currencySymbolPosition() const
 }
 
 /*!
-     Sets the currency symbol \a position.
+    Sets the currency symbol \a position.
+     
+    \attention Symbian specific API
 
-     \return true for Symbian and false for other OS
+    \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setCurrencySymbolPosition( const SymbolPos position )
 {
@@ -901,7 +985,12 @@ bool HbExtendedLocale::setCurrencySymbolPosition( const SymbolPos position )
 }
 
 /*!
-     \return the number of decimal places to which currency values are set.
+    Returns the number of decimal places to which currency values are set.
+    
+    \attention Symbian specific API
+    
+    \return Symbian - the number of decimal place
+    \return other platforms - '0'   
  */
 int HbExtendedLocale::currencyDecimalPlaces() const
 {
@@ -914,9 +1003,11 @@ int HbExtendedLocale::currencyDecimalPlaces() const
 }
 
 /*!
-     Sets the number of decimal \a places to which currency values should be set.
+    Sets the number of decimal \a places to which currency values should be set.
+    
+    \attention Symbian specific API
 
-     \return true for Symbian and false for other OS
+    \return true for Symbian and false for other OS
  */
 bool HbExtendedLocale::setCurrencyDecimalPlaces( const int places )
 {
@@ -954,6 +1045,9 @@ private:
     currency and numeric format settings.
     These settings include the currency symbol, the symbol's
     position and how negative values are formatted.
+
+    \attention Cross-Platform API
+    \attention Uses QString::number() function with other platforms than Symbian.
 
     \sa setCurrencyDecimalPlaces(), setCurrencySpace(), setCurrencySymbol(),
         setCurrencySymbolPosition(), setNegativeCurrencySpace(), setNegativeCurrencyFormat(),
@@ -1018,6 +1112,8 @@ QString HbExtendedLocale::formatCurrency( const qint64 amount )
 
 /*!
     Sets decimal point character \a ch to system locale.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
 */
@@ -1037,6 +1133,8 @@ bool HbExtendedLocale::setDecimalPoint( const QChar ch )
 
 /*!
     Sets group separator character \a ch to system locale.
+    
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
 */
@@ -1056,6 +1154,8 @@ bool HbExtendedLocale::setGroupSeparator( const QChar ch )
 
 /*!
     Sets zero digit \a type to system locale.
+
+    \attention Symbian specific API
 
     \return true for Symbian and false for other OS
 */
@@ -1174,9 +1274,14 @@ static const symbianToISO symbian_to_iso_list[] = {
 #endif
 
 /*!
-    \return ISO name corresponding to the Symbian language \a code.
+    Returns ISO name corresponding to the Symbian language \a code.
     If the code does not does not correspond to any Symbian language,
     returns a empty string.
+    
+    \attention Symbian specific API
+
+    \return Symbian - ISO style language code
+    \return other platforms - empty QString    
     
     \sa User::Language()
 */
@@ -1223,9 +1328,14 @@ QString HbExtendedLocale::symbianLangToISO( const int code )
 }
 
 /*!
-    \return RFC3066 name corresponding to the Symbian language \a code.
+    Returns RFC3066 name corresponding to the Symbian language \a code.
     If the code does not does not correspond to any Symbian language,
-    returns a empty string.
+    returns a empty string.    
+    
+    \attention Symbian specific API
+
+    \return Symbian - RFC3066 style language code
+    \return other platforms - empty QString    
     
     \sa User::Language()
 */
@@ -1237,9 +1347,11 @@ QString HbExtendedLocale::symbianLangToRfc3066( const int code )
 /*!
     Converts ISO tag to Symbian language code.
 
+    \attention Symbian specific API
+
     \param langAndCountry ISO tag, example "fi_FI"
     
-    \return Symbian language code or -1 (failed case)
+    \return Symbian language code if successful. With other platforms or if case fails then '-1'.
  */
 int HbExtendedLocale::ISOToSymbianLang( const QString &langAndCountry )
 {
@@ -1287,7 +1399,12 @@ static const char *jp_locale_dep[] = {
 /*!
     Returns a Qt version of the given \a sys_fmt Symbian datetime format string.
     Some convertable fields use data from current system locale,
-    unwanted locale may cause unexpected results.
+    unwanted locale may cause unexpected results.    
+    
+    \attention Symbian specific API
+
+    \return Symbian - datetime format string
+    \return other platforms - "not supported"    
 */
 QString HbExtendedLocale::symbianDateTimeToQt( const QString &sys_fmt )
 {
@@ -1658,15 +1775,17 @@ QString HbExtendedLocale::symbianDateTimeToQt( const QString &sys_fmt )
     \enum HbExtendedLocale::WeekDay
      This enum defines weekdays.
 
-      \sa startOfWeek()
+    \sa startOfWeek()
  */
 
 /*!
      Gets first day of the week.
      It is usually Saturday, Sunday or Monday, but the Symbian OS allows setting any weekday as the first.
-     Returns enum WeekDay.
 
-     \return Monday for other OS
+    \attention Symbian specific API
+
+    \return Symbian - enum of WeekDay
+    \return other platforms - HbExtendedLocale::Monday
  */
 HbExtendedLocale::WeekDay HbExtendedLocale::startOfWeek() const
 {
@@ -1697,8 +1816,13 @@ HbExtendedLocale::WeekDay HbExtendedLocale::startOfWeek() const
 
 /*!
     Sets the day which is considered to be the first day of the week.
-    \param day  The first day of the week.
+    
+    \attention Symbian specific API
+    
+    \param day The first day of the week.
+    
     \return true for Symbian and false for other OS
+    
     \sa startOfWeek()
  */
 
@@ -1744,13 +1868,15 @@ bool HbExtendedLocale::setStartOfWeek(WeekDay day)
 
 
 /*!
-     Gets days which are working days of week.
-     Returns QString which describes workdays as binary array.
-     1 meaning workday and 0 as non working day.
+    Gets days which are working days of week.
+    1 meaning workday and 0 as non working day.
 
-     \return 0011111 for other OS
+    \attention Symbian specific API
 
-     \sa setWorkDays()
+    \return Symbian - QString which describes workdays as binary array
+    \return other platforms - "0011111"
+
+    \sa setWorkDays()
  */
 QString HbExtendedLocale::workDays() const
 {
@@ -1768,7 +1894,10 @@ QString HbExtendedLocale::workDays() const
 }
 
 /*!
-     Sets working days of week.
+    Sets working days of week.
+     
+    \attention Symbian specific API
+    
      \param days which describes workdays as QString binary array.
             1 meaning workday and 0 non workday.
 
@@ -1798,8 +1927,12 @@ bool HbExtendedLocale::setWorkDays( const QString &days )
 }
 
 /*!
-    Checks whether or not daylight saving is set for the home city
-    \return True if home daylight saving is set, false if home daylight saving is not set
+    Checks whether or not daylight saving is set for the home city.
+    
+    \attention Symbian specific API
+    
+    \return Symbian - True if home daylight saving is set. False if home daylight saving is not set.
+    \return other platforms - false    
  */
 
 bool HbExtendedLocale::homeHasDaylightSavingOn() const
@@ -1815,11 +1948,16 @@ bool HbExtendedLocale::homeHasDaylightSavingOn() const
 /*! 
     Returns the daylight saving zone in which the home city is located.
     
+    \attention Symbian specific API
+
     \value Home Home daylight saving zone
     \value European European daylight saving zone
     \value Northern Northern hemisphere (non-European) daylight saving zone
     \value Southern Southern hemisphere daylight saving zone
     \value None No daylight saving zone
+    
+    \return Symbian - the daylight saving zone
+    \return other platforms - HbExtendedLocale::None
     
     \sa setHomeDaylightSavingZone()
  */
@@ -1847,7 +1985,10 @@ HbExtendedLocale::DaylightSavingZone HbExtendedLocale::homeDaylightSavingZone() 
 }
 
 /*!
-    Gets the locale’s universal time offset
+    Gets the locale’s universal time offset.
+    
+    \attention Symbian specific API
+    
     \return Offset in seconds from universal time. For other platforms it returns 0.
  */
 int HbExtendedLocale::universalTimeOffset() const
@@ -1861,6 +2002,11 @@ int HbExtendedLocale::universalTimeOffset() const
 #endif
 }
 
+/*!
+    Constructor of HbExtendedLocale.
+    
+    \attention Cross-Platform API
+ */
 HbExtendedLocale::HbExtendedLocale()
 {
 #if defined(Q_OS_SYMBIAN)
@@ -1869,7 +2015,11 @@ HbExtendedLocale::HbExtendedLocale()
 #endif
 }
 
-//! Returns new/dummy copy of HbExtendedLocale.
+/*!
+    Returns new/dummy copy of HbExtendedLocale.
+    
+    \attention Cross-Platform API
+ */
 HbExtendedLocale HbExtendedLocale::system()
 {
     // make sure QLocale's lp is updated if in future QApplication does not do it
@@ -1883,10 +2033,12 @@ HbExtendedLocale HbExtendedLocale::system()
     For example, what date components are included, and if leading zeroes are used.
     This is a function uses the date formats defined in the hbi18ndef.h header file.
 
+    \attention Cross-Platform API
+
      \param date The date to be formatted.  
      \param dateFormat The wanted format to be used.  
        
-     \return The date as a string.   
+     \return the date as a string   
  */
 QString HbExtendedLocale::format( const QDate &date, const QString &dateFormat )
 {
@@ -1940,7 +2092,7 @@ QString HbExtendedLocale::format( const QDate &date, const QString &dateFormat )
 	
 #else
     Q_UNUSED(dateFormat);
-	return toString(date, ShortFormat );
+    return toString(date, ShortFormat );
 #endif
 }
 
@@ -1949,10 +2101,12 @@ QString HbExtendedLocale::format( const QDate &date, const QString &dateFormat )
     For example, what components are included (hours/minutes/seconds), and if leading zeroes and AM/PM or am/pm symbols are used.
     This is a function uses the time formats defined in the hbi18ndef.h header file.
 
-     \param time The time to be formatted.  
-     \param timeFormat The wanted format to be used.  
+    \attention Cross-Platform API
+
+    \param time The time to be formatted.  
+    \param timeFormat The wanted format to be used.  
        
-     \return The time as a string.   
+    \return the time as a string   
  */
 QString HbExtendedLocale::format( const QTime &time, const QString &timeFormat )
 {
@@ -1997,6 +2151,6 @@ QString HbExtendedLocale::format( const QTime &time, const QString &timeFormat )
 	return TDesC2QString(s60TimeStr->Des());
 #else 
     Q_UNUSED(timeFormat);
-	return toString(time, ShortFormat);
+    return toString(time, ShortFormat);
 #endif	
 }

@@ -322,11 +322,8 @@ void HbTheTestWidget::textLayoutWriteReport()
     HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
     if ( measureUtility->locTestMode() ) {
         HbDeviceProfile profile = HbDeviceProfile::profile(d->mMainWindow);
-        if (!HbApplication::applicationName().isEmpty()) {
-            measureUtility->writeReport(profile, HbApplication::applicationName());
-        } else {
-            measureUtility->writeReport(profile, "unknown_application");
-        }
+        QFileInfo info(QCoreApplication::applicationFilePath());
+        measureUtility->writeReport(profile, info.baseName());
         measureUtility->reset();
     } else {
         showWarning("Localization metrics run-time flag disabled!");

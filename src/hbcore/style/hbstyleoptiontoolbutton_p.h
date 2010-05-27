@@ -29,7 +29,7 @@
 #include <hbstyleoption_p.h>
 #include <hbicon.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionToolButton : public HbStyleOption
 {
 public:

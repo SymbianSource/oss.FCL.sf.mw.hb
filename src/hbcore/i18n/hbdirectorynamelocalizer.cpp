@@ -48,6 +48,11 @@ class HbDNTXmlReader;
     
  */
 
+/*!
+    Constructor of HbDirectoryNameLocalizer.
+    
+    \attention Cross-Platform API
+ */
 HbDirectoryNameLocalizer::HbDirectoryNameLocalizer()
 {
     HbDNTXmlReader* dirDataReader = new HbDNTXmlReader();
@@ -70,13 +75,18 @@ HbDirectoryNameLocalizer::~HbDirectoryNameLocalizer()
     Translates the given source path to a localized string if possible.
     If localized version is not found returns an empty string.
     Should be only used for localizing directory names. 
+    
+    \attention Symbian specific API
 
-    @param sourceText The path that is to be translated.
-    @return The translated string. If translation is not found returns
+    \param sourceText The path that is to be translated.
+    
+    \return Symbian - The translated string. If translation is not found returns
     an empty string. 
+    \return other platforms - empty QString    
  */
 QString HbDirectoryNameLocalizer::translate( QString& sourceText ) const
 {
+#if defined(Q_OS_SYMBIAN)
     if ( sourceText.length() == 0 ) {
         return "";
     }
@@ -94,4 +104,8 @@ QString HbDirectoryNameLocalizer::translate( QString& sourceText ) const
     }
 
     return result;
+#else
+    Q_UNUSED(sourceText);
+    return QString();
+#endif
 }

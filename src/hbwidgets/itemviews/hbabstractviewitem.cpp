@@ -41,6 +41,7 @@
 #include <QVariant>
 #include <QCoreApplication>
 #include <QEvent>
+#include <QTimer>
 #include <QDebug>
 
 #include <QGesture>
@@ -48,6 +49,7 @@
 
 const QString KDefaultLayoutOption = "default";
 const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::registerEventType();
+const int HbViewItemPressDelay = 50;
 
 /*!
     @alpha
@@ -127,6 +129,12 @@ const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::regist
     \snippet{ultimatecodesnippet/customlistviewitem.cpp,1}
 */
 
+void HbAbstractViewItemShared::pressStateChangeTimerTriggered()
+{
+    HbWidgetFeedback::triggered(mPressedItem, Hb::InstantPressed, 0);
+    mPressedItem->pressStateChanged(true, mAnimatePress);
+}
+
 void HbAbstractViewItemPrivate::init()
 {
     Q_Q(HbAbstractViewItem);
@@ -204,7 +212,6 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
 
     switch (gesture->state()) {
         case Qt::GestureStarted: {
-            HbWidgetFeedback::triggered(q, Hb::InstantPressed, 0);
             setPressed(true, true);
             emit q->pressed(position);
             break;
@@ -277,10 +284,25 @@ void HbAbstractViewItemPrivate::setPressed(bool pressed, bool animate)
 
     if (pressed != mPressed) {
         mPressed = pressed;
-        q->pressStateChanged(mPressed, animate);
+
+        if (mSharedData->mPressStateChangeTimer) {
+            mSharedData->mPressStateChangeTimer->stop();
+        }
+
         if (mPressed) {
+            if (!mSharedData->mPressStateChangeTimer) {
+                mSharedData->mPressStateChangeTimer = new QTimer(mSharedData.data());
+                mSharedData->mPressStateChangeTimer->setSingleShot(true);
+                QObject::connect(mSharedData->mPressStateChangeTimer, SIGNAL(timeout()), mSharedData.data(), SLOT(pressStateChangeTimerTriggered()));
+            }
+            mSharedData->mPressedItem = q;
+            mSharedData->mAnimatePress = animate;
+            mSharedData->mPressStateChangeTimer->start(HbViewItemPressDelay);
+
             q->setProperty("state", "pressed");
         } else {
+            q->pressStateChanged(mPressed, animate);
+
             q->setProperty("state", "normal");
         }
     }
@@ -896,10 +918,10 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
             HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
         } else {
             HbEffect::cancel(this, "pressed");
-            HbEffect::start(this, sd->mItemType, "released");
+            HbEffect::cancel(this, "released");
             if (d->mFocusItem) {
                 HbEffect::cancel(d->mFocusItem, "pressed");
-                HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
+                HbEffect::cancel(d->mFocusItem, "released");
                 QCoreApplication::postEvent(this, new QEvent((QEvent::Type)HbAbstractViewItemShared::ViewItemDeferredDeleteEvent));
             }
         }

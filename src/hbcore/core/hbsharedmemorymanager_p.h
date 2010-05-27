@@ -77,6 +77,11 @@ protected:
 private:
     bool initialize();
     int loadMemoryFile(const QString &filePath);
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(base()) + offset);
+    }
 
 protected:
     bool writable;

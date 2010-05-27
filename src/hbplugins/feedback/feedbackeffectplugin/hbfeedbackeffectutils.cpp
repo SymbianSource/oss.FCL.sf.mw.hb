@@ -279,8 +279,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
 
         case HbFeedbackEffectUtils::Slider:
 
-            // slider area
-            effect = HbFeedback::None;
+            // slider track default
+            effect = HbFeedback::SensitiveSlider;
+
+            // special cases
             if (const HbProgressSlider *progressSlider = qobject_cast<const HbProgressSlider *>(widget)) {
                 Q_UNUSED(progressSlider)
                 effect = HbFeedback::BasicSlider;
@@ -318,11 +320,6 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             break;
     }
 
-    if (widget->type() == Hb::ItemType_MenuItem) {
-        if (modifiers & Hb::ModifierScrolling) {
-            effect = HbFeedback::StopFlick;
-        }
-    }
     // item view specific special cases
     if ( const HbAbstractViewItem * viewItem = qobject_cast<const HbAbstractViewItem *>(widget)) {
         const HbAbstractItemView* itemView = viewItem->itemView();
@@ -331,7 +328,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             switch (itemView->selectionMode()) {
                 case HbAbstractItemView::SingleSelection:
                 case HbAbstractItemView::MultiSelection: {
-                    effect = HbFeedback::None;
+                    effect = HbFeedback::SensitiveItem;
                     break;
                 }
                 case HbAbstractItemView::NoSelection:
@@ -363,14 +360,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                     effect = HbFeedback::SensitiveItem;
                 }
             }
-
-            if (modifiers & Hb::ModifierScrolling) {
-                effect = HbFeedback::StopFlick;
-            }
         }
     }
-    if (widget->type() == Hb::ItemType_VirtualTrackPoint) {
-        effect = HbFeedback::Editor;
+    if (modifiers & Hb::ModifierScrolling) {
+        effect = HbFeedback::StopFlick;
     }
 
     return effect;
@@ -458,8 +451,8 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
  
          case HbFeedbackEffectUtils::Slider:
 
-            // slider area
-             effect = HbFeedback::None;
+            // slider track default
+             effect = HbFeedback::SensitiveSlider;
 
             // slider handle
             if (modifiers & Hb::ModifierSliderHandle) {
@@ -473,7 +466,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             break;
 
         case HbFeedbackEffectUtils::Editor:
-            effect = HbFeedback::Editor;
+            effect = HbFeedback::None;
             break;
 
         default:
@@ -523,6 +516,11 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             }
         }
     }
+
+    if (widget->type() == Hb::ItemType_VirtualTrackPoint) {
+        effect = HbFeedback::Editor;
+    }
+
     return effect;
 }
 
@@ -704,9 +702,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyPress(const HbWidge
 */
 HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const HbWidget *widget, Hb::InteractionModifiers modifiers)
 {
+    Q_UNUSED(modifiers);
     HbFeedback::InstantEffect effect = HbFeedback::None;
 
-    if ( const HbAbstractViewItem * viewItem = qobject_cast<const HbAbstractViewItem *>(widget)) {
+    if (const HbAbstractViewItem * viewItem = qobject_cast<const HbAbstractViewItem *>(widget)) {
         const HbAbstractItemView* itemView = viewItem->itemView();
         if (itemView) {
             switch (itemView->selectionMode()) {
@@ -722,13 +721,9 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const
                 default:
                     break;
             }
-            if (modifiers == Hb::ModifierScrolling) {
-                effect = HbFeedback::StopFlick;
-            }
 		}
 	}
-
-        return effect;
+    return effect;
 }
 
 /*!

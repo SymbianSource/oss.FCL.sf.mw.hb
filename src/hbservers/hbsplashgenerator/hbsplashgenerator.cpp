@@ -25,6 +25,7 @@
 
 #include "hbsplashgenerator_p.h"
 #include "hbsplashdirs_p.h"
+#include "hbsplashdefs_p.h"
 #include "hbmainwindow.h"
 #include "hbmainwindow_p.h"
 #include "hbinstance.h"
@@ -45,9 +46,15 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSet>
+#include <QSettings>
 #include <QTranslator>
 #include <QLocale>
 #include <QTimer>
+
+#if defined(Q_OS_SYMBIAN)
+#include <f32file.h>
+#include <coemain.h>
+#endif
 
 const char *last_theme_key = "lasttheme";
 const char *last_lang_key = "lastlang";
@@ -55,9 +62,16 @@ const char *last_file_count_key = "lastfilecount";
 const char *last_output_dir_key = "lastoutdir";
 
 HbSplashGenerator::HbSplashGenerator()
-    : mBusy(false), mForceRegen(false), mMainWindow(0), mFirstRegenerate(true),
-      mSettings("Nokia", "HbSplash")
+    : mBusy(false), mForceRegen(false), mMainWindow(0), mFirstRegenerate(true)
 {
+#if defined(Q_OS_SYMBIAN)
+    CCoeEnv::Static()->FsSession().CreatePrivatePath(EDriveC);
+    QString iniFileName = QString("c:/private/%1/hbsplashgen.ini")
+        .arg(QString::number(hbsplash_server_uid3.iUid, 16));
+    mSettings = new QSettings(iniFileName, QSettings::IniFormat, this);
+#else
+    mSettings = new QSettings("Nokia", "HbSplash", this);
+#endif
     // Effects on decorators (started when they are shown) would ruin
     // the screenshot. So disable everything (except the orientation
     // switch effect which is needed for a proper rotated image).
@@ -129,10 +143,10 @@ void HbSplashGenerator::doStart()
     // number of files in the splash screen directory, or the splash screen
     // directory path is different than the recorded values. (or when
     // regeneration is forced via command line arg)
-    QString lastTheme = mSettings.value(QLatin1String(last_theme_key)).toString();
-    QString lastLang = mSettings.value(QLatin1String(last_lang_key)).toString();
-    int lastFileCount = mSettings.value(QLatin1String(last_file_count_key)).toInt();
-    QString lastOutputDir = mSettings.value(QLatin1String(last_output_dir_key)).toString();
+    QString lastTheme = mSettings->value(QLatin1String(last_theme_key)).toString();
+    QString lastLang = mSettings->value(QLatin1String(last_lang_key)).toString();
+    int lastFileCount = mSettings->value(QLatin1String(last_file_count_key)).toInt();
+    QString lastOutputDir = mSettings->value(QLatin1String(last_output_dir_key)).toString();
     QString currentTheme = theme->name();
     QString currentLang = QLocale::system().name();
     QString currentOutputDir = hbsplash_output_dir();
@@ -163,6 +177,7 @@ void HbSplashGenerator::regenerate()
     qDebug() << PRE << "regenerate() theme:" << themeName;
     if (!themeName.isEmpty()) {
         try {
+            emit regenerateStarted();
             QTime queuePrepTime;
             queuePrepTime.start();
             // Delete existing splash screens. This is important because apps
@@ -202,13 +217,17 @@ void HbSplashGenerator::regenerate()
     }
 }
 
-void HbSplashGenerator::regenerateOne(const QString &splashmlFileName)
+void HbSplashGenerator::regenerateOne(const QString &splashmlFileName, const QString &customTrDir)
 {
     mQueue.clear();
     QueueItem item(hbInstance->theme()->name(), Qt::Vertical);
-    item.mWorkDirForSingleFileRegen = QFileInfo(splashmlFileName).path(); // e.g. for translations
+    QString path = QFileInfo(splashmlFileName).path();
+    item.mCustomTrDirs.append(path);
+    if (!customTrDir.isEmpty()) {
+        item.mCustomTrDirs.append(customTrDir);
+    }
     parseSplashml(splashmlFileName, item);
-    item.mDocmlFileName = QDir(item.mWorkDirForSingleFileRegen).filePath(item.mDocmlFileName);
+    item.mDocmlFileName = QDir(path).filePath(item.mDocmlFileName);
     mQueue.enqueue(item); // generate it regardless of the fixed orientation setting
     item.mOrientation = Qt::Horizontal;
     mQueue.enqueue(item);
@@ -245,11 +264,11 @@ void HbSplashGenerator::processQueue()
     // the settings and stop.
     if (mQueue.isEmpty()) {
         qDebug() << PRE << "queue is empty  regen finished";
-        mSettings.setValue(last_theme_key, hbInstance->theme()->name());
-        mSettings.setValue(last_lang_key, QLocale::system().name());
+        mSettings->setValue(last_theme_key, hbInstance->theme()->name());
+        mSettings->setValue(last_lang_key, QLocale::system().name());
         QString outDir = hbsplash_output_dir();
-        mSettings.setValue(last_file_count_key, updateOutputDirContents(outDir));
-        mSettings.setValue(last_output_dir_key, outDir);
+        mSettings->setValue(last_file_count_key, updateOutputDirContents(outDir));
+        mSettings->setValue(last_output_dir_key, outDir);
         emit finished();
         qDebug() << PRE << "processQueue() over";
         return;
@@ -265,14 +284,7 @@ void HbSplashGenerator::processQueue()
         mItemTime.start();
         log("generating splash screen", mItem.mThemeName, mItem.mOrientation);
 
-        if (!mMainWindow) {
-            // The FixedVertical flag is used just to disable the sensor-based
-            // orientation switching.
-            mMainWindow = new HbMainWindow(0, Hb::WindowFlagFixedVertical);
-            // Make sure that at least the 1st phase of the delayed
-            // construction is done right now.
-            HbMainWindowPrivate::d_ptr(mMainWindow)->_q_delayedConstruction();
-        }
+        ensureMainWindow();
         mMainWindow->setOrientation(mItem.mOrientation, false);
         qDebug() << PRE << "mainwindow init time (ms):" << mItemTime.elapsed();
 
@@ -288,6 +300,18 @@ void HbSplashGenerator::processQueue()
         cleanup();
     }
     qDebug() << PRE << "processQueue() over";
+}
+
+void HbSplashGenerator::ensureMainWindow()
+{
+    if (!mMainWindow) {
+        // The FixedVertical flag is used just to disable the sensor-based
+        // orientation switching.
+        mMainWindow = new HbMainWindow(0, Hb::WindowFlagFixedVertical);
+        // Make sure that at least the 1st phase of the delayed
+        // construction is done right now.
+        HbMainWindowPrivate::d_ptr(mMainWindow)->_q_delayedConstruction();
+    }
 }
 
 void HbSplashGenerator::processWindow()
@@ -325,7 +349,7 @@ void HbSplashGenerator::takeScreenshot()
         t.start();
         QString splashFile = splashFileName();
         qDebug() << PRE << "saving to" << splashFile;
-        if (saveSpl(splashFile, image)) {
+        if (saveSpl(splashFile, image, mItem.mFlagsToStore)) {
 #if !defined(Q_OS_SYMBIAN) && defined(QT_DEBUG)
             image.save(splashFile + QLatin1String(".png"));
 #endif
@@ -368,20 +392,21 @@ inline const uchar *imageBits(const QImage &image)
     return image.bits();
 }
 
-bool HbSplashGenerator::saveSpl(const QString &nameWithoutExt, const QImage &image)
+bool HbSplashGenerator::saveSpl(const QString &nameWithoutExt, const QImage &image, quint32 extra)
 {
     QString fn(nameWithoutExt);
     fn.append(".spl");
     QFile f(fn);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        int w = image.width();
-        int h = image.height();
-        int bpl = image.bytesPerLine();
-        QImage::Format fmt = image.format();
-        f.write((char *) &w, sizeof(int));
-        f.write((char *) &h, sizeof(int));
-        f.write((char *) &bpl, sizeof(int));
-        f.write((char *) &fmt, sizeof(QImage::Format));
+        quint32 w = (quint32) image.width();
+        quint32 h = (quint32) image.height();
+        quint32 bpl = (quint32) image.bytesPerLine();
+        qint32 fmt = (qint32) image.format();
+        f.write((char *) &w, sizeof(quint32));
+        f.write((char *) &h, sizeof(quint32));
+        f.write((char *) &bpl, sizeof(quint32));
+        f.write((char *) &fmt, sizeof(qint32));
+        f.write((char *) &extra, sizeof(quint32));
         f.write((const char *) imageBits(image), bpl * h);
         f.close();
         return true;
@@ -414,13 +439,16 @@ QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem& item)
 
 HbSplashGenerator::QueueItem::QueueItem()
     : mOrientation(Qt::Vertical),
-      mHideBackground(false)
+      mHideBackground(false),
+      mFlagsToStore(0)
 {
 }
 
 HbSplashGenerator::QueueItem::QueueItem(const QString &themeName, Qt::Orientation orientation)
-    : mThemeName(themeName), mOrientation(orientation),
-      mHideBackground(false)
+    : mThemeName(themeName),
+      mOrientation(orientation),
+      mHideBackground(false),
+      mFlagsToStore(0)
 {
 }
 
@@ -717,9 +745,8 @@ void HbSplashGenerator::setupNameBasedWidgetProps(HbDocumentLoader &loader)
 
 void HbSplashGenerator::finishWindow()
 {
-    // Process additional settings.
+    // There must be a view always in order to support view-specific settings.
     if (mMainWindow->views().isEmpty()) {
-        // There must be a view always in order to support view-specific settings.
         mMainWindow->addView(new HbWidget);
     }
 
@@ -728,7 +755,7 @@ void HbSplashGenerator::finishWindow()
         HbView *view = views.at(0);
 
         // view-flags
-        HbView::HbViewFlags viewFlags = HbView::ViewFlagNone;
+        HbView::HbViewFlags viewFlags = view->viewFlags();
         if (mItem.mViewFlags.contains("tb-minimizable")) {
             viewFlags |= HbView::ViewTitleBarMinimizable;
         }
@@ -754,6 +781,11 @@ void HbSplashGenerator::finishWindow()
             viewFlags |= HbView::ViewStatusBarFloating;
         }
         view->setViewFlags(viewFlags);
+        if (viewFlags.testFlag(HbView::ViewStatusBarHidden)
+            || viewFlags.testFlag(HbView::ViewStatusBarTransparent))
+        {
+            mItem.mFlagsToStore |= 1;
+        }
 
         // navi-action-icon
         if (!mItem.mNaviActionIcon.isEmpty()) {
@@ -792,17 +824,24 @@ void HbSplashGenerator::finishWindow()
     }
 
     // Hide dynamic content from status bar (clock, indicators).
+    setStatusBarElementsVisible(false);
+}
+
+void HbSplashGenerator::setStatusBarElementsVisible(bool visible)
+{
+    HbMainWindowPrivate *mwd = HbMainWindowPrivate::d_ptr(mMainWindow);
     HbStatusBar *statusBar = mwd->mStatusBar;
     if (statusBar) {
         foreach (QGraphicsItem *item, statusBar->childItems()) {
             QString name = HbStyle::itemName(item);
-            bool hideItem = name == QLatin1String("signal")
+            bool knownItem =
+                name == QLatin1String("signal")
                 || name == QLatin1String("battery")
                 || name == QLatin1String("notificationindicators")
                 || name == QLatin1String("settingsindicators")
                 || name == QLatin1String("timetext");
-            if (hideItem) {
-                item->setVisible(false);
+            if (knownItem) {
+                item->setVisible(visible);
             }
         }
     }
@@ -814,9 +853,7 @@ void HbSplashGenerator::addTranslator(const QString &name)
     QTranslator *translator = new QTranslator;
     bool ok = false;
     QStringList dirNames(hbsplash_translation_dirs());
-    if (!mItem.mWorkDirForSingleFileRegen.isEmpty()) {
-        dirNames.append(mItem.mWorkDirForSingleFileRegen);
-    }
+    dirNames.append(mItem.mCustomTrDirs);
     foreach (const QString &dirName, dirNames) {
         QDir dir(dirName);
         QString fullName = dir.filePath(name + '_' + lang);

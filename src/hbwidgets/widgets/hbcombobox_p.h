@@ -66,7 +66,7 @@ public:
     HbComboBoxPrivate( );
     ~HbComboBoxPrivate( );
     void init( );
-    void createPrimitives();
+    void createPrimitives( );
     void setModel( QAbstractItemModel * model );
     void positionDropDown( );
     void setCompletion( bool completion );
@@ -88,9 +88,9 @@ public:
     QModelIndex findData( const QVariant &data ) const;
     void showPopup( QAbstractItemModel* aModel, QModelIndex aIndex = QModelIndex( ) );
     void createDropDown( );
-    void calculateListItemHeight();
+    void calculateListItemHeight( );
 
-public:    
+public:
     HbCustomLineEdit* mLineEdit;
     QGraphicsItem* mTextItem;
     QGraphicsItem *mButton;
@@ -118,14 +118,12 @@ class HbComboListViewItem : public HbListViewItem
 {
     Q_OBJECT
 public:
-    explicit HbComboListViewItem ( QGraphicsItem *parent = 0 ) : HbListViewItem( parent )
-    {
+    explicit HbComboListViewItem ( QGraphicsItem *parent = 0 ) : HbListViewItem( parent ) {
     }
 
-    HbAbstractViewItem *createItem()
-    {
-        return new HbComboListViewItem(*this);
-    }   
+    HbAbstractViewItem *createItem( ) {
+        return new HbComboListViewItem( *this );
+    }
 };
 
 class HbCustomLineEdit : public HbLineEdit
@@ -133,34 +131,32 @@ class HbCustomLineEdit : public HbLineEdit
 
     Q_OBJECT
 public:
-    HbCustomLineEdit( QGraphicsWidget *parent, HbComboBoxPrivate *comboPriv )
-        :HbLineEdit( *new HbLineEditPrivate, parent ),
+    HbCustomLineEdit( QGraphicsWidget *parent, HbComboBoxPrivate *comboPriv ) :
+        HbLineEdit( *new HbLineEditPrivate, parent ),
         comboBoxPrivate( comboPriv ),
-        VkbLaunched( false )
-    {
-        
+        VkbLaunched( false ) {
     }
-void setLongPressEnabled( bool enable = true ) 
-     {
-         if( enable ) {
-             scrollArea( )->setLongPressEnabled( true );
-         } else {
-             scrollArea( )->setLongPressEnabled( false );
-         }
-     }
+
+    void setLongPressEnabled( bool enable = true ) {
+        if( enable ) {
+            scrollArea( )->setLongPressEnabled( true );
+        } else {
+            scrollArea( )->setLongPressEnabled( false );
+        }
+    }
+
 protected:
-    void focusInEvent( QFocusEvent *event )
-    {
-            HbEditorInterface editorInterface(this);
-            HbVkbHost *host = editorInterface.vkbHost();
-            if ( host && !VkbLaunched ) {
-               VkbLaunched = true;
-               connect( host, SIGNAL( keypadClosed (  ) ), comboBoxPrivate->mDropDown,
-                       SLOT( keypadClosed(  ) ) );
-               connect( host, SIGNAL( keypadOpened (  ) ), comboBoxPrivate->mDropDown,
-                       SLOT( keypadOpened(  ) ) );
-            }
-            HbLineEdit::focusInEvent(event);
+    void focusInEvent( QFocusEvent *event ) {
+        HbEditorInterface editorInterface( this );
+        HbVkbHost *host = editorInterface.vkbHost( );
+        if ( host && !VkbLaunched ) {
+            VkbLaunched = true;
+            connect( host, SIGNAL( keypadClosed (  ) ), comboBoxPrivate->mDropDown,
+                SLOT( keypadClosed(  ) ) );
+            connect( host, SIGNAL( keypadOpened (  ) ), comboBoxPrivate->mDropDown,
+                SLOT( keypadOpened(  ) ) );
+        }
+        HbLineEdit::focusInEvent( event );
     }
 private:
     HbComboBoxPrivate *comboBoxPrivate;

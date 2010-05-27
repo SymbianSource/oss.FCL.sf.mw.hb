@@ -30,7 +30,7 @@
 #include <hbicon.h>
 #include <hbframedrawer.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionPushButton : public HbStyleOption
 {
 public:

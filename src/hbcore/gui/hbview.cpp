@@ -878,6 +878,27 @@ bool HbView::event(QEvent *event)
 }
 
 /*!
+    \reimp
+ */
+void HbView::changeEvent(QEvent *event){
+    
+    // We're listening for layout direction changes, because the screen needs to be
+    // repolished, if the layout direction changes and the titlebar is minimizable.
+    // We have to listen to the event here(and not in the titlebar), cause the layout
+    // direction change event is delivered to the titlebar (cause it does not mirror)
+    if (event->type() == QEvent::LayoutDirectionChange
+        && isVisible()
+        && (viewFlags() & ViewTitleBarMinimizable)){
+        HbMainWindow *mw = mainWindow();        
+        if (mw && mw->currentView() == this){
+            HbMainWindowPrivate::d_ptr(mw)->mClippingItem->decoratorVisibilityChanged();
+        }
+    }
+
+    HbWidget::changeEvent( event );
+}
+
+/*!
 Removes the menu from the view and returns it to the caller.
 Ownership of the menu is transferred to the caller.
 

@@ -1172,6 +1172,22 @@ void HbAbstractEditPrivate::updatePlaceholderDocProperties()
     }
 }
 
+void HbAbstractEditPrivate::filterInputText(QString &text) const
+{
+    Q_Q(const HbAbstractEdit);
+    HbEditorInterface editorInterface(const_cast<HbAbstractEdit*>(q));
+    HbInputFilter *inputFilter = editorInterface.filter();
+
+    if (!text.isEmpty() && inputFilter) {
+        for(int i(text.length() - 1); i>=0; --i) {
+            if (!inputFilter->filter(text.at(i))) {
+                text.remove(i,1);
+            }
+        }
+    }
+}
+
+
 Qt::Alignment HbAbstractEditPrivate::alignmentFromString(const QString &text)
 {
     Qt::Alignment align(0);

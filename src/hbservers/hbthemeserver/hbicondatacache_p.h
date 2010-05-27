@@ -40,14 +40,14 @@ public:
     HbIconCacheItem* getCacheItem(const HbIconKey &key ,
                                   HbRenderingMode currentRenderingMode,
                                   bool isMultiIconPiece = false);
-    bool insert(const HbIconKey &key,  HbIconCacheItem* item);
+    bool insert(const HbIconKey &key, HbIconCacheItem *item);
     bool remove(const HbIconKey&  key, bool keepInCache = true);
     void setMaxGpuCacheSize(int size);
     void setMaxCpuCacheSize(int size);
     bool contains(const HbIconKey &key) const;
     HbIconCacheItem* value(const HbIconKey &key) const;
-    bool isItemCachableInGpu(const HbIconCacheItem* item)const;
-    bool isItemCachableInCpu(const HbIconCacheItem* item)const;
+    bool isItemCachableInGpu(const HbIconCacheItem *item)const;
+    bool isItemCachableInCpu(const HbIconCacheItem *item)const;
     void memoryGood();
     void freeGpuRam(int bytes);
     void freeUnusedGpuResources();
@@ -78,9 +78,9 @@ private:
     void createCpuCacheSpace(int itemCost);
     void updateGpuLruSize(int iconDataCost);
     void updateCpuLruSize(int iconDataCost);
-    void removeFromCache(const HbIconKey &key, const HbIconCacheItem* releaseItem);
-    void releaseVectorItem(HbIconCacheItem* releaseItem);
-    void releaseRasterItem(HbIconCacheItem* releaseItem);
+    void removeFromCache(const HbIconKey &key, const HbIconCacheItem *releaseItem);
+    void releaseVectorItem(HbIconCacheItem *releaseItem);
+    void releaseRasterItem(HbIconCacheItem *releaseItem);
 
 private:
     QHash<HbIconKey, HbIconCacheItem*> *cache;

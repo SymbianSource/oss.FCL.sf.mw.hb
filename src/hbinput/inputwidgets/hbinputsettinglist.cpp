@@ -25,9 +25,6 @@
 
 #include <QGraphicsLinearLayout>
 #include <QGraphicsGridLayout>
-#if QT_VERSION >= 0x040600
-#include <QGraphicsDropShadowEffect>
-#endif
 
 #include <hblabel.h>
 #include <hbpushbutton.h>
@@ -144,12 +141,6 @@ HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
     // Make sure the custom button list never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-
-    // enable drop shadow for the setting list
-// Effect deletion is crashing -> Effect temporarily removed
-//    QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
-//    effect->setBlurRadius(8);
-//    setGraphicsEffect(effect);
 #endif
 
     connect(d->mLanguageButton, SIGNAL(clicked(bool)), this, SLOT(languageButtonClicked()));

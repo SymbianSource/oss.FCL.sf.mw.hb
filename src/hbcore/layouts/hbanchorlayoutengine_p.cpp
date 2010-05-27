@@ -778,7 +778,7 @@ void AnchorLayoutEngine::cleanUp( GraphVertex *start, GraphVertex *middle, Graph
     vertices->clear();
     for( int i = 0; i < el->size(); i++ ) {
         if( el->at(i)->isTrivial() ) {
-            el->removeAt(i);
+            delete el->takeAt(i);
             i--;
         }
     }

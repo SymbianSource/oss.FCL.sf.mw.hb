@@ -217,17 +217,6 @@ void HbPushButtonPrivate::createPrimitives()
     }
 }
 
-
-
-void HbPushButtonPrivate::_q_handleLongPress(QPointF point)
-{
-    Q_Q(HbPushButton);
-    if(!longPress){
-        longPress = true;
-        emit q->longPress( point );
-    }
-}
-
 void HbPushButtonPrivate::_q_handleLongKeyPress( )
 {
     Q_Q( HbPushButton );
@@ -694,6 +683,7 @@ HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem *parent) :
 }
 
 /*!
+    \reimp
     Initializes \a option with the values from this HbPushButton. 
     This method is useful for subclasses when they need a HbStyleOptionPushButton,
     but don't want to fill in all the information themselves.

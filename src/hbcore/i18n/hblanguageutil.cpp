@@ -112,14 +112,35 @@ QHash<int, QString> readLanguageList()
 bool setLocale( int language )
 {
     TExtendedLocale dummy;
+    dummy.LoadSystemSettings();
+   
+    // Try to load new locale model dll
     QString no;
-    no = QString( "%1" ).arg( language, 2, 10, QLatin1Char( '0' ) );
-    QString name = QString( "elocl." ).append( no );
+    if ( language < 10 ) {
+        no = QString( "00%1" ).arg(language);
+    } else if ( language < 100 ) {
+        no = QString( "0%1" ).arg(language);
+    } else {
+        no = QString( "%1" ).arg(language);
+    }
+    
+    QString name = QString("elocl_lan.").append(no);
     TPtrC nameptr(name.utf16());
     
-    TInt err = dummy.LoadLocale( nameptr );
-    if( err != KErrNone )
-        return false;
+    TInt err = dummy.LoadLocaleAspect(nameptr);    
+    if( err != KErrNone ) {
+        // Loading new locale model dll fails
+        // Try to load old locale model dll
+        no = QString("%1").arg(language, 2, 10, QLatin1Char( '0' ));
+        QString name2 = QString("elocl.").append(no);
+        TPtrC nameptr2(name2.utf16());
+        
+        TInt err2 = dummy.LoadLocale(nameptr2);
+        if ( err2 != KErrNone ) {
+            return false;
+        }
+    }
+    
     dummy.SaveSystemSettings();
     // cause localeprivate update on next qlocale object( glp->m_language_id = 0 )
     QSystemLocale dummy2;
@@ -134,8 +155,11 @@ bool setLocale( int language )
     Language names are localized according the language's native presentation.
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
-     
-    \return localized names and integer identifiers of languages supported in a device  
+    
+    \attention Symbian specific API
+    
+    \return Symbian - localized names and integer identifiers of languages supported in a device  
+    \return other platforms - empty QHash    
 */
 QHash<int, QString> HbLanguageUtil::supportedLanguages()
 {
@@ -143,9 +167,16 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
     QHash<int, QString> languages; 
     
     QTranslator translator;
-    if (!translator.load(TRANSLATOR_PATH)) {
-        return languages;
+    QString path = "c:";
+    path += QString(TRANSLATOR_PATH);
+    if (!translator.load(path)) {
+        path = "z:";
+        path += QString(TRANSLATOR_PATH);
+        if (!translator.load(path)) {
+            return languages;
+        } 
     } 
+
     QCoreApplication::installTranslator(&translator);
     QHash<int, QString> hashLanguageNames = readLanguageList();
  
@@ -182,7 +213,10 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
      
-    \return localized names and integer identifiers of known languages 
+    \attention Symbian specific API
+     
+    \return Symbian - localized names and integer identifiers of known languages 
+    \return other platforms - empty QHash    
 */
 QHash<int, QString> HbLanguageUtil::allLanguages()
 {
@@ -190,9 +224,16 @@ QHash<int, QString> HbLanguageUtil::allLanguages()
     QHash<int, QString> langs; 
     
     QTranslator translator;
-    if (!translator.load(TRANSLATOR_PATH)) {
-        return langs;
+    QString path = "c:";
+    path += QString(TRANSLATOR_PATH);
+    if (!translator.load(path)) {
+        path = "z:";
+        path += QString(TRANSLATOR_PATH);
+        if (!translator.load(path)) {
+            return langs;
+        } 
     } 
+
     QCoreApplication::installTranslator(&translator);
     
     QHash<int, QString> languageNameList = readLanguageList();
@@ -217,9 +258,11 @@ QHash<int, QString> HbLanguageUtil::allLanguages()
 
 /*!
     \brief Changes the device system language.  
-  
+     
+    \attention Symbian specific API
+     
     \param identifier of language to set active
-    \return true if language change was successful
+    \return true for Symbian if succesfull and false for other platforms
 */ 
 bool HbLanguageUtil::changeLanguage( int language )
 {
@@ -262,7 +305,9 @@ bool HbLanguageUtil::changeLanguage( int language )
 /*!
     \brief Returns ID of current language. 
   
-    \return identifier of current system language
+    \attention Symbian specific API
+     
+    \return identifier of current system language for Symbian and '0' for other platforms
 */ 
 int HbLanguageUtil::currentLanguage()
 {

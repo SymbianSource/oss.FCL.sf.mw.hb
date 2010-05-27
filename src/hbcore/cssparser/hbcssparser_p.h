@@ -648,12 +648,14 @@ struct HB_CORE_PRIVATE_EXPORT AttributeSelector
     inline AttributeSelector(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
           name(type),
+          nameHash(0),
           value(type),
           valueMatchCriterium(NoMatch),
           negated(false)         
     {}
     HbMemoryManager::MemoryType memoryType;
     HbString name;
+    uint nameHash;
     HbString value;
     ValueMatchType valueMatchCriterium;
     bool negated;

@@ -68,7 +68,7 @@
 */
 
 /*!
-    \fn void userActivated(const QString &type, const QVariantMap &data)
+    \fn void HbIndicator::userActivated(const QString &type, const QVariantMap &data)
 
     The class should emit this signal, when client needs to be notified of the
     user interaction.

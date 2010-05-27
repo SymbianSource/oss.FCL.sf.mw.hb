@@ -74,6 +74,8 @@ public:
     const QList<HbBadgeIconInfo> badges() const;
     bool isBadged() const;
 
+    QColor colorToUse(const QString &iconName) const;
+
 public:
     QSizeF size;
 
@@ -119,7 +121,9 @@ public:
 
     // Variables introduced for handling colorizable icons
     QColor color;
-    
+    // The color coming from the color group associated with a widget in its css.
+    QColor themedColor;
+
     //Icon Implementation interface which provides abstraction for the type of icon ( Pixmap, NVG, SgImage etc).
     // Each class derived from HbIconImpl will have to implement the paint(), pixmap() and defaultSize() API
     HbIconImpl *icon;
@@ -135,20 +139,15 @@ public:
 // Class HbIconEnginePrivate
 
 HbIconEnginePrivate::HbIconEnginePrivate(const QString &iconName) :
-    size(),
-    iconNames(),
-    pixmap(),
     aspectRatioMode(Qt::KeepAspectRatio),
     mode(QIcon::Normal),
     state(QIcon::Off),
-    defaultSize(),
     defaultSizeFailed(false),
     loadFailed(0),
     flags(0),
     mirroringMode(HbIcon::Default),
     defaultMirroring(Unknown),
     animator(0),
-    color(QColor()),
     icon(0),
     badgeInfo(0),
     signalConnectionsSet(false),
@@ -190,20 +189,15 @@ HbIconEnginePrivate::HbIconEnginePrivate(const HbIconEnginePrivate &other) :
 }
 
 HbIconEnginePrivate::HbIconEnginePrivate(QDataStream &stream) :
-    size(),
-    iconNames(),
-    pixmap(),
     aspectRatioMode(Qt::KeepAspectRatio),
     mode(QIcon::Normal),
     state(QIcon::Off),
-    defaultSize(),
     defaultSizeFailed(false),
     loadFailed(0),
     flags(0),
     mirroringMode(HbIcon::Default),
     defaultMirroring(Unknown),
     animator(0),
-    color(QColor()),
     icon(0),
     badgeInfo(new HbBadgeIcon),
     signalConnectionsSet(false),
@@ -313,6 +307,7 @@ void HbIconEnginePrivate::clear()
     defaultMirroring = Unknown;
     animator = 0;
     color = QColor();
+    themedColor = QColor();
     unLoadIcon();
     if (badgeInfo) {
         badgeInfo->removeAllBadges();
@@ -433,6 +428,15 @@ inline bool isMonoIcon(const QString &name)
     // colorized. These mono icons are recognized from their name. The check should not be
     // done for normal files, only for logical theme graphics names.
     return name.startsWith("qtg_mono_") && !name.contains('.');
+}
+
+QColor HbIconEnginePrivate::colorToUse(const QString &iconName) const
+{
+    if (flags.testFlag(HbIcon::Colorized) || isMonoIcon(iconName)) {
+        return color.isValid() ? color : themedColor;
+    } else {
+        return QColor();
+    }
 }
 
 void HbIconEnginePrivate::addBadge(Qt::Alignment align,
@@ -686,7 +690,7 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
                 modeForLoader,
                 d->iconLoaderOptions(),
                 0,
-                (d->flags.testFlag(HbIcon::Colorized) || isMonoIcon(name)) ? d->color : QColor());
+                d->colorToUse(name));
             
             if (d->icon){
                 // Draw badges on this pixmap
@@ -716,7 +720,7 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
                     modeForLoader,
                     d->iconLoaderOptions(),
                     0,
-                    (d->flags.testFlag(HbIcon::Colorized) || isMonoIcon(name)) ? d->color : QColor());
+                    d->colorToUse(name));
 
                 // If loading failed, store information so it is not retried.
                 if (!d->icon) {
@@ -754,6 +758,19 @@ QColor HbIconEngine::color() const
     return d->color;
 }
 
+void HbIconEngine::setThemedColor(const QColor &color)
+{
+    if (d->themedColor != color) {
+        clearStoredIconContent();
+        d->themedColor = color;
+    }
+}
+
+QColor HbIconEngine::themedColor() const
+{
+    return d->themedColor;
+}
+
 QSizeF HbIconEngine::defaultSize() const
 {
     QString name = iconName();
@@ -782,8 +799,13 @@ void HbIconEngine::setSize(const QSizeF &size)
 {
     if (size != d->size) {
         d->size = size;
+        // Update default size if size is set before painting
+        // to obtain the actual default size of the image
+        if (!d->icon && !d->defaultSize.isValid()) {
+            defaultSize();
+        }
         // Size changed, invalidate pixmap stored in this object.
-        clearStoredIconContent();
+        clearStoredIconContent(KeepDefaultSize);
     }
 }
 
@@ -793,21 +815,21 @@ void HbIconEngine::paint( QPainter *painter,
                           QIcon::State state )
 {
     // This method is called by QIcon and it should paint the icon with the size defined by 'rect'.
-    HbIconImpl* icon =  NULL;
+    HbIconImpl* icon = 0;
     
     // update the rendering mode
     HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());
     
     icon = paintHelper(rect.size(), Qt::KeepAspectRatio, mode, state);
-    if (icon){
+    if (icon) {
         icon->paint(painter, rect, Qt::AlignCenter);
         HbIconLoader::global()->unLoadIcon(icon);
         icon->dispose();
-    }
 
-    // Now paint any necessary badges.
-    if (d->badgeInfo) {
-        d->badgeInfo->paint(painter, rect, mode, state, icon->isMirrored());
+        // Now paint any necessary badges.
+        if (d->badgeInfo) {
+            d->badgeInfo->paint(painter, rect, mode, state, icon->isMirrored());
+        }
     }
 }
 
@@ -948,7 +970,7 @@ HbIconImpl* HbIconEngine::paintHelper(
                 modeForLoader,
                 d->iconLoaderOptions(),
                 d->animator,
-                (d->flags.testFlag(HbIcon::Colorized) || isMonoIcon(name)) ? d->color : QColor());
+                d->colorToUse(name));
 
             // If loading failed, store information so it is not retried in every repaint.
             if (!icon) {
@@ -987,16 +1009,18 @@ HbIconImpl* HbIconEngine::paintHelper(
     The data will be reloaded (well, at least tried to be reloaded) when the icon is
     painted the next time.
  */
-void HbIconEngine::clearStoredIconContent(bool resetIconSize, bool unloadedByServer)
+void HbIconEngine::clearStoredIconContent(ClearingFlags flags)
 {
 #ifdef HB_ICON_TRACES
     qDebug("HbIconEngine %x: clearStoredIconContent", (int) this);
 #endif
 
     d->pixmap = QPixmap();
-    d->unLoadIcon(unloadedByServer);
-    d->defaultSize = QSizeF();
-    if (resetIconSize) {
+    d->unLoadIcon(flags.testFlag(UnloadedByServer));
+    if (!(flags.testFlag(KeepDefaultSize))) {
+        d->defaultSize = QSizeF();
+    }
+    if (flags.testFlag(ResetIconSize)) {
         d->size = QSizeF();
     }
     d->defaultSizeFailed = false;
@@ -1042,7 +1066,7 @@ void HbIconEngine::themeChange(const QStringList &updatedFiles)
     // Theme has changed, clear stored icon content
     // Server side icon cache is already cleared when theme is changed
     if (updatedFiles.count() == 0 || (d->icon && updatedFiles.contains(d->icon->iconFileName())) ) {
-        clearStoredIconContent(false, true);
+        clearStoredIconContent(UnloadedByServer);
     }
 }
 
@@ -1062,7 +1086,7 @@ void HbIconEngine::handleDefaultSizeAdjustmentChanged()
 {
     if (d->flags.testFlag(HbIcon::ResolutionCorrected)) {
         // Icon content not valid any more - clear it.
-        clearStoredIconContent(true);
+        clearStoredIconContent(ResetIconSize);
     }
 }
 

@@ -290,6 +290,24 @@ bool HbIconPrivate::isBadged() const
 /*!
 \internal
 */
+void HbIconPrivate::setThemedColor(const QColor &color)
+{
+    if (engine && color != engine->themedColor()) {
+        engine->setThemedColor(color);
+    }
+}
+
+/*!
+\internal
+*/
+QColor HbIconPrivate::themedColor() const
+{
+    return engine ? engine->themedColor() : QColor();
+}
+
+/*!
+\internal
+*/
 QDataStream &operator>>(QDataStream &stream, HbIconPrivate &icon)
 {
     stream >> icon.size;
@@ -382,7 +400,7 @@ HbIcon::HbIcon( const QString &iconName )
 * compatibility reasons if a QIcon instance needs to be passed as a parameter
 * to a method taking a HbIcon parameter.
 * \note If this constructor is used, there are the following limitations in the HbIcon methods.
-* - HbIcon::defaultSize() always returns QSizeF().
+* - HbIcon::defaultSize() may return QSizeF().
 * - HbIcon::paint() ignores the parameter aspectRatioMode and converts the given QRectF to QRect.
 * - HbIcon::iconName() returns empty string by default.
 * - HbIcon::pixmap() returns null pixmap.
@@ -487,12 +505,15 @@ QPixmap HbIcon::pixmap()
 * always taken into account when the logical graphics name indicates that it is
 * a mono icon.
 * 
-* Note that if a widget css defines a color for an icon primitive then the style will take
-* care of calling setColor() with the correct color from the theme whenever the theme
-* changes. Typical examples of such widgets are the itemviews (e.g. list, grid). Therefore
-* mono icons shown in such widgets will automatically be colorized with a theme-specific
-* color if the icon is either a mono icon coming from the theme or the icon has the
+* Note that if a widget defines a color for its icon primitive (as most standard
+* widgets do) then the style will take care of colorizing with the correct color
+* from the theme whenever the theme changes. Therefore mono icons shown in such
+* widgets will automatically be colorized with a theme-specific color if the
+* icon is either a mono icon coming from the theme or the icon has the
 * HbIcon::Colorized flag set.
+*
+* However it is possible to override this theme-specific color with a custom one
+* by calling this function.
 *
 * \warning Currently this method makes use of pixmap() routine in case of NVG icons. 
 * pixmap() slows down the hardware accelerated rendering.  

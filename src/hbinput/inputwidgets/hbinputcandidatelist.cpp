@@ -26,10 +26,6 @@
 #include <QLabel>
 #include <QGraphicsLayout>
 
-#if QT_VERSION >= 0x040600
-#include <QGraphicsDropShadowEffect>
-#endif
-
 #include <hblistwidget.h>
 #include <hblistwidgetitem.h>
 #include <hbview.h>
@@ -169,11 +165,6 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
     // Make sure the preview pane never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-
-    // enable drop shadow for the preview pane
-    QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect;
-    effect->setBlurRadius(8);
-    setGraphicsEffect(effect);
 
     setTimeout(NoTimeout);
     setAttribute(Qt::WA_InputMethodEnabled, false);

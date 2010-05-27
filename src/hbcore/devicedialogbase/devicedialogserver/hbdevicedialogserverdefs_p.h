@@ -83,6 +83,7 @@ enum THbSrvCommands
     EHbSrvClientClosing,
     EHbSrvCancelUpdateChannel,
     EHbSrvOpenUpdateChannel,
+    EHbSrvPublishOrientation,
 
     //indicator commands
     EHbSrvIndicatorCommandsStart,

@@ -36,7 +36,7 @@
 #include <sys/stat.h>
 
 // Standard theme root dirs
-const char *coreResourcesRootDir = ":";
+const char *CoreResourcesRootDir = ":";
 
 // Private API
 // WARNING: This API is at prototype level and shouldn't be used before
@@ -221,37 +221,23 @@ void HbStandardDirsInstance::constructRootPathList()
 #endif
 
     // Add core resource dir as well
-    rootPathList << coreResourcesRootDir;
-}
-
-int HbStandardDirsInstance::fileSize( QByteArray fileName ) 
-{ 
-    struct stat fileStat; 
-    const char *fname = fileName.data();
-    int err = stat( fname, &fileStat ); 
-    if (0 != err) return 0; 
-    return fileStat.st_size; 
+    rootPathList << CoreResourcesRootDir;
 }
 
 QStringList HbStandardDirsInstance::additionalRootPath()
 {
-    QFile rootPathFile(rootPathsFile);
     static QStringList rootpaths;
-    
-    QByteArray filePath = rootPathsFile.toLatin1().constData();
-    int size = fileSize(filePath);
-    
-    if(size > 0) {
-        if (rootPathFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&rootPathFile);
-            rootpaths.clear();
-            while (!in.atEnd()) {
-                QString line = in.readLine();
-                QDir rootdir(line);
-                if (rootdir.exists()) {
-                    rootpaths.append(line);
-                }                
-            }        
+    if (!rootpaths.isEmpty()) return rootpaths;
+    QFile rootPathFile(rootPathsFile);
+    if (rootPathFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&rootPathFile);
+        rootpaths.clear();
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            QDir rootdir(line);
+            if (rootdir.exists()) {
+                rootpaths.append(line);
+            }
         }
     }
     return rootpaths;

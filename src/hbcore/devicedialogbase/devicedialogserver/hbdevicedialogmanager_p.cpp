@@ -39,7 +39,7 @@
 #include <hbinstance.h>
 #include <hbpopup.h>
 #include <hbgraphicsscene.h>
-
+#include <hbcorepskeys_p.h>
 #if defined(Q_OS_SYMBIAN)
 #include <coemain.h>
 #include <coecntrl.h>
@@ -130,6 +130,15 @@ HbDeviceDialogManagerPrivate::HbDeviceDialogManagerPrivate(HbDeviceDialogManager
     mServerStatus.setStatus(HbDeviceDialogServerStatus::NoFlags);
     qApp->installEventFilter(this);
     init();
+#if defined(Q_OS_SYMBIAN)	
+    _LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
+    _LIT_SECURITY_POLICY_S0(KWrPolicy, KHbPsForegroundAppOrientationCategoryUid.iUid); // pass device dialog server    
+    
+    int error = mProperty.Define(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey,
+            RProperty::EInt, KRdPolicy, KWrPolicy);
+    if(error == KErrNone)
+        mProperty.Attach(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey);
+#endif        
     TRACE_EXIT
 }
 
@@ -144,6 +153,7 @@ HbDeviceDialogManagerPrivate::~HbDeviceDialogManagerPrivate()
 #if defined(Q_OS_SYMBIAN)
     mScene->removeItem(&mMousePressCatcher);
     mWindowRegion.Close();
+    mProperty.Close();
 #endif
     delete mIndicatorPluginManager;
     TRACE_EXIT
@@ -266,13 +276,24 @@ int HbDeviceDialogManagerPrivate::closeDeviceDialog(int id, bool byClient)
     return ret;
 }
 
+// Publish current orientation to PS-key
+int HbDeviceDialogManagerPrivate::publishOrientation(int orientation)
+{
+#if defined(Q_OS_SYMBIAN)
+   	int ret = mProperty.Set(orientation); 
+    return ret;
+#else
+    Q_UNUSED(orientation)
+    return 0;    
+#endif    
+}
+
 // Client (session) is closing
 void HbDeviceDialogManagerPrivate::deviceDialogClientClosing(quintptr clientTag)
 {
     // Mark device dialogs launched by the client as having client (session) closed.
     // Housekeeper closes these after a timeout. Dialogs without a client are allowed but
     // they need to close within a timeout.
-
     markNoClient(clientTag);
 }
 
@@ -320,6 +341,7 @@ QList<IndicatorClientInfo> HbDeviceDialogManagerPrivate::indicatorClientInfoList
 void HbDeviceDialogManagerPrivate::moveToForeground(bool foreground)
 {
     TRACE_ENTRY_ARGS(foreground)
+    
     if (foreground) {
         if(!mMainWindow->isVisible()) {
             mMainWindow->showFullScreen();
@@ -398,7 +420,7 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
     const HbDeviceDialogsContainer::Dialog::Flags closeCalled(
         HbDeviceDialogsContainer::Dialog::CloseCalled);
     const HbDeviceDialogsContainer::Dialog::Flags noFlags(0);
-
+    
     // Check if any notification dialogs are showing
     const HbDeviceDialogsContainer::Dialog start;
     bool showingNotification = mDialogs.next(start, notificationGroup|showing,
@@ -409,6 +431,18 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
         securityGroup|showing).isValid();
     HbDeviceDialogsContainer::Dialog::Flags newDialogs(0);
 
+#if defined(Q_OS_SYMBIAN)
+    int val = 0;
+    int error = mProperty.Get(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey, val);
+    
+    if (val & KHbFixedOrientationMask) {
+        Qt::Orientation currentOrientation = (Qt::Orientation) (val & KHbOrientationMask);
+        if (currentOrientation == Qt::Vertical || currentOrientation == Qt::Horizontal) {
+            mMainWindow->setOrientation(currentOrientation, false);
+        }
+    }
+#endif
+    
     // Loop over not showing dialogs
     HbDeviceDialogsContainer::Dialog *current = &mDialogs.next(start, noFlags,
         showing | closeCalled);
@@ -453,7 +487,7 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
     const HbDeviceDialogsContainer::Dialog &nonNotificationDialog =
         mDialogs.next(start, showing, notificationGroup|showing);
     bool dialogsShowing = showingNotification || nonNotificationDialog.isValid();
-    
+
     return dialogsShowing;
 }
 
@@ -705,15 +739,19 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
         mDialogs.remove(current);
         removeRegionRect(id);
     }
-
     showDialogs();
     setupWindowRegion();
     updateStatus();
+    
+    //make sure there is no fixed orientation
+    if (mDialogs.isEmpty()) {       
+        mMainWindow->unsetOrientation(false);
+    }
 
     if (!securityDialog) {
         return;
     }
-
+    
     // security or critical level active
     const HbDeviceDialogsContainer::Dialog begin;
     const HbDeviceDialogsContainer::Dialog::Flags securityGroup(
@@ -743,13 +781,13 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
         moreDialogs = mDialogs.next(dialog, criticalGroup|showing,
             criticalGroup|showing).isValid();
     }
-
+    
     if (showingSecurity && !moreDialogs) {
 #if defined(Q_OS_SYMBIAN)
         doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);
-        mMainWindow->hide();        
-#endif        
-    }
+        mMainWindow->hide(); 
+#endif
+    }    
     TRACE_EXIT
 }
 
@@ -923,7 +961,7 @@ bool HbDeviceDialogManagerPrivate::doHousekeeping()
             break;
         }
     }
-
+    
     // Return true if housekeeping needs to continue
     return mDialogs.next(start, closeCalled, closeCalled).isValid() ||
         mDialogs.next(start, noClient, noClient).isValid();

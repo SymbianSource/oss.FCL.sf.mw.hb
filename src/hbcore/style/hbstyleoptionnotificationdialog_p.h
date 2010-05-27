@@ -31,7 +31,7 @@
 #include <hbstyleoptionpopup_p.h>
 
 
-//Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionNotificationDialog : public HbStyleOptionPopup
 {
 public:

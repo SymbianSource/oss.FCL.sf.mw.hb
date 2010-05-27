@@ -26,24 +26,11 @@
 #include <hbstyleoptiondatagroup_p.h>
 
 
-/*!
-
-    \deprecated HbStyleOptionDataGroup::HbStyleOptionDataGroup()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionDataGroup::HbStyleOptionDataGroup() : HbStyleOption(HbSO_DataGroup)
 {
     type = Type;
     version = Version;
 }
-
-/*!
-
-    \deprecated HbStyleOptionDataGroup::HbStyleOptionDataGroup(const HbStyleOptionDataGroup&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 
 HbStyleOptionDataGroup::HbStyleOptionDataGroup(const HbStyleOptionDataGroup &other) :
     HbStyleOption(other),

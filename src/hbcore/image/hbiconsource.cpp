@@ -274,16 +274,16 @@ void HbIconSource::takeSvgRenderer()
 QByteArray* HbIconSource::byteArray()
 {
     if (!mByteArray) {
-    #ifdef HB_NVG_CS_ICON
+#ifdef HB_NVG_CS_ICON
         QFile file(mFilename);
         if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
             return 0;
         }
-        mByteArray = new QByteArray (file.readAll());
-    #endif//nvg 
+        mByteArray = new QByteArray(file.readAll());
+#endif
     }
     
-    if (!mByteArray->isEmpty()) {
+    if (mByteArray && !mByteArray->isEmpty()) {
         return mByteArray;
     } else {
         return 0;

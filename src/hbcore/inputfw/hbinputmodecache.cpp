@@ -372,7 +372,7 @@ HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
     Q_D(HbInputModeCache);
 
     HbInputModeProperties stateProperties = d->propertiesFromState(state);
-    int languageRangeIndex = -1;
+    int languageRangeIndex = -1;    
 
     // First check if there is a method that matches excatly (ie. also specifies
     // the language).
@@ -389,7 +389,7 @@ HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
 
             if (properties.inputMode() != HbInputModeCustom) {
                 if (properties == stateProperties) {
-                        return d->cachedMethod(d->mMethods[i]);
+                    return d->cachedMethod(d->mMethods[i]);
                 }
             }
         }

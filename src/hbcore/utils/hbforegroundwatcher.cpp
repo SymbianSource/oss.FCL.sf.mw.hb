@@ -30,6 +30,7 @@
 #include <hbinstance.h>
 #include <hbsensorlistener_p.h>
 #include "hbsleepmodelistener_p.h"
+#include "hbmainwindow_p.h"
 #ifdef HB_EFFECTS_OPENVG
 #include <hbvgeffect_p.h>
 #endif
@@ -39,14 +40,17 @@
 #include "hbthemecommon_p.h"
 
 /*!
-  @proto
-  @hbcore
   \class HbForegroundWatcher
 
   \brief Listens for Symbian foreground-background notifications via CCoeEnv.
 
-  \internal
+  Note that this class cannot be used to safely determine if the application is
+  in foreground or not. For example there may not be a foreground-gained
+  notification when the application is starting and we always assume that the
+  application is started to foreground. Therefore use this class only to get
+  notifications about loosing/gaining foreground after app startup.
 
+  \internal
 */
 
 /*!
@@ -73,7 +77,6 @@
   This signal is emitted when lights are switched off and the app is in foreground.
 */
 
-
 HbForegroundWatcher *HbForegroundWatcher::instance()
 {
     static HbForegroundWatcher *watcher = new HbForegroundWatcher(qApp);
@@ -91,6 +94,7 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
     } else {
         qWarning("HbForegroundWatcher: CoeEnv not available");
     }
+	     
 #endif
     QApplication::instance()->installEventFilter(this);
     HbSleepModeListener::instance(); // make sure the instance is created
@@ -120,6 +124,12 @@ void HbForegroundWatcher::HandleGainingForeground()
             if (!signalsBlocked()) {
                 HbEffectInternal::resumeEffects();
             }
+#ifdef Q_OS_SYMBIAN
+            HbMainWindow *mWindow = HbInstance::instance()->allMainWindows().first();
+            if (mWindow) {
+                HbMainWindowPrivate::d_ptr(mWindow)->updateForegroundOrientationPSKey();
+            }    		
+#endif //Q_OS_SYMBIAN
         }
         mForeground = true;
     }

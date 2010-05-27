@@ -69,10 +69,12 @@ private:
     HbSharedCache();
     void initServer();
     void initClient();
+    void freeResources();
     HbVector<CacheItem> &itemCache(ItemType type);
     const HbVector<CacheItem> &itemCache(ItemType type) const;
     void addOffsetMap(const char *offsetMapData, int size, int offsetItemCount);
     friend class HbSharedMemoryManager;
+    friend class HbSharedMemoryManagerUt;
 private:
     friend bool writeCssBinary(const QStringList &, const QString &);
 

@@ -26,7 +26,7 @@
 #include <hbnamespace.h>
 
 /*!
-    @beta
+    @stable
     @hbcore
     \namespace Hb
     \brief The Hb namespace contains miscellaneous identifiers used throughout the Hb library.
@@ -574,4 +574,57 @@
     Application was started by other means.
  */ 
 
+/*!
+    \enum Hb::BackgroundImageMode
+
+    Controls how the background image is drawn.
+*/
+
+/*!
+    \var Hb::BackgroundImageMode Hb::ScaleBackgroundToFit
+    
+    The background image is scaled to cover the entire available area. The
+    aspect ratio is kept (by expanding the size if needed). The image is
+    centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::ScaleBackgroundToFitWithoutExpanding
+    
+    The background image is scaled to cover most of the available area. The
+    aspect ratio is kept (without expanding) so the image may not occupy the
+    entire available area. The image is centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::StretchBackgroundToFit
+    
+    The background image is stretched to cover the entire available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::KeepOriginalBackgroundSize
+
+    Keeps the original size of the image, no up or downscaling occurs. The image
+    is centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::KeepOriginalBackgroundSizeIfSmaller
+
+    Keeps the original size of the image only when the size is smaller than the
+    available area (i.e. dynamically switches between Hb::ScaleBackgroundToFit
+    and Hb::KeepOriginalBackgroundSize depending on the size of the source
+    image).
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::DoNotDrawBackground
+
+    Does not draw the background, i.e. the paint() function of the background
+    item will not do anything when this mode is set. Use this only to
+    temporarily prevent the background from showing. If you need to hide the
+    background item permanently then pass Hb::WindowFlagNoBackground to the
+    HbMainWindow constructor because that is more efficient.
+*/
 

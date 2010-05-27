@@ -28,6 +28,7 @@
 #include "hbtapgesture.h"
 #include "hbtapgesture_p.h"
 
+#include <hbdeviceprofile.h>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QGesture>
@@ -98,6 +99,7 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMousePress(
         gesture->setStartPos(me->globalPos());
         gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
         gesture->setSceneStartPos(HbGestureUtils::mapToScene(watched, me->globalPos()));
+        mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
 
         HbTapGesturePrivate* d_ptr = gesture->d_func();
         d_ptr->mTapStyleHint = HbTapGesture::Tap;
@@ -125,18 +127,19 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMouseMove(
         QObject *watched,
         QMouseEvent *me )
 {
-    if(gestureState != Qt::NoGesture) {
-        int tapRadius(mTapRadius);
+    if(gestureState != Qt::NoGesture && gestureState != Qt::GestureCanceled) {
+        int tapRadiusSquare(mTapRadius * mTapRadius);
         if(gesture->property("tapRadius").isValid()) {
             qWarning("WARNING using widget specific properties in HbTapGestureRecognizer");
-            tapRadius = gesture->property("tapRadius").toInt();
+            int tapRadius = gesture->property("tapRadius").toInt();
+            tapRadiusSquare = tapRadius * tapRadius;
         }
 
         gesture->setPosition(me->globalPos());
         gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
         gesture->setHotSpot(me->globalPos());
         QPointF delta = me->globalPos() - gesture->startPos();
-        if(delta.manhattanLength() > tapRadius) {
+        if((delta.x() * delta.x() + delta.y() * delta.y()) > tapRadiusSquare) {
             return QGestureRecognizer::CancelGesture;
         }
     }

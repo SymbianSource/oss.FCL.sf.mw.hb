@@ -58,11 +58,16 @@
   as possible in order to increase the amount of free graphics memory.
 */
 
+static bool oogmWatcherDeleted = false;
+
 /*!
     Returns the global HbOogmWatcher instance.
  */
 HbOogmWatcher *HbOogmWatcher::instance()
 {
+    if (oogmWatcherDeleted) {
+        return 0;
+    }
     static HbOogmWatcher *watcher = new HbOogmWatcher(qApp);
     return watcher;
 }
@@ -78,6 +83,7 @@ HbOogmWatcher::HbOogmWatcher(QObject *parent)
 HbOogmWatcher::~HbOogmWatcher()
 {
     delete d_ptr;
+    oogmWatcherDeleted = true;
 }
 
 /*!

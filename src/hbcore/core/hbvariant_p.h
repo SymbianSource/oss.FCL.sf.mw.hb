@@ -102,7 +102,7 @@ public:
     int toInt() const;
     QString toString() const;
     QColor toColor() const;
-    QStringList toStringList () const;
+    QStringList toStringList() const;
     double toDouble() const;
 
     HbVariant & operator=( int val );

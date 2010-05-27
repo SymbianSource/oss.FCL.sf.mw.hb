@@ -25,31 +25,18 @@
 
 #include "hbstyleoptionindicatorbutton_p.h"
 
-/*!
+/*
     \class HbStyleOptionIndicatorButton
     \brief HbStyleOptionIndicatorButton has the style component for the indicator button
 */
 
-
-
-/*!
-
-    \deprecated HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton() : 
     HbStyleOption(), mode(QIcon::Normal), transparent(false)
 {
     type = Type;
     version = Version;
 }
-/*!
 
-    \deprecated HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton(const HbStyleOptionIndicatorButton&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton(const HbStyleOptionIndicatorButton &other) :
     HbStyleOption(other), mode(other.mode), transparent(other.transparent)
 {

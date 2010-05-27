@@ -37,7 +37,7 @@ SUBDIRS += src
 feature.files += $$HB_SOURCE_DIR/hb.prf
 feature.files += $$HB_BUILD_DIR/hb_install.prf
 feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
-#feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
+feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
 feature.path = $$HB_FEATURES_DIR
 INSTALLS += feature
 
@@ -52,10 +52,11 @@ INSTALLS += hbvar
 symbian {
     exists(rom):include(rom/rom.pri)
     install.depends += index hbvar
-#    install.depends += cssbinary
+    #install.depends += cssbinary
     install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     QMAKE_EXTRA_TARGETS += install
+    BLD_INF_RULES.prj_exports += "sis/hb_stub.sis /epoc32/data/z/system/install/hb_stub.sis"
 }
 
 # theme indexing
@@ -82,6 +83,22 @@ else {
 
 # css binary generation
 
+cssbinary.path = . #needed for install target
+cssbinary.sourcedir = $$PWD/src/hbcore/resources/themes/style/hbdefault
+symbian {
+    cssbinary.targetfile = $${EPOCROOT}epoc32/data/z/resource/hb/themes/css.bin
+} else {
+    cssbinary.targetfile = $$HB_RESOURCES_DIR/themes/css.bin 
+}
+cssbinary.commands = $$hbToolCommand(hbbincssmaker) -i $$cssbinary.sourcedir -o $$cssbinary.targetfile
+
+# copy generated css binary to symbian emulator directory
+symbian {
+    cssbinary.commands += && $$QMAKE_COPY $$hbNativePath($$cssbinary.targetfile) $$hbNativePath($${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/css.bin)
+}
+
+QMAKE_EXTRA_TARGETS += cssbinary
+# INSTALLS += cssbinary
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src

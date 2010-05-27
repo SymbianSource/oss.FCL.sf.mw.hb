@@ -215,14 +215,29 @@ Finds state handler for given input state.
 */
 HbInputMethod* HbInputMethodPrivate::findStateHandler(HbInputState& state)
 {  
+    HbInputMethod *stateHandler = 0;
+
+    if (mFocusObject &&
+        (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintIgnoreFocus)) {
+        return HbInputMethodNull::Instance();
+    }
+
     if (stateAllowedInEditor(state)) {
-        HbInputMethod* stateHandler = HbInputModeCache::instance()->findStateHandler(state);
-        if (stateHandler) {
-            return stateHandler;
+        stateHandler = HbInputModeCache::instance()->findStateHandler(state);
+        if (!stateHandler &&
+             state.inputMode() == HbInputModeNumeric &&
+             state.language() != QLocale::English &&
+             mFocusObject &&
+             (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintFixedInputMode)) {
+             // This is number only editor but there was no numeric handler
+             // for specified language. Use default numeric hanlder
+             // as a fallback.
+             state.setLanguage(QLocale::English);
+             stateHandler = HbInputModeCache::instance()->findStateHandler(state);
         }
     }
 
-    return 0;
+    return stateHandler;
 }
 
 /*!
@@ -371,18 +386,15 @@ void HbInputMethodPrivate::setFocusCommon()
     HbInputMethodDescriptor activeMethod = HbInputSettingProxy::instance()->activeCustomInputMethod();
     if (!activeMethod.isEmpty() && !activeMethod.isDefault()) {
         // A custom method is active. Don't resolve, just try to load it.
-        stateHandler = HbInputModeCache::instance()->loadInputMethod(activeMethod);
+        if ((editorConstraints() & HbEditorConstraintIgnoreFocus) == 0) {
+            stateHandler = HbInputModeCache::instance()->loadInputMethod(activeMethod);
+        }
     }
 
     if (!stateHandler) {
         // It either wasn't a custom method or we were not able to load the custom method.
         // Resolve normally.
          stateHandler = findStateHandler(mInputState);
-    }
-
-    if (editorConstraints() & HbEditorConstraintIgnoreFocus) {
-        // The editor requests us to ignore the focus.
-        stateHandler = 0;
     }
 
     if (stateHandler == 0) {

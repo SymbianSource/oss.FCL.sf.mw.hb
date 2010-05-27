@@ -36,13 +36,14 @@ const QString rootPathsFile = "c:/theme/themerootsdir.txt";
 #elif defined(Q_OS_SYMBIAN)
 const QString rootPathsFile = "c:/data/theme/themerootsdir.txt";
 #elif defined(Q_OS_MAC)
-const QString rootPathsFile = QDir::homePath() + QString( "Library/UI Extensions for Mobile/themes/themerootsdir.txt" );
+const QString rootPathsFile =
+        QDir::homePath() + QString("Library/UI Extensions for Mobile/themes/themerootsdir.txt");
 #elif defined(Q_OS_UNIX)
 const QString rootPathsFile = "/usr/local/hb/theme/themerootsdir.txt";
 #endif
 
 // Standard theme root dirs
-extern const char *coreResourcesRootDir;
+extern const char *CoreResourcesRootDir;
 // WARNING: This API is at prototype level and shouldn't be used before
 // the resource fetching with theming is fully implemented
 class HbStandardDirs

@@ -1,20 +1,18 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
 <g>
-<defs>
-</defs>
 <rect fill="none" height="30" width="30"/>
-<polygon opacity="0.6" points="10,29 10,15 2.865,15 15,0.438 27.135,15 20,15 20,29 "/>
+<polygon fill-opacity="0.6" points="10,29 10,15 2.865,15 15,0.438 27.135,15 20,15 20,29 " stroke-opacity="0.6"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 0 682)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="653.8545" y2="680.0006">
-	<stop offset="0" style="stop-color:#57CDFF"/>
-	<stop offset="0.2788" style="stop-color:#19A3D6"/>
-	<stop offset="1" style="stop-color:#4EDEFF"/>
+<stop offset="0" style="stop-color:#57CDFF"/>
+<stop offset="0.2788" style="stop-color:#19A3D6"/>
+<stop offset="1" style="stop-color:#4EDEFF"/>
 </linearGradient>
 <polygon fill="url(#SVGID_1_)" points="19,14 19,28 11,28 11,14 5,14 15,2 25,14 "/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 0 682)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="654.8691" y2="678.4384">
-	<stop offset="0" style="stop-color:#048CC6"/>
-	<stop offset="1" style="stop-color:#4EDEFF"/>
+<stop offset="0" style="stop-color:#048CC6"/>
+<stop offset="1" style="stop-color:#4EDEFF"/>
 </linearGradient>
 <polygon fill="url(#SVGID_2_)" points="7.135,13 12,13 12,27 18,27 18,13 22.865,13 15,3.563 "/>
 <rect fill="none" height="30" width="30"/>

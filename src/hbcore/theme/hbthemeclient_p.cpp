@@ -113,8 +113,7 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
         : QByteArray();
 }
 
-
-    HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPartIconList,
+HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPartIconList,
                         const HbMultiPartSizeData  &multiPartIconData ,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
@@ -125,7 +124,8 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
                         HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
-    return d->getMultiPartIconInfo(multiPartIconList, multiPartIconData, size, aspectRatioMode, mode, mirrored, options, color, renderMode);
+    return d->getMultiPartIconInfo(multiPartIconList, multiPartIconData, size,
+                                   aspectRatioMode, mode, mirrored, options, color, renderMode);
 }
 
 /**
@@ -134,14 +134,17 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
  * \a fielName  css filename
  * \a priority  layer priority
  */
-HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
+HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName,
+                                                      HbLayeredStyleLoader::LayerPriority priority)
 {
     int offset = -1;
     if( HbLayeredStyleLoader::Priority_Core == priority ) {
         offset = sharedCacheItemOffset(HbSharedCache::Stylesheet, fileName);
     }
     if ( -1 != offset ) {
-        HbCss::StyleSheet *styleSheet = HbMemoryUtils::getAddress<HbCss::StyleSheet>(HbMemoryManager::SharedMemory,offset);
+        HbCss::StyleSheet *styleSheet =
+                HbMemoryUtils::getAddress<HbCss::StyleSheet>(HbMemoryManager::SharedMemory,
+                                                             offset);
         return styleSheet;
     }
     Q_D(HbThemeClient);
@@ -155,12 +158,16 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName, H
  * \a layout
  * \a section
  */
-HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,
+                                                                     const QString &layout,
+                                                                     const QString &section)
 {
-    int offset = sharedCacheItemOffset(HbSharedCache::LayoutDefinition, fileName + layout + section);
+    int offset = sharedCacheItemOffset(HbSharedCache::LayoutDefinition,
+                                       fileName + layout + section);
     if ( -1 != offset ) {
        HbWidgetLoader::LayoutDefinition *layoutDefs =
-           HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(HbMemoryManager::SharedMemory,offset);
+           HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(HbMemoryManager::SharedMemory,
+                                                                       offset);
        return layoutDefs;
     }
     Q_D(HbThemeClient);
@@ -184,7 +191,6 @@ HbTypefaceInfoVector *HbThemeClient::typefaceInfo()
     return d->typefaceInfo();
 }
 
-
 /**
  * HbThemeClient::notifyForegroundLostToServer()
  *
@@ -204,7 +210,8 @@ HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
 {
     int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePath);
     if ( -1 != offset ) {
-       HbEffectFxmlData  *effectFxmlData = HbMemoryUtils::getAddress<HbEffectFxmlData>(HbMemoryManager::SharedMemory,offset);
+       HbEffectFxmlData  *effectFxmlData =
+               HbMemoryUtils::getAddress<HbEffectFxmlData>(HbMemoryManager::SharedMemory, offset);
        return effectFxmlData;
     }
     Q_D(HbThemeClient);
@@ -331,8 +338,12 @@ void HbThemeClient::releaseInstance()
  */
 int HbThemeClient::sharedCacheItemOffset(HbSharedCache::ItemType type, const QString & key)
 {
+    int offset = -1;
     HbSharedCache *cache = HbSharedCache::instance();
-    return cache->offset(type, key);
+    if (cache) {
+        offset = cache->offset(type, key);
+    }
+    return offset;
 }
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -361,7 +372,8 @@ HbSharedIconInfoList HbThemeClient::getMultiIconInfo(const QStringList &multiPar
                         HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);
-    return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode, mirrored, options, color, renderMode);
+    return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode,
+                               mirrored, options, color, renderMode);
 }
 
 /**

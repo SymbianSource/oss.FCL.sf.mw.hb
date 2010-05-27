@@ -65,7 +65,14 @@ def run_process(args, cwd=None):
     code = 0
     output = ""
     if os.name == "nt":
+        env = os.environ.copy()
+        epocroot = env.get("EPOCROOT")
+        if epocroot:
+            if not epocroot.endswith("\\") or epocroot.endswith("/"):
+                env["EPOCROOT"] = "%s/" % epocroot
+            
         args = ["cmd.exe", "/C"] + args
+        
     try:
         if cwd != None:
             oldcwd = os.getcwd()
@@ -75,10 +82,17 @@ def run_process(args, cwd=None):
             code = process.wait()
             output = process.fromchild.read()
         else:
-            process = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            (stdout, stderr) = process.communicate()
-            code = process.returncode
-            output = stdout + stderr
+            if os.name == "nt":
+                process = subprocess.Popen(args, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                (stdout, stderr) = process.communicate()
+                code = process.returncode
+                output = stdout + stderr
+            else:
+                process = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                (stdout, stderr) = process.communicate()
+                code = process.returncode
+                output = stdout + stderr
+
         if cwd != None:
             os.chdir(oldcwd)
     except:
@@ -604,30 +618,7 @@ def main():
     basedir = options.prefix
     if platform.name() != "symbian":
         basedir = os.path.abspath(basedir)
-
     local = os.path.isdir(basedir) and (basedir == currentdir)
-
-    # generate local build wrapper headers
-    synchb = "bin/synchb.py"
-    if options.verbose:
-        synchb = "%s -v" % synchb
-        print("INFO: Running %s" % synchb)
-    os.system("python %s/%s -i %s -o %s" % (sourcedir, synchb, sourcedir, currentdir))
-
-    # generate a qrc for resources
-    args = [os.path.join(sourcedir, "bin/resourcifier.py")]
-    args += ["-i", "%s" % os.path.join(sys.path[0], "src/hbcore/resources")]
-    # TODO: make it currentdir
-    args += ["-o", "%s" % os.path.join(sourcedir, "src/hbcore/resources/resources.qrc")]
-    args += ["--exclude", "\"*distribution.policy.s60\""]
-    args += ["--exclude", "\"*readme.txt\""]
-    args += ["--exclude", "\"*.pr?\""]
-    args += ["--exclude", "\"*.qrc\""]
-    args += ["--exclude", "\"*~\""]
-    args += ["--exclude", "variant/*"]
-    if options.verbose:
-        print("INFO: Running %s" % " ".join(args))
-    os.system("python %s" % " ".join(args))
 
     # compilation tests to detect available features
     config = ConfigFile()
@@ -693,25 +684,6 @@ def main():
     config.set_value("HB_PLUGINS_DIR", ConfigFile.format_dir(options.plugindir))
     config.set_value("HB_RESOURCES_DIR", ConfigFile.format_dir(options.resourcedir))
     config.set_value("HB_FEATURES_DIR", ConfigFile.format_dir(options.featuredir))
-
-
-    if os.name == "posix" or os.name == "mac":
-        sharedmem = test.compile("config.tests/unix/sharedmemory")
-        if sharedmem:
-            (code, output) = run_process(["./hbconftest_sharedmemory"], "config.tests/unix/sharedmemory")
-            sharedmem = (code == 0)
-            if not sharedmem:
-                print("DEBUG:%s" % output)
-        print("INFO: Shared Memory:\t\t\t%s" % sharedmem)
-        if not sharedmem:
-            print("WARNING:The amount of available shared memory is too low!")
-            print "\tTry adjusting the shared memory configuration",
-            if os.path.exists("/proc/sys/kernel/shmmax"):
-                print "(/proc/sys/kernel/shmmax)"
-            elif os.path.exists("/etc/sysctl.conf"):
-                print "(/etc/sysctl.conf)"
-
-
 
     # TODO: get rid of this!
     if platform.name() == "symbian":
@@ -798,7 +770,7 @@ def main():
     #       - can be disabled by passing --no_debug_output option
     config._lines.append("CONFIG(release, debug|release) {\n")
     config._lines.append("    debug_output|developer {\n")
-    config._lines.append("        # debug/warning output enabled {\n")
+    config._lines.append("        # debug/warning output enabled\n")
     config._lines.append("    } else {\n")
     config._lines.append("        DEFINES += QT_NO_DEBUG_OUTPUT\n")
     config._lines.append("        DEFINES += QT_NO_WARNING_OUTPUT\n")
@@ -810,6 +782,9 @@ def main():
     config._lines.append("    }\n")
     config._lines.append("}\n")
 
+    # ensure that no QString(0) -like constructs slip in
+    config.add_value("DEFINES", "QT_QCHAR_CONSTRUCTOR")
+
     # TODO: is there any better way to expose functions to the whole source tree?
     config._lines.append("include(%s)\n" % (os.path.splitdrive(sourcedir)[1] + "/mkspecs/hb_functions.prf"))
 
@@ -818,6 +793,47 @@ def main():
     if not config.write(".qmake.cache"):
         print("ERROR: Unable to write .qmake.cache.")
         return
+
+    if os.name == "posix" or os.name == "mac":
+        sharedmem = test.compile("config.tests/unix/sharedmemory")
+        if sharedmem:
+            (code, output) = run_process(["./hbconftest_sharedmemory"], "config.tests/unix/sharedmemory")
+            sharedmem = (code == 0)
+            if not sharedmem:
+                print("DEBUG:%s" % output)
+        print("INFO: Shared Memory:\t\t\t%s" % sharedmem)
+        if not sharedmem:
+            print("WARNING:The amount of available shared memory is too low!")
+            print "\tTry adjusting the shared memory configuration",
+            if os.path.exists("/proc/sys/kernel/shmmax"):
+                print "(/proc/sys/kernel/shmmax)"
+            elif os.path.exists("/etc/sysctl.conf"):
+                print "(/etc/sysctl.conf)"
+
+    # generate local build wrapper headers
+    print("\nGenerating files...")
+    print("INFO: Wrapper headers")
+    synchb = "bin/synchb.py"
+    if options.verbose:
+        print("INFO: Running %s" % synchb)
+        synchb = "%s -v" % synchb
+    os.system("python %s/%s -i %s -o %s" % (sourcedir, synchb, sourcedir, currentdir))
+
+    # generate a qrc for resources
+    print("INFO: Qt resource collection")
+    args = [os.path.join(sourcedir, "bin/resourcifier.py")]
+    args += ["-i", "%s" % os.path.join(sys.path[0], "src/hbcore/resources")]
+    # TODO: make it currentdir
+    args += ["-o", "%s" % os.path.join(sourcedir, "src/hbcore/resources/resources.qrc")]
+    args += ["--exclude", "\"*distribution.policy.s60\""]
+    args += ["--exclude", "\"*readme.txt\""]
+    args += ["--exclude", "\"*.pr?\""]
+    args += ["--exclude", "\"*.qrc\""]
+    args += ["--exclude", "\"*~\""]
+    args += ["--exclude", "variant/*"]
+    if options.verbose:
+        print("INFO: Running %s" % " ".join(args))
+    os.system("python %s" % " ".join(args))
 
     # build host tools
     if platform.name() == "symbian" or options.hostqmakebin != None or options.hostmakebin != None:
@@ -840,6 +856,16 @@ def main():
     # run qmake
     if options.qmakebin:
         qmake = options.qmakebin
+    
+    # modify epocroot for symbian to have compatibility between qmake and raptor
+    epocroot = os.environ.get("EPOCROOT")
+    replace_epocroot = epocroot
+    if epocroot:
+        if epocroot.endswith("\\") or epocroot.endswith("/"):
+            replace_epocroot = epocroot
+        else:
+            replace_epocroot = "%s/" % epocroot
+    
     profile = os.path.join(sourcedir, "hb.pro")
     cachefile = os.path.join(currentdir, ".qmake.cache")
     if options.msvc:
@@ -855,7 +881,12 @@ def main():
     else:
         print("\nRunning qmake...")
     try:
+        # replace the epocroot for the qmake runtime
+        if replace_epocroot:
+            os.putenv("EPOCROOT", replace_epocroot)
         ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
+        if replace_epocroot:
+            os.putenv("EPOCROOT", epocroot)
     except KeyboardInterrupt:
         ret = -1
     if ret != 0:

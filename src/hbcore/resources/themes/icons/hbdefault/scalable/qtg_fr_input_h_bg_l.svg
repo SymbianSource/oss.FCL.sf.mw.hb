@@ -3,8 +3,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" y="0px">
 <rect fill="none" height="15" width="15"/>
 <rect fill="url(#SVGID_1_)" height="15" width="15"/>
+<rect fill="#969696" height="15" width="1"/>
 <defs>
-<linearGradient gradientTransform="matrix(0 -1 1 0 -4304 1265)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="1257.499" x2="1257.499" y1="4304.333" y2="4348.7798">
+<linearGradient gradientTransform="matrix(0 -1 -1 0 -940.5195 -3915.9805)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-3923.48" x2="-3923.48" y1="-940.5195" y2="-955.5195">
 <stop offset="0" style="stop-color:#D2D2D7"/>
 <stop offset="1" style="stop-color:#AAAAAF"/>
 </linearGradient>

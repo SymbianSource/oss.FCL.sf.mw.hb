@@ -1,21 +1,19 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60">
 <g>
-<defs>
-</defs>
 <rect fill="none" height="60" width="60"/>
 <path d="M56.858,51.79c0,2.797-2.269,5.066-5.069,5.066H8.211c-2.801,0-5.066-2.27-5.066-5.066V8.212  c0-2.8,2.267-5.068,5.066-5.068h43.578c2.801,0,5.069,2.269,5.069,5.068V51.79L56.858,51.79z" fill="#F7B388"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 -282.4805 -346.0195)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="287.9697" x2="336.3918" y1="-351.5146" y2="-399.9242">
-	<stop offset="0" style="stop-color:#DF4F20"/>
-	<stop offset="0.5" style="stop-color:#F48228"/>
-	<stop offset="1" style="stop-color:#CF3A21"/>
+<stop offset="0" style="stop-color:#DF4F20"/>
+<stop offset="0.5" style="stop-color:#F48228"/>
+<stop offset="1" style="stop-color:#CF3A21"/>
 </linearGradient>
 <path d="M8.211,55.314c-1.943,0-3.524-1.582-3.524-3.524V8.212c0-1.945,1.581-3.526,3.524-3.526h43.578  c1.944,0,3.526,1.581,3.526,3.526V51.79c0,1.942-1.582,3.524-3.526,3.524H8.211z" fill="url(#SVGID_1_)"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 -282.4805 -346.0195)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="312.4805" x2="312.4805" y1="-348.7539" y2="-403.0745">
-	<stop offset="0" style="stop-color:#C5422B"/>
-	<stop offset="0.5" style="stop-color:#F48228"/>
-	<stop offset="1" style="stop-color:#AD1B00"/>
+<stop offset="0" style="stop-color:#C5422B"/>
+<stop offset="0.5" style="stop-color:#F48228"/>
+<stop offset="1" style="stop-color:#AD1B00"/>
 </linearGradient>
 <path d="M51.904,3.857c2.338,0,4.238,1.901,4.238,4.236v43.814c0,2.336-1.9,4.234-4.238,4.234H8.093  c-2.335,0-4.236-1.901-4.236-4.234V8.093c0-2.335,1.902-4.236,4.236-4.236H51.904 M51.904,2.999H8.093  c-2.812,0-5.092,2.282-5.092,5.094v43.814c0,2.81,2.28,5.095,5.092,5.095h43.812c2.815,0,5.097-2.285,5.097-5.095V8.093  C57.001,5.281,54.72,2.999,51.904,2.999L51.904,2.999z" fill="url(#SVGID_2_)"/>
 <circle cx="16.742" cy="43.259" fill="#FFFFFF" r="5.208"/>

@@ -41,6 +41,8 @@ class HB_WIDGETS_EXPORT HbDataFormViewItem : public HbAbstractViewItem
     
 public:
 
+
+
     explicit HbDataFormViewItem(QGraphicsItem *parent = 0);
     virtual ~HbDataFormViewItem();
 
@@ -55,7 +57,7 @@ public:
     
     void setExpanded(bool expanded);
     bool isExpanded() const;
-    
+   
     HbWidget* dataItemContentWidget()const;
 
 public slots:

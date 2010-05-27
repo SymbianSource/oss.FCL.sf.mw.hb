@@ -29,7 +29,7 @@
 #include <hbstyleoption_p.h>
 #include <hbnamespace.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionComboBox : public HbStyleOption
 {
 public:

@@ -30,9 +30,8 @@
 
 #include "hbwsiniparser_p.h"
 
-// ======== MEMBER FUNCTIONS ========
-
 #define WSINI_PARSE_ENTRY(keyword, func) { keyword, &HbWsiniParser::call_##func }
+
 const HbWsiniParser::ParserEntry HbWsiniParser::mParseTable[] = 
     {
     WSINI_PARSE_ENTRY("S60_HWSTATE_KEYCODE", hardwareStateKeycode),        //S60_HWSTATE_KEYCODEn <KeyCode>
@@ -51,14 +50,23 @@ const HbWsiniParser::ParserEntry HbWsiniParser::mParseTable[] =
     a wsini file is put in the directory c:\hb\data, then that wsini will 
     simulate the behavior on a Symbian device.
 */
-void HbWsiniParser::parseModes(QMap<int, HbScreenMode> &modes)
+void HbWsiniParser::parseModes(QMap<int, HbScreenMode> &modes, const QString &wsIniFile)
 {
     HbWsiniParser parser(modes);
 #if defined(Q_WS_S60)
+    Q_UNUSED(wsIniFile);
     parser.parseFile("z:\\system\\data\\wsini.ini");
-#elif defined(Q_OS_WIN32)
-    parser.parseFile("c:/hb/data/wsini.ini"); 
-#endif 
+#else //!Q_WS_S60
+    // For unit testing
+    if (!wsIniFile.isEmpty()) {
+        parser.parseFile(wsIniFile);
+    } else {
+#if defined(Q_OS_WIN32)
+        // In windows try to parse file from the hard-coded location
+        parser.parseFile("c:/hb/data/wsini.ini");
+#endif //Q_OS_WIN32
+    }
+#endif //!Q_WS_S60
 }
 
 HbWsiniParser::HbWsiniParser(QMap<int, HbScreenMode> &modes)

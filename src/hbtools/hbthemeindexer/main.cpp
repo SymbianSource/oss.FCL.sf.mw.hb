@@ -59,7 +59,9 @@ QStringList LockedList;
 
 void createMirroredList(const QString &fullThemePath)
 {
-    std::cout << "Parsing mirrored list for theme " << fullThemePath.toStdString() << "\n";
+    if (verboseOn) {
+        std::cout << "Parsing mirrored list for theme " << fullThemePath.toStdString() << "\n";
+    }
     // Find mirrored.txt file
     QString filename = fullThemePath + "/mirrored.txt";
     // Try to read file
@@ -81,7 +83,9 @@ void createMirroredList(const QString &fullThemePath)
 
 void createLockedList(const QString &fullThemePath)
 {
-    std::cout << "Parsing locked list for theme " << fullThemePath.toStdString() << "\n";
+    if (verboseOn) {
+        std::cout << "Parsing locked list for theme " << fullThemePath.toStdString() << "\n";
+    }
     // Find locked.txt file
     QString filename = fullThemePath + "/locked.txt";
     // Try to read file

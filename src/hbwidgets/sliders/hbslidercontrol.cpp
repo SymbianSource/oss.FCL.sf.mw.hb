@@ -62,10 +62,6 @@ HbSliderControlPrivate::HbSliderControlPrivate( ) :
     minorTickInterval( 0 ),// minor tick interval
     groove( 0 ), //slider groove
     progressGroove( 0 ),//progress mask top of groove
-    tickmarksLeft( 0 ), // slider left/top tick mark item
-    tickmarksRight( 0 ),// slider right/bottom tick mark item
-    tickmarkslabelLeft( 0 ),// slider left/above tick mark label
-    tickmarkslabelRight ( 0 ),// slider right/bottom tick mark label
     displayCurrValueToolTip( true ), // holds whether to show current value tooltip or not
     toolTipAlignment( Qt::AlignTop|Qt::AlignRight ), // tooltip alignment
     groovePressed( false ), // hold whether groove is pressed or not
@@ -129,54 +125,7 @@ void HbSliderControlPrivate::init( )
     q->setFlags( QGraphicsItem::ItemIsFocusable );
 }
 
-/*!
-  \internal
-  Updates tick and Label.
-  */
-void HbSliderControlPrivate::updateTickAndLabel( )
-{
-    if (tickmarksLeft) {
-        tickmarksLeft->updateTicks();
-    }
-    if (tickmarksRight) {
-        tickmarksRight->updateTicks();
-    }
-    if( tickmarkslabelLeft ) {
-        tickmarkslabelLeft->updateTickLabels();
-    }
-    if( tickmarkslabelRight ) {
-        tickmarkslabelRight->updateTickLabels( );
-    }
-}
 
-
-/*!
-  \internal
-  Updates tick and Label.
-  */
-void HbSliderControlPrivate::deleteTickAndLabel( )
-{
-    if (tickmarksLeft) {
-        delete tickmarksLeft;
-        tickmarksLeft = 0;
-
-    }  
-    if (tickmarksRight) {
-        delete tickmarksRight;
-        tickmarksRight = 0;
-    }
-
- 
-    if( tickmarkslabelLeft ) {
-        delete tickmarkslabelLeft;
-        tickmarkslabelLeft = 0;
-    }
-    if( tickmarkslabelRight ) {
-        delete tickmarkslabelRight;
-        tickmarkslabelRight = 0;
-    }
-
-}
 
 /*!
   \internal
@@ -323,92 +272,6 @@ int HbSliderControlPrivate::getNearbyTick( )
     return ( q->sliderPosition( ) );
 }
 
-void HbSliderControlPrivate::createSliderTicks( )
-{
-
-    Q_Q ( HbSliderControl);
-    if (! tickmarksLeft) {
-        tickmarksLeft =  new HbSliderTickmarks(q);
-        tickmarksLeft->setTickPosition (Hb::SliderTicksLeft);
-        } 
-    if (!tickmarksRight) {
-       tickmarksRight =  new HbSliderTickmarks(q);
-       tickmarksRight->setTickPosition ( Hb::SliderTicksRight);
-    }
-    if ( orientation == Qt::Vertical ) {
-        HbStyle::setItemName( tickmarksLeft, "tick-marksleft" );
-        HbStyle::setItemName( tickmarksRight, "tick-marksright" );
-    } else {
-        HbStyle::setItemName( tickmarksLeft, "tick-marksabove" );
-        HbStyle::setItemName( tickmarksRight, "tick-marksbelow" );
-    }
-}
-
-void HbSliderControlPrivate::positionTickMarks( )
-{
-    Q_Q (HbSliderControl);
-    if (!tickmarksLeft||!tickmarksRight) {
-        return;
-    }
-      // SliderTickLeft and SliderTicksAbove value is same
-    if ( tickPosition & Hb::SliderTicksLeft) {
-        tickmarksLeft->createIcons(true);
-    } else {
-        tickmarksLeft->createIcons(false);
-    }
-    if ( tickPosition & Hb::SliderTicksRight ) {
-        tickmarksRight->createIcons(true);
-    } else {
-        tickmarksRight->createIcons(false);
-    }
-    if ( orientation == Qt::Vertical ) {
-        if ( tickPosition & Hb::SliderTicksAbsolute)  {
-            q->setLayoutDirection (Qt::LeftToRight );
-            }
-    }
-}
-
-void HbSliderControlPrivate::createSliderTickLabels( )
-{   
-    Q_Q(HbSliderControl);
-    if (! tickmarkslabelLeft) {
-        tickmarkslabelLeft =  new HbSliderTickmarksLabel(q);
-        tickmarkslabelLeft->setTickPosition (Hb::SliderTicksLeft);
-     } 
-    if (!tickmarkslabelRight) {
-        tickmarkslabelRight =  new HbSliderTickmarksLabel(q);
-        tickmarkslabelRight->setTickPosition (Hb::SliderTicksRight );
-     }
-    if ( orientation == Qt::Horizontal ) {
-        HbStyle::setItemName( tickmarkslabelLeft, "tick-textsabove" );
-        HbStyle::setItemName( tickmarkslabelRight, "tick-textsbelow" );
-    } else {
-        HbStyle::setItemName( tickmarkslabelLeft, "tick-textsleft" );
-        HbStyle::setItemName( tickmarkslabelRight, "tick-textsright" );
-    }
-
-}
-
-
-void HbSliderControlPrivate::positionTickMarksLabel( )
-{
-    if (!tickmarkslabelLeft||!tickmarkslabelRight) {
-        return;
-    }
-      // SliderTickLeft and SliderTicksAbove value is same
-    if ( tickPosition & Hb::SliderTicksLeft) {
-        tickmarkslabelLeft->createText(true);
-    } else {
-        tickmarkslabelLeft->createText(false);
-    }
-    if ( tickPosition & Hb::SliderTicksRight ) {
-        tickmarkslabelRight->createText(true);
-    } else {
-        tickmarkslabelRight->createText(false);
-    }
-}
-
-
 /*!
     Constructs a slider control with \a parent.
 */
@@ -482,26 +345,7 @@ void HbSliderControl::setTickPosition( Hb::SliderTickPositions position )
     Q_D( HbSliderControl );
     if ( d->tickPosition != position ) {
         d->tickPosition = position;
-        unsetLayoutDirection( );
-        if ( position == Hb::NoSliderTicks) {
-            d->deleteTickAndLabel( );
-        } else {
-            if ( (!d->tickmarksLeft || !d->tickmarksRight) && d->majorTickInterval > 0) {
-                d->createSliderTicks( );
-                d->positionTickMarks( );
-                repolish( );
-
-            }
-            if ( (!d->tickmarkslabelLeft || !d->tickmarkslabelRight) && d->majorTickInterval > 0 &&
-                (!d->majorLabel.isEmpty( ) || (!d->minorLabel.isEmpty( ) && d->minorTickInterval > 0) ) ) {
-                d->createSliderTickLabels( );
-                d->positionTickMarksLabel ( );
-                repolish( );
-            }
-            d->positionTickMarks( );
-            d->positionTickMarksLabel( );
-        }
-    }
+     }
 }
 
 /*!
@@ -531,29 +375,7 @@ void HbSliderControl::setMajorTickInterval( int interval )
     Q_D( HbSliderControl );
     if ( d->majorTickInterval != interval ) {
         d->majorTickInterval = qAbs ( interval );
-        if (interval <= 0 ) {
-            d->deleteTickAndLabel();
-            repolish();
-        } else if( d->tickPosition!=Hb::NoSliderTicks) {
-            if( !d->tickmarksLeft || !d->tickmarksRight) {
-                d->createSliderTicks( );
-                d->positionTickMarks( );
-                repolish( );
-            } else {
-                d->tickmarksLeft->updateTicks( );
-                d->tickmarksRight->updateTicks( );
-            }
-            if ( (!d->tickmarkslabelRight || !d->tickmarkslabelLeft) && (!d->majorLabel.isEmpty( ) ||
-                (d->minorTickInterval >0  &&! d->minorLabel.isEmpty( )))) {
-                    d->createSliderTickLabels( );
-                    d->positionTickMarksLabel( );
-                    repolish( );
-            }
 
-            if ( d->snappingMode == MajorTickSnapping ) {
-            updateSliderPosToTick( );
-            }
-        }
     }
 }
 
@@ -582,15 +404,6 @@ void HbSliderControl::setMinorTickInterval( int interval )
     Q_D( HbSliderControl );
     if ( d->minorTickInterval != interval ) {
         d->minorTickInterval = qAbs ( interval );
-        if ( d->tickmarksLeft && d->tickmarksRight ) {
-            d->tickmarksLeft->updateTicks( );
-            d->tickmarksRight->updateTicks( );
-        }
-        if ( d->majorTickInterval > 0 && ( !d->minorLabel.isEmpty() && d->minorTickInterval > 0) &&
-            (!d->tickmarkslabelLeft || !d->tickmarkslabelRight) && d->tickPosition!=Hb::NoSliderTicks) {
-                d->createSliderTickLabels( );
-                repolish( );
-        }
         if ( d->snappingMode == MinorTickSnapping && d->minorTickInterval > 0 && d->tickPosition!= Hb::NoSliderTicks ) {
             updateSliderPosToTick( );
         }
@@ -638,28 +451,7 @@ void HbSliderControl::setMajorTickLabels( const QStringList &majorTickLabels )
 {
     Q_D( HbSliderControl );
     d->majorLabel = majorTickLabels;
-    if (d->majorLabel.isEmpty( ) && (d->minorLabel.isEmpty( )|| d->minorTickInterval <=0) ) {
-        if (d->tickmarkslabelLeft) {
-            delete d->tickmarkslabelLeft;
-            d->tickmarkslabelLeft =0;
-        }
-        if( d->tickmarkslabelRight) {
-            delete d->tickmarkslabelRight;
-            d->tickmarkslabelRight =0;
-        }
-        repolish( );
 
-    } else {
-        if ((!d->tickmarkslabelLeft || !d->tickmarkslabelRight) && !d->majorLabel.isEmpty( ) &&
-            d->majorTickInterval > 0 && d->tickPosition!=Hb::NoSliderTicks) {
-                d->createSliderTickLabels( );
-                d->positionTickMarksLabel( );
-                repolish( );
-            }  else if ( d->tickmarkslabelLeft && d->tickmarkslabelRight ) {
-                d->tickmarkslabelLeft->updateTickLabels( );
-                d->tickmarkslabelRight->updateTickLabels( );
-            }
-    }
 }
 
 /*!
@@ -684,25 +476,6 @@ void HbSliderControl::setMinorTickLabels( const QStringList &minorTickLabels )
 {
     Q_D( HbSliderControl );
     d->minorLabel = minorTickLabels;
-    if (d->majorLabel.isEmpty( ) && (d->minorLabel.isEmpty( )|| d->minorTickInterval <=0) ) {
-        if (d->tickmarkslabelLeft) {
-            delete d->tickmarkslabelLeft;
-        }
-        if( d->tickmarkslabelRight) {
-            delete d->tickmarkslabelRight;
-        }
-        repolish( );
-
-    } else {
-        if ((!d->tickmarkslabelLeft || !d->tickmarkslabelRight) &&
-            d->majorTickInterval > 0 && d->tickPosition!=Hb::NoSliderTicks) {
-                d->createSliderTickLabels( );
-                repolish( );
-            }  else if ( d->tickmarkslabelLeft && d->tickmarkslabelRight)  {
-                d->tickmarkslabelLeft->updateTickLabels( );
-                d->tickmarkslabelRight->updateTickLabels( );
-            }
-    }
 }
 
 
@@ -786,7 +559,6 @@ void HbSliderControl::changeEvent( QEvent *event )
     switch ( event->type( ) ) {
         case QEvent::LayoutDirectionChange:
             d->adjustHandle( );
-            d->updateTickAndLabel( );
             break;
         case QEvent::StyleChange:
             // HbSlider::boundingRect( ) result depends on current style
@@ -1076,7 +848,26 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             setSliderPosition( pressValue );
             triggerAction( SliderMove );
             setRepeatAction( SliderNoAction, pressValue );
+            HbWidgetFeedback::triggered( this, Hb::InstantReleased );
+            if ( d->groovePressed ) {
+#ifdef HB_EFFECTS    
+                if( orientation( ) == Qt::Horizontal ) {   
+                    HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_h_trackrelease", "h_trackrelease" );
+                    HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "h_trackrelease" );
+                }  else {
+                    HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_v_trackrelease", "v_trackrelease" );
+                    HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "v_trackrelease" );
+                }    
+#endif
+                HbStyleOptionSlider opt;
+                d->groovePressed = false;
+                initStyleOption( &opt );    
+                // update primitive from press to normal
+                style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
             }
+         }
+         break;
+
         case Qt::GestureCanceled: {
             if ( d->groovePressed ) {
 #ifdef HB_EFFECTS    
@@ -1095,6 +886,8 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
             }
         }
+        break;
+
         default:
             break;
         }
@@ -1145,8 +938,18 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                     HbWidgetFeedback::triggered( this, Hb::InstantPressed );
                     event->ignore();
                     break;
-                } 
+                } else {
+                    setSliderDown( false );
+                    d->groovePressed = false;
+                    updatePrimitives( );
+                    d->handle->updatePrimitives();
+                    d->handleMoving = false;
+                    event->ignore();
+                    HbAbstractSliderControl::gestureEvent(event);
+                }
+
             }
+            break;
             case Qt::GestureFinished:
             case Qt::GestureCanceled: {
                 setSliderDown( false );
@@ -1157,6 +960,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 event->ignore();
                 HbAbstractSliderControl::gestureEvent(event);
             }
+            break;
             default:
                 break;
         }
@@ -1208,7 +1012,6 @@ void HbSliderControl::resizeEvent( QGraphicsSceneResizeEvent *event )
     updatePrimitives( );
     repolish();
     d->adjustHandle( );  
-    d->updateTickAndLabel( );
 }
 /*!
   reimp
@@ -1216,16 +1019,12 @@ void HbSliderControl::resizeEvent( QGraphicsSceneResizeEvent *event )
 */
 void HbSliderControl::polish( HbStyleParameters& params )
 {
-
     Q_D( HbSliderControl );
     HbStyleOptionSlider option;
     initStyleOption( &option );
     HbAbstractSliderControl::polish( params );
     d->adjustHandle( );
-    d->updateTickAndLabel();
     updatePrimitives( );
-
-
 }
 
 /*!
@@ -1331,7 +1130,7 @@ void HbSliderControl::setHandleVisible(bool isVisible)
 	}
 }
 
-bool HbSliderControl::handleVisible() const
+bool HbSliderControl::handleVisible( ) const
 {
     Q_D( const HbSliderControl );
 	return d->handle->isVisible();
@@ -1347,52 +1146,16 @@ void HbSliderControl::sliderChange( SliderChange  change)
     d->adjustHandle( );
     if ( change == SliderOrientationChange ) {
         //Layout is not mirrored in vertical orientation with absolute ticks
-        if ( d->orientation == Qt::Horizontal ) {
-        } else if ( d->tickPosition&Hb::SliderTicksAbsolute) {
-            setLayoutDirection (Qt::LeftToRight);
-        }
         if(d->orientation ==Qt::Horizontal) { 
-            unsetLayoutDirection( );
             if (!d->userDefinedTooltipAlign) {
                 d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignHCenter );
             }
-            setProperty("orientation",(Qt::Orientation)1);
-            if ( d->tickmarksLeft && d->tickmarksRight) {
-                HbStyle::setItemName( d->tickmarksLeft, "tick-marksabove" );
-                HbStyle::setItemName( d->tickmarksRight, "tick-marksbelow" );
-            }
-            if ( d->tickmarkslabelLeft && d->tickmarkslabelRight ) {
-                HbStyle::setItemName( d->tickmarkslabelLeft, "tick-textsabove" );
-                HbStyle::setItemName( d->tickmarkslabelRight, "tick-textsbelow" );
-            }
-
         } else {
-            setProperty("orientation",(Qt::Orientation)2);
-            if ( d->tickPosition & Hb::SliderTicksAbsolute) {
-                setLayoutDirection (Qt::LeftToRight);
-            }
             if (!d->userDefinedTooltipAlign) {
                 d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignRight );
             }
-            if ( d->tickmarksLeft && d->tickmarksRight) {
-                HbStyle::setItemName( d->tickmarksLeft, "tick-marksleft" );
-                HbStyle::setItemName( d->tickmarksRight, "tick-marksright" );
-                if ( d->tickPosition & Hb::SliderTicksAbsolute ) {
-                    setLayoutDirection (Qt::LeftToRight );
-                    }
-            }
-            if ( d->tickmarkslabelLeft && d->tickmarkslabelRight ) {
-                HbStyle::setItemName( d->tickmarkslabelLeft, "tick-textsleft" );
-                HbStyle::setItemName( d->tickmarkslabelRight, "tick-textsright" );
-            }
-
         }
         repolish( );
-        if ( d->tickmarkslabelLeft && d->tickmarkslabelRight ) {
-            d->tickmarkslabelLeft->updateTickLabels( );
-            d->tickmarkslabelRight->updateTickLabels( );
-        }
-
     }
 }
 
@@ -1568,6 +1331,17 @@ bool HbSliderControl::isTrackEventHandlingEnabled ( )
     Q_D( HbSliderControl );
     return d->trackHandlingEnable ;
 }
+
+/*!
+ Gets the size of the handle
+ */
+
+QSizeF HbSliderControl::getHandleSize ( ) 
+{
+    Q_D( HbSliderControl );
+    return d->handle->size( ) ;
+}
+
 
 void HbSliderControl::setTrackFilled(bool trackVisible )
 {

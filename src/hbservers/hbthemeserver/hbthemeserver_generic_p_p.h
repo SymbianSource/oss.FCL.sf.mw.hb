@@ -58,7 +58,7 @@ public:
     void stop();
 
     bool insertIconCacheItem(const HbIconKey &key, HbIconCacheItem *item);
-    HbIconCacheItem* iconCacheItem(const HbIconKey &key);
+    HbIconCacheItem *iconCacheItem(const HbIconKey &key);
     void setMaxGpuCacheSize(int size);
     void setMaxCpuCacheSize(int size);
     void removeIconCacheItem(const HbIconKey &key);
@@ -67,12 +67,13 @@ public:
     void handleContentUpdate(const QStringList &fileNames);
 
     QByteArray handleSharedEffectAddAndFileLookup(int request, const QString &fileName);
-    QByteArray handleSharedWidgetMLLookup(const QString &fileName, const QString &layout, const QString &section);
+    QByteArray handleSharedWidgetMLLookup(const QString &fileName,
+                                          const QString &layout, const QString &section);
     void writeToClients(QByteArray &block);
     void setThemeSelectionClient(QLocalSocket *socket);
 
     bool insertCssCacheItem(const QString &key,  HbCacheItem *item);
-    HbCacheItem* cssCacheItem(const QString &key);
+    HbCacheItem *cssCacheItem(const QString &key);
     void removeCssCacheItem(const QString &key);
     void clearCssCache();
 
@@ -120,7 +121,7 @@ private:
 #endif
     QLocalServer *server;
     QLocalSocket *iThemeSelectionClient;
-    QList<HbThemeServerSession*> sessionList;
+    QList<HbThemeServerSession *> sessionList;
     HbIconDataCache *iconCache;
     HbCache *cssCache;
 	HbRenderingMode renderMode;
@@ -133,10 +134,12 @@ public:
     HbThemeServerSession(QLocalSocket *clientConnection, HbThemeServerPrivate *server);
     ~HbThemeServerSession();
     QLocalSocket *clientConnection();
-    void fillOutPutDataStream(QDataStream &outputDataStream, HbSharedIconInfo &data, HbThemeServerRequest request);
+    void fillOutPutDataStream(QDataStream &outputDataStream, HbSharedIconInfo &data,
+                              HbThemeServerRequest request);
     void getDataFromCacheItem(HbIconCacheItem* cacheItem, HbSharedIconInfo &data) const;
     void freeDataFromCacheItem(HbIconCacheItem* cacheItem);
-    QByteArray handleStyleSheetLookup(int request, const QString &fileName, HbLayeredStyleLoader::LayerPriority priority);
+    QByteArray handleStyleSheetLookup(int request, const QString &fileName,
+                                      HbLayeredStyleLoader::LayerPriority priority);
     QByteArray handleIconLookup(const HbIconKey &key, HbSharedIconInfo &data, int options);
     bool iconInfoFromSingleIcon(HbIconKey key, HbSharedIconInfo &stitchedData);
     bool createCacheItemData(HbIconKey key, int options, HbSharedIconInfo &data);

@@ -27,6 +27,7 @@
 
 TEMPLATE = app
 TARGET = hbconftest_sharedmemory
+isEmpty(HB_SOURCE_DIR):error(HB_SOURCE_DIR not defined!!!)
 DEPENDPATH += . $${HB_SOURCE_DIR}/src/hbcore/core
 INCLUDEPATH += . $${HB_SOURCE_DIR}/src/hbcore/core
 DEFINES += HB_BOOTSTRAPPED

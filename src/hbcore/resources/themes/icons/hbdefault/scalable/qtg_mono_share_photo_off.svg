@@ -1,29 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
-	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
-]>
-<svg version="1.1"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
-	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
-<defs>
-</defs>
-<g opacity="0.5">
-	<rect fill="none" width="30" height="30"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
 </g>
 <path d="M17.774,17.623c-1.341,0.987-1.655,2.234-1.538,3.063l2.715-3.62C18.553,17.17,18.152,17.344,17.774,17.623z"/>
-<path d="M13.148,9H24v3.388c-0.162,0.208-0.314,0.444-0.459,0.695c0.418,0.118,0.793,0.362,1.059,0.717l0.4,0.534V8H12.148L13.148,9
-	z"/>
+<path d="M13.148,9H24v3.388c-0.162,0.208-0.314,0.444-0.459,0.695c0.418,0.118,0.793,0.362,1.059,0.717l0.4,0.534V8H12.148L13.148,9  z"/>
 <path d="M6,10.147l-1-1V22h10.29c0.038-0.066,0.063-0.138,0.11-0.2L16,21H6V10.147z"/>
 <polygon points="11.148,7 26,7 26,15.667 28,18.334 28,5 9.148,5 "/>
 <path d="M15.211,23.895c-0.142-0.283-0.195-0.59-0.194-0.895H4V8.147l-2-2V25h15C16.242,25,15.55,24.572,15.211,23.895z"/>
-<path d="M18.609,14.46c0.953-0.709,1.188-1.786,0.83-2.38c-0.262-0.434-1.124-0.805-2.076,0.389
-	c-0.105,0.132-0.196,0.293-0.278,0.467L18.609,14.46z"/>
+<path d="M18.609,14.46c0.953-0.709,1.188-1.786,0.83-2.38c-0.262-0.434-1.124-0.805-2.076,0.389  c-0.105,0.132-0.196,0.293-0.278,0.467L18.609,14.46z"/>
 <path d="M11.084,15.23c-1.152,1.201-1.271,2.335-0.878,2.738c0.39,0.399,1.681,0.717,3.043-0.573L11.084,15.23z"/>
-<path d="M7.979,12.126c-0.855,0.401-1.094,1.023-0.928,1.342c0.176,0.342,0.979,0.888,2.068,0.206
-	c0.083-0.053,0.156-0.115,0.227-0.182L7.979,12.126z"/>
+<path d="M7.979,12.126c-0.855,0.401-1.094,1.023-0.928,1.342c0.176,0.342,0.979,0.888,2.068,0.206  c0.083-0.053,0.156-0.115,0.227-0.182L7.979,12.126z"/>
 <polygon points="17.795,21.941 17,23 18.854,23 "/>
 <polygon points="27.15,23 29,23 23,15 21.35,17.2 "/>
 <polygon points="20,24.146 20,28 23.854,28 "/>
-<rect x="13.74" y="-3.242" transform="matrix(0.7063 -0.7079 0.7079 0.7063 -6.0767 14.6963)" width="1.868" height="35.827"/>
+<rect height="35.827" transform="matrix(0.7063 -0.7079 0.7079 0.7063 -6.0767 14.6963)" width="1.868" x="13.74" y="-3.242"/>
 </svg>

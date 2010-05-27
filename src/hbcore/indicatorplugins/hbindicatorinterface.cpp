@@ -162,6 +162,14 @@
     \sa HbIndicatorInterface::processClientRequest
 */
 
+/*!
+    \fn void HbIndicatorInterface::userActivated(const QVariantMap &data)
+
+    The class should emit this signal, when client needs to be notified of the
+    user interaction.
+    @param data Data sent by indicator.
+*/
+
 class HbIndicatorInterfacePrivate
 {
 public:

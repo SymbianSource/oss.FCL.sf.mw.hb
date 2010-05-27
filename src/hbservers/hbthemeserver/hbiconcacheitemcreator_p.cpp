@@ -46,7 +46,8 @@
     @hbserver
     \class HbIconCacheItemCreator
     \brief HbIconCacheItemCreator is a factory class responsible for creating the cache items.
-    The cache item structure internally maintains details of the icons created both in the Gpu and the Cpu memory.
+    The cache item structure internally maintains details of
+    the icons created both in the Gpu and the Cpu memory.
 
 */
 
@@ -72,19 +73,20 @@
 QString HbIconCacheItemCreator::KSvg = "SVG";
 QString HbIconCacheItemCreator::KNvg = "NVG";
 QString HbIconCacheItemCreator::KPic = "PIC";
-QString HbIconCacheItemCreator::KBlob = "BOLB";
+QString HbIconCacheItemCreator::KBlob = "BLOB";
 QString HbIconCacheItemCreator::KSgimage = "SGIMAGE";
 
 
 /*!
     \fn HbIconCacheItemCreator::createCacheItem()
-    The createCacheItem is responsible for creating an icon in cpu or gpu memory based on the format provided
+    The createCacheItem is responsible for creating an icon in cpu or gpu memory
+    based on the format provided.
     \a key denotes the unique identifier for the cache item
     \a options indicate different ways of loading icons
     \a format indicates the icon format e.g. svg/nvg etc.\
     \a currentRenderingMode ThemeServer's current rendering mode state.
  */
-HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
+HbIconCacheItem *HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
         HbIconLoader::IconLoaderOptions options,
         const QString &format,
         HbRenderingMode currentRenderingMode,
@@ -95,7 +97,7 @@ HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
     Q_UNUSED(currentRenderingMode)
 #endif
     QScopedPointer <HbIconCacheItem> tempIconCacheItem(new HbIconCacheItem);
-    HbIconCacheItem* item = tempIconCacheItem.data();
+    HbIconCacheItem *item = tempIconCacheItem.data();
     QScopedPointer <HbIconProcessor> rasterIcon;
     QScopedPointer <HbIconProcessor> vectorIcon;
     
@@ -124,32 +126,32 @@ HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
         if (!isMultiPiece) {
 #ifdef HB_SGIMAGE_ICON
             if(renderMode == ESWRendering){ 
-                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));                
-            }else {
+                rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
+            } else {
                 if (HbThemeServerPrivate::gpuMemoryState()) {
-                    rasterIcon.reset(new HbSgimageIconProcessor( key, options, format));
+                    rasterIcon.reset(new HbSgimageIconProcessor(key, options, format));
                 }
-                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
+                vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
             }
 #endif
             
 // if sgImage support is enabled by default remove this block
 #ifndef HB_SGIMAGE_ICON
             if(renderMode == ESWRendering){
-                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));
+                rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
             } else {
-                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
+                vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
             }
 #endif
 // block end
         }
         else {
             if(renderMode == ESWRendering){
-                rasterIcon.reset(new HbPixmapIconProcessor( key, options, format));
+                rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
             } else {
                 // multipieceIcon So make nvgiconimpl for .nvg files
                 // No raster icon data is created
-                vectorIcon.reset(new HbNvgIconProcessor( key, options, format ));
+                vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
             }
         }
 #endif
@@ -210,14 +212,14 @@ HbIconCacheItem* HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
 
 /*!
     \fn HbIconCacheItemCreator::createCacheItem()
-    This overloaded createCacheItem is a helper function to populate a cache item if this item is already
-    created with some parameters either on the Gpu or the Cpu
+    This overloaded createCacheItem is a helper function to populate a cache item
+    if this item is already created with some parameters either on the Gpu or the Cpu
     \a iconCacheItem denotes the cacheItem to be populated
     \a key unique identifier to identify the cache item
     \a currentRenderingMode ThemeServer's current rendering mode state
 
  */
-void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem& iconCacheItem,
+void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem &iconCacheItem,
                                                 const HbIconKey &key,
                                                 HbRenderingMode currentRenderingMode)
 {
@@ -252,10 +254,12 @@ void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem& iconCacheItem,
 #ifdef HB_SGIMAGE_ICON
             if(renderMode == EHWRendering){
                 if (HbThemeServerPrivate::gpuMemoryState()){
-                    rasterIcon.reset(new HbSgimageIconProcessor( key, iconCacheItem.iconOptions, format));
+                    rasterIcon.reset(new HbSgimageIconProcessor(key, iconCacheItem.iconOptions,
+                                                                 format));
                 }
             }else {
-                rasterIcon.reset(new HbPixmapIconProcessor( key, iconCacheItem.iconOptions, format));
+                rasterIcon.reset(new HbPixmapIconProcessor(key, iconCacheItem.iconOptions,
+                                                           format));
             }
 #endif
 #ifdef NVG_ICON
@@ -308,8 +312,8 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
     Q_UNUSED(currentRenderingMode)
 #endif   
     
-    HbIconCacheItem* item = 0;
-    QScopedPointer <HbIconCacheItem> tempIconCacheItem;
+    HbIconCacheItem *item = 0;
+    QScopedPointer<HbIconCacheItem> tempIconCacheItem;
     bool isIconCreated = false;
     QScopedPointer<HbIconProcessor> rasterIcon;
     
@@ -345,7 +349,8 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
         return item;
 #endif
     } else {
-        rasterIcon.reset(new HbPixmapIconProcessor(finalIconKey, (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options, format));
+        rasterIcon.reset(new HbPixmapIconProcessor(finalIconKey,
+            static_cast<HbIconLoader::IconLoaderOptions>(multiPieceIconParams.options), format));
     }
 
     if (rasterIcon.data()) {

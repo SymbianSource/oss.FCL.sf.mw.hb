@@ -351,7 +351,6 @@ bool HbListWidget::setArrangeMode(const bool arrangeMode)
         }
 
         d->mArrangeMode = arrangeMode;
-        d->mAnimateItems = !d->mArrangeMode;
 
         if (d->mArrangeMode == true) {
             d->mOriginalFriction = d->mFrictionEnabled;

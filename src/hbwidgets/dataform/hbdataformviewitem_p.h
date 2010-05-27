@@ -40,6 +40,7 @@ class HbDialog;
 class HbListWidget;
 class QGraphicsLinearLayout;
 class QItemSelection;
+class HbAction;
 
 QT_FORWARD_DECLARE_CLASS(QGraphicsLinearLayout)
 
@@ -135,6 +136,10 @@ public slots:
     void makeSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
+    void aboutToShow();
+    void aboutToHide();
+    void aboutToClose();
+    void finished(HbAction*);
 
 private:
 

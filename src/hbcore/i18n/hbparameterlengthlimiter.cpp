@@ -30,7 +30,7 @@
 #include "hbparameterlengthlimiter_p.h"
 
 /*!
-    @alpha
+    @stable
     @hbcore
     \class HbParameterLengthLimiter
     \brief HbParameterLengthLimiter is a class that offers support to insert different types of arguments into a QString.
@@ -51,7 +51,10 @@
 
 /*!
     Constructs a HbParameterLengthLimiter with \a HbParameterLengthLimiter.
-    \a HbLengthLimter& - HbParameterLengthLimiter that will have arguments inserted
+    
+    \attention Cross-Platform API
+    
+    \param a HbParameterLengthLimiter that will have arguments inserted
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const HbParameterLengthLimiter& a )
 {
@@ -59,10 +62,12 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const HbParameterLengthLimit
     p->str = a.p->str;
 }
 
-
 /*!
     Constructs a HbParameterLengthLimiter with \a QString.
-    \a QString - QString that will have arguments inserted
+    
+    \attention Cross-Platform API
+    
+    \param a QString that will have arguments inserted
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( QString a )
 {
@@ -72,7 +77,10 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( QString a )
 
 /*!
     Constructs a HbParameterLengthLimiter with \a char*.
-    \a const char* - char string that will have arguments inserted
+    
+    \attention Cross-Platform API
+    
+    \param a char string that will have arguments inserted
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a )
 {
@@ -81,9 +89,12 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a )
 }
 
 /*!
-    Constructs a HbParameterLengthLimiter with \a char*.
-    \a const char* - char string that will have arguments inserted
-    \n int - used to identify which plural form to use
+    Constructs a HbParameterLengthLimiter with \a char* and \a int.
+    
+    \attention Cross-Platform API
+    
+    \param a char string that will have arguments inserted
+    \param n used to identify which plural form to use
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a, int n )
 {
@@ -93,6 +104,8 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a, int n )
 
 /*!
     Conp->structs a HbParameterLengthLimiter without a predefined QString.
+    
+    \attention Cross-Platform API  
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter()
 {
@@ -110,10 +123,13 @@ HbParameterLengthLimiter::~HbParameterLengthLimiter()
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a qlonglong - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg(qlonglong a,
                                       int fieldwidth,
@@ -127,10 +143,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg(qlonglong a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a qulonglong - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( qulonglong a,
                                        int fieldwidth,
@@ -145,10 +164,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( qulonglong a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a long - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( long a,
                                        int fieldwidth,
@@ -163,10 +185,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( long a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a ulong - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ulong a,
                                        int fieldwidth,
@@ -180,10 +205,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ulong a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a int - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( int a,
                                        int fieldWidth,
@@ -198,10 +226,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( int a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a uint - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( uint a,
                                        int fieldWidth,
@@ -215,10 +246,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( uint a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a short - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( short a,
                                        int fieldWidth,
@@ -232,10 +266,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( short a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a ushort - number that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \base int - defines the number base
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a number that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param base defines the number base
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ushort a,
                                        int fieldWidth,
@@ -249,11 +286,14 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ushort a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a double - Argument a is formatted according to the specified format and precision.
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \fmt char - defines the format to be used
-    \prec int - defines the precision to be used
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a argument a is formatted according to the specified format and precision
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fmt defines the format to be used
+    \param prec defines the precision to be used
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( double a,
                                        int fieldWidth,
@@ -268,9 +308,12 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( double a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a char - character that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a character that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
                                        int fieldWidth,
@@ -283,9 +326,12 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a QChar - character that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a character that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
                                        int fieldWidth,
@@ -298,9 +344,12 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
 
 /*!
     Inserts an \a argument to a HbParameterLengthLimiter QString.
-    \a QString - QString that will be inserted to the QString
-    \fieldwidth int - specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \fillChar QChar - defines the fill character
+    
+    \attention Cross-Platform API
+    
+    \param a string that will be inserted to the QString
+    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
                                        int fieldWidth,
@@ -431,9 +480,12 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
+    Inserts an arguments a1 and a2 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2 )
@@ -443,10 +495,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2 and a3 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -457,11 +512,14 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3 and a4 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -473,12 +531,15 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
-    \a5 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3, a4 and a5 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
+    \param a5 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -491,13 +552,16 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
-    \a5 QString - QString that will be inserted to the QString
-    \a6 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3, a4, a5 and a6 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
+    \param a5 string that will be inserted to the QString
+    \param a6 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -511,14 +575,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
-    \a5 QString - QString that will be inserted to the QString
-    \a6 QString - QString that will be inserted to the QString
-    \a7 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3, a4, a5, a6 and a7 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
+    \param a5 string that will be inserted to the QString
+    \param a6 string that will be inserted to the QString
+    \param a7 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -533,15 +600,18 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
-    \a5 QString - QString that will be inserted to the QString
-    \a6 QString - QString that will be inserted to the QString
-    \a7 QString - QString that will be inserted to the QString
-    \a8 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3, a4, a5, a6, a7 and a8 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
+    \param a5 string that will be inserted to the QString
+    \param a6 string that will be inserted to the QString
+    \param a7 string that will be inserted to the QString
+    \param a8 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -557,16 +627,19 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments \a1 and \a2 to a HbParameterLengthLimiter QString.
-    \a1 QString - QString that will be inserted to the QString
-    \a2 QString - QString that will be inserted to the QString
-    \a3 QString - QString that will be inserted to the QString
-    \a4 QString - QString that will be inserted to the QString
-    \a5 QString - QString that will be inserted to the QString
-    \a6 QString - QString that will be inserted to the QString
-    \a7 QString - QString that will be inserted to the QString
-    \a8 QString - QString that will be inserted to the QString
-    \a9 QString - QString that will be inserted to the QString
+    Inserts an arguments a1, a2, a3, a4, a5, a6, a7, a8 and a9 to a HbParameterLengthLimiter QString.
+    
+    \attention Cross-Platform API
+    
+    \param a1 string that will be inserted to the QString
+    \param a2 string that will be inserted to the QString
+    \param a3 string that will be inserted to the QString
+    \param a4 string that will be inserted to the QString
+    \param a5 string that will be inserted to the QString
+    \param a6 string that will be inserted to the QString
+    \param a7 string that will be inserted to the QString
+    \param a8 string that will be inserted to the QString
+    \param a9 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2, 
@@ -583,8 +656,11 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Changes the QString that is to be used for inserting arguments to \a.
-    \a QString - QString that will be used for inserting arguments
+    Changes the QString that is to be used for inserting arguments to QString.
+    
+    \attention Cross-Platform API
+    
+    \param a QString that will be used for inserting arguments
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const QString &a )
 {
@@ -593,8 +669,11 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const QString &a 
 }
 
 /*!
-    Changes the QString that is to be used for inserting arguments to \a.
-    \a HbParameterLengthLimiter - HbParameterLengthLimiter holding the QString that will be used for inserting arguments
+    Changes the QString that is to be used for inserting arguments to HbParameterLengthLimiter.
+    
+    \attention Cross-Platform API
+    
+    \param a HbParameterLengthLimiter holding the QString that will be used for inserting arguments
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const HbParameterLengthLimiter &a )
 {
@@ -603,7 +682,9 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const HbParameter
 }
 
 /*!
-    returns the current QString.
+    Returns the current QString.
+    
+    \attention Cross-Platform API    
 */
 HbParameterLengthLimiter::operator QString() const
 {

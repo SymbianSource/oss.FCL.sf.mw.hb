@@ -105,6 +105,7 @@ public:
     void remove(Dialog &dialog);
     Dialog &next(const Dialog &from, Dialog::Flags flags, Dialog::Flags mask);
     Dialog &next(const Dialog &from, Dialog::Variable variable, quintptr value);
+    bool isEmpty() const;
 
 private:
     HbDeviceDialogPluginManager &mPluginManager;

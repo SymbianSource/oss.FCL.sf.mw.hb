@@ -33,6 +33,7 @@
 #include <QTimerEvent>
 #if defined(Q_OS_SYMBIAN)
 #include <e32std.h>
+#include <e32property.h>
 #endif
 
 #include "hbdevicedialogserver_p.h"
@@ -112,6 +113,7 @@ public:
     // Device dialog client related API
     int showDeviceDialog(HbDeviceDialogServer::DialogParameters &parameters);
     int updateDeviceDialog(int id, const QVariantMap &parameters);
+    int publishOrientation(int orientation);
     int closeDeviceDialog(int id, bool byClient = true);
     void deviceDialogClientClosing(quintptr clientTag);
     int activateIndicator(HbDeviceDialogServer::IndicatorParameters &parameters);
@@ -185,6 +187,7 @@ private:
     };
     QList<RegionMapping> mRegionList;
     RRegion mWindowRegion;
+    RProperty mProperty;    
 #endif
 };
 

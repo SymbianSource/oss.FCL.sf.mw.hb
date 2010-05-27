@@ -51,6 +51,9 @@ public:
     enum { Type = HbPrivate::ItemType_DataGroupHeadingWidget };
     int type() const { return Type; }
 
+public slots:        
+    void longPressed(const QPointF &position);
+
 #ifndef HB_GESTURE_FW
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent( QGraphicsSceneMouseEvent * event );
@@ -70,6 +73,7 @@ public:
     bool mDown;
     QString mHeading;
     QString mDescription;
+    bool mLongPressed;
 };
 
 #endif // HBDATAGROUPHEADINGWIDGET_H

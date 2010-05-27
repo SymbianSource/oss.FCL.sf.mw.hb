@@ -25,29 +25,11 @@
 
 #include "hbstyleoptionnotificationdialog_p.h"
 
-/*!
+/*
     \class HbStyleOptionNotificationDialog
     \brief HbStyleOptionNotificationDialog has the style component for notification dialog.
 */
 
-/*!
-    \deprecated HbStyleOptionNotificationDialog::titleWrapping
-        is deprecated. Use wrappingTitle instead.
-*/
-
-/*!
-    \deprecated HbStyleOptionNotificationDialog::textWrapping
-        is deprecated. Use wrappingText instead.
-*/
-
-
-
-/*!
-
-    \deprecated HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog() :
         titleAlignment(Qt::AlignLeft|Qt::AlignVCenter),
         textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
@@ -62,13 +44,6 @@ HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog() :
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(const HbStyleOptionNotificationDialog&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(
         const HbStyleOptionNotificationDialog &other) :
     HbStyleOptionPopup(other),

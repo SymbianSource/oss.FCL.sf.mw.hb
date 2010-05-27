@@ -228,9 +228,13 @@ void HbIndicatorButton::handlePress()
 void HbIndicatorButton::handleRelease()
 {
     Q_D(HbIndicatorButton);
-    d->showIndicatorMenu();
+    if( isUnderMouse() ) {
+        d->showIndicatorMenu();
+    }
 #ifdef HB_EFFECTS
     HbEffect::start(this, "decorator", "released");
 #endif
     updatePrimitives();
 }
+
+

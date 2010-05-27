@@ -28,11 +28,11 @@
 #include <QSharedMemory>
 #include <QDebug>
 
-#define TO_PTR(x) ((char*)(toPointer(x)))
-#define TO_NODE_POINTER(x) ((TreeNode*)(toPointer(x)))
-#define TO_BLOCK_POINTER(x) ((MemoryBlock*)(toPointer(x)))
-#define TO_NODE_OFFSET(x) ((int)((char*)(x)-(char*)(chunk->data())))
-#define TO_OFFSET(x) ((int)((char*)(x)-(char*)(chunk->data())))
+#define TO_PTR(x) ((char *)(toPointer(x)))
+#define TO_NODE_POINTER(x) ((TreeNode *)(toPointer(x)))
+#define TO_BLOCK_POINTER(x) ((MemoryBlock *)(toPointer(x)))
+#define TO_NODE_OFFSET(x) ((int)((char *)(x)-(char *)(chunk->data())))
+#define TO_OFFSET(x) ((int)((char *)(x)-(char *)(chunk->data())))
 
 // this identifier is used to check, if the splay tree is already
 // initialized in given shared chunk
@@ -52,19 +52,19 @@ void HbSplayTreeAllocator::initialize(QSharedMemory *sharedChunk,
     chunk = sharedChunk;
     this->offset = offset;
 
-    header = (HeapHeader*)(static_cast<char *>(chunk->data()) + offset);
+    header = address<HeapHeader>(offset);
     if (header->identifier == INITIALIZED_ALLOCATOR_IDENTIFIER) {
         return; // already initialized
     }
 
     memset(header, 0, sizeof(HeapHeader));
-    header->freeBytes = chunk->size()-offset-sizeof(HeapHeader)-sizeof(MemoryBlock);
+    header->freeBytes = chunk->size() - offset - sizeof(HeapHeader) - sizeof(MemoryBlock);
 
     // insert first memory block in chunk
-    MemoryBlock *block = (MemoryBlock*)&header[1];
+    MemoryBlock *block = reinterpret_cast<MemoryBlock*>(&header[1]);
 
     block->pointerNode.key = TO_OFFSET(block);
-    block->lengthNode.key = (unsigned int)header->freeBytes;
+    block->lengthNode.key = static_cast<unsigned int>(header->freeBytes);
 
     insertLengthNode(&header->lengthNode, &block->lengthNode);
     insertNode(&header->pointerNode, &block->pointerNode);
@@ -94,7 +94,7 @@ HbSplayTreeAllocator::~HbSplayTreeAllocator()
 void *HbSplayTreeAllocator::toPointer(unsigned int offset) const
 {
     if (offset >= sizeof(HeapHeader)) {
-        unsigned char *base = (unsigned char*)(chunk->data());
+        unsigned char *base = static_cast<unsigned char*>(chunk->data());
         return (&base[offset]);
     }
     return 0;
@@ -115,15 +115,15 @@ int HbSplayTreeAllocator::alloc(int size)
 
     size = ALIGN(size);
 
-    if (size > (int)(header->freeBytes-sizeof(MemoryBlock))) {
+    if (size > int(header->freeBytes - sizeof(MemoryBlock))) {
         throw std::bad_alloc();
     }
 
     // splay the 'length' tree to obtain the best match
-    TreeNode *node = TO_NODE_POINTER(splay(&header->lengthNode, (unsigned int)size));
+    TreeNode *node = TO_NODE_POINTER(splay(&header->lengthNode, static_cast<unsigned int>(size)));
     bool splayed = true;
 
-    if (node && (node->key < (unsigned int)size)) {
+    if (node && (node->key < static_cast<unsigned int>(size))) {
         splayed = false;
         node = TO_NODE_POINTER(node->rightNode);
         if (node) {
@@ -140,10 +140,10 @@ int HbSplayTreeAllocator::alloc(int size)
 
     // 'length' node is the first attribute of the MemoryBlock, therefore every
     // 'length' node is also a MemoryBlock.
-    MemoryBlock *block = (MemoryBlock*)node;
+    MemoryBlock *block = reinterpret_cast<MemoryBlock*>(node);
     int totalSize = size + sizeof(MemoryBlock);
-    int remainingSize = (int)node->key - totalSize;
-    unsigned char *ptr = (unsigned char*)&block[1];
+    int remainingSize = int(node->key) - totalSize;
+    unsigned char *ptr = reinterpret_cast<unsigned char*>(&block[1]);
 
     // Remove current block from the trees
     deleteLengthNode(&header->lengthNode, node, splayed);
@@ -151,18 +151,20 @@ int HbSplayTreeAllocator::alloc(int size)
 
     // If the block is larger than the requested size, split the block and 
     // insert the second block into the trees
-    MemoryBlock *secondBlock = (MemoryBlock*)&ptr[size];
-    if ((remainingSize >= (int)(ALIGN_SIZE)) && ((unsigned char*)secondBlock < ((unsigned char*)(chunk->data())+chunk->size()-sizeof(MemoryBlock)))) {
+    MemoryBlock *secondBlock = reinterpret_cast<MemoryBlock*>(&ptr[size]);
+    if (remainingSize >= ALIGN_SIZE
+        && reinterpret_cast<unsigned char*>(secondBlock)
+           < address<unsigned char>(chunk->size() - sizeof(MemoryBlock))) {
 
-        block->lengthNode.key = (unsigned int)size;
-        secondBlock->lengthNode.key = (unsigned int)remainingSize;
+        block->lengthNode.key = static_cast<unsigned int>(size);
+        secondBlock->lengthNode.key = static_cast<unsigned int>(remainingSize);
         secondBlock->pointerNode.key = TO_NODE_OFFSET(secondBlock);
 
         // Insert the second block into the trees
         insertLengthNode(&header->lengthNode, &secondBlock->lengthNode);
         insertNode(&header->pointerNode, &secondBlock->pointerNode);
     } else {
-        totalSize = (int)node->key;
+        totalSize = int(node->key);
     }
 
     // Adjust the allocation size
@@ -178,7 +180,7 @@ int HbSplayTreeAllocator::alloc(int size)
     block->prev = 0;
     block->allocatorIdentifier = MAIN_ALLOCATOR_IDENTIFIER;
 
-	return TO_OFFSET(ptr);
+    return TO_OFFSET(ptr);
 }
 
 /**
@@ -191,9 +193,9 @@ int HbSplayTreeAllocator::allocatedSize(int offset)
 {
     int size = 0;
     if (offset > 0) {
-		char *srcPtr = TO_PTR(offset);
-		MemoryBlock *block = (MemoryBlock*)(srcPtr - sizeof(MemoryBlock));	
-		size = block->lengthNode.key;
+        char *srcPtr = TO_PTR(offset);
+        MemoryBlock *block = reinterpret_cast<MemoryBlock*>(srcPtr - sizeof(MemoryBlock));
+        size = block->lengthNode.key;
     }
     return size;
 }
@@ -211,7 +213,7 @@ void HbSplayTreeAllocator::free(int offset)
     }
 
     MemoryBlock *block = TO_BLOCK_POINTER(offset - sizeof(MemoryBlock));
-    MemoryBlock *nextBlock = (MemoryBlock*)((unsigned char*)&block[1] + block->lengthNode.key);
+    MemoryBlock *nextBlock = reinterpret_cast<MemoryBlock*>(reinterpret_cast<char*>(&block[1]) + block->lengthNode.key);
 
     // Adjust the free bytes
     header->freeBytes += block->lengthNode.key;
@@ -219,12 +221,13 @@ void HbSplayTreeAllocator::free(int offset)
 
     TreeNode *node = 0;
     unsigned int predecessor = 0;
-    if ((char*)nextBlock > (char*)chunk->data() && (char*)nextBlock < ((char*)chunk->data()+chunk->size())) {
+    if (reinterpret_cast<char*>(nextBlock) > reinterpret_cast<char*>(chunk->data())
+        && reinterpret_cast<char*>(nextBlock) < address<char>(chunk->size())) {
         node = TO_NODE_POINTER(splay(&header->pointerNode, nextBlock->pointerNode.key));
     }
 
     if (node) {
-		// Find previous block
+        // Find previous block
         if (node->key < nextBlock->pointerNode.key) {
             predecessor = TO_NODE_OFFSET(node);
         } else if ((predecessor = node->leftNode) > 0) {
@@ -248,7 +251,8 @@ void HbSplayTreeAllocator::free(int offset)
         // See if the block can be merged with the predecessor
         if (predecessor) {
             MemoryBlock *b = TO_BLOCK_POINTER(TO_NODE_POINTER(predecessor)->key);
-            MemoryBlock *t = (MemoryBlock*)((unsigned char*)&b[1] + b->lengthNode.key);
+            MemoryBlock *t = reinterpret_cast<MemoryBlock*>(
+                                reinterpret_cast<unsigned char*>(&b[1]) + b->lengthNode.key);
 
             // Merge with the predecessor
             if (t->pointerNode.key == block->pointerNode.key) {
@@ -256,13 +260,12 @@ void HbSplayTreeAllocator::free(int offset)
                 deleteLengthNode(&header->lengthNode, &b->lengthNode, false);
 
                 // Adjust the size
-                b->lengthNode.key += (block->lengthNode.key + sizeof(MemoryBlock));
-                header->freeBytes += (int)sizeof(MemoryBlock);
-                header->allocatedBytes -= (int)sizeof(MemoryBlock);
+                b->lengthNode.key += block->lengthNode.key + sizeof(MemoryBlock);
+                header->freeBytes += sizeof(MemoryBlock);
+                header->allocatedBytes -= sizeof(MemoryBlock);
 
                 // Re-insert the node in 'length' tree
                 insertLengthNode(&header->lengthNode, &b->lengthNode);
-                
                 block = 0; // We don't have to insert the node
             }
         }
@@ -419,7 +422,7 @@ void HbSplayTreeAllocator::insertNode(unsigned int *root, TreeNode *node, TreeNo
  */
 void HbSplayTreeAllocator::deleteLengthNode(unsigned int *root, TreeNode *node, bool splayed)
 {
-    MemoryBlock *block = (MemoryBlock*)node;
+    MemoryBlock *block = reinterpret_cast<MemoryBlock*>(node);
 
     // If the node is not the first node in the linked list,
     // simply de-link node from the linked list.
@@ -446,7 +449,7 @@ void HbSplayTreeAllocator::deleteLengthNode(unsigned int *root, TreeNode *node, 
                 t->lengthNode.leftNode = TO_NODE_POINTER(x)->leftNode;
                 t->lengthNode.rightNode = TO_NODE_POINTER(x)->rightNode;
                 t->prev = 0;
-                *root = (unsigned int)block->next;
+                *root = static_cast<unsigned int>(block->next);
             }
         } else {
             deleteNode(root, node, false);
@@ -465,13 +468,13 @@ void HbSplayTreeAllocator::insertLengthNode(unsigned int *root, TreeNode *node)
     // Length TreeNode is the first entry in the MemoryBlock. Therefore,
     // we can safely typecast TreeNode to a MemoryBlock.
     MemoryBlock *t = TO_BLOCK_POINTER(splay(root, node->key));
-    MemoryBlock *p = (MemoryBlock*)node;
+    MemoryBlock *p = reinterpret_cast<MemoryBlock*>(node);
 
     if (!t || (t->lengthNode.key != node->key)) {
         // Insert into the tree
         p->prev = 0;
         p->next = 0;
-        insertNode(root, node, (TreeNode*)t);
+        insertNode(root, node, reinterpret_cast<TreeNode*>(t));
     } else {
         // Link to the existing tree node
         p->next = t->next;
@@ -492,18 +495,19 @@ void HbSplayTreeAllocator::insertLengthNode(unsigned int *root, TreeNode *node)
 int HbSplayTreeAllocator::size()
 {
     // splay the 'pointer' tree to obtain last pointer
-    TreeNode *node = TO_NODE_POINTER(splay(&header->pointerNode, (unsigned int)((char*)chunk->data()+chunk->size())));
+    TreeNode *node = TO_NODE_POINTER(splay(&header->pointerNode,
+                                           reinterpret_cast<unsigned int>(address<char>(chunk->size()))));
 
     if (node) {
         TreeNode *right = TO_NODE_POINTER(node->rightNode);
         if (right) {
             node = right;
         }
-        MemoryBlock *block = reinterpret_cast<MemoryBlock*>(reinterpret_cast<char*>(node) - sizeof(TreeNode));
-        int lastUsedOffset = TO_OFFSET(block)+sizeof(MemoryBlock)-1; // this is not aligned to 4!!! but actual last byte allocated
-        return lastUsedOffset;
+        MemoryBlock *block = reinterpret_cast<MemoryBlock*>(reinterpret_cast<char*>(node)
+                             - sizeof(TreeNode));
+        return TO_OFFSET(block) + sizeof(MemoryBlock) - 1; // not aligned, but actual last byte allocated.;
     }
-    return -1; // couldn't found last used offset
+    return -1;
 }
 
 int HbSplayTreeAllocator::freeBytes()
@@ -520,9 +524,9 @@ int HbSplayTreeAllocator::allocatedBytes()
 void HbSplayTreeAllocator::writeReport(QTextStream &reportWriter)
 {
     reportWriter << "***** (Main)HbSplayTreeAllocator report *****\n\n";
-    reportWriter << "Allocated memory (including memory allocated by multisegment allocator): " << header->allocatedBytes << " bytes\n";
+    reportWriter << "Allocated memory (including memory allocated by multisegment allocator): "
+                 << header->allocatedBytes << " bytes\n";
     reportWriter << "Free memory: " << header->freeBytes << " bytes\n";
     reportWriter << "Splaytree allocator is best fit allocator, so there is really no point to calculate fragmentation\n\n";
-
 }
 #endif

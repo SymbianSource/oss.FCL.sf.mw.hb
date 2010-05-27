@@ -72,6 +72,9 @@ public:
     void setBackgroundImageName(Qt::Orientation orientation, const QString &name);
     QString backgroundImageName(Qt::Orientation orientation) const;
 
+    void setBackgroundImageMode(Hb::BackgroundImageMode mode);
+    Hb::BackgroundImageMode backgroundImageMode() const;
+
     void setAutomaticOrientationEffectEnabled(bool enabled = true);
     bool automaticOrientationEffectEnabled() const;
 
@@ -95,6 +98,7 @@ protected:
     void customEvent(QEvent *event);
     void scrollContentsBy(int dx, int dy);
     void paintEvent(QPaintEvent *event);
+    void showEvent(QShowEvent *event);
 
     HbMainWindowPrivate *const d_ptr;
 

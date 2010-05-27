@@ -81,7 +81,7 @@ public:
     void setAction(ActionSelector select, QAction *action);
     void sendToServer(bool show = false);
     bool propertiesModified() const;
-    void clearActions();
+    void clearAction(Action &action);
     void setProperty(PropertySelector propertySelector, int value);
     void setProperty(PropertySelector propertySelector, const QString &value);
 
@@ -93,6 +93,7 @@ public:
 
 public slots:
     void triggerAction(QVariantMap data);
+    void actionChanged();
 
 public: // data
     HbDeviceMessageBox *q_ptr;

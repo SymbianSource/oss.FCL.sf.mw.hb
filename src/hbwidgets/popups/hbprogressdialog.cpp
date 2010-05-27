@@ -231,7 +231,8 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
     \class HbProgressDialog
     \brief HbProgressDialog provides feedback on the progress of a slow operation.
 
-    \image html hbprogressdialog.png  A progress dialog.
+    \image html progressdialog2.png  "A normal Progress Dialog with icon and text"
+    \image html progressdialog2.png  "A wait Progress Dialog with icon and text"
 
     ProgressDialog widget displays that a process is active and also the completion level of the process to the user.
 

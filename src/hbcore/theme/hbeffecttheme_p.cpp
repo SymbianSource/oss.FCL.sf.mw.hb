@@ -23,18 +23,18 @@
 **
 ****************************************************************************/
 
-#include <QDebug>
-#include <QDir>
-
+#include "hbeffecttheme_p.h"
 #include "hbthemecommon_p.h"
 #include "hbstandarddirs_p.h"
 #include "hbinstance.h"
-#include "hbeffecttheme_p.h"
 #include "hbthemeutils_p.h"
 #include "hbeffectinternal_p.h"
 #include "hbthemeindex_p.h"
 #include "hbtheme.h"
 #include "hbtheme_p.h"
+
+#include <QDebug>
+#include <QDir>
 
 #ifdef Q_OS_SYMBIAN
 static const char *effectFileSuffix = ".fxml";
@@ -58,15 +58,15 @@ void HbEffectThemePrivate::initialise(const QString &themeName)
 
     QMap<int, QString> maplist = HbThemeUtils::constructHierarchyListWithPathInfo(
     QString(), mThemeName, Hb::EffectResource);
-        
+
     mDirList.clear();
-        
     QList<QString> list = maplist.values(); // sorted by key
     for (int i = list.count() - 1; i >= 0; --i) { // take highest prio first
         mDirList.append(list.at(i));
     }
 
-    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName, Hb::EffectResource);
+    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName,
+                                                                    Hb::EffectResource);
 }
 
 HbEffectThemePrivate::HbEffectThemePrivate()
@@ -135,7 +135,7 @@ HbEffectTheme::~HbEffectTheme()
     delete d_ptr;
 }
 
-void HbEffectTheme::setCurrentTheme(const QString& themeName)
+void HbEffectTheme::setCurrentTheme(const QString &themeName)
 {
     d_ptr->initialise(themeName);
     d_ptr->mThemeName = themeName;

@@ -57,6 +57,7 @@ public:
     virtual void updateChildItems( );
     virtual bool canSetModelIndex( const QModelIndex &index ) const;
     void polish( HbStyleParameters& params );
+    void emitActivated(const QModelIndex &index)const;
 
 public slots:
     void updatePrimitives( );

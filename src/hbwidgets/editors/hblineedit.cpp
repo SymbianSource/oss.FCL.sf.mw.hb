@@ -594,7 +594,14 @@ void HbLineEdit::setText(const QString &text)
  */
 bool HbLineEdit::canInsertFromMimeData(const QMimeData *source) const
 {
-    return source->hasText() && !source->text().isEmpty();
+    Q_D(const HbLineEdit);
+    if(source->hasText() && !source->text().isEmpty()) {
+        QString text(source->text());
+        d->filterInputText(text);
+        return !text.isEmpty();
+    } else {
+        return false;
+    }
 }
 
 /*!

@@ -35,15 +35,15 @@ class HbDeviceModeInfoPrivate
 
 public:
     HbDeviceModeInfoPrivate();
-    void init();
+    void init(const QString &wsIniFile);
 
 public:
     QMap<int, HbScreenMode> mModes;
     };
 
-void HbDeviceModeInfoPrivate::init()
+void HbDeviceModeInfoPrivate::init(const QString &wsIniFile)
 {
-    HbWsiniParser::parseModes(mModes);
+    HbWsiniParser::parseModes(mModes, wsIniFile);
 }
 
 HbDeviceModeInfoPrivate::HbDeviceModeInfoPrivate()
@@ -58,14 +58,10 @@ HbDeviceModeInfoPrivate::HbDeviceModeInfoPrivate()
     
 */
 
-// ======== LOCAL FUNCTIONS ========
-
-// ======== MEMBER FUNCTIONS ========
-
-HbDeviceModeInfo::HbDeviceModeInfo()
+HbDeviceModeInfo::HbDeviceModeInfo(const QString &wsIniFile)
 :   d_ptr(new HbDeviceModeInfoPrivate())
 {
-    d_ptr->init();
+    d_ptr->init(wsIniFile);
 }
 
 HbDeviceModeInfo::~HbDeviceModeInfo()

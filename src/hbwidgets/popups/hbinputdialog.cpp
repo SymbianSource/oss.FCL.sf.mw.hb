@@ -42,36 +42,72 @@
 /*!
     @beta
     @hbwidgets
-
     \class HbInputDialog
-    \brief HbInputDialog creates a modal dialog for the user to get some information in the form of text or numbers.
-
+    \brief HbInputDialog is a convenient class for getting user inputs. 
     Based on the \InputMode user can enter text, int, double or an IP address. InputDialog can have one or two line edit input fields.
 
-    HbInputDialog by default will have a label to display a descriptive text for the line edit input field and,
-        OK and Cancel buttons.
+    \image html inputdialog.png  "An Input dialog with prompt text and a user input field."
+
+    HbInputDialog by default will have a label to display a descriptive text which gives information on the user input field, 
+    an edit field for entering text and,two action buttons.
 
     example code example:
     \code
-    HbInputDialog *object = new HbInputDialog(parent);
-    object->show();
+    HbInputDialog *object = new HbInputDialog();
     \endcode
+
+    The HbDialog::open( QObject* receiver, const char* member ) method  from the HbDialog is used to show the HbInputDialog. 
+
+    The open method can be attached with a SLOT of the format finished(HbAction*). When the open is used with a slot then the slot 
+    will be invoked once the user does any action such as accept or reject (The Ok or Cancel press).
+
     
-    Four static convenience API's are provided: getText(), getInteger(), getDouble(), and getIp()
+    below is the declaration of the slot.
+    \code
+    public slots : 
+    void dialogClosed(HbAction *action);
+    \endcode
+
+    below code shows how the open method can be called using this slot.
+
+    \code
+    HbInputDialog *object = new HbInputDialog(parent);
+    object->open(this,SLOT(dialogClosed(HbAction*)));
+    \endcode
+
+    A sample slot definition is shown below
+    
+    \code
+    void dialogClosed(HbAction *action)
+    {
+          HbInputDialog *dlg=static_cast<HbInputDialog*>(sender());
+          if(dlg->actions().first() == action) { // user is clicked OK
+              //Get the string enter by user
+               QString myString = dlg->value().toString();
+              //Do the action here
+           }
+           else if(dlg->actions().at(1) == action) {
+              // user is clicked CANCEL
+           }    
+    }
+    \endcode
+
+
+    In HbInputDialog four static convenience API's are provided: getText(), getInteger(), getDouble(), and getIp()
     static API's can be used to quickly get an input from user.
 
-     \enum HbInputDialog::InputMode
+    \enum HbInputDialog::InputMode
 
-    \value \b TextInput When this value is set as Input mode, input dialog accepts text input in its 
+    \value \b TextInput When this value is set as Input mode, Input Dialog accepts text input in its 
         correspoinding line edit field.
 
-    \value \b IntInput When this value is set as Input mode, input dialog accepts Integer input in its 
+    \value \b IntInput When this value is set as Input mode, Input Dialog accepts Integer input in its 
         correspoinding line edit field.
 
-    \value \b RealInput When this value is set as Input mode, input dialog accepts double or float input in its 
+    \value \b RealInput When this value is set as Input mode, Input Dialog accepts double or float input in its 
         correspoinding line edit field.
 
-    \value \b IpInput When this value is set as Input mode, input dialog accepts Ip address as input in its 
+    \value \b IpInput When this value is set as Input mode, Input Dialog accepts Ip address as input in its 
         correspoinding line edit field.
 
  */
@@ -107,15 +143,15 @@ HbInputDialog::~HbInputDialog()
 }
 
 /*!
-    Sets the input mode of the primary(Top/default)line edit in the query widget.
-
-    The default InputMode is TextInput
+    Sets the input mode of the user field. The default InputMode is TextInput.
+    The other available modes are IntInput,RealInput and IpInput.
     
     \param mode. InputMode can be TextMode, IntMode, RealMode and Ip address mode.
         each mode will affect how the line edit filters its input.
     
-    \param row. value 0 or 1
-    
+    \param row. This parameter indicates which row of the field.0 (by default) means the 
+    the first user field and 1 means second user field.
+
     \sa inputMode() 
 */    
 void HbInputDialog::setInputMode(InputMode mode ,int row)
@@ -125,11 +161,10 @@ void HbInputDialog::setInputMode(InputMode mode ,int row)
 }
 
 /*!
-    Returns input mode for top/default line edit.
+    Returns input mode of the user field.The default InputMode is TextInput.
 
-    The default InputMode is TextInput
-
-    \param row. value 0 or 1
+    \param row This parameter indicates which row of the field.0 means the
+    the first user field and 1 means second user field.
 
     \sa setInputMode()
 */
@@ -148,10 +183,11 @@ HbInputDialog::InputMode HbInputDialog::inputMode(int row) const
 }
 
 /*!
-    Sets the prompt \a text for top/default line edit.
+    Sets the prompt text for the user field. This prompt text text can be very descriptive like username,password etc.
 
-    \param text. Text for the label which describes the purpose of the corresponding input line edit field.
-    \param row. value 0 or 1
+    \param text The des
+    \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user field and 1 means second user field.
 
     \sa promtText()
 */
@@ -162,9 +198,10 @@ void HbInputDialog::setPromptText(const QString &text, int row)
 }
 
 /*!
-    Returns prompt text for top/default line edit.
-    the default is null string.
-    \param row. value 0 or 1
+    Returns descriptive prompt text.
+
+    \param row This parameter indicates which row of the field. 0 means the 
+    the user field in the first row and 1 means user field in the second row.
 
     \sa setPromptText()
 */
@@ -175,10 +212,12 @@ QString HbInputDialog::promptText(int row) const
 }
 
 /*!
-    Sets the top/default line edit value in \a text format.
-
-    \param value. user defined value for the default line edit.
-    \param row. value 0 or 1
+    Sets the value for the user input field.The value should in sync HbInputDialog::InputMode of the field.
+    
+    \param value The value that should be presented to the user.
+    
+    \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user field and 1 means second user field.
 
     \sa value()
 */
@@ -189,9 +228,11 @@ void HbInputDialog::setValue(const QVariant &value,int row)
 }
 
 /*!
-    Returns top/default line edit value as QVariant object.
-
-    \param row. value 0 or 1
+    This returns the value of the user field row. The return type is QVariant which can be converted to
+    corresponding type based on HbInputDialog::InputMode of the field.
+   
+   \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user field and 1 means second user field
 
     \sa setValue()
 */
@@ -202,9 +243,10 @@ QVariant HbInputDialog::value(int row) const
 }
 
 /*!
-    Sets the visibility of bottom line edit and prompt text.
+    HbInputDialog is capable of showing one or two user input fields. This can be set using this function.
+    By default this is false and only first row is visible.
 
-    \param visible true or false.
+    \param visible true or false. If true then two user fields will be visible otherwise one.
 
     \sa isAdditionalRowVisible()
 */
@@ -215,8 +257,8 @@ void HbInputDialog::setAdditionalRowVisible(bool visible)
 }
 
 /*!
-    Returns the visibility of secondary row(bottom line edit and prompt text).
-    the default is false
+    Returns the visibility of second row user input field.The default is false.
+
     \sa setAdditionalRowVisible()
 */
 bool HbInputDialog::isAdditionalRowVisible()
@@ -226,12 +268,16 @@ bool HbInputDialog::isAdditionalRowVisible()
 }
 
 /*!
-    Validator is used to validate the content and cursor movements.
+   
+    This API allows the user to set any validator to the user input field.
 
-    \param validator. Validator uses undo stack to back out invalid changes. Therefore undo
+    \param validator Validator uses undo stack to back out invalid changes. Therefore undo
     is enabled when validator is set.
 
-    \sa HbAbstractEdit::setValidator
+	\param row This parameter indicates which row of the user field.0 means the 
+    the first user field and 1 means second user field
+
+    \sa HbAbstractEdit::validator
 */
 void HbInputDialog::setValidator(HbValidator *validator,int row)
 {
@@ -244,9 +290,10 @@ void HbInputDialog::setValidator(HbValidator *validator,int row)
 }
 
 /*!
-    Returns the validator of the inputDialog's line edit.
+    This API returns the validator of the corresponding user input row.
 
-    \param row. A value 0 or 1
+    \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user field and 1 means second user field
 
     \sa setValidator()
 */
@@ -262,9 +309,9 @@ HbValidator * HbInputDialog::validator(int row) const
 }
 
 /*!
-    returns the lineEdit pointer. will return NULL if row is greater than 2.
-
-    \param row. A value 0 or 1
+    This returns the editor instance used in HbInputDialog.
+    \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user field and 1 means second user field
 */
 HbLineEdit* HbInputDialog::lineEdit(int row) const
 {
@@ -278,12 +325,15 @@ HbLineEdit* HbInputDialog::lineEdit(int row) const
 }
 
 /*!
-    sets the echo mode for the given row.
+    sets the echo mode for the user input fiels. The echo mode is defined in HbLineEdit.
+    Normal, NoEcho, Password, PasswordEchoOnEdit are the different echo modes supportted in HbLineEdit.
 
-    \param echoMode
-    \param row. A value 0 or 1
+    \param echoMode which can be HbLineEdit::Normal, HbLineEdit::NoEcho, HbLineEdit::Password or HbLineEdit::PasswordEchoOnEdit.
+    
+    \param row This parameter indicates which row of the user field.0 (by default) means the 
+    the first user input field and 1 means second user input field
 
-    \sa HbLineEdit::setEchoMode
+    \sa echoMode() , HbLineEdit::setEchoMode()
 */
 void HbInputDialog::setEchoMode(HbLineEdit::EchoMode echoMode,int row)
 {
@@ -322,7 +372,6 @@ QGraphicsItem* HbInputDialog::primitive(HbStyle::Primitive primitive) const
 
 /*!
     \reimp
-    Initializes \a option with the values from this HbInputDialog.
 */
 void HbInputDialog::initStyleOption(HbStyleOptionInputDialog *option) const
 {
@@ -334,7 +383,6 @@ void HbInputDialog::initStyleOption(HbStyleOptionInputDialog *option) const
 
 /*!
     \reimp
-    updatePrimitives.
 */
 void HbInputDialog::updatePrimitives()
 {
@@ -352,9 +400,10 @@ void HbInputDialog::updatePrimitives()
 }
 
 /*!
-    Returns the echoMode of line edit. returns -1 if row is more than 2.
+    Returns the echoMode of the user input field.It returns HbLineEdit::EchoMode.
 
-    \param row. A value 0 or 1
+    \param row This parameter indicates which row of the user field.0  means the 
+    the first user input field and 1 means second user input field
 
     \sa setEchoMode()
   */
@@ -370,16 +419,20 @@ HbLineEdit::EchoMode HbInputDialog::echoMode(int row) const
 }
 
 /*!
-    Static convenience function for creating an input dialog to get a string from the user. 
-    \a label is the text which is shown to the user (it should
-    say what should be entered). \a text is the default text which is
-    placed in the line edit. If \a ok is non-null \e *\a ok will be 
-    set to true if the user pressed \gui OK and to false if the user pressed
-    \gui Cancel. The dialog's parent is \a parent. The dialog will be
-    modal.
-
-    This function return data has to be queried in the finished(HbAction*) slot.
-
+    This is a static convenience function for creating an Input Dialog and to get a string data from the the user. The Application can use this 
+    function in order to get any text data from user like username,search data etc. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::getText(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param label The prompt text which gives information on user input field.
+    \param receiver The instance where the slot is declared.
+    \param member The slot which has dialogClosed(HbAction*) signature. 
+    \param text The default text that should be presented to the user.
+    \param scene The scene parameter.
+    \param parent The parent item for the dialog.
+   
     \sa getInteger(), getDouble(), getIp()
 */
 void HbInputDialog::getText(const QString &label,
@@ -402,16 +455,20 @@ void HbInputDialog::getText(const QString &label,
 
 
 /*!
-    Static convenience function to get an integer input from the
-    user.\a label is the text which is shown to the user
-    (it should say what should be entered). \a value is the default
-    integer which the spinbox will be set to.  
-    If \a ok is non-null *\a ok will be set to true if the user
-    pressed \gui OK and to false if the user pressed \gui Cancel. The
-    dialog's parent is \a parent. The dialog will be modal.
-
-    This function return data has to be queried in the finished(HbAction*) slot.
-
+    This is a static convenience function for creating an Input Dialog and to get an integer data from the the user. The Application can use this 
+    function in order to get any integer data from user like year , any number etc. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::getInt(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param label The prompt text which gives information on user input field.
+    \param receiver The instance where the slot is declared.
+    \param member The slot which has dialogClosed(HbAction*) signature. 
+    \param value The default value that should be presented to the user.
+    \param scene The scene parameter.
+    \param parent The parent widget for the dialog.
+   
     \sa getText(), getDouble(), getIp()
 */
 void HbInputDialog::getInteger(const QString &label, 
@@ -432,17 +489,20 @@ void HbInputDialog::getInteger(const QString &label,
     dlg->open(receiver,member);
 }
 /*!
-    Static convenience function to get a floating point number from
-    the user.\a label is the text which is shown to the user
-    (it should say what should be entered). \a value is the default
-    floating point number that the line edit will be set to.
-
-    If \a ok is non-null, *\a ok will be set to true if the user
-    pressed \gui OK and to false if the user pressed \gui Cancel. The
-    dialog's parent is \a parent. The dialog will be modal.
-
-    This function return data has to be queried in the finished(HbAction*) slot.
-
+    This is a static convenience function for creating an Input Dialog and to get a double data from the the user. The Application can use this 
+    function in order to get any double data from user. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::getDouble(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param label The prompt text which gives information on user input field.
+    \param receiver the instance where the slot is declared.
+    \param member the slot which has dialogClosed(HbAction*) signature. 
+    \param value the default value that should be presented to the user.
+    \param scene the scene parameter.
+    \param parent the parent widget for the dialog.
+   
     \sa getText(), getInteger(), getIp()
 */
 void HbInputDialog::getDouble(const QString &label, 
@@ -464,19 +524,22 @@ void HbInputDialog::getDouble(const QString &label,
 
 
 /*!
-    Static convenience function to get an ip address from
-    the user.\a label is the text which is shown to the user
-    (it should say what should be entered). \a address is the default
-    QHostAddress that the line edit will be set to.
-
-    If \a ok is non-null, *\a ok will be set to true if the user
-    pressed \gui OK and to false if the user pressed \gui Cancel. The
-    dialog's parent is \a parent. The dialog will be modal.
-
-    This function return data has to be queried in the finished(HbAction*) slot.
-
+    This is a static convenience function for creating an Input Dialog and to get an IP information from the the user. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::getIp(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param label The prompt text which gives information on user input field.
+    \param receiver the instance where the slot is declared.
+    \param member the slot which has dialogClosed(HbAction*) signature. 
+    \param ipaddress the default value that should be presented to the user.
+    \param scene the scene parameter.
+    \param parent the parent widget for the dialog.
+   
     \sa getText(), getInteger(), getDouble()
 */
+
 void HbInputDialog::getIp(const QString &label, 
                             QObject *receiver,
                             const char *member,
@@ -489,9 +552,9 @@ void HbInputDialog::getIp(const QString &label,
         scene->addItem(dlg);    
     }
     dlg->setPromptText(label);
-	dlg->setValue(ipaddress);
+    dlg->setValue(ipaddress);
     dlg->setInputMode(IpInput);    
     dlg->open(receiver,member);
 }
-
 #include "moc_hbinputdialog.cpp"
+

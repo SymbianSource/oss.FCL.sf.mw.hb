@@ -142,6 +142,10 @@ void HbGroupBoxContentWidget::setType(GroupBoxType type)
 */
 void HbGroupBoxContentWidget::setContentWidget( HbWidget *widget )
 {
+    if ( widget == mContent ) {
+        return;
+    }
+
     // delete old content set
     if ( mContent ) {
         delete mContent; 

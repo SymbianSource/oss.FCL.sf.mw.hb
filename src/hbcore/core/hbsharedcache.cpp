@@ -25,7 +25,7 @@
 
 #include <QSystemSemaphore>
 
-static QSystemSemaphore *Semaphore;
+static QSystemSemaphore *Semaphore = 0;
 
 static QLatin1String SemaphoreName("hbsharedcache_semaphore");
 
@@ -57,7 +57,7 @@ const HbOffsetItem *binaryFind(const QStringRef &key, const HbOffsetItem *itemAr
 
     // binary search
     while (begin <= end) {
-        int mid = begin + (end-begin)/2;
+        int mid = begin + (end - begin) / 2;
         // Fast string comparison, no unnecessary mem copy
         QLatin1String offsetName(reinterpret_cast<const char*>(itemArray)
                                  + itemArray[mid].nameOffset);
@@ -65,10 +65,7 @@ const HbOffsetItem *binaryFind(const QStringRef &key, const HbOffsetItem *itemAr
         // If the item was found, we're done.
         if (!comparison) {
             return &itemArray[mid];
-        }
-
-        // Is the target in lower or upper half?
-        else if (comparison < 0) {
+        } else if (comparison < 0) {
             end = mid - 1;
         } else {
             begin = mid + 1;
@@ -82,7 +79,11 @@ const HbOffsetItem *binaryFind(const QStringRef &key, const HbOffsetItem *itemAr
 HbSharedCache *HbSharedCache::instance()
 {
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    return static_cast<HbSharedMemoryManager*>(manager)->cache();
+    HbSharedCache *ptr = 0;
+    if (manager) {
+        ptr = static_cast<HbSharedMemoryManager*>(manager)->cache();
+    }
+    return ptr;
 }
 
 //doesn't check, if the item is already in the cache.
@@ -173,6 +174,12 @@ HbSharedCache::HbSharedCache()
       mStylesheetCache(HbMemoryManager::SharedMemory),
       mEffectCache(HbMemoryManager::SharedMemory)
 {
+}
+
+void HbSharedCache::freeResources()
+{
+    delete Semaphore;
+    Semaphore = 0;
 }
 
 void HbSharedCache::initServer()

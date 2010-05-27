@@ -123,7 +123,7 @@ HbIconItemPrivate::~HbIconItemPrivate ()
 
 void HbIconItemPrivate::updateIconItem()
 {
-    Q_Q( HbIconItem );
+    Q_Q(HbIconItem);
     const QRectF boundingRect = q->rect();
     if (!boundingRect.size().isEmpty()) {
         mIconRect = boundingRect;
@@ -131,8 +131,17 @@ void HbIconItemPrivate::updateIconItem()
         mAnimator.setIcon(mIcon);
         q->update();
     }
+    if (!mIcon.isNull() && HbIconPrivate::d_ptr(&mIcon)->themedColor() != mThemedColor) {
+        HbIconPrivate::d_ptr_detached(&mIcon)->setThemedColor(mThemedColor);
+    }
 }
 
+void HbIconItemPrivate::setThemedColor(const QColor &color)
+{
+    mThemedColor = color;
+    updateIconItem();
+}
+    
 /*!
  Constructs a new HbIconItem with \a iconName and \a parent.
  \param iconName the name of the icon.
@@ -195,7 +204,10 @@ HbIconItem::HbIconItem(HbIconItemPrivate &dd, QGraphicsItem * parent) :
  */
 HbIconItem::~HbIconItem()
 {
-    HbOogmWatcher::instance()->unregisterIconItem(this);
+    HbOogmWatcher *w = HbOogmWatcher::instance();
+    if (w) {
+        w->unregisterIconItem(this);
+    }
 }
 
 /*!
@@ -214,30 +226,14 @@ HbIcon HbIconItem::icon() const
 
  \param icon the HbIcon instance that this HbIconItem displays.
 
- When \a takeIconSettings is false, the following settings are not
- taken (ignored) from \a icon: flags, color, mirroring mode.  Instead,
- the previous values set via HbIconItem's setters are used.
-
- \sa icon
+ \sa icon()
 */
-void HbIconItem::setIcon(const HbIcon &icon, bool takeIconSettings)
+void HbIconItem::setIcon(const HbIcon &icon, bool reserved)
 {
-    Q_D(HbIconItem );
+    Q_UNUSED(reserved);
+    Q_D(HbIconItem);
     if (d->mIcon != icon) {
-        if (takeIconSettings) {
-            d->mIcon = icon;
-        } else {
-            // Must preserve settings like flags, colors, etc. In this case the
-            // settings made previously through HbIconItem take precedence over the
-            // newly set HbIcon's own settings.
-            HbIcon::Flags prevFlags = d->mIcon.flags();
-            QColor prevColor = d->mIcon.color();
-            HbIcon::MirroringMode prevMirroringMode = d->mIcon.mirroringMode();
-            d->mIcon = icon;
-            d->mIcon.setFlags(prevFlags);
-            d->mIcon.setColor(prevColor);
-            d->mIcon.setMirroringMode(prevMirroringMode);
-        }
+        d->mIcon = icon;
         d->updateIconItem();
     }
 }
@@ -419,12 +415,15 @@ void HbIconItem::setIconName(const QString &iconName, QIcon::Mode mode, QIcon::S
 }
 
 /*!
-  Sets the new icon color for the HbIconItem. Note that the color is just
-  stored but not actually used if the HbIcon::Colorized flag is not set and the
-  icon is not a mono icon from the theme.
+  Sets the new icon color for the HbIconItem. Note that the color
+  is just stored but not actually used if the HbIcon::Colorized flag
+  is not set and the icon is not a mono icon from the theme.
 
- \param  color to be set.
- \sa HbIconItem::color(), HbIcon::setColor()
+  See HbIcon::setColor() for more information on colorization of mono
+  icons in widgets.
+
+  \param  color to be set.
+  \sa HbIconItem::color(), HbIcon::setColor()
 */
 void HbIconItem::setColor(const QColor &color)
 {
@@ -595,7 +594,7 @@ void HbIconItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(option)
     Q_D(HbIconItem);
     const QRectF rect(boundingRect());
-    if(!rect.isEmpty()){
+    if (!rect.isEmpty()){
         if (d->mIconRect != rect) {
             d->mIconRect = rect;
             d->mIcon.setSize(d->mIconRect.size());

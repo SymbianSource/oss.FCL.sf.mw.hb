@@ -39,6 +39,7 @@ public:
     virtual ~HbListItemContainer();
 
     void removeItem(const QModelIndex &index, bool animate);
+    void setItemModelIndexes(int containerStartRow, int modelStartRow, int count);
 
 protected:
 
@@ -46,6 +47,7 @@ protected:
 
     virtual void itemAdded(int index, HbAbstractViewItem *item, bool animate = false);
     virtual void itemRemoved(HbAbstractViewItem *item, bool animate = false);
+
 
     virtual void viewResized(const QSizeF &viewSize);
 

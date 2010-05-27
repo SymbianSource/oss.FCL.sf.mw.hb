@@ -3322,7 +3322,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                          }
 					}
                     frameItem->frameDrawer().setFillWholeRect(true);       
-                    frameItem->update();
+                    //frameItem->update();
                     }
                     break;
             case P_ProgressSlider_track: // The ProgressValue Mask
@@ -3351,7 +3351,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     frameItem->setValue(opt->progressSliderValue);
                     frameItem->setInverted(opt->inverted);
                     frameItem->setOrientation(opt->orientation);
-                    frameItem->update();
+                    //frameItem->update();
                     } 
                     break;
             case P_ProgressBar_mintext: {
@@ -4291,9 +4291,11 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
             HbWidgetBasePrivate::d_ptr(text)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
         }
     }   
-    if(iconItem){
-        //applying color to mono-colorised icons from theme
-        iconItem->setColor( col );
+    if (iconItem) {
+        // Applying color to mono-colorised icons from theme. Using setColor()
+        // here would be wrong. It would lead to loosing the user-supplied color
+        // in some cases so use the special setThemedColor() instead.
+        HbIconItemPrivate::d_ptr(iconItem)->setThemedColor( col );
     }
     if(marqueeItem){
         //applying color to the marquee-item from theme
@@ -4425,13 +4427,13 @@ QString HbStyle::itemName( const QGraphicsItem *item )
     Available parameters can be found from hbglobalparameters.css. By using these
     parameters applications get consistent look.
 
-    \param variable Name of the global parameter.
+    \param param Name of the global parameter.
     \param value Returns value of the global parameter.
     \param profile Device profile of the used HbMainWindow. Primary display's.
             device profile HbDeviceProfile::current() is used if the value is omitted.
-    \return true if the variable were found.
+    \return true if the variable was found.
 */
-bool HbStyle::parameter(const QString& parameter, qreal& value, const HbDeviceProfile &profile) const
+bool HbStyle::parameter(const QString& param, qreal& value, const HbDeviceProfile &profile) const
 {
     HbDeviceProfile effectiveProfile = profile;
     if ( effectiveProfile.isNull() ) {
@@ -4442,23 +4444,23 @@ bool HbStyle::parameter(const QString& parameter, qreal& value, const HbDevicePr
     HbCss::ValueExtractor valueExtractor(d->layoutParameters, true, effectiveProfile);
     // todo: parsing variable/expression is done here so that there is no need to change API
     // also parameters method not changed (this change is done for docml/widgetml parsing)
-    if (parameter.startsWith("var(") && parameter.endsWith(")")) {
-        return valueExtractor.extractValue(parameter.mid(4,parameter.length()-5), value);
-    } else if (parameter.startsWith("-var(") && parameter.endsWith(")")) {
-        bool retVal = valueExtractor.extractValue(parameter.mid(5,parameter.length()-6), value);
+    if (param.startsWith("var(") && param.endsWith(")")) {
+        return valueExtractor.extractValue(param.mid(4,param.length()-5), value);
+    } else if (param.startsWith("-var(") && param.endsWith(")")) {
+        bool retVal = valueExtractor.extractValue(param.mid(5,param.length()-6), value);
         value = -value;
         return retVal;
-    } else if (parameter.startsWith("expr(") && parameter.endsWith(")")) {
-        QString expressionString = parameter.mid(5,parameter.length()-6);
+    } else if (param.startsWith("expr(") && param.endsWith(")")) {
+        QString expressionString = param.mid(5,param.length()-6);
         return valueExtractor.extractExpressionValue(expressionString, value);
-    } else if (parameter.startsWith("-expr(") && parameter.endsWith(")")) {
-        QString expressionString = parameter.mid(6,parameter.length()-7);
+    } else if (param.startsWith("-expr(") && param.endsWith(")")) {
+        QString expressionString = param.mid(6,param.length()-7);
         bool retVal = valueExtractor.extractExpressionValue(expressionString, value);
         value = -value;
         return retVal;
     }
 
-    return valueExtractor.extractValue(parameter, value);    
+    return valueExtractor.extractValue(param, value);    
 }
 
 /*!
@@ -4469,12 +4471,12 @@ bool HbStyle::parameter(const QString& parameter, qreal& value, const HbDevicePr
     parameters applications get consistent look. Usage of this API (instead of parameter)
     is recommended if an application needs to fetch several parameters in one place.
 
-    \param parameters Contains names and values of all global style parameters.
+    \param params Contains names and values of all global style parameters.
     \param profile Device profile of the used HbMainWindow. Primary display's
             device profile HbDeviceProfile::current() is used if the value is omitted.
 */
 
-void HbStyle::parameters(HbStyleParameters &parameters, const HbDeviceProfile &profile) const
+void HbStyle::parameters(HbStyleParameters &params, const HbDeviceProfile &profile) const
 {
     HbDeviceProfile effectiveProfile = profile;
     if ( effectiveProfile.isNull() ) {
@@ -4488,10 +4490,60 @@ void HbStyle::parameters(HbStyleParameters &parameters, const HbDeviceProfile &p
     QHash<QString, HbCss::Declaration>::const_iterator i = d->layoutParameters.constBegin();
     while (i != d->layoutParameters.constEnd()) {
         if (valueExtractor.extractValue(i.key(), value)) {
-            parameters.addParameter(i.key(), value);
+            params.addParameter(i.key(), value);
         }
         ++i;
     }
+}
+
+/*!
+    Returns values for widget specific style parameters. The names of the parameters
+    are passed in with \a params. 
+
+    This method should be used only if you need to access widget specific parameters out
+    of the polish loop. It is more efficient to use HbWidget::polish(HbStyleParameters &params)
+    if you don't need to access the parameters before the (first) polish event.
+
+    \param parameters, style parameters to be returned to the caller
+    \param widget, HbWidget to be polished
+    \sa HbStyle::polish, HbStyle::parameters and HbWidget::polish
+*/
+void HbStyle::widgetParameters(HbStyleParameters &params, HbWidget* widget) const
+{
+    Q_D( const HbStyle );
+    if( !widget || !params.count() ) {
+        return;
+    }
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::widgetParameters : Parameters for" << widget->metaObject()->className();
+#endif
+
+    HbLayeredStyleLoader *styleLoader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Layouts);
+    if(!styleLoader){
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::widgetParameters : HbLayeredStyleLoader returned a null pointer.";
+#endif
+        return;
+    }
+    HbDeviceProfile profile(HbDeviceProfile::profile(widget));
+    NODEPTR_N(widget);
+
+    HbVector<HbCss::StyleRule> styleRules = styleLoader->styleRulesForNode(n, profile.orientation());
+
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::widgetParameters : Number of style rules:" << styleRules.count();
+#endif
+    if (!styleRules.count()) {
+        return;
+    }
+    const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", widget, profile);
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::widgetParameters : Number of maching CSS declarations: " << decl.count();
+#endif
+    d->ensureLayoutParameters(profile);
+
+    HbCss::ValueExtractor extractor(decl, d->layoutParameters, profile);
+    extractor.extractParameters( params.params(), params.values() );
 }
 
 
@@ -4537,33 +4589,41 @@ void HbStylePrivate::_q_onThemeChanged()
 */
 QString HbStylePrivate::logicalName(HbStyle::Primitive primitive, const QStyleOption *option) const
 {
-    switch(primitive){
-    case HbStyle::P_Slider_thumb:{
-        const HbStyleOptionSlider *opt = qstyleoption_cast<const HbStyleOptionSlider *>(option);
-        QString iconPath;
+    switch (primitive) {
 
-                switch (opt->orientation){
-                case Qt::Horizontal:{
-                        if( opt->state&QStyle::State_Sunken)
-                            iconPath= "qtg_graf_slider_h_handle_pressed";
-                        else
-                            iconPath= "qtg_graf_slider_h_handle_normal";
-                        return (iconPath);
-                }
-                case Qt::Vertical:{
-                        if( opt->state&QStyle::State_Sunken)
-                            iconPath= "qtg_graf_slider_v_handle_pressed";
-                        else
-                            iconPath= "qtg_graf_slider_v_handle_normal";
-                        return (iconPath);
-                }
-                default: break;
+    case HbStyle::P_Slider_thumb: {
+        const HbStyleOptionSlider *opt = qstyleoption_cast<const HbStyleOptionSlider *>(option);
+        if (opt) {
+            QString iconPath;
+            switch (opt->orientation) {
+
+            case Qt::Horizontal:
+                if (opt->state & QStyle::State_Sunken)
+                    iconPath = "qtg_graf_slider_h_handle_pressed";
+                else
+                    iconPath = "qtg_graf_slider_h_handle_normal";
+                return iconPath;
+
+            case Qt::Vertical:
+                if (opt->state & QStyle::State_Sunken)
+                    iconPath = "qtg_graf_slider_v_handle_pressed";
+                else
+                    iconPath = "qtg_graf_slider_v_handle_normal";
+                return iconPath;
+
+            default:
+                break;
+
+            }
         }
     }
-        default: break;
+
+    default:
+        break;
+        
     }
 
-return QString();
+    return QString();
 }
 
 /*!

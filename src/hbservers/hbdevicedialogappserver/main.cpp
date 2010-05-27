@@ -134,7 +134,8 @@ int main(int arg, char *args[])
     }
     _LIT(KThreadName, "hbdevdlgsrvapp");
     RThread().RenameMe(KThreadName); // nicer panic info
-
+    RThread().SetProcessPriority(EPriorityHigh);
+    
     HbApplication app(deviceDialogAppFactory, arg, args, Hb::NoSplash);
 #else // Q_OS_SYMBIAN
     HbApplication app(arg, args);

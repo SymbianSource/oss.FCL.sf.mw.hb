@@ -84,9 +84,12 @@ public:
     HbVector<HbCss::StyleRule> styleRulesForNode(HbStyleSelector::NodePtr node,
 			const Qt::Orientation orientation) const;
     void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
+
+protected:
+    void updateLayersListIfRequired(LayerPriority priority);
+    QList<LayerPriority> mUsedLayers;
     
 private:
-    QList<LayerPriority> LayerList() const;
     bool loadBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
     bool saveBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
     void saveDeclarations(QDataStream & stream,HbVector<HbCss::Declaration>* decls );

@@ -1,7 +1,7 @@
 HbStatusBar
 {
     layout:default;
-    mirroring: disabled;
+    layout-direction: left-to-right;
 }
 
 HbStatusBar::timetext

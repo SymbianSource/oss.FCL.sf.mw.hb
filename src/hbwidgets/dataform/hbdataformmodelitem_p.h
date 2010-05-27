@@ -41,6 +41,7 @@ public:
 
     void setModel(const QAbstractItemModel *model);
     QAbstractItemModel* model() const;
+    void setContentWidgetData(const QString& propertyName ,const QVariant &value);
 
 public:
 

@@ -31,6 +31,7 @@
 #include "hbsliderhandle_p.h"
 
 #include "hbstyleoptionslider_p.h"
+#include "hbslidertickmarks_p.h"
 #include "hbslidertickmarkslabel_p.h"
 #include "hbabstractbutton.h"
 #include <hbwidgetfeedback.h>
@@ -243,7 +244,12 @@
 HbSliderPrivate::HbSliderPrivate( ) :
     sliderControl( 0 ),
     orientation( Qt::Vertical ),
-    pressOnIncrement( false )
+    pressOnIncrement( false ),
+    tickmarksLeft( 0 ), // slider left/top tick mark item
+    tickmarksRight( 0 ),// slider right/bottom tick mark item
+    tickmarkslabelLeft( 0 ),// slider left/above tick mark label
+    tickmarkslabelRight ( 0 )// slider right/bottom tick mark label
+
 {
     elementItemMap.clear();
 
@@ -291,6 +297,11 @@ void HbSliderPrivate::setElements( QList<HbSlider::SliderElement> elementList)
     // this will delete unwanted element and create new element
     updateElements( );
     // repolish call is required because new elements might be added
+}
+
+QSizeF HbSliderPrivate::getHandleSize( )
+{
+   return sliderControl ->getHandleSize();
 }
 
 /*!
@@ -464,6 +475,242 @@ void HbSliderPrivate::setTickLabelPresentProperty( )
 
 }
 
+
+
+
+void HbSliderPrivate::createTickMarks( )
+{
+    Q_Q ( HbSlider);
+    bool modified = false;
+    if( q->majorTickInterval( ) <= 0) {
+        return;
+    }
+    if ( q->tickPosition( ) & Hb::SliderTicksLeft) {
+        if (!tickmarksLeft) {
+            tickmarksLeft =  new HbSliderTickmarks(q);
+            tickmarksLeft->setZValue(sliderControl->zValue()-1);
+            tickmarksLeft->setTickPosition (Hb::SliderTicksLeft);
+            modified = true;
+            if ( orientation == Qt::Vertical ) {
+                HbStyle::setItemName( tickmarksLeft, "tick-marksleft" );
+            } else {
+                HbStyle::setItemName( tickmarksLeft, "tick-marksabove" );
+            }
+        } 
+
+    } else if ( tickmarksLeft ) {
+        delete tickmarksLeft;
+        tickmarksLeft = 0;
+        modified = true;
+    }
+    if ( q->tickPosition( ) & Hb::SliderTicksRight) {
+        if (!tickmarksRight) {
+            tickmarksRight =  new HbSliderTickmarks(q);
+            tickmarksRight->setTickPosition (Hb::SliderTicksRight);
+            tickmarksRight->setZValue(sliderControl->zValue()-1);
+            modified = true;
+
+            if ( orientation == Qt::Vertical ) {
+                HbStyle::setItemName( tickmarksRight, "tick-marksright" );
+            } else {
+                HbStyle::setItemName( tickmarksRight, "tick-marksbelow" );
+            }
+        }
+    } else if ( tickmarksRight ) {
+        delete tickmarksRight;
+        tickmarksRight = 0;
+        modified = true;
+    }
+    if ( orientation == Qt::Vertical ) {
+        if ( q->tickPosition( ) & Hb::SliderTicksAbsolute)  {
+            q->setLayoutDirection (Qt::LeftToRight );
+        } else {
+            q->unsetLayoutDirection( );
+        }
+    } else {
+        q->unsetLayoutDirection( );   
+    }
+    
+    if ( modified) {
+        q->repolish( );
+    }
+}
+
+
+void HbSliderPrivate::createTickLabels( )
+{   
+    Q_Q(HbSlider);
+    bool modified = false;
+    if( q->majorTickInterval( ) <= 0 || q->majorTickLabels( ).isEmpty( ) ) {
+        return;
+    }
+    if ( q->tickPosition( ) & Hb::SliderTicksLeft) {
+        if (!tickmarkslabelLeft) {
+            modified = true;
+            tickmarkslabelLeft =  new HbSliderTickmarksLabel(q);
+            tickmarkslabelLeft->setTickPosition (Hb::SliderTicksLeft);
+            if ( orientation == Qt::Vertical ) {
+                HbStyle::setItemName( tickmarkslabelLeft, "tick-textsleft" );
+            } else {
+                HbStyle::setItemName( tickmarkslabelLeft, "tick-textsabove" );
+            }
+        }
+    } else if ( tickmarkslabelLeft ) {
+        modified = true;
+        delete tickmarkslabelLeft;
+        tickmarkslabelLeft = 0;
+    }
+    if ( q->tickPosition( ) & Hb::SliderTicksRight) {
+        if (!tickmarkslabelRight) {
+            modified = true;
+            tickmarkslabelRight =  new HbSliderTickmarksLabel(q);
+            tickmarkslabelRight->setTickPosition (Hb::SliderTicksRight);
+            if ( orientation == Qt::Vertical ) {
+                HbStyle::setItemName( tickmarkslabelRight, "tick-textsright" );
+            } else {
+                HbStyle::setItemName( tickmarkslabelRight, "tick-textsbelow" );
+            }
+        }
+    } else if ( tickmarkslabelRight ) {
+        delete tickmarkslabelRight;
+        modified = true;
+        tickmarkslabelRight = 0;
+    }
+    if ( orientation == Qt::Vertical ) {
+        if ( q->tickPosition( ) & Hb::SliderTicksAbsolute)  {
+            q->setLayoutDirection (Qt::LeftToRight );
+        }
+    }
+    if ( modified ) {
+        q->repolish( );
+    }
+}
+
+
+void HbSliderPrivate::setTickOrientation()
+{
+    Q_Q(HbSlider);
+    if ( orientation == Qt::Vertical ) {
+        if ( tickmarksLeft ) {
+            HbStyle::setItemName( tickmarksLeft, "tick-marksleft" );
+        }
+        if ( tickmarksRight) {
+            HbStyle::setItemName( tickmarksRight, "tick-marksright" );
+        }
+        if (tickmarkslabelLeft ) {
+            HbStyle::setItemName( tickmarkslabelLeft, "tick-textsleft" );
+        }
+        if (tickmarkslabelRight ) {
+            HbStyle::setItemName( tickmarkslabelRight, "tick-textsright" );
+        }
+        if ( q->tickPosition( )&Hb::SliderTicksAbsolute) {
+            q->setLayoutDirection (Qt::LeftToRight);
+        }
+    } else {
+        if ( tickmarksLeft ) {
+            HbStyle::setItemName( tickmarksLeft, "tick-marksabove" );
+        }
+        if ( tickmarksRight) {
+            HbStyle::setItemName( tickmarksRight, "tick-marksbelow" );
+        }
+        if (tickmarkslabelLeft ) {
+            HbStyle::setItemName( tickmarkslabelLeft, "tick-textsabove" );
+        }
+        if (tickmarkslabelRight ) {
+            HbStyle::setItemName( tickmarkslabelRight, "tick-textsbelow" );
+        }
+        q->unsetLayoutDirection( );
+
+
+    }
+
+}
+
+
+
+
+
+/*!
+  \internal
+  Updates tick and Label.
+  */
+void HbSliderPrivate::updateTickMarks( )
+{
+    if (tickmarksLeft) {
+        tickmarksLeft->updateTicks();
+    }
+    if (tickmarksRight) {
+        tickmarksRight->updateTicks();
+    }
+}
+
+
+/*!
+  \internal
+  Updates tick and Label.
+  */
+void HbSliderPrivate::updateTickLabels( )
+{
+    if( tickmarkslabelLeft ) {
+        tickmarkslabelLeft->updateTickLabels();
+    }
+    if( tickmarkslabelRight ) {
+        tickmarkslabelRight->updateTickLabels( );
+    }
+}
+
+
+/*!
+  \internal
+  Updates tick and Label.
+  */
+void HbSliderPrivate::deleteTickMarks( )
+{
+    Q_Q ( HbSlider );
+    bool deleted = false;
+    if (tickmarksLeft) {
+        delete tickmarksLeft;
+        tickmarksLeft = 0;
+        deleted = true;
+    }  
+    if (tickmarksRight) {
+        delete tickmarksRight;
+        tickmarksRight = 0;
+        deleted = true;
+    }
+    if ( deleted ) {
+        q->repolish( );
+    }
+
+}
+
+
+/*!
+  \internal
+  Updates tick and Label.
+  */
+void HbSliderPrivate::deleteTickLabels( )
+{
+
+    Q_Q(HbSlider);
+    bool deleted = false;
+    if (tickmarkslabelLeft) {
+        delete tickmarkslabelLeft;
+        tickmarkslabelLeft = 0;
+        deleted = true;
+
+    }  
+    if (tickmarkslabelRight) {
+        delete tickmarkslabelRight;
+        tickmarkslabelRight = 0;
+        deleted = true;
+    }
+    if (deleted) {
+        q->repolish( );
+    }
+
+ }
+
 #ifdef HB_EFFECTS
 
 /*!
@@ -551,7 +798,7 @@ HbSlider::~HbSlider( )
 }
 
 /*!
-    @proto
+    @beta
     Returns the list of slider elements as QVariant 
     
     \note it is safe to type-cast element to HbSlider::SliderElement.  
@@ -571,7 +818,7 @@ QList<QVariant> HbSlider::sliderElements() const
 }
 
 /*!
-    @proto
+    @beta
     Sets the elements of the slider.
 
     \note Duplicate elements will be ignored.
@@ -603,7 +850,7 @@ void HbSlider::setSliderElements(const QList<QVariant> &elementlist)
 }
 
 /*!
-    @proto
+    @beta
     Sets the icons for elements
 
     key of \a elements is element name  and value is icon 
@@ -658,7 +905,7 @@ void HbSlider::setElementIcons(const QMap<QString,QVariant> &elements)
 }
 
 /*!
-    @proto
+    @beta
     Returns the map , which consist of element name as key and icon name  as value
 
     returns NULL map if none of the element has icon
@@ -963,7 +1210,8 @@ void HbSlider::setOrientation( Qt::Orientation orientation )
     if ( d->orientation != orientation ) {
         d->orientation = orientation;
         d->sliderControl->setOrientation( orientation );
-        repolish();
+        d->setTickOrientation( );
+        repolish( );
     }
 }
 
@@ -1290,6 +1538,8 @@ void HbSlider::setTickPosition( Hb::SliderTickPositions position )
     Q_D( HbSlider );
     d->sliderControl->setTickPosition( position );
     d->setTickLabelPresentProperty( );
+    d->createTickMarks( );
+    d->createTickLabels( );
 }
 
 /*!
@@ -1346,6 +1596,16 @@ void HbSlider::setMajorTickInterval( int interval )
 {
     Q_D( HbSlider );
     d->sliderControl->setMajorTickInterval( interval );
+    if (interval <=0 ) {
+        d->deleteTickMarks( );
+        d->deleteTickLabels( );
+    }
+    else {
+        d->createTickMarks( );
+        d->createTickLabels( );
+        d->updateTickMarks( );
+        d->updateTickLabels( );
+    }
     d->setTickLabelPresentProperty( );
 }
 
@@ -1377,6 +1637,8 @@ void HbSlider::setMinorTickInterval( int interval )
 {
     Q_D( HbSlider );
     d->sliderControl->setMinorTickInterval( interval );
+    d->updateTickMarks( );
+    d->updateTickLabels( );
     d->setTickLabelPresentProperty( );
 }
 
@@ -1408,7 +1670,7 @@ QString HbSlider::handleIcon( ) const
 
 
 /*!
-    @proto
+    @beta
     Sets whether to display progress track or not
 
     \default value is true
@@ -1424,7 +1686,7 @@ void HbSlider::setTrackFilled(bool trackVisible )
 }
 
 /*!
-    @proto
+    @beta
     returns whether progress track is visible or not
 
     \sa setTrackFilled( )
@@ -1478,7 +1740,13 @@ void HbSlider::setMajorTickLabels( const QStringList &majorTickLabels )
 {
     Q_D( HbSlider );
     d->sliderControl->setMajorTickLabels( majorTickLabels );
-    d->setTickLabelPresentProperty( );
+    if(majorTickLabels.isEmpty( )) {
+        d->deleteTickLabels( );
+    } else {
+        d->createTickLabels( );
+        d->updateTickLabels( );
+        d->setTickLabelPresentProperty( );
+    }
 }
 
 /*!
@@ -1504,6 +1772,7 @@ void HbSlider::setMinorTickLabels( const QStringList &minorTickLabels )
 {
     Q_D( HbSlider );
     d->sliderControl->setMinorTickLabels( minorTickLabels );
+    d->updateTickLabels( );
     d->setTickLabelPresentProperty( );
 }
 

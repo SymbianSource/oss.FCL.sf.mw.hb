@@ -43,16 +43,16 @@
     @beta
     @hbwidgets
     \class HbDataForm
-    \brief HbDataForm represents hierarchical dataitems in the form of groups,pages and 
-    items.
-    The HbDataForm class provides a default view implementation of dataform.
-    A HbDataForm implements a hierarchical representation of data items from a model.
+    \brief HbDataForm represents hierarchical dataitems in form of form pages, groups, group pages
+    and data items.
+    HbDataForm implements a hierarchical representation of view items for each model items from 
+    HbDataFormModel.
 
     HbDataForm implements the interfaces defined by the HbAbstractItemView class to allow 
-    it to display data provided  by models derived from the QAbstractItemModel class.
+    it to display data provided by models which are derived from QAbstractItemModel class.
 
     It is simple to construct a dataform displaying data from a model. The user has to create
-    HbDataFormModel and create the hierarchy of HbDataFormModelItems .The hierarchy is 
+    HbDataFormModel and create the hierarchy of HbDataFormModelItems.The hierarchy is 
     similar to the following.
     
     - HbDataForm
@@ -70,55 +70,80 @@
              - HbDataItem
              - HbDataItem
              - HbDataItem
+       - HbDataGroup3
+          - HbDataItem
+          - HbDataItem
+          - HbDataItem
+       - HbDataItem
+       - HbDataItem
  
-    HbDataItem can be the child of HbDataForm, HbDataFormPage,HbDataGroup and 
+    HbDataItem can be the child of HbDataForm, HbDataFormPage, HbDataGroup and 
     HbDataGroupPage. An instance of HbDataForm has to be created and model should be set 
-    to the form using setModel(HbDataFormModel) API.
-    The properties of each DataItem node can be set using HbDataFormModelItem convenient
-    API's. These data are parsed while the visualization instance of each item is created and 
-    set on each item.
+    to the form using setModel( ) API.
+    The properties of each data item node can be set using HbDataFormModelItem convenient
+    API's like setContentWidgetData( ). These model data are parsed and set while the visualization 
+    instance of each item is created.
 
-    The model/view architecture ensures that the contents of the data view are updated as the 
+    The model/view architecture ensures that the view contents are updated as and when the data in
     model changes.
 
-    Items that have children can be in expanded (children are visible) or collapsed 
-    (children are hidden) state. DataItems of type HbDataFormPage, HbDataGroup and 
-    HbDataGroupPage can be expanded and collapsed. HbDataItem of type FormPageItem, 
-    GroupItem, GroupPageItem can only have children. Each item in model is represented by an 
-    instance of HbDataFormViewItem. HbDataForm uses HbDataFormViewItem prototype to instantiate 
-    the HbDataForm items. HbDataFormViewItem can be subclassed for customization purposes.
+    Only model items that can have children can be in expanded (childrens are visible) or 
+    collapsed (childrens are hidden) state. Model items of type HbDataFormModelItem::FormPageItem,
+    HbDataFormModelItem::GroupItem and HbDataFormModelItem::GroupPageItem can be expanded 
+    or collapsed. Which in turn means that these types of model item can only have children. 
+    Each item in model is represented by either an instance of HbDataFormViewItem or classes which 
+    are derived from HbDataFormViewItem. HbDataFormViewItem can be subclassed for
+    customization purposes.
     
-    The Model hierarchy can be created using the convenient API's provided on model class like
-    appendDataFormPage , appendDataFormGroup ,appendDataFormGroupPage and 
-    appendDataFormItem. All of these will return HbDataFormModelItem instance correspoding 
-    to each type on which user can set item specific data. Otherwise each HbDataFormModelItem can 
-    be created individually by passing the corresponding type of item (GroupItem, GroupPageItem, 
-    FormPageItem) and create the tree of HbDataFormModelItem using setParent API 
-    or by passing the parent HbDataFormModelItem in constructor. Later the top level 
-    HbDataFormModelItem can be added inside the model.
+    The Model hierarchy can be created using the convenient API's provided in model class like
+    appendDataFormPage(), appendDataFormGroup(), appendDataFormGroupPage() and 
+    appendDataFormItem(). All these API's return HbDataFormModelItem instance corresponding 
+    to each HbDataFormModelItem::DataItemType type on which user can set item 
+    specific(content widget) data. Otherwise each HbDataFormModelItem can be created individually
+    by passing the corresponding type of item (GroupItem, GroupPageItem, FormPageItem) and create
+    the tree of HbDataFormModelItem using setParent API or by passing the parent 
+    HbDataFormModelItem in constructor. Later the top level HbDataFormModelItem can be added in 
+    model.
 
-    After doing the setModel, the visualization gets created . Only the items inside the expanded 
-    group or group page instances are created. When an item's visualization is created , 
-    DataForm emits activated(constQModelIndex&) signal. The application can get 
-    HbDataFormViewItem and content widget from DataForm using QModelIndex.    
+    After setting model in HbDataForm using setModel(), the visualization gets created.
+    Only the items inside the expanded form page, group or group page are created. When an item's
+    visualization is created, HbDataForm emits itemShown(constQModelIndex&) signal. The application 
+    can connect to this signal and when corresponding slot is called then application can get
+    HbDataFormViewItem instance and even content widget instance. Use HbAbstractItemView::itemByIndex()
+    to get HbDataFormViewItem instance. Use HbDataFormViewItem::dataItemContentWidget() to get
+    content widget instance.
     
-    The signal emitted by HbDataForm
-    \li activated(const QModelIndex &index) Emitted when the HbDataFormViewItem corresponding to
+    The signals emitted by HbDataForm
+    \li itemShown(const QModelIndex &index) Emitted when the HbDataFormViewItem corresponding to
     \a index is shown. User can connect to this signal and can fetch the instance of 
     HbDataFormViewItem from HbDataForm using the API dataFormViewItem(const QModelIndex &index).
-    \li dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) emitted when the 
-    HbDataFormModel is updated \atopLeft and \abottomRight will be same since every node has only one column.
-    User can connect to this signal and can fetch the instance of HbDataFormViewItem from HbDataForm 
-    using the API dataFormViewItem(const QModelIndex &index) or user can fetch HbDataFormModelItem using API 
-    itemFromIndex(const QModelIndex &index) in HbDataFormModel .When user updates model using 
-    setContentWidgetData API provided in HbDataFormModelItem class, then DataForm takes care of updating the 
-    corresponding item's visualization.
+    This signal is only emitted for model items of type greater than HbDataFormModelItem::GroupPageItem
 
-    The user can also provide connection information to correspoding content widget of each HbDataFormModelItem
-    using API addConnection(HbDataFormModelItem* item, const char* signal, QObject* receiver, consta char* slot)
-    provided in HbDataForm class.The connection will be established when the item visualization is created .
-    similar way removeConnection(HbDataFormModelItem *item, const char* signal, QObject *receiver, const char* slot)
-    and removeAllConnection() API can be used. Connection can be established or removed even at runtime also.
+    The user can also provide connection information to correspoding content widget of each 
+    HbDataFormModelItem using API 
+    addConnection(HbDataFormModelItem* item, const char* signal, QObject* receiver, const char* slot)
+    provided in HbDataForm. The connection will be established when the item visualization is created.
+    Similar way 
+    removeConnection(HbDataFormModelItem *item, const char* signal, QObject *receiver, const char* slot)
+    and removeAllConnection() API can be used. Connection can be established or removed even at runtime.
+    An example of how to make connection and setting the content widget property:
+
+    \code
+    HbDataForm *form = new HbDataForm();
+    model = new HbDataFormModel();
+
+    HbDataFormModelItem *sliderItem = 
+        model->appendDataFormItem(HbDataFormModelItem::SliderItem, QString("slider"));
+    //Set the content widget properties. In this case its HbSlider.
+    sliderItem->setContentWidgetData("maximum", 200);
+    sliderItem->setContentWidgetData("minimum", 0);
+    sliderItem->setContentWidgetData("value", 100);
+    //Make a connection to HbSlider valueChanged signal.
+    form->addConnection(sliderItem, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
+
+    form->setModel(model);
+    setWidget(form);
+    \endcode
     
     An example of how to create HbDataForm:
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,31}
@@ -134,20 +159,20 @@
     \sa HbDataFormViewItem, HbDataFormModel, HbDataFormModelItem
 
     Creating Custom Item:
+
     Application developer can create custom DataItem by deriving from HbDataFormViewItem and setting this as 
-    prototype(setItemProtoType() API).
-    Application has to override virtual API's createCustomWidget() , restore()and save(). 
-    createCustomWidget() API should return the corresponding custom HbWidget which can also be a compound widget.
-    Signal connection for child widgets inside the compound widget should taken care by the application. 
-    restore() API will be called by the framework when the model data is changed.
-    So restore() should take care of updating the visual items with correspoding data from model. 
-    save() API should update the model.App developer should  connect respective widgets SIGNALs to SLOT save() 
+    prototype using setItemProtoType() API. Application has to override virtual API's createCustomWidget(),
+    restore()and save(). createCustomWidget() API should return the corresponding custom HbWidget which
+    can also be a compound widget. Signal connection for child widgets inside the compound widget should
+    be taken care by the application. restore() API will be called by the framework when the model data 
+    is changed. So restore() should take care of updating the visual items with correspoding data from model. 
+    save() API should update the model. App developer should connect respective widgets SIGNALs to SLOT save() 
     and update the data to model .
 
 */
 
 /*!
-    \fn void HbAbstractItemView::activated(const QModelIndex &index)
+    \fn void HbAbstractItemView::itemShown(const QModelIndex &index)
 
     This signal is emitted when HbDataFormViewItem corresponding to \a index is shown.
 
@@ -165,8 +190,6 @@ HbDataForm::HbDataForm(QGraphicsItem *parent)
     d->q_ptr = this;
     d->init();
     setVerticalScrollBarPolicy(ScrollBarAlwaysOff);
-    //d->mHeadingWidget->createPrimitives();
-    //static_cast<HbDataItemContainer*>(container())->setFormHeading(d->mHeadingWidget);
 }
 
 /*!
@@ -192,15 +215,13 @@ HbDataForm::~HbDataForm()
 /*!
     \reimp
 
-    Scrolls the view so that the item represented by \a index comes at the middle of 
-    screen. By default HbDataForm does not scrolls. Application developer is supposed to 
-    call this API if he wants this behaviour. User can connect to activated signal and then
+    Scrolls the view so that the item represented by \a index position is changed as per \a hint
+    parameter. By default HbDataForm does not scrolls. Application developer is supposed to 
+    call this API if he wants this behaviour. User can connect to itemShown signal and then
     can call this API.
 */
 void HbDataForm::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
-    //Q_D(HbDataForm);
-    //d->revealItem(d->mContainer->itemByIndex(index), PositionAtCenter);
     HbAbstractItemView::scrollTo(index, hint);
 }
 
@@ -208,9 +229,10 @@ void HbDataForm::scrollTo(const QModelIndex &index, ScrollHint hint)
 /*!
     @beta
 
-    Sets the item referred to by \a index to either collapse or expanded, 
+    Sets the item referred to by \a index to either collapse or expanded state, 
     depending on the value of \a expanded. If \a expanded is true then child item are 
-    supposed to be visible.
+    supposed to be visible and in that case itemShown will be emitted for all the
+    new data items which were created.
 
     \sa isExpanded
 */
@@ -235,7 +257,7 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
 /*!
     @beta
 
-    Returns true if the model item \a index is expanded otherwise returns false.
+    Returns true if the model item at \a index is expanded otherwise returns false.
 
     \sa setExpanded
 */
@@ -256,7 +278,9 @@ bool HbDataForm::isExpanded(const QModelIndex &index) const
     Sets the heading of HbDataForm with the \a heading provided. Heading is displayed on 
     top of the HbDataForm. Heading is non-focusable.
 
-    \sa heading
+    \sa heading 
+    \sa setDescription
+    \sa description
 */
 void HbDataForm::setHeading(const QString &heading)
 {
@@ -292,7 +316,9 @@ void HbDataForm::setHeading(const QString &heading)
 
     Returns heading of HbDataForm.
 
-    \sa setHeading    
+    \sa setHeading
+    \sa setDescription
+    \sa description
 */
 QString HbDataForm::heading() const
 {
@@ -311,6 +337,8 @@ QString HbDataForm::heading() const
     below heading. Description is non-focusable.
 
     \sa description
+    \sa setHeading
+    \sa heading
 */
 void HbDataForm::setDescription(const QString &description)
 {
@@ -347,6 +375,8 @@ void HbDataForm::setDescription(const QString &description)
     Returns description of HbDataForm.
 
     \sa setDescription
+    \sa setHeading
+    \sa heading
 */
 QString HbDataForm::description() const
 {
@@ -412,7 +442,6 @@ void HbDataForm::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototy
 /*!
     \reimp
 */
-
 void HbDataForm::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
     Q_UNUSED(bottomRight);
@@ -487,7 +516,7 @@ void HbDataForm::rowsAboutToBeRemoved(const QModelIndex &index, int start, int e
 }
 
 /*!
-    @alpha 
+    @beta 
 
     This API can be used to connect with the signal of HbDataFormViewItem's content widget.
     For example: If HbDataFormModelItem is of type DataItemType::SliderItem then user
@@ -506,7 +535,8 @@ void HbDataForm::rowsAboutToBeRemoved(const QModelIndex &index, int start, int e
     \param receiver Instance of object whose slot will be called 
     \param slot Slot of \a receiver which will get called when signal is emitted
  
-    \sa removeConnection 
+    \sa removeConnection
+    \sa removeAllConnection
 */
 void HbDataForm::addConnection(HbDataFormModelItem * item, 
                                const char* signal, 
@@ -523,12 +553,13 @@ void HbDataForm::addConnection(HbDataFormModelItem * item,
 }
 
 /*!
-    @alpha
+    @beta
 
     This API can be used to remove the signal connection which was established using the
     addConnection API.
 
-    \sa addConnection 
+    \sa addConnection
+    \sa removeAllConnection
 */
 void HbDataForm::removeConnection(HbDataFormModelItem * item, 
                                   const char* signal, 
@@ -540,12 +571,13 @@ void HbDataForm::removeConnection(HbDataFormModelItem * item,
 }
 
 /*!
-    @alpha
+    @beta
 
-    Removes the connection of all the contentwidget of all the items which has been established .
-    The connection information stored inside DataForm also cleared.
+    Removes the connection of all the contentwidget of all the items which has been established.
+    The connection information stored inside data form is also cleared.
 
-    \sa removeAllConnection 
+    \sa removeConnection
+    \sa addConnection
 */
 void HbDataForm::removeAllConnection()
 {   
@@ -554,11 +586,11 @@ void HbDataForm::removeAllConnection()
 }
 
 /*!
-    @alpha
+    @beta
 
-    Removes the all connections of the contentwidget of HbDataFormModelItem's corresponding 
-    visual Item ( HbdataFormViewItem).The connection information of correspoding 
-    HbDataFormModelItem stored inside DataForm also cleared.
+    Removes all connections to the contentwidget of HbDataFormModelItem's corresponding 
+    visual Item ( HbdataFormViewItem ).The connection information of correspoding 
+    HbDataFormModelItem stored inside data form also cleared.
 
     \sa removeAllConnection 
 */

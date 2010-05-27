@@ -132,11 +132,8 @@ QStringList HbTouchInputPlugin::languages(const QString& key)
         HbInputModeProperties properties(HbInputModeDefault, HbInputLanguage(), HbKeyboardVirtualQwerty);
         result.append(properties.asString());
 
-        QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-        foreach (HbInputLanguage language, languages) {
-            properties = HbInputModeProperties(HbInputModeNumeric, language, HbKeyboardVirtualQwerty);
-            result.append(properties.asString());
-        }
+        properties = HbInputModeProperties(HbInputModeNumeric, HbInputLanguage(), HbKeyboardVirtualQwerty);
+        result.append(properties.asString());
     }
 
     return QStringList(result);

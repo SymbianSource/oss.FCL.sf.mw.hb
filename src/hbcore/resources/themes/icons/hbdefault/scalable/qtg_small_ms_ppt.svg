@@ -1,23 +1,15 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
-<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<g>
 <rect fill="none" height="30" width="30"/>
-
 <rect height="27" width="21.6" x="4.2" y="1.5"/>
-
 <rect fill="#F96D11" height="24.3" width="18.9" x="5.55" y="2.85"/>
-
 <rect fill="#FFFFFF" height="21.6" width="16.2" x="6.899" y="4.2"/>
-
 <rect fill="#F6F6F5" height="18.9" width="13.5" x="8.25" y="5.55"/>
-
 <rect fill="#F96D11" height="1.35" width="5.399" x="9.601" y="6.901"/>
-
 <rect fill="#F96D11" height="1.35" width="5.399" x="9.601" y="9.601"/>
-
 <circle cx="14.32" cy="18.38" fill="#FAA513" r="4.725"/>
-
 <path d="M20.4,18.37c-0.006-3.349-2.729-6.067-6.075-6.067v6.067h6.08z" fill="#F96D11"/>
-
+</g>
 </svg>

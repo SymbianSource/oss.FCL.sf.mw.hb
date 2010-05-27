@@ -32,6 +32,7 @@
 #include <hbframebackground.h>
 #include <hbnamespace.h>
 
+#include <QObject>
 #include <QPersistentModelIndex>
 #include <QPointer>
 #include <QExplicitlySharedDataPointer>
@@ -39,23 +40,33 @@
 
 class HbAbstractItemView;
 class QGraphicsItem;
-
+class QTimer;
 class QGestureEvent;
 
 #define HB_SD(Class) Class##Shared * sd = (Class##Shared *)(d->mSharedData.data())
 #define HB_SDD(Class) Q_D(Class); Class##Shared * sd = (Class##Shared *)(d->mSharedData.data())
 
-class HbAbstractViewItemShared : public QSharedData
+class HbAbstractViewItemShared : public QObject, public QSharedData
 {
+    Q_OBJECT
+
     public:
 
         HbAbstractViewItemShared() :
           mPrototype(0),
           mItemView(0),
           mDefaultFrame(),
-          mItemType("viewitem")
+          mItemType("viewitem"),
+          mPressStateChangeTimer(0),
+          mPressedItem(0)
         {
         }
+
+    public slots:
+
+        void pressStateChangeTimerTriggered();
+
+    public:
 
         HbAbstractViewItem *mPrototype;
         HbAbstractItemView *mItemView;
@@ -65,6 +76,10 @@ class HbAbstractViewItemShared : public QSharedData
 
         QString mItemType;
         static const int ViewItemDeferredDeleteEvent;
+
+        QTimer *mPressStateChangeTimer;
+        HbAbstractViewItem *mPressedItem;
+        bool mAnimatePress;
 };
 
 class HbAbstractViewItemPrivate : public HbWidgetPrivate

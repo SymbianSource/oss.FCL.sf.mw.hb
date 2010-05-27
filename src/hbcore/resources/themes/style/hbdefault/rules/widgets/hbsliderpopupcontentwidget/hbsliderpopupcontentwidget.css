@@ -3,14 +3,6 @@ HbSliderPopupContentWidget
     layout:slider_popup;
 }
 
-/* popup slider*/
-HbSliderPopupContentWidget::slider
-{   
-    top:-var(hb-param-margin-gene-popup);
-    left:-var(hb-param-margin-gene-popup);
-    bottom:var(hb-param-margin-gene-popup);
-    right:var(hb-param-margin-gene-popup);
-}
 
 
 

@@ -28,7 +28,7 @@
 
 #include <hbstyleoption_p.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionIndicatorButton : public HbStyleOption
 {
 public:

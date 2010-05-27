@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include <QDebug>
 #include "hbthemeindex_p.h"
+#include <QDebug>
 #ifndef HB_BOOTSTRAPPED
 #include "hbthemeclient_p.h"
 #include "hbinstance.h"
@@ -44,7 +44,7 @@ void HbThemeIndexResource::getResourceData()
 {
 #ifndef HB_BOOTSTRAPPED
 #ifdef THEME_INDEX_TRACES
-    qDebug() << "HbThemeIndexResource::getResourceData(: get item for" << resourceName.toUtf8();
+    qDebug() << "HbThemeIndexResource::getResourceData(), resourceName: " << resourceName;
 #endif
     // Theme index tables are always valid in shared memory
 
@@ -87,8 +87,9 @@ void HbThemeIndexResource::getResourceData()
     // Base wasn't locked, next check operator theme in C-drive
     info = HbThemeUtils::getThemeIndexInfo(OperatorC);
     if (info.themeIndexOffset > 0) {
-        const char *operatorCAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                       info.themeIndexOffset);
+        const char *operatorCAddress =
+                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                info.themeIndexOffset);
         HbThemeIndex operatorCIndex(operatorCAddress);
         const HbThemeIndexItemData *operatorCItemData = operatorCIndex.getItemData(resourceName);
 
@@ -104,8 +105,9 @@ void HbThemeIndexResource::getResourceData()
     // Not found from operator theme in C-drive, next check operator theme in ROM
     info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
     if (info.themeIndexOffset > 0) {
-        const char *operatorZAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                       info.themeIndexOffset);
+        const char *operatorZAddress =
+                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                info.themeIndexOffset);
         HbThemeIndex operatorZIndex(operatorZAddress);
         const HbThemeIndexItemData *operatorZItemData = operatorZIndex.getItemData(resourceName);
 
@@ -121,10 +123,12 @@ void HbThemeIndexResource::getResourceData()
     // Not found from operator themes, try active theme
     info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
     if (info.themeIndexOffset > 0) {
-        const char *activeThemeAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                         info.themeIndexOffset);
+        const char *activeThemeAddress =
+                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                info.themeIndexOffset);
         HbThemeIndex activeThemeIndex(activeThemeAddress);
-        const HbThemeIndexItemData *activeThemeItemData = activeThemeIndex.getItemData(resourceName);
+        const HbThemeIndexItemData *activeThemeItemData =
+                activeThemeIndex.getItemData(resourceName);
 
         if (activeThemeItemData) { // Found, use it
             type = ActiveTheme;
@@ -244,12 +248,12 @@ QString HbThemeIndexResource::fullFileName()
             }
         case HbThemeIndexItemData::AxmlItem:
             {
-            fullName = fullName + "/animations/" + themeName + "/" + resourceName;
+            fullName = fullName + "/animations/" + themeName + '/' + resourceName;
             break;
             }
         case HbThemeIndexItemData::FxmlItem:
             {
-            fullName = fullName + "/effects/" + themeName + "/" + resourceName;
+            fullName = fullName + "/effects/" + themeName + '/' + resourceName;
             break;
             }
         default:
@@ -271,47 +275,56 @@ QString HbThemeIndexResource::fullMirroredFileName()
     switch (data->mirroredItemType) {
         case HbThemeIndexItemData::SvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".svg";
             break;
             }
         case HbThemeIndexItemData::PngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".png";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".png";
             break;
             }
         case HbThemeIndexItemData::MngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".mng";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".mng";
             break;
             }
         case HbThemeIndexItemData::GifItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".gif";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".gif";
             break;
             }
         case HbThemeIndexItemData::XpmItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".xpm";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".xpm";
             break;
             }
         case HbThemeIndexItemData::JpgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".jpg";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".jpg";
             break;
             }
         case HbThemeIndexItemData::NvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".nvg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".nvg";
             break;
             }
         case HbThemeIndexItemData::SvgzItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svgz";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".svgz";
             break;
             }
         case HbThemeIndexItemData::QpicItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".qpic";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".qpic";
             break;
             }
         default:
@@ -344,9 +357,11 @@ void HbThemeIndex::init()
 {
     //int version = *(reinterpret_cast<const int *>(mBaseAddress));
     // Assumes version 1 for now
-    const HbThemeIndexHeaderV1 *header = reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
+    const HbThemeIndexHeaderV1 *header =
+            reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
     mItemCount = header->itemCount;
-    mThemeItemDataArray = reinterpret_cast<const HbThemeIndexItemData *>(mBaseAddress + sizeof(HbThemeIndexHeaderV1));
+    mThemeItemDataArray = reinterpret_cast<const HbThemeIndexItemData *>
+                            (mBaseAddress + sizeof(HbThemeIndexHeaderV1));
 
     initialized = true;
 }
@@ -381,7 +396,7 @@ const HbThemeIndexItemData *HbThemeIndex::getItemData(const QString &itemName)
 
     // binary search
     while (begin <= end) {
-        int mid = begin + (end-begin)/2;
+        int mid = begin + (end - begin) / 2;
 
         if (mThemeItemDataArray[mid].itemNameHash == hashValue) {
             retItem = &mThemeItemDataArray[mid];

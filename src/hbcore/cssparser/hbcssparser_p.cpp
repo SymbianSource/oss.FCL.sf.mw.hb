@@ -2311,6 +2311,8 @@ int StyleSelector::inheritanceDepth(NodePtr node, HbString &elementName) const
     }
 }
 
+const uint CLASS_HASH = qHash(QString("class"));
+
 int StyleSelector::basicSelectorMatches(const BasicSelector &sel, NodePtr node, bool nameCheckNeeded) const
 {
     int matchLevel = 0;
@@ -2322,7 +2324,7 @@ int StyleSelector::basicSelectorMatches(const BasicSelector &sel, NodePtr node, 
 
         for (int i = 0; i < sel.attributeSelectors.count(); ++i) {
             const AttributeSelector &a = sel.attributeSelectors.at(i);
-            if (a.name == QLatin1String("class")) {
+            if (a.nameHash == CLASS_HASH) {
                 elementName = a.value;
             }
             if (!attributeMatches(node, a)) {
@@ -3133,6 +3135,7 @@ bool Parser::parseSimpleSelector(BasicSelector *basicSel)
             onceMore = true;
             AttributeSelector a(basicSel->memoryType);
             a.name = QLatin1String("class");
+            a.nameHash = qHash(a.name);
             a.valueMatchCriterium = AttributeSelector::MatchContains;
             if (!parseClass(&a.value)) return false;
 #ifdef CSS_PARSER_TRACES
@@ -3188,6 +3191,7 @@ bool Parser::parseAttrib(AttributeSelector *attr)
 
     if (!next(IDENT)) return false;
     attr->name = lexem();
+    attr->nameHash = qHash(attr->name);
     skipSpace();
 
     if (test(EXCLAMATION_SYM)) {

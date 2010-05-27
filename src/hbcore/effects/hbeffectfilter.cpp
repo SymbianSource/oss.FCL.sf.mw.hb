@@ -199,7 +199,9 @@ HbEffectFilterAnimation *HbEffectFilter::createAnimation(
     HbEffectFilterAnimation *anim = 0;
 
     // Replace default values with parameter's values
-    mEffectDefined |= param.getValue(startValue);
+    if (param.getValue(startValue)) {
+        mEffectDefined = true;
+    }
     endValue = startValue;
 
     QList<HbKeyFrame> keyFrameList = param.keyFrames();
@@ -255,7 +257,9 @@ HbEffectColorAnimation *HbEffectFilter::createAnimation(
     if (!colorString.isEmpty()) {
         startValue.setNamedColor(colorString);
         endValue = startValue;
-        mEffectDefined |= startValue.isValid();
+        if (startValue.isValid()) {
+            mEffectDefined = true;
+        }
     }
 
     QList<HbKeyFrame> keyFrameList = param.keyFrames();

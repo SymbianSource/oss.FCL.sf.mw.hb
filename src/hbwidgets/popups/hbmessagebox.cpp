@@ -165,7 +165,11 @@ void HbMessageBoxPrivate::init()
     @beta
     
     \class HbMessageBox
-    \brief HbMessageBox is a convenience modal dialog class, using which a simple information, a question, or a simple warning can be shown to the user.
+    \brief The HbMessageBox class provides a modal dialog for informing the user or for asking the user a question and receiving an answer.
+
+    \image html information.PNG  "An information MessageBox"
+    \image html question.PNG  "A question MessageBox"
+    \image html warning.PNG  "A warning MessageBox"
 
     Using HbMessageBox, the following dialogs can be created:
 
@@ -183,6 +187,7 @@ void HbMessageBoxPrivate::init()
     
     All the three dialogs(information, warning, question) supported by MessageBox are by default modal in nature, with
     a dismiss policy of NoDismiss, timeout policy of NoTimeout, and with a BackgroundFade property on.
+    The user must click the OK/Yes/No buttons to dismiss the Message Box.
 
     Example code for launching MessageBox using static convenience functions:
 
@@ -195,26 +200,6 @@ void HbMessageBoxPrivate::init()
 
     //Question MessageBox
     HbMessageBox::question(questionText, this, SLOT(onDialogClose(HbAction*)), primaryButtonText, secondaryButtonText, headWidget, scene, parent);
-    \endcode
-
-    Example code to show an information messagebox:
-
-    \code
-    HbMessageBox *box = new HbMessageBox("This is an information dialog.");
-    box->setAttribute(Qt::WA_DeleteOnClose);
-    box->open();
-    \endcode
-
-    Example code to show an information messagebox with two action buttons:
-    \code
-    HbMessageBox *box = new HbMessageBox("XX will be deleted. Do you want to Continue ? ");
-
-    //Add new action.
-    box->addAction(new HbAction(HbWidget::tr("Cancel"), q));
-
-    box->setAttribute(Qt::WA_DeleteOnClose);
-
-    box->open();
     \endcode
 
     Example code to show a question messagebox with a return value based action

@@ -37,11 +37,34 @@
 const TUid KHbPsOrientationCategoryUid = {0x20022E82}; // Theme server UID
 
 /**
+ * HbCore internal foreground application orientation PS category UID.
+ */
+const TUid KHbPsForegroundAppOrientationCategoryUid = {0x20022FC5}; //device dialog UID
+
+/**
  * KHbPsOrientationKey
  * Current orientation value recieved from sensor.
  * Qt::Orientation
  */
 const TUint KHbPsOrientationKey = 'Orie';
+
+/**
+ * KHbPsForegroundAppOrientationKey
+ * Current orientation value checked from foreground app.
+ */
+const TUint KHbPsForegroundAppOrientationKey = 'Fgor';
+
+/**
+ * KHbFixedOrientationMask
+ * Indicates HbMainWindow has fixed orientation enabled
+ */
+const TUint KHbFixedOrientationMask = 0x100;
+
+/**
+ * KHbOrientationMask
+ * Used for masking orientation in PS-key
+ */
+const TUint KHbOrientationMask = 0xFF;
 
 #endif //Q_OS_SYMBIAN
 

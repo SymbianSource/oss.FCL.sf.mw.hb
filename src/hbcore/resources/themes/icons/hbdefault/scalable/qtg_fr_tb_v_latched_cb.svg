@@ -3,11 +3,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 60 30" width="60px" x="0px" y="0px">
 <rect fill="none" height="30" width="60" x="0"/>
 <rect fill="url(#SVGID_1_)" height="30" width="60"/>
-<rect fill-opacity="0.1" height="29" stroke-opacity="0.1" width="1" x="59"/>
-<polygon fill-opacity="0.2" points="0,30 60,30 60,29 1,29 1,0 0,0 " stroke-opacity="0.2"/>
-<polygon fill="#FFFFFF" fill-opacity="0.4" points="1,29 59,29 59,0 58,0 58,28 4,28 4,0 1,0 " stroke-opacity="0.4"/>
+<rect fill-opacity="0.1" height="29" stroke-opacity="0.1" width="1"/>
+<polygon fill-opacity="0.2" points="60,30 0,30 0,29 59,29 59,0 60,0 " stroke-opacity="0.2"/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="59,29 1,29 1,0 2,0 2,28 56,28 56,0 59,0 " stroke-opacity="0.4"/>
 <defs>
-<linearGradient gradientTransform="matrix(0 -1 1 0 1430.5 -2281.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2296.5005" x2="-2296.5005" y1="-1430.9995" y2="-1370.7295">
+<linearGradient gradientTransform="matrix(0 -1 -1 0 -3741.5 -2281.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-2296.5" x2="-2296.5" y1="-3801.9995" y2="-3741.7295">
 <stop offset="0" style="stop-color:#CDCDD2"/>
 <stop offset="0.9" style="stop-color:#9B9BA0"/>
 <stop offset="0.9" style="stop-color:#919196"/>

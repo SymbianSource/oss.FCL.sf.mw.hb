@@ -30,7 +30,7 @@
 #include <hbsplashscreen.h>
 #include <QImage>
 
-class HB_AUTOTEST_EXPORT HbSplash
+class HB_CORE_PRIVATE_EXPORT HbSplash
 {
 public:
     typedef uchar *(*AllocFunc)(int w, int h, int bpl, QImage::Format fmt, void *param);

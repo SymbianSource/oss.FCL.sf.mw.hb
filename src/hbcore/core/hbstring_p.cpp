@@ -364,7 +364,7 @@ HbString::operator QString() const
     if(ptr)
         return QString(ptr, data->mLength);
     else {
-        // TODO: this should return QString() but currently it causes wierd behaviour.
+        // TODO: this should return QString() but currently it causes weird behaviour.
         // Seems some clients assume it returns "".
         return QString("");
     }
@@ -469,7 +469,7 @@ bool HbString::operator==(const HbString &other) const
     }
 
     HbStringData* data = getStringData(mMemoryType, mDataOffset, mShared);
-    HbStringData* otherData = getStringData(other.mMemoryType, other.mDataOffset, other.mShared);;
+    HbStringData* otherData = getStringData(other.mMemoryType, other.mDataOffset, other.mShared);
 
     if (data->mLength != otherData->mLength) {
         return false;

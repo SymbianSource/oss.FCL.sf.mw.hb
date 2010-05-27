@@ -26,6 +26,7 @@
 TEMPLATE = app
 TARGET = hbthemeserver
 CONFIG -= app_bundle
+DEFINES += HB_LIB_DIR=\"\\\"$${HB_LIB_DIR}\\\"\"
 DEFINES += HB_BUILD_DIR=\"\\\"$${HB_BUILD_DIR}\\\"\"
 
 # directories
@@ -61,7 +62,9 @@ symbian:CONFIG += nvg
 
 symbian {
     SOURCES  += $$PWD/hbthemeserver_symbian.cpp
+    SOURCES  += $$PWD/hbthemewatcher_symbian.cpp
     HEADERS += $$PWD/hbthemeserver_symbian_p_p.h
+    HEADERS += $$PWD/hbthemewatcher_symbian_p.h
     LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli -lefsrv
 
     nvg {

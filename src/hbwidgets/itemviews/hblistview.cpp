@@ -244,7 +244,6 @@ bool HbListView::setArrangeMode(const bool arrangeMode)
             verticalScrollBar()->setInteractive(false);
         }
         d->mArrangeMode = arrangeMode;
-        d->mAnimateItems = !d->mArrangeMode;
 
         if (d->mArrangeMode == true) {
             d->mOriginalFriction = d->mFrictionEnabled;
@@ -317,14 +316,20 @@ void HbListView::scrolling(QPointF newPosition)
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsInserted(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
 
+    if (d->mMoveOngoing)
+        return;
+
     if (parent == d->mModelIterator->rootIndex()) {
         HbAbstractItemView::rowsInserted(parent, start, end);
-        if (!d->mArrangeMode && d->animationEnabled(true)) {
+        if (d->animationEnabled(true)) {
             d->startAppearEffect("viewitem", "appear", parent, start, end);
         }
     }
@@ -332,10 +337,16 @@ void HbListView::rowsInserted(const QModelIndex &parent, int start, int end)
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
+
+    if (d->mMoveOngoing)
+        return;
 
     if (parent == d->mModelIterator->rootIndex()) {
         for (int i = start; i <= end; i++) {
@@ -345,7 +356,7 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
                    d->mDraggedItem = 0;
                 }
 
-                if (!d->mArrangeMode && d->animationEnabled(false)) {
+                if (d->animationEnabled(false)) {
                     d->mItemsAboutToBeDeleted.append(item);
                 }
             }
@@ -355,10 +366,17 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
+
+    if (d->mMoveOngoing)
+        return;
+
     if (parent == d->mModelIterator->rootIndex()) {
         if (d->animationEnabled(false)) {
             for (int i = 0; i < d->mItemsAboutToBeDeleted.count(); i++) {

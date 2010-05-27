@@ -35,25 +35,19 @@
 #include "hbevent.h"
 #include "hbmainwindow_p.h"
 
-#ifndef HB_NVG_CS_ICON
-#define ENABLE_FAST_PAINT_
-#endif
-
 /*
     \class HbBackgroundItem
 
-    \brief HbBackgroundItem draws background
+    \brief Draws the background.
 
     \internal
 */
 
 HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent) :
         HbWidget(parent),
-        mMainWindow(mainWindow)
+        mMainWindow(mainWindow),
+        mImageMode(Hb::ScaleBackgroundToFit)
 {
-#ifdef ENABLE_FAST_PAINT_
-    setAttribute(Qt::WA_NoSystemBackground); // Disable clearing of background
-#endif
     setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
 
     mPrtImageName = defaultImageName(Qt::Vertical);
@@ -96,6 +90,19 @@ QString HbBackgroundItem::defaultImageName(Qt::Orientation orientation) const
         : QLatin1String("qtg_graf_screen_bg_lsc");
 }
 
+void HbBackgroundItem::setImageMode(Hb::BackgroundImageMode mode)
+{
+    if (mode != mImageMode) {
+        mImageMode = mode;
+        updateBackgroundImage();
+    }
+}
+
+Hb::BackgroundImageMode HbBackgroundItem::imageMode() const
+{
+    return mImageMode;
+}
+
 void HbBackgroundItem::updateBackgroundImage()
 {
     prepareGeometryChange();
@@ -103,12 +110,22 @@ void HbBackgroundItem::updateBackgroundImage()
         QSizeF size(HbDeviceProfile::profile(mMainWindow).logicalSize());
         mBoundingRect.setWidth(size.width());
         mBoundingRect.setHeight(size.height());
-        mBackground.setSize(size);
         if (mMainWindow->orientation() == Qt::Vertical) {
             mBackground.setIconName(mPrtImageName);
         } else {
             mBackground.setIconName(mLscImageName);
         }
+        if (mImageMode == Hb::KeepOriginalBackgroundSize
+            || mImageMode == Hb::KeepOriginalBackgroundSizeIfSmaller)
+        {
+            QSizeF imageSize = mBackground.defaultSize();
+            if (mImageMode == Hb::KeepOriginalBackgroundSize
+                || (imageSize.width() <= size.width() && imageSize.height() <= size.height()))
+            {
+                size = imageSize;
+            }
+        }
+        mBackground.setSize(size);
     }
 }
 
@@ -147,17 +164,28 @@ QRectF HbBackgroundItem::boundingRect() const
 
 void HbBackgroundItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    Q_UNUSED(widget)
-    Q_UNUSED(option)
+    Q_UNUSED(widget);
+    Q_UNUSED(option);
 
-#ifdef ENABLE_FAST_PAINT_
-    QPainter::CompositionMode compositionMode = painter->compositionMode();
-    painter->setCompositionMode( QPainter::CompositionMode_Source );  // Do not use alpha blending..
-#endif
+    if (mImageMode == Hb::DoNotDrawBackground) {
+        return;
+    }
 
-    mBackground.paint(painter, mBoundingRect, Qt::KeepAspectRatioByExpanding);
+    // Note: No optimizations to disable alpha blending etc. The background
+    // image may be anything, it can have transparent parts too.
 
-#ifdef ENABLE_FAST_PAINT_
-    painter->setCompositionMode( compositionMode );  // restore old composition mode
-#endif
+    Qt::AspectRatioMode aspRatMode;
+    switch (mImageMode) {
+    case Hb::ScaleBackgroundToFitWithoutExpanding:
+        aspRatMode = Qt::KeepAspectRatio;
+        break;
+    case Hb::StretchBackgroundToFit:
+        aspRatMode = Qt::IgnoreAspectRatio;
+        break;
+    default:
+        aspRatMode = Qt::KeepAspectRatioByExpanding;
+        break;
+    }
+
+    mBackground.paint(painter, mBoundingRect, aspRatMode, Qt::AlignCenter);
 }

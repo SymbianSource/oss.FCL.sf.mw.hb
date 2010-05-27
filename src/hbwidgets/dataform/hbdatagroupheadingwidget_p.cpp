@@ -26,7 +26,8 @@
 #include "hbdatagroupheadingwidget_p.h"
 #include "hbdataformviewitem_p.h"
 #include <hbstyleoptiondatagroupheadingwidget_p.h>
-#include <hbdatagroup_p.h>
+#include "hbdatagroup_p.h"
+#include "hbdatagroup_p_p.h"
 #include <QGraphicsItem>
 #include <hbwidgetfeedback.h>
 
@@ -43,8 +44,10 @@ HbDataGroupHeadingWidget::HbDataGroupHeadingWidget(QGraphicsItem *parent ) :
     mDescriptionItem(0),
     mParent(0),
     mExpanded(false),
-    mDown(false)
+    mDown(false),
+    mLongPressed(false)
 {
+    
 #ifdef HB_GESTURE_FW
     grabGesture( Qt::TapGesture );
 #endif
@@ -58,7 +61,8 @@ HbDataGroupHeadingWidget::~HbDataGroupHeadingWidget()
 }
 
 void HbDataGroupHeadingWidget::createPrimitives()
-{
+{   
+    QObject::connect(mParent, SIGNAL(longPressed(const QPointF )), this, SLOT(longPressed(const QPointF )));
     if(!mBackgroundItem) {
         mBackgroundItem = style()->createPrimitive(HbStyle::P_DataGroup_background, this);
     }
@@ -177,19 +181,22 @@ void HbDataGroupHeadingWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event
 void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
 {
     Hb::InteractionModifiers modifiers = 0;
-
+    if (event->gesture(Qt::TapGesture)) {
+        HbDataGroupPrivate::d_ptr(static_cast<HbDataGroup*>(mParent))->tapTriggered( event );
+    }
     if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         switch(tap->state()) {
 
         case Qt::GestureStarted:
             {
                 mDown = true;
+                mLongPressed = false;
                 HbStyleOptionDataGroupHeadingWidget settingGroupOption;
                 initStyleOption(&settingGroupOption);
                 if(mBackgroundItem) {
-                style()->updatePrimitive(
-                mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
-            }
+                    style()->updatePrimitive(
+                    mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+                }
                 modifiers = Hb::ModifierExpandedItem;
                 HbWidgetFeedback::triggered(this, Hb::InstantPressed, modifiers);
                 break;
@@ -199,12 +206,13 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
             {
                 modifiers = 0;
 
-                if(mDown && rect().contains(mapFromScene(event->mapToGraphicsScene(tap->position())))) {        
+                if(mDown && !mLongPressed && rect().contains(mapFromScene(event->mapToGraphicsScene(tap->position())))) {        
                 static_cast<HbDataGroup*>(mParent)->setExpanded(
                     !static_cast<HbDataGroup*>(mParent)->isExpanded());
                     modifiers |= Hb::ModifierExpandedItem;
-                    mDown = false;
                 }
+                mDown = false;
+                    
                 HbStyleOptionDataGroupHeadingWidget settingGroupOption;
                 initStyleOption(&settingGroupOption);
                 if(mBackgroundItem) {
@@ -235,5 +243,13 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
             break;
         }
     }
+    
+}
+
+
+void HbDataGroupHeadingWidget::longPressed(const QPointF &position)
+{
+    Q_UNUSED(position);
+    mLongPressed = true;
 }
 #endif

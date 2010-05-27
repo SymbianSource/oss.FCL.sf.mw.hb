@@ -31,12 +31,11 @@
 #include "hbcssthemeinterface_p.h"
 #include "hbcssparser_p.h"
 
-
 class HB_AUTOTEST_EXPORT HbColorThemePrivate
 {
 public:
     HbColorThemePrivate();
-    void setCurrentTheme(const QString& themeName);
+    void setCurrentTheme(const QString &themeName);
     void reloadColorFiles(bool sender);
     QColor resolveColor(HbCss::Value values) const;
     ~HbColorThemePrivate();

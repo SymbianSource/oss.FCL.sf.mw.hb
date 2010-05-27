@@ -28,6 +28,7 @@
 
 #include "hblistviewitem.h"
 #include "hbabstractitemcontainer_p.h"
+#include "hblistitemcontainer_p.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
 #include <hbpangesture.h>
@@ -52,7 +53,8 @@ HbListViewPrivate::HbListViewPrivate() :
     mMousePressPos(),
     mScrollStartMousePos(),
     mLastScrollPos(),
-    mOriginalTransform()
+    mOriginalTransform(),
+    mMoveOngoing(false)
 {
 }
 
@@ -121,8 +123,16 @@ void HbListViewPrivate::moveDraggedItemTo(const QPointF &mousePosition)
             //mDraggedItem->setPressed(false, false);
 
             int targetRow = targetIndex.row();
+            int startRow = qMin(targetRow, mDraggedItemIndex.row());
+            int endRow = qMax(targetRow, mDraggedItemIndex.row());
+            int containerStartIndex = mContainer->items().at(0)->modelIndex().row();
+            mMoveOngoing = true;
             q->move(mDraggedItemIndex, targetIndex);
-
+            static_cast <HbListItemContainer*>(mContainer)->setItemModelIndexes(startRow - containerStartIndex,
+                                                                                startRow,
+                                                                                endRow - startRow);
+            mMoveOngoing = false;
+           
             // in the swap the dragged item may have been deleted and recreated. So take it again here
             mDraggedItemIndex = mModelIterator->index(targetRow);
             if (mDraggedItemIndex.isValid()) {
@@ -165,10 +175,13 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
                     mDraggedItemIndex = mDraggedItem->modelIndex();
 
                     if (mDraggedItemIndex.isValid()) {
+                        HbEffect::cancel(mDraggedItem, QString(), true);
                         mMousePressTimer.restart();
                         mMousePressPos = scenePos;
                         mOriginalTransform = mDraggedItem->transform();
                         mDraggedItem->setZValue(mDraggedItem->zValue() + 1);
+                        mDraggedItem->translate(0, event->mapToGraphicsScene(gesture->offset()).y() -
+                                               event->mapToGraphicsScene(gesture->lastOffset()).y());
 
                         QObject::connect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(scrolling(QPointF)));    
                     } else {
@@ -185,8 +198,6 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
 
                 if (!q->isScrolling()) {
                     // move the item with the cursor to indicate the move
-                    //qDebug() << "ScenePos: " << scenePos;
-                    //qDebug() << "Offset: " << event->mapToGraphicsScene(gesture->offset()).y() << " lastOffset: " <<  event->mapToGraphicsScene(gesture->lastOffset()).y();
                     mDraggedItem->translate(0, event->mapToGraphicsScene(gesture->offset()).y() -
                                                event->mapToGraphicsScene(gesture->lastOffset()).y());
 
@@ -207,8 +218,10 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
                     QModelIndex firstItemIndex = mContainer->items().first()->modelIndex();
                     QModelIndex lastItemIndex = mContainer->items().last()->modelIndex();
                     // If the item is dragged up in the list (and there are more items to show), scroll up
-                    if (!q->isScrolling()
-                        && !q->isVisible(firstItemIndex)
+
+                    if (!mIsAnimating
+                        && !(visible(mContainer->itemByIndex(firstItemIndex), true) 
+                             && (firstItemIndex.row() == 0))
                         && scenePos.y() < mMousePressPos.y()
                         && pos.y() < q->itemByIndex(firstVisible)->size().height()) {
                         mScrollStartMousePos = scenePos;
@@ -216,8 +229,9 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
                         animateScroll(QPointF(0.0f , DRAGGED_ITEM_SCROLL_SPEED));
                     }
                     // If the item is dragged down in the list (and there are more items to show), scroll down
-                    else if (!q->isScrolling()
-                               && !q->isVisible(lastItemIndex)
+                    else if (!mIsAnimating
+                               && !(visible(mContainer->itemByIndex(lastItemIndex), true) 
+                                    && (lastItemIndex.row() == mModelIterator->indexCount() - 1))
                                && scenePos.y() > mMousePressPos.y()
                                && pos.y() > (q->size().height() - q->itemByIndex(lastVisible)->size().height())) {
                         mScrollStartMousePos = scenePos;
@@ -272,14 +286,5 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
     }
 
     return HbAbstractItemViewPrivate::panTriggered(event);
-}
-
-bool HbListViewPrivate::animationEnabled(bool insertOperation)
-{
-    if (mArrangeMode) {
-        return false;
-    } else {
-        return HbAbstractItemViewPrivate::animationEnabled(insertOperation);
-    }
 }
 

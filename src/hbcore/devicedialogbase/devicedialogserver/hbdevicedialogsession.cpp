@@ -154,6 +154,10 @@ void HbDeviceDialogSession::DispatchMessageL( const RMessage2 &aMessage )
         UpdateDataRequestL( aMessage );
         break;
     }
+    case EHbSrvPublishOrientation: {
+        PublishOrientation( aMessage );
+        break;
+    }    
 
     default: {
         break;
@@ -496,6 +500,21 @@ int HbDeviceDialogSession::WriteCloseData(int deviceDialogId, int closeReason)
     iUpdateChannel.Complete(error != HbDeviceDialogNoError ? error : closeReason);
     TRACE_EXIT_ARGS("error" << error)
     return error;
+}
+
+/*!
+    \internal
+    Publish current orientation to PS-key
+*/
+void HbDeviceDialogSession::PublishOrientation(const RMessage2 &aMessage)
+{
+    TRACE_ENTRY
+    TInt result = KErrNone;
+    TInt val0 = aMessage.Int0();
+    result = Server().publishOrientation( val0 );
+    
+    aMessage.Complete( result );
+    TRACE_EXIT_ARGS("result " << result)
 }
 
 /*!

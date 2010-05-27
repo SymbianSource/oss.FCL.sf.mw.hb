@@ -114,7 +114,7 @@ QGraphicsLayoutItem *HbWidgetPrivate::createSpacerItem( const QString &name )
     return newSpacer;
 }
 
-/*
+/*!
     
     \deprecated HbWidget::setBackgroundItem(HbStyle::Primitive, int)
     is deprecated. Use HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue) instead.
@@ -152,7 +152,7 @@ void HbWidget::setBackgroundItem(HbStyle::Primitive type, int zValue)
     }
 }
 
-/*
+/*!
     Sets background item to the widget.
     
     The item will be reparented to be child of the widget. Also Z-value 
@@ -184,7 +184,7 @@ void HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue)
     }
 }
 
-/*
+/*!
     Returns background item. 0 is returned if there isn't background
     item in the widget.
  */
@@ -194,7 +194,7 @@ QGraphicsItem *HbWidget::backgroundItem() const
     return d->backgroundItem;
 }
 
-/*
+/*!
     Returns focusItem primitive items.
     Focus primitive is created if has not been created already.
  */
@@ -221,7 +221,7 @@ QGraphicsItem *HbWidgetPrivate::focusPrimitive(HbWidget::FocusHighlight highligh
     return 0;
 }
 
-/*
+/*!
     Hides or shows focus primitive depending on the focus state of the widget.
 */
 void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
@@ -265,7 +265,7 @@ void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
 
 }
 
-/*
+/*!
     Find closest parent with focus group and update the focused child.
 */
 void HbWidgetPrivate::updateCurrentFocusChild()
@@ -279,7 +279,7 @@ void HbWidgetPrivate::updateCurrentFocusChild()
     }
 }
 
-/*
+/*!
     Find and return the closest parent with focus group if any. If propagate
     is true then the closest parent with focus group and children is accepted as
     valid focus group e.g. used for a widget which has the key for changing the 
@@ -316,7 +316,7 @@ HbFocusGroup *HbWidgetPrivate::getFocusGroup(bool propagate) const {
     return (group) ? group : 0;
 }
 
-/*
+/*!
     Set focus to child widget depending on the set focus delegation
     policy. 
 */
@@ -343,7 +343,7 @@ void HbWidgetPrivate::updateBackgroundItemSize()
     }
 }
 
-/*
+/*!
     Test if some item in our parent hierarchy has
     the Hb::InputMethodNeutral flag set.
 */

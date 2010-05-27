@@ -3,12 +3,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 60 30" width="60px" x="0px" y="0px">
 <rect fill="none" height="30" width="60" x="0"/>
 <rect fill="url(#SVGID_1_)" height="30" width="60"/>
-<rect fill-opacity="0.1" height="30" stroke-opacity="0.1" width="1" x="59"/>
-<rect fill="#FFFFFF" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1" x="58"/>
 <rect fill-opacity="0.1" height="30" stroke-opacity="0.1" width="1"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="30" stroke-opacity="0.4" width="1" x="1"/>
+<rect fill-opacity="0.1" height="30" stroke-opacity="0.1" width="1" x="59"/>
 <rect fill="#9696A0" fill-opacity="0.5" height="1" stroke-opacity="0.5" width="58" x="1"/>
 <defs>
-<linearGradient gradientTransform="matrix(0 -1 1 0 640.5 -2991.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-3006.5005" x2="-3006.5005" y1="-641" y2="-580.73">
+<linearGradient gradientTransform="matrix(0 -1 -1 0 -4499.5 -2991.5)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-3006.5" x2="-3006.5" y1="-4560" y2="-4499.73">
 <stop offset="0" style="stop-color:#FAFAFF"/>
 <stop offset="0.9" style="stop-color:#D7D7DC"/>
 <stop offset="0.9" style="stop-color:#CDCDD2"/>

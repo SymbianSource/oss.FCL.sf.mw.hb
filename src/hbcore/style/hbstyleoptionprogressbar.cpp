@@ -27,19 +27,12 @@
 #include "hbstyleoptionprogressbar_p.h"
 
 
-/*!
+/*
     \class HbStyleOptionProgressBar
     \brief HbStyleOptionProgressBar has the style component for progress bar primitives
 
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionProgressBar::HbStyleOptionProgressBar()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionProgressBar::HbStyleOptionProgressBar() :
     progressValue(0),
     minimum(0),
@@ -60,14 +53,6 @@ HbStyleOptionProgressBar::HbStyleOptionProgressBar() :
     type = Type;
     version = Version;
 }
-
-
-/*!
-
-    \deprecated HbStyleOptionProgressBar::HbStyleOptionProgressBar(const HbStyleOptionProgressBar&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionProgressBar::HbStyleOptionProgressBar(const HbStyleOptionProgressBar &other) :
     HbStyleOption(other),
     progressValue(other.progressValue),

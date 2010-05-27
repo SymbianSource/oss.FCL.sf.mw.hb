@@ -63,56 +63,54 @@ private:
     bool initialized;
 };
 
-
 struct HbThemeIndexItemData
-    {
-        enum Flag {
-            Default         = 0x00,
-            Mirrorable      = 0x01,
-            Locked          = 0x02
-        };
-
-        enum Type {
-            NotDefined      = 0,
-            SvgItem         = 1, // .svg
-            PngItem         = 2, // .png
-            MngItem         = 3, // .mng
-            GifItem         = 4, // .gif
-            XpmItem         = 5, // .xpm
-            JpgItem         = 6, // .jpg
-            NvgItem         = 7, // .nvg
-            SvgzItem        = 8, // .svgz
-            QpicItem        = 9, // .qpic
-            FxmlItem        = 10, // .fxml
-            AxmlItem        = 11 // .axml
-        };
-
-        HbThemeIndexItemData() :
-                itemType(NotDefined),
-                itemNameHash(0),
-                flags(Default),
-                mirroredItemType(NotDefined),
-                defaultWidth(-1),
-                defaultHeight(-1),
-                mirroredWidth(-1),
-                mirroredHeight(-1) {}
-
-        quint32 itemType; // from enum Type
-        quint32 itemNameHash;
-        quint32 flags; // from enum Flag
-
-        // These will go to every themable item, but overhead is still small
-        // because most of the items are icons
-        quint32 mirroredItemType; // from enum Type
-        qint32 defaultWidth;
-        qint32 defaultHeight;
-        qint32 mirroredWidth;
-        qint32 mirroredHeight;
+{
+    enum Flag {
+        Default         = 0x00,
+        Mirrorable      = 0x01,
+        Locked          = 0x02
     };
 
+    enum Type {
+        NotDefined      = 0,
+        SvgItem         = 1, // .svg
+        PngItem         = 2, // .png
+        MngItem         = 3, // .mng
+        GifItem         = 4, // .gif
+        XpmItem         = 5, // .xpm
+        JpgItem         = 6, // .jpg
+        NvgItem         = 7, // .nvg
+        SvgzItem        = 8, // .svgz
+        QpicItem        = 9, // .qpic
+        FxmlItem        = 10, // .fxml
+        AxmlItem        = 11 // .axml
+    };
+
+    HbThemeIndexItemData() :
+            itemType(NotDefined),
+            itemNameHash(0),
+            flags(Default),
+            mirroredItemType(NotDefined),
+            defaultWidth(-1),
+            defaultHeight(-1),
+            mirroredWidth(-1),
+            mirroredHeight(-1) {}
+
+    quint32 itemType; // from enum Type
+    quint32 itemNameHash;
+    quint32 flags; // from enum Flag
+
+    // These will go to every themable item, but overhead is still small
+    // because most of the items are icons
+    quint32 mirroredItemType; // from enum Type
+    qint32 defaultWidth;
+    qint32 defaultHeight;
+    qint32 mirroredWidth;
+    qint32 mirroredHeight;
+};
 
 // Helper class for getting data out of HbThemeIndexItemData
-class HbThemeIndexResource
+class HB_AUTOTEST_EXPORT HbThemeIndexResource
 {
 public:
     HbThemeIndexResource(const QString &resourceName);

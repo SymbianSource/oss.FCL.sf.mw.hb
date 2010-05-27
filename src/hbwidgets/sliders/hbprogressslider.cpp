@@ -86,11 +86,11 @@ void HbProgressSliderPrivate::setProgressValue(int value)
 void HbProgressSliderPrivate::setEnableFlag(bool flag)
 {
     Q_Q(HbProgressSlider);
-	
-	HbStyleOptionProgressSlider option;
+    
+    HbStyleOptionProgressSlider option;
     q->initStyleOption(&option);
     
-	if(!flag) {
+    if(!flag) {
         q->setProgressValue(q->minimum());
         q->setSliderValue(q->minimum());
     }
@@ -212,7 +212,12 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     @beta
     @hbwidgets
     \class HbProgressSlider
-    \brief Constructs a basic progress slider.
+    \brief ProgressSlider is used to indicate the current position of a playing music or video.It can show the progress 
+    of a progressing music or video along with the status of the buffered data.
+
+    \image html progressslider.png  "A Progress Slider with Min-Max text at bottom "
+
+
     ProgressSlider is a basic slider but the track is like a progressbar indicating how much progress
     has been done. its a slider with progressbar as its track with some additional behaviour. 
     There is also a progressValue which indicates the amount of buffered data.General use
@@ -220,6 +225,7 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     progressValue as the buffered amount.
 
     HbProgressSlider is derived from HbProgressBar so it supports all the features supported by HbProgressBar.
+    But It supports only horizontal orientation.
 
     HbProgressSlider emits below signals 
 
@@ -231,13 +237,31 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     sliderReleased is emits when the track is released.
     sliderMoved is emits when the handle is moved in any direction.
 
+    The Application can customize the Slider behaviour by listening the signals sliderPressed and sliderReleased.By default there 
+    is no behaviour defined by HbProgressSlider for these actions.
 
-    sample code showing how this can be connected. If the Application has different use case based on 
-    Slider press and slider release they can customize the behaviour.
+    By default the min value is 0 and max value is 100. The application can set the progressValue (buffer data) and 
+    sliderValue (Progress Slider position) according to the situation.
 
+    Example code for creating and using Progress Slider:
     \code
-    HbProgressSlider *object = new HbProgressSlider(parent);
+    HbProgressSlider *mySlider = new HbProgressSlider(parent);
     connect(mySlider,SIGNAL(sliderMoved(int)), mySlider ,SLOT(setSliderValue(int)));
+    //This sets the buffered data progress
+    mySlider->setProgressValue(45);
+    \endcode
+
+
+    Example code for creating and using Progress Slider along with Min-Max text:
+    \code
+    HbProgressSlider *mySlider = new HbProgressSlider(parent);
+    connect(mySlider,SIGNAL(sliderMoved(int)), mySlider ,SLOT(setSliderValue(int)));
+    //This sets the buffered data progress
+    mySlider->setProgressValue(45);
+    mySlider->setMinText("0");
+    mySlider->setMaxText("100");
+    //This sets the slider position
+    mySlider->setSliderValue(20);
     \endcode
     
 */
@@ -275,7 +299,8 @@ HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
 
 /*!
     @beta
-    Constructs a progressslider with a  parent.
+    Constructs a progress bar with the given parent.
+    \param parent The parent of ProgressBar
 */
 HbProgressSlider::HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *parent) : 
     HbProgressBar( dd,parent)
@@ -386,7 +411,9 @@ void HbProgressSlider::setInvertedAppearance(bool inverted)
     }
 }
 
-
+/*!
+    \reimp
+ */
 void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
     Q_D(HbProgressSlider);
@@ -416,7 +443,9 @@ void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->ignore();
     }
 }
-
+/*!
+    \reimp
+ */
 void HbProgressSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
 {
     Q_D(HbProgressSlider);
@@ -439,19 +468,19 @@ void HbProgressSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         event->ignore();
     }
 }
-
+/*!
+    \reimp
+ */
 void HbProgressSlider::setGeometry(const QRectF & rect)
 {
     Q_D(HbProgressSlider);
     HbProgressBar::setGeometry(rect);
     d->handle->setHandlePosForValue(sliderValue());
-    updatePrimitives();
+    //updatePrimitives();
 }
 
 /*!
-    Initializes \a option with the values from this HbProgressSlider. 
-    This method is useful for subclasses when they need a HbStyleOptionProgressSlider,
-    but don't want to fill in all the information themselves.
+    \reimp
  */
 void HbProgressSlider::initStyleOption( HbStyleOptionProgressSlider *option ) const
 {
@@ -468,7 +497,9 @@ void HbProgressSlider::initStyleOption( HbStyleOptionProgressSlider *option ) co
         option->disableState = true;
     }
 }
-
+/*!
+    \reimp
+ */
 void HbProgressSlider::updatePrimitives()
 {
     Q_D(HbProgressSlider);
@@ -503,7 +534,9 @@ void HbProgressSlider::updatePrimitives()
         }
     }
 }
-
+/*!
+    \reimp
+ */
 void HbProgressSlider::showEvent( QShowEvent * event )
 {
     Q_D(const HbProgressSlider);
@@ -514,6 +547,9 @@ void HbProgressSlider::showEvent( QShowEvent * event )
 
     HbProgressBar::showEvent(event);
 }
+/*!
+    \reimp
+ */
 QVariant HbProgressSlider::itemChange(GraphicsItemChange change,const QVariant & value)
 { 
     Q_D(HbProgressSlider);
@@ -531,7 +567,9 @@ QVariant HbProgressSlider::itemChange(GraphicsItemChange change,const QVariant &
     }
     return HbProgressBar::itemChange(change, value);
 }
-
+/*!
+    \reimp
+ */
 bool HbProgressSlider::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 {
     Q_D(HbProgressSlider);
@@ -554,9 +592,8 @@ bool HbProgressSlider::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 
 /*!
     @beta
-    Sets the tooltip for the handle. By default it shows the slider value.
-    If the Application wants to configure this they use setSliderToolTip for 
-    setting the new tooltip text.
+    Sets the tooltip for the Slider handle. By default it shows the slider value.
+    The application can customize the tooltip text using this API.
 
     \param text tooltip text
 

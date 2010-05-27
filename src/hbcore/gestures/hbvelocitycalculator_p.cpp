@@ -26,6 +26,8 @@
 #include "hbvelocitycalculator_p.h"
 #include "hbpointrecorder_p.h"
 
+#include "hbgestures_p.h"
+
 #include <QPointF>
 #include <QTime>
 
@@ -36,9 +38,6 @@
 #else
 # define DEBUG qDebug
 #endif
-
-const int KHbSampleTime = 80; // ms
-const int KHbStopTime = 70; // ms
 
 /*!
    @hbcore
@@ -99,7 +98,7 @@ qreal HbVelocityCalculator::calculate_velocity(
     }
 
     DEBUG() << "Stationary time: " << list.lastTime().msecsTo(time);
-    if (list.lastTime().msecsTo(time) > KHbStopTime) {
+    if (list.lastTime().msecsTo(time) >= HbVelocityStopTime) {
         return 0.0;
     }
 
@@ -107,7 +106,7 @@ qreal HbVelocityCalculator::calculate_velocity(
     qreal delta = 0.0;
     int timeDelta = 0;
     int i = list.count();
-    while (timeDelta < KHbSampleTime && i > 0) {
+    while (timeDelta < HbVelocitySampleTime && i > 0) {
         i--;
         timeDelta = list.at(i).second.msecsTo(time);
     }

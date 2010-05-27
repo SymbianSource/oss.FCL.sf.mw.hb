@@ -33,7 +33,7 @@
 class HbWsiniParser
     {
 public:
-    static void parseModes(QMap<int, HbScreenMode> &modes);
+    static void parseModes(QMap<int, HbScreenMode> &modes, const QString &wsIniFile);
 
 private:
     HbWsiniParser(QMap<int, HbScreenMode> &modes);

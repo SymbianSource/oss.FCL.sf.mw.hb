@@ -209,3 +209,9 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
     dialog.mIndex = i;
     return dialog;
 }
+
+// check is the dialog list empty
+bool HbDeviceDialogsContainer::isEmpty() const
+{
+    return mDialogs.isEmpty();
+}

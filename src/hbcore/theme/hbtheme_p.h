@@ -44,8 +44,8 @@ public:
 
 public:
     QString currentTheme;
-	HbIconTheme iconTheme;
-    HbTheme* q_ptr;
+    HbIconTheme iconTheme;
+    HbTheme *q_ptr;
 
 };
 #endif /* HBTHEME_P_H */
