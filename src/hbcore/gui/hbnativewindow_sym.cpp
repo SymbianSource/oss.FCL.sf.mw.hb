@@ -23,7 +23,7 @@
 **
 ****************************************************************************/
 
-#include <hbglobal.h> 
+#include <hbglobal.h>
 #include <hbdeviceprofile.h>
 
 #include "hbnativewindow_sym_p.h"
@@ -47,6 +47,6 @@ void HbNativeWindow::ConstructL()
     ActivateL();
 }
 
-void HbNativeWindow::Draw( const TRect& /*aRect*/ ) const
+void HbNativeWindow::Draw(const TRect& /*aRect*/) const
 {
 }

@@ -67,6 +67,8 @@ const int HB_RADIOBUTTONLIST_MINIMUM_ITEM_COUNT_IN_SIZE_HINT = 4;
     An example of how to create a radiobuttonlist inside a popup.
     \snippet{decoratorlistdemo/contentwidget.cpp,3}
 
+    By default the radio button list has uniformItemSizes property set to true.
+
 */
 
 /*!
@@ -170,6 +172,7 @@ void HbRadioButtonListPrivate::init(QAbstractItemModel *model, int selected,
     q->setSelected(selected);   
     q->setPreviewMode(previewMode);
     q->setLongPressEnabled(false);
+    q->setUniformItemSizes(true);
     calculateItemHeight();
 }
 

@@ -135,6 +135,7 @@ void HbScrollAreaPrivate::init()
 
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     q->setFlag( QGraphicsItem::ItemClipsChildrenToShape, true );
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
     q->setFocusPolicy(Qt::StrongFocus);
 
     // Scrollbar is created when it is shown for the first time.
@@ -168,7 +169,11 @@ void HbScrollAreaPrivate::doLazyInit()
     QObject::connect(&(mScrollTimer), SIGNAL(timeout()), q, SLOT(_q_animateScrollTimeout()));
     QObject::connect(&(mScrollBarHideTimer), SIGNAL(timeout()), q, SLOT(_q_hideScrollBars()));
 
+#if QT_VERSION >= 0x040700
+    q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures | Qt::IgnoredGesturesPropagateToParent);
+#else
     q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures);
+#endif
     q->grabGesture(Qt::TapGesture);
 }
 
@@ -684,6 +689,10 @@ void HbScrollAreaPrivate::ensureVisible(QPointF position, qreal xMargin, qreal y
 {
     if(mContents) {
         Q_Q(HbScrollArea);
+        // if contentwidget size has changed, xxxBoundary() functions
+        // won't work without this
+        QCoreApplication::sendPostedEvents(q, QEvent::LayoutRequest);
+
         QPointF currentPosition = -mContents->pos();
         QPointF newPosition = currentPosition;
 

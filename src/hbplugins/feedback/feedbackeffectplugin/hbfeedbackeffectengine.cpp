@@ -320,12 +320,11 @@ void HbFeedbackEffectEngine::released(const HbWidget *widget)
         }
         else if (HbFeedbackEffectUtils::widgetFamily(widget) == HbFeedbackEffectUtils::Editor) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers());
-        } else if (widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget || widget->type() == Hb::ItemType_ComboBox) {
+        } else if (widget->type() == Hb::ItemType_ComboBox) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers()) ;
         }
-        else if (widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget
-                 || widget->type() == HbPrivate::ItemType_GroupBoxContentWidget
-                 || widget->type() == HbPrivate::ItemType_DataGroupHeadingWidget
+        else if (widget->type() == HbPrivate::ItemType_GroupBoxContentWidget
+                 || widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget
                  || widget->type() == Hb::ItemType_ComboBox) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers());
         }
@@ -450,13 +449,26 @@ void HbFeedbackEffectEngine::draggedOver(const HbWidget *widget)
 
                 QGraphicsItem* graphicsItem = trackPoint->mainWindow()->scene()->focusItem();
 
-                if (graphicsItem->isWidget() &&
-                    static_cast<QGraphicsWidget*>(graphicsItem)->inherits("HbAbstractEdit")) {
-
-                    if (HbAbstractEdit* edit = static_cast<HbAbstractEdit*>(graphicsItem)) {
-                        if (edit->cursorPosition() != previousCursorPosition) {
-                            effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition);
-                            previousCursorPosition = edit->cursorPosition();
+                if (graphicsItem->isWidget()) {
+                    if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("HbAbstractEdit")) {
+                        if (HbAbstractEdit* edit = static_cast<HbAbstractEdit*>(graphicsItem)) {
+                            if (edit->cursorPosition() != previousCursorPosition) {
+                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition);
+                                previousCursorPosition = edit->cursorPosition();
+                            }
+                        }
+                    }
+                    else if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("QGraphicsWebView") )
+                    {
+                        // This takes care of the case when the track point is used on a QGraphicsWebView (for e.g. cWRT)
+                        QVariant v;
+                        v = graphicsItem->scene()->inputMethodQuery( Qt::ImCursorPosition );
+                        if ( v.isValid() && v.canConvert<int>()) {
+                            int currentCursorPosition = v.toInt();
+                            if (currentCursorPosition != previousCursorPosition) {
+                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(trackPoint, previousCursorPosition);
+                                previousCursorPosition = currentCursorPosition;
+                            }
                         }
                     }
                 }
@@ -512,18 +524,17 @@ void HbFeedbackEffectEngine::boundaryReached(const HbWidget *widget)
 */
 void HbFeedbackEffectEngine::rotated90Degrees(const HbWidget *widget)
 {
-    HbFeedback::InstantEffect effect = HbFeedback::None ;
-    HbFeedback::Modalities modalities = 0 ;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
+    HbFeedback::Modalities modalities = 0;
     Hb::InstantInteraction interaction = Hb::InstantRotated90Degrees;
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if(widgetOverridesEffect(widget, interaction)) {
         effect = overrider.newInstantEffect;
     } else {
         effect = HbFeedback::RotateStep;
-
     }
 
-    if(widgetOverridesModalities(widget,interaction)) {
+    if (widgetOverridesModalities(widget,interaction)) {
         modalities = overrider.newModalities ;
     } else  {
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
@@ -539,18 +550,20 @@ void HbFeedbackEffectEngine::popupOpened(const HbWidget *widget)
 {
     HbFeedback::Modalities modalities = 0 ;
     Hb::InstantInteraction interaction = Hb::InstantPopupOpened;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
 
     if(widgetOverridesModalities(widget,interaction)) {
-        modalities = overrider.newModalities ;
-    } else  {
+        modalities = overrider.newModalities;
+    } else {
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
     }
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if (widgetOverridesEffect(widget, interaction)) {
         playInstantFeedback(widget, overrider.newInstantEffect, modalities);
     } else {
-        if(HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
-            playInstantFeedback(widget, HbFeedback::PopupOpen, modalities);
+        if (HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
+            effect = HbFeedbackEffectUtils::instantOnPopupOpened(widget);
+            playInstantFeedback(widget, effect, modalities);
         }
     }
 }
@@ -562,6 +575,7 @@ void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
 {
     HbFeedback::Modalities modalities = 0 ;
     Hb::InstantInteraction interaction = Hb::InstantPopupClosed;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
 
     if(widgetOverridesModalities(widget,interaction)) {
         modalities = overrider.newModalities ;
@@ -569,11 +583,12 @@ void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
     }
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if(widgetOverridesEffect(widget, interaction)) {
         playInstantFeedback(widget, overrider.newInstantEffect, modalities);
     } else {
-        if(HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
-            playInstantFeedback(widget, HbFeedback::PopupClose, modalities);
+        if (HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
+            effect = HbFeedbackEffectUtils::instantOnPopupClosed(widget);
+            playInstantFeedback(widget, effect, modalities);
         }
     }
 }

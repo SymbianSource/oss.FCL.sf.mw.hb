@@ -33,11 +33,6 @@
 #include <hbview.h>
 #include <hblistwidget.h>
 
-#ifdef Q_OS_SYMBIAN
-#include "themeclientsymbian.h"
-#else
-#include "themeclientqt.h"
-#endif
 #include "themechangerdefs.h"
 
 class HbIcon;
@@ -47,12 +42,7 @@ class ThemeSelectionList:public HbView
 Q_OBJECT
 public:
 
-#ifdef Q_OS_SYMBIAN
-    ThemeSelectionList(ThemeClientSymbian* client);
-#else
-    ThemeSelectionList(ThemeClientQt* client);
-#endif
-
+    ThemeSelectionList();
     ~ThemeSelectionList();
 signals:
     void newThemeSelected(const QString &newthemepath);
@@ -78,11 +68,7 @@ private:
     HbIcon* rightMark;
     HbIcon* noMark;
     HbAction *action;
-#ifdef Q_OS_SYMBIAN
-    ThemeClientSymbian* client;
-#else
-    ThemeClientQt* client;
-#endif
+    QList<HbIcon*> thumbnails;
 
     QFileSystemWatcher *watcher;
     QString iCurrentTheme;

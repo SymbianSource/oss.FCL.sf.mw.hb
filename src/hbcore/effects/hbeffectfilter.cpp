@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffectfilter_p.h"
+#include "hbeffectfilter_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbeffectutils_p.h"
@@ -34,10 +34,10 @@
 #include <QtDebug>
 
 HbEffectFilterAnimation::HbEffectFilterAnimation(HbEffectFilter *effect,
-                                                 int duration,
-                                                 HbEffectGroup *group)
+        int duration,
+        HbEffectGroup *group)
     : HbEffectAnimation(group),
-    mEffect(effect)
+      mEffect(effect)
 {
     setDuration(duration);
 }
@@ -64,7 +64,7 @@ HbEffectColorAnimation::HbEffectColorAnimation(HbEffectFilter *effect, int durat
     : HbEffectFilterAnimation(effect, duration, group)
 {
 }
-    
+
 HbEffectColorAnimation::~HbEffectColorAnimation()
 {
 }
@@ -78,19 +78,19 @@ QVariant HbEffectColorAnimation::interpolated(const QVariant &from, const QVaria
 
     int fromValue = fromColor.red();
     int toValue = toColor.red();
-    ret.setRed(fromValue + (int)(mCurve.valueForProgress(progress) * (toValue - fromValue)));
+    ret.setRed(fromValue + (int)(mCurve.valueForProgress(progress) *(toValue - fromValue)));
 
     fromValue = fromColor.green();
     toValue = toColor.green();
-    ret.setGreen(fromValue + (int)(mCurve.valueForProgress(progress) * (toValue - fromValue)));
+    ret.setGreen(fromValue + (int)(mCurve.valueForProgress(progress) *(toValue - fromValue)));
 
     fromValue = fromColor.blue();
     toValue = toColor.blue();
-    ret.setBlue(fromValue + (int)(mCurve.valueForProgress(progress) * (toValue - fromValue)));
+    ret.setBlue(fromValue + (int)(mCurve.valueForProgress(progress) *(toValue - fromValue)));
 
     fromValue = fromColor.alpha();
     toValue = toColor.alpha();
-    ret.setAlpha(fromValue + (int)(mCurve.valueForProgress(progress) * (toValue - fromValue)));
+    ret.setAlpha(fromValue + (int)(mCurve.valueForProgress(progress) *(toValue - fromValue)));
 
     return ret;
 }
@@ -101,14 +101,14 @@ QVariant HbEffectColorAnimation::interpolated(const QVariant &from, const QVaria
 
 HbEffectFilter::HbEffectFilter(int /*startTime*/, QGraphicsItem *item, HbEffectGroup *group)
     : HbEffectAbstract(0, item, group),
-    mEffectDefined(false),
-    mCanceled(false)
+      mEffectDefined(false),
+      mCanceled(false)
 {
 }
 
 HbEffectFilter::~HbEffectFilter()
 {
-    Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+    Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
         anim->stop();
         delete anim;
     }
@@ -132,7 +132,7 @@ void HbEffectFilter::start()
     }
 
     if (mAnimations.count()) {
-        Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+        Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
             anim->stop(); // rewind the animation before starting again
             anim->setCurrentTime(0);
             anim->mFinished = false;
@@ -155,7 +155,7 @@ void HbEffectFilter::cancel(QTransform &transform, bool itemIsValid)
     mCanceled = true;
 
     // Put animations in their end state to reach the end state of the effect.
-    Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+    Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
         anim->stop();
         anim->setCurrentTime(anim->duration());
         anim->mFinished = true;
@@ -174,7 +174,7 @@ void HbEffectFilter::updateItemTransform(QTransform &/*transform*/)
 
 void HbEffectFilter::pause()
 {
-    Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+    Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
         if (anim->state() == QAbstractAnimation::Running) {
             anim->pause();
         }
@@ -183,7 +183,7 @@ void HbEffectFilter::pause()
 
 void HbEffectFilter::resume()
 {
-    Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+    Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
         if (anim->state() == QAbstractAnimation::Paused) {
             anim->resume();
         }
@@ -219,13 +219,12 @@ HbEffectFilterAnimation *HbEffectFilter::createAnimation(
         anim = new HbEffectFilterAnimation(this, duration, group);
         mAnimations.append(anim);
         // Go through keyframes
-        foreach(const HbKeyFrame &kf, keyFrameList) {
-	        if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
-		        startValue = kf.val;
-	        }
-	        else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
-		        endValue = kf.val;
-	        }
+        foreach(const HbKeyFrame & kf, keyFrameList) {
+            if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
+                startValue = kf.val;
+            } else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
+                endValue = kf.val;
+            }
             // Set keyframe in animation
             else {
                 anim->setKeyValueAt(kf.pos, QVariant(kf.val));
@@ -277,13 +276,12 @@ HbEffectColorAnimation *HbEffectFilter::createAnimation(
         anim = new HbEffectColorAnimation(this, duration, group);
         mAnimations.append(anim);
         // Go through keyframes
-        foreach(const HbKeyFrame &kf, keyFrameList) {
-	        if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
+        foreach(const HbKeyFrame & kf, keyFrameList) {
+            if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
                 startValue.setNamedColor(kf.stringValue);
-	        }
-	        else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
-		        endValue.setNamedColor(kf.stringValue);
-	        }
+            } else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
+                endValue.setNamedColor(kf.stringValue);
+            }
             // Set keyframe in animation
             else {
                 QColor c(kf.stringValue);
@@ -307,7 +305,7 @@ void HbEffectFilter::handleAnimationFinished()
 {
     bool allFinished = true;
 
-    Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+    Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
         if (!anim->mFinished) {
             allFinished = false;
         }
@@ -318,7 +316,7 @@ void HbEffectFilter::handleAnimationFinished()
     if (allFinished && !mCanceled) {
         // Make sure animations are in their end value to reach the end state of the effect.
         // Sometimes QVariantAnimation does not update the animation with its end value before sending finished signal.
-        Q_FOREACH(HbEffectFilterAnimation *anim, mAnimations) {
+        Q_FOREACH(HbEffectFilterAnimation * anim, mAnimations) {
             anim->stop();
             anim->setCurrentTime(anim->duration());
         }

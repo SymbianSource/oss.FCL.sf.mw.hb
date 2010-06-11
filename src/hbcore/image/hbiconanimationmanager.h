@@ -42,7 +42,7 @@ public:
     static HbIconAnimationManager *global();
 
     bool addDefinitionFile(const QString &definitionFileName);
-    
+
     void addDefinition(
         const QString &iconName,
         const HbIconAnimationDefinition &definition);

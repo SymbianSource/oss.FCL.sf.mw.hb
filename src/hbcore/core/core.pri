@@ -66,6 +66,7 @@ PRIVATE_HEADERS += $$PWD/hbsensorlistener_p.h
 PRIVATE_HEADERS += $$PWD/hblocalechangenotifier_p.h
 PRIVATE_HEADERS += $$PWD/hbapplication_p.h
 PRIVATE_HEADERS += $$PWD/hbthemesystemeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbthemesystemeffectmap_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p_p.h
 symbian {
@@ -96,6 +97,7 @@ SOURCES += $$PWD/hborientationstatus.cpp
 SOURCES += $$PWD/hbsensorlistener.cpp
 SOURCES += $$PWD/hblocalechangenotifier_p.cpp
 SOURCES += $$PWD/hbthemesystemeffect.cpp
+SOURCES += $$PWD/hbthemesystemeffectmap.cpp
 SOURCES += $$PWD/hbpluginloader.cpp
 symbian {
     SOURCES += $$PWD/hbsensornotifyhandler_p.cpp

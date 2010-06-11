@@ -25,9 +25,6 @@
 
 #include "hbeffecttheme_p.h"
 #include "hbthemecommon_p.h"
-#include "hbstandarddirs_p.h"
-#include "hbinstance.h"
-#include "hbthemeutils_p.h"
 #include "hbeffectinternal_p.h"
 #include "hbthemeindex_p.h"
 #include "hbtheme.h"
@@ -36,9 +33,7 @@
 #include <QDebug>
 #include <QDir>
 
-#ifdef Q_OS_SYMBIAN
 static const char *effectFileSuffix = ".fxml";
-#endif
 
 class HB_AUTOTEST_EXPORT HbEffectThemePrivate
 {
@@ -47,26 +42,13 @@ public:
     ~HbEffectThemePrivate();
 
     void initialise(const QString &themeName);
+public:
     QString mThemeName;
-    QStringList mDirList;
-    QStringList mListOfExistingFolders;
 };
 
 void HbEffectThemePrivate::initialise(const QString &themeName)
 {
     mThemeName = themeName;
-
-    QMap<int, QString> maplist = HbThemeUtils::constructHierarchyListWithPathInfo(
-    QString(), mThemeName, Hb::EffectResource);
-
-    mDirList.clear();
-    QList<QString> list = maplist.values(); // sorted by key
-    for (int i = list.count() - 1; i >= 0; --i) { // take highest prio first
-        mDirList.append(list.at(i));
-    }
-
-    mListOfExistingFolders = HbStandardDirs::findExistingFolderList(mDirList, mThemeName,
-                                                                    Hb::EffectResource);
 }
 
 HbEffectThemePrivate::HbEffectThemePrivate()
@@ -91,37 +73,22 @@ QString HbEffectTheme::getEffectXml(const QString &fileNameLogical, bool &fromTh
 #ifdef THEME_INDEX_TRACES
     qDebug() <<  "ThemeIndex: getEffectXml effect: " << fileNameLogical;
 #endif  
-    
-#ifdef Q_OS_SYMBIAN
-    // Try to get themed icon information from theme index
-    QString resourceName(fileNameLogical);
-    resourceName.append(effectFileSuffix);
 
-    HbThemeIndexResource resource(resourceName);
-    if (resource.isValid()) {
-        return resource.fullFileName();
-    }
-#endif // Q_OS_SYMBIAN
-    
-    // Assuming logical name will not have '.' and full filepath will
-    // always have some extension.
-    if (!fileNameLogical.contains('.')) {
-        #ifdef THEME_INDEX_TRACES
-        qDebug() <<  "ThemeIndex: getEffectXml index not used, do a lookup from file system!";
-        #endif  
+    if (HbThemeUtils::isLogicalName(fileNameLogical)) {
+        // Try to get themed icon information from theme index
+        QString resourceName(fileNameLogical);
+        resourceName.append(effectFileSuffix);
 
-        foreach (const QString &dir, d_ptr->mListOfExistingFolders) {
-            QString candidateFullName = dir + fileNameLogical + ".fxml";
-            QFile resource(candidateFullName);
-            if (resource.exists()) {
-                if (d_ptr->mListOfExistingFolders.last() != dir) {
-                    fromTheme = true;
-                }
-                return candidateFullName;
-            }
+        HbThemeIndexResource resource(resourceName);
+        if (resource.isValid()) {
+            fromTheme = true;
+            return resource.fullFileName();
         }
     }
-    return fileNameLogical;
+
+    // Not a logical name or not found in theme
+    fromTheme = false;
+    return fileNameLogical;   
 }
 
 HbEffectTheme::HbEffectTheme()
@@ -138,7 +105,6 @@ HbEffectTheme::~HbEffectTheme()
 void HbEffectTheme::setCurrentTheme(const QString &themeName)
 {
     d_ptr->initialise(themeName);
-    d_ptr->mThemeName = themeName;
     HbEffectInternal::reloadFxmlFiles();
 }
 

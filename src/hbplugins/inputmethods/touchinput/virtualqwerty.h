@@ -41,6 +41,7 @@ class HbPredictionEngine;
 class HbCandidateList;
 class HbExactWordPopup;
 class HbSctKeyboard;
+class HbAction;
 
 class HbInputModeHandler;
 class HbInputBasicQwertyHandler;
@@ -74,6 +75,7 @@ public slots:
     void smileySelected(QString smiley);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void candidatePopupClosed(int closingKey, const QString& candidate);
+    void aboutToActivateCustomAction(HbAction *custAction);
 
 public: // From HbInputMethod
     void focusReceived();

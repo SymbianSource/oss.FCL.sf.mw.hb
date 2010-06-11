@@ -49,7 +49,8 @@
     end edges are defined by (layout item, edge) pairs. See setAnchor() for
     more details.
 
-    If anchors set allow ambiguos positioning of items, then layout tries to set items size as close to preferred as possible.
+    If anchors set allow ambiguos positioning of items, then layout tries to set items size as 
+    close to preferred as possible.
 
     Example code:
     \snippet{anchorlayoutsample.cpp,1}
@@ -163,7 +164,8 @@ public:
     void createEquations( EdgeType type );
     void setSizeProp( SizeProperty *v, QGraphicsLayoutItem *item, EdgeType type );
     GraphVertex *createCenterEdge( EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge );
-    void defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, const int anchorIndex, const int definedItemIndex );
+    void defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, 
+        const int anchorIndex, const int definedItemIndex );
 
     QSizeF sizeHint( Qt::SizeHint which );
 
@@ -208,7 +210,8 @@ public:
 /*!
     \internal
 */
-HbAnchorLayoutPrivate::HbAnchorLayoutPrivate() : mEquationsDirty( false ), mValid( true ), mWrongAnchors( false ), mInvalidateCalled(false),
+HbAnchorLayoutPrivate::HbAnchorLayoutPrivate() : 
+    mEquationsDirty( false ), mValid( true ), mWrongAnchors( false ), mInvalidateCalled(false),
                                                     mLayoutVarH( 0 ), mLayoutVarV( 0 )
 {
 }
@@ -276,7 +279,11 @@ HbAnchor* HbAnchorLayoutPrivate::getAnchor(
     return 0;
 }
 
-void HbAnchorLayoutPrivate::defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, const int anchorIndex, const int definedItemIndex )
+void HbAnchorLayoutPrivate::defineNextGeometry( 
+    const int itemIndexStart, 
+    const int itemIndexEnd, 
+    const int anchorIndex, 
+    const int definedItemIndex )
 {
     ItemGeometry *knownItemGeom, *unKnownItemGeom;
     Hb::Edge knownEdge, unKnownEdge;
@@ -303,10 +310,12 @@ void HbAnchorLayoutPrivate::defineNextGeometry( const int itemIndexStart, const 
 
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexEnd] = true;
-            itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mItems.at(itemIndexEnd) ) );
+            itemSize = mSolutionHorizontal.value( 
+                mVariablesHorizontal.findVariable( mItems.at(itemIndexEnd) ) );
         } else {
             mGeometryDefinedV[itemIndexEnd] = true;
-            itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mItems.at(itemIndexEnd) ) );
+            itemSize = mSolutionVertical.value( 
+                mVariablesVertical.findVariable( mItems.at(itemIndexEnd) ) );
         }
 
         sign = 1;
@@ -319,10 +328,12 @@ void HbAnchorLayoutPrivate::defineNextGeometry( const int itemIndexStart, const 
 
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexStart] = true;
-            itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mItems.at(itemIndexStart) ) );
+            itemSize = mSolutionHorizontal.value( 
+                mVariablesHorizontal.findVariable( mItems.at(itemIndexStart) ) );
         } else {
             mGeometryDefinedV[itemIndexStart] = true;
-            itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mItems.at(itemIndexStart) ) );
+            itemSize = mSolutionVertical.value(
+                mVariablesVertical.findVariable( mItems.at(itemIndexStart) ) );
         }
 
         sign = -1;
@@ -655,7 +666,8 @@ void HbAnchorLayoutPrivate::setSizeProp( SizeProperty *v, QGraphicsLayoutItem *i
 }
 
 
-GraphVertex *HbAnchorLayoutPrivate::createCenterEdge( EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge )
+GraphVertex *HbAnchorLayoutPrivate::createCenterEdge( 
+    EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge )
 {
     GraphVertex *middle;
     GraphVertex *start = 0;
@@ -885,9 +897,11 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
                 itemStart = 0;
                 itemEnd = 0;
                 for( int j = 0; j < vertices->size(); j++ ) {
-                    if( ( vertices->at(j)->itemRef == anchor->mStartItem ) && ( vertices->at(j)->itemSide == anchor->mStartEdge ) ) {
+                    if( ( vertices->at(j)->itemRef == anchor->mStartItem ) && 
+                            ( vertices->at(j)->itemSide == anchor->mStartEdge ) ) {
                         itemStart = vertices->at(j);
-                    } else if( ( vertices->at(j)->itemRef == anchor->mEndItem ) && ( vertices->at(j)->itemSide == anchor->mEndEdge ) ) {
+                    } else if( ( vertices->at(j)->itemRef == anchor->mEndItem ) && 
+                        ( vertices->at(j)->itemSide == anchor->mEndEdge ) ) {
                         itemEnd = vertices->at(j);
                     }
                 }
@@ -951,7 +965,8 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
 
         if( ! AnchorLayoutEngine::instance()->processItems( edges, vertices, vs, el ) ) {
             mWrongAnchors = true;
-            AnchorLayoutEngine::instance()->cleanUp( layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
+            AnchorLayoutEngine::instance()->cleanUp( 
+                layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
 //#ifdef HBANCHORLAYOUT_DEBUG
             qDebug() << "FAIL line:" << __LINE__;
 //#endif //HBANCHORLAYOUT_DEBUG
@@ -985,8 +1000,10 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
         layoutVar->sizeProp.pref = 100;
         layoutVar->sizeProp.flags = 0;
 
-        AnchorLayoutEngine::instance()->attachToLayout( layoutStart, layoutMiddle, layoutEnd, layoutVar, el );
-        AnchorLayoutEngine::instance()->cleanUp( layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
+        AnchorLayoutEngine::instance()->attachToLayout( 
+            layoutStart, layoutMiddle, layoutEnd, layoutVar, el );
+        AnchorLayoutEngine::instance()->cleanUp( 
+            layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
 
 
         mAnchorsVisited.resize( mAnchors.size() * sizeof( bool ) );
@@ -1307,7 +1324,8 @@ void HbAnchorLayout::widgetEvent(QEvent *e)
 }
 
 /*!
-    From QGraphicsLayoutItem. If size hint for certain set of items cannot be defined, then it returns default size hint (0/100/1000)
+    From QGraphicsLayoutItem. If size hint for certain set of items cannot be defined, 
+    then it returns default size hint (0/100/1000)
     \param which desired size hint.
     \param constraint optional constraint.
     \return calculated size hint.

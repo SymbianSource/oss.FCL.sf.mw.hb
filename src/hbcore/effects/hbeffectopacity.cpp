@@ -32,8 +32,8 @@
 
 HbEffectOpacityAnimation::HbEffectOpacityAnimation(
     HbEffectGroup *group,
-    int duration ) :
-        HbEffectAnimation(group)
+    int duration) :
+    HbEffectAnimation(group)
 {
     setDuration(duration);
 }
@@ -55,8 +55,8 @@ HbEffectOpacity::HbEffectOpacity(
     const QList<HbEffectFxmlParamData> &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectAbstract(0, item, group),
-        mAnimation(0)
+    HbEffectAbstract(0, item, group),
+    mAnimation(0)
 {
     // Default values of if something is not passed in FXML
     mStartOpacity = 1.0f;
@@ -70,8 +70,8 @@ HbEffectOpacity::HbEffectOpacity(
     const HbEffectFxmlParamData *opacityParam = 0;
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, data) {
-	    if (param.name() == FXML_KEYWORD_OPACITY) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, data) {
+        if (param.name() == FXML_KEYWORD_OPACITY) {
             keyFrameList = param.keyFrames();
             HbEffectUtils::resolveFxmlDuration(duration, param);
             HbEffectUtils::resolveFxmlCurveShape(curve, param);
@@ -81,20 +81,19 @@ HbEffectOpacity::HbEffectOpacity(
             mEndOpacity = mStartOpacity;
 
             opacityParam = &param;
-	    }
+        }
     }
 
     if (duration > 0) {
-        mAnimation = new HbEffectOpacityAnimation(group, duration); 
+        mAnimation = new HbEffectOpacityAnimation(group, duration);
 
-        foreach( const HbKeyFrame &kf, keyFrameList ) {
-	        if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
-		        // Start value 0.0 does not work so this trick fixes that.
+        foreach(const HbKeyFrame & kf, keyFrameList) {
+            if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
+                // Start value 0.0 does not work so this trick fixes that.
                 mStartOpacity = kf.val + 0.0001f;
-	        }
-	        else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
-		        mEndOpacity = kf.val;
-	        }
+            } else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
+                mEndOpacity = kf.val;
+            }
             // Set keyframe in animation
             else {
                 mAnimation->setKeyValueAt(kf.pos, QVariant(kf.val));

@@ -268,6 +268,21 @@ bool HbIndicatorInterface::handleInteraction(InteractionType /*type*/)
 }
 
 /*!
+    Called by the framework, when the indicator menu is about to show. 
+    Indicators data can be refreshed here. 
+   
+    Should return true, if the indicator data is refreshed, false otherwise. 
+    If true is returned then the indicator menu calls indicatorData to get refreshed data.
+    Default implementation returns false. 
+
+    \sa HbIndicatorInterface::indicatorData(int role)
+*/
+bool HbIndicatorInterface::refreshData()
+{
+    return false;
+}
+
+/*!
     Constructs an indicator.
 
     \a indicatorType contains the type of the indicator,

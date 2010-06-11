@@ -60,7 +60,10 @@ public:
     }
     void DoCancel()
     {
-    // No Cancel() available for RSessionBase::Connect()
+        // No Cancel() available for RSessionBase::Connect()
+        // Nevertheless we must do something to prevent deadlocking.
+        TRequestStatus *rs = &iStatus;
+        User::RequestComplete(rs, KErrCancel);
     }
 private:
     HbIndicatorPrivate *iIndicator;
@@ -327,6 +330,8 @@ void HbIndicatorPrivate::RunL()
 void HbIndicatorPrivate::DoCancel()
 {
     TRACE_ENTRY
+    TRequestStatus *rs = &iStatus;
+    User::RequestComplete(rs, KErrCancel);
     TRACE_EXIT
 }
 

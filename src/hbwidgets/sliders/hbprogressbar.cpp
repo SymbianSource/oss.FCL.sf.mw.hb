@@ -53,7 +53,7 @@
     progress (value() - minimum()) divided by maximum() - minimum().
     
     By default the min value is 0 and max value is 100.If minimum and maximum both are set to 0, the bar shows a busy indicator 
-    instead of a percentage of steps.
+    instead of a percentage of steps.The ProgressBar is always non interactive.
 
     ProgressBar also supports adding text . Min-Max text pair is also supported which is commonly 
     used for progress indication for music. 

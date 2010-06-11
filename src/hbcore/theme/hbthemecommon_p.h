@@ -277,7 +277,6 @@ struct HbTypefaceDataInfo
 enum HbThemeServerRequest {
      EInvalidServerRequest = 0,
      EIconLookup = 1,
-     EIconDefaultSize,
      EStyleSheetLookup,
      EThemeSelection,
      EMultiPieceIcon,

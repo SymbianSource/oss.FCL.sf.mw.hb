@@ -29,16 +29,15 @@
 #include <QStyleOption>
 #include <QApplication>
 
-struct HbPixmapIconMaskedData
-{
+struct HbPixmapIconMaskedData {
     QPixmap    currentPixmap;
 };
 
 HbPixmapIconRenderer::HbPixmapIconRenderer(const QPixmap &pixmap, HbIconImpl *impl)
-        : iconMode(QIcon::Normal),
-        iconPropertiesApplied(false),
-        pixmapData(pixmap),
-        iconImpl(impl)
+    : iconMode(QIcon::Normal),
+      iconPropertiesApplied(false),
+      pixmapData(pixmap),
+      iconImpl(impl)
 {
 }
 
@@ -46,10 +45,10 @@ HbPixmapIconRenderer::~HbPixmapIconRenderer()
 {
 }
 
-void HbPixmapIconRenderer::draw(QPainter* painter,
+void HbPixmapIconRenderer::draw(QPainter *painter,
                                 const QPointF &topLeft,
                                 const QPainterPath &clipPath,
-                                HbMaskableIconImpl * maskIconData)
+                                HbMaskableIconImpl *maskIconData)
 {
     if (!iconPropertiesApplied) {
         applyIconProperties();
@@ -67,37 +66,33 @@ void HbPixmapIconRenderer::draw(QPainter* painter,
     doDraw(painter, topLeft, pixmapToDraw, clipPath);
 }
 
-void HbPixmapIconRenderer::doDraw(QPainter * painter,
-                                  const QPointF & topLeft,
-                                  const QPixmap & finalPixmap,
-                                  const QPainterPath & clipPath)
+void HbPixmapIconRenderer::doDraw(QPainter *painter,
+                                  const QPointF &topLeft,
+                                  const QPixmap &finalPixmap,
+                                  const QPainterPath &clipPath)
 {
     if (!clipPath.isEmpty()) {
         QPainterPath oldPath;
-        bool clipped = painter->hasClipping();
-    
-        if (!clipped) {
+        bool wasClipped = painter->hasClipping();
+
+        if (!wasClipped) {
             painter->setClipping(true);
         }
-        
+
         QRectF cliprect = clipPath.boundingRect();
         QPainterPath intersect(clipPath);
-        if (clipped) {
-            oldPath = painter->clipPath();
+        oldPath = painter->clipPath();
+        if (wasClipped) {
             QRectF oldrect = oldPath.boundingRect();
             intersect =  oldPath.intersected(clipPath);
             QRectF interrect = intersect.boundingRect();
         }
-    
-        painter->setClipPath(intersect, Qt::ReplaceClip);     
+
+        painter->setClipPath(intersect, Qt::ReplaceClip);
         painter->drawPixmap(topLeft, finalPixmap);
-    
-        if (!clipped) {
-            painter->setClipPath(oldPath, Qt::NoClip);
-        } else {
-            painter->setClipPath(oldPath);
-        }
-        painter->setClipping(clipped);
+
+        painter->setClipPath(oldPath);
+        painter->setClipping(wasClipped);
     }  else {
         painter->drawPixmap(topLeft, finalPixmap);
     }
@@ -122,11 +117,11 @@ void HbPixmapIconRenderer::applyIconProperties()
     iconPropertiesApplied = true;
 }
 
-QPixmap HbPixmapIconRenderer::getMaskedPixmap(HbMaskableIconImpl * maskIconData)
+QPixmap HbPixmapIconRenderer::getMaskedPixmap(HbMaskableIconImpl *maskIconData)
 {
     QPixmap maskedPixmap;
 
-    HbPixmapIconMaskedData * mi = (HbPixmapIconMaskedData *)maskIconData->implData();
+    HbPixmapIconMaskedData *mi = (HbPixmapIconMaskedData *)maskIconData->implData();
     if (maskIconData->maskChanged()) {
         if (!mi) {
             mi = new HbPixmapIconMaskedData();
@@ -146,6 +141,6 @@ QPixmap HbPixmapIconRenderer::getMaskedPixmap(HbMaskableIconImpl * maskIconData)
 
 void HbPixmapIconRenderer::destroyMaskedData(HbIconMaskedData *data)
 {
-    delete((HbPixmapIconMaskedData*)data);
+    delete((HbPixmapIconMaskedData *)data);
 }
 

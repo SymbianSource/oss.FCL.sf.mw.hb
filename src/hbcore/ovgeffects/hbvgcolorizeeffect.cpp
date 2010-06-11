@@ -63,8 +63,9 @@ QColor HbVgColorizeEffect::color() const
 void HbVgColorizeEffect::setColor(const QColor &color)
 {
     Q_D(HbVgColorizeEffect);
-    if (d->color == color)
+    if (d->color == color) {
         return;
+    }
     d->color = color;
     updateEffect();
     emit colorChanged(color);
@@ -82,25 +83,25 @@ const VGfloat Gw = 0.6094f;
 const VGfloat Bw = 0.0820f;
 
 void HbVgColorizeEffectPrivate::getColorMatrix(VGfloat *colorMatrix,
-                                               const QColor &color,
-                                               qreal opacity)
+        const QColor &color,
+        qreal opacity)
 {
     const VGfloat o = (VGfloat) opacity;
     const VGfloat ao = 1 - o;
     const VGfloat R = (o / 255.0f) * (VGfloat) color.red();
     const VGfloat G = (o / 255.0f) * (VGfloat) color.green();
     const VGfloat B = (o / 255.0f) * (VGfloat) color.blue();
-    colorMatrix[0] = R*Rw + ao;
-    colorMatrix[1] = G*Rw;
-    colorMatrix[2] = B*Rw;
+    colorMatrix[0] = R * Rw + ao;
+    colorMatrix[1] = G * Rw;
+    colorMatrix[2] = B * Rw;
     colorMatrix[3] = 0.0f;
-    colorMatrix[4] = R*Gw;
-    colorMatrix[5] = G*Gw + ao;
-    colorMatrix[6] = B*Gw;
+    colorMatrix[4] = R * Gw;
+    colorMatrix[5] = G * Gw + ao;
+    colorMatrix[6] = B * Gw;
     colorMatrix[7] = 0.0f;
-    colorMatrix[8] = R*Bw;
-    colorMatrix[9] = G*Bw;
-    colorMatrix[10] = B*Bw + ao;
+    colorMatrix[8] = R * Bw;
+    colorMatrix[9] = G * Bw;
+    colorMatrix[10] = B * Bw + ao;
     colorMatrix[11] = 0.0f;
     colorMatrix[12] = 0.0f;
     colorMatrix[13] = 0.0f;
@@ -109,15 +110,15 @@ void HbVgColorizeEffectPrivate::getColorMatrix(VGfloat *colorMatrix,
     colorMatrix[16] = 0.0f;
     colorMatrix[17] = 0.0f;
     colorMatrix[18] = 0.0f;
-    colorMatrix[19] = 0.0f;    
+    colorMatrix[19] = 0.0f;
 }
 
 #endif
 
 void HbVgColorizeEffect::performEffect(QPainter *painter,
-                                   const QPointF &offset,
-                                   const QVariant &vgImage,
-                                   const QSize &vgImageSize)
+                                       const QPointF &offset,
+                                       const QVariant &vgImage,
+                                       const QSize &vgImageSize)
 {
 #ifdef HB_EFFECTS_OPENVG
     QPixmap cachedPm = cached(vgImageSize);
@@ -131,8 +132,9 @@ void HbVgColorizeEffect::performEffect(QPainter *painter,
     VGImage dstImage = d->ensurePixmap(&d->dstPixmap, vgImageSize);
     qreal opacity = clamp(d->opacity, 0.0f, 1.0f);
     if (opacity > HBVG_EPSILON) {
-        if (d->paramsChanged)
+        if (d->paramsChanged) {
             HbVgColorizeEffectPrivate::getColorMatrix(d->colorMatrix, d->color, opacity);
+        }
         vgColorMatrix(dstImage, srcImage, d->colorMatrix);
         painter->drawPixmap(offset, d->dstPixmap);
         tryCache(d->dstPixmap);

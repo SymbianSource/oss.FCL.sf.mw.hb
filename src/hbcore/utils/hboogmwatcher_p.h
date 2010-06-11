@@ -49,7 +49,7 @@ signals:
     void iconCleanupDone(int count);
 
 private:
-    HbOogmWatcherPrivate * const d_ptr;
+    HbOogmWatcherPrivate *const d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbOogmWatcher)
     HbOogmWatcher(QObject *parent = 0);
 };

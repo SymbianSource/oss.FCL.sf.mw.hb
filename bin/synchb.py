@@ -89,12 +89,11 @@ def write_file(filepath, content):
         print(e)
 
 def include_directive(header):
-    return "#include \"%s\"\n" % header
+    return "#include \"%s\"\n" % header.replace("\\", "/")
 
 def write_header(header, include, path):
     filename = os.path.basename(header)
     filepath = os.path.join(path, filename)
-    relpath = os.path.relpath(header, path).replace("\\", "/")
     skip = False
     if os.path.exists(filepath):
         directive = include_directive(include)
@@ -115,6 +114,7 @@ class Component:
         self.name = name
         self.headers = []
         self.privates = []
+        self.restricted = []
 
     def read(self, path):
         entries = os.listdir(path)
@@ -123,10 +123,12 @@ class Component:
             if os.path.isdir(entrypath):
                 self.read(entrypath)
             elif os.path.isfile(entrypath):
-                if entry.endswith("_p_p.h"):
+                if re.match(entry, ".*?_[pr]_[pr]\.h"):
                     continue
                 elif entry.endswith("_p.h"):
                     self.privates.append(entrypath)
+                elif entry.endswith("_r.h"):
+                    self.restricted.append(entrypath)
                 elif entry.endswith(".h"):
                     self.headers.append(entrypath)
 
@@ -135,6 +137,11 @@ class Component:
         if len(self.headers) > 0:
             self._makedirs(path)
             written += self._write(path, self.headers, True)
+
+        if len(self.restricted) > 0:
+            restpath = os.path.join(path, "restricted")
+            self._makedirs(restpath)
+            written += self._write(restpath, self.restricted, True)
 
         if len(self.privates) > 0:
             privpath = os.path.join(path, "private")
@@ -145,12 +152,12 @@ class Component:
     def _write(self, path, headers, convenience):
         written = []
         for header in headers:
-            write_header(header, header, path)
+            write_header(header, os.path.relpath(header, path), path)
             written.append(os.path.join(path, os.path.basename(header)))
             if convenience:
                 classes = []
                 content = read_file(header)
-                for match in re.finditer("(?:class|namespace)\s+(?:HB_[^_]+_EXPORT\s+)?(Hb\w*)(\s*;)?", content):
+                for match in re.finditer("(?:class|namespace)\s+(?:HB_[^_]+(?:_RESTRICTED)?_EXPORT\s+)?(Hb\w*)(\s*;)?", content):
                     if not match.group(2):
                         classes.append(match.group(1))
                 for match in re.finditer("#pragma hb_header\((\w+)\)", content):

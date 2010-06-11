@@ -50,9 +50,9 @@ HbVgShadowEffect::~HbVgShadowEffect()
 }
 
 void HbVgShadowEffect::performEffect(QPainter *painter,
-                                   const QPointF &offset,
-                                   const QVariant &vgImage,
-                                   const QSize &vgImageSize)
+                                     const QPointF &offset,
+                                     const QVariant &vgImage,
+                                     const QSize &vgImageSize)
 {
 #ifdef HB_EFFECTS_OPENVG
     Q_D(HbVgOutlineEffect);

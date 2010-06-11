@@ -40,7 +40,7 @@
 #endif
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbApplication
     \brief The HbApplication class is a place for common functionality.
@@ -70,36 +70,36 @@
 
     Applications that support the 'activities' concept may check the start-up
     reason like this:
-    
+
     \code
     HbApplication app(argc, argv);
     if(app.activateReason() == HbApplication::activity) {
         // start-up case
     } else if (app.activateReason() == HbApplication::service) {
-        // service lauch 
+        // service launch
     } else {
         // normal launch
     }
 
     MyActivitiesEngine logic;
     // connect to the application signal
-    QObject::connect(&app, SIGNAL(activate()), &logic, SLOT(openActivity())); 
+    QObject::connect(&app, SIGNAL(activate()), &logic, SLOT(openActivity()));
     \endcode
-    
-    When new activity needs to be activated signal is emited. Application might
+
+    When new activity needs to be activated signal is emitted. Application might
     observe it and start correct handling to return to saved state. Logic should
     check what is the activity id and data to return to correct state.
-    
+
     \sa QApplication
 */
 
 /*!
     \fn void HbApplication::activate()
-    
+
     This signal is emitted when some activity needs to be shown.
 */
 
-static int& preInitApp(int &argc)
+static int &preInitApp(int &argc)
 {
     // This function contains code that needs to be executed before
     // the QApplication constructor.
@@ -211,6 +211,7 @@ void HbApplication::hideSplash()
 #if defined(Q_WS_S60)
 #include <w32std.h>
 #include <coecntrl.h>
+#include <coemain.h>
 #include <QDesktopWidget>
 #include <QStringList>
 #include <hbinstance.h>
@@ -225,7 +226,7 @@ void HbApplication::hideSplash()
 
 static void forceRefresh()
 {
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         QEvent event(QEvent::WindowActivate);
         QApplication::sendEvent(window, &event);
     }
@@ -246,80 +247,79 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
 
     const TWsEvent *aEvent = event->windowServerEvent();
     switch (aEvent->Type()) {
-         // In case of EEventScreenDeviceChanged-event, the current screen
-         // ratio is checked and orientation is set accordingly. 
-        case EEventScreenDeviceChanged:
-        {
-            QList<HbMainWindow*> windows = hbInstance->allMainWindows();
-            RWindow *win = static_cast<RWindow *>(windows.at(0)->effectiveWinId()->DrawableWindow());
-               
-            TSize rWinSize;
-            if (win)
-                rWinSize = win->Size();
-
-            // fix for emulator / changing modes
-            QSize nSize( (int)rWinSize.iWidth, (int)rWinSize.iHeight );
-            foreach (HbMainWindow* w, windows) {
+    case EEventScreenDeviceChanged: {
+        // Resize the mainwindows when the screen device changes.
+        // This is needed only to support the old S60 emulator.
+        CWsScreenDevice *screenDevice = CCoeEnv::Static()->ScreenDevice();
+        if (screenDevice) {
+            TPixelsTwipsAndRotation params;
+            int mode = screenDevice->CurrentScreenMode();
+            screenDevice->GetScreenModeSizeAndRotation(mode, params);
+            QSize nSize(params.iPixelSize.iWidth, params.iPixelSize.iHeight);
+            QList<HbMainWindow *> windows = hbInstance->allMainWindows();
+            foreach(HbMainWindow * w, windows) {
                 w->resize(nSize);
             }
         }
-        return false; //continue handling in QApplication::s60ProcessEvent
-        case KChangeDirection:{
-            TUint8* dataptr = aEvent->EventData();
-            switch(*dataptr){
-                case 0:
-                    HbApplication::setLayoutDirection(Qt::LeftToRight);
-                    break;
-                case 1:
-                    HbApplication::setLayoutDirection(Qt::RightToLeft);
-                    break;
-                default:
-                    qWarning("HbApplication::s60EventFilter: Unknown layout direction received");
-                    break;
-                }
-            }
-            return false;
-        case KChangeDeviceProfile:{
-            TUint8* dataptr = aEvent->EventData();
-            QStringList names = HbDeviceProfile::profileNames();
-            if(*dataptr > names.count() - 1){
-                qWarning("HbApplication::s60EventFilter: Unknown device profile received");
-            }else{
-                HbDeviceProfile profile(names.value(*dataptr));
-                HbDeviceProfileManager::select(profile);
-                QList<HbMainWindow*> windows = hbInstance->allMainWindows();
-                HbMainWindow *w = windows.at(0);
-                w->setOrientation(profile.orientation());
-            }
-            }
-            return false;
-        case KChangeTouchAreaVis:{
-                TUint8* dataptr = aEvent->EventData();
-                HbTouchAreaPrivate::setOutlineDrawing(*dataptr == 1);
-                forceRefresh();
-            }
-            return false;
-        case KChangeTextItemVis:{
-                TUint8* dataptr = aEvent->EventData();
-                HbTextItemPrivate::outlinesEnabled = *dataptr == 1;
-                forceRefresh();
-            }
-            return false;
-        case KChangeIconItemVis:{
-                TUint8* dataptr = aEvent->EventData();
-                HbIconItemPrivate::outlinesEnabled = *dataptr == 1;
-                forceRefresh();
-            }
-            return false;
-        case KChangeFpsCounterVis:{
-                TUint8* dataptr = aEvent->EventData();
-                HbGraphicsScenePrivate::fpsCounterEnabled = *dataptr == 1;
-                forceRefresh();
-            }
-            return false;
+    }
+    return false; //continue handling in QApplication::s60ProcessEvent
+
+    case KChangeDirection: {
+        TUint8 *dataptr = aEvent->EventData();
+        switch (*dataptr) {
+        case 0:
+            HbApplication::setLayoutDirection(Qt::LeftToRight);
+            break;
+        case 1:
+            HbApplication::setLayoutDirection(Qt::RightToLeft);
+            break;
         default:
-            return QApplication::symbianEventFilter(event);
+            qWarning("HbApplication::s60EventFilter: Unknown layout direction received");
+            break;
         }
+    }
+    return false;
+    case KChangeDeviceProfile: {
+        TUint8 *dataptr = aEvent->EventData();
+        QStringList names = HbDeviceProfile::profileNames();
+        if (*dataptr > names.count() - 1) {
+            qWarning("HbApplication::s60EventFilter: Unknown device profile received");
+        } else {
+            HbDeviceProfile profile(names.value(*dataptr));
+            HbDeviceProfileManager::select(profile);
+            QList<HbMainWindow *> windows = hbInstance->allMainWindows();
+            HbMainWindow *w = windows.at(0);
+            w->setOrientation(profile.orientation());
+        }
+    }
+    return false;
+    case KChangeTouchAreaVis: {
+        TUint8 *dataptr = aEvent->EventData();
+        HbTouchAreaPrivate::setOutlineDrawing(*dataptr == 1);
+        forceRefresh();
+    }
+    return false;
+    case KChangeTextItemVis: {
+        TUint8 *dataptr = aEvent->EventData();
+        HbTextItemPrivate::outlinesEnabled = *dataptr == 1;
+        forceRefresh();
+    }
+    return false;
+    case KChangeIconItemVis: {
+        TUint8 *dataptr = aEvent->EventData();
+        HbIconItemPrivate::outlinesEnabled = *dataptr == 1;
+        forceRefresh();
+    }
+    return false;
+    case KChangeFpsCounterVis: {
+        TUint8 *dataptr = aEvent->EventData();
+        HbGraphicsScenePrivate::fpsCounterEnabled = *dataptr == 1;
+        forceRefresh();
+    }
+    return false;
+    default:
+        return QApplication::symbianEventFilter(event);
+    }
 }
 
 #endif // Q_WS_S60
@@ -340,7 +340,7 @@ QVariant HbApplicationPrivate::activateData()
 {
     if (!mActivateId.isNull() && !mActivateData.isValid()) {
         mActivateData = mActivityManager->activityData(mActivateId);
-    } 
+    }
     return mActivateData;
 }
 
@@ -350,7 +350,7 @@ void HbApplicationPrivate::prepareActivityData(const QString &activityId)
     mActivateId = activityId;
     mActivateData = QVariant();
     mActivateParams = QVariantHash();
-    
+
     emit q_ptr->activate();
 }
 

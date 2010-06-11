@@ -94,7 +94,7 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
     } else {
         qWarning("HbForegroundWatcher: CoeEnv not available");
     }
-	     
+
 #endif
     QApplication::instance()->installEventFilter(this);
     HbSleepModeListener::instance(); // make sure the instance is created
@@ -116,7 +116,7 @@ void HbForegroundWatcher::HandleGainingForeground()
     if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
         return;
     }
-    
+
     if (!mForeground) {
         emit foregroundGained();
         if (!hbInstance->allMainWindows().isEmpty()) {
@@ -128,7 +128,7 @@ void HbForegroundWatcher::HandleGainingForeground()
             HbMainWindow *mWindow = HbInstance::instance()->allMainWindows().first();
             if (mWindow) {
                 HbMainWindowPrivate::d_ptr(mWindow)->updateForegroundOrientationPSKey();
-            }    		
+            }
 #endif //Q_OS_SYMBIAN
         }
         mForeground = true;
@@ -145,7 +145,7 @@ void HbForegroundWatcher::HandleLosingForeground()
     if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
         return;
     }
-    
+
     if (mForeground) {
         emit foregroundLost();
         if (!hbInstance->allMainWindows().isEmpty()) {

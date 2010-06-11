@@ -40,7 +40,7 @@
 
 /*!
   \class HbSplash
-  
+
   \brief Class with utility functions for accessing splash screens.
 
   \internal
@@ -64,8 +64,7 @@ static QString orientationId(HbSplashScreen::Flags flags)
     return QString("prt");
 }
 
-struct Params
-{
+struct Params {
     int *w;
     int *h;
     int *bpl;
@@ -113,7 +112,7 @@ static uchar *readSpl(File &f, Params &params)
     w = *headerPtr++;
     h = *headerPtr++;
     bpl = *headerPtr++;
-    fmt = (QImage::Format) *headerPtr++;
+    fmt = (QImage::Format) * headerPtr++;
     params.extra = *headerPtr;
     if (fmt != QImage::Format_ARGB32_Premultiplied) {
         qWarning("[hbsplash] Image format for %s is not ARGB32_PRE (is %d instead)",
@@ -257,9 +256,9 @@ bool HbSplashSrvClient::Connect()
 }
 
 bool HbSplashSrvClient::getSplashFileHandle(RFile &f,
-                                            const QString &ori,
-                                            const QString &appId,
-                                            const QString &screenId)
+        const QString &ori,
+        const QString &appId,
+        const QString &screenId)
 {
     TPtrC oriDes(static_cast<const TUint16 *>(ori.utf16()), ori.length());
     TPtrC appIdDes(static_cast<const TUint16 *>(appId.utf16()), appId.length());
@@ -272,9 +271,9 @@ bool HbSplashSrvClient::getSplashFileHandle(RFile &f,
 }
 
 uchar *HbSplashSrvClient::getSplashFromBitmap(const QString &ori,
-                                              const QString &appId,
-                                              const QString &screenId,
-                                              Params &params)
+        const QString &appId,
+        const QString &screenId,
+        Params &params)
 {
     TPtrC oriDes(static_cast<const TUint16 *>(ori.utf16()), ori.length());
     TPtrC appIdDes(static_cast<const TUint16 *>(appId.utf16()), appId.length());
@@ -334,6 +333,7 @@ static uchar *load_symbian(Params &params)
     if (appIdStr.isEmpty()) {
         RProcess process;
         appIdStr = QString::number(process.SecureId().iId, 16);
+        process.Close();
     }
 
     uchar *data = 0;

@@ -31,12 +31,12 @@
 /*
     \class HbDeviceProfileManager
     \brief HbDeviceProfileManager allows to select specific profile to be used.
-    
+
     This class is mostly for development purposes where there is need to test
     applications in different resolutions and settings.
-    
+
     \sa HbDeviceProfile
-    
+
     \proto
 */
 

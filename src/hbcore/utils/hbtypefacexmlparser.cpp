@@ -205,7 +205,7 @@ bool HbTypefaceXmlParser::matchLanguageAndCountry() const
 	// Construct the locale with the typeface locale info
 	if (!language.isEmpty()) {
 		if (!country.isEmpty()) {
-			typefaceLocaleName = language + "_" + country;
+			typefaceLocaleName = language + '_' + country;
 			systemLocaleName = systemLocale.name();
 		}
 		else {

@@ -26,7 +26,7 @@
 #include "hbthetestwidget_p.h"
 #include "hbinstance.h"
 #include "hbnamespace_p.h"
-#include <hbapplication.h>
+#include "hbapplication.h"
 #include "hbtoolbutton_p.h"
 #include "hbstyleoptiontoolbutton_p.h"
 #include "hbcolorscheme.h"
@@ -451,7 +451,7 @@ void HbTheTestWidget::doScreenCapture()
 //    QPixmap screenPixmap = QPixmap::fromSymbianCFbsBitmap(bitmap);
 //#else
     QPixmap screenPixmap = QPixmap::grabWindow(
-        QApplication::activeWindow()->winId());
+        QApplication::activeWindow()->winId()); //krazy:exclude=qclasses
 //#endif
     QString format = "png";
     screenPixmap.save(filePath.toLatin1(), format.toLatin1());

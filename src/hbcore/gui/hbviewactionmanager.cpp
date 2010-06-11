@@ -36,22 +36,22 @@
     @hbcore
     \class HbViewActionManager
     \brief HbViewActionManager is the class that decides switch to container
-    the action is placed (options menu or toolbar). 
+    the action is placed (options menu or toolbar).
     Decision is based the UI commands distribution guide that is read
     automatically.
 
     \internal
 */
 
-/*! 
+/*!
     Constructor.
 */
 HbViewActionManager::HbViewActionManager(HbView *view) :
-    QObject(view), view(view), toolBarMaxCount(99), 
+    QObject(view), view(view), toolBarMaxCount(99),
     defaultContainer(HbView::OptionsMenu), orientation(Qt::Vertical)
 {
     if (view) {
-        HbMainWindow* mainWin = view->mainWindow();
+        HbMainWindow *mainWin = view->mainWindow();
         if (mainWin) {
             connect(mainWin, SIGNAL(orientationChanged(Qt::Orientation)),
                     this, SLOT(orientationChanged(Qt::Orientation)));
@@ -62,7 +62,7 @@ HbViewActionManager::HbViewActionManager(HbView *view) :
     createTemplate();
 }
 
-/*! 
+/*!
     Destructor.
 */
 HbViewActionManager::~HbViewActionManager()
@@ -70,7 +70,7 @@ HbViewActionManager::~HbViewActionManager()
 
 }
 
-/*! 
+/*!
     The function adds \a action to either menu's or toolbar's list of actions.
     The ownership of \a action is not transferred.
 
@@ -85,15 +85,14 @@ void HbViewActionManager::addAction(QAction *action,
     if (preferredContainer == HbView::NotSpecified) {
         container = actualContainer(action, preferredContainer);
     }
- 
+
     // Add action to right container
     if (container == HbView::OptionsMenu) {
-        view->menu()->addAction(action);    
-    }
-    else if (container == HbView::ToolBar) {
+        view->menu()->addAction(action);
+    } else if (container == HbView::ToolBar) {
         view->toolBar()->addAction(action);
         if (view->toolBar()->actions().count() > toolBarMaxCount) {
-           moveActionToMenu(); 
+            moveActionToMenu();
         }
     }
 
@@ -104,7 +103,7 @@ void HbViewActionManager::addAction(QAction *action,
 
 /*!
     The function removes \a action either menu's or toolbar's list of actions.
-    
+
     The ownership of \a action is not transferred.
  */
 void HbViewActionManager::removeAction(QAction *action)
@@ -113,14 +112,14 @@ void HbViewActionManager::removeAction(QAction *action)
 }
 
 /*!
-    The function replaces an old \a action either menu's or 
+    The function replaces an old \a action either menu's or
     toolbar's list of actions.
-    
+
     The ownership of \a action is transferred to the caller.
  */
 void HbViewActionManager::replaceAction(QAction *oldAction, QAction *newAction)
 {
-    QMap<QAction*, Placement>::const_iterator i =
+    QMap<QAction *, Placement>::const_iterator i =
         distributedActions.find(oldAction);
     if (i != distributedActions.end()) {
         HbViewActionManager::Placement placement = i.value();
@@ -130,8 +129,7 @@ void HbViewActionManager::replaceAction(QAction *oldAction, QAction *newAction)
             if (placement.container == HbView::OptionsMenu) {
                 view->menu()->insertAction(oldAction, newAction);
                 view->menu()->removeAction(oldAction);
-            }  
-            else if (placement.container == HbView::ToolBar) {
+            } else if (placement.container == HbView::ToolBar) {
                 view->toolBar()->insertAction(oldAction, newAction);
                 view->toolBar()->removeAction(oldAction);
             }
@@ -171,13 +169,11 @@ void HbViewActionManager::setDefaultContainer(const QString &containerString)
 {
     if (containerString == "ToolBar") {
         defaultContainer = HbView::ToolBar;
-    }
-    else if (containerString == "OptionsMenu") {
+    } else if (containerString == "OptionsMenu") {
         defaultContainer = HbView::OptionsMenu;
-    }
-    else {
+    } else {
         defaultContainer = HbView::NotSpecified;
-    }  
+    }
 }
 
 /*!
@@ -187,7 +183,7 @@ void HbViewActionManager::setDefaultContainer(const QString &containerString)
  */
 void HbViewActionManager::addGuideItem(const GuideItem &guideItem)
 {
-    distributionGuide.append(guideItem);   
+    distributionGuide.append(guideItem);
 }
 
 /*!
@@ -204,7 +200,7 @@ void HbViewActionManager::orientationChanged(Qt::Orientation orientation)
     createTemplate();
 
     // Remove actions from containers
-    QMapIterator<QAction*, Placement> i(distributedActions);
+    QMapIterator<QAction *, Placement> i(distributedActions);
     while (i.hasNext()) {
         i.next();
         removeAction(i.key(), false);
@@ -223,31 +219,29 @@ void HbViewActionManager::createTemplate()
     QString path(":/actionmanager/");
     if (orientation == Qt::Vertical) {
         file.setFileName(path + "distribution_guide_vertical.xml");
-    }
-    else {
+    } else {
         file.setFileName(path + "distribution_guide_horizontal.xml");
     }
- 
+
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning("HbViewActionManager::createTemplate: opening file failed");
-     } 
-    else {
+    } else {
         HbActionManagerXmlParser reader(this);
         if (!reader.read(&file)) {
             qWarning("HbViewActionManager::createTemplate: reading file failed");
-        }        
+        }
     }
 }
 
 HbView::ActionContainer HbViewActionManager::actualContainer(QAction *action,
-    HbView::ActionContainer preferredContainer)
+        HbView::ActionContainer preferredContainer)
 {
     HbView::ActionContainer container(preferredContainer);
 
     HbAction *hbAction = qobject_cast<HbAction *>(action);
     // use the default container, if the downcast failed cause then
     // we are not able to obtain the commandRole from the action
-    if(!hbAction){
+    if (!hbAction) {
         return defaultContainer;
     }
 
@@ -281,7 +275,7 @@ void HbViewActionManager::moveActionToMenu()
 
     // Add actions to menu if it does not exist already
     if (view->menu()->actions().indexOf(action) < 0) {
-        view->menu()->addAction(action); 
+        view->menu()->addAction(action);
         // Update private structure
         Placement placement(HbView::OptionsMenu, HbView::ToolBar);
         distributedActions.insert(action, placement);
@@ -290,18 +284,17 @@ void HbViewActionManager::moveActionToMenu()
 
 void HbViewActionManager::removeAction(QAction *action, bool removeFromMap)
 {
-    QMap<QAction*, Placement>::const_iterator i =
+    QMap<QAction *, Placement>::const_iterator i =
         distributedActions.find(action);
     if (i != distributedActions.end()) {
         // Remove from the container
         HbViewActionManager::Placement placement = i.value();
         if (placement.container == HbView::OptionsMenu) {
-            view->menu()->removeAction(action);    
-        }
-        else if (placement.container == HbView::ToolBar) {
+            view->menu()->removeAction(action);
+        } else if (placement.container == HbView::ToolBar) {
             view->toolBar()->removeAction(action);
         }
-        
+
         if (removeFromMap) {
             // Remove from private structure
             distributedActions.remove(action);

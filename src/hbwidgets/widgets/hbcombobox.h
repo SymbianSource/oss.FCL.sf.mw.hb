@@ -135,6 +135,7 @@ protected:
     void keyReleaseEvent( QKeyEvent *event );
     void changeEvent( QEvent *event );
     bool eventFilter( QObject *obj, QEvent *event );
+    QVariant itemChange ( GraphicsItemChange change, const QVariant & value );
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbComboBox )

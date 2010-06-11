@@ -64,13 +64,14 @@ def add_remove_part(part, add):
 def run_process(args, cwd=None):
     code = 0
     output = ""
-    if os.name == "nt":
-        env = os.environ.copy()
+
+    env = os.environ.copy()
+    if "EPOCROOT" in env:
         epocroot = env.get("EPOCROOT")
-        if epocroot:
-            if not epocroot.endswith("\\") or epocroot.endswith("/"):
-                env["EPOCROOT"] = "%s/" % epocroot
-            
+        if not (epocroot.endswith("\\") or epocroot.endswith("/")):
+            env["EPOCROOT"] = "%s/" % epocroot        
+
+    if os.name == "nt":
         args = ["cmd.exe", "/C"] + args
         
     try:
@@ -82,17 +83,11 @@ def run_process(args, cwd=None):
             code = process.wait()
             output = process.fromchild.read()
         else:
-            if os.name == "nt":
-                process = subprocess.Popen(args, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-                (stdout, stderr) = process.communicate()
-                code = process.returncode
-                output = stdout + stderr
-            else:
-                process = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-                (stdout, stderr) = process.communicate()
-                code = process.returncode
-                output = stdout + stderr
-
+            process = subprocess.Popen(args, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            (stdout, stderr) = process.communicate()
+            code = process.returncode
+            output = stdout + stderr
+            
         if cwd != None:
             os.chdir(oldcwd)
     except:
@@ -715,10 +710,10 @@ def main():
     if platform.name() == "symbian":
         if os.path.isdir("/s60"):
             config.set_value("HB_EXPORT_DIR", "hb/%1/%2")
-            config.set_value("HB_PRIVATE_EXPORT_DIR", "hb/%1/private/%2")
+            config.set_value("HB_RESTRICTED_EXPORT_DIR", "hb/%1/restricted/%2")
         else:
             config.set_value("HB_EXPORT_DIR", "$${EPOCROOT}epoc32/include/mw/hb/%1/%2")
-            config.set_value("HB_PRIVATE_EXPORT_DIR", "$${EPOCROOT}epoc32/include/mw/hb/%1/private/%2")
+            config.set_value("HB_RESTRICTED_EXPORT_DIR", "$${EPOCROOT}epoc32/include/mw/hb/%1/restricted/%2")
 
     if options.developer:
         add_remove_part("tests", True)
@@ -831,6 +826,7 @@ def main():
     args += ["--exclude", "\"*.qrc\""]
     args += ["--exclude", "\"*~\""]
     args += ["--exclude", "variant/*"]
+    args += ["--exclude", "\"*css.bin\""]
     if options.verbose:
         print("INFO: Running %s" % " ".join(args))
     os.system("python %s" % " ".join(args))
@@ -857,15 +853,6 @@ def main():
     if options.qmakebin:
         qmake = options.qmakebin
     
-    # modify epocroot for symbian to have compatibility between qmake and raptor
-    epocroot = os.environ.get("EPOCROOT")
-    replace_epocroot = epocroot
-    if epocroot:
-        if epocroot.endswith("\\") or epocroot.endswith("/"):
-            replace_epocroot = epocroot
-        else:
-            replace_epocroot = "%s/" % epocroot
-    
     profile = os.path.join(sourcedir, "hb.pro")
     cachefile = os.path.join(currentdir, ".qmake.cache")
     if options.msvc:
@@ -881,12 +868,20 @@ def main():
     else:
         print("\nRunning qmake...")
     try:
-        # replace the epocroot for the qmake runtime
-        if replace_epocroot:
-            os.putenv("EPOCROOT", replace_epocroot)
-        ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
-        if replace_epocroot:
-            os.putenv("EPOCROOT", epocroot)
+
+        # modify epocroot for symbian to have compatibility between qmake and raptor
+        env = os.environ.copy()
+        if "EPOCROOT" in env:
+            epocroot = env.get("EPOCROOT")
+            if not (epocroot.endswith("\\") or epocroot.endswith("/")):
+                os.putenv("EPOCROOT", "%s/" % epocroot)
+                ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
+                os.putenv("EPOCROOT", epocroot)
+            else:
+                ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
+        else:
+            ret = os.system("%s -cache %s %s" % (qmake, cachefile, profile))
+    
     except KeyboardInterrupt:
         ret = -1
     if ret != 0:
@@ -907,7 +902,19 @@ def main():
                 print("\nRunning %s %s" % (qmake, profile))
             else:
                 print("\nRunning qmake in tsrc...")
-            os.system("%s %s" % (qmake, profile))
+            
+            # epocroot cecking also for tests
+            env = os.environ.copy()
+            if "EPOCROOT" in env:
+                epocroot = env.get("EPOCROOT")
+                if not (epocroot.endswith("\\") or epocroot.endswith("/")):
+                    os.putenv("EPOCROOT", "%s/" % epocroot)
+                    os.system("%s %s" % (qmake, profile))
+                    os.putenv("EPOCROOT", epocroot)
+                else:
+                    os.system("%s %s" % (qmake, profile))
+            else:
+                os.system("%s %s" % (qmake, profile))
             os.chdir(currentdir)
 
             # create output dirs

@@ -76,8 +76,8 @@ public:
     IMPORT_C void SetAnimationDefinitionL(const TDesC& aAnimationDefinition);
     IMPORT_C TPtrC AnimationDefinition() const;
 
-    void SetIconVisible(TBool aVisible);
-    TBool IconVisible() const;
+    IMPORT_C void SetIconVisible(TBool aVisible);
+    IMPORT_C TBool IconVisible() const;
 
     IMPORT_C void SetTimeout(TInt aTimeout);
     IMPORT_C TInt Timeout() const;

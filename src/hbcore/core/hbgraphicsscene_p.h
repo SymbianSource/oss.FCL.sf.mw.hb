@@ -44,7 +44,7 @@ public:
     HbGraphicsScenePrivate();
     virtual ~HbGraphicsScenePrivate();
 
-    void setInputFocus(QGraphicsItem* focusingWidget);
+    void setInputFocus(QGraphicsItem *focusingWidget);
     void clearInputFocus();
 
     bool focusChangeEvent(const QKeyEvent *event);
@@ -52,7 +52,7 @@ public:
     void showPopup(HbPopup *popup);
     void hidePopup(HbPopup *popup);
 
-    HbPopupManager* popupManager();
+    HbPopupManager *popupManager();
 
 public:
     HbGraphicsScene *q_ptr;
@@ -64,7 +64,7 @@ public:
     static bool fpsCounterEnabled;
     int mDrawCount;
     qreal mFPS;
-    QTime *mFPSTime; 
+    QTime *mFPSTime;
     qreal mMaxFPS;
 
 private:

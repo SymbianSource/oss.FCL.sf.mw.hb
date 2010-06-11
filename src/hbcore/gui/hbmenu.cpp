@@ -46,14 +46,14 @@ HbMenuPrivate::HbMenuPrivate():
     menuItemView(0),
     subMenuAction(0),
     activeSubMenu(0),
-    resultAction(0),
     actionTriggered(false),
     menuType(HbMenu::ContextMenu),
     mSubMenuItem(0),
     mRightMargin(0.0),
     mDownMargin(0.0),
     delayMenuConstruction(true),
-    receiverToDisconnectOnClose(0)
+    receiverToDisconnectOnClose(0),
+    mNumberOfColumns(1)
 {
 }
 
@@ -88,11 +88,6 @@ void HbMenuPrivate::addPopupEffects()
         if (hasEffects) {
             hasEffects = HbEffectInternal::add("HB_menuitem", "menuitem_press", "clicked");
         }
-        if (hasEffects ) {
-            hasEffects = HbEffectInternal::add("HB_POPUP",
-                                               "dialog_rotate",
-                                               "orientationswitch");
-        }
     }
 #endif
 }
@@ -108,15 +103,13 @@ void HbMenuPrivate::_q_triggerAction(HbMenuItem *currentItem)
         }
 #endif
         HbAction *hbAction = qobject_cast<HbAction *>(currentItem->action());
+        q->setActiveAction(hbAction);
         if (hbAction && hbAction->menu() && !actionTriggered) {
             hbAction->trigger();
             stopTimeout();
             openSubmenu(currentItem);
         } else {
             q->close();
-            
-            resultAction = hbAction;
-
             if (!actionTriggered) { // prevent duplicate events
                 currentItem->action()->trigger();
             }
@@ -257,7 +250,6 @@ void HbMenuPrivate::openSubmenu(HbMenuItem *activeItem)
     }
     if (activeItem && activeItem->action() && activeItem->action()->isEnabled()) {
         HbAction *hbAction = qobject_cast<HbAction *>(activeItem->action());
-        q->setActiveAction(hbAction);
         if (!hbAction)
             return;
         HbMenu *subMenu = hbAction->menu();
@@ -291,7 +283,7 @@ void HbMenuPrivate::_q_subMenuTimedOut()
     }
 }
 
-void HbMenuPrivate::_q_handleMenuAfterOrientationChange()
+void HbMenuPrivate::_q_handleMenuClose()
 {
     Q_Q(HbMenu);
     if ( menuType == HbMenu::ContextMenu || menuType == HbMenu::OptionsMenu ) {
@@ -307,17 +299,21 @@ void HbMenuPrivate::_q_handleMenuAfterOrientationChange()
 }
 
 /*!
- closes the menu after Orientation change
+ Handles menu close
 */
-void HbMenuPrivate::closeMenuAfterOrientationChange()
+void HbMenuPrivate::closeMenu()
 {
     Q_Q(HbMenu);
     HbMainWindow* w(q->mainWindow());
     if ( w ){
         QObject::disconnect( w, SIGNAL(aboutToChangeOrientation()),
-                             q, SLOT(_q_handleMenuAfterOrientationChange()));
+                             q, SLOT(_q_handleMenuClose()));
         QObject::connect( w, SIGNAL(aboutToChangeOrientation()),
-                 q, SLOT(_q_handleMenuAfterOrientationChange()));
+                        q, SLOT(_q_handleMenuClose()));
+        QObject::disconnect( w, SIGNAL(aboutToChangeView(HbView*, HbView*)),
+                          q, SLOT(_q_handleMenuClose()));
+        QObject::connect( w, SIGNAL(aboutToChangeView(HbView*, HbView*)),
+                          q, SLOT(_q_handleMenuClose()));
     }
 }
 
@@ -421,18 +417,11 @@ void HbMenuPrivate::setSubMenuPosition()
     The receiver is notifed when the action is triggered (QAction::triggered()).
     HbMenu also has a triggered() menu signal, which signals which HbAction was triggered in the menu.
 
-    Context menu example:
+    An example of how to create an option menu.
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,2}
 
-    A menu and a few actions are created. The triggered() signal of the menu is connected to
-    the mute() function of the enclosing class (implementation not shown).
-    The exec() function shows the menu.
-
-    User needs to connect to "longPress" signal and implement corresponding slot. This enables
-    longpress events to be received from list.
-
-    \dontinclude decoratorlistdemo/contentwidget.cpp
-    \skip // Create new menu
-    \until ( coords );
+    An example of how to create and show a context menu from the gesture.
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,54}
 
     \sa HbDialog, HbView
 */
@@ -617,7 +606,9 @@ HbAction *HbMenu::menuAction() const
  */
 HbAction *HbMenu::addSeparator()
 {
-    return insertSeparator(0);
+    //functionality removed for now
+    //return insertSeparator(0);
+    return 0;
 }
 
 /*!
@@ -629,12 +620,15 @@ HbAction *HbMenu::addSeparator()
  */
 HbAction *HbMenu::insertSeparator(HbAction *before)
 {
-    HbAction *action = new HbAction(this);
+    Q_UNUSED(before);
+    //functionality removed for now
+    /*HbAction *action = new HbAction(this);
     action->setSeparator(true);
     action->setEnabled(true);
     action->setVisible(true);
     insertAction(before, action);
-    return action;
+    return action;*/
+    return 0;
 }
 
 /*!
@@ -707,14 +701,13 @@ QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
     Q_D(HbMenu);
 
     if (change == QGraphicsItem::ItemSceneHasChanged) {
-        d->closeMenuAfterOrientationChange();
+        d->closeMenu();
     }
     if (change == QGraphicsItem::ItemVisibleChange) {
         if (value.toBool() && d->delayMenuConstruction) {
             d->delayedLayout();
         }
         if (value.toBool()) {
-            d->resultAction = 0;
             d->actionTriggered = false;
         }
         else if (!value.toBool() && !d->menuItemView){
@@ -757,6 +750,9 @@ bool HbMenu::event(QEvent *event)
 void HbMenu::polish(HbStyleParameters &params)
 {
     Q_D(HbMenu);
+    const QString NumberOfCols = "number-of-columns";
+    params.addParameter(NumberOfCols);
+
     if (d->mSubMenuItem) {
         const QString RightMargin = "submenu-right-offset";
         const QString DownMargin = "submenu-bottom-margin";
@@ -775,18 +771,28 @@ void HbMenu::polish(HbStyleParameters &params)
     } else {
         HbPopup::polish(params);
     }
+
+    if (!params.value(NumberOfCols).isNull()) {
+        int cols = params.value(NumberOfCols).toInt();
+        if (d->mNumberOfColumns != cols) {
+            d->mNumberOfColumns = cols;
+            if (d->menuItemView) {
+                d->menuItemView->updateContainer();
+            }
+        }
+    }
 }
 
 QPainterPath HbMenu::shape() const
 {
-    /*QRectF sceneRect = mapRectToScene(QRectF(-0.5, -0.5, boundingRect().width() + 0.5, boundingRect().height() + 0.5));
-    QRectF clipRect = sceneRect.intersected(QRectF(pos().x() - 0.5, pos().y() - 0.5, size().width() + 0.5, size().height() + 0.5));
+    /*QRectF rect = QRectF(-1.0, -1.0, boundingRect().width() + 1.0, boundingRect().height() + 1.0);
+    QRectF clipRect = rect.intersected(mapRectFromParent(QRectF(pos().x() - 1.0, pos().y() - 1.0, size().width() + 1.0, size().height() + 1.0)));
 
     QPainterPath path;
-    path.addRect(mapRectFromScene(clipRect));
+    path.addRect(clipRect);
 
-    return path.intersected(HbPopup::shape());*/
-	return HbPopup::shape();
+    return path;*/
+    return HbPopup::shape();
 }
 
 /*!

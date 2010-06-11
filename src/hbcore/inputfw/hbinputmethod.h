@@ -87,6 +87,8 @@ protected:
 
     void constructLatinState(HbInputState &result) const;
 
+    HbInputMethodDescriptor descriptor() const;
+
 public slots:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
     void globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage);

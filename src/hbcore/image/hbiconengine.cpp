@@ -34,10 +34,12 @@
 #include "hbimagetraces_p.h"
 #include "hbiconimpl_p.h"
 #include "hbpixmapiconimpl_p.h"
+#include "hbbadgeicon_p.h"
+
 #include <hbinstance.h>
 #include <hbiconanimator.h>
 #include <hbiconanimator_p.h>
-#include "hbbadgeicon_p.h"
+
 
 #include <QObject>
 #include <QPainter>
@@ -67,9 +69,9 @@ public:
     void unLoadIcon(bool unloadedByServer = false);
 
     void addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int z=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int z = 0);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;
     bool isBadged() const;
@@ -79,8 +81,7 @@ public:
 public:
     QSizeF size;
 
-    struct IconName
-    {
+    struct IconName {
         QIcon::Mode mode;
         QIcon::State state;
         QString name;
@@ -107,8 +108,7 @@ public:
     HbIcon::Flags flags;
     HbIcon::MirroringMode mirroringMode;
 
-    enum DefaultMirroring
-    {
+    enum DefaultMirroring {
         Unknown = 0,
         Enabled = 1,
         Disabled = 2
@@ -162,8 +162,7 @@ HbIconEnginePrivate::HbIconEnginePrivate(const QString &iconName) :
 HbIconEnginePrivate::HbIconEnginePrivate(const HbIconEnginePrivate &other) :
     size(other.size),
     iconNames(other.iconNames),
-    // Pixmap is cleared if other object uses animation
-    pixmap(other.animator ? QPixmap() : other.pixmap),
+    pixmap(other.animator ? QPixmap() : other.pixmap), // Pixmap is cleared if other object uses animation.
     aspectRatioMode(other.aspectRatioMode),
     mode(other.mode),
     state(other.state),
@@ -173,11 +172,9 @@ HbIconEnginePrivate::HbIconEnginePrivate(const HbIconEnginePrivate &other) :
     flags(other.flags),
     mirroringMode(other.mirroringMode),
     defaultMirroring(other.defaultMirroring),
-    // Animator is instance specific and not copied
-    animator(0),
-    color(other.color),
-    // HbIconImpl is instance specific, it is recreated when icon is painted
-    icon(0),
+    animator(0), // Animator is instance specific and not copied.
+    color(other.color), // No copy for themedColor, that one is an internal, instance-specific setting.
+    icon(0),  // HbIconImpl is instance specific, it is recreated when icon is painted.
     badgeInfo(0),
     signalConnectionsSet(false),
     iconType(INVALID_FORMAT)
@@ -227,6 +224,7 @@ HbIconEnginePrivate::HbIconEnginePrivate(QDataStream &stream) :
     stream >> temp;
     defaultMirroring = (HbIconEnginePrivate::DefaultMirroring)temp;
     stream >> color;
+    // Do not store themedColor, see the copy ctor.
 
     badgeInfo->internalize(stream);
 }
@@ -236,7 +234,7 @@ void HbIconEnginePrivate::externalize(QDataStream &stream)
     // Externalize parameters that are needed to reconstruct the icon
     stream << size;
     stream << iconNames.count();
-    Q_FOREACH(const IconName &name, iconNames) {
+    Q_FOREACH(const IconName & name, iconNames) {
         stream << (qint32)(name.mode);
         stream << (qint32)(name.state);
         stream << name.name;
@@ -277,9 +275,9 @@ HbIconEnginePrivate::~HbIconEnginePrivate()
 /*!
   \internal
 
-  Initiates an IPC call to the ThemeServer to unload ( decrement ref count ) 
+  Initiates an IPC call to the ThemeServer to unload ( decrement ref count )
   the icon if created on server side.
- 
+
  */
 void HbIconEnginePrivate::unLoadIcon(bool unloadedByServer)
 {
@@ -320,7 +318,7 @@ bool HbIconEnginePrivate::isMirrored()
     if (mirroringMode == HbIcon::Default && defaultMirroring == Unknown) {
         HbIconLoader *loader = HbIconLoader::global();
         defaultMirroring = loader->isAutomaticallyMirrored(
-            iconName(QIcon::Normal, QIcon::Off)) ? Enabled : Disabled;
+                               iconName(QIcon::Normal, QIcon::Off)) ? Enabled : Disabled;
     }
 
     bool basedOnLayoutDir = false;
@@ -333,13 +331,13 @@ bool HbIconEnginePrivate::isMirrored()
         } else if (defaultMirroring == Disabled) {
             return false;
         }
-    // Forced
+        // Forced
     } else if (mirroringMode == HbIcon::Forced) {
         return true;
-    // Prevented
+        // Prevented
     } else if (mirroringMode == HbIcon::Prevented) {
         return false;
-    // LayoutDirection
+        // LayoutDirection
     } else if (mirroringMode == HbIcon::LayoutDirection) {
         basedOnLayoutDir = true;
     }
@@ -347,11 +345,11 @@ bool HbIconEnginePrivate::isMirrored()
     if (basedOnLayoutDir) {
         // e.g. some unit tests do not have primary window at this point so need to do NULL checks here.
         if (hbInstance) {
-            QList<HbMainWindow*> allWindows = hbInstance->allMainWindows();
-            
-            if ( !allWindows.isEmpty() &&
-                 allWindows.value(0) &&
-                 allWindows.value(0)->layoutDirection() == Qt::RightToLeft) {
+            QList<HbMainWindow *> allWindows = hbInstance->allMainWindows();
+
+            if (!allWindows.isEmpty() &&
+                    allWindows.value(0) &&
+                    allWindows.value(0)->layoutDirection() == Qt::RightToLeft) {
                 return true;
             }
             return false;
@@ -388,7 +386,7 @@ QString HbIconEnginePrivate::iconName(QIcon::Mode mode, QIcon::State state) cons
 {
     QString ret;
 
-    Q_FOREACH(const HbIconEnginePrivate::IconName &name, iconNames) {
+    Q_FOREACH(const HbIconEnginePrivate::IconName & name, iconNames) {
         if (name.mode == mode && name.state == state) {
             ret = name.name;
             break;
@@ -427,7 +425,7 @@ inline bool isMonoIcon(const QString &name)
     // Even when the Colorized flag is not set certain icons from the theme must be
     // colorized. These mono icons are recognized from their name. The check should not be
     // done for normal files, only for logical theme graphics names.
-    return name.startsWith("qtg_mono_") && !name.contains('.');
+    return name.startsWith(QLatin1String("qtg_mono_")) && !name.contains('.');
 }
 
 QColor HbIconEnginePrivate::colorToUse(const QString &iconName) const
@@ -440,8 +438,8 @@ QColor HbIconEnginePrivate::colorToUse(const QString &iconName) const
 }
 
 void HbIconEnginePrivate::addBadge(Qt::Alignment align,
-                      const HbIcon& icon,
-                      int z)
+                                   const HbIcon &icon,
+                                   int z)
 {
     if (!badgeInfo) {
         badgeInfo = new HbBadgeIcon();
@@ -449,7 +447,7 @@ void HbIconEnginePrivate::addBadge(Qt::Alignment align,
     badgeInfo->addBadge(align, icon, z);
 }
 
-bool HbIconEnginePrivate::removeBadge(const HbIcon& badge)
+bool HbIconEnginePrivate::removeBadge(const HbIcon &badge)
 {
     return badgeInfo ? badgeInfo->removeBadge(badge) : false;
 }
@@ -481,7 +479,7 @@ HbIconEngine::HbIconEngine() :
 {
     // Register the HbIconEngine Instance to HbIconLoader
     HbIconLoader *loader = HbIconLoader::global();
-    loader->storeIconEngineInfo(this);    
+    loader->storeIconEngineInfo(this);
 }
 
 HbIconEngine::HbIconEngine(const QString &iconName) :
@@ -490,7 +488,7 @@ HbIconEngine::HbIconEngine(const QString &iconName) :
     d(new HbIconEnginePrivate(iconName))
 {
     // Register the HbIconEngine Instance to HbIconLoader
-    HbIconLoader *loader = HbIconLoader::global();    
+    HbIconLoader *loader = HbIconLoader::global();
     loader->storeIconEngineInfo(this);
 }
 
@@ -626,7 +624,7 @@ void HbIconEngine::setMirroringMode(HbIcon::MirroringMode mode)
         // Mirroring changed, clear stored icon content
         clearStoredIconContent();
     }
-    
+
     d->mirroringMode = mode;
 }
 
@@ -659,7 +657,7 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
     // If size has not been defined, use icon's default size.
     if (!s.isValid()) {
         // With size (0,0), loader uses the icon's default size.
-        s = QSize(0,0);
+        s = QSize(0, 0);
     }
 
     QIcon::Mode modeForLoader = mode;
@@ -678,21 +676,21 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
 
         // If requested size is not the same as set in the engine, get a new pixmap from loader
         if (pixelSize != size().toSize()) {
-             // Clear the old icon first
+            // Clear the old icon first
             d->unLoadIcon();
-            
+
             d->icon = loader->loadIcon(
-                name,
-                HbIconLoader::AnyType,
-                HbIconLoader::AnyPurpose,
-                s,
-                Qt::KeepAspectRatio,
-                modeForLoader,
-                d->iconLoaderOptions(),
-                0,
-                d->colorToUse(name));
-            
-            if (d->icon){
+                          name,
+                          HbIconLoader::AnyType,
+                          HbIconLoader::AnyPurpose,
+                          s,
+                          Qt::KeepAspectRatio,
+                          modeForLoader,
+                          d->iconLoaderOptions(),
+                          0,
+                          d->colorToUse(name));
+
+            if (d->icon) {
                 // Draw badges on this pixmap
                 QPainter painter(&d->pixmap);
                 if (d->badgeInfo) {
@@ -701,7 +699,7 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
                 d->pixmap = d->icon->pixmap();
                 return d->pixmap;
             }
-      
+
         }
         // Requested size was same as set in engine, use the pixmap stored in engine
         else {
@@ -712,26 +710,26 @@ QPixmap HbIconEngine::pixmap(const QSize &pixelSize, QIcon::Mode mode, QIcon::St
                 // Clear the old icon first
                 d->unLoadIcon();
                 d->icon  = loader->loadIcon(
-                    name,
-                    HbIconLoader::AnyType,
-                    HbIconLoader::AnyPurpose, 
-                    s,
-                    Qt::KeepAspectRatio,
-                    modeForLoader,
-                    d->iconLoaderOptions(),
-                    0,
-                    d->colorToUse(name));
+                               name,
+                               HbIconLoader::AnyType,
+                               HbIconLoader::AnyPurpose,
+                               s,
+                               Qt::KeepAspectRatio,
+                               modeForLoader,
+                               d->iconLoaderOptions(),
+                               0,
+                               d->colorToUse(name));
 
                 // If loading failed, store information so it is not retried.
                 if (!d->icon) {
-                    d->appendLoadFail(mode, state); 
+                    d->appendLoadFail(mode, state);
                 }
             }
             if (d->icon) {
                 d->pixmap = d->icon->pixmap();
                 // Draw badges on this pixmap
                 QPainter painter(&d->pixmap);
-                if (d->badgeInfo){
+                if (d->badgeInfo) {
                     d->badgeInfo->paint(&painter, QRectF(QPointF(0, 0), pixelSize), mode, state, d->isMirrored());
                 }
                 return d->pixmap;
@@ -775,7 +773,7 @@ QSizeF HbIconEngine::defaultSize() const
 {
     QString name = iconName();
     if (!d->defaultSizeFailed && !d->defaultSize.isValid() && !name.isEmpty()) {
-        if (d->icon){
+        if (d->icon) {
             d->defaultSize = d->icon->defaultSize();
         } else {
             HbIconLoader *loader = HbIconLoader::global();
@@ -809,17 +807,20 @@ void HbIconEngine::setSize(const QSizeF &size)
     }
 }
 
-void HbIconEngine::paint( QPainter *painter,
-                          const QRect &rect,
-                          QIcon::Mode mode,
-                          QIcon::State state )
+void HbIconEngine::paint(QPainter *painter,
+                         const QRect &rect,
+                         QIcon::Mode mode,
+                         QIcon::State state)
 {
     // This method is called by QIcon and it should paint the icon with the size defined by 'rect'.
-    HbIconImpl* icon = 0;
-    
+    HbIconImpl *icon = 0;
+
     // update the rendering mode
-    HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());
-    
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (paintEngine) {
+        HbIconLoader::global()->updateRenderingMode(paintEngine->type());
+    }
+
     icon = paintHelper(rect.size(), Qt::KeepAspectRatio, mode, state);
     if (icon) {
         icon->paint(painter, rect, Qt::AlignCenter);
@@ -833,12 +834,12 @@ void HbIconEngine::paint( QPainter *painter,
     }
 }
 
-void HbIconEngine::paint( QPainter *painter,
-                          const QRectF &rect,
-                          Qt::AspectRatioMode aspectRatioMode,
-                          Qt::Alignment alignment,
-                          QIcon::Mode mode,
-                          QIcon::State state)
+void HbIconEngine::paint(QPainter *painter,
+                         const QRectF &rect,
+                         Qt::AspectRatioMode aspectRatioMode,
+                         Qt::Alignment alignment,
+                         QIcon::Mode mode,
+                         QIcon::State state)
 {
     // If loading the pixmap has failed, do not retry forever
     if (loadFailed(mode, state)) {
@@ -855,9 +856,9 @@ void HbIconEngine::paint( QPainter *painter,
     // FrameSet animations need to be reloaded if size related parameters have changed,
     // so delete the current animation in that case.
     HbIconAnimation *anim = animation();
-    if (anim && anim->type() == HbIconAnimation::FrameSet) {        
-        if ( ( (!s.isEmpty() || !anim->size().isEmpty()) && s != anim->size() ) ||
-            aspectRatioMode != anim->aspectRatioMode()) {
+    if (anim && anim->type() == HbIconAnimation::FrameSet) {
+        if (((!s.isEmpty() || !anim->size().isEmpty()) && s != anim->size()) ||
+                aspectRatioMode != anim->aspectRatioMode()) {
 #ifdef HB_ICON_TRACES
             qDebug("HbIconEngine: deleting anim");
 #endif
@@ -869,7 +870,7 @@ void HbIconEngine::paint( QPainter *painter,
     // If size has not been defined, use icon's default size.
     if (!s.isValid()) {
         // With size (0,0), loader uses the icon's default size.
-        s = QSizeF(0,0);
+        s = QSizeF(0, 0);
     }
 
     // If pixmap has not been loaded yet or parameters affecting to pixmap have changed,
@@ -881,9 +882,12 @@ void HbIconEngine::paint( QPainter *painter,
         // If icon parameters changed unload the icon first, and get the new icon
         d->unLoadIcon();
         // Update the rendering mode
-        HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());        
+        QPaintEngine *paintEngine = painter->paintEngine();
+        if (paintEngine) {
+            HbIconLoader::global()->updateRenderingMode(paintEngine->type());
+        }
         d->icon = paintHelper(s, aspectRatioMode, mode, state);
-        if ( d->icon && d->icon->isCreatedOnServer() ) {
+        if (d->icon && d->icon->isCreatedOnServer()) {
             d->iconType = d->icon->iconData().type;
         }
     }
@@ -907,7 +911,7 @@ HbIconAnimator *HbIconEngine::animator() const
 void HbIconEngine::setAnimator(HbIconAnimator *animator)
 {
     d->animator = animator;
-    // Reconnect animation signals    
+    // Reconnect animation signals
     HbIconAnimation *anim = animation();
 
     if (anim) {
@@ -919,7 +923,7 @@ void HbIconEngine::setAnimator(HbIconAnimator *animator)
     }
 }
 
-HbIconImpl* HbIconEngine::paintHelper(
+HbIconImpl *HbIconEngine::paintHelper(
     const QSizeF &size,
     Qt::AspectRatioMode aspectRatioMode,
     QIcon::Mode mode,
@@ -932,7 +936,7 @@ HbIconImpl* HbIconEngine::paintHelper(
 
     QString name = iconName(mode, state);
     QIcon::Mode modeForLoader = mode;
-    HbIconImpl *icon = NULL;
+    HbIconImpl *icon = 0;
     if (name.isEmpty()) {
         // Icon name not defined for this mode and state, use default icon name
         name = iconName(QIcon::Normal, QIcon::Off);
@@ -962,15 +966,15 @@ HbIconImpl* HbIconEngine::paintHelper(
             HbIconLoader *loader = HbIconLoader::global();
 
             icon = loader->loadIcon(
-                name,
-                HbIconLoader::AnyType,
-                HbIconLoader::AnyPurpose,
-                size,
-                aspectRatioMode,
-                modeForLoader,
-                d->iconLoaderOptions(),
-                d->animator,
-                d->colorToUse(name));
+                       name,
+                       HbIconLoader::AnyType,
+                       HbIconLoader::AnyPurpose,
+                       size,
+                       aspectRatioMode,
+                       modeForLoader,
+                       d->iconLoaderOptions(),
+                       d->animator,
+                       d->colorToUse(name));
 
             // If loading failed, store information so it is not retried in every repaint.
             if (!icon) {
@@ -1003,7 +1007,7 @@ HbIconImpl* HbIconEngine::paintHelper(
     This function is called when some parameters change so that the content has
     to be reloaded, and in low-graphics-memory situations to get rid of all
     cached image data for the icon.
-    
+
     The goal in the OOGM case is to destroy all unnecessary QPixmaps which will in turn
     lead to freeing graphics memory (in case we are running on the OpenVG paint engine).
     The data will be reloaded (well, at least tried to be reloaded) when the icon is
@@ -1065,7 +1069,7 @@ void HbIconEngine::themeChange(const QStringList &updatedFiles)
 {
     // Theme has changed, clear stored icon content
     // Server side icon cache is already cleared when theme is changed
-    if (updatedFiles.count() == 0 || (d->icon && updatedFiles.contains(d->icon->iconFileName())) ) {
+    if (updatedFiles.count() == 0 || (d->icon && updatedFiles.contains(d->icon->iconFileName()))) {
         clearStoredIconContent(UnloadedByServer);
     }
 }
@@ -1073,7 +1077,7 @@ void HbIconEngine::themeChange(const QStringList &updatedFiles)
 void HbIconEngine::handleLayoutDirectionChanged()
 {
     if ((d->mirroringMode == HbIcon::Default && d->defaultMirroring == HbIconEnginePrivate::Enabled) ||
-         d->mirroringMode == HbIcon::LayoutDirection) {
+            d->mirroringMode == HbIcon::LayoutDirection) {
         // This icon is automatically mirrored based on layout direction.
 
         // Clear the stored icon content and its default size because the layout direction just changed.
@@ -1141,7 +1145,7 @@ QPixmap HbIconEngine::getPixmapFromAnimation() const
         anim->setSize(size());
         anim->setAspectRatioMode(d->aspectRatioMode);
         anim->setMode(d->mode);
-        // Get the current frame as pixmap from the animation        
+        // Get the current frame as pixmap from the animation
         return anim->currentFrame();
     } else {
         return QPixmap();
@@ -1150,15 +1154,15 @@ QPixmap HbIconEngine::getPixmapFromAnimation() const
 
 /*!
  * Removes the item in the cache if the ref. count is 0 and does delete on
- * HbIconImpl and Resets the IconImpl. 
+ * HbIconImpl and Resets the IconImpl.
  */
 void HbIconEngine::resetIconImpl() const
- {  
+{
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-    if ( (d->iconType == SGIMAGE) || (d->iconType == NVG) ) {
-        if ( d->icon ) {
+    if ((d->iconType == SGIMAGE) || (d->iconType == NVG)) {
+        if (d->icon) {
             d->icon->decrementRefCount();
-            if ( d->icon->refCount() == 0 && d->icon->isCreatedOnServer() ) {
+            if (d->icon->refCount() == 0 && d->icon->isCreatedOnServer()) {
                 HbIconLoader *loader = HbIconLoader::global();
                 loader->removeItemInCache(d->icon);
                 d->icon->dispose();
@@ -1167,16 +1171,16 @@ void HbIconEngine::resetIconImpl() const
         }
     }
 #endif
- }
+}
 
 void HbIconEngine::addBadge(Qt::Alignment align,
-                      const HbIcon& icon,
-                      int z)
+                            const HbIcon &icon,
+                            int z)
 {
     d->addBadge(align, icon, z);
 }
 
-bool HbIconEngine::removeBadge(const HbIcon& badge)
+bool HbIconEngine::removeBadge(const HbIcon &badge)
 {
     return d->removeBadge(badge);
 }

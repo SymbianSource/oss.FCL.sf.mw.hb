@@ -40,7 +40,7 @@
 
 // for testability plugin
 #ifdef HB_TESTABILITY
-#include <QtPlugin> 
+#include <QtPlugin>
 #include <QPluginLoader>
 #include <QLibraryInfo>
 #include "hbtestabilityinterface_p.h"
@@ -76,7 +76,7 @@
     hbInstance).
 
     The example below shows how hbInstance global pointer can be used to access theme name:
-    
+
     \dontinclude ultimatecodesnippet/main.cpp
     \skip int main(
     \until setApplicationName
@@ -85,7 +85,7 @@
 
     \sa QApplication
     \sa HbApplication
-    
+
 */
 
 /*!
@@ -106,11 +106,11 @@ HbInstancePrivate::HbInstancePrivate() :
     mStyle(0),
     mTheme(HbTheme::instance()),
     mOrientation(Qt::Vertical),
-    mLibraryPaths( 0 )
-#ifdef Q_OS_SYMBIAN    
-    ,testabilityEnabled(false)
+    mLibraryPaths(0)
+#ifdef Q_OS_SYMBIAN
+    , testabilityEnabled(false)
 #endif //Q_OS_SYMBIAN
-    ,mLocaleChangeNotifier(0)
+    , mLocaleChangeNotifier(0)
 {
     // initialization of dynamics parts of feedback manager
     HbFeedbackManager::instance();
@@ -118,22 +118,22 @@ HbInstancePrivate::HbInstancePrivate() :
 #ifdef HB_TESTABILITY
     testabilityInterface = 0;
 
-#ifdef Q_OS_SYMBIAN   
-    TRAPD( err, mRepo = CRepository::NewL( HBTESTABILITY_CREPO_ID ) );
-        if( err == KErrNone ) {
-            TInt value = 0;
-            err = mRepo->Get( HbTestabilityKey, value );
-            if(err == KErrNone && value == 1 ){
-                testabilityEnabled = ETrue;
-            }
-        }    
+#ifdef Q_OS_SYMBIAN
+    TRAPD(err, mRepo = CRepository::NewL(HBTESTABILITY_CREPO_ID));
+    if (err == KErrNone) {
+        TInt value = 0;
+        err = mRepo->Get(HbTestabilityKey, value);
+        if (err == KErrNone && value == 1) {
+            testabilityEnabled = ETrue;
+        }
+    }
 #endif //Q_OS_SYMBIAN        
 #endif //HB_TESTABILITY
 
     connect(mTheme, SIGNAL(changeFinished()), this, SLOT(updateScenes()));
 
 #ifdef HB_TESTABILITY
-    // Activate testability plugin if exists    
+    // Activate testability plugin if exists
     QObject *plugin = 0;
 
 #if defined(Q_OS_WIN) || defined(Q_OS_SYMBIAN)
@@ -152,45 +152,44 @@ HbInstancePrivate::HbInstancePrivate() :
 #ifdef Q_OS_SYMBIAN
 
     //TEMPORARY workaround:
-    //there is a defect in s60 qt port so that it does not search for plugins 
+    //there is a defect in s60 qt port so that it does not search for plugins
     //from all possible drives, so check for existence before loading the plugin
     //issue has been reported to port team and they will fix it at some point
-        if(testabilityEnabled){
-            QString flashDrive = "C:";
-            QString romDrive = "Z:";   
-        
-            //add drive letter to plugin path and then check c and z for the plugin
-            if(!testabilityPlugin.startsWith(flashDrive,Qt::CaseInsensitive) && !testabilityPlugin.startsWith(romDrive,Qt::CaseInsensitive)){
-                testabilityPlugin = flashDrive + testabilityPlugin; 
-            }
-        
-            QPluginLoader loader(testabilityPlugin.toLatin1().data());
-                
-            plugin = loader.instance();   
-        
-            if(!plugin){
-                if(testabilityPlugin.startsWith(flashDrive,Qt::CaseInsensitive)){
-                    testabilityPlugin.replace(flashDrive, romDrive, Qt::CaseInsensitive);
-                }        
-                else{
-                    testabilityPlugin.replace(romDrive, flashDrive, Qt::CaseInsensitive);
-        
-                }
-                loader.setFileName(testabilityPlugin.toLatin1().data());
-                plugin = loader.instance(); 
-            }
+    if (testabilityEnabled) {
+        QString flashDrive = "C:";
+        QString romDrive = "Z:";
+
+        //add drive letter to plugin path and then check c and z for the plugin
+        if (!testabilityPlugin.startsWith(flashDrive, Qt::CaseInsensitive) && !testabilityPlugin.startsWith(romDrive, Qt::CaseInsensitive)) {
+            testabilityPlugin = flashDrive + testabilityPlugin;
         }
-        //if the file is in neither then let failure occur similarly as with other platforms    
-#else    
+
+        QPluginLoader loader(testabilityPlugin.toLatin1().data());
+
+        plugin = loader.instance();
+
+        if (!plugin) {
+            if (testabilityPlugin.startsWith(flashDrive, Qt::CaseInsensitive)) {
+                testabilityPlugin.replace(flashDrive, romDrive, Qt::CaseInsensitive);
+            } else {
+                testabilityPlugin.replace(romDrive, flashDrive, Qt::CaseInsensitive);
+
+            }
+            loader.setFileName(testabilityPlugin.toLatin1().data());
+            plugin = loader.instance();
+        }
+    }
+    //if the file is in neither then let failure occur similarly as with other platforms
+#else
     QPluginLoader loader(testabilityPlugin.toLatin1().data());
     plugin = loader.instance();
 #endif //Q_OS_SYMBIAN        
 
     if (plugin) {
-      testabilityInterface = qobject_cast<TestabilityInterface *>(plugin);      
-      if (testabilityInterface) {
-          testabilityInterface->Initialize();
-      } 
+        testabilityInterface = qobject_cast<TestabilityInterface *>(plugin);
+        if (testabilityInterface) {
+            testabilityInterface->Initialize();
+        }
     }
 #endif //end testability
     mLocaleChangeNotifier = q_check_ptr(new HbLocaleChangeNotifier());
@@ -215,25 +214,25 @@ HbInstancePrivate::HbInstancePrivate() :
 */
 HbInstancePrivate::~HbInstancePrivate()
 {
-	delete mTypefaceInfo;
-	delete mStyle;
+    delete mTypefaceInfo;
+    delete mStyle;
     delete mLibraryPaths;
-    
+
     delete mLocaleChangeNotifier;
     mLocaleChangeNotifier = 0;
-    
+
 #ifdef HB_TESTABILITY
     //remove the testability plugin if it exists
     //makes sure that all resources used by the plugin
     //are free when the application exists
-    if (testabilityInterface){
+    if (testabilityInterface) {
         delete testabilityInterface;
         testabilityInterface = 0;
     }
 #endif //HB_TESTABILITY
 
 #ifdef Q_OS_SYMBIAN
-    if(mRepo){
+    if (mRepo) {
         delete mRepo;
         mRepo = 0;
     }
@@ -289,8 +288,8 @@ void HbInstancePrivate::select(const HbDeviceProfile &profile)
 {
     HbDeviceProfile oldProfile = mCurrentProfile;
     mCurrentProfile = profile;
-    
-    QListIterator<HbMainWindow*> iterator(mWindows);
+
+    QListIterator<HbMainWindow *> iterator(mWindows);
 
     while (iterator.hasNext()) {
         HbMainWindow *window = iterator.next();
@@ -312,7 +311,7 @@ void HbInstancePrivate::updateScenes()
     QGraphicsScene *updatedScene = 0; //krazy:exclude=qclasses
 
     // Update graphics scenes
-    Q_FOREACH(HbMainWindow *window, mWindows) {
+    Q_FOREACH(HbMainWindow * window, mWindows) {
         QGraphicsScene *scene = window->scene(); //krazy:exclude=qclasses
         if (scene && scene != updatedScene) {
             scene->update();
@@ -360,7 +359,7 @@ HbTypefaceInfo *HbInstancePrivate::typefaceInfo() const
 */
 void HbInstancePrivate::initLibraryPaths()
 {
-    if ( !mLibraryPaths ) {
+    if (!mLibraryPaths) {
         mLibraryPaths = new QStringList;
 
 #if defined(Q_OS_SYMBIAN)
@@ -368,7 +367,7 @@ void HbInstancePrivate::initLibraryPaths()
 
         QFileInfoList driveInfoList = QDir::drives();
 
-        foreach (const QFileInfo &driveInfo, driveInfoList) {
+        foreach(const QFileInfo & driveInfo, driveInfoList) {
             QFileInfo pathInfo(driveInfo.absolutePath() + pluginRelativePath);
             if (pathInfo.exists()) {
                 *mLibraryPaths << pathInfo.absolutePath();
@@ -405,7 +404,7 @@ HbInstance::~HbInstance()
 /*!
     Returns static instance
  */
-HbInstance* HbInstance::instance()
+HbInstance *HbInstance::instance()
 {
     if (!QCoreApplication::instance()) {
         qWarning("HbInstance: No application instance present.");
@@ -423,26 +422,26 @@ HbInstance* HbInstance::instance()
 
     \sa HbWidget::mainWindow()
  */
-QList<HbMainWindow*> HbInstance::allMainWindows() const
+QList<HbMainWindow *> HbInstance::allMainWindows() const
 {
     return d->mWindows;
 }
 
 
 /*!
-	Returns the platform style object. Note that widgets can use HbWidget's style()-method to get the 
-	style without using HbInstance.
+    Returns the platform style object. Note that widgets can use HbWidget's style()-method to get the
+    style without using HbInstance.
 */
 HbStyle *HbInstance::style() const
 {
-    if( !d->mStyle ){
-		d->mStyle = new HbStyle();
+    if (!d->mStyle) {
+        d->mStyle = new HbStyle();
     }
     return d->mStyle;
 }
 
 /*!
-	Returns the platform theme object. 
+    Returns the platform theme object.
 */
 HbTheme *HbInstance::theme() const
 {
@@ -460,7 +459,7 @@ HbTheme *HbInstance::theme() const
  */
 void HbInstance::setLibraryPaths(const QStringList &paths)
 {
-    if ( !d->mLibraryPaths ) {
+    if (!d->mLibraryPaths) {
         d->mLibraryPaths = new QStringList;
     }
     *d->mLibraryPaths = paths;
@@ -468,15 +467,15 @@ void HbInstance::setLibraryPaths(const QStringList &paths)
 
 /*!
     Prepends \a path to the beginning of the library path list. The paths
-    will be search in order, so the \a path is the first. 
+    will be search in order, so the \a path is the first.
 
     The default path list consists of
 
-    \li desktop environments: the installation directory for plugins 
-        and application execution directory. The default installation 
-        directory for plugins is INSTALL/plugins, where INSTALL is the 
+    \li desktop environments: the installation directory for plugins
+        and application execution directory. The default installation
+        directory for plugins is INSTALL/plugins, where INSTALL is the
         directory where Hb was installed.
-    \li Symbian: \c resource/plugins/ directory on each drive found 
+    \li Symbian: \c resource/plugins/ directory on each drive found
         from the device
 
     \sa HbInstance::removeLibraryPath()
@@ -485,8 +484,9 @@ void HbInstance::setLibraryPaths(const QStringList &paths)
 */
 void HbInstance::addLibraryPath(const QString &path)
 {
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return;
+    }
 
     d->initLibraryPaths();
 
@@ -497,7 +497,7 @@ void HbInstance::addLibraryPath(const QString &path)
 }
 
 /*!
-    Removes path from the library path list. If path is empty or not in the path list, 
+    Removes path from the library path list. If path is empty or not in the path list,
     the list is not changed.
 
     See also addLibraryPath(), libraryPaths(), and setLibraryPaths().
@@ -516,7 +516,7 @@ void HbInstance::removeLibraryPath(const QString &path)
 
 
 /*!
-    Returns a list of paths that the application will search when dynamically 
+    Returns a list of paths that the application will search when dynamically
     loading libraries.
 
     \sa HbInstance::removeLibraryPath()

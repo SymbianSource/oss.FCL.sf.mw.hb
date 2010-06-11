@@ -211,7 +211,7 @@ void HbSplashScreenGeneric::start(HbSplashScreen::Flags flags)
         if (!mContents.isNull()) {
             qDebug("[hbsplash] splash screen initialized");
 #ifdef Q_OS_SYMBIAN
-            showFullScreen();
+            showFullScreen(); // krazy:exclude=qmethods
 #else
             show();
 #endif

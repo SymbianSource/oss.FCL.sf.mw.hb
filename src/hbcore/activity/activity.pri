@@ -30,7 +30,8 @@ DEPENDPATH += $$PWD
 
 PUBLIC_HEADERS += $$PWD/hbactivitymanager.h
 
-INTERNAL_HEADERS += $$PWD/hbactivitymanager_p.h \
-                    $$PWD/hbactivityplugininterface_p.h \
+PRIVATE_HEADERS += $$PWD/hbactivitymanager_p.h
+
+RESTRICTED_HEADERS += $$PWD/hbactivityplugininterface_r.h
 
 SOURCES +=  $$PWD/hbactivitymanager.cpp \

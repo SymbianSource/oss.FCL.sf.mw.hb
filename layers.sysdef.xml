@@ -5,6 +5,11 @@
 
 <SystemDefinition name="hb" schema="1.5.1">
     <systemModel>
+        <layer name="tools_layer">
+            <module name="hbconf">
+                <unit unitID="qtdo.hb.hbconf" mrp="" bldFile="&layer_real_source_path;/src/symbian_installs" name="hbconf" />
+            </module>
+        </layer>
         <layer name="mw_layer">
             <module name="qtdo.hb">
                 <unit name="qtdo.hb" unitID="qtdo.hb" bldFile="&layer_real_source_path;" mrp=""/>

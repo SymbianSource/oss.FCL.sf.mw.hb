@@ -84,7 +84,7 @@ void HbSelectionDialogContentWidget::updateCounter()
 
         lbCounter->setText(QString(QString::number(selectedItems) + "/" + QString::number(totalItems)));
         //update checked state of "MarkAll" checkbox 
-        if (selectedItems == totalItems){
+        if (totalItems > 0 && (selectedItems == totalItems)){
             chkMark->blockSignals(true); //should not call _q_checkboxclicked()
             chkMark->setChecked(true);
             chkMark->blockSignals(false);
@@ -107,11 +107,13 @@ void HbSelectionDialogContentWidget::_q_checkboxclicked(int value)
         indexStart = itemModel->index(0,0);
         indexEnd = itemModel->index(itemModel->rowCount()-1,0);
         totalItems = itemModel->rowCount();
+        Q_UNUSED( totalItems ); // todo: remove totalItems if not needed
     }
 
     QItemSelectionModel* selectionModel = mListWidget->selectionModel();
     if(selectionModel){
         selectedItems = selectionModel->selectedRows().count();
+        Q_UNUSED( selectedItems ); // todo: remove selectedItems if not needed
         if(value){ //Select All
             selectionModel->select(QItemSelection(indexStart,indexEnd),QItemSelectionModel::Select);
         }

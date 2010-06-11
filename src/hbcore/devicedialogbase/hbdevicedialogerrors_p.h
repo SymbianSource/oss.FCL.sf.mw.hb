@@ -41,7 +41,9 @@ const int HbDeviceDialogIllegalOperationError = HbDeviceDialog::FrameworkErrors 
 const int HbDeviceDialogConnectError = HbDeviceDialog::FrameworkErrors + 5;
 // Plugin denies client access of a plugin
 const int HbDeviceDialogAccessDeniedError = HbDeviceDialog::FrameworkErrors + 6;
-//unknown indicator error
-const int HbDeviceDialogUnknownIndicatorError = HbDeviceDialog::FrameworkErrors + 7;
+// Dialog is single instance and already showing
+const int HbDeviceDialogAlreadyExists = HbDeviceDialog::FrameworkErrors + 7;
+// Unknown indicator error
+const int HbDeviceDialogUnknownIndicatorError = HbDeviceDialog::FrameworkErrors + 8;
 
 #endif // HBDEVICEDIALOGERRORS_P_H

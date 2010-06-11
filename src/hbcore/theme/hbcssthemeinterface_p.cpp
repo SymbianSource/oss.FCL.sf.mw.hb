@@ -41,8 +41,7 @@
  * \a loadAllFiles ,On application launch all files are loaded and on theme change unchanged files are not loaded.
  * \a enableBinarySupport optional flag for using the binary functionality
  */
-void HbCssThemeInterface::initialise(const QMap<int, QString> &list, bool loadAllFiles,
-                                     bool enableBinarySupport)
+void HbCssThemeInterface::initialise(const QMap<int, QString> &list, bool loadAllFiles)
 {
     int handle;
     flushVariableCache();
@@ -63,14 +62,14 @@ void HbCssThemeInterface::initialise(const QMap<int, QString> &list, bool loadAl
         HbLayeredStyleLoader::LayerPriority layerPriority =
                 static_cast<HbLayeredStyleLoader::LayerPriority>(i.key());
         if(loadAllFiles) {
-            handle = loader->load(i.value(), layerPriority, enableBinarySupport);
+            handle = loader->load(i.value(), layerPriority);
             if (layerPriority != HbLayeredStyleLoader::Priority_Core
                 && layerPriority != HbLayeredStyleLoader::Priority_Operator) {
                 handles.insertMulti(handle, layerPriority);
             }
         } else if (layerPriority != HbLayeredStyleLoader::Priority_Core
                    && layerPriority != HbLayeredStyleLoader::Priority_Operator) {
-                handle = loader->load(i.value(), layerPriority, enableBinarySupport);
+                handle = loader->load(i.value(), layerPriority);
                 handles.insertMulti(handle, layerPriority);
         }
     }
@@ -113,7 +112,7 @@ HbCss::Value HbCssThemeInterface::findAttribute(
     HbDeviceProfile profile(HbDeviceProfile::profile(w));
     HbCss::ValueExtractor valueExtractor(
             loader->declarationsForNode(n, profile.orientation()), true);
-    valueExtractor.extractValue(attribute, value);
+    valueExtractor.extractVariableValue(attribute, value);
     
     if ( value.type == Value::Variable) {
         value = findVariable ( value.variant.toString ());
@@ -139,7 +138,7 @@ HbCss::Value HbCssThemeInterface::findVariable(
 
     HbCss::Value value;
     HbCss::ValueExtractor valueExtractor(mVariables, true);
-    valueExtractor.extractValue(variableName, value);
+    valueExtractor.extractVariableValue(variableName, value);
 
     //for varibale cascading support
     if ( value.type == Value::Variable){

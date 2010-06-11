@@ -341,6 +341,13 @@ void HbToolBar::hideEvent(QHideEvent *event)
     HbWidget::hideEvent(event);
 }
 
+QRectF HbToolBar::boundingRect() const
+{
+    QRectF orginalRect(HbWidget::boundingRect());
+    orginalRect.setTop(orginalRect.top() + 1.0);
+    return orginalRect;
+}
+
 /*!
     \reimp
  */
@@ -384,6 +391,15 @@ void HbToolBar::updatePrimitives()
     }
     if (d->moreExtensionButton) {
         d->moreExtensionButton->updatePrimitives();
+    }
+}
+
+void HbToolBar::polish(HbStyleParameters &params)
+{
+    Q_D(HbToolBar);
+    HbWidget::polish(params);
+    if (d->mDoLayoutPending) {
+        d->doLayout();
     }
 }
 

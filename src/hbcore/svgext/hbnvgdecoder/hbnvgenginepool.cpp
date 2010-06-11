@@ -27,7 +27,7 @@
 
 HbPooledNVGEngine * HbNvgEnginePool::getNvgEngine()
 {
-    HbPooledNVGEngine* pNvgEngine;
+    HbPooledNVGEngine* pNvgEngine = 0;
     if (!pooledEngine) {
         pooledEngine = new HbNvgEngineInstance;
         Q_CHECK_PTR(pooledEngine);

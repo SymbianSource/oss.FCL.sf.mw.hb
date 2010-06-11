@@ -348,7 +348,7 @@ Hb::Edge HbXmlLoaderBaseActions::getAnchorOppositeEdge( Hb::Edge edge ) const
 
     return edge;
 }
-
+#ifndef HB_BIN_CSS
 bool HbXmlLoaderBaseActions::toPixels(const HbXmlLengthValue &lengthVal, qreal& result) const
 {
     bool retVal(true);
@@ -373,5 +373,6 @@ bool HbXmlLoaderBaseActions::toPixels(const HbXmlLengthValue &lengthVal, qreal& 
     }
     return retVal;
 }
+#endif
 
 

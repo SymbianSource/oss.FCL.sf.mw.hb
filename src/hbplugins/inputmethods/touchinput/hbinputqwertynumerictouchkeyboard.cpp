@@ -152,15 +152,20 @@ void HbQwertyNumericKeyboardPrivate::updateKeyCodes()
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
     if (buttonGroup) {
         int key = 0;
+        int charKeyCount = 0;
+
         QList<HbInputButton*> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
-
-                if (key < characters.count()) { 
+                // digits always comes in the first row
+                if (charKeyCount < 10) {
+                    item->setKeyCode(numberCharacterBoundToKey((charKeyCount + 1) % 10).unicode());
+                    charKeyCount++;
+                } else if (key < characters.count()) {
                     item->setKeyCode(characters.at(key).unicode());
+                    ++key;
                 }
-                ++key;
             }
         }
     }
@@ -176,17 +181,24 @@ void HbQwertyNumericKeyboardPrivate::updateButtons()
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
     if (buttonGroup) {
         int key = 0;
+        int charKeyCount = 0;
+
         QList<HbInputButton*> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
-
-                if (key < characters.count()) {
-                    item->setText(characters.at(key), HbInputButton::ButtonTextIndexPrimary);
+                if (charKeyCount < 10) {
+                    item->setText(numberCharacterBoundToKey((charKeyCount + 1) % 10),
+                    HbInputButton::ButtonTextIndexPrimary);  
+                    charKeyCount++;					
                 } else {
-                    item->setText(QString(), HbInputButton::ButtonTextIndexPrimary);
-                }
-                ++key;
+                    if (key < characters.count()) {
+                        item->setText(characters.at(key), HbInputButton::ButtonTextIndexPrimary);
+                    } else {
+                        item->setText(QString(), HbInputButton::ButtonTextIndexPrimary);
+                    }
+                    ++key;
+                }					
             }
         }
         buttonGroup->setButtons(buttons);
@@ -195,31 +207,35 @@ void HbQwertyNumericKeyboardPrivate::updateButtons()
 
 void HbQwertyNumericKeyboardPrivate::getCharacters(QString &characters)
 {
-    characters = QString("1234567890");
-
     if (mKeymap) {
         const HbKeyboardMap* keyboardMap = mKeymap->keyboard(HbKeyboardSctLandscape);
         if (!keyboardMap) {
             return;
         }
-
+        QString chars;
+		
         foreach (const HbMappedKey* mappedKey, keyboardMap->keys) {
-            QString chars = mappedKey->characters(HbModifierNone);
-            
+            chars.append(mappedKey->characters(HbModifierNone));
+        }          
             HbInputFocusObject *focusedObject = mOwner->focusObject();
             QString allowedChars;
             if (focusedObject) {
                 focusedObject->filterStringWithEditorFilter(chars, allowedChars);
             }
-
+            // Remove digits from it ( digits always come in the first row )
+            for (int i=0; i < 10; i++) {
+                allowedChars.remove(numberCharacterBoundToKey(i));
+            }	
+			
             foreach (QChar sctChar, allowedChars) {
                 if (!characters.contains(sctChar)) {
                     characters.append(sctChar);
                 }
             }
-        }
+        
     }
 }
+
 
 /*!
 Constructs the object. owner is the owning input method implementation. Keymap

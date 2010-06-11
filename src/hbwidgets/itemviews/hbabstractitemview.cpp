@@ -217,6 +217,21 @@ HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &dd,
 }
 
 /*!
+    Constructs a new HbAbstractItemView with \a parent.
+*/
+HbAbstractItemView::HbAbstractItemView(HbAbstractItemContainer *container,
+                                       HbModelIterator *modelIterator,
+                                       QGraphicsItem *parent)
+    : HbScrollArea(*new HbAbstractItemViewPrivate, parent)
+{
+    Q_D(HbAbstractItemView);
+    Q_ASSERT_X(container, "HbAbstractItemView constructor", "Container is null");
+
+    d->q_ptr = this;
+    d->init(container, modelIterator);
+}
+
+/*!
     Destructs the abstract item view.
  */
 HbAbstractItemView::~HbAbstractItemView()
@@ -350,11 +365,13 @@ void HbAbstractItemView::setSelectionMode(SelectionMode newMode)
 void HbAbstractItemView::selectAll()
 {
     Q_D(HbAbstractItemView);
-    if (d->mModelIterator->model()
-        && d->mSelectionModel 
-        && d->mSelectionMode == MultiSelection) {
-        QModelIndex firstIndex = d->mModelIterator->nextIndex(QModelIndex());
-        QModelIndex lastIndex = d->mModelIterator->previousIndex(QModelIndex());
+    QAbstractItemModel *model = d->mModelIterator->model();
+    if (    model
+        &&  d->mSelectionModel 
+        &&  d->mSelectionMode == MultiSelection) {
+        QModelIndex rootIndex = d->mModelIterator->rootIndex();
+        QModelIndex firstIndex = model->index(0, 0, rootIndex);
+        QModelIndex lastIndex = model->index(model->rowCount(rootIndex)-1, 0, rootIndex);
         d->mSelectionModel->select(QItemSelection(firstIndex, lastIndex), QItemSelectionModel::Select);
     }
 }
@@ -738,7 +755,7 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         HbAbstractViewItem *item = d->mContainer->itemByIndex(selectedIndexes.at(i));
         if (item) {
             item->setCheckState(Qt::Checked);
-            if (!d->mClearingSelection) {
+            if (!d->mClearingSelection && !d->mDoingContiguousSelection) {
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged); 
             }
         } 
@@ -753,7 +770,7 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         HbAbstractViewItem *item = d->mContainer->itemByIndex(deselectedIndexes.at(i));
         if (item) {
             item->setCheckState(Qt::Unchecked);
-            if (!d->mClearingSelection) {
+            if (!d->mClearingSelection && !d->mDoingContiguousSelection) {
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged);
             }
         } 
@@ -1007,6 +1024,8 @@ void HbAbstractItemView::setLayoutName(const QString &layoutName)
     the same size. This enables the view to do some optimizations for performance purposes.
 
     By default, this property is false.
+
+    \sa uniformItemSizes
 */
 void HbAbstractItemView::setUniformItemSizes(bool enable)
 {
@@ -1016,6 +1035,8 @@ void HbAbstractItemView::setUniformItemSizes(bool enable)
 
 /*!
     Returns the current value of the uniformItemsSizes property
+
+    By default, this property is false.
  */
 bool HbAbstractItemView::uniformItemSizes() const
 {

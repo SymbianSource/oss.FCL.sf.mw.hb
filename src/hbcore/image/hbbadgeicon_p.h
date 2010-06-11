@@ -26,10 +26,10 @@
 #ifndef HBBADGEICON_P_H
 #define HBBADGEICON_P_H
 
+#include "hbbadgeiconinfo_p.h"
+#include "hbicon.h"
 #include <QList>
 #include <QIcon>
-
-#include "hbbadgeiconinfo_p.h"
 
 class HbBadgeIcon
 {
@@ -39,26 +39,26 @@ public:
 
 public:
     void addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int zValue=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int zValue = 0);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     bool isBadged() const;
 
     const QList<HbBadgeIconInfo> badges() const;
 
-    void paint( QPainter *painter,
-                const QRectF& rect,
-                QIcon::Mode mode,
-                QIcon::State state,
-                bool mirror);
-    void externalize(QDataStream& stream);
-    void internalize(QDataStream& stream);
+    void paint(QPainter *painter,
+               const QRectF &rect,
+               QIcon::Mode mode,
+               QIcon::State state,
+               bool mirror);
+    void externalize(QDataStream &stream);
+    void internalize(QDataStream &stream);
 
 
 private:
-    QRectF badgeLocation(const HbBadgeIconInfo& iconInfo,
-                         const QRectF& parentRect,
+    QRectF badgeLocation(const HbBadgeIconInfo &iconInfo,
+                         const QRectF &parentRect,
                          bool mirror);
     QList<HbBadgeIconInfo> mBadgeIcons;
 };

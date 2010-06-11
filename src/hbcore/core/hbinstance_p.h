@@ -38,7 +38,7 @@ class TestabilityInterface;
 #ifdef Q_OS_SYMBIAN
 #include <centralrepository.h>
 const TUid HBTESTABILITY_CREPO_ID  = {0x2002C3AE};
-const TUint32 HbTestabilityKey  = 0x1;  
+const TUint32 HbTestabilityKey  = 0x1;
 #endif
 
 class HbLocaleChangeNotifier;
@@ -85,14 +85,14 @@ signals:
 private:
 #ifdef HB_TESTABILITY
     TestabilityInterface *testabilityInterface;
-#ifdef Q_OS_SYMBIAN  
-     CRepository *mRepo;
-     bool testabilityEnabled;
+#ifdef Q_OS_SYMBIAN
+    CRepository *mRepo;
+    bool testabilityEnabled;
 #endif //Q_OS_SYMBIAN
 #endif //HB_TESTABILITY
 
-     HbLocaleChangeNotifier* mLocaleChangeNotifier;
-     
+    HbLocaleChangeNotifier *mLocaleChangeNotifier;
+
     // Provided for HbMainWindow & friends who have to access
     // HbInstancePrivate in order to add/remove windows.
     // NOTE: Still kept as private to track dependencies...

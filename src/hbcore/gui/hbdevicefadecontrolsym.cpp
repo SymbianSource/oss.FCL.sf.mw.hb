@@ -41,8 +41,8 @@ class HbDeviceFadeControlPrivate  : public CActive
 {
 public:
     struct FadeControl {
-        int fadeOff:1; // command for application to unfade
-        int spare:31;
+        int fadeOff: 1; // command for application to unfade
+        int spare: 31;
     };
 
 public:
@@ -87,6 +87,7 @@ HbDeviceFadeControlPrivate::HbDeviceFadeControlPrivate(HbDeviceFadeControl *pare
         CActiveScheduler::Add(this);
         start();
     }
+    process.Close();
 }
 
 HbDeviceFadeControlPrivate::~HbDeviceFadeControlPrivate()

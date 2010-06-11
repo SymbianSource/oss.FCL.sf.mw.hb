@@ -258,11 +258,11 @@ void HbPluginNameCache::removeWatchPath(const QString &path)
     TRACE(dirPath)
     if (!dirPath.isEmpty()) {
 #ifdef MONITOR_INSTALLATION_DIRS
-#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+#if defined(Q_OS_LINUX) && !defined(Q_OS_SYMBIAN)
         const Qt::CaseSensitivity cs = Qt::CaseSensitive;
 #else
         const Qt::CaseSensitivity cs = Qt::CaseInsensitive;
-#endif // Q_OS_LINUX || Q_OS_MAC
+#endif // defined(Q_OS_LINUX) && !defined(Q_OS_SYMBIAN)
         if (mWatcher.directories().contains(dirPath, cs)) {
             mWatcher.removePath(dirPath);
 #else // MONITOR_INSTALLATION_DIRS
@@ -349,11 +349,11 @@ void HbPluginNameCache::removePath(const QString &filePath)
     QMutexLocker(&mThread->lock());
     QHash<QString, QString>::iterator i = mCache.begin();
     while (i != mCache.end()) {
-#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+#if defined(Q_OS_LINUX) && !defined(Q_OS_SYMBIAN)
         const Qt::CaseSensitivity cs = Qt::CaseSensitive;
 #else
         const Qt::CaseSensitivity cs = Qt::CaseInsensitive;
-#endif // Q_OS_LINUX || Q_OS_MAC
+#endif // defined(Q_OS_LINUX) && !defined(Q_OS_SYMBIAN)
         if (i.value().startsWith(filePath, cs)) {
             i = mCache.erase(i);
         } else {
@@ -365,14 +365,14 @@ void HbPluginNameCache::removePath(const QString &filePath)
 // Generate filter for plugin file names
 QString HbPluginNameCache::pluginFileNameFilter()
 {
-#if defined(Q_OS_LINUX)
-    return QString("*.so");
+#if defined(Q_OS_SYMBIAN)
+    return QString("*.qtplugin");
 #elif defined(Q_OS_MAC)
     return QString("*.dylib");
 #elif defined(Q_OS_WIN32)
     return QString("*.dll");
 #else
-    return QString("*.qtplugin");
+    return QString("*.so");
 #endif
 }
 

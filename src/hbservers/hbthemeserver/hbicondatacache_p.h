@@ -49,7 +49,7 @@ public:
     bool isItemCachableInGpu(const HbIconCacheItem *item)const;
     bool isItemCachableInCpu(const HbIconCacheItem *item)const;
     void memoryGood();
-    void freeGpuRam(int bytes);
+    void freeGpuRam(int bytes, bool useSwRendering);
     void freeUnusedGpuResources();
     QVector<const HbIconKey *> getKeys(const QString &filename) const;
 

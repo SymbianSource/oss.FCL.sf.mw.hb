@@ -66,7 +66,7 @@ class HbTheTestWidget : public HbWidget
 
 public:
     ~HbTheTestWidget();
-    HbTheTestWidget(HbMainWindow *mainWindow, QGraphicsItem *parent = 0);
+    explicit HbTheTestWidget(HbMainWindow *mainWindow, QGraphicsItem *parent = 0);
     
     HbTheTestButton *button1();
     HbTheTestButton *button2();

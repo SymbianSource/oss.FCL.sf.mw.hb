@@ -41,35 +41,14 @@ public:
     HbIconThemePrivate();
     ~HbIconThemePrivate();
 
-    QString m_theme;
-    QStringList m_dirList;
-    QString m_description;
-    bool loaded;
-    void loadThemeDescriptionFile(const QString &themePath, int priority);
-    void loadThemeDescriptionFiles(const QString &theme);
-    bool addBaseThemePath();
-};
+    void loadThemeDescriptionFile();
 
-void HbIconThemePrivate::loadThemeDescriptionFiles(const QString &theme)
-{
-    const QString indextheme(THEME_INDEX_FILE);
-    QString pathToTheme;
-    QMap<int, QString> maplist = HbThemeUtils::constructHierarchyListWithPathInfo(
-        QString(), theme, Hb::IconResource);
-    QMapIterator<int, QString> i(maplist);
-     i.toBack();
-     while (i.hasPrevious()) {
-         i.previous();
-         pathToTheme = HbStandardDirs::findResource(i.value() + indextheme, Hb::IconResource);
-         if (!pathToTheme.isEmpty()) {
-             loadThemeDescriptionFile(pathToTheme, i.key());
-         }
-     }
-    if (!addBaseThemePath()) {
-         qDebug() << "Can't find base theme";
-     }
-     loaded = true;
-}
+public:
+    QString m_theme;
+    QString m_description;
+    QString m_name;
+    bool loaded;
+};
 
 HbIconThemePrivate::HbIconThemePrivate() : loaded(false)
 {
@@ -79,68 +58,38 @@ HbIconThemePrivate::~HbIconThemePrivate()
 {
 }
 
-void HbIconThemePrivate::loadThemeDescriptionFile(const QString &themePath, int priority)
+void HbIconThemePrivate::loadThemeDescriptionFile()
 {
+    // TODO: index file is accessed in several places, create utility
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+
+    QString indexFileName;
+
+    indexFileName.append(info.path);
+    indexFileName.append("/icons/");
+    indexFileName.append(info.name);
+    indexFileName.append("/" THEME_INDEX_FILE);
+
     HbIniParser iniParser;
-    QFile themeFile(themePath);
+    QFile themeFile(indexFileName);
 
     if (!themeFile.open(QIODevice::ReadOnly) || !iniParser.read(&themeFile)) {
-        qDebug() << "Can't access file : " << themePath;
+#ifdef HB_THEME_SERVER_TRACES 
+        qDebug() << "HbIconTheme: Can't access file: " << indexFileName;
+#endif
         return;
     }
-    if (priority == HbLayeredStyleLoader::Priority_Theme) {
-        m_description = iniParser.value("Icon Theme", "Comment");
+    m_description = iniParser.value("Icon Theme", "Comment");
+    m_name = iniParser.value("Icon Theme", "Name");
 #ifdef Q_OS_SYMBIAN
-        m_description = m_description.left(m_description.indexOf("\n", 0));
+    m_description = m_description.left(m_description.indexOf("\n", 0));
+    m_name = m_name.left(m_name.indexOf("\n", 0));
 #endif
-    }
-
-    QString directories = iniParser.value("Icon Theme", "Directories");
-    QStringList dirList = directories.split( ',', QString::SkipEmptyParts );
-    QString indexThemeDir(themePath);
-    indexThemeDir.chop(sizeof(THEME_INDEX_FILE) - 1);
-
-    foreach (const QString &str, dirList) {
-        m_dirList.append(QString(indexThemeDir + str + '/'));
-    }
 }
-
-bool HbIconThemePrivate::addBaseThemePath()
-{
-    HbIniParser iniParser;
-    const HbThemeInfo &baseThemeInfo = HbThemeUtils::baseTheme();
-    QString baseThemePath = baseThemeInfo.rootDir + "/themes/icons/" + baseThemeInfo.name + "/"THEME_INDEX_FILE;
-
-    // Parse it
-    QFile baseThemeFile(baseThemePath);
-    if (!baseThemeFile.open(QIODevice::ReadOnly) || !iniParser.read(&baseThemeFile)) {
-        qDebug() << "Can't access file";
-        return false;
-    }
-
-    if (m_theme == baseThemeInfo.name) {
-        m_description = iniParser.value("Icon Theme", "Comment");
-#ifdef Q_OS_SYMBIAN
-        m_description = m_description.left(m_description.indexOf("\n", 0));
-#endif
-    }
-
-    //Read parameters
-    QString directories = iniParser.value("Icon Theme", "Directories");
-    QStringList dirList = directories.split(',', QString::SkipEmptyParts);
-    baseThemePath.chop(sizeof(THEME_INDEX_FILE) - 1);
-    // Save paths
-    foreach (const QString &str, dirList) {
-        m_dirList.append(QString(baseThemePath + str + '/'));
-    }
-
-    return true;
-}
-
 
 /*!
     \class HbIconTheme
-    \brief HbIconTheme gives access to icon themes and stores icon theme properties 
+    \brief HbIconTheme gives access to icon themes and stores icon theme properties
            according to the Freedesktop Icon Theme Specification
 */
 HbIconTheme::HbIconTheme()
@@ -155,9 +104,8 @@ HbIconTheme::~HbIconTheme()
 
 void HbIconTheme::setCurrentTheme(const QString &theme)
 {
-    if (d->m_theme != theme) {
+    if (!theme.isEmpty()) {
         d->m_theme = theme;
-        d->m_dirList.clear();
         d->loaded = false;
     }
 }
@@ -170,29 +118,20 @@ QString HbIconTheme::currentTheme() const
     return d->m_theme;
 }
 
-/**
- * List of valid subdirectories of a theme
- */
-QStringList HbIconTheme::dirList() const
-{ 
-    if (!d->loaded) {
-        d->loadThemeDescriptionFiles(d->m_theme);
-    }
-    return d->m_dirList;
-}
-
 QString HbIconTheme::description() const
 {
     if (!d->loaded) {
-        d->loadThemeDescriptionFiles(d->m_theme);
+        d->loadThemeDescriptionFile();
     }
     return d->m_description;
 }
 
-void HbIconTheme::clearDirList()
+QString HbIconTheme::name() const
 {
-    d->m_dirList.clear();
-    d->loaded = false;
+    if (!d->loaded) {
+        d->loadThemeDescriptionFile();
+    }
+    return d->m_name;
 }
 
 void HbIconTheme::emitUpdateIcons(const QStringList &fileNames)

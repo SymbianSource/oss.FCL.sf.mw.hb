@@ -23,15 +23,15 @@
 **
 ****************************************************************************/
 
-#include "hborientationstatus_p.h"
 #include "hbsensorlistener_p.h"
+#include "hborientationstatus_p.h"
 
 #ifdef Q_OS_SYMBIAN
-#include <sensrvchannelfinder.h> 
-#include <sensrvchannel.h> 
+#include <sensrvchannelfinder.h>
+#include <sensrvchannel.h>
 #include <sensrvdatalistener.h>
 #include <centralrepository.h>
-#include <e32property.h> 
+#include <e32property.h>
 #include "hbcommoncrkeys.h"
 #include "hbsensornotifyhandler_p.h"
 #else
@@ -43,16 +43,16 @@
 HbSensorListener::HbSensorListener(HbSensorListenerObserver &observer,
                                    Qt::Orientation defaultOrientation,
                                    bool updateOrientation)
-:
-mObserver(observer),
-mDefaultOrientation(defaultOrientation),
-mOrientation(mDefaultOrientation),
-mEnabled(false),
-mSettingsEnabled(false)
+    :
+    mObserver(observer),
+    mDefaultOrientation(defaultOrientation),
+    mOrientation(mDefaultOrientation),
+    mEnabled(false),
+    mSettingsEnabled(false)
 #ifdef Q_OS_SYMBIAN
-,
-mNotifyHandler(0),
-mSensrvChannel(0)
+    ,
+    mNotifyHandler(0),
+    mSensrvChannel(0)
 #endif
 {
     checkCenrepValue();
@@ -89,26 +89,27 @@ void HbSensorListener::setSensorOrientation(Qt::Orientation dataOrientation)
 void HbSensorListener::checkCenrepValue()
 {
 #ifdef Q_OS_SYMBIAN
-    CRepository* repository = 0;
-    TRAPD( err, repository = CRepository::NewL(KHbSensorCenrepUid));
-    if ( err ) {
-        qWarning( "HbSensorListener::checkCenrepValue; repository->NewL fails, error code = %d", err );
+    CRepository *repository = 0;
+    TRAPD(err, repository = CRepository::NewL(KHbSensorCenrepUid));
+    if (err) {
+        qWarning("HbSensorListener::checkCenrepValue; repository->NewL fails, error code = %d", err);
     } else {
         TInt value = 0;
         TInt err = repository->Get(KHbSensorCenrepKey, value);
-        if (err == KErrNone)
+        if (err == KErrNone) {
             cenrepValueChanged(value, false);
-        else 
-            qWarning( "HbSensorListener::checkCenrepValue: repository->Get fails, error code = %d", err );
+        } else {
+            qWarning("HbSensorListener::checkCenrepValue: repository->Get fails, error code = %d", err);
+        }
     }
     if (!mNotifyHandler) {
         TRAPD(err, mNotifyHandler = HbSensorNotifyHandler::NewL(*this));
         if (err) {
-            qWarning( "HbSensorListener::HbSensorListener: HbSensorNotifyHandler::NewL failed = %d", err );
+            qWarning("HbSensorListener::HbSensorListener: HbSensorNotifyHandler::NewL failed = %d", err);
         } else {
-            TRAPD( err, mNotifyHandler->startObservingL());
+            TRAPD(err, mNotifyHandler->startObservingL());
             if (err) {
-                qWarning( "HbSensorListener::HbSensorListener: mNotifyHandler->startObservingL failed = %d", err );
+                qWarning("HbSensorListener::HbSensorListener: mNotifyHandler->startObservingL failed = %d", err);
             }
         }
     }
@@ -123,11 +124,11 @@ void HbSensorListener::checkCenrepValue()
 void HbSensorListener::enableSensors(bool enable, bool notify)
 {
     mEnabled = enable;
-#ifdef Q_OS_SYMBIAN    
+#ifdef Q_OS_SYMBIAN
     enableSensorListening(enable);
 #else
     mSettingsEnabled = enable;
-#endif    
+#endif
     if (notify) {
         mObserver.sensorStatusChanged(enable, true);
     }
@@ -156,7 +157,7 @@ void HbSensorListener::enableSensorListening(bool enable)
 
 void HbSensorListener::cenrepValueChanged(TInt aValue, bool notify)
 {
-    bool enable = (aValue == 0)? false : true;
+    bool enable = (aValue == 0) ? false : true;
     mSettingsEnabled = enable;
     enableSensors(enable, notify);
 }
@@ -165,33 +166,33 @@ void HbSensorListener::cenrepValueChanged(TInt aValue, bool notify)
 void HbSensorListener::startSensorChannel()
 {
 #ifdef Q_OS_SYMBIAN
-    CSensrvChannelFinder* sensrvChannelFinder = CSensrvChannelFinder::NewLC();
+    CSensrvChannelFinder *sensrvChannelFinder = CSensrvChannelFinder::NewLC();
 
     RSensrvChannelInfoList channelInfoList;
     CleanupClosePushL(channelInfoList);
 
     TSensrvChannelInfo mySearchConditions;
-    
+
     //Search only Orientation events.
-    mySearchConditions.iChannelType = KSensrvChannelTypeIdOrientationData; 
-    
-    TRAPD( err, sensrvChannelFinder->FindChannelsL(channelInfoList,mySearchConditions));
+    mySearchConditions.iChannelType = KSensrvChannelTypeIdOrientationData;
+
+    TRAPD(err, sensrvChannelFinder->FindChannelsL(channelInfoList, mySearchConditions));
     if (!err) {
         if (channelInfoList.Count()) {
-                TRAP( err, mSensrvChannel = CSensrvChannel::NewL(channelInfoList[0]));
+            TRAP(err, mSensrvChannel = CSensrvChannel::NewL(channelInfoList[0]));
+            if (!err) {
+                TRAP(err, mSensrvChannel->OpenChannelL());
                 if (!err) {
-                    TRAP( err, mSensrvChannel->OpenChannelL());
-                    if (!err) {
-                        TRAP_IGNORE(mSensrvChannel->StartDataListeningL(this, 1,1,0));
-                    } else {
-                        qWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
-                    }
+                    TRAP_IGNORE(mSensrvChannel->StartDataListeningL(this, 1, 1, 0));
+                } else {
+                    qWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
                 }
             }
-         
+        }
+
         channelInfoList.Close();
-        CleanupStack::Pop( &channelInfoList );
-        CleanupStack::PopAndDestroy( sensrvChannelFinder );    
+        CleanupStack::Pop(&channelInfoList);
+        CleanupStack::PopAndDestroy(sensrvChannelFinder);
     } else {
         qWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
     }
@@ -199,14 +200,14 @@ void HbSensorListener::startSensorChannel()
 }
 
 #ifdef Q_OS_SYMBIAN
-Qt::Orientation HbSensorListener::orientationFromData(CSensrvChannel& aChannel, TInt aCount)
+Qt::Orientation HbSensorListener::orientationFromData(CSensrvChannel &aChannel, TInt aCount)
 {
     Qt::Orientation orientation = mOrientation;
-    if (aChannel.GetChannelInfo().iChannelType == KSensrvChannelTypeIdOrientationData ) {
+    if (aChannel.GetChannelInfo().iChannelType == KSensrvChannelTypeIdOrientationData) {
         TSensrvOrientationData data;
-        for ( TInt i = 0; i < aCount; i++ ) {
+        for (TInt i = 0; i < aCount; ++i) {
             TPckgBuf<TSensrvOrientationData> dataBuf;
-            aChannel.GetData( dataBuf );
+            aChannel.GetData(dataBuf);
             data = dataBuf();
             orientation = sensorOrientationToQtOrientation(data.iDeviceOrientation);
         }
@@ -218,9 +219,9 @@ Qt::Orientation HbSensorListener::orientationFromData(CSensrvChannel& aChannel, 
 //Supported orientations form sensors are EOrientationDisplayRightUp and EOrientationDisplayUp.
 Qt::Orientation HbSensorListener::sensorOrientationToQtOrientation(TSensrvOrientationData::TSensrvDeviceOrientation sensorOrientation) const
 {
-    if (mDefaultOrientation == Qt::Vertical || mDefaultOrientation == Qt::Horizontal ) {
+    if (mDefaultOrientation == Qt::Vertical || mDefaultOrientation == Qt::Horizontal) {
         if (sensorOrientation == TSensrvOrientationData::EOrientationDisplayRightUp) {
-            return Qt::Horizontal;                
+            return Qt::Horizontal;
         } else if (sensorOrientation == TSensrvOrientationData::EOrientationDisplayUp) {
             return Qt::Vertical;
         } else {
@@ -234,7 +235,7 @@ Qt::Orientation HbSensorListener::sensorOrientationToQtOrientation(TSensrvOrient
 }
 
 // From MSensrvDataListener
-void HbSensorListener::DataReceived(CSensrvChannel& aChannel, TInt aCount, TInt aDataLost)
+void HbSensorListener::DataReceived(CSensrvChannel &aChannel, TInt aCount, TInt aDataLost)
 {
     Q_UNUSED(aDataLost);
     Qt::Orientation dataOrientation = orientationFromData(aChannel, aCount);
@@ -242,23 +243,16 @@ void HbSensorListener::DataReceived(CSensrvChannel& aChannel, TInt aCount, TInt 
 }
 
 // From MSensrvDataListener
- void HbSensorListener::DataError( CSensrvChannel& aChannel, TSensrvErrorSeverity aError )
+void HbSensorListener::DataError(CSensrvChannel &aChannel, TSensrvErrorSeverity aError)
 {
     Q_UNUSED(aChannel);
     Q_UNUSED(aError);
 }
 
-// From MSensrvDataListener 
- void HbSensorListener::GetDataListenerInterfaceL( TUid aInterfaceUid, TAny*& aInterface)
+// From MSensrvDataListener
+void HbSensorListener::GetDataListenerInterfaceL(TUid aInterfaceUid, TAny*& aInterface)
 {
     Q_UNUSED(aInterfaceUid);
     Q_UNUSED(aInterface);
 }
 #endif
- 
- 
-
-
-
-
-

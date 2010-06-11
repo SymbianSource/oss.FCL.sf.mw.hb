@@ -95,7 +95,7 @@ namespace HbXml {
         ElementType type;
         void *data;
     };
-};
+}
 
 
 class HbXmlLoaderAbstractActions;

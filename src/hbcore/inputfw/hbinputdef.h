@@ -67,17 +67,17 @@ enum HbKeyboardTypeFlag
 {
     HbKeyboardNone          				= 0x00000000,
 
-    HbKeyboard12Key         				= 0x00000001,                                          /**< Conventional phone keypad */
-
-    HbKeyboardQwerty        				= 0x00000001 | HbQwertyKeyboardMask,                   /**< Qwerty keyboard */
- 
-    HbKeyboardVirtual12Key  				= 0x00000001 | HbTouchInputMask,                       /**< Touchscreen version of conventional phone keypad */
+    HbKeyboard12Key         				= 0x00000001,       /**< Deprecated, use HbKeyboardHardwarePortrait instead. */
+    HbKeyboardHardwarePortrait                          = HbKeyboard12Key,  /**< Hardware keyboard for portrait orientation. */
+    HbKeyboardQwerty        				= 0x00000001 | HbQwertyKeyboardMask,  /**< Deprecated, use HbKeyboardHardwareLandcape instead */
+    HbKeyboardHardwareLandcape                          = HbKeyboardQwerty, /**< Hardware keyboard for landscape mode. */
+    HbKeyboardVirtual12Key  				= 0x00000001 | HbTouchInputMask,    /**< Deprecated, use HbKeyboardTouchPortrait instead. */
+    HbKeyboardTouchPortrait                             = HbKeyboardVirtual12Key,           /**< Touch keyboard for portrait mode. */
     HbKeyboardVirtualQwerty 				= 0x00000002 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
+    HbKeyboardTouchLandscape                            = HbKeyboardVirtualQwerty, /**< Touch keyboard for landscape mode. */
     HbKeyboardSctPortrait   				= 0x00000003 | HbTouchInputMask,                       /**< Special character selection keypad for portrait view */
     HbKeyboardSctLandscape  				= 0x00000004 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
-    HbKeyboardHwr           				= 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask,    /**< Hand writing recognition keypad */
-    HbKeyboardThaiStarSctPortrait   	                = 0x00000006 | HbTouchInputMask,                       /**< Special character selection keypad for star key in Thai portrait view */
-    HbKeyboardThaiHashSctPortrait   	                = 0x00000007 | HbTouchInputMask                        /**< Special character selection keypad for hash key in Thai portrait view */
+    HbKeyboardHwr           				= 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask    /**< Hand writing recognition keypad */
 };
 
 Q_DECLARE_FLAGS(HbKeyboardType, HbKeyboardTypeFlag)

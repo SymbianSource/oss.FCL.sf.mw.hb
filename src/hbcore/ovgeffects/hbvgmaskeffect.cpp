@@ -141,8 +141,9 @@ void *HbVgMaskEffect::maskCallbackParam() const
 void HbVgMaskEffect::setMaskCallback(MaskCallback callback, void *param)
 {
     Q_D(HbVgMaskEffect);
-    if (d->maskCallback == callback)
+    if (d->maskCallback == callback) {
         return;
+    }
     clear();
     d->maskCallback = callback;
     d->maskCallbackParam = param;
@@ -176,8 +177,9 @@ QRectF HbVgMaskEffect::maskDeviceRect() const
 void HbVgMaskEffect::setMaskRect(const QRectF &rect)
 {
     Q_D(HbVgMaskEffect);
-    if (rect == d->maskRect && !d->maskRectIsInDeviceCoords)
+    if (rect == d->maskRect && !d->maskRectIsInDeviceCoords) {
         return;
+    }
     clear();
     d->maskRect = rect;
     d->maskRectIsInDeviceCoords = false;
@@ -193,8 +195,9 @@ void HbVgMaskEffect::setMaskRect(const QRectF &rect)
 void HbVgMaskEffect::setMaskDeviceRect(const QRectF &rect)
 {
     Q_D(HbVgMaskEffect);
-    if (rect == d->maskRect && d->maskRectIsInDeviceCoords)
+    if (rect == d->maskRect && d->maskRectIsInDeviceCoords) {
         return;
+    }
     clear();
     d->maskRect = rect;
     d->maskRectIsInDeviceCoords = true;
@@ -233,15 +236,21 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     Q_UNUSED(vgImage);
     Q_D(HbVgMaskEffect);
 
+    if (!painter->paintEngine()) {
+        return;
+    }
+
     // Initialize scaledMask if the mask has changed or the size of the source
     // is different than before.
     if (!d->mask.isNull()) {
-        if (d->scaledMask.isNull())
+        if (d->scaledMask.isNull()) {
             d->scaledMask = d->mask;
+        }
         // Scale only when really needed, i.e. when the size is different than
         // before (or there is a new mask).
-        if (d->scaledMask.size() != vgImageSize)
+        if (d->scaledMask.size() != vgImageSize) {
             d->scaledMask = d->mask.scaled(vgImageSize);
+        }
     }
 
     vgSeti(VG_MASKING, VG_TRUE);
@@ -276,8 +285,9 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     } else if (d->maskCallback) {
         // Invoke the callback but only if it has just been set or the size of
         // the source is different than before.
-        if (d->callbackResult.isNull() || d->callbackResult.size() != vgImageSize)
+        if (d->callbackResult.isNull() || d->callbackResult.size() != vgImageSize) {
             d->callbackResult = d->maskCallback(vgImageSize, d->maskCallbackParam);
+        }
         maskPtr = &d->callbackResult;
     }
 

@@ -27,7 +27,9 @@
 
 #include <hbeffect.h>
 #include <hbwidget_p.h>
+#include <hbinputregioncollector_p.h>
 #include "hbframedrawerpool_p.h"
+
 
 #include "hbinputscreenshotwidget.h"
 #include "hbinputvkbwidget.h"
@@ -84,6 +86,7 @@ HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem* parent)
 {
     Q_D(HbInputScreenshotWidget);
     d->q_ptr = this;
+    HbInputRegionCollector::instance()->attach(this);
 
     setPos(QPointF(0,0));
 

@@ -56,8 +56,12 @@ public:
     HbDeviceProfileChangedEvent(const HbDeviceProfile &profile, const HbDeviceProfile &oldProfile);
     ~HbDeviceProfileChangedEvent();
 
-    inline const HbDeviceProfile &profile() const { return mProfile; }
-    inline const HbDeviceProfile &oldProfile()const { return mOldProfile;}
+    inline const HbDeviceProfile &profile() const {
+        return mProfile;
+    }
+    inline const HbDeviceProfile &oldProfile()const {
+        return mOldProfile;
+    }
 protected:
     HbDeviceProfile mProfile, mOldProfile;
 };

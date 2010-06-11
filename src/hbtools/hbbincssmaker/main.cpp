@@ -32,10 +32,17 @@
 #include <hbsharedmemorymanager_p.h>
 #include <hbsharedcache_p.h>
 #include <hbcssconverterutils_p.h>
+#include <hboffsetmapbuilder_p.h>
+#include <hbwidgetloader_p.h>
 
 // Global variables
-QString AppName("hbbincssmaker");
+static const QString CSSFileExtension = ".css";
+static const QString WMLFileExtension = ".widgetml";
+static const QString ColorCSSEnding = "_color.css";
+
+static const QString AppName = "hbbincssmaker";
 static bool verboseOn = false;
+
 QTextStream out(stdout);
 QTextStream verboseOut(stderr);
 QTextStream err(stderr);
@@ -44,6 +51,17 @@ QTextStream err(stderr);
 #define VERBOSEIF(test, statement) if(verboseOn && test) { verboseOut << statement; }
 #define VERBOSELN(statement) if(verboseOn) { verboseOut << statement << endl; }
 
+struct WidgetMLParseInput
+{
+    QString filename;
+    QList<CSSLayoutInfo> layouts;
+
+    void clear()
+    {
+        layouts.clear();
+        filename.clear();
+    }
+};
 
 void testDeclarations(const HbVector<HbCss::Declaration> &decls)
 {
@@ -115,72 +133,114 @@ void testStyleSheet(HbCss::StyleSheet *styleSheet)
     }
 }
 
-class CssMap
+void testLayoutDef(const HbWidgetLoader::LayoutDefinition *layoutDef)
 {
-public:
-    CssMap() {}
-    void add(const QString &cssName, unsigned int offset)
-    {
-        HbOffsetItem mapItem = _mapItems.value(cssName, HbOffsetItem());
-        if (mapItem.nameOffset < 0) {
-            mapItem.nameOffset = _cssNameBuffer.size();
-            mapItem.offset = offset;
-            _cssNameBuffer.append(cssName.toLatin1()).append('\0');
-            _mapItems.insert(cssName, mapItem);
-        } else {
-            err << "warning: duplicate cache key for " << cssName << endl;
+    VERBOSELN("mesh items count: " << layoutDef->meshItems.count());
+    for (int i = 0; i < layoutDef->meshItems.count(); ++i) {
+        const HbWidgetLoader::MeshItem &meshItem = layoutDef->meshItems.at(i);
+        VERBOSELN("src: " << meshItem.src);
+        VERBOSELN("dst: " << meshItem.dst);
+        VERBOSELN("spacing text: " << meshItem.spacingText);
+        VERBOSELN("spacer: " << meshItem.spacer);
+    }
+}
+
+bool testCss()
+{
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
+    HbSharedCache *cache = shared->cache();
+
+    for (int k = 0; k < cache->mOffsetItemCount; ++k) {
+        if (cache->mOffsetItems[k].offsetCSS >= 0) {
+            HbCss::StyleSheet *sheet = HbMemoryUtils::getAddress<HbCss::StyleSheet>(
+                HbMemoryManager::SharedMemory, cache->mOffsetItems[k].offsetCSS);
+            VERBOSELN("Cssmap item " << k
+                    << "- hash value: \"" << cache->mOffsetItems[k].offsetCSS << "\"");
+            // Tests the stylesheet offsets and prints info to verbose out
+            testStyleSheet(sheet);
+
+            //test layout definition.
+            int tableSize = 0;
+            const HbLayoutIndexItem *ptr = cache->layoutIndexItemBegin(
+                    cache->mOffsetItems[k].offsetLayoutIndexTable, &tableSize);
+            for (; tableSize > 0; --tableSize, ++ptr) {
+                HbWidgetLoader::LayoutDefinition *layoutDef =
+                    HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(
+                            HbMemoryManager::SharedMemory, ptr->offset);
+                testLayoutDef(layoutDef);
+            }
         }
     }
+    return true;
+}
 
-    void registerOffsetHolders() {
-        foreach(const HbOffsetItem &mapItem, _mapItems) {
-            HbCssConverterUtils::registerOffsetHolder(const_cast<int *>(&mapItem.offset));
+/*!
+    Collects and return layout names from \a styleRules.
+    \a layoutSet - map of already found layoutnames and sections to prevent duplicate layouts
+    to be added.
+
+*/
+QList<CSSLayoutInfo> collectLayoutNames(
+        QSet<QPair<QString, QString> > &layoutSet,
+        const HbVector<HbCss::StyleRule> &styleRules)
+{
+    QList<CSSLayoutInfo> layouts;
+    layouts.append(CSSLayoutInfo());
+
+    foreach(const HbCss::StyleRule &rule, styleRules) {
+        foreach(const HbCss::Declaration &decl, rule.declarations) {
+            if (decl.propertyId == HbCss::Property_Layout) {
+                if (decl.values.count() == 1) {
+                    layouts.last().layoutname = decl.values.at(0).variant.toString();
+                }
+            } else if (decl.propertyId == HbCss::Property_Section) {
+                if (decl.values.count() == 1) {
+                    layouts.last().section = decl.values.at(0).variant.toString();
+                }
+            }
+        }
+        const CSSLayoutInfo &infoRef = layouts.last();
+        if (!infoRef.layoutname.isEmpty()) {
+            QPair<QString, QString> layout = qMakePair(infoRef.layoutname,
+                                                       infoRef.section);
+            //only add layout, if not already collected before.
+            if (!layoutSet.contains(layout)) {
+                layoutSet.insert(layout);
+                layouts.append(CSSLayoutInfo());
+            }
         }
     }
+    layouts.removeLast();
+    return layouts;
+}
 
-    QByteArray data() const {
-        QByteArray dataArray;
-        int count = _mapItems.size();
-        int adjustment = count * sizeof(HbOffsetItem);
-        foreach(const HbOffsetItem &mapItem, _mapItems) {
-            HbOffsetItem tmp(mapItem);
-            // Fix offsets in the items to be based on the beginning of the css map instead of
-            // the beginning of the css name buffer.
-            tmp.nameOffset += adjustment;
-            dataArray.append(reinterpret_cast<const char*>(&tmp), sizeof(HbOffsetItem));
-        }
-        dataArray.append(_cssNameBuffer);
-        return dataArray;
+/*!
+    Collects all the layouts defined in \a stylesheet and add the result to \a input.
+    returns true, if at least one layout is found.
+*/
+bool collectLayouts(const QString &cssFilePath,
+                    HbCss::StyleSheet *styleSheet,
+                    WidgetMLParseInput &input)
+{
+    input.clear();
+    QSet<QPair<QString, QString> > layoutSet; //for removing duplicate layout names.
+    foreach(const HbCss::WidgetStyleRules &rule, styleSheet->widgetRules) {
+        layoutSet.clear();
+        input.layouts += collectLayoutNames(layoutSet, rule.styleRules);
+        input.layouts += collectLayoutNames(layoutSet, rule.portraitRules);
+        input.layouts += collectLayoutNames(layoutSet, rule.landscapeRules);
     }
-    int size() const { return _mapItems.count(); }
-
-private:
-    QMap<QString, HbOffsetItem> _mapItems;
-    QByteArray _cssNameBuffer;
-};
-
-struct InputFile
-{
-    InputFile(const QString &cacheName, const QFileInfo &file) : cacheName(cacheName), file(file)
-    {
+    bool hasLayoutDef = false;
+    if (!input.layouts.isEmpty()) {
+        //if css contains at least 1 layout declaration, it might have .widgetml file.
+        QString filePath(cssFilePath);
+        filePath.replace(filePath.size() - CSSFileExtension.size(),
+                         CSSFileExtension.size(), WMLFileExtension);
+        input.filename = filePath;
+        hasLayoutDef = true;
     }
-
-    QString cacheName;
-    QFileInfo file;
-};
-typedef QList<InputFile> InputFileList;
-
-struct InputFileInfo
-{
-    QString base;
-    QString path;
-    QString prefix;
-};
-typedef QList<InputFileInfo> InputFileInfoList;
-
-bool operator < (const InputFile & if1, const InputFile & if2)
-{
-    return if1.file.size() > if2.file.size();
+    return hasLayoutDef;
 }
 
 void printHelp()
@@ -206,103 +266,203 @@ QFileInfoList collectFiles(const QFileInfoList &inputFiles, const QStringList &f
     return collected;
 }
 
-InputFileList collectCssFiles(const QStringList &inputFilePaths)
+QMap<QString, QFileInfo> collectCssFiles(const QStringList &inputFilePaths)
 {
     QStringList filters;
     filters << "*.css";
 
-    InputFileList inputFiles;
+    QMap<QString, QFileInfo> cssFileMap;
     QFileInfoList inputPath;
     inputPath.append(QFileInfo());
     Q_FOREACH(const QString &path, inputFilePaths) {
         inputPath[0].setFile(path);
         QFileInfoList allFiles = collectFiles(inputPath, filters);
         Q_FOREACH(const QFileInfo &info, allFiles) {
-            inputFiles.append(InputFile(info.fileName(), info));
+            QMap<QString, QFileInfo>::const_iterator i = cssFileMap.find(info.fileName());
+            if (i == cssFileMap.end()) {
+                cssFileMap.insert(info.fileName(), info);
+            } else {
+                err << "duplicate css filenames found: " << i.value().absoluteFilePath() <<
+                       " & " << info.absoluteFilePath();
+            }
         }
     }
-    return inputFiles;
+    return cssFileMap;
 }
 
-bool writeCssBinary(const QStringList &inputFiles, const QString &targetFile)
+/*!
+    Collects the css files from \a inputFiles, parses them to shared memory, stores
+    offsets to \a offsetMap.
+    returns true on success.
+*/
+bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
 {
     if (inputFiles.isEmpty()) return false;
-    InputFileList cssFiles = collectCssFiles(inputFiles);
-    if (cssFiles.isEmpty()) return false;
-    qSort(cssFiles);
+    QMap<QString, QFileInfo> cssFiles = collectCssFiles(inputFiles);
 
     HbCss::Parser parser;
     HbCss::StyleSheet *styleSheet = 0;
     bool success = false;
-    CssMap cssMap;
+    
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    Q_FOREACH(const InputFile &inputFile, cssFiles) {
-        const QFileInfo &file = inputFile.file;
-        VERBOSE("processing " << file.absoluteFilePath() << "...");
-        success = false;
-        int offset = manager->alloc(sizeof(HbCss::StyleSheet));
-        if (offset >= 0) {
-            styleSheet = new (static_cast<char*>(manager->base()) + offset)
-                         HbCss::StyleSheet(HbMemoryManager::SharedMemory);
-            parser.init(file.absoluteFilePath(), true);
-            success = parser.parse(styleSheet);
-            cssMap.add(inputFile.cacheName, offset);
-            VERBOSE("cache key = " << inputFile.cacheName << "...");
+    while (!cssFiles.isEmpty()) {
+        QMap<QString, QFileInfo>::iterator first = cssFiles.begin();
+        QMap<QString, QFileInfo>::iterator CSSFiles[CSSFileTypeEnd];
+
+        QString widgetName(first.key());
+        if (widgetName.endsWith(ColorCSSEnding)) {
+            //color css file, find the layout css pair.
+            CSSFiles[ColorCSSFile] = first;
+            widgetName.remove(widgetName.size() - ColorCSSEnding.size(),
+                              ColorCSSEnding.size());
+            CSSFiles[CSSFile] = cssFiles.find(widgetName + CSSFileExtension);
+        } else {
+            //layout css file, find the color css pair.
+            CSSFiles[CSSFile] = first;
+            widgetName.remove(widgetName.size() - CSSFileExtension.size(),
+                              CSSFileExtension.size());
+            CSSFiles[ColorCSSFile] = cssFiles.find(widgetName + ColorCSSEnding);
         }
+        int offsets[] = {-1, -1};
+
+        for (int i = 0; i < CSSFileTypeEnd; ++i) {
+            if (CSSFiles[i] != cssFiles.end()) {
+                const QFileInfo &file = CSSFiles[i].value();
+                VERBOSE("processing " << file.absoluteFilePath() << "...");
+                offsets[i] = manager->alloc(sizeof(HbCss::StyleSheet));
+                if (offsets[i] >= 0) {
+                    styleSheet = new (static_cast<char*>(manager->base()) + offsets[i])
+                                 HbCss::StyleSheet(HbMemoryManager::SharedMemory);
+                    parser.init(file.absoluteFilePath(), true);
+                    success = parser.parse(styleSheet);
+                    VERBOSE("cache key = " << CSSFiles[i].key() << "...");
+                }
+                if (success) {
+                    VERBOSELN("ok");
+                } else {
+                    VERBOSELN("failed");
+                    err << "Failed to parse: " << file.absoluteFilePath() << endl;
+                    break;
+                }
+            }
+        }
+
+        const QFileInfo *info = 0;
+        QString tmp;
+        if (CSSFiles[CSSFile] != cssFiles.end()) {
+            tmp = CSSFiles[CSSFile].key();
+            info = &CSSFiles[CSSFile].value();
+        }
+        if (!offsetMap.addWidgetOffsets(widgetName, info, offsets)) {
+            return false;
+        }
+
+        //remove processed files from the map.
+        cssFiles.erase(CSSFiles[ColorCSSFile]);
+        if (!tmp.isEmpty()) {
+            cssFiles.remove(tmp);
+        }
+    }
+    return success;
+}
+
+/*!
+    Parses widgetml file and all the layouts using the info from \a parseInput for a widget,
+    which hash is \a widgetHash, add offsets to \a offsetMap.
+*/
+bool parseWidgetML(HbOffsetMapBuilder &offsetMap,
+                   quint32 widgetHash,
+                   const WidgetMLParseInput &parseInput)
+{
+    HbWidgetLoader loader;
+
+    VERBOSELN("processing: " << parseInput.filename);
+    QFile file(parseInput.filename);
+    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+        VERBOSELN("unable to open file: " << parseInput.filename);
+        return false;
+    }
+    HbWidgetLoader::LayoutDefinition *layoutDef = 0;
+    int layoutDefOffset = -1;
+    bool success = true;
+
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    QList<LayoutItem> layoutInfoList;
+    Q_FOREACH(const CSSLayoutInfo &info, parseInput.layouts) {
+        VERBOSE("layout: " << info.layoutname << ", " << "section: " << info.section << "...");
+
+        layoutDefOffset = manager->alloc(sizeof(HbWidgetLoader::LayoutDefinition));
+        layoutDef = new(static_cast<char *>(manager->base()) + layoutDefOffset)
+            HbWidgetLoader::LayoutDefinition(HbMemoryManager::SharedMemory);
+        success = loader.loadLayoutDefinition(layoutDef, &file, info.layoutname, info.section);
+
         if (success) {
+            layoutInfoList.append(LayoutItem(&info));
+            layoutInfoList.last().offset = layoutDefOffset;
             VERBOSELN("ok");
         } else {
             VERBOSELN("failed");
-            err << "Failed to parse: " << file.absoluteFilePath() << endl;
             break;
         }
+        file.seek(0);
     }
-    if (success) {
-        HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
+    success = offsetMap.addWidgetMLOffsets(parseInput.filename, widgetHash, layoutInfoList);
+    return success;
+}
 
-        // Create shared cache to shared memory.
-        QByteArray data(cssMap.data());
-
-        if (shared->createSharedCache(data.data(), data.size(), cssMap.size())) {
-
-            // Defragment the chunk contents before dumping it in a file
-            int endOffset = HbCssConverterUtils::defragmentChunk();
-
-            if (verboseOn) {
-                HbSharedCache *cache = shared->cache();
-        
-                for (int k=0; k<cache->mOffsetItemCount; ++k) {
-                    HbCss::StyleSheet *sheet = HbMemoryUtils::getAddress<HbCss::StyleSheet>(
-                        HbMemoryManager::SharedMemory, cache->mOffsetItems[k].offset);
-                
-                    QString name(QLatin1String( ((char*)(cache->mOffsetItems)) + cache->mOffsetItems[k].nameOffset));
-
-                    VERBOSE("Cssmap item ");
-                    VERBOSE(k);
-                    VERBOSE("- name: \"");
-                    VERBOSE(name);
-                    VERBOSELN("\"");
-
-                    // Tests the stylesheet offsets and prints info to verbose out
-                    testStyleSheet(sheet);
-                }
+/*!
+    Parse all the widgetmls to shared memory for widget's found in \a offsetMap,
+    store the offsets to \a offsetMap.
+*/
+bool parseWidgetML(HbOffsetMapBuilder &offsetMap)
+{
+    QList<HbBinMakerOffsetItem> itemList = offsetMap.items();
+    Q_FOREACH(const HbBinMakerOffsetItem &item, itemList) {
+        if (item.offsetCSS >= 0) {
+            HbCss::StyleSheet *sheet = HbMemoryUtils::getAddress<HbCss::StyleSheet>(
+                HbMemoryManager::SharedMemory, item.offsetCSS);
+            WidgetMLParseInput file;
+            if (collectLayouts(item.name, sheet, file)) {
+                parseWidgetML(offsetMap, item.widgetHash, file);
             }
+        }
+    }
+    return true;
+}
 
-            VERBOSELN("writing the binary file");
-            QFile binFile(targetFile);
-            if (!binFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-                err << "failed to open target binary file: " << binFile.fileName() << endl;
-                return false;
-            }
-            //int size = shared->size();
-            if (binFile.write(static_cast<char*>(manager->base()), endOffset) >= 0) {
+bool writeCssBinary(const QStringList &inputFiles, const QString &targetFile)
+{
+    HbOffsetMapBuilder offsetMap;
+    if (!(parseCss(inputFiles, offsetMap)
+        && parseWidgetML(offsetMap))) {
+        return false;
+    }
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
+
+    // Create shared cache to shared memory.
+    QByteArray data(offsetMap.result());
+    bool success = false;
+    if (shared->createSharedCache(data.data(), data.size(), offsetMap.size())) {
+        // Defragment the chunk contents before dumping it in a file
+        int endOffset = HbCssConverterUtils::defragmentChunk();
+        if (verboseOn) testCss();
+
+        VERBOSELN("writing the binary file");
+        QFile binFile(targetFile);
+        success = binFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        if (success) {
+            success = (binFile.write(static_cast<char*>(manager->base()), endOffset) >= 0);
+            if (success) {
                 VERBOSELN("Wrote target binary file: " << binFile.fileName());
             } else {
                 err << "failed to write to target binary file: " << binFile.fileName() << endl;
             }
         } else {
-            err << "failed to create shared cache." << endl;
+            err << "failed to open target binary file: " << binFile.fileName() << endl;
         }
+    } else {
+        err << "failed to create shared cache." << endl;
     }
     return success;
 }
@@ -310,6 +470,7 @@ bool writeCssBinary(const QStringList &inputFiles, const QString &targetFile)
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
+    int returnValue = 0;
 
     if(argc < 3) {
         printHelp();
@@ -335,15 +496,18 @@ int main(int argc, char **argv)
         if (targetFile.isEmpty()) {
             err << "target filename needed" << endl << endl;
             printHelp();
+            returnValue = 1;
         } else {
             QString parentDir(QFileInfo(targetFile).absolutePath());
             if (QDir::current().mkpath(parentDir)) {
-                writeCssBinary(inputFiles, targetFile);
+                if (!writeCssBinary(inputFiles, targetFile)) {
+                    returnValue = 3;
+                }
             } else {
                 err << "failed to create path: " << parentDir << endl;
+                returnValue = 2;
             }
         }
     }
-    return 0;
+    return returnValue;
 }
-

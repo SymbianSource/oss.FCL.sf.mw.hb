@@ -28,11 +28,6 @@
 #include "themechangerdefs.h"
 #include "themeselectionlist.h"
 #include <QTextStream>
-#ifdef Q_OS_SYMBIAN
-#include "themeclientsymbian.h"
-#else
-#include "themeclientqt.h"
-#endif
 
 #ifdef THEME_CHANGER_TIMER_LOG
 void debugOutput(QtMsgType type, const char *msg)
@@ -70,15 +65,8 @@ int main(int argc, char *argv[])
     // Includes decorators such as signal strength and battery life indicator.
     HbMainWindow mainWindow;
     
-#ifdef Q_OS_SYMBIAN
-    ThemeClientSymbian* client = new ThemeClientSymbian();
-#else
-    // Create the theme server that does the notifiation to all the QT apps
-    ThemeClientQt* client = new ThemeClientQt();
-#endif
-
     // Show the list of themes available
-    ThemeSelectionList *themelist=new ThemeSelectionList(client);
+    ThemeSelectionList *themelist=new ThemeSelectionList();
     themelist->displayThemes();
     
     mainWindow.addView( themelist );

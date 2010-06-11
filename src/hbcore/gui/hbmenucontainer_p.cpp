@@ -31,8 +31,7 @@
 #include "hbinstance.h"
 #include <hbwidgetfeedback.h>
 #include <QGraphicsSceneMouseEvent>
-#include <QGraphicsLayout>
-#include <QDebug>
+#include <QGraphicsGridLayout>
 
 HbMenuContainerPrivate::HbMenuContainerPrivate(HbMenu *menu) :
         menu(menu), actionManager(0)
@@ -45,12 +44,13 @@ HbMenuContainerPrivate::~HbMenuContainerPrivate()
 void HbMenuContainerPrivate::init()
 {
     Q_Q(HbMenuContainer);
-    mLayout = new QGraphicsLinearLayout(Qt::Vertical, q);
+    mLayout = new QGraphicsGridLayout(q);
     mLayout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
     mLayout->setSpacing(0.0);
 
     mLayout->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     q->setLayout(mLayout);
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 HbMenuContainer::HbMenuContainer(HbMenu *menu,QGraphicsItem *parent):
@@ -98,11 +98,11 @@ void HbMenuContainer::visibleItemsChanged()
 void HbMenuContainer::removeActionItem(QAction *action)
 {
     Q_D(HbMenuContainer);
-    for (int i = 0; d->mItems.count(); i++) {
+    for (int i = 0; i < d->mItems.count(); i++) {
         HbMenuItem *item = d->mItems.at(i);
         if (item->action() == action) {
             d->mItems.removeAt(i);
-            d->mLayout->removeItem(item);
+            reLayout();
             delete item;
             break;
         }
@@ -117,6 +117,32 @@ void HbMenuContainer::delayedLayout()
         if (action->isVisible()) {
             d->mVisibleActions.append(action);            
             addItem(action);
+        }
+    }
+}
+
+/*!
+ Reforms the menu layout when needed, e.g. after an orientation change.
+*/
+void HbMenuContainer::reLayout()
+{
+    Q_D(HbMenuContainer);
+
+    int layoutItems = d->mLayout->count();
+    for ( int i = 0; i < layoutItems; i++ ) {
+        d->mLayout->removeAt(0);
+    }
+
+    int pos = 0;
+    int numCols = (HbMenuPrivate::d_ptr(d->menu))->mNumberOfColumns;
+
+    for ( int i = 0; i < d->mItems.count(); i++ ) {
+        int row = pos / numCols;
+        int col = pos % numCols;
+
+        if (!d->mItems.at(i)->action()->isSeparator()) {
+            d->mLayout->addItem(d->mItems.at(i), row, col, Qt::AlignCenter);
+            pos++;
         }
     }
 }
@@ -142,12 +168,8 @@ void HbMenuContainer::addItem(QAction *action, HbMenuItem *item)
     if (castedAction && castedAction->menu()) {
         HbMenuPrivate::d_ptr(castedAction->menu())->setSubMenuItem(item);
     }
-    /* Workaround for layout flushing problem */
-    if (item->action()->isSeparator())
-        item->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    /* Workaround ends */
     d->mItems.insert(pos, item);
-    d->mLayout->insertItem(pos, item);    
+    reLayout();
 }
 
 //this is called when an existing items visibility has changed.
@@ -163,7 +185,7 @@ void HbMenuContainer::updateActionItem(QAction *action)
                 d->mItems.removeAt(i);                
                 item->recycleItem();
                 item->setVisible(false);
-                d->mLayout->removeItem(item);
+                reLayout();
                 d->mBufferItems.insert(action, item);
             }
         }
@@ -220,6 +242,7 @@ HbMenuListView::HbMenuListView(HbMenu *menu,QGraphicsItem *parent)
     d->mContainer = new HbMenuContainer(menu, this);
     setContentWidget(d->mContainer);
     setScrollingStyle(HbScrollArea::Pan);
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 bool HbMenuListView::scrollByAmount(const QPointF& delta)
@@ -280,149 +303,6 @@ void HbMenuListView::setCurrentItem(HbAction *action)
     }
 }
 
-/*!
-    \reimp
-*/
-void HbMenuListView::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-#ifdef HB_GESTURE_FW
-    Q_UNUSED(event);
-    HbScrollArea::mousePressEvent(event);
-    event->accept();
-#else
-    Q_D(HbMenuListView);
-    d->mHitItem = itemAt(event->scenePos());
-    if (d->mHitItem){
-        Hb::InteractionModifiers modifiers = 0;
-        if (d->mIsScrolling) {
-            modifiers |= Hb::ModifierScrolling;
-            d->mWasScrolling = true;
-        }
-        HbWidgetFeedback::triggered(d->mHitItem, Hb::InstantPressed, modifiers);
-        if (!d->mWasScrolling){
-            ensureVisible(d->mHitItem->pos());
-            if(!isFocusable(d->mHitItem->action()))
-                d->mHitItem = 0;
-            else
-                d->mHitItem->pressStateChanged(true);
-        }
-        else
-            d->mHitItem = 0;
-    }
-    HbScrollArea::mousePressEvent(event);
-    event->accept();
-#endif
-}
-
-/*!
-    \reimp
-*/
-void HbMenuListView::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-#ifdef HB_GESTURE_FW
-    HbScrollArea::mouseReleaseEvent(event);    
-#else
-    Q_D(HbMenuListView);
-
-    HbScrollArea::mouseReleaseEvent(event);
-
-    HbMenuItem* hitItem = itemAt(event->scenePos());
-    if (hitItem){
-        Hb::InteractionModifiers modifiers = 0;
-        if (d->mWasScrolling) {
-            modifiers |= Hb::ModifierScrolling;
-            d->mWasScrolling = false;
-        }
-        HbWidgetFeedback::triggered(hitItem, Hb::InstantReleased, modifiers);
-    }
-    if (d->mHitItem){
-        d->mHitItem->pressStateChanged(false);
-        if (d->mHitItem == hitItem) {
-            d->mCurrentItem = d->mHitItem;
-            d->mCurrentIndex = d->mContainer->items().indexOf(d->mCurrentItem);
-            HbMenuPrivate::d_ptr(d->mCurrentItem->menu())->_q_triggerAction(d->mCurrentItem);
-
-        }
-        d->mHitItem = 0;
-    }
-    event->accept();
-#endif
-}
-
-HbMenuItem *HbMenuListView::itemAt(const QPointF& position) const
-{
-    HbMenuItem *hitItem = 0;
-    const QList<QGraphicsItem *> items = scene()->items(position);
-
-    const int count(items.count());
-    for (int current = 0; current < count; ++current) {
-        QGraphicsItem *item = items.at(current);
-        if (item && item->isWidget()) {
-            QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(item);
-
-            hitItem = qobject_cast<HbMenuItem *>(widget);
-            // Workaround for QT bug which is not returning all the scene items properly
-            if (!hitItem) {
-                QGraphicsItem *parent = widget->parentItem();
-                while (parent && parent->isWidget()) {
-                    hitItem = qobject_cast<HbMenuItem *>(static_cast<QGraphicsWidget*>(parent));
-                    if (hitItem)
-                        break;
-                    parent = parent->parentItem();
-                }
-            }
-            //workaround ends
-        }
-        if (hitItem)
-            break;
-    }    
-    return hitItem;
-}
-
-/*!
-    \reimp
-*/
-void HbMenuListView::upGesture(int value)
-{
-    Q_D(HbMenuListView);
-
-    if (d->mHitItem) {
-        d->mHitItem->pressStateChanged(false);
-        d->mHitItem = 0;
-    }
-
-    HbScrollArea::upGesture(value);
-}
-
-/*!
-    \reimp
-*/
-void HbMenuListView::downGesture(int value)
-{
-    Q_D(HbMenuListView);
-
-    if (d->mHitItem) {
-        d->mHitItem->pressStateChanged(false);
-        d->mHitItem = 0;
-    }
-
-    HbScrollArea::downGesture(value);
-}
-
-/*!
-    \reimp
-*/
-void HbMenuListView::panGesture(const QPointF &point)
-{
-    Q_D(HbMenuListView);
-
-    if (d->mHitItem) {
-        d->mHitItem->pressStateChanged(false);
-        d->mHitItem = 0;
-    }
-    HbScrollArea::panGesture(point);
-}
-
 bool HbMenuListView::isFocusable(QAction *action)// krazy:exclude=qclasses
 {
     return action && action->isVisible() && !action->isSeparator() && action->isEnabled();
@@ -430,8 +310,15 @@ bool HbMenuListView::isFocusable(QAction *action)// krazy:exclude=qclasses
 
 void HbMenuListView::doDelayedLayout()
 {
-        Q_D(HbMenuListView);
-        d->mContainer->delayedLayout();
+    Q_D(HbMenuListView);
+    d->mContainer->delayedLayout();
+}
+
+void HbMenuListView::updateContainer()
+{
+    Q_D(HbMenuListView);
+    d->mContainer->reLayout();
+    updateGeometry();
 }
 
 /*!
@@ -453,60 +340,8 @@ QVariant HbMenuListView::itemChange(GraphicsItemChange change, const QVariant &v
 
 void HbMenuListView::gestureEvent(QGestureEvent *event)
 {
-    Q_D(HbMenuListView);
     HbScrollArea::gestureEvent(event);
-    //WORKAROUND for bug scene doesn't return all the items
-    if(QTapGesture *gesture = static_cast<QTapGesture *>(event->gesture(Qt::TapGesture))) {
-        // Stop scrolling on tap
-        if (gesture->state() == Qt::GestureStarted) {
-            event->accept();
-            d->mHitItem = itemAt(gesture->position());
-            if (d->mHitItem){
-                Hb::InteractionModifiers modifiers = 0;
-                if (d->mIsScrolling) {
-                    modifiers |= Hb::ModifierScrolling;
-                    d->mWasScrolling = true;
-                }
-                HbWidgetFeedback::triggered(d->mHitItem, Hb::InstantPressed, modifiers);
-                if (!d->mWasScrolling){
-                    ensureVisible(d->mHitItem->pos());
-                    if(!isFocusable(d->mHitItem->action()))
-                        d->mHitItem = 0;
-                    else
-                        d->mHitItem->pressStateChanged(true);
-                }
-                else
-                    d->mHitItem = 0;
-            }
-        } else if (gesture->state() == Qt::GestureFinished) {
 
-            HbMenuItem* hitItem = itemAt(gesture->position());
-            if (hitItem){
-                Hb::InteractionModifiers modifiers = 0;
-                if (d->mWasScrolling) {
-                    modifiers |= Hb::ModifierScrolling;
-                    d->mWasScrolling = false;
-                }
-                HbWidgetFeedback::triggered(hitItem, Hb::InstantReleased, modifiers);
-            }
-            if (d->mHitItem){
-                d->mHitItem->pressStateChanged(false);
-                if (d->mHitItem == hitItem) {
-                    d->mCurrentItem = d->mHitItem;
-                    d->mCurrentIndex = d->mContainer->items().indexOf(d->mCurrentItem);
-                    HbMenuPrivate::d_ptr(d->mCurrentItem->menu())->_q_triggerAction(d->mCurrentItem);
-                }
-                d->mHitItem = 0;
-            }
-        } else if (gesture->state() == Qt::GestureCanceled) {
-            if (d->mHitItem) {
-                d->mHitItem->pressStateChanged(false);
-                d->mHitItem = 0;
-            }
-        }
-    }
-    //WORKAROUND
-    
     if (QPanGesture *panGesture = qobject_cast<QPanGesture*>(event->gesture(Qt::PanGesture))) {
         event->accept(panGesture);
     }

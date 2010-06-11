@@ -114,14 +114,17 @@ bool HbInputContextProxy::filterEvent(const QEvent* event)
             setInputFrameworkFocus(0);
             return true;            
         } else if (event->type() == QEvent::RequestSoftwareInputPanel) {           
-            if(QWidget * focusedWidget =  qApp->focusWidget()) {              
+            if(QWidget * focusedWidget =  qApp->focusWidget()) {
                 // see if the focused widget is graphics view, if so get the focused graphics item in the view
                 // and acivate inputmethod for the focused graphics item
-                if(QGraphicsView * graphicsView = qobject_cast<QGraphicsView*>(focusedWidget)) {
-                    if(QGraphicsScene * scene = graphicsView->scene()) {
-                        if(QGraphicsItem * focusingWidget = scene->focusItem()) {
-                            if (focusingWidget->isWidget()) {
-                                setInputFrameworkFocus(static_cast<QGraphicsWidget*>(focusingWidget));
+                if (QGraphicsView * graphicsView = qobject_cast<QGraphicsView*>(focusedWidget)) {
+                    if (QGraphicsScene * scene = graphicsView->scene()) {
+                        if (QGraphicsItem * fItem = scene->focusItem()) {
+                            QGraphicsProxyWidget *proxy  = qgraphicsitem_cast<QGraphicsProxyWidget *>(fItem);
+                            if (proxy) {    
+                                setInputFrameworkFocus(proxy->widget()->focusWidget());
+                            } else {
+                                setInputFrameworkFocus(static_cast<QGraphicsWidget*>(fItem));
                             }
                         }
                     }

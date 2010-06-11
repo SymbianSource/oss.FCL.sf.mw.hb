@@ -98,6 +98,7 @@ void HbScrollBarPrivate::init()
     Q_Q(HbScrollBar);
     q->grabGesture(Qt::PanGesture);
     q->grabGesture(Qt::TapGesture);
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 void HbScrollBarPrivate::createPrimitives()

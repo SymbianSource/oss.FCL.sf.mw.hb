@@ -31,7 +31,7 @@ class HbStyleParametersPrivate
 public:
     HbStyleParametersPrivate();
 
-    QList<QString> params;
+    QList<QString> keys;
     QList<QVariant> values;
 };
 HbStyleParametersPrivate::HbStyleParametersPrivate()
@@ -72,7 +72,7 @@ HbStyleParameters::~HbStyleParameters()
 */
 int HbStyleParameters::count()
 {
-    return d_ptr->params.count();
+    return d_ptr->keys.count();
 }
 
 /*!
@@ -80,23 +80,31 @@ int HbStyleParameters::count()
 
     Returns the index of the parameter with given name.
 
-    \param param name of the parameter
+    \param key name of the parameter
     \return index of given parameter
 */
-int HbStyleParameters::indexOf( const QString& param )
+int HbStyleParameters::indexOf( const QString& key )
 {
-    return d_ptr->params.indexOf(param);
+    return d_ptr->keys.indexOf(key);
 }
 
 /*!
     Returns the name of the parameter at given index.
 
     \param index position of the parameter
-    \return name of the parameter
+    \return key name of the parameter
+*/
+QString HbStyleParameters::key( int index )
+{
+    return d_ptr->keys.at(index);
+}
+
+/*!
+    Equals to key(index).
 */
 QString HbStyleParameters::parameter( int index )
 {
-    return d_ptr->params.at(index);
+    return key(index);
 }
 
 /*!
@@ -113,14 +121,14 @@ QVariant HbStyleParameters::value( int index )
 /*!
     Returns the value of the parameter with given name.
 
-    This is a convenience method. Equals to calling value(indexOf(param)).
+    This is a convenience method. Equals to calling value(indexOf(key)).
 
-    \param param name of the parameter
+    \param key name of the parameter
     \return value of the parameter
 */
-QVariant HbStyleParameters::value( const QString &param )
+QVariant HbStyleParameters::value( const QString &key )
 {
-    int index = indexOf(param);
+    int index = indexOf(key);
     if ( index >= 0 && index < d_ptr->values.count() )
         return value(index);
 
@@ -154,12 +162,12 @@ void HbStyleParameters::setValue( const QString &param, const QVariant &value )
 /*!
     Add a new parameter.
 
-    \param param name of the parameter to be added
+    \param key name of the parameter to be added
     \param value default value
 */
-void HbStyleParameters::addParameter( const QString &param, const QVariant &value )
+void HbStyleParameters::addParameter( const QString &key, const QVariant &value )
 {
-    d_ptr->params.append(param);
+    d_ptr->keys.append(key);
     d_ptr->values.append(value);
 }
 
@@ -170,16 +178,16 @@ void HbStyleParameters::addParameter( const QString &param, const QVariant &valu
 */
 void HbStyleParameters::removeAt( int index )
 {
-    d_ptr->params.removeAt(index);
+    d_ptr->keys.removeAt(index);
     d_ptr->values.removeAt(index);
 }
 
 /*!
     \internal
 */
-QList<QString> &HbStyleParameters::params()
+QList<QString> &HbStyleParameters::keys()
 {
-    return d_ptr->params;
+    return d_ptr->keys;
 }
 
 /*!

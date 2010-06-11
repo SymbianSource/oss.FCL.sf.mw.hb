@@ -361,11 +361,15 @@ void CHbDeviceMessageBoxPrivate::SendToServerL(bool aShow)
     if (aShow) {
         mReceivedButton = CHbDeviceMessageBoxSymbian::EInvalidButton;
         error = mDeviceDialog->Show(KDeviceDialogType, *parameters, this);
-        User::LeaveIfError(error);
+        if (error != KErrNone) {
+            User::Leave(error); // error can be positive or negative
+        }
         mShowCalled = true;
     } else {
         error = mDeviceDialog->Update(*parameters);
-        User::LeaveIfError(error);
+        if (error != KErrNone) {
+            User::Leave(error); // error can be positive or negative
+        }
     }
     CleanupStack::PopAndDestroy(); // parameters
 }

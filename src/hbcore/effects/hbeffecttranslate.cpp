@@ -34,8 +34,8 @@ HbEffectTranslateAnimation::HbEffectTranslateAnimation(
     HbEffectGroup *group,
     HbEffectTranslate *effect,
     int duration) :
-        HbEffectAnimation(group),
-        effect(effect)
+    HbEffectAnimation(group),
+    effect(effect)
 {
     setDuration(duration);
 }
@@ -65,9 +65,9 @@ HbEffectTranslate::HbEffectTranslate(
     const QList<HbEffectFxmlParamData> &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectAbstract(0, item, group),
-        mAnimationX(0),
-        mAnimationY(0)
+    HbEffectAbstract(0, item, group),
+    mAnimationX(0),
+    mAnimationY(0)
 {
     // Default values if something is not passed in FXML
     int durationX = 0;
@@ -76,43 +76,42 @@ HbEffectTranslate::HbEffectTranslate(
     QEasingCurve curveShapeX = QEasingCurve::Linear;
     QEasingCurve curveShapeY = QEasingCurve::Linear;
 
-    const HbEffectFxmlParamData* paramX = 0;
-    const HbEffectFxmlParamData* paramY = 0;
+    const HbEffectFxmlParamData *paramX = 0;
+    const HbEffectFxmlParamData *paramY = 0;
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, data) {
-	    if (param.name() == FXML_KEYWORD_TRANSLATION_X) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, data) {
+        if (param.name() == FXML_KEYWORD_TRANSLATION_X) {
             mKeyFrameListX = param.keyFrames();
 
             HbEffectUtils::resolveFxmlDuration(durationX, param);
             HbEffectUtils::resolveFxmlCurveShape(curveShapeX, param);
-			mStartXRef = param.startRef();
-			mEndXRef = param.endRef();
-			mStartX = param.getAttribute(FXML_KEYWORD_START);
-			mEndX = param.getAttribute(FXML_KEYWORD_END);
+            mStartXRef = param.startRef();
+            mEndXRef = param.endRef();
+            mStartX = param.getAttribute(FXML_KEYWORD_START);
+            mEndX = param.getAttribute(FXML_KEYWORD_END);
 
             // Only if "start ref" and "end ref" are not used, read parameter's "ref" attribute
             if (mStartXRef.isEmpty() && mEndXRef.isEmpty()) {
                 mParamRefX = param.getAttribute(FXML_PARAM_REF);
             }
             paramX = &param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_TRANSLATION_Y) {
+        } else if (param.name() == FXML_KEYWORD_TRANSLATION_Y) {
             mKeyFrameListY = param.keyFrames();
 
             HbEffectUtils::resolveFxmlDuration(durationY, param);
             HbEffectUtils::resolveFxmlCurveShape(curveShapeY, param);
-			mStartYRef = param.startRef();
-			mEndYRef = param.endRef();
-			mStartY = param.getAttribute(FXML_KEYWORD_START);
-			mEndY = param.getAttribute(FXML_KEYWORD_END);
+            mStartYRef = param.startRef();
+            mEndYRef = param.endRef();
+            mStartY = param.getAttribute(FXML_KEYWORD_START);
+            mEndY = param.getAttribute(FXML_KEYWORD_END);
 
             // Only if "start ref" and "end ref" are not used, read parameter's "ref" attribute
             if (mStartYRef.isEmpty() && mEndYRef.isEmpty()) {
                 mParamRefY = param.getAttribute(FXML_PARAM_REF);
             }
             paramY = &param;
-	    }
+        }
     }
 
     if (durationX > 0) {
@@ -130,7 +129,7 @@ HbEffectTranslate::HbEffectTranslate(
 }
 
 /*  Deletes the effect and rewinds the animation so that next animation can start,
-    rewind is necessary as the general use case is that the effect is restarted before 
+    rewind is necessary as the general use case is that the effect is restarted before
     being complete, in which case the rewind would transform the item and prepare for
     the next effect,otherwise would result in flicker.
 */
@@ -161,17 +160,17 @@ void HbEffectTranslate::init()
 
     // StartX
     qreal value = HbEffectUtils::resolveFxmlRef(
-        mStartXRef, mStartX, &valueOk, item(), HbEffectUtils::Position, extRect);
+                      mStartXRef, mStartX, &valueOk, item(), HbEffectUtils::Position, extRect);
     if (valueOk) {
         mStartXValue = value;
     } else {
         // Failed to resolve parameters, use item's current position.
         mStartXValue = item()->pos().x();
     }
-    
+
     // StartY
     value = HbEffectUtils::resolveFxmlRef(
-        mStartYRef, mStartY, &valueOk, item(), HbEffectUtils::Position, extRect);
+                mStartYRef, mStartY, &valueOk, item(), HbEffectUtils::Position, extRect);
     if (valueOk) {
         mStartYValue = value;
     } else {
@@ -181,7 +180,7 @@ void HbEffectTranslate::init()
 
     // EndX
     value = HbEffectUtils::resolveFxmlRef(
-        mEndXRef, mEndX, &valueOk, item(), HbEffectUtils::Position, extRect);
+                mEndXRef, mEndX, &valueOk, item(), HbEffectUtils::Position, extRect);
     if (valueOk) {
         mEndXValue = value;
     } else {
@@ -191,7 +190,7 @@ void HbEffectTranslate::init()
 
     // EndY
     value = HbEffectUtils::resolveFxmlRef(
-        mEndYRef, mEndY, &valueOk, item(), HbEffectUtils::Position, extRect);
+                mEndYRef, mEndY, &valueOk, item(), HbEffectUtils::Position, extRect);
     if (valueOk) {
         mEndYValue = value;
     } else {
@@ -207,7 +206,7 @@ void HbEffectTranslate::init()
         bool startEndRefUsed = !mStartXRef.isEmpty() && !mEndXRef.isEmpty();
 
         // Set keyframes in animation
-        foreach(const HbKeyFrame &kf, mKeyFrameListX) {
+        foreach(const HbKeyFrame & kf, mKeyFrameListX) {
             // If start and end references are used,
             // value at given step is (1-c)*startX + c*endX where c is the keyframe coefficient value
             if (startEndRefUsed) {
@@ -216,7 +215,7 @@ void HbEffectTranslate::init()
             // Otherwise c defines the value
             else {
                 value = HbEffectUtils::resolveFxmlRef(
-                    mParamRefX, QString().setNum(kf.val), &valueOk, item(), HbEffectUtils::Position, extRect);
+                            mParamRefX, QString().setNum(kf.val), &valueOk, item(), HbEffectUtils::Position, extRect);
                 if (!valueOk) {
                     // Default to item's position if failed
                     value = item()->pos().x();
@@ -242,7 +241,7 @@ void HbEffectTranslate::init()
         bool startEndRefUsed = !mStartYRef.isEmpty() && !mEndYRef.isEmpty();
 
         // Set keyframes in animation
-        foreach(const HbKeyFrame &kf, mKeyFrameListY) {
+        foreach(const HbKeyFrame & kf, mKeyFrameListY) {
             // If start and end references are used,
             // value at given step is (1-c)*startY + c*endY where c is the keyframe coefficient value
             if (startEndRefUsed) {
@@ -251,7 +250,7 @@ void HbEffectTranslate::init()
             // Otherwise c defines the relative value to parameter's reference
             else {
                 value = HbEffectUtils::resolveFxmlRef(
-                    mParamRefY, QString().setNum(kf.val), &valueOk, item(), HbEffectUtils::Position, extRect);
+                            mParamRefY, QString().setNum(kf.val), &valueOk, item(), HbEffectUtils::Position, extRect);
                 if (!valueOk) {
                     // Default to item's position if failed
                     value = item()->pos().y();
@@ -271,7 +270,7 @@ void HbEffectTranslate::init()
 }
 
 void HbEffectTranslate::setStartState(QTransform &transform)
-{   
+{
     qreal translateX = mAnimationX ? mStartXValue - mAnimationX->originalPos : 0;
     qreal translateY = mAnimationY ? mStartYValue - mAnimationY->originalPos : 0;
 

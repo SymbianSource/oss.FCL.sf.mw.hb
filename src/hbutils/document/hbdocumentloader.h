@@ -40,7 +40,7 @@ QT_END_NAMESPACE
 class HbMainWindow;
 class HbDocumentLoaderPrivate;
 
-class HB_TOOLS_EXPORT HbDocumentLoader
+class HB_UTILS_EXPORT HbDocumentLoader
 {
 public:
     HbDocumentLoader();

@@ -36,7 +36,7 @@ class HB_CORE_PRIVATE_EXPORT HbAnchorArrowDrawer : public HbWidgetBase
     Q_OBJECT
 
 public:
-    HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent = 0);
+    explicit HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent = 0);
     virtual ~HbAnchorArrowDrawer();
 
 public slots:

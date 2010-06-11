@@ -47,169 +47,22 @@
 #define HbDeltaHeight 3.0
 #define MAXUDBWORDSIZE 64
 
-HbInputSpellQuery::HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner) : mOwner(owner), mPrimaryAction(0)
-{
-}
-
-void HbInputSpellQuery::launch(QString editorText)
-{
-    HbInputFocusObject *focusObject = mOwner->mInputMethod->focusObject();
-    if (!focusObject) {
-        return;
-    }
-    mSavedState = mOwner->mInputMethod->inputState();
-    mOwner->mEngine->clear();
-    mOwner->mCanContinuePrediction = true;
-    // close the keypad before showing the spell dialog
-    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
-    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
-        vkbHost->closeKeypad();
-    }
-    setInputMode(HbInputDialog::TextInput);
-    setPromptText(tr("Spell:"));
-    setValue(QVariant(editorText));
-
-    //set the spell dialog position
-    QSizeF  newSize; 
-    QPointF newPos;
-    QRectF newGeometry;
-    getPositionAndSize(newPos, newSize, newGeometry);
-    newGeometry.setHeight(newSize.height());
-    newGeometry.setWidth(newSize.width());
-    setGeometry(newGeometry);
-    setPos(newPos);
-
-    // change the focus to spell dialog editor
-    HbLineEdit *spellEdit = lineEdit();
-    if (spellEdit) {      
-        spellEdit->setMaxLength(MAXUDBWORDSIZE);
-        spellEdit->setSmileysEnabled(false);
-        HbEditorInterface eInt(spellEdit);
-        // we don't want prediction and automatic textcase in spell query dialog
-        spellEdit->setInputMethodHints(spellEdit->inputMethodHints() | Qt::ImhNoPredictiveText | Qt::ImhNoAutoUppercase);
-        eInt.setLastFocusedState(mSavedState);
-        spellEdit->setFocus();
-    }
-    
-    // execute the spell dialog
-    mSavedFocusObject = focusObject->object();
-    mSavedEditorText = editorText;
-    //setAttribute(Qt::WA_DeleteOnClose);
-    mDidHandleFinish = false;
-    open(this,SLOT(dialogClosed(HbAction*)));
-    mPrimaryAction = qobject_cast<HbAction*>(actions().first());
-}
-
-void HbInputSpellQuery::dialogClosed(HbAction* action)
-{
-    //There are multiple dialog closed event received. This will make sure we handle finish
-    //only once
-    if(mDidHandleFinish) {
-        return;
-    } else {
-        mDidHandleFinish = true;
-    }
-	
-    bool isOk = false;
-    bool isCancel = false;
-    bool isExternalClose = false;
-    // action is null when input query is closed externally , for example by calling
-    // HbDialog::close() function.
-    if (action) {
-       isOk = mPrimaryAction == action ? true : false;
-       isCancel = mPrimaryAction != action ? true : false;
-    } else {
-        isExternalClose = true;
-    }
-    
-    //Need to disable effects as asynchronous hide will commit the word otherwise.
-    HbEffect::disable(this);
-    hide();
-    HbEffect::enable(this);  
-	
-    HbInputFocusObject *newFocusObject = new HbInputFocusObject(mSavedFocusObject);
-    newFocusObject->releaseFocus();
-    newFocusObject->setFocus();
-    
-    HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(mSavedFocusObject);
-    
-    if(abstractEdit) {
-        abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
-    }
-    
-    mOwner->mInputMethod->setFocusObject(newFocusObject);
-    mOwner->mInputMethod->focusObject()->editorInterface().setTextCase(mSavedState.textCase());
-    
-    if (isOk) {
-		mOwner->commit(value().toString(), true, true);
-	} else if (isCancel) {
-        //update the editor with pre-edit text
-        mOwner->mEngine->setWord(mSavedEditorText);
-        bool used = false;	 
-        mOwner->mEngine->updateCandidates(mOwner->mBestGuessLocation, used);
-        mOwner->mShowTail = false;
-        mOwner->updateEditor();
-	} else if (isExternalClose) {
-		mOwner->commit(mSavedEditorText, true, true);
-	}
-	
-	mSavedEditorText.clear();
-}
-
-void HbInputSpellQuery::getPositionAndSize(QPointF &pos,QSizeF &size, QRectF &geom)
-{
-    pos = HbInputDialog::pos();
-    size = HbInputDialog::size();
-    geom = HbInputDialog::geometry();
-
-    QRectF cursorRect = mOwner->mInputMethod->focusObject()->microFocus(); // from the top of the screen
-    pos = QPointF(cursorRect.bottomLeft().x(),cursorRect.bottomLeft().y());
-    qreal heightOfTitlebar = 80.0; // Using magic number for now...
-    qreal screenHeight = (qreal)HbDeviceProfile::current().logicalSize().height();
-
-    if( ((screenHeight - cursorRect.bottomLeft().y()) > (cursorRect.y() - heightOfTitlebar))
-        || ((screenHeight - cursorRect.bottomLeft().y() + HbDeltaHeight ) > geom.height()) ) {
-        // this means there is amore space below inline text than at the top or we can fit spell Dialog
-        // below inline text
-        pos.setY(cursorRect.bottomLeft().y() + HbDeltaHeight);
-        size.setHeight(screenHeight - pos.y());
-   } else {
-        // this means there is amore space above inline text than below it
-        pos.setY(cursorRect.y() - geom.height() - HbDeltaHeight);
-        if (pos.y() < heightOfTitlebar) {
-            // this means that spell dialog can not be fit in from top of inline text, we need to trim it
-            pos.setY(heightOfTitlebar);
-        }
-        size.setHeight(cursorRect.y() - heightOfTitlebar - HbDeltaHeight);
-    }
-    if ( size.height() > geom.height()) {
-        size.setHeight(geom.height());
-    }
-    if ((pos.x() + size.width()) > (qreal)HbDeviceProfile::current().logicalSize().width()) {
-        // can not fit spell dialog to the right side of inline edit text.
-        pos.setX((qreal)HbDeviceProfile::current().logicalSize().width()- size.width());
-    }
-}
-
 HbInputPrediction12KeyHandlerPrivate::HbInputPrediction12KeyHandlerPrivate()
 :mLastKey(0),
 mButtonDown(false),
 mCurrentChar(0),
 mLongPressHappened(false),
-mShiftKeyDoubleTap(false),
-mInputSpellQuery(NULL)
+mShiftKeyDoubleTap(false)
 {
 }
 
 HbInputPrediction12KeyHandlerPrivate::~HbInputPrediction12KeyHandlerPrivate()
 {
-    delete mInputSpellQuery;
-	mInputSpellQuery = 0;
 }
 
 void HbInputPrediction12KeyHandlerPrivate::chopQMarkAndUpdateEditor()
 {
-    if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {	
+    if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {
         (*mCandidates)[mBestGuessLocation].chop(1);
         updateEditor();
         mCanContinuePrediction = true;
@@ -230,13 +83,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
 
     if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
         if (buttonId == HbInputButton::ButtonKeyCodeAsterisk) {
-            if (!mCanContinuePrediction) {
-                mInputMethod->switchMode(buttonId);
-            } else {
-                //Remove the "?" mark if present
-                chopQMarkAndUpdateEditor();
-                mInputMethod->selectSpecialCharacterTableMode();
-            }
+            //Remove the "?" mark if present
+            chopQMarkAndUpdateEditor();
+            q->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
+            mInputMethod->selectSpecialCharacterTableMode();
             mLongPressHappened = true;
         } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
             mInputMethod->switchMode(HbInputButton::ButtonKeyCodeShift);
@@ -257,10 +107,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
                 deleteOneCharacter();
                 mLongPressHappened = true;
             }
-			if (buttonId != HbInputButton::ButtonKeyCodeDelete) {
-				q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
+            if (buttonId != HbInputButton::ButtonKeyCodeDelete) {
+                q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
                 mLongPressHappened = true;
-			}
+            }
         }
 
         if (mLongPressHappened) {
@@ -269,7 +119,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
         }
     }
 
-    if (buttonId == HbInputButton::ButtonKeyCodeShift) {		
+    if (buttonId == HbInputButton::ButtonKeyCodeShift) {
         // if we get a second consequtive shift key press, 
         // we want to handle it in buttonRelease
         if (mTimer->isActive() && (mLastKey == buttonId)){
@@ -309,23 +159,23 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         return true;
     } 
     /* Behavior of Short Press of Asterisk Key when in inline editing state 
-		- Should launch Candidate List if we can continue with prediction i.e. "?" is not displayed
-		- Should launch Spell Query Dialog if we cannot continue with prediction 
-	- Behavior of Short Press of Asterisk Key when not in inline editing state 
-		- Should launch SCT
-	*/
+        - Should launch Candidate List if we can continue with prediction i.e. "?" is not displayed
+        - Should launch Spell Query Dialog if we cannot continue with prediction 
+    - Behavior of Short Press of Asterisk Key when not in inline editing state 
+        - Should launch SCT
+    */
     else if (buttonId == HbInputButton::ButtonKeyCodeAsterisk ) {
-		if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {			
+        if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {			
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);
             updateEditor();
-            q->processCustomWord((*mCandidates)[mBestGuessLocation]);
+            q->launchSpellQueryDialog();
             mCanContinuePrediction = true;
-		}
-		else
-			mInputMethod->starKeySelected();
+        } else {
+            mInputMethod->starKeySelected();
+        }
         return true;
-    }	
+    }
     else if (buttonId == HbInputButton::ButtonKeyCodeEnter) {
         mInputMethod->closeKeypad();
         return true;
@@ -336,14 +186,14 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
             HbInputSettingProxy::instance()->togglePrediction();
         } else {
             if (mShiftKeyDoubleTap) {
-                mTimer->stop(); 
-                mShiftKeyDoubleTap = false;	
-                //mShowTail = false;      
+                mTimer->stop();
+                mShiftKeyDoubleTap = false;
+                //mShowTail = false;
                 if (HbInputSettingProxy::instance()->globalInputLanguage()== mInputMethod->inputState().language()) {
                     // in latin variants , double tap of shift key toggles the prediction status	
                     // revert back to the old case as this is a double tap 
                     // (the case was changed on the single tap)
-                    updateTextCase();				 
+                    updateTextCase();
                     q->togglePrediction();
                 } else {
                     // if the global language is different from the input mode language, we should 
@@ -352,7 +202,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
                     // to chinese input mode from latin input mode
                     HbInputState rootState;
                     mInputMethod->editorRootState(rootState);
-                    mInputMethod->activateState(rootState); 		
+                    mInputMethod->activateState(rootState);
                 }
             } else {
                 updateTextCase();
@@ -370,7 +220,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         return true;
     }
 
-    // text input happens on button release		
+    // text input happens on button release
     if (q->HbInputPredictionHandler::filterEvent(keyEvent)) {
         return true;
     }	
@@ -419,7 +269,7 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
     if(!d->mCanContinuePrediction) {
         int eventKey = event->key();
         switch(eventKey) {
-        case Qt::Key_0:        
+        case Qt::Key_0:
         case HbInputButton::ButtonKeyCodeSpace: {
             if(d->mCandidates->size() && focusObject) {
                 //Remove the "?" mark
@@ -439,11 +289,9 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
         case Qt::Key_Backspace:
         case HbInputButton::ButtonKeyCodeDelete:
         case HbInputButton::ButtonKeyCodeEnter:
-		case HbInputButton::ButtonKeyCodeAsterisk:
+        case HbInputButton::ButtonKeyCodeAsterisk:
         case HbInputButton::ButtonKeyCodeControl:
-            break;
-        /* Behavior for other keys i.e. from key1 to key9 - 
-        To start the long press timer as we need to handle long press functionality i.e Enter corresponding number mapped to a key */
+        case HbInputButton::ButtonKeyCodeSymbol:
         case Qt::Key_1:
         case Qt::Key_2:
         case Qt::Key_3:
@@ -452,15 +300,8 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
         case Qt::Key_6:
         case Qt::Key_7:
         case Qt::Key_8:
-        case Qt::Key_9: {
-            if (event->type() == QEvent::KeyRelease) {
-                d->mButtonDown = false;
-            } else {
-                d->mButtonDown = true;			
-                d->mLastKey = event->key();		
-            }
-            return true;
-        }
+        case Qt::Key_9:
+            break;
         //The default behavior for any other key press is just to consume the key event and
         //not to do anything.
         default: {
@@ -511,11 +352,6 @@ bool HbInputPrediction12KeyHandler::actionHandler(HbInputModeAction action)
             HbInputPredictionHandler::actionHandler(HbInputModeActionSetKeypad);
             d->mTimer->stop();
             break;
-		case HbInputModeActionCloseSpellQuery:
-			if (d->mInputSpellQuery) {
-				d->mInputSpellQuery->close();
-		    }
-			break;
         default:
             ret = HbInputPredictionHandler::actionHandler(action);
             break;
@@ -545,15 +381,4 @@ bool HbInputPrediction12KeyHandler::isActive() const
     return d->mEngine != 0;
 }
 
-void HbInputPrediction12KeyHandler::processCustomWord(QString customWord)
-{
-    Q_D(HbInputPrediction12KeyHandler);
-    if (customWord.size()) {
-		if(!d->mInputSpellQuery) {
-			d->mInputSpellQuery = new HbInputSpellQuery(d);
-		}
-        d->mInputSpellQuery->launch(customWord);
-    }
-    return;	  
-}
 //EOF

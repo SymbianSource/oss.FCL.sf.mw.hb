@@ -42,32 +42,9 @@
 #include "hbinputlanguage.h"
 #include "hbinpututils.h"
 
-#define HB_DIGIT_ARABIC_INDIC_START_VALUE 0x0660
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE   0x0660
+#define HB_DIGIT_EASTERN_ARABIC_START_VALUE 0x06F0
 
-
-/// @cond
-
-static bool usesLatinDigits(QLocale::Language language, HbInputDigitType digitType)
-{
-    if (digitType == HbDigitTypeDevanagari) {
-        return false;
-    }
-    if (language == QLocale::Urdu || language == QLocale::Persian) {
-        // Latin digits are used in Persian and Urdu ITU-T keypads
-        if (HbInputSettingProxy::instance()->activeKeyboard() == HbKeyboardVirtual12Key) {
-            return true;
-        } else {
-            return false;
-        }	 
-    }
-    if (language == QLocale::Arabic && digitType == HbDigitTypeArabicIndic) {
-        return false;
-    }
-
-    return true;
-}
-
-/// @endcond
 
 /*!
 \class HbInputUtils
@@ -92,9 +69,11 @@ QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
                                                        const HbInputLanguage language,
                                                        const HbInputDigitType digitType)
 {
+    Q_UNUSED(language);
+	
     if (key) {
         QString chars = key->characters(HbModifierNone);
-        if (usesLatinDigits(language.language(), digitType)) {
+        if (digitType == HbDigitTypeLatin) {
             for (int i = 0; i < chars.length(); i++) {
                 if (chars.at(i) >= '0' && chars.at(i) <= '9') {
                     return chars.at(i);
@@ -110,13 +89,14 @@ QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
             for (int i = 0; i < chars.length(); i++) {
                 if (chars.at(i) >= '0' && chars.at(i) <= '9') {
                     return HB_DIGIT_ARABIC_INDIC_START_VALUE +
-						(chars.at(i).toAscii() - '0');
+						(chars.at(i).unicode() - '0');
                 }
             }
         } else if (digitType == HbDigitTypeEasternArabic) {
             for (int i = 0; i < chars.length(); i++) {
-                if (chars.at(i) >= 0x06F0 && chars.at(i) <= 0x06F9) {
-                    return chars.at(i);
+                if (chars.at(i) >= '0' && chars.at(i) <= '9') {
+                    return HB_DIGIT_EASTERN_ARABIC_START_VALUE +
+						(chars.at(i).unicode() - '0');
                 }
             }
         }
@@ -255,11 +235,35 @@ HbInputDigitType HbInputUtils::inputDigitType(HbInputLanguage language)
         case QLocale::Arabic:
             digitType = HbDigitTypeArabicIndic;
             break;
+        case QLocale::Persian:
+		case QLocale::Urdu:	
+            digitType = HbDigitTypeEasternArabic;
+            break;
+        case QLocale::Hindi:
+			digitType = HbDigitTypeDevanagari;
+			break;
         default:
             digitType = HbDigitTypeLatin;
 			break;		
     }
     return digitType;
 }
+
+
+/*!
+Returns the proxy widget of the embedded widget in a graphics view ;
+if widget does not have the proxy widget then it returns the proxy widget of its window.
+ otherwise returns 0.
+*/
+QGraphicsProxyWidget* HbInputUtils::graphicsProxyWidget(const QWidget* w)
+{
+    QGraphicsProxyWidget *pw = w ? w->graphicsProxyWidget() : 0;
+    if (w && !pw) {
+        pw = w->window() ? w->window()->graphicsProxyWidget() : w->graphicsProxyWidget();
+    }
+    return pw;
+}
+
+
 // End of file
 

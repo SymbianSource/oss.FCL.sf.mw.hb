@@ -44,8 +44,8 @@
 #endif
 
 HbEffectGroup::HbEffectGroup(
-    const QString &effectEventType, 
-    QGraphicsItem *registrationItem, 
+    const QString &effectEventType,
+    QGraphicsItem *registrationItem,
     QGraphicsItem *targetItem,
     const QString &itemType)
     : mRegistrationItem(registrationItem),
@@ -133,7 +133,7 @@ void HbEffectGroup::fixEffectOrder()
             if (effect->name() == HB_EFFECT_NAME_SCALE) {
                 // Move scale effect second last in the effect list
                 mEffects.takeAt(i);
-                mEffects.insert(mEffects.size()-1, effect);
+                mEffects.insert(mEffects.size() - 1, effect);
             }
         }
 
@@ -148,18 +148,20 @@ void HbEffectGroup::setObserver(QObject *observer, const QString &effectFinished
 
 void HbEffectGroup::updateItemTransform()
 {
-    QGraphicsView *gv(0); 
+    QGraphicsView *gv(0);
     // support for graphics view transforms
     if (mTargetItem->type() == HbGVWrapperItemType) {
-        HbGVWrapperItem *gvw = static_cast<HbGVWrapperItem*>(mTargetItem);
-        if (gvw)
+        HbGVWrapperItem *gvw = static_cast<HbGVWrapperItem *>(mTargetItem);
+        if (gvw) {
             gv = gvw->mainWindow();
+        }
     }
     QTransform transform;
 
-    foreach (HbEffectAbstract *effect, mEffects) {
-        if (effect)
+    foreach(HbEffectAbstract * effect, mEffects) {
+        if (effect) {
             effect->updateItemTransform(transform);
+        }
     }
     if (!gv) {
         mTargetItem->setTransform(transform);
@@ -180,7 +182,7 @@ void HbEffectGroup::setDirty(bool dirty)
 
 int HbEffectGroup::effectCount() const
 {
-	return mEffects.count();
+    return mEffects.count();
 }
 
 bool HbEffectGroup::isRunning() const
@@ -200,14 +202,14 @@ bool HbEffectGroup::isLooping() const
 
 void HbEffectGroup::pause()
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         effect->pause();
     }
 }
 
 void HbEffectGroup::resume()
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         effect->resume();
     }
 }
@@ -303,7 +305,7 @@ void HbEffectGroup::startAll()
     // First resolve parameters and set the start states for all the effects.
     // This is done before starting the effect animations to avoid screen flickering.
     QTransform transform;
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         // Resolve parameters etc.
         effect->init();
         if (effect->interval() == 0) {
@@ -329,7 +331,7 @@ void HbEffectGroup::startAll()
     mTargetItemHidden = false;
 
     if (mEffects.empty()) {
-        // No effect exists but user wants notification when effect finishes. 
+        // No effect exists but user wants notification when effect finishes.
         // Let the user do whatever he wanted to do when effect finishes.
         invokeObserver(Hb::EffectNotStarted);
     } else {
@@ -340,7 +342,7 @@ void HbEffectGroup::startAll()
         if (isLooping()) {
             resolveView();
         }
-        foreach (HbEffectAbstract *effect, mEffects) {
+        foreach(HbEffectAbstract * effect, mEffects) {
             // If the starttime is zero, start effect immediately
             if (effect->interval() == 0) {
                 effect->start(); // This may call group's effectFinished if the effect was empty.
@@ -359,7 +361,7 @@ void HbEffectGroup::resolveView()
         if (scene) {
             // Resolve the main window having the same scene that the item belongs to
             QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
-            foreach (const HbMainWindow *window, windowList) {
+            foreach(const HbMainWindow * window, windowList) {
                 if (window->scene() == scene) {
                     mView = window->currentView();
                     break;
@@ -371,7 +373,7 @@ void HbEffectGroup::resolveView()
 
 bool HbEffectGroup::hasTranslateEffect() const
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_TRANSLATE) {
             return true;
         }
@@ -381,7 +383,7 @@ bool HbEffectGroup::hasTranslateEffect() const
 
 bool HbEffectGroup::hasRotateEffect() const
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_ROTATE) {
             return true;
         }
@@ -392,7 +394,7 @@ bool HbEffectGroup::hasRotateEffect() const
 
 bool HbEffectGroup::hasScaleEffect() const
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_SCALE) {
             return true;
         }
@@ -402,7 +404,7 @@ bool HbEffectGroup::hasScaleEffect() const
 
 bool HbEffectGroup::hasOpacityEffect() const
 {
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         if (effect->name() == HB_EFFECT_NAME_OPACITY) {
             return true;
         }
@@ -438,9 +440,9 @@ void HbEffectGroup::doClearEffect(const QTransform *transform, bool opacityEffec
         mTargetItem->setOpacity(1.0f);
     }
     // Reset filter effects.
-#ifdef HB_FILTER_EFFECTS            
+#ifdef HB_FILTER_EFFECTS
     deactivateVgEffect();
-#endif            
+#endif
 }
 
 void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool clearEffect, const QTransform &initialItemTransform)
@@ -452,7 +454,7 @@ void HbEffectGroup::cancelAll(bool sendCallback, bool itemIsValid, bool clearEff
     QTransform transform;
     bool opacityEffectUsed = false;
 
-    foreach (HbEffectAbstract *effect, mEffects) {
+    foreach(HbEffectAbstract * effect, mEffects) {
         if (effect) {
             HbTimer::instance()->unregisterEntry(effect);
             effect->cancel(transform, itemIsValid);
@@ -531,8 +533,8 @@ void HbEffectGroup::invokeObserver(Hb::EffectEvent reason)
         status.userData = mUserData;
         status.reason = reason;
 
-        QObject *observer = mObserver;    
-    
+        QObject *observer = mObserver;
+
         // Clear the observer to make sure it is not sent more than once.
         // This is done before invokeMethod to avoid crash if the callback
         // deletes this object.

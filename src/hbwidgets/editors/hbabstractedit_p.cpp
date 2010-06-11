@@ -248,28 +248,6 @@ void HbAbstractEditPrivate::init()
 
 void HbAbstractEditPrivate::updatePaletteFromTheme()
 {
-    Q_Q(HbAbstractEdit);
-
-    // TODO: remove once these color dissapear from hbcolorgroup.css
-    QColor textColor = HbColorScheme::color("qtc_editor_normal");
-    QColor selectedColor = HbColorScheme::color("qtc_editor_selected");
-    QColor selectedBackground = HbColorScheme::color("qtc_editor_marker_normal");
-    QPalette pal = q->palette();
-
-    if (textColor.isValid()) {
-        pal.setColor(QPalette::Text, textColor);
-    }
-
-    if (selectedColor.isValid()) {
-        pal.setColor(QPalette::HighlightedText, selectedColor);
-    }
-
-    if (selectedBackground.isValid()) {
-        pal.setColor(QPalette::Highlight, selectedBackground);
-    }
-    q->setPalette(pal);
-
-
     // The link color is used from application's palette
     QColor linkColor = HbColorScheme::color("qtc_view_link_normal");
     QColor linkVisitedColor = HbColorScheme::color("qtc_view_visited_normal");
@@ -510,13 +488,12 @@ bool HbAbstractEditPrivate::cursorMoveKeyEvent(QKeyEvent *e)
         return false;
     }
 
-    const QTextCursor oldCursor = cursor;
+    //const QTextCursor oldCursor = cursor;
     bool visualNavigation = cursor.visualNavigation();
     cursor.setVisualNavigation(true);
     cursor.movePosition(op, mode);
     cursor.setVisualNavigation(visualNavigation);
     cursorChanged(HbValidator::CursorChangeFromOperation);
-    repaintOldAndNewSelection(oldCursor);
 
     return true;
 }
@@ -649,14 +626,15 @@ void HbAbstractEditPrivate::_q_selectionChanged()
     Q_Q(HbAbstractEdit);
 
     if (cursor.hasSelection()) {   
-        if (selectionControl) {
-            selectionControl->showHandles();
-            q->update();
-        }      
+        selectionControl = HbSelectionControl::attachEditor(q);
+        selectionControl->showHandles();
     } else if (selectionControl){
         selectionControl->hideHandles();
-        q->update();
     }
+    
+    QTextCursor oldSelection(selectionCursor);
+    selectionCursor = cursor;
+    repaintOldAndNewSelection(oldSelection);
 }
 
 void HbAbstractEditPrivate::_q_scrollStarted()
@@ -761,7 +739,6 @@ void HbAbstractEditPrivate::selectionChanged(bool forceEmitSelectionChanged /*=f
     }
 
     emit q->selectionChanged(selectionCursor, cursor);
-    selectionCursor = cursor;
 }
 
 void HbAbstractEditPrivate::acceptKeyPressEvent(QKeyEvent *event)
@@ -1078,7 +1055,6 @@ void HbAbstractEditPrivate::tapGesture(const QPointF &point)
     if (removeSelection && cursor.hasSelection()) {
         const QTextCursor oldCursor = cursor;
         cursor.clearSelection();
-        repaintOldAndNewSelection(oldCursor);
         emit q->selectionChanged(oldCursor, cursor);
     }
 
@@ -1102,6 +1078,11 @@ void HbAbstractEditPrivate::tapGesture(const QPointF &point)
             updateCurrentCharFormat();
         }
         cursorChanged(HbValidator::CursorChangeFromMouse);
+
+        QString anchor(q->anchorAt(point));
+        if(!anchor.isEmpty()) {
+            emit q->anchorTapped(anchor);
+        }
     }
 }
 

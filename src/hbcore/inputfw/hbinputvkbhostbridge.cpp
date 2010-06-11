@@ -209,6 +209,8 @@ bool HbVkbHostBridge::connectHost(HbVkbHost *host)
 
     if (d->mActiveHost != host) {
         if (d->mActiveHost) {
+		    // Closing the previous vkb hosts keypad so that if necessary can be launched again for that same vkb host.
+            d->mActiveHost->closeKeypad(false);
             disconnect(d->mActiveHost, SIGNAL(aboutToOpen()), this, SIGNAL(aboutToOpen()));
             disconnect(d->mActiveHost, SIGNAL(aboutToClose()), this, SIGNAL(aboutToClose()));
             disconnect(d->mActiveHost, SIGNAL(keypadOpened()), this, SIGNAL(keypadOpened()));

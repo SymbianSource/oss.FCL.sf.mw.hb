@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include <hbglobal.h>
 #include "hbeffectanimation_p.h"
+#include "hbglobal.h"
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbeffectfxmldata_p.h"
@@ -85,7 +85,7 @@ void HbEffectAnimation::updateCurrentValue(const QVariant &value)
 
         if (current > mLoopEnd) {
             int newCurrentTime = mLoopStart + current - mLoopEnd;
-            
+
             // If the calculated new current time is again beyond the loop end,
             // change it to the loop end to avoid infinite recursion.
             if (newCurrentTime > mLoopEnd) {
@@ -109,13 +109,13 @@ void HbEffectAnimation::handleFinished()
     if (looping()) {
         int current = currentTime();
         int newCurrentTime = mLoopStart + current - mLoopEnd;
-        
+
         // If the calculated new current time is again beyond the loop end,
         // change it to the loop end to avoid infinite recursion.
         if (newCurrentTime > mLoopEnd) {
             newCurrentTime = mLoopEnd;
         }
-        
+
         // Temporarily prevent the animation from reacting to update request,
         // because start() causes update with time=0 and the loop might start from a later point of time.
         mInactive = true;

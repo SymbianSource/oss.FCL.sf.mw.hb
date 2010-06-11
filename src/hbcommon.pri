@@ -54,10 +54,19 @@ win32-msvc*:QMAKE_CXXFLAGS += /WX
 # integrity check for public/private headers
 contains(TEMPLATE, .*lib$) {
     for(pubheader, $$list($$lower($$unique(PUBLIC_HEADERS)))) {
-        contains(pubheader, .*_p.h$):warning($$basename(pubheader) is listed in PUBLIC_HEADERS but has a \"_p.h\" suffix.)
+        contains(pubheader, .*_[pr].h$):warning($$basename(pubheader) is listed in PUBLIC_HEADERS but has a \"_[pr].h\" suffix.)
+    }
+    for(restheader, $$list($$lower($$unique(RESTRICTED_HEADERS)))) {
+        !contains(restheader, .*_r.h$):warning($$basename(restheader) is listed in RESTRICTED_HEADERS but has no \"_r.h\" suffix.)
     }
     for(privheader, $$list($$lower($$unique(PRIVATE_HEADERS)))) {
         !contains(privheader, .*_p.h$):warning($$basename(privheader) is listed in PRIVATE_HEADERS but has no \"_p.h\" suffix.)
+    }
+    !isEmpty(INTERNAL_HEADERS) {
+        warning(INTERNAL_HEADERS is obsolete. Use PUBLIC|RESTRICTED|PRIVATE_HEADERS for the following headers:)
+        for(intheader, $$list($$unique(INTERNAL_HEADERS))) {
+            warning($$intheader)
+        }
     }
 }
 

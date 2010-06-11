@@ -502,7 +502,7 @@ qreal HbIndexFeedbackPrivate::textHeight() const
 {
     Q_Q( const HbIndexFeedback );
 
-    qreal retVal;
+    qreal retVal = 0.0;
 
     switch (mIndexFeedbackPolicy) {
         case HbIndexFeedback::IndexFeedbackNone:

@@ -35,33 +35,32 @@
 #include "hbmaskableiconimpl_p.h"
 #include "hbpixmapiconrenderer_p.h"
 
-struct HbPixmapMaskedIcon
-{
+struct HbPixmapMaskedIcon {
     QPixmap    currentPixmap;
 };
 
-HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString& name,
-                                   const QSizeF& keySize,
+HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString &name,
+                                   const QSizeF &keySize,
                                    Qt::AspectRatioMode aspectRatioMode,
                                    QIcon::Mode mode,
                                    bool mirrored,
                                    HbRenderingMode renderMode):
-        HbIconImpl(iconData,
-                   name,
-                   keySize,
-                   aspectRatioMode,
-                   mode,
-                   mirrored,
-                   renderMode),
-        pixmapIconRenderer(0)
+    HbIconImpl(iconData,
+               name,
+               keySize,
+               aspectRatioMode,
+               mode,
+               mirrored,
+               renderMode),
+    pixmapIconRenderer(0)
 {
     retrievePixmapData();
     pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
 }
 
-HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap& pixmap, const QString& name):
-        pixmapData(pixmap),
-        pixmapIconRenderer(0)
+HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap &pixmap, const QString &name):
+    pixmapData(pixmap),
+    pixmapIconRenderer(0)
 {
     pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
     aspectRatioMode = Qt::KeepAspectRatio;
@@ -95,7 +94,7 @@ QSize HbPixmapIconImpl::defaultSize() const
 void HbPixmapIconImpl::retrievePixmapData()
 {
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    QImage image((const uchar*)
+    QImage image((const uchar *)
                  ((char *)manager->base() + sharedIconData.pixmapData.offset),
                  sharedIconData.pixmapData.width, sharedIconData.pixmapData.height,
                  sharedIconData.pixmapData.format);
@@ -106,14 +105,14 @@ void HbPixmapIconImpl::retrievePixmapData()
 
 }
 
-void HbPixmapIconImpl::paint(QPainter* painter,
+void HbPixmapIconImpl::paint(QPainter *painter,
                              const QRectF &rect,
                              Qt::Alignment alignment,
                              const QPainterPath &clipPath,
-                             HbMaskableIconImpl * maskIconData)
+                             HbMaskableIconImpl *maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
-    qDebug() << "HbPixmapIconImpl::paint()-->"<<this->fileName;
+    qDebug() << "HbPixmapIconImpl::paint()-->" << this->fileName;
 #endif
     QPointF topLeft = rect.topLeft();
     QSizeF pixmapSize = pixmapData.size();

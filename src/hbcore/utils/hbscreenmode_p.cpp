@@ -23,42 +23,39 @@
 **
 ****************************************************************************/
 
+#include "hbscreenmode_p.h"
 #include <QSize>
 #include <QSizeF>
 
-#include "hbscreenmode_p.h"
-
-// ======== MEMBER FUNCTIONS ========
-
-class HbScreenModePrivate 
+class HbScreenModePrivate
 {
 public:
     HbScreenModePrivate();
-    
-public: 
+
+public:
     QSize mSize;
     QSizeF mTwipsSize;
     int mRotation; // in degrees. How the device would be moved to see/go into this mode
     QString mStyleName;
-    };
+};
 
 HbScreenModePrivate::HbScreenModePrivate() :
-    mSize(-1,-1),
-    mTwipsSize(-1.0F,-1.0F),
+    mSize(-1, -1),
+    mTwipsSize(-1.0F, -1.0F),
     mRotation(0)
-{   
+{
 }
 
 /*!
     \class HbScreenMode
     \brief Information for a single screen including screen pixel size, rotation, physical size
 
-    A single screen mode represents a physical operation mode of a display. Separate modes may be 
+    A single screen mode represents a physical operation mode of a display. Separate modes may be
     distinguished by a rotation, an opening or closing of a cover, or touch enabled or not
-    
-    This class should be considered as a abstraction of the underlying operating system's way of reporting 
-    its information. 
-        
+
+    This class should be considered as a abstraction of the underlying operating system's way of reporting
+    its information.
+
 */
 
 // ======== MEMBER FUNCTIONS ========
@@ -67,7 +64,7 @@ HbScreenModePrivate::HbScreenModePrivate() :
     Construct a screen mode with invalid information
 */
 HbScreenMode::HbScreenMode()
-:   d_ptr(new HbScreenModePrivate())
+    :   d_ptr(new HbScreenModePrivate())
 {
 }
 
@@ -75,7 +72,7 @@ HbScreenMode::HbScreenMode()
     Copy constructor
 */
 HbScreenMode::HbScreenMode(const HbScreenMode &mode)
-:   d_ptr(new HbScreenModePrivate())
+    :   d_ptr(new HbScreenModePrivate())
 {
     *d_ptr = *mode.d_ptr;
 }

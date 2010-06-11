@@ -46,7 +46,9 @@ public:
     void graphicsMemoryLow();
     void graphicsMemoryGood();
 
-    static HbOogmWatcherPrivate *d_ptr(HbOogmWatcher *w) { return w->d_ptr; }
+    static HbOogmWatcherPrivate *d_ptr(HbOogmWatcher *w) {
+        return w->d_ptr;
+    }
 
     HbOogmWatcher *q_ptr;
     QList<HbIconItem *> mIconItems;

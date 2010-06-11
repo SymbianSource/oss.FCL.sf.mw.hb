@@ -53,6 +53,8 @@ public:
     HbInputMethod* findStateHandler(const HbInputState& state); 
     HbInputMethod* activeMethod() const;
     QList<HbInputLanguage> listInputLanguages() const;
+    bool acceptsState(const HbInputMethod *inputMethod, const HbInputState &state) const;
+    HbInputMethodDescriptor descriptor(const HbInputMethod *inputMethod) const;
 
 public slots:
     void shutdown();

@@ -32,7 +32,6 @@
 #include "hbinputprediction12keyhandler.h"
 
 class HbAction;
-class HbInputSpellQuery;
 
 class HbInputPrediction12KeyHandlerPrivate: public HbInputPredictionHandlerPrivate
 {
@@ -52,24 +51,6 @@ public:
     QChar mCurrentChar;
     bool mLongPressHappened;
     bool mShiftKeyDoubleTap;
-    HbInputSpellQuery *mInputSpellQuery;
 };
 
-class HbInputSpellQuery : public HbInputDialog
-{
-Q_OBJECT
-public:
-    HbInputSpellQuery(HbInputPrediction12KeyHandlerPrivate *owner);
-    void getPositionAndSize(QPointF & pos,QSizeF & size, QRectF &geom);
-    void launch(QString editorText);
-public slots:
-    void dialogClosed(HbAction* action);    
-private:
-    HbInputState mSavedState;
-    bool mDidHandleFinish;
-    QPointer<QObject> mSavedFocusObject;
-    HbInputPrediction12KeyHandlerPrivate* mOwner;
-    QString mSavedEditorText;
-    HbAction *mPrimaryAction;
-};
 #endif //HB_INPUT_PREDICTION_12KEY_HANDLER_PRIVATE

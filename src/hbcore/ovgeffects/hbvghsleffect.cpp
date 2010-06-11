@@ -64,8 +64,9 @@ qreal HbVgHslEffect::hue() const
 void HbVgHslEffect::setHue(qreal hue)
 {
     Q_D(HbVgHslEffect);
-    if (d->hue == hue)
+    if (d->hue == hue) {
         return;
+    }
     d->hue = hue;
     updateEffect();
     emit hueChanged(hue);
@@ -80,8 +81,9 @@ qreal HbVgHslEffect::saturation() const
 void HbVgHslEffect::setSaturation(qreal saturation)
 {
     Q_D(HbVgHslEffect);
-    if (d->saturation == saturation)
+    if (d->saturation == saturation) {
         return;
+    }
     d->saturation = saturation;
     updateEffect();
     emit saturationChanged(saturation);
@@ -96,8 +98,9 @@ qreal HbVgHslEffect::lightness() const
 void HbVgHslEffect::setLightness(qreal lightness)
 {
     Q_D(HbVgHslEffect);
-    if (d->lightness == lightness)
+    if (d->lightness == lightness) {
         return;
+    }
     d->lightness = lightness;
     updateEffect();
     emit lightnessChanged(lightness);
@@ -118,28 +121,28 @@ QRectF HbVgHslEffect::boundingRectFor(const QRectF &rect) const
 #ifdef HB_EFFECTS_OPENVG
 
 inline void getSaturationRotationMatrix(VGfloat *effectMatrix, VGfloat opacity,
-                                        VGfloat saturation, VGfloat angle) 
+                                        VGfloat saturation, VGfloat angle)
 {
-    const VGfloat sa = saturation;            
+    const VGfloat sa = saturation;
     const VGfloat as = 1.0f - saturation;
-    
+
     const VGfloat o = opacity;
     const VGfloat ao = 1.0f - o;
-    
+
     const VGfloat c = qCos(angle);
     const VGfloat s = qSin(angle);
-    
-    effectMatrix[0] = o * ((-0.02473f*as+0.66667f*sa)*c+ (0.30450f*as*s+(0.33333f*as+0.33333f*sa))) + ao;
-    effectMatrix[1] = o * ((-0.02473f*as-0.33333f*sa)*c+((0.30450f*as+0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
-    effectMatrix[2] = o * ((-0.02473f*as-0.33333f*sa)*c+((0.30450f*as-0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
+
+    effectMatrix[0] = o * ((-0.02473f * as + 0.66667f * sa) * c + (0.30450f * as * s + (0.33333f * as + 0.33333f * sa))) + ao;
+    effectMatrix[1] = o * ((-0.02473f * as - 0.33333f * sa) * c + ((0.30450f * as + 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
+    effectMatrix[2] = o * ((-0.02473f * as - 0.33333f * sa) * c + ((0.30450f * as - 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
     effectMatrix[3] = 0.0f;
-    effectMatrix[4] = o * ((0.27607f*as-0.33333f*sa)*c+((-0.13083f*as-0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
-    effectMatrix[5] = o * ((0.27607f*as+0.66667f*sa)*c+ (-0.13083f*as*s+(0.33333f*as+0.33333f*sa))) + ao;
-    effectMatrix[6] = o * ((0.27607f*as-0.33333f*sa)*c+((-0.13083f*as+0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
+    effectMatrix[4] = o * ((0.27607f * as - 0.33333f * sa) * c + ((-0.13083f * as - 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
+    effectMatrix[5] = o * ((0.27607f * as + 0.66667f * sa) * c + (-0.13083f * as * s + (0.33333f * as + 0.33333f * sa))) + ao;
+    effectMatrix[6] = o * ((0.27607f * as - 0.33333f * sa) * c + ((-0.13083f * as + 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
     effectMatrix[7] = 0.0f;
-    effectMatrix[8] = o * ((-0.25134f*as-0.33333f*sa)*c+((-0.17367f*as+0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
-    effectMatrix[9] = o * ((-0.25134f*as-0.33333f*sa)*c+((-0.17367f*as-0.57736f*sa)*s+(0.33333f*as+0.33333f*sa)));
-    effectMatrix[10] = o * ((-0.25134f*as+0.66667f*sa)*c+ (-0.17367f*as*s+(0.33333f*as+0.33333f*sa))) + ao;
+    effectMatrix[8] = o * ((-0.25134f * as - 0.33333f * sa) * c + ((-0.17367f * as + 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
+    effectMatrix[9] = o * ((-0.25134f * as - 0.33333f * sa) * c + ((-0.17367f * as - 0.57736f * sa) * s + (0.33333f * as + 0.33333f * sa)));
+    effectMatrix[10] = o * ((-0.25134f * as + 0.66667f * sa) * c + (-0.17367f * as * s + (0.33333f * as + 0.33333f * sa))) + ao;
     effectMatrix[11] = 0.0f;
     effectMatrix[12] = 0.0f;
     effectMatrix[13] = 0.0f;
@@ -153,16 +156,16 @@ const VGfloat Bw = 0.0820f;
 
 inline void getSaturationMatrix(VGfloat *effectMatrix, VGfloat opacity, VGfloat saturation)
 {
-    const VGfloat sa = saturation;            
+    const VGfloat sa = saturation;
     const VGfloat as = 1.0f - saturation;
-    
+
     const VGfloat o = opacity;
     const VGfloat ao = 1.0f - o;
 
     const VGfloat asRw = o * as * Rw;
     const VGfloat asGw = o * as * Gw;
     const VGfloat asBw = o * as * Bw;
-    
+
     effectMatrix[0] = asRw + sa + ao;
     effectMatrix[1] = asRw;
     effectMatrix[2] = asRw;
@@ -185,21 +188,21 @@ inline void getRotationMatrix(VGfloat *effectMatrix, VGfloat opacity, VGfloat an
 {
     const VGfloat o = opacity;
     const VGfloat ao = 1.0f - o;
-    
+
     const VGfloat c = qCos(angle);
     const VGfloat s = qSin(angle);
-    
-    effectMatrix[0] = o * ( 0.66667f*c+0.33333f) + ao;
-    effectMatrix[1] = o * (-0.33333f*c+(0.57736f*s+0.33333f));
-    effectMatrix[2] = o * (-0.33333f*c+(-0.57736f*s+0.33333f));
+
+    effectMatrix[0] = o * (0.66667f * c + 0.33333f) + ao;
+    effectMatrix[1] = o * (-0.33333f * c + (0.57736f * s + 0.33333f));
+    effectMatrix[2] = o * (-0.33333f * c + (-0.57736f * s + 0.33333f));
     effectMatrix[3] =  0.0f;
-    effectMatrix[4] = o * (-0.33333f*c+(-0.57736f*s+0.33333f));
-    effectMatrix[5] = o * ( 0.66667f*c+0.33333f) + ao;
-    effectMatrix[6] = o * (-0.33333f*c+(0.57736f*s+0.33333f));
+    effectMatrix[4] = o * (-0.33333f * c + (-0.57736f * s + 0.33333f));
+    effectMatrix[5] = o * (0.66667f * c + 0.33333f) + ao;
+    effectMatrix[6] = o * (-0.33333f * c + (0.57736f * s + 0.33333f));
     effectMatrix[7] =  0.0f;
-    effectMatrix[8] = o * (-0.33333f*c+(0.57736f*s+0.33333f));
-    effectMatrix[9] = o * (-0.33333f*c+(-0.57736f*s+0.33333f));
-    effectMatrix[10] = o * (0.66667f*c+0.33333f) + ao;
+    effectMatrix[8] = o * (-0.33333f * c + (0.57736f * s + 0.33333f));
+    effectMatrix[9] = o * (-0.33333f * c + (-0.57736f * s + 0.33333f));
+    effectMatrix[10] = o * (0.66667f * c + 0.33333f) + ao;
     effectMatrix[11] = 0.0f;
     effectMatrix[12] = 0.0f;
     effectMatrix[13] = 0.0f;
@@ -230,9 +233,9 @@ inline void getIdentityMatrix(VGfloat *effectMatrix)
 #endif // HB_EFFECTS_OPENVG
 
 void HbVgHslEffect::performEffect(QPainter *painter,
-                                   const QPointF &offset,
-                                   const QVariant &vgImage,
-                                   const QSize &vgImageSize)
+                                  const QPointF &offset,
+                                  const QVariant &vgImage,
+                                  const QSize &vgImageSize)
 {
 #ifdef HB_EFFECTS_OPENVG
     QPixmap cachedPm = cached(vgImageSize);
@@ -250,13 +253,13 @@ void HbVgHslEffect::performEffect(QPainter *painter,
             // a helpful constant
             const qreal radsPerDeg = 2.0f * (qreal) M_PI / 360.0f;
 
-            // make sure parametres are in range
+            // make sure parameters are in range
             const VGfloat o = (VGfloat) opacity;
             const VGfloat angle = (VGfloat) clamp(d->hue * radsPerDeg, 0.0f, 2.0f * (qreal) M_PI); // angle [0, 2*pi]
             const VGfloat saturation = (VGfloat) clamp(d->saturation, 0.0f, 100.0f); // saturation [0, N]
             const VGfloat lightness = (VGfloat) clamp(d->lightness, -1.0f, 1.0f); // lightness [-1, 1]
-    
-            // check parametres which precalculated matrix we have to use.
+
+            // check parameters which precalculated matrix we have to use.
             // Note: lightness affects offset and not matrix so we don't bother optimising that.
             const bool enableSaturation  = (saturation < 1.0f - HBVG_EPSILON || saturation > 1.0f + HBVG_EPSILON);
             const bool enableHueRotation = (HBVG_EPSILON < angle && angle < (2.0f * (qreal) M_PI - HBVG_EPSILON));
@@ -265,12 +268,12 @@ void HbVgHslEffect::performEffect(QPainter *painter,
                 // contains SaturateT*PrerotationT*HuerotationT*PostrotationT*I*opacity+I*(1-opacity) matrices
                 // --- ugly, but saves lot of operations in FPU.
                 // note: there are plenty of redundancy in these calculations
-                // --- let compiler optimise them.
+                // --- let compiler optimize them.
                 getSaturationRotationMatrix(&d->colorMatrix[0], o, saturation, angle);
             } else if (enableSaturation && !enableHueRotation) {
                 // saturationT*I*opacity+I*(1 - opacity) matrix without hue rotation
                 getSaturationMatrix(&d->colorMatrix[0], o, saturation);
-            } else if(!enableSaturation && enableHueRotation) {
+            } else if (!enableSaturation && enableHueRotation) {
                 // PrerotationT*HuerotationT*PostrotationT*I*opacity+I*(1-opacity) matrices without saturation matrix
                 getRotationMatrix(&d->colorMatrix[0], o, angle);
             } else {

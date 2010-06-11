@@ -34,6 +34,7 @@
 #include "hbinputstandardfilters.h"
 #include "hbinputvkbhost.h"
 #include "hbabstractvkbhost.h"
+#include "hbinpututils.h"
 
 /*!
 @alpha
@@ -289,14 +290,20 @@ void HbEditorInterface::insertAction(HbAction *before, HbAction *action)
 
         // Remove the action first if it's already in the list
         int index = mPrivate->mActions.indexOf(action);
-        if (index >= 0)
+        if (index >= 0) {
             mPrivate->mActions.removeAt(index);
+            disconnect(action, SIGNAL(destroyed(QObject *)),
+                       HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject* object)));
+        }
 
         int pos = mPrivate->mActions.indexOf(before);
         if (pos < 0) {
             pos = mPrivate->mActions.size();
         }
         mPrivate->mActions.insert(pos, action);
+
+        connect(action, SIGNAL(destroyed(QObject *)),
+                HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject *)));
 
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
@@ -318,6 +325,8 @@ void HbEditorInterface::removeAction(HbAction *action)
     if (mPrivate) {
         mPrivate->lock();
         mPrivate->mActions.removeAll(action);
+        disconnect(action, SIGNAL(destroyed(QObject *)),
+                   HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject* object)));
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -452,16 +461,16 @@ HbVkbHost *HbEditorInterface::vkbHost() const
     QObject *theEditor = editor();
 
     if (theEditor) {
-        QGraphicsWidget *graphicsWidgetEditor = 0;
+        QGraphicsObject *graphicsObjectEditor = 0;
         QWidget *widgetEditor = qobject_cast<QWidget*>(theEditor);
         if (widgetEditor) {
-            if (widgetEditor->graphicsProxyWidget()) {
+            if (QGraphicsProxyWidget * pw = HbInputUtils::graphicsProxyWidget(widgetEditor)) {
                 HbVkbHost *host = HbVkbHost::getVkbHost(widgetEditor);
                 if (host) {
                     return host;
                 }
                 // it is a proxy widget, let graphics widget loop handle the parent chain.
-                graphicsWidgetEditor = widgetEditor->graphicsProxyWidget();
+                graphicsObjectEditor = pw;
             } else {
                 for (QWidget *parent = widgetEditor; parent; parent = parent->parentWidget()) {
                     HbVkbHost* host = HbVkbHost::getVkbHost(parent);
@@ -469,17 +478,17 @@ HbVkbHost *HbEditorInterface::vkbHost() const
                         return host;
                     }
                 }
-                return 0;  // Need to add default handler here...
+                return new HbAbstractVkbHost(widgetEditor->window());
             }
         }
 
-        if (!graphicsWidgetEditor) {
-            graphicsWidgetEditor = qobject_cast<QGraphicsWidget*>(theEditor);
+        if (!graphicsObjectEditor) {
+            graphicsObjectEditor = qobject_cast<QGraphicsObject*>(theEditor);
         }
 
-        if (graphicsWidgetEditor) {
-            QGraphicsWidget *lastKnownParent = 0;
-            for (QGraphicsWidget *parent = graphicsWidgetEditor; parent; parent = parent->parentWidget()) {
+        if (graphicsObjectEditor) {
+            QGraphicsObject *lastKnownParent = 0;
+            for (QGraphicsObject *parent = graphicsObjectEditor; parent; parent = parent->parentObject()) {
                 HbVkbHost* host = HbVkbHost::getVkbHost(parent);
                 if (host) {
                     return host;
@@ -500,17 +509,17 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 /*!
 Returns true if this instance is attached to same editor as given instance.
 */
-bool HbEditorInterface::operator==(const HbEditorInterface& interface) const
+bool HbEditorInterface::operator==(const HbEditorInterface& editorInterface) const
 {
-    return (mPrivate == interface.mPrivate);
+    return (mPrivate == editorInterface.mPrivate);
 }
 
 /*!
 Returns true if this instance is not attached to same editor as given instance.
 */
-bool HbEditorInterface::operator!=(const HbEditorInterface& interface) const
+bool HbEditorInterface::operator!=(const HbEditorInterface& editorInterface) const
 {
-    return (mPrivate != interface.mPrivate);
+    return (mPrivate != editorInterface.mPrivate);
 }
 
 /*!
@@ -557,7 +566,7 @@ void HbEditorInterface::setLastFocusedState(const HbInputState &state)
 }
 
 /*!
-A convinience method for setting up the editor as completing email field.
+A convenience method for setting up the editor as completing email field.
 */
 void HbEditorInterface::setUpAsCompletingEmailField()
 {
@@ -571,7 +580,7 @@ void HbEditorInterface::setUpAsCompletingEmailField()
 }
 
 /*!
-A convinience method for setting up the editor as completing url field.
+A convenience method for setting up the editor as completing url field.
 */
 void HbEditorInterface::setUpAsCompletingUrlField()
 {
@@ -585,7 +594,7 @@ void HbEditorInterface::setUpAsCompletingUrlField()
 }
 
 /*!
-A convinience method for setting up the editor as latin alphabet editor. In this mode, the input framework
+A convenience method for setting up the editor as latin alphabet editor. In this mode, the input framework
 will use global input language if it is naturally capable of producing latin aplhabets. Otherwise
 it will switch locally to english language (is is assumed that english is always available).
 It is also recommended that prediction is disabled in latin only editors. That's because predictive mode in

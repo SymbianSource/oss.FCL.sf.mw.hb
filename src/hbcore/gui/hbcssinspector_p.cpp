@@ -140,10 +140,10 @@ static QString convertMeasurementToText(const QGraphicsItem *item, qreal hint)
 
 static QString convertEffectiveSizeHintToText(const QGraphicsWidget *item, Qt::SizeHint which)
 {
-    QString hintText("(");
+    QString hintText('(');
     const QSizeF &size = item->effectiveSizeHint(which);
-    hintText += convertMeasurementToText(item, size.width()) + ",";
-    hintText += convertMeasurementToText(item, size.height()) + ")";
+    hintText += convertMeasurementToText(item, size.width()) + ',';
+    hintText += convertMeasurementToText(item, size.height()) + ')';
     return hintText;
 }
 
@@ -152,8 +152,8 @@ static QString cssItemHintText(const QGraphicsItem *item)
     QString sizeHint;
     if (item->isWidget()) {
         const QGraphicsWidget *widget = static_cast<const QGraphicsWidget*>(item);
-        sizeHint += convertEffectiveSizeHintToText(widget, Qt::MinimumSize)+"|";
-        sizeHint += convertEffectiveSizeHintToText(widget, Qt::PreferredSize)+"|";
+        sizeHint += convertEffectiveSizeHintToText(widget, Qt::MinimumSize)+'|';
+        sizeHint += convertEffectiveSizeHintToText(widget, Qt::PreferredSize)+'|';
         sizeHint += convertEffectiveSizeHintToText(widget, Qt::MaximumSize);
     }
     return sizeHint;
@@ -217,7 +217,8 @@ static QString anchorEdgeName(Hb::Edge edge)
 }
 
 
-QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, const QString layoutName)
+QString HbCssInspectorWindow::meshItemsToHtmlInfo(
+    HbMeshLayout *mesh, const QString itemName, const QString layoutName)
 {
     QString html;
     QString widgetML;
@@ -228,12 +229,17 @@ QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QStr
 
     QString str = syntax.lexemValue(HbXmlLoaderAbstractSyntax::TYPE_HBWIDGET);
     xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::TYPE_HBWIDGET));
-    xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_VERSION), HbWidgetLoaderSyntax::version());
+    xmlWriter.writeAttribute(
+        syntax.lexemValue(
+            HbXmlLoaderAbstractSyntax::ATTR_VERSION), HbWidgetLoaderSyntax::version());
     xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_TYPE), itemName);
 
     xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::TYPE_LAYOUT));
     xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_NAME), layoutName);
-    xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::ATTR_TYPE), syntax.lexemValue(HbXmlLoaderAbstractSyntax::LAYOUT_MESH));
+    xmlWriter.writeAttribute(
+        syntax.lexemValue(
+            HbXmlLoaderAbstractSyntax::ATTR_TYPE), 
+            syntax.lexemValue(HbXmlLoaderAbstractSyntax::LAYOUT_MESH));
 
     if (mesh) {
         QList<HbAnchor*> anchors = HbMeshLayoutDebug::getAnchors(mesh);
@@ -246,9 +252,11 @@ QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QStr
 
             QGraphicsItem *asGraphicsItem = mesh->parentLayoutItem()->graphicsItem();
             if ( asGraphicsItem && asGraphicsItem->isWidget() ){
-                HbWidget *asWidget = qobject_cast<HbWidget*>( static_cast<QGraphicsWidget*>(asGraphicsItem) );
+                HbWidget *asWidget = qobject_cast<HbWidget*>( 
+                        static_cast<QGraphicsWidget*>(asGraphicsItem) );
                 if( asWidget ) {
-                    HbWidgetPrivate*priv = static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(asWidget));
+                    HbWidgetPrivate*priv = 
+                        static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(asWidget));
 
                     if (startName.isEmpty()) {
                         startName = priv->mSpacers.key(anchor->mStartItem);
@@ -267,11 +275,13 @@ QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QStr
             xmlWriter.writeAttribute(
                 syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_NAME), startName);
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SRC_EDGE), anchorEdgeName(anchor->mStartEdge));
+                syntax.lexemValue(
+                    HbXmlLoaderAbstractSyntax::ML_SRC_EDGE), anchorEdgeName(anchor->mStartEdge));
             xmlWriter.writeAttribute(
                 syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_NAME), endName);
             xmlWriter.writeAttribute(
-                syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_DST_EDGE), anchorEdgeName(anchor->mEndEdge));
+                syntax.lexemValue(
+                    HbXmlLoaderAbstractSyntax::ML_DST_EDGE), anchorEdgeName(anchor->mEndEdge));
             if ( !spacingText.isEmpty() ) {
                 xmlWriter.writeAttribute(
                 syntax.lexemValue(HbXmlLoaderAbstractSyntax::ML_SPACING), spacingText);
@@ -284,13 +294,13 @@ QString HbCssInspectorWindow::meshItemsToHtmlInfo(HbMeshLayout *mesh, const QStr
     xmlWriter.writeEndElement(); // widgetml
 
     html = widgetML;
-    html.remove(0, html.indexOf("<")); // trim whitespace
-    html.replace("<", "&lt;");
-    html.replace(">", "&gt;");
+    html.remove(0, html.indexOf('<')); // trim whitespace
+    html.replace('<', "&lt;");
+    html.replace('>', "&gt;");
     html.replace(QRegExp("\"([^\"]*)\""), "\"<span>\\1</span>\""); // Add span elements around things in quotes
-    html.replace("\"", "&quot;");
+    html.replace('\"', "&quot;");
     html.replace("\n\n", "\n");
-    html.replace("\n", "<br/>");
+    html.replace('\n', "<br/>");
 
     html.insert(0, WIDGETML_HTML_HEADER);
     html.append(WIDGETML_HTML_FOOTER);
@@ -446,12 +456,13 @@ static void drawTriangle(QPainter *painter, Qt::Orientation dir, const QRectF &b
 }
 
 
-static void drawPolicyIcons(QPainter *painter, Qt::Orientation direction, QSizePolicy policy, const QRectF &itemRect)
+static void drawPolicyIcons(
+    QPainter *painter, Qt::Orientation direction, QSizePolicy policy, const QRectF &itemRect)
 {
     bool vert = direction == Qt::Vertical;
     QSizePolicy::Policy pol = vert ? policy.verticalPolicy() : policy.horizontalPolicy();
 
-    const QBrush fillBrush(Qt::gray, Qt::SolidPattern);
+    const QBrush fillBrush(Qt::gray, Qt::SolidPattern); //krazy:exclude=qenums
     const QBrush hollowBrush(Qt::white, Qt::SolidPattern);
     const QRectF rect = itemRect.adjusted(HOVER_BOX_PEN_WIDTH/2, HOVER_BOX_PEN_WIDTH/2,
                         -HOVER_BOX_PEN_WIDTH/2, -HOVER_BOX_PEN_WIDTH/2);
@@ -462,11 +473,13 @@ static void drawPolicyIcons(QPainter *painter, Qt::Orientation direction, QSizeP
 
     bool drawSecondIcons;
     if (vert) {
-        drawSecondIcons = (3*SIZE_PREF_DRAW_SIZE) + rect.top() <= hLinePos + SIZE_PREF_ALLOWED_OVERLAP;
-        painter->drawLine(linePos, rect.top(), linePos, rect.bottom());
+        drawSecondIcons = (3*SIZE_PREF_DRAW_SIZE) + rect.top() <= 
+                hLinePos + SIZE_PREF_ALLOWED_OVERLAP;
+        painter->drawLine(linePos, (int)(rect.top()), linePos, (int)(rect.bottom()));
     } else {
-        drawSecondIcons = rect.right() - (3*SIZE_PREF_DRAW_SIZE) >= vLinePos - SIZE_PREF_ALLOWED_OVERLAP;
-        painter->drawLine(rect.left(), linePos, rect.right(), linePos);
+        drawSecondIcons = rect.right() - (3*SIZE_PREF_DRAW_SIZE) >= 
+            vLinePos - SIZE_PREF_ALLOWED_OVERLAP;
+        painter->drawLine((int)(rect.left()), linePos, (int)(rect.right()), linePos);
     }
 
     // Ignore icons have different rules
@@ -538,19 +551,19 @@ void HbCssInfoDrawer::paint(QPainter *painter,
         paintRect(painter, mItemRect);
     } 
     if (mShowMinHintBox) {
-        painter->setPen(QPen(Qt::blue, HOVER_BOX_PEN_WIDTH));
+        painter->setPen(QPen(Qt::blue, HOVER_BOX_PEN_WIDTH)); //krazy:exclude=qenums
         QRectF rect = mMinHintRect;
         rect.moveCenter(mItemRect.center());
         paintRect(painter, rect);
     }
     if (mShowPrefHintBox) {
-        painter->setPen(QPen(Qt::green, HOVER_BOX_PEN_WIDTH));
+        painter->setPen(QPen(Qt::green, HOVER_BOX_PEN_WIDTH)); //krazy:exclude=qenums
         QRectF rect = mPrefHintRect;
         rect.moveCenter(mItemRect.center());
         paintRect(painter, rect);
     }
     if (mShowMaxHintBox) {
-        painter->setPen(QPen(Qt::red, HOVER_BOX_PEN_WIDTH));
+        painter->setPen(QPen(Qt::red, HOVER_BOX_PEN_WIDTH)); //krazy:exclude=qenums
         QRectF rect = mMaxHintRect;
         rect.moveCenter(mItemRect.center());
         paintRect(painter, rect);
@@ -589,7 +602,7 @@ void HbCssInfoDrawer::paint(QPainter *painter,
     
     // Draw the size prefs icons
     if (mShowSizePrefs) {
-        painter->setPen(QPen(Qt::gray, SIZE_PREF_LINE_WIDTH));
+        painter->setPen(QPen(Qt::gray, SIZE_PREF_LINE_WIDTH)); //krazy:exclude=qenums
         if (mItemRect.height() > SIZE_PREF_MINIMUM_THRESHOLD) {
             drawPolicyIcons(painter, Qt::Horizontal, mItemPolicy, mItemRect);
         }
@@ -676,19 +689,30 @@ void HbCssInspectorWindow::addFilters()
         HoveredWidgetFilter *filter = new HoveredWidgetFilter(window->scene());
         window->scene()->installEventFilter(filter);
         mInstalledFilters.append(filter);
-        connect(filter, SIGNAL(newItemHovered(const QGraphicsItem*)), SLOT(updateFocusItem(const QGraphicsItem*)));
+        connect(filter, SIGNAL(newItemHovered(const QGraphicsItem*)), 
+            SLOT(updateFocusItem(const QGraphicsItem*)));
 
-        connect(mObjectNameCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setItemTextVisible(bool)));
-        connect(mAnchorArrowsCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawArrows(bool)));
-        connect(mSubitemOutlinesCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawOutlines(bool)));
-        connect(mSpacersCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, SLOT(setDrawSpacers(bool)));
-        connect(mGuideLinesCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setGuideLinesVisible(bool)));
+        connect(mObjectNameCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setItemTextVisible(bool)));
+        connect(mAnchorArrowsCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, 
+            SLOT(setDrawArrows(bool)));
+        connect(mSubitemOutlinesCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, 
+            SLOT(setDrawOutlines(bool)));
+        connect(mSpacersCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer, 
+            SLOT(setDrawSpacers(bool)));
+        connect(mGuideLinesCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setGuideLinesVisible(bool)));
 
-        connect(mSizeHintTextCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setHintTextVisible(bool)));
-        connect(mMinSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setMinHintBoxVisible(bool)));
-        connect(mPrefSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setPrefHintBoxVisible(bool)));
-        connect(mMaxSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setMaxHintBoxVisible(bool)));
-        connect(mSizePrefCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, SLOT(setSizePrefsVisible(bool)));
+        connect(mSizeHintTextCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setHintTextVisible(bool)));
+        connect(mMinSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setMinHintBoxVisible(bool)));
+        connect(mPrefSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setPrefHintBoxVisible(bool)));
+        connect(mMaxSizeHintCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setMaxHintBoxVisible(bool)));
+        connect(mSizePrefCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer, 
+            SLOT(setSizePrefsVisible(bool)));
 
         connect(mHoverRadio, SIGNAL(toggled(bool)), filter, SLOT(setHoverMode(bool)));
         connect(mBlockRadio, SIGNAL(toggled(bool)), filter, SLOT(setBlockingMode(bool)));
@@ -834,10 +858,12 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
         NODEPTR_N(widget);
         HbDeviceProfile profile(HbDeviceProfile::profile(widget));
 
-        HbLayeredStyleLoader *layoutStack = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Layouts);
+        HbLayeredStyleLoader *layoutStack = 
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Layouts);
         if (layoutStack) {
             // Update layout CSS box
-            HbVector<HbCss::StyleRule> layoutRules = layoutStack->styleRulesForNode(n, profile.orientation());
+            HbVector<HbCss::StyleRule> layoutRules = 
+                layoutStack->styleRulesForNode(n, profile.orientation());
             mLayoutCssBox->setHtml(CSS_HTML_HEADER + HbCssFormatter::styleRulesToHtml(layoutRules));
 
             // Get layoutname from CSS
@@ -847,7 +873,7 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
             HbCss::ValueExtractor extractor(decls, profile);
             QString layoutName;
             QString sectionName;
-            extractor.extractLayout(&layoutName, &sectionName);
+            extractor.extractLayout(layoutName, sectionName);
 
             // Update widgetML box
             QString html;
@@ -860,9 +886,11 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
         }
 
         // Update colours CSS box
-        HbLayeredStyleLoader *colorsStack = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+        HbLayeredStyleLoader *colorsStack = 
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
         if (colorsStack) {
-            HbVector<HbCss::StyleRule> colorRules = colorsStack->styleRulesForNode(n, profile.orientation());
+            HbVector<HbCss::StyleRule> colorRules = 
+                colorsStack->styleRulesForNode(n, profile.orientation());
             mColorsCssBox->setHtml(CSS_HTML_HEADER + HbCssFormatter::styleRulesToHtml(colorRules));
         }
 
@@ -963,7 +991,8 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
 }
 
 HoveredWidgetFilter::HoveredWidgetFilter(QGraphicsScene *scene)
-    : mScene(scene), mCurrentItem(0), mArrowDrawer(0), mCssInfoDrawer(0), mHoverMode(true), mBlockingMode(false)
+    : mScene(scene), mCurrentItem(0), mArrowDrawer(0), 
+    mCssInfoDrawer(0), mHoverMode(true), mBlockingMode(false)
 {
     mCssInfoDrawer = new HbCssInfoDrawer(0);
     mScene->addItem(mCssInfoDrawer);
@@ -974,8 +1003,10 @@ HoveredWidgetFilter::HoveredWidgetFilter(QGraphicsScene *scene)
     mCssInfoDrawer->setZValue(HbPrivate::PopupZValueRangeEnd + ABOVE_POPUP_ZVALUE);
     mArrowDrawer->setZValue(HbPrivate::PopupZValueRangeEnd + ABOVE_POPUP_ZVALUE);
 
-    connect(this, SIGNAL(newItemHovered(const QGraphicsItem*)), mCssInfoDrawer, SLOT(updateFocusItem(const QGraphicsItem*)));
-    connect(this, SIGNAL(newItemHovered(const QGraphicsItem*)), mArrowDrawer, SLOT(updateFocusItem(const QGraphicsItem*)));
+    connect(this, SIGNAL(newItemHovered(const QGraphicsItem*)), 
+        mCssInfoDrawer, SLOT(updateFocusItem(const QGraphicsItem*)));
+    connect(this, SIGNAL(newItemHovered(const QGraphicsItem*)), 
+        mArrowDrawer, SLOT(updateFocusItem(const QGraphicsItem*)));
 }
 
 HoveredWidgetFilter::~HoveredWidgetFilter()

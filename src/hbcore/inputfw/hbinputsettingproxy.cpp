@@ -68,6 +68,77 @@ system.
 
 /// @cond
 
+HbSettingProxyInputMethodDescriptor::HbSettingProxyInputMethodDescriptor()
+{
+    pluginNameAndPathSize = 0;
+    keySize = 0;
+    displayNameSize = 0;
+}
+
+HbSettingProxyInputMethodDescriptor::HbSettingProxyInputMethodDescriptor(const HbInputMethodDescriptor &descriptor)
+{
+    *this = descriptor;
+}
+
+void HbSettingProxyInputMethodDescriptor::operator=(const HbInputMethodDescriptor &descriptor)
+{
+    pluginNameAndPathSize = 0;
+    keySize = 0;
+    displayNameSize = 0;
+
+    if (!descriptor.pluginNameAndPath().isEmpty() &&
+        (descriptor.pluginNameAndPath().size() * sizeof(QChar) < HbActiveMethodNameMax)) {
+        pluginNameAndPathSize = descriptor.pluginNameAndPath().size();
+        memcpy((void*)pluginNameAndPath, (void*)descriptor.pluginNameAndPath().unicode(), descriptor.pluginNameAndPath().size() * sizeof(QChar));
+    }
+    if (!descriptor.key().isEmpty() &&
+        (descriptor.key().size() * sizeof(QChar) < HbActiveMethodKeyMax)) {
+        memcpy((void*)key, (void*)descriptor.key().unicode(), descriptor.key().size() * sizeof(QChar));
+        keySize = descriptor.key().size();
+    }
+    if (!descriptor.displayName().isEmpty() &&
+        (descriptor.displayName().size() * sizeof(QChar) < HbActiveMethodKeyMax)) {
+        memcpy((void*)displayName, (void*)descriptor.displayName().unicode(), descriptor.displayName().size() * sizeof(QChar));
+        displayNameSize = descriptor.displayName().size();
+    }
+}
+
+HbInputMethodDescriptor HbSettingProxyInputMethodDescriptor::descriptor() const
+{
+    HbInputMethodDescriptor result;
+
+    if (pluginNameAndPathSize > 0) {
+        result.setPluginNameAndPath(QString(pluginNameAndPath, pluginNameAndPathSize));
+    }
+    if (keySize > 0) {
+        result.setKey(QString(key, keySize));
+    }
+    if (displayNameSize > 0) {
+        result.setDisplayName(QString(displayName, displayNameSize));
+    }
+
+    return result;
+}
+
+QByteArray HbSettingProxyInputMethodDescriptor::data() const
+{
+    if (customDataSize > 0) {
+        return QByteArray(customData, customDataSize);
+    }
+
+    return QByteArray();
+}
+
+void HbSettingProxyInputMethodDescriptor::setData(const QByteArray &data)
+{
+    customDataSize = 0;
+
+    if (data.size() > 0 && data.size() <= (int)HbActiveMethodKeyMax * 2) {
+        memcpy(customData, data.data(), data.size());
+        customDataSize = data.size();
+    }
+}
+
 // Special character classifier class for bookkeeping
 // of how popular a SC is.
 class HbScClassifier
@@ -169,10 +240,8 @@ void HbInputSettingProxyPrivate::initializeDataArea()
             prData->iGlobalSecondaryInputLanguage = QLocale::Language(0);
             prData->iActiveKeyboard = HbKeyboardVirtual12Key;
             prData->iTouchKeyboard = HbKeyboardVirtual12Key;
-            prData->iHwKeyboard = HbKeyboardQwerty;
-            prData->iActiveCustomMethodName[0] = 0;
-            prData->iActiveCustomMethodKey[0] = 0;
-            prData->iPredictiveInputState = HbKeyboardSettingNone;
+            prData->iHwKeyboard = HbKeyboardQwerty;           
+            prData->iPredictiveInputState = (HbKeyboardSettingFlags)HbKeyboardSetting12key|HbKeyboardSettingQwerty;
             prData->iDigitType = HbDigitTypeLatin;
             prData->iQwertyTextCasing = true;
             prData->iQwertyCharacterPreview = true;
@@ -180,7 +249,11 @@ void HbInputSettingProxyPrivate::initializeDataArea()
             prData->iKeypressTimeout = 1000;
             prData->iAutocompletion = (HbKeyboardSettingFlags)(HbKeyboardSetting12key | HbKeyboardSettingQwerty);
             prData->iTypingCorrectionLevel = HbTypingCorrectionLevelHigh;
-            prData->iPrimaryCandidateMode = HbPrimaryCandidateModeBestPrediction;
+            prData->iPrimaryCandidateMode = HbPrimaryCandidateModeBestPrediction;           
+            prData->iPreferredMethodHorizontal = HbInputMethodDescriptor();
+            prData->iPreferredMethodHorizontal.setData(QByteArray());
+            prData->iPreferredMethodVertical = HbInputMethodDescriptor();
+            prData->iPreferredMethodVertical.setData(QByteArray());
         }
     }
     unlock();
@@ -512,6 +585,109 @@ HbKeyboardType HbInputSettingProxy::activeKeyboard() const
 }
 
 /*!
+Returns the preferred input method for given screen orientation. Initially this value is empty
+and the framework will resolve the default handler.
+
+\sa setPreferredInputMethod
+*/
+HbInputMethodDescriptor HbInputSettingProxy::preferredInputMethod(Qt::Orientation orientation) const
+{
+    Q_D(const HbInputSettingProxy);
+
+    HbInputMethodDescriptor result;
+
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        d->lock();
+        if (orientation == Qt::Horizontal) {
+            result = prData->iPreferredMethodHorizontal.descriptor();
+        } else {
+            result = prData->iPreferredMethodVertical.descriptor();
+        }
+        d->unlock();
+    }
+
+    return result;
+}
+
+/*!
+Returns the preferred input method for current screen orientation. Initially this value is empty
+and the framework will resolve the default handler.
+
+\sa setPreferredInputMethod
+*/
+HbInputMethodDescriptor HbInputSettingProxy::preferredInputMethod() const
+{
+    Q_D(const HbInputSettingProxy);
+
+    HbInputMethodDescriptor result;
+
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        d->lock();
+        if (prData->iScreenOrientation == Qt::Horizontal) {
+            result = prData->iPreferredMethodHorizontal.descriptor();
+        } else {
+            result = prData->iPreferredMethodVertical.descriptor();
+        }
+        d->unlock();
+    }
+
+    return result;
+}
+
+/*!
+Returns custom data associated to preferred input method.
+
+\sa setPreferredInputMethod
+*/
+QByteArray HbInputSettingProxy::preferredInputMethodCustomData(Qt::Orientation orientation) const
+{
+    Q_D(const HbInputSettingProxy);
+
+    QByteArray result;
+
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        d->lock();
+        if (orientation == Qt::Horizontal) {
+            result = prData->iPreferredMethodHorizontal.data();
+        } else {
+            result = prData->iPreferredMethodVertical.data();
+        }
+        d->unlock();
+    }
+
+    return result;
+}
+
+/*!
+Sets preferred input method for given screen orientation. The parameter \a customdata may contain
+any information the preferred input method needs to remember as part of settings data.
+Note that only 128 bytes is reserved for custom data. Larger amount of it needs to be
+handled by other means.
+This method is for input method developers only. There should never be need to call it from application code.
+
+\sa preferredInputMethod
+*/
+void HbInputSettingProxy::setPreferredInputMethod(Qt::Orientation orientation, const HbInputMethodDescriptor &inputMethod, const QByteArray &customData)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData* prData = d->proxyData();
+    if (prData) {
+        d->lock();
+        if (orientation == Qt::Horizontal) {
+            prData->iPreferredMethodHorizontal = inputMethod;
+            prData->iPreferredMethodHorizontal.setData(customData);
+        } else {
+            prData->iPreferredMethodVertical = inputMethod;
+            prData->iPreferredMethodVertical.setData(customData);
+        }
+        d->unlock();
+    }
+}
+
+/*!
 Sets system wide input language. Will emit signal globalInputLanguageChanged if language is changed.
 
 \sa globalInputLanguage
@@ -769,11 +945,20 @@ Returns list of paths to all possible keymap plugin locations.
 QStringList HbInputSettingProxy::keymapPluginPaths()
 {
     QStringList result;
+    QFileInfoList list = QDir::drives();
+
 #ifdef Q_OS_SYMBIAN
-    result.append(QString("z:/resource/keymaps"));
+    for(int counter = 0; counter < list.count(); counter ++) {
+        result.append(list.at(counter).absoluteFilePath() + QString("/resource/keymaps"));
+    }
 #else
     result.append(HB_RESOURCES_DIR + (QDir::separator() + QString("keymaps")));
+    for(int counter = 0; counter < list.count(); counter ++) {
+        result.append(list.at(counter).absoluteFilePath() + QString("resource/keymaps"));
+    }
 #endif
+    result.sort();
+    //Append the default resource at the end
     result.append(":/keymaps");
     return QStringList(result);
 }
@@ -959,36 +1144,15 @@ Returns active custom input method. The pluginNameAndPath field is empty if no c
 */
 HbInputMethodDescriptor HbInputSettingProxy::activeCustomInputMethod() const
 {
-    Q_D(const HbInputSettingProxy);
-
-    HbInputMethodDescriptor result;
-
-    d->lock();
-    HbSettingProxyInternalData* prData = d->proxyData();
-    if (prData) {
-        result.setPluginNameAndPath(d->stringFromProxyDataElement(prData->iActiveCustomMethodName));
-        result.setKey(d->stringFromProxyDataElement(prData->iActiveCustomMethodKey));
-    }
-    d->unlock();
-
-    return HbInputMethodDescriptor(result);
+    return HbInputMethodDescriptor();
 }
 
 /*!
-
 \sa activeCustomInputMethod
 */
 void HbInputSettingProxy::setActiveCustomInputMethod(const HbInputMethodDescriptor &inputMethod)
 {
-    Q_D(HbInputSettingProxy);
-
-    d->lock();
-    HbSettingProxyInternalData* prData = d->proxyData();
-    if (prData) {
-        d->stringToProxyDataElement(prData->iActiveCustomMethodName, inputMethod.pluginNameAndPath(), HbActiveMethodNameMax);
-        d->stringToProxyDataElement(prData->iActiveCustomMethodKey, inputMethod.key(), HbActiveMethodKeyMax);
-    }
-    d->unlock();
+    Q_UNUSED(inputMethod)
 }
 
 /*!

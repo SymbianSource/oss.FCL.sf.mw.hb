@@ -39,8 +39,8 @@ HbTreeModelIteratorPrivate::~HbTreeModelIteratorPrivate()
 }
 
 /*
-    Return first index belonging to specified parent
-    If parent is colapsed QModelIndex is returned
+    Return first visible index belonging to specified parent.
+    If parent is collapsed QModelIndex is returned.
 */
 QModelIndex HbTreeModelIteratorPrivate::first(const QModelIndex &parent) const
 {
@@ -54,7 +54,8 @@ QModelIndex HbTreeModelIteratorPrivate::first(const QModelIndex &parent) const
 }
 
 /*
-    Return last index belonging to specified parent - last child in whole parent branch
+    Return last visible index belonging to specified parent - last child in whole parent branch.
+    If parent is collapsed QModelIndex is returned.
 */
 QModelIndex HbTreeModelIteratorPrivate::last(const QModelIndex &parent) const
 {
@@ -112,8 +113,11 @@ int HbTreeModelIteratorPrivate::searchForward(const QModelIndex &index) const
             return -1;
         }
     }
-    mCachedPosition.count = result;
-    mCachedPosition.index = index;
+
+    if (mUseCache) {
+        mCachedPosition.count = result;
+        mCachedPosition.index = index;
+    }
     return result;
 }
 
@@ -130,8 +134,11 @@ int HbTreeModelIteratorPrivate::searchBackward(const QModelIndex &index) const
             return -1;
         }
     }
-    mCachedPosition.count = result;
-    mCachedPosition.index = index;
+
+    if (mUseCache) {
+        mCachedPosition.count = result;
+        mCachedPosition.index = index;
+    }
     return result;
 }
 

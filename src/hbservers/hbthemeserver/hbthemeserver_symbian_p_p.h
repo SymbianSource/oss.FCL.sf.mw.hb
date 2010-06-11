@@ -96,12 +96,9 @@ public :
     void CleanupSessionCssItem(QString key);
     void clearCssCache();
     void MemoryGood();
-    void FreeGpuRam(int bytes);
+    void FreeGpuRam(int bytes, bool useSwRendering);
     void freeUnusedGpuResources();
     
-    void insertIconDefaultSizeCacheItem(const QString &key, const QSizeF &item);
-    QSizeF iconDefaultSizeCacheItem(const QString &key);
-
     void doCleanup();
     static bool gpuMemoryState();
 
@@ -142,23 +139,19 @@ public :
 
 #endif
 
-private:
-    void createThemeIndex(const QString &themePath, const HbThemeType &themetype);
-
 public:
     RProperty iThemeProperty;
     QString iCurrentThemeName;
     QString iCurrentThemePath;
+    QStringList romThemeNames;
 
 private:
     void ConstructL();
     HbIconDataCache * cache;
     HbCache* cssCache;
-    QHash<QString, QSizeF> iconDefaultSizes;
 
     static bool gpuGoodMemoryState;
     HbRenderingMode renderMode;
-    QStringList romThemeNames;
     CHbThemeChangeNotificationListener * iListener;
     CHbThemeWatcher *iWatcher;
 };
@@ -178,8 +171,6 @@ public:
     void ServiceL(const RMessage2 & aMessage);
     void DispatchMessageL(const RMessage2 & aMessage);
     void GetSharedIconInfoL(const RMessage2 & aMessage);
-    void GetSharedIconDefaultSizeInfoL(const RMessage2 &aMessage);
-    QSizeF RetrieveIconDefaultSize(const QString &filename);
     void HandleStyleSheetLookupL(const RMessage2 & aMessage);
     void HandleWidgetMLLookupL(const RMessage2& aMessage);
     void HandleDeviceProfilesReqL(const RMessage2& aMessage);

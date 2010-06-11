@@ -23,21 +23,19 @@
 **
 ****************************************************************************/
 
-#include "hbicon.h"
 #include "hbbadgeiconinfo_p.h"
+#include "hbicon.h"
 #include "hbbadgeicon_p.h"
 #include <QPainter>
-
 #include <QDebug>
 
-
-HbBadgeIconInfo::HbBadgeIconInfo(const HbIcon& badge,
+HbBadgeIconInfo::HbBadgeIconInfo(const HbIcon &badge,
                                  Qt::Alignment alignment,
-                                 int zValue): mIcon(badge),mAlignment(alignment),mZValue(zValue)
+                                 int zValue): mIcon(badge), mAlignment(alignment), mZValue(zValue)
 {
 }
 
-HbBadgeIconInfo::HbBadgeIconInfo(const HbBadgeIconInfo& other)
+HbBadgeIconInfo::HbBadgeIconInfo(const HbBadgeIconInfo &other)
 {
     *this = other;
 }
@@ -46,18 +44,17 @@ HbBadgeIconInfo::~HbBadgeIconInfo()
 {
 }
 
-bool HbBadgeIconInfo::operator==(const HbBadgeIconInfo &other)
+bool HbBadgeIconInfo::operator==(const HbBadgeIconInfo &other) const
 {
     return !(*this != other);
 }
 
-bool HbBadgeIconInfo::operator!=(const HbBadgeIconInfo &other)
+bool HbBadgeIconInfo::operator!=(const HbBadgeIconInfo &other) const
 {
     if ((icon() != other.icon()) ||
-        (zValue() != other.zValue()) ||
-        (alignment() != other.alignment())
-       )
-    {
+            (zValue() != other.zValue()) ||
+            (alignment() != other.alignment())
+       ) {
         return true;
     }
 
@@ -69,7 +66,7 @@ HbIcon HbBadgeIconInfo::icon() const
     return mIcon;
 }
 
-void HbBadgeIconInfo::setIcon(const HbIcon& icon)
+void HbBadgeIconInfo::setIcon(const HbIcon &icon)
 {
     mIcon = icon;
 }
@@ -93,4 +90,3 @@ void HbBadgeIconInfo::setAlignment(Qt::Alignment align)
 {
     mAlignment = align;
 }
-

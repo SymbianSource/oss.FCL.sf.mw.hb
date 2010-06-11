@@ -40,8 +40,8 @@ class HbSgimageIconImpl : public HbIconImpl
 {
 public :
     HbSgimageIconImpl(const HbSharedIconInfo &iconData,
-                      const QString& name,
-                      const QSizeF& keySize,
+                      const QString &name,
+                      const QSizeF &keySize,
                       Qt::AspectRatioMode aspectRatioMode,
                       QIcon::Mode mode,
                       bool mirrored,
@@ -49,11 +49,11 @@ public :
 
     ~HbSgimageIconImpl();
     QPixmap pixmap();
-    void paint(QPainter* painter,
+    void paint(QPainter *painter,
                const QRectF &rect,
                Qt::Alignment alignment,
                const QPainterPath &clipPath = QPainterPath(),
-               HbMaskableIconImpl * maskIconData = 0);
+               HbMaskableIconImpl *maskIconData = 0);
 
     QSize defaultSize() const;
     QSize size();
@@ -62,19 +62,19 @@ public :
 private :
     void retrieveSgImageData();
     VGImage getVgImageFromSgImage();
-    QPointF setAlignment(const QRectF& rect,
-                         QSizeF& renderSize,
+    QPointF setAlignment(const QRectF &rect,
+                         QSizeF &renderSize,
                          Qt::Alignment alignment);
-    void updatePainterTransformation(QPainter * painter, const QPointF & pos);
-    static VGImage getVgImage(HbIconImpl * impl, QPainter * painter);
+    void updatePainterTransformation(QPainter *painter, const QPointF &pos);
+    static VGImage getVgImage(HbIconImpl *impl, QPainter *painter);
 
 
 private:
     TSgDrawableId sgImageId;
     QPixmap currentPixmap;
     QSize contentSize;
-    HbVgImageIconRenderer * vgImageRenderer;
-    HbPixmapIconRenderer * pixmapIconRenderer;
+    HbVgImageIconRenderer *vgImageRenderer;
+    HbPixmapIconRenderer *pixmapIconRenderer;
 };
 
 #endif // HBSGIMAGEICONIMPL_P_H

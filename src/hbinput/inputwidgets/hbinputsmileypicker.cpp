@@ -35,6 +35,7 @@
 #include <HbFrameItem>
 #include <HbFrameDrawer>
 #include <hbdialog_p.h>
+#include <hbinputregioncollector_p.h>
 
 #include "hbinputsmileypicker.h"
 
@@ -116,7 +117,7 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     : HbDialog(*new HbInputSmileyPickerPrivate(rows, columns), parent)
 {
     Q_D(HbInputSmileyPicker);
-
+    HbInputRegionCollector::instance()->attach(this);
 #if QT_VERSION >= 0x040600
     // Make sure the smiley picker never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
@@ -129,6 +130,7 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     setBackgroundFaded(false);
     setTimeout(NoTimeout);
     setContentWidget(d->mView);
+    d->mView->setLongPressEnabled(false);
 
     // extract smilies.
     d->getSmilies(smileys);

@@ -23,25 +23,9 @@
 **
 ****************************************************************************/
 
-#include <hbiconloader_p.h>
-#include "hbthemecommon_p.h"
-
-#include <QDir>
-#include <QCoreApplication>
-#include <QDebug>
-#include <QPicture>
-#include <QPainter>
-#include <QStyleOption>
-#include <QApplication> //krazy:exclude=qclasses
-#include <QtAlgorithms>
-#include <QTime>
-#include <QSvgRenderer>
-#include <QImageReader>
-#include <QHash>
-
+#include "hbiconloader_p.h"
 #include "hbframedrawer_p.h"
 #include "hbicontheme_p.h"
-#include "hbstandarddirs_p.h"
 #include "hblayoutdirectionnotifier_p.h"
 #include "hbinstance.h"
 #include "hbiconanimation_p.h"
@@ -60,6 +44,19 @@
 #include "hbthemeindex_p.h"
 #include "hbthemecommon_p.h"
 #include "hbiconimplcreator_p.h"
+#include "hbstandarddirs_p.h"
+#include <QDir>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QPicture>
+#include <QPainter>
+#include <QStyleOption>
+#include <QApplication> //krazy:exclude=qclasses
+#include <QtAlgorithms>
+#include <QTime>
+#include <QSvgRenderer>
+#include <QImageReader>
+#include <QHash>
 
 #ifdef HB_NVG_CS_ICON
 #include "hbeglstate_p.h"
@@ -133,10 +130,10 @@ public:
                                    QIcon::Mode mode, 
                                    bool mirrored, 
                                    const QColor &color,
-                                   HbRenderingMode renderMode);
+                                   HbRenderingMode renderMode );
 #endif
 
-public: // data
+public: 
     QString storedTheme;
 
     int sourceResolution;
@@ -151,7 +148,7 @@ public: // data
 
     HbIconSource *lastIconSource;
 
-private: // data
+private: 
     enum {
         Unknown = 0,
         NotMirrored = 1,
@@ -190,18 +187,18 @@ HbIconLoaderPrivate *HbIconLoaderPrivate::global()
 QString HbIconLoaderPrivate::removeIconNameSuffix(const QString &iconName)
 {
     QString loweredIconName = iconName.toLower();
-    if (loweredIconName.endsWith(".svg")
-        || loweredIconName.endsWith(".png")
-        || loweredIconName.endsWith(".mng")
-        || loweredIconName.endsWith(".gif")
-        || loweredIconName.endsWith(".xpm")
-        || loweredIconName.endsWith(".jpg")
-        || loweredIconName.endsWith(".nvg")) {
+    if (loweredIconName.endsWith(QLatin1String(".svg"))
+        || loweredIconName.endsWith(QLatin1String(".png"))
+        || loweredIconName.endsWith(QLatin1String(".mng"))
+        || loweredIconName.endsWith(QLatin1String(".gif"))
+        || loweredIconName.endsWith(QLatin1String(".xpm"))
+        || loweredIconName.endsWith(QLatin1String(".jpg"))
+        || loweredIconName.endsWith(QLatin1String(".nvg"))) {
         return iconName.left(iconName.length() - 4);
     }
 
-    if (loweredIconName.endsWith(".svgz")
-        || loweredIconName.endsWith(".qpic")) {
+    if (loweredIconName.endsWith(QLatin1String(".svgz"))
+        || loweredIconName.endsWith(QLatin1String(".qpic"))) {
         return iconName.left(iconName.length() - 5);
     }
 
@@ -233,9 +230,7 @@ QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceNam
     mirroredIconFound = false;
     QString iconPath;
 
-    if (QDir::isRelativePath(resourceName)) {
-
-#ifdef Q_OS_SYMBIAN
+    if (HbThemeUtils::isLogicalName(resourceName)) {
         // Try to get themed icon information from theme index
         HbThemeIndexResource resource(resourceName);
         if (resource.isValid()) {
@@ -244,30 +239,12 @@ QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceNam
             } else {
                 return resource.fullFileName();
             }
-        }
-#endif // Q_OS_SYMBIAN
-
-        // If there was no theme index, search the icon in theme icon dirs (slow)
-        foreach (const QString &dir, HbThemePrivate::instance()->iconDirectories()) {
-            if (mirrored) {
-                // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
-                iconPath =  HbStandardDirs::findResource( dir + "mirrored" + '/' + resourceName, Hb::IconResource );
-                if( !iconPath.isEmpty() ) {
-                    mirroredIconFound = true;
-                    break;
-                }
-            }
-
-        iconPath =  HbStandardDirs::findResource( dir + resourceName, Hb::IconResource );
-
-            // If the file was found in this dir, return the filename.
-        if ( !iconPath.isEmpty() ) {
-                break;
-            }
+        } else {
+            // Logical name not found in theme index - return empty string
+            return QString();
         }
     } else {
-        // Absolute path. Do not scan through different theme directories.
-        QString iconNameCopy(resourceName);
+        // Not a logical name. Check from file system.
         if (mirrored) {
             // If icon is mirrored, try to find the icon in a separate "mirrored" folder used for mirrored icons
 
@@ -294,6 +271,8 @@ QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceNam
     }
 
     return iconPath;
+}
+
 /*
 From Freedesktop.org:
 
@@ -427,19 +406,15 @@ FindBestIconHelper(iconList, size, theme) {
 
     }
 */
-}
 
 bool HbIconLoaderPrivate::isAutomaticallyMirrored(const QString &iconName)
 {
-    Q_UNUSED(iconName);
     // only place to get mirroring information is from themeindex
-#ifdef Q_OS_SYMBIAN
-        // Try to get themed icon information from theme index
-        HbThemeIndexResource resource(iconName);
-        if (resource.isValid()) {
-            return resource.isAutomaticallyMirrored();
-        }
-#endif
+    // Try to get themed icon information from theme index
+    HbThemeIndexResource resource(iconName);
+    if (resource.isValid()) {
+        return resource.isAutomaticallyMirrored();
+    }
 
     return false;
 }
@@ -466,9 +441,13 @@ void HbIconLoaderPrivate::setLayoutMirrored(bool mirrored)
 }
 
 #ifdef HB_ICONIMPL_CACHE
-QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName, const QSizeF &size,
-    Qt::AspectRatioMode aspectRatioMode, QIcon::Mode mode, bool mirrored, const QColor &color,
-    HbRenderingMode renderMode)
+QByteArray HbIconLoaderPrivate::createCacheKeyFrom( const QString &iconName,
+                                                    const QSizeF &size,
+                                                    Qt::AspectRatioMode aspectRatioMode, 
+                                                    QIcon::Mode mode, 
+                                                    bool mirrored, 
+                                                    const QColor &color,
+                                                    HbRenderingMode renderMode )
 {
     static const int paramArraySize = 8;
 
@@ -576,11 +555,10 @@ QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName
         }
     }
 
-    // Step 2: There was no animation definition, try to get default size from theme index if it is a themed icon
+    // Step 2: There was no animation definition,
+    // try to get default size from theme index if it is a themed icon (logical name).
     
-    // TODO: change this to simpler function call in Symbian OS env
-    if (QDir::isRelativePath(iconName)) {
-#ifdef Q_OS_SYMBIAN
+    if (HbThemeUtils::isLogicalName(iconName)) {
         // Try to get themed icon information from theme index
         HbThemeIndexResource resource(iconName);
         if (resource.isValid()) {
@@ -590,15 +568,9 @@ QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName
             } else {
                 size = resource.defaultItemSize();
             }
-            // Returns invalid size if there is a valid theme index, but the item was not found there.
-            return size;
-        } else {
-            // Step 3: Theme index was not used, try to get icon's default size from theme server's default size cache.
-            params.iconFileName = resolveIconFileName(params);
         }
-#else
-        params.iconFileName = resolveIconFileName(params);
-#endif
+        // Returns invalid size if the index did not provide the size
+        return size;
     } else { // Absolute path, use it directly without resolving anything.
         params.iconFileName = iconName;
     }
@@ -610,27 +582,7 @@ QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName
 
     QString format = formatFromPath(params.iconFileName);
 
-// Theme server on desktop was found very slow (probably due to IPC with QLocalServer/QLocalSocket).
-// disabling icon sharing via theme server until theme server performance on desktop is improved
-#ifdef Q_OS_SYMBIAN
-    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
-    // Try to take data from server if parameters don't prevent it
-    if (manager && format != "MNG" && format != "GIF" &&
-        !iconName.startsWith(':')) { // not using server for app's own resources (iconName is a logical name for theme elements)
-#ifdef HB_ICON_TRACES
-        qDebug() << "HbIconLoader::DefaultSize req to server " << params.iconFileName;
-#endif
-        QSizeF sizeFromServer = HbThemeClient::global()->getSharedIconDefaultSize(params.iconFileName);
-#ifdef HB_ICON_TRACES
-        qDebug() << "HbIconLoader::DefaultSize result from server" << sizeFromServer;
-#endif
-        if (sizeFromServer.isValid()) {
-            return sizeFromServer;
-        }
-    }
-#endif // Q_OS_SYMBIAN
-
-    // Step 4: Get the default size from the icon file in the client side
+    // Step 3: Get the default size from the icon file in the client side
     HbIconSource *source = getIconSource(params.iconFileName, format);
     size = source->defaultSize();
 
@@ -770,16 +722,16 @@ void HbIconLoader::removeItemInCache(HbIconImpl *iconImpl)
 void HbIconLoader::freeGpuIconData()
 {
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-	for( int i = 0; i < iconEngineList.count(); i++ ) {	    
+    for( int i = 0; i < iconEngineList.count(); i++ ) {     
         HbIconEngine *engine = iconEngineList.at(i);
-	    engine->resetIconImpl();
-	}	
-	for(int i = 0; i< frameDrawerInstanceList.count(); i++) {
-	    HbFrameDrawerPrivate * fd = frameDrawerInstanceList.at(i);
-	    if ( (fd->iconFormatType() == SGIMAGE) || (fd->iconFormatType() == NVG) ) {
-	        fd->resetMaskableIcon();            
-	    }    
-	}    
+        engine->resetIconImpl();
+    }   
+    for(int i = 0; i< frameDrawerInstanceList.count(); i++) {
+        HbFrameDrawerPrivate * fd = frameDrawerInstanceList.at(i);
+        if ( (fd->iconFormatType() == SGIMAGE) || (fd->iconFormatType() == NVG) ) {
+            fd->resetMaskableIcon();            
+        }    
+    }    
 #endif
 }
 
@@ -848,23 +800,7 @@ QSizeF HbIconLoader::getAnimationDefaultSize(HbIconAnimationDefinition &def, HbI
     QList<HbIconAnimationFrameSet::FrameData> frameList;
 
     // Get the default size from the first animation frame
-    params.cleanIconName = frameDefs.at(0).iconName;
-    params.iconFileName = resolveIconFileName(params);
-    QString format = formatFromPath(params.iconFileName);
-
-    // Try to get the default size from server if the icon is not such that is loaded in client side.
-    if (format != "MNG"
-        && format != "GIF"
-        && !params.iconFileName.startsWith(':'))
-    {
-        QSizeF defSize = HbThemeClient::global()->getSharedIconDefaultSize(params.iconFileName);
-        if (defSize.isValid()) {
-            return defSize;
-        }
-    }
-
-    // Otherwise get if by calling HbIconLoader::defaultSize for the first animation frame
-    return HbIconLoader::defaultSize(params.iconFileName, QString(), params.options);
+    return HbIconLoader::defaultSize(frameDefs.at(0).iconName, QString(), params.options);
 }
 
 void HbIconLoader::loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingParams &params)
@@ -975,7 +911,7 @@ QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
 #endif
     // If not found then it can still be a normal file specified with a relative path.
     if (!iconFound) {
-        iconFound = QFile(params.iconName).exists();
+        iconFound = QFile::exists(params.iconName);
         if (iconFound) {
             iconPath = params.iconName;
         }
@@ -1271,12 +1207,12 @@ void HbIconLoader::switchRenderingMode(HbRenderingMode newRenderMode)
 #endif
 
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-    if (newRenderMode != renderMode) {     
+    if (newRenderMode != renderMode) {
         if (newRenderMode == ESWRendering) {
-            // switching from HW to SW mode  
-            freeGpuIconData();            
+            // switching from HW to SW mode
+            freeGpuIconData();
         }        
-        if (HbThemeClient::global()->switchRenderingMode(newRenderMode)) {         
+        if (HbThemeClient::global()->switchRenderingMode(newRenderMode)) {
             renderMode = newRenderMode;
         }
     }
@@ -1383,8 +1319,13 @@ HbIconImpl *HbIconLoader::loadIcon(
     if (!params.animationCreated) {
     
 #ifdef HB_ICONIMPL_CACHE
-        QByteArray cacheKey = d->createCacheKeyFrom( params.iconName, params.size, params.aspectRatioMode,
-                        params.mode, params.mirrored, params.color, params.renderMode );
+        QByteArray cacheKey = d->createCacheKeyFrom( params.iconName, 
+                                                     params.size,
+                                                     params.aspectRatioMode,
+                                                     params.mode, 
+                                                     params.mirrored, 
+                                                     params.color, 
+                                                     params.renderMode );
         //look up in the local iconImplCache. 
         //If found return the ptr directly
         if (iconImplCache.contains(cacheKey)) {
@@ -1397,7 +1338,7 @@ HbIconImpl *HbIconLoader::loadIcon(
             return ptr;
         }
 #endif
-        if (QDir::isRelativePath(iconName)) {
+        if (HbThemeUtils::isLogicalName(iconName)) {
             params.iconFileName = resolveIconFileName(params);
         } else {
             params.iconFileName = iconName;
@@ -1528,8 +1469,13 @@ HbIconImpl* HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
     // and when NVG is not available.
 #if defined(HB_ICONIMPL_CACHE)
 
-    QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconData.multiPartIconId, size,
-                          aspectRatioMode, mode, mirrored, color, renderMode);
+    QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconData.multiPartIconId,
+                                                size,
+                                                aspectRatioMode,
+                                                mode,
+                                                mirrored, 
+                                                color, 
+                                                renderMode);
     //If consolidated icon found in the client's cache, increment ref-count and return
     if (iconImplCache.contains(cacheKey)) {
         HbIconImpl * ptr = iconImplCache.value(cacheKey);
@@ -1700,7 +1646,7 @@ QPixmap HbIconLoader::loadIcon(const QString &iconName, HbIconLoader::Purpose pu
  * individual pieces.
  * 
  */
-void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,                                                             
+void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
                                 QVector<QSizeF> &sizeList,
                                 Qt::AspectRatioMode aspectRatioMode,
                                 QIcon::Mode mode,
@@ -1718,8 +1664,13 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
 #ifdef HB_ICONIMPL_CACHE
     // search the client cache first before asking the server
     for(int i = 0; i < multiPartIconList.count(); i++) {
-        QByteArray cacheKey = d->createCacheKeyFrom( multiPartIconList[i], sizeList[i], aspectRatioMode,
-                        mode, mirrored, color, currRenderMode );
+        QByteArray cacheKey = d->createCacheKeyFrom( multiPartIconList[i], 
+                                                     sizeList[i], 
+                                                     aspectRatioMode,
+                                                     mode, 
+                                                     mirrored, 
+                                                     color, 
+                                                     currRenderMode );
         //look up in the local iconImplCache. 
         //If found return the ptr directly
         HbIconImpl * ptr = 0;
@@ -1771,8 +1722,13 @@ void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
                 impl = HbIconImplCreator::createIconImpl(iconInfoList.icon[i], params);
 
 #ifdef HB_ICONIMPL_CACHE
-                QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconList[i], sizeList.at(i) , aspectRatioMode,
-                                      mode, mirrored, color, currRenderMode);
+                QByteArray cacheKey = d->createCacheKeyFrom( multiPartIconList[i], 
+                                                             sizeList.at(i) , 
+                                                             aspectRatioMode,
+                                                             mode, 
+                                                             mirrored, 
+                                                             color, 
+                                                             currRenderMode );
                 iconImplCache.insert(cacheKey, impl);
 #ifdef HB_ICON_CACHE_DEBUG
                 qDebug() << "HbIconLoader::getMultiIconImplFromServer(): " << params.iconName << " inserted into impl-cache, ref-count now = " << impl->refCount();

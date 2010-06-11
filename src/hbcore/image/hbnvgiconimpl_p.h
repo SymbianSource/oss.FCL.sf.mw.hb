@@ -35,8 +35,7 @@ class HbEglStates;
 class HbVgImageIconRenderer;
 class HbPixmapIconRenderer;
 
-struct NvgAspectRatioSettings
-{
+struct NvgAspectRatioSettings {
     HbNvgEngine::HbNvgAlignType nvgAlignStatusAndAspectRatio;
     HbNvgEngine::HbNvgMeetType type;
 };
@@ -45,8 +44,8 @@ class HB_AUTOTEST_EXPORT HbNvgIconImpl : public HbIconImpl
 {
 public :
     HbNvgIconImpl(const HbSharedIconInfo &iconData,
-                  const QString& name,
-                  const QSizeF& keySize,
+                  const QString &name,
+                  const QSizeF &keySize,
                   Qt::AspectRatioMode aspectRatioMode,
                   QIcon::Mode mode,
                   bool mirrored,
@@ -54,11 +53,11 @@ public :
 
     ~HbNvgIconImpl();
     QPixmap pixmap();
-    void paint(QPainter* painter,
+    void paint(QPainter *painter,
                const QRectF &rect,
                Qt::Alignment alignment,
                const QPainterPath &clipPath = QPainterPath(),
-               HbMaskableIconImpl * maskIconData = 0);
+               HbMaskableIconImpl *maskIconData = 0);
 
     QSize defaultSize() const;
 
@@ -68,18 +67,18 @@ public :
 
 private :
     void retrieveNvgData();
-    QPointF setAlignment(const QRectF& rect,
-                         QSizeF& renderSize,
+    QPointF setAlignment(const QRectF &rect,
+                         QSizeF &renderSize,
                          Qt::Alignment alignment);
     NvgAspectRatioSettings mapKeyAspectRatioToNvgAspectRatio(Qt::AspectRatioMode aspectRatio);
 
-    HbNvgEngine::HbNvgErrorType drawNVGIcon(const QSize & size, HbNvgEngine &engine);
+    HbNvgEngine::HbNvgErrorType drawNVGIcon(const QSize &size, HbNvgEngine &engine);
     int createContextAndSurface(EGLDisplay display,
                                 int width,
                                 int height,
-                                EGLContext & newContext,
-                                EGLSurface & newSurface,
-                                EGLConfig & config);
+                                EGLContext &newContext,
+                                EGLSurface &newSurface,
+                                EGLConfig &config);
 
     VGImage createVGImageFromNVG(EGLDisplay display,
                                  EGLSurface currentReadSurface,
@@ -88,19 +87,19 @@ private :
                                  int width,
                                  int height,
                                  bool useGivenContext = true,
-                                 HbNvgEngine * nvgEngine = 0);
+                                 HbNvgEngine *nvgEngine = 0);
 
-    bool drawRasterizedIcon(QPainter * painter,
-                            const QPointF & topLeft,
-                            const QSizeF & renderSize,
+    bool drawRasterizedIcon(QPainter *painter,
+                            const QPointF &topLeft,
+                            const QSizeF &renderSize,
                             const QPainterPath &clipPath);
 
-    void drawNVGIcon(QPainter * painter,
-                     const QPointF & topLeft,
-                     const QSizeF & renderSize,
+    void drawNVGIcon(QPainter *painter,
+                     const QPointF &topLeft,
+                     const QSizeF &renderSize,
                      NvgAspectRatioSettings settings);
 
-    static VGImage getVgImage(HbIconImpl * impl, QPainter * painter);
+    static VGImage getVgImage(HbIconImpl *impl, QPainter *painter);
 
 private:
     QByteArray          nvgData;
@@ -111,7 +110,7 @@ private:
     HbPooledNVGEngine  *nvgEngine;
     HbEglStates        *eglStates;
     HbVgImageIconRenderer *vgImageRenderer;
-    HbPixmapIconRenderer * pixmapIconRenderer;
+    HbPixmapIconRenderer *pixmapIconRenderer;
 };
 
 #endif // end of HBNVGICONIMPL_P_H

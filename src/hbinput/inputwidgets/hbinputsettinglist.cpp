@@ -34,6 +34,8 @@
 #include <hbinputsettingproxy.h>
 #include <hbinpututils.h>
 #include <hbinputpredictionfactory.h>
+#include <hbinputregioncollector_p.h>
+
 #include "hbinputsettinglist.h"
 #include "hbdialog_p.h"
 
@@ -89,6 +91,7 @@ HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
  : HbDialog(*new HbInputSettingListPrivate(), parent)
 {
     Q_D(HbInputSettingList);
+    HbInputRegionCollector::instance()->attach(this);
 
     QGraphicsLinearLayout *mainLayout = new QGraphicsLinearLayout(Qt::Vertical);
     QGraphicsGridLayout *gridLayout = new QGraphicsGridLayout();

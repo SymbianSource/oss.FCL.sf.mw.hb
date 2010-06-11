@@ -94,6 +94,10 @@ public:
     HbTypingCorrectionLevel typingCorrectionLevel() const;
     void setPrimaryCandidateMode(HbPrimaryCandidateMode mode);
     HbPrimaryCandidateMode primaryCandidateMode() const;
+    HbInputMethodDescriptor preferredInputMethod(Qt::Orientation orientation) const;
+    HbInputMethodDescriptor preferredInputMethod() const;
+    QByteArray preferredInputMethodCustomData(Qt::Orientation orientation) const;
+    void setPreferredInputMethod(Qt::Orientation orientation, const HbInputMethodDescriptor &inputMethod, const QByteArray &customData = QByteArray());
 
 signals:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);

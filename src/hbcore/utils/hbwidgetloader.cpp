@@ -22,6 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#ifndef HB_BIN_CSS
+#define HB_USETHEMESERVER
+#endif
 
 #include "hbwidgetloader_p.h"
 #include "hbwidgetloadersyntax_p.h"
@@ -29,7 +32,9 @@
 
 #include "hbinstance.h"
 #include "hbtheme_p.h"
+#ifdef HB_USETHEMESERVER
 #include "hbthemeclient_p.h"
+#endif
 
 #include <QtDebug>
 #include <QFile>
@@ -63,11 +68,11 @@ Q_GLOBAL_STATIC(ClientHashForLayoutDefs, clientLayoutDefsCache)
 Q_GLOBAL_STATIC(QStringList, filesNotPresent)
 
 // Layout caching
-static HbWidgetLoader::LayoutDefinition *staticCacheLayout = NULL;
-static QString staticCacheFileName = QString();
-static QString staticCacheName = QString();
-static QString staticCacheSection = QString();
-static QDateTime staticCacheModified = QDateTime();
+static HbWidgetLoader::LayoutDefinition *staticCacheLayout = 0;
+static QString staticCacheFileName;
+static QString staticCacheName;
+static QString staticCacheSection;
+static QDateTime staticCacheModified;
 
 class HbWidgetLoaderPrivate
 {
@@ -237,6 +242,12 @@ HbWidgetLoaderPrivate::~HbWidgetLoaderPrivate()
     delete mActions;
 }
 
+#ifdef HB_BIN_CSS
+void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
+{
+    Q_UNUSED(widget)
+}
+#else
 /*!
     \internal
 */
@@ -246,6 +257,7 @@ void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
     mActions->mWidget = widget;
     mActions->mCurrentProfile = HbDeviceProfile::profile(widget);
 }
+#endif
 
 /*!
     \internal
@@ -280,10 +292,12 @@ bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
     }
 
     // get the shared layout definition address.
+#ifdef HB_USETHEMESERVER
     layoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section);
     if (layoutDef) {
         clientLayoutDefsCache()->insert(key, layoutDef);
     }
+#endif
     return true;
 }
 

@@ -48,27 +48,27 @@ public:
         QVariant userData;
     };
 
-    static bool start(QGraphicsItem *item, 
-                            const QString &itemType, 
-                            const QString &effectEvent,
-                            QObject *receiver = 0,
-                            const char *member = 0,
-                            const QVariant &userData = QVariant(),
-                            const QRectF &extRect = QRectF());
+    static bool start(QGraphicsItem *item,
+                      const QString &itemType,
+                      const QString &effectEvent,
+                      QObject *receiver = 0,
+                      const char *member = 0,
+                      const QVariant &userData = QVariant(),
+                      const QRectF &extRect = QRectF());
 
-    static bool start(QGraphicsItem *item, 
-                            const QString &effectEvent,
-                            QObject *receiver = 0,
-                            const char *member = 0,
-                            const QVariant &userData = QVariant(),
-                            const QRectF &extRect = QRectF());
+    static bool start(QGraphicsItem *item,
+                      const QString &effectEvent,
+                      QObject *receiver = 0,
+                      const char *member = 0,
+                      const QVariant &userData = QVariant(),
+                      const QRectF &extRect = QRectF());
 
-    static bool start(const QList<QGraphicsItem *> &items, 
-                            const QString &itemType, 
-                            const QString &effectEvent,
-                            QObject *receiver = 0,
-                            const char *member = 0,
-                            const QVariant &userData = QVariant());
+    static bool start(const QList<QGraphicsItem *> &items,
+                      const QString &itemType,
+                      const QString &effectEvent,
+                      QObject *receiver = 0,
+                      const char *member = 0,
+                      const QVariant &userData = QVariant());
 
     static bool effectRunning(QGraphicsItem *item, const QString &effectEvent = QString());
 
@@ -84,7 +84,7 @@ public:
 
     static bool add(QGraphicsItem *item, const QString &filePath, const QString &effectEvent = QString());
     static bool add(QGraphicsItem *item, const QStringList &filePath, const QStringList &effectEvent = QStringList());
-    
+
     static bool remove(const QString &itemType, const QString &filePath, const QString &effectEvent = QString());
     static bool remove(QGraphicsItem *item, const QString &filePath, const QString &effectEvent = QString());
     static bool remove(QGraphicsItem *item);
@@ -96,6 +96,6 @@ private:
     HbEffect();
 };
 
-Q_DECLARE_METATYPE( HbEffect::EffectStatus )
+Q_DECLARE_METATYPE(HbEffect::EffectStatus)
 
 #endif // HBEFFECT_H

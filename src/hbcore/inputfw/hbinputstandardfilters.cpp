@@ -25,6 +25,12 @@
 #include "hbinputstandardfilters.h"
 
 #include "hbinputsettingproxy.h"
+
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE   0x0660
+#define HB_DIGIT_ARABIC_INDIC_END_VALUE     0x0669
+#define HB_DIGIT_EASTERN_ARABIC_START_VALUE 0x06F0
+#define HB_DIGIT_EASTERN_ARABIC_END_VALUE   0x06F9
+
 /*!
 @alpha
 @hbcore
@@ -48,14 +54,23 @@ static bool isValidNumber(QChar aChar)
     QLocale::Language language = HbInputSettingProxy::instance()->globalInputLanguage().language();
 	QLocale::Language systemLanguage = QLocale::system().language();
 
-	if (language != systemLanguage) {
-        if (aChar >= '0' && aChar <= '9') {
+	// If both phone language and writing language are same, then language specific 
+	// digits should be allowed in phone number and digits only editors. If the current
+	// language is Arabic, then Arabic-indic digits are supported. Eastern-Arabic digits
+	// are supported in Persian and Urdu languages.
+	if (language == systemLanguage) {
+		if (language == QLocale::Arabic &&
+			(aChar >= HB_DIGIT_ARABIC_INDIC_START_VALUE &&
+			aChar <= HB_DIGIT_ARABIC_INDIC_END_VALUE)) {
+            ret = true;
+        } else if ((language == QLocale::Persian ||
+            language == QLocale::Urdu) &&
+            (aChar >= HB_DIGIT_EASTERN_ARABIC_START_VALUE &&
+            aChar <= HB_DIGIT_EASTERN_ARABIC_END_VALUE)) {
+            ret = true;
+        } else if (aChar >= '0' && aChar <= '9') {
             ret = true;
         }	
-	} else if (language == QLocale::Arabic) {
-        if (aChar >= 0x0660 && aChar <= 0x0669) {
-            ret = true;
-        }
     } else if (aChar >= '0' && aChar <= '9') {
         ret = true;
     }         

@@ -55,10 +55,16 @@ void HbCssConverterUtils::unregisterOffsetHolder(int *offset)
     registered.remove(offset);
 }
 
-
-QList<int *> HbCssConverterUtils::registeredOffsetHolders()
+QMultiHash<int, int *> HbCssConverterUtils::registeredOffsetHolders()
 {
-    return registered.keys();
+    QMultiHash<int, int *> holders;
+    holders.reserve(registered.size());
+    QMap<int *, int>::const_iterator end = registered.constEnd();
+    for (QMap<int *, int>::const_iterator i = registered.constBegin(); i != end; ++i) {
+        int *holder = i.key();
+        holders.insertMulti(*holder, holder);
+    }
+    return holders;
 }
 
 void HbCssConverterUtils::unregisterAll()
@@ -84,13 +90,14 @@ void HbCssConverterUtils::cellFreed(int offset)
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
         HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
         const char *chunkBase = static_cast<const char *>(shared->base());
+        const char *freedEnd = chunkBase + offset + size;
+        const int *freedStart = reinterpret_cast<const int *>(chunkBase + offset);
 
-        QList<int *> offsetHolders = HbCssConverterUtils::registeredOffsetHolders();
-        for (int i = 0; i<offsetHolders.count(); ++i) {
-            int *holder = offsetHolders.at(i);
-            if ((char*)holder >= chunkBase + offset && (char*)holder < chunkBase + offset + size) {
-                HbCssConverterUtils::unregisterOffsetHolder(holder);
-            }
+        QMap<int *, int>::iterator freedHolders =
+                registered.lowerBound(const_cast<int *>(freedStart));
+        while(freedHolders != registered.end()
+              && reinterpret_cast<char*>(freedHolders.key()) <  freedEnd) {
+            freedHolders = registered.erase(freedHolders);
         }
     }
 }
@@ -102,19 +109,23 @@ void HbCssConverterUtils::cellMoved(int offset, int newOffset)
     if (size > 0) {
         // Check if there were registered offset holders in the old cell
         // and register corresponding ones in the reallocated cell.
-        QList<int *> holders = HbCssConverterUtils::registeredOffsetHolders();
-
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
         HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
-        const char *chunkBase = static_cast<const char *>(shared->base());    
-        
-        for (int i=0; i<holders.count(); i++) {
-            int *holder = holders.at(i);
-            char *holderC = (char*)holder;
-            if (holderC >= chunkBase + offset && holderC < chunkBase + offset + size) {
-                HbCssConverterUtils::unregisterOffsetHolder(holder);
-                HbCssConverterUtils::registerOffsetHolder((int*)(holderC + newOffset - offset));
-            }
+        const char *chunkBase = static_cast<const char *>(shared->base());
+        const char *freedEnd = chunkBase + offset + size;
+        const int *freedStart = reinterpret_cast<const int *>(chunkBase + offset);
+
+        QMap<int *, int>::iterator freedHolders =
+                registered.lowerBound(const_cast<int *>(freedStart));
+        QList<int *> newHolders;
+        while(freedHolders != registered.end()
+              && reinterpret_cast<char*>(freedHolders.key()) <  freedEnd) {
+            char *holderC = reinterpret_cast<char*>(freedHolders.key());
+            newHolders.append(reinterpret_cast<int*>(holderC + newOffset - offset));
+            freedHolders = registered.erase(freedHolders);
+        }
+        for (int i = 0; i < newHolders.size(); ++i) {
+            registerOffsetHolder(newHolders.at(i));
         }
     }
 }
@@ -129,62 +140,56 @@ int HbCssConverterUtils::defragmentChunk()
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
     HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
 
-    // Register shared cache pointer in chunk header as shared cache may also be moved in defragmentation
-    HbSharedChunkHeader *chunkHeader = static_cast<HbSharedChunkHeader*>(shared->base());    
-    HbCssConverterUtils::registerOffsetHolder(reinterpret_cast<int *>(&chunkHeader->sharedCacheOffset));
+    // Register shared cache pointer in chunk header
+    //as shared cache may also be moved in defragmentation
+    HbSharedChunkHeader *chunkHeader = static_cast<HbSharedChunkHeader*>(shared->base());
+    registerOffsetHolder(reinterpret_cast<int *>(&chunkHeader->sharedCacheOffset));
 
-    QList<int *> offsetHolders = HbCssConverterUtils::registeredOffsetHolders();
+    QMultiHash<int, int *> offsetHolders = registeredOffsetHolders();
 
     // Create new buffer where the current chunk contents are defragmented
-    void *buffer = ::malloc(shared->size());
+    char *buffer = static_cast<char*>(::malloc(shared->size()));
     int newCurrentOffset = 0;
 
     // Create new cell order and update offset holders
-    QMap<int,int>::const_iterator i = cells.constBegin();
+    QMap<int,int>::const_iterator end = cells.constEnd();
 
-    while (i != cells.constEnd()) {
+    for (QMap<int,int>::const_iterator i = cells.constBegin(); i != end; ++i) {
         // Get the old cell
         int offset = i.key();
         int size = i.value();
         
         // Update registered offset holders
-
-        // TODO: optimize this, now there's linear search for each cell!
-		for (int j=0; j<offsetHolders.count(); ++j) {
-			int *holder = offsetHolders.at(j);
-			if (*holder == offset) {
-				// Change stored offset value
-				*holder = newCurrentOffset + sizeof(HbSharedChunkHeader);
-			}
-		}
-
+        QList<int *> values = offsetHolders.values(offset);
+        offsetHolders.remove(offset);
+        int newOffset = newCurrentOffset + sizeof(HbSharedChunkHeader);
+        for (int j = 0; j < values.size(); ++j) {
+            int *holder = values[j];
+            *holder = newOffset;
+            offsetHolders.insertMulti(*holder, holder);
+        }
         newCurrentOffset += size;
-        i++;
     }
 
-    i = cells.constBegin();
     newCurrentOffset = 0;
-
     // Move allocated cells to a linear buffer
-    while (i != cells.constEnd()) {
+    for (QMap<int, int>::const_iterator i = cells.constBegin(); i != end; ++i) {
         // Get the old cell
         int offset = i.key();
         int size = i.value();
         // Copy to new chunk
-        memcpy((char*)buffer + newCurrentOffset, (char*)shared->base() + offset, size);
-
+        memcpy(buffer + newCurrentOffset, static_cast<char*>(shared->base()) + offset, size);
         newCurrentOffset += size;
-        i++;
     }
 
     // Free all cells from the shared chunk and move the defragmented buffer in the beginning of the chunk.
     // Note that chunk memory management is screwed up after this point, so no more allocations should be
     // done in it after this.
 
-    HbCssConverterUtils::unregisterAll();
+    unregisterAll();
     QList<int> keys = cells.keys();
 
-    for (int j=0; j<keys.count(); ++j) {
+    for (int j = 0; j < keys.count(); ++j) {
         shared->free(keys.at(j));
     }
 

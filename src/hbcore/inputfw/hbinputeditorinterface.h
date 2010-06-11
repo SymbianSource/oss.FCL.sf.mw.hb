@@ -49,8 +49,8 @@ public:
 
     HbTextCase textCase() const;
     void setTextCase(HbTextCase textCase);
-     HbInputModeType mode() const;
-     void setMode(HbInputModeType inputMode);    
+    HbInputModeType mode() const;
+    void setMode(HbInputModeType inputMode);
     HbEditorConstraints inputConstraints() const;
     void setInputConstraints(HbEditorConstraints constraints);
     HbInputFilter *filter() const;
@@ -70,12 +70,12 @@ public:
     void lastFocusedState(HbInputState &result) const;
     void setLastFocusedState(const HbInputState &state);
 
-    bool operator==(const HbEditorInterface& interface) const;
-    bool operator!=(const HbEditorInterface& interface) const;
+    bool operator==(const HbEditorInterface& editorInterface) const;
+    bool operator!=(const HbEditorInterface& editorInterface) const;
     QObject* editor() const;
     HbVkbHost *vkbHost() const;
 
-public:  // Convinience methods for setting up standard editor types.   
+public:  // Convenience methods for setting up standard editor types.
     void setUpAsCompletingEmailField();
     void setUpAsCompletingUrlField();
     void setUpAsLatinAlphabetOnlyEditor();

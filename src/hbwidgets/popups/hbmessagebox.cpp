@@ -50,15 +50,8 @@ public:
         HbScrollArea *scroll = scrollArea();
         scroll->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
         clearContextMenuFlag(Hb::ShowTextContextMenuOnLongPress);
-        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);
-        primitive(HbStyle::P_LineEdit_frame_normal)->setVisible(false);        
-        primitive(HbStyle::P_LineEdit_frame_highlight)->setVisible(false);        
-    }
-
-    HbScrollBar * getScrollBar() const
-    {
-        HbScrollArea *scroll = scrollArea();
-        return scroll->verticalScrollBar();
+        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);  
+        setBackgroundItem(0,0);
     }
 
     void focusInEvent(QFocusEvent * event)
@@ -158,7 +151,6 @@ void HbMessageBoxPrivate::init()
         q->addAction(new HbAction(q->tr("No"),q));
         break;
     }
-
 }
 
 /*!
@@ -173,7 +165,7 @@ void HbMessageBoxPrivate::init()
 
     Using HbMessageBox, the following dialogs can be created:
 
-    <b>Information:</b> a statement to the user to which they may respond by acknowledging the information ('OK').<br>
+    <b>Information:</b> a statement to the user to which dismissed after acknowledging the information ('OK').<br>
     <b>Question:</b> a query to the user requiring a response. User needs to select between two alternatives, the positive or negative (For example: 'Delete Mailbox?' 'Yes'/'No').<br>
     <b>Warning:</b> a statement to the user to which they may respond by acknowledging the warning ('OK').<br>
     
@@ -182,7 +174,7 @@ void HbMessageBoxPrivate::init()
     Default properties for the MessageBox (warning, information and question dialogs) are:
 
     Description text: Text shown to the user as information. The amount of text rows is not limited, but after five rows the text starts scrolling.
-    Icon: Default icons are available for each dialog type using the MessageBox template. Changing the default icons is not recommended.
+    Icon: Default icons are available for each dialog type using the MessageBox template.
     Action buttons (one or two): one button for information and warning MessageBox, two buttons for question MessageBox.
     
     All the three dialogs(information, warning, question) supported by MessageBox are by default modal in nature, with

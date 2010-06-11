@@ -330,7 +330,6 @@ QString HbThemeIndexResource::fullMirroredFileName()
         default:
             {
             return fullFileName(); // There was no mirrored icon, return normal icon
-            break;
             }
         }
 

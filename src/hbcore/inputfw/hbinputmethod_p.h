@@ -26,14 +26,18 @@
 #define HB_INPUT_METHOD_P_H
 
 #include <QString>
+#include <QPointer>
 
 #include <hbinputmodeproperties.h>
 #include <hbinputstate.h>
 #include <hbinputlanguage.h>
+#include "hbinputcontextproxy_p.h"
 
 class HbInputStateMachine;
 class HbInputFilter;
 class HbInputMethod;
+class HbInputMainWindow;
+class HbInputContextProxy;
 
 class HB_CORE_PRIVATE_EXPORT HbInputMethodPrivate
 {
@@ -42,11 +46,13 @@ class HB_CORE_PRIVATE_EXPORT HbInputMethodPrivate
 public:
     explicit HbInputMethodPrivate(HbInputMethod* owner)
         : q_ptr(owner),
+        mProxy(0),
         mIsActive(false),
         mFocusObject(0),
         mInputState(HbInputModeNone, HbTextCaseNone, HbKeyboardNone),        
         mFocusLocked(false),
-        mStateChangeInProgress(false)
+        mStateChangeInProgress(false),
+        mInsideVanillaWindow(false)
     {}
     ~HbInputMethodPrivate();
 
@@ -65,7 +71,7 @@ public:
     void setFocusCommon();
     void refreshState();
     bool compareWithCurrentFocusObject(HbInputFocusObject* focusObject) const;
-    QInputContext* newProxy();
+    QInputContext* proxy();
     bool isFixedCaseEditor() const;
     bool isLowerCaseOnlyEditor() const;
     bool isUpperCaseOnlyEditor() const;
@@ -81,16 +87,20 @@ public:
     void setUpFocusedObjectAsPhoneNumberEditor();
     void setUpFocusedObjectAsEmailEditor();
     void setUpFocusedObjectAsUrlEditor();
-
+    void initMainWindow(QWidget *window);
+    void checkAndShowMainWindow();
+    void showMainWindow();
+    void hideMainWindow();
 public:
     HbInputMethod *q_ptr;
+    QPointer<HbInputContextProxy > mProxy;
     bool mIsActive;
     HbInputFocusObject* mFocusObject;
     HbInputState mInputState;   
     bool mFocusLocked;
     bool mStateChangeInProgress;
     QList<HbInputModeProperties> mInputModes;
-
+    bool mInsideVanillaWindow;
 private: // For unit test.
     static HbInputMethodPrivate *d_ptr(HbInputMethod *inputMethod) {
         Q_ASSERT(inputMethod);

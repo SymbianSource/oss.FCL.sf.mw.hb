@@ -58,7 +58,7 @@ public:
     void paint(QPainter *painter);
 
     void reset(bool resetFrameCount = true, bool unloadedByServer = false);
-    void resetMaskableIcon();    
+    void resetMaskableIcon();
     bool fillWholeRect() const;
     QString multiPartIconId() const;
     HbIconLoader::IconLoaderOptions iconLoaderOptions();
@@ -68,15 +68,15 @@ public:
 
 private:
     void calculateShrinkedNinePieceCorners(
-            HbMultiPartSizeData &data,
-            const QSize& tlSize, const QSize& brSize,
-            const QSize& fullSize, const QPoint& splitPoint);
+        HbMultiPartSizeData &data,
+        const QSize &tlSize, const QSize &brSize,
+        const QSize &fullSize, const QPoint &splitPoint);
     QSizeF defaultSize(const QString &framePartSuffix);
     bool isMirrored();
     bool hasBorderWidths() const;
     // disabled
-    HbFrameDrawerPrivate& operator=(const HbFrameDrawerPrivate &other);
-    HbIconFormatType iconType;   
+    HbFrameDrawerPrivate &operator=(const HbFrameDrawerPrivate &other);
+    HbIconFormatType iconType;
 public:
     QString frameGraphicsName;
     HbFrameDrawer::FrameType type;
@@ -88,28 +88,26 @@ public:
     // - 0 if frame part files not checked
     // - 1 if not all frame parts exist and fall back to 1 piece frame
     // - frame part count otherwise
-    int frameParts; 
+    int frameParts;
 
     HbIcon::MirroringMode mirroring;
 
-    enum DefaultMirroring
-    {
+    enum DefaultMirroring {
         Unknown = 0,
         Enabled = 1,
         Disabled = 2
     };
     DefaultMirroring defaultMirroring;
 
-    enum internalFlags
-    {
+    enum internalFlags {
         LayoutDirectionSet  = 0x01,
         FillWholeRect       = 0x02,
-	    BorderWidthSetByApi = 0x04,
-	    DoNotCache           = 0x08,
+        BorderWidthSetByApi = 0x04,
+        DoNotCache           = 0x08,
         ResolutionCorrected  = 0x10,
         NoAutoStartAnimation = 0x20
     };
-    int flags; 
+    int flags;
 
     Qt::LayoutDirection layoutDirection;
 

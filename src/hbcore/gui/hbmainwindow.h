@@ -43,7 +43,7 @@ class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
 {
     Q_OBJECT
 
-    Q_PROPERTY(Qt::Orientation orientation 
+    Q_PROPERTY(Qt::Orientation orientation
                READ orientation
                WRITE setOrientation
                RESET unsetOrientation
@@ -79,7 +79,7 @@ public:
     bool automaticOrientationEffectEnabled() const;
 
 public slots:
-    void broadcastEvent( int eventType );
+    void broadcastEvent(int eventType);
 
 signals:
     void viewReady();
@@ -105,9 +105,9 @@ protected:
 private:
     Q_DISABLE_COPY(HbMainWindow)
     Q_DECLARE_PRIVATE_D(d_ptr, HbMainWindow)
-    Q_PRIVATE_SLOT(d_func(), void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status))
-    Q_PRIVATE_SLOT(d_func(), void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status))
-    Q_PRIVATE_SLOT(d_func(), void orientationEffectFinished(const HbEffect::EffectStatus& status))
+    Q_PRIVATE_SLOT(d_func(), void rootItemFirstPhaseDone(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void rootItemFinalPhaseDone(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void orientationEffectFinished(const HbEffect::EffectStatus &status))
     Q_PRIVATE_SLOT(d_func(), void _q_viewChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_viewRemoved(QGraphicsWidget *))
     Q_PRIVATE_SLOT(d_func(), void _q_viewTitleChanged(const QString &))

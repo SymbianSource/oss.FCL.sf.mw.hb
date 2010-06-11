@@ -51,8 +51,8 @@ private:
     void readFilterData();
     void readBlendingElement();
 
-	HbEffectFxmlParamData readParamData();
-	
+    HbEffectFxmlParamData readParamData();
+
 private:
     HbEffectFxmlData *mFxmlData;
     QString mCurrentBlending;

@@ -38,21 +38,22 @@ public:
     virtual ~HbStyleParameters();
 
     int count();
-    int indexOf( const QString& param );
+    int indexOf( const QString& key );
+    QString key( int index );
     QString parameter( int index );
 
     QVariant value( int index );
-    QVariant value( const QString &param );
+    QVariant value( const QString &key );
 
     void setValue( int index, const QVariant &value );
-    void setValue( const QString &param, const QVariant &value );
+    void setValue( const QString &key, const QVariant &value );
 
-    void addParameter( const QString &param, const QVariant &value = QVariant() );
+    void addParameter( const QString &key, const QVariant &value = QVariant() );
     void removeAt( int index );
 
 private:
     friend class HbStyle;
-    QList<QString> &params();
+    QList<QString> &keys();
     QList<QVariant> &values();
 
 private:

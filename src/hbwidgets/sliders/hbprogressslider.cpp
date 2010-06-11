@@ -212,14 +212,15 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     @beta
     @hbwidgets
     \class HbProgressSlider
-    \brief ProgressSlider is used to indicate the current position of a playing music or video.It can show the progress 
+    \brief ProgressSlider is used to indicate the current position of a playing music or video. It can show the progress 
     of a progressing music or video along with the status of the buffered data.
 
     \image html progressslider.png  "A Progress Slider with Min-Max text at bottom "
+    \image html progressslider2.png  "A Progress Slider with Min-Max text at bottom and with pregress value"
 
 
-    ProgressSlider is a basic slider but the track is like a progressbar indicating how much progress
-    has been done. its a slider with progressbar as its track with some additional behaviour. 
+    ProgressSlider has a track like Progress Bar indicating how much progress
+    has been done. It is a  Progress Bar with some additional behaviour. 
     There is also a progressValue which indicates the amount of buffered data.General use
     for this widget would be for playing music online which indicates sliderValue as currentTime and 
     progressValue as the buffered amount.
@@ -233,11 +234,11 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     void sliderReleased();
     void sliderMoved(int value);
 
-    sliderPressed is emits when the track is pressed. 
-    sliderReleased is emits when the track is released.
-    sliderMoved is emits when the handle is moved in any direction.
+    sliderPressed is emitted when the track is pressed. 
+    sliderReleased is emitted when the track is released.
+    sliderMoved is emitted when the handle is moved in any direction.
 
-    The Application can customize the Slider behaviour by listening the signals sliderPressed and sliderReleased.By default there 
+    The Application can customize the Slider behaviour by listening to the signals sliderPressed and sliderReleased.By default there 
     is no behaviour defined by HbProgressSlider for these actions.
 
     By default the min value is 0 and max value is 100. The application can set the progressValue (buffer data) and 
@@ -268,7 +269,7 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
 
 /*!
     @beta
-    Constructs a progressslider with a  parent.
+    Constructs a Progress Slider with a  parent.
 */
 
 HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
@@ -299,7 +300,7 @@ HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
 
 /*!
     @beta
-    Constructs a progress bar with the given parent.
+    Constructs a Progress Bar with the given parent.
     \param parent The parent of ProgressBar
 */
 HbProgressSlider::HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *parent) : 
@@ -323,7 +324,7 @@ HbProgressSlider::HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *pa
 
 /*!
     @beta
-    Destructor for the progressslider.
+    Destructor for the Progress Slider.
 */
 HbProgressSlider::~HbProgressSlider()
 {

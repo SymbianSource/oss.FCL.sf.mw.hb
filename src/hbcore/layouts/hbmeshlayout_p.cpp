@@ -23,17 +23,16 @@
 **
 ****************************************************************************/
 
-#include <QDebug>
-#include <QList>
-#include <QWidget>
-
-
 #include "hbmeshlayout_p.h"
 #include "hbmeshlayoutdebug_p.h"
 
 #include "hbanchorlayoutengine_p.h"
 #include "hblayoututils_p.h"
 #include "hbanchor_p.h"
+
+#include <QDebug>
+#include <QList>
+#include <QWidget>
 
 //Uncomment next define in order to get more debug prints.
 //Similar define exists also in the engine side.
@@ -201,7 +200,11 @@ public:
 
     void setSizeProp( SizeProperty *v, QGraphicsLayoutItem *item, EdgeType type );
     GraphVertex *createCenterEdge( EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge );
-    void defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, const int anchorIndex, const int definedItemIndex );
+    void defineNextGeometry( 
+        const int itemIndexStart, 
+        const int itemIndexEnd, 
+        const int anchorIndex, 
+        const int definedItemIndex );
 
 
     QSizeF sizeHint(Qt::SizeHint which);
@@ -267,8 +270,9 @@ QList<HbAnchor*> HbMeshLayoutDebug::getAnchors( HbMeshLayout* layout )
     \class HbMeshLayoutPrivate
     \internal
 */
-HbMeshLayoutPrivate::HbMeshLayoutPrivate() : mEquationsDirty(false), mValid(true), mInvalidateCalled( false ), mWrongAnchors( false ),
-                                                mUsedRect( 0, 0, 0, 0 ), mLayoutVarH( 0 ), mLayoutVarV( 0 )
+HbMeshLayoutPrivate::HbMeshLayoutPrivate() : 
+    mEquationsDirty(false), mValid(true), mInvalidateCalled( false ), mWrongAnchors( false ),
+    mUsedRect( 0, 0, 0, 0 ), mLayoutVarH( 0 ), mLayoutVarV( 0 )
 
 {
 }
@@ -447,7 +451,8 @@ void HbMeshLayoutPrivate::setSizeProp( SizeProperty *v, QGraphicsLayoutItem *ite
 }
 
 
-GraphVertex *HbMeshLayoutPrivate::createCenterEdge( EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge )
+GraphVertex *HbMeshLayoutPrivate::createCenterEdge( 
+    EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge )
 {
     GraphVertex *middle;
     GraphVertex *start = 0;
@@ -561,7 +566,11 @@ GraphVertex *HbMeshLayoutPrivate::createCenterEdge( EdgeType type, QGraphicsLayo
     return middle;
 }
 
-void HbMeshLayoutPrivate::defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, const int anchorIndex, const int definedItemIndex )
+void HbMeshLayoutPrivate::defineNextGeometry( 
+    const int itemIndexStart, 
+    const int itemIndexEnd, 
+    const int anchorIndex, 
+    const int definedItemIndex )
 {
     ItemGeometry *knownItemGeom, *unKnownItemGeom;
     Hb::Edge knownEdge, unKnownEdge;
@@ -588,10 +597,12 @@ void HbMeshLayoutPrivate::defineNextGeometry( const int itemIndexStart, const in
 
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexEnd] = true;
-            itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mActualItems.at(itemIndexEnd) ) );
+            itemSize = mSolutionHorizontal.value( 
+                mVariablesHorizontal.findVariable( mActualItems.at(itemIndexEnd) ) );
         } else {
             mGeometryDefinedV[itemIndexEnd] = true;
-            itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mActualItems.at(itemIndexEnd) ) );
+            itemSize = mSolutionVertical.value( 
+                mVariablesVertical.findVariable( mActualItems.at(itemIndexEnd) ) );
         }
 
         sign = 1;
@@ -604,10 +615,12 @@ void HbMeshLayoutPrivate::defineNextGeometry( const int itemIndexStart, const in
 
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexStart] = true;
-            itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mActualItems.at(itemIndexStart) ) );
+            itemSize = mSolutionHorizontal.value( 
+                mVariablesHorizontal.findVariable( mActualItems.at(itemIndexStart) ) );
         } else {
             mGeometryDefinedV[itemIndexStart] = true;
-            itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mActualItems.at(itemIndexStart) ) );
+            itemSize = mSolutionVertical.value( 
+                mVariablesVertical.findVariable( mActualItems.at(itemIndexStart) ) );
         }
 
         sign = -1;
@@ -1014,9 +1027,11 @@ void HbMeshLayoutPrivate::createEquations( EdgeType type )
                 itemStart = 0;
                 itemEnd = 0;
                 for( int j = 0; j < vertices->size(); j++ ) {
-                    if( ( vertices->at(j)->itemRef == anchor->mStartItem ) && ( vertices->at(j)->itemSide == anchor->mStartEdge ) ) {
+                    if( ( vertices->at(j)->itemRef == anchor->mStartItem ) && 
+                        ( vertices->at(j)->itemSide == anchor->mStartEdge ) ) {
                         itemStart = vertices->at(j);
-                    } else if( ( vertices->at(j)->itemRef == anchor->mEndItem ) && ( vertices->at(j)->itemSide == anchor->mEndEdge ) ) {
+                    } else if( ( vertices->at(j)->itemRef == anchor->mEndItem ) && 
+                        ( vertices->at(j)->itemSide == anchor->mEndEdge ) ) {
                         itemEnd = vertices->at(j);
                     }
                 }
@@ -1080,7 +1095,8 @@ void HbMeshLayoutPrivate::createEquations( EdgeType type )
 
         if( ! AnchorLayoutEngine::instance()->processItems( edges, vertices, vs, el ) ) {
             mWrongAnchors = true;
-            AnchorLayoutEngine::instance()->cleanUp( layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
+            AnchorLayoutEngine::instance()->cleanUp( 
+                layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
 #ifdef HBMESHLAYOUT_DEBUG
             qDebug() << "FAIL! " << __LINE__;
 #endif //HBMESHLAYOUT_DEBUG
@@ -1114,8 +1130,10 @@ void HbMeshLayoutPrivate::createEquations( EdgeType type )
         layoutVar->sizeProp.pref = 100;
         layoutVar->sizeProp.flags = 0;
 
-        AnchorLayoutEngine::instance()->attachToLayout( layoutStart, layoutMiddle, layoutEnd, layoutVar, el );
-        AnchorLayoutEngine::instance()->cleanUp( layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
+        AnchorLayoutEngine::instance()->attachToLayout( 
+            layoutStart, layoutMiddle, layoutEnd, layoutVar, el );
+        AnchorLayoutEngine::instance()->cleanUp( 
+            layoutStart, layoutMiddle, layoutEnd, edges, vertices, el );
 
 
         mAnchorsVisited.resize( mAnchors.size() * sizeof( bool ) );
@@ -1290,7 +1308,8 @@ void HbMeshLayoutPrivate::resolveAnchors( QList<HbAnchor*> *anchors )
                 }
 
                 if( isAnchorNew ) {
-                    item = new HbAnchor(startItem, anchor.mStartEdge, 0 /*end item*/, anchor.mEndEdge, value);
+                    item = new HbAnchor(
+                        startItem, anchor.mStartEdge, 0 /*end item*/, anchor.mEndEdge, value);
                 } else {
                     item = anchors->at( count );
                     item->mStartItem = startItem;
@@ -1454,7 +1473,8 @@ HbMeshLayout::~HbMeshLayout()
     \param spacing spacing value for all edges starting from (\a startId, \a startEdge).
     \return true if success, false otherwise.
 */
-bool HbMeshLayout::setAnchor(const QString& startId, Edge startEdge, const QString& endId, Edge endEdge, qreal spacing)
+bool HbMeshLayout::setAnchor(
+    const QString& startId, Edge startEdge, const QString& endId, Edge endEdge, qreal spacing)
 {
     Q_D( HbMeshLayout );
 
@@ -1473,7 +1493,8 @@ bool HbMeshLayout::setAnchor(const QString& startId, Edge startEdge, const QStri
     return false;
 }
 
-bool HbMeshLayout::setAnchor(const QString& startId, Edge startEdge, const QString& endId, Edge endEdge)
+bool HbMeshLayout::setAnchor(
+    const QString& startId, Edge startEdge, const QString& endId, Edge endEdge)
 {
     Q_D( HbMeshLayout );
 

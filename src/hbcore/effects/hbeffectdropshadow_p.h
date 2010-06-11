@@ -54,8 +54,7 @@ class HB_AUTOTEST_EXPORT HbEffectDropShadow : public HbEffectFilter
 {
 public:
 
-        enum type
-    {
+    enum type {
         dropShadow = 0x01,
         outline = 0x02
     };

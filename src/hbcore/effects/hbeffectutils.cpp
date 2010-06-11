@@ -47,7 +47,7 @@
 qreal HbEffectUtils::resolveFxmlRef(
     const QString &ref,
     const QString &value,
-    bool* ok,
+    bool *ok,
     const QGraphicsItem *item,
     HbEffectUtils::valueType type,
     const QRectF &extRect)
@@ -73,88 +73,71 @@ qreal HbEffectUtils::resolveFxmlRef(
             refValue = 0;
             addToPos = true;
             x = true;
-        }
-        else if (ref == FXML_KEYWORD_VISUAL_RIGHT) {
+        } else if (ref == FXML_KEYWORD_VISUAL_RIGHT) {
             refValue = rect.width();
             addToPos = true;
             x = true;
-        }
-        else if (ref == FXML_KEYWORD_VISUAL_TOP) {
+        } else if (ref == FXML_KEYWORD_VISUAL_TOP) {
             refValue = 0;
             addToPos = true;
             y = true;
-        }
-        else if (ref == FXML_KEYWORD_VISUAL_BOTTOM) {
+        } else if (ref == FXML_KEYWORD_VISUAL_BOTTOM) {
             refValue = rect.height();
             addToPos = true;
             y = true;
-        }
-        else if (ref == FXML_KEYWORD_VISUAL_WIDTH) {
+        } else if (ref == FXML_KEYWORD_VISUAL_WIDTH) {
             refValue = rect.width();
             addToPos = true;
             x = true;
-        }
-        else if (ref == FXML_KEYWORD_VISUAL_HEIGHT) {
+        } else if (ref == FXML_KEYWORD_VISUAL_HEIGHT) {
             refValue = rect.height();
             addToPos = true;
             y = true;
-        }
-        else {
+        } else {
             // Reference is something else than visual, so need to map to item's coordinates
             mapToItemCoordinates = true;
             srcRect = extRect;
-            
+
             // Extrect values
             if (ref == FXML_KEYWORD_EXTRECT_LEFT) {
                 refValue = extRect.left();
                 x = true;
-            }
-            else if (ref == FXML_KEYWORD_EXTRECT_RIGHT) {
+            } else if (ref == FXML_KEYWORD_EXTRECT_RIGHT) {
                 refValue = extRect.right();
                 x = true;
-            }
-            else if (ref == FXML_KEYWORD_EXTRECT_TOP) {
+            } else if (ref == FXML_KEYWORD_EXTRECT_TOP) {
                 refValue = extRect.top();
                 y = true;
-            }
-            else if (ref == FXML_KEYWORD_EXTRECT_BOTTOM) {
+            } else if (ref == FXML_KEYWORD_EXTRECT_BOTTOM) {
                 refValue = extRect.bottom();
                 y = true;
-            }
-            else if (ref == FXML_KEYWORD_EXTRECT_WIDTH) {
+            } else if (ref == FXML_KEYWORD_EXTRECT_WIDTH) {
                 refValue = extRect.width();
                 x = true;
-            }
-            else if (ref == FXML_KEYWORD_EXTRECT_HEIGHT) {
+            } else if (ref == FXML_KEYWORD_EXTRECT_HEIGHT) {
                 refValue = extRect.height();
                 y = true;
-            }
-            else {
-			    // Screen values
-			    QSize screenSize = HbDeviceProfile::profile(item).logicalSize();
-                srcRect = QRectF(QPointF(0,0), screenSize);
+            } else {
+                // Screen values
+                QSize screenSize = HbDeviceProfile::profile(item).logicalSize();
+                srcRect = QRectF(QPointF(0, 0), screenSize);
 
                 if (ref == FXML_KEYWORD_SCREEN_LEFT) {
                     refValue = 0;
                     x = true;
-                }
-                else if (ref == FXML_KEYWORD_SCREEN_RIGHT) {
+                } else if (ref == FXML_KEYWORD_SCREEN_RIGHT) {
                     refValue = screenSize.width();
                     x = true;
-                }
-                else if (ref == FXML_KEYWORD_SCREEN_TOP) {
+                } else if (ref == FXML_KEYWORD_SCREEN_TOP) {
                     refValue = 0;
                     y = true;
-                }
-                else if (ref == FXML_KEYWORD_SCREEN_BOTTOM) {
+                } else if (ref == FXML_KEYWORD_SCREEN_BOTTOM) {
                     refValue = screenSize.height();
                     y = true;
-                }
-                else if (ref == FXML_KEYWORD_SCREEN_WIDTH) {
+                } else if (ref == FXML_KEYWORD_SCREEN_WIDTH) {
                     refValue = screenSize.width();
                     x = true;
-                }
-                else if (ref == FXML_KEYWORD_SCREEN_HEIGHT) {
+                } else if (ref == FXML_KEYWORD_SCREEN_HEIGHT) {
                     refValue = screenSize.height();
                     y = true;
                 }
@@ -176,8 +159,7 @@ qreal HbEffectUtils::resolveFxmlRef(
         if (addToPos && type == HbEffectUtils::Position) {
             if (x) {
                 refValue += item->pos().x();
-            }
-            else {
+            } else {
                 refValue += item->pos().y();
             }
         }
@@ -200,26 +182,28 @@ qreal HbEffectUtils::resolveFxmlRef(
                 }
             }
         }
-        
+
         // Convert to item size units if needed
         if (type == HbEffectUtils::Size) {
             if (x) {
-                if (!fuzzyIsNull(rect.width()))
+                if (!fuzzyIsNull(rect.width())) {
                     refValue /= rect.width();
-                 else
+                } else {
                     refValue = 0;
+                }
             } else if (y) {
-                if (!fuzzyIsNull(rect.height()))
+                if (!fuzzyIsNull(rect.height())) {
                     refValue /= rect.height();
-                else
+                } else {
                     refValue = 0;
-            }            
+                }
+            }
         }
 
         // This operation is needed e.g. when scale is done from some other rect to target rect
         if (type == HbEffectUtils::CenterMappedToTargetRect && mapToItemCoordinates) {
             QPointF scenePos = item->scenePos();
-            // If the item is already translated, have to substract that to get correct result
+            // If the item is already translated, have to subtract that to get correct result
             QTransform trans = item->transform();
             qreal dx = trans.dx();
             qreal dy = trans.dy();
@@ -249,7 +233,7 @@ qreal HbEffectUtils::resolveFxmlRef(
 
 
 qreal HbEffectUtils::resolveFxmlRef(
-    const HbEffectFxmlParamData &data, bool* ok, const QGraphicsItem *item, HbEffectUtils::valueType type, const QRectF &extRect)
+    const HbEffectFxmlParamData &data, bool *ok, const QGraphicsItem *item, HbEffectUtils::valueType type, const QRectF &extRect)
 {
     return HbEffectUtils::resolveFxmlRef(data.getAttribute(FXML_PARAM_REF), data.getValue(), ok, item, type, extRect);
 }
@@ -261,32 +245,24 @@ void HbEffectUtils::resolveFxmlCurveShape(QEasingCurve &curve, const HbEffectFxm
     if (!style.isEmpty()) {
         if (style == FXML_KEYWORD_STYLE_LINEAR) {
             curve = QEasingCurve::Linear;
-        }
-        else if (style == FXML_KEYWORD_STYLE_INQUAD) {
+        } else if (style == FXML_KEYWORD_STYLE_INQUAD) {
             curve = QEasingCurve::InQuad;
-        }
-        else if (style == FXML_KEYWORD_STYLE_OUTQUAD) {
+        } else if (style == FXML_KEYWORD_STYLE_OUTQUAD) {
             curve = QEasingCurve::OutQuad;
-        }
-        else if (style == FXML_KEYWORD_STYLE_INOUTQUAD) {
+        } else if (style == FXML_KEYWORD_STYLE_INOUTQUAD) {
             curve = QEasingCurve::InOutQuad;
-        }
-        else if (style == FXML_KEYWORD_STYLE_OUTINQUAD) {
+        } else if (style == FXML_KEYWORD_STYLE_OUTINQUAD) {
             curve = QEasingCurve::OutInQuad;
-        }
-        else if (style == FXML_KEYWORD_STYLE_INBACK) {
+        } else if (style == FXML_KEYWORD_STYLE_INBACK) {
             curve = QEasingCurve::InBack;
-        }
-        else if (style == FXML_KEYWORD_STYLE_OUTBACK) {
+        } else if (style == FXML_KEYWORD_STYLE_OUTBACK) {
             curve = QEasingCurve::OutBack;
-        }
-        else if (style == FXML_KEYWORD_STYLE_INOUTBACK) {
+        } else if (style == FXML_KEYWORD_STYLE_INOUTBACK) {
             curve = QEasingCurve::InOutBack;
-        }
-        else if (style == FXML_KEYWORD_STYLE_OUTINBACK) {
+        } else if (style == FXML_KEYWORD_STYLE_OUTINBACK) {
             curve = QEasingCurve::OutInBack;
         }
-   }
+    }
 }
 
 void HbEffectUtils::resolveFxmlDuration(int &duration, const HbEffectFxmlParamData &data)

@@ -43,8 +43,11 @@ public:
     ~HbIconItemPrivate();
     void clearStoredIconContent();
     void updateIconItem();
+    void updateIconParams();
     void setThemedColor(const QColor &color);
-    static HbIconItemPrivate *d_ptr(HbIconItem *item) { return item->d_func(); }
+    static HbIconItemPrivate *d_ptr(HbIconItem *item) {
+        return item->d_func();
+    }
     HbIcon mIcon;
     HbIconAnimator mAnimator;
     Qt::Alignment mAlignment;

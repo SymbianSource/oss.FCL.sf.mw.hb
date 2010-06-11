@@ -40,7 +40,6 @@ public:
     ~HbThemePrivate();
     static HbThemePrivate *d_ptr(HbTheme *t) { return t->d_func(); }
     static HbThemePrivate *instance() { return HbTheme::instance()->d_func(); }
-    QStringList iconDirectories() { return iconTheme.dirList();}
 
 public:
     QString currentTheme;

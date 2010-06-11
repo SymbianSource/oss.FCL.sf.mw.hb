@@ -40,132 +40,115 @@ class HbIconImpl
 public:
 
     HbIconImpl()
-      : iconRefCount(1)
+        : createdOnServer(false),
+          iconRefCount(1)
 
     {
-        createdOnServer = false;
+
     }
 
-    HbIconImpl(const HbSharedIconInfo& iconData,
-               const QString& name,
-               const QSizeF& keySize,
+    HbIconImpl(const HbSharedIconInfo &iconData,
+               const QString &name,
+               const QSizeF &keySize,
                Qt::AspectRatioMode aspectRatioMode,
                QIcon::Mode mode,
                bool mirrored,
                HbRenderingMode renderMode):
-                    sharedIconData(iconData),
-                    fileName(name),
-                    cacheKeySize(keySize),
-                    aspectRatioMode(aspectRatioMode),
-                    mode(mode),
-                    mirrored(mirrored),
-                    defaultIconSize(QSize(0,0)),
-                    createdOnServer(true),
-                    iconRefCount(1),
-                    multiPieceIcon(false),
-                    renderMode(renderMode)
-                    
+        sharedIconData(iconData),
+        fileName(name),
+        cacheKeySize(keySize),
+        aspectRatioMode(aspectRatioMode),
+        mode(mode),
+        mirrored(mirrored),
+        defaultIconSize(QSize(0, 0)),
+        createdOnServer(true),
+        iconRefCount(1),
+        multiPieceIcon(false),
+        renderMode(renderMode)
+
     {
     }
 
     virtual QPixmap pixmap() = 0;
-    virtual void paint(QPainter* painter,
-                        const QRectF &childRect,
-                        Qt::Alignment alignment,
-                        const QPainterPath &clipPath = QPainterPath(),
-						HbMaskableIconImpl * maskIconData = 0) = 0;
+    virtual void paint(QPainter *painter,
+                       const QRectF &childRect,
+                       Qt::Alignment alignment,
+                       const QPainterPath &clipPath = QPainterPath(),
+                       HbMaskableIconImpl *maskIconData = 0) = 0;
     virtual QSize defaultSize() const = 0;
     virtual QSize size() = 0;
-    void setColor(const QColor &color)
-    {
-         this->iconColor = color;
+    void setColor(const QColor &color) {
+        this->iconColor = color;
     }
 
-    QColor color()
-    {
+    QColor color() {
         return iconColor;
     }
 
-    void setMultiPieceIcon(bool value = true)
-    {
+    void setMultiPieceIcon(bool value = true) {
         multiPieceIcon = value;
     }
 
-    bool isMultiPieceIcon()
-    {
+    bool isMultiPieceIcon() {
         return multiPieceIcon;
     }
 
-    HbSharedIconInfo iconData() const
-    {
+    HbSharedIconInfo iconData() const {
         return sharedIconData;
     }
 
-    QString iconFileName() const
-    {
+    QString iconFileName() const {
         return fileName;
     }
 
-    QSizeF keySize() const
-    {
+    QSizeF keySize() const {
         return cacheKeySize;
     }
 
-    Qt::AspectRatioMode iconAspectRatioMode() const
-    {
+    Qt::AspectRatioMode iconAspectRatioMode() const {
         return aspectRatioMode;
     }
 
-    QIcon::Mode iconMode() const
-    {
+    QIcon::Mode iconMode() const {
         return mode;
     }
 
-    bool isMirrored() const
-    {
+    bool isMirrored() const {
         return mirrored;
     }
 
-    bool isCreatedOnServer() const
-    {
+    bool isCreatedOnServer() const {
         return createdOnServer;
     }
 
-    void incrementRefCount()
-    {
+    void incrementRefCount() {
         this->iconRefCount++;
     }
 
-    uint refCount()
-    {
+    uint refCount() {
         return this->iconRefCount;
     }
 
-    void decrementRefCount()
-    {
+    void decrementRefCount() {
         this->iconRefCount--;
     }
 
-    void dispose()
-    {
+    void dispose() {
         if (iconRefCount == 0) {
             delete this;
         }
     }
 
-    virtual void destroyMaskedData(HbIconMaskedData *data)
-    {
+    virtual void destroyMaskedData(HbIconMaskedData *data) {
         Q_UNUSED(data);
     }
-    
-    HbRenderingMode iconRenderingMode() const
-    {
+
+    HbRenderingMode iconRenderingMode() const {
         return renderMode;
     }
 
 protected:
-    virtual ~HbIconImpl()
-    {
+    virtual ~HbIconImpl() {
     }
 
     HbSharedIconInfo sharedIconData;

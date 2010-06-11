@@ -23,15 +23,11 @@
 **
 ****************************************************************************/
 
-#include <QApplication>
-#include <QGraphicsLayout>
-#include <QLocale>
-#include <QDebug>
+#include "hbmainwindow_p.h"
 #include "hbgraphicsscene.h"
 #include "hbindicatorbutton_p.h"
 #include "hbtitlebar_p.h"
 #include "hbstatusbar_p.h"
-#include "hbmainwindow_p.h"
 #include "hbmenu.h"
 #include "hbnamespace.h"
 #include "hbnamespace_p.h"
@@ -54,6 +50,11 @@
 #include "hbforegroundwatcher_p.h"
 #include "hbcorepskeys_p.h"
 #include "hbmainwindoworientation_p.h"
+
+#include <QApplication>
+#include <QGraphicsLayout>
+#include <QLocale>
+#include <QDebug>
 
 #ifdef Q_OS_SYMBIAN
 #include "hbnativewindow_sym_p.h"
@@ -83,11 +84,13 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mTitleBar(0),
     mStatusBar(0),
     mFadeItem(0),
-    mRootItem(0),   
+    mRootItem(0),
     mPendingOrientationValue(0),
     mAutomaticOrientationSwitch(true),
     mUserOrientationSwitch(false),
     mOrientationChangeOngoing(false),
+    mRootItemFinalPhaseDone(false),
+    mOrientationEffectFinished(false),
     mGVOrientationChangeEffectEnabled(false),
     mPendingPsPublish(false),
     mOrientation(Qt::Vertical),
@@ -100,8 +103,6 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     q_ptr(0),
     mTheTestUtility(0),
     mIdleEventHandled(false),
-    mNotifyOrientationChange(false),
-    mOrientationChangeNotified(false),
     mToolbarWasAdded(false),
     mAutomaticOrientationChangeAnimation(true)
 #ifdef Q_OS_SYMBIAN
@@ -109,7 +110,7 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mNativeWindow(0),
     mDevDlgClientSession(0)
 #endif
-{   
+{
 }
 
 HbMainWindowPrivate::~HbMainWindowPrivate()
@@ -150,7 +151,7 @@ void HbMainWindowPrivate::initTranslations()
 HbToolBar *HbMainWindowPrivate::toolBar() const
 {
     HbView *view = qobject_cast<HbView *>(mViewStackWidget->currentWidget());
-    return view?HbViewPrivate::d_ptr(view)->toolBar:0;
+    return view ? HbViewPrivate::d_ptr(view)->toolBar : 0;
 }
 
 void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
@@ -167,16 +168,16 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
             toolBar->setParentItem(0);
             HbView *currentView = q->currentView();
             if (toolBar->scene() != mScene
-                && currentView
-                && currentView->isItemVisible(Hb::ToolBarItem)) { // check just to avoid warnings
+                    && currentView
+                    && currentView->isItemVisible(Hb::ToolBarItem)) { // check just to avoid warnings
                 // Update the toolbar to use the current orientation
                 // and layout direction.
                 if (toolBar->layoutDirection() != q->layoutDirection() &&
-                    !toolBar->testAttribute(Qt::WA_SetLayoutDirection)){
+                        !toolBar->testAttribute(Qt::WA_SetLayoutDirection)) {
 
                     toolBar->setLayoutDirection(q->layoutDirection());
                     toolBar->setAttribute(Qt::WA_SetLayoutDirection, false);
-                }                
+                }
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(toolBar);
                 toolBarD->mDoLayout = false;
                 // No "appear" effect when changing views or when the first
@@ -195,9 +196,12 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
             }
 
             toolBar->setZValue(HbPrivate::ToolBarZValue);
-            toolBar->setParentItem( mClippingItem );
+            toolBar->setParentItem(mClippingItem);
             mClippingItem->setToolBar(toolBar);
             mCurrentToolbar = toolBar;
+
+            toolBar->resetTransform();
+            toolBar->show();
         }
     }
 }
@@ -206,7 +210,7 @@ void HbMainWindowPrivate::removeToolBarFromLayout(HbToolBar *toolBar)
 {
     Q_Q(HbMainWindow);
     if (mCurrentToolbar && mCurrentToolbar->scene() && mCurrentToolbar == toolBar) {
-        mClippingItem->setToolBar( 0 );
+        mClippingItem->setToolBar(0);
         mScene->removeItem(mCurrentToolbar);
         mCurrentToolbar->disconnect(q);
         mCurrentToolbar = 0;
@@ -216,7 +220,7 @@ void HbMainWindowPrivate::removeToolBarFromLayout(HbToolBar *toolBar)
 HbDockWidget *HbMainWindowPrivate::dockWidget() const
 {
     HbView *view = qobject_cast<HbView *>(mViewStackWidget->currentWidget());
-    return view?HbViewPrivate::d_ptr(view)->dockWidget:0;
+    return view ? HbViewPrivate::d_ptr(view)->dockWidget : 0;
 }
 
 void HbMainWindowPrivate::addDockWidgetToLayout(HbDockWidget *dockWidget)
@@ -231,16 +235,16 @@ void HbMainWindowPrivate::addDockWidgetToLayout(HbDockWidget *dockWidget)
         if (dockWidget) {
             dockWidget->setParentItem(0);
             if (dockWidget->scene() != mScene) {
-                HbView* currentView = q->currentView();
+                HbView *currentView = q->currentView();
                 if (currentView && currentView->isItemVisible(Hb::DockWidgetItem)) {
                     mScene->addItem(dockWidget); // top level
                 }
             }
-            
+
             dockWidget->setZValue(HbPrivate::DockWidgetZValue);
 
-            dockWidget->setParentItem( mClippingItem );
-            mClippingItem->setDockWidget(dockWidget);            
+            dockWidget->setParentItem(mClippingItem);
+            mClippingItem->setDockWidget(dockWidget);
             mCurrentDockWidget = dockWidget;
         }
     }
@@ -250,7 +254,7 @@ void HbMainWindowPrivate::removeDockWidgetFromLayout(HbDockWidget *dockWidget)
 {
     Q_Q(HbMainWindow);
     if (mCurrentDockWidget && mCurrentDockWidget->scene() && mCurrentDockWidget == dockWidget) {
-        mClippingItem->setDockWidget( 0 );
+        mClippingItem->setDockWidget(0);
         mScene->removeItem(mCurrentDockWidget);
         mCurrentDockWidget->disconnect(q);
         mCurrentDockWidget = 0;
@@ -261,38 +265,42 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
 {
     Q_Q(HbMainWindow);
     mRequestedOrientation = orientation;
-      
+
     if (mOrientationChangeOngoing) {
         if (!mForceSetOrientation && !mUserOrientationSwitch) {
             return;
-        } else {
+        } else if (mOrientation != orientation) {
             HbEffectInternal::cancelAll();
+            // Possibly posted idle events must not be delivered,
+            // there will be new ones due to this new orientation switch.
+            QCoreApplication::removePostedEvents(q);
         }
     }
-   
+
     if (mOrientation == orientation && !mForceSetOrientation && mEffectItem) {
         return;
     }
-       
+
     // skip transition if graphicsview is not visible
     mAnimateOrientationSwitch = animate;
 
-    if (!q->isVisible())
+    if (!q->isVisible()) {
         mAnimateOrientationSwitch = false;
-    
+    }
+
     // calling due to resize, orientation remains the same -> no signalling
-    if ( !((mOrientation == orientation) && mForceSetOrientation) ) {
+    if (!((mOrientation == orientation) && mForceSetOrientation)) {
         // cancel all effects
         HbEffectInternal::cancelAll();
         mOrientationChangeOngoing = true;
-        mNotifyOrientationChange = false;
-        mOrientationChangeNotified = false;
+        mRootItemFinalPhaseDone = false;
+        mOrientationEffectFinished = false;
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
-      }
-    
+    }
+
     mOrientation = orientation;
-              
+
     if (!mAnimateOrientationSwitch) {
         HbEffect::disable(mEffectItem);
         HbEffect::disable(&mGVWrapperItem);
@@ -300,16 +308,16 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         HbEffect::enable(mEffectItem);
         HbEffect::enable(&mGVWrapperItem);
     }
-    
+
     // Sets graphicsview rotation effect to either 90/270 degrees
     updateRotationEffects();
 
     //For mirroring case
     changeSceneSize();
-        
-#ifdef Q_OS_SYMBIAN    
+
+#ifdef Q_OS_SYMBIAN
     updateForegroundOrientationPSKey();
-#endif 
+#endif
 
     HbEffect::start(mEffectItem, "rootItemFirstPhase", q, "rootItemFirstPhaseDone");
 
@@ -329,9 +337,10 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
 
 void HbMainWindowPrivate::changeSceneSize()
 {
-   // no need to perform the scene size change if there's no (rotation) effect for graphicsview
-    if (!mGVOrientationChangeEffectEnabled)
+    // no need to perform the scene size change if there's no (rotation) effect for graphicsview
+    if (!mGVOrientationChangeEffectEnabled) {
         return;
+    }
 
     Q_Q(HbMainWindow);
     HbDeviceProfile profile = HbDeviceProfile::profile(q);
@@ -361,17 +370,16 @@ void HbMainWindowPrivate::updateRotationEffects()
 
     HbDeviceProfile o = HbDeviceProfile::profile(q);
     mOrientationAngle = o.orientationAngle();
-    
+
     // Effects for GraphicsView (HbMainWindow)
     bool ret(true);
     bool ret2(true);
-    // wrapper item holds the degree value for optimisation purposes (set effect only once)
-    if (mOrientationAngle == 270 && (mGVWrapperItem.transformDegrees != 270) ) {
+    // wrapper item holds the degree value for optimization purposes (set effect only once)
+    if (mOrientationAngle == 270 && (mGVWrapperItem.transformDegrees != 270)) {
         mGVWrapperItem.transformDegrees = 270;
         ret = HbEffectInternal::add(&mGVWrapperItem, "toDefaultOrientation270", "toDefault");
         ret2 = HbEffectInternal::add(&mGVWrapperItem, "toRotatedOrientation270", "toRotated");
-    }
-    else if(mOrientationAngle == 90 &&(mGVWrapperItem.transformDegrees != 90)) {
+    } else if (mOrientationAngle == 90 && (mGVWrapperItem.transformDegrees != 90)) {
         mGVWrapperItem.transformDegrees = 90;
         ret = HbEffectInternal::add(&mGVWrapperItem, "toDefaultOrientation90", "toDefault");
         ret2 = HbEffectInternal::add(&mGVWrapperItem, "toRotatedOrientation90", "toRotated");
@@ -379,7 +387,7 @@ void HbMainWindowPrivate::updateRotationEffects()
 
     mGVOrientationChangeEffectEnabled = true;
     if (!ret || !ret2) {
-		HbEffectInternal::remove(&mGVWrapperItem);
+        HbEffectInternal::remove(&mGVWrapperItem);
         mGVOrientationChangeEffectEnabled = false;
     }
 }
@@ -405,7 +413,7 @@ void HbMainWindowPrivate::select(const HbDeviceProfile &profile, HbDeviceProfile
 
     // if setting the same orientation send the profile changed event here since the setTransformedOrientation won't do it
     if ((mOrientation == profile.orientation()) &&
-        mClippingItem->size() == profile.logicalSize()) {
+            mClippingItem->size() == profile.logicalSize()) {
         HbDeviceProfileChangedEvent *event = new HbDeviceProfileChangedEvent(profile, oldProfile);
         broadcastEvent(event);
     }
@@ -424,53 +432,54 @@ HbDeviceProfile HbMainWindowPrivate::adjustedProfile(const HbDeviceProfile &prof
 {
     HbDeviceProfile result = profile;
     if (!result.isNull() && result.orientation() != mOrientation) {
-        if(mAlternateProfile.isNull()) {
+        if (mAlternateProfile.isNull()) {
             mAlternateProfile = HbDeviceProfile(profile.alternateProfileName());
             return mAlternateProfile;
-        }
-        else {
+        } else {
             return mAlternateProfile;
         }
-     }
-     return result;
+    }
+    return result;
 }
 
 
-void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus& status)
+void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus &status)
 {
     Q_UNUSED(status);
     Q_Q(HbMainWindow);
 
+    mOrientationEffectFinished = true;
     QSize newSize;
-    
+
     HbDeviceProfile o = HbDeviceProfile::profile(q);
-    newSize = o.logicalSize(); 
+    newSize = o.logicalSize();
 
     // do some sanity checking for the size got from device profile
-    if( newSize.isNull() || ((newSize.width()*newSize.height()) < QVga_res) ) { // the resolution must be at least QVGA..
+    if (newSize.isNull() || ((newSize.width()*newSize.height()) < QVga_res)) {  // the resolution must be at least QVGA..
         qWarning("Orient. change error: size from device profile is faulty!");
     }
-    
-    q->setSceneRect(0,0,newSize.width(),newSize.height());
-    
-    if (mBgItem)
+
+    q->setSceneRect(0, 0, newSize.width(), newSize.height());
+
+    if (mBgItem) {
         mBgItem->updateBackgroundImage();
+    }
 
     // re-layouting, skip if size does not change
     if (mClippingItem->size() != newSize) {
         mClippingItem->resize(newSize);
-        mLayoutRect = QRectF(QPointF(0,0), newSize);
+        mLayoutRect = QRectF(QPointF(0, 0), newSize);
 
         // reset transformation
         q->resetTransform();
 
         // if not default rotation, rotate to the defined angle no matter what the effect did
-        if( mOrientation != mDefaultOrientation)
+        if (mOrientation != mDefaultOrientation) {
             q->rotate(mOrientationAngle);
+        }
 
         // handle actual orientation change only if the orientation really changes (not just a resize)
-        if (mOrientationChangeOngoing || mNotifyOrientationChange) {
-            mOrientationChangeNotified = true;
+        if (mOrientationChangeOngoing) {
             // signal only if layout changes (=orientation changes)
             // Background item is re-layouted from device profile changed event
             emit q->orientationChanged(mOrientation);
@@ -481,24 +490,26 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
             HbInputSettingProxy::instance()->setScreenOrientation(mOrientation);
         }
     }
-    mNotifyOrientationChange = false;
+    updateOrientationChangeStatus();
 }
 
-void HbMainWindowPrivate::rootItemFirstPhaseDone(const HbEffect::EffectStatus& status)
+void HbMainWindowPrivate::rootItemFirstPhaseDone(const HbEffect::EffectStatus &status)
 {
     Q_UNUSED(status)
     Q_Q(HbMainWindow);
 
-    if (mOrientation == mDefaultOrientation)
-        HbEffect::start(&mGVWrapperItem,"toDefault", q, "orientationEffectFinished");
-    else 
-        HbEffect::start(&mGVWrapperItem,"toRotated", q, "orientationEffectFinished");
+    if (mOrientation == mDefaultOrientation) {
+        HbEffect::start(&mGVWrapperItem, "toDefault", q, "orientationEffectFinished");
+    } else {
+        HbEffect::start(&mGVWrapperItem, "toRotated", q, "orientationEffectFinished");
+    }
 }
 
-void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus& status)
+void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus &status)
 {
     Q_UNUSED(status);
 
+    mRootItemFinalPhaseDone = true;
     if (mEffectItem) {
         HbEffect::enable(mEffectItem);
         // make sure effect does not leave anything in wrong state
@@ -509,8 +520,14 @@ void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus& s
     HbEffect::enable(&mGVWrapperItem);
 
     postIdleEvent(HbMainWindowPrivate::IdleOrientationFinalEvent);
-    mNotifyOrientationChange = !mOrientationChangeNotified && mOrientationChangeOngoing;
-    mOrientationChangeOngoing = false;
+    updateOrientationChangeStatus();
+}
+
+void HbMainWindowPrivate::updateOrientationChangeStatus()
+{
+    if (mOrientationChangeOngoing && mRootItemFinalPhaseDone && mOrientationEffectFinished) {
+        mOrientationChangeOngoing = false;
+    }
 }
 
 void HbMainWindowPrivate::addOrientationChangeEffects()
@@ -519,9 +536,10 @@ void HbMainWindowPrivate::addOrientationChangeEffects()
     // If effect loading fails, remove both effects.
     bool ret = HbEffectInternal::add(mEffectItem, "rootitem_orientation_firstPhase", "rootItemFirstPhase");
     bool ret2 = HbEffectInternal::add(mEffectItem, "rootitem_orientation_finalPhase", "rootItemFinalPhase");
-    
-    if (!ret || !ret2)
+
+    if (!ret || !ret2) {
         HbEffectInternal::remove(mEffectItem);
+    }
 
     mOrientationChangeEffectItems.append(mEffectItem);
     mOrientationChangeEffectItems.append(&mGVWrapperItem);
@@ -533,18 +551,18 @@ void HbMainWindowPrivate::addViewEffects()
     // Use HbEffectInternal and the HB_ prefix to prevent general overriding of these effects.
     // Instead, view switch effects can be overridden on a per-instance basis.
     bool ok = HbEffectInternal::add(
-        QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
-        QStringList() << "view_show_normal" << "view_hide_normal" <<  "view_show_back" << "view_hide_back",
-        QStringList() << "show" << "hide" << "show_back" << "hide_back");
+                  QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
+                  QStringList() << "view_show_normal" << "view_hide_normal" <<  "view_show_back" << "view_hide_back",
+                  QStringList() << "show" << "hide" << "show_back" << "hide_back");
     if (!ok) {
         qWarning("HbMainWindow: addViewEffects: atomic registration for show/hide effects failed");
     }
 
     // Register the alternative default.
     ok = HbEffectInternal::add(
-        QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
-        QStringList() << "view_show_normal_alt" << "view_hide_normal_alt" << "view_show_back_alt" << "view_hide_back_alt",
-        QStringList() << "show_alt" << "hide_alt" << "show_alt_back" << "hide_alt_back");
+             QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
+             QStringList() << "view_show_normal_alt" << "view_hide_normal_alt" << "view_show_back_alt" << "view_hide_back_alt",
+             QStringList() << "show_alt" << "hide_alt" << "show_alt_back" << "hide_alt_back");
     if (!ok) {
         qWarning("HbMainWindow: addViewEffects: atomic registration for alternative show/hide effects failed");
     }
@@ -552,18 +570,18 @@ void HbMainWindowPrivate::addViewEffects()
     // Register titlebar effects.
     // These should be overridable in general (so we use HbEffect and no HB_ prefix).
     ok = HbEffect::add(
-        QStringList() << "titlebar" << "titlebar" << "titlebar" << "titlebar",
-        QStringList() << "titlebar_disappear" <<  "titlebar_appear" << "titlebar_orient_disappear" << "titlebar_orient_appear",
-        QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
+             QStringList() << "titlebar" << "titlebar" << "titlebar" << "titlebar",
+             QStringList() << "titlebar_disappear" <<  "titlebar_appear" << "titlebar_orient_disappear" << "titlebar_orient_appear",
+             QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
     if (!ok) {
         qWarning("HbMainWindow: addViewEffects: atomic registration for titlebar effects failed");
     }
 
     // Register statusbar effects.
     ok = HbEffect::add(
-        QStringList() << "statusbar" << "statusbar" << "statusbar" << "statusbar",
-        QStringList() << "statusbar_disappear" <<  "statusbar_appear" << "statusbar_orient_disappear" << "statusbar_orient_appear",
-        QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
+             QStringList() << "statusbar" << "statusbar" << "statusbar" << "statusbar",
+             QStringList() << "statusbar_disappear" <<  "statusbar_appear" << "statusbar_orient_disappear" << "statusbar_orient_appear",
+             QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
     if (!ok) {
         qWarning("HbMainWindow: addViewEffects: atomic registration for statusbar effects failed");
     }
@@ -577,8 +595,8 @@ void HbMainWindowPrivate::_q_viewChanged()
     Q_Q(HbMainWindow);
 
     HbView *view = qobject_cast<HbView *>(mViewStackWidget->currentWidget());
-    if (view) {        
-        if(!HbViewPrivate::d_ptr(view)->mVisited) {
+    if (view) {
+        if (!HbViewPrivate::d_ptr(view)->mVisited) {
             HbViewPrivate::d_ptr(view)->mVisited = true;
             // connect signals when the view is first time visited
             QObject::connect(view, SIGNAL(titleChanged(QString)), q, SLOT(_q_viewTitleChanged(QString)));
@@ -604,7 +622,7 @@ void HbMainWindowPrivate::_q_viewRemoved(QGraphicsWidget *widget)
     Q_Q(HbMainWindow);
     widget->disconnect(q);
 
-    HbView *view = qobject_cast<HbView*>(widget);
+    HbView *view = qobject_cast<HbView *>(widget);
     if (view) {
         // Reset view visit flag
         HbViewPrivate::d_ptr(view)->mVisited = false;
@@ -638,7 +656,7 @@ void HbMainWindowPrivate::_q_viewDockWidgetChanged()
     Q_Q(HbMainWindow);
     HbView *view = qobject_cast<HbView *>(q->sender());
     if (view) {
-        if(view == q->currentView()) {
+        if (view == q->currentView()) {
             addDockWidgetToLayout(HbViewPrivate::d_ptr(view)->dockWidget);
         }
     }
@@ -647,7 +665,7 @@ void HbMainWindowPrivate::_q_viewDockWidgetChanged()
 /*
     Launches the menu of the current view at given pos.
 */
-void HbMainWindowPrivate::_q_launchMenu(const QPointF& pos)  // TODO - pos unused!
+void HbMainWindowPrivate::_q_launchMenu(const QPointF &pos)  // TODO - pos unused!
 {
     Q_Q(HbMainWindow);
     Q_UNUSED(pos);
@@ -657,7 +675,7 @@ void HbMainWindowPrivate::_q_launchMenu(const QPointF& pos)  // TODO - pos unuse
         if (!menu->isEmpty()) {
             q->connect(menu, SIGNAL(aboutToClose()), q, SLOT(_q_restoreTitlePane()));
             menu->setTimeout(HbPopup::NoTimeout);
-            menu->open( this, SLOT(menuClosed()));
+            menu->open(this, SLOT(menuClosed()));
         } else {
             _q_restoreTitlePane();
         }
@@ -694,7 +712,7 @@ void HbMainWindowPrivate::_q_viewVisibleItemsChanged()
 }
 
 /*
-    Updates the layout of current view when fullscreen 
+    Updates the layout of current view when fullscreen
     property has been toggled.
 */
 void HbMainWindowPrivate::_q_contentFullScreenChanged()
@@ -753,7 +771,7 @@ void HbMainWindowPrivate::updateVisibleItems()
     if (view) {
         const Hb::SceneItems visibleItems(view->visibleItems());
         view->setTitleBarVisible(visibleItems & Hb::TitleBarItem); // also handles updating of the navigation button
-        
+
         // ToolBar is a special case, since it depens on the current view's toolbar
         if (visibleItems & Hb::ToolBarItem) {
             if (q->currentView()) {
@@ -785,13 +803,13 @@ void HbMainWindowPrivate::updateVisibleItems()
 */
 void HbMainWindowPrivate::_q_themeChanged()
 {
-    broadcastEvent( HbEvent::ThemeChanged );
+    broadcastEvent(HbEvent::ThemeChanged);
 }
 
 static void informWidget(HbMainWindowPrivate::BroadcastItem &bcItem, QGraphicsWidget *widget);
 
 /*
-    Sends event of \eventType to all items in the \inform list 
+    Sends event of \eventType to all items in the \inform list
     excluding ones in the \a ignoreItems list.
 
     Invible widgets will be added onto \deferredItems list which will be
@@ -799,16 +817,16 @@ static void informWidget(HbMainWindowPrivate::BroadcastItem &bcItem, QGraphicsWi
 */
 static void informItems(HbMainWindowPrivate::BroadcastItem &bcItem, QList<QGraphicsItem *> &inform)
 {
-    if ( inform.count() ) {
-        foreach( QGraphicsItem *item, inform ) {
-            if ( item->isWidget() ) {
+    if (inform.count()) {
+        foreach(QGraphicsItem * item, inform) {
+            if (item->isWidget()) {
                 QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(item);
-                if ( item->isVisible() ) {
+                if (item->isVisible()) {
                     informWidget(bcItem, widget);
                 } else {
-                    bcItem.mPending.append(QPointer<QGraphicsWidget>( widget ));
+                    bcItem.mPending.append(QPointer<QGraphicsWidget>(widget));
                 }
-            } 
+            }
         }
     }
 }
@@ -830,11 +848,11 @@ static void informWidget(HbMainWindowPrivate::BroadcastItem &bcItem, QGraphicsWi
 
 /*
     Broadcasts event of type \a eventType into all widgets in the scene.
-	
-	This is a convenince method for void broadcastEvent( QEvent * ).
+
+    This is a convenince method for void broadcastEvent( QEvent * ).
 
 */
-void HbMainWindowPrivate::broadcastEvent( int eventType )
+void HbMainWindowPrivate::broadcastEvent(int eventType)
 {
     HbEvent *event = new HbEvent(eventType);
     broadcastEvent(event);
@@ -849,14 +867,14 @@ void HbMainWindowPrivate::broadcastEvent( int eventType )
     Invisible child items are added into mPending array which will be handled
     asynchronously.
 */
-void HbMainWindowPrivate::broadcastEvent( QEvent *event )
+void HbMainWindowPrivate::broadcastEvent(QEvent *event)
 {
     Q_Q(HbMainWindow);
 
     int type = event->type();
-    bool previousEvent(mBroadcastItems.contains( type ));
+    bool previousEvent(mBroadcastItems.contains(type));
 
-    BroadcastItem& broadcastItem = mBroadcastItems[type];
+    BroadcastItem &broadcastItem = mBroadcastItems[type];
     broadcastItem.mEvent = event;
 
     // cancel previous requests
@@ -866,29 +884,29 @@ void HbMainWindowPrivate::broadcastEvent( QEvent *event )
 
     // create high priority items
     QList<QGraphicsItem *> priorityItems;
-    if ( type == HbEvent::ThemeChanged ) {
-        if ( q->currentView() ) {
-            priorityItems.append( q->currentView() );
+    if (type == HbEvent::ThemeChanged) {
+        if (q->currentView()) {
+            priorityItems.append(q->currentView());
         }
     }
-    
+
     // inform prority items now
     informItems(broadcastItem, priorityItems);
 
     // inform root items in the scene
     QList<QGraphicsItem *> sceneItems = mScene->items();
     QList<QGraphicsItem *> rootItems;
-    foreach( QGraphicsItem *item, sceneItems ) {
-        if ( !item->parentItem() && !priorityItems.contains(item)) {
-            rootItems.append( item );
+    foreach(QGraphicsItem * item, sceneItems) {
+        if (!item->parentItem() && !priorityItems.contains(item)) {
+            rootItems.append(item);
         }
     }
     informItems(broadcastItem, rootItems);
 
     // create asynchronous broadcast loop if needed.
-    if ( broadcastItem.mPending.count() ) {
+    if (broadcastItem.mPending.count()) {
         Q_Q(HbMainWindow);
-        QMetaObject::invokeMethod( q, "_q_continueBroadcasting", Qt::QueuedConnection, Q_ARG(int, type) );
+        QMetaObject::invokeMethod(q, "_q_continueBroadcasting", Qt::QueuedConnection, Q_ARG(int, type));
     } else {
         // no pending items left, remove the broadcast item
         delete mBroadcastItems[type].mEvent;
@@ -897,9 +915,9 @@ void HbMainWindowPrivate::broadcastEvent( QEvent *event )
 }
 
 /*
-    For asynchronous event broadcasting. 
+    For asynchronous event broadcasting.
 
-    Items in the mPending array are informed. 
+    Items in the mPending array are informed.
 */
 void HbMainWindowPrivate::_q_continueBroadcasting(int type)
 {
@@ -908,22 +926,22 @@ void HbMainWindowPrivate::_q_continueBroadcasting(int type)
         return;
     }
 
-    BroadcastItem& broadcastItem = mBroadcastItems[type];
+    BroadcastItem &broadcastItem = mBroadcastItems[type];
 
     // take a copy and then clear the pending items
     QList<HbMainWindowPrivate::QGraphicsWidgetPtr> informItems = broadcastItem.mPending;
     broadcastItem.mPending.clear();
 
-    foreach( QPointer<QGraphicsWidget> widgetPtr, informItems ) {
-        if ( !widgetPtr.isNull() ) {
+    foreach(QPointer<QGraphicsWidget> widgetPtr, informItems) {
+        if (!widgetPtr.isNull()) {
             informWidget(broadcastItem, widgetPtr.data());
         }
     }
 
     // create another broadcast loop if needed.
-    if ( broadcastItem.mPending.count() ) {
+    if (broadcastItem.mPending.count()) {
         Q_Q(HbMainWindow);
-        QMetaObject::invokeMethod( q, "_q_continueBroadcasting", Qt::QueuedConnection, Q_ARG(int, type) );
+        QMetaObject::invokeMethod(q, "_q_continueBroadcasting", Qt::QueuedConnection, Q_ARG(int, type));
     } else {
         // no pending items left, remove the broadcast item
         delete mBroadcastItems[type].mEvent;
@@ -940,7 +958,7 @@ void HbMainWindowPrivate::postIdleEvent(int eventId)
 
 void HbMainWindowPrivate::_q_delayedConstruction()
 {
-    if (!mDelayedConstructionHandled){
+    if (!mDelayedConstructionHandled) {
         Q_Q(HbMainWindow);
         mDelayedConstructionHandled = true;
 
@@ -957,10 +975,10 @@ void HbMainWindowPrivate::_q_delayedConstruction()
         mViewStackWidget->delayedConstruction();
 
         connect(hbInstance->theme(), SIGNAL(changed()),
-                q, SLOT(_q_themeChanged()) );
+                q, SLOT(_q_themeChanged()));
 
-        connect(q, SIGNAL(currentViewChanged(HbView*)),
-                mClippingItem, SLOT(currentViewChanged(HbView*)));
+        connect(q, SIGNAL(currentViewChanged(HbView *)),
+                mClippingItem, SLOT(currentViewChanged(HbView *)));
 
         mTitleBar->delayedConstruction();
         connect(mTitleBar->titlePane(), SIGNAL(visibilityChanged()),
@@ -976,13 +994,13 @@ void HbMainWindowPrivate::_q_delayedConstruction()
 
         initFadeItem();
 
-#ifdef Q_OS_SYMBIAN                
-        mDevDlgConnectHelper = new HbDeviceDialogConnectHelper(this);    
+#ifdef Q_OS_SYMBIAN
+        mDevDlgConnectHelper = new HbDeviceDialogConnectHelper(this);
         connect(mDevDlgConnectHelper, SIGNAL(sessionEstablished(RHbDeviceDialogClientSession *)),
                 this, SLOT(deviceDialogConnectionReady(RHbDeviceDialogClientSession *)));
-        mDevDlgConnectHelper->connect();        
+        mDevDlgConnectHelper->connect();
 #endif //Q_OS_SYMBIAN
-        
+
         _q_viewReady();
 
         postIdleEvent(HbMainWindowPrivate::IdleEvent);
@@ -991,18 +1009,19 @@ void HbMainWindowPrivate::_q_delayedConstruction()
 
 void HbMainWindowPrivate::_q_viewReady()
 {
-        Q_Q(HbMainWindow);
-        emit q->viewReady();
+    Q_Q(HbMainWindow);
+    emit q->viewReady();
 }
 
 QGraphicsWidget *HbMainWindowPrivate::element(HbMainWindowPrivate::Element element) const
 {
-     if( element == HbMainWindowPrivate::RootItem )
+    if (element == HbMainWindowPrivate::RootItem) {
         return mRootItem;
-    else if( element == HbMainWindowPrivate::ViewportItem )
+    } else if (element == HbMainWindowPrivate::ViewportItem) {
         return mClippingItem;
-    else if( element == HbMainWindowPrivate::BackgroundItem )
+    } else if (element == HbMainWindowPrivate::BackgroundItem) {
         return mBgItem;
+    }
     return 0;
 }
 
@@ -1024,10 +1043,10 @@ void HbMainWindowPrivate::removeBackgroundItem()
     }
 }
 
-void HbMainWindowPrivate::setViewportSize(const QSizeF& newSize)
+void HbMainWindowPrivate::setViewportSize(const QSizeF &newSize)
 {
     mClippingItem->resize(newSize);
-    mLayoutRect = QRectF(QPointF(0,0), newSize);
+    mLayoutRect = QRectF(QPointF(0, 0), newSize);
     mViewStackWidget->resize(newSize);
 }
 
@@ -1041,36 +1060,37 @@ void HbMainWindowPrivate::updateForegroundOrientationPSKey()
 {
     // check current process is not devicedialog
     RProcess process;
-    if (process.SecureId().iId != deviceDialogUid.iUid) {    
-        if (mDevDlgClientSession && !mPendingPsPublish) {    
+    if (process.SecureId().iId != deviceDialogUid.iUid) {
+        if (mDevDlgClientSession && !mPendingPsPublish) {
             int orie = mOrientation;
-            if (!mAutomaticOrientationSwitch)
-                orie |= KHbFixedOrientationMask;              
-            mDevDlgClientSession->SendSyncRequest( EHbSrvPublishOrientation, orie );
-        }
-        else if (mDevDlgClientSession && mPendingPsPublish) {
-            mDevDlgClientSession->SendSyncRequest( EHbSrvPublishOrientation, mPendingOrientationValue );
+            if (!mAutomaticOrientationSwitch) {
+                orie |= KHbFixedOrientationMask;
+            }
+            mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, orie);
+        } else if (mDevDlgClientSession && mPendingPsPublish) {
+            mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, mPendingOrientationValue);
             mPendingPsPublish = false;
             mPendingOrientationValue = 0;
-        }
-        else if (!mDevDlgClientSession && !mPendingPsPublish) {
+        } else if (!mDevDlgClientSession && !mPendingPsPublish) {
             mPendingOrientationValue = mOrientation;
-            if (!mAutomaticOrientationSwitch)  
-                mPendingOrientationValue |= KHbFixedOrientationMask;            
-            mPendingPsPublish = true; 
-        }    
+            if (!mAutomaticOrientationSwitch) {
+                mPendingOrientationValue |= KHbFixedOrientationMask;
+            }
+            mPendingPsPublish = true;
+        }
     }
-    process.Close();    
+    process.Close();
 }
 #endif
 
 #ifdef Q_OS_SYMBIAN
 void HbMainWindowPrivate::deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession)
 {
-    mDevDlgClientSession = clientSession; 
-    if (mPendingPsPublish)
+    mDevDlgClientSession = clientSession;
+    if (mPendingPsPublish) {
         updateForegroundOrientationPSKey();
+    }
 }
-    
+
 #endif //Q_OS_SYMBIAN
 // end of file

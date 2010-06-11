@@ -34,6 +34,7 @@
 
 class HbSplashGenerator;
 class HbSplashGenServerSymbian;
+class HbSplashCompositorInterface;
 
 class HbSplashGenServer : public QObject
 {
@@ -43,6 +44,7 @@ public:
     HbSplashGenServer(HbSplashGenerator *generator);
     ~HbSplashGenServer();
     bool startupSuccess() const;
+    void addCompositor(HbSplashCompositorInterface *compositor);
 
 private slots:
     void onOutputDirContentsUpdated(const QString &dir, const QStringList &entries);

@@ -167,6 +167,8 @@ HbWidget* HbRadioItem::createRadioButton()
     if(!mRadioButtonList) {
         mRadioButtonList = new HbRadioButtonList();      
         mRadioButtonList->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
+        QObject::connect(mRadioButtonList, SIGNAL(itemSelected(int)), this, SIGNAL(itemSelected(int)));
+        QObject::connect(mRadioButtonList, SIGNAL(startPreview(int)), this, SIGNAL(startPreview(int)));
         //mRadioButtonList->setClampingStyle(HbScrollArea::StrictClamping);
         mRadioButtonList->setItems( mItems );
         if( mSelected != -1 ) {
@@ -325,6 +327,10 @@ void HbRadioItem::buttonClicked()
             this, SLOT(updateModel(int)) );
         selectItem();
         mDialog = new HbDialog();
+        QObject::connect(mDialog, SIGNAL(finished(HbAction*)), this, SIGNAL(finished(HbAction*)));
+        QObject::connect(mDialog, SIGNAL(aboutToShow()), this, SIGNAL(aboutToShow()));
+        QObject::connect(mDialog, SIGNAL(aboutToHide()), this, SIGNAL(aboutToHide()));
+        QObject::connect(mDialog, SIGNAL(aboutToClose()), this, SIGNAL(aboutToClose()));
         mDialog->setTimeout(HbPopup::NoTimeout);    
         mDialog->setAttribute(Qt::WA_DeleteOnClose);
         mDialog->setContentWidget(mRadioButtonList);    
@@ -447,6 +453,10 @@ void HbMultiSelectionItem::makeEmbedded()
     // create ListWidget if not yet created 
     if(!mMultiListWidget) {
         mMultiListWidget = new HbListWidget();
+    QObject::connect(mMultiListWidget, SIGNAL(activated(HbListWidgetItem *)), this, SIGNAL(activated(HbListWidgetItem *)));
+    QObject::connect(mMultiListWidget, SIGNAL(pressed(HbListWidgetItem *)), this, SIGNAL(pressed(HbListWidgetItem *)));
+    QObject::connect(mMultiListWidget, SIGNAL(released(HbListWidgetItem *)), this, SIGNAL(released(HbListWidgetItem *)));
+    QObject::connect(mMultiListWidget, SIGNAL(longPressed(HbListWidgetItem *,  const QPointF &)), this, SIGNAL(longPressed(HbListWidgetItem *,  const QPointF &)));
         layout->addItem(mMultiListWidget);
     }
     

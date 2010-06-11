@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffecthsl_p.h"
+#include "hbeffecthsl_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbvgchainedeffect_p.h"
@@ -42,12 +42,12 @@ HbEffectHsl::HbEffectHsl(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationH(0),
-        mAnimationS(0),
-        mAnimationL(0),
-        mVgHsl(0)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationH(0),
+    mAnimationS(0),
+    mAnimationL(0),
+    mVgHsl(0)
 {
     // Default values of if something is not passed in FXML
     qreal opacity_start = 1;
@@ -62,17 +62,14 @@ HbEffectHsl::HbEffectHsl(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_HSL_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_HSL_HUE) {
+        } else if (param.name() == FXML_KEYWORD_HSL_HUE) {
             mAnimationH = createAnimation(param, hue_start, hue_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_HSL_SATURATION) {
+        } else if (param.name() == FXML_KEYWORD_HSL_SATURATION) {
             mAnimationS = createAnimation(param, saturation_start, saturation_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_HSL_LIGHTNESS) {
+        } else if (param.name() == FXML_KEYWORD_HSL_LIGHTNESS) {
             mAnimationL = createAnimation(param, lightness_start, lightness_end, group);
         }
     }
@@ -81,10 +78,10 @@ HbEffectHsl::HbEffectHsl(
     if (mEffectDefined) {
         // Add blur effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         mVgHsl = new HbVgHslEffect();
         mVgHsl->setCaching(true);
-        
+
         chain->add(mVgHsl);
 
         // Set initial values for the effect

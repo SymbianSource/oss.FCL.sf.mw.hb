@@ -35,13 +35,13 @@
  * \class HbVgReflectionEffect
  *
  * \brief OpenVG-based reflection effect.
- * 
+ *
  * \internal
  */
 
 HbVgReflectionEffectPrivate::HbVgReflectionEffectPrivate()
     : fade(0), fadeInited(false)
-{    
+{
 }
 
 HbVgReflectionEffectPrivate::~HbVgReflectionEffectPrivate()
@@ -76,8 +76,9 @@ QPointF HbVgReflectionEffect::offset() const
 void HbVgReflectionEffect::setOffset(const QPointF &offset)
 {
     Q_D(HbVgReflectionEffect);
-    if (offset == d->offset)
+    if (offset == d->offset) {
         return;
+    }
     d->offset = offset;
     updateEffectBoundingRect();
     emit offsetChanged(offset);
@@ -100,8 +101,9 @@ qreal HbVgReflectionEffect::fade() const
 void HbVgReflectionEffect::setFade(qreal fade)
 {
     Q_D(HbVgReflectionEffect);
-    if (fade == d->fade)
+    if (fade == d->fade) {
         return;
+    }
     d->fade = fade;
     updateEffect();
     emit fadeChanged(fade);
@@ -116,8 +118,9 @@ QColor HbVgReflectionEffect::color() const
 void HbVgReflectionEffect::setColor(const QColor &color)
 {
     Q_D(HbVgReflectionEffect);
-    if (color == d->color)
+    if (color == d->color) {
         return;
+    }
     d->color = color;
     updateEffect();
     emit colorChanged(color);
@@ -129,27 +132,28 @@ QRectF HbVgReflectionEffect::boundingRectFor(const QRectF &rect) const
     Q_D(const HbVgReflectionEffect);
     QRectF r(rect);
     QPointF mappedOffset = d->mapOffset(d->offset);
-    qreal rotationAngle = d->mainWindowRotation();  
-    
-    if (rotationAngle == 0) 
+    qreal rotationAngle = d->mainWindowRotation();
+
+    if (rotationAngle == 0) {
         r.adjust(0, 0, 0, r.height());
-    else if (rotationAngle == 90 || rotationAngle == -270)
+    } else if (rotationAngle == 90 || rotationAngle == -270) {
         r.adjust(-r.width(), 0, 0, 0);
-    else if (rotationAngle == -90 || rotationAngle == 270)
+    } else if (rotationAngle == -90 || rotationAngle == 270) {
         r.adjust(0, 0, r.width(), 0);
-      
+    }
+
     qreal x1 = qMin(r.left(), r.left() + mappedOffset.x());
     qreal y1 = qMin(r.top(), r.top() + mappedOffset.y());
     qreal x2 = qMax(r.right(), r.right() + mappedOffset.x());
     qreal y2 = qMax(r.bottom(), r.bottom() + mappedOffset.y());
-        
+
     return QRectF(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 }
 
 void HbVgReflectionEffect::performEffect(QPainter *painter,
-                                         const QPointF &offset,
-                                         const QVariant &vgImage,
-                                         const QSize &vgImageSize)
+        const QPointF &offset,
+        const QVariant &vgImage,
+        const QSize &vgImageSize)
 {
 #ifdef HB_EFFECTS_OPENVG
     Q_D(HbVgReflectionEffect);
@@ -162,11 +166,11 @@ void HbVgReflectionEffect::performEffect(QPainter *painter,
 
     QPaintDevice *pdev = painter->device();
     QRectF rectWithChildren = d->deviceRectForSource(
-        HbVgFrameEffectPrivate::IncludeChildren,
-        pdev);
+                                  HbVgFrameEffectPrivate::IncludeChildren,
+                                  pdev);
     QRectF rectWithoutChildren = d->deviceRectForSource(
-        HbVgFrameEffectPrivate::ExcludeChildren,
-        pdev);
+                                     HbVgFrameEffectPrivate::ExcludeChildren,
+                                     pdev);
     VGImage srcImage = vgImage.value<VGImage>();
     VGImage dstImage = d->ensurePixmap(&d->dstPixmap, vgImageSize);
 
@@ -174,60 +178,63 @@ void HbVgReflectionEffect::performEffect(QPainter *painter,
     // IMAGE_USER_TO_SURFACE matrix.
     painter->drawPixmap(offset, d->srcPixmap);
 
-    // Prepare the mirrored image.    
+    // Prepare the mirrored image.
     qreal rotationAngle = d->mainWindowRotation();
     qreal absRotationAngle = qAbs(rotationAngle);
-    
+
     VGfloat m[9];
     vgGetMatrix(m);
     vgLoadIdentity();
-    if (absRotationAngle == 0)
+    if (absRotationAngle == 0) {
         m[4] *= -1.0f;
-    else if (absRotationAngle == 90 || absRotationAngle == 270)
+    } else if (absRotationAngle == 90 || absRotationAngle == 270) {
         m[0] *= -1.0f;
+    }
     vgMultMatrix(m);
-    
+
     // Must move the mirrored image to have it on top of the original and then down
     // again to have it below in portrait-mode. Rotation angles -90 or 270 causes image to be moved to right,
     // and in rotation angles -90 and 270, image is in correct place initially.
     // Try to take the exclude-children hint into account when performing the second move.
-    
+
     VGfloat trans;
-    if (absRotationAngle == 0) {        
-        if (d->hints & ExcludeChildrenHint)
+    if (absRotationAngle == 0) {
+        if (d->hints & ExcludeChildrenHint) {
             trans = -rectWithChildren.height() - rectWithoutChildren.height();
-        else
+        } else {
             trans = -2.0f * rectWithChildren.height();
-        
+        }
+
         vgTranslate(0.0f, trans);
-    }  
-    else if (absRotationAngle == 90 || absRotationAngle == 270) {
-        if (d->hints & ExcludeChildrenHint)
+    } else if (absRotationAngle == 90 || absRotationAngle == 270) {
+        if (d->hints & ExcludeChildrenHint) {
             trans = -rectWithChildren.width() - rectWithoutChildren.width();
-        else
+        } else {
             trans = -2.0f * rectWithChildren.width();
-        
+        }
+
         vgTranslate(trans, 0.0f);
     }
-        
+
     // Apply the additional offset. Note: down = minus, right = plus.
-    QPointF mappedOffset = d->mapOffset(d->offset);    
+    QPointF mappedOffset = d->mapOffset(d->offset);
     VGfloat ox = (VGfloat) mappedOffset.x();
     VGfloat oy = (VGfloat) mappedOffset.y();
 
-    if (rotationAngle == 0)   
-        vgTranslate(ox, -oy); 
-    else if (rotationAngle == 90 || rotationAngle == -270)
-        vgTranslate(-ox, oy);   
-    else if (rotationAngle == -90 || rotationAngle == 270)
-        vgTranslate(-ox, oy); 
-    
+    if (rotationAngle == 0) {
+        vgTranslate(ox, -oy);
+    } else if (rotationAngle == 90 || rotationAngle == -270) {
+        vgTranslate(-ox, oy);
+    } else if (rotationAngle == -90 || rotationAngle == 270) {
+        vgTranslate(-ox, oy);
+    }
+
     // Apply the opacity and the color. When no color was set and the opacity is 1, the
     // source image will be used as it is. This is the only place where we can try to use
     // the pixmap cache.
     VGImage imgToDraw = srcImage;
     QPixmap cachedPm = cached(vgImageSize);
-   if (cachedPm.isNull()) {
+    if (cachedPm.isNull()) {
         VGImage tmpImage = VG_INVALID_HANDLE;
         if (d->color.isValid()) {
             // Perform a colorize effect (ignore the opacity here because it must be set for
@@ -242,8 +249,9 @@ void HbVgReflectionEffect::performEffect(QPainter *painter,
         if (d->opacity < 1.0f - HBVG_EPSILON) {
             // Apply the opacity, i.e. modify the alpha channel.
             if (d->paramsChanged) {
-                for (int i = 0; i < 256; ++i)
-                    d->alphaLUT[i] = (VGubyte) (i * opacity);
+                for (int i = 0; i < 256; ++i) {
+                    d->alphaLUT[i] = (VGubyte)(i * opacity);
+                }
             }
             vgLookup(dstImage, imgToDraw,
                      identityLUT, identityLUT, identityLUT, d->alphaLUT,
@@ -251,10 +259,11 @@ void HbVgReflectionEffect::performEffect(QPainter *painter,
             imgToDraw = dstImage;
         }
         // If colorize and/or opacity was used then try to cache the result.
-        if (imgToDraw == tmpImage)
+        if (imgToDraw == tmpImage) {
             tryCache(d->tmpPixmap);
-        else if (imgToDraw == dstImage)
+        } else if (imgToDraw == dstImage) {
             tryCache(d->dstPixmap);
+        }
     } else {
         imgToDraw = qPixmapToVGImage(cachedPm);
     }
@@ -289,22 +298,18 @@ void HbVgReflectionEffect::performEffect(QPainter *painter,
         // Set up the linear gradient based on the (transformed) size of the source.
         VGfloat sw = (VGfloat) rectWithChildren.width();
         VGfloat sh = (VGfloat) rectWithChildren.height();
-         // must be bottom-up to get the proper effect
-        if (rotationAngle == 0)  {
+        // must be bottom-up to get the proper effect
+        if (absRotationAngle == 0) {
             VGfloat grad[] = { sw / 2.0f, sh,
-                               sw / 2.0f, 0.0f };            
+                               sw / 2.0f, 0.0f
+                             };
             vgSetParameterfv(d->fadePaint, VG_PAINT_LINEAR_GRADIENT, 4, grad);
-        }
-        else if (rotationAngle == -90 || rotationAngle == 270){
+        } else if (absRotationAngle == 90 || absRotationAngle == 270) {
             VGfloat grad[] = { sw, sh / 2.0f,
-                               0.0f, sh / 2.0f };
+                               0.0f, sh / 2.0f
+                             };
             vgSetParameterfv(d->fadePaint, VG_PAINT_LINEAR_GRADIENT, 4, grad);
         }
-        else if (rotationAngle == 90 || rotationAngle == -270){
-            VGfloat grad[] = { 0.0f, sh / 2.0f,
-                               sw, sh / 2.0f };
-            vgSetParameterfv(d->fadePaint, VG_PAINT_LINEAR_GRADIENT, 4, grad);
-        }        
 
         // Draw the mirrored image by using the paint to get a gradual fade-out effect.
         vgSeti(VG_MATRIX_MODE, VG_MATRIX_FILL_PAINT_TO_USER);

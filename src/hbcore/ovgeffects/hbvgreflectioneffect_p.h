@@ -49,7 +49,9 @@ public:
 
 public slots:
     void setOffset(const QPointF &offset);
-    void setOffset(qreal x, qreal y) { setOffset(QPointF(x, y)); }
+    void setOffset(qreal x, qreal y) {
+        setOffset(QPointF(x, y));
+    }
     void setFade(qreal fade);
     void setColor(const QColor &color);
 

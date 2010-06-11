@@ -390,6 +390,7 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                             mPreviousSelectedIndex = itemIndex;
                             mPreviousSelectedCommand = command;
                             mSelectionModel->select(itemIndex, command);
+                            HbWidgetFeedback::triggered(q, Hb::InstantSelectionChanged, Hb::ModifierScrolling);
                         }
 
                         // check if we need to start or keep on scrolling
@@ -508,13 +509,7 @@ void HbAbstractItemViewPrivate::saveIndexMadeVisibleAfterMetricsChange()
     QModelIndex lastVisibleModelIndex;
     mContainer->firstAndLastVisibleModelIndex(firstVisibleModelIndex, lastVisibleModelIndex);
 
-    if (mModelIterator->model()) {
-        if (lastVisibleModelIndex == mModelIterator->index(mModelIterator->indexCount() - 1)) {
-            mVisibleIndex = lastVisibleModelIndex;
-        } else {
-            mVisibleIndex = firstVisibleModelIndex;
-        }
-    }
+    mVisibleIndex = firstVisibleModelIndex;
 }
 
 /*!

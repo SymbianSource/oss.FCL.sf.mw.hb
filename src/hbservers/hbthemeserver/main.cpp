@@ -26,6 +26,7 @@
 #include "hbthemeserverapplication_p.h"
 #include <QTextStream>
 #include <cstdlib>
+#include <QDebug>
 
 void showHelp(const QString &argv0, const QString &error = QString())
 {

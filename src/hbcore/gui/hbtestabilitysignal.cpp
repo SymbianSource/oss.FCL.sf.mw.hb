@@ -27,9 +27,9 @@
 
 HbTestabilitySignal_p::HbTestabilitySignal_p(QObject *parent)
     : QObject(parent), testabilitySignal(false),
-        enabledChangeObserver(0), observerParam(0)
+      enabledChangeObserver(0), observerParam(0)
 {
-	setObjectName("HbTestabilitySignal");
+    setObjectName("HbTestabilitySignal");
 }
 
 HbTestabilitySignal_p::~HbTestabilitySignal_p()
@@ -38,18 +38,18 @@ HbTestabilitySignal_p::~HbTestabilitySignal_p()
 
 void HbTestabilitySignal_p::enableSignal(bool enabled)
 {
-	testabilitySignal = enabled;
-	if (enabledChangeObserver) {
-	    enabledChangeObserver(enabled, observerParam);
-	}
+    testabilitySignal = enabled;
+    if (enabledChangeObserver) {
+        enabledChangeObserver(enabled, observerParam);
+    }
 }
 
 bool HbTestabilitySignal_p::signalEnabled() const
 {
-	return testabilitySignal;
+    return testabilitySignal;
 }
 
-void HbTestabilitySignal_p::notifySignalEnabled(void (*observer)(bool, void*), void *param)
+void HbTestabilitySignal_p::notifySignalEnabled(void (*observer)(bool, void *), void *param)
 {
     enabledChangeObserver = observer;
     observerParam = param;

@@ -29,6 +29,7 @@
 #include <QtGlobal>
 #include <QObject>
 #include <QList>
+#include <QVariant>
 #include <hbdevicedialogplugin.h>
 
 class HbDeviceDialogPluginManager;
@@ -59,6 +60,7 @@ public:
             ClientTag,
             CloseHousekeeping,
             NoClientHousekeeping,
+            DialogType,
             NumVariables
         };
         enum {
@@ -77,8 +79,10 @@ public:
         Flags flags() const {Q_ASSERT(verify()); return mFlags;}
         void setFlags(Flags flags){Q_ASSERT(verify()); mFlags |= flags;}
         void resetFlags(Flags flags){Q_ASSERT(verify()); mFlags &= ~flags;}
-        quintptr variable(Variable selector) const {return mVariables[selector];}
-        void setVariable(Variable selector, quintptr value){mVariables[selector] = value;}
+        qulonglong intVariable(Variable selector) const {return mVariables[selector].toULongLong();}
+        QString stringVariable(Variable selector) const {return mVariables[selector].toString();}
+        void setVariable(Variable selector, qulonglong value){mVariables[selector].setValue(value);}
+        void setVariable(Variable selector, const QString &value){mVariables[selector].setValue(value);}
         bool operator ==(const Dialog &other) const;
     private:
         bool verify() const;
@@ -86,15 +90,15 @@ public:
         int mId;
         HbDeviceDialogInterface *mPtr;
         Flags mFlags;
-        quintptr mVariables[NumVariables];
+        QVariant mVariables[NumVariables];
         int mIndex;
 #ifndef QT_NO_DEBUG
         HbDeviceDialogsContainer *mContainer; // used by verify()
 #endif // QT_NO_DEBUG
         friend class HbDeviceDialogsContainer;
     };
-public:
 
+public:
     HbDeviceDialogsContainer(HbDeviceDialogPluginManager &pluginManager);
     virtual ~HbDeviceDialogsContainer();
 
@@ -104,8 +108,12 @@ public:
     Dialog &find(const QObject *widget);
     void remove(Dialog &dialog);
     Dialog &next(const Dialog &from, Dialog::Flags flags, Dialog::Flags mask);
-    Dialog &next(const Dialog &from, Dialog::Variable variable, quintptr value);
-    bool isEmpty() const;
+    Dialog &next(const Dialog &from, Dialog::Variable variable, quintptr value)
+        {return next(from, variable, QVariant(static_cast<qulonglong>(value)));}
+    Dialog &next(const Dialog &from, Dialog::Variable variable, const QString &value)
+        {return next(from, variable, QVariant(value));}
+    Dialog &next(const Dialog &from, Dialog::Variable variable, const QVariant &value);
+    bool isEmpty() const;	
 
 private:
     HbDeviceDialogPluginManager &mPluginManager;

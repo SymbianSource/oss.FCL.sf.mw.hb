@@ -168,6 +168,10 @@ void HbSystemInfoPrivate::dataReceived(const DeviceSystemInfo& info)
 
 void HbSystemInfoPrivate::DoCancel()
 {
+    if (mListening) {
+        mInfoProperty.Cancel();
+        mListening = false;
+    }
 }
 
 void HbSystemInfoPrivate::RunL()
@@ -228,11 +232,7 @@ void HbSystemInfoPrivate::setPowerState(QSystemDeviceInfo::PowerState state)
 
 void HbSystemInfoPrivate::lostForeground()
 {
-    if (mListening) {
-        mInfoProperty.Cancel();
-        Cancel();
-        mListening = false;
-    }
+    Cancel();
 }
 
 void HbSystemInfoPrivate::gainedForeground()

@@ -23,9 +23,9 @@
 **
 ****************************************************************************/
 
+#include "hbbadgeicon_p.h"
 #include "hbicon.h"
 #include "hbbadgeiconinfo_p.h"
-#include "hbbadgeicon_p.h"
 #include <QPainter>
 
 /*!
@@ -79,12 +79,11 @@ void HbBadgeIcon::addBadge(Qt::Alignment alignment,
     int size = mBadgeIcons.size();
     if (size == 0) {
         mBadgeIcons.append(info);
-    }
-    else {
+    } else {
         bool added = false;
         //Find a spot to insert the badgeinfo in the list.
-        for (int i = size - 1; i >= 0; i--){
-            if (mBadgeIcons[i].zValue() > zValue){
+        for (int i = size - 1; i >= 0; i--) {
+            if (mBadgeIcons[i].zValue() > zValue) {
                 mBadgeIcons.insert(i + 1, info);
                 added = true;
                 break;
@@ -147,7 +146,7 @@ const QList<HbBadgeIconInfo> HbBadgeIcon::badges() const
   Paint all badges in z-order.
 */
 void HbBadgeIcon::paint(QPainter *painter,
-                        const QRectF& rect,
+                        const QRectF &rect,
                         QIcon::Mode mode,
                         QIcon::State state,
                         bool mirror)
@@ -170,18 +169,18 @@ void HbBadgeIcon::paint(QPainter *painter,
         }
         // ... and then draw at the specified location.
         aIcon.icon().paint(painter,
-                 rect,
-                 Qt::KeepAspectRatio,
-                 absAlign,
-                 mode,
-                 state);
+                           rect,
+                           Qt::KeepAspectRatio,
+                           absAlign,
+                           mode,
+                           state);
     }
 }
 
 /*!
   \internal
  */
-void HbBadgeIcon::externalize(QDataStream& stream)
+void HbBadgeIcon::externalize(QDataStream &stream)
 {
     int size = mBadgeIcons.size();
     // Write out how many badges we'll save first
@@ -199,11 +198,11 @@ void HbBadgeIcon::externalize(QDataStream& stream)
 /*!
 \Internal
 */
-void HbBadgeIcon::internalize(QDataStream& stream)
+void HbBadgeIcon::internalize(QDataStream &stream)
 {
     int howManyBadges;
     stream >> howManyBadges;
-    for (int i = 0; i<howManyBadges; ++i) {
+    for (int i = 0; i < howManyBadges; ++i) {
         qint32 align;
         qint32 zValue;
         HbIcon icon;

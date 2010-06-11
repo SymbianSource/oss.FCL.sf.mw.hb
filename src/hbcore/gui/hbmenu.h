@@ -98,7 +98,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_onActionTriggered())
     Q_PRIVATE_SLOT(d_func(), void _q_subMenuItemTriggered(HbAction *action))
     Q_PRIVATE_SLOT(d_func(), void _q_subMenuTimedOut())
-    Q_PRIVATE_SLOT(d_func(), void _q_handleMenuAfterOrientationChange())
+    Q_PRIVATE_SLOT(d_func(), void _q_handleMenuClose())
 };
 
 #endif // HBMENU_H

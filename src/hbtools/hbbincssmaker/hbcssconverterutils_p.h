@@ -27,6 +27,7 @@
 #define HBCSSCONVERTERUTILS_P_H
 
 #include <QList>
+#include <QMultiHash>
 
 class HbCssConverterUtils
 {
@@ -34,7 +35,7 @@ public:
     // Shared chunk offset management
     static void registerOffsetHolder(int *offset);
     static void unregisterOffsetHolder(int *offset);
-    static QList<int *> registeredOffsetHolders();
+    static QMultiHash<int, int *> registeredOffsetHolders();
     static void unregisterAll();
 
     // Shared chunk allocation management

@@ -29,6 +29,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLinearLayout>
 
+#include <hbinputregioncollector_p.h>
 #include "hbdeviceprofile.h"
 #include "hbdialog.h"
 #include "hblabel.h"
@@ -111,6 +112,7 @@ HbExactWordPopup::HbExactWordPopup(QGraphicsWidget *parent, HbExactWordPopupIndi
     HbDialog(*new HbExactWordPopupPrivate(), parent)
 {
     Q_D(HbExactWordPopup);
+    HbInputRegionCollector::instance()->attach(this);
     d->mText = new HbLabel(this);
     d->mText->setAlignment(Qt::AlignCenter);
 

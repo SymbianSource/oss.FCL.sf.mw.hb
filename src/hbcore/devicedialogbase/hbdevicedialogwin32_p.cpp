@@ -190,6 +190,10 @@ int HbDeviceDialogPrivate::error() const
 // Set error
 void HbDeviceDialogPrivate::setError(int error)
 {
+    // Convert from internal to public error code
+    if (error == HbDeviceDialogAlreadyExists) {
+        error = HbDeviceDialog::InstanceExistsError;
+    }
     mLastError = error;
     emit q_func()->error(error);
 }

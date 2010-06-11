@@ -56,6 +56,7 @@ public:
     HbGridView* createColorGrid(QObject *receiver, const char *method)
     {
         mGridView = new HbGridView(this); 
+        mGridView->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded); 
         HbStyle::setItemName(mGridView, "color_grid_view");
        
         mGridView->setColumnCount(4);

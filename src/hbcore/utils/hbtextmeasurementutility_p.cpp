@@ -309,7 +309,7 @@ void HbTextMeasurementUtility::doMeasureItems()
 #else
     QList<HbMainWindow*> mainWindows = hbInstance->allMainWindows();
     foreach (HbMainWindow* mainWindow, mainWindows ) {
-        QGraphicsScene* scene = mainWindow->scene();
+        QGraphicsScene* scene = mainWindow->scene(); //krazy:exclude=qclasses
         QList<QGraphicsItem*> sceneItems = scene->items();
         foreach (QGraphicsItem* sceneItem, sceneItems ) {
             if ( sceneItem->isWidget() ) {

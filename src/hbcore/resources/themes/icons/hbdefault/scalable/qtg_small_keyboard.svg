@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
 <path d="M3.5,25c-1.65,0-3-1.35-3-3V7c0-1.65,1.35-3,3-3h23c1.65,0,3,1.35,3,3v15  c0,1.65-1.35,3-3,3H3.5z" fill-opacity="0.6" stroke-opacity="0.6"/>
 <linearGradient gradientTransform="matrix(1 0 0 -1 202.52 408.9805)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-187.52" x2="-187.52" y1="403.9805" y2="384.9805">

@@ -29,6 +29,8 @@
 
 #include <QCoreApplication>
 
+#include <QDebug>
+
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 1
 
@@ -53,6 +55,7 @@ void HbXmlLoaderBinaryActions::setOutputDevice( QIODevice *device )
 
 void HbXmlLoaderBinaryActions::cleanUp()
 {
+    qDebug() << "BinaryActions, cleanUp";
     mOut << (quint8)HbXml::ActionCleanUp;
 }
 
@@ -68,6 +71,7 @@ void HbXmlLoaderBinaryActions::deleteAll()
 
 bool HbXmlLoaderBinaryActions::pushDocument( const QString& context)
 {
+    qDebug() << "BinaryActions, pushDocument, in";
     if( mOut.device()->pos() != 0 ) {
         mOut << (quint8)HbXml::ActionPushDocument << context;
         return true;
@@ -75,6 +79,7 @@ bool HbXmlLoaderBinaryActions::pushDocument( const QString& context)
     mOut.device()->write(HbXmlLoaderBinarySyntax::signature(), strlen(HbXmlLoaderBinarySyntax::signature()));
     mOut << (qint8)VERSION_MAJOR << (qint8)VERSION_MINOR;
     mOut << (quint8)HbXml::ActionPushDocument << context;
+    qDebug() << "BinaryActions, pushDocument, out";
     return true;
 }
 

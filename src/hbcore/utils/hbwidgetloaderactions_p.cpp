@@ -50,6 +50,7 @@ HbWidgetLoaderActions::~HbWidgetLoaderActions()
 {
 }
 
+#ifndef HB_BIN_CSS
 /*!
     \internal
 */
@@ -116,7 +117,7 @@ bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcE
     }
     return ok;
 }
-
+#endif
 /*
     \class HbWidgetLoaderMemoryActions
     \internal

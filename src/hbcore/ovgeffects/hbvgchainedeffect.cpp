@@ -144,23 +144,28 @@ HbVgEffect *HbVgChainedEffect::at(int index)
 QRectF HbVgChainedEffect::boundingRectFor(const QRectF &rect) const
 {
     Q_D(const HbVgChainedEffect);
-    if (d->effects.empty())
+    if (d->effects.empty()) {
         return rect;
+    }
     // find out the bounding rect that covers all the effects
     QRectF result;
-    foreach (HbVgEffect *effect, d->effects) {
+    foreach(HbVgEffect * effect, d->effects) {
         QRectF br = effect->boundingRectFor(rect);
         if (result.isNull()) {
             result = br;
         } else {
-            if (br.left() < result.left())
+            if (br.left() < result.left()) {
                 result.setLeft(br.left());
-            if (br.top() < result.top())
+            }
+            if (br.top() < result.top()) {
                 result.setTop(br.top());
-            if (br.right() > result.right())
+            }
+            if (br.right() > result.right()) {
                 result.setRight(br.right());
-            if (br.bottom() > result.bottom())
+            }
+            if (br.bottom() > result.bottom()) {
                 result.setBottom(br.bottom());
+            }
         }
     }
     return result;
@@ -176,7 +181,7 @@ void HbVgChainedEffect::performEffect(QPainter *painter,
 {
 #ifdef HB_EFFECTS_OPENVG
     Q_D(HbVgChainedEffect);
-    foreach (HbVgEffect *effect, d->effects) {
+    foreach(HbVgEffect * effect, d->effects) {
         // Set up srcPixmap and others for the individual effects
         // because the base class does it only for us, not for the
         // contained ones.
@@ -189,8 +194,9 @@ void HbVgChainedEffect::performEffect(QPainter *painter,
         effD->paramsChanged = effD->cacheInvalidated = false;
     }
     // If there are no effects in the chain then just draw the source.
-    if (d->effects.isEmpty())
+    if (d->effects.isEmpty()) {
         painter->drawPixmap(offset, d->srcPixmap);
+    }
 
 #else
     Q_UNUSED(painter);
@@ -207,7 +213,7 @@ void HbVgChainedEffectPrivate::notifyCacheInvalidated()
 {
     // Distribute the new value of cacheInvalidated to all the
     // contained effects.
-    foreach (HbVgEffect *effect, effects) {
+    foreach(HbVgEffect * effect, effects) {
         HbVgEffectPrivate *effD = HbVgEffectPrivate::d_ptr(effect);
         effD->cacheInvalidated = true;
         effD->notifyCacheInvalidated();

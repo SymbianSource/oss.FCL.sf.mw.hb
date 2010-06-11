@@ -37,7 +37,7 @@ class HbEffectRotateAnimation : public HbEffectAnimation
 public:
     HbEffectRotateAnimation(HbEffectGroup *group,
                             Qt::Axis axis,
-                            int duration );
+                            int duration);
 
     void setCenter(const QPointF &p);
 
@@ -56,13 +56,13 @@ public:
 HbEffectRotateAnimation::HbEffectRotateAnimation(
     HbEffectGroup *group,
     Qt::Axis axis,
-    int duration ) :
-        HbEffectAnimation(group),
-        mAxis(axis),
-        mCenterX(0),
-        mCenterY(0),
-        mCurrentRotation(0),
-        mTargetRotation(0)
+    int duration) :
+    HbEffectAnimation(group),
+    mAxis(axis),
+    mCenterX(0),
+    mCenterY(0),
+    mCurrentRotation(0),
+    mTargetRotation(0)
 {
     setDuration(duration);
 }
@@ -94,11 +94,11 @@ void HbEffectRotateAnimation::handleAnimationFinish()
 
     Example of how to use HbEffectRotate
     \code
-    // animData here is pointer to HbEffectAnimation data, gruop is pointer to HbEffectGroup, and 
+    // animData here is pointer to HbEffectAnimation data, gruop is pointer to HbEffectGroup, and
     // item is the QGraphicsItem on which effect will be applied.
     HbEffectRotate *effect= new HbEffectScale(animData, item, group);
     effect->start();
-    
+
     \endcode
 
     \warning This class is a part of internal library implementation and may
@@ -111,11 +111,11 @@ HbEffectRotate::HbEffectRotate(
     const QList<HbEffectFxmlParamData> &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectAbstract(0, item, group),
-        mAnimation(0),
-        mCenterX(0.0),
-        mCenterY(0.0),
-        mPosChanged(false)
+    HbEffectAbstract(0, item, group),
+    mAnimation(0),
+    mCenterX(0.0),
+    mCenterY(0.0),
+    mPosChanged(false)
 {
     // Default values of rotation effect if something is not passed in FXML
     Qt::Axis axis = Qt::ZAxis;
@@ -130,27 +130,23 @@ HbEffectRotate::HbEffectRotate(
     const HbEffectFxmlParamData *angleParam = 0;
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, data) {
-	    if (param.name() == FXML_KEYWORD_ROTATION_ANGLE) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, data) {
+        if (param.name() == FXML_KEYWORD_ROTATION_ANGLE) {
             keyFrameList = param.keyFrames();
             HbEffectUtils::resolveFxmlDuration(duration, param);
             HbEffectUtils::resolveFxmlCurveShape(curve, param);
             angleParam = &param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_ROTATION_ORIGIN_X) {
+        } else if (param.name() == FXML_KEYWORD_ROTATION_ORIGIN_X) {
             originXData = param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_ROTATION_ORIGIN_Y) {
+        } else if (param.name() == FXML_KEYWORD_ROTATION_ORIGIN_Y) {
             originYData = param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_ROTATION_AXIS_X) {
+        } else if (param.name() == FXML_KEYWORD_ROTATION_AXIS_X) {
             bool valueOk = false;
             int value = param.getValue().toInt(&valueOk);
             if (valueOk && (bool)value) {
                 axis = Qt::XAxis;
             }
-        }
-	    else if (param.name() == FXML_KEYWORD_ROTATION_AXIS_Y) {
+        } else if (param.name() == FXML_KEYWORD_ROTATION_AXIS_Y) {
             bool valueOk = false;
             int value = param.getValue().toInt(&valueOk);
             if (valueOk && (bool)value) {
@@ -166,13 +162,12 @@ HbEffectRotate::HbEffectRotate(
 
     anim->addLooping(angleParam);
 
-    foreach( const HbKeyFrame &kf, keyFrameList ) {
-	    if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
-		    startAngle = kf.val;
-	    }
-	    else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
-		    endAngle = kf.val;
-	    }
+    foreach(const HbKeyFrame & kf, keyFrameList) {
+        if (HbEffectUtils::fuzzyIsNull(kf.pos)) {
+            startAngle = kf.val;
+        } else if (HbEffectUtils::fuzzyIsOneOrGreater(kf.pos)) {
+            endAngle = kf.val;
+        }
         // Set keyframe in animation
         else {
             anim->setKeyValueAt(kf.pos, QVariant(kf.val));
@@ -228,10 +223,10 @@ void HbEffectRotate::setStartState(QTransform &transform)
 the result is undefined.
 */
 void HbEffectRotate::start()
-{  
-	mAnimation->setCenter(QPointF(mCenterX, mCenterY));
+{
+    mAnimation->setCenter(QPointF(mCenterX, mCenterY));
     mAnimation->setCurrentTime(0);
-	mAnimation->start();
+    mAnimation->start();
 }
 
 /* Cancels the effect animation and sets the animation end state immediately.
@@ -241,7 +236,7 @@ void HbEffectRotate::cancel(QTransform &transform, bool itemIsValid)
     Q_UNUSED(itemIsValid)
 
     mAnimation->stop();
-    
+
     //This will set the endstate for the object correctly when cancelling effect
     QTransform newTransform;
     newTransform.translate(mAnimation->mCenterX, mAnimation->mCenterY);
@@ -254,7 +249,7 @@ void HbEffectRotate::cancel(QTransform &transform, bool itemIsValid)
 void HbEffectRotate::updateItemTransform(QTransform &transform)
 {
     if (mAnimation) {
-        // Rotate the transformation matrix to reach the new rotation angle.        
+        // Rotate the transformation matrix to reach the new rotation angle.
         QTransform newTransform;
         newTransform.translate(mAnimation->mCenterX, mAnimation->mCenterY);
         newTransform.rotate(mAnimation->mCurrentRotation, mAnimation->mAxis);

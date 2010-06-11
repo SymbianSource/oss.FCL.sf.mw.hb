@@ -34,6 +34,7 @@
 class HbView;
 class HbAbstractVkbHostPrivate;
 class HbWidget;
+class QGraphicsObject;
 
 class HB_CORE_EXPORT HbAbstractVkbHost : public HbVkbHost
 {
@@ -41,7 +42,9 @@ class HB_CORE_EXPORT HbAbstractVkbHost : public HbVkbHost
 
 public:
     HbAbstractVkbHost(HbWidget* containerWidget);
+    HbAbstractVkbHost(QWidget* containerWidget);
     HbAbstractVkbHost(QGraphicsWidget* containerWidget);
+    HbAbstractVkbHost(QGraphicsObject* containerWidget);
     ~HbAbstractVkbHost();
 
 public: // From HbVkbHost

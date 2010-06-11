@@ -113,7 +113,8 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
                 aVal.mEmptyValue = icon.isNull();
 #endif
             }
-            const QMetaProperty metaProperty = metaObject->property(metaObject->indexOfProperty(attr.name.toLatin1()));
+            const QMetaProperty metaProperty = 
+                metaObject->property(metaObject->indexOfProperty(attr.name.toLatin1()));
             if (metaProperty.isEnumType()) {
                 aVal.mValue2 = metaProperty.enumerator().valueToKey(value.toInt());
             }
@@ -123,7 +124,8 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
 
     bool match(false);
     if (attr.valueMatchCriterium == HbCss::AttributeSelector::MatchContains) {
-        QStringList lst = aVal.mValue1.split(QLatin1Char(' ')) + aVal.mValue2.split(QLatin1Char(' '));
+        QStringList lst = aVal.mValue1.split(QLatin1Char(' ')) + 
+            aVal.mValue2.split(QLatin1Char(' '));
         match = lst.contains(attr.value);
     } else if (attr.valueMatchCriterium == HbCss::AttributeSelector::MatchEqual) {
         match = (aVal.mValue1 == attr.value || aVal.mValue2 == attr.value);

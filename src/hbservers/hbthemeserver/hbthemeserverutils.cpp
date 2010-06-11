@@ -27,6 +27,7 @@
 
 #include <QHash>
 #include <QString>
+#include <QStringList>
 #include <QFile>
 #include <QDebug>
 
@@ -40,6 +41,7 @@
 #include "hbiconsource_p.h"
 #include "hbwidgetloader_p.h"
 #include "hbwidgetloaderactions_p.h"
+#include "hbthemeindex_p.h"
 
 //Hash of fileName-offset
 typedef QHash<QString, int> HbServerCache;
@@ -186,12 +188,29 @@ bool HbThemeServerUtils::parseCssFile(HbCss::Parser &parser, const QString &file
   Returns of the offset for the given filename,layout and section name.
  */
 
-int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, const QString &layout,
+int HbThemeServerUtils::getSharedLayoutDefinition(const QString &fileName, const QString &layout,
                                                   const QString &section)
 {
     int layoutDefOffset = -1;
+    QStringRef nameKey(&fileName);
+    if (nameKey.at(0) == ':') {
+        //use only filename as a key.
+        int index = fileName.lastIndexOf('/');
+        if (index >= 0) {
+            nameKey = fileName.rightRef((fileName.size() - 1) - index);
+        }
+    }
     // check in the cache.
-    QString key(fileName + layout + section);
+    QString key;
+    QChar separator('\0');
+    key.reserve(nameKey.length() + 2 //separators
+                + layout.length() + section.length());
+    key.append(nameKey)
+       .append(separator)
+       .append(layout)
+       .append(separator)
+       .append(section);
+
     if (layoutDefsCache()->contains(key)) {
         layoutDefOffset = layoutDefsCache()->value(key);
         return layoutDefOffset;
@@ -228,7 +247,8 @@ int HbThemeServerUtils::getSharedLayoutDefinition(const QString & fileName, cons
         // no need to check if this item is already present in the
         // cache as the parsing of the file happens only once
         // in the server side.
-        HbSharedCache::instance()->add(HbSharedCache::LayoutDefinition, key, layoutDefOffset);
+        HbSharedCache::instance()->addLayoutDefinition(fileName, layout, section,
+                                                       layoutDefOffset);
     } else {
         // load failed
         layoutDef->~LayoutDefinition();
@@ -386,4 +406,153 @@ void HbThemeServerUtils::cleanupUnusedCss(HbCache *cache)
         delete cache->cacheHandle().take(itemToRemove->fileName);
     }
 }
+
+void HbThemeServerUtils::createThemeIndex(const QString &themePath, const HbThemeType &themetype)
+{
+    #ifdef THEME_INDEX_TRACES
+    qDebug() <<  "ThemeIndex: createThemeIndex" << themePath.toUtf8();
+    #endif
+    QDir themeBasePath(themePath);
+    // Path is like "C:/resource/hb/themes/icons/sfwhitetheme"
+    QString themeName = themeBasePath.dirName();
+    
+    QString filename(themeBasePath.absolutePath());
+    int cutindex = filename.lastIndexOf("/",filename.lastIndexOf("/")-1)+1;
+    filename = filename.left(cutindex);
+    themeBasePath.setPath(filename);
+    filename.append(themeName);
+    filename.append(".themeindex");
+
+    if (themePath == ":\\themes\\icons\\hbdefault") {
+        themeBasePath.setPath(":/themes");
+        filename = ":/themes/hbdefault.themeindex";
+        themeName = "hbdefault";
+    }
+    
+    QFile indexFile(filename);
+
+    bool indexOK = false;
+
+    if (indexFile.open(QIODevice::ReadOnly)) {
+
+        indexOK = true;
+
+        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+
+        HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*) manager->base();
+        
+        qint64 byteSize = indexFile.size();
+
+        #ifdef THEME_INDEX_TRACES
+        qDebug() <<  "ThemeIndex: " << themeName.toUtf8() << " index file size:" << byteSize;
+        #endif
+
+        int offset = manager->alloc(byteSize);
+        if (offset >= 0) {
+            #ifdef THEME_INDEX_TRACES
+            qDebug() <<  "ThemeIndex: memory allocated for theme: " << themeName.toUtf8();
+            #endif
+
+            // Read the theme index in the shared chunk
+            char *address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, offset);
+
+            indexFile.read(address, byteSize);
+            indexFile.close();
+
+            #ifdef THEME_INDEX_TRACES
+            qDebug() <<  "ThemeIndex: Reading themeindex for theme" << themeName.toUtf8() << "... Done!";
+            #endif
+
+            // Verify theme index contents if it is not located in ROM,
+            // so that it does not have over-indexing offsets which might
+            // crash all the clients trying to read from it.
+
+#ifdef Q_OS_SYMBIAN // ROM check only for Symbian - verify always in other platforms.
+            if (themePath[0] != 'z' && themePath[0] != 'Z') {
+#endif
+                #ifdef THEME_INDEX_TRACES
+                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << themeName.toUtf8();
+                #endif
+
+                HbThemeIndex index(address);
+                indexOK = index.validateItems(byteSize);
+
+                #ifdef THEME_INDEX_TRACES
+                qDebug() <<  "ThemeIndex: Validating themeindex for theme" << themeName.toUtf8() << " done! Result: " << indexOK;
+                #endif
+#ifdef Q_OS_SYMBIAN
+            }
+#endif
+            if (indexOK) {
+                // Allocate theme path string from shared memory
+                QByteArray themePathArray = themeBasePath.absolutePath().toLatin1();
+                quint32 themePathOffset = manager->alloc(themePathArray.size()+1);
+                memcpy(HbMemoryUtils::getAddress<char>(
+                           HbMemoryManager::SharedMemory,
+                           themePathOffset),
+                           themePathArray.data(),
+                           themePathArray.size()+1); // +1 for '/0'
+
+                // Allocate theme name string from shared memory
+                QByteArray themeNameArray = themeName.toLatin1();
+                quint32 themeNameOffset = manager->alloc(themeNameArray.size()+1);
+                memcpy(HbMemoryUtils::getAddress<char>(
+                           HbMemoryManager::SharedMemory,
+                           themeNameOffset),
+                           themeNameArray.data(),
+                           themeNameArray.size()+1); // +1 for '/0'
+
+                // Store offset to the index in chunk
+                switch (themetype) {
+                case BaseTheme:
+                    // Release previously allocated content
+                    manager->free(chunkHeader->baseThemePathOffset);
+                    manager->free(chunkHeader->baseThemeNameOffset);
+                    manager->free(chunkHeader->baseThemeIndexOffset);
+                    // Base theme offsets
+                    chunkHeader->baseThemePathOffset = themePathOffset;
+                    chunkHeader->baseThemeNameOffset = themeNameOffset;
+                    chunkHeader->baseThemeIndexOffset = offset;
+                    break;
+                case OperatorC:
+                    // Release previously allocated content
+                    manager->free(chunkHeader->operatorThemeDriveCPathOffset);
+                    manager->free(chunkHeader->operatorThemeDriveCNameOffset);
+                    manager->free(chunkHeader->operatorThemeDriveCIndexOffset);
+                    // Operator theme in C-drive offsets
+                    chunkHeader->operatorThemeDriveCPathOffset = themePathOffset;
+                    chunkHeader->operatorThemeDriveCNameOffset = themeNameOffset;
+                    chunkHeader->operatorThemeDriveCIndexOffset = offset;
+                    break;
+                case OperatorROM:
+                    // Release previously allocated content
+                    manager->free(chunkHeader->operatorThemeRomPathOffset);
+                    manager->free(chunkHeader->operatorThemeRomNameOffset);
+                    manager->free(chunkHeader->operatorThemeRomIndexOffset);
+                    // Operator theme in ROM offsets
+                    chunkHeader->operatorThemeRomPathOffset = themePathOffset;
+                    chunkHeader->operatorThemeRomNameOffset = themeNameOffset;
+                    chunkHeader->operatorThemeRomIndexOffset = offset;
+                    break;
+                case ActiveTheme:
+                    // Release previously allocated content
+                    manager->free(chunkHeader->activeThemePathOffset);
+                    manager->free(chunkHeader->activeThemeNameOffset);
+                    manager->free(chunkHeader->activeThemeIndexOffset);
+                    // Active theme offsets
+                    chunkHeader->activeThemePathOffset = themePathOffset;
+                    chunkHeader->activeThemeNameOffset = themeNameOffset;
+                    chunkHeader->activeThemeIndexOffset = offset;
+                    break;
+                default:
+                    break;
+                }
+            } else {
+                // If the index contents were not OK, remove the index from the chunk
+                manager->free(offset);
+            }
+        }
+    }
+}
+
 

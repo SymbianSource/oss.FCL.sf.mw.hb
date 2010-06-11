@@ -32,25 +32,25 @@
 #include <QMap>
 #include <hbglobal.h>
 
-class HB_AUTOTEST_EXPORT HbIniParser 
+class HB_AUTOTEST_EXPORT HbIniParser
 {
 public:
     HbIniParser();
     ~HbIniParser();
-    
+
     bool read(QIODevice *file);
-    
+
     QStringList groups() const;
     bool setCurrentGroup(const QString &name);
     QString currentGroup();
-    
-    const QString value(const QString &groupName,const QString &key) const;
-    const QString value(const QString &key) const;       
-    
+
+    const QString value(const QString &groupName, const QString &key) const;
+    const QString value(const QString &key) const;
+
 private:
-    QString mCurrentGroup;    
-    typedef QMap<QString,QString> HbIniGroup;
-    QMap<QString,HbIniGroup> mData;
+    QString mCurrentGroup;
+    typedef QMap<QString, QString> HbIniGroup;
+    QMap<QString, HbIniGroup> mData;
 };
 
 #endif

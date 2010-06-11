@@ -45,7 +45,7 @@
 
 bool HbGraphicsScenePrivate::fpsCounterEnabled = false; // Fps counter off by default.
 
-/*! 
+/*!
     Define HB_RND_DRAW_ITEM_BORDERS to draw the graphics items' borders
     CAUTION: clipping and transformations may fail
  */
@@ -93,11 +93,11 @@ Clear the input framework focus
 */
 void HbGraphicsScenePrivate::clearInputFocus()
 {
-   QInputContext* inputContext = qApp->inputContext();
-   if (inputContext) {
-       inputContext->setFocusWidget(0);
-   }
-   mInputFocusSet = false;
+    QInputContext *inputContext = qApp->inputContext();
+    if (inputContext) {
+        inputContext->setFocusWidget(0);
+    }
+    mInputFocusSet = false;
 }
 
 //# Focus delegation between focus groups and widgets. Moves focus to next or
@@ -120,20 +120,20 @@ bool HbGraphicsScenePrivate::focusChangeEvent(const QKeyEvent *event)
     while (cont) {
         result = cont = false;
         while (widget && !focusGroup) {
-           focusGroup = widget->d_func()->focusGroup;
+            focusGroup = widget->d_func()->focusGroup;
 
             if (!focusGroup) {
                 item = widget->parentItem();
                 widget =  item ? qobject_cast<HbWidget *>(item->toGraphicsObject()) : 0;
             }
-      }
+        }
 
         if (!focusGroup || !focusGroup->focusParameters().testFlag(HbFocusGroup::AlwaysOn)) {
             break;
         }
 
-        bool focusNextKey = focusGroup->isFocusNextPrevKey(*event,true);
-        if (focusNextKey || focusGroup->isFocusNextPrevKey(*event,false)) {
+        bool focusNextKey = focusGroup->isFocusNextPrevKey(*event, true);
+        if (focusNextKey || focusGroup->isFocusNextPrevKey(*event, false)) {
             result = focusGroup->focusNextPrevItem(widget->lastFocusedChild(), focusNextKey);
 
             if (result) {
@@ -166,11 +166,11 @@ void HbGraphicsScenePrivate::hidePopup(HbPopup *popup)
     popupManager()->hidePopup(popup);
 }
 
-HbPopupManager* HbGraphicsScenePrivate::popupManager()
+HbPopupManager *HbGraphicsScenePrivate::popupManager()
 {
     Q_Q(HbGraphicsScene);
     if (!mPopupManager) {
-        mPopupManager = new HbPopupManager(q,q);
+        mPopupManager = new HbPopupManager(q, q);
     }
     return mPopupManager;
 }
@@ -178,17 +178,17 @@ HbPopupManager* HbGraphicsScenePrivate::popupManager()
 /*!
     Constructor
 */
-HbGraphicsScene::HbGraphicsScene(QObject* parent) : QGraphicsScene(parent),
-d_ptr(new HbGraphicsScenePrivate)
+HbGraphicsScene::HbGraphicsScene(QObject *parent) : QGraphicsScene(parent),
+    d_ptr(new HbGraphicsScenePrivate)
 {
     Q_D(HbGraphicsScene);
     d->q_ptr = this;
 
 #ifdef HB_RND_DRAW_ITEM_BORDERS // see the top of the file
-    if ( QGraphicsView *view = qobject_cast<QGraphicsView*>( parent ) ) {  
+    if (QGraphicsView *view = qobject_cast<QGraphicsView *>(parent)) {
         // set the IndirectPainting flag -> drawItems() is called on paint.
-        view->setOptimizationFlag( QGraphicsView::IndirectPainting, true );
-    } 
+        view->setOptimizationFlag(QGraphicsView::IndirectPainting, true);
+    }
 #endif
     setStickyFocus(true);
 }
@@ -206,7 +206,7 @@ HbGraphicsScene::~HbGraphicsScene()
   \reimp
   \sa QGraphicsScene
  */
-void HbGraphicsScene::focusInEvent(QFocusEvent* focusEvent)
+void HbGraphicsScene::focusInEvent(QFocusEvent *focusEvent)
 {
     QGraphicsScene::focusInEvent(focusEvent);
 }
@@ -215,7 +215,7 @@ void HbGraphicsScene::focusInEvent(QFocusEvent* focusEvent)
   \reimp
   \sa QGraphicsScene
  */
-void HbGraphicsScene::focusOutEvent(QFocusEvent* focusEvent)
+void HbGraphicsScene::focusOutEvent(QFocusEvent *focusEvent)
 {
     QGraphicsScene::focusOutEvent(focusEvent);
 }
@@ -224,19 +224,19 @@ void HbGraphicsScene::focusOutEvent(QFocusEvent* focusEvent)
   \reimp
   \sa QGraphicsScene
  */
-void HbGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent* mouseEvent)
+void HbGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
     QGraphicsScene::mousePressEvent(mouseEvent);
 
     // If the focused item is not HbWidget (and not an editor) then we send an event to close the input panel
-    QGraphicsItem* focusedItem = focusItem();
-    if(focusedItem) {
-        QGraphicsObject* focusedObject = focusedItem->toGraphicsObject();
-        if(focusedObject && !focusedObject->inherits("HbWidget") &&
-           ((focusedObject->flags() & QGraphicsItem::ItemAcceptsInputMethod) == 0)) {
+    QGraphicsItem *focusedItem = focusItem();
+    if (focusedItem) {
+        QGraphicsObject *focusedObject = focusedItem->toGraphicsObject();
+        if (focusedObject && !focusedObject->inherits("HbWidget") &&
+                ((focusedObject->flags() & QGraphicsItem::ItemAcceptsInputMethod) == 0)) {
             QInputContext *ic = qApp->inputContext();
             if (ic) {
-                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);             
+                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
                 ic->filterEvent(closeEvent);
                 delete closeEvent;
             }
@@ -260,23 +260,23 @@ void HbGraphicsScene::drawItems(QPainter *painter, int numItems,
         painter->setMatrix(items[i]->sceneMatrix(), true);
         items[i]->paint(painter, &options[i], widget);
 
-        const QColor randColor( qrand()%255, qrand()%255, qrand()%255 );
-        painter->setPen( randColor );
+        const QColor randColor(qrand() % 255, qrand() % 255, qrand() % 255);
+        painter->setPen(randColor);
 
-        painter->drawRect( items[i]->boundingRect() );
+        painter->drawRect(items[i]->boundingRect());
         painter->restore();
     }
 #else
-    QGraphicsScene::drawItems( painter, numItems, items, options, widget );
+    QGraphicsScene::drawItems(painter, numItems, items, options, widget);
 #endif
 
 // Switch to (1) to draw the borders of the scene
 #if(0)
     // Draw the scene rect
     painter->save();
-    const QColor randColor( qrand()%255, qrand()%255, qrand()%255 );
-    painter->setPen( randColor );
-    painter->drawRect( sceneRect() );
+    const QColor randColor(qrand() % 255, qrand() % 255, qrand() % 255);
+    painter->setPen(randColor);
+    painter->drawRect(sceneRect());
     painter->restore();
 #endif
 }
@@ -297,37 +297,38 @@ void HbGraphicsScene::drawBackground(QPainter *painter, const QRectF &rect)
         }
         d->mPolishWidgets = false;
     }
-    QGraphicsScene::drawBackground(painter,rect);
+    QGraphicsScene::drawBackground(painter, rect);
 }
 
-void HbGraphicsScene::drawForeground ( QPainter * painter, const QRectF & /*rect*/ )
+void HbGraphicsScene::drawForeground(QPainter *painter, const QRectF & /*rect*/)
 {
-    Q_D(HbGraphicsScene);    
+    Q_D(HbGraphicsScene);
     if (!d->mToolTip) {
         d->mToolTip = new HbToolTipLabel();
         addItem(d->mToolTip);
     }
-    if(d->fpsCounterEnabled) {
-        if(!d->mFPSTime) {
+    if (d->fpsCounterEnabled) {
+        if (!d->mFPSTime) {
             d->mFPSTime = new QTime();
             d->mFPSTime->start();
         }
         d->mDrawCount++;
-        if(d->mFPSTime->elapsed() > 500) {
+        if (d->mFPSTime->elapsed() > 500) {
             int elapsed = d->mFPSTime->restart();
             qreal e = elapsed;
-            if(d->mDrawCount > 2) { // just to minize problems with idle time
-                d->mFPS = d->mFPS * 0.5 + 0.5 * (qreal(d->mDrawCount * 1000) / e); 
+            if (d->mDrawCount > 2) { // just to minize problems with idle time
+                d->mFPS = d->mFPS * 0.5 + 0.5 * (qreal(d->mDrawCount * 1000) / e);
             }
             d->mDrawCount = 0;
             QTimer::singleShot(10, this, SLOT(update()));
         }
-        if (d->mFPS > d->mMaxFPS)
-            d->mMaxFPS = d->mFPS; 
+        if (d->mFPS > d->mMaxFPS) {
+            d->mMaxFPS = d->mFPS;
+        }
         painter->save();
-        painter->setFont(QFont("Arial", 12, QFont::Bold ));
-        painter->setPen(QColor(255,0,0));
-        painter->drawText(0,32,QString("FPS: %0 (%1)").arg(int(d->mFPS)).arg(int(d->mMaxFPS)));
+        painter->setFont(QFont("Arial", 12, QFont::Bold));
+        painter->setPen(QColor(255, 0, 0));
+        painter->drawText(0, 32, QString("FPS: %0 (%1)").arg(int(d->mFPS)).arg(int(d->mMaxFPS)));
         painter->restore();
     }
 }
@@ -335,7 +336,7 @@ void HbGraphicsScene::drawForeground ( QPainter * painter, const QRectF & /*rect
 /*!
   \reimp
  */
-void HbGraphicsScene::helpEvent ( QGraphicsSceneHelpEvent * helpEvent )
+void HbGraphicsScene::helpEvent(QGraphicsSceneHelpEvent *helpEvent)
 {
     Q_UNUSED(helpEvent);
     // Reimplemented to prevent desktop tool tips to be shown.
@@ -344,7 +345,7 @@ void HbGraphicsScene::helpEvent ( QGraphicsSceneHelpEvent * helpEvent )
 /*!
   \reimp
  */
-bool HbGraphicsScene::event ( QEvent * event )
+bool HbGraphicsScene::event(QEvent *event)
 {
     Q_D(HbGraphicsScene);
 
@@ -360,7 +361,7 @@ bool HbGraphicsScene::event ( QEvent * event )
         QKeyEvent *e = static_cast<QKeyEvent *>(event);
         result = d->focusChangeEvent(e);
         event->accept();
-        }
+    }
 
     return result;
 }

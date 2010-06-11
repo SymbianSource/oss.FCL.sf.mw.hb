@@ -24,6 +24,5 @@ HbDialog::heading > HbLabel::text {
     bottom:var(hb-param-margin-gene-popup);
     text-height:var(hb-param-text-height-primary);
     text-align:left;
-    text-line-count-max: 1;
     font-variant:primary;
 }

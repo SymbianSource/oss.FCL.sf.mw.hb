@@ -50,4 +50,8 @@ enum HbSplashServerPanics {
 
 #endif // Q_OS_SYMBIAN
 
+enum HbSplashStoredExtraFlags {
+    HbSplashNonStandardStatusBar = 1
+};
+
 #endif // HBSPLASHDEFS_P_H

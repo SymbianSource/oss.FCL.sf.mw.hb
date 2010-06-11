@@ -29,6 +29,7 @@
 #include "hbsplashdefs_p.h"
 #include "hbsplashblacklist_p.h"
 #include "hbsplash_direct_symbian_p.h"
+#include "hbsplashcompositor_p.h"
 #include <e32base.h>
 #include <f32file.h>
 #include <fbs.h>
@@ -54,12 +55,12 @@ HbSplashGenDocument::HbSplashGenDocument(CEikApplication &app)
 CEikAppUi *HbSplashGenDocument::CreateAppUiL()
 {
     qDebug() << PRE << "using custom appui";
-    return new (ELeave) HbSplashGenAppUi;
+    return new(ELeave) HbSplashGenAppUi;
 }
 
 CApaDocument *HbSplashGenApplication::CreateDocumentL()
 {
-    return new (ELeave) HbSplashGenDocument(*this);
+    return new(ELeave) HbSplashGenDocument(*this);
 }
 
 class HbSplashGenServerSymbian : public CServer2
@@ -69,22 +70,39 @@ public:
     ~HbSplashGenServerSymbian();
     CSession2 *NewSessionL(const TVersion &version, const RMessage2 &message) const;
 
-    void setSplashScreenDir(const QString &dir) { mSplashScreenDir = dir; }
-    void setSplashScreenDirContents(const QStringList &entries) { mSplashScreenDirEntries = entries; }
-    bool startupSuccess() const { return mStartupSuccess; }
+    void setSplashScreenDir(const QString &dir) {
+        mSplashScreenDir = dir;
+    }
+    void setSplashScreenDirContents(const QStringList &entries) {
+        mSplashScreenDirEntries = entries;
+    }
+    bool startupSuccess() const {
+        return mStartupSuccess;
+    }
     void clearBitmapCache();
+    void addCompositor(HbSplashCompositorInterface *compositor) {
+        mCompositors.append(compositor);
+    }
     bool processGetSplash(const RMessage2 &message);
 
 private:
-    bool completeGetSplash(const RMessage2 &message, const QString &fileName);
-    CFbsBitmap *getCachedBitmap(const QString &fileName) const;
-    void cacheBitmap(const QString &key, CFbsBitmap *bmp);
+    struct BitmapCacheData {
+        CFbsBitmap *mBitmap;
+        int mExtraSplashFlags;
+        Qt::Orientation mOrientation;
+    };
+
+    bool completeGetSplash(const RMessage2 &message, const QString &fileName, const QString &ori);
+    void completeWithBitmap(const RMessage2 &message, const BitmapCacheData &data);
+    const BitmapCacheData *getCachedBitmap(const QString &fileName) const;
+    void cacheBitmap(const QString &key, const BitmapCacheData &data);
 
     bool mStartupSuccess;
     RFs mFs;
     QString mSplashScreenDir;
     QStringList mSplashScreenDirEntries;
-    QList< QPair<QString, CFbsBitmap *> > mBitmaps;
+    QList< QPair<QString, BitmapCacheData> > mBitmaps;
+    QList<HbSplashCompositorInterface *> mCompositors;
 };
 
 class HbSplashGenServerSession : public CSession2
@@ -116,7 +134,8 @@ HbSplashGenServer::~HbSplashGenServer()
     delete mServer;
 }
 
-void HbSplashGenServer::onOutputDirContentsUpdated(const QString &dir, const QStringList &entries)
+void HbSplashGenServer::onOutputDirContentsUpdated(const QString &dir,
+        const QStringList &entries)
 {
     qDebug() << PRE << "splash screen dir contents received" << dir;
     qDebug() << PRE << entries;
@@ -132,6 +151,11 @@ void HbSplashGenServer::dropCachedData()
 bool HbSplashGenServer::startupSuccess() const
 {
     return mServer->startupSuccess();
+}
+
+void HbSplashGenServer::addCompositor(HbSplashCompositorInterface *compositor)
+{
+    mServer->addCompositor(compositor);
 }
 
 HbSplashGenServerSymbian::HbSplashGenServerSymbian()
@@ -162,59 +186,66 @@ HbSplashGenServerSymbian::~HbSplashGenServerSymbian()
     clearBitmapCache();
 }
 
-CSession2 *HbSplashGenServerSymbian::NewSessionL(const TVersion &version, const RMessage2 &message) const
+CSession2 *HbSplashGenServerSymbian::NewSessionL(const TVersion &version,
+        const RMessage2 &message) const
 {
     Q_UNUSED(message);
     TVersion v(hbsplash_version_major, hbsplash_version_minor, hbsplash_version_build);
     if (!User::QueryVersionSupported(v, version)) {
         User::Leave(KErrNotSupported);
     }
-    return new (ELeave) HbSplashGenServerSession(const_cast<HbSplashGenServerSymbian *>(this));
+    return new(ELeave) HbSplashGenServerSession(const_cast<HbSplashGenServerSymbian *>(this));
 }
 
 void HbSplashGenServerSymbian::clearBitmapCache()
 {
     for (int i = 0, ie = mBitmaps.count(); i != ie; ++i) {
-        delete mBitmaps.at(i).second;
+        delete mBitmaps.at(i).second.mBitmap;
     }
     mBitmaps.clear();
 }
 
-CFbsBitmap *HbSplashGenServerSymbian::getCachedBitmap(const QString &fileName) const
+const HbSplashGenServerSymbian::BitmapCacheData *HbSplashGenServerSymbian::getCachedBitmap(
+    const QString &fileName) const
 {
     for (int i = 0, ie = mBitmaps.count(); i != ie; ++i) {
         if (!mBitmaps.at(i).first.compare(fileName, Qt::CaseInsensitive)) {
-            return mBitmaps.at(i).second;
+            return &mBitmaps.at(i).second;
         }
     }
     return 0;
 }
 
-void HbSplashGenServerSymbian::cacheBitmap(const QString &key, CFbsBitmap *bmp)
+void HbSplashGenServerSymbian::cacheBitmap(const QString &key, const BitmapCacheData &data)
 {
     while (mBitmaps.count() >= bitmap_cache_limit) {
-        delete mBitmaps.at(0).second;
+        delete mBitmaps.at(0).second.mBitmap;
         mBitmaps.removeAt(0);
     }
-    QPair<QString, CFbsBitmap *> entry(key, bmp);
-    mBitmaps.append(entry);
+    mBitmaps.append(QPair<QString, BitmapCacheData>(key, data));
 }
 
-inline void completeWithBitmap(const RMessage2 &message, CFbsBitmap *bmp)
+void HbSplashGenServerSymbian::completeWithBitmap(const RMessage2 &message,
+        const BitmapCacheData &data)
 {
-    TPckg<TInt> bmpHandle(bmp->Handle());
+    foreach(HbSplashCompositorInterface * compositor, mCompositors) {
+        compositor->composeToBitmap(data.mBitmap, data.mOrientation, data.mExtraSplashFlags);
+    }
+    TPckg<TInt> bmpHandle(data.mBitmap->Handle());
     message.Write(3, bmpHandle);
     message.Complete(KErrNone);
 }
 
-bool HbSplashGenServerSymbian::completeGetSplash(const RMessage2 &message, const QString &fileName)
+bool HbSplashGenServerSymbian::completeGetSplash(const RMessage2 &message,
+        const QString &fileName,
+        const QString &ori)
 {
     bool wantsBitmap = message.Function() == HbSplashSrvGetSplashData;
     if (wantsBitmap) {
-        CFbsBitmap *cachedBitmap = getCachedBitmap(fileName);
-        if (cachedBitmap) {
+        const BitmapCacheData *cachedBitmapData = getCachedBitmap(fileName);
+        if (cachedBitmapData) {
             qDebug() << PRE << "returning cached bitmap for" << fileName;
-            completeWithBitmap(message, cachedBitmap);
+            completeWithBitmap(message, *cachedBitmapData);
             return true;
         }
     }
@@ -225,11 +256,17 @@ bool HbSplashGenServerSymbian::completeGetSplash(const RMessage2 &message, const
     RFile f;
     if (f.Open(mFs, nativeNameDes, EFileRead | EFileShareReadersOrWriters) == KErrNone) {
         if (wantsBitmap) {
-            CFbsBitmap *bmp = static_cast<CFbsBitmap *>(HbSplashDirectSymbian::load(&f, 0));
+            BitmapCacheData data;
+            data.mBitmap = static_cast<CFbsBitmap *>(
+                               HbSplashDirectSymbian::load(&f, &data.mExtraSplashFlags));
             f.Close();
-            if (bmp) {
-                cacheBitmap(fileName, bmp);
-                completeWithBitmap(message, bmp);
+            if (data.mBitmap) {
+                data.mOrientation = Qt::Vertical;
+                if (!ori.compare(QLatin1String("lsc"), Qt::CaseInsensitive)) {
+                    data.mOrientation = Qt::Horizontal;
+                }
+                cacheBitmap(fileName, data);
+                completeWithBitmap(message, data);
             } else {
                 qWarning() << PRE << "splash load failed";
                 return false;
@@ -329,14 +366,14 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
         usingAppSpecific = true;
     }
 
-    bool completed = completeGetSplash(message, name);
+    bool completed = completeGetSplash(message, name, orientation);
     if (!completed) {
         // If the screens are just being regenerated then there is a chance that
         // the app-specific file is not yet ready but the generic one is already
         // there (and the directory listing checked before is out-of-date). So
         // try the generic file too.
         if (usingAppSpecific) {
-            completed = completeGetSplash(message, genericName);
+            completed = completeGetSplash(message, genericName, orientation);
         }
         if (!completed) {
             qWarning() << PRE << "could not complete getSplash request";

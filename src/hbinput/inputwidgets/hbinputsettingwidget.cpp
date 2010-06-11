@@ -28,6 +28,7 @@
 #include <hbinpututils.h>
 #include <hbinputsettingproxy.h>
 #include <hbinputpredictionfactory.h>
+#include <QtAlgorithms>
 
 #include "hbinputsettingwidget.h"
 #include "hbinputcheckboxlist_p.h"
@@ -36,6 +37,7 @@ const QString statusOff = QObject::tr("Off");
 const QString statusOn = QObject::tr("On");
 const QString bestPrediction = QObject::tr("Best prediction");
 const QString exactTyping = QObject::tr("Exact typing");
+
 
 /// @cond
 
@@ -225,7 +227,7 @@ Fills given list with language names in the language list
 */
 void HbInputSettingWidgetPrivate::fillLanguageList(QStringList &list, QList<HbInputLanguage> &languageList, const QString &replace)
 {
-    foreach(HbInputLanguage language, languageList) {
+    foreach(HbInputLanguage language, languageList)  {
         QString langName = language.localisedName();
         if (langName.length() == 0) {
             langName = replace;

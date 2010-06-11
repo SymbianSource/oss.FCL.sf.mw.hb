@@ -31,6 +31,7 @@
 #include <hbinpututils.h>
 #include <hbinputsettingproxy.h>
 #include <hbinputmethod.h>
+#include <hbinputregioncollector_p.h>
 
 #include "hbinputcommondialogs.h"
 
@@ -97,6 +98,7 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
     langDialog->setDismissPolicy(HbPopup::NoDismiss);
     langDialog->setModal(true);
     //langDialog->exec(); TODO
+    HbInputRegionCollector::instance()->attach(langDialog);
     //TODO: needed to check from action which button was pressed (ok, cancel)
     //HbAction* action = langDialog->exec();
     if (langDialog->selectedItems().count()) {
@@ -154,6 +156,7 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
     methodDialog->setDismissPolicy(HbPopup::NoDismiss);
     methodDialog->setModal(true);
     //methodDialog->exec(); TODO
+    HbInputRegionCollector::instance()->attach(methodDialog);
     //TODO: needed to check from action which button was pressed (ok, cancel)
     //HbAction* action = langDialog->exec();
 

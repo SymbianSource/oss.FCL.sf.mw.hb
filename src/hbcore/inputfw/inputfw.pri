@@ -62,9 +62,12 @@ PRIVATE_HEADERS += $$PWD/hbinputeditorinterface_p.h
 PRIVATE_HEADERS += $$PWD/hbinputextrauserdictionary_p.h
 PRIVATE_HEADERS += $$PWD/hbinputmethod_p.h
 PRIVATE_HEADERS += $$PWD/hbinputsettingproxy_p.h
+PRIVATE_HEADERS += $$PWD/hbinputmainwindow_p.h
+PRIVATE_HEADERS += $$PWD/hbinputregioncollector_p.h
 
 # framework sources
-SOURCES += $$PWD/hbinputmethod.cpp
+SOURCES += $$PWD/hbinputmethod.cpp \
+    inputfw/hbinputregioncollector.cpp
 SOURCES += $$PWD/hbinputkeymap.cpp
 SOURCES += $$PWD/hbinputpredictionengine.cpp
 SOURCES += $$PWD/hbinputkeymapfactory.cpp
@@ -88,4 +91,5 @@ SOURCES += $$PWD/hbinputlanguage.cpp
 SOURCES += $$PWD/hbinputmethod_p.cpp
 SOURCES += $$PWD/hbinputmethoddescriptor.cpp
 SOURCES += $$PWD/hbinputvkbhostbridge.cpp
+SOURCES += $$PWD/hbinputmainwindow.cpp
 

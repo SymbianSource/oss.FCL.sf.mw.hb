@@ -67,7 +67,7 @@ private:
 
 private:
     QList<HbEffectInfo> mEffectEntries;
-    HbEffectXmlParser* mParser;
+    HbEffectXmlParser *mParser;
     bool mShared;
     bool mSharingSet;
 };

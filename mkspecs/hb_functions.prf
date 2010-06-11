@@ -48,8 +48,10 @@ defineTest(hbAddLibrary) {
     LIBRARY = $$last(PARTS)
 
     INCLUDEPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}
+    INCLUDEPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}/restricted
     INCLUDEPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}/private
     DEPENDPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}
+    DEPENDPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}/restricted
     DEPENDPATH *= $${HB_BUILD_DIR}/include/$${COLLECTION}/private
 
     LIBS *= -L$${HB_BUILD_DIR}/lib
@@ -66,7 +68,7 @@ defineTest(hbAddLibrary) {
 }
 
 # params: <collection>
-# NOTE: PUBLIC_HEADERS, INTERNAL_HEADERS, CONVENIENCE_HEADERS
+# NOTE: exports PUBLIC_HEADERS, RESTRICTED_HEADERS and CONVENIENCE_HEADERS
 # eg. hbExportHeaders(hbcore)
 defineTest(hbExportHeaders) {
     for(PUBLIC_HEADER, PUBLIC_HEADERS) {
@@ -74,12 +76,11 @@ defineTest(hbExportHeaders) {
         EXPORT_PATH = $$sprintf($$HB_EXPORT_DIR, $$1, $$basename(PUBLIC_HEADER))
         BLD_INF_RULES.prj_exports *= "$$PUBLIC_HEADER $$EXPORT_PATH"
     }
-    # DO NOT EXPORT PRIVATE HEADERS!
-    #for(INTERNAL_HEADER, INTERNAL_HEADERS) {
-    #    INTERNAL_HEADER = $$section(INTERNAL_HEADER, ":", 1)
-    #    EXPORT_PATH = $$sprintf($$HB_PRIVATE_EXPORT_DIR, $$1, $$basename(INTERNAL_HEADER))
-    #    BLD_INF_RULES.prj_exports *= "$$INTERNAL_HEADER $$EXPORT_PATH"
-    #}
+    for(RESTRICTED_HEADER, RESTRICTED_HEADERS) {
+        RESTRICTED_HEADER = $$section(RESTRICTED_HEADER, ":", 1)
+        EXPORT_PATH = $$sprintf($$HB_RESTRICTED_EXPORT_DIR, $$1, $$basename(RESTRICTED_HEADER))
+        BLD_INF_RULES.prj_exports *= "$$RESTRICTED_HEADER $$EXPORT_PATH"
+    }
     for(CONVENIENCE_HEADER, CONVENIENCE_HEADERS) {
         CONVENIENCE_HEADER = $$section(CONVENIENCE_HEADER, ":", 1)
         EXPORT_PATH = $$sprintf($$HB_EXPORT_DIR, $$1, $$basename(CONVENIENCE_HEADER))

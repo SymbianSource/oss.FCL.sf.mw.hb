@@ -115,7 +115,7 @@ bool HbWidgetLoaderSyntax::processDocument()
     QString ver_str =  attribute( ATTR_VERSION );
     
     ver_str.toDouble( &ok );
-    QStringList ver = ver_str.split( "." ); 
+    QStringList ver = ver_str.split( '.' ); 
 
         
     if( ( !ok ) || ( ver.size() != 2 ) ) {

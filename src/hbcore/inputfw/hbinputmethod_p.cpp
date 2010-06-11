@@ -24,9 +24,11 @@
 ****************************************************************************/
 #include <QInputMethodEvent>
 #include <QGraphicsView>
+#include <QGraphicsScene>
 #include <QGraphicsProxyWidget>
 #include <QLocale>
 #include <QClipboard>
+#include <QPointer>
 
 #include "hbinputmethod.h"
 #include "hbinputmethod_p.h"
@@ -37,7 +39,13 @@
 #include "hbinputmethodnull_p.h"
 #include "hbinpututils.h"
 #include "hbinputstandardfilters.h"
+#include "hbinputmainwindow_p.h"
 
+#if defined(Q_OS_SYMBIAN)
+#include <coemain.h>
+#include <coecntrl.h>
+#include <e32cmn.h>
+#endif
 /// @cond
 
 /*!
@@ -222,8 +230,19 @@ HbInputMethod* HbInputMethodPrivate::findStateHandler(HbInputState& state)
         return HbInputMethodNull::Instance();
     }
 
-    if (stateAllowedInEditor(state)) {
-        stateHandler = HbInputModeCache::instance()->findStateHandler(state);
+    if (stateAllowedInEditor(state)) {        
+        HbInputMethodDescriptor preferredMethod = HbInputSettingProxy::instance()->preferredInputMethod();
+        if (!preferredMethod.isEmpty()) {
+            stateHandler = HbInputModeCache::instance()->loadInputMethod(preferredMethod);
+            if (stateHandler && !HbInputModeCache::instance()->acceptsState(stateHandler, state)) {
+                stateHandler = 0; 
+            }   
+        }
+
+        if (!stateHandler) {
+            stateHandler = HbInputModeCache::instance()->findStateHandler(state);
+        }
+
         if (!stateHandler &&
              state.inputMode() == HbInputModeNumeric &&
              state.language() != QLocale::English &&
@@ -272,7 +291,8 @@ bool HbInputMethodPrivate::automaticTextCaseNeeded() const
     }
 
     if (mFocusObject) {
-        if (mFocusObject->inputMethodHints() & (Qt::ImhNoAutoUppercase | Qt::ImhPreferLowercase | Qt::ImhPreferUppercase)) {
+        if (mFocusObject->inputMethodHints() & (Qt::ImhNoAutoUppercase | Qt::ImhPreferLowercase |
+            Qt::ImhPreferUppercase | Qt::ImhDialableCharactersOnly | Qt::ImhEmailCharactersOnly | Qt::ImhUrlCharactersOnly)) {
             // Input method hint forbids auto-capitalisation or prefers either case.
             return false;
         }
@@ -357,7 +377,8 @@ void HbInputMethodPrivate::setFocusCommon()
 {
     Q_Q(HbInputMethod);
 
-    if (mFocusObject) {
+    if (mFocusObject &&
+        !(mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintIgnoreFocus)) {
         Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
         if (hints & Qt::ImhDialableCharactersOnly) {
             setUpFocusedObjectAsPhoneNumberEditor();
@@ -382,26 +403,14 @@ void HbInputMethodPrivate::setFocusCommon()
     inputStateFromEditor(mInputState);
 
     // Find state handler
-    HbInputMethod* stateHandler = 0;
-    HbInputMethodDescriptor activeMethod = HbInputSettingProxy::instance()->activeCustomInputMethod();
-    if (!activeMethod.isEmpty() && !activeMethod.isDefault()) {
-        // A custom method is active. Don't resolve, just try to load it.
-        if ((editorConstraints() & HbEditorConstraintIgnoreFocus) == 0) {
-            stateHandler = HbInputModeCache::instance()->loadInputMethod(activeMethod);
-        }
-    }
-
-    if (!stateHandler) {
-        // It either wasn't a custom method or we were not able to load the custom method.
-        // Resolve normally.
-         stateHandler = findStateHandler(mInputState);
-    }
-
+    HbInputMethod* stateHandler = findStateHandler(mInputState);
     if (stateHandler == 0) {
         // No state handler found (this should never happen under normal circumstances).
         // Fall back to null method.
         stateHandler = HbInputMethodNull::Instance();
     }
+
+    checkAndShowMainWindow();
 
     if (stateHandler != q_ptr) {
         // This method cannot handle requested input state. Switch to another one.
@@ -454,9 +463,12 @@ bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject* foc
 \internal
 Creates and returns new input context proxy.
 */
-QInputContext* HbInputMethodPrivate::newProxy()
+QInputContext* HbInputMethodPrivate::proxy()
 {
-    return new HbInputContextProxy(q_ptr);
+    if (!mProxy) {
+        mProxy = new HbInputContextProxy(q_ptr);
+    }
+    return mProxy;
 }
 
 /*!
@@ -525,6 +537,9 @@ void HbInputMethodPrivate::transfer(HbInputMethod* source)
 
         // Transfer state.
         mInputState = source->d_ptr->mInputState;
+        
+        // we need to transfer focuswidget from current proxy to the next proxy.
+        proxy()->QInputContext::setFocusWidget(source->d_ptr->proxy()->focusWidget());
 
         // Set this one active.
         mIsActive = true;
@@ -563,8 +578,9 @@ void HbInputMethodPrivate::contextSwitch(HbInputMethod* toBeActive)
     toBeActive->d_ptr->transfer(q);
 
     // Active new context.
-    QInputContext* proxy = toBeActive->d_ptr->newProxy();
-    qApp->setInputContext(proxy);
+    QInputContext* proxy = toBeActive->d_ptr->proxy();
+    if (proxy != qApp->inputContext())
+        qApp->setInputContext(proxy);
 
     if (toBeActive->focusObject()) {
         // Notify focus change.
@@ -685,15 +701,7 @@ Returns the default input mode for given language.
 */
 HbInputModeType HbInputMethodPrivate::defaultInputMode(const HbInputLanguage &inputLanguage) const
 {
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::China)) {
-        return HbInputModePinyin; 
-        }
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::HongKong)) {
-        return HbInputModeStroke; 
-        }
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::Taiwan)) {
-        return HbInputModeZhuyin; 
-        }
+    Q_UNUSED(inputLanguage);
 
     return HbInputModeDefault;
 }
@@ -781,6 +789,60 @@ void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
 
 /// @endcond
 
+/*
+create an instance of HbInputMainWindow which is a transparent window.
+*/
+void HbInputMethodPrivate::showMainWindow()
+{
+    // QGraphicsWidget is inside a graphics view which is not inside a HbMainWindow.
+    HbInputMainWindow *mainWindow = HbInputMainWindow::instance();
+    mainWindow->showInputWindow();
+    mInsideVanillaWindow = true;
+}
+
+/*
+ This function checks if focused object is inside a hbmainwindow, if it is inside a HbMainWindow
+ then it doesn't do anything. And if it finds that focused object is inside a vanilla window (windw != HbMainWindow)
+ then it creates a transparent window.
+*/
+void HbInputMethodPrivate::checkAndShowMainWindow()
+{
+    // check if focused object is inside HbMainWindow.
+    mInsideVanillaWindow = false;
+    QWidget *focusedWidget = proxy()->focusWidget();
+    if (focusedWidget) {
+        if (focusedWidget->inherits("HbMainWindow")) {
+            return;
+        }
+
+        // in symbian while launching a window on top of another
+        // there is a CCoeControl::FocusChange call on the vanilla window.
+        // causing it to lots of wiered problem.
+#if defined(Q_OS_SYMBIAN)
+        mFocusLocked = true;
+#endif
+        showMainWindow();
+#if defined(Q_OS_SYMBIAN)
+        // activating this at this time..
+        // will not require creation of new focus object
+        // as we already have one ..as we ignored the focus switch due to
+        // main window show.
+        focusedWidget->activateWindow();
+        mFocusLocked = false;
+#endif
+    }
+}
+
+/*
+hides HbInputMainWindow.
+*/
+void HbInputMethodPrivate::hideMainWindow()
+{
+    // QGraphicsWidget is inside a graphics view which is not inside a HbMainWindow.
+    if (mInsideVanillaWindow) {
+        HbInputMainWindow *mainWindow = HbInputMainWindow::instance();
+        mainWindow->hideInputWindow();
+    }
+}
+
 // End of file
-
-

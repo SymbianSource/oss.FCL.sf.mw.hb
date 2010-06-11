@@ -70,7 +70,6 @@ public:
     QByteArray handleSharedWidgetMLLookup(const QString &fileName,
                                           const QString &layout, const QString &section);
     void writeToClients(QByteArray &block);
-    void setThemeSelectionClient(QLocalSocket *socket);
 
     bool insertCssCacheItem(const QString &key,  HbCacheItem *item);
     HbCacheItem *cssCacheItem(const QString &key);
@@ -85,6 +84,8 @@ public:
 
 	HbRenderingMode currentRenderingMode() const;
     void setCurrentRenderingMode(HbRenderingMode currentMode);
+
+    bool resolveThemePath(const QString &themeName, QString &themePath);
 
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -120,11 +121,13 @@ private:
     QLabel statusLabel;
 #endif
     QLocalServer *server;
-    QLocalSocket *iThemeSelectionClient;
     QList<HbThemeServerSession *> sessionList;
     HbIconDataCache *iconCache;
     HbCache *cssCache;
 	HbRenderingMode renderMode;
+
+    QString iCurrentThemeName;
+    QString iCurrentThemePath;
 };
 
 class HbThemeServerSession : public QObject

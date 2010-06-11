@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
 <rect fill="none" height="30" width="30"/>
 <path d="M15,29C7.28,29,1,22.72,1,15S7.28,1,15,1s14,6.28,14,14S22.72,29,15,29L15,29z" fill-opacity="0.6" stroke-opacity="0.6"/>
@@ -15,17 +15,17 @@
 <rect fill="none" height="30" width="30"/>
 </g>
 <g>
-<rect fill="none" height="30" width="30"/>
-<path d="M21,30c-4.411,0-8-3.589-8-8s3.589-8,8-8s8,3.589,8,8S25.411,30,21,30L21,30z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<linearGradient gradientTransform="matrix(1 0 0 -1 -66 -46)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="87" x2="87" y1="-60.9688" y2="-75.1651">
-<stop offset="0" style="stop-color:#4EDEFF"/>
-<stop offset="1" style="stop-color:#048CC6"/>
+<path d="M22,30c-4.411,0-8-3.589-8-8s3.589-8,8-8s8,3.589,8,8S26.411,30,22,30L22,30z" fill-opacity="0.6" stroke-opacity="0.6"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="22" x2="22" y1="14.9683" y2="29.1646">
+<stop offset="0" style="stop-color:#FFC144"/>
+<stop offset="1" style="stop-color:#EF6902"/>
 </linearGradient>
-<circle cx="21" cy="22" fill="url(#SVGID_1__)" r="7"/>
-<polygon fill-opacity="0.2" points="25.34,24 20.999,19.4 16.66,24 16,23.3 20.999,18 26,23.3 " stroke-opacity="0.2"/>
-<polygon fill-opacity="0.2" points="20.999,20.857 17,25.098 17,27 20,27 20,24 22,24 22,27 25,27   25,25.098 " stroke-opacity="0.2"/>
-<path d="M21,16c3.697,0,6.717,2.869,6.975,6.5  C27.986,22.334,28,22.169,28,22c0-3.865-3.134-7-7-7s-7,3.135-7,7c0,0.169,0.014,0.334,0.025,0.5C14.283,18.869,17.303,16,21,16z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
-<polygon fill="#FFFFFF" points="25.34,23 20.999,18.4 16.66,23 16,22.3 20.999,17 26,22.3 "/>
-<polygon fill="#FFFFFF" points="20.999,19.857 17,24.098 17,26 20,26 20,23 22,23 22,26 25,26 25,24.098 "/>
+<circle cx="22" cy="22" fill="url(#SVGID_1__)" r="7"/>
+<polygon fill-opacity="0.2" points="26.34,24 21.999,19.4 17.66,24 17,23.3 21.999,18 27,23.3 26.34,24 " stroke-opacity="0.2"/>
+<polygon fill-opacity="0.2" points="21.999,20.857 18,25.098 18,27 21,27 21,24 23,24 23,27 26,27 26,25.097 " stroke-opacity="0.2"/>
+<path d="M22,16c3.697,0,6.717,2.869,6.975,6.5C28.986,22.334,29,22.169,29,22c0-3.865-3.134-7-7-7  s-7,3.135-7,7c0,0.169,0.014,0.334,0.025,0.5C15.283,18.869,18.303,16,22,16z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
+<polygon fill="#FFFFFF" points="26.34,23 21.999,18.4 17.66,23 17,22.3 21.999,17 27,22.3 26.34,23 "/>
+<polygon fill="#FFFFFF" points="21.999,19.857 18,24.098 18,26 21,26 21,23 23,23 23,26 26,26 26,24.097 "/>
+<rect fill="none" height="30" width="30"/>
 </g>
 </svg>

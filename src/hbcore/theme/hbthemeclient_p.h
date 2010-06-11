@@ -40,12 +40,10 @@
 class HbThemeClientPrivate;
 class HbEffectFxmlData;
 
-class HB_AUTOTEST_EXPORT HbThemeClient
+class HB_CORE_PRIVATE_EXPORT HbThemeClient
 {
 public:
     bool connectToServer();
-
-    QSizeF getSharedIconDefaultSize(const QString &iconPath);
 
     HbSharedIconInfo getSharedIconInfo(const QString &iconPath,
                         const QSizeF &size,
@@ -62,7 +60,7 @@ public:
                                                           const QString &layout,
                                                           const QString &section);
     HbCss::StyleSheet *getSharedStyleSheet(
-            const QString &filepath,
+            const QString &filePath,
             HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
@@ -108,9 +106,11 @@ public:
                             HbIconLoader::IconLoaderOptions options,
                             const QColor &color,
                             HbRenderingMode renderMode);
-							
+
     bool switchRenderingMode(HbRenderingMode renderMode);
 
+    void setTheme(const QString &theme);
+    
     bool clientConnected() const;
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -128,6 +128,9 @@ public:
 private:
     HbThemeClient();
     int sharedCacheItemOffset(HbSharedCache::ItemType type, const QString &key);
+    int sharedCacheLayoutDefinitionOffset(const QString &filePath,
+                                          const QString &layout,
+                                          const QString &section);
     HbThemeClientPrivate *d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbThemeClient)
 };

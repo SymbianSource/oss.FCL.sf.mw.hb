@@ -195,7 +195,7 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                     QChar numChr;
                     const HbKeyboardMap *keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
                     if (keyboardMap && key < keyboardMap->keys.count()) {
-                        numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(keyboardMap->keys.at(key), mKeymap->language());
+                        numChr = numberCharacterBoundToKey(key);
                     }
 
                     if (numChr > 0) {
@@ -214,7 +214,7 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                     const HbKeyboardMap *keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
                     if (keyboardMap && key < keyboardMap->keys.count()) {
                         keydata = keyboardMap->keys.at(key)->characters(mModifiers);
-                        numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(keyboardMap->keys.at(key), mKeymap->language());
+                        numChr = numberCharacterBoundToKey(key);
                     }
 
                     QString title("");
@@ -226,7 +226,7 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                         title.append(keydata.left(numberOfCharactersToShow(key)));
                     }
 
-                    if (numChr == QChar('0')) {
+                    if (key == 9 && numChr == numberCharacterBoundToKey(key)) {
                         item->setText(numChr, HbInputButton::ButtonTextIndexPrimary);
                         item->setIcon(HbIcon(HbInputButtonIconSpace2), HbInputButton::ButtonIconIndexSecondaryFirstRow);
                         // Set space as secondaty text so that the layout is correct if icon is not found. This can be removed when

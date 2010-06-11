@@ -444,7 +444,7 @@ HbExtendedLocale::SymbolPos HbExtendedLocale::amPmSymbolPosition() const
     TLocalePos position = _symbianLocale.GetLocale()->AmPmSymbolPosition();
     if ( position == ELocaleBefore ) {
     	return HbExtendedLocale::Before;
-    } else if ( position == ELocaleAfter ) {			
+    } else { // if ( position == ELocaleAfter ) {			
     	return HbExtendedLocale::After;
     }
 #else

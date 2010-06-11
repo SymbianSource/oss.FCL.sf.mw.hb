@@ -51,7 +51,7 @@ public:
         Hb::Edge srcEdge;
         Hb::Edge dstEdge;
         HbXmlLengthValue::Type spacingType;
-        qreal spacingVal;
+        float spacingVal;
         HbString spacingText;
         HbString spacer;
         MeshItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)

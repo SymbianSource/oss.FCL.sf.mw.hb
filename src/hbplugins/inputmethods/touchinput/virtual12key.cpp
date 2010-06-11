@@ -47,12 +47,9 @@
 
 //User includes
 #include "hbinput12keytouchkeyboard.h"
-#include "hbinputthaispecialpopup.h"
 #include "hbinputbasic12keyhandler.h"
 #include "hbinputprediction12keyhandler.h"
 #include "hbinputnumeric12keyhandler.h"
-#include "hbinputbasic12keythaihandler.h"
-#include "hbinputprediction12keythaihandler.h"
 
 const int HbSmileyNumberOfRows = 5;
 const int HbSmileyNumberOfColumns = 5;
@@ -71,7 +68,6 @@ HbVirtual12Key::HbVirtual12Key()
               : mCurrentKeypad(0),
                 mItutKeypad(0),
                 mSctKeypad(0),
-                mThaiSpecialChar(0),
                 mKeymap(0),
                 mOrientationAboutToChange(false),
                 mCandidatePopup(0),
@@ -87,24 +83,18 @@ void HbVirtual12Key::initializeModeHandlers()
     mBasicModeHandler = new HbInputBasic12KeyHandler(this);
     mPredictionModeHandler = new HbInputPrediction12KeyHandler(this);
     mNumericModeHandler = new HbInputNumeric12KeyHandler(this);
-    mBasic12keyThaiHandler = new HbInputBasic12KeyThaiHandler(this);
-    mPrediction12keyThaiHandler = new HbInputPrediction12KeyThaiHandler(this);
+	   
     mActiveModeHandler = mBasicModeHandler;
 
     mBasicModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionInit);
     mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionInit);
     mNumericModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionInit);
-    mPrediction12keyThaiHandler->actionHandler(HbInputModeHandler::HbInputModeActionInit);
 
     // let's connect prediction mode handler with latin basic mode handler. It is required incase we Qt::key_0 is pressed in prediction mode
     // key
     connect(mPredictionModeHandler, SIGNAL(passFilterEvent(const QKeyEvent *)),
             mBasicModeHandler, SLOT(filterEvent(const QKeyEvent *)));
     connect(mPredictionModeHandler, SIGNAL(passActionHandler(HbInputModeAction )),
-            mBasicModeHandler, SLOT(actionHandler(HbInputModeAction )));
-    connect(mPrediction12keyThaiHandler, SIGNAL(passFilterEvent(const QKeyEvent *)),
-            mBasicModeHandler, SLOT(filterEvent(const QKeyEvent *)));
-    connect(mPrediction12keyThaiHandler, SIGNAL(passActionHandler(HbInputModeAction )),
             mBasicModeHandler, SLOT(actionHandler(HbInputModeAction )));
 
     connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)));
@@ -128,20 +118,14 @@ HbVirtual12Key::~HbVirtual12Key()
     mSctKeypad = 0;
     delete mCandidatePopup;
     mCandidatePopup = 0;
-    delete mThaiSpecialChar;
-    mThaiSpecialChar = 0;
-
+    
     // free mode handlers
     delete mBasicModeHandler;
     mBasicModeHandler = 0;
     delete mPredictionModeHandler;
     mPredictionModeHandler = 0;
     delete mNumericModeHandler;
-    mNumericModeHandler = 0;
-    delete mBasic12keyThaiHandler;
-    mBasic12keyThaiHandler = 0;
-    delete mPrediction12keyThaiHandler;
-    mPrediction12keyThaiHandler = 0;
+    mNumericModeHandler = 0;	
 }
 
 /*!
@@ -195,7 +179,6 @@ Hb12KeyTouchKeyboard *HbVirtual12Key::construct12Keyboard()
     //FLICKDISABLED connect(tempKeypad, SIGNAL(flickEvent(HbInputVkbWidget::FlickDirection)), this, SLOT(flickEvent(HbInputVkbWidget::FlickDirection)));
     connect(tempKeypad, SIGNAL(smileySelected(QString)), this, SLOT(smileySelected(QString)));
     connect(tempKeypad, SIGNAL(mouseMovedOutOfButton()), this, SLOT(mouseMovedOutOfButton()));
-    connect(tempKeypad, SIGNAL(chrSelected(QString)), this, SLOT(thaiSctCharacterSelected(QString)));
     tempKeypad->setRockerVisible(true);
     return tempKeypad;
 }
@@ -255,6 +238,7 @@ void HbVirtual12Key::focusReceived()
         connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
                 mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
     }
+    HbInputAbstractMethod::focusReceived();
 }
 
 /*!
@@ -262,8 +246,10 @@ void HbVirtual12Key::focusReceived()
 */
 void HbVirtual12Key::focusLost(bool focusSwitch)
 {
-    // inform the active mode handler about the focus lost event.
-    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusLost);
+    if(mActiveModeHandler) {
+        // inform the active mode handler about the focus lost event.
+        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusLost);
+    }
 
     if (focusObject()) {
         disconnect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
@@ -289,9 +275,6 @@ void HbVirtual12Key::closeKeypad()
         mVkbHost->closeKeypad(!stateChangeInProgress());
         // set mCurrentKeypad to null.
         mCurrentKeypad = 0;
-        if (mThaiSpecialChar) {
-            mThaiSpecialChar->hide();
-        }
         if (mCandidatePopup) {
             mCandidatePopup->hide();
         }
@@ -311,7 +294,7 @@ void HbVirtual12Key::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimized
     if(!keypadToOpen) {
         return;
     }
-    bool wasKeypadOpen = false;
+    bool disableAnimation = false;
     // see if we are trying to open a different keypad than what is already opened.
     if (mCurrentKeypad != keypadToOpen) {
         // close currently open keypad. We always close keypad without animation
@@ -321,13 +304,19 @@ void HbVirtual12Key::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimized
             mVkbHost->closeKeypad(false);
             // when their is a keypad that needs to be closed before opening the new keypad, we don't
             // want to animate the opening of new keypad.
-            wasKeypadOpen = true;
+            disableAnimation = true;
         }
     }
     // Close candidate popup if open
     if (mCandidatePopup) {
         mCandidatePopup->hide();
     }
+
+    QObject::disconnect(mCurrentKeypad,SIGNAL(aboutToActivateCustomAction(HbAction*)),
+        this,SLOT(aboutToActivateCustomAction(HbAction*)));
+    QObject::connect(keypadToOpen,SIGNAL(aboutToActivateCustomAction(HbAction*)),
+        this,SLOT(aboutToActivateCustomAction(HbAction*)));
+
     // assign new keypad to be opened to varable mCurrentKeypad
     mCurrentKeypad =  keypadToOpen;
 
@@ -338,11 +327,20 @@ void HbVirtual12Key::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimized
         if (inMinimizedMode) {
             mVkbHost->openMinimizedKeypad(mCurrentKeypad, this);
         } else {
-            mVkbHost->openKeypad(mCurrentKeypad, this, (!stateChangeInProgress() && !wasKeypadOpen));
+            mVkbHost->openKeypad(mCurrentKeypad, this, (!stateChangeInProgress() && !disableAnimation));
         }
         connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
                 mVkbHost, SLOT(ensureCursorVisibility()));
     }
+}
+
+/*!
+vkb widget is about to call a custom action that is mapped to one of the keypad buttons.
+*/
+void HbVirtual12Key::aboutToActivateCustomAction(HbAction *custAction)
+{
+    Q_UNUSED(custAction);
+    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
 }
 
 /*!
@@ -467,7 +465,7 @@ void HbVirtual12Key::inputLanguageChanged(const HbInputLanguage &newLanguage)
     loadKeymap(newLanguage);
     // inform all the mode handler about the language change.
     mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionPrimaryLanguageChanged);
-    if (mCurrentKeypad) {
+    if (focusObject() && mCurrentKeypad) {
         mCurrentKeypad->animKeyboardChange();
     }
 }
@@ -513,18 +511,7 @@ void HbVirtual12Key::inputStateActivated(const HbInputState& newState)
     }
 
     HbInputModeHandler *previousModeHandler = mActiveModeHandler;
-    if (HbInputSettingProxy::instance()->globalInputLanguage() == QLocale::Thai &&
-        usePrediction() && newState.inputMode() != HbInputModeNumeric) {
-        mActiveModeHandler = mPrediction12keyThaiHandler;
-        // by passing HbInputModeActionFocusRecieved we will be setting the candidate list and keypad
-        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusRecieved);
-    } else if (HbInputSettingProxy::instance()->globalInputLanguage() == QLocale::Thai &&
-               !usePrediction() && newState.inputMode() != HbInputModeNumeric &&
-               ((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)!=focusObject()->editorInterface().inputConstraints())) {
-        mActiveModeHandler = mBasic12keyThaiHandler;
-        // by passing HbInputModeActionFocusRecieved we will be setting the candidate list and keypad
-        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusRecieved);
-    } else if (newState.inputMode() == HbInputModeDefault && usePrediction()) {
+	if (newState.inputMode() == HbInputModeDefault && usePrediction()) {
         mActiveModeHandler = mPredictionModeHandler;
         // by passing HbInputModeActionFocusRecieved we will be setting the candidate list and keypad
         mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusRecieved);
@@ -551,8 +538,7 @@ void HbVirtual12Key::inputStateActivated(const HbInputState& newState)
         // Auto Completion part needs to be committed as well on mode change.
 
         previousModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-        if (mActiveModeHandler == mPredictionModeHandler ||
-            mActiveModeHandler == mPrediction12keyThaiHandler) {
+        if (mActiveModeHandler == mPredictionModeHandler) {
             // lets set candidate list and keypad type to the engine.
             mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionSetCandidateList);
             mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionSetKeypad);
@@ -586,15 +572,9 @@ void HbVirtual12Key::loadKeymap(const HbInputLanguage &newLanguage)
             if (mPredictionModeHandler) {
                 mPredictionModeHandler->setKeymap(mKeymap);
             }
-            if (mNumericModeHandler) {
+            if(mNumericModeHandler) {
                 mNumericModeHandler->setKeymap(mKeymap);
-            } 
-            if (mBasic12keyThaiHandler) {
-                mBasic12keyThaiHandler->setKeymap(mKeymap);
-            }
-            if (mPrediction12keyThaiHandler) {
-                mPrediction12keyThaiHandler->setKeymap(mKeymap);
-            }
+            }			
         }
     }
 }
@@ -655,46 +635,6 @@ void HbVirtual12Key::switchMode(int keyCode)
         switchToAlphaMode();
     }
 }
-/*!
-Returns previous character from editor
-*/
-uint HbVirtual12Key::previousChar()
-{
-    if (focusObject()) {
-        int cursorPosition = focusObject()->editorCursorPosition();
-        if (cursorPosition) {
-            QString editorText = focusObject()->editorSurroundingText();
-            return((editorText.at(cursorPosition-1)).unicode());
-        }
-    }
-    return 0;
-}
-/*!
-Shows the Thai specific special characters 
-*/
-void HbVirtual12Key::showThaiSpecialCharacters(uint buttonId)
-{
-    uint prevChar = previousChar();
-    int screenWidth = 0;
-    int screenHeight = 0;
-    //Get the sceen size from device profile
-    if (mCurrentKeypad) {
-        screenWidth = HbDeviceProfile::profile(mCurrentKeypad).logicalSize().width();
-        screenHeight = HbDeviceProfile::profile(mCurrentKeypad).logicalSize().height();
-    }
-    //Create Thai special popup if not created 
-    if( !mThaiSpecialChar) {
-        mThaiSpecialChar = new HbInputThaiSpecialPopup(buttonId,prevChar,0);
-        connect(mThaiSpecialChar, SIGNAL(chrSelected(QString)),
-                this, SLOT(thaiSctCharacterSelected(QString)));
-    }
-    //Set Geometry and Layout for popup 
-    if (mThaiSpecialChar) {
-        mThaiSpecialChar->setGeometry(QRectF(0,screenHeight/2,screenWidth,screenHeight/2));
-        mThaiSpecialChar->setPopupLayout(mKeymap,prevChar,buttonId,screenWidth,screenHeight/2);
-        mThaiSpecialChar->show();
-    }
-}
 
 /*!
 Shows the special character table. Re-implements the same method from HbInputMethod.
@@ -751,8 +691,9 @@ void HbVirtual12Key::launchCandidatePopup(const QStringList& candidates)
     if (!mCandidatePopup) {
         mCandidatePopup = new HbCandidateList(this);
         connect(mCandidatePopup, SIGNAL(candidateSelected(int,QString)), this, SLOT(candidatePopupClosed(int,QString)));
+        QObject::connect(mCandidatePopup,SIGNAL(launchSpellQueryDialog()),mPredictionModeHandler,SLOT(launchSpellQueryDialog()));		
     }
-    mCandidatePopup->populateList(candidates);
+    mCandidatePopup->populateList(candidates,true);
     mCandidatePopup->setModal(true);
 
     QSizeF candListSize = mCandidatePopup->size();
@@ -802,14 +743,6 @@ void HbVirtual12Key::smileySelected(QString smiley)
      mActiveModeHandler->smileySelected(smiley);
 }
 
-void HbVirtual12Key::thaiSctCharacterSelected(QString sctChar)
-{
-    mActiveModeHandler->sctCharacterSelected(sctChar);
-    /* Update the text case */
-    updateState();
-}
-
-
 void HbVirtual12Key::selectSpecialCharacterTableMode()
 {
     if (mItutKeypad) {
@@ -843,6 +776,7 @@ void HbVirtual12Key::launchAutoCompletionPopup(const QStringList& candidates)
     if (!mCandidatePopup) {
         mCandidatePopup = new HbCandidateList(this);
         connect(mCandidatePopup, SIGNAL(candidateSelected(int,QString)), this, SLOT(candidatePopupClosed(int,QString)));
+        QObject::connect(mCandidatePopup,SIGNAL(launchSpellQueryDialog()),mPredictionModeHandler,SLOT(launchSpellQueryDialog()));		
     }
 
     if (candidates.count() > 0) {

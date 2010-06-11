@@ -23,6 +23,7 @@
 **
 ****************************************************************************/
 
+#include "hbstyle_p.h"
 #include "hbstyleoptionslider_p.h"
 #include "hbstyleoptionsliderelement_p.h"
 #include "hbstyleoptionpushbutton_p.h"
@@ -49,7 +50,6 @@
 #include "hbstyleoptionindicatorbutton_p.h"
 #include "hbstyleoptionsignalindicator_p.h"
 #include "hbstyleoptionbatteryindicator_p.h"
-#include "hbstyle_p.h"
 #include "hbstyleloader.h"
 #include "hbwidgetloader_p.h"
 #include "hbwidget_p.h"
@@ -132,7 +132,7 @@
     call the updatePrimitive method.
 
     Generally primitives should be updated only when a state change occurs. When a widget uses primitives to construct
-    itself it does not need a paint() method at all since primitives (widget's childs) are doing the drawing. 
+    itself it does not need a paint() method at all since primitives (widget's children) are doing the drawing. 
     Painting for the primitives occurs from the graphics scene.
 
 */
@@ -3384,7 +3384,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const HbStyleOptionRatingSlider *opt = qstyleoption_cast<const HbStyleOptionRatingSlider *>(option)) {                   
                     HbRepeatItem *repeatItem = static_cast<HbRepeatItem*>(item);
                     repeatItem->setRepeatingNumber(opt->noOfStars);
-                    if(opt->unRatedGraphicsName != QString()){
+                    if (!opt->unRatedGraphicsName.isEmpty()) {
                         repeatItem->setName(opt->unRatedGraphicsName);
                     }
                     else {
@@ -3403,7 +3403,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     repeatItem->setMaximum(opt->noOfIntervals);
                     repeatItem->setInverted(opt->inverted);
                     repeatItem->setRepeatingNumber(opt->noOfStars);
-                    if(opt->ratedGraphicsName != QString()){
+                    if (!opt->ratedGraphicsName.isEmpty()) {
                         repeatItem->setName(opt->ratedGraphicsName);
                     }
                     else {
@@ -3762,38 +3762,37 @@ void HbStylePrivate::polishItem(
     }
 #endif
 
+    QGraphicsLayoutItem* lItem = (item && item->isWidget()) ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item) : 0;
+    if ( !lItem ) {
+        lItem = widget->layoutPrimitive(name);
+        if ( lItem && !lItem->graphicsItem() ) {
+            // assume it is spacer
+            static_cast<HbMeshLayout*>(widget->layout())->setItemId( lItem, name );
+        }
+    }
+
     HbDeviceProfile profile(HbDeviceProfile::profile(widget));
 
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, widget, profile);
 #ifdef HBSTYLE_DEBUG
-    qDebug() << "HbStyle::polishItem : -- Number of maching CSS declarations: " << decl.count();
+    qDebug() << "HbStyle::polishItem : -- Number of matching CSS declarations: " << decl.count();
 #endif
     HbCss::ValueExtractor extractor(decl, layoutParameters, profile);
-    HbCss::GeometryValues geomValues;
-    HbCss::PositionValues posValues;
+    HbCss::KnownProperties prop;
 
-    bool extracted = extractor.extractGeometry(geomValues);
-#ifndef HBSTYLE_DEBUG
-    Q_UNUSED(extracted);
-#endif
+    if ( !extractor.extractKnownProperties(prop) ) {
 #ifdef HBSTYLE_DEBUG
-    if ( !extracted ) {
-        qDebug() << "HbStyle::polishItem : -- No geometry overrides found";
-    }
+        qDebug() << "HbStyle::polishItem : -- No polish overrides found";
 #endif
-    extracted = extractor.extractPosition(posValues);
-#ifdef HBSTYLE_DEBUG
-    if ( !extracted ) {
-        qDebug() << "HbStyle::polishItem : -- No position overrides found";
+        return;
     }
-#endif
 
     if ( item ) {
-        if (posValues.mFlags & HbCss::ExtractedZValue) {
+        if (prop.mFlags & HbCss::ExtractedZValue) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting zvalue: " << posValues.mZ;
+            qDebug() << "HbStyle::polishItem : -- Setting zvalue: " << prop.mZ;
 #endif
-            item->setZValue(posValues.mZ);
+            item->setZValue(prop.mZ);
         }
     }
 
@@ -3801,13 +3800,13 @@ void HbStylePrivate::polishItem(
         ? static_cast<QGraphicsWidget*>(item)
         : 0;
     if ( gWidget ) {
-        if (posValues.mFlags & HbCss::ExtractedLayoutDirection) {
+        if (prop.mFlags & HbCss::ExtractedLayoutDir) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting layout direction: " << posValues.mLayoutDirection;
+            qDebug() << "HbStyle::polishItem : -- Setting layout direction: " << prop.mLayoutDir;
 #endif
-            if (posValues.mLayoutDirection == HbCss::LayoutDirection_LeftToRight) {
+            if (prop.mLayoutDir == HbCss::LayoutDirection_LeftToRight) {
                 gWidget->setLayoutDirection(Qt::LeftToRight);
-            } else if (posValues.mLayoutDirection == HbCss::LayoutDirection_RightToLeft) {
+            } else if (prop.mLayoutDir == HbCss::LayoutDirection_RightToLeft) {
                 gWidget->setLayoutDirection(Qt::RightToLeft);
             } else {
                 gWidget->unsetLayoutDirection();
@@ -3818,227 +3817,181 @@ void HbStylePrivate::polishItem(
     HbWidgetBase *hbWidget = qobject_cast<HbWidgetBase*>(gWidget);
     if ( hbWidget ) {
         HbWidgetBasePrivate* hbWidget_p = HbWidgetBasePrivate::d_ptr(hbWidget);
-        QFont font;
-        HbFontSpec fontSpec;
-        int dummy;
-        if (extractor.extractFont(&font, &fontSpec, &dummy)) {
-            if ( !fontSpec.isNull() ) {
-                if ( font == QFont() ) {
+        if ( prop.mFlags & HbCss::ExtractedFontSpec ) {
+            if ( !(prop.mFlags & HbCss::ExtractedFont) ) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting fontspec: " << fontSpec.role();
+                qDebug() << "HbStyle::polishItem : -- Setting fontspec: " << prop.mFontSpec.role() << prop.mFontSpec.textHeight();
 #endif
-                    hbWidget->setFontSpec(fontSpec);
-                } else {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting fontspec with overrides: "
-                             << fontSpec.role() << font;
-#endif
-                    hbWidget->setFont(fontSpec.font().resolve(font));
-                }
+                hbWidget->setFontSpec(prop.mFontSpec);
             } else {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting explicit font: " << font;
+                qDebug() << "HbStyle::polishItem : -- Setting fontspec with overrides: "
+                         << prop.mFontSpec.role() << prop.mFontSpec.textHeight() << prop.mFont;
 #endif
-                hbWidget->setFont(font);
+                hbWidget->setFont(prop.mFontSpec.font().resolve(prop.mFont));
             }
+        } else if ( prop.mFlags & HbCss::ExtractedFont ) {
+#ifdef HBSTYLE_DEBUG
+            qDebug() << "HbStyle::polishItem : -- Setting explicit font: " << prop.mFont;
+#endif
+            hbWidget->setFont(prop.mFont);
         }
 
         HbIconItem* icon = qobject_cast<HbIconItem*>(hbWidget);
         if (icon) {
-            Qt::AspectRatioMode mode;
-            if (extractor.extractAspectRatioMode(&mode) 
+            if (prop.mFlags & HbCss::ExtractedAspectRatioMode
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting aspect ratio mode: " << mode;
+                qDebug() << "HbStyle::polishItem : -- Setting aspect ratio mode: " << prop.mAspectRatioMode;
 #endif
-                icon->setAspectRatioMode(mode);
+                icon->setAspectRatioMode(prop.mAspectRatioMode);
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode, false);
-            }
-            if(!hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_IconBrush)){
-                QBrush brush;
-                QString uri;
-                HbCss::Repeat repeat = HbCss::Repeat_XY;
-                Qt::Alignment alignment = Qt::AlignTop | Qt::AlignLeft;
-                HbCss::Attachment attachment = HbCss::Attachment_Scroll;
-                HbCss::Origin origin = HbCss::Origin_Padding;
-                HbCss::Origin clip = HbCss::Origin_Border;
-                if (extractor.extractBackground(&brush, &uri, &repeat, &alignment, &origin, &attachment, &clip)) {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting icon background: " << brush;
-#endif
-                    icon->setBrush( brush );
-                } else {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Resetting icon background";
-#endif
-                    icon->setBrush( QBrush() );
-                }
-                hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconBrush, false);
             }
         }
 
         HbTextItem* text = qobject_cast<HbTextItem*>(hbWidget);
         if (text) {
-            HbCss::TextValues textValues;
-            if ( extractor.extractTextValues( textValues ) ) {
-                if ( textValues.mFlags & HbCss::ExtractedLineCountMin
-                    && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
+            if ( prop.mFlags & HbCss::ExtractedMinLines
+                && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << textValues.mLineCountMin;
+                qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << prop.mMinLines;
 #endif
-                    text->setMinimumLines( textValues.mLineCountMin );
-                    hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
-                }
-                if ( textValues.mFlags & HbCss::ExtractedLineCountMax
-                    && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax)) {
-#ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << textValues.mLineCountMax;
-#endif
-                    text->setMaximumLines( textValues.mLineCountMax );
-                    hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
-                }
+                text->setMinimumLines( prop.mMinLines );
+                hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
             }
-            if ( posValues.mFlags & HbCss::ExtractedTextAlign 
+            if ( prop.mFlags & HbCss::ExtractedMaxLines
+                && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax)) {
+#ifdef HBSTYLE_DEBUG
+                qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << prop.mMaxLines;
+#endif
+                text->setMaximumLines( prop.mMaxLines );
+                hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
+            }
+            if ( prop.mFlags & HbCss::ExtractedTextAlign 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << posValues.mTextAlignment;
+                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << prop.mTextAlignment;
 #endif
-                text->setAlignment( posValues.mTextAlignment );
+                text->setAlignment( prop.mTextAlignment );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, false);
             }
-            if ( posValues.mFlags & HbCss::ExtractedWrapMode 
+            if ( prop.mFlags & HbCss::ExtractedWrapMode 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << posValues.mTextWrapMode;
+                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << prop.mTextWrapMode;
 #endif
-                text->setTextWrapping( posValues.mTextWrapMode );
+                text->setTextWrapping( prop.mTextWrapMode );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
             }
         }
 
         HbRichTextItem* richtext = qobject_cast<HbRichTextItem*>(hbWidget);
         if (richtext) {
-            if ( posValues.mFlags & HbCss::ExtractedTextAlign
+            if ( prop.mFlags & HbCss::ExtractedTextAlign
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << posValues.mTextAlignment;
+                qDebug() << "HbStyle::polishItem : -- Setting text alignment: " << prop.mTextAlignment;
 #endif
-                richtext->setAlignment( posValues.mTextAlignment );
+                richtext->setAlignment( prop.mTextAlignment );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, false);
             }
-            if ( posValues.mFlags & HbCss::ExtractedWrapMode 
+            if ( prop.mFlags & HbCss::ExtractedWrapMode 
                 && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode)) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << posValues.mTextWrapMode;
+                qDebug() << "HbStyle::polishItem : -- Setting wrap mode : " << prop.mTextWrapMode;
 #endif
-                richtext->setTextWrapping( posValues.mTextWrapMode );
+                richtext->setTextWrapping( prop.mTextWrapMode );
                 hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
             }
         }
 
         HbFrameItem *frame = qobject_cast<HbFrameItem*>(hbWidget);
         if (frame && !frame->frameDrawer().d->testBorderApiProtectionFlag()) {
-            qreal borderWidths[HbCss::NumEdges] = { 0.0,0.0,0.0,0.0 };
-            QBrush borderColors[HbCss::NumEdges];
-            HbCss::BorderStyle borderStyles[HbCss::NumEdges];
-            QSize borderRadii[4];
-
-            if (extractor.extractBorder(borderWidths,borderColors,borderStyles,borderRadii)) {
+            if (prop.mFlags & HbCss::ExtractedBorderWidths) {
 #ifdef HBSTYLE_DEBUG
                 qDebug() << "HbStyle::polishItem : -- Setting border widths (l,t,r,b):"
-                    << borderWidths[HbCss::LeftEdge]
-                    << borderWidths[HbCss::TopEdge]
-                    << borderWidths[HbCss::RightEdge]
-                    << borderWidths[HbCss::BottomEdge];
+                    << prop.mBorderWidths[HbCss::LeftEdge]
+                    << prop.mBorderWidths[HbCss::TopEdge]
+                    << prop.mBorderWidths[HbCss::RightEdge]
+                    << prop.mBorderWidths[HbCss::BottomEdge];
 #endif
                 frame->frameDrawer().setBorderWidths(
-                    borderWidths[HbCss::LeftEdge],
-                    borderWidths[HbCss::TopEdge],
-                    borderWidths[HbCss::RightEdge],
-                    borderWidths[HbCss::BottomEdge]);
+                    prop.mBorderWidths[HbCss::LeftEdge],
+                    prop.mBorderWidths[HbCss::TopEdge],
+                    prop.mBorderWidths[HbCss::RightEdge],
+                    prop.mBorderWidths[HbCss::BottomEdge]);
                 frame->frameDrawer().d->setBorderApiProtectionFlag(false);
             }
         }
         if ( hbWidget->inherits( "HbLineEdit" ) ) {
-            HbCss::TextValues textValues;
-            if ( extractor.extractTextValues( textValues ) ) {
-                if ( textValues.mFlags & HbCss::ExtractedLineCountMin
-                    && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
+            if ( prop.mFlags & HbCss::ExtractedMinLines
+                && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << textValues.mLineCountMin;
+                qDebug() << "HbStyle::polishItem : -- Setting text min lines: " << prop.mMinLines;
 #endif
-                    hbWidget->setProperty( "minRows", textValues.mLineCountMin );
-                    hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
-                }
-                if ( textValues.mFlags & HbCss::ExtractedLineCountMax
-                    && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
+                hbWidget->setProperty( "minRows", prop.mMinLines );
+                hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
+            }
+            if ( prop.mFlags & HbCss::ExtractedMaxLines
+                && !hbWidget_p->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin)) {
 #ifdef HBSTYLE_DEBUG
-                    qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << textValues.mLineCountMax;
+                qDebug() << "HbStyle::polishItem : -- Setting text max lines: " << prop.mMaxLines;
 #endif
-                    hbWidget->setProperty( "maxRows", textValues.mLineCountMax );
-                    hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
-                }
+                hbWidget->setProperty( "maxRows", prop.mMaxLines );
+                hbWidget_p->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
             }
         }
     }
 
-    QGraphicsLayoutItem* lItem = (item && item->isWidget()) ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item) : 0;
-    if ( !lItem ) {
-        lItem = widget->layoutPrimitive(name);
-        if ( lItem && !lItem->graphicsItem() ) {
-            // assume it is spacer
-            static_cast<HbMeshLayout*>(widget->layout())->setItemId( lItem, name );
-        }
-    }
     if ( lItem ) {
-        if ( geomValues.mFlags & HbCss::ExtractedMinW ) {
+        if ( prop.mFlags & HbCss::ExtractedMinW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting minimum width: " << geomValues.mMinW;
+            qDebug() << "HbStyle::polishItem : -- Setting minimum width: " << prop.mMinW;
 #endif
-            lItem->setMinimumWidth( geomValues.mMinW );
+            lItem->setMinimumWidth( prop.mMinW );
         }
-        if ( geomValues.mFlags & HbCss::ExtractedMinH ) {
+        if ( prop.mFlags & HbCss::ExtractedMinH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting minimum height: " << geomValues.mMinH;
+            qDebug() << "HbStyle::polishItem : -- Setting minimum height: " << prop.mMinH;
 #endif
-            lItem->setMinimumHeight( geomValues.mMinH );
+            lItem->setMinimumHeight( prop.mMinH );
         }
-        if ( geomValues.mFlags & HbCss::ExtractedPrefW ) {
+        if ( prop.mFlags & HbCss::ExtractedPrefW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting preferred width: " << geomValues.mPrefW;
+            qDebug() << "HbStyle::polishItem : -- Setting preferred width: " << prop.mPrefW;
 #endif
-            lItem->setPreferredWidth( geomValues.mPrefW );
+            lItem->setPreferredWidth( prop.mPrefW );
         }
-        if ( geomValues.mFlags & HbCss::ExtractedPrefH ) {
+        if ( prop.mFlags & HbCss::ExtractedPrefH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting preferred height: " << geomValues.mPrefH;
+            qDebug() << "HbStyle::polishItem : -- Setting preferred height: " << prop.mPrefH;
 #endif
-            lItem->setPreferredHeight( geomValues.mPrefH );
+            lItem->setPreferredHeight( prop.mPrefH );
         }
-        if ( geomValues.mFlags & HbCss::ExtractedMaxW ) {
+        if ( prop.mFlags & HbCss::ExtractedMaxW ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting maximum width: " << geomValues.mMaxW;
+            qDebug() << "HbStyle::polishItem : -- Setting maximum width: " << prop.mMaxW;
 #endif
-            lItem->setMaximumWidth( geomValues.mMaxW );
+            lItem->setMaximumWidth( prop.mMaxW );
         }
-        if ( geomValues.mFlags & HbCss::ExtractedMaxH ) {
+        if ( prop.mFlags & HbCss::ExtractedMaxH ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting maximum height: " << geomValues.mMaxH;
+            qDebug() << "HbStyle::polishItem : -- Setting maximum height: " << prop.mMaxH;
 #endif
-            lItem->setMaximumHeight( geomValues.mMaxH );
+            lItem->setMaximumHeight( prop.mMaxH );
         }
         QSizePolicy itemPol = lItem->sizePolicy();
-        if ( geomValues.mFlags & HbCss::ExtractedPolHor ) {
+        if ( prop.mFlags & HbCss::ExtractedPolHor ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting horizontal size policy: " << geomValues.mSizePolicy.horizontalPolicy();
+            qDebug() << "HbStyle::polishItem : -- Setting horizontal size policy: " << prop.mSizePolicy.horizontalPolicy();
 #endif
-            itemPol.setHorizontalPolicy(geomValues.mSizePolicy.horizontalPolicy());
+            itemPol.setHorizontalPolicy(prop.mSizePolicy.horizontalPolicy());
         }
-        if ( geomValues.mFlags & HbCss::ExtractedPolVer ) {
+        if ( prop.mFlags & HbCss::ExtractedPolVer ) {
 #ifdef HBSTYLE_DEBUG
-            qDebug() << "HbStyle::polishItem : -- Setting vertical size policy: " << geomValues.mSizePolicy.verticalPolicy();
+            qDebug() << "HbStyle::polishItem : -- Setting vertical size policy: " << prop.mSizePolicy.verticalPolicy();
 #endif
-            itemPol.setVerticalPolicy(geomValues.mSizePolicy.verticalPolicy());
+            itemPol.setVerticalPolicy(prop.mSizePolicy.verticalPolicy());
         }
         lItem->setSizePolicy(itemPol);
     }
@@ -4046,41 +3999,41 @@ void HbStylePrivate::polishItem(
     if (layoutDefined) {
         HbMeshLayout *layout = static_cast<HbMeshLayout*>(widget->layout());
         if ( layout ) {
-            if (posValues.mFlags & HbCss::ExtractedLeft) {
+            if (prop.mFlags & HbCss::ExtractedLeft) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting left override: " << posValues.mLeft;
+                qDebug() << "HbStyle::polishItem : -- Setting left override: " << prop.mLeft;
 #endif
-                layout->overrideSpacing(name, Hb::LeftEdge, posValues.mLeft);
+                layout->overrideSpacing(name, Hb::LeftEdge, prop.mLeft);
             }
-            if (posValues.mFlags & HbCss::ExtractedRight) {
+            if (prop.mFlags & HbCss::ExtractedRight) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting right override: " << posValues.mRight;
+                qDebug() << "HbStyle::polishItem : -- Setting right override: " << prop.mRight;
 #endif
-                layout->overrideSpacing(name, Hb::RightEdge, posValues.mRight);
+                layout->overrideSpacing(name, Hb::RightEdge, prop.mRight);
             }
-            if (posValues.mFlags & HbCss::ExtractedTop) {
+            if (prop.mFlags & HbCss::ExtractedTop) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting top override: " << posValues.mTop;
+                qDebug() << "HbStyle::polishItem : -- Setting top override: " << prop.mTop;
 #endif
-                layout->overrideSpacing(name, Hb::TopEdge, posValues.mTop);
+                layout->overrideSpacing(name, Hb::TopEdge, prop.mTop);
             }
-            if (posValues.mFlags & HbCss::ExtractedBottom) {
+            if (prop.mFlags & HbCss::ExtractedBottom) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting bottom override: " << posValues.mBottom;
+                qDebug() << "HbStyle::polishItem : -- Setting bottom override: " << prop.mBottom;
 #endif
-                layout->overrideSpacing(name, Hb::BottomEdge, posValues.mBottom);
+                layout->overrideSpacing(name, Hb::BottomEdge, prop.mBottom);
             }
-            if (posValues.mFlags & HbCss::ExtractedCenterH) {
+            if (prop.mFlags & HbCss::ExtractedCenterH) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting centerh override: " << posValues.mCenterH;
+                qDebug() << "HbStyle::polishItem : -- Setting centerh override: " << prop.mCenterH;
 #endif
-                layout->overrideSpacing(name, Hb::CenterHEdge, posValues.mCenterH);
+                layout->overrideSpacing(name, Hb::CenterHEdge, prop.mCenterH);
             }
-            if (posValues.mFlags & HbCss::ExtractedCenterV) {
+            if (prop.mFlags & HbCss::ExtractedCenterV) {
 #ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polishItem : -- Setting centerv override: " << posValues.mCenterV;
+                qDebug() << "HbStyle::polishItem : -- Setting centerv override: " << prop.mCenterV;
 #endif
-                layout->overrideSpacing(name, Hb::CenterVEdge, posValues.mCenterV);
+                layout->overrideSpacing(name, Hb::CenterVEdge, prop.mCenterV);
             }
         }
     }
@@ -4151,7 +4104,7 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     }
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", widget, profile);
 #ifdef HBSTYLE_DEBUG
-    qDebug() << "HbStyle::polish : Number of maching CSS declarations: " << decl.count();
+    qDebug() << "HbStyle::polish : Number of matching CSS declarations: " << decl.count();
 #endif
     d->ensureLayoutParameters(profile);
 
@@ -4161,12 +4114,12 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
 
     if ( params.count() ) {
 #ifdef HBSTYLE_DEBUG
-        qDebug() << "HbStyle::polish : Extracting parameters.";
+        qDebug() << "HbStyle::polish : Extracting custom properties.";
 #endif
-        extractor.extractParameters( params.params(), params.values() );
+        extractor.extractCustomProperties( params.keys(), params.values() );
     }
 
-    bool layoutDefined = extractor.extractLayout(&layoutName, &sectionName);
+    bool layoutDefined = extractor.extractLayout(layoutName, sectionName);
 #ifdef HBSTYLE_DEBUG
     if (!layoutDefined) {
         qDebug() << "HbStyle::polish : Couldn't find layout name for the widget.";
@@ -4268,13 +4221,13 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, 0, profile);
 
 #ifdef HBSTYLE_DEBUG
-   qDebug() << "HbStyle::updateThemedItems : -- Number of maching CSS declarations: " << decl.count();
+   qDebug() << "HbStyle::updateThemedItems : -- Number of matching CSS declarations: " << decl.count();
 #endif
    ensureColorParameters();
    HbCss::ValueExtractor extractor(decl, colorParameters, profile);
    
     QColor col;
-    bool extracted = extractor.extractColor( &col );
+    bool extracted = extractor.extractColor( col );
     if (!extracted || !col.isValid()) {
         // Setting non black or white default color to make it visisble in black or white theme
         col.setRgb(255,0,255);
@@ -4444,23 +4397,23 @@ bool HbStyle::parameter(const QString& param, qreal& value, const HbDeviceProfil
     HbCss::ValueExtractor valueExtractor(d->layoutParameters, true, effectiveProfile);
     // todo: parsing variable/expression is done here so that there is no need to change API
     // also parameters method not changed (this change is done for docml/widgetml parsing)
-    if (param.startsWith("var(") && param.endsWith(")")) {
-        return valueExtractor.extractValue(param.mid(4,param.length()-5), value);
-    } else if (param.startsWith("-var(") && param.endsWith(")")) {
-        bool retVal = valueExtractor.extractValue(param.mid(5,param.length()-6), value);
+    if (param.startsWith(QLatin1String("var(")) && param.endsWith(QLatin1String(")"))) {
+        return valueExtractor.extractVariableValue(param.mid(4,param.length()-5), value);
+    } else if (param.startsWith(QLatin1String("-var(")) && param.endsWith(QLatin1String(")"))) {
+        bool retVal = valueExtractor.extractVariableValue(param.mid(5,param.length()-6), value);
         value = -value;
         return retVal;
-    } else if (param.startsWith("expr(") && param.endsWith(")")) {
+    } else if (param.startsWith(QLatin1String("expr(")) && param.endsWith(QLatin1String(")"))) {
         QString expressionString = param.mid(5,param.length()-6);
         return valueExtractor.extractExpressionValue(expressionString, value);
-    } else if (param.startsWith("-expr(") && param.endsWith(")")) {
+    } else if (param.startsWith(QLatin1String("-expr(")) && param.endsWith(QLatin1String(")"))) {
         QString expressionString = param.mid(6,param.length()-7);
         bool retVal = valueExtractor.extractExpressionValue(expressionString, value);
         value = -value;
         return retVal;
     }
 
-    return valueExtractor.extractValue(param, value);    
+    return valueExtractor.extractVariableValue(param, value);    
 }
 
 /*!
@@ -4489,7 +4442,7 @@ void HbStyle::parameters(HbStyleParameters &params, const HbDeviceProfile &profi
     qreal value = 0;
     QHash<QString, HbCss::Declaration>::const_iterator i = d->layoutParameters.constBegin();
     while (i != d->layoutParameters.constEnd()) {
-        if (valueExtractor.extractValue(i.key(), value)) {
+        if (valueExtractor.extractVariableValue(i.key(), value)) {
             params.addParameter(i.key(), value);
         }
         ++i;
@@ -4538,12 +4491,12 @@ void HbStyle::widgetParameters(HbStyleParameters &params, HbWidget* widget) cons
     }
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, "", widget, profile);
 #ifdef HBSTYLE_DEBUG
-    qDebug() << "HbStyle::widgetParameters : Number of maching CSS declarations: " << decl.count();
+    qDebug() << "HbStyle::widgetParameters : Number of matching CSS declarations: " << decl.count();
 #endif
     d->ensureLayoutParameters(profile);
 
     HbCss::ValueExtractor extractor(decl, d->layoutParameters, profile);
-    extractor.extractParameters( params.params(), params.values() );
+    extractor.extractCustomProperties( params.keys(), params.values() );
 }
 
 
@@ -4677,7 +4630,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
     if (firstParse) {
         HbCss::Parser parser;
         parser.init(GLOBAL_PARAMETERS_LOCATION, true);
-        HbCss::StyleSheet *styleSheet = new(HbCss::StyleSheet);
+        HbCss::StyleSheet *styleSheet = HbMemoryUtils::create<HbCss::StyleSheet>(HbMemoryManager::HeapMemory);
         parser.parse(styleSheet);
 
         HbStyleSelector selector;
@@ -4694,7 +4647,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
         {
             HbCss::Declaration decl;
             decl.property = "hb-param-screen-width";
-            decl.propertyId = HbCss::UnknownProperty;
+            decl.propertyId = HbCss::Property_Unknown;
             HbCss::Value val;
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)pSize.width(),HbMemoryManager::HeapMemory);
@@ -4704,7 +4657,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
         {
             HbCss::Declaration decl;
             decl.property = "hb-param-screen-height";
-            decl.propertyId = HbCss::UnknownProperty;
+            decl.propertyId = HbCss::Property_Unknown;
             HbCss::Value val;
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)pSize.height(),HbMemoryManager::HeapMemory);
@@ -4714,7 +4667,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
         {
             HbCss::Declaration decl;
             decl.property = "hb-param-screen-short-edge";
-            decl.propertyId = HbCss::UnknownProperty;
+            decl.propertyId = HbCss::Property_Unknown;
             HbCss::Value val;
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)qMin(pSize.height(),pSize.width()),HbMemoryManager::HeapMemory);
@@ -4724,7 +4677,7 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
         {
             HbCss::Declaration decl;
             decl.property = "hb-param-screen-long-edge";
-            decl.propertyId = HbCss::UnknownProperty;
+            decl.propertyId = HbCss::Property_Unknown;
             HbCss::Value val;
             val.type = HbCss::Value::Number;
             val.variant = HbVariant((double)qMax(pSize.height(),pSize.width()),HbMemoryManager::HeapMemory);

@@ -27,7 +27,7 @@
 
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
-#include "hbeffectdropshadow_p.h"
+#include "hbeffectdropshadow_p.h" //krazy:exclude=includes
 #include "hbeffectfilter_p.h"
 #include "hbvgchainedeffect_p.h"
 #include "hbvgshadoweffect_p.h"
@@ -43,16 +43,16 @@ HbEffectDropShadow::HbEffectDropShadow(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationS(0),
-        mAnimationOutlineX(0),
-        mAnimationOutlineY(0),
-        mAnimationOffsetX(0),
-        mAnimationOffsetY(0),
-        mAnimationC(0),
-        mVgOutline(0),
-        mType(HbEffectDropShadow::outline)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationS(0),
+    mAnimationOutlineX(0),
+    mAnimationOutlineY(0),
+    mAnimationOffsetX(0),
+    mAnimationOffsetY(0),
+    mAnimationC(0),
+    mVgOutline(0),
+    mType(HbEffectDropShadow::outline)
 {
     // Default values from FXML spec
     qreal opacity_start = 1;
@@ -77,30 +77,24 @@ HbEffectDropShadow::HbEffectDropShadow(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_DROP_SHADOW_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_COLOR) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_COLOR) {
             mAnimationC = createAnimation(param, color_start, color_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OFFSET_X) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OFFSET_X) {
             mAnimationOffsetX = createAnimation(param, offset_x_start, offset_x_end, group);
             // If offset parameters are used, it is a drop shadow effect.
             mType = dropShadow;
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OFFSET_Y) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OFFSET_Y) {
             mAnimationOffsetY = createAnimation(param, offset_y_start, offset_y_end, group);
             // If offset parameters are used, it is a drop shadow effect.
             mType = dropShadow;
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_STEEPNESS) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_STEEPNESS) {
             mAnimationS = createAnimation(param, steepness_start, steepness_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OUTLINE_X) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OUTLINE_X) {
             mAnimationOutlineX = createAnimation(param, outline_x_start, outline_x_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OUTLINE_Y) {
+        } else if (param.name() == FXML_KEYWORD_DROP_SHADOW_OUTLINE_Y) {
             mAnimationOutlineY = createAnimation(param, outline_y_start, outline_y_end, group);
         }
     }
@@ -109,7 +103,7 @@ HbEffectDropShadow::HbEffectDropShadow(
     if (mEffectDefined) {
         // Add effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         if (mType == dropShadow) {
             mVgOutline = new HbVgShadowEffect();
         } else {
@@ -165,10 +159,10 @@ void HbEffectDropShadow::updateFilterEffect()
             mVgOutline->setSteepness(qVariantValue<qreal>(mAnimationS->currentValue()));
         }
         if (mAnimationC) {
-            mVgOutline->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));            
+            mVgOutline->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));
         }
         if (mAnimationO) {
-            mVgOutline->setOpacity(qVariantValue<qreal>(mAnimationO->currentValue()));            
+            mVgOutline->setOpacity(qVariantValue<qreal>(mAnimationO->currentValue()));
         }
     }
 }

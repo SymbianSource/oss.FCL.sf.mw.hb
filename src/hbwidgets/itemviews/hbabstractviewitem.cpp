@@ -230,13 +230,12 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
             break;
         }
         case Qt::GestureFinished: {
-            HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
-
             if (gesture->tapStyleHint() == HbTapGesture::Tap 
                 || (mSharedData->mItemView
                 && !mSharedData->mItemView->longPressEnabled())) {
                 setPressed(false, true);
 
+                HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
                 HbWidgetFeedback::triggered(q, Hb::InstantClicked);
                 QPointer<HbAbstractViewItem> item = q;
                 emit item->activated(position);
@@ -249,13 +248,13 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
                     }
                 }
             } else {
+                HbWidgetFeedback::triggered(q, Hb::InstantReleased,0);
                 emit q->released(position);
             }
 
             break;
         }
         case Qt::GestureCanceled: {
-
             // hides focus immediately
             setPressed(false, false);
 
@@ -286,7 +285,13 @@ void HbAbstractViewItemPrivate::setPressed(bool pressed, bool animate)
         mPressed = pressed;
 
         if (mSharedData->mPressStateChangeTimer) {
-            mSharedData->mPressStateChangeTimer->stop();
+            if(!pressed && animate && mSharedData->mPressStateChangeTimer->isActive()) {
+                // Release happened while press still delayed
+                mSharedData->mPressStateChangeTimer->stop();
+                mSharedData->pressStateChangeTimerTriggered();
+            } else {
+                mSharedData->mPressStateChangeTimer->stop();
+            }
         }
 
         if (mPressed) {

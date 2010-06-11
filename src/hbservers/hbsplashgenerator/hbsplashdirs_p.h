@@ -41,8 +41,7 @@ inline QString hbsplash_output_dir()
     TInt drive;
     TChar driveLetter;
     if (DriveInfo::GetDefaultDrive(driveType, drive) == KErrNone
-        && DriveInfo::GetDefaultDrive(driveType, driveLetter) == KErrNone)
-    {
+            && DriveInfo::GetDefaultDrive(driveType, driveLetter) == KErrNone) {
         bool driveUsable = true;
         CCoeEnv *env = CCoeEnv::Static();
         if (env) {
@@ -53,11 +52,10 @@ inline QString hbsplash_output_dir()
                 // Check if the drive is really internal (devices without internal mass
                 // storage will return the memory card which is not what we want here).
                 if (!(driveStatus & DriveInfo::EDriveInternal)
-                    || !(driveStatus & DriveInfo::EDrivePresent)
-                    || !(driveStatus & DriveInfo::EDriveFormatted)
-                    || (driveStatus & DriveInfo::EDriveCorrupt)
-                    || (driveStatus & DriveInfo::EDriveInUse))
-                {
+                        || !(driveStatus & DriveInfo::EDrivePresent)
+                        || !(driveStatus & DriveInfo::EDriveFormatted)
+                        || (driveStatus & DriveInfo::EDriveCorrupt)
+                        || (driveStatus & DriveInfo::EDriveInUse)) {
                     qDebug("[hbsplash] drive not usable, skipping");
                     driveUsable = false;
                 }

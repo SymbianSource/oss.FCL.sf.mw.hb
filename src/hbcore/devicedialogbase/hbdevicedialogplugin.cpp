@@ -263,7 +263,12 @@
     If the flag is set, device dialog service calls accessAllowed() before creating or
     attaching to a device dialog widget.
 */
-
+/*!
+    \var HbDeviceDialogPlugin::DeviceDialogFlag HbDeviceDialogPlugin::SingleInstance
+    If the flag is set, only one instance of the device dialog widget is allowed at
+    one time. Attempt to launch the widget while one exists results in an error to be
+    returned to the client.
+*/
 
 
 /*!

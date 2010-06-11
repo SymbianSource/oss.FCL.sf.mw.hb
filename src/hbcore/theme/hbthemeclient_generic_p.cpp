@@ -120,13 +120,6 @@ HbThemeClientPrivate::~HbThemeClientPrivate()
     delete localSocket;
 }
 
-QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString &iconPath)
-{
-    // Not implemented atm...
-    Q_UNUSED(iconPath)
-    return QSizeF();
-}
-
 /**
  * HbThemeClientPrivate::getSharedIconInfo()
  */
@@ -281,7 +274,7 @@ HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(
  * HbThemeClientPrivate::getSharedStyleSheet()
  */
 HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(
-        const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
+        const QString &filePath, HbLayeredStyleLoader::LayerPriority priority)
 {
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO;
@@ -296,7 +289,7 @@ HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(
     HbThemeServerRequest requestType = EStyleSheetLookup;
 
     outputDataStream << int(requestType);
-    outputDataStream << fileName;
+    outputDataStream << filePath;
     outputDataStream << priority;
 
     disconnect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
@@ -1013,6 +1006,24 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(
     // connecting again to handle theme change request from server
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(changeTheme()));
     return sharedIconInfoList;
+}
+
+/**
+ * HbThemeClientPrivate::setTheme() 
+ */
+void HbThemeClientPrivate::setTheme(const QString &theme)
+{
+    if ( !clientConnected ) {
+        return;
+    }
+    
+    QByteArray outputByteArray;
+    QDataStream outputDataStream(&outputByteArray, QIODevice::WriteOnly);
+    HbThemeServerRequest requestType = EThemeSelection;
+    outputDataStream << (int)requestType;
+    outputDataStream << theme;
+    localSocket->write(outputByteArray);
+    localSocket->flush();
 }
 
 /**

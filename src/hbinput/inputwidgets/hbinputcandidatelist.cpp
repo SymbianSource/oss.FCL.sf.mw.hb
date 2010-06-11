@@ -25,7 +25,6 @@
 
 #include <QLabel>
 #include <QGraphicsLayout>
-
 #include <hblistwidget.h>
 #include <hblistwidgetitem.h>
 #include <hbview.h>
@@ -37,6 +36,7 @@
 #include <hbinputmethod.h>
 #include <hbinputsettingproxy.h>
 #include <hbinputvkbhost.h>
+#include <hbinputregioncollector_p.h>
 
 #include "hbinputcandidatelist.h"
 
@@ -68,7 +68,9 @@ public:
     int numCandidates;
     int longestStringWidth;
     HbFrameItem *mFrameBackground;
+    HbListWidgetItem* mSpellQueryItem;
     bool mCandidateCommitted;
+    bool mSpellQueryOpenIsPending;
 };
 
 HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
@@ -77,7 +79,9 @@ HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
       numCandidates(0),
       longestStringWidth(0),
       mFrameBackground(0),
-      mCandidateCommitted(false)
+      mSpellQueryItem(0),
+      mCandidateCommitted(false),
+      mSpellQueryOpenIsPending(false)
 {
     Q_Q(HbCandidateList);
 
@@ -124,6 +128,10 @@ void HbCandidateListPrivate::calculateAndSetSize(qreal maxWidth)
     finalWidth = finalWidth + l + r ;
     finalHeight = (qreal)numLines * oneLineHeight + 5.0 + t + b;
 
+    if(mSpellQueryItem) {
+        finalHeight += oneLineHeight ; // for spell button
+    }
+
     if(finalHeight > HbDeviceProfile::current().logicalSize().height() - 30) {
         finalHeight = HbDeviceProfile::current().logicalSize().height() - 30;
     }
@@ -159,6 +167,8 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
 {
     Q_D(HbCandidateList);
 
+    HbInputRegionCollector::instance()->attach(this);
+
     d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.
     d->initFrameIcon();
 
@@ -186,7 +196,7 @@ Populates the candidate list with text strings given as parameter.
 
 @param
 */
-void HbCandidateList::populateList(const QStringList& candidates)
+void HbCandidateList::populateList(const QStringList& candidates,bool addSpellQuery)
 {
     Q_D(HbCandidateList);
 
@@ -205,6 +215,18 @@ void HbCandidateList::populateList(const QStringList& candidates)
         // TODO: Font has not been set corretly yet...
         QFontMetrics fontMetrics(d->mList->fontSpec().font());
         finalWidth = fontMetrics.width(candidates[i]);
+        if (finalWidth > longestwidth) {
+            longestwidth = finalWidth;
+        }
+    }
+    
+    d->mSpellQueryItem = 0;
+    if(addSpellQuery) {
+        d->mSpellQueryItem = new HbListWidgetItem();
+        d->mSpellQueryItem->setText(tr("Spell"));
+        d->mList->addItem(d->mSpellQueryItem);
+        QFontMetrics fontMetrics(d->mList->fontSpec().font());
+        finalWidth = fontMetrics.width(tr("Spell"));
         if (finalWidth > longestwidth) {
             longestwidth = finalWidth;
         }
@@ -255,10 +277,13 @@ Called when an item on the list is activated. Hides the list and informs the inp
 */
 void HbCandidateList::itemActivated(HbListWidgetItem *item)
 {
-    Q_UNUSED(item);
     Q_D(HbCandidateList);
-    if (!d->mCandidateCommitted) {
-        emit candidateSelected(0, currentCandidate());
+    if (!d->mCandidateCommitted)  {
+        if(d->mSpellQueryItem != item) {
+            emit candidateSelected(0, currentCandidate());
+        } else if(d->mSpellQueryItem){
+            d->mSpellQueryOpenIsPending = true;
+        }
         d->mCandidateCommitted = true;
     }
     hide();
@@ -289,9 +314,17 @@ this event handler is called, for Hide events, is delivered after the widget has
 */
 void HbCandidateList::hideEvent(QHideEvent * event)
 {
-    Q_D(HbCandidateList);
-    d->mCandidateCommitted = false;
+	Q_D(HbCandidateList);
+	d->mCandidateCommitted = false;
     HbDialog::hideEvent(event);
+    // If we try to open spell query in itemActivated, first spell query tries to 
+    // open, and then candidatel list is closed. This creates problems if we 
+    // quickly double click on the Spell button. So open spell query only after candidate
+    // list is closed.
+    if(d->mSpellQueryOpenIsPending) {
+        d->mSpellQueryOpenIsPending = false;
+        emit launchSpellQueryDialog();
+    }
 }
 
 void HbCandidateList::updatePrimitives()

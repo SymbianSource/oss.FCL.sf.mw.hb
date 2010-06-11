@@ -66,6 +66,8 @@ public:
 
     virtual void calculateButtonProbabilities(const QPointF &position);
 
+    void _q_customActionDestroyed(QObject *object);
+
 protected:
     virtual void createPrimarySingleTextLayout(int index, const QHash<int, QString> &textContent, const QSizeF &size);
     virtual void createPrimaryTextLayout(int index, const QHash<int, QString> &textContent, const QSizeF &size);

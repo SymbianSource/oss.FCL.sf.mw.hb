@@ -47,7 +47,6 @@ enum NvgBitEncoding  {
 };
 
 class HbDereferencer;
-class HbNvgIconData;
 class HbNvgEngine;
 class HbOpenVgHandleStore;
 class HbNvgFitToViewBoxImpl;
@@ -73,9 +72,20 @@ public:
 
     virtual ~HbNvgCsIcon();
 
-    virtual HbNvgEngine::HbNvgErrorType draw(const QSize &size);
+    HbNvgEngine::HbNvgErrorType draw(const QSize &size)
+    {
+	   // TODO @ Deprecated, remove from base class
+       Q_UNUSED(size);
+       return HbNvgEngine::NvgErrNone;
+    }
 
-    void  setViewBox(float x, float y, float w, float h) ;
+    void setViewBox(float x, float y, float w, float h)
+    {
+        mViewBoxX = x;
+        mViewBoxY = y;
+        mViewBoxW = w;
+        mViewBoxH = h;
+    }
 
     void setPreserveAspectRatio(HbNvgEngine::HbNvgAlignType preserveAspectSetting,
                                 HbNvgEngine::HbNvgMeetType smilFitSetting);
@@ -86,71 +96,24 @@ public:
 
     void directDraw(const QByteArray &buffer, const QSize &targetSize);
 
-    void create(const QByteArray &buffer, const QSize& targetSize);
-
-    void setIconData(const QByteArray &buffer);
+    void create(const QByteArray &buffer, const QSize& targetSize)
+    {
+	   // TODO @ Deprecated, remove from base class
+        Q_UNUSED(buffer);
+        Q_UNUSED(targetSize);
+    }
 
 private:
 
     HbNvgEngine::HbNvgErrorType initializeGc();
 
-    void drawCommandSection(const QByteArray &buffer, const QSize &targetSize, qint32 objectCaching);
+    void drawCommandSection(const QByteArray &buffer, const QSize &targetSize);
 
     HbNvgEngine::HbNvgErrorType createPathHandle(qint16 pathDataType, float scale, float bias);
 
     HbNvgEngine::HbNvgErrorType doDraw(const QSize &size);
 
-    void addDrawPathCommand(VGPath path, VGbitfield paintMode);
-
-    void addPathData(VGint numSegments, const VGubyte * pathSegments, const void * pathData);
-
-    void addLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint);
-
-    void addRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint);
-
-    void addSetColorCommand(VGuint rgba);
-
-    void addColorRampCommand(VGPaint paint);
-
-    void addSetTransformCommand(const VGfloat* transformMatrix, qint32 flag);
-
-    void addSetStrokeWidthCommand(VGfloat strokeWidth);
-
-    void addSetStrokeMiterLimitCommand(VGfloat miterLimit);
-
-    void addStrokeLineJoinCapCommand(VGint capStyle, VGint joinStyle);
-
-    void addStrokeLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint);
-
-    void addStrokeRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint);
-
-    void addStrokeSetColorCommand(VGuint rgba);
-
-    void addStrokeColorRampCommand(VGPaint paint);
-
-    void addLinearGradientCommandData(VGPaint paint, VGint count, VGfloat* gradientData, VGfloat* gradientMatrix);
-
-    void addRadialGradientCommandData(VGPaint paint, VGint count, VGfloat* gradientData, VGfloat* gradientMatrix);
-
-    void addSetColorCommandData(VGuint rgba);
-
-    void drawPaint(VGPaint paint, VGMatrixMode matrixMode, quint32 &lastPaintType, quint32 &lastPaintColor, VGPaintMode paintMode);
-
-    void drawColorRamp(VGPaint paint);
-
-    void setViewBoxToViewTransformation(const QSize &size);
-
     void setRotation();
-
-    void updateClientMatrices();
-
-    void restoreClientMatrices();
-
-    QPoint getTranslatedPoint(VGfloat *trMatrix, const QPoint &point);
-
-    VGfloat maxVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4);
-
-    VGfloat minVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4);
 
     void setFillPaint(HbDereferencer *iconData);
 
@@ -166,13 +129,10 @@ private:
 
     void setStrokeMiterLimit(const quint8* buffer);
 
-    void clearBackground();
-
     void resetNvgState();
 
     void applyViewboxToViewPortTransformation(const QSize& targetSize, float viewboxX, float viewboxY, float viewboxW, float viewboxH);
 
-    void applyScissoring(VGfloat *aMatrix, const QSize& targetSize);
 
     void executeNvgCsCommandLoop(quint16 commandCount, HbDereferencer * iconData, HbDereferencer * offsetVector,
                                  HbDereferencer * commandSection, quint8 nvgVersion);
@@ -189,10 +149,6 @@ private:
         return((T)((((quint32)value) + sizeof(quint16) - 1)&~(sizeof(quint16) - 1)));
     }
 
-#ifdef    OPENVG_OBJECT_CACHING
-    VGPath createPath();
-#endif
-
 private:
 
     VGPaint                 mPaintFill;
@@ -205,7 +161,6 @@ private:
     qint32                  mFillAlpha;
     qint32                  mStrokeAlpha;
     VGPaint                 mGradPaintStroke;
-    qint32                  mCreatingNvgIcon;
     float                   mViewBoxX;
     float                   mViewBoxY;
     float                   mViewBoxW;
@@ -214,17 +169,7 @@ private:
     float                   mRotationX;
     float                   mRotationY;
     HbNvgEngine::HbNvgAlignType      mPreserveAspectSetting;
-    HbNvgEngine::HbNvgMeetType      mSmilFitSetting;
-    HbNvgIconData *         mNvgIconData;
-    VGint                   mMatrixMode;
-    VGfloat                 mImageMatrix[9];
-    VGfloat                 mPathMatrix[9];
-    quint32                 mLastFillPaintType;
-    quint32                 mLastStrokePaintType;
-    quint32                 mLastFillPaintColor;
-    quint32                 mLastStrkePaintColor;
-    quint32                 mResetFillPaint;
-    quint32                 mResetStrokePaint;
+    HbNvgEngine::HbNvgMeetType      mSmilFitSetting;    
     bool                    mMirrored;
 };
 #endif

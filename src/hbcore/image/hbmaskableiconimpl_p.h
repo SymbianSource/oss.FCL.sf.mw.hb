@@ -35,144 +35,118 @@
 class HB_AUTOTEST_EXPORT HbMaskableIconImpl
 {
 public:
-    HbMaskableIconImpl(HbIconImpl * icon)
-    {
-       this->icon = icon;
-       data = 0;
-       maskApplied = false;
+    HbMaskableIconImpl(HbIconImpl *icon) {
+        this->icon = icon;
+        data = 0;
+        maskApplied = false;
     }
-    
-    QPixmap pixmap()
-    {
+
+    QPixmap pixmap() {
         return icon->pixmap();
     }
-    
-    void paint(QPainter* painter, const QRectF &childRect,
-                        Qt::Alignment alignment,
-                        const QPainterPath &clipPath = QPainterPath())
-    {
+
+    void paint(QPainter *painter, const QRectF &childRect,
+               Qt::Alignment alignment,
+               const QPainterPath &clipPath = QPainterPath()) {
         icon->paint(painter, childRect, alignment, clipPath, this);
         maskApplied = false;
     }
-    
-    HbIconImpl * iconImpl()
-    {
+
+    HbIconImpl *iconImpl() {
         return icon;
     }
-    
-    bool maskChanged()
-    {
+
+    bool maskChanged() {
         return maskApplied;
     }
-    
-    void setPixmap(QPixmap pixmap)
-    {
-        maskBitmap = pixmap;    
+
+    void setPixmap(QPixmap pixmap) {
+        maskBitmap = pixmap;
     }
-    
-    QSize defaultSize() const
-    {
+
+    QSize defaultSize() const {
         return icon->defaultSize();
     }
-    
-    void setMask(const QBitmap& mask)
-    {
-        if(!mask.isNull()) {
+
+    void setMask(const QBitmap &mask) {
+        if (!mask.isNull()) {
             maskBitmap = mask;
             maskApplied = true;
-        }         
+        }
     }
-    
-    QBitmap mask()
-    {
+
+    QBitmap mask() {
         return maskBitmap;
     }
-    
-    QSize size()
-    {
+
+    QSize size() {
         return icon->size();
     }
-    
-    void setColor(const QColor &color) 
-    {
-         icon->setColor(color);
+
+    void setColor(const QColor &color) {
+        icon->setColor(color);
     }
-    
-    QColor color()
-    {
+
+    QColor color() {
         return icon->color();
     }
-    
-    HbSharedIconInfo iconData() const
-    {
+
+    HbSharedIconInfo iconData() const {
         return icon->iconData();
     }
-    
-    QString iconFileName() const
-    {
+
+    QString iconFileName() const {
         return icon->iconFileName();
     }
-    
-    QSizeF keySize() const
-    {
+
+    QSizeF keySize() const {
         return icon->keySize();
     }
-    
-    Qt::AspectRatioMode iconAspectRatioMode() const
-    {
+
+    Qt::AspectRatioMode iconAspectRatioMode() const {
         return icon->iconAspectRatioMode();
     }
-    
-    QIcon::Mode iconMode() const
-    {
+
+    QIcon::Mode iconMode() const {
         return icon->iconMode();
     }
-    
-    bool isMirrored() const
-    {
+
+    bool isMirrored() const {
         return icon->isMirrored();
     }
-    
-    bool isCreatedOnServer() const
-    {
+
+    bool isCreatedOnServer() const {
         return icon->isCreatedOnServer();
     }
-    
-    void incrementRefCount()
-    {
+
+    void incrementRefCount() {
         icon->incrementRefCount();
     }
-    
-    uint refCount()
-    {
+
+    uint refCount() {
         return icon->refCount();
     }
-    
-    void decrementRefCount()
-    {
+
+    void decrementRefCount() {
         icon->decrementRefCount();
     }
-    
-    void dispose()
-    {
+
+    void dispose() {
         icon->destroyMaskedData(data);
         icon->dispose();
         delete this;
     }
-    
-    void setImplData(HbIconMaskedData *data)
-    {
+
+    void setImplData(HbIconMaskedData *data) {
         this->data = data;
     }
-    
-    HbIconMaskedData * implData() const
-    {
+
+    HbIconMaskedData *implData() const {
         return data;
     }
-    
+
 private:
-    ~HbMaskableIconImpl()
-    {
+    ~HbMaskableIconImpl() {
     }
 
     HbIconImpl        *icon;

@@ -140,14 +140,15 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
 
 /*!
     \class HbRatingSlider
-    \brief This is a widget through which user can do rating for videos , music etc.
+    \brief This is a widget that enables a user to rate contents like videos , music etc.
     \image html ratingslider.png  "A Rating Slider with rating done"
 
-    By default there are 5 ratings. The default rating graphics comes from theme.It supports custom graphics 
-    also.The custom graphics should contain only 1 star.Using the API \a setNumberOfIcons() number of icons can be 
-    configured.By default it is 5 and maximum number of icons is 10.
+    The default version of Rating Slider contains 5 repeated icons drawn side by side, using a single themed graphics.
+    The application can replace the themed graphic with a custom graphic.
+    The custom graphics should contain only one icon (eg one star)  which will be multipled by the API \a setNumberOfIcons().
+    By default it is 5 and maximum number of icons are 10.
 
-    Along with the rating HbRatingSlider can be used to show the cumulative rating also.
+    Along with the rating Rating Slider can be used to show the cumulative rating also.
 
     To use HbRatingSlider with default settings it just needs to be created.
     example code:
@@ -160,8 +161,16 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
     void ratingDone(int ratingValue);
     void ratingChanged(int ratingValue);
     
-    ratingDone is emits when the user does the rating and releases the finger. 
-    ratingChanged is emits when the user changes the rating by simply moving on the Rating Slider
+    ratingDone is emitted when the user does the rating and releases the finger. 
+    ratingChanged is emitted when the user presses and drags the finger on Rating Slider.
+
+    To use HbRatingSlider with default settings it just needs to be created. 
+    example code: 
+    \code 
+    HbMainWindow window;
+    HbRatingSlider *rs = new HbRatingSlider();
+    window.addView(rs);
+    \endcode 
 
     HbRatingSlider supports integer ratings.But using the API \a setStepCount() fraction ratings can also be 
     shown on Rating Slider
@@ -175,7 +184,7 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
     \endcode
     
     This will show as 2.5/5. Now if on the same ratingslider 
-    the Application wants to configure a rating slider with range 1-5
+    the Application wants to configure a Rating Slider with range 1-5
     on emitting the signal rating changed it can set to 5.
  */
 
@@ -186,6 +195,9 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
     \param parent Parent Item.
 
 */
+
+
+
 
 HbRatingSlider::HbRatingSlider(QGraphicsItem *parent) :
 HbWidget(*new HbRatingSliderPrivate,parent)
@@ -235,7 +247,7 @@ void HbRatingSlider::setReadOnly(bool value)
     
     @beta  
     Sets the number of icons. There can be n number of repeated icons. This method can be used to set 
-    the number of icons required.The default image is "*" and have 5 stars.
+    the number of icons required.The default image is "*" and has 5 stars.
 
     \param number. A value between 1 and 10 
 
@@ -269,7 +281,7 @@ int HbRatingSlider::numberOfIcons() const
 
 /*!
     @beta
-    Sets the step count for the rating slider.This indicates the interval of the rating. Eg. If step count is 10
+    Sets the step count for the Rating Slider.This indicates the interval of the rating. Eg. If step count is 10
     then 10 rating is possible.
     
     \param count. A value between 1 and 100. This can be considerd as the maximum rating possible. 
@@ -354,8 +366,8 @@ int HbRatingSlider::currentRating() const
 /*!
     @beta
     
-    It sets the unrated graphics name.This is the graphics shown when rating slider is displayed.
-    the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+    It sets the unrated graphics name.This is the graphics shown when Rating Slider is displayed.
+    the graphicscan be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
     setting number of stars.
     
     \param name. The graphics name along with the path. 
@@ -389,7 +401,7 @@ QString HbRatingSlider::unRatedIconName() const
     @beta
     
     It sets the rated graphics name.This is the graphics shown when rating is on going.
-    the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+    the graphicscan be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
     setting number of stars.
     
     \param name. The graphics name along with the path. 

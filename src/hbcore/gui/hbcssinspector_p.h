@@ -125,7 +125,7 @@ class CodeWidget : public QWidget
     Q_OBJECT
 
 public:
-    CodeWidget(const QString &title, QWidget *parent=0);
+    explicit CodeWidget(const QString &title, QWidget *parent=0);
     virtual ~CodeWidget();
 public slots:
     void setText(const QString &text);

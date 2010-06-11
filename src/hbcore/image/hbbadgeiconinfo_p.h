@@ -26,25 +26,26 @@
 #ifndef HBBADGEICONINFO_P_H
 #define HBBADGEICONINFO_P_H
 
+#include <hbglobal.h>
 #include <qnamespace.h>
-
+#include <hbicon.h>
 
 class HbBadgeIconInfoPrivate;
-class HbIcon;
 
-class HbBadgeIconInfo {
+class HbBadgeIconInfo
+{
 public:
-    HbBadgeIconInfo( const HbIcon& badge,
-                     Qt::Alignment alignment = Qt::AlignCenter,
-                     int zValue=0);
-    HbBadgeIconInfo(const HbBadgeIconInfo& other);
+    HbBadgeIconInfo(const HbIcon &badge,
+                    Qt::Alignment alignment = Qt::AlignCenter,
+                    int zValue = 0);
+    HbBadgeIconInfo(const HbBadgeIconInfo &other);
     ~HbBadgeIconInfo();
 
-    bool operator==(const HbBadgeIconInfo &other);
-    bool operator!=(const HbBadgeIconInfo &other);
+    bool operator==(const HbBadgeIconInfo &other) const;
+    bool operator!=(const HbBadgeIconInfo &other) const;
 
     HbIcon icon() const;
-    void setIcon(const HbIcon&);
+    void setIcon(const HbIcon &);
     int zValue() const;
     void setZValue(int);
     Qt::Alignment alignment() const;

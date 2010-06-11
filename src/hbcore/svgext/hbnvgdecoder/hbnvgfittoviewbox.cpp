@@ -25,17 +25,8 @@
 
 #include "hbnvgfittoviewbox_p.h"
 
-const qreal zero = 0.0f ;
-const qreal one = 1.0f ;
-
 HbNvgFitToViewBoxImpl::HbNvgFitToViewBoxImpl()
-        : mM00(one),
-        mM01(zero),
-        mM02(zero),
-        mM10(zero),
-        mM11(one),
-        mM12(zero),
-        mViewBoxDefined(false),
+        :mViewBoxDefined(false),
         mAlign(HbNvgEngine::NvgPreserveAspectRatioXmidYmid),
         mMeetSlice(HbNvgEngine::NvgMeet)
 {
@@ -52,7 +43,6 @@ HbNvgFitToViewBoxImpl::~HbNvgFitToViewBoxImpl()
 
 void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const QSize &size)
 {
-
     //VIEWPORT NUMBERS
     qreal viewPortX = viewPort.left();
     qreal viewPortY = viewPort.top();
@@ -318,21 +308,5 @@ void HbNvgFitToViewBoxImpl::setWindowViewportTrans(const QRect &viewPort, const 
 
     vgScale(sx, sy);
     vgTranslate(xtrans, ytrans);
-}
-
-void HbNvgFitToViewBoxImpl::concatenate(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12)
-{
-    qreal m0;
-    qreal m1;
-    m0  = mM00;
-    m1  = mM01;
-    mM00 = m00 * m0 + m10 * m1;
-    mM01 = m01 * m0 + m11 * m1;
-    mM02 += m02 * m0 + m12 * m1;
-    m0 = mM10;
-    m1 = mM11;
-    mM11 = m01 * m0 + m11 * m1;
-    mM10 = m00 * m0 + m10 * m1;
-    mM12 += m02 * m0 + m12 * m1;
 }
 

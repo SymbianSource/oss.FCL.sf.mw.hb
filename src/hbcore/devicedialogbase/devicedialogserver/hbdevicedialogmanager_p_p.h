@@ -156,6 +156,7 @@ private:
     void startHousekeeperTimer()
         {if (mHousekeeperTimerId == 0) mHousekeeperTimerId = startTimer(HousekeeperTimerPeriod);}
     bool doHousekeeping();
+    bool isShowing(const QString &type);
     void timerEvent(QTimerEvent *event);
     void markNoClient(quintptr clientTag);
     void setupWindowRegion();

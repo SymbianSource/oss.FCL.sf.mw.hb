@@ -43,7 +43,7 @@
 
 inline bool isScaleParameter(const QString &param)
 {
-    return 
+    return
         param == FXML_KEYWORD_SCALE_X ||
         param == FXML_KEYWORD_SCALE_Y;
 }
@@ -68,8 +68,8 @@ inline bool isOpacityParameter(const QString &param)
 inline bool isTranslateParameter(const QString &param)
 {
     return
-		param == FXML_KEYWORD_TRANSLATION_X ||
-		param == FXML_KEYWORD_TRANSLATION_Y;
+        param == FXML_KEYWORD_TRANSLATION_X ||
+        param == FXML_KEYWORD_TRANSLATION_Y;
 }
 
 
@@ -105,7 +105,7 @@ HbEffectGroup *HbEffectFactory::createEffect(
 
     // Try to get FXML definition
     const HbEffectFxmlData &fxmlData = mController.fetchFxmlData(
-        itemType, registrationItem, effectEventType);
+                                           itemType, registrationItem, effectEventType);
 
     if (!fxmlData.isNull()) {
         QList<HbEffectFxmlParamData> params = fxmlData.paramData();
@@ -132,7 +132,7 @@ HbEffectGroup *HbEffectFactory::createEffect(
         // This creates HbEffectAbstract instances from the definitions.
         // The whole list of parameters is passed to the effect
         // constructor, which skips parameters that it does not understand.
-        Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+        Q_FOREACH(const HbEffectFxmlParamData & param, params) {
             QString paramName = param.name();
 
             HbEffectAbstract *effect = 0;
@@ -166,12 +166,12 @@ HbEffectGroup *HbEffectFactory::createEffect(
         // Handle filter definitions similarly
         QList<HbEffectFxmlFilterData> filters = fxmlData.filterData();
 
-        Q_FOREACH(const HbEffectFxmlFilterData &filter, filters) {
+        Q_FOREACH(const HbEffectFxmlFilterData & filter, filters) {
             HbEffectAbstract *effect = 0;
             QString type = filter.type();
 
             if (!(effectsCreated & blurBit) &&
-                 (type == HB_EFFECT_NAME_BLUR || type == HB_EFFECT_NAME_GLOW)) {
+                    (type == HB_EFFECT_NAME_BLUR || type == HB_EFFECT_NAME_GLOW)) {
                 // Create a blur effect
                 effect = new HbEffectBlur(filter, targetItem, group);
                 effectsCreated |= blurBit;
@@ -187,7 +187,7 @@ HbEffectGroup *HbEffectFactory::createEffect(
                 effectsCreated |= colorizeBit;
             }
             if (!(effectsCreated & dropShadowBit) &&
-                 (type == HB_EFFECT_NAME_DROP_SHADOW || type == HB_EFFECT_NAME_OUTLINE)) {
+                    (type == HB_EFFECT_NAME_DROP_SHADOW || type == HB_EFFECT_NAME_OUTLINE)) {
                 // Create a drop shadow effect
                 effect = new HbEffectDropShadow(filter, targetItem, group);
                 effectsCreated |= dropShadowBit;

@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffectbc_p.h"
+#include "hbeffectbc_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbvgchainedeffect_p.h"
@@ -42,11 +42,11 @@ HbEffectBc::HbEffectBc(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationB(0),
-        mAnimationC(0),
-        mVgBc(0)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationB(0),
+    mAnimationC(0),
+    mVgBc(0)
 {
     // Default values of if something is not passed in FXML
     qreal opacity_start = 1;
@@ -59,14 +59,12 @@ HbEffectBc::HbEffectBc(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_BRIGHTNESS_CONTRAST_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_BRIGHTNESS_CONTRAST_BRIGHTNESS) {
+        } else if (param.name() == FXML_KEYWORD_BRIGHTNESS_CONTRAST_BRIGHTNESS) {
             mAnimationB = createAnimation(param, brightness_start, brightness_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_BRIGHTNESS_CONTRAST_CONTRAST) {
+        } else if (param.name() == FXML_KEYWORD_BRIGHTNESS_CONTRAST_CONTRAST) {
             mAnimationC = createAnimation(param, contrast_start, contrast_end, group);
         }
     }
@@ -75,10 +73,10 @@ HbEffectBc::HbEffectBc(
     if (mEffectDefined) {
         // Add effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         mVgBc = new HbVgBcEffect();
         mVgBc->setCaching(true);
-        
+
         chain->add(mVgBc);
 
         // Set initial values for the effect

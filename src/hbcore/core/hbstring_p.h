@@ -61,6 +61,7 @@ public:
     bool operator==( const HbString &str ) const;
     bool operator==( const QLatin1String &str ) const;
     bool operator==( const QString &str ) const;
+    bool operator==( const QStringRef &strRef ) const;
     bool operator!=( const HbString &str ) const;
     bool operator!=( const QLatin1String &str ) const;
     bool operator!=( const QString &str ) const;
@@ -80,20 +81,8 @@ public:
     int compare( const QLatin1String &other ) const;
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const
-    {
-        return true; 
-    }
-    void print() const
-    {
-        if (mDataOffset != -1 && mDataOffset != -2) {
-            GET_MEMORY_MANAGER(mMemoryType)
-            HbStringData * mData = HbMemoryUtils::getAddress<HbStringData>( mMemoryType, mDataOffset);
-            qDebug() << QString::fromRawData( (QChar*)((char*)manager->base() 
-                                               + mData->mStartOffset), mData->mLength );
-        }
-    }
-#endif //CSS_PARSER_TRACES
+    void print() const;
+#endif
 
 private:
     void copyString( const QChar *arr, int size );

@@ -85,7 +85,7 @@ public:
     // Utility functions.
     void commitFirstMappedNumber(int key, HbKeyboardType type);
     void getAndFilterCharactersBoundToKey(QStringList &list, Qt::Key key);
-    QChar getNthCharacterInKey(int &index, int key, HbKeyboardType type);
+    virtual QChar getNthCharacterInKey(int &index, int key, HbKeyboardType type);
     virtual void commitAndAppendString(const QString& string);
     virtual void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0, bool isAsync = false);
     void sendAndUpdate(QEvent &event);
@@ -184,14 +184,16 @@ public:
     virtual void deleteOneCharacter();
     virtual void processExactWord(QString exactWord);
     void commitExactWord();
-    virtual void processCustomWord(QString customWord);
     virtual void candidatePopupClosed(QString activatedWord, int closingKey);
     virtual void showExactWordPopupIfNeeded();
+    void closeSpellQueryDialog();
+    void spellQueryDialogClosed(QObject *savedFocusObject,bool isOk,QString string);
 public slots:
     // different utility popup callbacks
     virtual void inputQueryPopupClosed(QString activatedWord, int closingKey);    
     void sctCharacterSelected(QString character);
     void smileySelected(QString smiley);
+    void launchSpellQueryDialog();
 signals://some useful signals related to popups
     void launchInputQueryPopup(QString editWord);
 

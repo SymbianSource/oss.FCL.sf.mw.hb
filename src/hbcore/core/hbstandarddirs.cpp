@@ -303,7 +303,9 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
                 file.setFileName(absolutePath);
                 fileExists = file.open(QIODevice::ReadOnly);
                 file.close();
-                return absolutePath;
+                if ( fileExists ) {
+                    return absolutePath;
+                }
             }
         }
         else if (resType == Hb::EffectResource) {
@@ -330,6 +332,12 @@ QString HbStandardDirs::findResource(const QString &name, Hb::ResourceType resTy
 /* @param pathList. List of paths, relative or absolute. Modified to absolute paths.
  * @param typeOfResource Type of Resource, can be Hb::StyleSheetResource or Hb::EffectResource.
  * 
+ * --------------------------------------------------------------------------------------
+ * This function is no longer needed for anything else than finding colorgroup css files.
+ *
+ * It can be removed (or whole HbStandardDirs can be removed) when color css files are moved to themeindex. 
+ * --------------------------------------------------------------------------------------
+ *
  */
 void HbStandardDirs::findResourceList(QMap<int, QString> &pathList,
                                       Hb::ResourceType resType, bool assumeAbsolutesExists)
@@ -375,9 +383,18 @@ void HbStandardDirs::findResourceList(QMap<int, QString> &pathList,
     }
 }
 
-QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths, 
+QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths,
                                                    const QString &currentThemeName,
                                                    Hb::ResourceType resType)
+{
+    int baseThemeIndex = 0;
+    return findExistingFolderList(relativeFolderPaths, currentThemeName, resType, baseThemeIndex);
+}
+
+QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFolderPaths,
+                                                   const QString &currentThemeName,
+                                                   Hb::ResourceType resType,
+                                                   int &baseThemeIndex)
 {
     QString absolutePath;
     QStringList existingPaths;
@@ -414,18 +431,22 @@ QStringList HbStandardDirs::findExistingFolderList(const QStringList &relativeFo
     const HbThemeInfo &themeInfo = HbThemeUtils::baseTheme();
     if (themeInfo.name != currentThemeName && resType == Hb::EffectResource) {
         existingPaths.append(themeInfo.rootDir + '/' + HbThemeUtils::platformHierarchy + '/' + HbThemeUtils::effectsResourceFolder + '/' + themeInfo.name + '/');
+        baseThemeIndex = existingPaths.count() - 1;
     }
 
     return existingPaths;
 }
 
-const QString &HbStandardDirs::themesDir()
+QString HbStandardDirs::themesDir()
 {
 #ifdef Q_OS_SYMBIAN
-    static QString mainThemesDir("Z:\\resource\\hb\\");
+    static QString mainThemesDir("Z:/resource/hb");
 #else
     static QString mainThemesDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
 #endif
-    return mainThemesDir;
+    QString s("");
+    if (!mainThemesDir.isEmpty()) {
+       s.append(QDir(mainThemesDir).absolutePath());
+    }
+    return s;
 }
-

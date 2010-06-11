@@ -110,6 +110,7 @@ signals:
     void cursorPositionChanged(int oldPos, int newPos);
     void selectionChanged(const QTextCursor &oldCursor, const QTextCursor& newCursor);
     void aboutToShowContextMenu(HbMenu *contextMenu, const QPointF &pos);
+    void anchorTapped(const QString &anchor);
 
 public slots:
     void updatePrimitives();

@@ -28,6 +28,7 @@
 #include "hbinputmodehandler_p.h"
 
 class HbPredictionEngine;
+class HbInputSpellQuery;
 QT_BEGIN_NAMESPACE
 class QStringList;
 class QInputMethodEvent;
@@ -56,6 +57,7 @@ public:
     void handleEmptyCandidateList();
     void showExactWordPopupIfNeeded();
     QList<HbKeyPressProbability> probableKeypresses();
+    void setPreEditTextToEditor(QString string);
 public:
     HbPredictionEngine  *mEngine;
     QStringList         *mCandidates;
@@ -66,6 +68,7 @@ public:
     bool                mCanContinuePrediction;
     bool                mShowTooltip;
     Qt::KeyboardModifiers mModifiers;
+    HbInputSpellQuery *mSpellQueryDialog;
 
 public:
     void updateEditor();

@@ -3,6 +3,7 @@ HbMenu
 	layout:default;
 	submenu-right-offset: 2.25un;
 	submenu-bottom-margin: var(hb-param-margin-gene-screen); 
+	number-of-columns: 1;
 }
 
 HbMenu::content

@@ -44,9 +44,9 @@
 /*! Constructor.
 */
 HbDeviceProfileReader::HbDeviceProfileReader(HbDeviceProfileList *profileList,
-                                             HbMemoryManager::MemoryType type
-                                             )
-    : QXmlStreamReader(), mDeviceProfileList(profileList),mType(type)
+        HbMemoryManager::MemoryType type
+                                            )
+    : QXmlStreamReader(), mDeviceProfileList(profileList), mType(type)
 {
 }
 
@@ -74,7 +74,7 @@ bool HbDeviceProfileReader::read(QIODevice *device)
         readNext();
 
         if (isStartElement()) {
-            if ( name() == "displayDefinition" ) {
+            if (name() == "displayDefinition") {
                 readDisplayDefinitions();
             } else {
                 raiseError(
@@ -98,13 +98,14 @@ void HbDeviceProfileReader::readDisplayDefinitions()
 
         if (isEndElement()) {
             continue;
-        }   
+        }
 
         if (isStartElement()) {
-            if (name() == "display")
+            if (name() == "display") {
                 readAttributes();
-            else
+            } else {
                 readUnknownElement();
+            }
         }
     }
 }
@@ -114,10 +115,10 @@ void HbDeviceProfileReader::readDisplayDefinitions()
 */
 
 void HbDeviceProfileReader::readAttributes()
-    {
+{
     Q_ASSERT(isStartElement() && name() == "display");
     QXmlStreamAttributes attrs = attributes();
- 
+
     DeviceProfile deviceProfile(mType);
 
     int w = attrs.value("resolutionWidth").toString().toInt();
@@ -127,13 +128,13 @@ void HbDeviceProfileReader::readAttributes()
 
     QString orientationStr = "portrait";
     QString altOrientationStr = "landscape";
-    if ( w > h ) {
+    if (w > h) {
         orientationStr = "landscape";
         altOrientationStr = "portrait";
     }
     deviceProfile.mUnitValue = attrs.value("unitValue").toString().toFloat();
     deviceProfile.mPpiValue = attrs.value("ppiValue").toString().toFloat();
-    deviceProfile.mOrientationAngle= attrs.value("orientationAngle").toString().toInt();
+    deviceProfile.mOrientationAngle = attrs.value("orientationAngle").toString().toInt();
 
     QString resName = attrs.value("resolutionName").toString();
     // Legacy support for deprecated "styleName"
@@ -142,22 +143,21 @@ void HbDeviceProfileReader::readAttributes()
     }
 
     // Calculate inch size
-    qreal diagonal = qSqrt((qreal)(w*w+h*h)); // in "pixels"
-    int inchSizeX10 = qRound(10*(diagonal / deviceProfile.mPpiValue));
-    QString inchSizeStr = QString::number(inchSizeX10/10);
+    qreal diagonal = qSqrt((qreal)(w * w + h * h)); // in "pixels"
+    int inchSizeX10 = qRound(10 * (diagonal / deviceProfile.mPpiValue));
+    QString inchSizeStr = QString::number(inchSizeX10 / 10);
     inchSizeStr.append('.');
-    inchSizeStr.append(QString::number(inchSizeX10%10));
+    inchSizeStr.append(QString::number(inchSizeX10 % 10));
 
     deviceProfile.mName = resName + '-' + inchSizeStr + "-inch_" + orientationStr;
     deviceProfile.mAltName = resName + '-' + inchSizeStr + "-inch_" + altOrientationStr;
 
     bool defaultMode = false;
     defaultMode = attrs.value("defaultMode").toString() == "true";
-    
+
     if (defaultMode) {
         mDeviceProfileList->insert(0, deviceProfile);
-    }
-    else {
+    } else {
         mDeviceProfileList->append(deviceProfile);
     }
 }

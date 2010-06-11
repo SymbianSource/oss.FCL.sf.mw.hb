@@ -41,7 +41,7 @@ include(player/player.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbfeedback/hbfeedback.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbfeedback/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$RESTRICTED_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -54,10 +54,13 @@ hbAddLibrary(hbcore/HbCore)
     pubheaders.files = $$PUBLIC_HEADERS
     pubheaders.path = $${HB_INCLUDE_DIR}/hbfeedback
 
+    restheaders.files = $$RESTRICTED_HEADERS
+    restheaders.path = $${HB_INCLUDE_DIR}/hbfeedback/restricted
+
     convheaders.files = $$CONVENIENCE_HEADERS
     convheaders.path = $${HB_INCLUDE_DIR}/hbfeedback
 
-    INSTALLS += target pubheaders convheaders
+    INSTALLS += target pubheaders restheaders convheaders
     win32:INSTALLS += dlltarget
 }
 

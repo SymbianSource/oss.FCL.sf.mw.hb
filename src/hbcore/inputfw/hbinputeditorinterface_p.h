@@ -103,13 +103,14 @@ private:
     ~HbEditorInterfacePrivateCache();
 
 public:
-    HbEditorInterfacePrivate* attachEditor(QObject* editor, HbEditorInterface* interface);
-    bool isConnected(QObject* object);
+    HbEditorInterfacePrivate *attachEditor(QObject *editor, HbEditorInterface *interface);
+    bool isConnected(QObject *object);
     void notifyValueChanged(QObject *editor);
 
 public slots:
-    void destroyed(QObject* object);
-    void interfaceDestroyed(QObject* object);
+    void destroyed(QObject *object);
+    void interfaceDestroyed(QObject *object);
+    void actionDestroyed(QObject *object);
 
 private:
     QVector<HbEditorInterfacePrivate*> mObjectCache;

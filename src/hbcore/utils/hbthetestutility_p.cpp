@@ -171,7 +171,7 @@ bool HbTheTestUtilityPrivate::doCheckConfigFile(const QString &path)
 
 QObject *HbTheTestUtilityPrivate::receiver(const QString& name)
 {
-    QGraphicsScene* scene = mMainWindow->scene();
+    QGraphicsScene* scene = mMainWindow->scene(); //krazy:exclude=qclasses
     QList<QGraphicsItem*> sceneItems = scene->items();
     foreach (QGraphicsItem* sceneItem, sceneItems ) {
         if (sceneItem->isWidget()) {
@@ -261,9 +261,7 @@ void HbTheTestUtility::button4clicked()
 */
 void HbTheTestUtility::invokeSlots(const int button)
 {
-#if defined (Q_OS_LINUX) || defined(Q_OS_MAC)
-    QString filePath(QDir::tempPath());
-#else
+#if defined (Q_OS_SYMBIAN)
     QString filePath;
     if (d->useF) {
         filePath = "F:\\data\\log\\";
@@ -272,6 +270,10 @@ void HbTheTestUtility::invokeSlots(const int button)
     } else {
         filePath = "C:\\data\\log\\";
     }
+#elif defined (Q_OS_WIN)
+    QString filePath("C:\\data\\log\\");
+#else
+    QString filePath(QDir::tempPath());
 #endif
 
     filePath = QDir::toNativeSeparators(filePath);

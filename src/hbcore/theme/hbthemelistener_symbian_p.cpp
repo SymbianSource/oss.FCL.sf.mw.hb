@@ -67,6 +67,12 @@ void CHbThemeListenerPrivate::RunL()
 #endif
     mRepository->NotifyRequest(HbThemeUtils::CurrentThemeSetting, iStatus);
     SetActive();    
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+    if (info.themeIndexOffset > 0) {
+        themeClient->handleThemeChange(info.name);
+        return;
+    }
+    // Fallback to reading cenrep
     TBuf<256> newTheme;
     if (KErrNone == mRepository->Get(HbThemeUtils::CurrentThemeSetting, newTheme)) {
         QString qnewTheme((QChar*)newTheme.Ptr(), newTheme.Length());

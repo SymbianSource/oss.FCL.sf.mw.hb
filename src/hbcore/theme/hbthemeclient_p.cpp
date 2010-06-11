@@ -28,7 +28,9 @@
 #include "hbsharedmemorymanager_p.h"
 #include "hbmemoryutils_p.h"
 
-static HbThemeClient *clientInst=0;
+static const QLatin1String ResourceStylePath(":/themes/style/hbdefault/");
+
+static HbThemeClient *clientInst = 0;
 
 /**
  * Constructor
@@ -45,12 +47,6 @@ bool HbThemeClient::connectToServer()
 {
     Q_D(HbThemeClient);
     return d->connectToServer();
-}
-
-QSizeF HbThemeClient::getSharedIconDefaultSize(const QString &iconPath)
-{
-    Q_D(HbThemeClient);
-    return d->getSharedIconDefaultSize(iconPath);
 }
 
 /**
@@ -131,47 +127,67 @@ HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPar
 /**
  * HbThemeClient::getSharedStyleSheet()
  *
- * \a fielName  css filename
+ * \a filePath  css filepath. Only acceptable path separator is '/'.
  * \a priority  layer priority
  */
-HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &fileName,
+HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
                                                       HbLayeredStyleLoader::LayerPriority priority)
 {
-    int offset = -1;
-    if( HbLayeredStyleLoader::Priority_Core == priority ) {
-        offset = sharedCacheItemOffset(HbSharedCache::Stylesheet, fileName);
+    const QString filePathFixed = QDir::fromNativeSeparators(filePath);
+
+    HbCss::StyleSheet *styleSheet = 0;
+    bool requestFromServer = true;
+    if (filePathFixed.startsWith(QLatin1Char(':')) && !filePathFixed.startsWith(ResourceStylePath)) {
+        //filePathFixed is located in application resource, parse it on client side.
+        requestFromServer = false;
     }
-    if ( -1 != offset ) {
-        HbCss::StyleSheet *styleSheet =
-                HbMemoryUtils::getAddress<HbCss::StyleSheet>(HbMemoryManager::SharedMemory,
-                                                             offset);
-        return styleSheet;
+    if (requestFromServer) {
+        int offset = -1;
+        if(HbLayeredStyleLoader::Priority_Core == priority) {
+            offset = sharedCacheItemOffset(HbSharedCache::Stylesheet, filePathFixed);
+        }
+        if ( -1 != offset ) {
+            styleSheet =
+                    HbMemoryUtils::getAddress<HbCss::StyleSheet>(HbMemoryManager::SharedMemory,
+                                                                 offset);
+        } else {
+            Q_D(HbThemeClient);
+            styleSheet = d->getSharedStyleSheet(filePathFixed, priority);
+        }
     }
-    Q_D(HbThemeClient);
-    return d->getSharedStyleSheet(fileName,priority);
+    return styleSheet;
 }
 
 /**
  * HbThemeClient::getSharedLayoutDefs()
- *
- * \a fileName
- * \a layout
- * \a section
+ * \a filePath  layout definition filepath. Only acceptable path separator is '/'.
+ * \a layout  layout name
+ * \a section section name
  */
-HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &fileName,
+HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &filePath,
                                                                      const QString &layout,
                                                                      const QString &section)
 {
-    int offset = sharedCacheItemOffset(HbSharedCache::LayoutDefinition,
-                                       fileName + layout + section);
-    if ( -1 != offset ) {
-       HbWidgetLoader::LayoutDefinition *layoutDefs =
-           HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(HbMemoryManager::SharedMemory,
-                                                                       offset);
-       return layoutDefs;
+    const QString filePathFixed = QDir::fromNativeSeparators(filePath);
+
+    HbWidgetLoader::LayoutDefinition *layoutDefinition = 0;
+    bool requestFromServer = true;
+    if (filePathFixed.startsWith(QLatin1Char(':')) && !filePathFixed.startsWith(ResourceStylePath)) {
+        //filePathFixed is located in application resource, parse it on client side.
+        requestFromServer = false;
     }
-    Q_D(HbThemeClient);
-    return d->getSharedLayoutDefs(fileName,layout,section);
+    if (requestFromServer) {
+        int offset = sharedCacheLayoutDefinitionOffset(filePathFixed, layout, section);
+        if (offset != -1) {
+           layoutDefinition =
+               HbMemoryUtils::getAddress<HbWidgetLoader::LayoutDefinition>(
+                       HbMemoryManager::SharedMemory, offset);
+        } else {
+            Q_D(HbThemeClient);
+            layoutDefinition = d->getSharedLayoutDefs(filePathFixed, layout, section);
+        }
+    }
+    return layoutDefinition;
 }
 /**
  * HbThemeClient::deviceProfiles()
@@ -204,34 +220,38 @@ void HbThemeClient::notifyForegroundLostToServer()
 /**
  * HbThemeClient::getSharedEffect()
  *
- * \a filePath
+ * \a filePath. Only acceptable path separator is '/'.
  */
 HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
 {
-    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePath);
+    const QString filePathFixed = QDir::fromNativeSeparators(filePath);
+
+    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePathFixed);
     if ( -1 != offset ) {
        HbEffectFxmlData  *effectFxmlData =
                HbMemoryUtils::getAddress<HbEffectFxmlData>(HbMemoryManager::SharedMemory, offset);
        return effectFxmlData;
     }
     Q_D(HbThemeClient);
-    return d->getSharedEffect(filePath);
+    return d->getSharedEffect(filePathFixed);
 }
 
 /**
  * HbThemeClient::addSharedEffect()
  *
- * \a filePath
+ * \a filePath. Only acceptable path separator is '/'.
  */
 bool HbThemeClient::addSharedEffect(const QString& filePath)
 {
-    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePath);
+    const QString filePathFixed = QDir::fromNativeSeparators(filePath);
+
+    int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePathFixed);
     if ( -1 != offset ) {
         // effect already added.
         return true;
     }
     Q_D(HbThemeClient);
-    return d->addSharedEffect(filePath);
+    return d->addSharedEffect(filePathFixed);
 }
 
 /**
@@ -331,17 +351,31 @@ void HbThemeClient::releaseInstance()
 }
 
 /**
- * sharedCacheItemOffset  function returns the offset of the cache item
- * for the given key
+ * returns the offset of the cache item for the given key
  * \param key
  *
  */
-int HbThemeClient::sharedCacheItemOffset(HbSharedCache::ItemType type, const QString & key)
+int HbThemeClient::sharedCacheItemOffset(HbSharedCache::ItemType type, const QString &key)
 {
     int offset = -1;
     HbSharedCache *cache = HbSharedCache::instance();
     if (cache) {
         offset = cache->offset(type, key);
+    }
+    return offset;
+}
+
+/**
+ * returns the offset of the layout definition for the given file, layout and section.
+ */
+int HbThemeClient::sharedCacheLayoutDefinitionOffset(const QString &fileName,
+                                         const QString &layout,
+                                         const QString &section)
+{
+    int offset = -1;
+    HbSharedCache *cache = HbSharedCache::instance();
+    if (cache) {
+        offset = cache->layoutDefinitionOffset(fileName, layout, section);
     }
     return offset;
 }
@@ -414,4 +448,10 @@ bool HbThemeClient::switchRenderingMode(HbRenderingMode renderMode)
 {
     Q_D(HbThemeClient);    
     return d->switchRenderingMode(renderMode);    
+}
+
+void HbThemeClient::setTheme(const QString &theme)
+{
+    Q_D(HbThemeClient);
+    d->setTheme(theme);
 }

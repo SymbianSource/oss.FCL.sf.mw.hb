@@ -49,7 +49,9 @@ protected:
 
 private:
     void updateCurrentValue(const QVariant &value);
-    inline bool looping() const { return mLoopEnd > 0; }
+    inline bool looping() const {
+        return mLoopEnd > 0;
+    }
 
 private slots:
     void handleFinished();

@@ -39,7 +39,7 @@
 #include "hbpixmapiconrenderer_p.h"
 
 typedef EGLImageKHR(*pfnEglCreateImageKHR)(EGLDisplay, EGLContext,
-        EGLenum, EGLClientBuffer, EGLint*);
+        EGLenum, EGLClientBuffer, EGLint *);
 typedef EGLBoolean(*pfnEglDestroyImageKHR)(EGLDisplay, EGLImageKHR);
 typedef VGImage(*pfnVgCreateEGLImageTargetKHR)(VGeglImageKHR);
 
@@ -53,21 +53,21 @@ static const int HB_BITS_PER_COLOR =    8;
     if (context != EGL_NO_CONTEXT) { eglDestroyContext(display, context); }
 
 HbSgimageIconImpl::HbSgimageIconImpl(const HbSharedIconInfo &iconData,
-                                     const QString& name,
-                                     const QSizeF& keySize,
+                                     const QString &name,
+                                     const QSizeF &keySize,
                                      Qt::AspectRatioMode aspectRatioMode,
                                      QIcon::Mode mode,
                                      bool mirrored,
                                      HbRenderingMode renderMode):
-        HbIconImpl(iconData,
-                   name,
-                   keySize,
-                   aspectRatioMode,
-                   mode,
-                   mirrored,
-                   renderMode),
-        vgImageRenderer(0),
-        pixmapIconRenderer(0)
+    HbIconImpl(iconData,
+               name,
+               keySize,
+               aspectRatioMode,
+               mode,
+               mirrored,
+               renderMode),
+    vgImageRenderer(0),
+    pixmapIconRenderer(0)
 {
     retrieveSgImageData();
 }
@@ -103,15 +103,15 @@ QPixmap HbSgimageIconImpl::pixmap()
 
     EGLContext eglContext = eglContextPrev;
     EGLSurface eglSurface = eglSurfacePrevDraw;
-    
+
     EGLContext eglNewContext = EGL_NO_CONTEXT;
     EGLContext eglNewSurface = EGL_NO_SURFACE;
-    
+
     if (eglContext == EGL_NO_CONTEXT) {
         EGLConfig config;
-    
+
         EGLint    numConfigs;
-    
+
         const EGLint attribList[] = {
             EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
             EGL_SURFACE_TYPE, EGL_PBUFFER_BIT | EGL_VG_ALPHA_FORMAT_PRE_BIT,
@@ -121,13 +121,13 @@ QPixmap HbSgimageIconImpl::pixmap()
             EGL_ALPHA_SIZE, HB_BITS_PER_COLOR,
             EGL_NONE
         };
-    
+
         if (eglChooseConfig(display, attribList, &config, 1, &numConfigs) == EGL_FALSE) {
             return currentPixmap;
         }
-        
+
         if (eglSurface == EGL_NO_SURFACE) {
-             //pixmap is called without EGL being initialized
+            //pixmap is called without EGL being initialized
 
             const EGLint attribList2[] = {
                 EGL_WIDTH, contentSize.width(),
@@ -141,22 +141,22 @@ QPixmap HbSgimageIconImpl::pixmap()
             }
         }
         eglNewContext = eglContext = eglCreateContext(display, config, EGL_NO_CONTEXT, 0);
-        if (eglContext == EGL_NO_CONTEXT) {            
+        if (eglContext == EGL_NO_CONTEXT) {
             EGL_DESTROY_SURFACE(display, eglNewSurface);
             return currentPixmap;
         }
         if (eglMakeCurrent(display, eglSurface, eglSurface,
-                eglContext) == EGL_FALSE) {
-            EGL_DESTROY_SURFACE(display, eglNewSurface);     
+                           eglContext) == EGL_FALSE) {
+            EGL_DESTROY_SURFACE(display, eglNewSurface);
             EGL_DESTROY_CONTEXT(display, eglNewContext);
             return currentPixmap;
         }
     }
-    
-    
+
+
     VGImage localVgImage = getVgImageFromSgImage();
     if (localVgImage == VG_INVALID_HANDLE) {
-        EGL_DESTROY_SURFACE(display, eglNewSurface);     
+        EGL_DESTROY_SURFACE(display, eglNewSurface);
         EGL_DESTROY_CONTEXT(display, eglNewContext);
         if (eglContextPrev) {
             eglMakeCurrent(display, eglSurfacePrevDraw, eglSurfacePrevRead, eglContextPrev);
@@ -183,10 +183,10 @@ QPixmap HbSgimageIconImpl::pixmap()
 
     if (eglNewContext != EGL_NO_CONTEXT || eglNewSurface != EGL_NO_SURFACE) {
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        EGL_DESTROY_SURFACE(display, eglNewSurface);     
+        EGL_DESTROY_SURFACE(display, eglNewSurface);
         EGL_DESTROY_CONTEXT(display, eglNewContext);
     }
-    
+
     if (eglContextPrev) {
         eglMakeCurrent(display, eglSurfacePrevDraw, eglSurfacePrevRead, eglContextPrev);
     }
@@ -206,16 +206,16 @@ void HbSgimageIconImpl::retrieveSgImageData()
     contentSize = QSize(sharedIconData.sgImageData.width, sharedIconData.sgImageData.height);
 }
 
-VGImage HbSgimageIconImpl::getVgImage(HbIconImpl * impl, QPainter *)
+VGImage HbSgimageIconImpl::getVgImage(HbIconImpl *impl, QPainter *)
 {
     return ((HbSgimageIconImpl *)impl)->getVgImageFromSgImage();
 }
 
-void HbSgimageIconImpl::paint(QPainter* painter,
-                              const QRectF& rect,
+void HbSgimageIconImpl::paint(QPainter *painter,
+                              const QRectF &rect,
                               Qt::Alignment alignment,
                               const QPainterPath &clipPath,
-                              HbMaskableIconImpl * maskIconData)
+                              HbMaskableIconImpl *maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
     qDebug() << "HbSgimageIconImpl::paint()-->" << this->fileName;
@@ -230,19 +230,20 @@ void HbSgimageIconImpl::paint(QPainter* painter,
         maskApplied = true;
     }
 
-    if ((painter->paintEngine()->type() != QPaintEngine::OpenVG) ||
-         maskApplied || pixmapIconRenderer) {
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (!paintEngine || paintEngine->type() != QPaintEngine::OpenVG
+            || maskApplied || pixmapIconRenderer) {
         // going to pixmap, vgimage may not be required any more
         if (vgImageRenderer) {
             delete vgImageRenderer;
             vgImageRenderer = 0;
         }
-        
+
         if (!pixmapIconRenderer) {
             painter->beginNativePainting();
             pixmap();
             painter->endNativePainting();
-            
+
             pixmapIconRenderer = new HbPixmapIconRenderer(currentPixmap, this);
             pixmapIconRenderer->setColor(iconColor);
             pixmapIconRenderer->setMode(mode);
@@ -270,8 +271,8 @@ void HbSgimageIconImpl::paint(QPainter* painter,
     }
 }
 
-QPointF HbSgimageIconImpl::setAlignment(const QRectF& rect,
-                                        QSizeF& renderSize,
+QPointF HbSgimageIconImpl::setAlignment(const QRectF &rect,
+                                        QSizeF &renderSize,
                                         Qt::Alignment alignment)
 {
     QPointF topLeft = rect.topLeft();
@@ -306,8 +307,8 @@ VGImage HbSgimageIconImpl::getVgImageFromSgImage()
 #endif
     }
 
-    
-    
+
+
     EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
     // Retrieve the extensions

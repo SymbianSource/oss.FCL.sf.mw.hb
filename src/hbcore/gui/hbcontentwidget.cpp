@@ -42,7 +42,7 @@
   \internal
 */
 
-HbContentWidget::HbContentWidget(HbMainWindow *mainWindow,QGraphicsItem *parent /*= 0*/):
+HbContentWidget::HbContentWidget(HbMainWindow *mainWindow, QGraphicsItem *parent /*= 0*/):
     HbStackedWidget(parent),
     mViewSwitchRunning(false),
     mTargetView(0),
@@ -55,15 +55,14 @@ QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) c
 {
     Q_UNUSED(constraint);
 
-    QSizeF size;    
+    QSizeF size;
 
     switch (which) {
     case Qt::MinimumSize:
         size = QSizeF(0, 0);
         break;
-    
-    case Qt::PreferredSize:
-    {
+
+    case Qt::PreferredSize: {
         HbDeviceProfile profile(HbDeviceProfile::profile(this));
         size = profile.logicalSize();
         if (!size.isValid()) {
@@ -200,7 +199,7 @@ void HbContentWidget::runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitch
     // 2nd param (hideOld): We still want to see the old view (normally setCurrentWidget would hide it).
     // 3rd param (showNew): The new view is not yet needed (the effect will take care of making it visible).
     setCurrentWidget(mTargetView, false, false);
-    
+
     mHidingView = viewToHide;
     mViewSwitchFlags = flags;
 
@@ -208,7 +207,7 @@ void HbContentWidget::runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitch
     if (effectTarget) {
         mMainWindow->setInteractive(false); // disable input while the effects are running
         QString event = getEffectEvent("hide", flags, viewToHide, mTargetView);
-        HbEffectInternal::EffectFlags effectFlags = 
+        HbEffectInternal::EffectFlags effectFlags =
             HbEffectInternal::ClearEffectWhenFinished // the effect must not be persistent
             | HbEffectInternal::HideRegItemBeforeClearingEffect; // to prevent unlikely, but possible flicker
         HbEffectInternal::start(viewToHide, effectTarget, effectFlags,

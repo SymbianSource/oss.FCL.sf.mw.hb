@@ -151,6 +151,11 @@ protected:
                        HbAbstractItemContainer *container,
                        HbModelIterator *modelIterator,
                        QGraphicsItem *parent = 0);
+
+    HbAbstractItemView(HbAbstractItemContainer *container,
+                       HbModelIterator *modelIterator,
+                       QGraphicsItem *parent = 0);
+
     virtual QItemSelectionModel::SelectionFlags selectionCommand( 
                                                     const HbAbstractViewItem *item, 
                                                     const QEvent *event);

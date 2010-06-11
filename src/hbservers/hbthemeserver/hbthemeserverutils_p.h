@@ -58,6 +58,8 @@ public:
     static bool removeSharedEffect(const QString &fileName);
     static void clearSharedEffects();
 
+    static void createThemeIndex(const QString &themePath, const HbThemeType &themetype);
+
 private:
 };
 

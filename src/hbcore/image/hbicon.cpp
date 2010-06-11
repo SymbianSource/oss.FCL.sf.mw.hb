@@ -68,14 +68,14 @@
 
     The icon can be resized with method HbIcon::setSize.
     When resizing, by default the aspect ratio of the icon is preserved.
-    To change this, define the aspect ratio mode parameter in the method HbIcon::paint(). 
+    To change this, define the aspect ratio mode parameter in the method HbIcon::paint().
 
     An icon itself can be a combination of existing icons; in this case the main icon is
     "badged" with smaller icons to form a distinct icon. You can badge icons in this way
     with the HbIcon::addBadge method, specifying the location where the badge should be drawn
-    and a second HbIcon to draw at the indicated location. To prevent possible recursion , 
+    and a second HbIcon to draw at the indicated location. To prevent possible recursion ,
     you can't badge an icon with a badge icon that is itself badged, however.
-	
+
     Scaled instances of the icons are shared by the framework
     to decrease memory consumption.
 
@@ -101,7 +101,7 @@
     This can be disabled with flag HbIcon::NoAutoStartAnimation.
 
     An example of how to define a frame-by-frame animation and construct an icon using it.
-    
+
     \dontinclude ultimatecodesnippet/ultimatecodesnippet.cpp
     \skip frame-by-frame
     \until }
@@ -115,14 +115,14 @@
          not need to be cached for being able to load it faster next time.
 
   \b ResolutionCorrected \b (0x02) This flag is useful for making icon sizes automatically
-         adapt to different screen resolutions (DPI values) and zoom factors used in the user 
+         adapt to different screen resolutions (DPI values) and zoom factors used in the user
          interface. The current display resolution (DPI value) and zoom factor are taken
          in consideration when defining the default size of the icon. This affects on what default
          size is reported for the icon and also in which size the icon is rendered if its size is
          not set explicitly. The default DPI value is 144 and the default zoom factor 1.0.
          When this flag is set, the corrected default size of icon is defined as:
 
-         Corrected default size = original default size * current DPI value / default DPI 
+         Corrected default size = original default size * current DPI value / default DPI
          value * current zoom factor
 
          \note Currently this flag has an effect on vector icons only.
@@ -170,7 +170,7 @@
          in a right-to-left layout.
 */
 
-// Must be initialized dynamically because QIcon cannot be constructed 
+// Must be initialized dynamically because QIcon cannot be constructed
 // when static variables are constructed.
 static HbIconPrivate *shared_null = 0;
 
@@ -181,7 +181,7 @@ This constructor is used for shared_null instance only
 \internal
 */
 HbIconPrivate::HbIconPrivate() :
-    engine( new HbIconEngine(QString()) ),
+    engine(new HbIconEngine(QString())),
     qicon(engine),
     badgeInfo(0)
 {
@@ -191,7 +191,7 @@ HbIconPrivate::HbIconPrivate() :
 /*!
 \internal
 */
-HbIconPrivate::HbIconPrivate( const QIcon &qicon ) :
+HbIconPrivate::HbIconPrivate(const QIcon &qicon) :
     engine(0),
     qicon(qicon),
     badgeInfo(0)
@@ -201,8 +201,8 @@ HbIconPrivate::HbIconPrivate( const QIcon &qicon ) :
 /*!
 \internal
 */
-HbIconPrivate::HbIconPrivate( const QString &iconName ) :
-    engine( new HbIconEngine(iconName) ),
+HbIconPrivate::HbIconPrivate(const QString &iconName) :
+    engine(new HbIconEngine(iconName)),
     qicon(engine),
     badgeInfo(0)
 {
@@ -211,25 +211,25 @@ HbIconPrivate::HbIconPrivate( const QString &iconName ) :
 /*!
 \internal
 */
-HbIconPrivate::HbIconPrivate( const HbIconPrivate &other ) :
-    QSharedData( other ),
-    size( other.size ),
+HbIconPrivate::HbIconPrivate(const HbIconPrivate &other) :
+    QSharedData(other),
+    size(other.size),
     engine(0),
     qicon(),
     badgeInfo(0)
 {
-    if ( other.engine ) {
-        engine = new HbIconEngine( *other.engine );
-        // Have to instantiate a temporary QIcon because 
+    if (other.engine) {
+        engine = new HbIconEngine(*other.engine);
+        // Have to instantiate a temporary QIcon because
         // QIcon's copy constructor shares the engine.
         QIcon temp(engine);
         qicon = temp;
     } else {
         // Copy constructed from qicon - so just copy the qicon.
         qicon = other.qicon;
-        if ( other.badgeInfo ) {
+        if (other.badgeInfo) {
             badgeInfo = new HbBadgeIcon(*other.badgeInfo);
-        }   
+        }
     }
 }
 
@@ -267,9 +267,9 @@ void HbIconPrivate::clear()
 */
 void HbIconPrivate::removeAllBadges()
 {
-    if ( engine ) {
+    if (engine) {
         engine->removeAllBadges();
-    } else if ( badgeInfo ) {
+    } else if (badgeInfo) {
         badgeInfo->removeAllBadges();
     }
 }
@@ -279,11 +279,11 @@ void HbIconPrivate::removeAllBadges()
 */
 bool HbIconPrivate::isBadged() const
 {
-    if ( engine ) {
+    if (engine) {
         return engine->isBadged();
-    } else if ( badgeInfo ) {
+    } else if (badgeInfo) {
         return badgeInfo->isBadged();
-    } 
+    }
     return false;
 }
 
@@ -344,15 +344,15 @@ QDataStream &operator<<(QDataStream &stream, const HbIconPrivate &icon)
 \internal
 */
 bool HbIconPrivate::addBadge(Qt::Alignment align,
-                      const HbIcon& icon,
-                      int z)
+                             const HbIcon &icon,
+                             int z)
 {
-    if ( icon.isBadged() ) {
+    if (icon.isBadged()) {
         return false;
-    } else if ( engine ) {
+    } else if (engine) {
         engine->addBadge(align, icon, z);
     } else {
-        if ( !badgeInfo ) {
+        if (!badgeInfo) {
             badgeInfo = new HbBadgeIcon();
         }
         badgeInfo->addBadge(align, icon, z);
@@ -363,13 +363,13 @@ bool HbIconPrivate::addBadge(Qt::Alignment align,
 /*!
 \internal
  */
-bool HbIconPrivate::removeBadge(const HbIcon& badge)
+bool HbIconPrivate::removeBadge(const HbIcon &badge)
 {
     bool result = false;
 
-    if ( engine ) {
+    if (engine) {
         result = engine->removeBadge(badge);
-    } else if ( badgeInfo ) {
+    } else if (badgeInfo) {
         result = badgeInfo->removeBadge(badge);
     }
 
@@ -382,7 +382,7 @@ bool HbIconPrivate::removeBadge(const HbIcon& badge)
 HbIcon::HbIcon()
 {
     // Construct shared_null if not done yet.
-    if ( !shared_null ) {
+    if (!shared_null) {
         shared_null = new HbIconPrivate;
     }
     d = shared_null;
@@ -390,7 +390,7 @@ HbIcon::HbIcon()
 
 /*! Constructs a new icon with the icon name \a iconName.
 */
-HbIcon::HbIcon( const QString &iconName )
+HbIcon::HbIcon(const QString &iconName)
 {
     d = new HbIconPrivate(iconName);
 }
@@ -407,7 +407,7 @@ HbIcon::HbIcon( const QString &iconName )
 * - Colorization and mirroring support are not available.
 * This method should only be used if absolute necessary, as this is not ideal for hardware accelerated environment.
 */
-HbIcon::HbIcon( const QIcon &icon )
+HbIcon::HbIcon(const QIcon &icon)
 {
     d = new HbIconPrivate(icon);
 }
@@ -416,8 +416,8 @@ HbIcon::HbIcon( const QIcon &icon )
 * Copy constructs a new icon using the \a other icon.
 * Copy-on-write semantics is used, so this only does a shallow copy.
 */
-HbIcon::HbIcon( const HbIcon &other ) :
-    d( other.d )
+HbIcon::HbIcon(const HbIcon &other) :
+    d(other.d)
 {
 }
 
@@ -425,9 +425,9 @@ HbIcon::HbIcon( const HbIcon &other ) :
 * Assigns the \a other icon to this icon and returns a reference to
 * this icon. Copy-on-write semantics is used, so this only does a shallow copy.
 */
-HbIcon &HbIcon::operator=( const HbIcon &other )
+HbIcon &HbIcon::operator=(const HbIcon &other)
 {
-    if ( &other != this ) {
+    if (&other != this) {
         d = other.d;
     }
     return *this;
@@ -463,7 +463,7 @@ bool HbIcon::isNull() const
 void HbIcon::clear()
 {
     // A NULL icon is always cleared - save some time not detaching from it
-    if ( d.constData() != shared_null ) {
+    if (d.constData() != shared_null) {
         d.detach();
         d->clear();
     }
@@ -489,7 +489,7 @@ bool HbIcon::isBadged() const
 QPixmap HbIcon::pixmap()
 {
     if (d->engine) {
-        return d->engine->pixmap( d->size.toSize(), QIcon::Normal, QIcon::Off );
+        return d->engine->pixmap(d->size.toSize(), QIcon::Normal, QIcon::Off);
     }
 
     return QPixmap();
@@ -504,7 +504,7 @@ QPixmap HbIcon::pixmap()
 * is not set.  This does not apply to theme elements, for them the color is
 * always taken into account when the logical graphics name indicates that it is
 * a mono icon.
-* 
+*
 * Note that if a widget defines a color for its icon primitive (as most standard
 * widgets do) then the style will take care of colorizing with the correct color
 * from the theme whenever the theme changes. Therefore mono icons shown in such
@@ -515,9 +515,9 @@ QPixmap HbIcon::pixmap()
 * However it is possible to override this theme-specific color with a custom one
 * by calling this function.
 *
-* \warning Currently this method makes use of pixmap() routine in case of NVG icons. 
-* pixmap() slows down the hardware accelerated rendering.  
-* 
+* \warning Currently this method makes use of pixmap() routine in case of NVG icons.
+* pixmap() slows down the hardware accelerated rendering.
+*
 * \sa HbIcon::color(), HbIcon::Colorized
 */
 void HbIcon::setColor(const QColor &color)
@@ -562,7 +562,7 @@ QString HbIcon::iconName() const
 * This icon name is used if there is no name set separately for the specified icon mode and state.
 * \sa HbIcon::iconName()
 */
-void HbIcon::setIconName( const QString &iconName )
+void HbIcon::setIconName(const QString &iconName)
 {
     if (d->engine && d->engine->iconName() != iconName) {
         d.detach();
@@ -573,7 +573,7 @@ void HbIcon::setIconName( const QString &iconName )
         d.detach();
         d->engine = new HbIconEngine(iconName);
         d->engine->setSize(d->size);
-        // Have to instantiate a temporary QIcon because 
+        // Have to instantiate a temporary QIcon because
         // QIcon's assignment operator shares the engine.
         QIcon temp(d->engine);
         d->qicon = temp;
@@ -586,13 +586,13 @@ void HbIcon::setIconName( const QString &iconName )
 * the icon name set without these parameters is returned.
 * \sa HbIcon::setIconName()
 */
-QString HbIcon::iconName( QIcon::Mode mode, QIcon::State state ) const
+QString HbIcon::iconName(QIcon::Mode mode, QIcon::State state) const
 {
     QString ret;
 
     if (d->engine) {
-        ret = d->engine->iconName( mode, state );
-        if ( ret.isEmpty() ) {
+        ret = d->engine->iconName(mode, state);
+        if (ret.isEmpty()) {
             ret = d->engine->iconName();
         }
     }
@@ -606,9 +606,9 @@ QString HbIcon::iconName( QIcon::Mode mode, QIcon::State state ) const
 * the given mode and state.
 * \sa HbIcon::iconName()
 */
-void HbIcon::setIconName( const QString &iconName, QIcon::Mode mode, QIcon::State state )
+void HbIcon::setIconName(const QString &iconName, QIcon::Mode mode, QIcon::State state)
 {
-    if ( d->engine && d->engine->iconName(mode, state) != iconName) {
+    if (d->engine && d->engine->iconName(mode, state) != iconName) {
         d.detach();
         d->engine->setIconName(iconName, mode, state);
     }
@@ -617,50 +617,50 @@ void HbIcon::setIconName( const QString &iconName, QIcon::Mode mode, QIcon::Stat
 /*! Paints the icon in the given \a painter with the specified drawing parameters.
 * \note If the constructor HbIcon::HbIcon(const QIcon &icon) is used, the parameter
 * \a aspectRatioMode is ignored and Qt::KeepAspectRatio is used. Also in that case the icon
-* is not scaled exactly to the given size but the best size match returned by the QIcon 
+* is not scaled exactly to the given size but the best size match returned by the QIcon
 * instance is used.
 */
-void HbIcon::paint( QPainter *painter,
-                    const QRectF &rect,
-                    Qt::AspectRatioMode aspectRatioMode,
-                    Qt::Alignment alignment,
-                    QIcon::Mode mode,
-                    QIcon::State state) const
+void HbIcon::paint(QPainter *painter,
+                   const QRectF &rect,
+                   Qt::AspectRatioMode aspectRatioMode,
+                   Qt::Alignment alignment,
+                   QIcon::Mode mode,
+                   QIcon::State state) const
 {
-    if ( !rect.isEmpty() && d.constData() != shared_null ) {
-        if ( d->engine ) {
-            d->engine->paint( painter, rect, aspectRatioMode, alignment, mode, state );
+    if (!rect.isEmpty() && d.constData() != shared_null) {
+        if (d->engine) {
+            d->engine->paint(painter, rect, aspectRatioMode, alignment, mode, state);
         } else {
-            // This HbIcon was copy constructed from QIcon and 
+            // This HbIcon was copy constructed from QIcon and
             // we cannot use HbIconEngine for painting.
             QSizeF size = this->size();
-            if ( !size.isValid() ) {
+            if (!size.isValid()) {
                 // If size is not set, have to use rect size because QIcon
                 // does not provide defaultSize information.
                 size = rect.size();
             }
-            
-            QPixmap pixmap = d->qicon.pixmap( size.toSize(), mode, state );
+
+            QPixmap pixmap = d->qicon.pixmap(size.toSize(), mode, state);
             QSizeF pixmapSize = pixmap.size();
             // Adjust the alignment
-            QPointF topLeft = rect.topLeft();            
+            QPointF topLeft = rect.topLeft();
 
-            if ( alignment & Qt::AlignRight ) {
-                topLeft.setX( rect.right() - pixmapSize.width() );
-            } else if ( alignment & Qt::AlignHCenter ) {
-                topLeft.setX( topLeft.x() + (rect.width() - pixmapSize.width()) / 2 );
+            if (alignment & Qt::AlignRight) {
+                topLeft.setX(rect.right() - pixmapSize.width());
+            } else if (alignment & Qt::AlignHCenter) {
+                topLeft.setX(topLeft.x() + (rect.width() - pixmapSize.width()) / 2);
             }
 
-            if ( alignment & Qt::AlignBottom ) {
-                topLeft.setY( rect.bottom() - pixmapSize.height() );
-            } else if ( alignment & Qt::AlignVCenter ) {
-                topLeft.setY( topLeft.y() + (rect.height() - pixmapSize.height()) / 2 );
+            if (alignment & Qt::AlignBottom) {
+                topLeft.setY(rect.bottom() - pixmapSize.height());
+            } else if (alignment & Qt::AlignVCenter) {
+                topLeft.setY(topLeft.y() + (rect.height() - pixmapSize.height()) / 2);
             }
 
-            painter->drawPixmap( topLeft, pixmap, pixmap.rect() );
+            painter->drawPixmap(topLeft, pixmap, pixmap.rect());
 
             // Draw the badges on this icon
-            if ( d->badgeInfo ) {
+            if (d->badgeInfo) {
                 d->badgeInfo->paint(painter, rect, mode, state, false);
             }
         }
@@ -675,7 +675,7 @@ QSizeF HbIcon::size() const
     if ((static_cast<int>(flags()) & HbIcon::ResolutionCorrected)) {
         if (d->size.isValid()) {
             return d->size;
-        } else { 
+        } else {
             QSizeF defSize(defaultSize());
             HbIconLoader::global()->applyResolutionCorrection(defSize);
             return defSize;
@@ -684,14 +684,14 @@ QSizeF HbIcon::size() const
         return d->size;
     }
     return defaultSize();
-}    
+}
 
 /*! Returns the default size of the icon.
 */
 QSizeF HbIcon::defaultSize() const
 {
     // Default constructed icon?
-    if ( d.constData() == shared_null ) {
+    if (d.constData() == shared_null) {
         return QSizeF();
     }
 
@@ -713,29 +713,29 @@ QSizeF HbIcon::defaultSize() const
 
 /*! Sets the \a height of the icon. Its width is computed using the aspect ratio of the icon.
 */
-void HbIcon::setHeight( qreal height ) 
+void HbIcon::setHeight(qreal height)
 {
     QSizeF size = defaultSize();
-    if ( size.height() > 0 ) {
+    if (size.height() > 0) {
         qreal ar = size.width() / size.height();
-        setSize( QSizeF( ar * height , height) );
+        setSize(QSizeF(ar * height , height));
     }
 }
 
 /*! Sets the \a width of the icon. Its height is computed using the aspect ratio of the icon.
 */
-void HbIcon::setWidth( qreal width )
+void HbIcon::setWidth(qreal width)
 {
     QSizeF size = defaultSize();
-    if ( size.width() > 0 ) {
+    if (size.width() > 0) {
         qreal ar = size.height() / size.width();
-        setSize( QSizeF( width, ar * width ) );
+        setSize(QSizeF(width, ar * width));
     }
 }
 
 /*! Returns the width of the icon.
 */
-qreal HbIcon::width() const 
+qreal HbIcon::width() const
 {
     return size().width();
 }
@@ -762,10 +762,10 @@ HbIcon::MirroringMode HbIcon::mirroringMode() const
 /*! Sets the mirroring \a mode for the icon.
 * \sa HbIcon::mirroringMode()
 */
-void HbIcon::setMirroringMode( HbIcon::MirroringMode mode )
+void HbIcon::setMirroringMode(HbIcon::MirroringMode mode)
 {
     if (d->engine) {
-        if ( mode != d->engine->mirroringMode() ) {
+        if (mode != d->engine->mirroringMode()) {
             d.detach();
             d->engine->setMirroringMode(mode);
         }
@@ -780,7 +780,7 @@ HbIcon::Flags HbIcon::flags() const
     if (d->engine) {
         return d->engine->flags();
     } else {
-        return ( HbIcon::Flags )0;
+        return (HbIcon::Flags)0;
     }
 }
 
@@ -799,9 +799,9 @@ void HbIcon::setFlags(HbIcon::Flags flags)
 /*! Sets the size for the icon. Without calling this method, the icon uses its default size.
 * \sa HbIcon::size(), HbIcon::defaultSize()
 */
-void HbIcon::setSize( const QSizeF &size )
+void HbIcon::setSize(const QSizeF &size)
 {
-    if ( size != d->size ) {
+    if (size != d->size) {
         d.detach();
 
         d->size = size;
@@ -823,71 +823,71 @@ HbIcon::operator QVariant() const
 * Returns a reference to a QIcon instance representing this icon.
 * \note The returned reference is valid only for the life time of this HbIcon instance.
 */
-QIcon & HbIcon::qicon() const
+QIcon &HbIcon::qicon() const
 {
     return d->qicon;
 }
 
 /*!
 * Equality operator. It compares the icon names for all the state and mode combinations.
-* It also compares the badges, the color and the mirroring mode of the icon. The sizes 
+* It also compares the badges, the color and the mirroring mode of the icon. The sizes
 * set for the icons are not used for the comparison.
 */
-bool HbIcon::operator==( const HbIcon &other ) const
+bool HbIcon::operator==(const HbIcon &other) const
 {
-    return !( *this != other );
+    return !(*this != other);
 }
 
 /*!
 * Inequality operator. It compares the icon names for all the state and mode combinations.
-* It also compares the badges, the color and the mirroring mode of the icon. The sizes 
+* It also compares the badges, the color and the mirroring mode of the icon. The sizes
 * set for the icons are not used for the comparison.
 */
-bool HbIcon::operator!=( const HbIcon &other ) const
+bool HbIcon::operator!=(const HbIcon &other) const
 {
     // NULL icons are equal
-    if ( isNull() && other.isNull() ) {
-        if ( d->badgeInfo && other.d->badgeInfo ) {
-            if ( d->badgeInfo->badges() != other.d->badgeInfo->badges() ) {
+    if (isNull() && other.isNull()) {
+        if (d->badgeInfo && other.d->badgeInfo) {
+            if (d->badgeInfo->badges() != other.d->badgeInfo->badges()) {
                 return true;
             }
         }
         return false;
     }
-    
+
     const HbIconEngine *engine1 = d->engine;
     const HbIconEngine *engine2 = other.d->engine;
 
     // If both icons do not have engines, they are unequal.
     // An icon does not have an engine if it is constructed with a QIcon.
-    if ( !engine1 || !engine2 ) {
-        return true;   
+    if (!engine1 || !engine2) {
+        return true;
     }
 
-    if ( engine1->iconName() != engine2->iconName() ||
-         engine1->iconName( QIcon::Normal, QIcon::Off )    != engine2->iconName( QIcon::Normal, QIcon::Off ) ||
-         engine1->iconName( QIcon::Normal, QIcon::On )     != engine2->iconName( QIcon::Normal, QIcon::On ) ||
-         engine1->iconName( QIcon::Disabled, QIcon::Off )  != engine2->iconName( QIcon::Disabled, QIcon::Off ) ||
-         engine1->iconName( QIcon::Disabled, QIcon::On )   != engine2->iconName( QIcon::Disabled, QIcon::On ) ||
-         engine1->iconName( QIcon::Active, QIcon::Off )    != engine2->iconName( QIcon::Active, QIcon::Off ) ||
-         engine1->iconName( QIcon::Active, QIcon::On )     != engine2->iconName( QIcon::Active, QIcon::On ) ||
-         engine1->iconName( QIcon::Selected, QIcon::Off )  != engine2->iconName( QIcon::Selected, QIcon::Off ) ||
-         engine1->iconName( QIcon::Selected, QIcon::On )   != engine2->iconName( QIcon::Selected, QIcon::On ) ) {
+    if (engine1->iconName() != engine2->iconName() ||
+            engine1->iconName(QIcon::Normal, QIcon::Off)    != engine2->iconName(QIcon::Normal, QIcon::Off) ||
+            engine1->iconName(QIcon::Normal, QIcon::On)     != engine2->iconName(QIcon::Normal, QIcon::On) ||
+            engine1->iconName(QIcon::Disabled, QIcon::Off)  != engine2->iconName(QIcon::Disabled, QIcon::Off) ||
+            engine1->iconName(QIcon::Disabled, QIcon::On)   != engine2->iconName(QIcon::Disabled, QIcon::On) ||
+            engine1->iconName(QIcon::Active, QIcon::Off)    != engine2->iconName(QIcon::Active, QIcon::Off) ||
+            engine1->iconName(QIcon::Active, QIcon::On)     != engine2->iconName(QIcon::Active, QIcon::On) ||
+            engine1->iconName(QIcon::Selected, QIcon::Off)  != engine2->iconName(QIcon::Selected, QIcon::Off) ||
+            engine1->iconName(QIcon::Selected, QIcon::On)   != engine2->iconName(QIcon::Selected, QIcon::On)) {
 
         return true;
     }
 
     // If they have different badges, they are unequal
-    if ( engine1->badges() != engine2->badges() ) {
+    if (engine1->badges() != engine2->badges()) {
         return true;
     }
 
-    if ( engine1->color() != engine2->color() ){
+    if (engine1->color() != engine2->color()) {
         return true;
     }
 
     // two icons are considered different if their mirroring modes are different
-    if ( engine1->mirroringMode() != engine2->mirroringMode() ){
+    if (engine1->mirroringMode() != engine2->mirroringMode()) {
         return true;
     }
 
@@ -899,9 +899,9 @@ bool HbIcon::operator!=( const HbIcon &other ) const
  * are drawn relative to the alignment you specify with the
  * z-order you provide.
  */
-bool HbIcon::addBadge( Qt::Alignment alignment,
-              const HbIcon& badge,
-              int z )
+bool HbIcon::addBadge(Qt::Alignment alignment,
+                      const HbIcon &badge,
+                      int z)
 {
     d.detach();
     return d->addBadge(alignment, badge, z);
@@ -910,10 +910,10 @@ bool HbIcon::addBadge( Qt::Alignment alignment,
 /*!
  * Removes badge icon(s) from the icon.
  */
-bool HbIcon::removeBadge( const HbIcon& badge )
+bool HbIcon::removeBadge(const HbIcon &badge)
 {
     d.detach();
-    return d->removeBadge( badge );
+    return d->removeBadge(badge);
 }
 
 /*!

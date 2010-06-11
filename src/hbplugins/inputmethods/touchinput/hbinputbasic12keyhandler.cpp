@@ -170,12 +170,12 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             return false;
         }
         mDownKey = 0;
-        if (mLongPressHappened){
+		if ( mLongPressHappened ){
             mLongPressHappened = false;
             return false;
         }
 
-        if (mTimer->isActive() && mLastKey != buttonId) {
+		if(mTimer->isActive() && mLastKey != buttonId) {
             mNumChr = 0;
 
             // For QLineEdit it works fine. For HbLineEdit, need to set the state 
@@ -198,7 +198,7 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             return true;
         } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
             // single tap of shift key toggles prediction status in case insensitive languages
-			// The Editor should not be Web or URL which allows only Latin Alphabet
+            // The Editor should not be Web or URL which allows only Latin Alphabet
             if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage() &&
                                 ((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)!=focusObject->editorInterface().inputConstraints()) &&
                 // when the language does not support prediction in that case we should not update the state and prediction
@@ -218,7 +218,8 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
                         // (the case was changed on the single tap)
                         updateTextCase();
                         // when the language does not support prediction in that case we should not update the state and prediction
-                        if(HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language())) {
+                        if(HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language()) &&
+                            mInputMethod->focusObject()->editorInterface().isPredictionAllowed()) {
                             q->togglePrediction();
                         }
                     } else {

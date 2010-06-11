@@ -43,12 +43,14 @@
 #include <hbframedrawer.h>
 #include <hbevent.h>
 #include <hbdataform.h>
+#include <hbinputregioncollector_p.h>
 
 #include <hbinputmethod.h>
 #include <hbinputsettingproxy.h>
 #include <hbinpututils.h>
 #include <hbinputdef.h>
 #include <hbinputvkbhost.h>
+#include <hbinputvkbhostbridge.h>
 #include <hbinputsettingwidget.h>
 #include <hbinputcommondialogs.h>
 #include <hbinputkeymap.h>
@@ -59,6 +61,8 @@
 #include <hbinputbutton.h>
 #include <HbSwipeGesture>
 #include <HbTapGesture>
+#include <HbSelectionDialog>
+#include <HbListWidgetItem>
 #include "hbinputvirtualrocker.h"
 #include "hbinputvkbwidget.h"
 #include "hbinputvkbwidget_p.h"
@@ -67,6 +71,11 @@
 #include <hbfeedbackmanager.h>
 #include "hbinputsmileypicker.h"
 #include "hbinputscreenshotwidget.h"
+
+#define HB_DIGIT_LATIN_START_VALUE          0x0030
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE   0x0660
+#define HB_DIGIT_EASTERN_ARABIC_START_VALUE 0x06F0
+#define HB_DIGIT_DEVANAGARI_START_VALUE     0x0966
 
 const qreal HbRockerWidth = 50.0;
 
@@ -126,7 +135,8 @@ mCloseHandleHeight(0),
 mCloseHandle(0),
 mSettingView(0),
 mCurrentView(0),
-mKeyboardDimmed(false)
+mKeyboardDimmed(false),
+mImSelectionDialog(0)
 {
     mScreenshotTimeLine.setUpdateInterval(16);
 }
@@ -138,7 +148,8 @@ HbInputVkbWidgetPrivate::~HbInputVkbWidgetPrivate()
     delete mBackgroundDrawer;
     delete mIconDrawer;
     delete mSmileyPicker;
-    delete mScreenshotWidget;
+    delete mScreenshotWidget; 
+    delete mImSelectionDialog;
 }
 
 void HbInputVkbWidgetPrivate::initLayout()
@@ -166,6 +177,10 @@ void HbInputVkbWidgetPrivate::initLayout()
 void HbInputVkbWidgetPrivate::init()
 {
     Q_Q(HbInputVkbWidget);
+
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    QObject::connect(buttonGroup,SIGNAL(aboutToActivateCustomAction(HbAction*)),
+                                q,SIGNAL(aboutToActivateCustomAction(HbAction*)));
 
     mRocker = new HbInputVirtualRocker(q);
     mRocker->setObjectName("VirtualRocker");
@@ -198,6 +213,8 @@ void HbInputVkbWidgetPrivate::init()
     // eating gestures below the panel (remove when panel starts to do this)
     q->grabGesture(Qt::TapGesture);
     q->grabGesture(Qt::PanGesture);
+
+    HbInputRegionCollector::instance()->attach(q);
 }
 
 // re-implemented by inherited keyboards
@@ -299,7 +316,7 @@ void HbInputVkbWidgetPrivate::updateButtons()
                 HbInputButton *item = buttons.at(i);
 
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
-                if (keyboardMap && key < keyboardMap->keys.count()) {
+                if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(mModifiers)!= QString("")) {
                     QString keydata = keyboardMap->keys.at(key)->characters(mModifiers);
                     item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
 
@@ -411,6 +428,122 @@ bool HbInputVkbWidgetPrivate::isSmileysEnabled()
 
     return ret;
 }
+
+QChar HbInputVkbWidgetPrivate::numberCharacterBoundToKey(int key)
+{
+    QChar numChr;
+    if (!mKeymap || !mOwner) {
+        return numChr;
+    }
+
+    HbInputFocusObject *focusObject = mOwner->focusObject();
+    if (!focusObject) {
+        return numChr;
+    }	
+    HbInputLanguage language = mKeymap->language();
+    if (language.language()  != (QLocale::Language)0) {
+        HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
+        	
+        // In number editors, show the native digits only when both device and writing languages are same,
+        // else show latin digits
+        if (focusObject->editorInterface().isNumericEditor()) {
+            QLocale::Language systemLanguage = QLocale::system().language();
+            if (language.language() != systemLanguage) {
+                digitType = HbDigitTypeLatin;
+            }	
+        }
+			
+        HbKeyboardType keyboardType = mOwner->inputState().keyboard();
+        
+        if (keyboardType == HbKeyboardVirtual12Key) {
+            numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(
+            mKeymap->keyboard(keyboardType)->keys.at(key),
+            language, digitType);
+        } else if (keyboardType == HbKeyboardVirtualQwerty) {
+            switch (digitType) {
+            case HbDigitTypeLatin:
+                numChr = HB_DIGIT_LATIN_START_VALUE + key;
+                break;
+            case HbDigitTypeArabicIndic:
+                numChr = HB_DIGIT_ARABIC_INDIC_START_VALUE + key;
+                break;
+            case HbDigitTypeEasternArabic:
+                numChr = HB_DIGIT_EASTERN_ARABIC_START_VALUE + key;
+                break;
+            case HbDigitTypeDevanagari:
+                numChr = HB_DIGIT_DEVANAGARI_START_VALUE + key;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return numChr;
+}
+
+void HbInputVkbWidgetPrivate::showInputMethodSelectionDialog()
+{
+    Q_Q(HbInputVkbWidget);
+
+    delete mImSelectionDialog;
+    mImSelectionDialog = new HbSelectionDialog();
+
+    mImSelectionDialog->setObjectName("Input method dialog");
+
+    // Make sure the language dialog never steals focus.
+    mImSelectionDialog->setFlag(QGraphicsItem::ItemIsPanel, true);
+    mImSelectionDialog->setActive(false);
+
+    QList<HbInputMethodDescriptor> customList = HbInputMethod::listCustomInputMethods();
+
+    QList<HbListWidgetItem*> listItems;
+    HbListWidgetItem* item = new HbListWidgetItem();
+    QString methodName("Default");
+    item->setText(methodName);
+    listItems.append(item);
+
+    foreach (HbInputMethodDescriptor descriptor, customList) {
+    QString displayName = descriptor.displayName();
+        if (displayName.length() == 0) {
+            displayName = QString("Unknown");
+        }
+        item = new HbListWidgetItem();
+        item->setText(displayName);
+        listItems.append(item);
+    }
+    mImSelectionDialog->setWidgetItems(listItems, true);
+    mImSelectionDialog->setSelectionMode(HbAbstractItemView::SingleSelection);
+    mImSelectionDialog->setDismissPolicy(HbPopup::NoDismiss);
+    mImSelectionDialog->setModal(true);
+
+    q->connect(mImSelectionDialog, SIGNAL(finished(HbAction*)), q, SLOT(_q_inputMethodSelectionDialogFinished(HbAction*)));
+
+    mImSelectionDialog->open();
+}
+
+void HbInputVkbWidgetPrivate::_q_inputMethodSelectionDialogFinished(HbAction *action)
+{
+    Q_UNUSED(action);
+
+    QList<QVariant> selectedItems = mImSelectionDialog->selectedItems();
+    if (selectedItems.count()) {
+        HbInputMethodDescriptor result;
+        int selection = selectedItems.first().toInt();
+        if (selection == 0) {
+           result.setDefault();
+        } else {
+           QList<HbInputMethodDescriptor> customList = HbInputMethod::listCustomInputMethods();
+           if (customList.count() <= selection) {
+               result = customList[selection-1];
+           }
+        }
+
+        if (!result.isEmpty() && mOwner) {
+            mOwner->activateInputMethod(result);
+        }
+    }
+}
+
 /// @endcond
 
 /*!
@@ -617,6 +750,7 @@ void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
     d->mModifiers = modifiers;
 
     d->updateButtons();
+	d->updateKeyCodes();
     d->applyEditorConstraints();
 
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
@@ -676,6 +810,9 @@ void HbInputVkbWidget::aboutToClose(HbVkbHost *host)
 
     d->mCurrentHost = host;
 
+    if (d->mSmileyPicker && d->mSmileyPicker->isVisible()) {
+        d->mSmileyPicker->hide();
+    }	
     d->mRocker->setVisible(false);
     if (d->mSettingList) {
         d->mSettingList->close();
@@ -783,11 +920,26 @@ Shows settings view
 void HbInputVkbWidget::showSettingsView()
 {
     Q_D(HbInputVkbWidget);
+    
+    //HbVkbHostBridge::instance()->minimizeKeypad(true);
+    /*
+    Added for vanilla input
+    When settings dialog is launched, keypad is not closed.
+    */
+    HbInputFocusObject *focusObject = 0;
+    if (!d->mOwner || !(focusObject = d->mOwner->focusObject())) {
+        return;
+    }
+    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
+    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
+        vkbHost->closeKeypad();
+    }
 
     closeSettingList();
     hide();
 
     d->mSettingView = new HbView(this);
+    HbInputRegionCollector::instance()->attach(d->mSettingView);
     d->mSettingView->setTitle(tr("Input Settings"));
     mainWindow()->addView(d->mSettingView);
 
@@ -815,8 +967,20 @@ void HbInputVkbWidget::closeSettingsView()
 
     mainWindow()->setCurrentView(d->mCurrentView);
     mainWindow()->removeView(d->mSettingView);
+    HbInputRegionCollector::instance()->detach(d->mSettingView);
     delete d->mSettingView;
     d->mSettingView = 0;
+    
+    /***** To be removed, Added for vanilla input.
+    HbInputFocusObject *focusObject = 0;
+    if (!d->mOwner || !(focusObject = d->mOwner->focusObject())) {
+        return;
+    }
+    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
+    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusOpened) {
+        vkbHost->openKeypad();
+    }
+    *****/
 }
 
 /*!
@@ -827,11 +991,7 @@ void HbInputVkbWidget::executeMethodDialog()
     Q_D(HbInputVkbWidget);
 
     closeSettingList();
-    HbInputMethodDescriptor method
-        = HbInputCommonDialogs::showCustomInputMethodSelectionDialog(HbInputSettingProxy::instance()->globalInputLanguage());
-    if (!method.isEmpty() && d->mOwner) {
-        d->mOwner->activateInputMethod(method);
-    }
+    d->showInputMethodSelectionDialog();
 }
 
 /*!
@@ -1019,13 +1179,13 @@ void HbInputVkbWidget::sendKeyReleaseEvent(const QKeyEvent &event)
 {
     Q_D(HbInputVkbWidget);
 
+	if (d->mOwner && event.key() > 0) {
+		d->mOwner->filterEvent(&event);
+	}
+
     if (event.key() == HbInputButton::ButtonKeyCodeSettings) {
         showSettingList();
-    } else {
-        if (d->mOwner) {
-            d->mOwner->filterEvent(&event);
-        }
-    }
+    } 
 }
 
 /*!
@@ -1169,11 +1329,12 @@ void HbInputVkbWidget::gestureEvent(QGestureEvent *event)
     } else if(HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         if (gesture->state() == Qt::GestureFinished) {        
             // if keypad is minimized, open it 
-            if ( d->mCurrentHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized ) {
+            if (d->mCurrentHost && d->mCurrentHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized ) {
                 d->mCurrentHost->openKeypad(this, d->mOwner);
             }
         }
     }
 }
 
+#include "moc_hbinputvkbwidget.cpp"
 // End of file

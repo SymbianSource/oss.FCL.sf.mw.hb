@@ -68,7 +68,7 @@ void HbDeviceDialogConnectHelperPrivate::RunL()
 void HbDeviceDialogConnectHelperPrivate::DoCancel() 
 {
     TRequestStatus *rs = &iStatus;
-    User::RequestComplete(rs, KErrNone);
+    User::RequestComplete(rs, KErrCancel);
 }
 
 

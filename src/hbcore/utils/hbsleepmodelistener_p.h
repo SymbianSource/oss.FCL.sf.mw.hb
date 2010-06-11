@@ -26,14 +26,12 @@
 #ifndef HBSLEEPMODELISTENER_P_H
 #define HBSLEEPMODELISTENER_P_H
 
+#include <hbglobal.h>
+
 #if defined(Q_OS_SYMBIAN)
-
 class CSleepModeListenerPrivate;
-
 #else
-
 class HbSleepModeListenerPrivate;
-
 #endif
 
 class HB_CORE_PRIVATE_EXPORT HbSleepModeListener

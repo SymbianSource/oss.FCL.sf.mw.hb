@@ -23,73 +23,73 @@
 **
 ****************************************************************************/
 
-//These active objects observe the changing of the sensor cenrep value
-//and notify the sensorlistener when the change has occured
+// These active objects observe the changing of the sensor cenrep value
+// and notify the sensorlistener when the change has ocurred.
 
 #include "hbsensornotifyhandler_p.h"
 #include "hbcommoncrkeys.h"
 #include <centralrepository.h>
 #include <QtGlobal>
 
- HbSensorNotifyHandler* HbSensorNotifyHandler::NewL(HbSensorListener& aObserver)
- {
-     HbSensorNotifyHandler* self = new (ELeave) HbSensorNotifyHandler(aObserver);
-     CleanupStack::PushL(self);                 
-     self->ConstructL();
-     CleanupStack::Pop();
-     return self;
- }
+HbSensorNotifyHandler *HbSensorNotifyHandler::NewL(HbSensorListener &aObserver)
+{
+    HbSensorNotifyHandler *self = new(ELeave) HbSensorNotifyHandler(aObserver);
+    CleanupStack::PushL(self);
+    self->ConstructL();
+    CleanupStack::Pop();
+    return self;
+}
 
- HbSensorNotifyHandler::HbSensorNotifyHandler(HbSensorListener& aObserver)
-  : CActive(EPriorityStandard), mObserver(aObserver)
- {
- }
+HbSensorNotifyHandler::HbSensorNotifyHandler(HbSensorListener &aObserver)
+    : CActive(EPriorityStandard), mObserver(aObserver)
+{
+}
 
- void HbSensorNotifyHandler::ConstructL()
- {
-     TRAPD(err, mRepository = CRepository::NewL(KHbSensorCenrepUid));
-     if (err) {
-         qWarning( "mRepository::NewL fails, error code = %d", err );
-     }     
-     CActiveScheduler::Add(this);
- }
+void HbSensorNotifyHandler::ConstructL()
+{
+    TRAPD(err, mRepository = CRepository::NewL(KHbSensorCenrepUid));
+    if (err) {
+        qWarning("mRepository::NewL fails, error code = %d", err);
+    }
+    CActiveScheduler::Add(this);
+}
 
- HbSensorNotifyHandler::~HbSensorNotifyHandler()
- {
-     Cancel(); //first cancel because iRepository is used there
-     delete mRepository;
- }
+HbSensorNotifyHandler::~HbSensorNotifyHandler()
+{
+    Cancel(); //first cancel because iRepository is used there
+    delete mRepository;
+}
 
- void HbSensorNotifyHandler::startObservingL()
- {
-     if (IsActive()) {
-         return; //do nothing if allready observing
-     }
-     User::LeaveIfError(mRepository->NotifyRequest(KHbSensorCenrepKey, iStatus));
-     SetActive();
- }
- 
- void HbSensorNotifyHandler::stopObserving()
- {
-     Cancel();
- }
+void HbSensorNotifyHandler::startObservingL()
+{
+    if (IsActive()) {
+        return; // do nothing if already observing
+    }
+    User::LeaveIfError(mRepository->NotifyRequest(KHbSensorCenrepKey, iStatus));
+    SetActive();
+}
 
- void HbSensorNotifyHandler::DoCancel()
- {
-     mRepository->NotifyCancel(KHbSensorCenrepKey);
- }
+void HbSensorNotifyHandler::stopObserving()
+{
+    Cancel();
+}
 
- void HbSensorNotifyHandler::RunL()
- {
-     TInt value = 0;
-     TInt error = mRepository->Get(KHbSensorCenrepKey, value);
-     if (error == KErrNone) {
+void HbSensorNotifyHandler::DoCancel()
+{
+    mRepository->NotifyCancel(KHbSensorCenrepKey);
+}
+
+void HbSensorNotifyHandler::RunL()
+{
+    TInt value = 0;
+    TInt error = mRepository->Get(KHbSensorCenrepKey, value);
+    if (error == KErrNone) {
         mObserver.cenrepValueChanged(value);
-     }
-     // Re-subscribe
-     error = mRepository->NotifyRequest(KHbSensorCenrepKey, iStatus);
-     if (error == KErrNone) {
-         SetActive();
-     }
- }
- 
+    }
+    // Re-subscribe
+    error = mRepository->NotifyRequest(KHbSensorCenrepKey, iStatus);
+    if (error == KErrNone) {
+        SetActive();
+    }
+}
+

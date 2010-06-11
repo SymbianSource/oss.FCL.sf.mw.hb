@@ -657,6 +657,9 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
         int freedMemory = 0;
         while (itemCost > freedMemory) {
             HbIconCacheItem *itemToRemove = gpuLruList.removeFront();
+            if ( itemToRemove == 0 ){
+                return ;
+            }    
             // Decrement the Size by the cost of the removed icon's data cost
 #ifdef HB_SGIMAGE_ICON
 #ifdef HB_ICON_CACHE_DEBUG
@@ -781,7 +784,7 @@ void HbIconDataCache::memoryGood()
     goodMemory = true;
 }
 
-void HbIconDataCache::freeGpuRam(int bytes)
+void HbIconDataCache::freeGpuRam(int bytes, bool useSwRendering)
 {
     goodMemory = false;
     if (bytes  <= gpuLruListSize) {
@@ -790,6 +793,7 @@ void HbIconDataCache::freeGpuRam(int bytes)
         createGpuCacheSpace(gpuLruListSize);
     }
     
+    if (useSwRendering) {
     // Iterate through the cache and remove any active SgImages, before the context
     // is destroyed.
     QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
@@ -803,11 +807,12 @@ void HbIconDataCache::freeGpuRam(int bytes)
             HbSgImageRenderer::removeSgImageFromHash(temp->rasterIconData.sgImageData.id);
 #endif
             temp->rasterIconData.type = INVALID_FORMAT;
-            temp->gpuLink.setNext(0);
-            temp->gpuLink.setPrev(0);
             currentGpuCacheSize -= temp->rasterIconDataCost;
         }
     }
+    gpuLruList.removeAll();
+    gpuLruListSize = 0;
+    }    	    
 }
 
 /*!

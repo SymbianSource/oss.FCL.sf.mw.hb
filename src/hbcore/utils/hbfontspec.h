@@ -40,8 +40,7 @@ class HB_CORE_EXPORT HbFontSpec
     Q_ENUMS(Role)
 
 public:
-    enum Role
-    {
+    enum Role {
         Undefined = 0,
         Primary,
         Secondary,

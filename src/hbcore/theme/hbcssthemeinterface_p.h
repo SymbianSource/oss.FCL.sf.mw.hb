@@ -37,9 +37,7 @@ public:
 
     HbCssThemeInterface(){};
 
-    void initialise( const QMap<int,QString>& alist,
-                    bool loadAllFiles,
-                    bool enableBinarySupport = false );
+    void initialise( const QMap<int,QString>& alist, bool loadAllFiles);
 
     HbCss::Value findAttribute( const QGraphicsWidget * aWidget,
                                         const QString& attributeName ) const;

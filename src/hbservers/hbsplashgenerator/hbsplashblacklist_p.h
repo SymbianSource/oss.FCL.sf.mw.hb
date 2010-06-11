@@ -34,23 +34,23 @@ inline QList<quint32> hbsplash_blacklist()
 {
     return QList<quint32>()
 
-        // started on phone boot
-        << 0x20022f35 // app/homescreen/homescreenapp/hsapplication
-        << 0x100058b3 // app/phone/phoneapp/phoneui2
-        << 0x2002e67a // app/phone/phoneengine/networkhandlingstarter
+           // started on phone boot
+           << 0x20022f35 // app/homescreen/homescreenapp/hsapplication
+           << 0x100058b3 // app/phone/phoneapp/phoneui2
+           << 0x2002e67a // app/phone/phoneengine/networkhandlingstarter
 
-        // uses hbapplication but not hbmainwindow
-        << 0x1028339d // app/devicecontrol/deviceupdateui/deviceupdateqtsp
-        << 0x2001fe74 // app/messaging/messagingapp/msgnotifications/msgerrornotifier
-        << 0xe0022e73 // mw/securitysrv/securitydialogs/autolocksrv (this uid cannot be the final one, can it...)
+           // uses hbapplication but not hbmainwindow
+           << 0x1028339d // app/devicecontrol/deviceupdateui/deviceupdateqtsp
+           << 0x2001fe74 // app/messaging/messagingapp/msgnotifications/msgerrornotifier
+           << 0xe0022e73 // mw/securitysrv/securitydialogs/autolocksrv (this uid cannot be the final one, can it...)
 
-        // started to background and may not need splash anyway
-        << 0x2002e669 // mw/webruntime/app/widget/wrtwidgetui
+           // started to background and may not need splash anyway
+           << 0x2002e669 // mw/webruntime/app/widget/wrtwidgetui
 
-        // probably launched on first boot, including for now to prevent mess in startup sequence
-        << 0x20026f95 // app/firsttimeuse/ftuapplication
+           // probably launched on first boot, including for now to prevent mess in startup sequence
+           << 0x20026f95 // app/firsttimeuse/ftuapplication
 
-        ;
+           ;
 }
 
 #endif

@@ -515,6 +515,15 @@ bool HbString::operator==(const QString &str) const
 }
 
 /*
+    Overloaded "==" operator that takes QStringRef as
+    argument and returns boolean value.
+*/
+bool HbString::operator==(const QStringRef &strRef) const
+{
+    return compareString(strRef.constData(), strRef.length());
+}
+
+/*
     Overloaded "!=" operator that takes HbString as argument
     and returns boolean value
 */
@@ -818,6 +827,21 @@ int HbString::compare(const QLatin1String &other)const
 
     return compare_helper(stringData, data->mLength, other);
 }
+
+#ifdef CSS_PARSER_TRACES
+/*
+* Debugging support
+*/
+void HbString::print() const
+{
+    if (mDataOffset != -1 && mDataOffset != -2) {
+        GET_MEMORY_MANAGER(mMemoryType)
+        HbStringData * mData = HbMemoryUtils::getAddress<HbStringData>( mMemoryType, mDataOffset);
+        qDebug() << QString::fromRawData( (QChar*)((char*)manager->base() 
+                                           + mData->mStartOffset), mData->mLength );
+    }
+}
+#endif // CSS_PARSER_TRACES
 
 /*
     Reads a HbString from the QDataStream

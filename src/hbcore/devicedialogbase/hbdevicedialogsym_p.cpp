@@ -100,7 +100,7 @@ int HbDeviceDialogPrivate::initialize()
     TRACE_ENTRY
 
     if (!iBuffer) {
-        iBuffer = HBufC8::NewL(64);
+        TRAP_IGNORE(iBuffer = HBufC8::NewL(64));
         if (iBuffer) {
             iDataPtr.Set(iBuffer->Des());
         } else {
@@ -422,10 +422,13 @@ int HbDeviceDialogPrivate::symToDeviceDialogError(int errorCode)
         // Any Symbian error, close session handle. It will be reopened on next show()
         if (errorCode < KErrNone) {
             mHbSession.Close();
-        }
-        // All Symbian errors are connected to HbDeviceDialogConnectError
-        if (errorCode < KErrNone) {
+            // All Symbian errors are converted to HbDeviceDialogConnectError
             errorCode = HbDeviceDialogConnectError;
+        } else {
+            // Convert from internal to public error code
+            if (errorCode == HbDeviceDialogAlreadyExists) {
+                errorCode = HbDeviceDialog::InstanceExistsError;
+            }
         }
     }
     return errorCode;

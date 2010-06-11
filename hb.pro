@@ -25,6 +25,7 @@
 #############################################################################
 #
 
+
 TEMPLATE = subdirs
 CONFIG += root
 
@@ -34,12 +35,22 @@ SUBDIRS += src
     SUBDIRS += tutorials
 }
 
-feature.files += $$HB_SOURCE_DIR/hb.prf
-feature.files += $$HB_BUILD_DIR/hb_install.prf
-feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
-feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
-feature.path = $$HB_FEATURES_DIR
-INSTALLS += feature
+!symbian {
+    feature.files += $$HB_SOURCE_DIR/hb.prf
+    feature.files += $$HB_BUILD_DIR/hb_install.prf
+    feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
+    feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
+    feature.path = $$HB_FEATURES_DIR
+    INSTALLS += feature
+}
+else {
+    tmp = $$split(HB_FEATURES_DIR, :)
+    HB_SYMBIAN_PRF_EXPORT_DIR = $$last(tmp)
+    BLD_INF_RULES.prj_exports += "hb.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb.prf"
+    BLD_INF_RULES.prj_exports += "hb_install.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_install.prf"
+    BLD_INF_RULES.prj_exports += "mkspecs/hb_functions.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_functions.prf"
+    BLD_INF_RULES.prj_exports += "mkspecs/docml2bin.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/docml2bin.prf"
+}
 
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/.qmake.cache)
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/hb_install.prf)
@@ -51,34 +62,13 @@ INSTALLS += hbvar
 
 symbian {
     exists(rom):include(rom/rom.pri)
-    install.depends += index hbvar
-    #install.depends += cssbinary
+    install.depends += hbvar
+#    install.depends += cssbinary
     install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
+    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/mkspecs/hb_functions.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
+    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/mkspecs/docml2bin.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     QMAKE_EXTRA_TARGETS += install
-    BLD_INF_RULES.prj_exports += "sis/hb_stub.sis /epoc32/data/z/system/install/hb_stub.sis"
-}
-
-# theme indexing
-
-symbian:HB_THEMES_DIR = $${EPOCROOT}epoc32/data/z/resource/hb/themes
-else:HB_THEMES_DIR = $(HB_THEMES_DIR)/themes
-isEmpty(HB_THEMES_DIR):index.commands += echo HB_THEMES_DIR environment variable not set
-else {
-    index.path = .
-    index.name = hbdefault
-    index.source = $$PWD/src/hbcore/resources/themes/icons/hbdefault
-    index.targets = $$HB_THEMES_DIR
-    symbian {
-        index.targets += $${EPOCROOT}epoc32/release/winscw/urel/z/resource/hb/themes
-        index.targets += $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes
-    }
-    for(index.target, index.targets) {
-        !isEmpty(index.commands):index.commands += &&
-        index.commands += $$hbToolCommand(hbthemeindexer) -n $$index.name -s $$index.source -t $$index.target
-    }
-    QMAKE_EXTRA_TARGETS += index
-    INSTALLS += index
 }
 
 # css binary generation
@@ -98,7 +88,7 @@ symbian {
 }
 
 QMAKE_EXTRA_TARGETS += cssbinary
-# INSTALLS += cssbinary
+#INSTALLS += cssbinary
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src

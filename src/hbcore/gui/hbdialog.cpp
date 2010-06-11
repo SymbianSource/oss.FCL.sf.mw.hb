@@ -384,7 +384,8 @@ void HbDialog::changeEvent(QEvent *event)
 bool HbDialog::event(QEvent *event)
 {
     Q_D(HbDialog);
-    event->accept();
+    if(event->type() != QEvent::ShortcutOverride && event->type() != QEvent::GestureOverride)
+        event->accept();
 
     if (event->type() == QEvent::ActionAdded) {
         if (!d->toolBar) {

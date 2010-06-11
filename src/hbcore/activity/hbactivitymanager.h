@@ -44,7 +44,7 @@ class HB_CORE_EXPORT HbActivityManager : public QObject
 public:
     explicit HbActivityManager(QObject *parent = 0);
     virtual ~HbActivityManager();
-    
+
     bool addActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters);
     bool removeActivity(const QString &activityId);
     bool updateActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters);
@@ -54,15 +54,15 @@ public:
     void parseCommandLine(const QStringList &commandLineParams, Hb::ActivationReason &reason, QString &id, QVariantHash &params) const;
 
 signals:
-    void activityRequested(const QString &activityId);  
- 
+    void activityRequested(const QString &activityId);
+
 protected:
     HbActivityManagerPrivate *d_ptr;
-    
+
 private:
     Q_DISABLE_COPY(HbActivityManager)
-    Q_DECLARE_PRIVATE_D(d_ptr, HbActivityManager)    
-    
+    Q_DECLARE_PRIVATE_D(d_ptr, HbActivityManager)
+
 };
 
 #endif // HBACTIVITYMANAGER_H

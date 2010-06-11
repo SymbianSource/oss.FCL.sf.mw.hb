@@ -1,4 +1,3 @@
-#
 #############################################################################
 ##
 ## Copyright (C) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
@@ -23,7 +22,6 @@
 ## Nokia at developer.feedback@nokia.com.
 ##
 #############################################################################
-#
 
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD

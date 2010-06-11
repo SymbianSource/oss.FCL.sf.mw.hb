@@ -630,7 +630,7 @@ QVariant HbDataFormModelItem::data(int role ) const
     - TextItem: HbLineEdit property should be used
     - ToggleValueItem: HbPushButton(text and additionalText) property should be used
     - RadioButtonListItem: HbRadioButtonList property should be used
-    - MultiselectionItem: HbListDialog property should be used
+    - MultiselectionItem: HbListWidget property should be used
     - ComboBoxItem: HbComboBox property should be used
 */
 void HbDataFormModelItem::setContentWidgetData(

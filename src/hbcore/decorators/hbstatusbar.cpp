@@ -28,6 +28,7 @@
 #include <hbtextitem.h>
 #include <hbmainwindow.h>
 #include <hbview.h>
+#include <hbextendedlocale.h>
 
 #include "hbstatusbar_p.h"
 #include "hbstatusbar_p_p.h"
@@ -38,6 +39,8 @@
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbindicatorsym_p.h"
+#include <bacntf.h>  // CEnvironmentChangeNotifier
+#include <coemain.h> // EActivePriorityLogonA
 #else
 #include "hbindicatorwin32_p.h"
 #endif // defined(Q_OS_SYMBIAN)
@@ -62,12 +65,30 @@ HbStatusBarPrivate::HbStatusBarPrivate() :
     mPreviousProperties(0),
     mIndicatorPrivate(0)
 {
+#if defined(Q_OS_SYMBIAN)
+    // Register for system environment changes
+    TCallBack envCallback(EnvChangeCallback, this);
+
+    mEnvChangeNotifier =
+        CEnvironmentChangeNotifier::NewL(EActivePriorityLogonA, envCallback);
+
+    mEnvChangeNotifier->Start();
+#endif
 }
 
 HbStatusBarPrivate::~HbStatusBarPrivate()
 {
     mIndicatorPrivate->stopListen();     
     delete mIndicatorPrivate;
+
+#if defined(Q_OS_SYMBIAN)
+    // Stop environment change notifications
+    if (mEnvChangeNotifier)
+        {
+        mEnvChangeNotifier->Cancel();
+        delete mEnvChangeNotifier;
+        }
+#endif
 }
 
 void HbStatusBarPrivate::delayedConstruction()
@@ -138,10 +159,10 @@ void HbStatusBarPrivate::init()
 void HbStatusBarPrivate::updateTime()
 {
     Q_Q(HbStatusBar);
-	// use QLocale to find out whether there is am/pm info
-    QString timeFormat(QLocale().timeFormat(QLocale::ShortFormat));
 
-    if(timeFormat.contains("ap", Qt::CaseInsensitive)) {
+    QString timeFormat;
+    // set the time format accordingly
+    if (HbExtendedLocale().timeStyle() == HbExtendedLocale::Time12) {
         timeFormat.clear();
         timeFormat.insert(0, "hh:mm ap");
     } else {
@@ -156,6 +177,25 @@ void HbStatusBarPrivate::updateTime()
 
     q->updatePrimitives();
 }
+
+#if defined(Q_OS_SYMBIAN)
+TInt HbStatusBarPrivate::EnvChangeCallback(TAny *aObject)
+{
+    // Return value for functions used as TCallBack objects should be EFalse
+    // unless the function is intended to be called again from a timer.
+    return static_cast<HbStatusBarPrivate*>(aObject)->DoEnvChange();
+}
+
+TInt HbStatusBarPrivate::DoEnvChange()
+{
+    const TInt changes(mEnvChangeNotifier->Change());
+    if ((changes & EChangesLocale) || (changes & EChangesSystemTime))
+        {
+        updateTime();
+        }
+    return EFalse ;
+}
+#endif
 
 /*
     Constructor, the statusbar.

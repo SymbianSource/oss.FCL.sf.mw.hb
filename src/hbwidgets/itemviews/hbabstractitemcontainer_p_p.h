@@ -78,7 +78,7 @@ public:
     void increaseBufferSize(int amount);
     void decreaseBufferSize(int amount);
 
-    HbAbstractViewItem* item(const QModelIndex &index) const;
+    virtual HbAbstractViewItem* item(const QModelIndex &index) const;
 
     void doRemoveItem(HbAbstractViewItem *item, const QModelIndex &index, bool animate = false);
 

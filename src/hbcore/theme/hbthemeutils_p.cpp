@@ -52,7 +52,7 @@ const char *HbThemeUtils::iconsResourceFolder = "icons";
 const char *HbThemeUtils::effectsResourceFolder = "effects";
 const char *HbThemeUtils::styleResourceFolder = "style";
 const char *HbThemeUtils::themeResourceFolder = "theme";
-const char *HbThemeUtils::operatorHierarchy = "operatortheme";
+const char *HbThemeUtils::operatorHierarchy = "prioritytheme";
 const char *HbThemeUtils::appHierarchy = "apptheme";
 const char *HbThemeUtils::platformHierarchy = "themes";
 
@@ -290,42 +290,90 @@ QVector<HbHierarchy> HbThemeUtils::hierarchies()
  * @ret list of hierarchy of themes in priority.Also appends the default path with least priority.
  */
 QMap<int, QString> HbThemeUtils::constructHierarchyListWithPathInfo(const QString &fileName,
-                                                                   const QString &currentTheme,
-                                                                   const Hb::ResourceType resType)
+                                                                    const QString &currentTheme,
+                                                                    const Hb::ResourceType resType)
 {
     QMap<int,QString> hierarchyListWithPathInfo;
 
     // Map the resource enum to string here
     const QString &resourcePath = getResourceFolderName(resType);
-
+#ifdef Q_OS_SYMBIAN
     foreach (const HbHierarchy &hierarchy, d.hierarchies) {
         switch(hierarchy.layerPriority) {
-        case HbLayeredStyleLoader::Priority_Operator:
-            if (!d.operatorPath.isEmpty()) {
-                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
-                                                 d.constructOperatorPath(operatorBasePath(), fileName));
+        case HbLayeredStyleLoader::Priority_Operator: {
+                // Operator C drive path
+                HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(OperatorC);
+                if (info.themeIndexOffset > 0) {
+
+                    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
+                            (info.path + '/' + resourcePath + '/' + info.name + '/' + fileName));
+                }
+                // Operator ROM path
+                info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
+                if (info.themeIndexOffset > 0) {
+                    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
+                            (info.path + '/' + resourcePath + '/' + info.name + '/' + fileName));
+                }
+                break;
             }
-            break;
-        case HbLayeredStyleLoader::Priority_Application:
-            hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Application, 
-                    (hierarchy.name + '/' + HbMemoryUtils::getCleanAppName() + '/' +
-                     resourcePath + '/' + currentTheme + '/' + fileName));
-            break;
-        case HbLayeredStyleLoader::Priority_Theme:
-            // Add platform theme folder only if it is different from base theme
-            // Base theme is anyway added at the core priority
-            if (currentTheme != baseTheme().name) {
-                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme, 
+        case HbLayeredStyleLoader::Priority_Theme: {
+                HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+                if (info.themeIndexOffset > 0) {
+                    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme,
+                            (info.path + '/' + resourcePath + '/' + info.name + '/' + fileName));
+                }
+                break;
+            }
+        default: {
+                // this is for a new hierarchy level and for the time being HbLayeredStyleLoader::Priority_Theme prirority
+                // is used,since there is no enum defined in hblayeredstyleloader_p.h
+                // priority should be replaced with respective enum.
+                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme,
                         (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
             }
-            break;
-        default:
-            // this is for a new hierarchy level and for the time being
-            // HbLayeredStyleLoader::Priority_Theme priority is used,
-            // since there is no enum defined in hblayeredstyleloader_p.h
-            // priority should be replaced with respective enum.
-            hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme, 
-                    (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
+        }
+    }
+    // lets add base CSS path too in this list for now
+    // This comes last in base hierarchy
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
+    if (info.themeIndexOffset > 0) {
+    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Core,
+            (info.path + '/' + resourcePath + '/' + info.name + '/' + fileName));
+    }
+    
+#else
+    foreach (const HbHierarchy &hierarchy, d.hierarchies) {
+        switch(hierarchy.layerPriority) {
+        case HbLayeredStyleLoader::Priority_Operator: {
+                if (!d.operatorPath.isEmpty()) {
+                    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
+                                                     d.constructOperatorPath(operatorBasePath(), fileName));
+                }
+                break;
+            }
+        case HbLayeredStyleLoader::Priority_Application: {
+                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Application,
+                    (hierarchy.name + '/' + HbMemoryUtils::getCleanAppName() + '/' +
+                     resourcePath + '/' + currentTheme + '/' + fileName));
+                break;
+            }
+        case HbLayeredStyleLoader::Priority_Theme: {
+                if (currentTheme != baseTheme().name) {
+                    // Add platform theme folder only if it is different from base theme
+                    // Base theme is anyway added at the core priority
+                    hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme,
+                            (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
+                }
+                break;
+            }
+        default: {
+                // this is for a new hierarchy level and for the time being
+                // HbLayeredStyleLoader::Priority_Theme prirority is used,
+                // since there is no enum defined in hblayeredstyleloader_p.h
+                // priority should be replaced with respective enum.
+                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme,
+                        (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
+            }
         }
     }
     
@@ -335,7 +383,7 @@ QMap<int, QString> HbThemeUtils::constructHierarchyListWithPathInfo(const QStrin
         hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Core, 
                 (QLatin1String("themes/") + resourcePath + '/' + baseTheme().name + '/' + fileName));
     }
-
+#endif // Q_OS_SYMBIAN
     return hierarchyListWithPathInfo;
 }
 
@@ -361,6 +409,16 @@ const HbThemeInfo &HbThemeUtils::baseTheme()
         } else {
             // So settings are initialized, it will have other value as well
             baseThemeInfo.rootDir = getThemeSetting(DefaultThemeRootDirSetting).trimmed();
+            // On desktop platforms try the HB_THEMES_DIR environment variable instead of
+            // blindly sticking to the previous stored setting, the theme directory may have been
+            // moved meanwhile and that usually results in a changed HB_THEMES_DIR but nobody will
+            // update the our settings stored via QSettings.
+#ifndef Q_OS_SYMBIAN            
+            QString themesDirFromEnv = HbStandardDirs::themesDir();
+            if (!themesDirFromEnv.isEmpty()) {
+                baseThemeInfo.rootDir = themesDirFromEnv;
+            }
+#endif
         }
     }
     
@@ -508,40 +566,54 @@ HbThemeIndexInfo HbThemeUtils::getThemeIndexInfo(const HbThemeType &type)
 {
     HbThemeIndexInfo info;
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(manager->base());
-    
-    switch(type) {
-    case BaseTheme:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->baseThemeNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->baseThemePathOffset));
-        info.themeIndexOffset = chunkHeader->baseThemeIndexOffset;
-        break;
-    case OperatorC:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->operatorThemeDriveCNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->operatorThemeDriveCPathOffset));
-        info.themeIndexOffset = chunkHeader->operatorThemeDriveCIndexOffset;
-        break;
-    case OperatorROM:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->operatorThemeRomPathOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->operatorThemeRomPathOffset));
-        info.themeIndexOffset = chunkHeader->operatorThemeRomIndexOffset;
-        break;
-    case ActiveTheme:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->activeThemeNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->activeThemePathOffset));
-        info.themeIndexOffset = chunkHeader->activeThemeIndexOffset;
-        break;
-    default:
-        break;
+    if (manager) { 
+        HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(manager->base());
+        
+        switch(type) {
+        case BaseTheme:
+            if (chunkHeader->baseThemeIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->baseThemeNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->baseThemePathOffset));
+                info.themeIndexOffset = chunkHeader->baseThemeIndexOffset;
+            }
+            break;
+        case OperatorC:
+            if (chunkHeader->operatorThemeDriveCIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->operatorThemeDriveCNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->operatorThemeDriveCPathOffset));
+                info.themeIndexOffset = chunkHeader->operatorThemeDriveCIndexOffset;
+            }
+            break;
+        case OperatorROM:
+            if (chunkHeader->operatorThemeRomIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->operatorThemeRomNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->operatorThemeRomPathOffset));
+                info.themeIndexOffset = chunkHeader->operatorThemeRomIndexOffset;
+            }
+            break;
+        case ActiveTheme:
+            if (chunkHeader->activeThemeIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->activeThemeNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->activeThemePathOffset));
+                info.themeIndexOffset = chunkHeader->activeThemeIndexOffset;
+            }
+            break;
+        default:
+            break;
+        }
     }
-    
     return info;
+}
+
+bool HbThemeUtils::isLogicalName(const QString &fileName)
+{
+    return !(fileName.contains(QChar('/'), Qt::CaseSensitive) || fileName.contains(QChar('\\'), Qt::CaseSensitive));
 }

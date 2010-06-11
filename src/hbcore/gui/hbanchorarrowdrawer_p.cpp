@@ -43,7 +43,8 @@ const QString VALID_COLOR = "qtc_default_main_pane_normal";
 const QString INVALID_COLOR = "qtc_view_visited_normal";
 
 HbAnchorArrowDrawer::HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent)
-    : HbWidgetBase(parent), mLayout(mesh), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
+    : HbWidgetBase(parent), 
+      mLayout(mesh), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
 {
 #if defined(HB_DEVELOPER) || defined(CSS_INSPECTOR)
     updateColors();
@@ -92,7 +93,8 @@ void HbAnchorArrowDrawer::updateFocusItem(const QGraphicsItem *item)
 #endif
 }
 
-void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void HbAnchorArrowDrawer::paint(
+    QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option);
     Q_UNUSED(widget);
@@ -135,17 +137,22 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
                     bool overridden = false;
                     // find all the horizontal anchors
                     foreach(HbAnchor *anchor, anchors) {
-                        if (anchor->mStartEdge == Hb::LeftEdge || anchor->mStartEdge == Hb::RightEdge ||anchor->mStartEdge == Hb::CenterHEdge) {
+                        if (anchor->mStartEdge == Hb::LeftEdge || 
+                            anchor->mStartEdge == Hb::RightEdge ||
+                            anchor->mStartEdge == Hb::CenterHEdge) {
+
                             QGraphicsLayoutItem *other = 0;
                             if (anchor->mStartItem == layoutItem && anchor->mEndItem != mLayout) {
                                 other = anchor->mEndItem;
-                            } else if (anchor->mEndItem == layoutItem && anchor->mStartItem != mLayout) {
+                            } else if (anchor->mEndItem == layoutItem && 
+                                        anchor->mStartItem != mLayout) {
                                 other = anchor->mStartItem;
                             }
                             if (other) {
                                 if (overridden) {
                                     rectArea.setTop(qMin(rectArea.top(), other->geometry().top()));
-                                    rectArea.setBottom(qMax(rectArea.bottom(), other->geometry().bottom()));
+                                    rectArea.setBottom(
+                                        qMax(rectArea.bottom(), other->geometry().bottom()));
                                     break;
                                 } else {
                                     rectArea.setTop(other->geometry().top());
@@ -163,17 +170,22 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
                     bool overridden = false;
                     // find all the vertical anchors
                     foreach(HbAnchor *anchor, anchors) {
-                        if (anchor->mStartEdge == Hb::TopEdge || anchor->mStartEdge == Hb::BottomEdge ||anchor->mStartEdge == Hb::CenterVEdge) {
+                        if (anchor->mStartEdge == Hb::TopEdge || 
+                                anchor->mStartEdge == Hb::BottomEdge ||
+                                anchor->mStartEdge == Hb::CenterVEdge) {
                             QGraphicsLayoutItem *other = 0;
                             if (anchor->mStartItem == layoutItem && anchor->mEndItem != mLayout) {
                                 other = anchor->mEndItem;
-                            } else if (anchor->mEndItem == layoutItem && anchor->mStartItem != mLayout) {
+                            } else if (anchor->mEndItem == layoutItem && 
+                                anchor->mStartItem != mLayout) {
                                 other = anchor->mStartItem;
                             }
                             if (other) {
                                 if (overridden) {
-                                    rectArea.setLeft(qMin(rectArea.left(), other->geometry().left()));
-                                    rectArea.setRight(qMax(rectArea.right(), other->geometry().right()));
+                                    rectArea.setLeft(
+                                        qMin(rectArea.left(), other->geometry().left()));
+                                    rectArea.setRight(
+                                        qMax(rectArea.right(), other->geometry().right()));
                                     break;
                                 } else {
                                     rectArea.setLeft(other->geometry().left());
@@ -205,7 +217,8 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
             if (anchor->mStartItem) {
                 if (QGraphicsItem *asGraphicsItem = anchor->mStartItem->graphicsItem()) {
                     if (asGraphicsItem->isWidget()) {
-                        const QGraphicsWidget *widget = static_cast<const QGraphicsWidget *>(asGraphicsItem);
+                        const QGraphicsWidget *widget = 
+                            static_cast<const QGraphicsWidget *>(asGraphicsItem);
                         QString itemText(widget->metaObject()->className());
                         if (itemText == "HbFrameItem"
                             || itemText == "HbTouchArea") {
@@ -214,7 +227,8 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
                     }
                 }
             }
-            // if edge is connected to parent on same edge, and if the gap is zero, then don't show an arrow head
+            // if edge is connected to parent on same edge, and if the gap is zero, 
+            // then don't show an arrow head
             if(anchor->mEndItem->isLayout()
                 && anchor->mStartEdge == anchor->mEndEdge
                 && anchor->mValue == 0) {
@@ -346,7 +360,7 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
             QColor arrowColor = mLayout->isValid()
                 ? mValidColor
                 : mInvalidColor;
-            QColor centerColor = Qt::yellow;
+            QColor centerColor = Qt::yellow; //krazy:exclude=qenums
 
             myPen.setWidth(LINE_WIDTH);
             myPen.setColor(arrowColor);

@@ -98,18 +98,18 @@ public:
     void setAnimator(HbIconAnimator *animator);
     bool isMirrored() const;
     void addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int z=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int z = 0);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;
-    HbIconFormatType iconFormatType() const;    
+    HbIconFormatType iconFormatType() const;
 
 private:
     void ensureSignalConnections();
     QPixmap getPixmapFromAnimation() const;
-    
-    HbIconImpl* paintHelper(const QSizeF &size,
+
+    HbIconImpl *paintHelper(const QSizeF &size,
                             Qt::AspectRatioMode aspectRatioMode,
                             QIcon::Mode,
                             QIcon::State);

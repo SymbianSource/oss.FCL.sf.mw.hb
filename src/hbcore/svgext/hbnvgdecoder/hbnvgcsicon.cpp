@@ -24,10 +24,10 @@
 ****************************************************************************/
 
 #include "hbnvgcsicon_p.h"
-#include "hbnvgicondata_p.h"
 #include "hbnvgfittoviewbox_p.h"
 #include "hbnvgutil_p.h"
 #include "hbnvgexception_p.h"
+#include "hbdereferencer_p.h"
 
 #include <QScopedPointer>
 #include <QScopedArrayPointer>
@@ -118,31 +118,16 @@ const VGfloat identityMatrix[] = {
  */
 
 HbNvgCsIcon::HbNvgCsIcon()
-        :   mPaintFill(VG_INVALID_HANDLE),
+        :mPaintFill(VG_INVALID_HANDLE),
         mPaintStroke(VG_INVALID_HANDLE),
         mVgPath(VG_INVALID_HANDLE),
         mLastPathDataType(0),
         mDoFill(VG_FALSE),
         mDoStroke(VG_FALSE),
-        mCreatingNvgIcon(0),
         mPreserveAspectSetting(HbNvgEngine::NvgPreserveAspectRatioXmidYmid),
         mSmilFitSetting(HbNvgEngine::NvgMeet),
-        mNvgIconData(0),
-        mLastFillPaintType(0),
-        mLastStrokePaintType(0),
-        mLastFillPaintColor(0),
-        mLastStrkePaintColor(0),
-        mResetFillPaint(0),
-        mResetStrokePaint(0),
         mMirrored(false)
 {
-}
-
-void HbNvgCsIcon::setIconData(const QByteArray &buffer)
-{
-    mNvgIconData = new HbNvgIconData(buffer.size());
-    Q_CHECK_PTR(mNvgIconData);
-    Q_CHECK_PTR(mNvgIconData);
 }
 
 HbNvgCsIcon::~HbNvgCsIcon()
@@ -159,17 +144,6 @@ HbNvgCsIcon::~HbNvgCsIcon()
 
     vgSetPaint(VG_INVALID_HANDLE, VG_FILL_PATH);
     vgSetPaint(VG_INVALID_HANDLE, VG_STROKE_PATH);
-
-    delete mNvgIconData;
-}
-
-
-void HbNvgCsIcon::setViewBox(float x, float y, float w, float h)
-{
-    mViewBoxX = x;
-    mViewBoxY = y;
-    mViewBoxW = w;
-    mViewBoxH = h;
 }
 
 /*!
@@ -205,23 +179,11 @@ void HbNvgCsIcon::rotate(float angle, float xValue, float yValue)
 */
 void HbNvgCsIcon ::directDraw(const QByteArray &buffer, const QSize &targetSize)
 {
-    drawCommandSection(buffer, targetSize, 0);
+    drawCommandSection(buffer, targetSize);
 }
 
-/*!
-    Create the nvg graphic data \a buffer of size \a targetSize
-    and return the status of the draw.
-*/
-void HbNvgCsIcon::create(const QByteArray &buffer, const QSize& targetSize)
-{
-    drawCommandSection(buffer, targetSize, 1);
-}
-
-void HbNvgCsIcon::drawCommandSection(const QByteArray &buffer, const QSize & targetSize,
-                                     qint32 objectCaching)
-{
-    mCreatingNvgIcon = objectCaching;
-
+void HbNvgCsIcon::drawCommandSection(const QByteArray &buffer, const QSize & targetSize)
+{ 
     HbDereferencer iconData(buffer);
     qint16 headerSize  = iconData.derefInt16(NVG_HEADERSIZE_OFS);
     quint8 nvgVersion   = iconData.derefInt8(NVG_VERSION_OFS);
@@ -253,8 +215,6 @@ void HbNvgCsIcon::drawCommandSection(const QByteArray &buffer, const QSize & tar
     // transformation matrix.
     // Everything gets restored to the original values before we return.
     vgLoadMatrix(currentPathMatrix);
-
-//    applyScissoring(currentPathMatrix, targetSize);
 
     /*
      * set the rotation angle if available
@@ -391,9 +351,7 @@ void HbNvgCsIcon::executeNvgCsCommandLoop(quint16 commandCount, HbDereferencer *
                 strokeWidth = commandSection->derefReal32();
             }
 
-            COND_COM_OC(mCreatingNvgIcon,
-                        addSetStrokeWidthCommand(strokeWidth),
-                        vgSetf(VG_STROKE_LINE_WIDTH, strokeWidth));
+            vgSetf(VG_STROKE_LINE_WIDTH, strokeWidth);
         }
         break;
         case CMD_SET_STROKE_MITER_LIMIT: {
@@ -413,9 +371,7 @@ void HbNvgCsIcon::executeNvgCsCommandLoop(quint16 commandCount, HbDereferencer *
                 miterLimit = commandSection->derefReal32();
             }
 
-            COND_COM_OC(mCreatingNvgIcon,
-                        addSetStrokeMiterLimitCommand(miterLimit),
-                        vgSetf(VG_STROKE_MITER_LIMIT, miterLimit));
+            vgSetf(VG_STROKE_MITER_LIMIT, miterLimit);
         }
         break;
         case CMD_SET_STROKE_LINE_JOIN_CAP: {
@@ -450,10 +406,8 @@ void HbNvgCsIcon::executeNvgCsCommandLoop(quint16 commandCount, HbDereferencer *
                 break;
             }
 
-            COND_COM_OC(mCreatingNvgIcon,
-                        addStrokeLineJoinCapCommand(capStyle, lineJoinStyle),
-                        vgSeti(VG_STROKE_CAP_STYLE, capStyle);
-                        vgSeti(VG_STROKE_JOIN_STYLE, lineJoinStyle););
+            vgSeti(VG_STROKE_CAP_STYLE, capStyle);
+            vgSeti(VG_STROKE_JOIN_STYLE, lineJoinStyle);
         }
         break;
         default: {
@@ -505,73 +459,18 @@ void HbNvgCsIcon::applyViewboxToViewPortTransformation(const QSize& targetSize,
     Q_CHECK_PTR(viewBoxTx);
     QScopedPointer<HbNvgFitToViewBoxImpl> viewboxTrnsfr(viewBoxTx);
 
-    /*
-     * this is bit unreadable,
-     * need to find a better design to separate the object caching solution from normal rendering,
-     */
+    viewboxTrnsfr->setAllignment(mPreserveAspectSetting);
+    viewboxTrnsfr->setScaling(mSmilFitSetting);
 
-    COND_COM_OC_NOC( {
-        if (mCreatingNvgIcon) {
-            setViewBox(viewboxX, viewboxY, viewboxW, viewboxH);
-        } else {
-            viewboxTrnsfr->setAllignment(mPreserveAspectSetting);
-            viewboxTrnsfr->setScaling(mSmilFitSetting);
+    if (viewboxW > 0 && viewboxH > 0) {
+        viewboxTrnsfr->setViewBox(viewboxX, viewboxY, viewboxW, viewboxH);
+    }
 
-            if (viewboxW > 0 && viewboxH > 0) {
-                viewboxTrnsfr->setViewBox(viewboxX, viewboxY, viewboxW, viewboxH);
-            }
+    qint32 width = targetSize.width();
+    qint32 height = targetSize.height();
 
-            qint32 width = aTargetSize.width();
-            qint32 height = aTargetSize.height();
-
-            viewboxTrnsfr->setWindowViewportTrans(QRect(0, 0, width, height), QSize(0, 0));
-        }
-    }, {
-        viewboxTrnsfr->setAllignment(mPreserveAspectSetting);
-        viewboxTrnsfr->setScaling(mSmilFitSetting);
-
-        if (viewboxW > 0 && viewboxH > 0) {
-            viewboxTrnsfr->setViewBox(viewboxX, viewboxY, viewboxW, viewboxH);
-        }
-
-        qint32 width = targetSize.width();
-        qint32 height = targetSize.height();
-
-        viewboxTrnsfr->setWindowViewportTrans(QRect(0, 0, width, height), QSize(0, 0));
-    });
+    viewboxTrnsfr->setWindowViewportTrans(QRect(0, 0, width, height), QSize(0, 0));
 }
-
-void HbNvgCsIcon::applyScissoring(VGfloat *aMatrix, const QSize& targetSize)
-{
-    /*
-     * calculate the rectangle with respect to the transformation applied
-     * and set the scissoring rect
-     */
-    QPoint leftBottom  = getTranslatedPoint(aMatrix, QPoint(0, 0));
-    QPoint leftTop     = getTranslatedPoint(aMatrix, QPoint(0, targetSize.height()));
-    QPoint rightBottom = getTranslatedPoint(aMatrix, QPoint(targetSize.width(), 0));
-    QPoint rightTop    = getTranslatedPoint(aMatrix, QPoint(targetSize.width(), targetSize.height()));
-
-    VGfloat minX = leftBottom.x();
-    VGfloat minY = leftBottom.y();
-    VGfloat maxX = leftBottom.x();
-    VGfloat maxY = leftBottom.y();
-
-    minX = minVal4(leftBottom.x(), leftTop.x(), rightBottom.x(), rightTop.x());
-    minY = minVal4(leftBottom.y(), leftTop.y(), rightBottom.y(), rightTop.y());
-
-    maxX = maxVal4(leftBottom.x(), leftTop.x(), rightBottom.x(), rightTop.x());
-    maxY = maxVal4(leftBottom.y(), leftTop.y(), rightBottom.y(), rightTop.y());
-
-    VGfloat newW = maxX - minX;
-    VGfloat newH = maxY - minY;
-
-    VGint clipRect[] = {minX, minY, newW, newH};
-
-    vgSeti(VG_SCISSORING, VG_TRUE);
-    vgSetiv(VG_SCISSOR_RECTS, 4, clipRect);
-}
-
 
 HbNvgEngine::HbNvgErrorType HbNvgCsIcon::initializeGc()
 {
@@ -687,8 +586,6 @@ void HbNvgCsIcon::resetNvgState()
 
 void HbNvgCsIcon::setFillPaint(HbDereferencer *iconData)
 {
-    COND_COM_OC_OOC(register qint32 drawingMode = mCreatingNvgIcon);
-
     quint32 commonData  = iconData->derefInt32();
     quint32 paintType   = commonData & 0x07;
     quint16 specifcData = (commonData >> 16) & 0xff;
@@ -696,15 +593,7 @@ void HbNvgCsIcon::setFillPaint(HbDereferencer *iconData)
     switch (paintType) {
     case PAINT_LGRAD: {
         mGradPaintFill = mPaintFill;
-        COND_COM_OC_OOC(
-        if (mCreatingNvgIcon) {
-        // CNVGCSIcon will destroy the paint handle
-        mGradPaintFill = vgCreatePaint();
-            if (mGradPaintFill == VG_INVALID_HANDLE) {
-                throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-            }
-        });
-
+       
         // gradient data, the data will be word aligned
         float* gradData = (float*)iconData->derefInt8Array(4 * sizeof(VGfloat), sizeof(float));
 
@@ -721,31 +610,17 @@ void HbNvgCsIcon::setFillPaint(HbDereferencer *iconData)
                                     gradMatrix1[2], gradMatrix1[5], 1.0f
                                    };
 
-            COND_COM_OC(drawingMode,
-                        addLinearGradientCommand(4, gradData, gradMatrix, mGradPaintFill),
-                        vgLoadMatrix(gradMatrix););
+            vgLoadMatrix(gradMatrix);
             Q_UNUSED(identityMatrix);
         } else {
-            COND_COM_OC(drawingMode,
-                        addLinearGradientCommand(4, gradData, (VGfloat*)identityMatrix, mGradPaintFill),
-                        vgLoadIdentity());
+            vgLoadIdentity();
         }
-
-        COND_COM_OC(drawingMode, ; ,
-                    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE));
+        vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     }
     break;
     case PAINT_RGRAD: {
         mGradPaintFill = mPaintFill;
-
-        COND_COM_OC_OOC(
-        if (mCreatingNvgIcon) {
-        mGradPaintFill = vgCreatePaint();
-            if (mGradPaintFill == VG_INVALID_HANDLE) {
-                throw HbNvgException(openVgErrorToHbNvgError(vgGetError()));
-            }
-        });
-
+        
         // gradient data, the data will be word aligned
         float* gradData = (float*)iconData->derefInt8Array(4 * sizeof(VGfloat), sizeof(quint32));
 
@@ -762,18 +637,12 @@ void HbNvgCsIcon::setFillPaint(HbDereferencer *iconData)
                                     gradMatrix1[2], gradMatrix1[5], 1.0f
                                    };
 
-            COND_COM_OC(drawingMode,
-                        addRadialGradientCommand(5, gradData, gradMatrix, mGradPaintFill),
-                        vgLoadMatrix(gradMatrix));
+            vgLoadMatrix(gradMatrix);
             Q_UNUSED(identityMatrix);
         } else {
-            COND_COM_OC(drawingMode,
-                        addRadialGradientCommand(5, gradData, (VGfloat*)identityMatrix, mGradPaintFill),
-                        vgLoadIdentity());
+            vgLoadIdentity();
         }
-
-        COND_COM_OC(drawingMode, ; ,
-                    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE));
+        vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     }
     break;
     case PAINT_FLAT: {
@@ -781,10 +650,8 @@ void HbNvgCsIcon::setFillPaint(HbDereferencer *iconData)
 
         rgba = (rgba & 0xffffff00) | mFillAlpha;
 
-        COND_COM_OC(drawingMode,
-                    addSetColorCommand(rgba),
-                    vgSetParameteri(mPaintFill, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-                    vgSetColor(mPaintFill, rgba));
+        vgSetParameteri(mPaintFill, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
+        vgSetColor(mPaintFill, rgba);
     }
     break;
     default: {
@@ -894,28 +761,18 @@ void HbNvgCsIcon::drawPath(HbDereferencer * iconData)
         paintMode = VG_FILL_PATH;
     }
 
-    COND_COM_OC(mCreatingNvgIcon, {
-        VGPath path = createPath();
+    vgClearPath(mVgPath, VG_PATH_CAPABILITY_APPEND_TO);
 
-        if (path != VG_INVALID_HANDLE) {
-            vgAppendPathData(path, numSegments, pathSegments, pathData);
-        } else {
-            addPathData(numSegments, pathSegments, pathData);
-        }
-        addDrawPathCommand(path, paintMode);
-    }, {
-        vgClearPath(mVgPath, VG_PATH_CAPABILITY_APPEND_TO);
+    vgAppendPathData(mVgPath, numSegments, pathSegments, pathData);
+    vgDrawPath(mVgPath, paintMode);
 
-        vgAppendPathData(mVgPath, numSegments, pathSegments, pathData);
-        vgDrawPath(mVgPath, paintMode);
-    });
     mDoStroke   = VG_FALSE;
     mDoFill     = VG_FALSE;
 }
 
 void HbNvgCsIcon::setTransform(HbDereferencer * iconData, quint32 & counter, const VGfloat* currentMatrix)
 {
-    COND_COM_OC(mCreatingNvgIcon, ; , vgLoadMatrix(currentMatrix));
+    vgLoadMatrix(currentMatrix);
 
     quint32 commonData =  iconData->derefInt32();
     quint32 transformType = (commonData & 0x00ff0000) >> 16 ;
@@ -966,19 +823,12 @@ void HbNvgCsIcon::setTransform(HbDereferencer * iconData, quint32 & counter, con
             }
         }
 
-        COND_COM_OC(mCreatingNvgIcon,
-                    addSetTransformCommand(matrixTemp, 1),
-                    vgMultMatrix(matrixTemp));
-    } else {
-        COND_COM_OC(mCreatingNvgIcon,
-                    addSetTransformCommand(matrixTemp, 0), ;);
-    }
+        vgMultMatrix(matrixTemp);
+    } 
 }
 
 void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
 {
-    COND_COM_OC_OOC(register qint32 drawingMode = mCreatingNvgIcon;);
-
     quint32 commonData = iconData->derefInt32();
     quint32 strokeType = commonData & 0x07;
     quint16 specifcData = (commonData >> 16) & 0xff;
@@ -987,21 +837,12 @@ void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
     case STROKE_LGRAD: {
         mGradPaintStroke = mPaintStroke;
 
-        COND_COM_OC_OOC(
-        if (mCreatingNvgIcon) {
-        mGradPaintStroke = vgCreatePaint();
-            if (mGradPaintStroke == VG_INVALID_HANDLE) {
-                throw HbNvgException(HbNvgEngine::NvgErrBadHandle);
-            }
-        });
-
         // gradient data, the data will be word aligned
         float* gradData = (float*)iconData->derefInt8Array(4 * sizeof(VGfloat), sizeof(float));
 
-        COND_COM_OC(drawingMode, ; ,
-                    vgSetParameteri(mGradPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_LINEAR_GRADIENT);
-                    vgSetParameterfv(mGradPaintStroke, VG_PAINT_LINEAR_GRADIENT, 4, gradData);
-                    vgSeti(VG_MATRIX_MODE, VG_MATRIX_STROKE_PAINT_TO_USER));
+        vgSetParameteri(mGradPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_LINEAR_GRADIENT);
+        vgSetParameterfv(mGradPaintStroke, VG_PAINT_LINEAR_GRADIENT, 4, gradData);
+        vgSeti(VG_MATRIX_MODE, VG_MATRIX_STROKE_PAINT_TO_USER);
 
         if (specifcData & 0x1) {
             float* gradMatrix1 = (float*)iconData->derefInt8Array(6 * sizeof(VGfloat),
@@ -1012,14 +853,10 @@ void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
                                     gradMatrix1[2], gradMatrix1[5], 1.0f
                                    };
 
-            COND_COM_OC(drawingMode,
-                        addStrokeLinearGradientCommand(4, gradData, gradMatrix, mGradPaintStroke),
-                        vgLoadMatrix(gradMatrix));
+            vgLoadMatrix(gradMatrix);
             Q_UNUSED(identityMatrix);
         } else {
-            COND_COM_OC(drawingMode,
-                        addStrokeLinearGradientCommand(4, gradData, (VGfloat*)identityMatrix, mGradPaintStroke),
-                        vgLoadIdentity());
+            vgLoadIdentity();
         }
         vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     }
@@ -1027,20 +864,12 @@ void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
     case STROKE_RGRAD: {
         mGradPaintStroke = mPaintStroke;
 
-        COND_COM_OC_OOC(
-        if (mCreatingNvgIcon) {
-        mGradPaintStroke = vgCreatePaint();
-            if (mGradPaintStroke == VG_INVALID_HANDLE) {
-                throw HbNvgException(HbNvgEngine::NvgErrBadHandle);
-            }
-        });
         // gradient data, the data will be word aligned
         float* gradData = (float*)iconData->derefInt8Array(5 * sizeof(VGfloat), sizeof(quint32));
 
-        COND_COM_OC(drawingMode, ; ,
-                    vgSetParameteri(mGradPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_RADIAL_GRADIENT);
-                    vgSetParameterfv(mGradPaintStroke, VG_PAINT_RADIAL_GRADIENT, 5, gradData);
-                    vgSeti(VG_MATRIX_MODE, VG_MATRIX_STROKE_PAINT_TO_USER));
+        vgSetParameteri(mGradPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_RADIAL_GRADIENT);
+        vgSetParameterfv(mGradPaintStroke, VG_PAINT_RADIAL_GRADIENT, 5, gradData);
+        vgSeti(VG_MATRIX_MODE, VG_MATRIX_STROKE_PAINT_TO_USER);
 
         if (specifcData & 0x1) {
             float* gradMatrix1 = (float*)iconData->derefInt8Array(6 * sizeof(VGfloat),
@@ -1050,14 +879,10 @@ void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
                                     gradMatrix1[2], gradMatrix1[5], 1.0f
                                    };
 
-            COND_COM_OC(drawingMode,
-                        addStrokeRadialGradientCommand(4, gradData, gradMatrix, mGradPaintStroke),
-                        vgLoadMatrix(gradMatrix));
+            vgLoadMatrix(gradMatrix);
             Q_UNUSED(identityMatrix);
         } else {
-            COND_COM_OC(drawingMode,
-                        addStrokeRadialGradientCommand(4, gradData, (VGfloat*)identityMatrix, mGradPaintStroke),
-                        vgLoadIdentity());
+            vgLoadIdentity();
         }
         vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
     }
@@ -1093,423 +918,11 @@ void HbNvgCsIcon::setStrokePaint(HbDereferencer * iconData)
         quint32 rgba = iconData->derefInt32(NVG_RGBA_OFS);
         rgba = (rgba & 0xffffff00) | mStrokeAlpha; // replace alpha
 
-        COND_COM_OC(drawingMode,
-                    addStrokeSetColorCommand(rgba),
-                    vgSetParameteri(mPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-                    vgSetColor(mPaintStroke, rgba));
+        vgSetParameteri(mPaintStroke, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
+        vgSetColor(mPaintStroke, rgba);
     }
     break;
     }
-}
-
-#ifdef    OPENVG_OBJECT_CACHING
-VGPath HbNvgCsIcon::createPath()
-{
-    VGPath path = VG_INVALID_HANDLE;
-    switch (mLastPathDataType) {
-    case NvgEightBitEncoding: {
-        path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                            VG_PATH_DATATYPE_S_16, 1.0f / 2.0f, 0.0f, 0, 0,
-                            VG_PATH_CAPABILITY_APPEND_TO);
-    }
-    break;
-
-    case NvgSixteenBitEncoding: {
-        path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                            VG_PATH_DATATYPE_S_16, 1.0f / 16.0f, 0.0f, 0, 0,
-                            VG_PATH_CAPABILITY_APPEND_TO);
-    }
-    break;
-
-    case NvgThirtyTwoBitEncoding: {
-        path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                            VG_PATH_DATATYPE_S_32, 1.0f / 65536.0f, 0.0f, 0, 0,
-                            VG_PATH_CAPABILITY_APPEND_TO);
-    }
-    break;
-    default: 
-    break;
-    }
-    return path;
-}
-#endif
-
-void HbNvgCsIcon::addPathData(VGint numSegments, const VGubyte * pathSegments, const void * pathData)
-{
-    mNvgIconData->encodeUint32(NvgPathData);
-    mNvgIconData->encodeUint32(numSegments);
-    mNvgIconData->encodeData(pathSegments, numSegments);
-
-    qint32 coordinateCount = 0;
-    for (qint32 i = 0; i < numSegments; ++i) {
-        switch (pathSegments[i]) {
-        case VG_HLINE_TO:
-        case VG_VLINE_TO:
-            coordinateCount += 1;
-            break;
-        case VG_MOVE_TO:
-        case VG_LINE_TO:
-        case VG_SQUAD_TO:
-            coordinateCount += 2;
-            break;
-        case VG_QUAD_TO:
-        case VG_SCUBIC_TO:
-            coordinateCount += 4;
-            break;
-        case VG_SCCWARC_TO:
-        case VG_SCWARC_TO:
-        case VG_LCCWARC_TO:
-        case VG_LCWARC_TO:
-            coordinateCount += 5;
-            break;
-        case VG_CUBIC_TO:
-            coordinateCount += 6;
-            break;
-        default:
-            break;
-        }
-    }
-    mNvgIconData->encodeUint16(coordinateCount);
-    mNvgIconData->encodeData(pathData, coordinateCount * 4);
-}
-
-void HbNvgCsIcon::addDrawPathCommand(VGPath path, VGbitfield paintMode)
-{
-    mNvgIconData->encodeUint32(NvgPath);
-    mNvgIconData->encodeUint32(path);
-    mNvgIconData->encodeUint32(paintMode);
-}
-
-void HbNvgCsIcon::addLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgPaint);
-    addLinearGradientCommandData(paint, count, gradientData, gradientMatrix);
-}
-
-void HbNvgCsIcon::addRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgPaint);
-    addRadialGradientCommandData(paint, count, gradientData, gradientMatrix);
-}
-
-void HbNvgCsIcon::addSetColorCommand(VGuint rgba)
-{
-    mNvgIconData->encodeUint32(NvgPaint);
-    mNvgIconData->encodeUint32(VG_PAINT_TYPE_COLOR);
-    mNvgIconData->encodeUint32(rgba);
-}
-
-void HbNvgCsIcon::addColorRampCommand(VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgColorRamp);
-    mNvgIconData->encodeUint32(paint);
-}
-
-void HbNvgCsIcon::addSetTransformCommand(const VGfloat* transformMatrix, int aFlag)
-{
-    mNvgIconData->encodeUint32(NvgTransform);
-    mNvgIconData->encodeData(transformMatrix, 9 * sizeof(VGfloat));
-    mNvgIconData->encodeUint32(aFlag);
-}
-
-void HbNvgCsIcon::addSetStrokeWidthCommand(VGfloat strokeWidth)
-{
-    mNvgIconData->encodeUint32(NvgStrokeWidth);
-    mNvgIconData->encodeReal32(strokeWidth);
-}
-
-void HbNvgCsIcon::addSetStrokeMiterLimitCommand(VGfloat miterLimit)
-{
-    mNvgIconData->encodeUint32(NvgStrokeMiterLimit);
-    mNvgIconData->encodeReal32(miterLimit);
-}
-
-void HbNvgCsIcon::addStrokeLineJoinCapCommand(VGint capStyle, VGint joinStyle)
-{
-    mNvgIconData->encodeUint32(NvgStrokeLineJoinCap);
-    mNvgIconData->encodeUint32(capStyle);
-    mNvgIconData->encodeUint32(joinStyle);
-}
-
-void HbNvgCsIcon::addStrokeLinearGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgStrokePaint);
-    addLinearGradientCommandData(paint, count, gradientData, gradientMatrix);
-}
-
-void HbNvgCsIcon::addStrokeRadialGradientCommand(VGint count, VGfloat* gradientData, VGfloat* gradientMatrix, VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgStrokePaint);
-    addRadialGradientCommandData(paint, count, gradientData, gradientMatrix);
-}
-
-void HbNvgCsIcon::addStrokeSetColorCommand(VGuint rgba)
-{
-    mNvgIconData->encodeUint32(NvgStrokePaint);
-    addSetColorCommandData(rgba);
-}
-
-void HbNvgCsIcon::addStrokeColorRampCommand(VGPaint paint)
-{
-    mNvgIconData->encodeUint32(NvgStrokeColorRamp);
-    mNvgIconData->encodeUint32(paint);
-}
-
-void HbNvgCsIcon::addLinearGradientCommandData(VGPaint paint, VGint count, VGfloat* gradientData, VGfloat* gradientMatrix)
-{
-    mNvgIconData->encodeUint32(VG_PAINT_TYPE_LINEAR_GRADIENT);
-    mNvgIconData->encodeUint32(paint);
-    mNvgIconData->encodeUint32(count);
-    mNvgIconData->encodeData(gradientData, count * sizeof(VGfloat));
-    mNvgIconData->encodeData(gradientMatrix, 9 * sizeof(VGfloat));
-}
-
-void HbNvgCsIcon::addRadialGradientCommandData(VGPaint paint, VGint count, VGfloat* gradientData, VGfloat* gradientMatrix)
-{
-    mNvgIconData->encodeUint32(VG_PAINT_TYPE_RADIAL_GRADIENT);
-    mNvgIconData->encodeUint32(paint);
-    mNvgIconData->encodeUint32(count);
-    mNvgIconData->encodeData(gradientData, count * sizeof(VGfloat));
-    mNvgIconData->encodeData(gradientMatrix, 9 * sizeof(VGfloat));
-}
-
-void HbNvgCsIcon::addSetColorCommandData(VGuint rgba)
-{
-    mNvgIconData->encodeUint32(VG_PAINT_TYPE_COLOR);
-    mNvgIconData->encodeUint32(rgba);
-}
-
-HbNvgEngine::HbNvgErrorType HbNvgCsIcon::draw(const QSize &size)
-{
-    NVG_DEBUGP2("DRAWING NvgCsIcon %s, ", __FUNCTION__);
-
-    HbNvgEngine::HbNvgErrorType error = HbNvgEngine::NvgErrNone;
-
-    // Get Matrix modes and all caller matrices (must be restored afterwards)
-    updateClientMatrices();
-
-    //Exception handling has to happen
-    error =  doDraw(size);
-
-    // restore everything as we may have changed matrix mode
-    restoreClientMatrices();
-
-    return error;
-}
-
-HbNvgEngine::HbNvgErrorType HbNvgCsIcon::doDraw(const QSize &size)
-{
-    HbNvgEngine::HbNvgErrorType ret = HbNvgEngine::NvgErrNone;
-
-    vgSetPaint(mPaintFill,   VG_FILL_PATH);
-    vgSetPaint(mPaintStroke, VG_STROKE_PATH);
-    mLastFillPaintColor     = 0;
-    mLastStrkePaintColor    = 0;
-    mLastFillPaintType      = 0;
-    mLastStrokePaintType    = 0;
-
-    VGfloat currentPathMatrix[9];
-    vgGetMatrix(currentPathMatrix);
-
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-    vgLoadMatrix(currentPathMatrix);
-    setRotation();
-#ifdef __MIRROR_
-    vgScale(1.0f, -1.0f);
-    vgTranslate(0, (VGfloat)(-size.height()));
-#endif
-
-    setViewBoxToViewTransformation(size);
-
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-
-    VGfloat currentMatrix[9];
-
-    vgGetMatrix(currentMatrix);
-
-    mNvgIconData->beginRead();
-
-    while (!mNvgIconData->eof()) {
-        switch (mNvgIconData->readInt32()) {
-        case NvgPath: {
-            VGPath path = (VGPath)mNvgIconData->readInt32();
-            VGPaintMode paintMode = (VGPaintMode)mNvgIconData->readInt32();
-
-            if (path == VG_INVALID_HANDLE) {
-                vgDrawPath(mVgPath, paintMode);
-            } else {
-                vgDrawPath(path, paintMode);
-            }
-            break;
-        }
-        case NvgPathData: {
-            if (mVgPath != VG_INVALID_HANDLE) {
-
-                VGint numSegments = mNvgIconData->readInt32();
-
-                VGubyte *pSegArry = new VGubyte[numSegments];
-                Q_CHECK_PTR(pSegArry);
-                QScopedArrayPointer<VGubyte> pathSegments(pSegArry);
-                mNvgIconData->read(pathSegments.data(), numSegments);
-
-                VGint coordinateCount = mNvgIconData->readInt32();
-
-                VGubyte *pDataArry = new VGubyte[coordinateCount * 4];
-                Q_CHECK_PTR(pDataArry);
-                QScopedArrayPointer<VGubyte> pathData(pDataArry);
-                mNvgIconData->read(pathData.data(), coordinateCount * 4);
-
-                vgClearPath(mVgPath, VG_PATH_CAPABILITY_APPEND_TO);
-                vgAppendPathData(mVgPath, numSegments, pathSegments.data(), pathData.data());
-            }
-            break;
-        }
-        case NvgPaint: {
-            drawPaint(mPaintFill, VG_MATRIX_FILL_PAINT_TO_USER, mLastFillPaintType, mLastFillPaintColor, VG_FILL_PATH);
-            break;
-        }
-        case NvgColorRamp: {
-            mNvgIconData->readInt32();
-            break;
-        }
-        case NvgTransform: {
-            qint32 flag;
-            VGfloat transformMatrix[9];
-
-            mNvgIconData->read((quint8 *)transformMatrix, 9 * sizeof(VGfloat));
-            flag = mNvgIconData->readInt32();
-
-            vgLoadMatrix(currentMatrix);
-            if (flag) {
-                vgMultMatrix(transformMatrix);
-            }
-
-            break;
-        }
-        case NvgStrokeWidth: {
-            VGfloat strokeWidth = mNvgIconData->readReal32();
-            vgSetf(VG_STROKE_LINE_WIDTH, strokeWidth);
-            break;
-        }
-
-        case NvgStrokeMiterLimit: {
-            VGfloat miterLimit = mNvgIconData->readReal32();
-            vgSetf(VG_STROKE_MITER_LIMIT, miterLimit);
-            break;
-        }
-
-        case NvgStrokeLineJoinCap: {
-            VGint lineJoin = mNvgIconData->readInt32();
-            VGint cap = mNvgIconData->readInt32();
-
-            vgSeti(VG_STROKE_JOIN_STYLE, (VGJoinStyle)lineJoin);
-            vgSeti(VG_STROKE_CAP_STYLE, (VGCapStyle)cap);
-            break;
-        }
-        case NvgStrokePaint: {
-            drawPaint(mPaintStroke, VG_MATRIX_STROKE_PAINT_TO_USER, mLastStrokePaintType, mLastStrkePaintColor, VG_STROKE_PATH);
-            break;
-        }
-        case NvgStrokeColorRamp: {
-            mNvgIconData->readInt32();
-            break;
-        }
-        default: {
-            throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
-        }
-        }
-    }
-
-    mNvgIconData->endRead();
-
-    return ret;
-}
-
-void HbNvgCsIcon::drawColorRamp(VGPaint paint)
-{
-    qint32 stopCount = mNvgIconData->readInt32();
-
-    VGfloat *crs = new VGfloat[stopCount];
-    Q_CHECK_PTR(crs);
-    QScopedArrayPointer<VGfloat> colorRamps(crs);
-
-    mNvgIconData->read((quint8 *)colorRamps.data(), stopCount * sizeof(VGfloat));
-    vgSetParameteri(paint, VG_PAINT_COLOR_RAMP_SPREAD_MODE, VG_COLOR_RAMP_SPREAD_PAD);
-    vgSetParameterfv(paint, VG_PAINT_COLOR_RAMP_STOPS, stopCount, colorRamps.data());
-}
-
-void HbNvgCsIcon::drawPaint(VGPaint paint, VGMatrixMode matrixMode, quint32 & lastPaintType, quint32 &lastPaintColor, VGPaintMode paintMode)
-{
-    VGPaintType paintType = (VGPaintType)mNvgIconData->readInt32();
-
-    if (paintType == VG_PAINT_TYPE_LINEAR_GRADIENT ||
-            paintType == VG_PAINT_TYPE_RADIAL_GRADIENT) {
-        VGPaintParamType paintPType = VG_PAINT_LINEAR_GRADIENT;
-        if (paintType == VG_PAINT_TYPE_RADIAL_GRADIENT) {
-            paintPType = VG_PAINT_RADIAL_GRADIENT;
-        }
-
-        VGPaint paintHandle = mNvgIconData->readInt32();
-        qint32 count = mNvgIconData->readInt32();
-        VGfloat gradientData[5];
-        VGfloat gradientMatrix[9];
-
-        mNvgIconData->read((quint8 *)gradientData, count * sizeof(VGfloat));
-        mNvgIconData->read((quint8 *)gradientMatrix, 9 * sizeof(VGfloat));
-
-        if (paintHandle) {
-            vgSetPaint(paintHandle,   paintMode);
-            vgSeti(VG_MATRIX_MODE, matrixMode);
-            vgLoadMatrix(gradientMatrix);
-            if (paintMode == VG_FILL_PATH) {
-                mResetFillPaint = 1;
-            } else {
-                mResetStrokePaint = 1;
-            }
-        } else {
-            if (lastPaintType != (quint32)paintType) {
-                vgSetParameteri(paint, VG_PAINT_TYPE, paintType);
-            }
-            vgSetParameterfv(paint, paintPType, count, gradientData);
-
-            vgSeti(VG_MATRIX_MODE, matrixMode);
-            vgLoadMatrix(gradientMatrix);
-        }
-        vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-    } else if (paintType == VG_PAINT_TYPE_COLOR) {
-        if (paintMode == VG_FILL_PATH && mResetFillPaint) {
-            mResetFillPaint = 0;
-            vgSetPaint(paint, paintMode);
-        } else if (paintMode == VG_STROKE_PATH && mResetStrokePaint) {
-            mResetStrokePaint = 0;
-            vgSetPaint(paint, paintMode);
-        }
-        quint32 color = static_cast<quint32>(mNvgIconData->readInt32());
-        if (lastPaintType != (quint32)paintType) {
-            vgSetParameteri(paint, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
-            vgSetColor(paint, color);
-        } else {
-            if (lastPaintColor != color) {
-                vgSetColor(paint, color);
-            }
-        }
-        lastPaintColor = color;
-    } else {
-        throw HbNvgException(HbNvgEngine::NvgErrCorrupt);
-    }
-    lastPaintType = paintType;
-}
-
-void HbNvgCsIcon::setViewBoxToViewTransformation(const QSize &size)
-{
-    HbNvgFitToViewBoxImpl *viewBoxTx = new HbNvgFitToViewBoxImpl();
-    Q_CHECK_PTR(viewBoxTx);
-    QScopedPointer<HbNvgFitToViewBoxImpl> fitToViewBoxImpl(viewBoxTx);
-
-    fitToViewBoxImpl->setAllignment(mPreserveAspectSetting);
-    fitToViewBoxImpl->setScaling(mSmilFitSetting);
-    fitToViewBoxImpl->setViewBox(mViewBoxX, mViewBoxY, mViewBoxW, mViewBoxH);
-    fitToViewBoxImpl->setWindowViewportTrans(QRect(0, 0, size.width(), size.height()), QSize(0, 0));
 }
 
 void HbNvgCsIcon::setRotation()
@@ -1520,67 +933,3 @@ void HbNvgCsIcon::setRotation()
         vgTranslate(-mRotationX, -mRotationY);
     }
 }
-
-void HbNvgCsIcon::updateClientMatrices()
-{
-    mMatrixMode = vgGeti(VG_MATRIX_MODE);
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-    vgGetMatrix(mPathMatrix);
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-    vgGetMatrix(mImageMatrix);
-    vgSeti(VG_MATRIX_MODE, mMatrixMode);
-}
-
-void HbNvgCsIcon::restoreClientMatrices()
-{
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-    vgLoadMatrix(mPathMatrix);
-    vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
-    vgLoadMatrix(mImageMatrix);
-    vgSeti(VG_MATRIX_MODE, mMatrixMode);
-}
-
-QPoint HbNvgCsIcon::getTranslatedPoint(VGfloat *trMatrix, const QPoint &point)
-{
-    QPoint trPoint;
-
-    trPoint.setX(trMatrix[0] * point.x() + trMatrix[3] * point.y() + trMatrix[6]);
-    trPoint.setY(trMatrix[1] * point.x() + trMatrix[4] * point.y() + trMatrix[7]);
-
-    return trPoint;
-}
-
-VGfloat HbNvgCsIcon::minVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4)
-{
-    VGfloat min = x1;
-
-    if (min > x2) {
-        min = x2;
-    }
-    if (min > x3) {
-        min = x3;
-    }
-    if (min > x4) {
-        min = x4;
-    }
-
-    return min;
-}
-
-VGfloat HbNvgCsIcon::maxVal4(VGfloat x1, VGfloat x2, VGfloat x3, VGfloat x4)
-{
-    VGfloat max = x1;
-
-    if (max < x2) {
-        max = x2;
-    }
-    if (max < x3) {
-        max = x3;
-    }
-    if (max < x4) {
-        max = x4;
-    }
-
-    return max;
-}
-

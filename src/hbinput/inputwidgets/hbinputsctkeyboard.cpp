@@ -289,7 +289,7 @@ void HbSctKeyboardPrivate::updateButtons()
                 HbInputButton *item = buttons.at(i);
 
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
-                if (keyboardMap && key < keyboardMap->keys.count()) {
+                if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(HbModifierNone)!= QString("")) {
                     QString keydata = keyboardMap->keys.at(key)->characters(HbModifierNone);
                     item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
                 } else {

@@ -43,7 +43,7 @@ public:
 
     QRectF boundingRectFor(const QRectF &rect) const;
 
-    typedef QPixmap (*MaskCallback)(const QSize &, void *);
+    typedef QPixmap(*MaskCallback)(const QSize &, void *);
 
     QPixmap mask() const;
     QPixmap scaledMask() const;
@@ -59,8 +59,12 @@ public slots:
     void setMask(const QPixmap &mask);
     void setMaskRect(const QRectF &rect);
     void setMaskDeviceRect(const QRectF &rect);
-    inline void setMaskRect(int x, int y, int w, int h) { setMaskRect(QRectF(x, y, w, h)); }
-    inline void setMaskDeviceRect(int x, int y, int w, int h) { setMaskDeviceRect(QRectF(x, y, w, h)); }
+    inline void setMaskRect(int x, int y, int w, int h) {
+        setMaskRect(QRectF(x, y, w, h));
+    }
+    inline void setMaskDeviceRect(int x, int y, int w, int h) {
+        setMaskDeviceRect(QRectF(x, y, w, h));
+    }
     void setMaskCallback(MaskCallback callback, void *param = 0);
 
 signals:

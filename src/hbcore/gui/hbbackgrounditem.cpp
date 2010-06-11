@@ -23,17 +23,16 @@
 **
 ****************************************************************************/
 
-#include <QGraphicsSceneResizeEvent>
-#include <QPainter>
-#include <QObject>
-#include <QDebug>
-
 #include "hbbackgrounditem_p.h"
 #include "hbwidget_p.h"
 #include "hbinstance.h"
 #include "hbdeviceprofile.h"
 #include "hbevent.h"
 #include "hbmainwindow_p.h"
+#include <QGraphicsSceneResizeEvent>
+#include <QPainter>
+#include <QObject>
+#include <QDebug>
 
 /*
     \class HbBackgroundItem
@@ -44,11 +43,11 @@
 */
 
 HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent) :
-        HbWidget(parent),
-        mMainWindow(mainWindow),
-        mImageMode(Hb::ScaleBackgroundToFit)
+    HbWidget(parent),
+    mMainWindow(mainWindow),
+    mImageMode(Hb::ScaleBackgroundToFit)
 {
-    setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
     mPrtImageName = defaultImageName(Qt::Vertical);
     mLscImageName = defaultImageName(Qt::Horizontal);
@@ -86,8 +85,8 @@ QString HbBackgroundItem::imageName(Qt::Orientation orientation) const
 QString HbBackgroundItem::defaultImageName(Qt::Orientation orientation) const
 {
     return orientation == Qt::Vertical
-        ? QLatin1String("qtg_graf_screen_bg_prt")
-        : QLatin1String("qtg_graf_screen_bg_lsc");
+           ? QLatin1String("qtg_graf_screen_bg_prt")
+           : QLatin1String("qtg_graf_screen_bg_lsc");
 }
 
 void HbBackgroundItem::setImageMode(Hb::BackgroundImageMode mode)
@@ -116,12 +115,10 @@ void HbBackgroundItem::updateBackgroundImage()
             mBackground.setIconName(mLscImageName);
         }
         if (mImageMode == Hb::KeepOriginalBackgroundSize
-            || mImageMode == Hb::KeepOriginalBackgroundSizeIfSmaller)
-        {
+                || mImageMode == Hb::KeepOriginalBackgroundSizeIfSmaller) {
             QSizeF imageSize = mBackground.defaultSize();
             if (mImageMode == Hb::KeepOriginalBackgroundSize
-                || (imageSize.width() <= size.width() && imageSize.height() <= size.height()))
-            {
+                    || (imageSize.width() <= size.width() && imageSize.height() <= size.height())) {
                 size = imageSize;
             }
         }

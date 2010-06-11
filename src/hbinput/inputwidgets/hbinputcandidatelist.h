@@ -44,7 +44,7 @@ public:
     explicit HbCandidateList(HbInputMethod* input, QGraphicsItem* parent = 0);
     virtual ~HbCandidateList();
 
-    void populateList(const QStringList& candidates);
+    void populateList(const QStringList& candidates,bool addSpellQuery = false);
     QString currentCandidate();
     void setNumberOfVisibleLines(int numLines);
     bool setSizeAndPositionForAutoCompletion(HbVkbHost *vkbHost);
@@ -52,6 +52,7 @@ public:
 signals:
     void candidatePopupCancelled();
     void candidateSelected(int key, const QString &candidate);
+    void launchSpellQueryDialog();
 
 protected:
     void closeEvent(QCloseEvent* event);

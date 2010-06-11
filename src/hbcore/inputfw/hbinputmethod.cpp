@@ -62,19 +62,95 @@ Custom input methods are a special class of input methods. Once a custom input m
 activated from UI, input mode cache stops resolving input methods upon focus operations
 and the custom input is active in all editors until it is deactivated.
 
-Following is the basic input framework program flow:
+\bold The input framework program flow
 
-1. An editor gains input focus.
-2  Input mode cache resolves correct mode handler and activates it.
-3. A virtual function HbInputMethod::focusReceived is called. At this point the input method
-   initializes whatever it needs to initialize in order to start the input operation (for example,
-   opens the virtual keyboard by using HbVkbHost API) and waits for user actions.
-4. Text is written. The input method delivers results to the editor buffer by using HbInputFocusObject API.
-   It can access editor attributes via HbEditorInterface API.
-5. The active editor loses focus. At this point the input method receives a call to virtual function
-   HbInputMethod::focusLost and is expected to conclude any ongoing input operations and shut down active
-   UI elements (such as the virtual keyboard).
-6. The input method waits for next focusReceived() call.
+1. An editor gains input focus.<BR>
+2. Editor sets requestSoftwareInputPanel event to active input context.<BR>
+3. The input framework creates input state based on editor attributes and the input mode cache <BR>
+   resolves correct mode handler and activates it.<BR>
+4. A virtual function HbInputMethod::focusReceived is called. At this point the input method<BR>
+   initializes whatever it needs to initialize in order to start the input operation (for example,<BR>
+   opens the virtual keyboard by using HbVkbHost API) and waits for user actions.<BR>
+5. Text is written. The input method delivers results to the editor buffer by using HbInputFocusObject API.<BR>
+   It can access editor attributes via HbEditorInterface API.<BR>
+6. The active editor loses focus. At this point the input method receives a call to virtual function<BR>
+   HbInputMethod::focusLost and is expected to conclude any ongoing input operations and shut down active<BR>
+   UI elements (such as the virtual keyboard).<BR>
+7. The input method waits for next focusReceived() call. <BR>
+
+\bold Input method resolving
+
+The input framework resolves correct input state handler based on three attributes: input mode,
+keyboard type and input language.
+
+The framework recognizes three different input modes: default, numeric and custom.
+Default and numeric input modes are something that the framework resolves for active
+input language and keyboard type. Custom input mode is something that the framework never
+activates automatically, but it is activated from UI or directly from application
+(or input method) code.
+
+Numeric input mode is something that can handle those editors that are configured to only accept
+numeric data (for example those that have Qt::ImhDigitsOnly hints on).
+
+Language attribute is matched either as a direct match or as a language range. Language range
+means the input method is capable of handling all the languages that
+HbKeymapFactory::availableLanguages() returns. Direct match always wins so it is possible
+to override language range for specific languages.
+
+The keyboard attribute is always matched directly. Note that event though the constant
+has term "keyboard" in it, it covers all input devices such as hand writing recognition widgets
+that don't utilize traditional keys. it is up the the input method what that constant
+really means.
+
+The input method resolving parameters are part of input plugin meta data and they are returned
+by QInputContextPlugin::languages() method. A single entry in the returned string list
+is formed by packing resolving parameters into HbInputModeProperties structure and calling
+HbInputModeProperties::asString() method.
+
+Following code snippet shows how the input context plugin returns resolving parameters
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,1}
+
+\bold Input method resolving example
+
+Say that we have implemented touch input methods for 12 key portrait mode and qwerty landscape mode.
+Then we have Chinese touch input method for both portrait and landscape orientations and also
+Chinese handwriting recognition input mode for portrait mode.
+
+Touch input methods resolve to language range, which means that they will be handle all
+the other languages, except Chinese, which has its own designated input method.
+
+Touch input methods also implement support for numeric mode. Because Chinese language uses
+same numeric system as "latin" based languages, we only want to implement numeric mode
+handling in one input method and arrange resolving parameters so that the numeric mode
+is handled by default touch input method even when the global input language is Chinese.
+
+Chinese handwriting input method is something that is a custom mode, and will be activated
+from UI.
+
+Following example shows how the resolving attributes are set up to achieve above configuration.
+
+Portait touch input method returns following attributes
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,2}
+
+Landscape touch input method returns following attributes
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,3}
+
+Chinese portrait input method returns following attributes
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,4}
+
+Chinese landscape input method returns following attributes
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,5}
+
+Chinese handwriting recognition input method returns following attributes
+(note use of HbInputModeCustom, in this example HWR is something that we
+want to active from UI separately).
+
+\snippet{unittest_hbinputmethod/unittest_hbinputmethod.cpp,6}
 
 \sa QInputContext
 \sa HbInputFocusObject
@@ -120,8 +196,11 @@ bool HbInputMethod::initializeFramework(QApplication& app)
     master->d_ptr->mIsActive = true;
 
     // Finally set application input context.
-    QInputContext* proxy = master->d_ptr->newProxy();
-    app.setInputContext(proxy);
+    QInputContext* proxy = master->d_ptr->proxy();    
+    // A check required so that Qt does not delete inputcontext
+    // which we are passing.
+    if (proxy != app.inputContext())
+        app.setInputContext(proxy);
 
     return true;
 }
@@ -163,24 +242,21 @@ QList<HbInputMethodDescriptor> HbInputMethod::listCustomInputMethods()
 }
 
 /*!
-Activates given input method. Input context is
-switched to custom method. Returns false if input method was not found
+Activates given input method. Returns false if input method was not found
 or the framework was not able to activate it.
 */
 bool HbInputMethod::activateInputMethod(const HbInputMethodDescriptor &inputMethod)
 {
     Q_D(HbInputMethod);
 
-    if (!inputMethod.isEmpty()) {
-        HbInputSettingProxy::instance()->setActiveCustomInputMethod(inputMethod);
-
+    if (!inputMethod.isEmpty()) {       
         if (inputMethod.isDefault()) {
            d->setFocusCommon();
            return true;
         } else {
             HbInputMethod *customMethod = HbInputModeCache::instance()->loadInputMethod(inputMethod);
-            if (customMethod) {
-                d->contextSwitch(customMethod);
+            if (customMethod) {              
+               d->contextSwitch(customMethod);
                return true;
            }
         }
@@ -301,17 +377,20 @@ implementation should never override this method unless it knows what it is doin
 void HbInputMethod::setFocusWidget(QWidget* widget)
 {
     Q_D(HbInputMethod);
-
+    
     if (d->mFocusLocked) {
-        return;
-    }
-
-    QInputContext::setFocusWidget(widget);
-
+	    return;
+	}
+		
+    // attach focuswidget to prxoy inputcontext as proxy is 
+    // the only inputcotext known to qt framework.
+    d->proxy()->QInputContext::setFocusWidget(widget);
+    
     if (!widget) {
         // Losing focus.
         if (d->mFocusObject) {
             focusLost(false);
+            d->hideMainWindow();
             delete d->mFocusObject;
             d->mFocusObject = 0;
         }
@@ -339,6 +418,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
     if (readOnly && HbInputFocusObject::isReadOnlyWidget(widget)) {
         if (d->mFocusObject) {
             focusLost();
+            d->hideMainWindow();
         }
         return;
     }
@@ -390,6 +470,9 @@ void HbInputMethod::widgetDestroyed(QWidget* widget)
     if (d->mFocusObject && d->mFocusObject->object() == widget) {
         delete d->mFocusObject;
         d->mFocusObject = 0;
+        // passing to actual QInputContext which is attached to Qt framework.
+        // which will internally set QInputContext::focusWidget to Null.
+        d->proxy()->QInputContext::widgetDestroyed(widget);
     }
 }
 
@@ -414,7 +497,9 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
     if (focusObject == 0) {
         // Losing focus.
         if (d->mFocusObject != 0) {
+            disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
             focusLost(false);
+            d->hideMainWindow();
             delete d->mFocusObject;
             d->mFocusObject = 0;
         }
@@ -443,17 +528,10 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
         delete d->mFocusObject;
         d->mFocusObject = 0;
     }
-    QInputContext::setFocusWidget(0);
 
     // Attach focus.
     d->mFocusObject = focusObject;
     connect(d->mFocusObject->object(), SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
-
-    // If this is embedded QWidget, then set base class focus too.
-    QWidget *widget = qobject_cast<QWidget*>(focusObject->object());
-    if (widget) {
-        QInputContext::setFocusWidget(widget);
-    }
 
     d->setFocusCommon();
 
@@ -776,11 +854,21 @@ void HbInputMethod::editorDeleted(QObject *obj)
     Q_UNUSED(obj);
 
     focusLost();
-
+	d->hideMainWindow();
     delete d->mFocusObject;
     d->mFocusObject = 0;
 
     reset();
+}
+
+/*!
+Returns the input method descriptor the framework used for loading this plugin.
+Returns empty descriptor if the framework doesn't recognize this input method
+(ie. it was not resolved by input mode cache).
+*/
+HbInputMethodDescriptor HbInputMethod::descriptor() const
+{
+    return HbInputModeCache::instance()->descriptor(this);
 }
 
 // End of file

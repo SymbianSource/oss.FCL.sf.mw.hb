@@ -67,6 +67,7 @@ class QGraphicsLinearLayout;
 class HbInputScreenshotWidget;
 class HbInputFocusObject;
 class HbInputSettingList;
+class HbSelectionDialog;
 
 const qreal VerticalSpacing = 0.0, HorizontalSpacing = 0.0; //vertical and horizontal spacing for buttons in layout
 
@@ -111,7 +112,11 @@ public:
 
     bool isSmileysEnabled();
     bool isKeyboardDimmed();
+    
+    void showInputMethodSelectionDialog();
+    void _q_inputMethodSelectionDialogFinished(HbAction *action);
 
+    virtual QChar numberCharacterBoundToKey(int key);
     friend class HbTouchKeypadButton;
     friend class HbInputUsedSymbolPane;
 
@@ -168,6 +173,7 @@ public:
     HbView *mSettingView;
     HbView *mCurrentView;
     bool mKeyboardDimmed;
+    HbSelectionDialog *mImSelectionDialog;
 };
 
 #endif //HB_INPUT_VKB_WIDGET_PRIVATE_H

@@ -103,30 +103,6 @@ TVersion HbThemeClientPrivate::Version(void) const
                     KThemeServerBuildVersionNumber));
 }
 
-QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString &iconPath)
-{
-    if (!clientConnected) {
-        return QSizeF();
-    }
-
-    QSizeF defaultSize;
-
-    TBuf<256> buffer(iconPath.utf16());
-    TPckg<QSizeF> retPckg(defaultSize);
-
-    TIconParams params;
-    params.fileName = buffer;
-
-    TPckg<TIconParams> paramPckg(params);
-    TIpcArgs args(&paramPckg, &retPckg);
-
-    TInt err = SendReceive(EIconDefaultSize, args);
-    if (KErrNone != err) {
-        defaultSize = QSizeF();
-    }
-    return defaultSize;
-}
-
 /**
  * HbThemeClientPrivate::getSharedIconInfo()
  *
@@ -626,6 +602,15 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(
     TInt err = SendReceive(EMultiIcon, args);
 
     return sharedIconInfoList;
+}
+
+/**
+ * HbThemeClientPrivate::setTheme()
+ */
+void HbThemeClientPrivate::setTheme(const QString &theme)
+{
+    // In Symbian P&S is used to change active theme
+    Q_UNUSED(theme);
 }
 
 /**

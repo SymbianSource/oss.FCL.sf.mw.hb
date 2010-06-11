@@ -30,11 +30,11 @@
 #include <QGraphicsWidget>
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbFrameItem
     \brief A graphics item that draws a frame using the given HbFrameDrawer instance.
-    
+
     This class is not intended to be derived from.
 
     Example of how to create a graphics frame item and use it.
@@ -79,7 +79,7 @@ HbFrameItemPrivate::HbFrameItemPrivate(HbFrameItem *q)
 }
 
 HbFrameItemPrivate::HbFrameItemPrivate(HbFrameItem *q, HbFrameDrawer *drawer)
-    : item(q),        
+    : item(q),
       frameDrawer(drawer)
 {
     init();
@@ -101,9 +101,9 @@ HbFrameItemPrivate::~HbFrameItemPrivate()
 
 void HbFrameItemPrivate::init()
 {
-    item->setSizePolicy( QSizePolicy::Ignored, QSizePolicy::Ignored );
+    item->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
-    if ( QGraphicsWidget *parent = item->parentWidget() ) {
+    if (QGraphicsWidget *parent = item->parentWidget()) {
         frameDrawer->setLayoutDirection(parent->layoutDirection());
     }
 
@@ -202,16 +202,16 @@ void HbFrameItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
     d->frameDrawer->paint(painter, boundingRect());
 }
 
- /*!
-    \reimp
- */
+/*!
+   \reimp
+*/
 void HbFrameItem::changeEvent(QEvent *event)
 {
-    if ( event->type() == QEvent::LayoutDirectionChange ) {
-        if ( QGraphicsWidget *parent = parentWidget() ) {
-            d->frameDrawer->setLayoutDirection( parent->layoutDirection() );
+    if (event->type() == QEvent::LayoutDirectionChange) {
+        if (QGraphicsWidget *parent = parentWidget()) {
+            d->frameDrawer->setLayoutDirection(parent->layoutDirection());
         }
-    } else if ( event->type() == HbEvent::ThemeChanged ) {
+    } else if (event->type() == HbEvent::ThemeChanged) {
         d->frameDrawer->themeChanged();
     }
 
@@ -223,7 +223,7 @@ void HbFrameItem::changeEvent(QEvent *event)
         break;
     case QEvent::StyleChange: // flow through
     default:
-        HbWidgetBase::changeEvent( event );
+        HbWidgetBase::changeEvent(event);
         break;
     }
 }
@@ -232,11 +232,11 @@ void HbFrameItem::changeEvent(QEvent *event)
 QSizeF HbFrameItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
     if (which == Qt::MinimumSize) {
-        return QSizeF( 0, 0 );
-    } else if (which == Qt::PreferredSize ) {
-        return QSizeF( 0, 0 );
+        return QSizeF(0, 0);
+    } else if (which == Qt::PreferredSize) {
+        return QSizeF(0, 0);
     } else {
-        return HbWidgetBase::sizeHint( which, constraint );
+        return HbWidgetBase::sizeHint(which, constraint);
     }
 }
 

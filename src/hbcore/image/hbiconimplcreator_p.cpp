@@ -40,14 +40,25 @@
 
     \internal
 */
-HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
-                                              HbIconLoadingParams &params )
+HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
+        HbIconLoadingParams &params)
 {
-    HbIconImpl* iconImpl = 0;
-    switch(iconImplInfo.type){
-        case NVG:
+    HbIconImpl *iconImpl = 0;
+    switch (iconImplInfo.type) {
+    case NVG:
 #ifdef HB_NVG_CS_ICON
-            iconImpl = new HbNvgIconImpl(iconImplInfo,
+        iconImpl = new HbNvgIconImpl(iconImplInfo,
+                                     params.iconFileName,
+                                     params.size,
+                                     params.aspectRatioMode,
+                                     params.mode,
+                                     (params.mirrored && !params.mirroredIconFound),
+                                     params.renderMode);
+#endif
+        break;
+    case SGIMAGE:
+#ifdef HB_SGIMAGE_ICON
+        iconImpl = new HbSgimageIconImpl(iconImplInfo,
                                          params.iconFileName,
                                          params.size,
                                          params.aspectRatioMode,
@@ -55,34 +66,23 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo& iconImplInfo,
                                          (params.mirrored && !params.mirroredIconFound),
                                          params.renderMode);
 #endif
-            break;
-        case SGIMAGE:
-#ifdef HB_SGIMAGE_ICON
-            iconImpl = new HbSgimageIconImpl(iconImplInfo,
-                                            params.iconFileName,
-                                            params.size,
-                                            params.aspectRatioMode,
-                                            params.mode,
-                                            (params.mirrored && !params.mirroredIconFound),
-                                            params.renderMode);
-#endif
-            break;
-        case OTHER_SUPPORTED_FORMATS:
-            iconImpl = new HbPixmapIconImpl(iconImplInfo,
-                                            params.iconFileName,
-                                            params.size,
-                                            params.aspectRatioMode,
-                                            params.mode,
-                                            (params.mirrored && !params.mirroredIconFound),
-                                            params.renderMode);
-            break;
-        default:
-            break;
+        break;
+    case OTHER_SUPPORTED_FORMATS:
+        iconImpl = new HbPixmapIconImpl(iconImplInfo,
+                                        params.iconFileName,
+                                        params.size,
+                                        params.aspectRatioMode,
+                                        params.mode,
+                                        (params.mirrored && !params.mirroredIconFound),
+                                        params.renderMode);
+        break;
+    default:
+        break;
     }
-    
-	if (iconImpl && params.color.isValid()){
-		iconImpl->setColor(params.color);
-	}
+
+    if (iconImpl && params.color.isValid()) {
+        iconImpl->setColor(params.color);
+    }
 
     return iconImpl;
 }

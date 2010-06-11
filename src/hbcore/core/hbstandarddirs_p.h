@@ -61,7 +61,12 @@ public:
         const QStringList &relativeFolderPaths,
         const QString &currentThemeName, Hb::ResourceType resType);
 
-    static const QString &themesDir();
+    static QStringList findExistingFolderList(
+        const QStringList &relativeFolderPaths,
+        const QString &currentThemeName, Hb::ResourceType resType,
+        int &baseThemeIndex);
+
+    static QString themesDir();
 };
 
 #endif

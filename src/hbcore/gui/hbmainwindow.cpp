@@ -23,6 +23,9 @@
 **
 ****************************************************************************/
 
+#include "hbmainwindow.h"
+#include "hbmainwindow_p.h"
+
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsItem>
@@ -35,8 +38,6 @@
 #include "hbinstance.h"
 #include "hbinstance_p.h"
 #include "hbgraphicsscene.h"
-#include "hbmainwindow.h"
-#include "hbmainwindow_p.h"
 #include "hbnamespace.h"
 #include "hbnamespace_p.h"
 #include "hbtitlebar_p.h"
@@ -208,7 +209,7 @@
 class HbRootItem : public HbWidget
 {
 public:
-    explicit  HbRootItem( QGraphicsItem *parent = 0 );
+    explicit  HbRootItem(QGraphicsItem *parent = 0);
     ~HbRootItem() {}
 private:
     bool event(QEvent *event);
@@ -216,13 +217,13 @@ private:
 
 /*!
     Constructs an HbMainWindow object with \a parent.
-    
+
     \a windowFlags can be used for specifying special functionality to HbMainWindow.
-    
+
     \sa Hb::WindowFlag
 */
 HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
-        QGraphicsView(parent), d_ptr(new HbMainWindowPrivate)
+    QGraphicsView(parent), d_ptr(new HbMainWindowPrivate)
 {
     Q_D(HbMainWindow);
     d->q_ptr = this;
@@ -264,7 +265,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
         d->mAutomaticOrientationSwitch = true;
     } else {
         d->mOrientation = d->mDefaultOrientation;
-        d->mAutomaticOrientationSwitch = false; 
+        d->mAutomaticOrientationSwitch = false;
     }
 
 #if defined(Q_WS_S60) || defined(HB_Q_WS_MAEMO)
@@ -281,7 +282,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // workaround for problems with BSP tree implementation in Qt
     d->mScene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
-    d->mScene->setSceneRect(0, 0, pSize.width(), pSize.height()); 
+    d->mScene->setSceneRect(0, 0, pSize.width(), pSize.height());
     setScene(d->mScene);
 
     // add root item
@@ -305,8 +306,8 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     d->mClippingItem->setStackWidget(d->mViewStackWidget);
     connect(d->mViewStackWidget, SIGNAL(currentChanged(int)),
             this, SLOT(_q_viewChanged()));
-    connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget*)),
-            this, SLOT(_q_viewRemoved(QGraphicsWidget*)));
+    connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget *)),
+            this, SLOT(_q_viewRemoved(QGraphicsWidget *)));
 
     // create Titlebar (container for indicators, titlepane and secondary softkey
     d->mTitleBar = new HbTitleBar(this, d->mClippingItem);
@@ -319,9 +320,9 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // At this point the mainwindow is considered more or less fully constructed.
     HbInstancePrivate::d_ptr()->addWindow(this);
 
-    QRectF rect(0,0,pSize.width(),pSize.height());
+    QRectF rect(0, 0, pSize.width(), pSize.height());
     resize(pSize);
-	d->mLayoutRect = rect;
+    d->mLayoutRect = rect;
     d->mRootItem->setGeometry(rect);
     d->mClippingItem->setGeometry(rect);
     setSceneRect(0, 0, pSize.width(), pSize.height());
@@ -374,9 +375,9 @@ HbMainWindow::~HbMainWindow()
     delete d_ptr;
 
     // to workaround problem when creating/destroying multiple hbmainwindow's in unit tests (win env)
-    #ifdef Q_OS_WIN
-        destroy();
-    #endif
+#ifdef Q_OS_WIN
+    destroy();
+#endif
 }
 
 /*!
@@ -384,20 +385,43 @@ HbMainWindow::~HbMainWindow()
     \a widget creates an empty HbView.
 
     The \a widget can be either a HbView or QGraphicsWidget. If it is
-    the QGraphicsWidget then HbMainWindow will create a HbView and set
-    \a widget as the new HbView's content widget.
+    a QGraphicsWidget (or any subclass that is not HbView) then
+    HbMainWindow will create a HbView and set \a widget as the new
+    HbView's content widget.
 
-    A HbMainWindow should only have one of each view and adding a view
-    it already has will not cause the same view to be in the
-    HbMainWindow twice.
+    When \a widget is a HbView, use HbView::setWidget() to set the content
+    widget for the view. Note that you should never attach child items directly
+    to the HbView instance, even though HbView is also a HbWidget. Instead, create
+    a content widget, set it to the view via HbView::setWidget(), and attach children
+    to that.
+
+    Use setCurrentView() to switch between the added views. (only one of them is visible at a time)
+    The view-specific decorators (toolbar, Options menu, title in the titlebar) and of course
+    the visibility of the view's content widgets will be updated and managed automatically by the framework
+    when switching views.
+
+    For a detailed description of views see the HbView class.
+    
+    Note that using view switching (i.e. several HbView instances, setCurrentView(), etc.) in
+    Hb applications is not mandatory, it is purely optional. For applications that are not really
+    view based (e.g. because they only have one screen of content or because they have more "fluid" UI where
+    the traditional view separation does not make that much sense) it may sometimes be better (and may provide more freedom)
+    to have just one view and manage the content entirely via the content widget of that one view.
+    (one can still use HbStackedLayout and manual visibility management of child widgets to achieve a traditional view-like look,
+    even when the Hb view management is not used)
 
     After calling addView() the caller does not need to care about
     destroying \a widget, the framework will take care of that by
     reparenting \a widget if needed.
 
+    A HbMainWindow should only have one of each view and adding a view
+    it already has will not cause the same view to be in the
+    HbMainWindow twice.
+
     \return the new view
 
-    \sa insertView removeView
+    \sa insertView() removeView() setCurrentView()
+    \sa HbView HbStackedLayout
 */
 HbView *HbMainWindow::addView(QGraphicsWidget *widget)
 {
@@ -443,7 +467,7 @@ HbView *HbMainWindow::addView(QGraphicsWidget *widget)
     \sa addView removeView
 */
 HbView *HbMainWindow::insertView(int index, QGraphicsWidget *widget)
-{    
+{
     Q_D(HbMainWindow);
     HbView *view = 0;
     if (!widget) {
@@ -492,8 +516,8 @@ void HbMainWindow::removeView(QGraphicsWidget *widget)
         d->mViewStackWidget->removeWidget(view);
     } else {
         // Check if it is a widget inside a view and delete that view
-        for (int n=0; n<d->mViewStackWidget->count(); n++) {
-            HbView *tempView = qobject_cast<HbView*>(d->mViewStackWidget->widgetAt(n));
+        for (int n = 0; n < d->mViewStackWidget->count(); n++) {
+            HbView *tempView = qobject_cast<HbView *>(d->mViewStackWidget->widgetAt(n));
             if (tempView->widget() == widget) {
                 d->mViewStackWidget->removeWidget(tempView);
                 // Take a widget out from the view, before deleting it.
@@ -575,15 +599,15 @@ QList<HbView *> HbMainWindow::views() const
 {
     Q_D(const HbMainWindow);
     HbContentWidget *stackWidget = d->mViewStackWidget;
-    
+
     const int n = stackWidget->count();
     QList<HbView *> result;
-    for ( int i=0; i<n; ++i ) {
+    for (int i = 0; i < n; ++i) {
         HbView *view = qobject_cast<HbView *>(stackWidget->widgetAt(i));
         Q_ASSERT_X(view, "HbMainWindow::views()", "HbView was expected");
         result.append(view);
     }
-    
+
     return result;
 }
 
@@ -630,8 +654,9 @@ void HbMainWindow::unsetOrientation(bool animate)
     if (!d->mAutomaticOrientationSwitch) {
         d->mAutomaticOrientationSwitch = true;
         d->mUserOrientationSwitch = false;
-        if(HbMainWindowOrientation::instance()->isEnabled())
+        if (HbMainWindowOrientation::instance()->isEnabled()) {
             d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), animate);
+        }
     }
 }
 
@@ -688,14 +713,14 @@ void HbMainWindow::resetNativeBackgroundWindow()
 
 /*!
     Returns the rectangle which is used for layouting HbMainWindow contents. Updates on orientation change and is up to date
-    after HbMainWindow orientationChanged() signal. Note that this is not the same thing as QGraphicsView (HbMainWindow) geometry. 
+    after HbMainWindow orientationChanged() signal. Note that this is not the same thing as QGraphicsView (HbMainWindow) geometry.
     HbMainWindow geometry does not update on orientation change since the contents are only transformed with a rotate transform.
-    
+
 */
 QRectF HbMainWindow::layoutRect() const
 {
     Q_D(const HbMainWindow);
-	return d->mLayoutRect;
+    return d->mLayoutRect;
 }
 
 /*!
@@ -757,7 +782,7 @@ Hb::BackgroundImageMode HbMainWindow::backgroundImageMode() const
 /*!
   Sets the animations enabled when the orientation is changed automatically.
   By default animations are enabled.
-  
+
   \sa automaticOrientationEffectEnabled()
  */
 
@@ -768,7 +793,7 @@ void HbMainWindow::setAutomaticOrientationEffectEnabled(bool enabled)
 }
 
 /*!
-  Returns boolean value to signify whether animations enabled/disabled during 
+  Returns boolean value to signify whether animations enabled/disabled during
   automatic orientation change. By default animations are enabled.
 
   \sa setAutomaticOrientationEffectEnabled()
@@ -789,12 +814,12 @@ void HbMainWindow::changeEvent(QEvent *event)
         // Notify layout direction change to the icon framework
         HbLayoutDirectionNotifier::instance()->notifyLayoutDirectionChange();
 
-        broadcastEvent( HbEvent::WindowLayoutDirectionChanged );
+        broadcastEvent(HbEvent::WindowLayoutDirectionChanged);
 
-        foreach (QGraphicsItem *item, items()) {
-            if (item->isWidget() && !item->parentItem() ) {
+        foreach(QGraphicsItem * item, items()) {
+            if (item->isWidget() && !item->parentItem()) {
                 QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(item);
-                if (!widget->testAttribute(Qt::WA_SetLayoutDirection)){
+                if (!widget->testAttribute(Qt::WA_SetLayoutDirection)) {
                     widget->setLayoutDirection(layoutDirection());
                     widget->setAttribute(Qt::WA_SetLayoutDirection, false);
                 }
@@ -820,7 +845,7 @@ void HbMainWindow::keyPressEvent(QKeyEvent *event)
     // pass the soft key press into the soft key decorator class
     HbAction *action = 0;
 
-    switch(event->key()) {
+    switch (event->key()) {
 
 #ifdef Q_OS_SYMBIAN
     case Qt::Key_Context1:
@@ -876,19 +901,20 @@ void HbMainWindow::resizeEvent(QResizeEvent *event)
 {
     Q_D(HbMainWindow);
 
-    if ( !HbMainWindowPrivate::dragToResizeEnabled ) {
+    if (!HbMainWindowPrivate::dragToResizeEnabled) {
         // determine the default orientation width < height -> portrait
-        if (event->size().width() < event->size().height())
+        if (event->size().width() < event->size().height()) {
             d->mDefaultOrientation = Qt::Vertical;
-        else
+        } else {
             d->mDefaultOrientation = Qt::Horizontal;
+        }
         d->mForceSetOrientation = true;
         d->setTransformedOrientation(d->mOrientation, false);
         d->mForceSetOrientation = false;
     } else {
         // RnD feature for resizing the window by dragging
         QSize newSize(event->size());
-        setSceneRect(0,0,newSize.width(),newSize.height());
+        setSceneRect(0, 0, newSize.width(), newSize.height());
         d->mClippingItem->resize(newSize);
         if (d->mBgItem) {
             d->mBgItem->resize(newSize);
@@ -899,15 +925,15 @@ void HbMainWindow::resizeEvent(QResizeEvent *event)
 /*!
     Reimplemented from QObject::customEvent().
 */
-void HbMainWindow::customEvent( QEvent *event )
+void HbMainWindow::customEvent(QEvent *event)
 {
     Q_D(HbMainWindow);
     if (event->type() == HbMainWindowPrivate::IdleEvent) { // called asyncronously after the application start-up
         if (!d->mIdleEventHandled) {
             d->mIdleEventHandled = true;
-            if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TheTestUtility ) ) {
+            if (HbFeatureManager::instance()->featureStatus(HbFeatureManager::TheTestUtility)) {
                 // create the test utility
-                if ( !d->mTheTestUtility ) {
+                if (!d->mTheTestUtility) {
                     d->mTheTestUtility = new HbTheTestUtility(this);
                 }
             }
@@ -924,7 +950,7 @@ void HbMainWindow::customEvent( QEvent *event )
         // Notify that mainwindow is (most probably) ready.
         // The signal must be emitted always, even when there was no need to do anything.
         emit d->idleEventDispatched();
-    } else if(event->type() == HbMainWindowPrivate::IdleOrientationEvent) { // complete the orientation change effect chain
+    } else if (event->type() == HbMainWindowPrivate::IdleOrientationEvent) { // complete the orientation change effect chain
         if (d->mEffectItem && d->mOrientationChangeOngoing) {
             HbEffect::start(d->mEffectItem, "rootItemFinalPhase", this, "rootItemFinalPhaseDone");
         }
@@ -932,15 +958,21 @@ void HbMainWindow::customEvent( QEvent *event )
         if (d->mAnimateOrientationSwitch) {
             HbEffect::start(d->mTitleBar, "titlebar", "appear_orient");
             HbEffect::start(d->mStatusBar, "statusbar", "appear_orient");
-            if (d->mCurrentToolbar) {         
+            if (d->mCurrentToolbar) {
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(d->mCurrentToolbar);
                 toolBarD->startAppearOrientEffect();
+            } else {
+                foreach(HbView * view, views()) {
+                    view->toolBar()->resetTransform();
+                    view->toolBar()->setOpacity(1);
+                    view->toolBar()->show();
+                    HbToolBarPrivate::d_ptr(view->toolBar())->mOrientationEffectsRunning = false;
+                }
             }
-            d->mOrientationChangeOngoing = false;
+            d->updateOrientationChangeStatus();
             if (d->mAutomaticOrientationSwitch && HbMainWindowOrientation::instance()->isEnabled()) {
                 d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), d->mAnimateOrientationSwitch);
-            }
-            else if (d->mRequestedOrientation != d->mOrientation) {
+            } else if (d->mRequestedOrientation != d->mOrientation) {
                 d->setTransformedOrientation(d->mRequestedOrientation, d->mAnimateOrientationSwitch);
             }
         } else {
@@ -1010,12 +1042,12 @@ void HbMainWindow::scrollContentsBy(int dx, int dy)
     asynchronously.
 
     If the receiving widget has abstract items as child items, these will be informed
-    after the widget has received the event. 
+    after the widget has received the event.
 */
-void HbMainWindow::broadcastEvent( int eventType )
+void HbMainWindow::broadcastEvent(int eventType)
 {
     Q_D(HbMainWindow);
-    d->broadcastEvent( eventType );
+    d->broadcastEvent(eventType);
 }
 
 HbRootItem::HbRootItem(QGraphicsItem *parent)

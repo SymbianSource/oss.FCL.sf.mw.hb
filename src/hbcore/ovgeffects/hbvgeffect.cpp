@@ -40,7 +40,7 @@
  * \brief Abstract base class for OpenVG effects.
  *
  * \internal
- * 
+ *
  * Brief guide for creating new effects:
  * <ul>
  *
@@ -122,10 +122,11 @@ HbVgEffectPrivate::~HbVgEffectPrivate()
  *
  * \internal
  */
-VGImage HbVgEffectPrivate::ensurePixmap(QPixmap *pixmap, const QSize& size)
+VGImage HbVgEffectPrivate::ensurePixmap(QPixmap *pixmap, const QSize &size)
 {
-    if (pixmap->size() != size)
+    if (pixmap->size() != size) {
         *pixmap = QPixmap(size);
+    }
     return qPixmapToVGImage(*pixmap);
 }
 #endif
@@ -165,10 +166,11 @@ qreal HbVgEffectPrivate::mainWindowRotation() const
             QGraphicsScene *scene = srcItem->scene();
             if (scene) {
                 QList<QGraphicsView *> views = scene->views();
-                foreach (QGraphicsView *view, views) {
+                foreach(QGraphicsView * view, views) {
                     mainWindow = qobject_cast<HbMainWindow *>(view);
-                    if (mainWindow)
+                    if (mainWindow) {
                         break;
+                    }
                 }
             }
         }
@@ -190,7 +192,7 @@ QTransform HbVgEffectPrivate::rotationTransform() const
     }
     return lastRotationTransform;
 }
-    
+
 /*!
  * Maps the given translation offset to an offset that is based on the current
  * rotation of the graphics view. Effects are drawing directly, in device
@@ -349,8 +351,9 @@ qreal HbVgEffect::opacity() const
 void HbVgEffect::setOpacity(qreal opacity)
 {
     Q_D(HbVgEffect);
-    if (d->opacity == opacity)
+    if (d->opacity == opacity) {
         return;
+    }
     d->opacity = opacity;
     updateEffect();
     emit opacityChanged(opacity);
@@ -367,7 +370,8 @@ void HbVgEffect::draw(QPainter *painter)
 {
     // Just draw the source without effects if the painter's paint engine
     // is not using OpenVG.
-    if (painter->paintEngine()->type() != QPaintEngine::OpenVG) {
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (!paintEngine || paintEngine->type() != QPaintEngine::OpenVG) {
         drawSource(painter);
         return;
     }
@@ -462,8 +466,9 @@ bool HbVgEffect::caching() const
 void HbVgEffect::setCaching(bool caching)
 {
     Q_D(HbVgEffect);
-    if (d->caching == caching)
+    if (d->caching == caching) {
         return;
+    }
     d->caching = caching;
     emit cachingChanged(caching);
 }
@@ -492,8 +497,7 @@ QPixmap HbVgEffect::cached(const QSize &size) const
             // causes a clipping to the device viewport, therefore the cached
             // pixmap for an item that was/is clipped should not be used.
             if (QPixmapCache::find(key, &cachedPm)
-                && (size.isNull() || cachedPm.size() == size))
-            {
+                    && (size.isNull() || cachedPm.size() == size)) {
 #ifdef HBVG_TRACES
                 qDebug("HbVgEffect [%x]: cache hit", (int) this);
 #endif
@@ -534,7 +538,7 @@ void HbVgEffect::tryCache(const QPixmap &pm)
 void HbVgEffect::releaseCachedResources()
 {
     QSet<QString> *keys = cacheKeys();
-    foreach (const QString &key, *keys) {
+    foreach(const QString & key, *keys) {
         QPixmapCache::remove(key);
     }
     keys->clear();

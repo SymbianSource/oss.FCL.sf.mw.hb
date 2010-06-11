@@ -22,11 +22,11 @@ HbMessageBoxContentWidget::text {
 
 HbMessageBoxContentWidget::text[hasIcon="true"]
 {
-	fixed-width: expr(var(hb-param-screen-short-edge)-4*var(hb-param-margin-gene-screen)-var(hb-param-graphic-size-primary-large))
+	min-width: expr(var(hb-param-screen-short-edge)-4*var(hb-param-margin-gene-screen)-var(hb-param-graphic-size-primary-large))
 }
 HbMessageBoxContentWidget::text[hasIcon="false"]
 {
-	fixed-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen))
+	min-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen))
 }
 HbMessageBoxContentWidget::icon
 {

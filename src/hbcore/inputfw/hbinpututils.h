@@ -36,6 +36,7 @@ class HbLanguageDatabaseInterface;
 class QInputContextPlugin;
 class QWidget;
 class QGraphicsWidget;
+class QGraphicsProxyWidget;
 
 struct HbInputMethodList
 {
@@ -61,7 +62,8 @@ public:
 
     static QWidget* createWrapperWidget(QGraphicsWidget* graphicsWidget);
     static QGraphicsWidget* createGraphicsProxyWidget(QWidget* widget);
-    static HbInputDigitType inputDigitType(HbInputLanguage language);	
+    static HbInputDigitType inputDigitType(HbInputLanguage language);
+    static QGraphicsProxyWidget* graphicsProxyWidget(const QWidget* w);
 };
 
 /*!

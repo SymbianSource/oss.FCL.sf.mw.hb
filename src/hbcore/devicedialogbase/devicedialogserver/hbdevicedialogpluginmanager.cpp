@@ -466,14 +466,14 @@ QStringList HbDeviceDialogPluginManager::pluginPathList(const QString &subDir, i
 // Generate plugin file name filter
 QString HbDeviceDialogPluginManager::pluginFileNameFilter()
 {
-#if defined(Q_OS_LINUX)
-    return QString("*.so");
+#if defined(Q_OS_SYMBIAN)
+    return QString("*.qtplugin");
 #elif defined(Q_OS_MAC)
     return QString("*.dylib");
 #elif defined(Q_OS_WIN32)
     return QString("*.dll");
 #else
-    return QString("*.qtplugin");
+    return QString("*.so");
 #endif
 }
 

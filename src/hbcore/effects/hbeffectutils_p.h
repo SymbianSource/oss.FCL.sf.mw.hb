@@ -50,14 +50,14 @@ public:
     static qreal resolveFxmlRef(
         const QString &ref,
         const QString &value,
-        bool* ok,
+        bool *ok,
         const QGraphicsItem *item,
         valueType type,
         const QRectF &extRect = QRectF());
 
     static qreal resolveFxmlRef(
         const HbEffectFxmlParamData &data,
-        bool* ok,
+        bool *ok,
         const QGraphicsItem *item,
         valueType type,
         const QRectF &extRect = QRectF());
@@ -66,24 +66,20 @@ public:
 
     static void resolveFxmlDuration(int &duration, const HbEffectFxmlParamData &data);
 
-    static inline bool fuzzyIsNull(double d)
-    {
-    return qAbs(d) <= 0.000000000001;
+    static inline bool fuzzyIsNull(double d) {
+        return qAbs(d) <= 0.000000000001;
     }
 
-    static inline bool fuzzyIsNull(float f)
-    {
-    return qAbs(f) <= 0.00001f;
+    static inline bool fuzzyIsNull(float f) {
+        return qAbs(f) <= 0.00001f;
     }
 
-    static inline bool fuzzyIsOneOrGreater(double d)
-    {
-    return d >= 1.0 - 0.000000000001;
+    static inline bool fuzzyIsOneOrGreater(double d) {
+        return d >= 1.0 - 0.000000000001;
     }
 
-    static inline bool fuzzyIsOneOrGreater(float f)
-    {
-    return f >= 1.0f - 0.00001f;
+    static inline bool fuzzyIsOneOrGreater(float f) {
+        return f >= 1.0f - 0.00001f;
     }
 
 };

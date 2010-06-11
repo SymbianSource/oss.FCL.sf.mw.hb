@@ -84,7 +84,7 @@ protected:
     void draw(QPainter *painter);
     void sourceChanged(ChangeFlags flags);
 
-    HbVgEffectPrivate * const d_ptr;
+    HbVgEffectPrivate *const d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbVgEffect)
     Q_DISABLE_COPY(HbVgEffect)
 };

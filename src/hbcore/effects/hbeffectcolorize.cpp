@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffectcolorize_p.h"
+#include "hbeffectcolorize_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbvgchainedeffect_p.h"
@@ -42,10 +42,10 @@ HbEffectColorize::HbEffectColorize(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationC(0),
-        mVgColorize(0)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationC(0),
+    mVgColorize(0)
 {
     // Default values of if something is not passed in FXML
     qreal opacity_start = 1;
@@ -57,11 +57,10 @@ HbEffectColorize::HbEffectColorize(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_COLORIZE_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_COLORIZE_COLOR) {
+        } else if (param.name() == FXML_KEYWORD_COLORIZE_COLOR) {
             mAnimationC = createAnimation(param, color_start, color_end, group);
         }
     }
@@ -70,7 +69,7 @@ HbEffectColorize::HbEffectColorize(
     if (mEffectDefined) {
         // Add blur effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         mVgColorize = new HbVgColorizeEffect();
         mVgColorize->setCaching(true);
         chain->add(mVgColorize);
@@ -98,7 +97,7 @@ void HbEffectColorize::updateFilterEffect()
             mVgColorize->setOpacity(qVariantValue<qreal>(mAnimationO->currentValue()));
         }
         if (mAnimationC) {
-            mVgColorize->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));            
+            mVgColorize->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));
         }
     }
 }

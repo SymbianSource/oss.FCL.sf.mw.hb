@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="220px" version="1.1" viewBox="0 0 220 220" width="220px" x="0px" y="0px">
+<svg baseProfile="tiny" height="220px" version="1.1" viewBox="0 0 220 220" width="220px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path d="M144.648,144.648C135.781,153.516,123.531,159,110,159s-25.781-5.484-34.648-14.352  l-39.598,39.598C54.755,203.247,81.005,215,110,215c28.994,0,55.244-11.753,74.246-30.754L144.648,144.648z" fill="#141414" fill-opacity="0.4" stroke-opacity="0.4"/>
 <path d="M110,212c-26.869,0-52.176-10.363-71.38-29.205l36.739-36.739C84.716,155.056,96.979,160,110,160  s25.283-4.944,34.642-13.944l36.739,36.739C162.176,201.637,136.869,212,110,212L110,212z" fill="url(#SVGID_1_)"/>
 <path d="M144.642,146.056c-9.358,9-21.62,13.944-34.642,13.944s-25.284-4.944-34.642-13.944  L38.62,182.795C57.824,201.637,83.131,212,110,212c26.869,0,52.176-10.363,71.381-29.205L144.642,146.056z M40.044,182.785  l35.334-35.336C84.824,156.196,97.079,161,110,161c12.922,0,25.176-4.804,34.621-13.551l35.335,35.336  C161.037,200.988,136.236,211,110,211C83.764,211,58.962,200.988,40.044,182.785z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>

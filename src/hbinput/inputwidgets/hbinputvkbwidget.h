@@ -142,12 +142,14 @@ signals:
     void flickEvent(HbInputVkbWidget::HbFlickDirection direction);
     void smileySelected(QString text);
     void mouseMovedOutOfButton();
+    void aboutToActivateCustomAction(HbAction *custAction);
 protected:
     HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem* parent);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputVkbWidget)
     Q_DISABLE_COPY(HbInputVkbWidget)
+    Q_PRIVATE_SLOT(d_func(), void _q_inputMethodSelectionDialogFinished(HbAction *))
 
     friend class HbTouchKeypadButton;
     friend class HbInputUsedSymbolPane;

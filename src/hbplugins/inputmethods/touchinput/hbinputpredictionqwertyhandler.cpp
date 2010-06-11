@@ -48,15 +48,13 @@ public:
 public:
     int mButton;    
     HbFnState mFnState;
-    bool mExactPopupLaunched;
-    bool mLongPressHappened;
+    bool mExactPopupLaunched;    
 };
 
 HbInputPredictionQwertyHandlerPrivate::HbInputPredictionQwertyHandlerPrivate()
 :mButton(0),    
     mFnState(HbFnOff),
-    mExactPopupLaunched(false),
-    mLongPressHappened(false)
+    mExactPopupLaunched(false)
 {
 }
 
@@ -78,10 +76,6 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
         return false;
     }
 
-    if (mLongPressHappened) {
-        mLongPressHappened = false;
-        return false;
-    }
 
     int key = event->key();
     
@@ -97,39 +91,42 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
             }
         break;
     case HbInputButton::ButtonKeyCodeShift: {
-			HbTextCase currentTextCase = (HbTextCase)focusObject->editorInterface().textCase();
-			HbInputLanguage language = mInputMethod->inputState().language();
+            HbTextCase currentTextCase = (HbTextCase)focusObject->editorInterface().textCase();
+            HbInputLanguage language = mInputMethod->inputState().language();
 
-			// Update the Case Information in HbInputState, it internally updates in HbEditorInterface as well
-			switch(currentTextCase) {
-			case HbTextCaseLower:
-				// For Case-insensitive languages, Shift Key is used to switch between character sets (i.e lower case characters and shifted characters)
-				if(!language.isCaseSensitiveLanguage()){
-					currentTextCase = HbTextCaseUpper; 
-				}
-				else {
-					currentTextCase = HbTextCaseAutomatic;
-				}
-				break;				
-			case HbTextCaseUpper:	
-				currentTextCase = HbTextCaseLower;				
-				break;
+            // Update the Case Information in HbInputState, it internally updates in HbEditorInterface as well
+            switch(currentTextCase) {
+            case HbTextCaseLower:
+                // For Case-insensitive languages, Shift Key is used to switch between character sets (i.e lower case characters and shifted characters)
+                if(!language.isCaseSensitiveLanguage()){
+                    currentTextCase = HbTextCaseUpper; 
+                }
+                else {
+                    currentTextCase = HbTextCaseAutomatic;
+                }
+                break;				
+            case HbTextCaseUpper:	
+                currentTextCase = HbTextCaseLower;				
+                break;
             case HbTextCaseAutomatic:
-				currentTextCase = HbTextCaseUpper;				                
+                currentTextCase = HbTextCaseUpper;				                
                 break;
             default:
                 break;
             }
-			HbInputState state = mInputMethod->inputState();
-			state.setTextCase(currentTextCase);			
-			mInputMethod->activateState(state);
+            HbInputState state = mInputMethod->inputState();
+            state.setTextCase(currentTextCase);			
+            mInputMethod->activateState(state);
         }
         break;
     case HbInputButton::ButtonKeyCodeSymbol: { // Ctrl/Chr
     case HbInputButton::ButtonKeyCodeAlphabet:
-            mInputMethod->switchSpecialCharacterTable();
-        }
+        mInputMethod->switchSpecialCharacterTable();
+        }		
         break;
+    case HbInputButton::ButtonKeyCodeSettings:
+        mInputMethod->closeExactWordPopup();
+		break;
     default: {
             HbTextCase currentTextCase = focusObject->editorInterface().textCase();
             Qt::KeyboardModifiers modifiers = Qt::NoModifier;
@@ -166,9 +163,6 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonPressed(const QKeyEvent *event
     if (event->isAutoRepeat() && mButton == event->key()) {
         if (mButton == HbInputButton::ButtonKeyCodeSymbol) {
             mInputMethod->selectSpecialCharacterTableMode();
-            mLongPressHappened = true;
-        }
-        if (mLongPressHappened) {
             mButton = 0;        
             return true;
         }
@@ -200,7 +194,6 @@ bool HbInputPredictionQwertyHandler::actionHandler(HbInputModeAction action)
     bool ret = true;
     switch (action) {
         case HbInputModeActionCancelButtonPress:
-        case HbInputModeActionReset:
             break;
         case HbInputModeActionFocusRecieved:
             HbInputPredictionHandler::actionHandler(HbInputModeActionSetCandidateList);
@@ -220,10 +213,8 @@ bool HbInputPredictionQwertyHandler::actionHandler(HbInputModeAction action)
             // close exactword popup.
             d->mInputMethod->closeExactWordPopup();
             break;
-        case HbInputModeActionCommit: {   
-			d->commit();        
-		}
-        default: ret = HbInputPredictionHandler::actionHandler(action);
+        default: 
+            ret = HbInputPredictionHandler::actionHandler(action);
     }
     return ret;
 }
@@ -251,7 +242,7 @@ void HbInputPredictionQwertyHandler::commitAndUpdate(const QString& string, int 
     HbInputModeHandler::commitAndUpdate(string, replaceFrom, replaceLength);
     d->mInputMethod->closeExactWordPopup();
     d->mExactPopupLaunched = false;  
-	d->mTailShowing = false;
+    d->mTailShowing = false;
 }
 
 /*!
@@ -322,35 +313,35 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         //some word getting predicted as a result to that.
         mCanContinuePrediction = true;
  
-		if(false == mTailShowing && true == mExactPopupLaunched) {
-				mEngine->deleteKeyPress();
-				mEngine->updateCandidates(mBestGuessLocation);
-		}
-		if (true == mExactPopupLaunched) {			
-			mBestGuessLocation = 0 ;
-		}
+        if(false == mTailShowing && true == mExactPopupLaunched) {
+                mEngine->deleteKeyPress();
+                mEngine->updateCandidates(mBestGuessLocation);
+        }
+        if (true == mExactPopupLaunched) {			
+            mBestGuessLocation = 0 ;
+        }
         //When there is a deletion of key press, no need to update the candidate list
         //This is because deletion should not cause reprediction.
-		if(mCandidates->count() && (mCandidates->count()>mBestGuessLocation) && false == mTailShowing && false == mExactPopupLaunched) {
-		    QString currentWord = mCandidates->at(mBestGuessLocation);
-			if(currentWord.length() > mEngine->inputLength()) {
-				//chop off the autocompletion part
-				currentWord = currentWord.left(mEngine->inputLength());
-			}
-		    if(currentWord.length()) {
+        if(mCandidates->count() && (mCandidates->count()>mBestGuessLocation) && false == mTailShowing && false == mExactPopupLaunched) {
+            QString currentWord = mCandidates->at(mBestGuessLocation);
+            if(currentWord.length() > mEngine->inputLength()) {
+                //chop off the autocompletion part
+                currentWord = currentWord.left(mEngine->inputLength());
+            }
+            if(currentWord.length()) {
                 currentWord.chop(1);
-		        mEngine->deleteKeyPress();
-				//We are not supposed to re-construct the candidate list as deletion
-				//does not cause reprediction. Also, candidate list construction is the
-				//heaviest operation out of all engine operations.
-				(*mCandidates)[mBestGuessLocation] = currentWord;
-		    } else {
-		        commit(QString(""),false);
-		    }
-		        
-		} else if(!mCandidates->count() && mEngine->inputLength() >= 1) {
+                mEngine->deleteKeyPress();
+                //We are not supposed to re-construct the candidate list as deletion
+                //does not cause reprediction. Also, candidate list construction is the
+                //heaviest operation out of all engine operations.
+                (*mCandidates)[mBestGuessLocation] = currentWord;
+            } else {
+                commit(QString(""),false);
+            }
+                
+        } else if(!mCandidates->count() && mEngine->inputLength() >= 1) {
             //If Input length greater or equal to one then Append the current word to candidate 
-			mCandidates->append(mEngine->currentWord());
+            mCandidates->append(mEngine->currentWord());
         }
         // update the editor with the new preedit text.
         updateEditor();

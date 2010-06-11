@@ -27,23 +27,23 @@
 #include <hbmainwindow.h>
 #include <QObject>
 
-#ifndef HBDEVICE_VIEW_H
-#define HBDEVICE_VIEW_H
+#ifndef HBDEVICE_P_H
+#define HBDEVICE_P_H
 
 class HbMainWindow;
 
 class HbDeviceView: public QGraphicsView
 {
-
     Q_OBJECT
+
 public:
     HbDeviceView();
-    HbDeviceView(HbMainWindow *window, QWidget *parent = 0);
+    explicit HbDeviceView(HbMainWindow *window, QWidget *parent = 0);
     virtual ~HbDeviceView();
 
 protected:
     void mouseMoveEvent(QMouseEvent *event);
-    void keyPressEvent(QKeyEvent *event); 
+    void keyPressEvent(QKeyEvent *event);
 
 public slots:
     void orientationChanged(Qt::Orientation orientation);
@@ -60,4 +60,4 @@ private:
     bool mMouseMove;
 };
 
-#endif //HBDEVICE_VIEW_H
+#endif // HBDEVICE_P_H

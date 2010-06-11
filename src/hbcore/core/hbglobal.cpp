@@ -52,11 +52,11 @@
     and as Q_DECL_IMPORT when using HbWidgets.
  */
 
- /*!
-    \macro HB_AUTOTEST_EXPORT
-    \relates <HbGlobal>
+/*!
+   \macro HB_AUTOTEST_EXPORT
+   \relates <HbGlobal>
 
-    Used for internal exports for testing.
+   Used for internal exports for testing.
 */
 
 /*!
@@ -67,7 +67,7 @@ QString hbTrId(const char *id, int n)
 {
     QString loc = qtTrId(id, n);
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbFeatureManager::instance()->featureStatus(HbFeatureManager::TextMeasurement)) {
         loc.append(QChar(LOC_TEST_START));
         loc.append(id);
         loc.append(QChar(LOC_TEST_END));

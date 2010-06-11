@@ -27,31 +27,32 @@
 #define HB_SENSOR_NOTIFY_HANDLER_H
 
 #include "hbsensorlistener_p.h"
-#include <e32base.h> 
+#include <e32base.h>
 
 class CRepository;
 class HbSensorListener;
 
-class HbSensorNotifyHandler : public CActive {
+class HbSensorNotifyHandler : public CActive
+{
 
 public:
-    static HbSensorNotifyHandler* NewL(HbSensorListener& aObserver);
+    static HbSensorNotifyHandler *NewL(HbSensorListener &aObserver);
     virtual ~HbSensorNotifyHandler();
 
     void startObservingL();
     void stopObserving();
-    
+
 protected: // From CActive
     void RunL();
     void DoCancel();
-    
+
 private:
-    HbSensorNotifyHandler(HbSensorListener& aObserver);
+    HbSensorNotifyHandler(HbSensorListener &aObserver);
     void ConstructL();
 
 private:
-    CRepository* mRepository;
-    HbSensorListener& mObserver;
+    CRepository *mRepository;
+    HbSensorListener &mObserver;
 };
 
 #endif //HB_SENSOR_NOTIFY_HANDLER_H

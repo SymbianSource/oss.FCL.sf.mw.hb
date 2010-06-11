@@ -56,6 +56,11 @@ public:
 
     void start(bool forceRegen);
 
+    HbMainWindow *ensureMainWindow();
+    bool lockMainWindow();
+    void unlockMainWindow();
+    static void setStatusBarElementsVisible(HbMainWindow *mw, bool visible);
+
 signals:
     void regenerateStarted();
     void outputDirContentsUpdated(const QString &dir, const QStringList &entries);
@@ -106,7 +111,6 @@ public:
     };
 
 private:
-    void ensureMainWindow();
     void takeScreenshot();
     void cleanup();
     QImage renderView();
@@ -119,12 +123,13 @@ private:
     void setupAppSpecificWindow();
     void setupNameBasedWidgetProps(HbDocumentLoader &loader);
     void finishWindow();
-    void setStatusBarElementsVisible(bool visible);
     void addTranslator(const QString &name);
     void clearTranslators();
     int updateOutputDirContents(const QString &outDir);
+    void unlockMainWindowInternal();
 
-    bool mBusy;
+    bool mMainWindowLocked;
+    bool mProcessQueuePending;
     bool mForceRegen;
     HbMainWindow *mMainWindow;
     QQueue<QueueItem> mQueue;
@@ -137,6 +142,6 @@ private:
     QFileSystemWatcher mFsWatcher;
 };
 
-QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem& item);
+QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem &item);
 
 #endif // HBSPLASHGENERATOR_P_H

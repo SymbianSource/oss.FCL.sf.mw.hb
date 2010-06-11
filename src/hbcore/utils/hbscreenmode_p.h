@@ -32,14 +32,14 @@
 
 class HbScreenModePrivate;
 
-class HbScreenMode 
+class HbScreenMode
 {
 
 public:
     HbScreenMode();
     HbScreenMode(const HbScreenMode &mode);
     HbScreenMode &operator=(const HbScreenMode &other);
-    
+
     ~HbScreenMode();
 
     void setName(const QString &name);
@@ -48,10 +48,10 @@ public:
     void setPixelWidth(int width);
     void setPixelHeight(int height);
 
-private: 
-    HbScreenModePrivate * const d_ptr;
+private:
+    HbScreenModePrivate *const d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbScreenMode)
-    };
+};
 
 #endif // HBSCREENMODE_H
 

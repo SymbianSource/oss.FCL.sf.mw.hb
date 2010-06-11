@@ -158,7 +158,7 @@ void HbVirtualQwerty::focusReceived()
         else if (automaticTextCaseNeeded()) {
             state.setTextCase(HbTextCaseAutomatic);
         }
-        state.inputMode() = HbInputModeDefault;
+        state.setInputMode(HbInputModeDefault);
         activateState(state);
         inputStateToEditor(state);
     }
@@ -207,6 +207,7 @@ void HbVirtualQwerty::focusReceived()
         disconnect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
         connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
     }
+    HbInputAbstractMethod::focusReceived();
 }
 
 void HbVirtualQwerty::focusLost(bool focusSwitch)
@@ -244,7 +245,7 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
     if(!keypadToOpen) {
         return;
     }
-    bool wasKeypadOpen = false;
+    bool disableAnimation = false;
     // see if we are trying to open a different keypad than what is already opened.
     if (mCurrentKeypad != keypadToOpen) {
         // close currently open keypad. We always close keypad without animation
@@ -254,13 +255,19 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
             mVkbHost->closeKeypad(false);
             // when their is a keypad that needs to be closed before opening the new keypad, we don't
             // want to animate the opening of new keypad.
-            wasKeypadOpen = true;
+            disableAnimation = true;
         }
     }
     // Close candidate popup if open
     if (mCandidatePopup) {
         mCandidatePopup->hide();
     }
+
+    QObject::disconnect(mCurrentKeypad,SIGNAL(aboutToActivateCustomAction(HbAction*)),
+        this,SLOT(aboutToActivateCustomAction(HbAction*)));
+    QObject::connect(keypadToOpen,SIGNAL(aboutToActivateCustomAction(HbAction*)),
+        this,SLOT(aboutToActivateCustomAction(HbAction*)));
+
     // assign new keypad to be opened to varable mCurrentKeypad
     mCurrentKeypad =  keypadToOpen;
 
@@ -269,24 +276,20 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
         if (inMinimizedMode) {
             mVkbHost->openMinimizedKeypad(mCurrentKeypad, this);
         } else {
-            mVkbHost->openKeypad(mCurrentKeypad, this, !wasKeypadOpen);
+            mVkbHost->openKeypad(mCurrentKeypad, this, !disableAnimation);
         }
 
-        // If previous focused editor was numeric, prediction is disabled.
-        // Enable prediction if prediction was set in alpha editor prior
-        // to focusing numeric editor.
-/*        if (mPrevKeypadMode == EModeAbc && HbInputModeLatinPredictive == mPreviousInputMode) {
-            mMode = HbInputModeLatinPredictive;
-        } else if (mPrevKeypadMode == EModeNumeric && HbInputModeLatinPredictive == mMode) {
-            // If the previous focused editor was alpha and if prediction is
-            // on, disable prediction. Store the previous state because if
-            // any alpha editor is focused next, the previous prediction state
-            // should be enabled.
-            mMode = HbInputModeDefault;
-            mPreviousInputMode = HbInputModeLatinPredictive;
-        }  */
         connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mVkbHost, SLOT(ensureCursorVisibility()));
     }
+}
+
+/*!
+vkb widget is about to call a custom action that is mapped to one of the keypad buttons.
+*/
+void HbVirtualQwerty::aboutToActivateCustomAction(HbAction *custAction)
+{
+    Q_UNUSED(custAction);
+    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
 }
 
 HbInputVkbWidget* HbVirtualQwerty::constructKeyboard(HbKeypadMode currentInputType)
@@ -332,6 +335,9 @@ void HbVirtualQwerty::keypadClosed()
     if (mOrientationAboutToChange) {
         mOrientationAboutToChange = false;
     }
+    if (mExactWordPopup && mExactWordPopup->isVisible()) {
+        mExactWordPopup->hide();
+    }	
 }
 
 void HbVirtualQwerty::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod)

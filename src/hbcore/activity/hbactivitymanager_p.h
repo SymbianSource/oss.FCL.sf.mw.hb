@@ -46,7 +46,7 @@ public:
 
 private:
     HbActivityPluginInterface *activityPlugin() const;
-    
+
 private:
     HbActivityManager *q;
     mutable HbActivityPluginInterface *mActivityPlugin;

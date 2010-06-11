@@ -65,9 +65,11 @@ public:
     static HbFeedback::InstantEffect instantOnKeyPress(const HbWidget *widget, Hb::InteractionModifiers modifiers);
     static HbFeedback::InstantEffect instantOnEditorHighlight(const HbWidget *widget, int previousCursorFocus);
     static HbFeedback::InstantEffect instantOnSelectionChanged(const HbWidget *widget, Hb::InteractionModifiers modifiers);
+    static HbFeedback::InstantEffect instantOnPopupOpened(const HbWidget *widget);
+    static HbFeedback::InstantEffect instantOnPopupClosed(const HbWidget *widget);
     static HbFeedback::ContinuousEffect continuousEffect(const HbWidget *widget, Hb::ContinuousInteraction interaction);
-    static HbFeedback::Modalities modalities(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers );
-    static HbFeedback::Modalities modalities(const HbWidget *widget, Hb::ContinuousInteraction interaction, Hb::InteractionModifiers modifiers );
+    static HbFeedback::Modalities modalities(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers);
+    static HbFeedback::Modalities modalities(const HbWidget *widget, Hb::ContinuousInteraction interaction, Hb::InteractionModifiers modifiers);
     static bool isFeedbackAllowedForPopup(const HbWidget *widget);
     static int intensity(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta = QPointF());
     static bool isFeedbackAllowed(const HbWidget* widget);

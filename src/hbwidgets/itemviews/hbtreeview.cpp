@@ -178,18 +178,15 @@ void HbTreeView::rowsInserted(const QModelIndex &parent, int start, int end)
 
     if (d->isParentValid(parent)) {
         if (isExpanded(parent) || parent == d->mModelIterator->rootIndex()) {
-            int lastStartPoint = 0;
             for (int i = start; i <= end; ++i) {
-                QModelIndex newParent = d->treeModelIterator()->index(i, parent);
+                HbAbstractItemView::rowsInserted(parent, i, i);
+                // if there is expanded parent under expanding parent, handle it recursively
+                QModelIndex newParent = d->treeModelIterator()->model()->index(i, 0, parent);
                 int childCount = d->treeModelIterator()->childCount(newParent);
                 if (childCount > 0 && isExpanded(newParent)) {
-                    HbAbstractItemView::rowsInserted(parent, lastStartPoint, i);
-                    lastStartPoint = i;
                     rowsInserted(newParent, 0, childCount - 1);
-                }
+                } 
             }
-
-            HbAbstractItemView::rowsInserted(parent, lastStartPoint, end);
 
             if (d->animationEnabled(true)) {
                 if (d->mInSetExpanded) {

@@ -38,6 +38,7 @@ class HbSelectionDialog;
 class HbAction;
 class HbDialog;
 class HbListWidget;
+class HbListWidgetItem;
 class QGraphicsLinearLayout;
 class QItemSelection;
 class HbAction;
@@ -100,6 +101,13 @@ public slots:
     void resetSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
+    void itemSelected(int index);
+    void startPreview(int index);
+    //popup signals
+    void finished(HbAction*);
+    void aboutToShow();
+    void aboutToHide();
+    void aboutToClose(); 
 
 private:
     HbRadioButtonList* mRadioButtonList;
@@ -140,6 +148,10 @@ signals:
     void aboutToHide();
     void aboutToClose();
     void finished(HbAction*);
+    void activated(HbListWidgetItem *item);
+    void pressed(HbListWidgetItem *item);
+    void released(HbListWidgetItem *item);
+    void longPressed(HbListWidgetItem *item, const QPointF &coords);
 
 private:
 

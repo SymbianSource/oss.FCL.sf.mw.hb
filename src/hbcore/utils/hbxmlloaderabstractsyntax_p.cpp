@@ -186,7 +186,7 @@ QDataStream &operator<<(QDataStream &stream, const HbXmlLengthValue &value)
         case HbXmlLengthValue::Unit:
         case HbXmlLengthValue::Millimeter:
             {
-            double f_value = (double)value.mValue;
+            double f_value = (double)value.mValue; //krazy:exclude=typedefs
             stream << f_value;
             break;
             }
@@ -213,7 +213,7 @@ QDataStream &operator>>(QDataStream &stream, HbXmlLengthValue &value)
         case HbXmlLengthValue::Unit:
         case HbXmlLengthValue::Millimeter:
             {
-            double f_value;
+            double f_value; //krazy:exclude=typedefs
             stream >> f_value;
             value.mValue = f_value;
             break;

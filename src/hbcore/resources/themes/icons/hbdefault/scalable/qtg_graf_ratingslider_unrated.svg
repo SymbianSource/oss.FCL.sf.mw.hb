@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="25px" version="1.1" viewBox="0 0 25 25" width="25px" x="0px" y="0px">
+<svg baseProfile="tiny" height="25px" version="1.1" viewBox="0 0 25 25" width="25px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path d="M15.312,9.813L12.506,1.13L9.689,9.813H0.545l7.416,5.367L5.109,23.87l7.396-5.396l7.385,5.396  l-2.844-8.689l7.408-5.367H15.312z" fill="url(#SVGID_1_)"/>
 <path d="M24.455,9.813h-9.144L12.506,1.13L9.689,9.813H0.545l7.416,5.367L5.109,23.87l7.396-5.396l7.385,5.396  l-2.844-8.689L24.455,9.813z M17.977,21.235l-5.472-4l-5.477,3.994l2.111-6.431l-4.124-2.985h6.128l1.358-4.189l1.354,4.189h6.136  l-4.121,2.985L17.977,21.235z" fill-opacity="0.1"/>
 <rect fill="none" height="25" width="25"/>

@@ -136,6 +136,13 @@
 */
 
 /*!
+  \fn void anchorTapped(const QString &anchor)
+
+  This signal is emitted when a tap gesture happens on a word which has anchor attached.
+
+*/
+
+/*!
     \fn QString HbAbstractEdit::toPlainText() const
 
     Returns the contents as plain text.
@@ -176,7 +183,7 @@ HbAbstractEdit::~HbAbstractEdit()
 {
     Q_D(HbAbstractEdit);
     if (d->selectionControl) {
-        d->selectionControl->detachEditor();
+        d->selectionControl->detachEditorFromDestructor();
     }
 }
 
@@ -364,9 +371,7 @@ void HbAbstractEdit::keyPressEvent(QKeyEvent *event)
         d->acceptKeyPressEvent(event);
 
     if (!(d->interactionFlags & Qt::TextEditable)) {
-        d->repaintOldAndNewSelection(d->selectionCursor);
         d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
-        //ensureCursorVisible();
         event->ignore();
         return;
     }
@@ -829,7 +834,6 @@ void HbAbstractEdit::setTextCursor(const QTextCursor &cursor)
         d->updateCurrentCharFormat();
 
         d->ensureCursorVisible();
-        d->repaintOldAndNewSelection(oldCursor);
         d->cursorChanged(HbValidator::CursorChangeFromContentSet);
     }
 }
@@ -919,13 +923,8 @@ void HbAbstractEdit::selectClickedWord()
         return;
 
     setCursorPosition(cursorPos);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.select(QTextCursor::WordUnderCursor);
-    emit selectionChanged(oldSelection, d->cursor);
-    d->repaintOldAndNewSelection(oldSelection);
     d->cursorChanged(HbValidator::CursorChangeFromMouse);
-    //TODO: focus is in VKB so needs to re-focus to editor
-//    setFocus();
 }
 
 /*!
@@ -935,10 +934,7 @@ void HbAbstractEdit::selectClickedWord()
 void HbAbstractEdit::selectAll()
 {
     Q_D(HbAbstractEdit);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.select(QTextCursor::Document);
-    emit selectionChanged(oldSelection, d->cursor);
-    d->repaintOldAndNewSelection(oldSelection);
     d->cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
@@ -949,9 +945,8 @@ void HbAbstractEdit::selectAll()
 void HbAbstractEdit::deselect()
 {
     Q_D(HbAbstractEdit);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.clearSelection();
-    emit selectionChanged(oldSelection, d->cursor);
+    d->cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
 /*!
@@ -1133,7 +1128,6 @@ void HbAbstractEdit::moveCursor(QTextCursor::MoveOperation op, QTextCursor::Move
     QTextCursor previousCursor(d->cursor);
     previousCursor.setPosition(d->previousCursorAnchor);
     previousCursor.setPosition(d->previousCursorPosition, QTextCursor::KeepAnchor);
-    d->repaintOldAndNewSelection(previousCursor);
     d->cursorChanged(HbValidator::CursorChangeFromOperation);
 }
 

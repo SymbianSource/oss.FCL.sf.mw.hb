@@ -65,7 +65,7 @@ public:
         return (layerPriority >= Priority_AppTheme && layerPriority <=  Priority_Application )? false : true;
     }
 
-    int load(const QString &fileName, LayerPriority priority, bool enableBinarySupport =false);
+    int load(const QString &fileName, LayerPriority priority);
     int load(QIODevice *device, LayerPriority priority);
     QVector<int> loadAll(const QStringList &files, LayerPriority priority);
     QVector<int> loadDir(const QString &dirPath, QDir::SortFlags sort, LayerPriority priority);
@@ -88,16 +88,6 @@ public:
 protected:
     void updateLayersListIfRequired(LayerPriority priority);
     QList<LayerPriority> mUsedLayers;
-    
-private:
-    bool loadBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
-    bool saveBinary(const QString& fileName,HbCss::StyleSheet *styleSheet);
-    void saveDeclarations(QDataStream & stream,HbVector<HbCss::Declaration>* decls );
-    HbVector<HbCss::Declaration> loadDeclarations(QDataStream & stream );
-    void saveStyleRules(QDataStream &stream, const HbVector<HbCss::StyleRule> *rules);
-    void loadStyleRules(QDataStream &stream, HbVector<HbCss::StyleRule> &rules);
-    bool isBinaryFile(const QString& fileName);
-    QString getBinaryFileName(const QString& fileName);
 
 private:
     PriorityLayerMap mStyleLayers;

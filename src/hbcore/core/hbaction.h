@@ -48,7 +48,7 @@ public:
     explicit HbAction(QObject *parent = 0);
     explicit HbAction(const QString &text, QObject *parent = 0);
     explicit HbAction(const HbIcon &icon, const QString &text, QObject *parent = 0);
-    explicit HbAction(Hb::NavigationAction action, QObject* parent = 0);
+    explicit HbAction(Hb::NavigationAction action, QObject *parent = 0);
     virtual ~HbAction();
 
     using QAction::setIcon;
@@ -67,13 +67,14 @@ public:
     HbToolBarExtension *toolBarExtension() const;
 
     enum CommandRole { NoRole, OptionsRole, OpenRole, NewRole, DeleteRole, ClearRole,
-        SettingsRole, SendRole, PrintRole, EditRole, CopyRole, PasteRole,
-        HelpRole, QuitRole, ExitRole, OtherRole };
+                       SettingsRole, SendRole, PrintRole, EditRole, CopyRole, PasteRole,
+                       HelpRole, QuitRole, ExitRole, OtherRole
+                     };
     void setCommandRole(CommandRole commandRole);
     CommandRole commandRole() const;
 
 protected:
-    HbActionPrivate * const d_ptr;
+    HbActionPrivate *const d_ptr;
     HbAction(HbActionPrivate &dd, QObject *parent);
 
 private:

@@ -134,6 +134,7 @@ HbComboBox::HbComboBox( QGraphicsItem *parent ):
     d->init( );
     updatePrimitives( );
     setProperty( "state", "normal" );
+    setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 }
 
 /*!
@@ -1043,6 +1044,24 @@ bool HbComboBox::eventFilter( QObject* obj, QEvent* event )
 /*!
     \reimp
  */
+QVariant HbComboBox::itemChange( GraphicsItemChange change, const QVariant & value )
+{
+    Q_D( HbComboBox );
+    switch( change ) {
+        case QGraphicsItem::ItemScenePositionHasChanged:
+            if( ( d->mDropDown ) && ( d->mDropDown->mList ) && ( d->mDropDown->isVisible( ) ) ) {
+                d->positionDropDown( );
+            }
+            break;
+        default:
+            break;
+    }
+    return HbWidget::itemChange( change, value );
+}
+
+/*!
+    \reimp
+ */
 void HbComboBox::changeEvent( QEvent *event )
 {
     switch ( event->type( ) ) {
@@ -1054,6 +1073,7 @@ void HbComboBox::changeEvent( QEvent *event )
     }
     HbWidget::changeEvent( event );
 }
+
 
 // End of file
 

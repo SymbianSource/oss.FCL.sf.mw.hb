@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" y="0px">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <rect fill="none" height="30" width="30"/>
 <path d="M15.46,20.81l-1.366-1.366c0.058-0.056,0.121-0.104,0.179-0.162,1.753-1.754,1.753-4.611-0.004-6.368-0.056-0.056-0.114-0.104-0.171-0.155l1.362-1.362c0.056,0.052,0.116,0.099,0.172,0.154,2.509,2.51,2.513,6.591,0.007,9.097-0.06,0.05-0.12,0.1-0.18,0.16zm2.44,2.43l-1.367-1.366c0.061-0.056,0.125-0.106,0.184-0.164,3.094-3.095,3.092-8.133-0.008-11.23-0.057-0.056-0.115-0.104-0.172-0.155l1.363-1.363c0.057,0.055,0.115,0.1,0.172,0.155,3.852,3.853,3.857,10.11,0.01,13.96-0.05,0.06-0.11,0.11-0.17,0.17z"/>
 <polygon points="5,0,5,3,27,3,27,25,30,25,30,0"/>

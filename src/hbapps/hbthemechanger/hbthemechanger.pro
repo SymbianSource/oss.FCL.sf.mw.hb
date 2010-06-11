@@ -36,6 +36,7 @@ DESTDIR = $${HB_BUILD_DIR}/bin
 # dependencies
 hbAddLibrary(hbcore/HbCore)
 hbAddLibrary(hbwidgets/HbWidgets)
+hbAddLibrary(hbutils/HbUtils)
 
 # Input
 HEADERS += themechangerdefs.h
@@ -45,11 +46,6 @@ SOURCES += themechangermain.cpp
 
 symbian {
     TARGET.CAPABILITY += WriteDeviceData
-    HEADERS += themeclientsymbian.h
-    SOURCES += themeclientsymbian.cpp
-} else {
-    HEADERS += themeclientqt.h
-    SOURCES += themeclientqt.cpp
 }
 
 # installation

@@ -66,8 +66,6 @@ public QObject
     HbThemeClientPrivate();
     bool connectToServer();
 
-    QSizeF getSharedIconDefaultSize(const QString& iconPath);
-
     HbSharedIconInfo getSharedIconInfo(const QString& iconPath ,
                                        const QSizeF &size,
                                        Qt::AspectRatioMode aspectRatioMode,
@@ -81,7 +79,7 @@ public QObject
                                                           const QString &layout,
                                                           const QString &section);
 
-    HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath,
+    HbCss::StyleSheet *getSharedStyleSheet(const QString &filePath,
                                            HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
@@ -125,6 +123,7 @@ public QObject
                                         HbIconLoader::IconLoaderOptions options,
                                         const QColor &color,
                                         HbRenderingMode renderMode);
+    void setTheme(const QString &theme);
     void notifyForegroundLostToServer();
     bool switchRenderingMode(HbRenderingMode renderMode);
     int freeSharedMemory();

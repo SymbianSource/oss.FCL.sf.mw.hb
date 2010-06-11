@@ -35,11 +35,11 @@
 HbEffectScaleAnimation::HbEffectScaleAnimation(
     HbEffectGroup *group,
     HbEffectScale *effect,
-    int duration ) :
-        HbEffectAnimation(group),
-        mEffect(effect),
-        mCenter(0),
-        mCurrentScaling(1.0)
+    int duration) :
+    HbEffectAnimation(group),
+    mEffect(effect),
+    mCenter(0),
+    mCurrentScaling(1.0)
 {
     setDuration(duration);
 }
@@ -75,9 +75,9 @@ HbEffectScale::HbEffectScale(
     const QList<HbEffectFxmlParamData> &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectAbstract(0, item, group),
-        mAnimationX(0),
-        mAnimationY(0)
+    HbEffectAbstract(0, item, group),
+    mAnimationX(0),
+    mAnimationY(0)
 {
     int durationX = 0;
     int durationY = 0;
@@ -92,19 +92,19 @@ HbEffectScale::HbEffectScale(
     mCenterXValue = 0;
     mCenterYValue = 0;
 
-    const HbEffectFxmlParamData* paramX = 0;
-    const HbEffectFxmlParamData* paramY = 0;
+    const HbEffectFxmlParamData *paramX = 0;
+    const HbEffectFxmlParamData *paramY = 0;
 
-    Q_FOREACH(const HbEffectFxmlParamData &param, data) {
-	    if (param.name() == FXML_KEYWORD_SCALE_X) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, data) {
+        if (param.name() == FXML_KEYWORD_SCALE_X) {
             mKeyFrameListX = param.keyFrames();
-			// <start> for scale_x
-			mStartWidth =  param.getAttribute(FXML_KEYWORD_START);
-			mStartWidthRef = param.startRef();
-			// <end> for scale_x
-			mEndWidth = param.getAttribute(FXML_KEYWORD_END);
-			mEndWidthRef = param.endRef();
-			// duration and curvepath
+            // <start> for scale_x
+            mStartWidth =  param.getAttribute(FXML_KEYWORD_START);
+            mStartWidthRef = param.startRef();
+            // <end> for scale_x
+            mEndWidth = param.getAttribute(FXML_KEYWORD_END);
+            mEndWidthRef = param.endRef();
+            // duration and curvepath
             HbEffectUtils::resolveFxmlDuration(durationX, param);
             HbEffectUtils::resolveFxmlCurveShape(curveX, param);
 
@@ -114,15 +114,14 @@ HbEffectScale::HbEffectScale(
             }
 
             paramX = &param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_SCALE_Y) {
+        } else if (param.name() == FXML_KEYWORD_SCALE_Y) {
             mKeyFrameListY = param.keyFrames();
-			// <start> for scale_y
-			mStartHeight =  param.getAttribute(FXML_KEYWORD_START);
-			mStartHeightRef = param.startRef();
-			// <end> for scale_y
-			mEndHeight = param.getAttribute(FXML_KEYWORD_END);
-			mEndHeightRef = param.endRef();
+            // <start> for scale_y
+            mStartHeight =  param.getAttribute(FXML_KEYWORD_START);
+            mStartHeightRef = param.startRef();
+            // <end> for scale_y
+            mEndHeight = param.getAttribute(FXML_KEYWORD_END);
+            mEndHeightRef = param.endRef();
             HbEffectUtils::resolveFxmlDuration(durationY, param);
             HbEffectUtils::resolveFxmlCurveShape(curveY, param);
 
@@ -132,22 +131,20 @@ HbEffectScale::HbEffectScale(
             }
 
             paramY = &param;
-	    }
-	    else if (param.name() == FXML_KEYWORD_SCALE_ORIGIN_X) {
+        } else if (param.name() == FXML_KEYWORD_SCALE_ORIGIN_X) {
             mCenterX = param.getValue();
             mCenterXRef = param.getAttribute(FXML_PARAM_REF);
-        }                        
-	    else if (param.name() == FXML_KEYWORD_SCALE_ORIGIN_Y) {
+        } else if (param.name() == FXML_KEYWORD_SCALE_ORIGIN_Y) {
             mCenterY = param.getValue();
             mCenterYRef = param.getAttribute(FXML_PARAM_REF);
-	    }
+        }
     }
 
     // Validate references. If start and end references are used, at least one of them must be a visual reference.
     if ((mStartWidthRef.isEmpty() || mStartWidthRef.startsWith(FXML_VISUAL) ||
-         mEndWidthRef.isEmpty() || mEndWidthRef.startsWith(FXML_VISUAL)) &&
-        (mStartHeightRef.isEmpty() || mStartHeightRef.startsWith(FXML_VISUAL) ||
-         mEndHeightRef.isEmpty() || mEndHeightRef.startsWith(FXML_VISUAL))) {
+            mEndWidthRef.isEmpty() || mEndWidthRef.startsWith(FXML_VISUAL)) &&
+            (mStartHeightRef.isEmpty() || mStartHeightRef.startsWith(FXML_VISUAL) ||
+             mEndHeightRef.isEmpty() || mEndHeightRef.startsWith(FXML_VISUAL))) {
         // references ok
     } else {
         // Invalid references - disable effect
@@ -187,7 +184,7 @@ HbEffectScale::HbEffectScale(
 
 
 /* deletes the effect and rewinds the animation so that next animation can star,
-    rewind is necessary as the general use case is that the effect is restarted before 
+    rewind is necessary as the general use case is that the effect is restarted before
     being complete, in which case the rewind would transform the item and prepare for
     the next effect.
 */
@@ -224,7 +221,7 @@ void HbEffectScale::init()
     // start width
     if (!mStartWidth.isEmpty()) {
         value = HbEffectUtils::resolveFxmlRef(
-            mStartWidthRef, mStartWidth, &valueOk, item(), HbEffectUtils::Size, extRect);
+                    mStartWidthRef, mStartWidth, &valueOk, item(), HbEffectUtils::Size, extRect);
         if (valueOk) {
             mStartXValue = value;
         }
@@ -240,7 +237,7 @@ void HbEffectScale::init()
     // end width
     if (!mEndWidth.isEmpty()) {
         value = HbEffectUtils::resolveFxmlRef(
-            mEndWidthRef, mEndWidth, &valueOk, item(), HbEffectUtils::Size, extRect);
+                    mEndWidthRef, mEndWidth, &valueOk, item(), HbEffectUtils::Size, extRect);
 
         if (valueOk) {
             mEndXValue = value;
@@ -249,7 +246,7 @@ void HbEffectScale::init()
     // end height
     if (!mEndHeight.isEmpty()) {
         value = HbEffectUtils::resolveFxmlRef(
-            mEndHeightRef, mEndHeight, &valueOk, item(), HbEffectUtils::Size, extRect);
+                    mEndHeightRef, mEndHeight, &valueOk, item(), HbEffectUtils::Size, extRect);
 
         if (valueOk) {
             mEndYValue = value;
@@ -258,14 +255,14 @@ void HbEffectScale::init()
 
     // CenterX
     value = HbEffectUtils::resolveFxmlRef(
-        mCenterXRef, mCenterX, &valueOk, item(), HbEffectUtils::CenterMappedToTargetRect, extRect);
-    
+                mCenterXRef, mCenterX, &valueOk, item(), HbEffectUtils::CenterMappedToTargetRect, extRect);
+
     if (valueOk) {
         mCenterXValue = value;
     }
     // CenterY
     value = HbEffectUtils::resolveFxmlRef(
-        mCenterYRef, mCenterY, &valueOk, item(), HbEffectUtils::CenterMappedToTargetRect, extRect);
+                mCenterYRef, mCenterY, &valueOk, item(), HbEffectUtils::CenterMappedToTargetRect, extRect);
 
     if (valueOk) {
         mCenterYValue = value;
@@ -295,15 +292,15 @@ void HbEffectScale::init()
         bool startEndRefUsed = !mStartWidthRef.isEmpty() && !mEndWidthRef.isEmpty();
 
         qreal paramRefValueX = 0.0;
-        
+
         // Resolve SCALE_X parameter's "ref" value only if that's needed
         if (!startEndRefUsed) {
             paramRefValueX = HbEffectUtils::resolveFxmlRef(
-                mParamRefX, "1", &valueOk, item(), HbEffectUtils::Size, extRect);
+                                 mParamRefX, "1", &valueOk, item(), HbEffectUtils::Size, extRect);
         }
 
         // Set keyframes in animation
-        foreach(const HbKeyFrame &kf, mKeyFrameListX) {
+        foreach(const HbKeyFrame & kf, mKeyFrameListX) {
 
             // If start and end references are used,
             // value at given step is (1-c)*startX + c*endX where c is the keyframe coefficient value
@@ -342,11 +339,11 @@ void HbEffectScale::init()
         // Resolve SCALE_Y parameter's "ref" value only if that's needed
         if (!startEndRefUsed) {
             paramRefValueY = HbEffectUtils::resolveFxmlRef(
-                mParamRefY, "1", &valueOk, item(), HbEffectUtils::Size, extRect);
+                                 mParamRefY, "1", &valueOk, item(), HbEffectUtils::Size, extRect);
         }
 
         // Set keyframes in animation
-        foreach(const HbKeyFrame &kf, mKeyFrameListY) {
+        foreach(const HbKeyFrame & kf, mKeyFrameListY) {
             // If start and end references are used,
             // value at given step is (1-c)*startY + c*endY where c is the keyframe coefficient value
             if (startEndRefUsed) {
@@ -425,7 +422,7 @@ void HbEffectScale::updateItemTransform(QTransform &transform)
     QTransform newTransform;
     // Handle centering for scaling the matrix
     newTransform.translate(mCenterXValue, mCenterYValue);
-    
+
     // Get the current scaling factor from animation or use 1.0 if animation does not exist
     qreal currentScalingX = mAnimationX ? mAnimationX->mCurrentScaling : 1.0;
     qreal currentScalingY = mAnimationY ? mAnimationY->mCurrentScaling : 1.0;

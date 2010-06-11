@@ -453,6 +453,9 @@ void HbPushButton::setIcon( const HbIcon &icon )
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
             style()->updatePrimitive( d->iconItem, HbStyle::P_PushButton_icon, &buttonOption );
+            if ( isEnabled() ) {
+                setProperty("state", "normal");
+            } 
 
         }
         if( doPolish ) {

@@ -28,8 +28,8 @@
 #include "hbnvgutil_p.h"
 #include "hbnvgcsicon_p.h"
 #include "hbnvgiconfactory_p.h"
-#include "hbnvgicondata_p.h"
 #include "hbnvgexception_p.h"
+#include "hbdereferencer_p.h"
 
 #include <QByteArray>
 
@@ -42,29 +42,6 @@ const qint32 NVG_VIEWBOX_WIDTH_OFS   = 44;
 const qint32 NVG_VIEWBOX_HEIGHT_OFS  = 48;
 const qint32 NvgOffsetReserved1       = 6;
 
-void HbNvgIconList::addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgIcon)
-{
-    if (type <= HbNvgIconFactory::NvgCs) {
-        if (icons[type]) {
-            delete icons[type];
-        }
-        icons[type] = nvgIcon;
-    }
-}
-
-HbNvgIcon * HbNvgIconList::getIcon(HbNvgIconFactory::HbNvgIconType type)
-{
-    if (type <= HbNvgIconFactory::NvgCs) {
-        return icons[type];
-    }
-    return 0;
-}
-
-HbNvgIconList::~HbNvgIconList()
-{
-    delete icons[HbNvgIconFactory::NvgCs];   
-}
-
 HbNvgEnginePrivate::HbNvgEnginePrivate():
         mCurrentBufferSize(1, 1),
         mRotateAngle(0.0),
@@ -72,8 +49,6 @@ HbNvgEnginePrivate::HbNvgEnginePrivate():
         mCentreY(0.0),
         mPreserveAspectSetting(HbNvgEngine::NvgPreserveAspectRatioXmidYmid),
         mSmilFitSetting(HbNvgEngine::NvgMeet),
-        mVgImageBinder(0),
-        mCreatingNvgIcon(false),
         mCurrentNvgIcon(0),
         mLastError(HbNvgEngine::NvgErrNone),
         mMirrored(false)
@@ -84,9 +59,7 @@ HbNvgEnginePrivate::HbNvgEnginePrivate():
 
 HbNvgEnginePrivate::~HbNvgEnginePrivate()
 {
-#ifdef    OPENVG_OBJECT_CACHING
-    delete  mCurrentNvgIcon;
-#endif
+    delete mCurrentNvgIcon;
 }
 
 void HbNvgEnginePrivate::rotate(float angle, float centreX, float centreY)
@@ -117,9 +90,7 @@ QSize HbNvgEnginePrivate::contentDimensions(const QByteArray &buffer) const
 
         if (viewboxWidth > 0 && viewboxHeight > 0) {
             ret = QSize(viewboxWidth, viewboxHeight);
-        } else {
-            ret = QSize(0, 0);
-        }
+        } 
     }
     return ret;
 }
@@ -151,7 +122,6 @@ HbNvgEngine::HbNvgErrorType HbNvgEnginePrivate::drawNvg(const QByteArray &buffer
 
     try {
         doDrawNvg(buffer, size);
-
     } catch (const std::bad_alloc & e) {
         mLastError = HbNvgEngine::NvgErrNoMemory;
     } catch (const HbNvgException & e) {
@@ -161,32 +131,6 @@ HbNvgEngine::HbNvgErrorType HbNvgEnginePrivate::drawNvg(const QByteArray &buffer
     restoreClientMatrices();
 
     return mLastError;
-}
-
-HbNvgIcon * HbNvgEnginePrivate::createNvgIcon(const QByteArray &buffer, const QSize& size)
-{
-    NVG_DEBUGP1("Creating NvgCsIcon");
-
-    mCurrentNvgIcon     = 0;
-
-#ifdef OPENVG_OBJECT_CACHING
-    mCreatingNvgIcon    = true;
-
-    mLastError = drawNvg(buffer, size);
-    if (mLastError != NvgErrNone) {
-        delete mCurrentNvgIcon;
-        mCurrentNvgIcon = 0;
-        NVG_DEBUGP2("Creating NvgCsIcon failed %d\n", mLastError);
-    }
-
-    mCreatingNvgIcon    = false;
-#else
-    QByteArray tempArray = buffer;
-    QSize tempSize = size;
-    Q_UNUSED(tempArray);
-    Q_UNUSED(tempSize);
-#endif
-    return mCurrentNvgIcon;
 }
 
 void HbNvgEnginePrivate::doDrawNvg(const QByteArray & buffer, const QSize &size)
@@ -211,63 +155,14 @@ void HbNvgEnginePrivate::doDrawNvg(const QByteArray & buffer, const QSize &size)
     quint16 reserved1 = nvgIconData.derefInt16(NvgOffsetReserved1) & 0x03;
     HbNvgIconFactory::HbNvgIconType iconType = (HbNvgIconFactory::HbNvgIconType)(reserved1 & 0x03);
 
-#ifdef OPENVG_OBJECT_CACHING
-    mCurrentNvgIcon = HbNvgIconFactory::create(iconType);
-    QScopedPointer <HbNvgIcon> nvgIcon(mCurrentNvgIcon);
-#else
-    HbNvgIcon * nvGIcon = mIconList.getIcon(iconType);
-    if (!nvGIcon) {
-        mCurrentNvgIcon = HbNvgIconFactory::create(iconType);
-        mIconList.addNvgIcon(iconType, mCurrentNvgIcon);
-    } else {
-        mCurrentNvgIcon = nvGIcon;
-    }
-#endif
-
+    if (!mCurrentNvgIcon) {
+        mCurrentNvgIcon = HbNvgIconFactory::create(iconType);   
+    } 
+    
     mCurrentNvgIcon->setPreserveAspectRatio(mPreserveAspectSetting, mSmilFitSetting);
     mCurrentNvgIcon->rotate(mRotateAngle, mCentreX, mCentreY);
-    mCurrentNvgIcon->setVgImageBinder(mVgImageBinder);
     mCurrentNvgIcon->enableMirroring(mMirrored);
-
-#ifdef OPENVG_OBJECT_CACHING
-    if (mCreatingNvgIcon) {
-        mCurrentNvgIcon->create(buffer, size);
-        nvgIcon.take();
-    } else {
-        mCurrentNvgIcon->directDraw(buffer, size);
-    }
-#else
     mCurrentNvgIcon->directDraw(buffer, size);
-#endif
-}
-
-void HbNvgEnginePrivate::setBackgroundColor(const QColor &rgba8888Color)
-{
-    mBackgroundColor = rgba8888Color;
-}
-
-void HbNvgEnginePrivate::clearBackground()
-{
-    quint32 rgba = (mBackgroundColor.rgba() << 8) | (mBackgroundColor.rgba() >> 24);
-    qint32 r, g, b, a;
-    r = (qint32)((rgba & 0xFF000000) >> 24);
-    g = (qint32)((rgba & 0x00FF0000) >> 16);
-    b = (qint32)((rgba & 0x0000FF00) >> 8);
-    a = (qint32)(rgba & 0x000000FF);
-
-    r += r >> 7; g += g >> 7; b += b >> 7; a += a >> 7;
-
-    const VGfloat Inverse255 =  1.0f / 256.0f;
-    const VGfloat clearColor[4] = {(Inverse255 * VGfloat(r)),
-                                   (Inverse255 * VGfloat(g)),
-                                   (Inverse255 * VGfloat(b)),
-                                   (Inverse255 * VGfloat(a))
-                                  };
-
-    vgSeti(VG_SCISSORING, VG_FALSE);
-    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
-    vgClear(0, 0, mCurrentBufferSize.width(), mCurrentBufferSize.height());
-    vgSeti(VG_SCISSORING, VG_TRUE);
 }
 
 /*!
@@ -314,28 +209,11 @@ QSize HbNvgEngine::contentDimensions(const QByteArray &buffer)const
 }
 
 /*!
-  Creates the nvgicon with the content \a buffer of size \a size and
-  return pointer to the HbNvgIcon.
- */
-HbNvgIcon * HbNvgEngine::createNvgIcon(const QByteArray &buffer, const QSize &size)
-{
-    return d_ptr->createNvgIcon(buffer, size);
-}
-
-/*!
   Draw the  nvg graphic with the content \a buffer of size \a size.
  */
 HbNvgEngine::HbNvgErrorType HbNvgEngine::drawNvg(const QByteArray &buffer, const QSize &size)
 {
     return d_ptr->drawNvg(buffer, size);
-}
-
-/*!
-  Set the HbVgImageBinder \a imageBinder  to the HbNvgEngine
- */
-void HbNvgEngine::setVgImageBinder(HbVgImageBinder *imageBinder)
-{
-    d_ptr->setVgImageBinder(imageBinder);
 }
 
 /*!
@@ -346,26 +224,37 @@ HbNvgEngine::HbNvgErrorType HbNvgEngine::error()const
     return d_ptr->error();
 }
 
-/*!
-  Sets the \a rgba8888Color as background color of the nvg graphics.
- */
-void HbNvgEngine::setBackgroundColor(const QColor &rgba8888Color)
-{
-    d_ptr->setBackgroundColor(rgba8888Color);
-}
-
 void HbNvgEngine::enableMirroring(bool mirroringMode)
 {
     d_ptr->enableMirroring(mirroringMode);
 }
 
-/*!
-  Clears the background color of the nvg graphic.
- */
+
+HbNvgIcon * HbNvgEngine::createNvgIcon(const QByteArray &buffer, const QSize &size)
+{
+    // TODO @ Deprecated
+    Q_UNUSED(buffer);
+    Q_UNUSED(size);
+    return 0;
+}
+
+void HbNvgEngine::setVgImageBinder(HbVgImageBinder *imageBinder)
+{
+    // TODO @ Deprecated
+    Q_UNUSED(imageBinder);
+}
+
+void HbNvgEngine::setBackgroundColor(const QColor &rgba8888Color)
+{
+    // TODO @ Deprecated
+    Q_UNUSED(rgba8888Color);
+}
+
 void HbNvgEngine::clearBackground()
 {
-    d_ptr->clearBackground();
+    // TODO @ Deprecated
 }
+
 
 HbNvgEngine::HbNvgErrorType openVgErrorToHbNvgError(qint32 error)
 {

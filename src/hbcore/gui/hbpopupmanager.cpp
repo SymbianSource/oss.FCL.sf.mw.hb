@@ -94,7 +94,7 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
 {
     if (!mPopup.isNull()) {
         const QSizeF popupPreferredSize = 
-            mPopup->effectiveSizeHint(Qt::PreferredSize);
+                mPopup->effectiveSizeHint(Qt::PreferredSize);
         const QSizeF usedSize( qMin(rect.width(),   popupPreferredSize.width() ),
                                qMin( rect.height(), popupPreferredSize.height() ) );
         QPointF usedPos(rect.left(), rect.top());
@@ -157,7 +157,12 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
 
             usedPos = QPointF(usedx, usedy);
         }
-        mPopup->setGeometry(QRectF(usedPos, usedSize));
+        if (((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting) {
+            mPopup->setGeometry(QRectF(usedPos, usedSize));
+            ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting = true;
+        } else {
+            mPopup->resize(usedSize);
+        }
     }
 }
 
@@ -178,7 +183,7 @@ bool HbPopupLayoutProxy::eventFilter(QObject *obj, QEvent *event)
     Q_UNUSED( obj );
     switch( event->type() ) {
         case QEvent::LayoutRequest: {
-            updateGeometry();
+                updateGeometry();
             break;
         }
         case QEvent::ContextMenu: {
@@ -416,8 +421,7 @@ void HbPopupManagerPrivate::addPopup(HbPopup *popup)
                  popup->metaObject()->className() != QLatin1String("HbExactWordPopup") &&
                  popup->metaObject()->className() != QLatin1String("HbInputSmileyPicker") &&
                  popup->metaObject()->className() != QLatin1String("Hb12KeyCustomKeypad") &&
-				 popup->metaObject()->className() != QLatin1String("HbInputThaiSpecialPopup") &&
-                 !popup->inherits("HbInputVkbWidget")) {
+				 !popup->inherits("HbInputVkbWidget")) {
                 setGeometryForPopup( popup );
             }
         }
@@ -432,8 +436,12 @@ void HbPopupManagerPrivate::addPopup(HbPopup *popup)
             if(!initialFocusedItem && scene) {
                 initialFocusedItem = scene->focusItem();
             }
-
-            topLevelFocusablePopup->setFocus();
+            
+            // an embedded graphics item is already having a 
+            // focus so do not set focus as graphicsscene will automatically
+            // set the focus to the embedded item.
+            if (!topLevelFocusablePopup->focusItem())
+                topLevelFocusablePopup->setFocus();
         }
 
         updateFading();

@@ -52,7 +52,7 @@ protected:
 class HB_AUTOTEST_EXPORT HbTimerSignalEntry : public QObject, public HbTimerEntry
 {
     Q_OBJECT
-    
+
 public:
     HbTimerSignalEntry(int interval);
 

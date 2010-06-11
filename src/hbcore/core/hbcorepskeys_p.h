@@ -31,38 +31,58 @@
 #include <e32cmn.h>
 
 /**
- * HbCore internal orientation PS category UID.
- * Intended only for orientation setting.
+ * HbCore orientation PS category UID.
  */
-const TUid KHbPsOrientationCategoryUid = {0x20022E82}; // Theme server UID
+const TUid KHbPsHardwareCoarseOrientationCategoryUid = {0x20022E82}; // Theme server UID
 
 /**
  * HbCore internal foreground application orientation PS category UID.
  */
-const TUid KHbPsForegroundAppOrientationCategoryUid = {0x20022FC5}; //device dialog UID
+const TUid KHbPsForegroundAppOrientationCategoryUid = {0x20022FC5}; // Device dialog server UID
 
 /**
- * KHbPsOrientationKey
- * Current orientation value recieved from sensor.
- * Qt::Orientation
+ * Contains the current orientation value based on the hw sensors and
+ * other components.
+ *
+ * The value is not necessarily based solely on the accelerometer, it
+ * may be different than that due to the hw keyboard state, lock
+ * switch, etc. In any case this is the suggested orientation for
+ * applications and the framework will use this orientation when the
+ * automatic orientation management is in use by a Hb application
+ * (i.e. by default).
+ *
+ * The sensors are tracked only while the device is not in sleep
+ * mode. This means that the value is not guaranteed to be immediately
+ * up-to-date with the current accelerometer orientation after coming
+ * out of sleep mode.
+ *
+ * The value is a Qt::Orientation.
+ *
+ * Published by theme server. Used by Hb apps themselves (e.g. when
+ * showing splash screens) and possibly by wserv.
  */
-const TUint KHbPsOrientationKey = 'Orie';
+const TUint KHbPsHardwareCoarseOrientationKey = 0x4F726965;
 
 /**
- * KHbPsForegroundAppOrientationKey
- * Current orientation value checked from foreground app.
+ * Current orientation value from the foreground app.
+ * Applies only to Hb applications, non-Hb apps are not taken into account.
+ *
+ * Bits 0-7 contain the Qt::Orientation value.
+ * If bit 8 is set then the orientation is a fixed (forced) one.
+ * If bit 8 is not set then the orientation is managed automatically by the framework.
+ *
+ * Published by device dialog server.
  */
-const TUint KHbPsForegroundAppOrientationKey = 'Fgor';
+const TUint KHbPsForegroundAppOrientationKey = 0x46676F72;
 
 /**
- * KHbFixedOrientationMask
- * Indicates HbMainWindow has fixed orientation enabled
+ * Mask for the bit that indicates HbMainWindow has fixed orientation
+ * enabled.
  */
 const TUint KHbFixedOrientationMask = 0x100;
 
 /**
- * KHbOrientationMask
- * Used for masking orientation in PS-key
+ * Used for masking orientation in PS-key.
  */
 const TUint KHbOrientationMask = 0xFF;
 

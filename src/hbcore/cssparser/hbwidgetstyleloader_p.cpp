@@ -57,8 +57,8 @@ static const QString HBWIDGETBASE_CLASSNAME = "HbWidgetBase";
 	
 	Multiple FileSets can be active at any given time, and apply to any layer of any stack.
 	
-	A list of class names that CSS has been loaded for is maintained for each FileSet, and the parent 
-	hierarchy is navigated up to HbWidget to load CSS for all parent classes.
+	A list of class names that CSS has been loaded for is maintained for each FileSet, and the 
+    parent hierarchy is navigated up to HbWidget to load CSS for all parent classes.
 	
 	\note When a FileSet is removed, the corresponding layer of the CSS stack will be cleared.
 	Any other FileSets active on the same layer will have their loaded list cleared, and required
@@ -194,7 +194,8 @@ bool HbWidgetStyleLoader::removeFilePath(const QString &filePath,
     \return whether the addition was successful
  */
 /*
-bool HbWidgetStyleLoader::addFileSet(const QString &pathPattern, const HbLayeredStyleLoader::Concern concern, 
+bool HbWidgetStyleLoader::addFileSet(const QString &pathPattern, 
+        const HbLayeredStyleLoader::Concern concern, 
 		const HbLayeredStyleLoader::LayerPriority priority)
 {
     return doAddFileSet(pathPattern, FileSetType_Pattern, concern, priority);
@@ -341,7 +342,8 @@ bool HbWidgetStyleLoader::doRemoveFileSet(
     Attempts to load CSS for the given widget (and all parent classes) based on the currently
     existing filesets. Note that a list of loaded CSS files is stored, so calling this function
     on a widget whose CSS is already loaded will NOT cause duplicate CSS.
-	Failed attempts to load a file will also be cached to avoid repeated filesystem access requests.
+	Failed attempts to load a file will also be cached to avoid repeated filesystem access 
+    requests.
 	
     \param widget, Widget to load CSS for
  */
@@ -443,12 +445,15 @@ void HbWidgetStyleLoader::loadCss(const HbWidget *widget)
     
     \sa addFileSet
     
-    \param widget, Widget to load layout for. If successful, the widget's layout variable will be modified.
+    \param widget, Widget to load layout for. If successful, the widget's layout variable will be 
+        modified.
     \param layoutName, The layout name (previously extracted from CSS) to look for
-    \param sectionName, The section name (previously extracted from CSS) to look for, if not defined then use the first section found
+    \param sectionName, The section name (previously extracted from CSS) to look for, if not 
+        defined then use the first section found
  */
 #ifndef HB_BIN_CSS
-bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutName, const QString &sectionName)
+bool HbWidgetStyleLoader::loadWidgetML(
+    HbWidget *widget, const QString &layoutName, const QString &sectionName)
 {
 	if(!widget){
 		return false;
@@ -459,7 +464,8 @@ bool HbWidgetStyleLoader::loadWidgetML(HbWidget *widget, const QString &layoutNa
 	qDebug() << "Looking for layout" << layoutName << "in section" << sectionName;
 #endif
 
-	// Iterate backwards to ensure filesets override correctly (eg landscape delta overrides portrait)
+	// Iterate backwards to ensure filesets override correctly (eg landscape delta overrides 
+    // portrait)
 	int c = mFileSets.count();
 	while(c-- && !loaded){
         if ( !(mFileSets.at(c).type == FileSetType_Pattern ||

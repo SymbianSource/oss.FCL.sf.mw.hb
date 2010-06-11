@@ -58,6 +58,7 @@ public:
 
     static HbSelectionControl* attachEditor(HbAbstractEdit *edit);
     void detachEditor();
+    void detachEditorFromDestructor();
     void hideHandles();
     void showHandles();
     bool event(QEvent *event);

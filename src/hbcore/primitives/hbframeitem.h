@@ -59,7 +59,9 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
 
     enum { Type = Hb::ItemType_FrameItem };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
 protected:
     void changeEvent(QEvent *event);

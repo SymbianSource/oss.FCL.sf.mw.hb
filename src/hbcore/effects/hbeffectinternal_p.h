@@ -27,6 +27,7 @@
 #define HBEFFECTINTERNAL_P_H
 
 #include <hbglobal.h>
+#include <hbnamespace.h>
 #include <QStringList>
 
 const int HbGVWrapperItemType = Hb::ItemType_Last + 10000; // just some value after the last one
@@ -38,8 +39,10 @@ class HB_CORE_PRIVATE_EXPORT HbGVWrapperItem: public QGraphicsItem
 {
 public:
     HbGVWrapperItem();
-    int type() const { return HbGVWrapperItemType; }
-    void setMainWindow( HbMainWindow& mainWindow );
+    int type() const {
+        return HbGVWrapperItemType;
+    }
+    void setMainWindow(HbMainWindow &mainWindow);
     HbMainWindow *mainWindow() const;
     qreal transformDegrees;
 private:
@@ -91,7 +94,7 @@ public:
 
     static void reloadFxmlFiles();
 
-    static void cancelAll(const QList<QGraphicsItem*> *exceptionList = 0, bool ignoreLooping = false);
+    static void cancelAll(const QList<QGraphicsItem *> *exceptionList = 0, bool ignoreLooping = false);
     static void safeCancelAll(bool clear = false);
 
     static void stopEffects();

@@ -63,8 +63,9 @@ qreal HbVgBcEffect::brightness() const
 void HbVgBcEffect::setBrightness(qreal brightness)
 {
     Q_D(HbVgBcEffect);
-    if (d->brightness == brightness)
+    if (d->brightness == brightness) {
         return;
+    }
     d->brightness = brightness;
     updateEffect();
     emit brightnessChanged(brightness);
@@ -79,8 +80,9 @@ qreal HbVgBcEffect::contrast() const
 void HbVgBcEffect::setContrast(qreal contrast)
 {
     Q_D(HbVgBcEffect);
-    if (d->contrast == contrast)
+    if (d->contrast == contrast) {
         return;
+    }
     d->contrast = contrast;
     updateEffect();
     emit contrastChanged(contrast);
@@ -92,9 +94,9 @@ QRectF HbVgBcEffect::boundingRectFor(const QRectF &rect) const
 }
 
 void HbVgBcEffect::performEffect(QPainter *painter,
-                                   const QPointF &offset,
-                                   const QVariant &vgImage,
-                                   const QSize &vgImageSize)
+                                 const QPointF &offset,
+                                 const QVariant &vgImage,
+                                 const QSize &vgImageSize)
 {
 #ifdef HB_EFFECTS_OPENVG
     QPixmap cachedPm = cached(vgImageSize);
@@ -112,11 +114,11 @@ void HbVgBcEffect::performEffect(QPainter *painter,
             // brightness [-1, 1]
             const VGfloat offset_br = clamp(d->brightness, -1.0f, 1.0f);
             const VGfloat scale_br = 1.0f - 0.5f * ((offset_br < 0.0f) ? -offset_br : offset_br);
-    
+
             // contrast [0, N]
             const VGfloat scale_con = clamp(d->contrast, 0.0f, 100.0f);
             const VGfloat offset_con = -0.5f * scale_con + 0.5f ;
-    
+
             // combine the effects of brightness and contrast
             const VGfloat off = offset_br + offset_con;
             const VGfloat sc  = scale_br * scale_con;
@@ -125,7 +127,7 @@ void HbVgBcEffect::performEffect(QPainter *painter,
             const VGfloat o = (VGfloat) opacity;
             const VGfloat oOff = off * o;
             const VGfloat oSc  = (sc * o) + (1.0f - o);
-    
+
             d->colorMatrix[0] = oSc;
             d->colorMatrix[1] = 0.0f;
             d->colorMatrix[2] = 0.0f;

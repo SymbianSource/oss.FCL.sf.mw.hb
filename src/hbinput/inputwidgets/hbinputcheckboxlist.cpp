@@ -117,6 +117,7 @@ HbWidget* HbInputCheckBoxList::createCustomWidget()
     d->mListWidget->setSelectionMode(HbAbstractItemView::MultiSelection);
     d->mListWidget->contentWidget()->setContentsMargins(10, 10, 10, 10);
     d->mListWidget->setBackgroundItem(HbStyle::P_DataItem_background);
+    d->mListWidget->setScrollDirections(0);
     
     QStringList items = modelItem->contentWidgetData(QString("items")).toStringList();
     foreach(QString itemName, items) {

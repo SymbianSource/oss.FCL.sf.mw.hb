@@ -56,11 +56,12 @@ class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
         virtual ~HbWidgetLoaderActions();
 
         void setWidget( HbWidget *widget );
-
+#ifndef HB_BIN_CSS
         bool createMeshLayout( const QString &widget );
         bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
                                 const QString &dst, Hb::Edge dstEdge,
                                 const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+#endif
 
     public:
         Q_DISABLE_COPY(HbWidgetLoaderActions)
@@ -75,7 +76,6 @@ class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
     public:
         HbWidgetLoaderMemoryActions();
         virtual ~HbWidgetLoaderMemoryActions();
-
         bool createMeshLayout( const QString &widget );
         bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
                                 const QString &dst, Hb::Edge dstEdge,

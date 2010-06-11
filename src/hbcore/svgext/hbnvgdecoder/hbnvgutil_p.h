@@ -217,37 +217,6 @@ inline void vgDestroyImageWrapper(HbHandleCounter * handleCounter, VGHandle h)
 
 #endif
 
-#ifdef OPENVG_OBJECT_CACHING
-// first one is for openVG object caching, the macro is used for testing purpose
-#define COND_COM_OC(obj, s1, s2)       if (obj) { s1; } else { s2; }
-
-// if object caching is enabled take the first one, which is for object caching,
-// else the second one
-#define COND_COM_OC_NOC(s1, s2)        s1
-
-// if object caching is enabled take the first one, which is for object caching
-// else don't do anything
-#define COND_COM_OC_OOC(s1)            s1
-
-#else
-
-// first one is for openVG object caching, the macro is used for testing purpose
-#define COND_COM_OC(obj, s1, s2)       s2
-
-// if object caching is enabled take the first one, which is for object caching,
-// else the second one
-#define COND_COM_OC_NOC(s1, s2)        s2
-
-// if object caching is enabled take the first one, which is for object caching
-// else don't do anything
-// if object caching is enabled take the first one, which is for object caching
-// else don't do anything
-#define COND_COM_OC_OOC(s1)
-
-// if object caching is enabled take the first one, which is for object caching
-// else don't do anything
-#endif
-
 /*
  * There is an Align4 function in symbian which does the alignement
  * this is just to check whether the given pointer is aligned or not

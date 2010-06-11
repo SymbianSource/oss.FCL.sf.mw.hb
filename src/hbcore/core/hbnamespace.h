@@ -35,13 +35,13 @@
 class HB_CORE_EXPORT Hb
 {
     Q_GADGET
-    Q_ENUMS( NavigationAction UiAttribute TouchGesture
-             ItemDataRole GraphicsItemType SceneItem
-             InstantInteraction ContinuousInteraction InteractionModifier
-             TextCursorVisibility SliderTickPosition ModelItemType TextWrapping
-             ActivationReason )
-    Q_FLAGS( UiAttributes TouchGestures SceneItems SliderTickPositions
-             TextContextMenuFlags )
+    Q_ENUMS(NavigationAction UiAttribute TouchGesture
+            ItemDataRole GraphicsItemType SceneItem
+            InstantInteraction ContinuousInteraction InteractionModifier
+            TextCursorVisibility SliderTickPosition ModelItemType TextWrapping
+            ActivationReason)
+    Q_FLAGS(UiAttributes TouchGestures SceneItems SliderTickPositions
+            TextContextMenuFlags)
 
 public:
 #else
@@ -54,24 +54,21 @@ namespace Hb
     static const int Key_SoftKeySecondary  = Qt::Key_Launch1;
     static const int Key_SoftKeyMiddle     = Qt::Key_Launch2;
 
-    enum NavigationAction
-    {
+    enum NavigationAction {
         QuitNaviAction,
         BackNaviAction,
         ConfirmNaviAction,
         DoneNaviAction
     };
-    
-    enum EffectEvent
-    {
+
+    enum EffectEvent {
         EffectFinished                = 1,
         EffectCancelled               = 2,
         EffectNotStarted              = 3
     };
 
-    
-    enum UiAttribute
-    {
+
+    enum UiAttribute {
         Ui_NoAttributes         = 0x0000,
         Ui_VisibleInTouch       = 0x0001,
         Ui_VisibleInNonTouch    = 0x0002
@@ -82,8 +79,7 @@ namespace Hb
     /*!
         Gesture types.
      */
-    enum TouchGesture
-    {
+    enum TouchGesture {
         TapGesture         = 0x0000001,
         LongPressGesture   = 0x0000002,
         PanGesture         = 0x0000004,
@@ -92,25 +88,22 @@ namespace Hb
 
     Q_DECLARE_FLAGS(TouchGestures, TouchGesture)
 
-    
-    enum ItemDataRole
-    {
+
+    enum ItemDataRole {
         ItemTypeRole = 1001,
-        IndexFeedbackRole, 
+        IndexFeedbackRole,
         UserRole = 1500
     };
 
-    enum ModelItemType
-    {
+    enum ModelItemType {
         StandardItem,
         ParentItem,
         SeparatorItem,
         UserItem = 1000
     };
-    
-    enum GraphicsItemType
-    {
-        ItemType_NotificationDialog = QGraphicsItem::UserType+10000,
+
+    enum GraphicsItemType {
+        ItemType_NotificationDialog = QGraphicsItem::UserType + 10000,
         ItemType_FrameItem,
         ItemType_GraphicsPixmapItem,
         ItemType_AbstractItemView,
@@ -147,7 +140,7 @@ namespace Hb
         ItemType_ToolBarExtension,
         ItemType_ToolButton,
         ItemType_Widget,
-        ItemType_View, 
+        ItemType_View,
         ItemType_ConfirmationQuery,
         ItemType_CheckBox,
         ItemType_MessageQuery,
@@ -191,8 +184,7 @@ namespace Hb
         ItemType_Last = QGraphicsItem::UserType + 20000
     };
 
-    enum WidgetAttribute
-    {
+    enum WidgetAttribute {
         InteractionDisabled   = 0x00000001,
         InsidePopup = 0x00000002,
         InputMethodNeutral = 0x00000004
@@ -208,7 +200,7 @@ namespace Hb
         StatusBarItem         = 0x00000040,
         AllItems              = 0xFFFFFFFF
     };
-    
+
     /*!
        Anchor edges.
      */
@@ -230,7 +222,7 @@ namespace Hb
     };
 
     Q_DECLARE_FLAGS(SceneItems, SceneItem)
-    
+
     enum WindowFlag {
         WindowFlagNone            = 0x00000000,
         WindowFlagTransparent     = 0x00000001,
@@ -261,14 +253,12 @@ namespace Hb
 
     Q_DECLARE_FLAGS(ViewSwitchFlags, ViewSwitchFlag)
 
-    enum TextCursorVisibility
-    {
+    enum TextCursorVisibility {
         TextCursorHidden = 0,
         TextCursorVisible
     };
 
-    enum SliderTickPosition
-    {
+    enum SliderTickPosition {
         NoSliderTicks = 0,
         SliderTicksAbove = 1,
         SliderTicksLeft = SliderTicksAbove,
@@ -285,17 +275,16 @@ namespace Hb
         ShowTextContextMenuOnLongPress = 4
     };
     Q_DECLARE_FLAGS(TextContextMenuFlags , TextContextMenuFlag)
-    
+
     /*!
         A type definition for text wrapping
     */
-    enum TextWrapping
-    {
+    enum TextWrapping {
         TextNoWrap = 0,
         TextWordWrap = 1,
         TextWrapAnywhere = 3
     };
-        
+
     enum InstantInteraction {
         InstantPressed = 0,
         InstantReleased,
@@ -336,9 +325,9 @@ namespace Hb
         ModifierCollapsedItem = 0x8,
         ModifierScrolling = 0x10
     };
- 
+
     Q_DECLARE_FLAGS(InteractionModifiers, InteractionModifier)
-    
+
 
     enum ActivationReason {
         ActivationReasonActivity = 0,

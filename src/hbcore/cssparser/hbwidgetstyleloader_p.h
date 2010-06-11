@@ -53,7 +53,8 @@ public:
 	
 	void loadCss(const HbWidget *widget);
 	
-	bool loadWidgetML(HbWidget *widget, const QString &layoutName, const QString &section = QString());
+	bool loadWidgetML(
+        HbWidget *widget, const QString &layoutName, const QString &section = QString());
 	
 private:
 

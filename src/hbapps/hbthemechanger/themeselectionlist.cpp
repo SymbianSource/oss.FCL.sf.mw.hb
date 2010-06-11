@@ -31,6 +31,7 @@
 #include <hbaction.h>
 #include <hbicon.h>
 #include <hblistwidgetitem.h>
+#include <restricted/hbthemeservices_r.h>
 #include <QDebug>
 #include <QTime>
 #include <QThread>
@@ -41,18 +42,11 @@
 /**
  * Constructor
  */
-ThemeSelectionList::ThemeSelectionList(
-#ifdef Q_OS_SYMBIAN
-    ThemeClientSymbian* client
-#else
-    ThemeClientQt* client
-#endif
-                        ): 
+ThemeSelectionList::ThemeSelectionList(): 
                         oldItemIndex(-1),
                         themelist(new HbListWidget(this)),
                         rightMark(new HbIcon(QString("qtg_small_tick"))),
-                        noMark(new HbIcon(QString(""))),
-                        client(client)
+                        noMark(new HbIcon(QString("")))
 {
     connect(themelist, SIGNAL(activated(HbListWidgetItem *)),this, SLOT(setChosen(HbListWidgetItem *)));
     setWidget(themelist);
@@ -83,7 +77,6 @@ ThemeSelectionList::~ThemeSelectionList()
     // Set the theme to the applied theme before exiting.
     setChosen(themelist->item(oldItemIndex));
     delete noMark;
-
     noMark=NULL;
     delete rightMark;
     rightMark=NULL;
@@ -92,6 +85,10 @@ ThemeSelectionList::~ThemeSelectionList()
     themelist->reset();
     delete themelist;
     themelist=NULL;
+    
+    // Delete preview thubnails
+    qDeleteAll(thumbnails);
+    thumbnails.clear();
 }
 
 
@@ -116,9 +113,8 @@ void ThemeSelectionList::displayThemes()
                     QSettings iniSetting(iconThemePath.path()+"/index.theme",QSettings::IniFormat);
                     iniSetting.beginGroup("Icon Theme");
                     QString hidden = iniSetting.value("Hidden").toString();
-                    QString name = iniSetting.value("Name").toString();
                     iniSetting.endGroup();
-                    if((hidden == "true") ||( hidden == "")||(name!=themefolder) ) {
+                    if((hidden == "true") ||( hidden == "")) {
                         iconthemeslist.removeOne(themefolder);
                     }
                 }
@@ -128,19 +124,52 @@ void ThemeSelectionList::displayThemes()
             
             }
             if(!entryAdded){
-                iconthemeslist.insert(0,"hbdefault"); //adding one default entry
+                //adding one default entry
+                HbListWidgetItem *item = new HbListWidgetItem();
+                item->setText("hbdefault");
+                item->setSecondaryText("hbdefault");
+                QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
+                HbIcon *icon = new HbIcon(thumbPath);
+                thumbnails.append(icon);
+                item->setIcon(*icon);                                
+                if (HbInstance::instance()->theme()->name() == "hbdefault") {
+                    item->setSecondaryIcon(*rightMark);
+                    themelist->addItem(item);                
+                    oldItemIndex=themelist->count()-1;
+                    themelist->setCurrentRow(oldItemIndex);                    
+                } else {
+                    item->setSecondaryIcon(*noMark);
+                    themelist->addItem(item);                
+                }
                 entryAdded = true;
             }
             list=iconthemeslist;
             for (int i=0; i <list.count();i++) {
                 // populate theme list with existing themes
-                if((HbInstance::instance()->theme()->name())==(list.at(i))) { 
-                    themelist->addItem(*rightMark,list.at(i));
+                HbListWidgetItem *item = new HbListWidgetItem();
+
+                QSettings iniSetting(root.path()+"/themes/icons/"+list.at(i)+"/index.theme",QSettings::IniFormat);
+                iniSetting.beginGroup("Icon Theme");
+                QString name = iniSetting.value("Name").toString();
+                iniSetting.endGroup();
+                item->setText(name);
+
+                item->setSecondaryText(root.path()+"/themes/icons/"+list.at(i));
+                QString thumbPath(root.path()+"/themes/icons/"+list.at(i)+"/scalable/qtg_graf_theme_preview_thumbnail.svg");
+                HbIcon *icon = new HbIcon(thumbPath);
+                thumbnails.append(icon);
+                item->setIcon(*icon);
+                
+                
+                if (QFileInfo(HbThemeServices::themePath()) == QFileInfo(item->secondaryText())) {
+                    item->setSecondaryIcon(*rightMark);
+                    themelist->addItem(item);
                     oldItemIndex=themelist->count()-1;
                     themelist->setCurrentRow(oldItemIndex);
                 }
                 else {
-                    themelist->addItem(*noMark,list.at(i));
+                    item->setSecondaryIcon(*noMark);
+                    themelist->addItem(item);
                 }
             }
         }
@@ -149,21 +178,20 @@ void ThemeSelectionList::displayThemes()
     if(!themePresent) {
             QStringList defaultList;
             defaultList.insert(0,"hbdefault"); //adding one default entry
-            themelist->addItem(*rightMark,defaultList.at(0));
+            HbListWidgetItem *item = new HbListWidgetItem();
+            item->setText(defaultList.at(0));
+            item->setSecondaryText(defaultList.at(0));
+            QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
+            HbIcon *icon = new HbIcon(thumbPath);
+            thumbnails.append(icon);
+            item->setIcon(*icon);            
+            item->setSecondaryIcon(*rightMark);
+            themelist->addItem(item);
             QString themeName=HbInstance::instance()->theme()->name();
             if (themeName != "hbdefault")
             {
-                if (!client->isConnected()) {
-                    bool success = client->connectToServer();
-                    if (success) {
-                        emit newThemeSelected("hbdefault");
-                    }
-                }
-                else {
-                    emit newThemeSelected("hbdefault");
-                }
+                emit newThemeSelected("hbdefault");
             }
-
         }
 }
 
@@ -172,28 +200,17 @@ void ThemeSelectionList::displayThemes()
  */
 void ThemeSelectionList::setChosen(HbListWidgetItem *item)
 {
-    QString str=item->text();
-
 #ifdef THEME_CHANGER_TRACES
-    qDebug() << "ThemeSelectionList::Setchosen with ThemeName: "<<str;
+    qDebug() << "ThemeSelectionList::Setchosen with ThemeName: "<<item->secondaryText();
 #endif
-    if(iCurrentTheme != str ) {
+    if(iCurrentTheme != item->secondaryText()) {
 #ifdef THEME_CHANGER_TIMER_LOG
         timer.start();
-        qDebug() << "Selected theme: " << str;
+        qDebug() << "Selected theme: " << item->secondaryText();
 #endif
-        iCurrentTheme = str;
-        if (!client->isConnected()) {
-            bool success = client->connectToServer();
-            if (success) {
-                QThread::currentThread()->setPriority(QThread::HighPriority);
-                emit newThemeSelected(str);
-            }
-        }
-        else {
-            QThread::currentThread()->setPriority(QThread::HighPriority);
-            emit newThemeSelected(str); 
-        }
+        iCurrentTheme = item->secondaryText();
+        QThread::currentThread()->setPriority(QThread::HighPriority);
+        emit newThemeSelected(item->secondaryText());
     }
     else
     {
@@ -208,9 +225,11 @@ void ThemeSelectionList::setChosen(HbListWidgetItem *item)
 void ThemeSelectionList::applySelection()
 {
     if(oldItemIndex!=themelist->currentRow()) {
-        themelist->setIcon(themelist->currentRow(),*rightMark);
+        HbListWidgetItem *item = themelist->item(themelist->currentRow()); 
+        item->setSecondaryIcon(*rightMark);
         if(oldItemIndex >= 0) {
-            themelist->setIcon(oldItemIndex,*noMark);
+            HbListWidgetItem *olditem = themelist->item(oldItemIndex); 
+            olditem->setSecondaryIcon(*noMark);
         }
         oldItemIndex = themelist->currentRow();
     }
@@ -248,7 +267,7 @@ void ThemeSelectionList::updateThemeList(const QString &path)
  */
 void ThemeSelectionList::sendThemeName(const QString& name)
 {
-    client->changeTheme(name);
+    HbThemeServices::setTheme(name);
 }
 
 /**
@@ -281,9 +300,6 @@ void ThemeSelectionList::processWhenIdle()
     qDebug() << "Theme changed applied in " << timer.elapsed() << " msec";
     idleTimer->stop();
     QThread::currentThread()->setPriority(QThread::NormalPriority);    
-    if (!client->isConnected()) {
-        client->connectToServer();
-    }
 }
 
 void ThemeSelectionList::themeChanged()

@@ -60,6 +60,8 @@ public:
     enum { Type = Hb::ItemType_ToolBar };
     int type() const { return Type; }
 
+    QRectF boundingRect() const;
+
 public slots:
     void setOrientation(Qt::Orientation orientation);
 
@@ -72,6 +74,7 @@ protected:
     void resizeEvent( QGraphicsSceneResizeEvent *event );
     void hideEvent(QHideEvent *event);
     bool event( QEvent *event );
+    virtual void polish(HbStyleParameters &params);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbToolBar )

@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBORIENTATIONSSTATUS_P_H
-#define HBORIENTATIONSSTATUS_P_H
+#ifndef HBORIENTATIONSTATUS_P_H
+#define HBORIENTATIONSTATUS_P_H
 
 #include <QObject>
 #include "hbsensorlistener_p.h"
@@ -56,4 +56,4 @@ private:
 #endif
 };
 
-#endif  // HBORIENTATIONSSTATUS_P_H
+#endif // HBORIENTATIONSTATUS_P_H

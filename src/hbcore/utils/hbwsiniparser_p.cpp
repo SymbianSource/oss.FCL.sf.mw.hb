@@ -23,12 +23,11 @@
 **
 ****************************************************************************/
 
+#include "hbwsiniparser_p.h"
 #include <QFile>
 #include <QTextStream>
 #include <QStringList>
 #include <QMap>
-
-#include "hbwsiniparser_p.h"
 
 #define WSINI_PARSE_ENTRY(keyword, func) { keyword, &HbWsiniParser::call_##func }
 

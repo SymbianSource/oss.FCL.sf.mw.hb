@@ -173,10 +173,19 @@ void HbIndicatorMenu::showEvent(QShowEvent *event)
 {
     HbMainWindow* mainWnd = mainWindow();
     Q_ASSERT(mainWnd);
-    if (mainWnd && !mShowEventReceived) {
-        connect(mainWnd, SIGNAL(orientationChanged(Qt::Orientation)),
-                this, SLOT(orientationChanged(Qt::Orientation)));
+    if (mainWnd && !mShowEventReceived) {        
+        // To have a consistant user experience the indicator menu's behaviour
+        // got aligned to the options menu's behaviour.
+        // The menu is now closed before a view/orientation change happens.
+        connect(mainWnd, SIGNAL(aboutToChangeOrientation()),
+                this, SLOT(close()));
+        connect(mainWnd, SIGNAL(aboutToChangeView(HbView *,HbView *)),
+                this, SLOT(close()));
     }
+
+    HbIndicatorMenuContent *menuContent =
+        qobject_cast<HbIndicatorMenuContent*>(contentWidget());
+    menuContent->handleAboutToShow();
 
     HbDialog::showEvent(event);
     mShowEventReceived = true;
@@ -242,12 +251,3 @@ void HbIndicatorMenu::indicatorRemoved(
             qobject_cast<HbIndicatorMenuContent*>(contentWidget());
     menuContent->indicatorRemoved(indicatorRemoved);
 }
-
-void HbIndicatorMenu::orientationChanged(Qt::Orientation orientation)
-{
-    Q_UNUSED(orientation);
-    doMenuLayout();
-}
-
-
-

@@ -24,10 +24,7 @@
 #############################################################################
 TEMPLATE = lib
 TARGET = $$hbLibraryTarget(HbWidgets)
-QT = core \
-    gui \
-    svg \
-    network
+QT = core gui svg network
 DEFINES += BUILD_HB_WIDGETS
 
 # directories
@@ -42,11 +39,10 @@ include(popups/popups.pri)
 include(sliders/sliders.pri)
 include(widgets/widgets.pri)
 include(dataform/dataform.pri)
+
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbwidgets/hbwidgets.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbwidgets/Hb*)
-HEADERS += $$PUBLIC_HEADERS \
-    $$PRIVATE_HEADERS \
-    $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$RESTRICTED_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -55,13 +51,17 @@ hbAddLibrary(hbcore/HbCore)
 !local { 
     target.path = $${HB_LIB_DIR}
     win32:dlltarget.path = $${HB_BIN_DIR}
+
     pubheaders.files = $$PUBLIC_HEADERS
     pubheaders.path = $${HB_INCLUDE_DIR}/hbwidgets
+
+    restheaders.files = $$RESTRICTED_HEADERS
+    restheaders.path = $${HB_INCLUDE_DIR}/hbwidgets/restricted
+
     convheaders.files = $$CONVENIENCE_HEADERS
     convheaders.path = $${HB_INCLUDE_DIR}/hbwidgets
-    INSTALLS += target \
-        pubheaders \
-        convheaders
+
+    INSTALLS += target pubheaders restheaders convheaders
     win32:INSTALLS += dlltarget
 }
 
@@ -70,7 +70,7 @@ hbAddLibrary(hbcore/HbCore)
 
 symbian {
     defFilePath = defs
-    
+
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022FCC

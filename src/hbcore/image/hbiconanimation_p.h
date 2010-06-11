@@ -88,7 +88,7 @@ public:
     void setMirrored(bool mirrored);
 
     QColor color() const;
-    void setColor(const QColor &color);	
+    void setColor(const QColor &color);
 
     bool resolutionCorrected() const;
     void setResolutionCorrected(bool corrected);
@@ -96,33 +96,27 @@ public:
     HbIconAnimationDefinition::PlayMode playMode() const;
     void setPlayMode(HbIconAnimationDefinition::PlayMode playMode);
 
-    inline HbView *view() const
-    {
+    inline HbView *view() const {
         return mView;
     }
 
-    inline void setView(HbView *view)
-    {
+    inline void setView(HbView *view) {
         mView = view;
     }
 
-    inline HbIconAnimator *animator() const
-    {
+    inline HbIconAnimator *animator() const {
         return mAnimator;
     }
 
-    inline bool paused() const
-    {
+    inline bool paused() const {
         return mPaused;
     }
 
-    inline bool pausedDueToBackground() const
-    {
+    inline bool pausedDueToBackground() const {
         return mPausedDueToBackground;
     }
 
-    inline void setPausedDueToBackground(bool status)
-    {
+    inline void setPausedDueToBackground(bool status) {
         mPausedDueToBackground = status;
     }
 
@@ -161,7 +155,7 @@ protected:
 
     // dptr to the global animation manager instance
     HbIconAnimationManagerPrivate *mAnimMgrD;
-	QColor mColor;
+    QColor mColor;
 
     HbIconAnimator *mAnimator;
     HbView *mView;
@@ -239,17 +233,16 @@ public:
         QPixmap pixmap;
         int duration; // in milliseconds
         QList<JumpData> jumps;
-        void assignJumps(const QList<HbIconAnimationDefinition::AnimationFrame::Jump> &jlist)
-            {
-                jumps.clear();
-                for (int i = 0, ie = jlist.count(); i != ie; ++i) {
-                    JumpData jd;
-                    jd.targetFrameIndex = jlist.at(i).targetFrameIndex;
-                    jd.repeatCount = jlist.at(i).repeatCount;
-                    jd.execCount = 0;
-                    jumps.append(jd);
-                }
+        void assignJumps(const QList<HbIconAnimationDefinition::AnimationFrame::Jump> &jlist) {
+            jumps.clear();
+            for (int i = 0, ie = jlist.count(); i != ie; ++i) {
+                JumpData jd;
+                jd.targetFrameIndex = jlist.at(i).targetFrameIndex;
+                jd.repeatCount = jlist.at(i).repeatCount;
+                jd.execCount = 0;
+                jumps.append(jd);
             }
+        }
     };
 
     HbIconAnimationFrameSet(HbIconAnimator *animator, const QString &iconName, const QList<FrameData> &frames);
@@ -277,7 +270,7 @@ private:
     int mCurrentFrameIndex;
 
     bool mMirrored;
-    
+
     HbTimerSignalEntry *mTimerEntry;
 };
 

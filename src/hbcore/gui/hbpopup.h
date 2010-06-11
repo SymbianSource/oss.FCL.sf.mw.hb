@@ -143,7 +143,8 @@ private:
     Q_DISABLE_COPY(HbPopup)
 #ifdef HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void _q_delayedHide(HbEffect::EffectStatus status))
-    Q_PRIVATE_SLOT(d_func(), void _q_orientationChange(Qt::Orientation orient, bool animate))
+    Q_PRIVATE_SLOT(d_func(), void _q_orientationAboutToChange(Qt::Orientation orient, bool animate))
+    Q_PRIVATE_SLOT(d_func(), void _q_orientationChanged())
 #endif // HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void _q_timeoutFinished())
 };

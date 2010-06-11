@@ -51,9 +51,9 @@
     instance support of gestures.
 
     An action may contain a command role.
-    These command roles are used when action is added through HbView::addAction. 
-    The command role specifies the action container (options menu, toolbar) 
-    to which the action is places and also the position in that container.    
+    These command roles are used when action is added through HbView::addAction.
+    The command role specifies the action container (options menu, toolbar)
+    to which the action is places and also the position in that container.
     \sa QAction::MenuRole
     \sa HbView::addAction
 
@@ -66,7 +66,7 @@
 \internal
 */
 HbActionPrivate::HbActionPrivate() : menu(0), extension(0)
-, commandRole(HbAction::NoRole)
+    , commandRole(HbAction::NoRole)
 {
 }
 
@@ -107,26 +107,26 @@ HbAction::HbAction(const HbIcon &icon, const QString &text, QObject *parent)
 /*!
     Constructs a new HbAction with the given navigation \a action and \a parent.
 */
-HbAction::HbAction(Hb::NavigationAction action, QObject* parent)
+HbAction::HbAction(Hb::NavigationAction action, QObject *parent)
     : QAction(parent), d_ptr(new HbActionPrivate)
 {
     Q_D(HbAction);
     switch (action) {
-        case Hb::QuitNaviAction:
-            d->icon = HbIcon("qtg_mono_app_exit");
-            break;
-        case Hb::BackNaviAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        case Hb::ConfirmNaviAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        case Hb::DoneNaviAction:
-            d->icon = HbIcon("qtg_mono_back");
-            break;
-        default:
-            qWarning("HbAction: unknown action: %i", action);
-            break;
+    case Hb::QuitNaviAction:
+        d->icon = HbIcon("qtg_mono_app_exit");
+        break;
+    case Hb::BackNaviAction:
+        d->icon = HbIcon("qtg_mono_back");
+        break;
+    case Hb::ConfirmNaviAction:
+        d->icon = HbIcon("qtg_mono_back");
+        break;
+    case Hb::DoneNaviAction:
+        d->icon = HbIcon("qtg_mono_back");
+        break;
+    default:
+        qWarning("HbAction: unknown action: %i", action);
+        break;
     }
 }
 
@@ -140,7 +140,7 @@ HbAction::~HbAction()
 
 /*!
     Sets the icon of the action. Note that this icon is different from QIcon
-	setIcon() and icon(). 
+    setIcon() and icon().
 
     \sa icon()
 */
@@ -165,7 +165,7 @@ HbIcon HbAction::icon() const
 }
 
 /*!
-    Sets the menu of the action. 
+    Sets the menu of the action.
 
     \sa menu()
 */
@@ -196,8 +196,9 @@ HbMenu *HbAction::menu() const
 void HbAction::setToolTip(const QString &tooltip)
 {
     Q_D(HbAction);
-    if (d->tooltip == tooltip)
+    if (d->tooltip == tooltip) {
         return;
+    }
 
     d->tooltip = tooltip;
     QAction::setToolTip(tooltip);
@@ -215,7 +216,7 @@ QString HbAction::toolTip() const
 }
 
 /*!
-    Sets the toolbar extension of the action. 
+    Sets the toolbar extension of the action.
 
     \sa menu()
 */
@@ -242,7 +243,7 @@ HbToolBarExtension *HbAction::toolBarExtension() const
 }
 
 /*!
-   Sets the command role identifier of the action. 
+   Sets the command role identifier of the action.
 
     \sa commandRole()
 */

@@ -36,22 +36,19 @@ class HB_CORE_PRIVATE_EXPORT HbViewActionManager : public QObject
 
 public:
 
-    class Placement 
+    class Placement
     {
     public:
-        Placement(HbView::ActionContainer container, 
+        Placement(HbView::ActionContainer container,
                   HbView::ActionContainer preferredContainer) :
-            container(container), preferredContainer(preferredContainer)
-        {
+            container(container), preferredContainer(preferredContainer) {
         }
         Placement(const QString &containerString) :
-            container(HbView::NotSpecified), preferredContainer(HbView::NotSpecified)
-        {
+            container(HbView::NotSpecified), preferredContainer(HbView::NotSpecified) {
             if (containerString == "ToolBar") {
                 container = HbView::ToolBar;
                 preferredContainer = HbView::ToolBar;
-            }
-            else {
+            } else {
                 container = HbView::OptionsMenu;
                 preferredContainer = HbView::OptionsMenu;
             }
@@ -60,25 +57,22 @@ public:
         HbView::ActionContainer preferredContainer;
     };
 
-    class GuideItem 
+    class GuideItem
     {
     public:
-        GuideItem()
-        {
+        GuideItem() {
         }
         GuideItem(HbActionManager::TemplateItem templateItem, Placement placement) :
-            templateItem(templateItem)
-        {
+            templateItem(templateItem) {
             placements.append(placement);
         }
-        bool operator==(const GuideItem &other) const
-        { return (templateItem == other.templateItem); }
-        void setTemplateItem(HbActionManager::TemplateItem item)
-        {
+        bool operator==(const GuideItem &other) const {
+            return (templateItem == other.templateItem);
+        }
+        void setTemplateItem(HbActionManager::TemplateItem item) {
             templateItem = item;
         }
-        void addPlacement(Placement placement)
-        {
+        void addPlacement(Placement placement) {
             placements.append(placement);
         }
         HbActionManager::TemplateItem templateItem;
@@ -98,15 +92,15 @@ public:
     void addGuideItem(const GuideItem &guideItem);
 
 public slots:
-     void orientationChanged(Qt::Orientation orientation);
+    void orientationChanged(Qt::Orientation orientation);
 
 private:
     void createTemplate();
     HbView::ActionContainer actualContainer(QAction *action,
-        HbView::ActionContainer preferredContainer);
-    void moveActionToMenu();    
+                                            HbView::ActionContainer preferredContainer);
+    void moveActionToMenu();
     void removeAction(QAction *action, bool removeFromMap);
-    QList<QAction *> containerActions(HbView::ActionContainer container); 
+    QList<QAction *> containerActions(HbView::ActionContainer container);
 
     Q_DISABLE_COPY(HbViewActionManager)
 
@@ -116,7 +110,7 @@ private:
     HbView::ActionContainer defaultContainer;
     Qt::Orientation orientation;
     QList<GuideItem> distributionGuide;
-    QMap<QAction*, Placement> distributedActions;
+    QMap<QAction *, Placement> distributedActions;
 };
 
 #endif // HBVIEWACTIONMANAGER_H

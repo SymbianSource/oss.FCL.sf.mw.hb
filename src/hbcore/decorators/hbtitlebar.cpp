@@ -412,7 +412,9 @@ void HbTitleBar::polish(HbStyleParameters &params)
     if (mainWindow() && mainWindow()->currentView()) {
         int viewFlags = mainWindow()->currentView()->viewFlags();
         if (viewFlags & HbView::ViewTitleBarMinimizable) {
-            d->mTitleBarHandle->setVisible(true);
+            if (d->mTitleBarHandle) {
+                d->mTitleBarHandle->setVisible(true);
+            }
             d->mIndicatorButton->showHandleIndication(true);
         } else {
             d->mIndicatorButton->showHandleIndication(false);

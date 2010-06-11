@@ -32,7 +32,7 @@
 #include "hbscrollarea.h"
 #include "hbscrollarea_p.h"
 #include "hbactionmanager_p.h"
-#include <QGraphicsLinearLayout>
+#include <QGraphicsGridLayout>
 #include <QGesture>
 
 class HbMenuContainer;
@@ -53,21 +53,16 @@ public:
     void removeActionItem(QAction *Action);
     void updateActionItem(QAction *action);
     void doDelayedLayout();
+    void updateContainer();
     HbMenuItem* currentItem() const;
     void setCurrentItem(HbAction *action);
     enum { Type = HbPrivate::ItemType_MenuListView };
     int type() const { return Type; }
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void upGesture(int value);
-    void downGesture(int value);
-    void panGesture(const QPointF &point);
     virtual void gestureEvent(QGestureEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 private:
-    HbMenuItem* itemAt(const QPointF& position) const;
     void updateCurrentItem();
     bool isFocusable(QAction *action);
 protected:
@@ -104,6 +99,7 @@ public:
     void removeActionItem(QAction *Action);
     void visibleItemsChanged();
     void updateVisibleActionList();
+    void reLayout();
 
 protected:
     void polish(HbStyleParameters &params);
@@ -120,7 +116,7 @@ public:
     explicit HbMenuContainerPrivate(HbMenu *menu);
     void init();
     virtual ~HbMenuContainerPrivate();
-    QGraphicsLinearLayout *mLayout;
+    QGraphicsGridLayout *mLayout;
     HbMenu *menu;
     HbActionManager *actionManager;
     QList<HbMenuItem*> mItems;

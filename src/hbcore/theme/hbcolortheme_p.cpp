@@ -42,8 +42,8 @@ HbColorThemePrivate::HbColorThemePrivate()
 
 void HbColorThemePrivate::setCurrentTheme(const QString &themeName)
 {
-    // If new theme is different from earlier set theme
-    if (currentTheme != themeName) {
+    // If new theme is not empty set theme
+    if (!themeName.isEmpty()) {
         bool reloadAll = currentTheme.isEmpty();
         currentTheme = themeName;
         reloadColorFiles( reloadAll );

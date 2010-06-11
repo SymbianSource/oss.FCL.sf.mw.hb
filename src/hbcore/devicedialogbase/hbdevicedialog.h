@@ -47,7 +47,8 @@ public:
         PluginErrors = 0x10000000,
         ErrorTypeMask = 0xf0000000,
         CancelledError = 0x0fffffff,
-        SystemCancelledError = 0x0ffffffe
+        SystemCancelledError = 0x0ffffffe,
+        InstanceExistsError = 0x0ffffffd
     };
 
     enum DeviceDialogFlag{

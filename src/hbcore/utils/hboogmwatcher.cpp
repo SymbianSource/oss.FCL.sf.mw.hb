@@ -71,7 +71,7 @@ HbOogmWatcher *HbOogmWatcher::instance()
     static HbOogmWatcher *watcher = new HbOogmWatcher(qApp);
     return watcher;
 }
-    
+
 HbOogmWatcher::HbOogmWatcher(QObject *parent)
     : QObject(parent), d_ptr(new HbOogmWatcherPrivate)
 {
@@ -102,10 +102,10 @@ void HbOogmWatcher::notifyGraphicsMemoryLow()
 void HbOogmWatcherPrivate::graphicsMemoryLow()
 {
     qWarning("HbOogmWatcher::graphicsMemoryLow()");
-    if (mRenderMode == EHWRendering) {        
+    if (mRenderMode == EHWRendering) {
         mRenderMode = ESWRendering;
         HbIconLoader::global()->switchRenderingMode(mRenderMode);
-    }    
+    }
 #ifdef HB_EFFECTS_OPENVG
     // Destroy the cached pixmaps of effects. This is also necessary
     // to make the OpenVG filter effect caching working properly. (if
@@ -117,7 +117,7 @@ void HbOogmWatcherPrivate::graphicsMemoryLow()
     // Drop the underlying pixmap data (if possible) for all HbIconItems that
     // are not currently visible.
     int n = 0;
-    foreach (HbIconItem *iconItem, mIconItems) {
+    foreach(HbIconItem * iconItem, mIconItems) {
         if (!iconItem->isVisible()) {
             HbIconItemPrivate::d_ptr(iconItem)->clearStoredIconContent();
             ++n;
@@ -133,10 +133,10 @@ void HbOogmWatcherPrivate::graphicsMemoryLow()
 void HbOogmWatcherPrivate::graphicsMemoryGood()
 {
     qWarning("HbOogmWatcher::graphicsMemoryGood()");
-    if (mRenderMode == ESWRendering) {        
+    if (mRenderMode == ESWRendering) {
         mRenderMode = EHWRendering;
         HbIconLoader::global()->switchRenderingMode(mRenderMode);
-    }     
+    }
     emit q_ptr->graphicsMemoryGood();
 }
 

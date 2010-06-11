@@ -67,7 +67,7 @@ public:
     void releaseImageReader();
     void takeImageReader();
     QPixmap *pixmap();
-    QByteArray* byteArray();
+    QByteArray *byteArray();
 
     void deletePixmapIfLargerThan(int limitInBytes);
 
@@ -79,9 +79,9 @@ private:
     QString mType;
 
     // These are used to generate the raster pixmap of the icon and for fetching icon's default size
-    QPicture *mPicture;
-    QPixmap *mPixmap;
-    QByteArray* mByteArray;
+    QPicture   *mPicture;
+    QPixmap    *mPixmap;
+    QByteArray *mByteArray;
 
     // Stored default size
     QSize mDefaultSize;

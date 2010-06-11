@@ -123,6 +123,27 @@
     HbDataFormModelItem using API 
     addConnection(HbDataFormModelItem* item, const char* signal, QObject* receiver, const char* slot)
     provided in HbDataForm. The connection will be established when the item visualization is created.
+    Using addConnection() API user can also connect to hbdialog's signals(for ex: aboutToClose) in case 
+    of popup items like radio button list item and multi selection list item. Below code snippet demonstrates
+    the same:
+
+    \code
+    HbDataFormModelItem *days = model->appendDataFormItem(HbDataFormModelItem::MultiselectionItem,
+                                    QString("Days"), themeGeneral);
+    QStringList multiItems;
+    multiItems<<"Sunday"<<"Monday"<<"Tuesday"<<"Wednesday"<<"Thursday"<<"Friday";
+    days->setContentWidgetData(QString("items"), multiItems);
+    QList<QVariant> selected;
+    selected<<2<<3;
+    days->setContentWidgetData(QString("selectedItems"), selected);
+    days->setContentWidgetData(QString("items"), multiItems);
+    form->addConnection(days, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
+    form->addConnection(days, SIGNAL(aboutToHide()()), this, SLOT(aboutToHide()()));
+    form->addConnection(days, SIGNAL(aboutToClose()), this, SLOT(aboutToClose()));
+    form->addConnection(days, SIGNAL(finished(HbAction*)), this, SLOT(finished(HbAction*)));
+
+    \endcode
+
     Similar way 
     removeConnection(HbDataFormModelItem *item, const char* signal, QObject *receiver, const char* slot)
     and removeAllConnection() API can be used. Connection can be established or removed even at runtime.

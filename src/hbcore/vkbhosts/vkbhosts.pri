@@ -32,7 +32,9 @@ PRIVATE_HEADERS += $$PWD/hbabstractvkbhost_p.h
 
 PUBLIC_HEADERS += $$PWD/hbstaticvkbhost.h
 PUBLIC_HEADERS += $$PWD/hbabstractvkbhost.h
+PUBLIC_HEADERS += $$PWD/hbshrinkingvkbhost.h
 
 SOURCES += $$PWD/hbabstractvkbhost.cpp
 SOURCES += $$PWD/hbstaticvkbhost.cpp
+SOURCES += $$PWD/hbshrinkingvkbhost.cpp
 

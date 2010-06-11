@@ -34,17 +34,17 @@
 #include <QtDebug>
 #endif
 
-#define EPSILON 0.01f
-#define MAX_SIZE 0xffffff
+static const qreal EPSILON = 0.01f;
+static const qreal MAX_SIZE = 0xffffff;
 
-static inline bool myFuzzyCompare(double p1, double p2)
+static inline bool myFuzzyCompare(double p1, double p2) //krazy:exclude=typedefs
 {
     return (qAbs(p1 - p2) <= 0.0001);
 }
 
-static inline bool myFuzzyCompare(float p1, float p2)
+static inline bool myFuzzyCompare(float p1, float p2) //krazy:exclude=typedefs
 {
-    return (qAbs(p1 - p2) <= EPSILON);
+    return (qAbs(p1 - p2) <= (float)EPSILON); //krazy:exclude=typedefs
 }
 
 
@@ -60,7 +60,8 @@ static inline qreal maxSlope(const Variable &var, qreal coef )
 
 static inline bool differentSignOrZero( qreal val1, qreal val2 )
 {
-    return ( ( val1 < EPSILON ) && ( val2 > -EPSILON ) ) || ( ( val1 > -EPSILON ) && ( val2 < EPSILON ) );
+    return ( ( val1 < EPSILON ) && ( val2 > -EPSILON ) ) || 
+           ( ( val1 > -EPSILON ) && ( val2 < EPSILON ) );
 }
 
 
@@ -78,7 +79,11 @@ AnchorLayoutEngine *AnchorLayoutEngine::instance()
     return &theAnchorLayoutSimplyfier;
 }
 
-bool AnchorLayoutEngine::processItems( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, VariableSet *vs, QList<Expression*> *el )
+bool AnchorLayoutEngine::processItems( 
+    QList<GraphEdge*> *edges, 
+    QList<GraphVertex*> *vertices, 
+    VariableSet *vs, 
+    QList<Expression*> *el )
 {
     bool result = true;
 
@@ -122,7 +127,8 @@ bool AnchorLayoutEngine::processItems( QList<GraphEdge*> *edges, QList<GraphVert
                     break;
                 }
 
-                if( ( oldEdgesNumber == edges->size() ) && ( oldVerticesNumber == vertices->size() ) ) {
+                if( ( oldEdgesNumber == edges->size() ) && 
+                        ( oldVerticesNumber == vertices->size() ) ) {
                     state = SPLIT_1;
                     break;
                 }
@@ -157,7 +163,8 @@ bool AnchorLayoutEngine::processItems( QList<GraphEdge*> *edges, QList<GraphVert
     return result;
 }
 
-GraphVertex *AnchorLayoutEngine::nextVertex( GraphVertex *currentVertex, GraphEdge *currentEdge, int *sign )
+GraphVertex *AnchorLayoutEngine::nextVertex( 
+    GraphVertex *currentVertex, GraphEdge *currentEdge, int *sign )
 {
     if( currentEdge->startVertex == currentVertex ) {
         *sign = 1;
@@ -175,7 +182,8 @@ GraphEdge *AnchorLayoutEngine::nextEdge( GraphVertex *currentVertex, GraphEdge *
     return currentVertex->edges.at(0);
 }
 
-bool AnchorLayoutEngine::findSerialChains( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, QList<Expression*> *el )
+bool AnchorLayoutEngine::findSerialChains( 
+    QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, QList<Expression*> *el )
 {
     bool result = true;
 
@@ -245,7 +253,8 @@ bool AnchorLayoutEngine::findSerialChains( QList<GraphEdge*> *edges, QList<Graph
                 qDebug() << "Adding one more left edge";
 #endif //HBANCHORLAYOUT_DEBUG
 
-            } while( ( currentVertex != initialVertex ) && ( currentVertex->edges.size() == 2 ) && ( ! currentVertex->special ) );
+            } while( ( currentVertex != initialVertex ) && 
+                ( currentVertex->edges.size() == 2 ) && ( ! currentVertex->special ) );
 
             if( currentVertex == initialVertex ) {
                 el->append( expr );
@@ -331,6 +340,7 @@ bool AnchorLayoutEngine::findSerialChains( QList<GraphEdge*> *edges, QList<Graph
                     i--;
                 }
 
+                delete initialVertex;
                 continue;
             }
 
@@ -373,7 +383,11 @@ bool AnchorLayoutEngine::findSerialChains( QList<GraphEdge*> *edges, QList<Graph
 }
 
 
-bool AnchorLayoutEngine::findParallelChains( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, VariableSet *vs, QList<Expression*> *el )
+bool AnchorLayoutEngine::findParallelChains( 
+    QList<GraphEdge*> *edges, 
+    QList<GraphVertex*> *vertices, 
+    VariableSet *vs, 
+    QList<Expression*> *el )
 {
     Q_UNUSED( vertices );
     bool result = true;
@@ -407,10 +421,12 @@ bool AnchorLayoutEngine::findParallelChains( QList<GraphEdge*> *edges, QList<Gra
             compared = edges->at(j);
             found = false;
 
-            if( ( current->startVertex == compared->startVertex ) && ( current->endVertex == compared->endVertex ) ) {
+            if( ( current->startVertex == compared->startVertex ) && 
+                ( current->endVertex == compared->endVertex ) ) {
                 found = true;
                 sign = 1;
-            } else if( ( current->startVertex == compared->endVertex ) && ( current->endVertex == compared->startVertex ) ) {
+            } else if( ( current->startVertex == compared->endVertex ) && 
+                ( current->endVertex == compared->startVertex ) ) {
                 found = true;
                 sign = -1;
             }
@@ -468,12 +484,17 @@ bool AnchorLayoutEngine::findParallelChains( QList<GraphEdge*> *edges, QList<Gra
                         newEdgeSizeProp->pref = sign * compared->expr->prefValue();
                         newEdgeSizeProp->flags |= SizeProperty::FlagFixed;
                     } else {
-                        if( sign * compared->expr->minValue() < sign * compared->expr->maxValue()  ) {
-                            newEdgeSizeProp->min = qMax( newEdgeSizeProp->min, sign * compared->expr->minValue() );
-                            newEdgeSizeProp->max = qMin( newEdgeSizeProp->max, sign * compared->expr->maxValue() );
+                        if( sign * compared->expr->minValue() < 
+                                sign * compared->expr->maxValue()  ) {
+                            newEdgeSizeProp->min = 
+                                qMax( newEdgeSizeProp->min, sign * compared->expr->minValue() );
+                            newEdgeSizeProp->max = 
+                                qMin( newEdgeSizeProp->max, sign * compared->expr->maxValue() );
                         } else {
-                            newEdgeSizeProp->min = qMax( newEdgeSizeProp->min, sign * compared->expr->maxValue() );
-                            newEdgeSizeProp->max = qMin( newEdgeSizeProp->max, sign * compared->expr->minValue() );
+                            newEdgeSizeProp->min = 
+                                qMax( newEdgeSizeProp->min, sign * compared->expr->maxValue() );
+                            newEdgeSizeProp->max = 
+                                qMin( newEdgeSizeProp->max, sign * compared->expr->minValue() );
                         }
                         if( comparedEdgeFlags & SizeProperty::FlagExpanding ) {
                             expandingPrefValues.append( sign * compared->expr->prefValue() );
@@ -499,7 +520,8 @@ bool AnchorLayoutEngine::findParallelChains( QList<GraphEdge*> *edges, QList<Gra
                     delete compared;
                 } else {
                     if( comparedEdgeFlags & SizeProperty::FlagFixed ) {
-                        if( ! myFuzzyCompare( newEdgeSizeProp->pref, sign * compared->expr->prefValue() ) ) {
+                        if( ! myFuzzyCompare( newEdgeSizeProp->pref, 
+                                              sign * compared->expr->prefValue() ) ) {
 #ifdef HBANCHORLAYOUT_DEBUG
                             qDebug()<< "!!!  two different parallel fixed items";
 #endif //HBANCHORLAYOUT_DEBUG
@@ -543,19 +565,23 @@ bool AnchorLayoutEngine::findParallelChains( QList<GraphEdge*> *edges, QList<Gra
                 if( ~newEdgeSizeProp->flags & SizeProperty::FlagFixed ) {
                     int expectedPref = 0;
                     if( expandingPrefValues.size() < numberOfParallelEdges ) {
-                        expectedPref = static_cast<int>(newEdgeSizeProp->pref / ( numberOfParallelEdges - expandingPrefValues.size() ));
+                        expectedPref = static_cast<int>(newEdgeSizeProp->pref / 
+                            ( numberOfParallelEdges - expandingPrefValues.size() ));
                     }
 
                     qSort( expandingPrefValues );
-                    if( ( !expandingPrefValues.isEmpty() ) && ( qAbs( expandingPrefValues.last() ) < qAbs( expandingPrefValues.first() ) ) ) {
-                        qSort( expandingPrefValues.begin(), expandingPrefValues.end(), qGreater<qreal>() );
+                    if( ( !expandingPrefValues.isEmpty() ) && 
+                        ( qAbs( expandingPrefValues.last() ) < qAbs( expandingPrefValues.first() ) ) ) {
+                        qSort( expandingPrefValues.begin(), 
+                            expandingPrefValues.end(), qGreater<qreal>() );
                     }
 
                     while( expandingPrefValues.size() > 0 ) {
                         if( qAbs( expandingPrefValues.last() ) > qAbs( expectedPref ) ) {
                             newEdgeSizeProp->pref += expandingPrefValues.last();
                             expandingPrefValues.removeLast();
-                            expectedPref = static_cast<int>(newEdgeSizeProp->pref / ( numberOfParallelEdges - expandingPrefValues.size() ));
+                            expectedPref = static_cast<int>(newEdgeSizeProp->pref / 
+                                ( numberOfParallelEdges - expandingPrefValues.size() ));
                         } else {
                             break;
                         }
@@ -607,6 +633,7 @@ bool AnchorLayoutEngine::findBranches( QList<GraphEdge*> *edges, QList<GraphVert
             currentVertex = nextVertex( initialVertex, currentEdge, &sign );
 
             vertices->removeOne( initialVertex );
+            delete initialVertex;
             edges->removeOne( currentEdge );
 
             while( ( currentVertex->edges.size() == 2 ) && ( ! currentVertex->special ) ) {
@@ -642,7 +669,8 @@ bool AnchorLayoutEngine::findBranches( QList<GraphEdge*> *edges, QList<GraphVert
     return result;
 }
 
-void AnchorLayoutEngine::attachToLayout( GraphVertex *start, GraphVertex *middle, GraphVertex *end, Variable *layoutVar,
+void AnchorLayoutEngine::attachToLayout( 
+    GraphVertex *start, GraphVertex *middle, GraphVertex *end, Variable *layoutVar,
                                          QList<Expression*> *el )
 {
     GraphEdge *current;
@@ -689,11 +717,15 @@ void AnchorLayoutEngine::attachToLayout( GraphVertex *start, GraphVertex *middle
                     // else some compare and indicate error
                 } else if( ~layoutVar->sizeProp.flags & SizeProperty::FlagFixed ) {
                     if( current->expr->minValue() / se.mCoef < current->expr->maxValue() / se.mCoef ) {
-                        layoutVar->sizeProp.min = qMax( layoutVar->sizeProp.min, current->expr->minValue() / se.mCoef );
-                        layoutVar->sizeProp.max = qMin( layoutVar->sizeProp.max, current->expr->maxValue() / se.mCoef );
+                        layoutVar->sizeProp.min = 
+                            qMax( layoutVar->sizeProp.min, current->expr->minValue() / se.mCoef );
+                        layoutVar->sizeProp.max = 
+                            qMin( layoutVar->sizeProp.max, current->expr->maxValue() / se.mCoef );
                     } else {
-                        layoutVar->sizeProp.min = qMax( layoutVar->sizeProp.min, current->expr->maxValue() / se.mCoef );
-                        layoutVar->sizeProp.max = qMin( layoutVar->sizeProp.max, current->expr->minValue() / se.mCoef );
+                        layoutVar->sizeProp.min = 
+                            qMax( layoutVar->sizeProp.min, current->expr->maxValue() / se.mCoef );
+                        layoutVar->sizeProp.max = 
+                            qMin( layoutVar->sizeProp.max, current->expr->minValue() / se.mCoef );
                     }
                     layoutVar->sizeProp.pref += qAbs( current->expr->prefValue() / se.mCoef );
                 }
@@ -732,12 +764,17 @@ void AnchorLayoutEngine::attachToLayout( GraphVertex *start, GraphVertex *middle
                     }
                     // else some compare and indicate error
                 } else if( ~layoutVar->sizeProp.flags & SizeProperty::FlagFixed ) {
-                    if( current->expr->minValue() / se.mCoef < current->expr->maxValue() / se.mCoef ) {
-                        layoutVar->sizeProp.min = qMax( layoutVar->sizeProp.min, current->expr->minValue() / se.mCoef );
-                        layoutVar->sizeProp.max = qMin( layoutVar->sizeProp.max, current->expr->maxValue() / se.mCoef );
+                    if( current->expr->minValue() / 
+                            se.mCoef < current->expr->maxValue() / se.mCoef ) {
+                        layoutVar->sizeProp.min = 
+                            qMax( layoutVar->sizeProp.min, current->expr->minValue() / se.mCoef );
+                        layoutVar->sizeProp.max = 
+                            qMin( layoutVar->sizeProp.max, current->expr->maxValue() / se.mCoef );
                     } else {
-                        layoutVar->sizeProp.min = qMax( layoutVar->sizeProp.min, current->expr->maxValue() / se.mCoef );
-                        layoutVar->sizeProp.max = qMin( layoutVar->sizeProp.max, current->expr->minValue() / se.mCoef );
+                        layoutVar->sizeProp.min = 
+                            qMax( layoutVar->sizeProp.min, current->expr->maxValue() / se.mCoef );
+                        layoutVar->sizeProp.max = 
+                            qMin( layoutVar->sizeProp.max, current->expr->minValue() / se.mCoef );
                     }
                     layoutVar->sizeProp.pref += qAbs( current->expr->prefValue() / se.mCoef );
                 }
@@ -758,7 +795,13 @@ void AnchorLayoutEngine::attachToLayout( GraphVertex *start, GraphVertex *middle
     }
 }
 
-void AnchorLayoutEngine::cleanUp( GraphVertex *start, GraphVertex *middle, GraphVertex *end, QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, QList<Expression*> *el )
+void AnchorLayoutEngine::cleanUp( 
+    GraphVertex *start, 
+    GraphVertex *middle, 
+    GraphVertex *end, 
+    QList<GraphEdge*> *edges, 
+    QList<GraphVertex*> *vertices, 
+    QList<Expression*> *el )
 {
     if( start ) {
         vertices->removeOne( start );
@@ -785,7 +828,10 @@ void AnchorLayoutEngine::cleanUp( GraphVertex *start, GraphVertex *middle, Graph
 }
 
 
-bool AnchorLayoutEngine::splitVertices( QList<GraphEdge*> *edges, QList<GraphVertex*> *vertices, int level )
+bool AnchorLayoutEngine::splitVertices( 
+    QList<GraphEdge*> *edges, 
+    QList<GraphVertex*> *vertices, 
+    int level )
 {
     bool result = false;
     GraphEdge *newEdge, *current, *edgeToModify;
@@ -879,7 +925,10 @@ bool AnchorLayoutEngine::ready( QList<GraphVertex*> *vertices )
 }
 
 
-bool AnchorLayoutEngine::solveEquation( QList<Expression*> *elOriginal, VariableSet *vs, Solution *solution )
+bool AnchorLayoutEngine::solveEquation( 
+    QList<Expression*> *elOriginal, 
+    VariableSet *vs, 
+    Solution *solution )
 {
     enum State {
         CheckEquationsNum,
@@ -984,7 +1033,8 @@ bool AnchorLayoutEngine::solveEquation( QList<Expression*> *elOriginal, Variable
                             }
                             solution->insert( se.mVar, se.mVar->sizeProp.pref );
                         }
-                    } else if( ( ( pref < EPSILON ) && ( maxExp > pref ) ) || ( ( pref > -EPSILON ) && ( maxExp < pref ) ) ) {
+                    } else if( ( ( pref < EPSILON ) && ( maxExp > pref ) ) || 
+                        ( ( pref > -EPSILON ) && ( maxExp < pref ) ) ) {
                         for ( int i = 0; i < currentEquation->mExpression.size(); i++ ) {
                             SimpleExpression se = currentEquation->mExpression.at(i);
 
@@ -1033,7 +1083,8 @@ bool AnchorLayoutEngine::solveEquation( QList<Expression*> *elOriginal, Variable
                     SimpleExpression se = currentEquation->mExpression.at(i);
                     qreal value;
 
-                    if ( ( se.mVar->sizeProp.flags & SizeProperty::FlagFixed ) || solution->contains( ( se.mVar ) ) ) {
+                    if ( ( se.mVar->sizeProp.flags & SizeProperty::FlagFixed ) || 
+                        solution->contains( ( se.mVar ) ) ) {
                         continue;
                     }
 
@@ -1150,7 +1201,8 @@ bool AnchorLayoutEngine::solveEquation( QList<Expression*> *elOriginal, Variable
 
                 qreal value = - exp.value( solution ) / se.mCoef;
 
-                if ( ( value - se.mVar->sizeProp.min < -EPSILON ) || ( value - se.mVar->sizeProp.max > EPSILON  ) ) {
+                if ( ( value - se.mVar->sizeProp.min < -EPSILON ) || 
+                    ( value - se.mVar->sizeProp.max > EPSILON  ) ) {
 #ifdef HBANCHORLAYOUT_DEBUG
                     qDebug( "cannot solve: min=%lf, max=%lf, value=%lf", se.mVar->sizeProp.min, se.mVar->sizeProp.max, value );
 #endif
@@ -1268,7 +1320,8 @@ uint Expression::flags() const
 
     for ( int i = 0; i < mExpression.size(); i++ ) {
         isFixed = isFixed && ( mExpression.at(i).mVar->sizeProp.flags & SizeProperty::FlagFixed );
-        isExpanding = ( isExpanding ) || ( mExpression.at(i).mVar->sizeProp.flags & SizeProperty::FlagExpanding );
+        isExpanding = ( isExpanding ) || 
+            ( mExpression.at(i).mVar->sizeProp.flags & SizeProperty::FlagExpanding );
     }
 
     if( isFixed ) {
@@ -1392,7 +1445,9 @@ qreal Expression::minValue() const
         if ( currentExpression.mVar->sizeProp.flags & SizeProperty::FlagFixed ) {
             result += currentExpression.mVar->sizeProp.pref * currentExpression.mCoef;
         } else {
-            result += qMin( currentExpression.mVar->sizeProp.max * currentExpression.mCoef, currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
+            result += qMin( currentExpression.mVar->sizeProp.max * 
+                currentExpression.mCoef, 
+                currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
         }
     }
 
@@ -1426,7 +1481,9 @@ qreal Expression::maxValue() const
         if ( currentExpression.mVar->sizeProp.flags & SizeProperty::FlagFixed ) {
             result += currentExpression.mVar->sizeProp.pref * currentExpression.mCoef;
         } else {
-            result += qMax( currentExpression.mVar->sizeProp.max * currentExpression.mCoef, currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
+            result += qMax( currentExpression.mVar->sizeProp.max * 
+                currentExpression.mCoef, 
+                currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
         }
     }
 
@@ -1447,7 +1504,9 @@ qreal Expression::minValue( Solution *solution ) const
         } else if ( solution->contains( ( currentExpression.mVar ) ) ) {
             result += solution->value( ( currentExpression.mVar ) ) * currentExpression.mCoef;
         } else {
-            result += qMin( currentExpression.mVar->sizeProp.max * currentExpression.mCoef, currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
+            result += qMin( currentExpression.mVar->sizeProp.max * 
+                currentExpression.mCoef, 
+                currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
         }
     }
 
@@ -1487,7 +1546,9 @@ qreal Expression::maxValue( Solution *solution ) const
         } else if ( solution->contains( ( currentExpression.mVar ) ) ) {
             result += solution->value( ( currentExpression.mVar ) ) * currentExpression.mCoef;
         } else {
-            result += qMax( currentExpression.mVar->sizeProp.max * currentExpression.mCoef, currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
+            result += qMax( currentExpression.mVar->sizeProp.max * 
+                currentExpression.mCoef, 
+                currentExpression.mVar->sizeProp.min * currentExpression.mCoef );
         }
     }
 
@@ -1530,13 +1591,15 @@ QString Expression::print() const
             res += " + ";
         }
         if( mExpression.at(i).mVar->sizeProp.flags & SizeProperty::FlagFixed ) {
-            res += '(' + QString::number( mExpression.at(i).mCoef ) + ')' + "var[" + QString::number( mExpression.at(i).mVar->mId ) + ']' + "(" +
+            res += '(' + QString::number( mExpression.at(i).mCoef ) + 
+                ')' + "var[" + QString::number( mExpression.at(i).mVar->mId ) + ']' + '(' +
                     QString::number( mExpression.at(i).mVar->sizeProp.pref ) + "|f)";
         } else {
-            res += '(' + QString::number( mExpression.at(i).mCoef ) + ')' + "var[" + QString::number( mExpression.at(i).mVar->mId ) + ']' + "(" +
-                    QString::number( mExpression.at(i).mVar->sizeProp.min ) + "," +
-                    QString::number( mExpression.at(i).mVar->sizeProp.pref ) + "," +
-                    QString::number( mExpression.at(i).mVar->sizeProp.max ) + ")";
+            res += '(' + QString::number( mExpression.at(i).mCoef ) + 
+                ')' + "var[" + QString::number( mExpression.at(i).mVar->mId ) + ']' + '(' +
+                    QString::number( mExpression.at(i).mVar->sizeProp.min ) + ',' +
+                    QString::number( mExpression.at(i).mVar->sizeProp.pref ) + ',' +
+                    QString::number( mExpression.at(i).mVar->sizeProp.max ) + ')';
         }
     }
     return res;

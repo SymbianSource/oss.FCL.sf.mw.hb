@@ -101,7 +101,9 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
     private:
         Q_DISABLE_COPY(HbXmlLoaderBaseActions)
     public:
+#ifndef HB_BIN_CSS
         HbDeviceProfile mCurrentProfile;
+#endif
 };
 
 #endif // HBXMLLOADERBASEACTIONS_P_H

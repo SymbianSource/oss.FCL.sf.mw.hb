@@ -109,6 +109,7 @@ signals:
     void buttonReleased(const QKeyEvent &event);
     void buttonLongPressed(const QKeyEvent &event);
     void pressedButtonChanged(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent);
+    void aboutToActivateCustomAction(HbAction *custAction);
 
 private slots:
     void longPressEvent();
@@ -117,6 +118,7 @@ private slots:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputButtonGroup)
     Q_DISABLE_COPY(HbInputButtonGroup)
+    Q_PRIVATE_SLOT(d_func(), void _q_customActionDestroyed(QObject *))
 };
 
 #endif // HB_INPUT_BUTTON_GROUP_H

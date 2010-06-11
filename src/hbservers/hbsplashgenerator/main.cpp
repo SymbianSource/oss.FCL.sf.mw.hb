@@ -28,10 +28,10 @@
 #include <hbapplication.h>
 #include "hbsplashgenerator_p.h"
 #include "hbsplashdefs_p.h"
+#include "hbsplashindicompositor_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbsplashgen_server_symbian_p.h"
-#include "hbsplashdefs_p.h"
 #include <e32std.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
@@ -88,7 +88,7 @@ int runMain(int argc, char **argv, void *mutexToSignal)
 #endif
 
     // The server must be initialized before calling HbSplashGenerator::start().
-#ifdef Q_OS_SYMBIAN
+#if defined(Q_OS_SYMBIAN)
     qDebug("[hbsplashgenerator] starting server");
     HbSplashGenServer server(&gen);
     // If there was an error then exit right away.
@@ -101,7 +101,10 @@ int runMain(int argc, char **argv, void *mutexToSignal)
     qDebug("[hbsplashgenerator] starting generator");
     gen.start(forceRegen);
 
+    HbSplashIndicatorCompositor indiCompositor(&gen);
+
 #if defined(Q_OS_SYMBIAN)
+    server.addCompositor(&indiCompositor);
     if (mutexToSignal) {
         qDebug("[hbsplashgenerator] signaling mutex");
         static_cast<RMutex *>(mutexToSignal)->Signal();

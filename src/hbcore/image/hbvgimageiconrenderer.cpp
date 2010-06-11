@@ -29,15 +29,15 @@
 
 #include <QtCore/qvarlengtharray.h>
 
-HbVgImageIconRenderer::HbVgImageIconRenderer(VGImage img, const QSize & size, HbIconImpl * impl)
-        : vgImage(img),
-        iconMode(QIcon::Normal),
-        specialCaseApplied(false),
-        rendersize(size),
-        addedToStates(false),
-        opacityPaint(VG_INVALID_HANDLE),
-        lastOpacity(1.0),
-        iconImpl(impl)
+HbVgImageIconRenderer::HbVgImageIconRenderer(VGImage img, const QSize &size, HbIconImpl *impl)
+    : vgImage(img),
+      iconMode(QIcon::Normal),
+      specialCaseApplied(false),
+      rendersize(size),
+      addedToStates(false),
+      opacityPaint(VG_INVALID_HANDLE),
+      lastOpacity(1.0),
+      iconImpl(impl)
 {
     eglStates = HbEglStates::global();
     eglStates->ref();
@@ -91,7 +91,7 @@ void HbVgImageIconRenderer::applyIconProperties()
     }
 }
 
-bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, const QPainterPath & clipPath)
+bool HbVgImageIconRenderer::draw(QPainter *painter, const QPointF &topLeft, const QPainterPath &clipPath)
 {
     if ((iconColor.isValid()) || (iconMode != QIcon::Normal)) {
         applyIconProperties();
@@ -107,36 +107,36 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
         addedToStates = true;
     }
 
-    if (vgImage != VG_INVALID_HANDLE) {    
+    if (vgImage != VG_INVALID_HANDLE) {
         QPainterPath oldPath;
-        bool clipped = painter->hasClipping();
-        
+        bool wasClipped = painter->hasClipping();
+
         if (!clipPath.isEmpty()) {
-            if (!clipped) {
+            if (!wasClipped) {
                 painter->setClipping(true);
             }
-            
+
             QPainterPath intersect(clipPath);
-            if (clipped) {
-                oldPath = painter->clipPath();
+            oldPath = painter->clipPath();
+            if (wasClipped) {
                 intersect =  oldPath.intersected(clipPath);
                 if (intersect.isEmpty()) {
                     return true;
                 }
             }
-        
+
             painter->setClipPath(intersect, Qt::ReplaceClip);
             painter->beginNativePainting();
         }
-        
+
         VGint imageMode      = vgGeti(VG_IMAGE_MODE);
         VGint matrixMode     = vgGeti(VG_MATRIX_MODE);
         VGPaint oldFillPaint = VG_INVALID_HANDLE;
         VGPaint oldStrkPaint = VG_INVALID_HANDLE;
         VGint   blendMode    = 0;
-        
+
         updatePainterTransformation(painter, topLeft);
-        
+
         qreal opacity = painter->opacity();
 
         if (opacity != lastOpacity || iconMode == QIcon::Selected) {
@@ -193,12 +193,8 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
 
         if (!clipPath.isEmpty()) {
             painter->endNativePainting();
-            if (!clipped) {
-                painter->setClipPath(oldPath, Qt::NoClip);
-            } else {
-                painter->setClipPath(oldPath);
-            }
-            painter->setClipping(clipped);
+            painter->setClipPath(oldPath);
+            painter->setClipping(wasClipped);
         }
         return true;
     }
@@ -207,7 +203,7 @@ bool HbVgImageIconRenderer::draw(QPainter * painter, const QPointF & topLeft, co
 }
 
 
-void HbVgImageIconRenderer::updatePainterTransformation(QPainter * painter, const QPointF & pos)
+void HbVgImageIconRenderer::updatePainterTransformation(QPainter *painter, const QPointF &pos)
 {
     VGfloat devh = painter->device()->height() - 1;
     QTransform viewport(1.0f, 0.0f, 0.0f,

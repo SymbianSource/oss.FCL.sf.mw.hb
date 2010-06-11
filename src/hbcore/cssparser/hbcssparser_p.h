@@ -32,7 +32,6 @@
 #include <QPair>
 #include <QSize>
 #include <QFont>
-#include <QPalette>
 #include <QIcon>
 #include <QSizePolicy>
 #include <QHash>
@@ -49,219 +48,84 @@
 #include "hbvariant_p.h"
 #include "hbstringvector_p.h"
 
-class HbFontSpec;
-
-//QT_BEGIN_NAMESPACE
-
 namespace HbCss
 {
 
 enum Property {
-    UnknownProperty,
-    BackgroundColor,
-    Color,
-    Float,
-    Font,
-    FontFamily,
-    FontSize,
-    FontStyle,
-    FontWeight,
-    Margin,
-    MarginBottom,
-    MarginLeft,
-    MarginRight,
-    MarginTop,
-    QtBlockIndent,
-    QtListIndent,
-    QtParagraphType,
-    QtTableType,
-    QtUserState,
-    TextDecoration,
-    TextIndent,
-    TextUnderlineStyle,
-    VerticalAlignment,
-    Whitespace,
-    QtSelectionForeground,
-    QtSelectionBackground,
-    Border,
-    BorderLeft,
-    BorderRight,
-    BorderTop,
-    BorderBottom,
-    Padding,
-    PaddingLeft,
-    PaddingRight,
-    PaddingTop,
-    PaddingBottom,
-    PageBreakBefore,
-    PageBreakAfter,
-    QtAlternateBackground,
-    BorderLeftStyle,
-    BorderRightStyle,
-    BorderTopStyle,
-    BorderBottomStyle,
-    BorderStyles,
-    BorderLeftColor,
-    BorderRightColor,
-    BorderTopColor,
-    BorderBottomColor,
-    BorderColor,
-    BorderLeftWidth,
-    BorderRightWidth,
-    BorderTopWidth,
-    BorderBottomWidth,
-    BorderWidth,
-    BorderTopLeftRadius,
-    BorderTopRightRadius,
-    BorderBottomLeftRadius,
-    BorderBottomRightRadius,
-    BorderRadius,
-    Background,
-    BackgroundOrigin,
-    BackgroundClip,
-    BackgroundRepeat,
-    BackgroundPosition,
-    BackgroundAttachment,
-    BackgroundImage,
-    BorderImage,
-    QtSpacing,
-    Width,
-    Height,
-    MinimumWidth,
-    MinimumHeight,
-    MaximumWidth,
-    MaximumHeight,
-    QtImage,
-    Left,
-    Right,
-    Top,
-    Bottom,
-    QtOrigin,
-    QtPosition,
-    Position,
-    QtStyleFeatures,
-    QtBackgroundRole,
-    ListStyleType,
-    ListStyle,
-    QtImageAlignment,
-    TextAlignment,
-    Outline,
-    OutlineOffset,
-    OutlineWidth,
-    OutlineColor,
-    OutlineStyle,
-    OutlineRadius,
-    OutlineTopLeftRadius,
-    OutlineTopRightRadius,
-    OutlineBottomLeftRadius,
-    OutlineBottomRightRadius,
-    FontVariant,
-    TextTransform,
-    HbSpacingHorizontal,
-    HbSpacingVertical,
-    HbColumnNarrowWidth,
-    HbColumnWideWidth,
-    HbIndent,
-    HbSmallIconSize,
-    HbLargeIconSize,
-    HbTopMarginWeight,
-    HbIconLeftAlignmentWeight,
-    HbStretchable,
-    HbLayout,
-    HbAspectRatio,
-    HbPreferredWidth,
-    HbPreferredHeight,
-    HbPreferredSize,
-    HbFixedWidth,
-    HbFixedHeight,
-    HbFixedSize,
-    HbMinimumSize,
-    HbMaximumSize,
-    HbSizePolicy,
-    HbSizePolicyHorizontal,
-    HbSizePolicyVertical,
-    HbCenterHorizontal,
-    HbCenterVertical,
-    HbSection,
-    HbTextLineCountMin,
-    HbTextLineCountMax,
-    HbTextHeight,
-    HbTextWrapMode,
-    Mirroring, // deprecated
-    HbLayoutDirection,
-    ZValue,
+    Property_Unknown,
+    Property_AspectRatio,
+    Property_BorderWidth,
+    Property_BorderWidthBottom,
+    Property_BorderWidthLeft,
+    Property_BorderWidthRight,
+    Property_BorderWidthTop,
+    Property_Bottom,
+    Property_CenterHorizontal,
+    Property_CenterVertical,
+    Property_Color,
+    Property_FixedHeight,
+    Property_FixedSize,
+    Property_FixedWidth,
+    Property_Font,
+    Property_FontFamily,
+    Property_FontSize,
+    Property_FontStyle,
+    Property_FontVariant,
+    Property_FontWeight,
+    Property_Height,
+    Property_Layout,
+    Property_LayoutDirection,
+    Property_Left,
+    Property_MaximumHeight,
+    Property_MaximumSize,
+    Property_MaximumWidth,
+    Property_MinimumHeight,
+    Property_MinimumSize,
+    Property_MinimumWidth,
+    Property_Mirroring, // deprecated
+    Property_PreferredHeight,
+    Property_PreferredSize,
+    Property_PreferredWidth,
+    Property_Right,
+    Property_Section,
+    Property_SizePolicy,
+    Property_SizePolicyHorizontal,
+    Property_SizePolicyVertical,
+    Property_Spacing,
+    Property_SpacingHorizontal,
+    Property_SpacingVertical,
+    Property_TextAlignment,
+    Property_TextDecoration,
+    Property_TextHeight,
+    Property_TextLineCountMax,
+    Property_TextLineCountMin,
+    Property_TextTransform,
+    Property_TextWrapMode,
+    Property_Top,
+    Property_Width,
+    Property_ZValue,
     NumProperties
 };
 
 enum KnownValue {
     UnknownValue,
     Value_Normal,
-    Value_Pre,
-    Value_Small,
-    Value_Medium,
-    Value_Large,
-    Value_XLarge,
-    Value_XXLarge,
     Value_Italic,
     Value_Oblique,
     Value_Bold,
     Value_Underline,
     Value_Overline,
     Value_LineThrough,
-    Value_Sub,
-    Value_Super,
     Value_Left,
     Value_Right,
     Value_Top,
     Value_Bottom,
     Value_Center,
-    Value_Native,
-    Value_Solid,
-    Value_Dotted,
-    Value_Dashed,
-    Value_DotDash,
-    Value_DotDotDash,
-    Value_Double,
-    Value_Groove,
-    Value_Ridge,
-    Value_Inset,
-    Value_Outset,
-    Value_Wave,
-    Value_Middle,
-    Value_Auto,
-    Value_Always,
     Value_None,
     Value_Transparent,
-    Value_Disc,
-    Value_Circle,
-    Value_Square,
-    Value_Decimal,
-    Value_LowerAlpha,
-    Value_UpperAlpha,
     Value_SmallCaps,
     Value_Uppercase,
     Value_Lowercase,
-
-    /* keep these in same order as QPalette::ColorRole */
-    Value_FirstColorRole,
-    Value_WindowText = Value_FirstColorRole,
-    Value_Button,
-    Value_Light,
-    Value_Midlight,
-    Value_Dark,
-    Value_Mid,
-    Value_Text,
-    Value_BrightText,
-    Value_ButtonText,
-    Value_Base,
-    Value_Window,
-    Value_Shadow,
-    Value_Highlight,
-    Value_HighlightedText,
-    Value_Link,
-    Value_LinkVisited,
-    Value_AlternateBase,
-    Value_LastColorRole = Value_AlternateBase,
 
     Value_Disabled,
     Value_Active,
@@ -299,71 +163,12 @@ enum KnownValue {
     NumKnownValues
 };
 
-enum BorderStyle {
-    BorderStyle_Unknown,
-    BorderStyle_None,
-    BorderStyle_Dotted,
-    BorderStyle_Dashed,
-    BorderStyle_Solid,
-    BorderStyle_Double,
-    BorderStyle_DotDash,
-    BorderStyle_DotDotDash,
-    BorderStyle_Groove,
-    BorderStyle_Ridge,
-    BorderStyle_Inset,
-    BorderStyle_Outset,
-    BorderStyle_Native,
-    NumKnownBorderStyles
-};
-
 enum Edge {
     TopEdge,
     RightEdge,
     BottomEdge,
     LeftEdge,
     NumEdges
-};
-
-enum Corner {
-    TopLeftCorner,
-    TopRightCorner,
-    BottomLeftCorner,
-    BottomRightCorner
-};
-
-enum TileMode {
-    TileMode_Unknown,
-    TileMode_Round,
-    TileMode_Stretch,
-    TileMode_Repeat,
-    NumKnownTileModes
-};
-
-enum Repeat {
-    Repeat_Unknown,
-    Repeat_None,
-    Repeat_X,
-    Repeat_Y,
-    Repeat_XY,
-    NumKnownRepeats
-};
-
-enum Origin {
-    Origin_Unknown,
-    Origin_Padding,
-    Origin_Border,
-    Origin_Content,
-    Origin_Margin,
-    NumKnownOrigins
-};
-
-enum PositionMode {
-    PositionMode_Unknown,
-    PositionMode_Static,
-    PositionMode_Relative,
-    PositionMode_Absolute,
-    PositionMode_Fixed,
-    NumKnownPositionModes
 };
 
 enum LayoutDirection {
@@ -373,21 +178,7 @@ enum LayoutDirection {
     NumKnownLayoutDirections
 };
 
-enum Attachment {
-    Attachment_Unknown,
-    Attachment_Fixed,
-    Attachment_Scroll,
-    NumKnownAttachments
-};
-
-enum StyleFeature {
-    StyleFeature_None = 0,
-    StyleFeature_BackgroundColor = 1,
-    StyleFeature_BackgroundGradient = 2,
-    NumKnownStyleFeatures = 4
-};
-
-struct HB_CORE_PRIVATE_EXPORT Value
+struct HB_CORE_PRIVATE_EXPORT Value //krazy:exclude=multiclasses
 {
     enum Type {
         Unknown,
@@ -415,69 +206,10 @@ struct HB_CORE_PRIVATE_EXPORT Value
           variant(memType)
     { }
 
-    //for debug only
 #ifdef CSS_PARSER_TRACES
-    const QString what(Type t) const
-    {
-        QString returnString;
-        switch(t) {
-        case Unknown: 
-            returnString = QString("Unknown");
-            break;
-        case Number:
-            returnString = QString("Number");
-            break;
-        case Percentage:
-            returnString = QString("Percentage");
-            break;
-        case Length:
-            returnString = QString("Length");
-            break;
-        case String:
-            returnString = QString("String");
-            break;
-        case Identifier:
-            returnString = QString("Identifier");
-            break;
-        case KnownIdentifier:
-            returnString = QString("KnownIdentifier");
-            break;
-        case Uri:
-            returnString = QString("Uri");
-            break;
-        case Color:
-            returnString = QString("Color");
-            break;
-        case Function:
-            returnString = QString("Function");
-            break;
-        case TermOperatorSlash:
-            returnString = QString("TermOperatorSlash");
-            break;
-        case TermOperatorComma:
-            returnString = QString("TermOperatorComma");
-            break;
-        case Variable:
-            returnString = QString("Variable");
-            break;
-        default:
-            break;
-        }
-        return returnString;
-    }
-
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"\t \t \t"<<"==============Value::Print():Begin==================";
-        qDebug() <<"\t \t \t"<< "Value::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() <<"\t \t \t"<< "Value::Type type = " << what(type);
-        qDebug() <<"\t \t \t"<< "Value::HbString original = " << original;
-        qDebug() <<"\t \t \t"<< "Value::HbVariant variant = " << variant.toString();
-        qDebug() <<"\t \t \t"<<"==============Value::Print():End====================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     Type type;
@@ -491,59 +223,22 @@ struct HB_CORE_PRIVATE_EXPORT Value
 // 4. QVector<Declaration> - { prop1: value1; prop2: value2; }
 // 5. Declaration - prop1: value1;
 
-struct HB_CORE_PRIVATE_EXPORT Declaration
+struct HB_CORE_PRIVATE_EXPORT Declaration //krazy:exclude=multiclasses
 {
     inline Declaration(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         :memoryType(type),
         property(type),
-        propertyId(UnknownProperty),
+        propertyId(Property_Unknown),
         values(type),
         important(false)
     {}
 
-    inline bool isEmpty() const { return property.isEmpty() && propertyId == UnknownProperty; }
-
-    // helper functions
-    QColor colorValue(const QPalette & = QPalette()) const;
-    void colorValues(QColor *c, const QPalette & = QPalette()) const;
-    QBrush brushValue(const QPalette & = QPalette()) const;
-    void brushValues(QBrush *c, const QPalette & = QPalette()) const;
-
-    BorderStyle styleValue() const;
-    void styleValues(BorderStyle *s) const;
-
-    Origin originValue() const;
-    Repeat repeatValue() const;
-    Qt::Alignment alignmentValue() const;
-    Hb::TextWrapping wrapModeValue() const;
-    PositionMode positionValue() const;
-    Attachment attachmentValue() const;
-    int styleFeaturesValue() const;
-
-    bool intValue(int *i, const char *unit = 0) const;
-    bool realValue(qreal *r, const char *unit = 0) const;
-
-    QSize sizeValue() const;
-    QRect rectValue() const;
-    QString uriValue() const;
-    QIcon iconValue() const;
-
-    void borderImageValue(QString *image, int *cuts, TileMode *h, TileMode *v) const;
+    inline bool isEmpty() const { return property.isEmpty() && propertyId == Property_Unknown; }
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"\t"<<"==============Declaration::Print():Begin==================";
-        qDebug() <<"\t"<<"Declaration::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "\t"<< "Declaration::HbString property = " << property;
-        qDebug() << "\t"<< "Declaration::Property propertyId = " << propertyId;
-        qDebug() << "\t"<< "Declaration::HbVector<Value> values = " ;
-        values.print();
-        qDebug() <<"\t"<<"==============Declaration::Print():End====================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbString property;
@@ -554,61 +249,17 @@ struct HB_CORE_PRIVATE_EXPORT Declaration
 
 typedef QPair<int, Declaration> WeightedDeclaration;
 
-const quint64 PseudoClass_Unknown          = Q_UINT64_C(0x0000000000000000);
-const quint64 PseudoClass_Enabled          = Q_UINT64_C(0x0000000000000001);
-const quint64 PseudoClass_Disabled         = Q_UINT64_C(0x0000000000000002);
-const quint64 PseudoClass_Pressed          = Q_UINT64_C(0x0000000000000004);
-const quint64 PseudoClass_Focus            = Q_UINT64_C(0x0000000000000008);
-const quint64 PseudoClass_Hover            = Q_UINT64_C(0x0000000000000010);
-const quint64 PseudoClass_Checked          = Q_UINT64_C(0x0000000000000020);
-const quint64 PseudoClass_Unchecked        = Q_UINT64_C(0x0000000000000040);
-const quint64 PseudoClass_Indeterminate    = Q_UINT64_C(0x0000000000000080);
-const quint64 PseudoClass_Unspecified      = Q_UINT64_C(0x0000000000000100);
-const quint64 PseudoClass_Selected         = Q_UINT64_C(0x0000000000000200);
-const quint64 PseudoClass_Horizontal       = Q_UINT64_C(0x0000000000000400);
-const quint64 PseudoClass_Vertical         = Q_UINT64_C(0x0000000000000800);
-const quint64 PseudoClass_Window           = Q_UINT64_C(0x0000000000001000);
-const quint64 PseudoClass_Children         = Q_UINT64_C(0x0000000000002000);
-const quint64 PseudoClass_Sibling          = Q_UINT64_C(0x0000000000004000);
-const quint64 PseudoClass_Default          = Q_UINT64_C(0x0000000000008000);
-const quint64 PseudoClass_First            = Q_UINT64_C(0x0000000000010000);
-const quint64 PseudoClass_Last             = Q_UINT64_C(0x0000000000020000);
-const quint64 PseudoClass_Middle           = Q_UINT64_C(0x0000000000040000);
-const quint64 PseudoClass_OnlyOne          = Q_UINT64_C(0x0000000000080000);
-const quint64 PseudoClass_PreviousSelected = Q_UINT64_C(0x0000000000100000);
-const quint64 PseudoClass_NextSelected     = Q_UINT64_C(0x0000000000200000);
-const quint64 PseudoClass_Flat             = Q_UINT64_C(0x0000000000400000);
-const quint64 PseudoClass_Left             = Q_UINT64_C(0x0000000000800000);
-const quint64 PseudoClass_Right            = Q_UINT64_C(0x0000000001000000);
-const quint64 PseudoClass_Top              = Q_UINT64_C(0x0000000002000000);
-const quint64 PseudoClass_Bottom           = Q_UINT64_C(0x0000000004000000);
-const quint64 PseudoClass_Exclusive        = Q_UINT64_C(0x0000000008000000);
-const quint64 PseudoClass_NonExclusive     = Q_UINT64_C(0x0000000010000000);
-const quint64 PseudoClass_Frameless        = Q_UINT64_C(0x0000000020000000);
-const quint64 PseudoClass_ReadOnly         = Q_UINT64_C(0x0000000040000000);
-const quint64 PseudoClass_Active           = Q_UINT64_C(0x0000000080000000);
-const quint64 PseudoClass_Closable         = Q_UINT64_C(0x0000000100000000);
-const quint64 PseudoClass_Movable          = Q_UINT64_C(0x0000000200000000);
-const quint64 PseudoClass_Floatable        = Q_UINT64_C(0x0000000400000000);
-const quint64 PseudoClass_Minimized        = Q_UINT64_C(0x0000000800000000);
-const quint64 PseudoClass_Maximized        = Q_UINT64_C(0x0000001000000000);
-const quint64 PseudoClass_On               = Q_UINT64_C(0x0000002000000000);
-const quint64 PseudoClass_Off              = Q_UINT64_C(0x0000004000000000);
-const quint64 PseudoClass_Editable         = Q_UINT64_C(0x0000008000000000);
-const quint64 PseudoClass_Item             = Q_UINT64_C(0x0000010000000000);
-const quint64 PseudoClass_Closed           = Q_UINT64_C(0x0000020000000000);
-const quint64 PseudoClass_Open             = Q_UINT64_C(0x0000040000000000);
-const quint64 PseudoClass_EditFocus        = Q_UINT64_C(0x0000080000000000);
-const quint64 PseudoClass_Alternate        = Q_UINT64_C(0x0000100000000000);
-const quint64 PseudoClass_Landscape        = Q_UINT64_C(0x0000200000000000);
-const quint64 PseudoClass_Portrait         = Q_UINT64_C(0x0000400000000000);
-const quint64 PseudoClass_LeftToRight      = Q_UINT64_C(0x0000800000000000);
-const quint64 PseudoClass_RightToLeft      = Q_UINT64_C(0x0001000000000000);
+const quint32 PseudoClass_Unknown          = 0x00000000;
+const quint32 PseudoClass_Unspecified      = 0x00000001;
+const quint32 PseudoClass_Landscape        = 0x00000002;
+const quint32 PseudoClass_Portrait         = 0x00000004;
+const quint32 PseudoClass_LeftToRight      = 0x00000008;
+const quint32 PseudoClass_RightToLeft      = 0x00000010;
 // The Any specifier is never generated, but can be used as a wildcard in searches.
-const quint64 PseudoClass_Any              = Q_UINT64_C(0x0002000000000000);
-const int NumPseudos = 50;
+const quint32 PseudoClass_Any              = 0x00000020;
+const int NumPseudos = 7;
 
-struct HB_CORE_PRIVATE_EXPORT Pseudo
+struct HB_CORE_PRIVATE_EXPORT Pseudo //krazy:exclude=multiclasses
 {
     Pseudo(HbMemoryManager::MemoryType memType = HbMemoryManager::HeapMemory) 
         : memoryType(memType),
@@ -618,16 +269,9 @@ struct HB_CORE_PRIVATE_EXPORT Pseudo
     { }
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-    void print() const
-    {    qDebug() <<"==============Pseudo::Print():Begin==================";
-        qDebug() << "Pseudo::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "Pseudo::HbString name= " << name;
-        qDebug() << "Pseudo::HbString function = " << function;
-        qDebug() <<"==============Pseudo::Print():End==================";
-        
-    }
+    void print() const;
 #endif
+
     //Data
     HbMemoryManager::MemoryType memoryType;
     bool negated;
@@ -636,7 +280,7 @@ struct HB_CORE_PRIVATE_EXPORT Pseudo
     HbString function;
 };
 
-struct HB_CORE_PRIVATE_EXPORT AttributeSelector
+struct HB_CORE_PRIVATE_EXPORT AttributeSelector //krazy:exclude=multiclasses
 {
     enum ValueMatchType {
         NoMatch,
@@ -653,6 +297,10 @@ struct HB_CORE_PRIVATE_EXPORT AttributeSelector
           valueMatchCriterium(NoMatch),
           negated(false)         
     {}
+#ifdef CSS_PARSER_TRACES
+    void print() const;
+#endif
+
     HbMemoryManager::MemoryType memoryType;
     HbString name;
     uint nameHash;
@@ -660,21 +308,9 @@ struct HB_CORE_PRIVATE_EXPORT AttributeSelector
     ValueMatchType valueMatchCriterium;
     bool negated;
 
-#ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============AttributeSelector::Print():Begin==================";
-        qDebug() << "AttributeSelector::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "AttributeSelector::HbString name= " << name;
-        qDebug() << "AttributeSelector::HbString value = " << value;
-        qDebug() <<"==============AttributeSelector::Print():End==================";
-    }
-#endif
 };
 
-struct HB_CORE_PRIVATE_EXPORT BasicSelector
+struct HB_CORE_PRIVATE_EXPORT BasicSelector //krazy:exclude=multiclasses
 {
     inline BasicSelector(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory) 
         : memoryType(type),
@@ -707,20 +343,9 @@ struct HB_CORE_PRIVATE_EXPORT BasicSelector
     };
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-    void print() const
-    {
-        qDebug() <<"\t \t"<<"==============BasicSelector::Print():Begin==================";
-        qDebug() <<"\t \t"<<"BasicSelector::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() <<"\t \t"<<"BasicSelector::HbString elementName= " << elementName;
-//        qDebug() <<"\t \t"<<"BasicSelector::QStringList ids = " << ids;
-        qDebug() <<"\t \t"<<"BasicSelector::PseudoVector pseudos = ";
-        pseudos.print();
-        qDebug() <<"\t \t"<< "BasicSelector::AttributeSelectorVector attributeSelectors = ";
-        attributeSelectors.print();
-        qDebug() <<"\t \t"<<"==============BasicSelector::Print():End====================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbString elementName;
@@ -731,7 +356,7 @@ struct HB_CORE_PRIVATE_EXPORT BasicSelector
     Relation relationToNext;
 };
 
-struct HB_CORE_PRIVATE_EXPORT Selector
+struct HB_CORE_PRIVATE_EXPORT Selector //krazy:exclude=multiclasses
 {
     Selector() 
         : memoryType(HbMemoryManager::HeapMemory),
@@ -748,137 +373,99 @@ struct HB_CORE_PRIVATE_EXPORT Selector
     QString pseudoElement() const;
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"\t "<<"==============Selector::Print():Begin==================";
-        qDebug() <<"\t "<<"Selector::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() <<"\t "<<"Selector::BasicSelectorVector basicSelectors= ";
-        basicSelectors.print();    
-        qDebug() <<"\t "<<"==============Selector::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbVector<BasicSelector> basicSelectors;
 };
 
-enum PositionValueFlag {
-    ExtractedLeft = 0x0001,
-    ExtractedRight = 0x0002,
-    ExtractedTop = 0x0004,
-    ExtractedBottom = 0x0008,
-    ExtractedOrigin = 0x0010,
-    ExtractedAlign = 0x0020,
-    ExtractedMode = 0x0040,
-    ExtractedTextAlign = 0x0080,
-    ExtractedCenterH = 0x0100,
-    ExtractedCenterV = 0x0200,
-    ExtractedLayoutDirection = 0x0400,
-    ExtractedZValue = 0x0800,
-    ExtractedWrapMode = 0x1000
-};
-Q_DECLARE_FLAGS(PositionValueFlags, PositionValueFlag)
+enum KnownPropertyFlag {
 
-enum GeometryValueFlag {
-    ExtractedPrefW = 0x0001,
-    ExtractedPrefH = 0x0002,
-    ExtractedMinW = 0x0004,
-    ExtractedMinH = 0x0008,
-    ExtractedMaxW = 0x0010,
-    ExtractedMaxH = 0x0020,
-    ExtractedPolHor = 0x0040,
-    ExtractedPolVer = 0x0080
-};
-Q_DECLARE_FLAGS(GeometryValueFlags, GeometryValueFlag)
+    // Generic
+    ExtractedLeft       = 0x00000001,
+    ExtractedRight      = 0x00000002,
+    ExtractedTop        = 0x00000004,
+    ExtractedBottom     = 0x00000008,
+    ExtractedCenterH    = 0x00000010,
+    ExtractedCenterV    = 0x00000020,
 
-enum TextValueFlag {
-    ExtractedLineCountMin = 0x0001,
-    ExtractedLineCountMax = 0x0002
-};
-Q_DECLARE_FLAGS(TextValueFlags, TextValueFlag)
+    ExtractedPrefW      = 0x00000100,
+    ExtractedPrefH      = 0x00000200,
+    ExtractedMinW       = 0x00000400,
+    ExtractedMinH       = 0x00000800,
+    ExtractedMaxW       = 0x00001000,
+    ExtractedMaxH       = 0x00002000,
+    ExtractedPolHor     = 0x00004000,
+    ExtractedPolVer     = 0x00008000,
 
-struct GeometryValues
-{
-    qreal mPrefW, mPrefH, mMinW, mMinH, mMaxW, mMaxH;
-    QSizePolicy mSizePolicy;
-    GeometryValueFlags mFlags;
-};
+    ExtractedLayoutDir  = 0x00010000,
+    ExtractedZValue     = 0x00020000,
 
-struct PositionValues
+    // Text specific
+    ExtractedTextAlign  = 0x00100000,
+    ExtractedWrapMode   = 0x00200000,
+    ExtractedMinLines   = 0x00400000,
+    ExtractedMaxLines   = 0x00800000,
+    ExtractedFont       = 0x01000000,
+    ExtractedFontSpec   = 0x02000000,
+
+    // Icon specific
+    ExtractedAspectRatioMode    = 0x10000000,
+
+    // Frame specific
+    ExtractedBorderWidths       = 0x20000000
+
+};
+Q_DECLARE_FLAGS(KnownPropertyFlags, KnownPropertyFlag)
+
+struct KnownProperties
 {
     qreal mLeft, mTop, mRight, mBottom, mCenterH, mCenterV, mZ;
-    Qt::Alignment mPosition;
-    HbCss::Origin mOrigin;
-    HbCss::PositionMode mPositionMode;
+    qreal mPrefW, mPrefH, mMinW, mMinH, mMaxW, mMaxH;
+    QSizePolicy mSizePolicy;
+
+    HbCss::LayoutDirection mLayoutDir;    
+
     Qt::Alignment mTextAlignment;
-    HbCss::LayoutDirection mLayoutDirection;    
     Hb::TextWrapping mTextWrapMode;
-    PositionValueFlags mFlags;
+    int mMinLines, mMaxLines;
+
+    QFont mFont;
+    HbFontSpec mFontSpec;
+
+    Qt::AspectRatioMode mAspectRatioMode;
+
+    qreal mBorderWidths[HbCss::NumEdges];
+
+    KnownPropertyFlags mFlags;
 };
 
-struct TextValues
+struct HB_CORE_PRIVATE_EXPORT ValueExtractor //krazy:exclude=multiclasses
 {
-    int mLineCountMin;
-    int mLineCountMax;
-    TextValueFlags mFlags;
-};
-
-
-struct StyleRule;
-struct MediaRule;
-struct PageRule;
-struct ImportRule;
-struct VariableRule;  //new added for variable support
-
-struct HB_CORE_PRIVATE_EXPORT ValueExtractor
-{
-    ValueExtractor(const HbVector<Declaration> &declarations, const HbDeviceProfile &profile, const QPalette & = QPalette());
+    ValueExtractor(const HbVector<Declaration> &declarations, const HbDeviceProfile &profile);
     ValueExtractor(const HbVector<Declaration> &declarations, const QHash<QString, HbCss::Declaration> &varDeclarations,
-                   const HbDeviceProfile &profile, const QPalette & = QPalette());
+                   const HbDeviceProfile &profile);
     ValueExtractor(const HbVector<Declaration> &varDeclarations, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
     ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
 
-    bool extractFont(QFont *font, HbFontSpec *fontSpec, int *fontSizeAdjustment);
-    bool extractValue(const QString& variableName, HbVector<HbCss::Value>& values) const;
-    bool extractValue(const QString& variableName, qreal& value);
-    bool extractValue( const QString &variableName, HbCss::Value &value ) const;
+    bool extractVariableValue(const QString &variableName, HbVector<HbCss::Value>& values) const;
+    bool extractVariableValue(const QString &variableName, qreal& value);
+    bool extractVariableValue(const QString &variableName, HbCss::Value &value) const;
     bool extractExpressionValue(QString &expression, qreal &value);
-    bool extractBackground(QBrush *, QString *, Repeat *, Qt::Alignment *, HbCss::Origin *, HbCss::Attachment *,
-                           HbCss::Origin *);
-    bool extractGeometry(GeometryValues &geomValues);
-    bool extractPosition(PositionValues &posValues);
-    bool extractBox(qreal *margins, qreal *paddings, qreal *spacing = 0);
-    bool extractBorder(qreal *borders, QBrush *colors, BorderStyle *Styles, QSize *radii);
-    bool extractOutline(qreal *borders, QBrush *colors, BorderStyle *Styles, QSize *radii, qreal *offsets);
-    bool extractPalette(QBrush *fg, QBrush *sfg, QBrush *sbg, QBrush *abg);
-    int  extractStyleFeatures();
-    bool extractImage(QIcon *icon, Qt::Alignment *a, QSize *size);
-    bool extractLayout(QString *layoutName, QString *sectionName);
-    bool extractAspectRatioMode(Qt::AspectRatioMode *mode);
-    bool extractParameters( const QList<QString> &params, QList<QVariant> &values );
-    bool extractColor( QColor *col ) const;
-    bool extractTextValues( TextValues &textValues );
 
-    bool asBool(const Declaration &decl);
-    qreal asReal(const Declaration &decl);
-
-    int lengthValue(const Declaration &decl);
+    bool extractKnownProperties(KnownProperties &prop);
+    bool extractCustomProperties(const QList<QString> &keys, QList<QVariant> &values);
+    bool extractLayout(QString &layoutName, QString &sectionName);
+    bool extractColor(QColor &color) const;
 
 private:
-    void extractFont();
-    void borderValue(const Declaration &decl, qreal *width, HbCss::BorderStyle *style, QBrush *color);
-    int lengthValue(const Value& v);
-    qreal asReal(const Value& v);
-    qreal asReal(QString &s, Value::Type type);
-    bool asReal(QString &s, qreal &value);
-    void asReals(const Declaration &decl, qreal *m);
-    QSizePolicy asSizePolicy(const Declaration &decl);
-    QSizePolicy::Policy asPolicy(const Value& v);
-    void lengthValues(const Declaration &decl, int *m);
-    QSize sizeValue(const Declaration &decl);
-    void sizeValues(const Declaration &decl, QSize *radii);
+
+    qreal asReal(const Declaration &decl, bool *ok = 0);
+    qreal asReal(const Value &v, bool *ok = 0);
+    qreal asReal(QString &s, Value::Type type, bool *ok = 0);
+    bool asReals(const Declaration &decl, qreal *m);
 
     struct ExpressionValue
     {
@@ -901,18 +488,13 @@ private:
     HbVector<Declaration> declarations;
     HbVector<Declaration> variableDeclarations; //for variables
     QHash<QString, HbCss::Declaration> variableDeclarationsHash;
-    QFont f;
-    HbFontSpec fSpec;
-    int adjustment;
-    int fontExtracted;
-    QPalette pal;
     HbDeviceProfile currentProfile;
     QList<ExpressionValue> expressionValues; // for parsed expression string
 };
 
 struct StyleSheet;
 
-struct HB_CORE_PRIVATE_EXPORT StyleRule
+struct HB_CORE_PRIVATE_EXPORT StyleRule //krazy:exclude=multiclasses
 {
     StyleRule(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
@@ -924,19 +506,9 @@ struct HB_CORE_PRIVATE_EXPORT StyleRule
     {}
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============StyleRule::Print():Begin==================";
-        qDebug() << "StyleRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "StyleRule::SelectorVector selectors = ";
-        selectors.print();
-        qDebug() << "StyleRule::DeclarationVector declarations = ";
-        declarations.print();
-        qDebug() <<"==============StyleRule::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbVector<Selector> selectors;
@@ -948,7 +520,7 @@ struct HB_CORE_PRIVATE_EXPORT StyleRule
 
 typedef QPair<int, StyleRule> WeightedRule;
 
-struct HB_CORE_PRIVATE_EXPORT VariableRule
+struct HB_CORE_PRIVATE_EXPORT VariableRule //krazy:exclude=multiclasses
 {
     VariableRule(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType (type),
@@ -956,22 +528,15 @@ struct HB_CORE_PRIVATE_EXPORT VariableRule
     {}
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-    void print() const
-    {
-        qDebug() <<"==============VariableRule::Print():Begin==================";
-        qDebug() << "VariableRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "VariableRule::DeclarationVector declarations = ";
-        declarations.print();
-        qDebug() <<"==============VariableRule::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbVector<Declaration> declarations;
 };
 
-struct HB_CORE_PRIVATE_EXPORT MediaRule
+struct HB_CORE_PRIVATE_EXPORT MediaRule //krazy:exclude=multiclasses
 {
     MediaRule(HbMemoryManager::MemoryType type=HbMemoryManager::HeapMemory)
         : memoryType(type),
@@ -980,18 +545,9 @@ struct HB_CORE_PRIVATE_EXPORT MediaRule
     {}
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-    void print() const
-    {
-        qDebug() <<"==============MediaRule::Print():Begin==================";
-        qDebug() << "MediaRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
-//        qDebug() << "MediaRule::QStringList media = " << media;
-        qDebug() << "MediaRule::StyleRuleVector styleRules = ";
-        styleRules.print();
-        qDebug() <<"==============MediaRule::Print():End==================";
-            
-    }
+    void print() const;
 #endif
+
     // data
     HbMemoryManager::MemoryType memoryType;
     //ToDo: Replace it with HbStringList if we have it in future
@@ -999,7 +555,7 @@ struct HB_CORE_PRIVATE_EXPORT MediaRule
     HbVector<StyleRule> styleRules;
 };
 
-struct HB_CORE_PRIVATE_EXPORT PageRule
+struct HB_CORE_PRIVATE_EXPORT PageRule //krazy:exclude=multiclasses
 {
     PageRule(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
@@ -1008,25 +564,16 @@ struct HB_CORE_PRIVATE_EXPORT PageRule
     {}
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============PageRule::Print():Begin==================";
-        qDebug() << "PageRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "PageRule::HbString selector = " << selector;
-        qDebug() << "PageRule::DeclarationVector declarations = ";
-        declarations.print();
-        qDebug() <<"==============PageRule::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbString selector;
     HbVector<Declaration> declarations;
 };
 
-struct HB_CORE_PRIVATE_EXPORT ImportRule
+struct HB_CORE_PRIVATE_EXPORT ImportRule //krazy:exclude=multiclasses
 {
     ImportRule(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
@@ -1035,17 +582,9 @@ struct HB_CORE_PRIVATE_EXPORT ImportRule
     {}
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============ImportRule::Print():Begin==================";
-        qDebug() << "ImportRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "ImportRule::HbString href = " << href;
-//        qDebug() << "ImportRule::QStringList media = " << media;
-        qDebug() <<"==============ImportRule::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
     HbMemoryManager::MemoryType memoryType;
     HbString href;
@@ -1068,20 +607,9 @@ WidgetStyleRules(uint widgetNameHash, HbMemoryManager::MemoryType type = HbMemor
     { 
     }
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============WidgetStyleRules::Print():Begin==================";
-        qDebug() << "Generic rules:";
-        styleRules.print();
-        qDebug() << "Portrait rules:";
-        portraitRules.print();
-        qDebug() << "Landscape rules:";
-        landscapeRules.print();
-        qDebug() <<"==============WidgetStyleRules::Print():End==================";
-    }
+    void print() const;
 #endif
+
     // Data
 	uint classNameHash;
     HbVector<StyleRule> styleRules;
@@ -1089,7 +617,7 @@ WidgetStyleRules(uint widgetNameHash, HbMemoryManager::MemoryType type = HbMemor
     HbVector<StyleRule> landscapeRules;
 };
 
-struct HB_AUTOTEST_EXPORT StyleSheet
+struct HB_AUTOTEST_EXPORT StyleSheet //krazy:exclude=multiclasses
 {
 StyleSheet(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : memoryType(type),
@@ -1129,24 +657,7 @@ StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type)
     }
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const {return true;}
-
-    void print() const
-    {
-        qDebug() <<"==============StyleSheet::Print():Begin==================";
-        qDebug() << "StyleSheet::HbMemoryManager::MemoryType memoryType = " << memoryType;
-        qDebug() << "StyleSheet::VariableRuleVector variableRules = ";
-        variableRules.print();
-        qDebug() << "StyleSheet::WidgetStyleRuleVector widgetRules = ";
-        widgetRules.print();
-        qDebug() << "StyleSheet::MediaRuleVector mediaRules = ";
-        mediaRules.print();
-        qDebug() << "StyleSheet::PageRulesVector pageRules = ";
-        pageRules.print();
-        qDebug() << "StyleSheet::ImportRuleVector importRules = ";
-        importRules.print();
-        qDebug() <<"==============StyleSheet::Print():End==================";
-    }
+    void print() const;
 #endif
 
     // Utility functions
@@ -1182,7 +693,7 @@ StyleSheet(const StyleSheet &other, HbMemoryManager::MemoryType type)
 #endif
 };
 
-class HB_AUTOTEST_EXPORT StyleSelector
+class HB_AUTOTEST_EXPORT StyleSelector //krazy:exclude=multiclasses
 {
 public:
     StyleSelector();
@@ -1273,7 +784,7 @@ enum TokenType {
     OR
 };
 
-struct HB_CORE_PRIVATE_EXPORT Symbol
+struct HB_CORE_PRIVATE_EXPORT Symbol //krazy:exclude=multiclasses
 {
     inline Symbol() : start(0), len(-1) {}
     TokenType token;
@@ -1282,15 +793,14 @@ struct HB_CORE_PRIVATE_EXPORT Symbol
     QString lexem() const;
 };
 
-class /*Q_AUTOTEST_EXPORT*/ Scanner
+class Scanner
 {
 public:
     static QString preprocess(const QString &input, bool *hasEscapeSequences = 0);
     static void scan(const QString &preprocessedInput, QVector<Symbol> *symbols);
-    static const char *tokenName(TokenType t);
 };
 
-class HB_CORE_PRIVATE_EXPORT Parser
+class HB_CORE_PRIVATE_EXPORT Parser //krazy:exclude=multiclasses
 {
 public:
 	enum Error{
@@ -1390,6 +900,4 @@ public:
 
 } // namespace HbCss
 
-//QT_END_NAMESPACE
-
-#endif
+#endif // HBCSSPARSER_P_H

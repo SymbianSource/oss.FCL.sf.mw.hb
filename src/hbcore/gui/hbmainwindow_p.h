@@ -44,7 +44,7 @@
 #ifdef Q_OS_SYMBIAN
 #include <hbdevicedialogclientsession_p.h>
 #include <hbdevicedialogconnecthelper_p.h>
-#endif 
+#endif
 
 class HbBackgroundItem;
 class HbGraphicsScene;
@@ -96,7 +96,7 @@ public:
     HbDeviceProfile adjustedProfile(const HbDeviceProfile &profile) const;
 
     void broadcastEvent(int eventType);
-    void broadcastEvent(QEvent* event);
+    void broadcastEvent(QEvent *event);
 
     void changeSceneSize();
     void updateRotationEffects();
@@ -110,7 +110,7 @@ public:
     void unfadeScreen();
 
     void _q_viewReady();
-        
+
     QGraphicsWidget *element(HbMainWindowPrivate::Element element) const;
 
     HbGraphicsScene *mScene;
@@ -125,14 +125,16 @@ public:
     Qt::Orientation mDefaultOrientation;
     int mPendingOrientationValue;
     qreal mOrientationAngle;
-    QList<QGraphicsItem*> mItemList;
-    QList<QGraphicsItem*> mOrientationChangeEffectItems;
+    QList<QGraphicsItem *> mItemList;
+    QList<QGraphicsItem *> mOrientationChangeEffectItems;
     bool mAutomaticOrientationSwitch;
     bool mUserOrientationSwitch;
     bool mOrientationChangeOngoing;
+    bool mRootItemFinalPhaseDone;
+    bool mOrientationEffectFinished;
     bool mAnimateOrientationSwitch;
     bool mGVOrientationChangeEffectEnabled;
-    bool mPendingPsPublish;    
+    bool mPendingPsPublish;
     Qt::Orientation mOrientation;
     Qt::Orientation mRequestedOrientation;
     HbToolBar *mCurrentToolbar;
@@ -154,8 +156,6 @@ public:
     QRectF mLayoutRect;
     mutable HbDeviceProfile mAlternateProfile;
     QPointer<HbView> mMenuView;
-    bool mNotifyOrientationChange;
-    bool mOrientationChangeNotified;
     bool mToolbarWasAdded;
     bool mAutomaticOrientationChangeAnimation;
     QTranslator mCommonTranslator;
@@ -164,10 +164,11 @@ public:
     RHbDeviceDialogClientSession *mDevDlgClientSession;
     HbDeviceDialogConnectHelper *mDevDlgConnectHelper;
 #endif
-    void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status);
-    void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status);
-    void orientationEffectFinished(const HbEffect::EffectStatus& status);
+    void rootItemFirstPhaseDone(const HbEffect::EffectStatus &status);
+    void rootItemFinalPhaseDone(const HbEffect::EffectStatus &status);
+    void orientationEffectFinished(const HbEffect::EffectStatus &status);
 
+    void updateOrientationChangeStatus();
     void addOrientationChangeEffects();
     void addViewEffects();
     void _q_viewChanged();
@@ -190,7 +191,7 @@ public:
     static const int IdleOrientationEvent;
     static const int IdleOrientationFinalEvent;
 
-    void setViewportSize(const QSizeF& newSize);
+    void setViewportSize(const QSizeF &newSize);
     QSizeF viewPortSize() const;
 
     static HbMainWindowPrivate *d_ptr(HbMainWindow *mainWindow) {
@@ -203,13 +204,14 @@ signals:
 
 public slots:
     void menuClosed();
-#ifdef Q_OS_SYMBIAN  
+#ifdef Q_OS_SYMBIAN
     void updateForegroundOrientationPSKey();
     void deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession);
 #endif
 
-	friend class HbForegroundWatcher;
-	friend class HbDeviceDialogConnectHelperPrivate;
+    friend class HbShrinkingVkbHostPrivate;
+    friend class HbForegroundWatcher;
+    friend class HbDeviceDialogConnectHelperPrivate;
 };
 
 #endif // HBMAINWINDOW_P_H

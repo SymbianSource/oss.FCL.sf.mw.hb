@@ -91,6 +91,7 @@ public:
     void panGestureFinished (HbPanGesture *gesture);
     void show();
     void _q_aboutToChangeView();
+    void detachEditor(bool updateAtthachedEditorState);
 
 public:
 
@@ -466,6 +467,21 @@ void HbSelectionControlPrivate::_q_aboutToChangeView()
     }
 }
 
+void HbSelectionControlPrivate::detachEditor(bool updateAtthachedEditorState)
+{
+    Q_Q(HbSelectionControl);
+    if (mEdit) {
+        q->hideHandles();
+        reparentHandles(q);
+        if (updateAtthachedEditorState) {
+            mEdit->disconnect(q);
+            mEdit->d_func()->selectionControl = 0;
+            mEdit->deselect();
+        }
+        mEdit = 0;
+        mTopLevelAncestor = 0;
+    }
+}
 
 HbSelectionControl::HbSelectionControl() : HbWidget(*new HbSelectionControlPrivate(),0)
 
@@ -510,17 +526,14 @@ HbSelectionControl* HbSelectionControl::attachEditor(HbAbstractEdit *edit)
 void HbSelectionControl::detachEditor()
 {
     Q_D(HbSelectionControl);
-    if (d->mEdit) {
-        hideHandles();
-        d->reparentHandles(this);
-        d->mEdit->disconnect(this);
-        d->mEdit->d_func()->selectionControl = 0;        
-        d->mEdit->deselect();
-        d->mEdit = 0;
-        d->mTopLevelAncestor = 0;
-    }
+    d->detachEditor(true);
 }
 
+void HbSelectionControl::detachEditorFromDestructor()
+{
+    Q_D(HbSelectionControl);
+    d->detachEditor(false);
+}
 
 void HbSelectionControl::hideHandles()
 {

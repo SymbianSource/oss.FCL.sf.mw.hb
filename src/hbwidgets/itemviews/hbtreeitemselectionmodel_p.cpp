@@ -83,7 +83,7 @@ void HbTreeItemSelectionModel::select(const QItemSelection &selection, QItemSele
     QModelIndexList indexes = selection.indexes();
     int count = indexes.count();
     for (int i = 0; i < count; ++i) {
-        QModelIndex index = indexes.at(0);
+        QModelIndex index = indexes.at(i);
         if (!index.isValid()) {
             return;
         }

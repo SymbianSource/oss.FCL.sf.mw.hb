@@ -297,7 +297,6 @@ public:
        {
            const_iterator iter = begin();
            while(iter != end()) {
-               if(iter->supportsPrinting())
                iter->print();
                iter++;
            }

@@ -109,13 +109,15 @@ public:
     QPointer<QObject> receiverToDisconnectOnClose;
     QByteArray memberToDisconnectOnClose;
     qreal mScreenMargin;
+    bool mAutoLayouting;
 
 public:
 #ifdef HB_EFFECTS
     void _q_delayedHide(HbEffect::EffectStatus status);
-    void _q_orientationChange(Qt::Orientation orient, bool animate);
+    void _q_orientationAboutToChange(Qt::Orientation orient, bool animate);
 #endif // HB_EFFECTS
     void _q_timeoutFinished();
+    void _q_orientationChanged();
 
     bool addPopupToScene();
     void handleBackgroundMousePressEvent();
@@ -134,6 +136,7 @@ public:
     void doSetModal( bool modal );
     QString effectType;
     HbVgMaskEffect *mVgMaskEffect;
+    bool mOrientationEffectHide;
 private:
     static bool popupEffectsLoaded;
     static HbPopupPrivate *d_ptr(HbPopup *popup) {

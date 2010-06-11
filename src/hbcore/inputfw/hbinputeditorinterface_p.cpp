@@ -196,6 +196,19 @@ void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* object)
     }
 }
 
+void HbEditorInterfacePrivateCache::actionDestroyed(QObject* object)
+{
+    foreach(HbEditorInterfacePrivate *editorInterfacePrivate, mObjectCache) {
+        HbAction *action = static_cast<HbAction *>(object);
+        if (editorInterfacePrivate->mActions.contains(action)) {
+            editorInterfacePrivate->mActions.removeAll(action);
+            foreach(HbEditorInterface *editorInterface, editorInterfacePrivate->mAttachedInterfaces) {
+                editorInterface->backendModified();
+            }
+        }
+    }
+}
+
 void HbEditorInterfacePrivateCache::notifyValueChanged(QObject* editor)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {

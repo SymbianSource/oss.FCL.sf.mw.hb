@@ -100,20 +100,20 @@ public:
     void setFlags(Flags flags);
 
     void paint(QPainter *painter,
-                const QRectF &rect,
-                Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
-                Qt::Alignment alignment = Qt::AlignCenter,
-                QIcon::Mode mode = QIcon::Normal,
-                QIcon::State state = QIcon::Off) const;
+               const QRectF &rect,
+               Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
+               Qt::Alignment alignment = Qt::AlignCenter,
+               QIcon::Mode mode = QIcon::Normal,
+               QIcon::State state = QIcon::Off) const;
 
     operator QVariant() const;
 
     QIcon &qicon() const;
 
     bool addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int z=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int z = 0);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
 
 private:

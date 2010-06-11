@@ -52,26 +52,26 @@ QString iconTypeFromFilename(const QString &iconPath)
 {
     QString loweredIconPath = iconPath.toLower();
 
-    if (loweredIconPath.endsWith(".svgz") ) {
-        return "SVG";
+    if (loweredIconPath.endsWith(QLatin1String(".svgz"))) {
+        return QLatin1String("SVG");
     }
-    if (loweredIconPath.endsWith(".qpic") ) {
-        return "PIC";
+    if (loweredIconPath.endsWith(QLatin1String(".qpic"))) {
+        return QLatin1String("PIC");
     }
 
-    if (loweredIconPath.endsWith(".svg")
-        || loweredIconPath.endsWith(".png")
-        || loweredIconPath.endsWith(".mng")
-        || loweredIconPath.endsWith(".gif")
-        || loweredIconPath.endsWith(".xpm")
-        || loweredIconPath.endsWith(".jpg")
-        || loweredIconPath.endsWith(".nvg")) {
+    if (loweredIconPath.endsWith(QLatin1String(".svg"))
+        || loweredIconPath.endsWith(QLatin1String(".png"))
+        || loweredIconPath.endsWith(QLatin1String(".mng"))
+        || loweredIconPath.endsWith(QLatin1String(".gif"))
+        || loweredIconPath.endsWith(QLatin1String(".xpm"))
+        || loweredIconPath.endsWith(QLatin1String(".jpg"))
+        || loweredIconPath.endsWith(QLatin1String(".nvg"))) {
         return iconPath.right(3).toUpper();
     }
 
-    if (loweredIconPath.endsWith(".xml")
-        || loweredIconPath.endsWith(".axml")
-        || loweredIconPath.endsWith(".fxml"))
+    if (loweredIconPath.endsWith(QLatin1String(".xml"))
+        || loweredIconPath.endsWith(QLatin1String(".axml"))
+        || loweredIconPath.endsWith(QLatin1String(".fxml")))
     {
         return "BLOB";
     }
@@ -93,6 +93,7 @@ QSize nvgContentDimensions(const QByteArray &buffer)
      
     const quint8* lBuf = (quint8*) buffer.data();
     if((buffer.length() > NVG_VIEWBOX_WIDTH_OFS) && (buffer.length() > NVG_VIEWBOX_HEIGHT_OFS)) {	
+        // Do not change to qreal, no matter what krazy says.
 	    float lViewboxWidth = * (float*)(lBuf + NVG_VIEWBOX_WIDTH_OFS);
 	    float lViewboxHeight = * (float*)(lBuf + NVG_VIEWBOX_HEIGHT_OFS);
 

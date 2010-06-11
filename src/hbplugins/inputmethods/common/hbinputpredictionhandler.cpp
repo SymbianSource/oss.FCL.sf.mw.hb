@@ -34,6 +34,7 @@
 #include <hbcolorscheme.h>
 #include <hbinpututils.h>
 #include <hbinputbutton.h>
+#include "hbinputspellquerydialog.h"
 #include "../touchinput/virtualqwerty.h"
 
 #include "hbinputpredictionhandler_p.h"
@@ -49,7 +50,8 @@ HbInputPredictionHandlerPrivate::HbInputPredictionHandlerPrivate()
     mTailShowing(false),
     mAutoAddedSpace(true),
     mCanContinuePrediction(true),
-    mShowTooltip(true)
+    mShowTooltip(true),
+    mSpellQueryDialog(0)
 {
 }
 
@@ -168,7 +170,8 @@ This function shows the exact popup if needed.
 void HbInputPredictionHandlerPrivate::showExactWordPopupIfNeeded()
 {
     Q_Q(HbInputPredictionHandler);
-    if (mShowTooltip && mBestGuessLocation > 0 && mCandidates->at(0).mid(0, mEngine->inputLength()) \
+    if (mShowTooltip && mBestGuessLocation > 0 &&  mCandidates->count() > 0
+    	&& mCandidates->at(0).mid(0, mEngine->inputLength()) \
         != mCandidates->at(mBestGuessLocation).mid(0, mEngine->inputLength())) {                
         q->processExactWord(mCandidates->at(0));
     } else {
@@ -222,7 +225,14 @@ void HbInputPredictionHandlerPrivate::updateEditor()
                 QBrush brush(col);
                 QTextCharFormat gray;
                 gray.setForeground(brush);
-                list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, mEngine->inputLength(), taillength, gray));
+                if((focusedObject->object())->inherits("QGraphicsWebView") || (focusedObject->object())->inherits("QWebView")) {
+                    //QGraphicsWebView does not handle partial input length formatting well. Causes crash, a temporary fix provided,
+                    //This makes the whole text field grey insted of just the auto-completion part. Anyways, it does not cause crash.
+                    //This should be treated as a work around till QGraphicsWebView is fixed.
+                    list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, 0, QInputMethodEvent::TextFormat, gray));
+                } else {
+                    list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, mEngine->inputLength(), taillength, gray));
+                }
 				list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mBestGuessLocation), list);
                 focusedObject->sendEvent(event);
@@ -252,7 +262,8 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
     HbInputFocusObject* focusObject = 0;
     focusObject = mInputMethod->focusObject();
     //If the focused object is NULL or the key event is improper, can not continue
-    if(!focusObject || (event->key()<0)) {
+    if(!focusObject || event->key() < 0 ||
+        event->key() == HbInputButton::ButtonKeyCodeCustom) {
         return false;
     }
 
@@ -425,7 +436,7 @@ void HbInputPredictionHandlerPrivate::mouseHandler(int cursorPosition, QMouseEve
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);
             updateEditor();
-            q->processCustomWord((*mCandidates)[mBestGuessLocation]);
+            q->launchSpellQueryDialog();
             mCanContinuePrediction = true;
         } else {
 
@@ -601,6 +612,17 @@ void HbInputPredictionHandlerPrivate::handleEmptyCandidateList()
     }
 }
 
+void HbInputPredictionHandlerPrivate::setPreEditTextToEditor(QString string)
+{
+    //update the editor with pre-edit text
+    mEngine->setWord(string);
+    bool used = false;	 
+    mEngine->updateCandidates(mBestGuessLocation, used);
+    mTailShowing = true;
+    updateEditor();
+
+}
+
 HbInputPredictionHandler::HbInputPredictionHandler(HbInputPredictionHandlerPrivate &dd, HbInputAbstractMethod* inputMethod)
 :HbInputModeHandler(dd, inputMethod)
 {
@@ -631,23 +653,14 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
     Q_D(HbInputPredictionHandler);
     bool ret = true;
     switch (action) {
-        case HbInputModeActionReset: {
+        case HbInputModeActionReset:
+        case HbInputModeActionCommit:
+        case HbInputModeActionFocusLost: {
             //At the moment we are commiting the text with the autocompletion part as it needs to be committed on clicking outside the editor. 
             //TO DO : When We back to the application by pressing Application key the inline word should not commit and remain in the inline editing
             //d->mShowTail = false;
             d->commit();
             d->reset();
-        }
-        break;
-        case HbInputModeActionFocusLost: {
-            // if focus lost happens and before that if toolitip is available then typing line word should be committed in the editor 
-            // if tooltip and autocompletion part is available then typing line word should be committed in the editor along with the autocompletion part            
-            // Focus change should commit the auto-completed part as well.
-            d->commit();
-        }
-            break;
-        case HbInputModeActionCommit: {
-            d->commit();
         }
         break;
         case HbInputModeActionDeleteAndCommit: {
@@ -694,9 +707,12 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
         case HbInputModeActionHideTail:
             d->mShowTail = false;
             break;
+        case HbInputModeActionCloseSpellQuery:
+            closeSpellQueryDialog();
+            break;
         default:
             ret = HbInputModeHandler::actionHandler(action);
-        break;
+            break;
     }
     
     return ret;
@@ -813,14 +829,78 @@ void HbInputPredictionHandler::processExactWord(QString exactWord)
     Q_UNUSED(exactWord);
 }
 
-void HbInputPredictionHandler::processCustomWord(QString customWord)
-{
-    Q_UNUSED(customWord);
-}
-
 void HbInputPredictionHandler::showExactWordPopupIfNeeded()
 {
     Q_D(HbInputPredictionHandler);
     d->showExactWordPopupIfNeeded();
+}
+
+// Launch spell query dialog in responce to launchSpellQueryDialog signal
+void HbInputPredictionHandler::launchSpellQueryDialog()
+{
+    Q_D(HbInputPredictionHandler);
+    HbInputFocusObject *focusedObject = d->mInputMethod->focusObject();
+    if(!focusedObject) {
+        return;
+    }
+
+    // As of now we need to delete and create mSpellQueryDialog every time 
+    // we launch it. If we launch the same dialog, keypad does not open sometimes. 
+    // Will take sometime to find out the root cause of this, and will fix this. 
+    if(d->mSpellQueryDialog) {
+        delete d->mSpellQueryDialog;
+        d->mSpellQueryDialog =0;
+    }
+    if(!d->mSpellQueryDialog) {
+        d->mSpellQueryDialog = new HbInputSpellQuery(d->mInputMethod,this); 
+        d->mSpellQueryDialog->setParent(this);
+    }
+
+    QString string;
+    if(d->mCandidates && (*(d->mCandidates)).size() >= d->mBestGuessLocation + 1) {
+        string = (*(d->mCandidates))[d->mBestGuessLocation].left(d->mEngine->inputLength());
+    }
+    d->reset();
+    d->mSpellQueryDialog->launch(string);
+
+}
+
+// To force the spell query dialog to close.
+void HbInputPredictionHandler::closeSpellQueryDialog()
+{    
+    Q_D(HbInputPredictionHandler);
+    if (d->mSpellQueryDialog && d->mSpellQueryDialog->isVisible()) {
+        d->mSpellQueryDialog->close();
+    }
+}
+
+//
+void HbInputPredictionHandler::spellQueryDialogClosed(QObject *savedFocusObject,bool isOk,QString string)
+{
+    Q_D(HbInputPredictionHandler);
+
+    // set the focus back to the editor which caused the launch of spell dialog.
+    if(savedFocusObject) {
+        HbInputFocusObject *newFocusObject = new HbInputFocusObject(savedFocusObject);
+        newFocusObject->releaseFocus();
+        newFocusObject->setFocus();
+        HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(savedFocusObject);
+        if(abstractEdit) {
+            abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
+        }
+        d->mInputMethod->setFocusObject(newFocusObject);
+    }
+
+    if (isOk) {
+        d->commit(string,true);
+    } else {
+        //update the editor with pre-edit text
+        d->setPreEditTextToEditor(string);
+        // This update is need for below usecase
+        // Editor is empty => enter some data till their is no match => click on word
+        // to lauch spell query => now press cancel => testcase of keypad is uppercase,
+        // but it should be lower case
+        d->mInputMethod->updateState();
+    }
 }
 // EOF

@@ -109,7 +109,9 @@ public:
     static bool isThemeValid(const HbThemeInfo &themeInfo);
 
     static HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
-    
+
+    static bool isLogicalName(const QString &fileName);
+
     // Standard folder names
     static const char *iconsResourceFolder;
     static const char *effectsResourceFolder;
@@ -127,4 +129,3 @@ private:
 };
 
 #endif //HBTHEMEUTILS_P_H
-

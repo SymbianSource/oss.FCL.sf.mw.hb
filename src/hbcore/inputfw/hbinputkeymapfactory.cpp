@@ -41,6 +41,8 @@ public:
     HbKeymapFactoryPrivate();
     ~HbKeymapFactoryPrivate();
     void parseFiles(QStringList& files, QList<HbInputLanguage>& languages);
+    bool isValidKeymap(QFile& file);
+    float keymapVersion(QFile& file);
 
 public:
     QList<HbKeymap*> mKeymaps;
@@ -95,6 +97,97 @@ void HbKeymapFactoryPrivate::parseFiles(QStringList& files, QList<HbInputLanguag
     }
 }
 
+bool HbKeymapFactoryPrivate::isValidKeymap(QFile& file)  
+{ 
+    QTextStream stream(&file);
+    HbKeyboardType keyboardType = HbKeyboardNone;
+    bool retunResult = false;
+
+    while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        
+        if (keyboardType == HbKeyboardSctPortrait || keyboardType == HbKeyboardSctLandscape) {
+            continue;
+        } 
+
+        // When an empty line is encountered, an ongoing keyboard definition ends
+        if (line.isEmpty()) {
+            if (keyboardType != HbKeyboardNone) {
+                keyboardType = HbKeyboardNone;
+            }
+            continue;
+        }
+        // Line starting with "//" is a comment
+        if (line.length() >= 2 && line.at(0) == '/' && line.at(1) == '/') {
+            continue;
+        }
+        // Non-empty line without ongoing keyboard definition is the start of a definition,
+        // containing the keyboard type as hex
+        if (keyboardType == HbKeyboardNone) {
+            bool ok = false;
+            int keyType = line.toInt(&ok, 16); 
+            if (ok) {
+                keyboardType = static_cast<HbKeyboardType>(keyType);
+            }
+            retunResult = true;
+        // Non-empty line with ongoing keyboard definition contains a key definition
+        // Format: <keycode(char)><tab><keys_nomod><tab><keys_shiftmod><tab><keys_fnmod><tab><keys_fn+shiftmod>
+        // Keycode and keys_nomod should always be present, but the rest are optional
+
+        } else {
+            QStringList splitResult = line.split("\t"); 
+            if (splitResult.count() == 0) {
+                continue;
+            } 
+
+            if ((splitResult.count() < 2 || splitResult.count() > 5)) {
+                retunResult = false;
+                break;
+            } else { 
+                retunResult = true;		
+            }
+        }
+    }
+    //Make the Reading position at the start of the file
+    stream.seek(0); 
+    return retunResult;
+}
+
+float HbKeymapFactoryPrivate::keymapVersion(QFile& file)  
+{
+    QTextStream stream(&file);
+    float versionNumber = -1;
+    while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        if (line.isEmpty() || (line.length() >= 2 && line.at(0) == '/' && line.at(1) == '/')) {
+            continue;
+        }
+        QStringList splitResult = line.split("\t");
+
+        if(splitResult.at(0).toLower() == QString("version")) {
+            QStringList periodSplits = splitResult.at(1).split('.');
+            QString version = periodSplits.at(0);
+            version.append('.');
+            int count = periodSplits.count() - 1; 
+            int i = 1; 
+            while (i < count) {
+                version.append(periodSplits.at(i++)); 		
+            }
+            versionNumber = version.toFloat();
+            break;
+        } else {
+            QString filename = file.fileName();
+            if (filename.left(2) == ":/" || filename.left(2).toLower() == "z:") {
+                versionNumber = 0;
+                break;
+            }	
+        }
+    }
+
+    //Make the Reading position at the start of the file
+    stream.seek(0);
+    return versionNumber;
+}
 /// @endcond
 
 /*!
@@ -170,7 +263,9 @@ const HbKeymap* HbKeymapFactory::keymap(const HbInputLanguage language)
         }
     }
 
-    QString filename;
+    QString filename, latestVersionFilename;
+    QFile file;
+    float maxVersionNumber = -1.0;
 
     foreach (QString path, HbInputSettingProxy::keymapPluginPaths()) {
         if (language.variant() == QLocale::AnyCountry) {
@@ -179,23 +274,36 @@ const HbKeymap* HbKeymapFactory::keymap(const HbInputLanguage language)
             filename = path + '/' + QString::number(language.language()) + "_"
                 + QString::number(language.variant()) + ".txt";
         }
+        
         if (QFile::exists(filename)) {
-            break;
-        }
+            file.setFileName(filename);
+            if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                float fileVersion = mPrivate->keymapVersion(file);
+                if ((fileVersion > maxVersionNumber) && mPrivate->isValidKeymap(file)) {
+                    //Found the valid keymap with latest version
+                    latestVersionFilename = filename;
+                    maxVersionNumber = fileVersion;
+                } 
+                //Close the file
+                file.close();
+            } 
+        } 
     }
-    QFile file(filename);
+    file.setFileName(latestVersionFilename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        if (language.variant() == QLocale::AnyCountry) {
-            // File not found when trying to open with AnyCountry (no location specified), check whether
-            // the language is available as a country-specific version
-            foreach(HbInputLanguage availableLanguage, availableLanguages()) {
-                if (availableLanguage.language() == language.language()) {
-                    return keymap(availableLanguage);
+                if (language.variant() == QLocale::AnyCountry) {
+                    // File not found when trying to open with AnyCountry (no location specified), check whether
+                    // the language is available as a country-specific version
+                
+                    foreach(HbInputLanguage availableLanguage, availableLanguages()) {
+                        if (availableLanguage.language() == language.language()) {
+                            return keymap(availableLanguage);
+                        }
+                    }
                 }
-            }
-        }
-        return 0;
-    }
+                return 0;
+            } 
+
     QTextStream stream(&file);
 
     HbKeymap* keymap = 0;
@@ -261,6 +369,7 @@ const HbKeymap* HbKeymapFactory::keymap(const HbInputLanguage language)
     if (keymap) {
         mPrivate->mKeymaps.append(keymap);
     }
+    file.close();
     return keymap;
 }
 
@@ -292,12 +401,10 @@ QList<HbInputLanguage> HbKeymapFactory::availableLanguages()
         languages = instance->mPrivate->mRomLanguages;
     } else {
         instance->mPrivate->parseFiles(romFiles, languages);
+        instance->mPrivate->mRomLanguages = languages;
     }
     instance->mPrivate->parseFiles(files, languages);
 
-    if (instance->mPrivate->mRomLanguages.isEmpty()) {
-        instance->mPrivate->mRomLanguages = languages;
-    }
     return languages;
 }
 

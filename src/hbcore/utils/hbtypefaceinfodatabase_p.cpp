@@ -52,9 +52,9 @@
 #define UNDEFINED_STRING "undefined"
 
 #define TYPEFACE_METRICS_FILE_STEM "typeface_metrics_"
-#define LARGEST_SIZE 100
+static const int LARGEST_SIZE = 100;
 // Following must be greater than 0
-#define SMALLEST_SIZE 1
+static const int SMALLEST_SIZE = 1;
 
 
 

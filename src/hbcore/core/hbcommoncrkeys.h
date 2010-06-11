@@ -41,7 +41,7 @@ const TUid KHbSensorCenrepUid  = {0x2002C384};
  * Define the status of the sensors
  * - Off = 0
  * - On = 1
- * 
+ *
  */
 const TUint32 KHbSensorCenrepKey  = 0x1;
 

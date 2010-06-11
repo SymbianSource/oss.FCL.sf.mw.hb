@@ -23,6 +23,9 @@
 **
 ****************************************************************************/
 
+#ifndef HBLONGPRESSVISUALIZER_P_H
+#define HBLONGPRESSVISUALIZER_P_H
+
 #include <hbglobal.h>
 #include <QPointF>
 #include <QTimer>
@@ -51,3 +54,5 @@ private:
     QTimer mTimer;
     QPointF mPos;
 };
+
+#endif

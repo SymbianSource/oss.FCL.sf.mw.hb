@@ -281,7 +281,9 @@ HbPopupPrivate::HbPopupPrivate( ) :
     preferredPosSet(false),
     mStartEffect(false),
     mScreenMargin(0.0),
+    mAutoLayouting(true),
     mVgMaskEffect(0),
+    mOrientationEffectHide(false),
     timeoutTimerInstance(0)
 {
 }
@@ -358,16 +360,33 @@ void HbPopupPrivate::_q_delayedHide(HbEffect::EffectStatus status)
     hidingInProgress = false;
 }
 
-void HbPopupPrivate::_q_orientationChange(Qt::Orientation orient, bool animate)
+void HbPopupPrivate::_q_orientationAboutToChange(Qt::Orientation orient, bool animate)
 {
-    Q_UNUSED(orient);
-    if (animate) {
+    Q_UNUSED(orient);    
     Q_Q(HbPopup);
-    HbEffect::start(q, "HB_POPUP", "orientationswitch");
+    if (animate && q->isVisible()) {
+        HbEffect::start(q, "HB_POPUP", "orient_disappear");
+        mOrientationEffectHide = true;
     }
-
 }
+
 #endif // HB_EFFECTS
+
+void HbPopupPrivate::_q_orientationChanged()
+{
+    Q_Q(HbPopup);
+    if (q->isVisible()) {
+        QEvent userEvent(QEvent::ContextMenu);
+        QCoreApplication::sendEvent(q, &userEvent);
+    }
+#ifdef HB_EFFECTS
+    if (mOrientationEffectHide) {
+        HbEffect::cancel(q);
+        HbEffect::start(q, "HB_POPUP", "orient_appear");
+        mOrientationEffectHide = false;
+    }
+#endif
+}
 
 void HbPopupPrivate::_q_timeoutFinished()
 {
@@ -514,8 +533,13 @@ void HbPopupPrivate::addPopupEffects()
     }
     if (hasEffects ) {
         hasEffects = HbEffectInternal::add("HB_POPUP",
-                                           "dialog_rotate",
-                                           "orientationswitch");
+                                           "popup_orient_disappear",
+                                           "orient_disappear");
+    }
+    if (hasEffects ) {
+        hasEffects = HbEffectInternal::add("HB_POPUP",
+                                           "popup_orient_appear",
+                                           "orient_appear");
     }
 #endif
 }
@@ -792,7 +816,10 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
 {
     Q_D(HbPopup);
 
-    /*if (change == QGraphicsItem::ItemVisibleHasChanged) {
+    if (change == QGraphicsItem::ItemPositionChange) {
+        d->mAutoLayouting = false;
+    }
+    if (change == QGraphicsItem::ItemVisibleHasChanged) {
         if (value.toBool()) {
             if(d->hasEffects && boundingRect().isValid()) {
 
@@ -801,6 +828,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                -boundingRect().height(),
                                boundingRect().width(),
                                0);
+                HbEffect::cancel(this);
                 HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);
 #endif//HB_EFFECTS
                 d->mStartEffect = false;
@@ -808,7 +836,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                 d->mStartEffect = true;
             }
         }
-    }*/
+    }
 
     if (change == QGraphicsItem::ItemVisibleChange) {
         if (value.toBool()) {
@@ -837,6 +865,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                    -boundingRect().height(),
                                    boundingRect().width(),
                                    0);
+                    HbEffect::cancel(this);
                     if (!HbEffect::start(this, d->effectType, "disappear",
                                          this, "_q_delayedHide",
                                          QVariant(), extRect)) {
@@ -856,9 +885,12 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
     } else if (change == QGraphicsItem::ItemSceneHasChanged) {
         HbMainWindow* w(mainWindow());
         if ( w ){
+            disconnect(this, SLOT(_q_orientationAboutToChange(Qt::Orientation, bool)));
+            connect( w, SIGNAL(aboutToChangeOrientation(Qt::Orientation, bool)),
+                     this, SLOT(_q_orientationAboutToChange(Qt::Orientation, bool)) );
             disconnect(this, SLOT(handlePopupPos()));
             connect( w, SIGNAL(orientationChanged(Qt::Orientation)),
-                     this, SLOT(handlePopupPos()) );
+                     this, SLOT(_q_orientationChanged()) );
         }
     }
     return HbWidget::itemChange(change, value);
@@ -869,8 +901,9 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
 */
 void HbPopup::handlePopupPos()
 {
+    //Not used inside hbpopup, deprecate this(?)
     QEvent userEvent(QEvent::ContextMenu);
-    QCoreApplication::sendEvent(this, &userEvent);
+    QCoreApplication::sendEvent(this, &userEvent);    
 }
 
 /*!
@@ -1041,7 +1074,7 @@ void HbPopup::closeEvent ( QCloseEvent * event )
  */
 bool HbPopup::event(QEvent *event)
 {
-/*    Q_D(HbPopup);
+    Q_D(HbPopup);
     if (event->type() == QEvent::LayoutRequest) {
         //Workaround when showing first time                           
 #ifdef HB_EFFECTS
@@ -1052,17 +1085,12 @@ bool HbPopup::event(QEvent *event)
                            -boundingRect().height(),
                            boundingRect().width(),
                            0);
+            HbEffect::cancel(this);
             HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);            
-            qDebug() << "effect start";
         }
 #endif//HB_EFFECTS
         //workaround ends
-    }
-    qDebug() << "event: " << event;*/
-    /*Q_D(HbPopup);
-    if (event->type() == QEvent::LayoutDirectionChange) {
-        d->calculateShape();
-    }*/
+    }    
     return HbWidget::event(event);
 }
 
@@ -1070,15 +1098,18 @@ bool HbPopup::event(QEvent *event)
   Sets preferred position\a position for popup with \a placement
   as origin.
 
+  By default popup is placed in the middle of the screen. If other positions are needed please
+  ensure that the preferred position is working properly with different screen sizes.
+
   \param position is the position at which the popup is shown.
   \param placement is the corner or edge which \a position refers to
 
   Example usage:
   \code
-  HbDialog popup;
+  HbPopup *popup = new HbPopup();
   ...
-  popup.setPreferredPosition( QPointF(x,y), HbPopupBase::BottomEdgeCenter );
-  popup.show();
+  popup->setPreferredPosition( QPointF(x,y), HbPopupBase::BottomEdgeCenter );
+  popup->show();
   \endcode
 
  */
@@ -1099,7 +1130,8 @@ void HbPopup::setPreferredPos( const QPointF& preferredPos,
     d->preferredPosSet = true;
     //If position updated, informing layoutproxy with layoutrequest
     if (layoutFlag) {
-        QApplication::sendEvent(this, new QEvent(QEvent::LayoutRequest));
+        QEvent layoutRequest = QEvent::LayoutRequest;
+        QApplication::sendEvent(this, &layoutRequest);
     }
 }
 

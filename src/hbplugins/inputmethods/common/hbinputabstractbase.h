@@ -49,13 +49,18 @@ public:
     virtual void launchAutoCompletionPopup(const QStringList& candidates);
     virtual void closeAutoCompletionPopup();
     virtual void switchMode(int keyCode);
-	virtual void showThaiSpecialCharacters(uint buttonId);
     virtual void starKeySelected();
     virtual void getCandidatePositionAndSize(HbCandidateList *candidatePopup,
                     HbInputVkbWidget *currentKeypad, QPointF & pos,QSizeF & size);
 	virtual bool isSctModeActive() const;
+	virtual QChar previousChar();
     virtual HbKeyboardType currentKeyboardType() const;
+public: // From HbInputMethod
+    void focusReceived();    
+public slots:
+    void switchKeypad(bool isActive);    
 private:
+    HbAction *mVanillQwertySwitch;
     Q_DISABLE_COPY(HbInputAbstractMethod)
 };
 

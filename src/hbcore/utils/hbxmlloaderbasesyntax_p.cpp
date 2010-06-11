@@ -386,15 +386,15 @@ bool HbXmlLoaderBaseSyntax::readAlienSection()
                 return false;
             }
 
-            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: LEAVING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: LEAVING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
             mCurrentSection << name;
-            HB_DOCUMENTLOADER_PRINT( QString("READ ALIEN SECTION: ENTERING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString("READ ALIEN SECTION: ENTERING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
 
         } else if( mCurrentTokenType == QXmlStreamReader::EndElement ) {
 
-            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: LEAVING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: LEAVING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
             mCurrentSection.removeLast();
-            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: ENTERING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "READ ALIEN SECTION: ENTERING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
 
         } else {
 
@@ -527,9 +527,9 @@ bool HbXmlLoaderBaseSyntax::readGeneralStartItem()
                 break;
             }
 
-            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL START ITEM: LEAVING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL START ITEM: LEAVING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
             mCurrentSection << name;
-            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL START ITEM: ENTERING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL START ITEM: ENTERING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
 
             result = true;
             break;
@@ -566,9 +566,9 @@ bool HbXmlLoaderBaseSyntax::readGeneralEndItem()
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL END ITEM: SECTION" );
 
-            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL END ITEM: LEAVING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL END ITEM: LEAVING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
             mCurrentSection.removeLast();
-            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL END ITEM: ENTERING SECTION " ) + "'" + mCurrentSection.join(" ") + "'" );
+            HB_DOCUMENTLOADER_PRINT( QString( "GENERAL END ITEM: ENTERING SECTION " ) + ''' + mCurrentSection.join(' ') + ''' );
 
             result = true;
             break;

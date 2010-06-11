@@ -52,7 +52,7 @@ class HbTumbleViewItemContainer:public HbListItemContainer
 {
     Q_DECLARE_PRIVATE(HbTumbleViewItemContainer)
 public:
-    HbTumbleViewItemContainer(QGraphicsItem* parent = 0);
+    HbTumbleViewItemContainer(QGraphicsItem* parent = 0);    
     QPointF recycleItems(const QPointF &delta);
 
     void setLoopingEnabled(bool looping) ;
@@ -69,6 +69,7 @@ public:
     QPointF recycleItems(const QPointF &delta);
     HbAbstractViewItem *shiftDownItem(QPointF& delta);
     HbAbstractViewItem *shiftUpItem(QPointF& delta);
+    HbAbstractViewItem* item(const QModelIndex &index) const;
 
     bool mIsLooped;
 };
@@ -129,11 +130,6 @@ HbTumbleViewItemContainer::HbTumbleViewItemContainer(QGraphicsItem* parent )
 QPointF HbTumbleViewItemContainer::recycleItems(const QPointF &delta)
 {
     Q_D(HbTumbleViewItemContainer);
-
-    if (d->mPrototypes.count() != 1) {
-        return delta;
-    }
-
     QRectF viewRect(d->itemBoundingRect(d->mItemView));
     viewRect.moveTopLeft(viewRect.topLeft() + delta);
 
@@ -396,6 +392,17 @@ HbAbstractViewItem *HbTumbleViewItemContainerPrivate::shiftUpItem(QPointF& delta
     return item;
 }
 
+HbAbstractViewItem *HbTumbleViewItemContainerPrivate::item(const QModelIndex &index) const
+{
+    int itemCount = mItems.count();
+    for(int i=0;i<itemCount;++i) {
+        if(mItems.at(i)->modelIndex() == index) {
+            return mItems.at(i);
+        }
+    }
+    return 0;
+}
+
 HbTumbleViewPrivate::HbTumbleViewPrivate()
     :HbListViewPrivate()
     ,mHeight(10.0)
@@ -446,6 +453,10 @@ void HbTumbleViewPrivate::init(QAbstractItemModel *model)
     q->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     q->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     q->setFrictionEnabled(true);
+
+    //dont want this to occupy entire screen. preferred is few items.
+    q->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+
     mDelayedSelectTimer.setSingleShot(true);
     bool b = q->connect(q,SIGNAL(scrollingStarted()),q,SLOT(_q_scrollingStarted()));
     Q_ASSERT(b);
@@ -524,12 +535,51 @@ void HbTumbleViewPrivate::selectCurrentIndex(const QModelIndex& index)
     }
 }
 
-void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint)
-{
-#ifdef HBTUMBLE_DEBUG  
-    qDebug() << "HbTumbleView::scrollTo(" << index.row() << ", )";
-#endif
-    HbListView::scrollTo(index, PositionAtCenter);
+void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint hint)
+{    
+    Q_D(HbTumbleView);
+
+    if (!d->mModelIterator->model()
+        ||  index.model() != d->mModelIterator->model()) {
+        return;
+    }
+
+    //If item is in the buffer, just reveal it.
+    //This is always the case if recycling is off
+    //and sometimes the case when recycling is on
+    if (itemRecycling()) {
+        if (    !d->mContainer->itemByIndex(index)
+            ||  hint != EnsureVisible) {
+            //Now the item is not in the buffer.
+            //We must first set the item to be in the buffer
+            //If the item is above let's put it first and if it is below put it last
+
+            int newIndex = -1;
+
+            switch (hint) {
+            case PositionAtCenter: {
+                    int containerCount = d->mContainer->items().count();
+                    newIndex = index.row() - containerCount / 2 ;
+                    if(newIndex < 0){
+                        if(isLoopingEnabled()){
+                            newIndex = d->mModelIterator->indexCount()+newIndex;
+                        }
+                        else{
+                            newIndex = 0;
+                        }
+                    }
+                    break;
+                }
+            case EnsureVisible:
+            case PositionAtTop:
+            case PositionAtBottom:
+            default: {
+                    qWarning()<<"Scroll Hint is not supported ";                }
+            }
+            d->mContainer->setModelIndexes(d->mModelIterator->index(newIndex));
+        }
+    }
+    HbAbstractItemView::scrollTo(index, hint);
 }
 
 void HbTumbleViewPrivate::createPrimitives()

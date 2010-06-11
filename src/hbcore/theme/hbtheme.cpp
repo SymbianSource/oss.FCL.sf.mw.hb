@@ -85,7 +85,7 @@ HbTheme *HbTheme::instance()
 */
 QString HbTheme::name() const
 {
-    return d_ptr->currentTheme;
+    return d_ptr->iconTheme.name();
 }
 
 /*!
@@ -145,10 +145,16 @@ HbThemePrivate::~HbThemePrivate()
 */
 void HbThemePrivate::fetchCurrentThemeFromSettings()
 {
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+    if (info.themeIndexOffset > 0) {
+        currentTheme = info.name;
+        return;
+    }
+    
+    // Fallback to settings
     currentTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
     if (currentTheme.trimmed().isEmpty()){
         currentTheme = HbThemeUtils::defaultTheme().name;
-        HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, currentTheme);
     }
 }
 
@@ -160,10 +166,15 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     Q_Q(HbTheme);
     QString newTheme;
     if (str.isEmpty()) {
-        newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+        HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+        if (info.themeIndexOffset > 0) {
+            newTheme = info.name;
+        } else {
+            newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+        }
     } else {
         newTheme = str;
-        // Update the new currentTheme setting in HbThemeUtils.
+        // Update the new currentTheme to local settings in HbThemeUtils.
         HbThemeUtils::updateThemeSetting(HbThemeUtils::CurrentThemeSetting, newTheme);
     }
 
@@ -173,16 +184,14 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     
     // The server sends the signal only if the theme is changed from the previous theme
     // Hence here, we need not check whether the theme differs from currentTheme or not.
-    if(currentTheme != newTheme) {
-        currentTheme = newTheme;
-        // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
-        // In application side this is needed only when icon size can be different in different theme.
-        iconTheme.emitUpdateIcons();
+    currentTheme = newTheme;
+    // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
+    // In application side this is needed only when icon size can be different in different theme.
+    iconTheme.emitUpdateIcons();
 
-        emit q->changed();
-        // This signal should be used to update the screen after the theme change - it's handled by HbInstance.
-        emit q->changeFinished();
-    }
+    emit q->changed();
+    // This signal should be used to update the screen after the theme change - it's handled by HbInstance.
+    emit q->changeFinished();
 }
 
 /*!

@@ -46,7 +46,7 @@
   Constructor.
 */
 HbEffectXmlParser::HbEffectXmlParser()
-    :mFxmlData(0)
+    : mFxmlData(0)
 {
 }
 
@@ -74,7 +74,7 @@ bool HbEffectXmlParser::read(QIODevice *device, HbEffectFxmlData *dst)
                 qWarning("HbEffectXmlParser: Document element is invalid (not <layers>");
                 raiseError("HbEffectXmlParser::read The document is not an valid effect definitions document.");
             }
-        }        
+        }
     }
 
     if (error()) {
@@ -141,8 +141,9 @@ void HbEffectXmlParser::readVisuals()
         readNext();
 
         if (isEndElement()) {
-            if (name() == FXML_LAYERS)
+            if (name() == FXML_LAYERS) {
                 break;
+            }
         }
 
         if (isStartElement()) {
@@ -152,14 +153,11 @@ void HbEffectXmlParser::readVisuals()
 
             else if (name() == FXML_LAYERGROUP) {
                 // Not needed
-            }
-            else if (name() == FXML_BLENDING) {
+            } else if (name() == FXML_BLENDING) {
                 readBlendingElement();
-            }
-            else if (name() == FXML_COMMENT) {
+            } else if (name() == FXML_COMMENT) {
                 // Comments are skipped
-            }
-            else if (name() == FXML_FILTER) {
+            } else if (name() == FXML_FILTER) {
 #ifdef HB_FILTER_EFFECTS
                 readFilterData();
 #endif
@@ -186,13 +184,11 @@ void HbEffectXmlParser::readVisualData()
         if (isStartElement()) {
             if (name() == FXML_PARAM) {
                 mFxmlData->appendParamData(readParamData());
-            }
-            else if (name() == FXML_FILTER) {
+            } else if (name() == FXML_FILTER) {
 #ifdef HB_FILTER_EFFECTS
                 readFilterData();
 #endif
-            }
-            else {
+            } else {
                 readUnknownElement();
             }
         }
@@ -211,7 +207,7 @@ void HbEffectXmlParser::readFilterData()
     // Parse filter type
     QXmlStreamAttributes attrs = attributes();
 
-    foreach (const QXmlStreamAttribute &attr, attrs) {
+    foreach(const QXmlStreamAttribute & attr, attrs) {
         // "type" = ...
         if (attr.name().toString() == FXML_PARAM_TYPE) {
             filterData.setType(attr.value().toString());
@@ -247,18 +243,18 @@ void HbEffectXmlParser::readFilterData()
 
 // This parses information inside one <param> field.
 // E.g. "scale_x", "scale_y", "scale_origin_x"
-// 
+//
 HbEffectFxmlParamData HbEffectXmlParser::readParamData()
 {
     Q_ASSERT(isStartElement() && name() == FXML_PARAM);
-    
+
     HbEffectFxmlParamData param(mFxmlData->memoryType());
     HbKeyFrame kf(mFxmlData->memoryType());
 
     QXmlStreamAttributes attrs = attributes();
 
     // Populate the PARAM attributes
-    foreach (const QXmlStreamAttribute &attr, attrs) {
+    foreach(const QXmlStreamAttribute & attr, attrs) {
         // "name" = ...
         if (attr.name().toString() == FXML_PARAM_NAME) {
             param.setName(attr.value().toString());
@@ -293,7 +289,7 @@ HbEffectFxmlParamData HbEffectXmlParser::readParamData()
             // <marker> tag
             else if (name() == FXML_MARKER) {
                 QXmlStreamAttributes attrs = attributes();
-                
+
                 enum {
                     Undefined = 0,
                     Start,
@@ -301,7 +297,7 @@ HbEffectFxmlParamData HbEffectXmlParser::readParamData()
                 } loopType = Undefined;
 
                 // Fetch "type" attribute from <marker> tag
-                foreach (const QXmlStreamAttribute &attr, attrs) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
                     if (attr.name().toString() == FXML_PARAM_TYPE) {
                         QString s = attr.value().toString();
                         if (s == FXML_LOOP_START) {
@@ -315,7 +311,7 @@ HbEffectFxmlParamData HbEffectXmlParser::readParamData()
 
                 if (loopType != Undefined) {
                     // Fetch "at" attribute from <marker> tag
-                    foreach (const QXmlStreamAttribute &attr, attrs) {
+                    foreach(const QXmlStreamAttribute & attr, attrs) {
                         if (attr.name().toString() == FXML_PARAM_AT) {
                             QString s = attr.value().toString();
                             bool ok = false;
@@ -343,11 +339,11 @@ HbEffectFxmlParamData HbEffectXmlParser::readParamData()
             // <keyframe> tag
             else if (name() == FXML_KEYFRAME) {
                 QXmlStreamAttributes attrs = attributes();
-                
+
                 bool ok = false;
 
                 // Fetch "at" attribute from <keyframe> tag
-                foreach (const QXmlStreamAttribute &attr, attrs) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
                     if (attr.name().toString() == FXML_PARAM_AT) {
                         QString s = attr.value().toString();
                         kf.pos = s.toFloat(&ok);
@@ -373,27 +369,26 @@ HbEffectFxmlParamData HbEffectXmlParser::readParamData()
                 }
             }
             //<start> element
-            else if(name() == FXML_KEYWORD_START) {
+            else if (name() == FXML_KEYWORD_START) {
 
                 QXmlStreamAttributes attrs = attributes();
-                foreach (const QXmlStreamAttribute &attr, attrs) {
-                    if( attr.name() == FXML_PARAM_REF ) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
+                    if (attr.name() == FXML_PARAM_REF) {
                         param.setStartRef(attr.value().toString());
                     }
                 }
                 param.setAttribute(FXML_KEYWORD_START, readElementText());
             }
             //<end> element
-            else if(name() == FXML_KEYWORD_END) {                
+            else if (name() == FXML_KEYWORD_END) {
                 QXmlStreamAttributes attrs = attributes();
-                foreach (const QXmlStreamAttribute &attr, attrs) {
-                    if( attr.name() == FXML_PARAM_REF ) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
+                    if (attr.name() == FXML_PARAM_REF) {
                         param.setEndRef(attr.value().toString());
                     }
                 }
                 param.setAttribute(FXML_KEYWORD_END, readElementText());
-            }
-            else {
+            } else {
                 readUnknownElement();
             }
         }

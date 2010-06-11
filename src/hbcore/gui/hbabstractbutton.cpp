@@ -299,6 +299,7 @@ void HbAbstractButtonPrivate::init()
     q->grabGesture(Qt::TapGesture);
 #endif
 
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
     // FIXME: size policy is commented out b/c of a bug in Qt #236689, also in our bugtracker.
     //q->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum, controlType));
 
@@ -974,7 +975,7 @@ void HbAbstractButton::gestureEvent(QGestureEvent *event)
             if (!d->down) {
                 return;
             }
-            if ( hit  && !d->longPress) {
+            if ( hit ) {
                 HbWidgetFeedback::triggered(this, Hb::InstantClicked);
             }
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);

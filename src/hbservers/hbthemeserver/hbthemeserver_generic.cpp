@@ -30,7 +30,6 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QSharedMemory>
-#include <QSettings>
 #include <QDebug>
 #include <QList>
 #include <QIcon>
@@ -56,6 +55,7 @@
 #include "hbthemesystemeffect_p.h"
 #include "hbsharedmemorymanager_p.h"
 #include "hbtypefaceinfodatabase_p.h"
+#include "hbthemeutils_p.h"
 
 static const int CLOSE_TIMEOUT = 3000;
 
@@ -85,7 +85,6 @@ HbThemeServerPrivate::HbThemeServerPrivate(QWidget *parent)
 HbThemeServerPrivate::HbThemeServerPrivate(): server(new QLocalServer(this))
 #endif
 {
-    iThemeSelectionClient = 0;
     sessionList.clear();
 #ifdef QT_DEBUG
     setWindowTitle("Theme Server");
@@ -99,7 +98,46 @@ HbThemeServerPrivate::HbThemeServerPrivate(): server(new QLocalServer(this))
     setMaxGpuCacheSize(GPU_CACHE_SIZE);
     setMaxCpuCacheSize(CPU_CACHE_SIZE);
 
+    // Store the active theme name in a member string
+    iCurrentThemeName = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);    
+
+    if (iCurrentThemeName.isEmpty()) {
+        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
+    }
+    
+    // Resolve the path of the current theme
+    QDir path(iCurrentThemeName);
+    if (!path.isAbsolute()) {
+        // Resolve the path of the current theme
+        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
+    } else {
+        iCurrentThemeName = path.dirName();
+        iCurrentThemePath = path.absolutePath();
+    }          
+    // Process base theme index, it is used as parent index also when the current theme is something else
+    QString basePath;
+    resolveThemePath(HbThemeUtils::getThemeSetting(HbThemeUtils::BaseThemeSetting), basePath);
+    HbThemeServerUtils::createThemeIndex(basePath, BaseTheme);
+    // Process operator theme indexes
+    QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
+    if (!operatorName.isEmpty()) {
+        QString operatorPath( HbThemeUtils::baseTheme().rootDir + '/' +
+            QLatin1String(HbThemeUtils::operatorHierarchy) + '/' +
+            QLatin1String(HbThemeUtils::iconsResourceFolder) + '/' +
+            operatorName );
+        
+        HbThemeServerUtils::createThemeIndex(operatorPath, OperatorC);
+        // Operator Z not used in generic themeserver.
+    }
+    // Process current theme index
+    HbThemeServerUtils::createThemeIndex(iCurrentThemePath, ActiveTheme);
+
+    // Register theme system effects in construction
+    // TODO: fix parameter
+    HbThemeSystemEffect::handleThemeChange(iCurrentThemeName);
+
     connect(server, SIGNAL(newConnection()), this, SLOT(newClientConnected()));
+    HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, iCurrentThemePath);    
 }
 
 /*!
@@ -273,8 +311,6 @@ void HbThemeServerPrivate::handleThemeSelection(const QString &newTheme)
 #ifdef THEME_SERVER_TRACES
     qDebug() << Q_FUNC_INFO << "  theme=" << newTheme;
 #endif
-    // Modify the QSettings to store the applied theme
-    QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
 
     // Clear cached icons and session data
     clearIconCache();
@@ -283,21 +319,62 @@ void HbThemeServerPrivate::handleThemeSelection(const QString &newTheme)
         session->clearSessionIconData();
     }
 
-    QString cleanThemeName = newTheme.trimmed();
-    settings.remove("currenttheme"); //temporary
-    settings.setValue(CURRENT_THEME_KEY, cleanThemeName);
-    settings.sync();
+    iCurrentThemeName = newTheme.trimmed();
+
+    // Resolve the path of the current theme
+    QDir path(iCurrentThemeName);
+    if (!path.isAbsolute()) {
+        // Resolve the path of the current theme
+        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
+    } else {
+        iCurrentThemeName = path.dirName();
+        iCurrentThemePath = path.absolutePath();
+    }          
+
+    // Set the new theme in theme settings
+    HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, iCurrentThemeName);    
+
+    // Process operator Drive C theme index
+    QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
+    if (!operatorName.isEmpty()) {
+        QString operatorPath( HbThemeUtils::baseTheme().rootDir + '/' +
+            QLatin1String(HbThemeUtils::operatorHierarchy) + '/' +
+            QLatin1String(HbThemeUtils::iconsResourceFolder) + '/' +
+            operatorName );
+        
+        HbThemeServerUtils::createThemeIndex(operatorPath, OperatorC);
+    }
+    // Process current theme index
+    HbThemeServerUtils::createThemeIndex(iCurrentThemePath, ActiveTheme);
 
     // Register new system effects
-    HbThemeSystemEffect::handleThemeChange(cleanThemeName);
+    HbThemeSystemEffect::handleThemeChange(iCurrentThemeName);
 
     HbThemeServerRequest requestType;
     requestType = EThemeSelection;
     QByteArray block;
     QDataStream out(&block, QIODevice::WriteOnly);
     out << (int)requestType;
-    out << cleanThemeName;
+    out << iCurrentThemeName;
     writeToClients(block);
+}
+
+bool HbThemeServerPrivate::resolveThemePath(const QString &themeName, QString &themePath)
+{
+    static QString mainThemesDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
+
+    if (themeName == "hbdefault") {
+        themePath = ":/themes/icons/hbdefault";
+        return true;
+    } else {
+        QString themeLookupPath = mainThemesDir + "/themes/icons/" + themeName;
+        if (QFile::exists(themeLookupPath + "/index.theme")) {
+            themePath = themeLookupPath;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void HbThemeServerPrivate::handleContentUpdate(const QStringList &fileNames)
@@ -374,20 +451,8 @@ void HbThemeServerPrivate::writeToClients(QByteArray &block)
 #endif
     foreach(session, sessionList) {
         QLocalSocket * curSocket = session->clientConnection();
-        if (iThemeSelectionClient != curSocket) {
-            curSocket->write(block);
-        }
+        curSocket->write(block);
     }
-}
-
-/*!
-  \fn HbThemeServerPrivate::setThemeSelectionClient()
-  Set the theme selection client
-  \a socket
-*/
-void HbThemeServerPrivate::setThemeSelectionClient(QLocalSocket *socket)
-{
-    iThemeSelectionClient = socket;
 }
 
 /*!
@@ -701,9 +766,7 @@ void HbThemeServerSession::readDataFromClient()
         }
         case EThemeSelection: {
             QString themename;
-            QLocalSocket *themeSelectionClient = static_cast<QLocalSocket *>(sender());
             inputDataStream >> themename;
-            iServer->setThemeSelectionClient(themeSelectionClient);
             iServer->handleThemeSelection(themename);
             break;
         }
@@ -763,8 +826,6 @@ void HbThemeServerSession::readDataFromClient()
             static_cast<QLocalSocket *>(sender())->write(output);
             break;
         }
-        case EIconDefaultSize:
-            break; //todo
         case EMultiPieceIcon: {
             HbMultiIconParams frameItemParams;
             inputDataStream >> frameItemParams.multiPartIconList;
