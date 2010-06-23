@@ -2,6 +2,7 @@
 HbComboBox
 {
     layout:combobox_layout_noneditable;
+    size-policy-horizontal:expanding;
 }
 
 HbComboBox[editable]
@@ -23,7 +24,6 @@ HbComboBox::combobox_button
 {
     fixed-width:var(hb-param-widget-combobox-height);    
     fixed-height:var(hb-param-widget-combobox-height);
-    
 }
 
 HbComboBox::combobox_labelfield
@@ -33,12 +33,13 @@ HbComboBox::combobox_labelfield
     text-align:left center;
     font-variant:primary;      
     text-height:var(hb-param-text-height-secondary);
-    
 }
 
 HbComboBox[!editable]::combobox_labelfield
 {
     text-line-count-max:1;
+
 }
+
 
 

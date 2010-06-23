@@ -57,10 +57,8 @@
     from the themeserver.
 
     This class is not supposed to use directly. Instead, use \c HbDeviceProfile
-    and \c HbExtendedDeviceProfile.
-
+    
     \sa HbDeviceProfile
-    \sa HbExtendedDeviceProfile
     \internal
     \proto
 */

@@ -297,6 +297,7 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         mOrientationEffectFinished = false;
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
+        HbInputSettingProxy::instance()->notifyScreenOrientationChange();
     }
 
     mOrientation = orientation;
@@ -509,18 +510,20 @@ void HbMainWindowPrivate::rootItemFinalPhaseDone(const HbEffect::EffectStatus &s
 {
     Q_UNUSED(status);
 
-    mRootItemFinalPhaseDone = true;
-    if (mEffectItem) {
-        HbEffect::enable(mEffectItem);
-        // make sure effect does not leave anything in wrong state
-        mEffectItem->setOpacity(1.0f);
-        mEffectItem->resetTransform();
+    if (mOrientationChangeOngoing) {
+        mRootItemFinalPhaseDone = true;
+        if (mEffectItem) {
+            HbEffect::enable(mEffectItem);
+            // make sure effect does not leave anything in wrong state
+            mEffectItem->setOpacity(1.0f);
+            mEffectItem->resetTransform();
+        }
+
+        HbEffect::enable(&mGVWrapperItem);
+
+        postIdleEvent(HbMainWindowPrivate::IdleOrientationFinalEvent);
+        updateOrientationChangeStatus();
     }
-
-    HbEffect::enable(&mGVWrapperItem);
-
-    postIdleEvent(HbMainWindowPrivate::IdleOrientationFinalEvent);
-    updateOrientationChangeStatus();
 }
 
 void HbMainWindowPrivate::updateOrientationChangeStatus()
@@ -771,6 +774,7 @@ void HbMainWindowPrivate::updateVisibleItems()
     if (view) {
         const Hb::SceneItems visibleItems(view->visibleItems());
         view->setTitleBarVisible(visibleItems & Hb::TitleBarItem); // also handles updating of the navigation button
+		view->setStatusBarVisible(visibleItems & Hb::StatusBarItem);
 
         // ToolBar is a special case, since it depens on the current view's toolbar
         if (visibleItems & Hb::ToolBarItem) {
@@ -991,6 +995,8 @@ void HbMainWindowPrivate::_q_delayedConstruction()
                 mTitleBar, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
         connect(mStatusBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
                 mTitleBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
+        connect(mStatusBar, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+                mTitleBar, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)));
 
         initFadeItem();
 

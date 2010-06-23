@@ -31,6 +31,8 @@
 #ifndef HB_INPUT_MAINWINDOW
 #define HB_INPUT_MAINWINDOW
 
+class HbProxyWindow;
+
 class HbInputMainWindow : public HbMainWindow
 {
     Q_OBJECT
@@ -41,8 +43,8 @@ public:
 private:
     HbInputMainWindow();
     virtual ~HbInputMainWindow();
-    
-    bool event(QEvent *e);    
+
+    bool event(QEvent *e);
     bool eventFilter(QObject *obj, QEvent *event);
 
 public slots:
@@ -53,6 +55,31 @@ private:
     QPointer<QWidget> mLastFocusedWidget;
     QRegion mMask;
     bool mSpellQueryLaunched;
+    QPointer<HbProxyWindow > mProxyWindow;
+};
+
+class HbProxyWindow: public QWidget
+{
+public:
+    HbProxyWindow()
+    {
+        setGeometry(0,0,0,0);
+    }
+    void setWindow(QWidget* window)
+    {
+        this->window = window;
+        if (window) {
+            window->setParent(this);
+        }
+    }
+    ~HbProxyWindow()
+    {
+        if (window) {
+            window->setParent(0);
+        }
+    }
+private:
+    QPointer<QWidget> window;
 };
 
 #endif //HB_INPUT_MAINWINDOW

@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputsettinglist.h"
 
 #include <QGraphicsLinearLayout>
 #include <QGraphicsGridLayout>
@@ -36,7 +37,6 @@
 #include <hbinputpredictionfactory.h>
 #include <hbinputregioncollector_p.h>
 
-#include "hbinputsettinglist.h"
 #include "hbdialog_p.h"
 
 const QString settingsIcon("qtg_mono_settings");
@@ -61,7 +61,7 @@ public:
 };
 
 HbInputSettingListPrivate::HbInputSettingListPrivate()
- : mLanguageButton(0), mPredictionButton(0), mOptionList(0)
+    : mLanguageButton(0), mPredictionButton(0), mOptionList(0)
 {
 }
 
@@ -72,7 +72,7 @@ qreal HbInputSettingListPrivate::languageNameWidth()
     HbInputUtils::listSupportedInputLanguages(languages);
     QFontMetrics fontMetrics(mLanguageButton->font());
 
-    foreach (HbInputLanguage language, languages) {
+    foreach(HbInputLanguage language, languages) {
         qreal width = fontMetrics.width(language.localisedName());
         if (width > nameWidth) {
             nameWidth = width;
@@ -87,15 +87,15 @@ qreal HbInputSettingListPrivate::languageNameWidth()
 /*!
 Constructs input setting list
 */
-HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
- : HbDialog(*new HbInputSettingListPrivate(), parent)
+HbInputSettingList::HbInputSettingList(QGraphicsWidget *parent)
+    : HbDialog(*new HbInputSettingListPrivate(), parent)
 {
     Q_D(HbInputSettingList);
     HbInputRegionCollector::instance()->attach(this);
 
     QGraphicsLinearLayout *mainLayout = new QGraphicsLinearLayout(Qt::Vertical);
     QGraphicsGridLayout *gridLayout = new QGraphicsGridLayout();
-    
+
     HbLabel *languageLabel = new HbLabel(tr("Language"), this);
     languageLabel->setFontSpec(HbFontSpec(HbFontSpec::Primary));
     d->mLanguageButton = new HbPushButton(QString(), this);
@@ -130,7 +130,9 @@ HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
 
     mainLayout->addItem(gridLayout);
     mainLayout->addItem(d->mOptionList);
-    setLayout(mainLayout);
+    QGraphicsWidget *content = new QGraphicsWidget(this);
+    content->setLayout(mainLayout);
+    setContentWidget(content);
 
     d->mPredictionValues.append(tr("Off"));
     d->mPredictionValues.append(tr("On"));
@@ -140,16 +142,14 @@ HbInputSettingList::HbInputSettingList(QGraphicsWidget* parent)
     setBackgroundFaded(false);
     setDismissPolicy(TapOutside);
 
-#if QT_VERSION >= 0x040600
     // Make sure the custom button list never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-#endif
 
     connect(d->mLanguageButton, SIGNAL(clicked(bool)), this, SLOT(languageButtonClicked()));
     connect(d->mPredictionButton, SIGNAL(clicked(bool)), this, SLOT(predictionButtonClicked()));
-    connect(d->mOptionList, SIGNAL(activated(HbListWidgetItem*)), this, SLOT(listItemActivated(HbListWidgetItem*)));
-    connect(d->mOptionList, SIGNAL(longPressed(HbListWidgetItem*, const QPointF&)), this, SLOT(listItemActivated(HbListWidgetItem*)));
+    connect(d->mOptionList, SIGNAL(activated(HbListWidgetItem *)), this, SLOT(listItemActivated(HbListWidgetItem *)));
+    connect(d->mOptionList, SIGNAL(longPressed(HbListWidgetItem *, const QPointF &)), this, SLOT(listItemActivated(HbListWidgetItem *)));
 
     HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     connect(settings, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), this, SLOT(primaryLanguageChanged(const HbInputLanguage &)));
@@ -218,23 +218,23 @@ void HbInputSettingList::languageButtonClicked()
 {
     Q_D(HbInputSettingList);
 
-	HbInputSettingProxy *settings = HbInputSettingProxy::instance();
+    HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     HbPredictionFactory *predFactory = HbPredictionFactory::instance();
     if (d->mSecondaryLanguage == HbInputLanguage()) {
         emit inputSettingsButtonClicked();
     } else {
-		HbInputLanguage language = d->mPrimaryLanguage;
-		bool oldPLangSupportsPrediction = (predFactory->predictionEngineForLanguage(language) != NULL);	
+        HbInputLanguage language = d->mPrimaryLanguage;
+        bool oldPLangSupportsPrediction = (predFactory->predictionEngineForLanguage(language) != NULL);
         d->mPrimaryLanguage = d->mSecondaryLanguage;
         d->mSecondaryLanguage = language;
 
         HbInputSettingProxy::instance()->setGlobalInputLanguage(d->mPrimaryLanguage);
-		bool langSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryLanguage) != NULL);	
+        bool langSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryLanguage) != NULL);
         HbInputSettingProxy::instance()->setGlobalSecondaryInputLanguage(d->mSecondaryLanguage);
-        
-		if( oldPLangSupportsPrediction != langSupportsPrediction) {
+
+        if (oldPLangSupportsPrediction != langSupportsPrediction) {
             settings->setPredictiveInputStatusForActiveKeyboard(langSupportsPrediction);
-		} 	
+        }
     }
 
     close();

@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbindexfeedback.h"
 #include "hbindexfeedback_p.h"
+#include "hbindexfeedback.h"
 
 #include <hbscrollbar.h>
 #include <hbabstractitemview.h>
@@ -189,7 +189,7 @@ void HbIndexFeedbackPrivate::showIndexFeedback()
 */
 QString HbIndexFeedbackPrivate::displayText(const QVariant &data) const
 {
-    QString retVal = QString();
+    QString retVal;
 
     switch (mIndexFeedbackPolicy) {
         case HbIndexFeedback::IndexFeedbackSingleCharacter:

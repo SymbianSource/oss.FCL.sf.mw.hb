@@ -233,7 +233,7 @@ void HbInputModeHandler::smileySelected(QString smiley)
         return ;
     }
     QStringList patterns = focusObject->editorInterface().smileyTheme().patterns(smiley);
-    foreach( QString string, patterns) {
+    foreach( const QString string, patterns) {
         QString filtered;
         focusObject->filterStringWithEditorFilter(string, filtered);
         if (filtered == string) {

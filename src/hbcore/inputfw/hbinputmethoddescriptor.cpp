@@ -128,7 +128,7 @@ input method selection dialogs.
 void HbInputMethodDescriptor::setDefault()
 {
     mPluginNameAndPath = HbInputDefaultMethodString;
-    mKey = QString();
+    mKey.clear();
     mDisplayName = QString("Default");
 }
 

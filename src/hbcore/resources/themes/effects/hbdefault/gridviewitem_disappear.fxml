@@ -8,7 +8,7 @@
     </param>
     <param name="scale_y" type="anim">
       <duration>0.3</duration>
-      <style>outquad</style>  
+       <style>inoutquad</style>   
       <keyframe at="0.0">1.0</keyframe>
       <keyframe at="1.0">0.8</keyframe>
     </param> 

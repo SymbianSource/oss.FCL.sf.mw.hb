@@ -101,6 +101,12 @@ HbLayeredStyleLoader *HbLayeredStyleLoader::getStack(Concern con)
     if (stacks) {
         if (!stacks->contains(con)) {
             (*stacks)[con].mConcern = con;
+            if (con != Concern_All) {
+                HbLayeredStyleLoader *allStack = getStack(Concern_All);
+                if (allStack) {
+                    (*stacks)[con].mUsedLayers = allStack->mUsedLayers;
+                }
+            }
         }
         result = &((*stacks)[con]);
     }

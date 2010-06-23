@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputmodecache_p.h"
+
 #include <QInputContextPlugin>
 #include <QLocale>
 #include <QFileSystemWatcher>
@@ -29,7 +31,6 @@
 #include <QPluginLoader>
 #include <QDir>
 
-#include "hbinputmodecache_p.h"
 #include "hbinpututils.h"
 #include "hbinputmethod.h"
 #include "hbinputsettingproxy.h"
@@ -69,7 +70,7 @@ public:
     HbInputModeCachePrivate() : mWatcher(new QFileSystemWatcher()), mShuttingDown(false) {}
     ~HbInputModeCachePrivate() {}
     void refresh(const QString &directory = QString());
-    QInputContextPlugin *pluginInstance(const QString& pluginFileName) const;
+    QInputContextPlugin *pluginInstance(const QString &pluginFileName) const;
     HbInputMethod *methodInstance(const QString &pluginFileName, const QString &key) const;
     HbInputModeProperties propertiesFromString(const QString &entry) const;
     HbInputModeProperties propertiesFromState(const HbInputState &state) const;
@@ -83,13 +84,13 @@ public:
     bool mShuttingDown;
 };
 
-QInputContextPlugin* HbInputModeCachePrivate::pluginInstance(const QString& pluginFileName) const
+QInputContextPlugin *HbInputModeCachePrivate::pluginInstance(const QString &pluginFileName) const
 {
     if (QLibrary::isLibrary(pluginFileName)) {
         QPluginLoader loader(pluginFileName);
-        QObject* plugin = loader.instance();
+        QObject *plugin = loader.instance();
         if (plugin) {
-            return qobject_cast<QInputContextPlugin*>(plugin);
+            return qobject_cast<QInputContextPlugin *>(plugin);
         }
     }
 
@@ -101,12 +102,12 @@ HbInputMethod *HbInputModeCachePrivate::methodInstance(const QString &pluginFile
     QInputContextPlugin *plugin = pluginInstance(pluginFileName);
     if (plugin) {
         QInputContext *instance = plugin->create(key);
-        HbInputMethod *result = qobject_cast<HbInputMethod*>(instance);
+        HbInputMethod *result = qobject_cast<HbInputMethod *>(instance);
         if (result) {
             QStringList languages = plugin->languages(key);
             QList<HbInputModeProperties> modeList;
-            foreach (QString language, languages) {
-                  modeList.append(propertiesFromString(language));
+            foreach(const QString &language, languages) {
+                modeList.append(propertiesFromString(language));
             }
             result->d_ptr->mInputModes = modeList;
         }
@@ -130,7 +131,7 @@ void HbInputModeCachePrivate::refresh(const QString &directory)
 
     // Query plugin paths and scan the folders.
     QStringList folders = HbInputSettingProxy::instance()->inputMethodPluginPaths();
-    foreach (QString folder, folders) {
+    foreach(const QString &folder, folders) {
         QDir dir(folder);
         for (unsigned int i = 0; i < dir.count(); i++) {
             QString path = QString(dir.absolutePath());
@@ -138,7 +139,7 @@ void HbInputModeCachePrivate::refresh(const QString &directory)
                 path += QDir::separator();
             }
             path += dir[i];
-            QInputContextPlugin* inputContextPlugin = pluginInstance(path);
+            QInputContextPlugin *inputContextPlugin = pluginInstance(path);
             if (inputContextPlugin) {
                 HbInputMethodListItem listItem;
                 listItem.descriptor.setPluginNameAndPath(dir.absolutePath() + QDir::separator() + dir[i]);
@@ -146,7 +147,7 @@ void HbInputModeCachePrivate::refresh(const QString &directory)
                 // For each found plugin, check if there is already a list item for it.
                 // If not, then add one.
                 QStringList contextKeys = inputContextPlugin->keys();
-                foreach (QString key, contextKeys) {
+                foreach(const QString &key, contextKeys) {
                     listItem.descriptor.setKey(key);
                     listItem.descriptor.setDisplayName(inputContextPlugin->displayName(key));
 
@@ -184,9 +185,10 @@ void HbInputModeCachePrivate::refresh(const QString &directory)
                 // Replace it with null input context.
                 HbInputMethod *master = HbInputMethodNull::Instance();
                 master->d_ptr->mIsActive = true;
-                QInputContext* proxy = master->d_ptr->proxy();
-                if (proxy != qApp->inputContext())
+                QInputContext *proxy = master->d_ptr->proxy();
+                if (proxy != qApp->inputContext()) {
                     qApp->setInputContext(proxy);
+                }
             }
             delete mMethods[i].cached;
             mMethods.removeAt(i);
@@ -199,7 +201,7 @@ HbInputModeProperties HbInputModeCachePrivate::propertiesFromString(const QStrin
 {
     HbInputModeProperties result;
 
-    QStringList parts = entry.split(" ");
+    QStringList parts = entry.split(' ');
     if (parts.count() == 4) {
         // See HbInputModeProperties::toString() for details,
         QString languageStr = parts[0] + QString(" ") + parts[1];
@@ -241,7 +243,7 @@ void HbInputModeCachePrivate::updateMonitoredPaths()
     }
 
     QStringList paths = HbInputSettingProxy::instance()->inputMethodPluginPaths();
-    foreach (QString path, paths) {
+    foreach(const QString &path, paths) {
         QDir dir(path);
         if (!dir.exists() && path.left(1) == "f") {
             mWatcher->addPath(QString("f:") + QDir::separator());
@@ -255,7 +257,7 @@ bool HbInputModeCachePrivate::isMappedLanguage(const HbInputLanguage &language) 
 {
     if (language.defined()) {
         QList<HbInputLanguage> languages = HbKeymapFactory::instance()->availableLanguages();
-        foreach (const HbInputLanguage mappedLanguage, languages) {
+        foreach(const HbInputLanguage &mappedLanguage, languages) {
             if (mappedLanguage == language) {
                 return true;
             }
@@ -271,7 +273,7 @@ bool HbInputModeCachePrivate::isMappedLanguage(const HbInputLanguage &language) 
 \internal
 Returns the singleton instance.
 */
-HbInputModeCache* HbInputModeCache::instance()
+HbInputModeCache *HbInputModeCache::instance()
 {
     static HbInputModeCache theCache;
     return &theCache;
@@ -329,7 +331,7 @@ void HbInputModeCache::shutdown()
     Q_D(HbInputModeCache);
     d->mShuttingDown = true;
 
-    foreach (HbInputMethodListItem method, d->mMethods) {
+    foreach(HbInputMethodListItem method, d->mMethods) {
         delete method.cached;
         method.cached = 0;
     }
@@ -342,7 +344,7 @@ void HbInputModeCache::shutdown()
 \internal
 Loads given input method and caches it.
 */
-HbInputMethod* HbInputModeCache::loadInputMethod(const HbInputMethodDescriptor &inputMethod)
+HbInputMethod *HbInputModeCache::loadInputMethod(const HbInputMethodDescriptor &inputMethod)
 {
     Q_D(HbInputModeCache);
 
@@ -370,8 +372,8 @@ QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
 
     QList<HbInputMethodDescriptor> result;
 
-    foreach (HbInputMethodListItem item, d->mMethods) {
-        foreach (QString language, item.languages) {
+    foreach(const HbInputMethodListItem &item, d->mMethods) {
+        foreach(const QString &language, item.languages) {
             HbInputModeProperties properties = d->propertiesFromString(language);
             if (properties.inputMode() == HbInputModeCustom) {
                 result.append(item.descriptor);
@@ -387,17 +389,17 @@ QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
 \internal
 Find correct handler for given input state.
 */
-HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
+HbInputMethod *HbInputModeCache::findStateHandler(const HbInputState &state)
 {
     Q_D(HbInputModeCache);
 
     HbInputModeProperties stateProperties = d->propertiesFromState(state);
-    int languageRangeIndex = -1;    
+    int languageRangeIndex = -1;
 
     // First check if there is a method that matches excatly (ie. also specifies
     // the language).
     for (int i = 0; i < d->mMethods.count(); i++) {
-        foreach (QString language, d->mMethods[i].languages) {
+        foreach(const QString &language, d->mMethods[i].languages) {
             HbInputModeProperties properties = d->propertiesFromString(language);
             if (properties.language().undefined() &&
                 properties.keyboard() == stateProperties.keyboard() &&
@@ -421,12 +423,12 @@ HbInputMethod* HbInputModeCache::findStateHandler(const HbInputState& state)
     if (languageRangeIndex >= 0) {
         QList<HbInputLanguage> languages = HbKeymapFactory::instance()->availableLanguages();
 
-        foreach(HbInputLanguage language, languages) {
+        foreach(const HbInputLanguage &language, languages) {
             // exact match is returned If the country variant is specified in state language,
             // otherwise a method that matches to only language range is returned.
             bool exactMatchFound = (stateProperties.language().variant() != QLocale::AnyCountry) ?
-                (language == stateProperties.language()) :
-                (language.language() == stateProperties.language().language());
+                                   (language == stateProperties.language()) :
+                                   (language.language() == stateProperties.language().language());
             if (exactMatchFound) {
                 return d->cachedMethod(d->mMethods[languageRangeIndex]);
             }
@@ -442,11 +444,11 @@ Returns the active input method.
 
 \sa HbInputMethod
 */
-HbInputMethod* HbInputModeCache::activeMethod() const
+HbInputMethod *HbInputModeCache::activeMethod() const
 {
     Q_D(const HbInputModeCache);
 
-    foreach (HbInputMethodListItem item, d->mMethods) {
+    foreach(const HbInputMethodListItem &item, d->mMethods) {
         if (item.cached && item.cached->isActiveMethod()) {
             return item.cached;
         }
@@ -465,15 +467,15 @@ QList<HbInputLanguage> HbInputModeCache::listInputLanguages() const
 
     QList<HbInputLanguage> result;
 
-    foreach (HbInputMethodListItem item, d->mMethods) {
-        foreach (QString language, item.languages) {
+    foreach(const HbInputMethodListItem &item, d->mMethods) {
+        foreach(const QString &language, item.languages) {
             HbInputModeProperties mode = d->propertiesFromString(language);
             if (mode.inputMode() != HbInputModeCustom) {
                 if (mode.language().undefined()) {
                     // This is language range. Let's add everything
                     // we have key mappings for.
                     QList<HbInputLanguage> languages = HbKeymapFactory::instance()->availableLanguages();
-                    foreach (HbInputLanguage mappedLanguage, languages) {
+                    foreach(const HbInputLanguage &mappedLanguage, languages) {
                         if (!result.contains(mappedLanguage)) {
                             result.append(mappedLanguage);
                         }
@@ -498,9 +500,9 @@ bool HbInputModeCache::acceptsState(const HbInputMethod *inputMethod, const HbIn
 {
     Q_D(const HbInputModeCache);
 
-    foreach (const HbInputMethodListItem item, d->mMethods) {
-        if (item.cached == inputMethod) {           
-            foreach (const QString language, item.languages) {
+    foreach(const HbInputMethodListItem &item, d->mMethods) {
+        if (item.cached == inputMethod) {
+            foreach(const QString &language, item.languages) {
                 HbInputModeProperties mode = d->propertiesFromString(language);
                 // Check if keyboard type matches.
                 if (mode.keyboard() == state.keyboard()) {
@@ -533,7 +535,7 @@ HbInputMethodDescriptor HbInputModeCache::descriptor(const HbInputMethod *inputM
 {
     Q_D(const HbInputModeCache);
 
-    foreach (HbInputMethodListItem item, d->mMethods) {
+    foreach(const HbInputMethodListItem &item, d->mMethods) {
         if (item.cached == inputMethod) {
             return item.descriptor;
         }

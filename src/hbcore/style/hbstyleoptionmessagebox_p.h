@@ -47,6 +47,7 @@ public:
     Qt::Alignment iconAlignment;    //deprecated
     bool textWrapping;    //deprecated
     enum MessageBoxType {
+        MessageTypeNone,
         MessageTypeInformation,
         MessageTypeQuestion,
         MessageTypeWarning

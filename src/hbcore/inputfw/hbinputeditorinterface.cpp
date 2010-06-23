@@ -22,6 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputeditorinterface.h"
+#include "hbinputeditorinterface_p.h"
+
 #include <QGraphicsProxyWidget>
 #include <QWidget>
 #include <QList>
@@ -29,8 +32,6 @@
 #include <hbaction.h>
 #include <hbwidget.h>
 
-#include "hbinputeditorinterface.h"
-#include "hbinputeditorinterface_p.h"
 #include "hbinputstandardfilters.h"
 #include "hbinputvkbhost.h"
 #include "hbabstractvkbhost.h"
@@ -53,17 +54,17 @@ Following example shows how to create editor interface, attach editor to it and 
 If the attached editor is deleted, the editor interface will start to return same values
 as when a null pointer is passed to the constructor.
 
-When any of the values is changed, signal modified() is emited.
+When any of the values is changed, signal modified() is emitted.
 */
 
 
 /*!
 Constructs the object and attaches given editor.
 */
-HbEditorInterface::HbEditorInterface(QObject* editor)
+HbEditorInterface::HbEditorInterface(QObject *editor)
 {
     mPrivate = HbEditorInterfacePrivateCache::instance()->attachEditor(editor, this);
-    connect(mPrivate, SIGNAL(destroyed(QObject*)), this, SLOT(backendDestroyed(QObject*)));
+    connect(mPrivate, SIGNAL(destroyed(QObject *)), this, SLOT(backendDestroyed(QObject *)));
 }
 
 /*!
@@ -177,7 +178,7 @@ void HbEditorInterface::setInputConstraints(HbEditorConstraints constraints)
 
 /*!
 Returns active input filter. The input framework will always run any text it produces
-through the active filter before it is commited into editor buffer.
+through the active filter before it is committed into editor buffer.
 
 In some cases, the input framework also automatically sets the filter to match
 input method hints. The default filter can still be overridden.
@@ -293,7 +294,7 @@ void HbEditorInterface::insertAction(HbAction *before, HbAction *action)
         if (index >= 0) {
             mPrivate->mActions.removeAt(index);
             disconnect(action, SIGNAL(destroyed(QObject *)),
-                       HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject* object)));
+                       HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject * object)));
         }
 
         int pos = mPrivate->mActions.indexOf(before);
@@ -326,7 +327,7 @@ void HbEditorInterface::removeAction(HbAction *action)
         mPrivate->lock();
         mPrivate->mActions.removeAll(action);
         disconnect(action, SIGNAL(destroyed(QObject *)),
-                   HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject* object)));
+                   HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject * object)));
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -339,9 +340,9 @@ Returns this editor's list of actions.
 \sa insertAction
 \sa removeAction
 */
-QList<HbAction*> HbEditorInterface::actions() const
+QList<HbAction *> HbEditorInterface::actions() const
 {
-    QList<HbAction*> ret;
+    QList<HbAction *> ret;
     if (mPrivate) {
         mPrivate->lock();
         ret = mPrivate->mActions;
@@ -462,9 +463,9 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 
     if (theEditor) {
         QGraphicsObject *graphicsObjectEditor = 0;
-        QWidget *widgetEditor = qobject_cast<QWidget*>(theEditor);
+        QWidget *widgetEditor = qobject_cast<QWidget *>(theEditor);
         if (widgetEditor) {
-            if (QGraphicsProxyWidget * pw = HbInputUtils::graphicsProxyWidget(widgetEditor)) {
+            if (QGraphicsProxyWidget *pw = HbInputUtils::graphicsProxyWidget(widgetEditor)) {
                 HbVkbHost *host = HbVkbHost::getVkbHost(widgetEditor);
                 if (host) {
                     return host;
@@ -473,7 +474,7 @@ HbVkbHost *HbEditorInterface::vkbHost() const
                 graphicsObjectEditor = pw;
             } else {
                 for (QWidget *parent = widgetEditor; parent; parent = parent->parentWidget()) {
-                    HbVkbHost* host = HbVkbHost::getVkbHost(parent);
+                    HbVkbHost *host = HbVkbHost::getVkbHost(parent);
                     if (host) {
                         return host;
                     }
@@ -483,13 +484,13 @@ HbVkbHost *HbEditorInterface::vkbHost() const
         }
 
         if (!graphicsObjectEditor) {
-            graphicsObjectEditor = qobject_cast<QGraphicsObject*>(theEditor);
+            graphicsObjectEditor = qobject_cast<QGraphicsObject *>(theEditor);
         }
 
         if (graphicsObjectEditor) {
             QGraphicsObject *lastKnownParent = 0;
             for (QGraphicsObject *parent = graphicsObjectEditor; parent; parent = parent->parentObject()) {
-                HbVkbHost* host = HbVkbHost::getVkbHost(parent);
+                HbVkbHost *host = HbVkbHost::getVkbHost(parent);
                 if (host) {
                     return host;
                 }
@@ -509,7 +510,7 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 /*!
 Returns true if this instance is attached to same editor as given instance.
 */
-bool HbEditorInterface::operator==(const HbEditorInterface& editorInterface) const
+bool HbEditorInterface::operator==(const HbEditorInterface &editorInterface) const
 {
     return (mPrivate == editorInterface.mPrivate);
 }
@@ -517,7 +518,7 @@ bool HbEditorInterface::operator==(const HbEditorInterface& editorInterface) con
 /*!
 Returns true if this instance is not attached to same editor as given instance.
 */
-bool HbEditorInterface::operator!=(const HbEditorInterface& editorInterface) const
+bool HbEditorInterface::operator!=(const HbEditorInterface &editorInterface) const
 {
     return (mPrivate != editorInterface.mPrivate);
 }
@@ -525,7 +526,7 @@ bool HbEditorInterface::operator!=(const HbEditorInterface& editorInterface) con
 /*!
 Returns pointer to the editor object this interface is attached to.
 */
-QObject* HbEditorInterface::editor() const
+QObject *HbEditorInterface::editor() const
 {
     if (mPrivate) {
         return mPrivate->mHostEditor;
@@ -627,7 +628,7 @@ Returns true if predictive input mode is allowed in attached editor.
 */
 bool HbEditorInterface::isPredictionAllowed() const
 {
-   return !(mPrivate->inputMethodHints() & Qt::ImhNoPredictiveText);
+    return !(mPrivate->inputMethodHints() & Qt::ImhNoPredictiveText);
 }
 
 /*!

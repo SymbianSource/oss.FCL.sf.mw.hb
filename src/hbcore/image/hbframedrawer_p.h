@@ -74,6 +74,7 @@ private:
     QSizeF defaultSize(const QString &framePartSuffix);
     bool isMirrored();
     bool hasBorderWidths() const;
+    QStringList resolveMultiPieceFileNames();
     // disabled
     HbFrameDrawerPrivate &operator=(const HbFrameDrawerPrivate &other);
     HbIconFormatType iconType;

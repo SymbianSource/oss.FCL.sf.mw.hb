@@ -1,14 +1,37 @@
 HbDialog {
     max-width:expr(var(hb-param-screen-width)-2*var(hb-param-margin-gene-screen));
     max-height:expr(var(hb-param-screen-height)-2*var(hb-param-margin-gene-screen));
+	layout:default;
+}
+
+HbDialog[heading_layout] {
+	layout:content_header;
+}
+
+HbDialog[controls_layout] {
+	layout:content_controls;
+}
+
+HbDialog[heading_layout][controls_layout] {
+	layout:content_header_controls;
 }
 
 HbDialog::heading {
+    left:-var(hb-param-margin-gene-popup);
+    right:var(hb-param-margin-gene-popup);
+    top:-var(hb-param-margin-gene-popup);
+    bottom:var(hb-param-margin-gene-popup);
+    text-height:var(hb-param-text-height-primary);
+    text-align:left;
+    font-variant:primary;
     max-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));
+	bottom:var(hb-param-margin-gene-popup);
 }
 
-HbDialog::controls {
+HbDialog::controls {	
+    top:-var(hb-param-margin-gene-popup);
     min-width:expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen));
+	fixed-height:var(hb-param-widget-popup-softkey-height);
 }
 
 HbDialog::content {
@@ -16,6 +39,7 @@ HbDialog::content {
     right:var(hb-param-margin-gene-popup);
     top:-var(hb-param-margin-gene-popup);
     bottom:var(hb-param-margin-gene-popup);
+
 }
 
 HbDialog > HbListWidget {

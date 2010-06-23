@@ -29,7 +29,6 @@
 #include "hbsliderhandle_p.h"
 #include "hbstyleoptionslider_p.h"
 #include "hbslidertickmarkslabel_p.h"
-#include "hbslidertickmarkslabel_p.h"
 #include <hbstyle.h>
 #include <hbinstance.h>
 #include <hbtheme.h>
@@ -96,22 +95,21 @@ void HbSliderControlPrivate::init( )
     Q_Q( HbSliderControl );
    
     q->enableTrackEventHandling( true );
-#ifdef HB_GESTURE_FW
-    q->grabGesture(Qt::TapGesture);
-    q->grabGesture(Qt::PanGesture,Qt::ReceivePartialGestures);
-    q->setFiltersChildEvents(true) ;
-#endif    
+   
     // creating handle
     handle = createHandle();
     if(handle) {
         HbStyle::setItemName( handle, "handle" );
-    }
+    } 
     q->setFocusPolicy( Qt::FocusPolicy( ( qApp->style( ) )->styleHint( QStyle::SH_Button_FocusPolicy ) ) );
-    //creating groove
     groove = createGroove();
     if(groove) {
         HbStyle::setItemName( groove, "groove" );
     }
+#ifdef HB_GESTURE_FW
+    q->setFiltersChildEvents(true) ;
+#endif
+
     //filled item top of groove
     if ( enableProgressTrack ) {
         progressGroove = createProgressGroove();
@@ -129,7 +127,7 @@ void HbSliderControlPrivate::init( )
 
 /*!
   \internal
-  This is used to create the handle, is virtual and can be overridden to create different handle.
+  This is used to create the handle, it is virtual and can be overridden to create different handle.
   */
 HbSliderHandle *HbSliderControlPrivate::createHandle()
 {
@@ -140,7 +138,7 @@ HbSliderHandle *HbSliderControlPrivate::createHandle()
 
 /*!
   \internal
-  This is used to create the groove. can be overrideen by derived class
+  This is used to create the groove.It can be overrideen by derived class
   */
 QGraphicsItem *HbSliderControlPrivate::createGroove()
 {
@@ -151,7 +149,7 @@ QGraphicsItem *HbSliderControlPrivate::createGroove()
 }
 /*!
   \internal
-  This is used to create the masked progress groove. can be overrideen by derived class
+  This is used to create the masked progress groove.This can be overrideen by derived class
   */
 QGraphicsItem *HbSliderControlPrivate::createProgressGroove()
 {
@@ -204,7 +202,7 @@ void HbSliderControlPrivate::adjustHandle( )
 }
 
 /*!
-   This api returns true if pos in on handle rect
+   This api returns true if pos in on handle boundingRect
 */
 bool HbSliderControlPrivate::onHandle( QPointF pos )
 {
@@ -443,7 +441,10 @@ int HbSliderControl::minorTickInterval( ) const
     specify empty string ( "" ) for that item  in the string list.
 
     case 4: if both major & minor tickinterval are same,then only majortickLabel
-    strings are taken into account for drawing the labelItem
+    strings are taken into account for drawing the labelItem.
+
+    case 5: If you want to remove the majorticklabel from the slider, pass the empty
+    stringlist as the argument
 
     \sa majorTickLabels( )
 */
@@ -509,7 +510,7 @@ void HbSliderControl::setSnappingMode( SnappingMode mode )
 }
 
 /*!
-    This will enable/disable current value diplay as tooltip
+    This will enable/disable current value display as tooltip
     on thumb drag
 */
  void HbSliderControl::setToolTipVisible( bool value )
@@ -677,7 +678,7 @@ void HbSliderControl::mousePressEvent( QGraphicsSceneMouseEvent *event )
             static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown );
         //update the groove and touch item
         style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );  
-        // if default is set then dont increment or decrement slider value
+        // if default is set then do not increment or decrement slider value
         // just set default value to slider
         if ( d->setDefault ) {
             setValue( d->previousValue );
@@ -767,7 +768,10 @@ void HbSliderControl::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 #endif 
 }
 
+/*!
+  reimp
 
+*/
 #ifdef HB_GESTURE_FW
 void HbSliderControl::gestureEvent(QGestureEvent *event)
 {
@@ -843,7 +847,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown );
 
 
-            // if default is set then dont increment or decrement slider value
+            // if default is set then don't increment or decrement slider value
             // just set default value to slider
             setSliderPosition( pressValue );
             triggerAction( SliderMove );
@@ -897,6 +901,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             case Qt::GestureStarted: 
             case Qt::GestureUpdated:{
                 QPointF startPoint = event->mapToGraphicsScene(panGesture->offset()+panGesture->startPos( ) );
+				//if the position is on thumb , then start moving the thumb
                 if( ( d->onHandle( startPoint) && d->grooveTouchArea->sceneBoundingRect( ).contains( startPoint))||isSliderDown( ) ) {
                     qreal handlePos = 0;
                     qreal span = 0;
@@ -957,6 +962,8 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 updatePrimitives( );
                 d->handle->updatePrimitives();
                 d->handleMoving = false;
+				int pressValue = sliderPosition();
+                setRepeatAction( SliderNoAction,static_cast<int>( pressValue ) );
                 event->ignore();
                 HbAbstractSliderControl::gestureEvent(event);
             }
@@ -1064,11 +1071,11 @@ void HbSliderControl::initStyleOption( HbStyleOptionSlider *option ) const
     QRectF handleBounds = d->handle->boundingRect( );
     qreal span = 0;
     if ( orientation( ) == Qt::Horizontal ) {
-        bounds.adjust( 0, 0, -handleBounds.width( )/2, 0 );
+        bounds.adjust( 0, 0, -handleBounds.width( ), 0 );
         // calculating span
         span = bounds.width( );
     } else {
-        bounds.adjust( 0, 0, 0, -handleBounds.height( )/2 );
+        bounds.adjust( 0, 0, 0, -handleBounds.height( ) );
         // calculating span
         span = bounds.height( );
     }
@@ -1264,7 +1271,7 @@ void HbSliderControl::setSliderPosition( int value )
 }
 
 /*!
-  snapp slider values
+  snap to slider values
 */
 void HbSliderControl::updateSliderPosToTick( )  
 {
@@ -1316,7 +1323,7 @@ void HbSliderControl::enableTrackEventHandling( bool enable )
             ungrabGesture(Qt::TapGesture);
             ungrabGesture(Qt::PanGesture);
             touchArea->grabGesture(Qt::TapGesture);
-            touchArea->grabGesture(Qt::PanGesture,Qt::ReceivePartialGestures);
+            touchArea->grabGesture(Qt::PanGesture);
 #endif 
         }
     }
@@ -1342,6 +1349,9 @@ QSizeF HbSliderControl::getHandleSize ( )
     return d->handle->size( ) ;
 }
 
+/*!
+ fills the track upto the current value if \a trackVisible is true
+ */ 
 
 void HbSliderControl::setTrackFilled(bool trackVisible )
 {
@@ -1366,7 +1376,9 @@ void HbSliderControl::setTrackFilled(bool trackVisible )
 
 }
 
-
+/*!
+ Returns whether the track is filled upto the current value or not
+ */ 
 bool HbSliderControl::isTrackFilled() const
 {
     Q_D( const HbSliderControl );

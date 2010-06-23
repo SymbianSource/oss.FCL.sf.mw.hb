@@ -27,7 +27,7 @@
 
 #include <QChar>
 #include <QString>
-#include <QStringList>  
+#include <QStringList>
 
 const int DeadKeyTable[14] = {0x060, 0x0B4, 0x05E, 0x0A8, 0x022, 0x2C7, 0x2D8, 0x0B0, 0x2DB, 0x2DD, 0x07E, 0x0B8, 0x201A, 0x0B7};
 
@@ -37,7 +37,7 @@ const int DeadKeyCombineTable[59][3] = {
     {0x060, 0x069, 0x0ec},
     {0x060, 0x06F, 0x0f2},
     {0x060, 0x075, 0x0f9},
-    
+
     {0x0b4, 0x061, 0x0e1},
     {0x0b4, 0x065, 0x0e9},
     {0x0b4, 0x069, 0x0ed},
@@ -57,21 +57,21 @@ const int DeadKeyCombineTable[59][3] = {
     {0x05e, 0x069, 0x0ee},
     {0x05e, 0x06F, 0x0f4},
     {0x05e, 0x075, 0x0fb},
-    
+
     {0x0a8, 0x061, 0x0e4},
     {0x0a8, 0x065, 0x0eb},
     {0x0a8, 0x069, 0x0ef},
     {0x0a8, 0x06F, 0x0f6},
     {0x0a8, 0x075, 0x0fc},
     {0x0a8, 0x079, 0x0ff},
-    
+
     {0x022, 0x061, 0x0e4},
     {0x022, 0x065, 0x0eb},
     {0x022, 0x069, 0x0ef},
     {0x022, 0x06F, 0x0f6},
     {0x022, 0x075, 0x0fc},
     {0x022, 0x079, 0x0ff},
-    
+
     {0x2c7, 0x065, 0x11b},
     {0x2c7, 0x063, 0x10d},
     {0x2c7, 0x064, 0x10f},
@@ -81,7 +81,7 @@ const int DeadKeyCombineTable[59][3] = {
     {0x2c7, 0x053, 0x161},
     {0x2c7, 0x074, 0x165},
     {0x2c7, 0x07A, 0x17E},
-    
+
     {0x2d8, 0x061, 0x103},
 
     {0x0b0, 0x061, 0x0c5},
@@ -103,7 +103,8 @@ const int DeadKeyCombineTable[59][3] = {
     {0x201a, 0x063, 0x0e7},
     {0x201a, 0x072, 0x15f},
 
-    {0x0b7, 0x07A, 0x17c}};
+    {0x0b7, 0x07A, 0x17c}
+};
 
 class HbKeymapPrivate
 {
@@ -113,20 +114,20 @@ public:
     ~HbKeymapPrivate();
 
 public:
-    QMap<HbKeyboardType, HbKeyboardMap*> mKeyboards;
+    QMap<HbKeyboardType, HbKeyboardMap *> mKeyboards;
     HbInputLanguage mLanguage;
 };
 
 
 HbKeymapPrivate::HbKeymapPrivate(HbInputLanguage language)
-: mLanguage(language)
+    : mLanguage(language)
 {
 }
 
 HbKeymapPrivate::~HbKeymapPrivate()
 {
-    foreach (HbKeyboardMap* keymap, mKeyboards) {
-        foreach (HbMappedKey* key, keymap->keys) {
+    foreach(HbKeyboardMap *keymap, mKeyboards) {
+        foreach(HbMappedKey *key, keymap->keys) {
             delete key;
         }
         delete keymap;
@@ -250,7 +251,7 @@ Returns a keyboard of the type \a keyboard or 0 if not found.
 */
 const HbKeyboardMap *HbKeymap::keyboard(HbKeyboardType keyboard) const
 {
-    HbKeyboardMap* keyboardMap = 0;
+    HbKeyboardMap *keyboardMap = 0;
     if (mPrivate->mKeyboards.contains(keyboard)) {
         keyboardMap = mPrivate->mKeyboards.value(keyboard);
     }
@@ -275,9 +276,9 @@ Returns the key in the keyboard of type \a keyboard, on the position \a keyIndex
 */
 const HbMappedKey *HbKeymap::keyForIndex(HbKeyboardType keyboard, int keyIndex) const
 {
-    HbMappedKey* key = 0;
+    HbMappedKey *key = 0;
     if (mPrivate->mKeyboards.contains(keyboard)) {
-        HbKeyboardMap* keymap = mPrivate->mKeyboards.value(keyboard);
+        HbKeyboardMap *keymap = mPrivate->mKeyboards.value(keyboard);
         if (keymap->keys.count() > keyIndex && keyIndex >= 0) {
             key = keymap->keys.at(keyIndex);
         }
@@ -294,10 +295,10 @@ Returns the key on the keyboard \a keyboard with specified \a keycode or 0 if no
 */
 const HbMappedKey *HbKeymap::keyForKeycode(HbKeyboardType keyboard, QChar keycode) const
 {
-    HbMappedKey* key = 0;
+    HbMappedKey *key = 0;
     if (mPrivate->mKeyboards.contains(keyboard)) {
-        HbKeyboardMap* keymap = mPrivate->mKeyboards.value(keyboard);
-        foreach (HbMappedKey* mappedKey, keymap->keys) {
+        HbKeyboardMap *keymap = mPrivate->mKeyboards.value(keyboard);
+        foreach(HbMappedKey *mappedKey, keymap->keys) {
             if (mappedKey->keycode == keycode) {
                 key = mappedKey;
                 break;
@@ -317,11 +318,11 @@ if not found.
 */
 const HbMappedKey *HbKeymap::keyForCharacter(HbKeyboardType keyboard, QChar character) const
 {
-    HbMappedKey* key = 0;
+    HbMappedKey *key = 0;
     if (mPrivate->mKeyboards.contains(keyboard)) {
-        HbKeyboardMap* keymap = mPrivate->mKeyboards.value(keyboard);
-        foreach (HbMappedKey* mappedKey, keymap->keys) {
-            foreach (QString charstring, mappedKey->chars) {
+        HbKeyboardMap *keymap = mPrivate->mKeyboards.value(keyboard);
+        foreach(HbMappedKey *mappedKey, keymap->keys) {
+            foreach(const QString &charstring, mappedKey->chars) {
                 if (charstring.contains(character)) {
                     key = mappedKey;
                     break;
@@ -345,8 +346,8 @@ Returns true if key is a dead key
 bool HbKeymap::isDeadKey(int key)
 {
     int size = sizeof(DeadKeyTable) / sizeof(DeadKeyTable[0]);
-    for (int i=0; i<size; i++){
-        if (key == DeadKeyTable[i]){
+    for (int i = 0; i < size; i++) {
+        if (key == DeadKeyTable[i]) {
             return true;
         }
     }
@@ -375,9 +376,9 @@ void HbKeymap::combineCharacter(QChar deadKey, QChar key, QChar &firstKey, QChar
     } else {
         firstKey = deadKey;
         secondKey = key;
-        int size = sizeof(DeadKeyCombineTable) / sizeof(DeadKeyCombineTable[0][0])/3;
-        for (int i=0; i<size; i++){
-            if (deadKey == DeadKeyCombineTable[i][0] && lowerKey == DeadKeyCombineTable[i][1]){
+        int size = sizeof(DeadKeyCombineTable) / sizeof(DeadKeyCombineTable[0][0]) / 3;
+        for (int i = 0; i < size; i++) {
+            if (deadKey == DeadKeyCombineTable[i][0] && lowerKey == DeadKeyCombineTable[i][1]) {
                 if (key.isUpper()) {
                     firstKey = ((QChar)DeadKeyCombineTable[i][2]).toUpper();
                 } else {

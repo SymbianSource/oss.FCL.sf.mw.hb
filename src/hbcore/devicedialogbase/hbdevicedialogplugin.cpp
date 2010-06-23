@@ -63,6 +63,12 @@
 
     Device dialog widgets have to be derived from HbPopup either directly or by ancestry.
 
+    Device dialog widget can be derived from existing Hb class, eg. HbDialog or constructed from
+    a docml using HbDocumentLoader. Structure of the plugin differs depending on which approach
+    is selected. If docml is used the dialog widget cannot be multiple inherited from HbDialog
+    and HbDeviceDialogInterface. In this case a container can be used to to create and manage the
+    widget. See code example at the end.
+
     <div style="color:gray">
     <b>For future needs. Not implemented.</b>
     Device dialog may be shared by several device dialog clients. Each client can update the
@@ -105,6 +111,8 @@
     Creating a device dialog plugin and widget involves following steps.
     - Set in .pro file TEMPLATE = lib and CONFIG += hb plugin
     - Derive a class from HbPopup or derivatives and HbDeviceDialogInterface
+    The example below is <b>not using docml</b> and dialog widget is derived from HbDialog and
+    HbDeviceDialogInterface.
     \code
     class HbSampleMessageBoxWidget : public HbMessageBox, public HbDeviceDialogInterface
     {
@@ -185,6 +193,97 @@
     }
     \enddot
 
+    The example below is <b>using docml</b> and dialog widget is managed by a container.
+    \code
+    class HbSampleDialogContainer : public QObject, public HbDeviceDialogInterface
+    {
+        Q_OBJECT
+    \endcode
+    - In the constructor create the dialog widget using HbDocumentLoader
+    - Implement HbDeviceDialogInterface functions
+      - From deviceDialogWidget() function return the created (docml) widget
+      - From signalSender() function return the container (HbSampleDialogContainer)
+    - Declare and emit deviceDialogClosed and optionally deviceDialogData signals.
+    - Do not call show(), hide() or setVisible() in the plugin. Device dialog
+      framework calls show() to display the widget.
+    \code
+    public:
+        bool setDeviceDialogParameters(const QVariantMap &parameters);
+        int deviceDialogError() const;
+        void closeDeviceDialog(bool byClient);
+        HbPopup *deviceDialogWidget() const;
+        QObject *signalSender() const;
+    signals:
+        void deviceDialogClosed();
+        void deviceDialogData(QVariantMap data);
+    \endcode
+    - Wrap the widget into a plugin derived from HbDeviceDialogPlugin
+    \code
+    class HbSampleDeviceDialogPlugin : public HbDeviceDialogPlugin
+    {
+        Q_OBJECT
+    \endcode
+    - Implement HbDeviceDialogPlugin pure virtual functions
+      - Return the container (HbSampleDialogContainer) from createDeviceDialog() function
+    \code
+        bool accessAllowed(const QString &deviceDialogType,
+            const QVariantMap &parameters, const QVariantMap &securityInfo) const;
+        HbDeviceDialogInterface *createDeviceDialog(const QString &deviceDialogType, const QVariantMap &parameters);
+        bool deviceDialogInfo(const QString &deviceDialogType,
+            const QVariantMap &parameters, DeviceDialogInfo *info) const;
+        QStringList deviceDialogTypes() const;
+        PluginFlags pluginFlags() const;
+        int error() const;
+    \endcode
+
+    <b> Class diagram of the sample plugin using docml:</b>
+    \dot
+    digraph G {
+        rankdir=LR;
+
+        subgraph cluster_class_diagram {
+            style=solid;
+
+            node [shape = box, style=solid, fontsize = 10];
+            HbSampleDeviceDialogPlugin [label = "HbSampleDeviceDialogPlugin"];
+            QObject [label = "QObject"];
+            HbDeviceDialogPluginInterface [label = "HbDeviceDialogPluginInterface"];
+            HbDeviceDialogPlugin [label = "HbDeviceDialogPlugin"];
+            edge [fontsize = 10, style = filled];
+            QObject -> HbDeviceDialogPlugin [label = "is a"];
+            HbDeviceDialogPluginInterface -> HbDeviceDialogPlugin [label = "is a"];
+            HbDeviceDialogPlugin -> HbSampleDeviceDialogPlugin [label = "is a"];
+
+            HbSampleDialogContainer [label = "HbSampleDialogContainer"];
+            QObject2 [label = "QObject"];
+            HbDeviceDialogInterface [label = "HbDeviceDialogInterface"];
+            QObject2 -> HbSampleDialogContainer [label = "is a"];
+            HbDeviceDialogInterface -> HbSampleDialogContainer [label = "is a"];
+
+            edge [fontsize = 10, style = dotted];
+            HbSampleDeviceDialogPlugin -> HbSampleDialogContainer [label = "creates"];
+
+            DialogWidget [label = "Dialog widget (docml)"];
+            edge [fontsize = 10, style = dotted];
+            HbSampleDialogContainer -> DialogWidget [label = "creates"];
+        }
+
+        subgraph cluster_key {
+            label = "Key";
+            style=solid;
+            node [shape = box, style=solid, fontsize = 10];
+            Class1 [label = "Class"];
+            Class2 [label = "Class"];
+            Class3 [label = "Class"];
+
+            edge [fontsize = 10, style = filled];
+            Class2 -> Class1 [label = "generalization"];
+            edge [fontsize = 10, style = dotted];
+            Class3 -> Class1 [label = "dependency"];
+            }
+    }
+    \enddot
+
     Sample plugin implementations can be found in src/hbplugins/devicedialogs directory.
 
     \sa HbDeviceDialogPluginInterface HbDeviceDialogInterface HbDeviceDialog HbPopup
@@ -245,7 +344,7 @@
     \enum HbDeviceDialogPlugin::DeviceDialogFlag
     Defines flags for a device dialog created by the plugin.
 
-    \sa deviceDialogInfo DeviceDialogInfo
+    \sa deviceDialogInfo() HbIndicatorInterface
 */
 /*!
     \var HbDeviceDialogPlugin::DeviceDialogFlag HbDeviceDialogPlugin::NoDeviceDialogFlags
@@ -268,6 +367,13 @@
     If the flag is set, only one instance of the device dialog widget is allowed at
     one time. Attempt to launch the widget while one exists results in an error to be
     returned to the client.
+*/
+/*!
+    \var HbDeviceDialogPlugin::DeviceDialogFlag HbDeviceDialogPlugin::ReceiveIndicatorStatus
+    Indicates that the device dialog is interested in indicator activation/deactivation events.
+    To receive indicator status the dialog has to implement two slots. Indicator activation is
+    received by a slot indicatorActivated(HbIndicatorInterface*) and deactivation by a slot
+    indicatorDeactivated(HbIndicatorInterface*).
 */
 
 
@@ -338,7 +444,7 @@
          <tr>
          <td>"sym-caps"</td>
          <td>quint32</td>
-         <td>Client's capability set as a bitmap</td>
+         <td>Client's capability set as a bitmap. Bit positions correspond to Symbian enum TCapability</td>
          </tr>
      </table>
 */

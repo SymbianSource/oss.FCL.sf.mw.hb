@@ -83,9 +83,7 @@ public:
 		QGraphicsItem *item ) const;
 
     void ensureLayoutParameters(const HbDeviceProfile &profile) const;
-    void ensureColorParameters() const;
 
-    void _q_onThemeChanged();
     void clearStyleSheetCaches();
 
     HbWidgetBasePrivate *widgetBasePrivate(HbWidgetBase *widgetBase) const;
@@ -97,7 +95,6 @@ public:
     mutable QHash<QString, QString> pluginStylePaths;
     mutable int nextAvailableId;
 
-    mutable QHash<QString, HbCss::Declaration> colorParameters;
     mutable QHash<QString, HbCss::Declaration> layoutParameters;
     mutable QString layoutParametersProfileName;
 

@@ -27,7 +27,7 @@
 #include "hbwidgetbase.h"
 #include "hbfontspec.h"
 #include "hbinstance.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 #include <QGraphicsWidget>
 #include <QTextStream>

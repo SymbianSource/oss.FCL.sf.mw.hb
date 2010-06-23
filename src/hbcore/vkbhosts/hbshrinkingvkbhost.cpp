@@ -67,7 +67,7 @@ public:
 };
 
 HbShrinkingVkbHostPrivate::HbShrinkingVkbHostPrivate(HbAbstractVkbHost *myHost, HbWidget *widget)
-: HbAbstractVkbHostPrivate(myHost, widget)
+    : HbAbstractVkbHostPrivate(myHost, widget)
 {
 }
 
@@ -80,13 +80,13 @@ bool HbShrinkingVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus
 }
 
 void HbShrinkingVkbHostPrivate::closeKeypad()
-{ 
+{
     resetViewSize();
     HbAbstractVkbHostPrivate::closeKeypad();
 }
 
 void HbShrinkingVkbHostPrivate::closeKeypadWithoutAnimation()
-{  
+{
     resetViewSize();
     HbAbstractVkbHostPrivate::closeKeypadWithoutAnimation();
 }
@@ -104,7 +104,7 @@ void HbShrinkingVkbHostPrivate::minimizeKeypadWithoutAnimation()
 }
 
 void HbShrinkingVkbHostPrivate::resetViewSize()
-{    
+{
     HbMainWindow *mainWin = mainWindow();
     if (mainWin && mContainerOriginalSize.isValid()) {
         HbMainWindowPrivate::d_ptr(mainWin)->setViewportSize(mContainerOriginalSize);
@@ -131,8 +131,8 @@ void HbShrinkingVkbHostPrivate::shrinkView()
 Constructs the object.
 */
 HbShrinkingVkbHost::HbShrinkingVkbHost(HbWidget *widget) : HbAbstractVkbHost(new HbShrinkingVkbHostPrivate(this, widget))
-{  
-    setParent(widget);   
+{
+    setParent(widget);
 }
 
 /*!
@@ -146,7 +146,7 @@ HbShrinkingVkbHost::~HbShrinkingVkbHost()
 \reimp
 */
 int HbShrinkingVkbHost::priority() const
-{   
+{
     return 0;
 }
 

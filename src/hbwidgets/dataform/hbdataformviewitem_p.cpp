@@ -72,6 +72,11 @@ HbToggleItem::HbToggleItem( QGraphicsItem* parent ): HbWidget( parent )
             mModel->itemFromIndex( mViewItem->modelIndex( ) ) );
     QObject::connect(this,SIGNAL(valueChanged(QPersistentModelIndex, QVariant)),mViewItem, 
         SIGNAL(itemModified(QPersistentModelIndex, QVariant)));
+
+     // make the connetions added by application
+     HbDataFormPrivate* form_priv = HbDataFormPrivate::d_ptr(
+            static_cast<HbDataForm*>(mViewItem->itemView()));
+     form_priv->makeConnection(mViewItem->modelIndex() , mButton);
 }
 
 HbToggleItem::~HbToggleItem()
@@ -117,7 +122,7 @@ void HbToggleItem::toggleValue()
         mModelItem->contentWidgetData( QString("additionalText") ).toString();
     QString txt = mModelItem->contentWidgetData(QString("text")).toString();
     HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(mModelItem); 
-    // Dont want to emit datachanged for this property so calling private function
+    // Don't want to emit datachanged for this property so calling private function
     modelItem_priv->setContentWidgetData( QString("additionalText"), txt );
     // will emit datachanged
     mModelItem->setContentWidgetData( QString("text"), additionalTxt );
@@ -167,8 +172,7 @@ HbWidget* HbRadioItem::createRadioButton()
     if(!mRadioButtonList) {
         mRadioButtonList = new HbRadioButtonList();      
         mRadioButtonList->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
-        QObject::connect(mRadioButtonList, SIGNAL(itemSelected(int)), this, SIGNAL(itemSelected(int)));
-        QObject::connect(mRadioButtonList, SIGNAL(startPreview(int)), this, SIGNAL(startPreview(int)));
+               
         //mRadioButtonList->setClampingStyle(HbScrollArea::StrictClamping);
         mRadioButtonList->setItems( mItems );
         if( mSelected != -1 ) {
@@ -179,6 +183,11 @@ HbWidget* HbRadioItem::createRadioButton()
         // only when dialog closed
         QObject::connect( mRadioButtonList, SIGNAL(itemSelected(int)), 
             this, SLOT(updateModel(int)) );
+
+        // make the connetions added by application
+        HbDataFormPrivate* form_priv = HbDataFormPrivate::d_ptr(
+            static_cast<HbDataForm*>(mViewItem->itemView()));
+        form_priv->makeConnection(mViewItem->modelIndex() , mRadioButtonList);
         
     }
     return mRadioButtonList;
@@ -203,6 +212,16 @@ bool HbRadioItem::event( QEvent * e )
                 if( dynamicPropertyName == "items" || dynamicPropertyName == "displayMode" ) {
                     // store the items locally
                     mItems = property("items").toStringList();
+                    if(mItems.count() == 0) {
+                        mItems = mModelItem->contentWidgetData(QString("items")).toStringList();
+                    }
+                    if(mItems.count() == 0) {
+                        //clear the current slection if all items are deleted 
+                        updateModel(-1);
+                    }/* else {
+                        // if new items are populated make the current slection to 0
+                        updateModel(0);
+                    }*/
                     // in case of automatic, displayMode (embedded, automatic or popup) will change 
                     // if new items are populated or mode should be changed if mode is set
                     //  explicitly by application at runtime
@@ -236,6 +255,8 @@ void HbRadioItem::makeEmbedded()
     createRadioButton();
     layout->addItem(mRadioButtonList);
     mRadioButtonList->setScrollDirections(0);
+    //Ungrab the pan gesture because we do not want radio button list to scroll
+    mRadioButtonList->ungrabGesture(Qt::PanGesture);
 }
 
 void HbRadioItem::makePopup()
@@ -310,7 +331,6 @@ void HbRadioItem::initilizeButton()
 {
     if(!mButton) {
         mButton = new HbPushButton();
-        mButton->setTextAlignment(Qt::AlignLeft);
         QObject::connect(mButton, SIGNAL(clicked()), this, SLOT(buttonClicked()));
         layout->addItem( mButton ); 
     }
@@ -333,11 +353,17 @@ void HbRadioItem::buttonClicked()
         QObject::connect(mDialog, SIGNAL(aboutToClose()), this, SIGNAL(aboutToClose()));
         mDialog->setTimeout(HbPopup::NoTimeout);    
         mDialog->setAttribute(Qt::WA_DeleteOnClose);
-        mDialog->setContentWidget(mRadioButtonList);    
-        mDialog->addAction(new HbAction(QString("Ok")));
-        mDialog->addAction(new HbAction(QString("Cancel")));
-        mDialog->open(this,SLOT(dialogClosed(HbAction*)));  
-        mRadioButtonList->setSelected(mSelected);
+        mDialog->setDismissPolicy(HbPopup::NoDismiss);
+        mDialog->setModal(true);
+        mDialog->setContentWidget(mRadioButtonList);   
+        HbAction *ok = new HbAction(QString("Ok"));
+        mDialog->addAction(ok);
+        HbAction *cancel = new HbAction(QString("Cancel"));
+        connect(ok, SIGNAL(triggered()), mDialog,SLOT(accept()));
+        mDialog->addAction(cancel);
+        mDialog->connect(cancel, SIGNAL(triggered()), mDialog, SLOT(reject()));
+        mRadioButtonList->setSelected(mSelected);       
+        mDialog->open(this,SLOT(dialogClosed(int)));
     }
 }
 
@@ -345,7 +371,9 @@ void HbRadioItem::buttonClicked()
 void HbRadioItem::updateModel( int index )
 {
     mSelected = index;
-    emit valueChanged(mViewItem->modelIndex(), mItems.at(index));
+    if( index > -1 && mItems.count() < index ) {
+    	emit valueChanged(mViewItem->modelIndex(), mItems.at(index));
+    }
     // Disconnect modelchanged signal since visualization is already updated by user
     // so if not disconnected , this will trigger visualization change again
     disconnect( mModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
@@ -362,13 +390,13 @@ void HbRadioItem::updateModel( int index )
 }
 
 
-void HbRadioItem::dialogClosed(HbAction* action)
+void HbRadioItem::dialogClosed(int code)
 {
-    if(( action ) && ( action->text() == "Ok" )) {
+    if(code == HbDialog::Accepted && mRadioButtonList) {
         // store the selected item to model
         updateModel(mRadioButtonList->selected());        
     }
-    // dont change selection incase of "Cancel" button click .
+    // don't change selection incase of "Cancel" button click .
     mRadioButtonList = 0;
     mDialog = 0;
 }
@@ -411,7 +439,7 @@ void HbMultiSelectionItem::makeSelection()
         // get selection model
         model = mMultiListWidget->selectionModel();
         if(model) {
-            // disconnect so that the visualization does not get changed when selction 
+            // disconnect so that the visualization does not get changed when selection 
             // model changes
             QObject::disconnect(model, 
                 SIGNAL(selectionChanged( const QItemSelection , const QItemSelection  )), 
@@ -431,7 +459,7 @@ void HbMultiSelectionItem::makeSelection()
         for ( int i = 0; i < mSelectedItems.count() ; i++ ) {
             int selectionindex = mSelectedItems.at( i ).toInt();
             if( selectionindex< mItems.count()) {
-                if( i > 0) {// dont add ; in the starting of the string
+                if( i > 0) {// don't add ; in the starting of the string
                     newValue.append( "," );
                 }
                 newValue.append( mItems.at( mSelectedItems.at( i ).toInt() ) );
@@ -468,6 +496,9 @@ void HbMultiSelectionItem::makeEmbedded()
         mMultiListWidget->addItem(mItems.at(index));
     }
     mMultiListWidget->setScrollDirections(0);
+    //ungrab pan gesture because we do not want embedded multi selection list
+    //to scroll
+    mMultiListWidget->ungrabGesture( Qt::PanGesture );
 }
 
 void HbMultiSelectionItem::makePopup()
@@ -482,7 +513,6 @@ void HbMultiSelectionItem::makePopup()
     // and popup will be launched when button is clicked
     if(!mButton) {
         mButton = new HbPushButton();
-        mButton->setTextAlignment(Qt::AlignLeft);
         layout->addItem(mButton);
     }
     QObject::connect(mButton, SIGNAL(clicked()), this, SLOT(launchMultiSelectionList()));
@@ -571,13 +601,19 @@ void HbMultiSelectionItem::launchMultiSelectionList()
         mSelectionDialog->setStringItems( mItems, -1 ); 
         mSelectionDialog->setSelectedItems( mSelectedItems );
         mSelectionDialog->setAttribute(Qt::WA_DeleteOnClose);
-        mSelectionDialog->open(this,SLOT(dialogClosed(HbAction*)));   
+        mSelectionDialog->open(this,SLOT(dialogClosed(int)));
+
+        // make the connetions added by application
+     HbDataFormPrivate* form_priv = HbDataFormPrivate::d_ptr(
+            static_cast<HbDataForm*>(mViewItem->itemView()));
+     form_priv->makeConnection(mViewItem->modelIndex() , mSelectionDialog);
     }
 }
 
-void HbMultiSelectionItem::dialogClosed(HbAction* action)
+void HbMultiSelectionItem::dialogClosed(int code)
 {
-    if(( action ) && ( action->text() == "Ok" )) {
+
+    if(code == HbDialog::Accepted) {
         //fetch the selected items
         mSelectedItems = mSelectionDialog->selectedItems();
         QString newValue("");
@@ -846,7 +882,7 @@ void HbDataFormViewItemPrivate::updateData()
         //update description of either data item or data group
         QString description = model_item->description();
         if( type == HbDataFormModelItem::GroupItem ) {
-            HbDataGroupPrivate::d_ptr(static_cast<HbDataGroup*>(q))->setDescription(description);
+            static_cast<HbDataGroup*>(q)->setDescription(description);
         } else if ( type > HbDataFormModelItem::GroupPageItem ) {
             setDescription(description);
         }
@@ -870,6 +906,7 @@ void HbDataFormViewItemPrivate::setEnabled(bool enabled)
             itemFlags |= QGraphicsItem::ItemIsFocusable;
             q->setFocusPolicy(q->prototype()->focusPolicy());
             q->setProperty("state", "normal");
+            q->setEnabled(true);
             q->grabGesture(Qt::TapGesture);
         }
     } else {
@@ -877,12 +914,27 @@ void HbDataFormViewItemPrivate::setEnabled(bool enabled)
             itemFlags &= ~QGraphicsItem::ItemIsFocusable;
             q->setFocusPolicy(Qt::NoFocus);
             q->setProperty("state", "disabled");
+            q->setEnabled(false);
             q->ungrabGesture(Qt::TapGesture);
         }
     }
 
     if( mContentWidget ) {
         mContentWidget->setEnabled(enabled);
+        //If slider is disabled then still panning should be possible.
+        if( ( mType == HbDataFormModelItem::SliderItem ) ||
+            ( mType == HbDataFormModelItem::VolumeSliderItem ) ) {
+                HbSlider *slider = static_cast<HbSlider*>( mContentWidget );
+                if( enabled ) {
+                    //grab pan gesture
+                    slider->primitive(HbStyle::P_SliderElement_touchgroove)->toGraphicsObject()->grabGesture(
+                        Qt::PanGesture);
+                } else {
+                    //ungrab pan gesture
+                    slider->primitive(HbStyle::P_SliderElement_touchgroove)->toGraphicsObject()->ungrabGesture(
+                        Qt::PanGesture);
+                }
+        }
     }
 }
 

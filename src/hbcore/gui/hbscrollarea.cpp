@@ -222,6 +222,14 @@
 */
 
 /*!
+    \primitives
+    \primitives{continuation-indicator-bottom} HbFrameItem representing the scrollarea continuation indicator on the bottom of the scrollarea.
+    \primitives{continuation-indicator-top} HbFrameItem representing the scrollarea continuation indicator on the top of the scrollarea.
+    \primitives{continuation-indicator-left} HbFrameItem representing the scrollarea continuation indicator on the left side of the scrollarea.
+    \primitives{continuation-indicator-right} HbFrameItem representing the scrollarea continuation indicator on the right side of the scrollarea.
+  */
+
+/*!
   Constructor
  
   \sa HbScrollArea::HbScrollArea
@@ -234,6 +242,9 @@ HbScrollArea::HbScrollArea(QGraphicsItem* parent) :
     d->init();
 }
 
+/*!
+  Protected constructor.
+  */
 HbScrollArea::HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent):
         HbWidget( dd, parent  )
 {
@@ -619,9 +630,9 @@ void HbScrollArea::longPressGesture(const QPointF &)
     HB_DEPRECATED("HbScrollArea::longPressGesture(const QPointF &) is deprecated. Use gesture FW.");
 }
 
-/*
+/*!
     \reimp
-*/
+ */
 void HbScrollArea::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED (event);
@@ -839,7 +850,6 @@ void HbScrollArea::gestureEvent(QGestureEvent *event)
 
     \sa horizontalScrollBarPolicy(), setVerticalScrollBarPolicy()
 */
-
 HbScrollArea::ScrollBarPolicy HbScrollArea::verticalScrollBarPolicy() const
 {
     Q_D(const HbScrollArea);
@@ -896,7 +906,6 @@ void HbScrollArea::setVerticalScrollBar(HbScrollBar *scrollBar)
 
     \sa verticalScrollBarPolicy(), setHorizontalScrollBarPolicy()
 */
-
 HbScrollArea::ScrollBarPolicy HbScrollArea::horizontalScrollBarPolicy() const
 {
     Q_D(const HbScrollArea);
@@ -1050,7 +1059,7 @@ void HbScrollArea::scrollContentsTo (const QPointF& newPosition, int time) {
     }
 }
 
-/*
+/*!
   \reimp
  */
 void HbScrollArea::polish(HbStyleParameters& params)

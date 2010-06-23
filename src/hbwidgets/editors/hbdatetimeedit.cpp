@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include <QDateTime>
+#include <QMetaMethod>
 
 #include "hblineedit.h"
 #include "hbdatetimevalidator_p.h"
@@ -235,11 +236,24 @@ void HbDateTimeEdit::setText (const QString &text)
 */
 void HbDateTimeEdit::focusOutEvent(QFocusEvent *event)
 {
-    HbAbstractEdit::focusOutEvent(event);
-
     Q_D(HbDateTimeEdit);
+
     if(d->validator->fixDate(&d->cursor, true)) {
         // fixing so restore focus to editor
-        setFocus(event->reason());
+        // do it asynchronously by private slot:
+        int metodIndex = metaObject()->indexOfMethod("_q_regainFocus()");
+        if (metodIndex<0) {
+            qWarning("HbDateTimeEdit::focusOutEvent private method "
+                     "_q_regainFocus() NOT FOUND");
+        } else {
+            if (!metaObject()->method(metodIndex).invoke(this, Qt::QueuedConnection)) {
+                qWarning("HbDateTimeEdit::focusOutEvent failed to call "
+                         "private method _q_regainFocus()");
+            }
+        }
+        // prevent emmiting signal editingFinished so omnit HbLineEdit
+        HbAbstractEdit::focusOutEvent(event);
+    } else {
+        HbLineEdit::focusOutEvent(event);
     }
 }

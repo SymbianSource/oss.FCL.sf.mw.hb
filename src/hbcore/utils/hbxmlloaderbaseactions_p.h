@@ -54,7 +54,14 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
 {
     public:
 
-        typedef QPair<QPointer<QObject>, HbXml::ElementType> ObjectMapItem;                
+        struct ObjectMapItem
+        {
+            ObjectMapItem() : mObject(0), mType(HbXml::UNKNOWN), mOwned(true) {};
+
+            QPointer<QObject> mObject;
+            HbXml::ElementType mType;
+            bool mOwned;
+        };
         typedef QMap<QString, ObjectMapItem> ObjectMap;
         
     public:    

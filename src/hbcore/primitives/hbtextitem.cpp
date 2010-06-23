@@ -38,15 +38,20 @@
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #endif
 
+// #define HB_TEXT_ITEM_LOGS
 #define EPSILON 0.01
+
+#ifdef HB_TEXT_ITEM_LOGS
+#   include <QDebug>
+#endif // HB_TEXT_ITEM_LOGS
 
 bool HbTextItemPrivate::outlinesEnabled = false;
 
 static const QString KDefaultColorThemeName = "qtc_view_normal";
-const int MinimumWidth = 5; // minimum width if there is some text.
+const qreal MinimumWidth = 5.0; // minimum width if there is some text.
 const int KLayoutCacheLimit = 64;
 const qreal KFadeTolerance = 1.0;
 
@@ -58,11 +63,13 @@ HbTextItemPrivate::HbTextItemPrivate () :
     mPaintFaded(false),
     mFadeLengthX(30),
     mFadeLengthY(15),
-    mPrefHeight(0),
-    mMinLines(0),
+    mMinLines(1),
     mMaxLines(0),
-    mNeedToAdjustSizeHint(false),
-    mUpdateColor(true)
+    mMinWidthForAdjust(-1),
+    mMaxWidthForAdjust(-1),
+    mDefaultHeight(-1),
+    mUpdateColor(true),
+    mEventPosted(false)
 {
 }
 
@@ -79,6 +86,7 @@ void HbTextItemPrivate::init(QGraphicsItem *)
     textOption.setWrapMode(QTextOption::WordWrap);
     mTextLayout.setTextOption(textOption);
     mTextLayout.setCacheEnabled(true);
+    mTextLayout.setFont(q->font());
 }
 
 void HbTextItemPrivate::clear()
@@ -86,57 +94,36 @@ void HbTextItemPrivate::clear()
     // no implementation needed
 }
 
-bool HbTextItemPrivate::doLayout(const QString& text, const qreal lineWidth, qreal leading)
+bool HbTextItemPrivate::doLayout(const QString& text, const qreal lineWidth, qreal lineSpacing)
 {
     bool textTruncated = false;
-    mInvalidateShownText = false;
 
     mTextLayout.setText(text);
-    mTextLayout.setFont( q_func()->font() );
 
-    qreal height = 0;
+    qreal yLinePos = 0;
     mTextLayout.beginLayout();
     while (1) {
         QTextLine line = mTextLayout.createLine();
         if (!line.isValid())
             break;
-        if( ( mMaxLines > 0 ) && ( mTextLayout.lineCount() > mMaxLines ) ) {
-            textTruncated = true;
-            break;
-        }
 
         line.setLineWidth(lineWidth);
-        height += leading;
-        line.setPosition(QPointF(0, height));
-        height += line.height();
+        line.setPosition(QPointF(0, yLinePos));
+
+        if( ( mMaxLines > 0 ) && ( mTextLayout.lineCount() >= mMaxLines ) ) {
+            textTruncated = (line.textStart()+line.textLength() < text.length());
+            break;
+        }
+        yLinePos += lineSpacing;
     }
     mTextLayout.endLayout();
-
-    if( textTruncated ) {
-        mTextLayout.setText(text);
-        mTextLayout.setFont( q_func()->font() );
-
-        qreal height = 0;
-        mTextLayout.beginLayout();
-        while ( mTextLayout.lineCount() < mMaxLines ) {
-            QTextLine line = mTextLayout.createLine();
-            line.setLineWidth(lineWidth);
-            height += leading;
-            line.setPosition(QPointF(0, height));
-            height += line.height();
-        }
-        mTextLayout.endLayout();
-    }
 
     return textTruncated;
 }
 
-void HbTextItemPrivate::setSize(const QSizeF &newSize)
+void HbTextItemPrivate::rebuildTextLayout(const QSizeF &newSize)
 {
-    Q_Q(HbTextItem);
-
-    QFont usedFont = q->font();
-    QFontMetricsF fontMetrics(usedFont);
+    QFontMetricsF fontMetrics(mTextLayout.font());
 
     const qreal lineWidth = qRound( newSize.width() + 0.5 ); // round up to integer
 
@@ -148,11 +135,10 @@ void HbTextItemPrivate::setSize(const QSizeF &newSize)
         tempText.replace('\n', QChar::LineSeparator);
     }
 
-    // function does the layout only when needed
-    mTextLayout.setFont(usedFont);
 	// Need to call elidedText explicitly to enable multiple length translations.
     tempText = fontMetrics.elidedText(tempText, Qt::ElideNone, lineWidth);
-    bool textTruncated = doLayout(tempText, lineWidth, fontMetrics.leading());
+    bool textTruncated = doLayout(tempText, lineWidth, fontMetrics.lineSpacing());
+
     if(mElideMode!=Qt::ElideNone && !tempText.isEmpty()) {
         if( ( mTextLayout.boundingRect().height() - newSize.height() > EPSILON ) ||
             ( mTextLayout.boundingRect().width() - lineWidth > EPSILON ) ||
@@ -160,12 +146,15 @@ void HbTextItemPrivate::setSize(const QSizeF &newSize)
             // TODO: Multiple length translations with multiline text
             doLayout(elideLayoutedText(newSize, fontMetrics),
                      lineWidth,
-                     fontMetrics.leading());
+                     fontMetrics.lineSpacing());
         }
     }
+
     calculateVerticalOffset();
     calculateFadeRects();
-    q->update();
+
+    // build of text layout is completed
+    mInvalidateShownText = false;
 }
 
 /*
@@ -192,6 +181,25 @@ int HbTextItemPrivate::findIndexOfLastLineBeforeY(qreal y) const
         }
     }
     return i;
+}
+
+QSizeF HbTextItemPrivate::respectSizeLimits(QSizeF size) const
+{
+    QFontMetricsF metrics(mTextLayout.font());
+
+    Q_ASSERT(mMinLines>0);
+    qreal minHeight = metrics.lineSpacing()*mMinLines - metrics.leading();
+    if (size.height()<minHeight) {
+        size.setHeight(minHeight);
+    }
+
+    if (mMaxLines>0) {
+        qreal maxHeight = metrics.lineSpacing()*mMaxLines - metrics.leading();
+        if (size.height()>maxHeight) {
+            size.setHeight(maxHeight);
+        }
+    }
+    return size;
 }
 
 QString HbTextItemPrivate::elideLayoutedText(const QSizeF& size, const QFontMetricsF& metrics) const
@@ -280,38 +288,134 @@ int HbTextItemPrivate::textFlagsFromTextOption() const
     return flags;
 }
 
-bool HbTextItemPrivate::adjustSizeHint()
+/*!
+    This method check spetial case of calculating sizeHint.
+    By default prefferedSize returns size of text which has lots of free space.
+    But there can be situaltion that text has less avaible free width ther requred.
+    In such cases prefered hight of HbTextItem should be recaculated because wrapping
+    of the line may requre more space in vertical direction.
+
+    In such case bigger hight should be cached for sizeHint calculations.
+ */
+bool HbTextItemPrivate::isAdjustHightNeeded(const QSizeF& newSize,
+                                            const QSizeF& prefSize)
 {
-    Q_Q( HbTextItem );
+#ifdef HB_TEXT_ITEM_LOGS
+    qDebug() << "isAdjustHightNeeded for: " << q_ptr->objectName()
+            << " text=" << mText.left(20)
+            << " adjusted=" << mAdjustedSize
+            << " pref=" << prefSize
+            << mTextLayout.font();
+#endif // HB_TEXT_ITEM_LOGS
 
-    mNeedToAdjustSizeHint = false;
-
-    if ( !(q->sizePolicy().verticalPolicy()&QSizePolicy::IgnoreFlag) ) {
-        // only calculated if the vertical sizeHint is taken into account
-
-        const QFontMetricsF metrics(q->font());
-
-        if ( mMinLines > 0 && (mMinLines == mMaxLines) ) {
-            // if the number of lines if fixed: optimize
-            const qreal newPrefHeight = ( metrics.height() + metrics.leading() ) * mMinLines - metrics.leading();
-            if( qAbs( mPrefHeight - newPrefHeight ) > EPSILON ) {
-                mPrefHeight = newPrefHeight;
-                return true;
-            }
-            return false;
-        }
-
-        QSizeF currSize = q->size();
-        // do the heavy calculation
-        QRectF desiredRect = metrics.boundingRect( QRectF( 0, 0 , currSize.width(), QWIDGETSIZE_MAX ), textFlagsFromTextOption(), mText );
-
-        if( qAbs( desiredRect.height() - mPrefHeight ) > EPSILON ) {
-            mPrefHeight = desiredRect.height();
-            return true;
-        }
+    // first check if wrapping of text is not active
+    QTextOption::WrapMode wrapMode = mTextLayout.textOption().wrapMode();
+    if (wrapMode==QTextOption::NoWrap
+        || wrapMode==QTextOption::ManualWrap) {
+        return false;
     }
 
-    return false;
+    // check if line count is fixed
+    if (mMaxLines == mMinLines) {
+        return false;
+    }
+
+    // check if preffered height is defined by user
+    //    so check if preff height is same as value returned by sizeHint
+    if (!qFuzzyCompare(prefSize.height(), mAdjustedSize.height())) {
+        return false;
+    }
+
+    // check if adjusted size has been already calculated
+    // new width is bigger then last estimated range of same height
+    if ((mMaxWidthForAdjust>=newSize.width()
+        // new width is smaller then last estimated range of same height
+        && newSize.width()>=mMinWidthForAdjust)) {
+        return false;
+    }
+
+    if (!mAdjustedSize.isValid()) {
+        // this means that preferred size is set outside of class by setPreferredSize
+        // so sizeHint(Qt::Preferredsize) was not called and size adjustment is useless
+        return false;
+    }
+
+    // if preconditions are met test if current hight is enough
+    const QFontMetricsF metrics(mTextLayout.font());
+
+    // heavy calculation: check if text fits in current size and cache result
+    QSizeF newAdjust = metrics.boundingRect(QRectF(0, 0, newSize.width(), QWIDGETSIZE_MAX),
+                                       textFlagsFromTextOption(),
+                                       mText).size();
+
+    if (qFuzzyCompare(newAdjust.height(), mAdjustedSize.height())) {
+        // height is same as last time update range of same height
+        mMaxWidthForAdjust = qMax(mMaxWidthForAdjust, newSize.width());
+        mMinWidthForAdjust = qMin(mMinWidthForAdjust, newSize.width());
+
+        // and don't update geometry
+        return false;
+    }
+
+    // new height was calculated create new range for which
+    // current mAdjustedSize.height is valid
+    mMaxWidthForAdjust = newSize.width();
+    mMinWidthForAdjust = newAdjust.width();
+
+    // store new hieght use don't change width
+    mAdjustedSize.setHeight(newAdjust.height());
+    Q_ASSERT_X(mAdjustedSize.width()>=newAdjust.width(),
+               "HbTextItemPrivate::isAdjustHightNeeded",
+               QString("Fail for string: \"%1\"").arg(mText).toAscii().data());
+
+    if (respectSizeLimits(mAdjustedSize)==prefSize) {
+        // updateGeometry has no effect
+        return false;
+    }
+
+    // all conditions for calling updateGeometry are meet
+    return true;
+}
+
+void HbTextItemPrivate::clearAdjustedSizeCache()
+{
+    // clear cache of size
+    mMinWidthForAdjust = -1;
+    mMaxWidthForAdjust = -1;
+    mAdjustedSize.setHeight(-1);
+}
+
+QSizeF HbTextItemPrivate::calculatePrefferedSize(const QSizeF& constraint) const
+{
+    const QFontMetricsF metrics(mTextLayout.font());
+
+    if (mAdjustedSize.isValid() &&
+        (constraint.height()<0 || qFuzzyCompare(constraint.height(), mAdjustedSize.height())) &&
+        (constraint.width()<0  || qFuzzyCompare(constraint.width(), mAdjustedSize.width()))) {
+        // return cached value, see more in:
+        //      - HbTextItemPrivate::isAdjustHightNeeded
+        //      - HbTextItem::resizeEvent
+        return mAdjustedSize;
+    }
+
+    QSizeF maxSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+    if(constraint.width()>0) {
+        maxSize.setWidth(constraint.width());
+    }
+    if(constraint.height()>0) {
+        maxSize.setHeight(constraint.height());
+    }
+
+    QSizeF size = metrics.boundingRect(QRectF(QPointF(),maxSize),
+                                       textFlagsFromTextOption(),
+                                       mText).size();
+
+    mAdjustedSize = size;
+    mDefaultHeight = size.height();
+    mMinWidthForAdjust = size.width();
+    mMaxWidthForAdjust = QWIDGETSIZE_MAX;
+
+    return size;
 }
 
 bool HbTextItemPrivate::fadeNeeded(const QRectF& contentRect) const
@@ -532,7 +636,6 @@ void HbTextItemPrivate::paintWithFadeEffect(QPainter *painter) const
 
 // #define SEE_FADE_RECTANGLES
 #ifdef SEE_FADE_RECTANGLES
-    painter->setClipRect(mFadeToRect);
     painter->setBrush(QBrush(QColor(215, 0, 0, 30)));
     painter->drawRect(mFadeToRect);
     painter->setBrush(QBrush(QColor(0, 0, 200, 30)));
@@ -743,6 +846,11 @@ QRectF HbTextItemPrivate::boundingRect (const QRectF& contentsRect) const
     return result;
 }
 
+void HbTextItemPrivate::scheduleTextBuild()
+{
+    mInvalidateShownText = true;
+}
+
 /*!
     @alpha
     @hbcore
@@ -757,7 +865,6 @@ QRectF HbTextItemPrivate::boundingRect (const QRectF& contentsRect) const
 /*!
     Constructor for the class with no content.
  */
-
 HbTextItem::HbTextItem (QGraphicsItem *parent) :
     HbWidgetBase(*new HbTextItemPrivate, parent)
 {
@@ -872,21 +979,30 @@ void HbTextItem::setText (const QString &text)
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
     if (d->mText != txt) {
-        d->mInvalidateShownText = true;
+        d->scheduleTextBuild();
         prepareGeometryChange();
         d->mText = txt;
         d->mTextLayout.setCacheEnabled(KLayoutCacheLimit >= d->mText.length());
-        bool onlyHorizontalSizeHintChanged = false;
-        if ( d->mMinLines > 0 && (d->mMinLines == d->mMaxLines) ) {
-            onlyHorizontalSizeHintChanged = true;
-        }
-        if ( (sizePolicy().horizontalPolicy()&QSizePolicy::IgnoreFlag) && onlyHorizontalSizeHintChanged ) {
-            // suppress updateGeometry() and use the same geometry
-            d->setSize( size() );
-        } else {
-            updateGeometry();
-        }
+        d->clearAdjustedSizeCache();
         update();
+
+        // check if call of updateGeometry can be ignored
+        // don't call it when minimum and maximum lines are equal (height is fixed) or ...
+        if ((d->mMinLines == d->mMaxLines)
+            // or when preferred height is ignored
+            || (sizePolicy().verticalPolicy()&QSizePolicy::IgnoreFlag)) {
+
+            // and when preferred width is ignored or ...
+            if (sizePolicy().horizontalPolicy()&QSizePolicy::IgnoreFlag
+                // or when preferred width is defined from outside
+                || !qFuzzyCompare(preferredWidth(), d->mAdjustedSize.width())) {
+                  // TODO: looking for better solution since preferredWidth() can cause call of sizeHint
+
+                // in those cases skip updateGeometry
+                return;
+            }
+        }
+        updateGeometry();
     }
 }
 
@@ -952,8 +1068,9 @@ void HbTextItem::setElideMode (Qt::TextElideMode elideMode)
 {
     Q_D(HbTextItem);
     if (elideMode != d->mElideMode) {
-        d->mInvalidateShownText = true;
         d->mElideMode = elideMode;
+        d->scheduleTextBuild();
+        prepareGeometryChange();
         update();
     }
 }
@@ -986,6 +1103,10 @@ void HbTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
         painter->drawRect(rect);
     }
 
+    if (d->mInvalidateShownText) {
+        d->rebuildTextLayout(size());
+    }
+
 
     painter->setPen(textColor());
 
@@ -1011,15 +1132,16 @@ void HbTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
  */
 void HbTextItem::setGeometry(const QRectF & rect)
 {
-    Q_D(HbTextItem);
-
     HbWidgetBase::setGeometry(rect);
 
-    // needed when there was no size change and some things
-    // need to relayout text
-    if(d->mInvalidateShownText) {
-        prepareGeometryChange();
-        d->setSize(rect.size());
+    if (parentLayoutItem() && parentLayoutItem()->isLayout()) {
+        // rect.size can't be used here since size can be limited inside of
+        // called method HbWidgetBase::setGeometry(rect) so size is used which
+        // holds current size
+        Q_D(HbTextItem);
+        if (d->isAdjustHightNeeded(size(), preferredSize())) {
+            updateGeometry();
+        }
     }
 }
 
@@ -1032,6 +1154,9 @@ QRectF HbTextItem::boundingRect () const
 {
     Q_D(const HbTextItem);
 
+    if (d->mInvalidateShownText) {
+        const_cast<HbTextItemPrivate*>(d)->rebuildTextLayout(size());
+    }
     return d->boundingRect(contentsRect());
 } // boundingRect()
 
@@ -1043,6 +1168,21 @@ QSizeF HbTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
     Q_D(const HbTextItem);
 
     QSizeF size(0,0);
+
+    // TODO: Temporary work-around - font change event are not always received
+    // so updating font here (this is needed because of sizeHint adjustments).
+    if (d->mTextLayout.font()!=font()) {
+#ifdef HB_TEXT_ITEM_LOGS
+        qWarning() << "Font change was not recieved on time: work-around is active"
+                << objectName()
+                << " test: " << d->mText.left(20)
+                << " oldFont:" << d->mTextLayout.font()
+                << " newFont:" << font();
+#endif // HB_TEXT_ITEM_LOGS
+
+        const_cast<HbTextItemPrivate *>(d)->mTextLayout.setFont(font());
+        const_cast<HbTextItemPrivate *>(d)->clearAdjustedSizeCache();
+    }
 
     Qt::Orientations effectiveOrientations(0);
     if ( !(sizePolicy().horizontalPolicy()&QSizePolicy::IgnoreFlag) ) {
@@ -1058,71 +1198,32 @@ QSizeF HbTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
         return HbWidgetBase::sizeHint( which, constraint );
     }
 
-    const QFontMetricsF metrics(font());
-    QSizeF maxSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-
-    if(constraint.width()>0) {
-        maxSize.setWidth(constraint.width());
-    }
-    if(constraint.height()>0) {
-        maxSize.setHeight(constraint.height());
-    }
-
     switch(which) {
     case Qt::MinimumSize: 
         {
             if ( !d->mText.isEmpty() ) {
-                size.setWidth( MinimumWidth ); // just to show something  -- should not matter in read use-case
-
-                if( d->mMinLines > 1 ) {
-                    size.setHeight( ( metrics.height() + metrics.leading() ) * d->mMinLines - metrics.leading() );
-                } else {
-                    size.setHeight( metrics.height() );
-                }
+                size.setWidth(MinimumWidth); // just to show something  -- should not matter in read use-case
+                size = d->respectSizeLimits(size);
             }
-
             break;
         }
 
     case Qt::PreferredSize: 
         {
-            if ( !(effectiveOrientations&Qt::Horizontal) && d->mMinLines > 0 && (d->mMinLines == d->mMaxLines) ) {
+            if ( !effectiveOrientations.testFlag(Qt::Horizontal)
+                    && (d->mMinLines == d->mMaxLines) ) {
                 //optimize single line if the horizontal sizeHint is ignored
-                size.setHeight( ( metrics.height() + metrics.leading() ) * d->mMinLines - metrics.leading() );
+                size = d->respectSizeLimits(size);
                 break;
             }
 
-            // do the heavy calculation
-            size = metrics.boundingRect(QRectF(QPointF(),maxSize),
-                d->textFlagsFromTextOption(),
-                d->mText).size();
-
-
-            if( ( constraint.width() < 0 ) && ( constraint.height() < 0 ) ) {
-
-                if( ( d->mNeedToAdjustSizeHint ) || ( d->oldSize != size ) ) {
-                    const_cast<HbTextItemPrivate*>(d)->adjustSizeHint();
-                }
-
-                qreal pref =  d->mPrefHeight;
-
-                if( d->mMaxLines > 0 ) {
-                    qreal maxLimit =  ( metrics.height() + metrics.leading() ) * d->mMaxLines - metrics.leading();
-                    if( maxLimit < pref ) {
-                        pref = maxLimit;
-                    }
-
-                }
-
-                const_cast<HbTextItemPrivate*>(d)->oldSize = size;
-                size.setHeight( pref );
-            }
-
+            size = d->calculatePrefferedSize(constraint);
+            size = d->respectSizeLimits(size);
             break;
         }
 
     default:
-        size = HbWidgetBase::sizeHint( which, constraint );
+        size = HbWidgetBase::sizeHint(which, constraint);
     }
 
     return size;
@@ -1140,16 +1241,30 @@ void HbTextItem::changeEvent(QEvent *event)
     switch(event->type()) {
     case QEvent::LayoutDirectionChange: {
             Q_D(HbTextItem);
-            d->mInvalidateShownText = true;
-            updateGeometry();
+            d->scheduleTextBuild();
         }
         break;
 
     case QEvent::FontChange: {
             Q_D(HbTextItem);
-            d->mInvalidateShownText = true;
-            prepareGeometryChange();
-            updateGeometry();
+
+            if (!d->mTextLayout.font().isCopyOf(font())) {
+
+#ifdef HB_TEXT_ITEM_LOGS
+                qDebug() << "fontChangeEvent: " << objectName()
+                        << " text: " << text().left(20)
+                        << " font: " << font();
+#endif // HB_TEXT_ITEM_LOGS
+
+                d->mTextLayout.setFont(font());
+                d->clearAdjustedSizeCache();
+                d->scheduleTextBuild();
+                prepareGeometryChange();
+                updateGeometry();
+            } else {
+                // ignoring event since it has no effect
+                return;
+            }
         }
         break;
 
@@ -1170,20 +1285,13 @@ void HbTextItem::changeEvent(QEvent *event)
 /*!
     \reimp
  */
-void HbTextItem::resizeEvent ( QGraphicsSceneResizeEvent * event )
+void HbTextItem::resizeEvent (QGraphicsSceneResizeEvent *event)
 {
     Q_D(HbTextItem);
 
     HbWidgetBase::resizeEvent(event);
 
-    d->setSize(event->newSize());
-
-    if( ( qAbs(event->oldSize().width() - event->newSize().width()) > EPSILON ) &&
-        ( ( event->oldSize().width() < preferredWidth() ) || ( event->newSize().width() < preferredWidth() ) ) ){
-        if( d->adjustSizeHint() ) {
-            updateGeometry();
-        }
-    }
+    d->scheduleTextBuild();
 }
 
 /*!
@@ -1205,9 +1313,23 @@ void HbTextItem::setTextWrapping(Hb::TextWrapping mode)
         textOption.setWrapMode(textWrapMode);
         d->mTextLayout.setTextOption(textOption);
         if(!d->mText.isEmpty()) {
-            d->mInvalidateShownText = true;
-            d->mNeedToAdjustSizeHint = true;
-            updateGeometry();
+            d->scheduleTextBuild();
+            prepareGeometryChange();
+            update();
+        }
+
+        // is size hint adjustable?
+        if (parentLayoutItem() && parentLayoutItem()->isLayout()) {
+            if (d->mAdjustedSize.isValid() &&
+                d->mAdjustedSize.width() > size().width()) {
+                // restore default size hint
+                d->mAdjustedSize = d->respectSizeLimits(
+                        QSizeF(d->mAdjustedSize.width(), d->mDefaultHeight));
+                d->mMinWidthForAdjust = d->mAdjustedSize.width();
+                d->mMaxWidthForAdjust = QWIDGETSIZE_MAX;
+
+                updateGeometry();
+            }
         }
     }
 }
@@ -1261,7 +1383,8 @@ void HbTextItem::setTextClip(bool clipping)
 }
 
 /*!
-    Returns true if text is cliped when item geometry is to small.
+    Returns true if text is clipped when item geometry is too small.
+
     \sa HbTextItem::setTextClip(bool)
 
     Equvalent of QGraphicsItem::flags().testFlag(QGraphicsItem::ItemClipsToShape)
@@ -1287,14 +1410,17 @@ bool HbTextItem::isTextClip() const
 void HbTextItem::setMinimumLines( int minLines )
 {
     Q_D( HbTextItem );
+    minLines = qMax(minLines, 1); // zero or nagative values are meanless and are restoring 1
+
 	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, true);
 
     if( minLines != d->mMinLines ) {
         if( ( d->mMaxLines > 0 ) && ( minLines > d->mMaxLines ) ) {
             d->mMaxLines = minLines;
         }
-
         d->mMinLines = minLines;
+
+        // not needed?: d->clearAdjustedSizeCache(); // some condition?
         updateGeometry();
     }
 }
@@ -1317,12 +1443,18 @@ void HbTextItem::setMaximumLines( int maxLines )
     Q_D( HbTextItem );
 	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, true);
 
+    maxLines = qMax(maxLines, 0);
+
     if( maxLines != d->mMaxLines ) {
-        if( ( d->mMinLines > 0 ) && ( maxLines > 0 ) && ( maxLines < d->mMinLines ) ){
+        if ((maxLines > 0) && (maxLines < d->mMinLines)){
             d->mMinLines = maxLines;
         }
-
         d->mMaxLines = maxLines;
+
+        d->scheduleTextBuild();
+        prepareGeometryChange();
+        update();
+
         updateGeometry();
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
         if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
@@ -1336,7 +1468,7 @@ void HbTextItem::setMaximumLines( int maxLines )
     \sa HbTextItem::setMinimumLines()
     \sa HbTextItem::setMaximumLines()
     \sa HbTextItem::maximumLines()
-    \return "minimum lines" parameter
+    \return "minimum lines" parameter (zero value means unset)
  */
 int HbTextItem::minimumLines() const
 {

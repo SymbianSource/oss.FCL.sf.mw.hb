@@ -71,6 +71,4 @@ contains(TEMPLATE, .*lib$) {
 }
 
 # common extra targets
-include(flint.pri)
-include(astyle.pri)
 include(coverage.pri)

@@ -287,7 +287,7 @@ bool HbXmlLoaderBinarySyntax::parsePushProperty()
     HbXmlVariable buffer;
     mIn >> propertyName >> buffer;
     bool res = mActions->pushProperty(propertyName, buffer);
-    delete propertyName;
+    delete[] propertyName;
     return res;
 }
 
@@ -310,10 +310,10 @@ bool HbXmlLoaderBinarySyntax::parsePushContainer()
         container.append(variable);
     }
 
-
     bool res =  mActions->pushContainer(propertyName, (HbXmlLoaderAbstractSyntax::DocumentLexems)type, container);
 
-    delete propertyName;
+    delete[] propertyName;
+    qDeleteAll(container);
 
     return res;
 }

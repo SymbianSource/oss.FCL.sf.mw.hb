@@ -182,14 +182,13 @@ bool HbPopupLayoutProxy::eventFilter(QObject *obj, QEvent *event)
 {
     Q_UNUSED( obj );
     switch( event->type() ) {
-        case QEvent::LayoutRequest: {
-                updateGeometry();
-            break;
-        }
-        case QEvent::ContextMenu: {
+        case QEvent::LayoutRequest:
+        case QEvent::ContextMenu:
+        case QEvent::Close:
+            {
             updateGeometry();
             break;
-        }
+            }
         default:
             break;
     }
@@ -493,7 +492,8 @@ void HbPopupManagerPrivate::removePopup(HbPopup *popup)
 
             // Move the focus to the initial focus item if there is no current focus item or
             // the ancestor of the current fucus item is popup
-            if( !scene->focusItem() || popup->hasFocus() || popup->isAncestorOf(scene->focusItem())) {
+            if( !scene->focusItem() || scene->focusItem() == popup ||
+                popup->isAncestorOf(scene->focusItem())) {
                 initialFocusedItem->setFocus();
                 initialFocusedItem = 0;
             }

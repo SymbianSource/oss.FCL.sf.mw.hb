@@ -169,12 +169,7 @@ void HbDeviceDialogManagerPrivate::init()
     HbDeviceDialogInterface *deviceDialogIf =
         mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), recycled, error);
     if (deviceDialogIf) {
-        HbPopup *popup = deviceDialogIf->deviceDialogWidget();
-#if defined(Q_OS_SYMBIAN)
-        mIndicatorPluginManager->connectTo(popup);
-#else
-        HbIndicatorPrivate::pluginManager()->connectTo(popup);
-#endif
+        connectIndicatorStatus(deviceDialogIf);
         mPluginManager.freeWidget(deviceDialogIf);
     }
     TRACE_EXIT
@@ -348,7 +343,7 @@ void HbDeviceDialogManagerPrivate::moveToForeground(bool foreground)
     TRACE_ENTRY_ARGS(foreground)
     
     if (foreground) {
-        if(!mMainWindow->isVisible()) {
+        if(!mMainWindow->isVisible() || !mMainWindow->isActiveWindow()) {
             mMainWindow->showFullScreen();
             doMoveToForeground(foreground, ECoeWinPriorityAlwaysAtFront);
         }
@@ -621,15 +616,11 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
     connect(sender, SIGNAL(deviceDialogData(QVariantMap)),
         SLOT(deviceDialogUpdate(const QVariantMap)));
 
-    if (!recycled && deviceDialogInfo.group == HbDeviceDialogPlugin::IndicatorGroup) {
+    if (!recycled && (deviceDialogInfo.flags & HbDeviceDialogPlugin::ReceiveIndicatorStatus)) {
         // Connect plugin manager signals to indicator menu slots, so that
         // it will get indicator updates. If the widget is reused, signals
         // are already connected.
-#if defined(Q_OS_SYMBIAN)
-        mIndicatorPluginManager->connectTo(popup);
-#else
-        HbIndicatorPrivate::pluginManager()->connectTo(popup);
-#endif
+        connectIndicatorStatus(deviceDialogIf);
     }
 
     // Set popup priority
@@ -753,6 +744,7 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
             }
         }
         emit q->deviceDialogClosed(id, closeReason);
+        disconnectDialogSignals(current.widget());
         mDialogs.remove(current);
         removeRegionRect(id);
     }
@@ -801,8 +793,7 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
     
     if (showingSecurity && !moreDialogs) {
 #if defined(Q_OS_SYMBIAN)
-        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);
-        mMainWindow->hide(); 
+        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);        
 #endif
     }    
     TRACE_EXIT
@@ -1035,4 +1026,46 @@ void HbDeviceDialogManagerPrivate::markNoClient(quintptr clientTag)
         current = &mDialogs.next(*current, HbDeviceDialogsContainer::Dialog::ClientTag,
             clientTag);
     }
+}
+
+// Connect indicators status (activate/deactivate) signals to device dialog (indicator menu
+// and screen saver)
+void HbDeviceDialogManagerPrivate::connectIndicatorStatus(HbDeviceDialogInterface *dialogInterface)
+{
+    HbIndicatorPluginManager *indicatorPluginManager;
+#if defined(Q_OS_SYMBIAN)
+    indicatorPluginManager = mIndicatorPluginManager;
+#else
+    indicatorPluginManager = HbIndicatorPrivate::pluginManager();
+#endif
+
+    QObject *receiver = dialogSignaler(dialogInterface);
+    indicatorPluginManager->disconnect(receiver);
+
+    // Connect indicator plugin manager signals to device dialog slots for it to get
+    // indicator updates
+    receiver->connect(indicatorPluginManager, SIGNAL(indicatorActivated(HbIndicatorInterface*)),
+        SLOT(indicatorActivated(HbIndicatorInterface*)));
+    receiver->connect(indicatorPluginManager, SIGNAL(indicatorRemoved(HbIndicatorInterface*)),
+        SLOT(indicatorDeactivated(HbIndicatorInterface*)));
+
+    indicatorPluginManager->signalActiveIndicators(receiver);
+}
+
+// Disconnect device dialog signals
+void HbDeviceDialogManagerPrivate::disconnectDialogSignals(HbDeviceDialogInterface *dialogInterface)
+{
+    dialogSignaler(dialogInterface)->disconnect(this); // disconnect signals
+}
+
+// Return device dialog signals source/target
+QObject *HbDeviceDialogManagerPrivate::dialogSignaler(HbDeviceDialogInterface *dialogInterface)
+{
+    // Plugin can specify signal source/target by signalSender() or allow default which is device
+    // dialog widget
+    QObject *signalSourceAndTarget = dialogInterface->signalSender();
+    if (!signalSourceAndTarget) {
+        signalSourceAndTarget = dialogInterface->deviceDialogWidget();
+    }
+    return signalSourceAndTarget;
 }

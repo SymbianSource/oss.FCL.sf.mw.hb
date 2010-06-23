@@ -35,6 +35,21 @@
 #include <qbasicatomic.h>
 #include <QDir>
 
+#ifdef Q_OS_SYMBIAN
+/*!
+    Convert path to Symbian version
+*/
+static void toSymbianPath(QString &path) {    
+    int len=path.length();
+    for (int i=0; i<len; i++) {
+        QCharRef ref=path[i];
+        if (ref == '/') {
+           ref= '\\';
+        }
+    }
+}
+#endif
+
 /*!
     @beta
     @hbcore
@@ -54,7 +69,9 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
 #ifdef Q_OS_SYMBIAN
     RFs& fs = CCoeEnv::Static()->FsSession();
     TFindFile ff(fs);
-    TPtrC fName((ushort*)(str.constData()),str.length());
+    QString str2 = str;
+    toSymbianPath(str2);
+    TPtrC fName((ushort*)(str2.constData()),str2.length());
     QString dNameString;
     
     if (!defaultDrive.isNull()) {
@@ -68,8 +85,8 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
         TParse p;
         p.Set(ff.File(), 0,0);
         TPtrC ptrC = p.Drive();
-        QString str2 = QString::fromRawData((QChar*)(ushort*)ptrC.Ptr(),ptrC.Length()); 
-        str.prepend(str2);
+        QString str3 = QString::fromRawData((QChar*)(ushort*)ptrC.Ptr(),ptrC.Length()); 
+        str.prepend(str3);
         return true;
     }    
     else {
@@ -103,12 +120,18 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
     
 }
 
+/*!
+    Helper class
+*/
 class AvailableDrives : public QString
 {
 public:
     AvailableDrives();    
 };
 
+/*!
+    Search available drives
+*/
 AvailableDrives::AvailableDrives() {
 #ifdef Q_OS_SYMBIAN    
     RFs& fs = CCoeEnv::Static()->FsSession();
@@ -124,7 +147,7 @@ AvailableDrives::AvailableDrives() {
         QChar cC = static_cast<QChar>(driveLetter);    
         this->append(cC);
     }
-    for (driveNumber = EDriveY; driveNumber >= EDriveA; driveNumber--) {
+    for (driveNumber = EDriveY; driveNumber >= EDriveA; --driveNumber) {
         if (driveNumber == EDriveC) {
             continue;
         }

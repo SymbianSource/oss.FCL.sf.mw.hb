@@ -46,7 +46,10 @@ HbStyleOptionRatingSlider::HbStyleOptionRatingSlider(const HbStyleOptionRatingSl
     noOfIntervals(other.noOfIntervals),
     noOfStars(other.noOfStars),
     unRatedGraphicsName(other.unRatedGraphicsName),
-    ratedGraphicsName(other.ratedGraphicsName)
+    ratedGraphicsName(other.ratedGraphicsName),
+    disableState(false),
+	pressedState(false)
+
 {
     type = Type;
     version = Version;

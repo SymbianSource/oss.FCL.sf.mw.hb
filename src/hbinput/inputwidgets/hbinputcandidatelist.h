@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_CANDIDATE_LIST_H
-#define HB_CANDIDATE_LIST_H
+#ifndef HB_INPUT_CANDIDATE_LIST_H
+#define HB_INPUT_CANDIDATE_LIST_H
 
 #include <hbdialog.h>
 
@@ -41,10 +41,10 @@ class HB_INPUT_EXPORT HbCandidateList : public HbDialog
     Q_OBJECT
 
 public:
-    explicit HbCandidateList(HbInputMethod* input, QGraphicsItem* parent = 0);
+    explicit HbCandidateList(HbInputMethod *input, QGraphicsItem *parent = 0);
     virtual ~HbCandidateList();
 
-    void populateList(const QStringList& candidates,bool addSpellQuery = false);
+    void populateList(const QStringList &candidates, bool addSpellQuery = false);
     QString currentCandidate();
     void setNumberOfVisibleLines(int numLines);
     bool setSizeAndPositionForAutoCompletion(HbVkbHost *vkbHost);
@@ -55,9 +55,9 @@ signals:
     void launchSpellQueryDialog();
 
 protected:
-    void closeEvent(QCloseEvent* event);
-    void keyPressEvent(QKeyEvent* event);
-    void hideEvent(QHideEvent * event);
+    void closeEvent(QCloseEvent *event);
+    void keyPressEvent(QKeyEvent *event);
+    void hideEvent(QHideEvent *event);
     void updatePrimitives();
 
 public slots:
@@ -68,6 +68,6 @@ private:
     Q_DISABLE_COPY(HbCandidateList)
 };
 
-#endif // HB_CANDIDATE_LIST_H
+#endif // HB_INPUT_CANDIDATE_LIST_H
 
 // End of file

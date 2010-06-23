@@ -27,7 +27,6 @@
 #include "hbinstance_p.h"
 #include <hbstyle.h>
 #include "hbstyle_p.h"
-#include "hbcolortheme_p.h"
 #endif
 #include "hbwidgetstyleloader_p.h"
 #include "hbwidgetloader_p.h"
@@ -243,10 +242,6 @@ bool HbWidgetStyleLoader::doAddFileSet(const QString &path,
     if (HbInstancePrivate::d_ptr()->mStyle) {
         HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
     }
-    if ( concern == HbLayeredStyleLoader::Concern_Colors 
-         || concern == HbLayeredStyleLoader::Concern_All) {
-        HbColorTheme::instance()->flushVariableCache();
-    }
 #endif
 
 #ifdef WIDGETSTYLELOADER_DEBUG
@@ -312,13 +307,6 @@ bool HbWidgetStyleLoader::doRemoveFileSet(
 #ifndef HB_BIN_CSS
                 if (HbInstancePrivate::d_ptr()->mStyle) {
                     HbInstancePrivate::d_ptr()->mStyle->d_func()->clearStyleSheetCaches();
-                }
-                if ( concern && (*concern == HbLayeredStyleLoader::Concern_Colors || 
-                                 *concern == HbLayeredStyleLoader::Concern_All)) {
-                    HbColorTheme *colorThemeInstance = HbColorTheme::instance();                    
-                    if (colorThemeInstance) {  // Check that the instance has not been destroyed.
-                        colorThemeInstance->flushVariableCache();
-                    }
                 }
 #endif
             }

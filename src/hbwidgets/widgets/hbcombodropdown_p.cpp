@@ -90,6 +90,7 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
                 if( !( this->isUnderMouse( ) ) ) {
                     HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
                     setVisible( false );
+                    comboPrivate->q_ptr->setProperty("state","normal");
                     backgroundPressed = true;
                     accepted = true;
                 }

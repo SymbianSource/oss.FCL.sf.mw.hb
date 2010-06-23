@@ -49,16 +49,16 @@ public:
     explicit HbInputFocusObject(QObject *focusedObject);
     ~HbInputFocusObject();
 
-    void sendPreEditString(const QString& string);
-    void sendCommitString(const QString& string);
-    void sendEvent(QEvent& event);
-    void postEvent(QEvent& event);
+    void sendPreEditString(const QString &string);
+    void sendCommitString(const QString &string);
+    void sendEvent(QEvent &event);
+    void postEvent(QEvent &event);
     QVariant inputMethodQuery(Qt::InputMethodQuery query) const;
     int editorCursorPosition();
     QFont editorFont();
     QString editorTextSelection();
     QString editorSurroundingText();
-    HbEditorInterface& editorInterface() const;
+    HbEditorInterface &editorInterface() const;
     void cursorLeft(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void cursorRight(Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void releaseFocus();
@@ -71,9 +71,9 @@ public:
     void setInputMethodHints(Qt::InputMethodHints hints);
 
     QPointF scenePos() const;
-    void filterStringWithEditorFilter(const QString& source, QString& result);
+    void filterStringWithEditorFilter(const QString &source, QString &result);
     bool characterAllowedInEditor(QChar character) const;
-    bool stringAllowedInEditor(const QString& string) const;
+    bool stringAllowedInEditor(const QString &string) const;
     void commitSmiley(QString smiley);
     QObject *object() const;
     void setFocus();
@@ -82,7 +82,7 @@ public:
     static bool isEditor(QObject *object);
 
 protected:
-    HbInputFocusObjectPrivate * const d_ptr;
+    HbInputFocusObjectPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputFocusObject)

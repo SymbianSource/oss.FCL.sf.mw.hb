@@ -39,7 +39,7 @@
 #include "hbmeshlayout_p.h"
 #include "hbsmileyengine_p.h"
 #include "hbinputeditorinterface.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hbtextmeasurementutility_p.h"
 #include "hbtapgesture.h"
 #include "hbpangesture.h"
@@ -688,26 +688,33 @@ QGraphicsItem *HbAbstractEdit::primitive (HbStyle::Primitive primitive) const
 void HbAbstractEdit::updatePrimitives()
 {
     Q_D(HbAbstractEdit);
-    HbWidget::updatePrimitives();
 
-    if (d->scrollArea) {
-        d->doc->setTextWidth(d->scrollArea->size().width());
-        if(d->placeholderDoc) {
-            d->placeholderDoc->setTextWidth(d->scrollArea->size().width());
+    if (d->polished && !d->updatePrimitivesInProgress) {
+
+        d->updatePrimitivesInProgress = true;
+
+        HbWidget::updatePrimitives();
+
+        if (d->scrollArea) {
+            d->doc->setTextWidth(d->scrollArea->size().width());
+            if(d->placeholderDoc) {
+                d->placeholderDoc->setTextWidth(d->scrollArea->size().width());
+            }
         }
-    }
-    QRectF canvasGeom(QRectF(QPointF(0,0),d->doc->size()));
-    if(d->scrollArea) {
-        canvasGeom.setHeight(qMax(d->scrollArea->size().height(), d->doc->size().height()));
-    }
-    //Changed from setGeometry() to setPreferredSize() because it causes
-    //weird input behavior otherwise.
-    d->canvas->setPreferredSize(canvasGeom.size());
-    d->ensureCursorVisible();
-    if (d->selectionControl) {
-        d->selectionControl->updatePrimitives();
-    }
+        QRectF canvasGeom(QRectF(QPointF(0,0),d->doc->size()));
+        if(d->scrollArea) {
+            canvasGeom.setHeight(qMax(d->scrollArea->size().height(), d->doc->size().height()));
+        }
 
+        d->canvas->setGeometry(canvasGeom);
+
+        d->ensureCursorVisible();
+        if (d->selectionControl) {
+            d->selectionControl->updatePrimitives();
+        }
+
+        d->updatePrimitivesInProgress=false;
+    }
 }
 
 /*!
@@ -792,6 +799,7 @@ void HbAbstractEdit::documentLayoutChanged()
 void HbAbstractEdit::documentSizeChanged(const QSizeF &size)
 {
     Q_UNUSED(size)
+
     updateGeometry();
     updatePrimitives();
 }
@@ -828,7 +836,6 @@ void HbAbstractEdit::setTextCursor(const QTextCursor &cursor)
     // QTextCursor operator!= compares only position
     if (    cursor.position() != d->cursor.position()
         ||  cursor.anchor() != d->cursor.anchor() ) {
-        const QTextCursor oldCursor = d->cursor;
         d->cursor = cursor;
 
         d->updateCurrentCharFormat();
@@ -1087,15 +1094,8 @@ void HbAbstractEdit::setValidator(HbValidator* validator)
 {
     Q_D(HbAbstractEdit);
 
-    if(d->validator) {
-        delete d->validator;
-        d->validator = 0;
-    }
-
-    if(validator) {
-        d->validator = validator;
-        d->initValidator();
-    }
+    d->validator = validator;
+    d->initValidator();
 }
 
 /*!
@@ -1119,7 +1119,6 @@ bool HbAbstractEdit::hasAcceptableInput() const
 void HbAbstractEdit::moveCursor(QTextCursor::MoveOperation op, QTextCursor::MoveMode mode)
 {
     Q_D(HbAbstractEdit);
-    //const QTextCursor oldCursor = d->cursor;
     d->cursor.movePosition(op, mode);
 
     d->updateCurrentCharFormat();
@@ -1287,35 +1286,35 @@ void HbAbstractEdit::showContextMenu(QPointF position)
 
     if (d->cursor.hasSelection() && d->canCut()) {
         connect(
-            menu->addAction("Cut"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_cut")), SIGNAL(triggered()),
             this, SLOT(cut()));       
     }
     if (d->cursor.hasSelection() && d->canCopy()) {
         connect(
-            menu->addAction("Copy"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_copy")), SIGNAL(triggered()),
             this, SLOT(copy()));
     }
     if (!d->cursor.hasSelection() && !d->doc->isEmpty() && d->canCopy()){
         connect(
-            menu->addAction("Select"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_select")), SIGNAL(triggered()),
             this, SLOT(selectClickedWord()));
         connect(
-            menu->addAction("Select all"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_select_all_contents")), SIGNAL(triggered()),
             this, SLOT(selectAll()));
     }
     if (d->canPaste()) {
         connect(
-            menu->addAction("Paste"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_paste")), SIGNAL(triggered()),
             this, SLOT(paste()));
     }
     if (d->cursor.hasSelection()) {
         connect(
-            menu->addAction("Deselect"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_deselect")), SIGNAL(triggered()),
             this, SLOT(deselect()));
     }
     if (d->canFormat()) {
         connect(
-            menu->addAction("Format"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_format")), SIGNAL(triggered()),
             this, SLOT(format()));
     }
 

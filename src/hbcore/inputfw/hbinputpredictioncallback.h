@@ -47,8 +47,7 @@ public:
 
     virtual QString surroundingText() = 0;
     virtual int cursorPosition() = 0;
-    virtual QList<HbKeyPressProbability> probableKeypresses()
-    {
+    virtual QList<HbKeyPressProbability> probableKeypresses() {
         return QList<HbKeyPressProbability>();
     }
 };

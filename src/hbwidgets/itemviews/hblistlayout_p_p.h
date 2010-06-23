@@ -22,8 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#ifndef HBLISTITEMLAYOUT_P_P_H
-#define HBLISTITEMLAYOUT_P_P_H
+#ifndef HBLISTLAYOUT_P_P_H
+#define HBLISTLAYOUT_P_P_H
 
 #include "hblistlayout_p.h"
 

@@ -45,18 +45,20 @@ public:
 };
 
 
-// This class is to handle all the specific widget actions in an , 
+// This class is to handle all the specific widget actions in an,
 // abstract way, put all such widget specific code in below class.
 class HbVkbHostContainerWidget
 {
- public:
+public:
     HbVkbHostContainerWidget(QObject *containterWidget);
     void setPos(QPointF newPosition);
     QPointF pos();
     QRectF sceneBoundingRect();
-    QObject *widgetObject() {return mContainerWidget;}
-    void connectSignals(QObject *reciever);
-    void disconnectSignals(QObject *reciever);
+    QObject *widgetObject() {
+        return mContainerWidget;
+    }
+    void connectSignals(QObject *receiver);
+    void disconnectSignals(QObject *receiver);
 private:
     QPointer<QObject> mContainerWidget;
 };
@@ -90,7 +92,7 @@ public:
 
 public:
     HbAbstractVkbHost *q_ptr;
-    HbVirtualKeyboard *mCallback; 
+    HbVirtualKeyboard *mCallback;
     QPointer<QGraphicsWidget> mKeypad;
     HbVkbHostContainerWidget *mContainerWidget;
     QSizeF mScreenSize;

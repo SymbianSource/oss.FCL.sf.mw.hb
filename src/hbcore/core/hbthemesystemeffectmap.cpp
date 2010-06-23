@@ -29,10 +29,10 @@
 
 #ifdef Q_OS_SYMBIAN
 #include <babitflags.h>
-//#include <w32std.h>
-//#include <graphics/wstfxconst.h>
+#include <w32std.h>
+#include <graphics/wstfxconst.h>
 
-//const TInt tfxPurpose = Qt::Window;
+const TInt tfxPurpose = Qt::Window;
 #endif //Q_OS_SYMBIAN
 
 #ifdef HBTHEMESYSTEMEFFECT_DEBUG
@@ -149,10 +149,10 @@ void HbThemeSystemEffectMap::traceEffects() const
 #endif //HBTHEMESYSTEMEFFECT_DEBUG
 
 #ifdef Q_OS_SYMBIAN
-void HbThemeSystemEffectMap::unregisterAllEffects(RWsSession &/*wsSession*/) const
+void HbThemeSystemEffectMap::unregisterAllEffects(RWsSession &wsSession) const
 {
     // Unregister all previous theme effects
-    //wsSession.UnregisterAllEffects();
+    wsSession.UnregisterAllEffects();
 }
 
 void HbThemeSystemEffectMap::registerEffects(RWsSession &wsSession,
@@ -169,22 +169,22 @@ void HbThemeSystemEffectMap::registerEffects(RWsSession &wsSession,
         // If no effect files defined, unregister effect
         if (mapIt.value().mOutgoingFile.isEmpty()
                 && mapIt.value().mIncomingFile.isEmpty()) {
-            //wsSession.UnregisterEffect(tfxAction, tfxPurpose, mapIt.key().mAppUid);
+            wsSession.UnregisterEffect(tfxAction, tfxPurpose, mapIt.key().mAppUid);
         } else {
             TPtrC outgoingEffect = mapIt.value().mOutgoingFile.utf16();
             TPtrC incomingEffect = mapIt.value().mIncomingFile.utf16();
             TPtrC resourceDir = mapIt.value().mFromBaseTheme ? baseResourceDir : themeResourceDir;
             TBitFlags effectFlags;
             if (mapIt.value().mIncomingHasPriority) {
-                //effectFlags.Set(ETfxIncomingTakesPriority);
+                effectFlags.Set(ETfxIncomingTakesPriority);
             }
-            //wsSession.RegisterEffect(tfxAction,
-            //                         tfxPurpose,
-            //                         resourceDir,
-            //                         outgoingEffect,
-            //                         incomingEffect,
-            //                         mapIt.key().mAppUid,
-            //                         effectFlags);
+            wsSession.RegisterEffect(tfxAction,
+                                     tfxPurpose,
+                                     resourceDir,
+                                     outgoingEffect,
+                                     incomingEffect,
+                                     mapIt.key().mAppUid,
+                                     effectFlags);
         }
     }
 }
@@ -194,13 +194,13 @@ TInt HbThemeSystemEffectMap::tfxTransitionAction(SystemEffectId id) const
     TInt tfxTransitionAction = 0;
     switch (id) {
     case(AppStart) :
-        //tfxTransitionAction = ETfxActionStart;
+        tfxTransitionAction = ETfxActionStart;
         break;
     case(AppExit) :
-        //tfxTransitionAction = ETfxActionShutDown;
+        tfxTransitionAction = ETfxActionShutDown;
         break;
     case(AppSwitch) :
-        //tfxTransitionAction = ETfxActionSwitching;
+        tfxTransitionAction = ETfxActionSwitching;
         break;
     default:
         break;

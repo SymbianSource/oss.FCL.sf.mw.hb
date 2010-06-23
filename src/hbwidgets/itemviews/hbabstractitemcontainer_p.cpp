@@ -279,7 +279,7 @@ void HbAbstractItemContainerPrivate::increaseBufferSize(int amount)
     }
 
     int itemsAdded = 0;
-    // in practise following conditions must apply: itemview is empty and scrollTo() has been called.
+    // in practize following conditions must apply: itemview is empty and scrollTo() has been called.
     // Starts populating items from given mFirstItemIndex
     if (    !index.isValid()
         &&  mFirstItemIndex.isValid()) {
@@ -289,7 +289,7 @@ void HbAbstractItemContainerPrivate::increaseBufferSize(int amount)
 
         mFirstItemIndex = QModelIndex();
     }
- 
+
     while (itemsAdded < amount) {
         index = mItemView->modelIterator()->nextIndex(index);
         if (!index.isValid()) {

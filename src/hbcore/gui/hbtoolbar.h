@@ -60,8 +60,6 @@ public:
     enum { Type = Hb::ItemType_ToolBar };
     int type() const { return Type; }
 
-    QRectF boundingRect() const;
-
 public slots:
     void setOrientation(Qt::Orientation orientation);
 

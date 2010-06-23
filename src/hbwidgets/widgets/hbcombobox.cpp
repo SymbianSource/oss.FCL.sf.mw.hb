@@ -133,7 +133,6 @@ HbComboBox::HbComboBox( QGraphicsItem *parent ):
     Q_D( HbComboBox );
     d->init( );
     updatePrimitives( );
-    setProperty( "state", "normal" );
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 }
 
@@ -153,7 +152,6 @@ HbComboBox::HbComboBox( HbComboBoxPrivate &dd, QGraphicsItem *parent ) :
     Q_D( HbComboBox );
     d->init( );
     updatePrimitives( );
-    setProperty( "state", "normal" );
 }
 
 /*!
@@ -679,7 +677,9 @@ void HbComboBox::setEditable( bool editable )
 {
     Q_D( HbComboBox ); 
     d->setEditable( editable );
-    setProperty( "state", "normal" );
+    if (!editable ) {
+        setProperty( "state", "normal" );
+    }
 }
 
 /*!
@@ -1021,7 +1021,6 @@ bool HbComboBox::eventFilter( QObject* obj, QEvent* event )
                     {
                         d->mIsDown = false;
                         updatePrimitives( );
-                        setProperty( "state", "normal" );
                         accepted = true;
                         break;
                     }

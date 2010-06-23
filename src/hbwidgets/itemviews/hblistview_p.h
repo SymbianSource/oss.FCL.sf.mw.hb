@@ -68,6 +68,8 @@ public:
 
     virtual bool panTriggered(QGestureEvent *event);
 
+    void arrangeModeSetup(bool newMode);
+
 
 public:
     bool mArrangeMode;
@@ -81,6 +83,8 @@ public:
 
     bool mMoveOngoing;
     bool mOriginalFriction;    
+    bool mOriginalLongPressEnabled;    
+    bool mOriginalInteractiveScrollBar;    
 };
 
 #endif // HBLISTVIEW_PRIVATE_H

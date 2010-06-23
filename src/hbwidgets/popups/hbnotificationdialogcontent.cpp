@@ -36,7 +36,10 @@ HbNotificationDialogContent::HbNotificationDialogContent(QGraphicsWidget *parent
 
 void HbNotificationDialogContent::setIcon(const HbIcon &icon)
 {
-    if(!mIconItem) {
+    delete mIconItem;
+    mIconItem = 0;
+
+    if(!icon.isNull()) {    
         mIconItem = style()->createPrimitive(
                 HbStyle::P_NotificationDialog_icon, this);
         Q_CHECK_PTR(mIconItem);

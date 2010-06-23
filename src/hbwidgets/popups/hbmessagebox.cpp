@@ -42,6 +42,7 @@ class HbStyle;
 
 class HbMessageBoxEditor : public HbLineEdit
 {
+	Q_OBJECT
 public:
     HbMessageBoxEditor(QGraphicsItem* parent =0) : HbLineEdit(parent),mText()
     {
@@ -50,8 +51,8 @@ public:
         HbScrollArea *scroll = scrollArea();
         scroll->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
         clearContextMenuFlag(Hb::ShowTextContextMenuOnLongPress);
-        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);  
-        setBackgroundItem(0,0);
+        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);
+        setBackgroundItem(0,0);     
     }
 
     void focusInEvent(QFocusEvent * event)
@@ -109,15 +110,17 @@ HbMessageBoxPrivate::HbMessageBoxPrivate() :
     HbDialogPrivate(),
     mIcon(),
     mMessageBoxContentWidget(0),
-    mMessageBoxType(HbMessageBox::MessageTypeInformation),
+    mMessageBoxType(HbMessageBox::MessageTypeNone),
     mIconVisible(true)
 {
 }
 
-void HbMessageBoxPrivate::_q_closeOnGesture()
+void HbMessageBoxPrivate::_q_buttonClicked()
 {
+    Q_Q(HbMessageBox);    
+    HbAction *action = static_cast<HbAction*>(q->sender());
+    q->done(mActionList.value(action));
 }
-
 /*
     destructor
 */
@@ -131,101 +134,119 @@ HbMessageBoxPrivate::~HbMessageBoxPrivate()
 void HbMessageBoxPrivate::init()
 {
     Q_Q(HbMessageBox);
-
+       
+    mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
+    q->setContentWidget( mMessageBoxContentWidget );
+    q->setDismissPolicy(HbPopup::NoDismiss);
+    q->setTimeout(HbPopup::NoTimeout);      
+    q->setStandardButtons(HbMessageBox::Ok);
+    
     switch(mMessageBoxType) {
+    case HbMessageBox::MessageTypeNone:
+        mMessageBoxContentWidget->mIconItem->hide();
+        mMessageBoxContentWidget->setProperty("hasIcon",false);
+        break;
     case HbMessageBox::MessageTypeInformation:
     case HbMessageBox::MessageTypeWarning:
-        mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
-        q->setContentWidget( mMessageBoxContentWidget );
-        q->setDismissPolicy(HbPopup::NoDismiss);
-        q->setTimeout(HbPopup::NoTimeout);      
-        q->addAction(new HbAction(q->tr("OK"),q));
-        break;
-
     case HbMessageBox::MessageTypeQuestion:
-        mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
-        q->setContentWidget( mMessageBoxContentWidget );
-        q->setDismissPolicy(HbPopup::NoDismiss);
-        q->setTimeout(HbPopup::NoTimeout);       
-        q->addAction(new HbAction(q->tr("Yes"),q));
-        q->addAction(new HbAction(q->tr("No"),q));
         break;
+        
     }
+
 }
 
 /*!
     @beta
     
     \class HbMessageBox
-    \brief The HbMessageBox class provides a modal dialog for informing the user or for asking the user a question and receiving an answer.
+    \brief HbMessageBox is a convenience modal dialog class. HbMessageBox can be used to launch a information,question,warning or any other 
+    general messages.
 
-    \image html information.PNG  "An information MessageBox"
-    \image html question.PNG  "A question MessageBox"
-    \image html warning.PNG  "A warning MessageBox"
+	\image html information.PNG  "An information MessageBox"
+	\image html question.PNG  "A question MessageBox"
+	\image html warning.PNG  "A warning MessageBox"
 
     Using HbMessageBox, the following dialogs can be created:
 
-    <b>Information:</b> a statement to the user to which dismissed after acknowledging the information ('OK').<br>
+    <b>Information:</b> a statement to the user to which they may respond by acknowledging the information ('Ok').<br>
     <b>Question:</b> a query to the user requiring a response. User needs to select between two alternatives, the positive or negative (For example: 'Delete Mailbox?' 'Yes'/'No').<br>
     <b>Warning:</b> a statement to the user to which they may respond by acknowledging the warning ('OK').<br>
+    <b>None:</b> Any general messages to which user responds. 
     
-    By default, Message box launches an information dialog which contains a description text and user actions visualized as command buttons.
+    By default, Message box launches a None dialog which can contain a text, an icon and action buttons
 
     Default properties for the MessageBox (warning, information and question dialogs) are:
 
     Description text: Text shown to the user as information. The amount of text rows is not limited, but after five rows the text starts scrolling.
-    Icon: Default icons are available for each dialog type using the MessageBox template.
-    Action buttons (one or two): one button for information and warning MessageBox, two buttons for question MessageBox.
+    Icon: Default icons are available for each dialog type using the MessageBox template. Changing the default icons is not recommended.
+    Action button : One action button ("Ok") for all the types.
     
-    All the three dialogs(information, warning, question) supported by MessageBox are by default modal in nature, with
+    All the four dialogs(information, warning, question and none) supported by MessageBox are by default modal in nature, with
     a dismiss policy of NoDismiss, timeout policy of NoTimeout, and with a BackgroundFade property on.
-    The user must click the OK/Yes/No buttons to dismiss the Message Box.
 
     Example code for launching MessageBox using static convenience functions:
 
     \code
     //Information MessageBox
-    HbMessageBox::information(informationText, this, SLOT(onDialogClose(HbAction*)), headWidget, scene, parent);
+    HbMessageBox::information("The file is deleted",0,0,HbMessageBox::Ok);
 
     //Warning MessageBox
-    HbMessageBox::warning(warningText, this, SLOT(onDialogClose(HbAction*)), headWidget, scene, parent);
+    HbMessageBox::warning("This will change the name",0,0,HbMessageBox::Ok);
 
     //Question MessageBox
-    HbMessageBox::question(questionText, this, SLOT(onDialogClose(HbAction*)), primaryButtonText, secondaryButtonText, headWidget, scene, parent);
+     HbMessageBox::question("Do you want to delete the file ?", this, SLOT(onDialogClose(int)),HbMessageBox::Yes |HbMessageBox::No );
+    \endcode
+
+    Example code to show an information messagebox:
+    \code
+    HbMessageBox *box = new HbMessageBox("This is a general note.");
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->open();
     \endcode
 
     Example code to show a question messagebox with a return value based action
     \code
-    HbMessageBox *box = new HbMessageBox(" Delete file IC0002 ? ",HbMessageBox::MessageTypeQuestion);
+    HbMessageBox *box = new HbMessageBox(HbMessageBox::MessageTypeQuestion);
+    box->setText("Delete file IC0002 ? ");
     box->setAttribute(Qt::WA_DeleteOnClose);
-    box->open(this,SLOT(dialogClosed(HbAction*)));
-
+    box->setStandardButtons(HbMessageBox::Yes | HbMessageBox::No);
+    box->open(this,SLOT(onDialogClosed(int)));
+    
     //Slot implementation
-    void dialogClosed(HbAction *action)
+    void MessageBoxView::onDialogClosed(int action)
     {
-        HbMessageBox *dlg = static_cast<HbMessageBox*>(sender());
-        if(action == dlg->actions().at(0)) 
-        {
-            // Delete file 
-        }
-        else
-        {
-           // Cancellation is done.Dont delete the file
-        }
-     }
+         if (action == HbMessageBox::Yes) {
+          //User Clicked Yes//
+          //Delete the file//
+         }
+         else if (action == HbMessageBox::No) {
+          //User Clicked No//
+          //do not delete the file//
+         }
+        
+    }
+    \endcode     
+
+    Example code to show a question messagebox using static API
+     \code
+     HbMessageBox::question("Delete file IC0002 ? ",this,SLOT(onDialogClosed(int)),HbMessageBox::Yes | HbMessageBox::No);  
+     // Here the SLOT implementation is same as above
      \endcode     
+
 
     \enum HbMessageBox::MessageBoxType
 
-    \value \b MessageTypeInformation creates a modal information dialog, which by default will have one OK button 
+    \value \b MessageTypeNone creates a modal dialog, which by default will have one OK button 
         for the user to dismiss the dialog.
 
     \value \b MessageTypeWarning creates a simple modal dialog with a warning icon and a description text. 
-        Dialog by default will have one OK button, for the user to dismiss the dialog. 
+        This Dialog by default will have one Ok button, for the user to dismiss the dialog. 
 
-    \value \b MessageTypeQuestion Shows a modal dialog with question icon and a description text. The user can either confirm or
-        reject the dialog. By default dialog supports two buttons, using which user can dismiss the dialog. 
+    \value \b MessageTypeWarning creates a simple modal dialog with a information icon and a description text. 
+        This Dialog by default will have one Ok button, for the user to dismiss the dialog. 
 
+     \value \b MessageTypeQuestion creates a simple modal dialog with a question icon and a description text. 
+        This Dialog by default will have one Ok button, for the user to dismiss the dialog.  
 */
 
 /*!
@@ -362,6 +383,10 @@ void HbMessageBox::setIcon(const HbIcon &icon)
             initStyleOption(&option);
             style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, HbStyle::P_MessageBox_icon, &option);
         }
+        if(iconVisible() ) {
+            d->mMessageBoxContentWidget->mIconItem->show();
+            d->mMessageBoxContentWidget->setProperty("hasIcon",true);
+        }
     }
 }
 
@@ -412,11 +437,123 @@ bool  HbMessageBox::iconVisible() const
     return d->mIconVisible;
 
 }
+/*!
+    sets the buttons for the dialog. If the Application wants "Yes" and "No" buttons 
+    can set it like setStandardButtons(HbMessageBox::Yes | HbMessageBox::No).
+    If only yes Button then setStandardButtons(HbMessageBox::Yes).
+   
+   \param buttons the button set
+    \sa standardButtons()
 
+*/
+void HbMessageBox::setStandardButtons(HbMessageBox::StandardButtons buttons)
+{
+    Q_D(HbMessageBox); 
+    if(d->mStandardButtons == buttons ) {
+        return;
+    }
+    clearActions();
+    d->mStandardButtons = buttons;
+    uint i = HbMessageBox::Ok;        
+    int count =0;
+    while (i <= HbMessageBox::Reset) {
+         HbAction *action=0;
+         if (i & buttons) {
+             StandardButton button = HbMessageBox::StandardButton(i);
+             switch(button){
+                    case Ok:
+                          action = new HbAction(hbTrId("txt_common_button_ok"),this); 
+                          d->mActionList.insert(action,Ok);
+                          break;
+                    case Save:
+                          action = new HbAction(hbTrId("txt_common_button_save"),this); 
+                          d->mActionList.insert(action,Save);
+                          break;
+                    case Open:
+                          action = new HbAction(hbTrId("txt_common_button_open"),this); 
+                          d->mActionList.insert(action,Open);
+                          break;
+                     case Yes:
+                          action = new HbAction(hbTrId("txt_common_button_yes"),this); 
+                          d->mActionList.insert(action,Yes);
+                          break;
+                      case No:
+                          action = new HbAction(hbTrId("txt_common_button_no"),this);                         
+                          d->mActionList.insert(action,No);
+                          break;
+                      case Retry:
+                          action = new HbAction(hbTrId("txt_common_button_retry"),this);  
+                          d->mActionList.insert(action,Retry);
+                          break;                      
+                      case Continue:
+                          action = new HbAction(hbTrId("txt_common_button_continue"),this);  
+                          d->mActionList.insert(action,Continue);
+                          break;
+                      case Close:
+                          action = new HbAction(hbTrId("txt_common_button_close"),this);
+                          d->mActionList.insert(action,Close);
+                          break;
+                       case Cancel:
+                          action = new HbAction(hbTrId("txt_common_button_cancel"),this); 
+                          d->mActionList.insert(action,Cancel);
+                          break;
+                       case Help:
+                          action = new HbAction(hbTrId("txt_common_button_help"),this); 
+                          d->mActionList.insert(action,Help);
+                          break;
+                       case Reset:
+                          action = new HbAction(hbTrId("txt_common_button_reset"),this);    
+                          d->mActionList.insert(action,Reset);
+                          break;
+                       case Delete:
+                          action = new HbAction(hbTrId("txt_common_button_delete"),this);
+                          d->mActionList.insert(action,Delete);
+                          break;
+                       default :
+                           break;
+
+                };
+            
+            }
+            i = i << 1;
+
+            if(action) {
+                connect(action,SIGNAL(triggered()),this,SLOT(_q_buttonClicked()));
+                addAction(action);                
+                count++;
+            }
+            
+        }
+}
+/*!
+   Returns the standared button list
+   
+   \sa setStandardButtons()
+
+*/
+HbMessageBox::StandardButtons HbMessageBox::standardButtons() const
+{
+    Q_D(const HbMessageBox);
+    return d->mStandardButtons;
+
+}
 
 /*!
-    This is a convenience function for showing a question dialog with \a questionText and buttons with specified \a primaryButtonText and
-    \a secondaryButtonText. 
+
+    \deprecated HbMessageBox::question(const QString&,QObject*,const char*,const QString&,const QString&,QGraphicsWidget*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+
+    Please use 
+    
+    question(const QString &questionText,
+                                            QObject *receiver,
+                                            const char *member,
+                                            HbMessageBox::StandardButtons buttons,
+                                            QGraphicsWidget *headWidget,
+                                            QGraphicsScene *scene,
+                                            QGraphicsItem *parent)
+
+    This is a convenience function for showing a question dialog with \a questionText with provided buttons.
     \param questionText descriptive text for the messagebox
     \param receiver Object which has the slot, which acts as a handler once the dialog closes.
     \param member the slot, where the control will come, once the dialog is closed.
@@ -457,6 +594,18 @@ void HbMessageBox::question(const QString &questionText,
 }
      
 /*!
+    \deprecated HbMessageBox::information(const QString&,QObject*,const char*,QGraphicsWidget*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+
+    Please use 
+    
+    information(const QString &questionText,
+                                            QObject *receiver,
+                                            const char *member,
+                                            HbMessageBox::StandardButtons buttons,
+                                            QGraphicsWidget *headWidget,
+                                            QGraphicsScene *scene,
+                                            QGraphicsItem *parent)
     This is a convenience function for showing an information dialog with a descriptive text and a default OK button.
     \param informationText Descriptive text for the information dialog.
     \param receiver Which has the slot, which acts as a handler once the dialog closes.
@@ -485,6 +634,19 @@ void HbMessageBox::information(const QString &informationText,
 }
                                                                                               
 /*!
+    \deprecated HbMessageBox::warning(const QString&,QObject*,const char*,QGraphicsWidget*,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+
+    Please use 
+    
+    warning(const QString &questionText,
+                                            QObject *receiver,
+                                            const char *member,
+                                            HbMessageBox::StandardButtons buttons,
+                                            QGraphicsWidget *headWidget,
+                                            QGraphicsScene *scene,
+                                            QGraphicsItem *parent)
+
     This is a convenience function for showing a warning dialog with a descriptive text and an OK button.
     \param warningText Descriptive text for the warning dialog.
     \param receiver Which has the slot, which acts as a handler once the dialog closes.
@@ -507,6 +669,105 @@ void HbMessageBox::warning(const QString &warningText,
     messageBox->setText(warningText);
     if(headWidget) {
         messageBox->setHeadingWidget(headWidget);
+    }
+    messageBox->setAttribute(Qt::WA_DeleteOnClose);
+    messageBox->open(receiver,member);
+}
+
+/*!
+    This is a convenience function for showing a question dialog with \a questionText and a default OK button.
+    \param questionText descriptive text for the messagebox
+    \param receiver Object which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.The signature of member is void dialogClosed(int val);
+    \param buttons The action buttons of the dialog.
+    \param headWidget the heading widget, where the user can set a title, Null by default.
+    \param scene the scene for the MessageBox. Null by default.
+    \param parent the parent widget. Null by default.
+*/
+void HbMessageBox::question(const QString &questionText,
+                                            QObject *receiver,
+                                            const char *member,
+                                            HbMessageBox::StandardButtons buttons,
+                                            QGraphicsWidget *headingWidget,
+                                            QGraphicsScene *scene,
+                                            QGraphicsItem *parent)
+{    
+    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeQuestion, parent);
+    if (scene && !parent) {
+        scene->addItem(messageBox);
+    }
+    messageBox->setText(questionText);
+
+    messageBox->setStandardButtons(buttons);   
+    
+    if(headingWidget) {
+        messageBox->setHeadingWidget(headingWidget);
+    }
+    messageBox->setAttribute(Qt::WA_DeleteOnClose);
+    messageBox->open(receiver,member);
+}
+     
+/*!
+    This is a convenience function for showing an information dialog with a descriptive text and a default OK button.
+    \param informationText Descriptive text for the information dialog.
+    \param receiver Which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.The signature of member is void dialogClosed(int val);
+    \param buttons The action buttons of the dialog.
+    \param headWidget This can used by the user to set a title widget. Null by default.
+    \param scene the scene for the MessageBox, Null by default.
+    \param parent the parent widget. Null by default
+*/
+void HbMessageBox::information(const QString &informationText,
+                                               QObject *receiver,
+                                               const char *member,
+                                               HbMessageBox::StandardButtons buttons,
+                                               QGraphicsWidget *headingWidget,
+                                               QGraphicsScene *scene,
+                                               QGraphicsItem *parent)
+{
+    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeInformation, parent);
+    if (scene && !parent) {
+        scene->addItem(messageBox);
+    }
+    messageBox->setText(informationText);
+
+    messageBox->setStandardButtons(buttons);   
+
+    if(headingWidget) {
+        messageBox->setHeadingWidget(headingWidget);
+    }
+    messageBox->setAttribute(Qt::WA_DeleteOnClose);
+    messageBox->open(receiver,member);
+}
+                                                                                              
+/*!
+    This is a convenience function for showing a warning dialog with a descriptive text and an OK button.
+    \param warningText Descriptive text for the warning dialog.
+    \param receiver Which has the slot, which acts as a handler once the dialog closes.
+    \param member the slot, where the control will come, once the dialog is closed.The signature of member is void dialogClosed(int val);
+    \param buttons The action buttons of the dialog.
+    \param headWidget This can used by the user to set a title widget, Null by default.
+    \param scene the scene for the messagebox, Null by default.
+    \param parent the parent widget, Null by default.
+*/
+void HbMessageBox::warning(const QString &warningText,
+                                           QObject *receiver,
+                                           const char *member,
+                                           HbMessageBox::StandardButtons buttons,
+                                           QGraphicsWidget *headingWidget,
+                                           QGraphicsScene *scene,
+                                           QGraphicsItem *parent)
+{
+    HbMessageBox *messageBox = new HbMessageBox(HbMessageBox::MessageTypeWarning, parent);
+    if (scene && !parent) {
+        scene->addItem(messageBox);
+    }
+    messageBox->setText(warningText);
+
+    messageBox->setStandardButtons(buttons);   
+
+    if(headingWidget) {
+        messageBox->setHeadingWidget(headingWidget);
     }
     messageBox->setAttribute(Qt::WA_DeleteOnClose);
     messageBox->open(receiver,member);

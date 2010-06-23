@@ -46,9 +46,9 @@ public:
     HbInputMethod();
     virtual ~HbInputMethod();
 
-    static bool initializeFramework(QApplication& app);
+    static bool initializeFramework(QApplication &app);
     static void forceUnfocus();
-    static HbInputMethod* activeInputMethod();
+    static HbInputMethod *activeInputMethod();
     static QList<HbInputMethodDescriptor> listCustomInputMethods();
 
     virtual void focusReceived();
@@ -56,34 +56,34 @@ public:
 
     bool isActiveMethod() const;
 
-    HbInputFocusObject* focusObject() const;
-    void setFocusObject(HbInputFocusObject* focusObject);
+    HbInputFocusObject *focusObject() const;
+    void setFocusObject(HbInputFocusObject *focusObject);
 
     void lockFocus();
     void unlockFocus();
 
     // From QInputContext (do not override).
-    void widgetDestroyed(QWidget* widget);
-    void setFocusWidget(QWidget* widget);
+    void widgetDestroyed(QWidget *widget);
+    void setFocusWidget(QWidget *widget);
 
     HbInputState inputState() const;
 
-    bool activateState(const HbInputState& state);
+    bool activateState(const HbInputState &state);
     void updateState();
     void editorRootState(HbInputState &result) const;
     bool automaticTextCaseNeeded() const;
     bool activateInputMethod(const HbInputMethodDescriptor &inputMethod);
 
 protected:
-    virtual void inputStateActivated(const HbInputState& newState);
+    virtual void inputStateActivated(const HbInputState &newState);
     virtual void inputLanguageChanged(const HbInputLanguage &newLanguage);
-    virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);  
+    virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
     bool stateChangeInProgress() const;
 
     HbInputLanguage activeLanguage() const;
 
     bool modeAllowedInEditor(HbInputModeType mode) const;
-    void inputStateToEditor(const HbInputState& source);
+    void inputStateToEditor(const HbInputState &source);
 
     void constructLatinState(HbInputState &result) const;
 
@@ -92,7 +92,7 @@ protected:
 public slots:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
     void globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
-    void activeKeyboardChanged(HbKeyboardType newKeyboard);     
+    void activeKeyboardChanged(HbKeyboardType newKeyboard);
     void orientationChanged(Qt::Orientation orientation);
     virtual void orientationAboutToChange();
     void editorDeleted(QObject *obj);

@@ -33,6 +33,7 @@
 
 #include <QGesture>
 #include <QTime>
+#include <QGraphicsObject>
 
 //#define RECOGNIZERS_DEBUG
 #ifdef RECOGNIZERS_DEBUG
@@ -271,8 +272,14 @@ HbPinchGestureRecognizer::~HbPinchGestureRecognizer()
     \return
 
 */
-QGesture* HbPinchGestureRecognizer::create(QObject *)
+QGesture* HbPinchGestureRecognizer::create(QObject *target)
 {
+    if (target && target->isWidgetType()) {
+        static_cast<QWidget *>(target)->setAttribute(Qt::WA_AcceptTouchEvents);
+    }
+    if (QGraphicsObject *o = qobject_cast<QGraphicsObject *>(target)){
+        o->setAcceptTouchEvents(true);
+    }
     return new HbPinchGesture;
 }
 

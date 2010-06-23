@@ -40,7 +40,7 @@ class HB_CORE_EXPORT HbInputSettingProxy : public QObject
     Q_OBJECT
 
 public:
-    static HbInputSettingProxy* instance();
+    static HbInputSettingProxy *instance();
     static QStringList inputMethodPluginPaths();
     static QStringList keymapPluginPaths();
     static QString languageDatabasePath();
@@ -54,8 +54,8 @@ private:
     virtual ~HbInputSettingProxy();
 
 public:
-    void connectObservingObject(QObject* observer);
-    void disconnectObservingObject(QObject* observer);
+    void connectObservingObject(QObject *observer);
+    void disconnectObservingObject(QObject *observer);
     HbInputLanguage globalInputLanguage() const;
     void availableHwKeyboard(QList<HbKeyboardType>& listOfAvailableKeyboards) const;
     HbInputLanguage globalSecondaryInputLanguage() const;
@@ -124,7 +124,7 @@ public:
     friend class ContentWidget;
 
 private:
-    HbInputSettingProxyPrivate * const d_ptr;
+    HbInputSettingProxyPrivate *const d_ptr;
 
 private:
     Q_DISABLE_COPY(HbInputSettingProxy)

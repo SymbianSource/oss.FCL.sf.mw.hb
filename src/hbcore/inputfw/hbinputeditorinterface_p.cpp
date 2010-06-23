@@ -22,13 +22,14 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputeditorinterface.h"
+#include "hbinputeditorinterface_p.h"
+
 #include <QWidget>
 #include <QGraphicsWidget>
 #include <QGraphicsProxyWidget>
 #include <QLineEdit>
 #include <QTextEdit>
-#include "hbinputeditorinterface_p.h"
-#include "hbinputeditorinterface.h"
 
 void HbEditorInterfacePrivate::lock()
 {
@@ -42,7 +43,7 @@ void HbEditorInterfacePrivate::unlock()
 
 bool HbEditorInterfacePrivate::hasInterface(HbEditorInterface *toBeChecked) const
 {
-    foreach (HbEditorInterface *iFace, mAttachedInterfaces) {
+    foreach(HbEditorInterface *iFace, mAttachedInterfaces) {
         if (iFace == toBeChecked) {
             return true;
         }
@@ -52,35 +53,35 @@ bool HbEditorInterfacePrivate::hasInterface(HbEditorInterface *toBeChecked) cons
 }
 
 void HbEditorInterfacePrivate::setInputMethodHints(Qt::InputMethodHints hints)
-{   
-    if (mHostEditor) {       
-         QGraphicsWidget *graphicsWidget = qobject_cast<QGraphicsWidget*>(mHostEditor); 
-         if (graphicsWidget) {               
-             graphicsWidget->setInputMethodHints(hints);
-         } else {
-             QWidget *widget = qobject_cast<QWidget*>(mHostEditor); 
-             if (widget) {            
+{
+    if (mHostEditor) {
+        QGraphicsWidget *graphicsWidget = qobject_cast<QGraphicsWidget *>(mHostEditor);
+        if (graphicsWidget) {
+            graphicsWidget->setInputMethodHints(hints);
+        } else {
+            QWidget *widget = qobject_cast<QWidget *>(mHostEditor);
+            if (widget) {
                 widget->setInputMethodHints(hints);
-             }                   
-         } 
+            }
+        }
     }
 }
 
 Qt::InputMethodHints HbEditorInterfacePrivate::inputMethodHints() const
 {
-   if (mHostEditor) {    
-       QGraphicsWidget *graphicsWidget = qobject_cast<QGraphicsWidget*>(mHostEditor); 
-       if (graphicsWidget) {              
-           return graphicsWidget->inputMethodHints();
-       } else {
-            QWidget *widget = qobject_cast<QWidget*>(mHostEditor); 
-            if (widget) {          
+    if (mHostEditor) {
+        QGraphicsWidget *graphicsWidget = qobject_cast<QGraphicsWidget *>(mHostEditor);
+        if (graphicsWidget) {
+            return graphicsWidget->inputMethodHints();
+        } else {
+            QWidget *widget = qobject_cast<QWidget *>(mHostEditor);
+            if (widget) {
                 return widget->inputMethodHints();
-            }     
+            }
         }
     }
 
-   return Qt::ImhNone;
+    return Qt::ImhNone;
 }
 
 void HbEditorInterfacePrivate::notifyCursorPositionChange(int oldPos, int newPos)
@@ -97,7 +98,7 @@ void HbEditorInterfacePrivate::cursorPositionChanged()
 // HbEditorInterfaceCache
 //
 
-HbEditorInterfacePrivateCache* HbEditorInterfacePrivateCache::instance()
+HbEditorInterfacePrivateCache *HbEditorInterfacePrivateCache::instance()
 {
     static HbEditorInterfacePrivateCache myCache;
     return &myCache;
@@ -114,27 +115,27 @@ HbEditorInterfacePrivateCache::~HbEditorInterfacePrivateCache()
     }
 }
 
-HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* editor, HbEditorInterface* interface)
+HbEditorInterfacePrivate *HbEditorInterfacePrivateCache::attachEditor(QObject *editor, HbEditorInterface *interface)
 {
     if (editor) {
         for (int i = 0; i < mObjectCache.count(); i++) {
             if (mObjectCache[i]->mHostEditor == editor) {
                 if (!mObjectCache[i]->hasInterface(interface)) {
                     mObjectCache[i]->mAttachedInterfaces.append(interface);
-                    connect(interface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
+                    connect(interface, SIGNAL(destroyed(QObject *)), this, SLOT(interfaceDestroyed(QObject *)));
                     connect(mObjectCache[i], SIGNAL(cursorPositionChanged(int, int)), interface, SIGNAL(cursorPositionChanged(int, int)));
                 }
                 return mObjectCache[i];
             }
         }
 
-        HbEditorInterfacePrivate* newItem = new HbEditorInterfacePrivate();
+        HbEditorInterfacePrivate *newItem = new HbEditorInterfacePrivate();
         newItem->mHostEditor = editor;
         newItem->mAttachedInterfaces.append(interface);
         mObjectCache.append(newItem);
 
-        connect(editor, SIGNAL(destroyed(QObject*)), this, SLOT(destroyed(QObject*)));
-        connect(interface, SIGNAL(destroyed(QObject*)), this, SLOT(interfaceDestroyed(QObject*)));
+        connect(editor, SIGNAL(destroyed(QObject *)), this, SLOT(destroyed(QObject *)));
+        connect(interface, SIGNAL(destroyed(QObject *)), this, SLOT(interfaceDestroyed(QObject *)));
         connect(newItem, SIGNAL(cursorPositionChanged(int, int)), interface, SIGNAL(cursorPositionChanged(int, int)));
 
         // Check whether the connected object is a QLineEdit or QTextEdit, plain or wrapped in QGraphicsProxyWidget
@@ -142,26 +143,26 @@ HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* e
         if (editor->inherits("HbAbstractEdit")) {
             connect(editor, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
         } else {
-            QGraphicsProxyWidget* proxywidget = qobject_cast<QGraphicsProxyWidget*>(editor);
+            QGraphicsProxyWidget *proxywidget = qobject_cast<QGraphicsProxyWidget *>(editor);
             if (proxywidget) {
-                QWidget* editorwidget = proxywidget->widget();
-                QLineEdit* lineedit = qobject_cast<QLineEdit*>(editorwidget);
+                QWidget *editorwidget = proxywidget->widget();
+                QLineEdit *lineedit = qobject_cast<QLineEdit *>(editorwidget);
                 if (lineedit) {
-                connect(lineedit, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
+                    connect(lineedit, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
                 } else {
-                    QTextEdit* textedit = qobject_cast<QTextEdit*>(editorwidget);
+                    QTextEdit *textedit = qobject_cast<QTextEdit *>(editorwidget);
                     if (textedit) {
-                    connect(textedit, SIGNAL(cursorPositionChanged()), newItem, SLOT(cursorPositionChanged()));
+                        connect(textedit, SIGNAL(cursorPositionChanged()), newItem, SLOT(cursorPositionChanged()));
                     }
                 }
             } else {
-                QLineEdit* lineedit = qobject_cast<QLineEdit*>(editor);
+                QLineEdit *lineedit = qobject_cast<QLineEdit *>(editor);
                 if (lineedit) {
-                connect(lineedit, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
+                    connect(lineedit, SIGNAL(cursorPositionChanged(int, int)), newItem, SIGNAL(cursorPositionChanged(int, int)));
                 } else {
-                    QTextEdit* textedit = qobject_cast<QTextEdit*>(editor);
+                    QTextEdit *textedit = qobject_cast<QTextEdit *>(editor);
                     if (textedit) {
-                    connect(textedit, SIGNAL(cursorPositionChanged()), newItem, SLOT(cursorPositionChanged()));
+                        connect(textedit, SIGNAL(cursorPositionChanged()), newItem, SLOT(cursorPositionChanged()));
                     }
                 }
             }
@@ -173,7 +174,7 @@ HbEditorInterfacePrivate* HbEditorInterfacePrivateCache::attachEditor(QObject* e
     return 0;
 }
 
-void HbEditorInterfacePrivateCache::destroyed(QObject* object)
+void HbEditorInterfacePrivateCache::destroyed(QObject *object)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
         if (mObjectCache[i]->mHostEditor == object) {
@@ -184,7 +185,7 @@ void HbEditorInterfacePrivateCache::destroyed(QObject* object)
     }
 }
 
-void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* object)
+void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject *object)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
         for (int j = 0; j < mObjectCache[i]->mAttachedInterfaces.count(); j++) {
@@ -196,7 +197,7 @@ void HbEditorInterfacePrivateCache::interfaceDestroyed(QObject* object)
     }
 }
 
-void HbEditorInterfacePrivateCache::actionDestroyed(QObject* object)
+void HbEditorInterfacePrivateCache::actionDestroyed(QObject *object)
 {
     foreach(HbEditorInterfacePrivate *editorInterfacePrivate, mObjectCache) {
         HbAction *action = static_cast<HbAction *>(object);
@@ -209,10 +210,10 @@ void HbEditorInterfacePrivateCache::actionDestroyed(QObject* object)
     }
 }
 
-void HbEditorInterfacePrivateCache::notifyValueChanged(QObject* editor)
+void HbEditorInterfacePrivateCache::notifyValueChanged(QObject *editor)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
-       if (mObjectCache[i]->mHostEditor == editor) {
+        if (mObjectCache[i]->mHostEditor == editor) {
             for (int j = 0; j < mObjectCache[i]->mAttachedInterfaces.count(); j++) {
                 mObjectCache[i]->mAttachedInterfaces[j]->backendModified();
             }
@@ -221,7 +222,7 @@ void HbEditorInterfacePrivateCache::notifyValueChanged(QObject* editor)
     }
 }
 
-bool HbEditorInterfacePrivateCache::isConnected(QObject* object)
+bool HbEditorInterfacePrivateCache::isConnected(QObject *object)
 {
     for (int i = 0; i < mObjectCache.count(); i++) {
         if (mObjectCache[i]->mHostEditor == object) {

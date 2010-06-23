@@ -44,7 +44,7 @@ class HbCharPreviewPane;
 
 class HB_INPUT_PRIVATE_EXPORT HbQwertyKeyboardPrivate : public HbInputVkbWidgetPrivate
 {
-    Q_DECLARE_PUBLIC(HbQwertyKeyboard) 
+    Q_DECLARE_PUBLIC(HbQwertyKeyboard)
 
 public:
 
@@ -58,8 +58,8 @@ public:
     void initializeKeyboard(bool refreshButtonText);
     void initializeNumericKeyboard();
     bool showPreview(int keycode);
-    void setButtonObjectName(HbTouchKeypadButton& button, int row, int column, Qt::Key specialKey);
-    void launchPreviewPane(const QStringList& list);
+    void setButtonObjectName(HbTouchKeypadButton &button, int row, int column, Qt::Key specialKey);
+    void launchPreviewPane(const QStringList &list);
 
     void applyEditorConstraints();
     void setRockerPosition();
@@ -71,11 +71,11 @@ public:
     int indexForKeycode(int keyCode);
     int keyCode(int buttonId);
     int keyCode(HbTouchKeypadButton *button);
-    void getAllowedSctCharcters(QString & allowedSctCharacters);
+    void getAllowedSctCharcters(QString &allowedSctCharacters);
     void updateButtonsTextAndMappers();
 public:
-    QList<HbTouchKeypadButton*> mButtons;
-    QList<HbStyleOptionLabel*> mKeypadButtonOption;
+    QList<HbTouchKeypadButton *> mButtons;
+    QList<HbStyleOptionLabel *> mKeypadButtonOption;
     int mCtrlBtnIndex;
 
     int mPressedButtonIndex;

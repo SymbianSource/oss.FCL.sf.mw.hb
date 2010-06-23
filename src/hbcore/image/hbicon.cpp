@@ -61,10 +61,10 @@
     E.g. logical name of the icon is "frame". Assuming the icon file is in SVG-T format,
     the filename should be "frame.svg".
 
-    If the given icon name is a logical icon name and not an absolute filename,
-    it is searched in the icon locations of the theming framework.
+    The icon name can be either a logical icon name that is fetched from the theme
+    or an absolute filename. Logical icon names should not include a filename extension.
 
-    An absolute icon filename can point e.g. in application's resource file.
+    An absolute icon filename must include full path and filename extension.
 
     The icon can be resized with method HbIcon::setSize.
     When resizing, by default the aspect ratio of the icon is preserved.
@@ -405,7 +405,8 @@ HbIcon::HbIcon(const QString &iconName)
 * - HbIcon::iconName() returns empty string by default.
 * - HbIcon::pixmap() returns null pixmap.
 * - Colorization and mirroring support are not available.
-* This method should only be used if absolute necessary, as this is not ideal for hardware accelerated environment.
+* This method should only be used if absolute necessary, as this is not ideal for hardware accelerated environment
+* and there may be huge differences in painting performance when compared to a native HbIcon.
 */
 HbIcon::HbIcon(const QIcon &icon)
 {
@@ -558,7 +559,8 @@ QString HbIcon::iconName() const
 }
 
 /*!
-* Sets the name of the icon.
+* Sets the name of the icon. It can be either a logical icon name that is fetched from the theme
+* or an absolute filename. Logical icon names should not include a filename extension.
 * This icon name is used if there is no name set separately for the specified icon mode and state.
 * \sa HbIcon::iconName()
 */
@@ -642,6 +644,14 @@ void HbIcon::paint(QPainter *painter,
 
             QPixmap pixmap = d->qicon.pixmap(size.toSize(), mode, state);
             QSizeF pixmapSize = pixmap.size();
+
+            // QIcon::pixmap() will not do upscaling.
+            if (pixmapSize.width() < size.width() || pixmapSize.height() < size.height()) {
+                // Native HbIcons are scaled using SmoothTransformation so use the same.
+                pixmap = pixmap.scaled(size.toSize(), aspectRatioMode, Qt::SmoothTransformation);
+                pixmapSize = pixmap.size();
+            }
+
             // Adjust the alignment
             QPointF topLeft = rect.topLeft();
 

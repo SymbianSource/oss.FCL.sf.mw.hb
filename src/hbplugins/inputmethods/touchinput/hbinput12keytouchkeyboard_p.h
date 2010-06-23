@@ -52,7 +52,8 @@ public:
     int keyCode(int buttonId);
     void applyEditorConstraints();
     void updateButtons();
-    int numberOfCharactersToShow(int key);
+
+    QString keyLabel(const QStringList &labels, int index);
 };
 
 #endif // HB_INPUT_12KEY_TOUCH_KEYBOARD_PRIVATE_H

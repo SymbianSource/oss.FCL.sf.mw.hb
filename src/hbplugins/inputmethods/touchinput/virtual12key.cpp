@@ -98,6 +98,8 @@ void HbVirtual12Key::initializeModeHandlers()
             mBasicModeHandler, SLOT(actionHandler(HbInputModeAction )));
 
     connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags,bool)));
+    mPredictionModeHandler->setAutocompletionStatus(HbInputSettingProxy::instance()->isAutocompletionEnabled(HbKeyboardSetting12key));
 }
 
 bool HbVirtual12Key::isSctModeActive() const
@@ -286,14 +288,15 @@ Opens the virtual keypad for input.
 */
 void HbVirtual12Key::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimizedMode)
 {
+    // if null is sent, just return.
+    if(!keypadToOpen || !focusObject()) {
+        return;
+    }
+
     mKeyboardChangeAlreadyInprogress = true;
     HbInputSettingProxy::instance()->setActiveKeyboard(HbKeyboardVirtual12Key);
     mKeyboardChangeAlreadyInprogress = false;
 
-    // if null is sent, just return.
-    if(!keypadToOpen) {
-        return;
-    }
     bool disableAnimation = false;
     // see if we are trying to open a different keypad than what is already opened.
     if (mCurrentKeypad != keypadToOpen) {
@@ -329,8 +332,10 @@ void HbVirtual12Key::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimized
         } else {
             mVkbHost->openKeypad(mCurrentKeypad, this, (!stateChangeInProgress() && !disableAnimation));
         }
-        connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
-                mVkbHost, SLOT(ensureCursorVisibility()));
+        if (focusObject()) {
+            connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
+                    mVkbHost, SLOT(ensureCursorVisibility()));
+        }
     }
 }
 
@@ -365,6 +370,13 @@ void HbVirtual12Key::predictiveInputStateChanged(HbKeyboardSettingFlags keyboard
             // Just refresh the situation.
             inputStateActivated(inputState());
         }
+    }
+}
+
+void HbVirtual12Key::autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState)
+{
+    if (keyboardType & HbKeyboardSetting12key) {
+        mPredictionModeHandler->setAutocompletionStatus(newState);
     }
 }
 
@@ -512,7 +524,7 @@ void HbVirtual12Key::inputStateActivated(const HbInputState& newState)
 
     HbInputModeHandler *previousModeHandler = mActiveModeHandler;
 	if (newState.inputMode() == HbInputModeDefault && usePrediction()) {
-        mActiveModeHandler = mPredictionModeHandler;
+        mActiveModeHandler = mPredictionModeHandler;        
         // by passing HbInputModeActionFocusRecieved we will be setting the candidate list and keypad
         mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusRecieved);
     } else if (newState.inputMode() == HbInputModeDefault) {
@@ -553,7 +565,7 @@ keymappings,loads them to all avaialble keyboards and to all mode handlers
 */
 void HbVirtual12Key::loadKeymap(const HbInputLanguage &newLanguage)
 {
-    //dont try to get the keymappings if we ( mKeyData) already have keymappings for newLanguage
+    //don't try to get the keymappings if we ( mKeyData) already have keymappings for newLanguage
     if (!mKeymap || mKeymap->language().language() != newLanguage.language()) {
         const HbKeymap* keymap = HbKeymapFactory::instance()->keymap(newLanguage);
         if(keymap) {
@@ -809,15 +821,4 @@ bool HbVirtual12Key::usePrediction() const
     return false;
 }
 
-/*!
-This function returns true if the latest mouse release was part of a horizontal flick event
-*/
-HbInputVkbWidget::HbFlickDirection HbVirtual12Key::flickDirection() const
-{
-    if (mCurrentKeypad) {
-        return mCurrentKeypad->flickDirection();
-    } else {
-        return HbInputVkbWidget::HbFlickDirectionNone;
-    }
-}
 // End of file

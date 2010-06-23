@@ -41,6 +41,7 @@ public:
 
     QIcon::Mode mode;
     bool transparent;
+    bool twoIcons;
 };
 
 #endif // HBSTYLEOPTIONINDICATORBUTTON_H

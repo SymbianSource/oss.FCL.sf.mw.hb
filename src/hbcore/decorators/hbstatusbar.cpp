@@ -120,10 +120,10 @@ void HbStatusBarPrivate::delayedConstruction()
 
     q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
         q, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+        q, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)));
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
-    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
-        q, SIGNAL(activated(const QList<IndicatorClientInfo> &)));
 
     mClockTimerId = q->startTimer(clockUpdateDelay);
     mIndicatorPrivate->startListen();

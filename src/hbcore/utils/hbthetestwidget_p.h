@@ -82,6 +82,8 @@ public slots:
     void showThemeServerMemoryInfo();
     void screenCapture(); // not working on HW
     void createSharedMemoryReport() const;
+    void launchThemeChanger();
+    void launchApplications(); // Reads exe names and parameters in config file
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
@@ -92,6 +94,7 @@ private slots:
 
 private:
     void showWarning(QString text);
+    QString findAppLaunchConfigFile();
 
 private:
     HbTheTestWidgetPrivate *d;

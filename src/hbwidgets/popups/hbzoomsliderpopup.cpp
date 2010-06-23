@@ -51,8 +51,10 @@
 
     The elements can be changed by calling HbSlider::setElements() later at any time.
 
-    Orientation of HbZoomSliderPopup can not be changed. If orientation change is need, 
+    Orientation of HbZoomSliderPopup can not be changed. If orientation change is needed, 
     then first create HbSlider and set needed elements.
+
+    It is positioned at Right side of the screen in non mirrored layout.
 
     Example usage:
     \code
@@ -62,7 +64,7 @@
 
     
     Note:: position and size of these elements cant be change.
-    use HbZoomSlider instead if you want to change position or size
+    use HbSlider and set the appropriate elements instead if you want to change position or size
 
     Note:: if setElement is called on this slider ,  application is reponsible for
     inconsitent UI.
@@ -193,11 +195,13 @@ void HbZoomSliderPopup::setDefaultZoomLevel(int value)
 
 
 /*!
+   \reimp
     Reimplemented from QGraphicsItem::keyReleaseEvent().
  */
 void HbZoomSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
 {
-   switch (keyevent->key()) {
+    Q_D( HbZoomSliderPopup);
+    switch (keyevent->key()) {
     case Qt::Key_Enter:
     case Qt::Key_Return:
     case Qt::Key_Select:
@@ -209,6 +213,11 @@ void HbZoomSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
          hide();
     break;
     case Qt::Key_Left:
+        if ( d->keyNavigation() ) {
+            hide();
+            keyevent->accept();
+            break;
+        }
     case Qt::Key_Backspace:
     case Qt::Key_Back:
          hide();
@@ -221,13 +230,21 @@ void HbZoomSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
 }
 
 /*!
+    \reimp
     Reimplemented from QGraphicsItem::keyPressEvent().
  */
 void HbZoomSliderPopup::keyPressEvent(QKeyEvent *keyevent)
 {
-   switch (keyevent->key()) {
+    Q_D( HbZoomSliderPopup );
+    switch (keyevent->key()) {
     case Qt::Key_Left:
     case Qt::Key_Right:
+        if ( d->keyNavigation() )
+        {
+            hide();
+            keyevent->accept();
+            break;
+        }
     case Qt::Key_Back:
     case Qt::Key_Backspace:
          hide();

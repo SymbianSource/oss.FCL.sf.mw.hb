@@ -43,6 +43,11 @@ public:
     int type() const { return Type; }
 
     void setAdditionalRowVisible(bool visible);
+public slots:
+    void emitTextChange(const QString &text);
+    
+signals:
+    void textChanged(const QString &text);
 
 public:
     HbInputDialogPrivate* d;

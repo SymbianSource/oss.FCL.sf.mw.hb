@@ -124,3 +124,10 @@ void HbDateTimeEditPrivate::_q_textChanged()
     }
     HbLineEditPrivate::_q_textChanged();
 }
+
+void HbDateTimeEditPrivate::_q_regainFocus()
+{
+    q_ptr->setFocus(Qt::OtherFocusReason);
+}
+
+#include <moc_hbdatetimeedit.cpp>

@@ -44,7 +44,7 @@
                 limited argument is the second argument to be inserted.
         - %Lx   for inserting numbers, x is used to indicate argument inserting order.
 
-    Example of how to use HbParameterLengthLimiter
+    Example of how to use HbParameterLengthLimiter:
     \snippet{unittest_HbParameterLengthLimiter/unittest_HbParameterLengthLimiter.cpp,1}
 
 */
@@ -209,7 +209,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ulong a,
     \attention Cross-Platform API
     
     \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param base defines the number base
     \param fillChar defines the fill character
 */
@@ -230,7 +230,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( int a,
     \attention Cross-Platform API
     
     \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param base defines the number base
     \param fillChar defines the fill character
 */
@@ -250,7 +250,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( uint a,
     \attention Cross-Platform API
     
     \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param base defines the number base
     \param fillChar defines the fill character
 */
@@ -270,7 +270,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( short a,
     \attention Cross-Platform API
     
     \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param base defines the number base
     \param fillChar defines the fill character
 */
@@ -290,7 +290,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ushort a,
     \attention Cross-Platform API
     
     \param a argument a is formatted according to the specified format and precision
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param fmt defines the format to be used
     \param prec defines the precision to be used
     \param fillChar defines the fill character
@@ -312,7 +312,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( double a,
     \attention Cross-Platform API
     
     \param a character that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
@@ -330,7 +330,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
     \attention Cross-Platform API
     
     \param a character that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
@@ -348,7 +348,7 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
     \attention Cross-Platform API
     
     \param a string that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
+    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
     \param fillChar defines the fill character
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
@@ -386,6 +386,9 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
 
                 while( p->str.at(i) != ']' ) {
                     i++;
+                    if( i >= p->str.length() ) {
+                        break;
+                    }
                 }
 
                 i++;

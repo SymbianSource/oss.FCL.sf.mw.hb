@@ -23,18 +23,19 @@
 **
 ****************************************************************************/
 
-#include <hbdataform.h>
-#include <hbdataformmodelitem.h>
-#include <hbdataformmodel.h>
 #include "hbdataform_p.h"
 #include "hbdataformviewitem_p.h"
 #include "hbdataitemcontainer_p.h"
 #include "hbdatagroup_p.h"
 #include "hbdatagroup_p_p.h"
-#include <hbcombobox.h>
 #include "hbdataformheadingwidget_p.h"
 #include "hbdataformmodelitem_p.h"
 #include "hbtreemodeliterator_p.h"
+
+#include <hbdataform.h>
+#include <hbdataformmodelitem.h>
+#include <hbdataformmodel.h>
+#include <hbcombobox.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QCoreApplication>
@@ -268,10 +269,10 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
             static_cast<HbDataFormViewItem *>(d->mContainer->itemByIndex(index));
         if (item) {
             item->setExpanded(expanded);
+            d->mContainer->setModelIndexes();
         }
 
-        d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
-        d->mContainer->setModelIndexes();
+        d->mContainer->setItemTransientStateValue(index, "expanded", expanded);    
     }
 }
 
@@ -566,7 +567,7 @@ void HbDataForm::addConnection(HbDataFormModelItem * item,
 {   
     Q_D(HbDataForm);
     ItemSignal itemSignal;
-    itemSignal.reciever = receiver;
+    itemSignal.receiver = receiver;
     itemSignal.signal = signal;
     itemSignal.slot = slot;
     d->mConnectionList.insertMulti(item, itemSignal);

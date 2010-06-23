@@ -7,3 +7,13 @@ HbDataGroupHeadingWidget::dataGroup_Description
 {
 	color:var(qtc_list_item_content_normal);
 }
+
+HbDataGroupHeadingWidget[!enabled]::dataGroup_HeadingLabel
+{
+	color:var(qtc_list_item_disabled);
+}
+
+HbDataGroupHeadingWidget[!enabled]::dataGroup_Description
+{
+	color:var(qtc_list_item_disabled);
+}

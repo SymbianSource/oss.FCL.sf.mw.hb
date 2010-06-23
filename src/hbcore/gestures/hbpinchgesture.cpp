@@ -31,12 +31,106 @@
     @hbcore
     \class HbPinchGesture
 
-    \brief HbPinchGesture is an extension to Qt standard QPinchGesture
+    \brief The HbPinchGesture class provides multitouch support.
+    
+    HbPinchGesture is an extension to Qt standard QPinchGesture. It offers
+    convenience functions for handling the pinch gesture properties directly
+    in scene coordinates. This removes any need for manual conversions from
+    the screen (global) coordinates of the QPinchGesture base class
+    properties.
+    
+    You can use HbPinchGesture, for example, to let the user change an
+    image size in a photo application by dragging the two opposing corners
+    of the image at the same time. Another example would be rotating a widget
+    with two fingers.
+    
+    \section _usecases_hbpinchgesture Using the HbPinchGesture class
+    
+    This example shows how to make a custom widget recognize the pinch
+    gesture. The custom widget in the example derives from HbWidget.
+    
+    <ol>
+    <li>
+    In order to receive touch events, which are required by the pinch gesture,
+    at least one widget in the scene needs to accept the QEvent::TouchBegin event.
+    To make sure this is done, you can do this in your widget by reimplementing
+    QGraphicsWidget::event().
+    
+    \code
+    bool MyWidget::event(QEvent *e)
+    {
+        if (e->type() == QEvent::TouchBegin) {
+            return true;
+        }
+        return HbWidget::event(e);
+    }    
+    \endcode 
+    </li>
+    
+    <li>
+    Register for pinch gestures by using the base class function
+    QGraphicsObject::grabGesture(). QGraphicsObject::grabGesture() can be
+    called several times with different arguments, if the widget is
+    interested in other gesture types as well.
+   
+    \code
+    // This widget is interested in pinch and tap gestures.
+    grabGesture(Qt::PinchGesture);
+    grabGesture(Qt::TapGesture);
+    \endcode
+    </li>
+    
+    <li>
+    Reimplement HbWidgetBase::gestureEvent() to handle gestures that are
+    meaningful for your custom widget.
+   
+    \code
+    void MyWidget::gestureEvent(QGestureEvent *event)
+    {
+        if (HbPinchGesture *pinch = qobject_cast<HbPinchGesture *>
+            (event->gesture(Qt::PinchGesture))) {
+       
+            switch (pinch->state()) {
+           
+            case Qt::GestureStarted:
+                // Visualize the active state of the widget.
+                // Emit a signal to move the content.
+                break;
+            case Qt::GestureUpdated:
+                // Emit a signal to move the content.
+                break;
+            case Qt::GestureCanceled:
+                // Visualize the non-active state of the widget.
+                // Emit a signal to return the content to the starting
+                // position.
+                break;
+            case Qt::GestureFinished:              
+                // Visualize the non-active state of the widget.              
+                // Emit a signal to move the content.             
+                break;
+            default:
+                break;
+            }           
+        }
+       
+        // Handle other gesture types that have been grabbed. There may be several,
+        // since all gestures that are active at the same moment are sent within
+        // the same gesture event.
+        if (HbTapGesture *tap = qobject_cast<HbTapGesture *>
+            (event->gesture(Qt::TapGesture))) {
+            // handle the tap gesture
+        }
+       
+    }   
+    \endcode
+    </li>
+    </ol>
+    
     \sa QPinchGesture
 */
 
 /*!
-    \brief HbPinchGesture constructor
+    Constructor.
     \param parent Owner for gesture
 */
 HbPinchGesture::HbPinchGesture(QObject *parent)
@@ -50,7 +144,7 @@ HbPinchGesture::HbPinchGesture(QObject *parent)
 }
 
 /*!
-    \brief HbPinchGesture constructor
+    Constructor required by the shared d-pointer paradigm.
     \param dd Private data
     \param parent Owner for gesture
 */
@@ -64,7 +158,7 @@ HbPinchGesture::HbPinchGesture(HbPinchGesturePrivate &dd, QObject *parent)
 }
 
 /*!
-    \brief HbPinchGesture destructor
+    Destructor.
 */
 HbPinchGesture::~HbPinchGesture()
 {
@@ -72,9 +166,8 @@ HbPinchGesture::~HbPinchGesture()
 }
 
 /*!
-    \property sceneTotalRotationAngle
-    \brief The total angle covered by the gesture in scene coordinates.
-    \sa QPinchGesture::totalRotationAngle()
+    Returns the total angle covered by the gesture in scene coordinates.
+    \sa setSceneTotalRotationAngle(), QPinchGesture::totalRotationAngle()
 */
 qreal HbPinchGesture::sceneTotalRotationAngle() const
 {
@@ -82,6 +175,12 @@ qreal HbPinchGesture::sceneTotalRotationAngle() const
     return d->mSceneTotalRotationAngle;
 }
 
+/*!
+    Sets the total angle covered by the gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneTotalRotationAngle(), QPinchGesture::setTotalRotationAngle()
+*/
 void HbPinchGesture::setSceneTotalRotationAngle(qreal value)
 {
     Q_D(HbPinchGesture);
@@ -89,9 +188,9 @@ void HbPinchGesture::setSceneTotalRotationAngle(qreal value)
 }
 
 /*!
-    \property sceneLastRotationAngle
-    \brief The last reported angle covered by the gesture motion in scene coordinates.
-    \sa QPinchGesture::lastRotationAngle()
+    Returns the last reported angle covered by the gesture in scene
+    coordinates.
+    \sa setSceneLastRotationAngle(), QPinchGesture::lastRotationAngle()
 */
 qreal HbPinchGesture::sceneLastRotationAngle() const
 {
@@ -99,6 +198,12 @@ qreal HbPinchGesture::sceneLastRotationAngle() const
     return d->mSceneLastRotationAngle;
 }
 
+/*!
+    Sets the last reported angle covered by the gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneLastRotationAngle(), QPinchGesture::setLastRotationAngle()
+*/
 void HbPinchGesture::setSceneLastRotationAngle(qreal value)
 {
     Q_D(HbPinchGesture);
@@ -106,9 +211,9 @@ void HbPinchGesture::setSceneLastRotationAngle(qreal value)
 }
 
 /*!
-    \property sceneRotationAngle
-    \brief The angle covered by the gesture motion in scene coordinates.
-    \sa QPinchGesture::rotationAngle()
+    Returns the angle covered by the gesture since last update
+    in scene coordinates.
+    \sa setSceneRotationAngle(), QPinchGesture::rotationAngle()
 */
 qreal HbPinchGesture::sceneRotationAngle() const
 {
@@ -116,6 +221,13 @@ qreal HbPinchGesture::sceneRotationAngle() const
     return d->mSceneRotationAngle;
 }
 
+/*!
+    Sets the angle covered by the gesture since last update
+    in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneRotationAngle(), QPinchGesture::setRotationAngle()
+*/
 void HbPinchGesture::setSceneRotationAngle(qreal value)
 {
     Q_D(HbPinchGesture);
@@ -123,9 +235,8 @@ void HbPinchGesture::setSceneRotationAngle(qreal value)
 }
 
 /*!
-    \property sceneStartCenterPoint
-    \brief The starting position of the center point in scene coordinates.
-    \sa QPinchGesture::startCenterPoint()
+    Returns the starting position of the center point in scene coordinates.
+    \sa setSceneStartCenterPoint(), QPinchGesture::startCenterPoint()
 */
 QPointF HbPinchGesture::sceneStartCenterPoint() const
 {
@@ -133,6 +244,12 @@ QPointF HbPinchGesture::sceneStartCenterPoint() const
     return d->mSceneStartCenterPoint;
 }
 
+/*!
+    Sets the starting position of the center point in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneStartCenterPoint(), QPinchGesture::setStartCenterPoint()
+*/
 void HbPinchGesture::setSceneStartCenterPoint(const QPointF &value)
 {
     Q_D(HbPinchGesture);
@@ -140,9 +257,9 @@ void HbPinchGesture::setSceneStartCenterPoint(const QPointF &value)
 }
 
 /*!
-    \property sceneLastCenterPoint
-    \brief The last position of the center point recorded for this gesture in scene coordinates.
-    \sa QPinchGesture::lastCenterPoint()
+    Returns the last position of the center point recorded for the gesture
+    in scene coordinates.
+    \sa setSceneLastCenterPoint(), QPinchGesture::lastCenterPoint()
 */
 QPointF HbPinchGesture::sceneLastCenterPoint() const
 {
@@ -150,6 +267,13 @@ QPointF HbPinchGesture::sceneLastCenterPoint() const
     return d->mSceneLastCenterPoint;
 }
 
+/*!
+    Sets the last position of the center point recorded for the gesture
+    in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneLastCenterPoint(), QPinchGesture::setLastCenterPoint()
+*/
 void HbPinchGesture::setSceneLastCenterPoint(const QPointF &value)
 {
     Q_D(HbPinchGesture);
@@ -157,9 +281,8 @@ void HbPinchGesture::setSceneLastCenterPoint(const QPointF &value)
 }
 
 /*!
-    \property sceneCenterPoint
-    \brief The current center point in scene coordinates.
-    \sa QPinchGesture::centerPoint()
+    Returns the current center point in scene coordinates.
+    \sa setSceneCenterPoint(), QPinchGesture::centerPoint()
 */
 QPointF HbPinchGesture::sceneCenterPoint() const
 {
@@ -167,6 +290,12 @@ QPointF HbPinchGesture::sceneCenterPoint() const
     return d->mSceneCenterPoint;
 }
 
+/*!
+    Sets the current center point in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneCenterPoint(), QPinchGesture::setCenterPoint()
+*/
 void HbPinchGesture::setSceneCenterPoint(const QPointF &value)
 {
     Q_D(HbPinchGesture);

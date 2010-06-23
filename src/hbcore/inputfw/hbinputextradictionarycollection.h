@@ -27,9 +27,12 @@
 #define HB_INPUT_EXTRA_DICTIONARY_COLLECTION_H
 
 #include <QList>
+#include <hbglobal.h>
+#include <Qt>
 
 class HbExtraDictionaryCollectionPrivate;
 class HbExtraUserDictionary;
+class QStringList;
 
 const int HbMaxDictionariesInCollection = 16;
 
@@ -57,13 +60,13 @@ public:
     int totalNumberOfWords() const;
 
     QString wordAt(int index) const;
-    QStringList findMatches(const QString& searchString, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive);
+    QStringList findMatches(const QString &searchString, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive);
 
-    bool hasWord(const QString& word) const;
-    void incrementUseCount(const QString& word);
+    bool hasWord(const QString &word) const;
+    void incrementUseCount(const QString &word);
 
 protected:
-    HbExtraDictionaryCollectionPrivate* const d_ptr;
+    HbExtraDictionaryCollectionPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbExtraDictionaryCollection)

@@ -42,23 +42,25 @@ class ThemeSelectionList:public HbView
 Q_OBJECT
 public:
 
-    ThemeSelectionList();
+    ThemeSelectionList(HbMainWindow *mainWindow);
     ~ThemeSelectionList();
 signals:
     void newThemeSelected(const QString &newthemepath);
 public slots:
     void displayThemes();
     void setChosen(HbListWidgetItem *item);
+    void onLongPressed(HbListWidgetItem* listViewItem, const QPointF& coords);
     void applySelection();
     void updateThemeList(const QString &path);
     void sendThemeName(const QString& name);
+    void cancelTheme();
+    void applyTheme();
 #ifdef THEME_CHANGER_TIMER_LOG
     void processWhenIdle();
     void themeChanged();
 #endif
 
 protected:
-    bool event(QEvent *e);
     void resizeEvent(QResizeEvent* event);
 private:
     static QStringList rootPaths();
@@ -69,6 +71,11 @@ private:
     HbIcon* noMark;
     HbAction *action;
     QList<HbIcon*> thumbnails;
+    HbAction* mOkAction;
+    HbAction* mCancelAction;
+    HbMainWindow *mMainWindow;
+    HbListWidgetItem* previewItem;
+    HbView *previewView;
 
     QFileSystemWatcher *watcher;
     QString iCurrentTheme;

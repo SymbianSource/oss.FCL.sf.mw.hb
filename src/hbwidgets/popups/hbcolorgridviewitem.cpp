@@ -29,6 +29,14 @@
 #include <hbiconitem.h>
 #include <hbevent.h>
 
+/*!
+  \primitives
+  \primitive{cg-color-icon} HbIconItem representing the icon colored with this color item's color.
+  \primitive{cg-border-icon} HbIconItem representing borders of the color item.
+  \primitive{cg-selection-icon} HbIconItem representing the check mark of a selected color item.
+  \primitive{background} HbFrameBackground representing the background frame.
+  */
+
 class HbColorGridViewItemPrivate: public HbGridViewItemPrivate
 {
     Q_DECLARE_PUBLIC( HbColorGridViewItem )

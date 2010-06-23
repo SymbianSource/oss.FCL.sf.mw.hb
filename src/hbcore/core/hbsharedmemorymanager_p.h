@@ -41,6 +41,7 @@
 #if !defined(HB_BOOTSTRAPPED) || defined(HB_BIN_CSS)
 
 class QSharedMemory;
+class HbSharedMemoryWrapper;
 class HbSharedMemoryAllocator;
 class HbSharedCache;
 
@@ -87,7 +88,7 @@ protected:
     bool writable;
     HbSharedMemoryAllocator *mainAllocator;
     HbSharedMemoryAllocator *subAllocator;
-	QSharedMemory *chunk;
+    HbSharedMemoryWrapper *chunk;
 
 private:
     static HbSharedMemoryManager *memManager;

@@ -43,8 +43,11 @@ public:
     void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0);
     void deleteOneCharacter();
     void smileySelected(QString smiley);
+    void setPrimaryCandidateMode(HbPrimaryCandidateMode mode);
+    void setTypingCorrectionLevel(HbTypingCorrectionLevel correctionLevel);
 public slots:
     void exactWordPopupClosed();
+    void exactWordSelected();
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputPredictionQwertyHandler)
     Q_DISABLE_COPY(HbInputPredictionQwertyHandler)

@@ -38,7 +38,7 @@ class HB_INPUT_EXPORT HbInputSettingList : public HbDialog
     Q_OBJECT
 
 public:
-    HbInputSettingList(QGraphicsWidget* parent = 0);
+    HbInputSettingList(QGraphicsWidget *parent = 0);
     virtual ~HbInputSettingList();
 
 public:
@@ -60,7 +60,7 @@ signals:
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputSettingList)
-    Q_DISABLE_COPY(HbInputSettingList)   
+    Q_DISABLE_COPY(HbInputSettingList)
 };
 
 #endif // HB_INPUT_SETTING_LIST_H

@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputcandidatelist.h"
 
 #include <QLabel>
 #include <QGraphicsLayout>
@@ -38,8 +39,6 @@
 #include <hbinputvkbhost.h>
 #include <hbinputregioncollector_p.h>
 
-#include "hbinputcandidatelist.h"
-
 #include "hbdialog_p.h"
 
 const int HbCandListDefaultNumRows = 5;
@@ -53,27 +52,27 @@ const qreal HbAutoComplPopupMinAllowedHeight = 25.0;
 
 class HbCandidateListPrivate : public HbDialogPrivate
 {
-   Q_DECLARE_PUBLIC(HbCandidateList)
+    Q_DECLARE_PUBLIC(HbCandidateList)
 
 public:
-    HbCandidateListPrivate(HbInputMethod* input);
+    HbCandidateListPrivate(HbInputMethod *input);
     ~HbCandidateListPrivate();
     void calculateAndSetSize(qreal maxWidth);
     void initFrameIcon();
 
 public:
-    HbListWidget* mList;
-    HbInputMethod* mInput;
+    HbListWidget *mList;
+    HbInputMethod *mInput;
     int numRows;
     int numCandidates;
     int longestStringWidth;
     HbFrameItem *mFrameBackground;
-    HbListWidgetItem* mSpellQueryItem;
+    HbListWidgetItem *mSpellQueryItem;
     bool mCandidateCommitted;
     bool mSpellQueryOpenIsPending;
 };
 
-HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod* input)
+HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod *input)
     : mInput(input),
       numRows(HbCandListDefaultNumRows),
       numCandidates(0),
@@ -97,10 +96,10 @@ void HbCandidateListPrivate::initFrameIcon()
 {
     Q_Q(HbCandidateList);
 
-    mFrameBackground = static_cast<HbFrameItem*>( q->primitive( HbStyle::P_Popup_background ));
+    mFrameBackground = static_cast<HbFrameItem *>(q->primitive(HbStyle::P_Popup_background));
 
-    if( mFrameBackground == 0 ) {
-        mFrameBackground = static_cast<HbFrameItem*>( q->style()->createPrimitive(( HbStyle::Primitive )( HbStyle::P_Popup_background ), q ));
+    if (mFrameBackground == 0) {
+        mFrameBackground = static_cast<HbFrameItem *>(q->style()->createPrimitive((HbStyle::Primitive)(HbStyle::P_Popup_background), q));
     }
 }
 
@@ -128,11 +127,11 @@ void HbCandidateListPrivate::calculateAndSetSize(qreal maxWidth)
     finalWidth = finalWidth + l + r ;
     finalHeight = (qreal)numLines * oneLineHeight + 5.0 + t + b;
 
-    if(mSpellQueryItem) {
+    if (mSpellQueryItem) {
         finalHeight += oneLineHeight ; // for spell button
     }
 
-    if(finalHeight > HbDeviceProfile::current().logicalSize().height() - 30) {
+    if (finalHeight > HbDeviceProfile::current().logicalSize().height() - 30) {
         finalHeight = HbDeviceProfile::current().logicalSize().height() - 30;
     }
 
@@ -162,7 +161,7 @@ Constructor.
 @param input The input method that uses this widget.
 @param parent parent of the widget.
 */
-HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
+HbCandidateList::HbCandidateList(HbInputMethod *input, QGraphicsItem *parent)
     : HbDialog(*new HbCandidateListPrivate(input), parent)
 {
     Q_D(HbCandidateList);
@@ -178,8 +177,8 @@ HbCandidateList::HbCandidateList(HbInputMethod* input, QGraphicsItem* parent)
 
     setTimeout(NoTimeout);
     setAttribute(Qt::WA_InputMethodEnabled, false);
-    connect(d->mList, SIGNAL(activated(HbListWidgetItem*)), this, SLOT(itemActivated(HbListWidgetItem*)));
-    connect(d->mList, SIGNAL(longPressed(HbListWidgetItem*, const QPointF&)), this, SLOT(itemActivated(HbListWidgetItem*)));
+    connect(d->mList, SIGNAL(activated(HbListWidgetItem *)), this, SLOT(itemActivated(HbListWidgetItem *)));
+    connect(d->mList, SIGNAL(longPressed(HbListWidgetItem *, const QPointF &)), this, SLOT(itemActivated(HbListWidgetItem *)));
 
     setBackgroundFaded(false);
 }
@@ -193,10 +192,8 @@ HbCandidateList::~HbCandidateList()
 
 /*!
 Populates the candidate list with text strings given as parameter.
-
-@param
 */
-void HbCandidateList::populateList(const QStringList& candidates,bool addSpellQuery)
+void HbCandidateList::populateList(const QStringList &candidates, bool addSpellQuery)
 {
     Q_D(HbCandidateList);
 
@@ -208,7 +205,7 @@ void HbCandidateList::populateList(const QStringList& candidates,bool addSpellQu
     int longestwidth = 0;
     int finalWidth = 250;
     for (int i = 0; i < candidates.count(); i++) {
-        HbListWidgetItem* item = new HbListWidgetItem();
+        HbListWidgetItem *item = new HbListWidgetItem();
         item->setText(candidates[i]);
         d->mList->addItem(item);
 
@@ -219,9 +216,9 @@ void HbCandidateList::populateList(const QStringList& candidates,bool addSpellQu
             longestwidth = finalWidth;
         }
     }
-    
+
     d->mSpellQueryItem = 0;
-    if(addSpellQuery) {
+    if (addSpellQuery) {
         d->mSpellQueryItem = new HbListWidgetItem();
         d->mSpellQueryItem->setText(tr("Spell"));
         d->mList->addItem(d->mSpellQueryItem);
@@ -246,7 +243,7 @@ void HbCandidateList::populateList(const QStringList& candidates,bool addSpellQu
 /*!
 Inherited from HbDialog.
 */
-void HbCandidateList::keyPressEvent(QKeyEvent* event)
+void HbCandidateList::keyPressEvent(QKeyEvent *event)
 {
     Q_D(HbCandidateList);
 
@@ -279,9 +276,9 @@ void HbCandidateList::itemActivated(HbListWidgetItem *item)
 {
     Q_D(HbCandidateList);
     if (!d->mCandidateCommitted)  {
-        if(d->mSpellQueryItem != item) {
+        if (d->mSpellQueryItem != item) {
             emit candidateSelected(0, currentCandidate());
-        } else if(d->mSpellQueryItem){
+        } else if (d->mSpellQueryItem) {
             d->mSpellQueryOpenIsPending = true;
         }
         d->mCandidateCommitted = true;
@@ -295,7 +292,11 @@ Returns the currently selected candidate on the list.
 QString HbCandidateList::currentCandidate()
 {
     Q_D(HbCandidateList);
-    return d->mList->currentItem()->text();
+    if (d->mList->currentItem()) {
+        return d->mList->currentItem()->text();
+    }
+
+    return QString();
 }
 
 /*!
@@ -312,16 +313,16 @@ void HbCandidateList::setNumberOfVisibleLines(int numLines)
 /*!
 this event handler is called, for Hide events, is delivered after the widget has been hidden.
 */
-void HbCandidateList::hideEvent(QHideEvent * event)
+void HbCandidateList::hideEvent(QHideEvent *event)
 {
-	Q_D(HbCandidateList);
-	d->mCandidateCommitted = false;
+    Q_D(HbCandidateList);
+    d->mCandidateCommitted = false;
     HbDialog::hideEvent(event);
-    // If we try to open spell query in itemActivated, first spell query tries to 
-    // open, and then candidatel list is closed. This creates problems if we 
+    // If we try to open spell query in itemActivated, first spell query tries to
+    // open, and then candidatel list is closed. This creates problems if we
     // quickly double click on the Spell button. So open spell query only after candidate
     // list is closed.
-    if(d->mSpellQueryOpenIsPending) {
+    if (d->mSpellQueryOpenIsPending) {
         d->mSpellQueryOpenIsPending = false;
         emit launchSpellQueryDialog();
     }
@@ -369,7 +370,7 @@ bool HbCandidateList::setSizeAndPositionForAutoCompletion(HbVkbHost *vkbHost)
                     return true;
                 }
             } else {
-              if (bottomRect.height() > HbAutoComplPopupMinAllowedHeight) {
+                if (bottomRect.height() > HbAutoComplPopupMinAllowedHeight) {
                     qreal finalHeight = (size().height() < bottomRect.height() ? size().height() : bottomRect.height());
                     bottomRect.setHeight(finalHeight);
                     resize(bottomRect.width(), bottomRect.height());

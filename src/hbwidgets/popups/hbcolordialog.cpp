@@ -217,7 +217,6 @@ void HbColorDialogPrivate::addDatatoModel(const QList<QColor> &colorList)
 
 */
 
-
 /*!
   @beta
   Constructs a new HbColorDialog with \a parent
@@ -344,7 +343,7 @@ void HbColorDialog::setNoneBlockVisible(bool visible)
     }
 }
 
-/*
+/*!
   @beta
   Returns visibility of NoneBlock.
   Default value is false.

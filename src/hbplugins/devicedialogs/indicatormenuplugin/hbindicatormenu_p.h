@@ -66,7 +66,7 @@ public slots:
 
     void indicatorsActivated(QList<HbIndicatorInterface*> activatedIndicators);
     void indicatorActivated(HbIndicatorInterface *activatedIndicator);
-    void indicatorRemoved(HbIndicatorInterface *indicatorRemoved);
+    void indicatorDeactivated(HbIndicatorInterface *indicator);
 
 private:
     bool constructMenu(const QVariantMap &parameters);

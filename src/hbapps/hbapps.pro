@@ -28,6 +28,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += hbthemechanger
+SUBDIRS += hbfeatureconfigapp
 
 symbian {
     SUBDIRS += hbiconpreloader

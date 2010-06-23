@@ -75,6 +75,7 @@ protected:
 private:
     Q_DISABLE_COPY(HbDateTimeEdit)
     Q_DECLARE_PRIVATE_D(d_ptr, HbDateTimeEdit)
+    Q_PRIVATE_SLOT(d_func(), void _q_regainFocus())
 };
 
 #endif // HBDATETIMEEDIT_H

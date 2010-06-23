@@ -88,7 +88,7 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
 
     public:
 
-        HbAbstractViewItemPrivate(HbAbstractViewItem *prototype, HbAbstractViewItemShared *shared = 0) :
+        explicit HbAbstractViewItemPrivate(HbAbstractViewItem *prototype, HbAbstractViewItemShared *shared = 0) :
           HbWidgetPrivate(),
           mFocused(false),
           mBackgroundItem(0),

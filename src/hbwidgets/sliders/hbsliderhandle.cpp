@@ -188,7 +188,7 @@ void HbSliderHandle::showEvent(QShowEvent *event)
 }
 bool HbSliderHandle::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 {
-    //TODO: touch area doesnt work with the current filtering mechanism. find better solution
+    //TODO: touch area does not work with the current filtering mechanism. find better solution
 	if( obj == mHandleItem) {
 		if(event->type() == QEvent::GraphicsSceneMouseMove){
 			mouseMoveEvent ( (QGraphicsSceneMouseEvent *) event ) ;

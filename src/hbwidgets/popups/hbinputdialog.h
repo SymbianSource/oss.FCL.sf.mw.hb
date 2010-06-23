@@ -97,6 +97,31 @@ public:
             , QGraphicsScene *scene = 0
             , QGraphicsItem *parent = 0);
 
+    static void queryText(const QString &promptText
+            ,QObject *receiver
+            ,const char *member
+            ,const QString &defaultText = QString()
+            ,QGraphicsScene *scene = 0
+            ,QGraphicsItem *parent = 0);
+    static void queryInt(const QString &promptText
+            ,QObject *receiver
+            ,const char *member
+            ,int defaultInt = 0
+            ,QGraphicsScene *scene = 0
+            ,QGraphicsItem *parent = 0);
+    static void queryDouble(const QString &promptText
+            ,QObject *receiver
+            ,const char *member
+            ,double defaultDouble = 0
+            , QGraphicsScene *scene = 0
+            , QGraphicsItem *parent = 0);
+    static void queryIp(const QString &promptText
+            ,QObject *receiver
+            ,const char *member
+            , const QString &defaultIp = QString()
+            , QGraphicsScene *scene = 0
+            , QGraphicsItem *parent = 0);
+
     QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 
     enum { Type = Hb::ItemType_InputDialog };
@@ -104,6 +129,12 @@ public:
 
 public slots:
     void updatePrimitives();
+    void done(int code);
+
+signals:
+    void intValueSelected(int value);
+    void doubleValueSelected(double value);
+    void textValueSelected(QString value);
 
 protected:
     HbInputDialog(HbDialogPrivate &dd, QGraphicsItem *parent);
@@ -113,6 +144,7 @@ private:
     Q_DISABLE_COPY(HbInputDialog)
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputDialog)
     Q_PRIVATE_SLOT(d_func(), void _q_notesOrientationChanged(Qt::Orientation))
+    Q_PRIVATE_SLOT(d_func(), void textChange(const QString))
 };
 
 #endif //HBINPUT_DIALOG_H

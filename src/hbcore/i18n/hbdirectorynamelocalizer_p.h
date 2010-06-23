@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef DIRECTORYNAMELOCALIZER_P_H_
-#define DIRECTORYNAMELOCALIZER_P_H_
+#ifndef DIRECTORYNAMELOCALIZER_P_H
+#define DIRECTORYNAMELOCALIZER_P_H
 
 #include <QMap>
 
@@ -34,4 +34,4 @@ public:
 	QMap<QString,QString> localizedNames;
 };
 
-#endif /* DIRECTORYNAMELOCALIZER_H_ */
+#endif /* DIRECTORYNAMELOCALIZER_P_H */

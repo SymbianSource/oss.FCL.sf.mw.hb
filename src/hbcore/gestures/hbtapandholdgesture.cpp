@@ -33,12 +33,90 @@
     @hbcore
     \class HbTapAndHoldGesture
 
-    \brief HbTapAndHoldGesture is an extension to Qt standard QTapAndHoldGesture
-    \sa QTapAndHoldGesture
+    \brief The HbTapAndHoldGesture class provides support for receiving
+    tap-and-hold gestures.
+    
+    HbTapAndHoldGesture is an extension to Qt standard QTapAndHoldGesture.
+    It is optimized for mobile touch screens, and also supports recognition
+    of mouse events for development purposes. It also gives information about
+    the tap-and-hold gesture position directly in scene coordinates, removing
+    any need for manual conversions from the screen (global) coordinates
+    offered by QTapAndHoldGesture.
+    
+    Use HbTapAndHoldGesture for a custom widget that is only interested in
+    the tap-and-hold (long tap) gesture. If you want your custom widget to
+    receive both short and long taps, use HbTapGesture instead, since it
+    supports both.
+    
+    \section _usecases_hbtapandholdgesture Using the HbTapAndHoldGesture class
+    
+    This example shows how to make a custom widget recognize the tap-and-hold
+    gesture. The custom widget in the example derives from HbWidget.
+    
+    <ol>
+    <li>
+    Register for tap-and-hold gestures by using the base class function
+    QGraphicsObject::grabGesture(). QGraphicsObject::grabGesture() can be
+    called several times with different arguments, if the widget is
+    interested in other gesture types as well.
+   
+    \code
+    // This widget is interested in tap-and-hold and pan gestures.
+    grabGesture(Qt::TapAndHoldGesture);
+    grabGesture(Qt::PanGesture);
+    \endcode
+    </li>
+    
+    <li>
+    Reimplement HbWidgetBase::gestureEvent() to handle gestures that are
+    meaningful for your custom widget.
+   
+    \code
+    void MyWidget::gestureEvent(QGestureEvent *event)
+    {
+        if (HbTapAndHoldGesture *tapAndHold =
+            qobject_cast<HbTapAndHoldGesture *>
+                (event->gesture(Qt::TapAndHoldGesture))) {
+       
+            switch (tapAndHold->state()) {
+           
+            case Qt::GestureStarted:
+                // Visualize the active state of the widget.
+                break;
+                
+            // No GestureUpdated events are sent for this gesture type,
+            // so no handling is needed for those
+             
+            case Qt::GestureCanceled:
+                // Visualize the non-active state of the widget.
+                break;
+            case Qt::GestureFinished:              
+                // Visualize the non-active state of the widget.
+                // Emit a long tap signal.              
+                break;
+            default:
+                break;
+            }           
+        }
+       
+        // Handle other gesture types that have been grabbed. There may be
+        // several, since all gestures that are active at the same moment
+        // are sent within the same gesture event.
+        if (HbPanGesture *pan = qobject_cast<HbPanGesture *>
+            (event->gesture(Qt::PanGesture))) {
+            // handle the pan gesture
+        }
+       
+    }   
+    \endcode
+    </li>
+    </ol>
+   
+    \sa HbTapGesture, QTapAndHoldGesture
 */
 
 /*!
-    \brief HbTapAndHoldGesture constructor
+    Constructor.
     \param parent Parent for the gesture
 */
 HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
@@ -49,7 +127,7 @@ HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
 }
 
 /*!
-    \brief HbTapAndHoldGesture constructor
+    Constructor required by the shared d-pointer paradigm.
     \param dd Custom private data
     \param parent Parent for the gesture
 */
@@ -62,7 +140,7 @@ HbTapAndHoldGesture::HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* dd, QObject
 }
 
 /*!
-    \brief HbTapAndHoldGesture destructor
+    Destructor.
 */
 HbTapAndHoldGesture::~HbTapAndHoldGesture()
 {
@@ -70,16 +148,20 @@ HbTapAndHoldGesture::~HbTapAndHoldGesture()
 }
 
 /*!
-    \property scenePosition
-
-    Current position of the gesture.
-    \sa QTapAndHoldGesture::position()
+    Returns the current position of the gesture in scene coordinates.
+    \sa setScenePosition(), QTapAndHoldGesture::position()
 */
 QPointF HbTapAndHoldGesture::scenePosition() const
 {
     return priv->mScenePos;
 }
 
+/*!
+    Sets the current position of the gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa scenePosition(), QTapAndHoldGesture::setPosition()
+*/
 void HbTapAndHoldGesture::setScenePosition(const QPointF& pos)
 {
     priv->mScenePos = pos;

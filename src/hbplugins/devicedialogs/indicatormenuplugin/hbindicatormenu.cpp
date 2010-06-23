@@ -243,11 +243,11 @@ void HbIndicatorMenu::indicatorActivated(
     menuContent->indicatorActivated(activatedIndicator);
 }
 
-void HbIndicatorMenu::indicatorRemoved(
-        HbIndicatorInterface *indicatorRemoved)
+void HbIndicatorMenu::indicatorDeactivated(
+        HbIndicatorInterface *indicator)
 {
     //forward to content widget.
     HbIndicatorMenuContent *menuContent =
             qobject_cast<HbIndicatorMenuContent*>(contentWidget());
-    menuContent->indicatorRemoved(indicatorRemoved);
+    menuContent->indicatorRemoved(indicator);
 }

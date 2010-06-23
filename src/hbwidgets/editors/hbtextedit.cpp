@@ -31,7 +31,7 @@
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 /*!

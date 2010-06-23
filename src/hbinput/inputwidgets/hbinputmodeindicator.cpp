@@ -22,13 +22,13 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include <hbinputmodeindicator.h>
 
 #include <QPainter>
 #include <QPointer>
 #include <hbicon.h>
 #include <hbinputmethod.h>
 #include <hbinputeditorinterface.h>
-#include <hbinputmodeindicator.h>
 #include <hbinputfocusobject.h>
 #include <hbinputsettingproxy.h>
 
@@ -36,19 +36,19 @@
 
 class HbInputModeIndicatorPrivate
 {
-public:   
+public:
     HbInputModeIndicatorPrivate(HbInputButton *button);
     ~HbInputModeIndicatorPrivate();
 
     void updatePrediction();
 
-public:  
+public:
     HbInputButton *mButtonItem;
     QPointer<HbInputFocusObject> mFocusObject;
 };
 
 HbInputModeIndicatorPrivate::HbInputModeIndicatorPrivate(HbInputButton *button)
- : mButtonItem(button), mFocusObject(0)
+    : mButtonItem(button), mFocusObject(0)
 {
     if (HbInputMethod::activeInputMethod()) {
         mFocusObject = HbInputMethod::activeInputMethod()->focusObject();
@@ -72,7 +72,7 @@ void HbInputModeIndicatorPrivate::updatePrediction()
     if (HbInputSettingProxy::instance()->predictiveInputStatusForActiveKeyboard() &&
         mFocusObject && mFocusObject->editorInterface().isPredictionAllowed()) {
         icon = HbIcon(predictionOnIcon);
-     } else {
+    } else {
         icon = HbIcon(predictionOffIcon);
     }
     icon.setColor(color);
@@ -99,7 +99,7 @@ HbInputModeIndicator::HbInputModeIndicator(HbInputButton *button, QGraphicsWidge
 {
     mPrivate = new HbInputModeIndicatorPrivate(button);
     if (mPrivate->mFocusObject) {
-        connect (&mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
+        connect(&mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
     }
     connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)),
             this, SLOT(updatePredictionStatus(HbKeyboardSettingFlags, bool)));
@@ -123,7 +123,7 @@ void HbInputModeIndicator::updateIndicator()
         if (HbInputMethod::activeInputMethod()) {
             mPrivate->mFocusObject = HbInputMethod::activeInputMethod()->focusObject();
             if (mPrivate->mFocusObject) {
-                connect( &mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
+                connect(&mPrivate->mFocusObject->editorInterface(), SIGNAL(modified()), this, SLOT(updateIndicator()));
             } else {
                 return;
             }

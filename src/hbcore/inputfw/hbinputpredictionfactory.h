@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_PREDICTION_FACTORY_H
-#define HB_PREDICTION_FACTORY_H
+#ifndef HB_INPUT_PREDICTION_FACTORY_H
+#define HB_INPUT_PREDICTION_FACTORY_H
 
 #include <QObject>
 #include <QList>
@@ -39,7 +39,7 @@ class HbPredictionPlugin
 {
 public:
     virtual ~HbPredictionPlugin() {}
-    virtual HbPredictionEngine* createInterface() = 0;
+    virtual HbPredictionEngine *createInterface() = 0;
     virtual HbPredictionInterfaceType type() const = 0;
     virtual QList<HbInputLanguage> languages() const = 0;
     virtual QString vendorId() const = 0;
@@ -49,15 +49,15 @@ Q_DECLARE_INTERFACE(HbPredictionPlugin, "com.Nokia.HbPredictionPlugin");
 
 class HB_CORE_EXPORT HbPredictionFactory : public QObject
 {
-Q_OBJECT
+    Q_OBJECT
 public:
-    static HbPredictionFactory* instance();
+    static HbPredictionFactory *instance();
 
-    HbPredictionEngine* predictionEngineForLanguage(const HbInputLanguage &language);
+    HbPredictionEngine *predictionEngineForLanguage(const HbInputLanguage &language);
     QList<int> allPredictionEnginesForLanguage(const HbInputLanguage &language);
     QList<int> allPredictionEngines();
-    HbPredictionEngine* createEngine(int handle);
-    HbPredictionEngine* createEngine(const QString& vendorIdString);
+    HbPredictionEngine *createEngine(int handle);
+    HbPredictionEngine *createEngine(const QString &vendorIdString);
 
     void initialize();
     void clearEngineData();
@@ -70,13 +70,13 @@ private:
     HbPredictionFactory();
 
     // Prevent copying
-    HbPredictionFactory(const HbPredictionFactory&);
-    HbPredictionFactory& operator = (const HbPredictionFactory& other);
+    HbPredictionFactory(const HbPredictionFactory &);
+    HbPredictionFactory &operator = (const HbPredictionFactory &other);
 
 private:
-    HbPredictionFactoryPrivate* d;
+    HbPredictionFactoryPrivate *d;
 };
 
-#endif // HB_PREDICTION_FACTORY_H
+#endif // HB_INPUT_PREDICTION_FACTORY_H
 
 // End of file

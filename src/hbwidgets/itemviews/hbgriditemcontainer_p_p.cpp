@@ -63,7 +63,7 @@ void HbGridItemContainerPrivate::init()
 
 qreal HbGridItemContainerPrivate::getDiffWithoutScrollareaCompensation(const QPointF &delta) const
 {
-    // substract invisible space from delta - part of scrolling that can
+    // subtract invisible space from delta - part of scrolling that can
     // be done by scroll area
     Q_Q(const HbGridItemContainer);
     const QSizeF containerSize(q->size());
@@ -547,7 +547,7 @@ void HbGridItemContainerPrivate::increaseBufferSize(int targetCount,
     QModelIndex index;
     if (mItems.size() == 0) {
         // in case when buffer was empty and to be sure 
-        // it allways has at least one item - to make rest
+        // it always has at least one item - to make rest
         // code simpler
         index = mItemView->model()->index(startingIndex, 0);
         if (index.isValid()) {

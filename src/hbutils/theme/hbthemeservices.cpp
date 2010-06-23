@@ -80,7 +80,7 @@ const QString HbThemeServices::themePath()
 {
     QString path("");
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.themeIndexOffset > 0) {
+    if (info.address) {
         path.append(info.path);
         path.append("/icons/");
         path.append(info.name);

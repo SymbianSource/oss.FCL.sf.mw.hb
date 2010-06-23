@@ -158,10 +158,16 @@ void appendItem(HbThemeIndexItemData &itemData, const QString &itemName)
                 if (itemData.flags & HbThemeIndexItemData::Mirrorable) {
                     std::cout << "Icon is automatically mirrored\n";
                 }
+            } else if (itemData.itemType == HbThemeIndexItemData::ColorItem) {
+                std::cout << "Color value: " << itemData.colorValue << "\n";
+                if (itemData.flags & HbThemeIndexItemData::Reference) {
+                    std::cout << "Item is reference\n";
+                }
             }
             if (itemData.flags & HbThemeIndexItemData::Locked) {
                 std::cout << "Item is locked\n";
             }
+
             std::cout << "----------------------------------------------------------------\n\n";
         } else { // Item already added in index with some other extension, do not add duplicates
             std::cout << "----------------------------------------------------------------\n";
@@ -306,6 +312,50 @@ bool themeIndexItemDataLessThan(const HbThemeIndexItemData &d1, const HbThemeInd
     return d1.itemNameHash < d2.itemNameHash;
 }
 
+void indexColorVariables(const QString &filename)
+{
+    QFile file(filename);
+
+    // Index only if given CSS file exists in theme.
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+
+        while(!in.atEnd()) {
+            QString line = in.readLine().trimmed();
+
+            if (line.startsWith("qtc_")) {
+                HbThemeIndexItemData itemData;
+
+                // Extract name and value from line
+                QString name = line.mid(0, line.indexOf(':')).trimmed();
+                QString value;
+                if (line.at(line.indexOf(':') + 1) == QChar('#')) {
+                    // qtc_conv_list_received_normal:#B5B5B5;
+                    int startIndex = line.indexOf('#');
+                    int endIndex = line.indexOf(';');
+                    value = line.mid(startIndex + 1, endIndex - startIndex - 1).trimmed();
+                } else if (line.indexOf("var(") >= 0) {
+                    // qtc_conv_list_received_normal:var(qtc_conv_list_sent_normal);
+                    itemData.flags |= HbThemeIndexItemData::Reference;
+                    int startIndex = line.indexOf("var(") + 4;
+                    int endIndex = line.indexOf(')');
+                    value = line.mid(startIndex, endIndex - startIndex).trimmed();
+                }
+
+                itemData.itemNameHash = HbThemeIndex::hash(name);
+                itemData.itemType = HbThemeIndexItemData::ColorItem;
+                bool ok = false;
+                itemData.colorValue = (quint32)value.toUInt(&ok, 16);   // Might cause compiler warning in 64 bit systems
+                appendItem(itemData, name);
+            }
+        }
+        file.close();
+    } else if (verboseOn) {
+        std::cout << "No " << filename.toStdString() << " in theme!\n";
+    }
+    return;
+}
+
 void processDir(const QDir &dir, const QString &themename, const QString targetName, bool subDir = false)
 {
     if (!subDir) {
@@ -341,8 +391,25 @@ void processDir(const QDir &dir, const QString &themename, const QString targetN
             itemData.flags |= HbThemeIndexItemData::Mirrorable;
             appendItem(itemData, mirrored);
         }
-        QDir targetDir(targetName);
-        if (!targetDir.exists()) {
+
+        // Read application and widget color group CSS files and index their content
+        // Temporary check
+        if (QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css") &&
+            QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css")) {
+            if (verboseOn) {
+                std::cout << "Processing hbapplicationcolorgroup.css and hbwidgetcolorgroup.css";
+            }
+            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css");
+            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css");
+        } else {
+            if (verboseOn) {
+                std::cout << "Processing hbcolorgroup.css";
+            }
+            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbcolorgroup.css");
+        }
+
+        QDir targetDir;
+        if (!targetDir.exists(targetName)) {
             targetDir.mkpath(targetName);
         }
         QString filename = targetName + themename + ".themeindex";
@@ -384,11 +451,12 @@ void processDir(const QDir &dir, const QString &themename, const QString targetN
 
 void showHelp() {
     std::cout << "Themeindexer.exe usage:\n\n";
-    std::cout << "hbthemeindexer [-v] -f filename OR -n themename -s themes source directory -t theme index file target directory\n\n";
+    std::cout << "hbthemeindexer [-v] -f filename OR (-n themename) -s themes source directory -t theme index file target directory\n\n";
 
-    std::cout << "-n \t\ttheme to be indexed (\"<themename>.themeindex\").\n";
-    std::cout << "-s \t\tthemes source directory is scanned recursively and all the";
-    std::cout << "\t\t\trecognized resource files for given theme are aded in the theme index.\n";
+    std::cout << "-n \t\ttheme to be indexed (\"<themename>.themeindex\"). If omitted, all found\n";
+    std::cout << "\t\tthemes are indexed.\n";
+    std::cout << "-s \t\tthemes source directory is scanned recursively and all the recognized\n";
+    std::cout << "\t\tresource files for given theme are aded in the theme index.\n";
     std::cout << "-t \t\ttarget directory for the index file.\n";
 
     std::cout << "-f <filename>\tfile which contains multiple themes to be indexed. Each in its own row.\n";
@@ -491,7 +559,7 @@ int main(int argc, char *argv[])
                 }
             }
         } else {
-            // Index only given theme
+            // Index only given dir
 
             targetname.replace('\\', '/');
             // Check that targetname has / at the end
@@ -499,7 +567,22 @@ int main(int argc, char *argv[])
                 targetname.append('/');
             }
 
-            processDir(basedir, themename, targetname);
+            if (themename.isEmpty()) {
+                // Theme name not given, determine available themes
+                QDir icondir(basedir);
+                if (icondir.cd("icons")) {
+                    QStringList entries = icondir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+                    foreach (const QString &entry, entries) {
+                        QDir entrydir(icondir.filePath(entry));
+                        if (entrydir.exists("index.theme")) {
+                            processDir(basedir, entrydir.dirName(), targetname);
+                        }
+                    }
+                }
+            } else {
+                // Process only given theme
+                processDir(basedir, themename, targetname);
+            }
 
         }
     }

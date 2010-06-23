@@ -171,7 +171,7 @@ public:
     QTextCursor cursor;
     QTextCursor selectionCursor;
 
-    HbValidator* validator;
+    QPointer<HbValidator> validator;
     bool imEditInProgress;
     int imPosition;
     int imAdded;
@@ -210,13 +210,13 @@ public:
     HbFormatDialogPointer formatDialog;
     QTextCursor nextCharCursor;
 
+    bool updatePrimitivesInProgress;
 
 private:
     static HbAbstractEditPrivate *d_ptr(HbAbstractEdit *edit) {
         Q_ASSERT(edit);
         return edit->d_func();
     }
-    friend class HbEditScrollArea;
     friend class HbFormatDialog;
     friend class HbFormatDialogPrivate;
     // To be able to unit test private features

@@ -23,10 +23,9 @@
 **
 ****************************************************************************/
 
-
-#include "hbstandarddirs_p.h"
 #include "hbthemesystemeffect_p.h"
 #include "hbthemesystemeffectmap_p.h"
+#include "hbthemeutils_p.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -106,7 +105,7 @@ void HbThemeSystemEffect::setCurrentTheme(const QString &themeName)
         QString confPath;
 
         // Try registering the theme specific effects
-        if (getThemeEffectFolder(confPath, themeName)) {
+        if (getThemeEffectFolder(confPath)) {
             HbThemeSystemEffectMap *themeEffects = parseConfigurationFile(confPath);
             if (themeEffects->entryCount()) {
                 verifyAllEffectsFound(*themeEffects);
@@ -125,37 +124,32 @@ void HbThemeSystemEffect::setCurrentTheme(const QString &themeName)
     }
 }
 
-bool HbThemeSystemEffect::getThemeEffectFolder(QString &path, const QString &themeName)
+bool HbThemeSystemEffect::getThemeEffectFolder(QString &path)
 {
     bool pathFound = false;
-    QString effectDir = "themes/effects/" + themeName + "/";
-    QStringList queryList;
-    queryList.append(effectDir);
-    int baseThemeIndex = -1;
-    QStringList folderList = HbStandardDirs::findExistingFolderList(queryList,
-                             themeName,
-                             Hb::EffectResource,
-                             baseThemeIndex);
 
-    // Search for current theme effect folder
-    QString pathCandidate;
-    for (int i = 0; i < folderList.count(); i++) {
-        pathCandidate = folderList.at(i);
-        // Skip resource folders
-        if (!pathCandidate.startsWith(":/") && i != baseThemeIndex) {
-            path = pathCandidate;
-            pathFound = true;
-            break;
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+    // QT resource filenames cannot be used because filenames are passed
+    // to native Symbian component, which does not read QT resources.
+    if (!info.path.startsWith(':')) {
+        pathFound = true;
+        path = info.path;
+        path.append("/effects/");
+        path.append(info.name);
+        path.append('/');
+    }
+
+    // Get also base theme effects folder - todo: should operator theme layer be looked up as well?
+    if (mBaseEffectsFolder.isEmpty()) {
+        info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
+        if (!info.path.startsWith(':')) {
+            mBaseEffectsFolder = info.path;
+            mBaseEffectsFolder.append("/effects/");
+            mBaseEffectsFolder.append(info.name);
+            mBaseEffectsFolder.append('/');
         }
     }
 
-    // Save base theme effect folder path if not saved already
-    if (baseThemeIndex >= 0 && mBaseEffectsFolder.isEmpty()) {
-        QString baseEffectsFolder = folderList.at(baseThemeIndex);
-        if (!baseEffectsFolder.startsWith(":/")) {
-            mBaseEffectsFolder = baseEffectsFolder;
-        }
-    }
     return pathFound;
 }
 
@@ -351,18 +345,18 @@ bool HbThemeSystemEffect::validEffectFile(const QString &effectFile,
     bool validFile = false;
     // Check if file is found in theme effect folder
     if (!fromBaseTheme) {
-        validFile = QFile(effects->effectsFolder() + effectFile).exists();
+        validFile = QFile::exists(effects->effectsFolder() + effectFile);
         // Not found -> Check if file is found in base theme effect folder
         if (!validFile && !instance()->mBaseEffectsFolder.isEmpty()
                 && instance()->mBaseEffectsFolder != effects->effectsFolder()) {
-            validFile = QFile(instance()->mBaseEffectsFolder + effectFile).exists();
+            validFile = QFile::exists(instance()->mBaseEffectsFolder + effectFile);
             if (validFile) {
                 fromBaseTheme = true;
             }
         }
         // Other entry files found in base theme -> this should be found there too
     } else {
-        validFile = QFile(instance()->mBaseEffectsFolder + effectFile).exists();
+        validFile = QFile::exists(instance()->mBaseEffectsFolder + effectFile);
     }
     return validFile;
 }

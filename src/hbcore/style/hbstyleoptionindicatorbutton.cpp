@@ -31,14 +31,14 @@
 */
 
 HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton() : 
-    HbStyleOption(), mode(QIcon::Normal), transparent(false)
+    HbStyleOption(), mode(QIcon::Normal), transparent(false), twoIcons(false)
 {
     type = Type;
     version = Version;
 }
 
 HbStyleOptionIndicatorButton::HbStyleOptionIndicatorButton(const HbStyleOptionIndicatorButton &other) :
-    HbStyleOption(other), mode(other.mode), transparent(other.transparent)
+    HbStyleOption(other), mode(other.mode), transparent(other.transparent), twoIcons(other.twoIcons)
 {
     type = Type;
     version = Version;

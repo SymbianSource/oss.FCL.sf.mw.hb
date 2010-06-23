@@ -74,6 +74,8 @@ public slots:
     void mouseMovedOutOfButton();
     void smileySelected(QString smiley);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void typingCorrectionLevelChanged(HbTypingCorrectionLevel typingCorrectionLevel);
     void candidatePopupClosed(int closingKey, const QString& candidate);
     void aboutToActivateCustomAction(HbAction *custAction);
 
@@ -105,6 +107,7 @@ public:
 
 private slots:
     void candidatePopupCancelled();
+	void primaryCandidateModeChanged(HbPrimaryCandidateMode mode);
 
 private:
     void initializePredictiveMode();
@@ -119,7 +122,7 @@ private:
     HbInputVkbWidget *constructKeyboard(HbKeypadMode currentInputType);
 
 private:
-    // mCurrentKeypad contains currently active keypad, we dont need to have
+    // mCurrentKeypad contains currently active keypad, we don't need to have
     // anyother variables to tell us which is current keypad
     QPointer<HbInputVkbWidget> mCurrentKeypad;
     // contains qwerty alpha keypad

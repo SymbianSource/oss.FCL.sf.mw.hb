@@ -1,0 +1,28 @@
+<layers>
+<visual>
+	<param name="scale_x" type="anim">
+			<duration>0.3</duration>
+			<style>outback</style>
+			<keyframe at="0.0">0</keyframe>
+			<keyframe at="1.0">1</keyframe>
+			<start ref="visual.width">0.5</start>
+			<end ref="visual.width">1.0</end>
+		</param>
+		<param name="scale_y" type="anim">
+			<duration>0.3</duration>
+			<style>outback</style>
+			<keyframe at="0.0">0</keyframe>
+			<keyframe at="1.0">1</keyframe>
+			<start ref="visual.height">0.5</start>
+			<end ref="visual.height">1.0</end>
+		</param>
+		<param name="opacity" type="anim">
+			<style>linear</style>
+			<duration>0.3</duration>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">1.0</keyframe>
+		</param>
+		<param name="scale_origin_x" ref="visual.width">0.5</param>
+		<param name="scale_origin_y" ref="visual.height">0.5</param>
+	</visual>
+</layers>

@@ -58,7 +58,6 @@ public:
     void startIncrementing();
     void startDecrementing();
     void stopRepeatAction();
-    void setTickLabelPresentProperty();
     void updateTickMarks();
     void updateTickLabels();
     void deleteTickMarks();

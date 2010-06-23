@@ -23,7 +23,6 @@
 **
 ****************************************************************************/
 
-
 #include <hbratingslider.h>
 #include "hbratingslider_p.h"
 #include <hbtooltip.h>
@@ -444,6 +443,7 @@ void HbRatingSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
         }
         d->mMousePressed = true;
         event->accept();
+        updatePrimitives();
 
     }
 
@@ -477,7 +477,7 @@ void HbRatingSlider::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
         int rating=0;
         if(rect.contains(xVal,0 )) {
             rating = d->calculateProgressValue(xVal);
-            if(toolTip() != QString()) {
+            if(!toolTip().isNull()) {
                 HbToolTip::showText(toolTip(),this);
             }    
             setCurrentRating(rating);
@@ -519,7 +519,7 @@ void HbRatingSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         int rating=0;
         if(rect.contains(xVal,0 )) {
             rating = d->calculateProgressValue(xVal);
-            if(toolTip() != QString()) {
+            if(!toolTip().isNull()) {
                 HbToolTip::showText(toolTip(),this);
             }    
             setCurrentRating(rating);
@@ -529,6 +529,7 @@ void HbRatingSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
             event->accept();
             d->mMousePressed = false;
         }
+        updatePrimitives();
     
     }        
 }
@@ -563,9 +564,18 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                     event->ignore();
                     return;
                 }
-
-                d->mMousePressed = true;
-                event->accept();
+                QRectF rect = d->mTouchArea->boundingRect();
+                if(rect.contains(xVal,0 )) {
+                    d->mMousePressed = true;
+                    updatePrimitives();
+                    rating = d->calculateProgressValue(xVal);
+                    setCurrentRating(rating);
+                    event->accept();
+                }
+                else {
+                    event->ignore();
+                }
+                
                 }
                 break;
  
@@ -592,7 +602,7 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
 
                rating = d->calculateProgressValue(xVal);
         
-               if(toolTip() != QString()) {
+               if(!toolTip().isNull()) {
                     HbToolTip::showText(toolTip(),this);
                 }    
                 setCurrentRating(rating);
@@ -601,7 +611,24 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                 }
                 event->accept();
                 d->mMousePressed = false;
+                updatePrimitives();
+            }            
+            else {
+
+                d->mMousePressed = false;
+                updatePrimitives();
+
+                if(xVal <rect.x() )  {
+
+                    setCurrentRating(0);
+                    emit ratingDone (d->mCurrentValue);
                 }
+            
+            }
+            
+
+
+
             }
             break;
             default: break;
@@ -630,7 +657,7 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
 
                                 rating = d->calculateProgressValue(xVal);
                                 
-                                if(toolTip() != QString()) {
+                                if(!toolTip().isNull()) {
                                     HbToolTip::showText(toolTip(),this);
                                 }    
                                 setCurrentRating(rating);
@@ -646,34 +673,34 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                     {                          
                          qreal xVal = mapFromScene(event->mapToGraphicsScene( pan->startPos()+pan->offset())).x();
                          QRectF rect = d->mTouchArea->boundingRect();
+                         d->mMousePressed = false;
+                         updatePrimitives();
                          int rating=0;
                          if(rect.contains(xVal,0 )) {
                             if(d->mReadOnly) {
                                event->ignore();
                                return;
                              }
-                        }
+                         }
 
-                        if(!d->mMousePressed) {
-                             return;
-                        }
+                         if(xVal <0) {    
+                            setCurrentRating(0);
+                            emit ratingDone (d->mCurrentValue);
+                            return;
+                          }
 
-                       if(xVal <0) {    
-                          setCurrentRating(0);
-                          emit ratingDone (d->mCurrentValue);
-                          return;
-                        }
-
-                        rating = d->calculateProgressValue(xVal);
-                        setCurrentRating(rating);
-                        if(d->mCurrentValue) {
-                           emit ratingDone (d->mCurrentValue);
-                        }
-                        d->mMousePressed = false;
-                        event->accept();
-                     }
-                     default:
-                     break;
+                          rating = d->calculateProgressValue(xVal);
+                          setCurrentRating(rating);
+                          if(d->mCurrentValue) {
+                             emit ratingDone (d->mCurrentValue);
+                           }                       
+                           event->accept();
+                        
+                      }
+                     
+					
+					default:
+                      break;
                 }
     }
 }
@@ -703,6 +730,8 @@ void HbRatingSlider::initStyleOption(HbStyleOption *hboption) const
         option->unRatedGraphicsName = d->mUnratedIconName;
         option->ratedGraphicsName = d->mRatedIconName;
         option->progressValue = d->mCurrentValue;
+        option->disableState = !isEnabled();
+        option->pressedState = d->mMousePressed;
     }
 }
 
@@ -740,6 +769,9 @@ void HbRatingSlider::changeEvent(QEvent *event)
     case QEvent::LayoutDirectionChange:
         updatePrimitives();
         break;
+    case QEvent::EnabledChange:
+         updatePrimitives();
+          break;
     default:
         break;
     }

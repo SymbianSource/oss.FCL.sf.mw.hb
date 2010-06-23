@@ -25,14 +25,12 @@
 #include "hbtheme.h"
 #include "hbtheme_p.h"
 #include "hbthemeclient_p.h"
-#include "hbstandarddirs_p.h"
 #include "hbicontheme_p.h"
 #include "hbthemeutils_p.h"
 #include "hbiconloader_p.h"
-#include "hbcolortheme_p_p.h"
-#include "hbcolortheme_p.h"
 #include "hbeffecttheme_p.h"
 #include "hbeffectinternal_p.h"
+#include "hbthemeindex_p.h"
 #include <QSettings>
 
 /*!
@@ -97,13 +95,24 @@ QString HbTheme::description() const
 }
 
 /*!
+    Returns the color for definition \a colorRole
+ */
+QColor HbTheme::color(const QString &colorRole) const
+{
+    HbThemeIndexResource resource(colorRole);
+    if (resource.isValid()) {
+        return resource.colorValue();
+    }
+    return QColor();
+}
+
+/*!
     Constructor
 */
 HbTheme::HbTheme() : d_ptr(new HbThemePrivate) 
 {
     d_ptr->q_ptr = this;
     d_ptr->fetchCurrentThemeFromSettings();
-    HbThemeUtils::initSettings();
     d_ptr->handleThemeChange();
 }
 
@@ -146,7 +155,7 @@ HbThemePrivate::~HbThemePrivate()
 void HbThemePrivate::fetchCurrentThemeFromSettings()
 {
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.themeIndexOffset > 0) {
+    if (info.address) {
         currentTheme = info.name;
         return;
     }
@@ -167,7 +176,7 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     QString newTheme;
     if (str.isEmpty()) {
         HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-        if (info.themeIndexOffset > 0) {
+        if (info.address) {
             newTheme = info.name;
         } else {
             newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
@@ -179,7 +188,6 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     }
 
     iconTheme.setCurrentTheme(newTheme);
-    HbColorTheme::instance()->setCurrentTheme(newTheme);
     HbEffectTheme::instance()->setCurrentTheme(newTheme);
     
     // The server sends the signal only if the theme is changed from the previous theme
@@ -199,9 +207,6 @@ void HbThemePrivate::handleThemeChange(const QString &str)
 */
 void HbThemePrivate::updateTheme(const QStringList &updatedFiles)
 {
-    // Reload the CSS
-    HbColorTheme::instance()->reloadCss();
-    
     // Reload effects
     HbEffectInternal::reloadFxmlFiles();
 

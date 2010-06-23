@@ -37,7 +37,9 @@
 #include "hbthemeserverutils_p.h"
 
 #if defined (Q_OS_SYMBIAN)
-#include <vg/openvg.h>
+// Note: Cases of the following two directory names intentionally differ to
+//       match the cases of the corresponding directories in Symbian 4.
+#include <VG/openvg.h>
 #include <vg/vgcontext_symbian.h>
 #endif //Q_OS_SYMBIAN
 

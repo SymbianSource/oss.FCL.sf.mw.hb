@@ -697,51 +697,6 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
                 }
                 break;
             }
-        case HbFeedbackEffectUtils::List:
-        case HbFeedbackEffectUtils::Grid:
-            {
-                if (interaction == Hb::ContinuousScrolled) {
-                    if (const HbAbstractItemView * itemView = qobject_cast<const HbAbstractItemView *>(widget)) {
-                        feedbackPlayed = true;
-                        QList<HbAbstractViewItem *> visibleItems = itemView->visibleItems();
-                        bool newItemFound(false);
-                        int index(-1);
-                        QList<int> visibleIndexes;
-                        if (widget == activelyScrollingItemView) {
-                            foreach (HbAbstractViewItem * item, visibleItems) {
-                                index = item->modelIndex().row();
-                                if (!oldVisibleIndexes.contains(index)) {
-                                    newItemFound = true;
-                                }
-                                visibleIndexes.append(index);
-                            }
-                        }
-                        if (widget != activelyScrollingItemView){
-                            activelyScrollingItemView = widget;
-                            newItemFound = false;
-                        }
-                        // To prevent the uninitialized list to cause false new item detections
-                        if (oldVisibleIndexes.empty()) {
-                            newItemFound = false;
-                        }
-                        oldVisibleIndexes.clear();
-                        oldVisibleIndexes = visibleIndexes;
-                        
-                        if (newItemFound) {
-                            const HbListView* listView = qobject_cast<const HbListView*>(widget);
-                            if (!(  listView &&
-                                    listView->arrangeMode() &&
-                                    listView->draggedItem())){
-                                if(!widgetOverridesModalities(widget,interaction)) {
-                                    modalities = HbFeedback::Audio | HbFeedback::Tactile;
-                                }
-                                playInstantFeedback(widget, HbFeedback::ItemScroll, modalities);
-                            }
-                        }
-                    }
-                }
-                break;
-            }
         default:
             {
                 break;

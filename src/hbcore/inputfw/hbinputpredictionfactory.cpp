@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputpredictionfactory.h"
+
 #include <QLocale>
 #include <QPluginLoader>
 #include <QDir>
@@ -31,7 +33,6 @@
 #include <QApplication>
 #include <QList>
 
-#include "hbinputpredictionfactory.h"
 #include "hbinputsettingproxy.h"
 #include "hbinputpredictionengine.h"
 
@@ -55,11 +56,9 @@ class HbEngineData
 {
 public:
     HbEngineData()
-        : cachedInstance(0)
-    {
+        : cachedInstance(0) {
     }
-    ~HbEngineData()
-    {
+    ~HbEngineData() {
         delete cachedInstance;
     }
 
@@ -67,7 +66,7 @@ public:
     QList<HbInputLanguage> languages;
     HbPredictionInterfaceType type;
     int handle;
-    HbPredictionEngine* cachedInstance;
+    HbPredictionEngine *cachedInstance;
     QString filename;
     QString vendorId;
 };
@@ -78,13 +77,15 @@ public:
     HbPredictionFactoryPrivate() : leadingHandle(0) {}
     ~HbPredictionFactoryPrivate();
     void initialize();
-    HbPredictionEngine* predictionEngineForLanguage(const HbInputLanguage &language);
+    HbPredictionEngine *predictionEngineForLanguage(const HbInputLanguage &language);
     void clearEngineData();
-    HbPredictionEngine* createInstance(int index);
-    int newHandle() { return ++leadingHandle; }
+    HbPredictionEngine *createInstance(int index);
+    int newHandle() {
+        return ++leadingHandle;
+    }
 
 public:
-    QList<HbPredictionPlugin*> activePlugins;
+    QList<HbPredictionPlugin *> activePlugins;
     QList<HbEngineData> engines;
     int leadingHandle;
     QMutex mutex;
@@ -121,10 +122,10 @@ void HbPredictionFactoryPrivate::initialize()
             }
 
             QPluginLoader loader(dir.absoluteFilePath(fileName));
-            QObject* engine_base = loader.instance();
+            QObject *engine_base = loader.instance();
             if (engine_base) {
-                HbPredictionPlugin* plugin = qobject_cast<HbPredictionPlugin*>(engine_base);
-                if (plugin) {                    
+                HbPredictionPlugin *plugin = qobject_cast<HbPredictionPlugin *>(engine_base);
+                if (plugin) {
                     HbEngineData data;
                     data.languages = plugin->languages();
                     data.type = plugin->type();
@@ -144,19 +145,19 @@ void HbPredictionFactoryPrivate::initialize()
 }
 
 void HbPredictionFactoryPrivate::clearEngineData()
-{  
+{
     engines.clear();
 }
 
-HbPredictionEngine* HbPredictionFactoryPrivate::predictionEngineForLanguage(const HbInputLanguage &language)
+HbPredictionEngine *HbPredictionFactoryPrivate::predictionEngineForLanguage(const HbInputLanguage &language)
 {
     bool anyVariant = (language.variant() == QLocale::AnyCountry);
     for (int i = 0; i < engines.count(); ++i) {
         for (int j = 0; j < engines[i].languages.count(); ++j) {
             if ((engines[i].type & HbPredInterfaceHidden) == 0) {    // Include only those that are not hidden.
                 bool checkLangOnly = (anyVariant || (engines[i].languages[j].variant() == QLocale::AnyCountry));
-                if ((checkLangOnly && (engines[i].languages[j].language() == language.language())) 
-                                                                || engines[i].languages[j] == language) {
+                if ((checkLangOnly && (engines[i].languages[j].language() == language.language()))
+                    || engines[i].languages[j] == language) {
                     return createInstance(i);
                 }
             }
@@ -166,7 +167,7 @@ HbPredictionEngine* HbPredictionFactoryPrivate::predictionEngineForLanguage(cons
     return 0;
 }
 
-HbPredictionEngine* HbPredictionFactoryPrivate::createInstance(int index)
+HbPredictionEngine *HbPredictionFactoryPrivate::createInstance(int index)
 {
     if (index < engines.count()) {
         if (engines[index].cachedInstance) {
@@ -181,17 +182,17 @@ HbPredictionEngine* HbPredictionFactoryPrivate::createInstance(int index)
             fullName += engines[index].filename;
             QPluginLoader loader(fullName);
 
-            QObject* plugin_base = loader.instance();
+            QObject *plugin_base = loader.instance();
             if (plugin_base) {
-                HbPredictionPlugin* plugin = qobject_cast<HbPredictionPlugin*>(plugin_base);
+                HbPredictionPlugin *plugin = qobject_cast<HbPredictionPlugin *>(plugin_base);
                 if (plugin) {
-                    HbPredictionEngine* newEngine = plugin->createInterface();
+                    HbPredictionEngine *newEngine = plugin->createInterface();
                     if (newEngine) {
                         engines[index].cachedInstance = newEngine;
                         activePlugins.append(plugin);
                         return newEngine;
                     }
-               }
+                }
             }
         }
     }
@@ -204,7 +205,7 @@ HbPredictionEngine* HbPredictionFactoryPrivate::createInstance(int index)
 /*!
 Returns reference to singleton object.
 */
-HbPredictionFactory* HbPredictionFactory::instance()
+HbPredictionFactory *HbPredictionFactory::instance()
 {
     static HbPredictionFactory myInstance;
     return &myInstance;
@@ -235,7 +236,7 @@ language. There may be also others available.
 \sa allPredictionEnginesForLanguage
 \sa allPredictionEngines
 */
-HbPredictionEngine* HbPredictionFactory::predictionEngineForLanguage(const HbInputLanguage &language)
+HbPredictionEngine *HbPredictionFactory::predictionEngineForLanguage(const HbInputLanguage &language)
 {
     QMutexLocker locker(&d->mutex);
     return d->predictionEngineForLanguage(language);
@@ -328,7 +329,7 @@ Creates and caches an instance of given language.
 \sa allPredictionEnginesForLanguage
 \sa allPredictionEngines
 */
-HbPredictionEngine* HbPredictionFactory::createEngine(int handle)
+HbPredictionEngine *HbPredictionFactory::createEngine(int handle)
 {
     QMutexLocker locker(&d->mutex);
 
@@ -350,7 +351,7 @@ to HbPredictionPlugin::VendorId() string.
 \sa HbPredictionEngine
 \sa HbPredictionPlugin
 */
-HbPredictionEngine* HbPredictionFactory::createEngine(const QString& vendorIdString)
+HbPredictionEngine *HbPredictionFactory::createEngine(const QString &vendorIdString)
 {
     QMutexLocker locker(&d->mutex);
 

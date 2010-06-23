@@ -44,8 +44,8 @@
 #include "hbinputabstractbase.h"
 #include "hbinputprediction12keyhandler_p.h"
 
-#define HbDeltaHeight 3.0
-#define MAXUDBWORDSIZE 64
+static const qreal HbDeltaHeight = 3.0;
+static const qint16 MAXUDBWORDSIZE = 64;
 
 HbInputPrediction12KeyHandlerPrivate::HbInputPrediction12KeyHandlerPrivate()
 :mLastKey(0),
@@ -84,9 +84,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
     if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
         if (buttonId == HbInputButton::ButtonKeyCodeAsterisk) {
             //Remove the "?" mark if present
-            chopQMarkAndUpdateEditor();
-            q->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-            mInputMethod->selectSpecialCharacterTableMode();
+            if (!mCanContinuePrediction) {
+                chopQMarkAndUpdateEditor();
+            }	
+            mInputMethod->switchMode(buttonId);
             mLongPressHappened = true;
         } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
             mInputMethod->switchMode(HbInputButton::ButtonKeyCodeShift);
@@ -120,7 +121,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
     }
 
     if (buttonId == HbInputButton::ButtonKeyCodeShift) {
-        // if we get a second consequtive shift key press, 
+        // if we get a second consecutive shift key press, 
         // we want to handle it in buttonRelease
         if (mTimer->isActive() && (mLastKey == buttonId)){
             mShiftKeyDoubleTap = true;
@@ -149,6 +150,11 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     mButtonDown = false;
     int buttonId = keyEvent->key(); 
 
+	// short key press of character keys should not be handled when "?" is displayed
+    if (!mCanContinuePrediction && !mLongPressHappened &&
+		buttonId >= Qt::Key_1 && buttonId <= Qt::Key_9) {
+        return false;
+    }	
     // Sym key is handled in this class it self, so not passing it to 
     // the base mode handlers.	
     if (buttonId == HbInputButton::ButtonKeyCodeSymbol ||
@@ -170,7 +176,6 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
             (*mCandidates)[mBestGuessLocation].chop(1);
             updateEditor();
             q->launchSpellQueryDialog();
-            mCanContinuePrediction = true;
         } else {
             mInputMethod->starKeySelected();
         }
@@ -213,7 +218,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         }
         return true;
     }
-
+	// ButtonKeyCodeSettings should not be propagated to the engine
+    if(buttonId == HbInputButton::ButtonKeyCodeSettings) {
+        return true;
+    }
     if (buttonId != HbInputButton::ButtonKeyCodeDelete &&
         mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
         q->sctCharacterSelected(QChar(buttonId));

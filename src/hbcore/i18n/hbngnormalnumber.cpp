@@ -30,6 +30,13 @@ namespace NgNormalNumber {
 	QHash<QLocale::Country, HbNgNormalNumber::CountryData> countryList;
 }
 
+/*!
+    Function for general grouping.  
+          
+    \param number QString which contains numbers
+    \param country locale for grouping
+    \return grouped numbers
+*/ 
 QString HbNgNormalNumber::normalNumberGrouping( const QString &number, 
 												const QLocale::Country &country )
 {
@@ -58,6 +65,16 @@ QString HbNgNormalNumber::normalNumberGrouping( const QString &number,
 	return HbNgNormalNumber::formatingGroup(number, firstNumber, lastNumber, dot, sign, decimal, group, patternBlockSizes);
 }
 
+/*!
+    Verifies that number string is valid.  
+          
+    \param number QString which contains numbers
+    \param firstNumber index of first number
+    \param lastNumber index of last number
+    \param dot index of dot
+    \param sign boolean which tells is there sign used
+    \return true if valid
+*/ 
 bool HbNgNormalNumber::checkingNumber( const QString &number, 
 									   int &firstNumber,
 									   int &lastNumber, 
@@ -153,6 +170,15 @@ bool HbNgNormalNumber::checkingNumber( const QString &number,
     return true;
 }
 
+/*!
+    Reads locale data from XML if needed.  
+          
+    \param country locale for grouping
+    \param decimal character(s) for decimal
+    \param group character(s) for group separator
+    \param patternBlockSizes list of blocks
+    \return true if successful
+*/ 
 bool HbNgNormalNumber::checkingXML( const QLocale::Country &country, 
 									QString &decimal, 
 									QString &group, 
@@ -171,7 +197,7 @@ bool HbNgNormalNumber::checkingXML( const QLocale::Country &country,
 	    decimal = numberGrpReader.getDecimal();  
 	    group = numberGrpReader.getGroup();
 	    
-	    if ( (pattern == "") || (decimal == "") ) {
+	    if ( (pattern.isEmpty()) || (decimal.isEmpty()) ) {
 	    	// XML doesn't contain all needed information or reading has failed
 	    	return false;
 	    }
@@ -192,7 +218,7 @@ bool HbNgNormalNumber::checkingXML( const QLocale::Country &country,
 	    NgNormalNumber::countryList.insert(country, tempCountryData);  
 	} else { 
 		// Data found
-		HbNgNormalNumber::CountryData tempCountryData2 = iter.value();
+	    HbNgNormalNumber::CountryData tempCountryData2 = iter.value();
 	    pattern = tempCountryData2.pattern;
 	    decimal = tempCountryData2.decimal;
 	    group = tempCountryData2.group;
@@ -202,6 +228,12 @@ bool HbNgNormalNumber::checkingXML( const QLocale::Country &country,
     return true;
 }
 
+/*!
+    Verifies that pattern for gouping is valid.  
+          
+    \param pattern rules for grouping
+    \return size of (number) block
+*/ 
 QList<int> HbNgNormalNumber::checkingPattern( const QString &pattern )
 {
 	int index = 0;
@@ -242,6 +274,19 @@ QList<int> HbNgNormalNumber::checkingPattern( const QString &pattern )
 	return blockSizes;
 }
 
+/*!
+    Grouping numbers  
+          
+    \param number QString which contains numbers
+    \param firstNumber index of first number
+    \param lastNumber index of last number
+    \param dot index of dot
+    \param sign boolean which tells is there sign used
+    \param decimal character(s) for decimal
+    \param group character(s) for group separator
+    \param patternBlockSizes list of blocks
+    \return grouped numbers
+*/ 
 QString HbNgNormalNumber::formatingGroup( const QString &number, 
 										  const int &firstNumber, 
 										  const int &lastNumber, 
@@ -278,7 +323,7 @@ QString HbNgNormalNumber::formatingGroup( const QString &number,
 	numberOfBlocks = patternBlockSizes.length();
 	patternBlockSize = patternBlockSizes.last(); 
 	
-	for ( index = tempDot-1; index > firstNumber-1; index-- ) {
+	for ( index = tempDot-1; index > firstNumber-1; --index ) {
 		if ( blockCounter < patternBlockSize ) {
 			// Inserting number...
 			formated.insert(0, number.at(index));

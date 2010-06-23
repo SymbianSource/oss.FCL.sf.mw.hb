@@ -74,5 +74,4 @@ for(COLLECTION, $$list($$COLLECTIONS)) {
 
 !isEmpty(LINKAGE) {
     LIBS += -L$${HB_LIB_DIR} $${LINKAGE}
-    QMAKE_RPATHDIR *= $${HB_LIB_DIR}
 }

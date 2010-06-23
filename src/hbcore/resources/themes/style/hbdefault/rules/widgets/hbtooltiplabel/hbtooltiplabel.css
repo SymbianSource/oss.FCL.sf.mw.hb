@@ -16,4 +16,5 @@ HbToolTipLabel::label
     text-line-count-max: 1;
     font-variant:secondary;
     text-height:var(hb-param-text-height-tiny);
+    text-wrap-mode:no-wrap;
 }

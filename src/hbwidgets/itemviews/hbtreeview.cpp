@@ -534,7 +534,7 @@ void HbTreeView::setIndentation(qreal indentation)
 
 /*!
     Returns indentation of tree view items. 
-    The returned value is either default value or set by setIndentation().
+    The returned value is either default value or value set by setIndentation().
 
     Default value is -1. In this case indentation from style sheet is used.
 

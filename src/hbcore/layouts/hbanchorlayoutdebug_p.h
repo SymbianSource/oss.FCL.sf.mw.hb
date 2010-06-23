@@ -33,6 +33,7 @@ class HB_CORE_PRIVATE_EXPORT HbAnchorLayoutDebug
 {
 public:
     static QList<HbAnchor*> getAnchors( HbAnchorLayout* layout );
+    static QList<HbAnchor*> getOriginalAnchors( HbAnchorLayout* layout );
 };
 
 #endif

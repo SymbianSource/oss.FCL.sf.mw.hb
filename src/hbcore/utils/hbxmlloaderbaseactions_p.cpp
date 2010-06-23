@@ -57,11 +57,11 @@ QList <QObject*> HbXmlLoaderBaseActions::takeAll()
     QList<QObject *> result;
     while (objects.size()) {
         ObjectMapItem item = objects.takeLast();
-        if (item.first.data()) {
-            result.append(item.first.data());
+        if (item.mObject.data()) {
+            result.append(item.mObject.data());
         }
     }
-    
+    mTopObjectMap.clear();
     return result;
     
 }
@@ -70,9 +70,9 @@ QGraphicsWidget* HbXmlLoaderBaseActions::findWidget( const QString &name )
 {
     QGraphicsWidget *result = 0;
     
-    ObjectMap::iterator it = mObjectMap.find(name);
-    if (it != mObjectMap.end() && it.value().second == HbXml::WIDGET ) {
-        result = static_cast<QGraphicsWidget *>(it.value().first.data());
+    ObjectMap::const_iterator it = mObjectMap.find(name);
+    if (it != mObjectMap.end() && it.value().mType == HbXml::WIDGET ) {
+        result = static_cast<QGraphicsWidget *>(it.value().mObject.data());
     }    
         
     return result;        
@@ -82,7 +82,7 @@ QGraphicsWidget* HbXmlLoaderBaseActions::findWidget( const QString &name )
 QObject* HbXmlLoaderBaseActions::findObject( const QString &name )
 {
     if( mObjectMap.contains(name) ) {               
-        return mObjectMap.value(name).first.data();
+        return mObjectMap.value(name).mObject.data();
     }
     return 0;    
 }
@@ -141,20 +141,22 @@ void HbXmlLoaderBaseActions::cleanUp()
     mStack.clear();
     
     // Create mTopObjectMap
-    for (ObjectMap::const_iterator it = mObjectMap.constBegin(); 
-         it != mObjectMap.constEnd(); 
-         ++it ) {
-        QObject *object = it.value().first.data();
-
-        if (object && it.value().second == HbXml::WIDGET) {
-            QGraphicsWidget *asWidget = static_cast<QGraphicsWidget *>(object);
-            if (!asWidget->parentItem() && !asWidget->parent()) {
+    for (ObjectMap::iterator it = mObjectMap.begin(); 
+         it != mObjectMap.end(); 
+         ++it ) {               
+        QObject *object = it.value().mObject.data();
+        if ( it.value().mOwned ) {
+            if (object && it.value().mType == HbXml::WIDGET) {
+                QGraphicsWidget *asWidget = static_cast<QGraphicsWidget *>(object);
+                if (!asWidget->parentItem() && !asWidget->parent()) {
+                    mTopObjectMap.insert(it.key(), it.value());
+                }
+            } else if (object && !object->parent()) {
                 mTopObjectMap.insert(it.key(), it.value());
+            } else {
+                // not added - owned by another object.
             }
-        } else if (object && !object->parent()) {
-            mTopObjectMap.insert(it.key(), it.value());
-        } else {
-            // not added - owned by another object.
+            it.value().mOwned = false;
         }
     }
 }
@@ -173,39 +175,39 @@ HbXmlLoaderBaseActions::ObjectMapItem HbXmlLoaderBaseActions::lookUp(const QStri
     const bool nameNotEmpty = name.size() != 0;
     bool doLookUp = true;
     ObjectMapItem current;
-    current.first = 0;
-    current.second = HbXml::OBJECT;
+    current.mObject = 0;
+    current.mType = HbXml::OBJECT;
     
     if (nameNotEmpty) {
-        ObjectMap::iterator it = mObjectMap.find(name);
+        ObjectMap::const_iterator it = mObjectMap.find(name);
         if (it != mObjectMap.end()) {
             current = it.value();
             
-            if (!current.first) {
+            if (!current.mObject) {
                 mObjectMap.remove(name);
             }
             // CHECK DISABLED FOR NOW.
             /*
-            if (current.first && !type.isEmpty()) {
+            if (current.mObject && !type.isEmpty()) {
                 const QByteArray array = type.toUtf8();
                 
-                if (!current.first->inherits(array.data())) {                    
+                if (!current.mObject->inherits(array.data())) {                    
                     HB_DOCUMENTLOADER_PRINT( QString( "Existing object requested with invalid type" ) );
                     // We have object already in mObjectMap, but it does not fulfill
                     // all needs. So object look up has failed.
                     doLookUp = false;
-                    current.first = 0;
+                    current.mObject = 0;
                 }
             }
             */
         }
     }
     
-    if (doLookUp && !current.first) {
+    if (doLookUp && !current.mObject) {
         QObject *obj = createObject(type, name, plugin);        
         if (obj) {
-            current.first = obj;
-            current.second = qobject_cast<QGraphicsWidget*>(obj) ? HbXml::WIDGET : HbXml::OBJECT;
+            current.mObject = obj;
+            current.mType = qobject_cast<QGraphicsWidget*>(obj) ? HbXml::WIDGET : HbXml::OBJECT;
         }
         if (nameNotEmpty) {
             mObjectMap.insert(name, current);
@@ -266,32 +268,23 @@ void HbXmlLoaderBaseActions::reset()
 bool HbXmlLoaderBaseActions::setObjectTree( QList<QObject *> roots )
 {
     reset();
-    
-    for( int i = 0; i < roots.size(); i++ ) {
-        QObject *obj = roots.at(i);
-        ObjectMapItem item;
-        item.first = obj;
-        item.second = qobject_cast<QGraphicsWidget*>(obj) ? HbXml::WIDGET : HbXml::OBJECT;
-        mTopObjectMap.insert( roots.at(i)->objectName(), item );
-    }
-    
     addToObjectMap( roots );
-    
     return true;
 }
 
 void HbXmlLoaderBaseActions::addToObjectMap( QList<QObject *> objects )
 {
-    for( int i = 0; i < objects.size(); i++ ) {
+    for ( int i = 0; i < objects.size(); i++ ) {
         QObject *obj = objects.at(i);
         QGraphicsWidget *widget = qobject_cast<QGraphicsWidget*>(obj);
 
         ObjectMapItem item;
-        item.first = obj;
-        item.second = widget ? HbXml::WIDGET : HbXml::OBJECT;
+        item.mObject = obj;
+        item.mType = widget ? HbXml::WIDGET : HbXml::OBJECT;
+        item.mOwned = false;
         mObjectMap.insert( obj->objectName(), item );
 
-        if( widget ) {
+        if ( widget ) {
             addToObjectMap( widget->childItems() );
         } else {
             addToObjectMap( obj->children() );
@@ -301,12 +294,13 @@ void HbXmlLoaderBaseActions::addToObjectMap( QList<QObject *> objects )
 
 void HbXmlLoaderBaseActions::addToObjectMap( QList<QGraphicsItem *> objects )
 {
-    for( int i = 0; i < objects.size(); i++ ) {
-        if( objects.at(i)->isWidget() ) {
+    for ( int i = 0; i < objects.size(); i++ ) {
+        if ( objects.at(i)->isWidget() ) {
             QGraphicsWidget *widget = static_cast<QGraphicsWidget *>( objects.at(i) );
             ObjectMapItem item;
-            item.first = widget;
-            item.second = HbXml::WIDGET;
+            item.mObject = widget;
+            item.mType = HbXml::WIDGET;
+            item.mOwned = false;
             mObjectMap.insert( widget->objectName(), item );
             addToObjectMap( widget->childItems() );
         }

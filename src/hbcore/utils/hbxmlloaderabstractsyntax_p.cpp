@@ -130,8 +130,10 @@ static const char *knownLexems[HbXmlLoaderAbstractSyntax::NUMBER_OF_LEXEMS] = {
 
     "anchoritem",       // AL_ANCHOR
     "src",              // AL_SRC_NAME
+    "srcId",            // AL_SRC_ID
     "srcEdge",          // AL_SRC_EDGE
     "dst",              // AL_DST_NAME
+    "dstId",            // AL_DST_ID
     "dstEdge",          // AL_DST_EDGE
     "spacing",          // AL_SPACING
     "spacer",           // AL_SPACER

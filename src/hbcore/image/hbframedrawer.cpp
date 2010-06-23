@@ -30,7 +30,7 @@
 #include <hbinstance.h>
 #include <hbiconimpl_p.h>
 #include <hbiconloader_p.h>
-
+#include <hbthemeutils_p.h>
 
 #include <QPainter>
 #include <QIcon>
@@ -201,11 +201,14 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const QString &frameGraphicsName, HbF
     borderWidths[2] = 0.0;
     borderWidths[3] = 0.0;
 
-    // Remove possible file extension
-    int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
-    if (index > 0) {
-        this->frameGraphicsName.resize(index);
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Remove possible file extension
+        int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index>0) {
+            this->frameGraphicsName.resize(index);
+        }
     }
+
     //Register the HbFrameDrawerPrivate Instance to HbIconLoader
     HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
@@ -382,11 +385,9 @@ void HbFrameDrawerPrivate::createFrameIcon()
         }
 
     } else {
-        QStringList multiPieceFileNames;
-        QStringList list = fileNameSuffixList();
-        int nameListCount = list.count();
-        for (int i = 0; i < nameListCount; i++) {
-            multiPieceFileNames.append(frameGraphicsName + list[i]);
+        QStringList multiPieceFileNames = resolveMultiPieceFileNames();
+        
+        for (int i = 0; i < frameParts; i++) {
             if (data.pixmapSizes[i].isEmpty()) {
                 data.pixmapSizes[i] = QSize(0, 0);
             }
@@ -412,6 +413,32 @@ void HbFrameDrawerPrivate::createFrameIcon()
         }
 
     }
+}
+
+QStringList HbFrameDrawerPrivate::resolveMultiPieceFileNames()
+{
+    QStringList multiPieceFileNames;
+
+    bool logicalName = HbThemeUtils::isLogicalName(frameGraphicsName);
+
+    int suffixIndex = frameGraphicsName.length();
+    if (!logicalName) {
+        // If it is an absolute icon path, the suffix is inserted before the file extension
+        int index = frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index > 0) {
+            suffixIndex = index;
+        }
+    }
+
+    QStringList list = fileNameSuffixList();
+    int count = list.count();
+    for (int i = 0; i < count; i++) {
+        QString nameWithSuffix = frameGraphicsName;
+        nameWithSuffix.insert(suffixIndex, list.at(i));
+        multiPieceFileNames.append(nameWithSuffix);
+    }
+
+    return multiPieceFileNames;
 }
 
 /*!
@@ -475,9 +502,9 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
                 }
             }
         }
-        if (fallbackMaskableIconList[0]->iconImpl()
-                && fallbackMaskableIconList[0]->iconImpl()->isCreatedOnServer()) {
-            if (fallbackMaskableIconList[0]->iconImpl()->iconData().type != INVALID_FORMAT) {
+        if ( fallbackMaskableIconList.count() && fallbackMaskableIconList[0]->iconImpl()
+             && fallbackMaskableIconList[0]->iconImpl()->isCreatedOnServer() ) {
+            if ( fallbackMaskableIconList[0]->iconImpl()->iconData().type != INVALID_FORMAT ) {
                 // store the icon type
                 iconType = fallbackMaskableIconList[0]->iconImpl()->iconData().type;
             }
@@ -860,7 +887,20 @@ void HbFrameDrawerPrivate::calculateShrinkedNinePieceCorners(
 QSizeF HbFrameDrawerPrivate::defaultSize(const QString &framePartSuffix)
 {
     HbIconLoader *loader = HbIconLoader::global();
-    return loader->defaultSize(frameGraphicsName + framePartSuffix).toSize();
+    
+    QString nameWithSuffix = frameGraphicsName;
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Logical icon name, append suffix in the end
+        nameWithSuffix.append(framePartSuffix);
+    } else {
+        // Absolute icon path, insert suffix before file extension
+        int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index > 0) {
+            nameWithSuffix.insert(index, framePartSuffix);
+        }
+    }
+
+    return loader->defaultSize(nameWithSuffix).toSize();
 }
 
 bool HbFrameDrawerPrivate::isMirrored()
@@ -1147,14 +1187,19 @@ QString HbFrameDrawer::frameGraphicsName() const
 /*!
 * Sets the frame graphics name. See the class description for the file name convention for different frame parts.
 * \sa HbFrameDrawer::frameGraphicsName()
+* \note Logical frame names that define a themable frame should not include filename extension, whereas absolute filenames
+* must include full path and filename extension.
 */
 void HbFrameDrawer::setFrameGraphicsName(const QString &frameGraphicsName)
 {
-    // Remove possible file extension
     QString nameWithoutExt = frameGraphicsName;
-    int index = nameWithoutExt.lastIndexOf(QChar('.'));
-    if (index > 0) {
-        nameWithoutExt.resize(index);
+
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Remove possible file extension
+        int index = nameWithoutExt.lastIndexOf(QChar('.'));
+        if (index>0) {
+            nameWithoutExt.resize(index);
+        }
     }
 
     if (d->frameGraphicsName != nameWithoutExt) {

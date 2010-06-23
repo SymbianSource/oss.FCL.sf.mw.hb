@@ -39,6 +39,7 @@ struct DeviceSystemInfo
         powerState(QSystemDeviceInfo::UnknownPower) {}
     
     QSystemNetworkInfo::NetworkMode networkMode;
+    QSystemNetworkInfo::NetworkStatus networkStatus;
     int signalStrength;
     int batteryLevel;
     QSystemDeviceInfo::PowerState powerState;    
@@ -48,6 +49,7 @@ inline QDataStream& operator << (QDataStream &outStream,
                                  const DeviceSystemInfo &obj)
 {
     outStream << obj.networkMode;
+    outStream << obj.networkStatus;
     outStream << obj.signalStrength;
     outStream << obj.powerState;
     outStream << obj.batteryLevel;
@@ -60,9 +62,11 @@ inline QDataStream& operator >> (QDataStream &inStream,
     int temp;
     inStream >> temp;
     obj.networkMode = (QSystemNetworkInfo::NetworkMode)temp;
+    inStream >> temp;
+    obj.networkStatus = (QSystemNetworkInfo::NetworkStatus)temp;
     inStream >> obj.signalStrength;
     inStream >> temp;
-    obj.powerState= (QSystemDeviceInfo::PowerState)temp;
+    obj.powerState = (QSystemDeviceInfo::PowerState)temp;
     inStream >> obj.batteryLevel;
     return inStream;
 }
@@ -84,6 +88,7 @@ public:
     void dataReceived(const DeviceSystemInfo& info);
     bool eventFilter(QObject *obj, QEvent *event);
 public:
+    QSystemNetworkInfo::NetworkStatus networkStatus() const;
     int networkSignalStrength() const;
     QSystemNetworkInfo::NetworkMode networkMode() const;
     int batteryLevel() const;
@@ -94,6 +99,7 @@ protected:
     virtual void RunL();    
     
 public slots:
+    void setNetworkStatus(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus);
     void setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int);
     void setNetworkMode(QSystemNetworkInfo::NetworkMode);
     void setBatteryLevel(int);

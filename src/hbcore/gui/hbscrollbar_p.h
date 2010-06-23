@@ -74,8 +74,8 @@ public:
     QGraphicsItem *grooveItem;
     QGraphicsItem *handleItem;
     QGraphicsItem *mTouchArea;
-    QRectF mBoundingRect;
-    QRectF mHandleGeometry;
+    qreal mLimitingFactor;
+    qreal mTopLeft;
     bool hasEffects;
     QPointF lastEmittedPos;
     bool emittedPos;

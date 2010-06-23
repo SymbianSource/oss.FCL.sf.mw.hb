@@ -64,13 +64,11 @@ void HbThemeIndexResource::getResourceData()
 
     // First check base theme, which should be always valid
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
-    if (info.themeIndexOffset == 0) { // This shouldn't happen, as there must be valid base theme
+    if (!info.address) { // This shouldn't happen, as there must be valid base theme
         return; // Data will be 0
     }
     
-    const char *baseAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                              info.themeIndexOffset);
-    HbThemeIndex baseIndex(baseAddress);
+    HbThemeIndex baseIndex(info.address);
     const HbThemeIndexItemData *baseItemData = baseIndex.getItemData(resourceName);
 
     if (!baseItemData) { // If the item is not found from base theme, it can't be found elsewhere
@@ -86,11 +84,8 @@ void HbThemeIndexResource::getResourceData()
 
     // Base wasn't locked, next check operator theme in C-drive
     info = HbThemeUtils::getThemeIndexInfo(OperatorC);
-    if (info.themeIndexOffset > 0) {
-        const char *operatorCAddress =
-                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
-                                                info.themeIndexOffset);
-        HbThemeIndex operatorCIndex(operatorCAddress);
+    if (info.address) {
+        HbThemeIndex operatorCIndex(info.address);
         const HbThemeIndexItemData *operatorCItemData = operatorCIndex.getItemData(resourceName);
 
         if (operatorCItemData) { // Found, use it
@@ -104,11 +99,8 @@ void HbThemeIndexResource::getResourceData()
 
     // Not found from operator theme in C-drive, next check operator theme in ROM
     info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
-    if (info.themeIndexOffset > 0) {
-        const char *operatorZAddress =
-                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
-                                                info.themeIndexOffset);
-        HbThemeIndex operatorZIndex(operatorZAddress);
+    if (info.address) {
+        HbThemeIndex operatorZIndex(info.address);
         const HbThemeIndexItemData *operatorZItemData = operatorZIndex.getItemData(resourceName);
 
         if (operatorZItemData) { // Found, use it
@@ -122,11 +114,8 @@ void HbThemeIndexResource::getResourceData()
 
     // Not found from operator themes, try active theme
     info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.themeIndexOffset > 0) {
-        const char *activeThemeAddress =
-                HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
-                                                info.themeIndexOffset);
-        HbThemeIndex activeThemeIndex(activeThemeAddress);
+    if (info.address) {
+        HbThemeIndex activeThemeIndex(info.address);
         const HbThemeIndexItemData *activeThemeItemData =
                 activeThemeIndex.getItemData(resourceName);
 
@@ -155,6 +144,12 @@ HbThemeIndexResource::~HbThemeIndexResource()
 
 bool HbThemeIndexResource::isValid()
 {
+    if (data && data->itemType == HbThemeIndexItemData::ColorItem) {
+        Q_ASSERT_X(!(data->flags & HbThemeIndexItemData::Reference),
+            "HbThemeIndexResource::isValid()",
+            "Reference to another color variable not supported");
+    }
+
     if (data) {
         return true;
     }
@@ -336,6 +331,15 @@ QString HbThemeIndexResource::fullMirroredFileName()
     return fullName;
 }
 
+QColor HbThemeIndexResource::colorValue()
+{
+    if (!data || data->itemType != HbThemeIndexItemData::ColorItem) {
+        return QColor();
+    }
+
+    return QColor(data->colorValue);
+}
+
 
 // Class HbThemeIndex has the logic of handling different versions of
 // the theme index file formats.
@@ -428,38 +432,18 @@ bool HbThemeIndex::validateItems(qint64 byteSize)
 
     bool indexOK = false;
 
-    if (sizeof(HbThemeIndexHeaderV1)
-        + (mItemCount * sizeof(HbThemeIndexItemData)) == byteSize) {
+    qint64 indexCalculatedSize = (qint64)(sizeof(HbThemeIndexHeaderV1) +
+        (mItemCount * sizeof(HbThemeIndexItemData)));
+
+    if (indexCalculatedSize == byteSize) {
         indexOK = true;
     }
 
     #ifdef THEME_INDEX_TRACES
     if (!indexOK) {
-        qDebug() <<  "ThemeIndex: Index file corrupted!";
+        qDebug() <<  "ThemeIndex: Index file corrupted (index size is wrong)!";
     }
     #endif    
-
-    /* Todo: fix
-    // Validate items
-    for (int i = 0; i < mItemCount; i++) {
-        const HbThemeIndexItem *item = mThemeItemArray++;
-        if (!item ||
-            item->itemNameOffset < stringAreaStart || item->itemNameOffset >= byteSize ||
-            item->itemFolderOffset < stringAreaStart || item->itemFolderOffset >= byteSize ||
-            item->extOffset < stringAreaStart || item->extOffset >= byteSize ||
-            (item->mirroredExtOffset != -1 &&
-            (item->mirroredExtOffset < stringAreaStart || item->mirroredExtOffset >= byteSize))) {
-
-            indexOK = false;
-            break;
-        }
-    }
-*/
-    #ifdef THEME_INDEX_TRACES
-    if (!indexOK) {
-        qDebug() <<  "ThemeIndex: Icons NOK! Stopping validation.";
-    }
-    #endif
 
     return indexOK;
 }

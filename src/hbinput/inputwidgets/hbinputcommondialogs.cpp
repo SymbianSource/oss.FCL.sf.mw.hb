@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputcommondialogs.h"
+
 #include <QDir>
 #include <QtAlgorithms>
 
@@ -32,8 +34,6 @@
 #include <hbinputsettingproxy.h>
 #include <hbinputmethod.h>
 #include <hbinputregioncollector_p.h>
-
-#include "hbinputcommondialogs.h"
 
 /// @cond
 
@@ -52,35 +52,33 @@ Displays language selection dialog and returns selected language.
 */
 HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Language selectedLanguage, const QList<HbInputLanguage> languageList)
 {
-    HbSelectionDialog* langDialog = new HbSelectionDialog();
+    HbSelectionDialog *langDialog = new HbSelectionDialog();
     langDialog->setObjectName("Language dialog");
 
-#if QT_VERSION >= 0x040600
     // Make sure the language dialog never steals focus.
     langDialog->setFlag(QGraphicsItem::ItemIsPanel, true);
     langDialog->setActive(false);
-#endif
 
-    HbInputSettingProxy* settings = HbInputSettingProxy::instance();
+    HbInputSettingProxy *settings = HbInputSettingProxy::instance();
     HbInputLanguage currentLang = settings->globalInputLanguage();
     QList<HbInputLanguage> languages;
     if (languageList.count() == 0) {
         HbInputUtils::listSupportedInputLanguages(languages);
     } else {
-        languages=languageList;
+        languages = languageList;
     }
-	
-	qStableSort(languages.begin(), languages.end(), caseInsensitiveLessThanForHbInputLanguage);
-    QList<HbListWidgetItem*> listItems;
-    HbListWidgetItem* item = 0;
-    foreach( HbInputLanguage language, languages ) {
-                QString langName = language.localisedName();
+
+    qStableSort(languages.begin(), languages.end(), caseInsensitiveLessThanForHbInputLanguage);
+    QList<HbListWidgetItem *> listItems;
+    HbListWidgetItem *item = 0;
+    foreach(HbInputLanguage language, languages) {
+        QString langName = language.localisedName();
         if (langName.length() == 0) {
             langName = QString("Unknown");
         }
         item = new HbListWidgetItem();
         item->setText(langName);
-        if (language == currentLang ) {
+        if (language == currentLang) {
             QList<QVariant> selected;
             selected.append(listItems.count());
             langDialog->setSelectedItems(selected);
@@ -104,7 +102,7 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
     if (langDialog->selectedItems().count()) {
         int selection = langDialog->selectedItems().at(0).toInt();
         HbInputLanguage result;
-        if(languages.at(selection).language() == QLocale::Chinese) {
+        if (languages.at(selection).language() == QLocale::Chinese) {
             result = languages.at(selection);
         } else {
             result = languages.at(selection).language();
@@ -124,26 +122,24 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
 {
     Q_UNUSED(language);
 
-    HbSelectionDialog* methodDialog = new HbSelectionDialog();
+    HbSelectionDialog *methodDialog = new HbSelectionDialog();
     methodDialog->setObjectName("Input method dialog");
 
-#if QT_VERSION >= 0x040600
     // Make sure the language dialog never steals focus.
     methodDialog->setFlag(QGraphicsItem::ItemIsPanel, true);
     methodDialog->setActive(false);
-#endif
 
     QList<HbInputMethodDescriptor> customList = HbInputMethod::listCustomInputMethods();
 
-    QList<HbListWidgetItem*> listItems;
-    HbListWidgetItem* item = new HbListWidgetItem();
+    QList<HbListWidgetItem *> listItems;
+    HbListWidgetItem *item = new HbListWidgetItem();
     QString methodName("Default");
     item->setText(methodName);
     listItems.append(item);
 
     //for (int i=0; i<customList.dllName.count() ; i++) {
-    foreach (HbInputMethodDescriptor descriptor, customList) {
-    QString displayName = descriptor.displayName();
+    foreach(const HbInputMethodDescriptor &descriptor, customList) {
+        QString displayName = descriptor.displayName();
         if (displayName.length() == 0) {
             displayName = QString("Unknown");
         }
@@ -164,9 +160,9 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
     if (methodDialog->selectedItems().count()) {
         int selection = methodDialog->selectedItems().first().toInt();
         if (selection == 0) {
-           result.setDefault();
+            result.setDefault();
         } else {
-           result = customList[selection-1];
+            result = customList[selection-1];
         }
     }
 

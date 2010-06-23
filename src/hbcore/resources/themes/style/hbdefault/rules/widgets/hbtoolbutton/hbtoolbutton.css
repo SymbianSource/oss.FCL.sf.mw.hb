@@ -113,10 +113,6 @@ HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::text{
     text-line-count-max: 1;
 }
 
-HbToolButton[dialogtoolbar]{
-    fixed-height:var(hb-param-widget-popup-softkey-height);
-}
-
 HbToolBar > HbToolButton[dialogtoolbar]::text {
     left:-0.75un;
     right:0.75un;
@@ -124,4 +120,24 @@ HbToolBar > HbToolButton[dialogtoolbar]::text {
     text-height:var(hb-param-text-height-primary);
     text-align:center center;
     text-line-count-max: 1;
+}
+
+HbTitleBar > HbToolButton[buttonStyle="0"]::icon{
+    fixed-width:var(hb-param-graphic-size-secondary);
+    fixed-height:var(hb-param-graphic-size-secondary);
+}
+
+HbTitleBar > HbToolButton[buttonStyle="1"]::icon{
+    fixed-width:var(hb-param-graphic-size-function);
+    fixed-height:var(hb-param-graphic-size-function);
+}
+
+HbTitleBar > HbToolButton[buttonStyle="2"]::icon{
+    fixed-width:var(hb-param-graphic-size-function);
+    fixed-height:var(hb-param-graphic-size-function);
+}
+
+HbTitleBar > HbToolButton[buttonStyle="3"]::icon{
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height:var(hb-param-graphic-size-primary-small);
 }

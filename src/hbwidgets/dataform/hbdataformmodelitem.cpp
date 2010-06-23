@@ -23,14 +23,13 @@
 **
 ****************************************************************************/
 
-#include <QAbstractItemModel>
-
 #include "hbdataformmodelitem_p.h"
-#include "hbdataformmodelitem.h"
-#include "hbdataformmodel.h"
 #include "hbdataformmodel_p.h"
 
-class QAbstractItemModel;
+#include <hbdataformmodelitem.h>
+#include <hbdataformmodel.h>
+
+#include <QAbstractItemModel>
 
 
 HbDataFormModelItemPrivate::HbDataFormModelItemPrivate():
@@ -322,8 +321,11 @@ HbDataFormModelItem::HbDataFormModelItem(
     d_ptr(new HbDataFormModelItemPrivate())
 {
     Q_D(HbDataFormModelItem);
-    d->q_ptr = this ;
-    d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+    d->q_ptr = this ;  
+    if( parent ) {
+          d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+          d->mParentItem->appendChild(this);         
+    }
     setData(ItemTypeRole, type);
     setData(LabelRole, label);
 }
@@ -336,7 +338,10 @@ HbDataFormModelItem::HbDataFormModelItem(const HbDataFormModelItem* parent):
 {
     Q_D(HbDataFormModelItem);
     d->q_ptr = this ;
-    d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+    if( parent ){
+        d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+        d->mParentItem->appendChild(this);  
+    }
 }
 
 /*!
@@ -378,7 +383,8 @@ void HbDataFormModelItem::appendChild(HbDataFormModelItem *child)
         }
         else {
             d->mChildItems.append(child);
-        }
+        }        
+
     }
 }
 
@@ -450,24 +456,22 @@ void HbDataFormModelItem::removeChild(int index)
     Q_D(HbDataFormModelItem);
     HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
 
-    if(model)
-        model->d_func()->rowsAboutToBeRemoved(this, index, index);
-
-        HbDataFormModelItem *item = d->mChildItems.at(index);
-        if( item ) {
-            int childCount = item->childCount();
-            for ( int childIndex = 0; childIndex <= childCount ;childIndex++) {
-                item->removeChild(0); 
-            }
-
-            HbDataFormModelItem *item = d->mChildItems.takeAt(index);
-            delete item;
-            item = 0;
-        }        
-        
-    if(model)
-        model->d_func()->rowsRemoved();
-     
+    HbDataFormModelItem *item = d->mChildItems.at(index);
+    if( item ) {
+        int childCount = item->childCount();
+        for ( int childIndex = 0; childIndex < childCount ;childIndex++) {
+            item->removeChild(0); 
+        }
+        if( model ) {
+            model->d_func()->rowsAboutToBeRemoved(this, index, index);
+        }
+        HbDataFormModelItem *item = d->mChildItems.takeAt(index);
+        delete item;
+        item = 0;
+        if( model ) {
+            model->d_func()->rowsRemoved();
+        }
+    }
 }
 
 /*!
@@ -486,26 +490,11 @@ void HbDataFormModelItem::removeChildren(int startIndex, int count)
     
     if( startIndex + count > childCount() ) {
         return;
-    }
-
-    Q_D(HbDataFormModelItem);
-
-    HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
-    if( model ) {
-        model->d_func()->rowsAboutToBeRemoved(this, startIndex, startIndex + count -1); 
-    }
+    }   
 
     for(int index = 0; index < count ;index++) {
-        HbDataFormModelItem *item = d->mChildItems.takeAt(0);
-        if ( item ) {
-            delete item;
-            item = 0;
-        }
-    }
-
-    if( model ) {
-        model->d_func()->rowsRemoved();
-    }
+        removeChild(startIndex);
+    }   
 }
 
 /*!
@@ -673,7 +662,7 @@ QHash<QString, QVariant> HbDataFormModelItem::contentWidgetData() const
    @beta
 
    Sets \a parent as a parent to this item.
-   It only sets the parent pointer. It doesnt put the item in the 
+   It only sets the parent pointer. It does not put the item in the 
    hierarchy.
 */
 void HbDataFormModelItem::setParent(HbDataFormModelItem* parent)

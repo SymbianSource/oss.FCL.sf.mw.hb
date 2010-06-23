@@ -7,3 +7,18 @@ HbDataFormViewItem::dataItem_Description
 {
 	color:var(qtc_list_item_content_normal);
 }
+
+HbDataFormViewItem[!enabled]::dataItem_Label
+{
+	color:var(qtc_list_item_disabled);
+}
+
+
+HbDataFormViewItem[!enabled]::dataItem_Description
+{
+	color:var(qtc_list_item_disabled);
+}
+
+
+
+

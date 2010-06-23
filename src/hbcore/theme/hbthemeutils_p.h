@@ -33,19 +33,6 @@
 #include <hblayeredstyleloader_p.h>
 #include <QPair>
 
-#undef USE_APPTHEMES
-
-struct HbHierarchy
-{
-    HbHierarchy() {}
-    HbHierarchy(QString name,
-                HbLayeredStyleLoader::LayerPriority layerPriority)
-                    : name(name),
-                      layerPriority(layerPriority) {}
-    QString name;
-    HbLayeredStyleLoader::LayerPriority layerPriority;
-};
-
 struct HbThemeInfo
 {
     HbThemeInfo()
@@ -63,36 +50,23 @@ struct HbThemeIndexInfo
     HbThemeIndexInfo() :
         name(),
         path(),
-        themeIndexOffset(0)
+        address(0)
     {
     }
-    HbThemeIndexInfo(const QString &themeName, const QString &path, quint32 themeIndexOffset) :
+    HbThemeIndexInfo(const QString &themeName, const QString &path, char *address) :
         name(themeName),
         path(path),
-        themeIndexOffset(themeIndexOffset)
+        address(address)
     {
     }
     QString name;
     QString path;
-    quint32 themeIndexOffset;
+    char *address;
 };
 
 class HB_CORE_PRIVATE_EXPORT HbThemeUtils
 {
 public:
-    static QVector<HbHierarchy> hierarchies();
-    static void initSettings();
-
-//following methods for unittests only
-    static int addHierarchy(const QString& newHierarchy, int priorityOrder);
-    static bool removeHierarchy(const QString &hierarchy);
-    static QString operatorBasePath();
-//unittest functions end.
-    static QMap<int, QString> constructHierarchyListWithPathInfo(
-                                        const QString &fileName,
-                                        const QString &currentTheme,
-                                        const Hb::ResourceType resType );
-
     enum Setting {
         BaseThemeSetting = 0x1,
         DefaultThemeSetting = 0x2,
@@ -111,15 +85,14 @@ public:
     static HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
 
     static bool isLogicalName(const QString &fileName);
+    static QString themesDir();
 
-    // Standard folder names
+    static const char *themeResourceFolder;
+    static const char *platformHierarchy;
+    static const char *operatorHierarchy;
     static const char *iconsResourceFolder;
     static const char *effectsResourceFolder;
     static const char *styleResourceFolder;
-    static const char *themeResourceFolder;
-    static const char *operatorHierarchy;
-    static const char *appHierarchy;
-    static const char *platformHierarchy;
 
 private:
     static HbThemeInfo getBaseThemeFromFile(const QString &rootDir);

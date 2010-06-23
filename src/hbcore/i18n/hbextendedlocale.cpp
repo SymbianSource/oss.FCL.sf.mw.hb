@@ -444,7 +444,7 @@ HbExtendedLocale::SymbolPos HbExtendedLocale::amPmSymbolPosition() const
     TLocalePos position = _symbianLocale.GetLocale()->AmPmSymbolPosition();
     if ( position == ELocaleBefore ) {
     	return HbExtendedLocale::Before;
-    } else { // if ( position == ELocaleAfter ) {			
+    } else { 			
     	return HbExtendedLocale::After;
     }
 #else
@@ -1200,6 +1200,9 @@ struct symbianToISO {
 };
 
 #if defined(Q_OS_SYMBIAN)
+/*!
+    Mapping from Symbian to ISO locale
+*/
 static const symbianToISO symbian_to_iso_list[] = {
     { ELangEnglish,             "en_GB" },
     { ELangFrench,              "fr_FR" },

@@ -30,8 +30,8 @@
 #include <hbcolorscheme.h>
 #include <hbevent.h>
 #include <hblayoututils_p.h>
-#include <hbmeshlayout_p.h>
-#include <hbmeshlayoutdebug_p.h>
+#include <hbanchorlayout.h>
+#include <hbanchorlayoutdebug_p.h>
 #include <QBrush>
 #include <QPainter>
 #include <QPen>
@@ -42,9 +42,9 @@ const QString BOX_COLOR = "qtc_view_separator_normal";
 const QString VALID_COLOR = "qtc_default_main_pane_normal";
 const QString INVALID_COLOR = "qtc_view_visited_normal";
 
-HbAnchorArrowDrawer::HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent)
+HbAnchorArrowDrawer::HbAnchorArrowDrawer(HbAnchorLayout *layout, QGraphicsItem *parent)
     : HbWidgetBase(parent), 
-      mLayout(mesh), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
+      mLayout(layout), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
 {
 #if defined(HB_DEVELOPER) || defined(CSS_INSPECTOR)
     updateColors();
@@ -82,7 +82,7 @@ void HbAnchorArrowDrawer::updateFocusItem(const QGraphicsItem *item)
         setGeometry(item->sceneBoundingRect());
         QGraphicsLayout *layout = widget->layout();
         if (layout) {
-            HbMeshLayout *mesh = dynamic_cast<HbMeshLayout *>(layout);
+            HbAnchorLayout *mesh = dynamic_cast<HbAnchorLayout *>(layout);
             if (mesh) {
                 mLayout = mesh;
             }
@@ -105,7 +105,7 @@ void HbAnchorArrowDrawer::paint(
     }
     painter->save();
 
-    QList<HbAnchor*> anchors = HbMeshLayoutDebug::getAnchors(mLayout);
+    QList<HbAnchor*> anchors = HbAnchorLayoutDebug::getAnchors(mLayout);
 
     // Draw boxes round anchored child items
     if (mDrawOutlines) {

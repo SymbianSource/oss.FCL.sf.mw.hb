@@ -265,6 +265,9 @@ HbViewPrivate::HbViewPrivate()
  */
 HbViewPrivate::~HbViewPrivate()
 {
+    delete menu;
+    delete toolBar;
+    delete dockWidget;
 }
 
 /*!
@@ -292,16 +295,6 @@ HbView::HbView(HbViewPrivate &dd, QGraphicsItem *parent):
 */
 HbView::~HbView()
 {
-    Q_D(HbView);
-    if (d->menu) {
-        d->menu->deleteLater();
-    }
-    if (d->toolBar) {
-        d->toolBar->deleteLater();
-    }
-    if (d->dockWidget) {
-        d->dockWidget->deleteLater();
-    }
 }
 
 /*!

@@ -187,7 +187,7 @@ qreal HbTreeItemContainerPrivate::getSmallestItemHeight() const
     if (minHeight == 0.0) {
         QModelIndex index;
         while (mItems.isEmpty()) {
-            // in practise following conditions must apply: itemview is empty and scrollTo() has been called.
+            // in practize following conditions must apply: itemview is empty and scrollTo() has been called.
             // Starts populating items from given mFirstItemIndex
             if ( mFirstItemIndex.isValid()) {
                 index = mFirstItemIndex;
@@ -426,7 +426,7 @@ QPointF HbTreeItemContainer::recycleItems(const QPointF &delta)
                 // because only then container can go out of bounds
                 qreal viewSize = itemView()->boundingRect().size().height();
                 if (layoutPreferredHeight + pos().y() < viewSize) {
-                    // position is allways negative
+                    // position is always negative
                     // view out of bounds
                     if (diff > 0.0) {
                         QPointF posDiff(pos().x(), 0.0);

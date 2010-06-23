@@ -73,7 +73,7 @@ public:
 
 private:
     bool canKeepOpen() const;
-    
+
     QString mFilename;
     QString mFullFilename;
     QString mType;
@@ -85,7 +85,7 @@ private:
 
     // Stored default size
     QSize mDefaultSize;
-    
+
     QSvgRenderer *mSvgRenderer;
     QImageReader *mImageReader;
 };

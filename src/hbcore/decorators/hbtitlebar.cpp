@@ -75,6 +75,8 @@ void HbTitleBarPrivate::delayedConstruction()
         mIndicatorButton, SLOT(activate(const QList<IndicatorClientInfo> &)));
     q->connect(q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)), 
         mIndicatorButton, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
+    q->connect(q, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)), 
+        mIndicatorButton, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
     q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
     q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));  
 
@@ -387,6 +389,8 @@ void HbTitleBar::currentViewChanged(HbView *view)
         }
     }
 
+    d->mIndicatorButton->currentViewChanged(view);
+
     // only do repolish if titlebar properties have changed
     if (d->mPreviousTitleBarProperties != view->viewFlags()) {
         d->initTitleBarHandle(view);
@@ -463,11 +467,11 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
     case QEvent::Gesture: {
         QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
         if (HbPanGesture *pan = qobject_cast<HbPanGesture*>(gestureEvent->gesture(Qt::PanGesture))) {
-            if(pan->state() == Qt::GestureUpdated || pan->state() == Qt::GestureFinished) {
+            if (pan->state() == Qt::GestureFinished) {
                 if(pan->sceneDelta().x() < -0) {
                     gestureLeft();
                 }
-                if(pan->sceneDelta().x() > 0) {
+                else if (pan->sceneDelta().x() > 0) {
                     gestureRight();
                 }
                 gestureEvent->accept();

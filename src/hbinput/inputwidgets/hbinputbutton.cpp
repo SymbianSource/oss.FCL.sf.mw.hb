@@ -51,8 +51,8 @@ public:
 };
 
 HbInputButtonPrivate::HbInputButtonPrivate()
- : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
-   mPosition(0, 0), mSize(1, 1), mKeyCode(-1), mAutoRepeat(false)
+    : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
+      mPosition(0, 0), mSize(1, 1), mKeyCode(-1), mAutoRepeat(false)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         mTexts.append("");
@@ -64,8 +64,8 @@ HbInputButtonPrivate::HbInputButtonPrivate()
 }
 
 HbInputButtonPrivate::HbInputButtonPrivate(int keyCode, const QPoint &position, const QSize &size)
- : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
-   mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(false)
+    : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
+      mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(false)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         mTexts.append("");
@@ -94,10 +94,10 @@ HbInputButtonPrivate::HbInputButtonPrivate(int keyCode, const QPoint &position, 
 }
 
 HbInputButtonPrivate::HbInputButtonPrivate(HbInputButton::HbInputButtonType type, HbInputButton::HbInputButtonState state,
-                                           const QPoint &position, const QSize &size, int keyCode, bool autoRepeat,
-                                           const QList<QString> &texts, const QString &mappedCharacters, const QList<HbIcon> &icons)
- : mType(type), mState(state), mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(autoRepeat),
-   mMappedCharacters(mappedCharacters)
+        const QPoint &position, const QSize &size, int keyCode, bool autoRepeat,
+        const QList<QString> &texts, const QString &mappedCharacters, const QList<HbIcon> &icons)
+    : mType(type), mState(state), mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(autoRepeat),
+      mMappedCharacters(mappedCharacters)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         if (i < texts.count()) {
@@ -150,7 +150,7 @@ void HbInputButtonPrivate::setDefaultGraphics(int keyCode)
 Constructor
 */
 HbInputButton::HbInputButton()
- : d_ptr(new HbInputButtonPrivate)
+    : d_ptr(new HbInputButtonPrivate)
 {
 }
 
@@ -163,7 +163,7 @@ position is button's position in grid cell units.
 size is button's size in grid cell units.
 */
 HbInputButton::HbInputButton(int keyCode, const QPoint &position, const QSize &size)
- : d_ptr(new HbInputButtonPrivate(keyCode, position, size))
+    : d_ptr(new HbInputButtonPrivate(keyCode, position, size))
 {
 }
 
@@ -357,7 +357,7 @@ void HbInputButton::setTexts(const QList<QString> &texts)
         if (i < texts.count()) {
             d->mTexts.replace(i, texts.at(i));
         } else {
-            d->mTexts.replace(i, QString());
+            d->mTexts[i].clear();
         }
     }
 }
@@ -434,7 +434,7 @@ void HbInputButton::setIcon(const HbIcon &icon, HbInputButtonIconIndex index)
 
 /*!
 Updates all button icons.
-Button can have three different icons. Icon position 
+Button can have three different icons. Icon position
 will depend of other buttons icons and texts. If list contains
 more icons, then the rest will be ignored. Icon with same index
 than text will override the text.

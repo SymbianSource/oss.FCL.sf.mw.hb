@@ -22,9 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputextradictionarycollection.h"
+
 #include "hbinputextrauserdictionary.h"
 #include "hbinputextradictionaryfactory.h"
-#include "hbinputextradictionarycollection.h"
 
 /*!
 @proto
@@ -55,21 +56,29 @@ public:
 
     void addDictionaries(QList<int>& newOnes);
     void addDictionary(int newId);
-    void addDictionary(HbExtraUserDictionary* newOne);
+    void addDictionary(HbExtraUserDictionary *newOne);
 
     void removeDictionary(int dictId);
-    void removeDictionary(HbExtraUserDictionary* dict);
+    void removeDictionary(HbExtraUserDictionary *dict);
 
     bool isAlreadyInList(int dictId) const;
 
-    int isDisabled(int index) const { return ((0x0001 << index) & deactivated); }
-    void enable(int index) { deactivated &= !(0x0001 << index);  }
-    void disable(int index) { deactivated |= (0x0001 << index); }
+    int isDisabled(int index) const {
+        return ((0x0001 << index) & deactivated);
+    }
+
+    void enable(int index) {
+        deactivated &= !(0x0001 << index);
+    }
+
+    void disable(int index) {
+        deactivated |= (0x0001 << index);
+    }
 
     int dictionaryIndex(int id) const;
 
 public:
-    QList<HbExtraUserDictionary*> dictionaries;
+    QList<HbExtraUserDictionary *> dictionaries;
     unsigned short deactivated;     // Bit vector
 };
 
@@ -104,10 +113,10 @@ void HbExtraDictionaryCollectionPrivate::addDictionary(int newId)
     }
 }
 
-void HbExtraDictionaryCollectionPrivate::addDictionary(HbExtraUserDictionary* newOne)
+void HbExtraDictionaryCollectionPrivate::addDictionary(HbExtraUserDictionary *newOne)
 {
     if (newOne && !isAlreadyInList(newOne->id())) {
-        dictionaries.append(newOne);    
+        dictionaries.append(newOne);
     }
 }
 
@@ -116,11 +125,11 @@ void HbExtraDictionaryCollectionPrivate::removeDictionary(int dictId)
     int index = dictionaryIndex(dictId);
     if (index >= 0) {
         dictionaries.removeAt(index);
-    
+
     }
 }
 
-void HbExtraDictionaryCollectionPrivate::removeDictionary(HbExtraUserDictionary* dict)
+void HbExtraDictionaryCollectionPrivate::removeDictionary(HbExtraUserDictionary *dict)
 {
     for (int i = 0; i < dictionaries.count(); i++) {
         if (dictionaries[i] == dict) {
@@ -167,7 +176,7 @@ loading dictionaries.
 HbExtraDictionaryCollection::HbExtraDictionaryCollection(QList<int> dictionaries) : d_ptr(new HbExtraDictionaryCollectionPrivate)
 {
     Q_D(HbExtraDictionaryCollection);
-    d->addDictionaries(dictionaries); 
+    d->addDictionaries(dictionaries);
 }
 
 /*!
@@ -180,18 +189,18 @@ HbExtraDictionaryCollection::~HbExtraDictionaryCollection()
 
 /*!
 Adds given dictionary to the collection if it is avaivale. Uses HbExtraDictionaryFactory
-for loading the dictionary. Returns true if dictionary was found and succesfully added. 
+for loading the dictionary. Returns true if dictionary was found and succesfully added.
 */
 bool HbExtraDictionaryCollection::addDictionary(int id)
 {
-   Q_D(HbExtraDictionaryCollection);
+    Q_D(HbExtraDictionaryCollection);
 
-   if (d->dictionaries.count() < HbMaxDictionariesInCollection) {
-       d->addDictionary(id);       
-       return true;
-   }
+    if (d->dictionaries.count() < HbMaxDictionariesInCollection) {
+        d->addDictionary(id);
+        return true;
+    }
 
-   return false;
+    return false;
 }
 
 /*!
@@ -199,14 +208,14 @@ Adds given dictionary to the collection.
 */
 bool HbExtraDictionaryCollection::addDictionary(HbExtraUserDictionary *dictionary)
 {
-   Q_D(HbExtraDictionaryCollection);
+    Q_D(HbExtraDictionaryCollection);
 
-   if (d->dictionaries.count() < HbMaxDictionariesInCollection) {
-       d->addDictionary(dictionary);
-       return true;
-   }
+    if (d->dictionaries.count() < HbMaxDictionariesInCollection) {
+        d->addDictionary(dictionary);
+        return true;
+    }
 
-   return false;
+    return false;
 }
 
 /*!
@@ -214,8 +223,8 @@ Removes dictionary from the collection.
 */
 void HbExtraDictionaryCollection::removeDictionary(int id)
 {
-   Q_D(HbExtraDictionaryCollection);
-   d->removeDictionary(id);
+    Q_D(HbExtraDictionaryCollection);
+    d->removeDictionary(id);
 }
 
 /*!
@@ -223,8 +232,8 @@ Removes dictionary from the collection.
 */
 void HbExtraDictionaryCollection::removeDictionary(HbExtraUserDictionary *dictionary)
 {
-   Q_D(HbExtraDictionaryCollection);
-   d->removeDictionary(dictionary);
+    Q_D(HbExtraDictionaryCollection);
+    d->removeDictionary(dictionary);
 }
 
 /*!
@@ -239,7 +248,7 @@ QList<int> HbExtraDictionaryCollection::dictionaries() const
 
     for (int i = 0; i < d->dictionaries.count(); i++) {
         results.append(d->dictionaries[i]->id());
-        }
+    }
 
     return QList<int>(results);
 }
@@ -272,7 +281,7 @@ int HbExtraDictionaryCollection::totalNumberOfWords() const
     int ret = 0;
 
     for (int i = 0; i < d->dictionaries.count(); i++) {
-        ret += d->dictionaries[i]->numberOfWords();        
+        ret += d->dictionaries[i]->numberOfWords();
     }
 
     return ret;
@@ -284,7 +293,7 @@ Returns all the words in the collection that begin with contents of searchString
 Search is case insensitive. Only enabled dictionaries are part of the search.
 Empty string will match to all words.
 */
-QStringList HbExtraDictionaryCollection::findMatches(const QString& aSearchString, Qt::CaseSensitivity caseSensitivity)
+QStringList HbExtraDictionaryCollection::findMatches(const QString &aSearchString, Qt::CaseSensitivity caseSensitivity)
 {
     Q_D(HbExtraDictionaryCollection);
 
@@ -302,7 +311,7 @@ QStringList HbExtraDictionaryCollection::findMatches(const QString& aSearchStrin
 /*!
 Diables given dictionary, but still keeps it as part of the collection.
 All access and search operators will skip disabled dictionary until it is
-enabled again. 
+enabled again.
 
 \sa enableDictionary
 */
@@ -312,7 +321,7 @@ void HbExtraDictionaryCollection::disableDictionary(int id)
 
     int index =  d->dictionaryIndex(id);
     if (index >= 0) {
-        d->disable(index); 
+        d->disable(index);
     }
 }
 
@@ -321,13 +330,13 @@ Enables given dictionary.
 
 \sa disableDictionary
 */
-void HbExtraDictionaryCollection::enableDictionary(int id) 
+void HbExtraDictionaryCollection::enableDictionary(int id)
 {
     Q_D(HbExtraDictionaryCollection);
 
     int index =  d->dictionaryIndex(id);
     if (index >= 0) {
-        d->enable(index); 
+        d->enable(index);
     }
 }
 
@@ -340,9 +349,9 @@ bool HbExtraDictionaryCollection::isDisabled(int dictionaryId) const
 
     int index =  d->dictionaryIndex(dictionaryId);
     if (index >= 0) {
-        return d->isDisabled(index); 
+        return d->isDisabled(index);
     }
-    
+
     return false;
 }
 
@@ -372,7 +381,7 @@ QString HbExtraDictionaryCollection::wordAt(int index) const
 /*!
 Returns true if given word exists in any of the active dictionaries in the collection.
 */
-bool HbExtraDictionaryCollection::hasWord(const QString& word) const
+bool HbExtraDictionaryCollection::hasWord(const QString &word) const
 {
     Q_D(const HbExtraDictionaryCollection);
 
@@ -391,7 +400,7 @@ bool HbExtraDictionaryCollection::hasWord(const QString& word) const
 Increments use count (frequency) for given word. Applied to all the instances of given word
 in enabled part of the collection.
 */
-void HbExtraDictionaryCollection::incrementUseCount(const QString& word)
+void HbExtraDictionaryCollection::incrementUseCount(const QString &word)
 {
     Q_D(const HbExtraDictionaryCollection);
 

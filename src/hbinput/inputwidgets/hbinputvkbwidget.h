@@ -51,8 +51,7 @@ class HB_INPUT_EXPORT HbInputVkbWidget : public HbWidget, public HbVirtualKeyboa
     Q_OBJECT
 
 public:
-    enum HbFlickDirection
-    {
+    enum HbFlickDirection {
         HbFlickDirectionNone = 0,
         HbFlickDirectionLeft,
         HbFlickDirectionRight,
@@ -60,15 +59,14 @@ public:
         HbFlickDirectionDown
     };
 
-    enum HbVkbCloseMethod
-    {
+    enum HbVkbCloseMethod {
         HbVkbCloseMethodButtonDrag = 0x1,
         HbVkbCloseMethodCloseButton = 0x2,
         HbVkbCloseMethodCloseButtonDrag = HbVkbCloseMethodCloseButton | HbVkbCloseMethodButtonDrag,
         HbVkbCloseMethodCloseGesture = 0x4,
     };
 
-     enum HbSctView {
+    enum HbSctView {
         HbSctViewSpecialCharacter,
         HbSctViewSmiley
     };
@@ -77,8 +75,8 @@ public:
     virtual ~HbInputVkbWidget();
 
 public: // From HbVirtualKeyboard
-    QWidget* asWidget();
-    QGraphicsWidget* asGraphicsWidget();
+    QWidget *asWidget();
+    QGraphicsWidget *asGraphicsWidget();
     QSizeF preferredKeyboardSize();
     QSizeF minimizedKeyboardSize();
     virtual void aboutToOpen(HbVkbHost *host);
@@ -88,7 +86,7 @@ public: // From HbVirtualKeyboard
     virtual void keyboardMinimized(HbVkbHost *host);
     virtual void keyboardAnimationFrame(HbVkbAnimationType type, qreal x);
 
-    virtual void setKeymap(const HbKeymap* keymap);
+    virtual void setKeymap(const HbKeymap *keymap);
 
     virtual void setMode(HbKeypadMode mode, HbModifiers modifiers);
     virtual HbKeypadMode mode() const;
@@ -108,16 +106,19 @@ public: // From HbVirtualKeyboard
     HbFlickDirection flickDirection();
 
 protected: // From QGraphicsItem
-    virtual QPainterPath shape () const;
+    virtual QPainterPath shape() const;
     virtual void changeEvent(QEvent *event);
-    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
-    virtual int type() const {return Hb::ItemType_InputVkbWidget;}
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    virtual int type() const {
+        return Hb::ItemType_InputVkbWidget;
+    }
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     virtual void gestureEvent(QGestureEvent *event);
 
 protected:
     // layout
     QSizeF keypadButtonAreaSize();
+    virtual QPointF rockerPosition();
 
 public slots:
     void showSettingList();
@@ -144,12 +145,14 @@ signals:
     void mouseMovedOutOfButton();
     void aboutToActivateCustomAction(HbAction *custAction);
 protected:
-    HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem* parent);
+    HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem *parent);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputVkbWidget)
     Q_DISABLE_COPY(HbInputVkbWidget)
     Q_PRIVATE_SLOT(d_func(), void _q_inputMethodSelectionDialogFinished(HbAction *))
+    Q_PRIVATE_SLOT(d_func(), void _q_handleRockerChange(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode))
+    Q_PRIVATE_SLOT(d_func(), void _q_settingsClosed(HbAction *action))
 
     friend class HbTouchKeypadButton;
     friend class HbInputUsedSymbolPane;

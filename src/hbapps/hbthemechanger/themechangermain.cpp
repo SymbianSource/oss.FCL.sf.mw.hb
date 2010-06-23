@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     HbMainWindow mainWindow;
     
     // Show the list of themes available
-    ThemeSelectionList *themelist=new ThemeSelectionList();
+    ThemeSelectionList *themelist=new ThemeSelectionList(&mainWindow);
     themelist->displayThemes();
     
     mainWindow.addView( themelist );

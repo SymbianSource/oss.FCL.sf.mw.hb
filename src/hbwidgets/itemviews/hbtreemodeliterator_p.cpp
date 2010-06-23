@@ -97,7 +97,7 @@ int HbTreeModelIterator::indexPosition(const QModelIndex &index) const
     \reimp
     Returnes index of item, which is visible at pos ordinal under parent. 
     Indexes in collapsed parents are not taken into account.
-    Very slow - need to interate throught whole model in worst case!
+    Very slow - need to interate through whole model in worst case!
 */
 QModelIndex HbTreeModelIterator::index(int pos, const QModelIndex &parent) const
 {
@@ -295,6 +295,8 @@ void HbTreeModelIterator::setModel(QAbstractItemModel *model,
                     this, SLOT(columnsInserted(QModelIndex,int,int)));
             connect(d->mModel, SIGNAL(columnsRemoved(QModelIndex,int,int)),
                     this, SLOT(columnsRemoved(QModelIndex,int,int)));
+            connect(d->mModel, SIGNAL(layoutChanged()),
+                    this, SLOT(modelLayoutChanged()));
         }
     } else {
         setRootIndex(rootIndex);
@@ -390,6 +392,12 @@ void HbTreeModelIterator::columnsRemoved(const QModelIndex &parent, int start, i
     Q_UNUSED(parent);
     Q_UNUSED(start);
     Q_UNUSED(end);
+    d->resetCache();
+}
+
+void HbTreeModelIterator::modelLayoutChanged()
+{
+    Q_D(HbTreeModelIterator);
     d->resetCache();
 }
 

@@ -22,9 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
-#include <hbinputdialog.h>
 #include "hbinputdialog_p.h"
+#include <hbinputdialog.h>
 #include "hbglobal_p.h"
 #include <hblineedit.h>
 #include <hbaction.h>
@@ -58,42 +57,23 @@
 
     The HbDialog::open( QObject* receiver, const char* member ) method  from the HbDialog is used to show the HbInputDialog. 
 
-    The open method can be attached with a SLOT of the format finished(HbAction*). When the open is used with a slot then the slot 
+    The open method can be attached with a SLOT of the format finished(HbAction*) or finished(int). When the open is used with a slot then the slot 
     will be invoked once the user does any action such as accept or reject (The Ok or Cancel press).
 
     
     below is the declaration of the slot.
     \code
     public slots : 
-    void dialogClosed(HbAction *action);
+    void dialogClosed(int);
     \endcode
 
     below code shows how the open method can be called using this slot.
+    \snipped{ultimatecodesnipped/ultimatecodesnippet.cpp,56}    
 
-    \code
-    HbInputDialog *object = new HbInputDialog(parent);
-    object->open(this,SLOT(dialogClosed(HbAction*)));
-    \endcode
+    A sample slot definition is shown below    
+    \snipped{ultimatecodesnipped/ultimatecodesnippet.cpp,55}    
 
-    A sample slot definition is shown below
-    
-    \code
-    void dialogClosed(HbAction *action)
-    {
-          HbInputDialog *dlg=static_cast<HbInputDialog*>(sender());
-          if(dlg->actions().first() == action) { // user is clicked OK
-              //Get the string enter by user
-               QString myString = dlg->value().toString();
-              //Do the action here
-           }
-           else if(dlg->actions().at(1) == action) {
-              // user is clicked CANCEL
-           }    
-    }
-    \endcode
-
-
-    In HbInputDialog four static convenience API's are provided: getText(), getInteger(), getDouble(), and getIp()
+    In HbInputDialog four static convenience API's are provided: queryText(), queryInteger(), queryDouble(), and queryIp()
     static API's can be used to quickly get an input from user.
 
     \enum HbInputDialog::InputMode
@@ -399,6 +379,35 @@ void HbInputDialog::updatePrimitives()
     }
 }
 
+void HbInputDialog::done(int code)
+{
+    Q_D(HbInputDialog);
+    if(code==Accepted) {
+        QString text;
+        if(d->mContentWidget && d->mContentWidget->mEdit1) {
+            text = d->mContentWidget->mEdit1->text();
+        }
+        switch(d->mPrimaryMode) {
+            case HbInputDialog::TextInput:
+            case HbInputDialog::IpInput: {
+                emit textValueSelected(text);
+                break;
+            }        
+            case HbInputDialog::IntInput: {
+                emit intValueSelected(text.toInt(0,10));       
+                break;
+            }
+            case HbInputDialog::RealInput: {
+                emit doubleValueSelected(text.toDouble());       
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    HbDialog::done(code);
+}
+
 /*!
     Returns the echoMode of the user input field.It returns HbLineEdit::EchoMode.
 
@@ -419,6 +428,9 @@ HbLineEdit::EchoMode HbInputDialog::echoMode(int row) const
 }
 
 /*!
+    \deprecated HbInputDialog::getText(const QString&,QObject*,const char*,const QString&,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+    
     This is a static convenience function for creating an Input Dialog and to get a string data from the the user. The Application can use this 
     function in order to get any text data from user like username,search data etc. This API allows a slot to be passed as a param. This slot will 
     be invoked when the user does the action like OK press or CANCEL press.  
@@ -455,21 +467,10 @@ void HbInputDialog::getText(const QString &label,
 
 
 /*!
-    This is a static convenience function for creating an Input Dialog and to get an integer data from the the user. The Application can use this 
-    function in order to get any integer data from user like year , any number etc. This API allows a slot to be passed as a param. This slot will 
-    be invoked when the user does the action like OK press or CANCEL press.  
-    
-    HbInputDialog::getInt(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
-    Please refer the class documentation to know how to handle the slot.
-   
-    \param label The prompt text which gives information on user input field.
-    \param receiver The instance where the slot is declared.
-    \param member The slot which has dialogClosed(HbAction*) signature. 
-    \param value The default value that should be presented to the user.
-    \param scene The scene parameter.
-    \param parent The parent widget for the dialog.
-   
-    \sa getText(), getDouble(), getIp()
+    \deprecated HbInputDialog::getInteger(const QString&,QObject*,const char*,int,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+
+    \sa queryInteger(), queryDouble(), queryIp()
 */
 void HbInputDialog::getInteger(const QString &label, 
                                 QObject *receiver,
@@ -489,21 +490,10 @@ void HbInputDialog::getInteger(const QString &label,
     dlg->open(receiver,member);
 }
 /*!
-    This is a static convenience function for creating an Input Dialog and to get a double data from the the user. The Application can use this 
-    function in order to get any double data from user. This API allows a slot to be passed as a param. This slot will 
-    be invoked when the user does the action like OK press or CANCEL press.  
-    
-    HbInputDialog::getDouble(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
-    Please refer the class documentation to know how to handle the slot.
+    \deprecated HbInputDialog::getDouble(const QString&,QObject*,const char*,double,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
    
-    \param label The prompt text which gives information on user input field.
-    \param receiver the instance where the slot is declared.
-    \param member the slot which has dialogClosed(HbAction*) signature. 
-    \param value the default value that should be presented to the user.
-    \param scene the scene parameter.
-    \param parent the parent widget for the dialog.
-   
-    \sa getText(), getInteger(), getIp()
+    \sa queryInteger(), queryDouble(), queryIp()
 */
 void HbInputDialog::getDouble(const QString &label, 
                                 QObject *receiver,
@@ -522,22 +512,11 @@ void HbInputDialog::getDouble(const QString &label,
     dlg->open(receiver,member);
 }
 
-
 /*!
-    This is a static convenience function for creating an Input Dialog and to get an IP information from the the user. This API allows a slot to be passed as a param. This slot will 
-    be invoked when the user does the action like OK press or CANCEL press.  
-    
-    HbInputDialog::getIp(iTitle,this,SLOT(dialogClosed(HbAction*)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
-    Please refer the class documentation to know how to handle the slot.
-   
-    \param label The prompt text which gives information on user input field.
-    \param receiver the instance where the slot is declared.
-    \param member the slot which has dialogClosed(HbAction*) signature. 
-    \param ipaddress the default value that should be presented to the user.
-    \param scene the scene parameter.
-    \param parent the parent widget for the dialog.
-   
-    \sa getText(), getInteger(), getDouble()
+    \deprecated HbInputDialog::getIp(const QString &,QObject*,const char*,const QString&,QGraphicsScene*,QGraphicsItem*)
+        is deprecated.
+
+    \sa queryInteger(), queryDouble(), queryIp()
 */
 
 void HbInputDialog::getIp(const QString &label, 
@@ -553,6 +532,145 @@ void HbInputDialog::getIp(const QString &label,
     }
     dlg->setPromptText(label);
     dlg->setValue(ipaddress);
+    dlg->setInputMode(IpInput);    
+    dlg->open(receiver,member);
+}
+
+/*!
+    This is a static convenience function for creating an Input Dialog and to get a string data from the the user. The Application can use this 
+    function in order to get any text data from user like username,search data etc. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::queryText(iTitle,this,SLOT(dialogClosed(int)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param promptText The prompt text which gives information on user input field.
+    \param receiver The instance where the slot is declared.
+    \param member The slot which has dialogClosed(HbAction*) or dialogClosed(int) signature. 
+    \param defaultText The default text that should be presented to the user.
+    \param scene The scene parameter.
+    \param parent The parent item for the dialog.
+   
+    \sa queryInteger(), queryDouble(), queryIp()
+*/
+void HbInputDialog::queryText(const QString &promptText,
+                                QObject *receiver,
+                                const char* member,
+                                const QString &defaultText,
+                                QGraphicsScene *scene, 
+                                QGraphicsItem *parent)
+{
+    HbInputDialog *dlg = new HbInputDialog(parent);
+    if (scene && !parent) {
+        scene->addItem(dlg);
+    }
+    dlg->setPromptText(promptText);
+    dlg->setInputMode(TextInput);
+    dlg->setValue(defaultText);    
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->open(receiver,member);
+}
+
+
+/*!
+    This is a static convenience function for creating an Input Dialog and to get an integer data from the the user. The Application can use this 
+    function in order to get any integer data from user like year , any number etc. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::queryInt(iTitle,this,SLOT(dialogClosed(int)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param promptText The prompt text which gives information on user input field.
+    \param receiver The instance where the slot is declared.
+    \param member The slot which has dialogClosed(HbAction*) or dialogClosed(int) signature. 
+    \param defaultInt The default value that should be presented to the user.
+    \param scene The scene parameter.
+    \param parent The parent widget for the dialog.
+   
+    \sa queryText(), queryDouble(), queryIp()
+*/
+void HbInputDialog::queryInt(const QString &promptText, 
+                                QObject *receiver,
+                                const char *member,
+                                int defaultInt,
+                                QGraphicsScene *scene,
+                                QGraphicsItem *parent)
+{
+    HbInputDialog *dlg = new HbInputDialog(parent);
+    if(scene && !parent) {
+        scene->addItem(dlg);
+    }
+    dlg->setPromptText(promptText);
+    dlg->setInputMode(IntInput);
+    dlg->setValue(QString::number(defaultInt));
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->open(receiver,member);
+}
+/*!
+    This is a static convenience function for creating an Input Dialog and to get a double data from the the user. The Application can use this 
+    function in order to get any double data from user. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::queryDouble(iTitle,this,SLOT(dialogClosed(int)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param promptText The prompt text which gives information on user input field.
+    \param receiver the instance where the slot is declared.
+    \param member the slot which has dialogClosed(HbAction*) or dialogClosed(int) signature. 
+    \param defaultDouble the default value that should be presented to the user.
+    \param scene the scene parameter.
+    \param parent the parent widget for the dialog.
+   
+    \sa queryText(), queryInteger(), queryIp()
+*/
+void HbInputDialog::queryDouble(const QString &promptText, 
+                                QObject *receiver,
+                                const char *member,
+                                double defaultDouble, 
+                                QGraphicsScene *scene, 
+                                QGraphicsItem *parent)
+{
+    HbInputDialog *dlg = new HbInputDialog(parent);
+    if(scene && !parent) {
+        scene->addItem(dlg);    
+    }
+    dlg->setPromptText(promptText);
+    dlg->setInputMode(RealInput);
+    dlg->setValue(QString::number(defaultDouble));
+    dlg->open(receiver,member);
+}
+
+
+/*!
+    This is a static convenience function for creating an Input Dialog and to get an IP information from the the user. This API allows a slot to be passed as a param. This slot will 
+    be invoked when the user does the action like OK press or CANCEL press.  
+    
+    HbInputDialog::queryIp(iTitle,this,SLOT(dialogClosed(int)),iText);  iTitle is the prompt text.dialogClosed will be invoked when the user does the action.
+    Please refer the class documentation to know how to handle the slot.
+   
+    \param promptText The prompt text which gives information on user input field.
+    \param receiver the instance where the slot is declared.
+    \param member the slot which has dialogClosed(HbAction*) or dialogClosed(int) signature. 
+    \param defaultIp the default value that should be presented to the user.
+    \param scene the scene parameter.
+    \param parent the parent widget for the dialog.
+   
+    \sa queryText(), queryInteger(), queryDouble()
+*/
+
+void HbInputDialog::queryIp(const QString &promptText, 
+                            QObject *receiver,
+                            const char *member,
+                            const QString &defaultIp, 
+                            QGraphicsScene *scene, 
+                            QGraphicsItem *parent)
+{
+    HbInputDialog *dlg = new HbInputDialog(parent);
+    if(scene && !parent) {
+        scene->addItem(dlg);    
+    }
+    dlg->setPromptText(promptText);
+    dlg->setValue(defaultIp);
     dlg->setInputMode(IpInput);    
     dlg->open(receiver,member);
 }

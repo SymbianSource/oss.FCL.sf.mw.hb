@@ -131,18 +131,21 @@ void HbProgressSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
     mMousePressPos = event->scenePos();
     mItemPosAtPress = pos();
-    if(q->textVisible()) {
+   
+    HbWidgetFeedback::triggered(q->parentGraphicsWidget(), Hb::InstantPressed, Hb::ModifierSliderHandle);
+
+    event->accept();
+    q->emitSliderPressed();   
+
+     if(q->textVisible()) {
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemPosAtPress,QSize(0,0)),q->textAlignment());
     }
     else {
         HbExtendedLocale locale;
-        HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+        HbProgressSlider *slider = (HbProgressSlider*)q->parentGraphicsWidget();
+        HbToolTip::showText(locale.toString(slider->sliderValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
     }
 
-    HbWidgetFeedback::triggered(q->parentGraphicsWidget(), Hb::InstantPressed, Hb::ModifierSliderHandle);
-
-    event->accept();
-    q->emitSliderPressed();    
 }
 
 void HbProgressSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
@@ -217,16 +220,18 @@ void HbProgressSliderHandle::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
         #endif
     }
 
+    event->accept();
+
+    q->emitSliderMoved(pointToValue(mItemCurPos));  
+    
     if(q->textVisible()) {
         HbToolTip::showText(q->toolTipText(),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
     }
     else {
         HbExtendedLocale locale;
-        HbToolTip::showText(locale.toString(q->progressValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
+        HbProgressSlider *slider = (HbProgressSlider*)q->parentGraphicsWidget();
+        HbToolTip::showText(locale.toString(slider->sliderValue()),this, QRectF(mItemCurPos,QSize(0,0)),q->textAlignment());
     }
-    event->accept();
-
-    q->emitSliderMoved(pointToValue(mItemCurPos));
 }
 
 int HbProgressSliderHandle::pointToValue(QPointF point) const

@@ -36,12 +36,92 @@
     @hbcore
     \class HbPanGesture
 
-    \brief HbPanGesture is an extension to Qt standard QPanGesture
+    \brief The HbPanGesture class provides support for receiving a dragging
+    (pan) gesture.
+    
+    HbPanGesture is an extension to the Qt standard QPanGesture. It is
+    optimized for mobile touch screens, and also supports recognition of
+    mouse events for development purposes. Moreover, HbPanGesture
+    adds some new properties (startPos and velocity) to the existing
+    QPanGesture properties, and also provides variants of all these expressed
+    in scene coordinates. This removes any need for manual conversions from
+    the screen (global) coordinates of the QPanGesture base class properties.
+    
+    A pan gesture is used in situations where the user drags content to a new
+    position. Make sure your application gives instant feedback to the user
+    with each gesture update by moving the content, not only when the gesture
+    is finished.
+    
+    \section _usecases_hbpangesture Using the HbPanGesture class
+    
+    This example shows how to make a custom widget recognize the pan
+    gesture. The custom widget in the example derives from HbWidget.
+    
+    <ol>
+    <li>
+    Register for pan gestures by using the base class function
+    QGraphicsObject::grabGesture(). QGraphicsObject::grabGesture() can be
+    called several times with different arguments, if the widget is
+    interested in other gesture types as well.
+   
+    \code
+    // This widget is interested in pan and tap gestures.
+    grabGesture(Qt::PanGesture);
+    grabGesture(Qt::TapGesture);
+    \endcode
+    </li>
+    
+    <li>
+    Reimplement HbWidgetBase::gestureEvent() to handle gestures that are
+    meaningful for your custom widget.
+   
+    \code
+    void MyWidget::gestureEvent(QGestureEvent *event)
+    {
+        if (HbPanGesture *pan = qobject_cast<HbPanGesture *>
+            (event->gesture(Qt::PanGesture))) {
+       
+            switch (pan->state()) {
+           
+            case Qt::GestureStarted:
+                // Visualize the active state of the widget.
+                // Emit a signal to move the content
+                break;
+            case Qt::GestureUpdated:
+                // Emit a signal to move the content.
+                break;
+            case Qt::GestureCanceled:
+                // Visualize the non-active state of the widget.
+                // Emit a signal to return the content to the starting
+                // position.
+                break;
+            case Qt::GestureFinished:
+                // Visualize the non-active state of the widget.             
+                // Emit a signal to move the content.   
+                break;
+            default:
+                break;
+            }           
+        }
+       
+        // Handle other gesture types that have been grabbed. There may be
+        // several, since all gestures that are active at the same moment
+        // are sent within the same gesture event.
+        if (HbTapGesture *tap = qobject_cast<HbTapGesture *>
+            (event->gesture(Qt::TapGesture))) {
+            // handle the tap gesture
+        }
+       
+    }   
+    \endcode
+    </li>
+    </ol>
+    
     \sa QPanGesture
 */
 
 /*!
-    \brief HbPanGesture constructor
+    Constructor.
     \param parent Owner for gesture
 
 */
@@ -51,7 +131,7 @@ HbPanGesture::HbPanGesture(QObject *parent) : QPanGesture(parent), d_ptr(new HbP
 }
 
 /*!
-    \brief HbPanGesture constructor
+    Constructor required by the shared d-pointer paradigm.
     \param dd Private data
     \param parent Owner for gesture
 
@@ -63,7 +143,7 @@ HbPanGesture::HbPanGesture( HbPanGesturePrivate &dd, QObject *parent )
 }
 
 /*!
-    \brief HbPanGesture destructor
+    Destructor.
 */
 HbPanGesture::~HbPanGesture()
 {
@@ -71,9 +151,8 @@ HbPanGesture::~HbPanGesture()
 }
 
 /*!
-    \property startPos
-    \brief Starting position for gesture in global coordinates.
-    \sa HbPanGesture::sceneStartPos
+    Returns the starting position for the gesture in global coordinates.
+    \sa setStartPos(), sceneStartPos()
 */
 QPointF HbPanGesture::startPos() const
 {
@@ -81,6 +160,12 @@ QPointF HbPanGesture::startPos() const
     return d->mStartPos;
 }
 
+/*!
+    Sets the starting position for the gesture in global coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa startPos(), setSceneStartPos()
+*/
 void HbPanGesture::setStartPos(const QPointF &startPos)
 {
     Q_D(HbPanGesture);
@@ -88,9 +173,9 @@ void HbPanGesture::setStartPos(const QPointF &startPos)
 }
 
 /*!
-    \property velocity
-    \brief Panning velocity in global coordinates.
-    \sa HbPanGesture::sceneVelocity
+    Returns the panning velocity in global coordinates.
+    The unit is pixels per millisecond.
+    \sa setVelocity(), sceneVelocity()
 */
 QPointF HbPanGesture::velocity() const
 {
@@ -98,15 +183,21 @@ QPointF HbPanGesture::velocity() const
     return HbVelocityCalculator( d->mAxisX, d->mAxisY ).velocity(QTime::currentTime());
 }
 
+/*!
+    Sets the panning velocity in global coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa velocity()
+*/
 void HbPanGesture::setVelocity(const QPointF &)
 {
     Q_ASSERT(false);
 }
 
 /*!
-    \property sceneLastOffset
-    \brief The total offset from start position to second last position in scene coordinates.
-    \sa QPanGesture::lastOffset()
+    Returns the total offset from start position to second last position
+    in scene coordinates.
+    \sa setSceneLastOffset(), QPanGesture::lastOffset()
 */
 QPointF HbPanGesture::sceneLastOffset() const
 {
@@ -114,6 +205,13 @@ QPointF HbPanGesture::sceneLastOffset() const
     return d->mSceneLastOffset;
 }
 
+/*!
+    Sets the total offset from start position to second last position
+    in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneLastOffset(), QPanGesture::setLastOffset()
+*/
 void HbPanGesture::setSceneLastOffset(const QPointF &lastOffset)
 {
     Q_D(HbPanGesture);
@@ -121,9 +219,9 @@ void HbPanGesture::setSceneLastOffset(const QPointF &lastOffset)
 }
 
 /*!
-    \property sceneOffset
-    \brief The total offset from start position to current position in scene coordinates.
-    \sa QPanGesture::offset()
+    Returns the total offset from start position to current position
+    in scene coordinates.
+    \sa setSceneOffset(), QPanGesture::offset()
 */
 QPointF HbPanGesture::sceneOffset() const
 {
@@ -131,6 +229,13 @@ QPointF HbPanGesture::sceneOffset() const
     return d->mSceneOffset;
 }
 
+/*!
+    Sets the total offset from start position to current position
+    in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneOffset(), QPanGesture::setOffset()
+*/
 void HbPanGesture::setSceneOffset(const QPointF &offset)
 {
     Q_D(HbPanGesture);
@@ -138,9 +243,8 @@ void HbPanGesture::setSceneOffset(const QPointF &offset)
 }
 
 /*!
-    \property sceneStartPos
-    \brief Starting position for gesture in scene coordinates.
-    \sa HbPanGesture::startPos()
+    Returns the starting position for the gesture in scene coordinates.
+    \sa setSceneStartPos(), startPos()
 */
 QPointF HbPanGesture::sceneStartPos() const
 {
@@ -148,6 +252,12 @@ QPointF HbPanGesture::sceneStartPos() const
     return d->mSceneStartPos;
 }
 
+/*!
+    Sets the starting position for the gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    \sa sceneStartPos(), setStartPos()
+*/
 void HbPanGesture::setSceneStartPos(const QPointF &startPos)
 {
     Q_D(HbPanGesture);
@@ -155,9 +265,9 @@ void HbPanGesture::setSceneStartPos(const QPointF &startPos)
 }
 
 /*!
-    \property sceneVelocity
-    \brief Panning velocity in scene coordinates.
-    \sa HbPanGesture::velocity()
+    Returns the panning velocity in scene coordinates.
+    The unit is pixels per millisecond.
+    \sa velocity()
 */
 QPointF HbPanGesture::sceneVelocity() const
 {
@@ -166,8 +276,7 @@ QPointF HbPanGesture::sceneVelocity() const
 }
 
 /*!
-    \property sceneAcceleration
-    \brief Panning acceleration in scene coordinates.
+    Returns the panning acceleration in scene coordinates.
     \sa QPanGesture::acceleration()
 */
 QPointF HbPanGesture::sceneAcceleration() const
@@ -176,8 +285,7 @@ QPointF HbPanGesture::sceneAcceleration() const
 }
 
 /*!
-    \property sceneDelta
-    \brief Distance between last two points in scene coordinates.
+    Returns the distance between the last two points in scene coordinates.
     \sa QPanGesture::delta()
 */
 QPointF HbPanGesture::sceneDelta() const

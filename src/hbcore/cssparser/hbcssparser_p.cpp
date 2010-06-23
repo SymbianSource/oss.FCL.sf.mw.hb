@@ -42,6 +42,7 @@
 #include "hbcssscanner_p.cpp"
 #include "hbmemoryutils_p.h"
 #include "hblayeredstyleloader_p.h"
+#include "hbthemeindex_p.h"
 
 using namespace HbCss;
 
@@ -54,6 +55,7 @@ struct HbCssKnownValue
 };
 
 static const HbCssKnownValue properties[NumProperties - 1] = {
+    { "alignment", Property_Alignment },
     { "aspect-ratio", Property_AspectRatio },
     { "border-width", Property_BorderWidth },
     { "border-width-bottom", Property_BorderWidthBottom },
@@ -659,8 +661,9 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
             flags|=ExtractedLayoutDir;
             break;
 
+        case Property_Alignment: 
         case Property_TextAlignment: 
-            prop.mTextAlignment = parseAlignment(decl); flags|=ExtractedTextAlign; break;
+            prop.mAlignment = parseAlignment(decl); flags|=ExtractedAlignment; break;
         case Property_TextLineCountMin: 
             prop.mMinLines = decl.values.first().variant.toInt(); flags|=ExtractedMinLines; break;
         case Property_TextLineCountMax: 
@@ -714,6 +717,7 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
     prop.mFlags = flags;
     return hit;
 }
+
 static QColor parseColorValue(Value v)
 {
     if (v.type == Value::Identifier || v.type == Value::String || v.type == Value::Color)
@@ -1100,20 +1104,29 @@ bool ValueExtractor::extractColor( QColor &color ) const
     for ( int i = 0; i < declarationsCount; ++i ) {
         const Declaration &decl = declarations.at(i);
         switch(decl.propertyId) {
-        case Property_Color: 
+        case Property_Color:
             {
             HbCss::Value value;
             if ( decl.values.at(0).type == Value::Variable ) {
-                extractVariableValue( decl.values.at(0).variant.toString(), value );
+                const QString variableName = decl.values.at(0).variant.toString();
+                HbThemeIndexResource resource(variableName);
+                if (resource.isValid()) {
+                    // Color value coming from index
+                    color = resource.colorValue();
+                } else {
+                    // Color value coming from custom css
+                    extractVariableValue( variableName, value );
+                    color = parseColorValue(value);
+                }
             } else {
                 value = decl.values.at(0);
+                color = parseColorValue(value);
             }
-            color = parseColorValue(value);
             hit = true;
             break;
             }
         default:
-            break;           
+            break;
         }
     }
     return hit;

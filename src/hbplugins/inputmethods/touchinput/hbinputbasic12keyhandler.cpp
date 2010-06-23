@@ -161,8 +161,7 @@ asterisk.
 */
 bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
 {
-    HbInputVkbWidget::HbFlickDirection flickDir = static_cast<HbVirtual12Key*>(mInputMethod)->flickDirection();
-    if (mInputMethod && flickDir!=HbInputVkbWidget::HbFlickDirectionDown) {
+    if (mInputMethod) {
         Q_Q(HbInputBasic12KeyHandler);
         int buttonId = keyEvent->key();
         HbInputFocusObject *focusObject = mInputMethod->focusObject();

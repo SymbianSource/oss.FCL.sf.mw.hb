@@ -29,7 +29,7 @@
 /*!
 \internal
 */
-HbInputMethodNull* HbInputMethodNull::Instance()
+HbInputMethodNull *HbInputMethodNull::Instance()
 {
     static HbInputMethodNull myInstance;
     return &myInstance;
@@ -83,7 +83,7 @@ void HbInputMethodNull::reset()
 /*!
 \internal
 */
-bool HbInputMethodNull::filterEvent(const QEvent* event)
+bool HbInputMethodNull::filterEvent(const QEvent *event)
 {
     Q_UNUSED(event);
     return false;
@@ -92,7 +92,7 @@ bool HbInputMethodNull::filterEvent(const QEvent* event)
 /*!
 \internal
 */
-void HbInputMethodNull::mouseHandler(int x, QMouseEvent* event)
+void HbInputMethodNull::mouseHandler(int x, QMouseEvent *event)
 {
     Q_UNUSED(x);
     Q_UNUSED(event);

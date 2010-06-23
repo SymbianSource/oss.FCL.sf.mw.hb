@@ -26,14 +26,16 @@
 #ifndef HB_INPUT_COMMON_DIALOGS_H
 #define HB_INPUT_COMMON_DIALOGS_H
 
-class HbInputLanguage;
 #include <QLocale>
+#include <QList>
 #include <hbinputmethoddescriptor.h>
+
+class HbInputLanguage;
 
 class HB_INPUT_EXPORT HbInputCommonDialogs
 {
 public:
-    static HbInputLanguage showLanguageSelectionDialog(const QLocale::Language selectedLanguage, const QList<HbInputLanguage> languageList=QList<HbInputLanguage>());
+    static HbInputLanguage showLanguageSelectionDialog(const QLocale::Language selectedLanguage, const QList<HbInputLanguage> languageList = QList<HbInputLanguage>());
     static HbInputMethodDescriptor showCustomInputMethodSelectionDialog(const HbInputLanguage &language);
 };
 

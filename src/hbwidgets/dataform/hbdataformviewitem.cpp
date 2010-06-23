@@ -23,16 +23,15 @@
 **
 ****************************************************************************/
 
-
-#include <hbdataformviewitem.h>
-#include <hbstyleoptiondataformviewitem_p.h>
+#include "hbdataformviewitem.h"
+#include "hbdataformviewitem_p.h"
 
 #include "hbdataformmodelitem_p.h"
-#include "hbdataformviewitem_p.h"
 #include "hbdataform_p.h"
 #include "hbdatagroup_p.h"
+#include "hbstyleoptiondataformviewitem_p.h"
 
-#include "hbtapgesture.h"
+#include <hbtapgesture.h>
 
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
@@ -71,7 +70,7 @@
     If group is expanded then all the child items are shown.
 
     If user wants to create a custom data item then he has to derive from this class and set that
-    as a protoype for HbDataForm using HbAbstractItemView::setItemPrototype API. While creating
+    as a prototype for HbDataForm using HbAbstractItemView::setItemPrototype API. While creating
     data for custom data items user should pass value greater than or equal to 
     DataItemType::CustomItemBase. When visualization is created and if data item type is
     custom item then createCustomWidget() is called. User has to override this API and pass the
@@ -240,7 +239,15 @@ void HbDataFormViewItem::updateChildItems()
     // Establish Signal Connections set in HbDataFormModel to th contentWidget of this item
     HbDataFormPrivate::d_ptr(
         static_cast<HbDataForm*>(d->mSharedData->mItemView))->makeConnection(
-        d->mIndex.operator const QModelIndex & ());
+        d->mIndex.operator const QModelIndex & (),d->mContentWidget);
+    //update only the background primitive
+    HbStyleOptionDataFormViewItem options;
+    initStyleOption(&options);
+    if( d->mBackgroundItem ) {
+        style()->updatePrimitive(
+            d->mBackgroundItem, HbStyle::P_DataItem_background, &options );
+    }
+
 }
 
 /*!
@@ -366,6 +373,10 @@ void HbDataFormViewItem::save()
     This is a virtual function which by default returns NULL. This function must be overridden
     in case user wants to create a data item of type custom item. The user is supposed to pass
     the widget which he wants to display in data item.
+    If content widget grabs pan gesture and user wants data form to be scrollable even panning
+    is done on disabled content widget then user is supposed to ungrab pan gesture when content 
+    widget is disabled. And again grab pan gesture when state of content widget is changed to 
+    enabled.
 */
 HbWidget* HbDataFormViewItem::createCustomWidget()
 {
@@ -484,6 +495,30 @@ void HbDataFormViewItem::showEvent(QShowEvent * event)
     if( d->mIndex.isValid( ) ) {
         emit itemShown( d->mIndex.operator const QModelIndex & ( ) );
     }
+}
+
+/*!
+    \reimp
+ */
+QVariant HbDataFormViewItem::itemChange( GraphicsItemChange change, const QVariant &value )
+{
+    Q_D( HbDataFormViewItem );
+    switch ( static_cast<HbPrivate::HbItemChangeValues>( change ) ) {
+    case QGraphicsItem::ItemEnabledHasChanged: {
+            HbStyleOptionDataFormViewItem options;
+            initStyleOption(&options);
+            if( d->mBackgroundItem ) {
+                style()->updatePrimitive(
+                d->mBackgroundItem, HbStyle::P_DataItem_background, &options );
+            }
+            //We are skipping call to abstractviewitem::itemChange here because updateChildItems is 
+            //called in that function which will again create data view item primitives.
+            return HbWidget::itemChange( change, value );
+        }
+        default:
+            break;
+  }
+    return HbAbstractViewItem::itemChange( change, value );
 }
 
 #include "moc_hbdataformviewitem.cpp"

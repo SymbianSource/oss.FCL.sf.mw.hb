@@ -29,7 +29,6 @@
 #include "hblistlayout_p.h"
 #include "hblistviewitem.h"
 #include "hblistitemcontainer_p.h"
-#include "hblistitemcontainer_p.h"
 #include "hbscrollbar.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
@@ -202,7 +201,7 @@ int HbListView::type() const
 
 /*!
     Returns true if view is in arrange mode. False otherwise.
- */
+*/
 bool HbListView::arrangeMode() const
 {
     Q_D(const HbListView);
@@ -210,8 +209,8 @@ bool HbListView::arrangeMode() const
 }
 
 /*!
- * Returns the view item being dragged. This is NULL if no item is being dragged.
- */
+    Returns the view item being dragged. This is NULL if no item is being dragged.
+*/
 HbAbstractViewItem *HbListView::draggedItem() const
 {
     Q_D( const HbListView );
@@ -233,24 +232,12 @@ bool HbListView::setArrangeMode(const bool arrangeMode)
 {
     Q_D(HbListView);
     if (arrangeMode != d->mArrangeMode) {
-        if (arrangeMode == true) {
-            if (d->mSelectionMode != HbAbstractItemView::NoSelection
-                || !d->mModelIterator->model()
-                || !(d->mModelIterator->model()->supportedDropActions().testFlag(Qt::MoveAction))) {
-                return false;
+        if (d->mSelectionMode != HbAbstractItemView::NoSelection
+            || !d->mModelIterator->model()
+            || !(d->mModelIterator->model()->supportedDropActions().testFlag(Qt::MoveAction))) {
+            return false;
             }
-            verticalScrollBar()->setInteractive(true);
-        } else {
-            verticalScrollBar()->setInteractive(false);
-        }
-        d->mArrangeMode = arrangeMode;
-
-        if (d->mArrangeMode == true) {
-            d->mOriginalFriction = d->mFrictionEnabled;
-            setFrictionEnabled(false);
-        } else {
-            setFrictionEnabled(d->mOriginalFriction);
-        }
+        d->arrangeModeSetup(arrangeMode);
     }
     return true;
 }

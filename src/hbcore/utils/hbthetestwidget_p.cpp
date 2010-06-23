@@ -50,6 +50,7 @@
 #include <QFile>
 #include <QDir>
 #include <QTimer>
+#include <QProcess>
 #include <hbaction.h>
 
 #include <QDebug> // for qWarning
@@ -67,6 +68,11 @@ const int KWidth = 140; // container size, button width is KWidth/2
 const int KHeight = 140; // container size, button height is KHeight/2
 // how much must button be dragged before it is actually moved
 const int KThreshold = 16;
+
+const QString KDriveFPath("F:\\data\\log\\");
+const QString KDriveEPath("E:\\data\\log\\");
+const QString KDriveCPath("C:\\data\\log\\");
+const QString KTheAppLaunchConfigureFile("app_launch_config.txt");
 
 HbTheTestButton::HbTheTestButton(QGraphicsItem *parent)
 : HbToolButton(parent),
@@ -396,6 +402,62 @@ void HbTheTestWidget::createSharedMemoryReport() const
 #endif
 }
 
+void HbTheTestWidget::launchThemeChanger()
+{
+    QProcess::startDetached("hbthemechanger.exe");
+}
+
+void HbTheTestWidget::launchApplications()
+{
+    // Find config file
+    QString filePath = findAppLaunchConfigFile();
+
+    QStringList commandLines;
+
+    if (!filePath.isEmpty()) {
+        // Try to read file
+        QFile file(filePath);
+        if (file.open(QIODevice::ReadOnly)) {
+            QString line;
+
+            while (!file.atEnd()) {
+                QByteArray dirtyLine = file.readLine();
+                line = QString(dirtyLine).trimmed();
+                // Skip empty lines and comment lines
+                if (line.isEmpty() || line.at(0) == '#') {
+                    continue;
+                }
+                commandLines.append(line);
+            }
+        }
+    }
+
+    for (int i=0; i<commandLines.count(); i++) {
+        int index = 0;
+        // Parse program name and arguments from the command line
+        QString cmdLine = commandLines.at(i);
+        QStringList args;
+        
+        while (index < cmdLine.count()) {
+            int startIndex = index;
+            // Find empty space
+            while (index < cmdLine.count() && !cmdLine[index].isSpace()) index++;
+            args.append(cmdLine.mid(startIndex, index-startIndex));
+            // Find non-empty space
+            while (index < cmdLine.count() && cmdLine[index].isSpace()) index++;
+        }
+
+        if (!args.count()) {
+            continue;
+        }
+
+        QString program = args.at(0);
+        args.removeFirst();
+
+        QProcess::startDetached(program, args);
+    }
+}
+
 void HbTheTestWidget::screenCapture()
 {
     setVisible(false);
@@ -432,6 +494,7 @@ void HbTheTestWidget::doScreenCapture()
         dir.mkpath(filePath);
     }
 
+    filePath.append(QDir::separator());
     if (!HbApplication::applicationName().isEmpty()) {
         filePath.append(HbApplication::applicationName());
     } else {
@@ -439,20 +502,9 @@ void HbTheTestWidget::doScreenCapture()
     }
     filePath.append(".png");
 
-//#ifdef Q_OS_SYMBIAN
-    // todo: not fail-safe code
-//    TSize screenSize = CCoeEnv::Static()->ScreenDevice()->SizeInPixels();
-//    TDisplayMode displayMode = CCoeEnv::Static()->ScreenDevice()->DisplayMode();
-
-//    CFbsBitmap *bitmap = new (ELeave) CFbsBitmap();
-//    User::LeaveIfError(bitmap->Create(screenSize, displayMode));
-
-//    CCoeEnv::Static()->ScreenDevice()->CopyScreenToBitmap(bitmap);
-//    QPixmap screenPixmap = QPixmap::fromSymbianCFbsBitmap(bitmap);
-//#else
     QPixmap screenPixmap = QPixmap::grabWindow(
         QApplication::activeWindow()->winId()); //krazy:exclude=qclasses
-//#endif
+
     QString format = "png";
     screenPixmap.save(filePath.toLatin1(), format.toLatin1());
     setVisible(true);
@@ -472,4 +524,25 @@ void HbTheTestWidget::showWarning(QString text)
     dialog->show();
 }
 
+QString HbTheTestWidget::findAppLaunchConfigFile()
+{
+    QString filePath;
+
+#if defined (Q_OS_SYMBIAN)
+    if (QFile::exists(KDriveFPath + KTheAppLaunchConfigureFile)) {
+        filePath = KDriveFPath + KTheAppLaunchConfigureFile;
+    } else if (QFile::exists(KDriveEPath + KTheAppLaunchConfigureFile)) {
+        filePath = KDriveEPath + KTheAppLaunchConfigureFile;
+    } else if (QFile::exists(KDriveCPath + KTheAppLaunchConfigureFile)) {
+        filePath = KDriveCPath + KTheAppLaunchConfigureFile;
+    }
+#elif defined (Q_OS_WIN32)
+    if (QFile::exists(KDriveCPath + KTheAppLaunchConfigureFile)) {
+        filePath = KDriveCPath + KTheAppLaunchConfigureFile;
+    }
+    // only Symbian and Windows are supported
+#endif
+
+    return filePath;
+}
 

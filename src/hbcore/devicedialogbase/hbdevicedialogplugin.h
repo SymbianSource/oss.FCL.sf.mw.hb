@@ -71,7 +71,8 @@ public:
         NoDeviceDialogFlags = 0x00,
         SharedDeviceDialog = 0x01,
         SecurityCheck = 0x02,
-        SingleInstance = 0x04
+        SingleInstance = 0x04,
+        ReceiveIndicatorStatus = 0x08
     };
     Q_DECLARE_FLAGS(DeviceDialogFlags, DeviceDialogFlag)
 

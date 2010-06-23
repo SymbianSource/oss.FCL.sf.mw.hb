@@ -258,8 +258,10 @@ public:
 
         AL_ANCHOR,
         AL_SRC_NAME,
+        AL_SRC_ID,
         AL_SRC_EDGE,
         AL_DST_NAME,
+        AL_DST_ID,
         AL_DST_EDGE,
         AL_SPACING,
         AL_SPACER,

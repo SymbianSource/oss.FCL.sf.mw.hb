@@ -153,7 +153,15 @@ void HbSliderTickmarksLabel::updateTickLabels( )
         return;
     }
     d->createTickLabels();
-    setLabelSize( );
+    int totalMajorTicksLabel = d->tickmarkmajorIconItemsLabel.length();
+    for (int i=0;i<totalMajorTicksLabel;i++) {
+         QGraphicsWidget *textItem = d->tickmarkmajorIconItemsLabel.at ( i);
+         HbStyleOptionSlider opt;
+         initStyleOption(&opt);
+         opt.orientation = d->slider->orientation();
+         opt.text = (d->slider->majorTickLabels( )).at(i);
+         style()->updatePrimitive(textItem,HbStyle::P_SliderTickMark_majorlabel,&opt);
+	}
     int minimum = d->slider->minimum();
     int maximum = d->slider->maximum();
     int majorTickInterval = d->slider->majorTickInterval ( );
@@ -289,6 +297,7 @@ HbSliderTickmarksLabel::HbSliderTickmarksLabel( QGraphicsItem *parent )
     d->q_ptr = this;
     d->slider=dynamic_cast<HbSlider*>( parentItem() );
     d->createTickLabels();
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);
 }
 
 /*!
@@ -298,106 +307,9 @@ HbSliderTickmarksLabel::~HbSliderTickmarksLabel()
 {
 }
 
-void HbSliderTickmarksLabel::setLabelSize()
-{
-    Q_D (HbSliderTickmarksLabel);
-
-    int minimum = d->slider->minimum();
-    int maximum = d->slider->maximum();
-    int majorTickInterval = d->slider->majorTickInterval ( );
-    int minorTickInterval = d->slider->minorTickInterval ( );
-    qreal span = 0;
-    bool rtlLayout = (((d->slider->orientation( ) != Qt::Vertical)
-        &&(HbApplication::layoutDirection() == Qt::LeftToRight))?false:true);
-    HbSliderPrivate *sliderPrivate = dynamic_cast<HbSliderPrivate*>(HbSliderPrivate::d_ptr(d->slider));
-    QSizeF handleSize(0.0,0.0);
-    if( sliderPrivate) {
-        handleSize = sliderPrivate->getHandleSize( );
-    } else {
-        return;
-    }
-    if ( d->slider->orientation() == Qt::Horizontal) {
-        span = d->slider->size().width();
-        span-=handleSize.width();
-    }
-    if ( d->slider->orientation() == Qt::Vertical) {
-        span = d->slider->size().height();
-        span-=handleSize.height();
-    }
-    int minPos = QStyle::sliderPositionFromValue( minimum, maximum,
-                minimum,static_cast<int>( span ), rtlLayout );
-    int firstMajorIntervalPos = QStyle::sliderPositionFromValue( minimum, maximum,
-                minimum+majorTickInterval,static_cast<int>( span ), rtlLayout );
-
-    int firstMinorIntervalPos = QStyle::sliderPositionFromValue( minimum, maximum,
-                minimum+minorTickInterval,static_cast<int>( span ), rtlLayout );
-
-    qreal totalMajorTextWidth = abs(firstMajorIntervalPos-minPos);
-    qreal totalMinorTextWidth = abs(firstMinorIntervalPos-minPos);
-    Q_UNUSED(totalMajorTextWidth)
-    Q_UNUSED(totalMinorTextWidth)
-
-    if (majorTickInterval) {
-        int totalMajorTicksLabel = d->tickmarkmajorIconItemsLabel.length();
-        for (int i=0;i<totalMajorTicksLabel;i++) {
-             QGraphicsWidget *textItem = d->tickmarkmajorIconItemsLabel.at ( i);
-             HbStyleOptionSlider opt;
-             initStyleOption(&opt);
-             opt.orientation = d->slider->orientation();
-             opt.text = (d->slider->majorTickLabels( )).at(i);
-             style()->updatePrimitive(textItem,HbStyle::P_SliderTickMark_majorlabel,&opt);
-             if ( d->slider->orientation() == Qt::Horizontal) {
-             /*   textItem->setMaximumHeight (boundingRect().height());
-                textItem->setMinimumHeight (boundingRect().height());
-                textItem->setMinimumWidth(totalMajorTextWidth);
-                textItem->setMaximumWidth(totalMajorTextWidth);*/
-                textItem->update();
-             } else {
-             /*   textItem->setMinimumWidth(boundingRect().width());
-                textItem->setMaximumWidth(boundingRect().width());*/
-                textItem->update( );
-             }
-        }
-    }
-    if (minorTickInterval) {
-        int totalminorTicks = ((maximum-minimum)/minorTickInterval)+1;
-        int minorIndex = 0;
-        for (int i=0;i<totalminorTicks;i++) {
-            if (majorTickInterval ) {
-                if (i*minorTickInterval%majorTickInterval== 0) {
-                    continue;
-                }
-            }
-            if ( minorIndex < d->tickmarkminorIconItemsLabel.length() ) {
-                QGraphicsWidget *textItem = d->tickmarkminorIconItemsLabel.at ( minorIndex);
-                minorIndex++;
-                 if ( d->slider->orientation() == Qt::Horizontal) {
-                  /*  textItem->setMaximumHeight (boundingRect().height());
-                    textItem->setMinimumHeight (boundingRect().height());
-                    textItem->setMinimumWidth(totalMinorTextWidth);
-                    textItem->setMaximumWidth(totalMinorTextWidth);*/
-                    textItem->update();
-                 } else {
-                 /*   textItem->setMinimumWidth(boundingRect().width());
-                    textItem->setMaximumWidth(boundingRect().width());*/
-                    textItem->update( );
-                 }
-            }
-        }
-    }
- }
-
-
 
 void HbSliderTickmarksLabel::polish( HbStyleParameters& params )
 {
-    Q_D (HbSliderTickmarksLabel);
-    d->createTickLabels();
-    if( d->slider->orientation( ) == Qt::Horizontal ) {
-        setProperty("orientation",(Qt::Orientation)1);
-    } else {
-        setProperty("orientation",(Qt::Orientation)2);
-    }
     HbWidget::polish(params);
     updateTickLabels();
 }

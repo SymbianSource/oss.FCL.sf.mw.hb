@@ -104,6 +104,9 @@ contains(DEFINES, HB_HAVE_QT_MOBILITY) {
 TRANSLATIONS += i18n/translations/directorylocalizer_en_GB.ts
 TRANSLATIONS += i18n/translations/directorylocalizer_de_DE.ts
 TRANSLATIONS += i18n/translations/languages.ts
+TRANSLATIONS += i18n/translations/collations.ts
+TRANSLATIONS += i18n/translations/regions.ts
+TRANSLATIONS += i18n/translations/languages_OLD.ts
 
 symbian {
     defFilePath = defs
@@ -160,6 +163,7 @@ symbian {
     }
     # i18n's other files export
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/language_list.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/language_list.txt"
+    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/locale_mappings.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/locale_mappings.txt"
 
     LIBS += -lapparc
     LIBS += -lavkon

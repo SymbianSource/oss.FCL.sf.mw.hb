@@ -37,7 +37,6 @@ class HbAction;
 
 QT_FORWARD_DECLARE_CLASS(QEventLoop)
 QT_FORWARD_DECLARE_CLASS(QGraphicsWidget)
-QT_FORWARD_DECLARE_CLASS(QGraphicsLinearLayout)
 QT_FORWARD_DECLARE_CLASS(QGraphicsSceneMouseEvent)
 
 class HB_CORE_PRIVATE_EXPORT HbDialogPrivate :public HbPopupPrivate
@@ -47,14 +46,12 @@ class HB_CORE_PRIVATE_EXPORT HbDialogPrivate :public HbPopupPrivate
 public:
     HbDialogPrivate( );
     virtual ~HbDialogPrivate();
-    void init();
 
-    void setWidget(int layoutIndex, QGraphicsWidget *&destWidget, QGraphicsWidget *widget);
     void doLayout();
+    void removeSpaces(QString& string);
 
     QGraphicsWidget *contentWidget;
     QGraphicsWidget *headingWidget;
-    QGraphicsLinearLayout *mainLayout;
     HbAction *primaryAction;
     HbAction *secondaryAction;
     HbAction *closingAction;

@@ -131,7 +131,7 @@ bool HbHardwareInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent * 
 		break;
 	case Qt::Key_Backspace:
 	case Qt::Key_Delete: {
-		// let's pass the backspace event to the focussed editor.
+		// let's pass the backspace event to the focused editor.
 		//return q->HbInputBasicHandler::filterEvent(event);
 		break;
 	}

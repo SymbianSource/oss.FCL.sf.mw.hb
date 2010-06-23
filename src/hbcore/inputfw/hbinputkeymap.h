@@ -47,11 +47,10 @@ public:
     const QString characters(const HbModifiers modifiers) const;
 };
 
-struct HbKeyboardMap
-{
+struct HbKeyboardMap {
 public:
     HbKeyboardType type;
-    QList<HbMappedKey*> keys;
+    QList<HbMappedKey *> keys;
 };
 
 class HB_CORE_EXPORT HbKeymap
@@ -67,11 +66,11 @@ public:
     virtual const HbMappedKey *keyForIndex(HbKeyboardType keyboard, int keyIndex) const;
     virtual const HbMappedKey *keyForKeycode(HbKeyboardType keyboard, QChar keyCode) const;
     virtual const HbMappedKey *keyForCharacter(HbKeyboardType keyboard, QChar character) const;
-    static bool isDeadKey (int key);
+    static bool isDeadKey(int key);
     static void combineCharacter(QChar deadKey, QChar key, QChar &firstKey, QChar &secondKey);
 
 private:
-    HbKeymapPrivate* mPrivate;
+    HbKeymapPrivate *mPrivate;
 };
 
 #endif // HB_INPUT_KEYMAP_DATA_H

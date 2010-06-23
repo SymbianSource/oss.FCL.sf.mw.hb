@@ -22,12 +22,12 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputregioncollector_p.h"
 
 #include <QRegion>
 #include <QTransform>
 #include <QPointer>
 
-#include "hbinputregioncollector_p.h"
 #include "hbwidget.h"
 #include "hbmainwindow.h"
 #include "hbpopup.h"
@@ -51,10 +51,11 @@ class HbWidgetFilterList
 {
 public:
     HbWidgetFilterList(HbWidget *w)
-        :mWidget (w), mIsVisible (false)
-    {
+        : mWidget(w), mIsVisible(false) {
     }
-    bool operator ==(const HbWidgetFilterList &other) const {return mWidget == other.mWidget;}
+    bool operator ==(const HbWidgetFilterList &other) const {
+        return mWidget == other.mWidget;
+    }
     QPointer <HbWidget> mWidget;
     // visibility is needed as the time when we get show event inside eventFilter
     // widget is not visible.
@@ -65,7 +66,7 @@ class HbInputRegionCollectorPrivate
 {
 public:
     HbInputRegionCollectorPrivate()
-        :mEnabled(false), mModalDialogs(0){}
+        : mEnabled(false), mModalDialogs(0) {}
     QList < HbWidgetFilterList > mInputWidgets;
     bool mEnabled;
     int mModalDialogs;
@@ -85,7 +86,7 @@ HbInputRegionCollector *HbInputRegionCollector::instance()
 Constructor.
 */
 HbInputRegionCollector::HbInputRegionCollector()
-    :d_ptr(new HbInputRegionCollectorPrivate())
+    : d_ptr(new HbInputRegionCollectorPrivate())
 {
 }
 
@@ -100,7 +101,7 @@ HbInputRegionCollector::~HbInputRegionCollector()
 /*!
 Installs a even filter on the passed widget.
 */
-void HbInputRegionCollector::attach (HbWidget *widget)
+void HbInputRegionCollector::attach(HbWidget *widget)
 {
     if (widget && !d_ptr->mInputWidgets.contains(widget)) {
         if (d_ptr->mEnabled) {
@@ -113,7 +114,7 @@ void HbInputRegionCollector::attach (HbWidget *widget)
 /*!
 Detaches widget from region collection and updates current region if region collection is enabled.
 */
-void HbInputRegionCollector::detach (HbWidget *widget)
+void HbInputRegionCollector::detach(HbWidget *widget)
 {
     if (widget && d_ptr->mInputWidgets.contains(widget)) {
         widget->removeEventFilter(this);
@@ -127,7 +128,7 @@ void HbInputRegionCollector::detach (HbWidget *widget)
 /*!
 Observes size, position and move events of all attached widgets and calls update().
 */
-bool HbInputRegionCollector::eventFilter (QObject *obj, QEvent *event)
+bool HbInputRegionCollector::eventFilter(QObject *obj, QEvent *event)
 {
     HbWidget *widget = qobject_cast<HbWidget *>(obj);
     if (widget) {
@@ -136,44 +137,42 @@ bool HbInputRegionCollector::eventFilter (QObject *obj, QEvent *event)
         case QEvent::GraphicsSceneMove:
             update();
             break;
-        case QEvent::Show:
-            {
-                // We can not query for HbWidget visiblility at this point
-                // so have to set it inside the strcuture variable.
-                int pos = d_ptr->mInputWidgets.indexOf(widget);
-                if (pos != -1) {
-                    // Temporary TODO ++
-                    // TODO write a HbInputWidgetStore class which will hold all the 
-                    // active widgets and will emit signals for example sceneBlocked() 
-                    // sceneUnBlocked(). And then connect to region collector.
-                    HbPopup *popup = qobject_cast<HbPopup *>(obj);
-                    // since there is a bug in Qt that QGraphicsItem geenrates two show events
-                    // once when you do a show() and once when you added it to the scene(), 
-                    // so need a check on visibility.
-                    if (popup && popup->isModal() && !d_ptr->mInputWidgets[pos].mIsVisible) {
-                        d_ptr->mModalDialogs++;
-                    }
-                    // Temporary TODO --                
-                    d_ptr->mInputWidgets[pos].mIsVisible = true;
-                    update();
+        case QEvent::Show: {
+            // We can not query for HbWidget visiblility at this point
+            // so have to set it inside the strcuture variable.
+            int pos = d_ptr->mInputWidgets.indexOf(widget);
+            if (pos != -1) {
+                // Temporary TODO ++
+                // TODO write a HbInputWidgetStore class which will hold all the
+                // active widgets and will emit signals for example sceneBlocked()
+                // sceneUnBlocked(). And then connect to region collector.
+                HbPopup *popup = qobject_cast<HbPopup *>(obj);
+                // since there is a bug in Qt that QGraphicsItem geenrates two show events
+                // once when you do a show() and once when you added it to the scene(),
+                // so need a check on visibility.
+                if (popup && popup->isModal() && !d_ptr->mInputWidgets[pos].mIsVisible) {
+                    d_ptr->mModalDialogs++;
                 }
-                break;
+                // Temporary TODO --
+                d_ptr->mInputWidgets[pos].mIsVisible = true;
+                update();
             }
-        case QEvent::Hide:
-            {
-                int pos = d_ptr->mInputWidgets.indexOf(widget);
-                if (pos != -1) {
-                    // Temporary TODO ++
-                    HbPopup *popup = qobject_cast<HbPopup *>(obj);
-                    if (popup && popup->isModal()) {
-                        d_ptr->mModalDialogs--;
-                    }
-                    // Temporary TODO --
-                    d_ptr->mInputWidgets[pos].mIsVisible = false;
-                    update();
+            break;
+        }
+        case QEvent::Hide: {
+            int pos = d_ptr->mInputWidgets.indexOf(widget);
+            if (pos != -1) {
+                // Temporary TODO ++
+                HbPopup *popup = qobject_cast<HbPopup *>(obj);
+                if (popup && popup->isModal()) {
+                    d_ptr->mModalDialogs--;
                 }
-                break;
+                // Temporary TODO --
+                d_ptr->mInputWidgets[pos].mIsVisible = false;
+                update();
             }
+            break;
+        }
         default:
             break;
         };
@@ -210,13 +209,12 @@ void HbInputRegionCollector::update()
                     // is 270 degree. We should map it to get transformed rectangle.
                     QTransform t = window->viewportTransform();
                     QRectF tRect = t.mapRect(rect);
-                    region += tRect.toRect();
                     QRectF intersection = QRectF(window->geometry()).intersected(tRect);
                     region += intersection.toRect();
                 }
             }
         }
-     }
+    }
     emit updateRegion(region);
 }
 

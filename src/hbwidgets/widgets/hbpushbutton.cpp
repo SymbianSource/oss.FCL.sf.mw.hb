@@ -42,7 +42,8 @@
 #include <QTimer>
 #include <QGraphicsItem>
 #include <QDebug>
-
+#include <QCoreApplication>
+#include <QApplication>
 
 /*!
     @beta
@@ -371,6 +372,9 @@ void HbPushButton::setText( const QString &text )
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
             style( )->updatePrimitive( d->textItem, HbStyle::P_PushButton_text, &buttonOption);
+            if ( isEnabled() ) {
+                setProperty("state", "normal");
+            }
         }
         if(doPolish) {
             repolish( );
@@ -459,7 +463,13 @@ void HbPushButton::setIcon( const HbIcon &icon )
 
         }
         if( doPolish ) {
-            repolish();
+            //Instead of posting an event we are directly sending polish and layout request
+            //event because during runtime if icon is set for the first time some
+            //flickering was coming. That was coming because icon was getting painted
+            //before polish.
+            QEvent* polishEvent = new QEvent( QEvent::Polish );
+            QCoreApplication::sendEvent(this, polishEvent);
+            QApplication::sendPostedEvents(this, QEvent::LayoutRequest);
         }
     }
 }
@@ -740,7 +750,8 @@ void HbPushButton::keyPressEvent(QKeyEvent *event)
         case Qt::Key_Up:
         case Qt::Key_Left:
         case Qt::Key_Right:
-        case Qt::Key_Down:{
+        case Qt::Key_Down:
+            if( d->keyNavigation()) {
                 d->navigationKeyPress = true;
             }
             break;       
@@ -772,7 +783,8 @@ void HbPushButton::keyReleaseEvent(QKeyEvent *event)
             case Qt::Key_Up:
             case Qt::Key_Left:
             case Qt::Key_Right:
-            case Qt::Key_Down:{
+            case Qt::Key_Down:
+                if ( d->keyNavigation() ) {
                     d->navigationKeyPress = false;
                 }
             break;       
@@ -851,46 +863,46 @@ void HbPushButton::gestureEvent( QGestureEvent *event )
 {
     Q_D(HbPushButton);
     if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        bool hit = hitButton(mapFromScene(event->mapToGraphicsScene(tap->position())));
         switch(tap->state()) {
-        case Qt::GestureStarted:{
+            case Qt::GestureStarted:
+                if( hit ){
 #ifdef HB_EFFECTS
-                HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
+                    HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
 #endif
-                if( d->checkable && !d->checked) {
-                    setProperty( "state", "latched" );
-                }else if(!d->checkable) {
-                    setProperty( "state", "pressed" );
+                    if( d->checkable && !d->checked) {
+                        setProperty( "state", "latched" );
+                    }else if(!d->checkable) {
+                        setProperty( "state", "pressed" );
+                    }
                 }
-            }
-            break;
-        case Qt::GestureUpdated:
-            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
-                d->longPress = true;
-                emit longPress( event->mapToGraphicsScene(tap->position()) );
-            }
-            break;
-        case Qt::GestureCanceled:
-            setProperty( "state", "normal" );
-            break;
-        case Qt::GestureFinished:{
+                break;
+            case Qt::GestureUpdated:
+                if(tap->tapStyleHint() == HbTapGesture::TapAndHold && hit) {
+                    d->longPress = true;
+                    emit longPress( event->mapToGraphicsScene(tap->position()) );
+                }
+                break;
+            case Qt::GestureCanceled:
+                setProperty( "state", "normal" );
+                break;
+            case Qt::GestureFinished:
+                if( hit ){
 #ifdef HB_EFFECTS
-                HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
+                    HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
 #endif
+                }
                 if( d->checkable && !d->checked) {
                     setProperty( "state", "latched" );
-                }else {                    
+                }else {
                     setProperty( "state", "normal" );
                 }
-
-            }
-            break;
-        default:
-            break;
+                break;
+            default:
+                break;
         }
     }
-
     HbAbstractButton::gestureEvent( event );
-
 }
 #endif
 

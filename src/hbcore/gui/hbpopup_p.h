@@ -110,6 +110,7 @@ public:
     QByteArray memberToDisconnectOnClose;
     qreal mScreenMargin;
     bool mAutoLayouting;
+    bool mOriginalAutoLayouting;
 
 public:
 #ifdef HB_EFFECTS
@@ -147,7 +148,6 @@ private:
     friend class HbPopupManagerPrivate;
     friend class HbPopupLayoutProxy;
     friend class HbDeviceDialogManagerPrivate;
-
     // To be able to unit test private features
     friend class TestHbPopup;
 

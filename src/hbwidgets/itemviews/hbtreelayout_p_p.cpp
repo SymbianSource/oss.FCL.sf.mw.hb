@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbtreelayout_p.h"
 #include "hbtreelayout_p_p.h"
+#include "hbtreelayout_p.h"
 #include "hbabstractitemcontainer_p.h"
 
 #include <hblayoututils_p.h>

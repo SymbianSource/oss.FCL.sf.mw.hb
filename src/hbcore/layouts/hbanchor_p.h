@@ -43,8 +43,10 @@ public:
 
     QGraphicsLayoutItem *mStartItem;
     Hb::Edge mStartEdge;
+    QString mStartId;
     QGraphicsLayoutItem *mEndItem;
     Hb::Edge mEndEdge;
+    QString mEndId;
     qreal mValue;
 };
 

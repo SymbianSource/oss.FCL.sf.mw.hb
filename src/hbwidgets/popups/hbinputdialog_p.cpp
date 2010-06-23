@@ -52,10 +52,14 @@ HbInputDialogContentWidget::HbInputDialogContentWidget(HbInputDialogPrivate* pri
     mEdit1 = new HbLineEdit(this);
     HbStyle::setItemName(mEdit1, "text-1");
 
+    connect(mEdit1,SIGNAL(textChanged(const QString)),this,SLOT(emitTextChange(const QString)));
     this->setProperty("additionalRowVisible",QVariant(false));
 }
 
-
+void HbInputDialogContentWidget::emitTextChange(const QString & data)
+{
+    emit textChanged(data);
+}
 void HbInputDialogContentWidget::setAdditionalRowVisible(bool visible)
 {
     mAdditionalRowVisible = visible;
@@ -116,10 +120,17 @@ void HbInputDialogPrivate::init()
     //Populate the widget
     mContentWidget = new HbInputDialogContentWidget(this);
 
+    q->connect(mContentWidget,SIGNAL(textChanged(const QString)),q,SLOT(textChange(const QString)));
     q->setContentWidget(mContentWidget);
-    q->addAction(new HbAction(q->tr("Ok"), q));
 
-    q->addAction(new HbAction(q->tr("Cancel"), q));
+    action1=new HbAction(hbTrId("txt_common_button_ok"),q);
+    action1->setEnabled(false);
+    q->addAction(action1);
+    q->connect(action1,SIGNAL(triggered()),q,SLOT(accept()));
+
+    HbAction *action2=new HbAction(hbTrId("txt_common_button_cancel"),q);
+    q->addAction(action2);
+    q->connect(action2,SIGNAL(triggered()),q,SLOT(reject()));
 
     q->setTimeout(HbPopup::NoTimeout); 
     q->setModal(true); // Dialog is modal  
@@ -131,6 +142,22 @@ void HbInputDialogPrivate::init()
                     SLOT( _q_notesOrientationChanged(Qt::Orientation) ) );
 }
 
+void HbInputDialogPrivate::textChange(const QString data)
+{
+    Q_UNUSED(data);
+    Q_Q(HbInputDialog);
+
+    if(q->actions().count() == 0) {
+        return;
+    }
+
+    if(mContentWidget->mEdit1->hasAcceptableInput()) {
+        q->actions().at(0)->setEnabled(true);
+    } else {
+        q->actions().at(0)->setEnabled(false);
+    }
+
+}
 
 void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputMode mode)
 {

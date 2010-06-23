@@ -39,7 +39,7 @@
 #include "hbinputspellquerydialog.h"
 #include "hbinputmodehandler.h"
 
-#define MAXUDBWORDSIZE 64
+static const qint16 MAXUDBWORDSIZE = 64;
 
 HbInputSpellQuery::HbInputSpellQuery(HbInputMethod *inputMethod, HbInputPredictionHandler *predictionHandler)
  : mOwner(inputMethod), mPredictionHandler(predictionHandler), mPrimaryAction(0) 
@@ -109,34 +109,24 @@ void HbInputSpellQuery::dialogClosed(HbAction* action)
         mDidHandleFinish = true;
     }
 
-    bool isOk = false;
-    bool isCancel = false;
-    bool isExternalClose = false;
+    HbSpellCloseReason closeReason = HbForceClose;
+    QString string = mSavedEditorText;
     // action is null when input query is closed externally , for example by calling
     // HbDialog::close() function.
     if (action) {
-        isOk = mPrimaryAction == action ? true : false; 
-        isCancel = mPrimaryAction != action ? true : false; 
-    } else {
-        isExternalClose = true;
+        if(mPrimaryAction == action) {
+            closeReason = HbOkPressed;
+            string = value().toString();
+        } else {
+            closeReason = HbCancelPressed;
+        }
     }
-
     //Need to disable effects as asynchronous hide will commit the word otherwise.
     HbEffect::disable(this);
     hide();
     HbEffect::enable(this);  
 
-    QString string = mSavedEditorText;
-    bool status = false;
-    if (isOk) {
-        string = value().toString();
-        status = true;
-    } else if (isCancel) {
-        status = false;
-    } else if (isExternalClose) {
-        status = true;
-    }
-    mPredictionHandler->spellQueryDialogClosed(mSavedFocusObject,status,string);
+    mPredictionHandler->spellQueryDialogClosed(mSavedFocusObject,closeReason,string);
     mSavedFocusObject = 0;
     mSavedEditorText.clear();
     mPrimaryAction = 0;

@@ -68,7 +68,8 @@ struct HbThemeIndexItemData
     enum Flag {
         Default         = 0x00,
         Mirrorable      = 0x01,
-        Locked          = 0x02
+        Locked          = 0x02,
+        Reference       = 0x04
     };
 
     enum Type {
@@ -83,7 +84,8 @@ struct HbThemeIndexItemData
         SvgzItem        = 8, // .svgz
         QpicItem        = 9, // .qpic
         FxmlItem        = 10, // .fxml
-        AxmlItem        = 11 // .axml
+        AxmlItem        = 11, // .axml
+        ColorItem       = 12 // color variable
     };
 
     HbThemeIndexItemData() :
@@ -102,7 +104,11 @@ struct HbThemeIndexItemData
 
     // These will go to every themable item, but overhead is still small
     // because most of the items are icons
-    quint32 mirroredItemType; // from enum Type
+    union
+    {
+        quint32 mirroredItemType; // from enum Type
+        quint32 colorValue;
+    };
     qint32 defaultWidth;
     qint32 defaultHeight;
     qint32 mirroredWidth;
@@ -123,6 +129,7 @@ public:
     bool isLocked();
     QString fullFileName();
     QString fullMirroredFileName();
+    QColor colorValue();
 
 private:
     void getResourceData();

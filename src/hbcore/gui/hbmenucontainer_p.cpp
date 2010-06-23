@@ -50,7 +50,6 @@ void HbMenuContainerPrivate::init()
 
     mLayout->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     q->setLayout(mLayout);
-    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 HbMenuContainer::HbMenuContainer(HbMenu *menu,QGraphicsItem *parent):
@@ -242,7 +241,6 @@ HbMenuListView::HbMenuListView(HbMenu *menu,QGraphicsItem *parent)
     d->mContainer = new HbMenuContainer(menu, this);
     setContentWidget(d->mContainer);
     setScrollingStyle(HbScrollArea::Pan);
-    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 bool HbMenuListView::scrollByAmount(const QPointF& delta)

@@ -27,6 +27,7 @@
 
 #include <QSharedMemory>
 #include <QString>
+#include <QVector>
 
 #include "hbinputmethoddescriptor.h"
 #include "hbinputlanguage.h"
@@ -63,8 +64,7 @@ public:
 
 // REMEMBER to increase HbProxyDataRequiredVersion every time you add fields
 // to this class or change related constants!
-struct HbSettingProxyInternalData
-{
+struct HbSettingProxyInternalData {
     int iVersion;
     int iReferences;
     HbInputLanguage iGlobalPrimaryInputLanguage;
@@ -75,7 +75,7 @@ struct HbSettingProxyInternalData
     HbKeyboardSettingFlags iPredictiveInputState;
     HbInputDigitType iDigitType;
     bool iQwertyTextCasing;
-    bool iQwertyCharacterPreview; 
+    bool iQwertyCharacterPreview;
     Qt::Orientation iScreenOrientation;
     bool iOrientationChangeCompleted;
     bool iFlipStatus;
@@ -101,12 +101,12 @@ public:
     bool load();
     void save();
     void shutdownDataArea();
-    HbSettingProxyInternalData* proxyData() const;
+    HbSettingProxyInternalData *proxyData() const;
 
     void flipToggle();
     bool flipStatus();
     void setFlipStatus(bool flipStatus);
-    
+
     void handleDeviceSpecificOriantationAndFlipChange();
 
     void lock() const {

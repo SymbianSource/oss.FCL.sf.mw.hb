@@ -22,10 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
+#include "hbprogressbar_p.h"
 #include <hbprogressbar.h>
 #include <hbstyleoptionprogressbar_p.h>
-#include "hbprogressbar_p.h"
 #include "hbglobal_p.h"
 
 #ifdef HB_EFFECTS
@@ -235,14 +234,23 @@ void HbProgressBarPrivate::setRange(int minimum, int maximum)
         mProgressValue = mMaximum;
     }
 
+    // update primitve optimization, update only track primitive 
+    // incase of normal as well as in infinite progressbar
+    HbStyleOptionProgressBar progressBarOption;
+    q->initStyleOption(&progressBarOption);
+
     if( (mMinimum == 0) && (mMaximum == 0) ) {
         mWaitTrack->setVisible(true);
         mTrack->setVisible(false);
+
+        q->style()->updatePrimitive(mWaitTrack, HbStyle::P_ProgressBar_waittrack, &progressBarOption);
     } else {
         mWaitTrack->setVisible(false);
         mTrack->setVisible(true);
+
+        q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
     }
-    q->updatePrimitives();
+    //q->updatePrimitives();
 } 
 
 /*!
@@ -317,7 +325,7 @@ HbProgressBar::~HbProgressBar()
 
 /*!
     @beta
-    Return the inverted appearence property. 
+    Return the inverted appearance property. 
     \sa setInvertedAppearance()
 */
 bool HbProgressBar::invertedAppearance() const 
@@ -501,7 +509,7 @@ QString HbProgressBar::maxText() const
 /*!
     @beta 
     Set the MinMaxtext visibility. true for showing text,false for hiding the text.
-    The default is  false. Min Max text doesnt have a background and would have a transparent background.
+    The default is  false. Min Max text does not have a background and would have a transparent background.
     \param visible true or false.
     \sa isMinMaxTextVisible().
 */
@@ -515,6 +523,15 @@ void HbProgressBar::setMinMaxTextVisible(bool visible)
         if(!d->mMinTextItem && !d->mMaxTextItem){
             d->createTextPrimitives();
         }
+        
+    // update primitve optimization, update only text primitives 
+    // incase of with and without min-max text
+    HbStyleOptionProgressBar progressBarOption;
+    initStyleOption(&progressBarOption);
+
+    style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);    
+    style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption); 
+
             d->mMinTextItem->show();
             d->mMaxTextItem->show();
     } else {
@@ -524,7 +541,7 @@ void HbProgressBar::setMinMaxTextVisible(bool visible)
         }
     }
     repolish();
-    updatePrimitives();
+    //updatePrimitives();
     }
 }
 
@@ -552,7 +569,7 @@ bool HbProgressBar::isMinMaxTextVisible() const
     AlignTop is equivalent to Left
     AlignBottom is equivalent to Right
 
-    \param alignment alignement for the min max text
+    \param alignment alignment for the min max text
     \sa isMinMaxTextVisible().
 
 */
@@ -567,7 +584,8 @@ void HbProgressBar::setMinMaxTextAlignment(Qt::Alignment alignment)
         if (d->mMinMaxTextVisible) {
             repolish();
         }
-        updatePrimitives();
+        // no need for primitve updation, only layout change is required
+        //updatePrimitives();
     }
 
 }
@@ -684,9 +702,7 @@ void HbProgressBar::initStyleOption(HbStyleOptionProgressBar *option) const
     option->inverted = d->mInvertedAppearance;
     option->stopWaitAnimation = false;
     option->minMaxTextAlignment = d->mMinMaxTextAlignment;
-    QRect rect((int)d->mFrame->boundingRect().x(),(int)d->mFrame->boundingRect().y(),(int)d->mFrame->boundingRect().width(),
-    (int)d->mFrame->boundingRect().height());
-    option->rect = rect;
+
 }
 
 /*!

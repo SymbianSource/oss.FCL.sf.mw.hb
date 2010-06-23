@@ -37,7 +37,7 @@ class HB_AUTOTEST_EXPORT HbTreeModelIterator : public QObject, public HbModelIte
     Q_OBJECT
 
 public:
-    HbTreeModelIterator(QAbstractItemModel *model = 0, QModelIndex rootIndex = QModelIndex(), bool useCache = true);
+    explicit HbTreeModelIterator(QAbstractItemModel *model = 0, QModelIndex rootIndex = QModelIndex(), bool useCache = true);
     ~HbTreeModelIterator();
 
     int indexCount(const QModelIndex &parent = QModelIndex()) const;
@@ -63,6 +63,7 @@ private slots:
     void rowsRemoved(const QModelIndex &parent, int start, int end);
     void columnsInserted(const QModelIndex &parent, int start, int end);
     void columnsRemoved(const QModelIndex &parent, int start, int end);
+    void modelLayoutChanged();
 
 private:
     Q_DECLARE_PRIVATE_D(d, HbTreeModelIterator)

@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputsctkeyboard.h"
+#include "hbinputsctkeyboard_p.h"
 
 #include <math.h>
 
@@ -33,8 +35,6 @@
 #include <hbframedrawer.h>
 #include <hbinputsettingproxy.h>
 
-#include "hbinputsctkeyboard.h"
-#include "hbinputsctkeyboard_p.h"
 #include "hbinputbuttongroup.h"
 #include "hbinputbutton.h"
 
@@ -45,8 +45,7 @@ const qreal HbLandscapeKeyboardWidthInUnits = 95.5;
 
 const int HbSctPortraitNumberOfRows = 5;
 const int HbSctPortraitNumberOfColumns = 5;
-const int HbPortraitButtonKeyCodeTable[HbSctPortraitNumberOfRows * HbSctPortraitNumberOfColumns] =
-{
+const int HbPortraitButtonKeyCodeTable[HbSctPortraitNumberOfRows *HbSctPortraitNumberOfColumns] = {
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
@@ -76,8 +75,7 @@ const int HbPortraitButtonKeyCodeTable[HbSctPortraitNumberOfRows * HbSctPortrait
 
 const int HbSctLandscapeNumberOfRows = 4;
 const int HbSctLandscapeNumberOfColumns = 10;
-const int HbLandscapeButtonKeyCodeTable[HbSctLandscapeNumberOfRows * HbSctLandscapeNumberOfColumns] =
-{
+const int HbLandscapeButtonKeyCodeTable[HbSctLandscapeNumberOfRows *HbSctLandscapeNumberOfColumns] = {
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
@@ -132,8 +130,8 @@ given key map data object and it also supports editor specific custom buttons.
 */
 
 HbSctKeyboardPrivate::HbSctKeyboardPrivate()
- : mType(HbKeyboardSctPortrait), mColumns(0), mRows(0),
-   mCharacterButtons(0), mPages(0), mActivePage(0)
+    : mType(HbKeyboardSctPortrait), mColumns(0), mRows(0),
+      mCharacterButtons(0), mPages(0), mActivePage(0)
 {
 }
 
@@ -151,7 +149,7 @@ void HbSctKeyboardPrivate::init()
         mType = HbKeyboardSctLandscape;
     }
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         mColumns = HbSctPortraitNumberOfColumns;
         mRows = HbSctPortraitNumberOfRows;
@@ -165,11 +163,11 @@ void HbSctKeyboardPrivate::init()
         buttonGroup->setGridSize(QSize(mColumns, mRows));
 
         int key = 0;
-        QList<HbInputButton*> buttons;
+        QList<HbInputButton *> buttons;
         for (int i = 0; i < mColumns * mRows; ++i) {
             HbInputButton *item = new HbInputButton(keyCode(i), QPoint(key % mColumns, key / mColumns));
             buttons.append(item);
- 
+
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 ++mCharacterButtons;
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeSpace) {
@@ -186,13 +184,13 @@ void HbSctKeyboardPrivate::init()
         }
         buttonGroup->setButtons(buttons);
 
-        QObject::connect(buttonGroup, SIGNAL(buttonPressed(const QKeyEvent&)), q, SLOT(sendKeyPressEvent(const QKeyEvent&)));
-        QObject::connect(buttonGroup, SIGNAL(buttonDoublePressed(const QKeyEvent&)), q, SLOT(sendKeyDoublePressEvent(const QKeyEvent&)));
-        QObject::connect(buttonGroup, SIGNAL(buttonReleased(const QKeyEvent&)), q, SLOT(sendKeyReleaseEvent(const QKeyEvent&)));
-        QObject::connect(buttonGroup, SIGNAL(buttonLongPressed(const QKeyEvent&)), q, SLOT(sendLongPressEvent(const QKeyEvent&)));
-        QObject::connect(buttonGroup, SIGNAL(pressedButtonChanged(const QKeyEvent&, const QKeyEvent&)), q, SLOT(sendKeyChangeEvent(const QKeyEvent&, const QKeyEvent&)));
+        QObject::connect(buttonGroup, SIGNAL(buttonPressed(const QKeyEvent &)), q, SLOT(sendKeyPressEvent(const QKeyEvent &)));
+        QObject::connect(buttonGroup, SIGNAL(buttonDoublePressed(const QKeyEvent &)), q, SLOT(sendKeyDoublePressEvent(const QKeyEvent &)));
+        QObject::connect(buttonGroup, SIGNAL(buttonReleased(const QKeyEvent &)), q, SLOT(sendKeyReleaseEvent(const QKeyEvent &)));
+        QObject::connect(buttonGroup, SIGNAL(buttonLongPressed(const QKeyEvent &)), q, SLOT(sendLongPressEvent(const QKeyEvent &)));
+        QObject::connect(buttonGroup, SIGNAL(pressedButtonChanged(const QKeyEvent &, const QKeyEvent &)), q, SLOT(sendKeyChangeEvent(const QKeyEvent &, const QKeyEvent &)));
     }
- 
+
     QObject::connect(q, SIGNAL(flickEvent(HbInputVkbWidget::HbFlickDirection)), buttonGroup, SLOT(cancelButtonPress()));
 }
 
@@ -214,9 +212,9 @@ void HbSctKeyboardPrivate::applyEditorConstraints()
         return;
     }
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
-        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             HbInputButton *item = buttons.at(i);
 
@@ -257,10 +255,10 @@ void HbSctKeyboardPrivate::updateKeyCodes()
         mFlickAnimation = true;
     }
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         int key = mActivePage * mCharacterButtons;
-        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
@@ -280,16 +278,16 @@ void HbSctKeyboardPrivate::updateButtons()
 {
     Q_Q(HbSctKeyboard);
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         int key = mActivePage * mCharacterButtons;
-        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
 
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
-                if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(HbModifierNone)!= QString("")) {
+                if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(HbModifierNone) != QString("")) {
                     QString keydata = keyboardMap->keys.at(key)->characters(HbModifierNone);
                     item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
                 } else {
@@ -310,13 +308,13 @@ changed later (for example when the input language changes) by calling
 setKeymap.
 */
 HbSctKeyboard::HbSctKeyboard(HbInputMethod *owner, const HbKeymap *keymap, QGraphicsItem *parent)
- : HbInputVkbWidget(*new HbSctKeyboardPrivate, parent)
+    : HbInputVkbWidget(*new HbSctKeyboardPrivate, parent)
 {
     if (!owner) {
         return;
     }
     Q_D(HbSctKeyboard);
-    d->mOwner = owner;    
+    d->mOwner = owner;
     setKeymap(keymap);
 
     const HbKeyboardMap *keyboardMap = keymap->keyboard(keyboardType());
@@ -341,14 +339,14 @@ changed later (for example when the input language changes) by calling
 setKeymap.
 */
 HbSctKeyboard::HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner,
-                             const HbKeymap *keymap, QGraphicsItem* parent)
- : HbInputVkbWidget(dd, parent)
+                             const HbKeymap *keymap, QGraphicsItem *parent)
+    : HbInputVkbWidget(dd, parent)
 {
     if (!owner) {
         return;
     }
     Q_D(HbSctKeyboard);
-    d->mOwner = owner;    
+    d->mOwner = owner;
     setKeymap(keymap);
 
     const HbKeyboardMap *keyboardMap = keymap->keyboard(keyboardType());
@@ -422,9 +420,9 @@ Updates button preview status.
 */
 void HbSctKeyboard::updateButtonPreviewStatus(bool status)
 {
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
-        buttonGroup->setButtonPreviewEnabled(status);   
+        buttonGroup->setButtonPreviewEnabled(status);
     }
 }
 
@@ -485,7 +483,7 @@ Release event is ignored.
 */
 void HbSctKeyboard::sendKeyChangeEvent(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent)
 {
-    if (pressEvent.key() != HbInputButton::ButtonKeyCodePageChange && 
+    if (pressEvent.key() != HbInputButton::ButtonKeyCodePageChange &&
         pressEvent.key() != HbInputButton::ButtonKeyCodeSmiley) {
         HbInputVkbWidget::sendKeyChangeEvent(releaseEvent, pressEvent);
     }

@@ -38,8 +38,8 @@ SUBDIRS += src
 !symbian {
     feature.files += $$HB_SOURCE_DIR/hb.prf
     feature.files += $$HB_BUILD_DIR/hb_install.prf
-    feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
-    feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
+    feature.files += $$HB_SOURCE_DIR/mkspecs/hb_functions.prf
+    feature.files += $$HB_SOURCE_DIR/mkspecs/docml2bin.prf
     feature.path = $$HB_FEATURES_DIR
     INSTALLS += feature
 }
@@ -63,7 +63,7 @@ INSTALLS += hbvar
 symbian {
     exists(rom):include(rom/rom.pri)
     install.depends += hbvar
-#    install.depends += cssbinary
+    install.depends += cssbinary
     install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/mkspecs/hb_functions.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
@@ -72,32 +72,33 @@ symbian {
 }
 
 # css binary generation
+cssbinmaker.input = $$HB_SOURCE_DIR/src/hbcore/resources/themes/style/hbdefault
+cssbinmaker.output = $$HB_BUILD_DIR/src/hbcore/resources/themes/hbdefault.cssbin
+cssbinmaker.commands = $$hbToolCommand(hbbincssmaker) -i $$cssbinmaker.input -o $$cssbinmaker.output
+QMAKE_DISTCLEAN += $$cssbinmaker.output
+QMAKE_EXTRA_TARGETS += cssbinmaker
 
-cssbinary.path = . #needed for install target
-cssbinary.sourcedir = $$PWD/src/hbcore/resources/themes/style/hbdefault
+cssbinary.depends = cssbinmaker
+cssbinary.path = $$HB_RESOURCES_DIR/themes
+cssbinary.files = $$cssbinmaker.output
+INSTALLS += cssbinary
+
 symbian {
-    cssbinary.targetfile = $${EPOCROOT}epoc32/data/z/resource/hb/themes/css.bin
-} else {
-    cssbinary.targetfile = $$HB_RESOURCES_DIR/themes/css.bin 
+    cssbinary.commands += $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/data/z/resource/hb/themes/)
+    cssbinary.commands += && $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/)
+    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/data/z/resource/hb/themes/$$cssbinary.files
+    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/$$cssbinary.files
+    QMAKE_EXTRA_TARGETS += cssbinary
 }
-cssbinary.commands = $$hbToolCommand(hbbincssmaker) -i $$cssbinary.sourcedir -o $$cssbinary.targetfile
-
-# copy generated css binary to symbian emulator directory
-symbian {
-    cssbinary.commands += && $$QMAKE_COPY $$hbNativePath($$cssbinary.targetfile) $$hbNativePath($${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/css.bin)
-}
-
-QMAKE_EXTRA_TARGETS += cssbinary
-#INSTALLS += cssbinary
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src
     test.commands += cd tsrc && $(MAKE) test
     autotest.depends = sub-src
     autotest.commands += cd tsrc && $(MAKE) autotest
-    loctest.depends = sub-src
-    loctest.commands += cd tsrc/loc && $(MAKE) loctest
-    QMAKE_EXTRA_TARGETS += test autotest loctest
+    unittest.depends = sub-src
+    unittest.commands += cd tsrc/unit && $(MAKE) test
+    QMAKE_EXTRA_TARGETS += test autotest unittest
 }
 
 exists(doc):include(doc/doc.pri)

@@ -25,7 +25,7 @@
 
 #include <hbglobal.h>
 #include "hbglobal_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include <QString>
 #include <QCoreApplication>
 

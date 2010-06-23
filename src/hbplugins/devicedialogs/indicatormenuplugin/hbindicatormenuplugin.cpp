@@ -110,7 +110,7 @@ bool HbIndicatorMenuPlugin::deviceDialogInfo(const QString &deviceDialogType,
     Q_UNUSED(parameters)
 
     info->group = IndicatorGroup;
-    info->flags = NoDeviceDialogFlags;
+    info->flags = ReceiveIndicatorStatus;
     info->priority = DefaultPriority;
 
     TRACE_EXIT

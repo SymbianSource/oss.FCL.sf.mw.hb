@@ -34,7 +34,7 @@
 class HB_CORE_EXPORT HbPhoneNumberFilter : public HbInputFilter
 {
 public:
-    static HbPhoneNumberFilter* instance();
+    static HbPhoneNumberFilter *instance();
     virtual ~HbPhoneNumberFilter();
     bool filter(QChar character);
 
@@ -51,12 +51,12 @@ private:
 class HB_CORE_EXPORT HbFormattedNumbersFilter : public HbInputFilter
 {
 public:
-    static HbFormattedNumbersFilter* instance();
+    static HbFormattedNumbersFilter *instance();
     virtual ~HbFormattedNumbersFilter();
     bool filter(QChar character);
 
 private:
-   HbFormattedNumbersFilter();
+    HbFormattedNumbersFilter();
 
 private:
     Q_DISABLE_COPY(HbFormattedNumbersFilter)
@@ -68,12 +68,12 @@ private:
 class HB_CORE_EXPORT HbDigitsOnlyFilter : public HbInputFilter
 {
 public:
-    static HbDigitsOnlyFilter* instance();
+    static HbDigitsOnlyFilter *instance();
     virtual ~HbDigitsOnlyFilter();
     bool filter(QChar character);
 
 private:
-   HbDigitsOnlyFilter();
+    HbDigitsOnlyFilter();
 
 private:
     Q_DISABLE_COPY(HbDigitsOnlyFilter)
@@ -84,13 +84,13 @@ private:
 //
 class HB_CORE_EXPORT HbUrlFilter : public HbInputFilter
 {
-public: 
-    static HbUrlFilter* instance();
+public:
+    static HbUrlFilter *instance();
     virtual ~HbUrlFilter();
     bool filter(QChar character);
 
 private:
-     HbUrlFilter();
+    HbUrlFilter();
 
 private:
     Q_DISABLE_COPY(HbUrlFilter)
@@ -102,8 +102,8 @@ private:
 //
 class HB_CORE_EXPORT HbEmailAddressFilter : public HbInputFilter
 {
-public: 
-    static HbEmailAddressFilter* instance();
+public:
+    static HbEmailAddressFilter *instance();
     virtual ~HbEmailAddressFilter();
     bool filter(QChar character);
 
@@ -120,7 +120,7 @@ private:
 class HB_CORE_EXPORT HbInputLowerCaseFilter : public HbInputFilter
 {
 public:
-    static HbInputLowerCaseFilter* instance();
+    static HbInputLowerCaseFilter *instance();
     virtual ~HbInputLowerCaseFilter() {}
     bool filter(QChar character);
 
@@ -137,7 +137,7 @@ private:
 class HB_CORE_EXPORT HbInputUpperCaseFilter : public HbInputFilter
 {
 public:
-    static HbInputUpperCaseFilter* instance();
+    static HbInputUpperCaseFilter *instance();
     virtual ~HbInputUpperCaseFilter() {}
     bool filter(QChar character);
 

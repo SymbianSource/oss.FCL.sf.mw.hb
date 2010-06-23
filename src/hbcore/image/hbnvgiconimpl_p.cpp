@@ -339,6 +339,20 @@ QPixmap HbNvgIconImpl::pixmap()
     EGL_DESTROY_CONTEXT(display, newContext);
 
     currentPixmap = QPixmap::fromImage(image);
+
+    // Apply mode
+    if (this->mode != QIcon::Normal) {
+        QStyleOption opt(0);
+        opt.palette = QApplication::palette();
+        currentPixmap = QApplication::style()->generatedIconPixmap(this->mode, currentPixmap, &opt);
+    }
+
+    // Apply color
+    if (this->color().isValid() && (this->mode != QIcon::Disabled)) {
+        QPixmap mask = currentPixmap.alphaChannel();
+        currentPixmap.fill(this->color());
+        currentPixmap.setAlphaChannel(mask);
+    }
     return currentPixmap;
 }
 

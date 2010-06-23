@@ -45,6 +45,8 @@ public:
 	int noOfStars;
 	QString unRatedGraphicsName;
 	QString ratedGraphicsName;
+    bool disableState;
+	bool pressedState;
 };
 
 #endif 

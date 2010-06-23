@@ -48,7 +48,7 @@ public:
     enum ProgressDialogType { ProgressDialog, WaitDialog };
 
     explicit HbProgressDialog(QGraphicsItem *parent = 0);
-    HbProgressDialog(ProgressDialogType type, QGraphicsItem *parent = 0);
+    explicit HbProgressDialog(ProgressDialogType type, QGraphicsItem *parent = 0);
     ~HbProgressDialog();
 
     int maximum() const;

@@ -279,23 +279,14 @@ QList<HbIndicatorInterface*>
     return indicatorList;
 }
 
-void HbIndicatorPluginManager::connectTo(QObject *widget)
+// Signal active indicators to target
+void HbIndicatorPluginManager::signalActiveIndicators(QObject *target)
 {
-    widget->disconnect(this);
-
-   //connect pluginmanager signals to indicatormenu slots, so that
-   //popup will get indicator updates.
-    widget->connect(this,
-                   SIGNAL(indicatorActivated(HbIndicatorInterface*)),
-                   SLOT(indicatorActivated(HbIndicatorInterface*)));
-    widget->connect(this,
-                   SIGNAL(indicatorRemoved(HbIndicatorInterface*)),
-                   SLOT(indicatorRemoved(HbIndicatorInterface*)));
     QList<HbIndicatorInterface*> addedIndicators = indicators();
 
     if (addedIndicators.count() > 0) {
         //initialize popup with added indicators.
-        QMetaObject::invokeMethod(widget, "indicatorsActivated",
+        QMetaObject::invokeMethod(target, "indicatorsActivated",
             Qt::DirectConnection,
             Q_ARG(QList<HbIndicatorInterface*>, addedIndicators));
     }

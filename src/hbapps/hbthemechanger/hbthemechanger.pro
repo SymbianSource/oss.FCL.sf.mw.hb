@@ -30,6 +30,8 @@ TARGET.EPOCHEAPSIZE = 0x20000 0x1000000
 QT += network
 DEFINES += HB_RESOURCES_DIR=\"\\\"$${HB_RESOURCES_DIR}\\\"\"
 
+CONFIG += hb
+
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin
 
@@ -46,6 +48,7 @@ SOURCES += themechangermain.cpp
 
 symbian {
     TARGET.CAPABILITY += WriteDeviceData
+    SKINICON = qtg_large_personalization
 }
 
 # installation

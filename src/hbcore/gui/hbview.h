@@ -47,6 +47,7 @@ class HB_CORE_EXPORT HbView : public HbWidget
     Q_PROPERTY(QString title READ title WRITE setTitle)
     Q_PROPERTY(HbIcon icon READ icon WRITE setIcon)
     Q_PROPERTY(bool contentFullScreen READ isContentFullScreen WRITE setContentFullScreen)
+    Q_PROPERTY(HbViewFlags viewFlags READ viewFlags WRITE setViewFlags)
 
 public:
 

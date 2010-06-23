@@ -45,7 +45,9 @@ public:
     virtual void resizeEvent(QGraphicsSceneResizeEvent *event);
     void updateTicks( );
     void setTickPosition(Hb::SliderTickPositions position);
-    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);    
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);  
+    void createTicks( );
+
 
 protected:
     void polish( HbStyleParameters& params );

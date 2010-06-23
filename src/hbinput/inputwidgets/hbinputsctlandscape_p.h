@@ -59,7 +59,7 @@ public:
 
     void getSpecialCharacters();
 
-    void setSctButtons(const QString& characters);
+    void setSctButtons(const QString &characters);
     void setAsFunctionButton(int index, const HbIcon &icon, const QString &text);
     void latchRangeButton(int buttonId);
 

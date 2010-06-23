@@ -45,7 +45,6 @@
 class HbToolButton;
 class HbStyle;
 class HbTextItem;
-class HbAction;
 
 class HbToolButtonPrivate : public HbAbstractButtonPrivate
 {
@@ -63,7 +62,7 @@ public:
     void setLayoutProperty(const char *name, bool value);
     QSizeF getMinimumSize();
 
-    QPointer<HbAction> action;
+    QPointer<QAction> action;
 
     HbTextItem *textItem; //Workaround should be QGraphicsItem
     QGraphicsItem *iconItem;

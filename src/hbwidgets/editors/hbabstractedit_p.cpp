@@ -45,7 +45,7 @@
 #include "hbcolorscheme.h"
 #include "hbsmileyengine_p.h"
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hbinputeditorinterface.h"
 #include "hbinputvkbhost.h"
 
@@ -198,7 +198,8 @@ HbAbstractEditPrivate::HbAbstractEditPrivate () :
     wasGesture(false),
     smileysEnabled(false),
     smileyEngine(0),
-    formatDialog(0)
+    formatDialog(0),
+    updatePrimitivesInProgress(false)
 {
 }
 
@@ -211,6 +212,8 @@ void HbAbstractEditPrivate::init()
     Q_Q(HbAbstractEdit);
 
     canvas = new HbEditItem(q);
+    canvas->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
+
 
     setContent(Qt::RichText, QString());
 
@@ -238,6 +241,7 @@ void HbAbstractEditPrivate::init()
     q->setFlag(QGraphicsItem::ItemIsFocusable);
     q->setFlag(QGraphicsItem::ItemAcceptsInputMethod);
     q->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+    q->setFlag(QGraphicsItem::ItemHasNoContents, false);
     q->setFocusPolicy(Qt::StrongFocus);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -368,6 +372,10 @@ bool HbAbstractEditPrivate::findNextPrevAnchor(const QTextCursor& from, bool nex
 
 void HbAbstractEditPrivate::setCursorPosition(int pos, QTextCursor::MoveMode mode)
 {
+    if (cursor.isNull()) {
+        cursor = QTextCursor(doc);
+    }
+
     cursor.setPosition(pos, mode);
 
     cursorChanged(HbValidator::CursorChangeFromMouse);
@@ -972,7 +980,7 @@ void HbAbstractEditPrivate::sendMouseEventToInputContext(const QPointF &tapPos) 
     QTextLayout *layout = cursor.block().layout();
     int cursorPos = hitTest(tapPos, Qt::ExactHit);
 
-    if (cursorPos == -1) {
+    if (layout && cursorPos == -1) {
             cursorPos = cursor.position() + layout->preeditAreaText().length();
     }
 

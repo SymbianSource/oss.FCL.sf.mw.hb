@@ -52,6 +52,172 @@ static const int reallocIdentifier = 0xC0000000;
 
 HbSharedMemoryManager *HbSharedMemoryManager::memManager = 0;
 
+#ifdef HB_HAVE_PROTECTED_CHUNK // Symbian, protected chunk
+HbSharedMemoryWrapper::HbSharedMemoryWrapper(const QString &key, QObject *parent) :
+    wrapperError(QSharedMemory::NoError),        
+    key(key),
+    memorySize(0),
+    memory(0)
+{
+    Q_UNUSED(parent);
+}
+
+HbSharedMemoryWrapper::~HbSharedMemoryWrapper()
+{
+    chunk.Close();
+
+    memory = 0;
+    memorySize = 0;
+
+}
+
+void HbSharedMemoryWrapper::setErrorString(const QString &function, TInt errorCode)
+{
+    if (errorCode == KErrNone)
+        return;
+    switch (errorCode) {
+    case KErrAlreadyExists:
+        wrapperError = QSharedMemory::AlreadyExists;
+        errorString = QSharedMemory::tr("%1: already exists").arg(function);
+    break;
+    case KErrNotFound:
+        wrapperError = QSharedMemory::NotFound;
+        errorString = QSharedMemory::tr("%1: doesn't exists").arg(function);
+        break;
+    case KErrArgument:
+        wrapperError = QSharedMemory::InvalidSize;
+        errorString = QSharedMemory::tr("%1: invalid size").arg(function);
+        break;
+    case KErrNoMemory:
+        wrapperError = QSharedMemory::OutOfResources;
+        errorString = QSharedMemory::tr("%1: out of resources").arg(function);
+        break;
+    case KErrPermissionDenied:
+        wrapperError = QSharedMemory::PermissionDenied;
+        errorString = QSharedMemory::tr("%1: permission denied").arg(function);
+        break;
+    default:
+        errorString = QSharedMemory::tr("%1: unknown error %2").arg(function).arg(errorCode);
+        wrapperError = QSharedMemory::UnknownError;
+    }
+}
+
+bool HbSharedMemoryWrapper::create(int size, QSharedMemory::AccessMode mode)
+{
+    Q_UNUSED(mode);
+    TPtrC ptr(TPtrC16(static_cast<const TUint16*>(key.utf16()), key.length()));
+
+    TChunkCreateInfo info;
+    info.SetReadOnly();
+    info.SetGlobal(ptr);
+    info.SetNormal(size, size);
+    
+    //TInt err = chunk.CreateGlobal(ptr, size, size); // Original Qt version
+    TInt err = chunk.Create(info);
+
+    QString function = QLatin1String("HbSharedMemoryWrapper::create");    
+    setErrorString(function, err);
+
+    if (err != KErrNone)
+        return false;
+
+    // Zero out the created chunk
+    Mem::FillZ(chunk.Base(), chunk.Size());
+
+    memorySize = chunk.Size();
+    memory = chunk.Base();
+    
+    return true;
+}
+
+QSharedMemory::SharedMemoryError HbSharedMemoryWrapper::error() const
+{
+    return wrapperError;
+}
+
+bool HbSharedMemoryWrapper::attach(QSharedMemory::AccessMode mode)
+{
+    Q_UNUSED(mode);    
+    // Grab a pointer to the memory block
+    if (!chunk.Handle()) {
+        TPtrC ptr(TPtrC16(static_cast<const TUint16*>(key.utf16()), key.length()));        
+
+        TInt err = KErrNoMemory;
+
+        err = chunk.OpenGlobal(ptr, false);
+
+        if (err != KErrNone) {
+            QString function = QLatin1String("HbSharedMemoryWrapper::attach");        
+            setErrorString(function, err);
+            return false;
+        }
+    }
+
+    memorySize = chunk.Size();
+    memory = chunk.Base();
+
+    return true;
+}
+
+void *HbSharedMemoryWrapper::data()
+{
+    return memory;
+}
+
+int HbSharedMemoryWrapper::size() const
+{
+    return memorySize;
+}
+#else // use QSharedMemory
+HbSharedMemoryWrapper::HbSharedMemoryWrapper(const QString &key, QObject *parent)
+{
+    chunk = new QSharedMemory(key, parent);
+}
+
+HbSharedMemoryWrapper::~HbSharedMemoryWrapper()
+{
+    delete chunk;
+    chunk = 0;
+}
+
+bool HbSharedMemoryWrapper::create(int size, QSharedMemory::AccessMode mode)
+{
+    if (chunk) {
+        return chunk->create(size, mode);
+    }
+    return false;
+}
+
+QSharedMemory::SharedMemoryError HbSharedMemoryWrapper::error() const
+{
+    return chunk->error();
+}
+
+bool HbSharedMemoryWrapper::attach(QSharedMemory::AccessMode mode)
+{
+    if (chunk) {
+        return chunk->attach(mode);
+    }
+    return false;
+}
+
+void *HbSharedMemoryWrapper::data()
+{
+    if (chunk) {
+        return chunk->data();
+    }
+    return 0;
+}
+
+int HbSharedMemoryWrapper::size() const
+{
+    if (chunk) {
+        return chunk->size();
+    }
+    return 0;
+}
+#endif
+
 /* Functions implementation of HbSharedMemoryManager class */
 
 /**
@@ -66,7 +232,7 @@ bool HbSharedMemoryManager::initialize()
         return true;
     }
     bool success = false;
-    chunk = new QSharedMemory(HB_THEME_SHARED_PIXMAP_CHUNK);
+    chunk = new HbSharedMemoryWrapper(HB_THEME_SHARED_PIXMAP_CHUNK);
     // check if app filename is same as server filename ..
     // ToDo: improve server identification logic.. UID on symbian?
     const QString &appName = HbMemoryUtils::getCleanAppName();
@@ -113,15 +279,20 @@ bool HbSharedMemoryManager::initialize()
 
 #ifdef Q_OS_SYMBIAN
             if (!binCSSConverterApp) {
-                QString memoryFile("z:/resource/hb/themes/css.bin");
+                QString memoryFile("z:/resource/hb/themes/hbdefault.cssbin");
                 memoryFileSize = loadMemoryFile(memoryFile);
             }
 #endif
             // Put main allocator after the memory file or if memory file was not loaded, after chunk header.
             chunkHeader->mainAllocatorOffset = memoryFileSize ? ALIGN(memoryFileSize)
                                                               : sizeof(HbSharedChunkHeader);
+            // Clear also allocator identifier so that they will not try to re-connect
+            int *mainAllocatorIdentifier = address<int>(chunkHeader->mainAllocatorOffset);
+            *mainAllocatorIdentifier = 0;
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
+            int *subAllocatorIdentifier = address<int>(chunkHeader->subAllocatorOffset);
+            *subAllocatorIdentifier = 0;
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
             

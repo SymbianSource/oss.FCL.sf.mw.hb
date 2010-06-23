@@ -34,22 +34,33 @@
 class HB_CORE_EXPORT HbInputLanguage
 {
 public:
-    HbInputLanguage() : mLanguage((QLocale::Language)0), mVariant(QLocale::AnyCountry)  
-        {}
+    HbInputLanguage() : mLanguage((QLocale::Language)0), mVariant(QLocale::AnyCountry)
+    {}
 
     HbInputLanguage(QLocale::Language language, QLocale::Country variant = QLocale::AnyCountry)
         : mLanguage(language), mVariant(variant)
-        {}
+    {}
 
     HbInputLanguage(const HbInputLanguage &other) {
         mLanguage = other.mLanguage;
         mVariant = other.mVariant;
     }
 
-    QLocale::Language language() const { return mLanguage; }
-    QLocale::Country variant() const { return mVariant; }
-    bool undefined() const { return (mLanguage == (QLocale::Language)0); }
-    bool defined() const { return (mLanguage != (QLocale::Language)0); }
+    QLocale::Language language() const {
+        return mLanguage;
+    }
+
+    QLocale::Country variant() const {
+        return mVariant;
+    }
+
+    bool undefined() const {
+        return (mLanguage == (QLocale::Language)0);
+    }
+
+    bool defined() const {
+        return (mLanguage != (QLocale::Language)0);
+    }
 
     bool operator==(const HbInputLanguage &other) const {
         return (mLanguage == other.mLanguage && mVariant == other.mVariant);
@@ -64,7 +75,7 @@ public:
     }
 
     bool operator!=(const QLocale::Language language) const {
-         return (mLanguage != language);
+        return (mLanguage != language);
     }
 
     QString localisedName();

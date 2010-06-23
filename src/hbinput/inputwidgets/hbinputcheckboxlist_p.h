@@ -38,16 +38,16 @@ public:
     explicit HbInputCheckBoxList(QGraphicsItem *parent = 0);
     ~HbInputCheckBoxList();
 
-    HbAbstractViewItem* createItem();
+    HbAbstractViewItem *createItem();
     bool canSetModelIndex(const QModelIndex &index) const;
 
 public slots:
     void itemActivated(const QModelIndex &index);
 
 protected:
-    HbWidget* createCustomWidget();
+    HbWidget *createCustomWidget();
 
-    HbInputCheckBoxListPrivate * const d_ptr;
+    HbInputCheckBoxListPrivate *const d_ptr;
 
 private:
     HbInputCheckBoxList(const HbInputCheckBoxList &other);

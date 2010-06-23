@@ -32,6 +32,7 @@
 #include <hbinputmodeproperties.h>
 #include <hbinputdef.h>
 #include <hbinputpredictioncallback.h>
+#include "hbinputspellquerydialog.h"
 
 class HbInputAbstractMethod;
 class QMouseEvent;
@@ -68,7 +69,7 @@ public:
         HbInputModeActionSetupAutoCompletion, // setting up of autocompletion
 
         // focus change
-        HbInputModeActionFocusRecieved, // focus recived state
+        HbInputModeActionFocusRecieved, // focus received state
         HbInputModeActionFocusLost, // focus lost state
         HbInputModeActionCancelButtonPress,
 		HbInputModeActionCloseSpellQuery
@@ -187,7 +188,8 @@ public:
     virtual void candidatePopupClosed(QString activatedWord, int closingKey);
     virtual void showExactWordPopupIfNeeded();
     void closeSpellQueryDialog();
-    void spellQueryDialogClosed(QObject *savedFocusObject,bool isOk,QString string);
+    void spellQueryDialogClosed(QObject *savedFocusObject,HbInputSpellQuery::HbSpellCloseReason closeReason,const QString &string);
+    void setAutocompletionStatus(bool status);  
 public slots:
     // different utility popup callbacks
     virtual void inputQueryPopupClosed(QString activatedWord, int closingKey);    

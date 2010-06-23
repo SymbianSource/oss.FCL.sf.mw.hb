@@ -64,6 +64,9 @@ public:
     int type( ) const {
         return Type;
     }
+protected:
+
+    QSizeF sizeHint( Qt::SizeHint which, const QSizeF &constraint = QSizeF() ) const;
 
 public slots:
 

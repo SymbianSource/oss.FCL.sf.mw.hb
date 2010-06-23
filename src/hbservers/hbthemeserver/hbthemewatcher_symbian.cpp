@@ -81,10 +81,7 @@ void CHbThemeWatcher::RunL()
         return;
     }
     
-    QFile file(iFile);
-    if (file.open(QIODevice::ReadOnly)) {
-        file.close();
-
+    if (QFile::exists(iFile)) {
         // theme exists continue watching
         TBuf<256> fileToWatch(iFile.utf16());
         iFs.NotifyChange(ENotifyAll, iStatus, fileToWatch);

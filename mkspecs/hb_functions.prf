@@ -56,13 +56,11 @@ defineTest(hbAddLibrary) {
 
     LIBS *= -L$${HB_BUILD_DIR}/lib
     LIBS *= -l$$hbLibraryTarget($$LIBRARY)
-    QMAKE_RPATHDIR *= $${HB_BUILD_DIR}/lib
     unix:HB_COVERAGE_EXCLUDE += \"*/$$COLLECTION/*\"
 
     export(LIBS)
     export(INCLUDEPATH)
     export(DEPENDPATH)
-    export(QMAKE_RPATHDIR)
     export(HB_COVERAGE_EXCLUDE)
     return(true)
 }
@@ -131,4 +129,19 @@ defineReplace(hbToolCommand) {
 
     # fall back to <builddir>/bin
     return($$hbNativePath($$HB_BUILD_DIR/bin/$$1))
+}
+
+# params: <file> <dir>
+defineReplace(hbCopyCommand) {
+    file = $$hbNativePath($$1)
+    dir = $$hbNativePath($$2)
+
+    chk_dir_exists = $$QMAKE_CHK_DIR_EXISTS $$dir
+    mkdir = $$QMAKE_MKDIR $$dir
+    copy = $$QMAKE_COPY $$file $$dir
+
+    hbUnixStyle():chk_dir_exists_mkdir = $$chk_dir_exists || $$mkdir
+    else:chk_dir_exists_mkdir = $$chk_dir_exists $$mkdir
+
+    return(($$chk_dir_exists_mkdir) && $$copy)
 }

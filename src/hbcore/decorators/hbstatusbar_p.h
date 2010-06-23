@@ -58,6 +58,7 @@ public slots:
 signals:
     void activated(const QList<IndicatorClientInfo> &clientInfo);
     void deactivated(const QList<IndicatorClientInfo> &clientInfo);
+    void allActivated(const QList<IndicatorClientInfo> &clientInfo);
 
 protected:
     void initStyleOption(HbStyleOptionStatusBar *option) const;

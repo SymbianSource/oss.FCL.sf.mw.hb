@@ -44,7 +44,7 @@ class HB_WIDGETS_EXPORT HbAbstractItemView : public HbScrollArea
     
     Q_ENUMS(SelectionMode ScrollHint)  
     Q_FLAGS(ItemAnimations)
-	
+
     Q_PROPERTY(bool itemRecycling READ itemRecycling WRITE setItemRecycling)
     Q_PROPERTY(SelectionMode selectionMode READ selectionMode WRITE setSelectionMode)
     Q_PROPERTY(QString layoutName READ layoutName WRITE setLayoutName)
@@ -124,7 +124,7 @@ public:
     bool uniformItemSizes() const;
 
     HbModelIterator *modelIterator() const;
-	
+
     void setEnabledAnimations(ItemAnimations flags);
     ItemAnimations enabledAnimations() const;
 

@@ -77,6 +77,7 @@ signals:
     void titleBarStateChanged();
     void activated(const QList<IndicatorClientInfo> &clientInfo);
     void deactivated(const QList<IndicatorClientInfo> &clientInfo);
+    void allActivated(const QList<IndicatorClientInfo> &clientInfo);
 
 public slots:
     void gestureRight();

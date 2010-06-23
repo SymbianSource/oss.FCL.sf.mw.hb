@@ -74,7 +74,53 @@ const int HbViewItemPressDelay = 50;
     If derived abstract view item has transient state information that is not meaningful to store within model index (child item cursor 
     position selection areas etc.) this information can be supplied to transient state model. Transient state model is maintained 
     internally by abstract item view. 
+
+
+    \primitives
+    \primitive{background} HbIconItem representing the item background. This primitive exists in cases the model's Qt::BackgroundRole returns HbIcon or QBrush for this item.
+    \primitive{frame} HbFrameItem representing the background frame of the item. This primitive exists if background primitive does not exist and the model's Qt::BackgroundRole returns HbFrameBackground or there is a default frame set with the setDefaultFrame(). An item can have either the frame or the background primitive, but not the both at the same time.
+    \primitive{selection-icon} HbIconItem representing the checkbox in the multi selection mode.
+    \primitive{multiselection-toucharea} HbTouchArea used in extending the touch area of the selection-icon. 
 */
+
+/*!
+    \enum HbAbstractViewItem::SelectionAreaType
+
+    Enumeration specifies selection area types. 
+    
+    Multiselection selection mode may operate in contiguous selection mode, in which items are selected 
+    or deselected by panning over items. Normal multiselection functionality is available also in this mode.
+    Location of touch down gesture determines whether contiguous selection mode is activated.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+/*!
+    \var HbAbstractViewItem::SingleSelection
+
+    Selection area for single selection mode.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+
+/*!
+    \var HbAbstractViewItem::MultiSelection
+
+    Selection area for multiple selection mode.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+
+/*!
+    \var HbAbstractViewItem::ContiguousSelection
+
+    Selection area for contiguous selection mode. 
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
 
 /*!
     \fn void HbAbstractViewItem::pressed(const QPointF &position)
@@ -155,6 +201,11 @@ void HbAbstractViewItemPrivate::init()
     }
 }
 
+/*!
+    Returns Hb::ModelItemType of this view item.
+
+    \sa Hb::ModelItemType
+*/
 int HbAbstractViewItemPrivate::modelItemType() const
 {
     return mIndex.data(Hb::ItemTypeRole).toInt();
@@ -517,11 +568,11 @@ void HbAbstractViewItem::initStyleOption(HbStyleOptionAbstractViewItem *option) 
     Default selection areas are for
     \li HbAbstractViewItem::SingleSelection mode: whole item
     \li HbAbstractViewItem::MultiSelection mode: whole item.
-    \li HbAbstractItemView::NoSelection mode: none
+    \li HbAbstractViewItem::ContiguousSelection mode: area of HbStyle::P_ItemViewItem_touchmultiselection icon.
 
     The \a selectionAreaType tells what kind of selection area is requested.  The parameter value ContiguousSelection returns 
-	the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
-	the HbStyle::P_ItemViewItem_touchmultiselection.
+    the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
+    the HbStyle::P_ItemViewItem_touchmultiselection.
     
 */
 bool HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
@@ -613,6 +664,10 @@ QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVarian
             }
             break;
         }
+        case ItemEnabledHasChanged: {
+            updateChildItems();
+            break;
+        }
         default:
             break;
     }
@@ -623,7 +678,7 @@ QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVarian
 /*!
     \reimp
 
-    To optimise loading css/xml definitions to take place only once, this function should be
+    To optimize loading css/xml definitions to take place only once, this function should be
     called only after other primitives (child items) has been created.
 
 */
@@ -776,7 +831,7 @@ void HbAbstractViewItem::updateChildItems()
     GraphicsItemFlags itemFlags = flags();
     Qt::ItemFlags indexFlags = d->mIndex.flags();
 
-    if (indexFlags & Qt::ItemIsEnabled) {
+    if ((indexFlags & Qt::ItemIsEnabled) && sd->mItemView && sd->mItemView->isEnabled()) {
         if (!(itemFlags & QGraphicsItem::ItemIsFocusable)) {
             itemFlags |= QGraphicsItem::ItemIsFocusable;
             setFocusPolicy(sd->mPrototype->focusPolicy());

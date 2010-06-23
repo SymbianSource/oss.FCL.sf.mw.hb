@@ -39,6 +39,11 @@ public:
     HbInputSpellQuery(HbInputMethod *mOwner,HbInputPredictionHandler *predictionHandler);
     ~HbInputSpellQuery();
     void launch(QString editorText);
+    enum HbSpellCloseReason {
+        HbOkPressed,
+        HbCancelPressed,
+        HbForceClose
+    };
 public slots:
     void dialogClosed(HbAction* action);    
 private:

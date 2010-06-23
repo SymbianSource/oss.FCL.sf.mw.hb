@@ -30,7 +30,7 @@
 #include <hbglobal.h>
 #include <hbwidget.h>
 #include <hbstring_p.h>
-#include <hbmeshlayout_p.h>
+#include <hbanchorlayout.h>
 #include <hbmemorymanager_p.h>
 #include "hbwidgetloader_p.h"
 #include "hbwidgetloaderactions_p.h"
@@ -41,9 +41,9 @@
 
 // Uncomment the following in order to get additional debug prints
 //#define HB_DOCUMENTLOADER_DEBUG
- 
+
 #ifndef HB_DOCUMENTLOADER_DEBUG
-#define HB_DOCUMENTLOADER_PRINT(a) 
+#define HB_DOCUMENTLOADER_PRINT(a)
 #else
 #include <QDebug>
 #define HB_DOCUMENTLOADER_PRINT(a) qDebug() << QString(a);
@@ -58,7 +58,7 @@ class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
         void setWidget( HbWidget *widget );
 #ifndef HB_BIN_CSS
         bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
                                 const QString &dst, Hb::Edge dstEdge,
                                 const HbXmlLengthValue &spacing, const QString &spacer = QString() );
 #endif
@@ -68,7 +68,7 @@ class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
 
         HbWidget *mWidget;
     private:
-        HbMeshLayout *mLayout;
+        HbAnchorLayout *mLayout;
 };
 
 class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
@@ -77,7 +77,7 @@ class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
         HbWidgetLoaderMemoryActions();
         virtual ~HbWidgetLoaderMemoryActions();
         bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
                                 const QString &dst, Hb::Edge dstEdge,
                                 const HbXmlLengthValue &spacing, const QString &spacer = QString() );
 

@@ -163,6 +163,7 @@ void HbSearchPanelPrivate::constructUi()
     if(mCancelEnabled) {
         addCancelButton();
     }
+    q->setFocusProxy(mLineEdit);
 }
 
 void HbSearchPanelPrivate::_q_hideClicked()

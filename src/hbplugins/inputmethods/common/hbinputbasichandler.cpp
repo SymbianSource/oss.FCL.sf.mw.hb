@@ -172,6 +172,8 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
         commitAndUpdate(qc);
         }
         break;
+    case HbInputButton::ButtonKeyCodeSettings:
+		break;
     default:
         ret = HbInputModeHandler::filterEvent(event);
         break;

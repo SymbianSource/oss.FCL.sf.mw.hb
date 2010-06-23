@@ -60,11 +60,9 @@ private:
     HbIndicatorGroup::IndicatorType mIndicatorType;
     QList<QGraphicsItem*> mIcons;   
     QList<IndicatorClientInfo> mIndicators;
-    bool mProgressAdded;
     bool mIndicatorAdded;
     QList<QPointF> mOriginalPos;
     QStringList mRemovedIndicators;
-    bool mProgressAnimationFound;
 };
 
 #endif // HBINDICATORGROUP_P_P_H

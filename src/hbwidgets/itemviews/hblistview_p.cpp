@@ -25,6 +25,7 @@
     
 #include "hblistview_p.h"
 #include "hblistview.h"
+#include "hbscrollbar.h"
 
 #include "hblistviewitem.h"
 #include "hbabstractitemcontainer_p.h"
@@ -288,3 +289,23 @@ bool HbListViewPrivate::panTriggered(QGestureEvent *event)
     return HbAbstractItemViewPrivate::panTriggered(event);
 }
 
+void HbListViewPrivate::arrangeModeSetup(bool newMode)
+{
+    Q_Q(HbListView);
+
+    if (newMode) {
+        mOriginalInteractiveScrollBar = q->verticalScrollBar()->isInteractive();
+        q->verticalScrollBar()->setInteractive(true);
+        mOriginalLongPressEnabled = q->longPressEnabled();
+        q->setLongPressEnabled(false);
+        mOriginalFriction = mFrictionEnabled;
+        q->setFrictionEnabled(false);
+    } else {
+        q->verticalScrollBar()->setInteractive(mOriginalInteractiveScrollBar);
+        q->setLongPressEnabled(mOriginalLongPressEnabled);
+        q->setFrictionEnabled(mOriginalFriction);
+    }
+
+    mArrangeMode = newMode;
+        
+}

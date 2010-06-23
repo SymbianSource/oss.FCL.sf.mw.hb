@@ -82,7 +82,6 @@ public:
     void showAutoCompletionFieldCandidates();
     void initializeModeHandlers();
     bool isSctModeActive() const;
-    HbInputVkbWidget::HbFlickDirection flickDirection() const;
     void launchCandidatePopup(const QStringList& candidates);
     void closeKeypad();
     void selectSpecialCharacterTableMode();
@@ -111,9 +110,10 @@ public slots:
     void smileySelected(QString smiley);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void aboutToActivateCustomAction(HbAction *custAction);
+    void autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
 
 private:
-    // mCurrentKeypad contains currently active keypad, we dont need to have
+    // mCurrentKeypad contains currently active keypad, we don't need to have
     // anyother variables to tell us which is current keypad
     QPointer<HbInputVkbWidget> mCurrentKeypad;
     // contains itut keypad

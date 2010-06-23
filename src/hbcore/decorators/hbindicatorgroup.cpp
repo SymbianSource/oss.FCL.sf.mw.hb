@@ -23,8 +23,6 @@
 **
 ****************************************************************************/
 
-#include <hbiconanimationmanager.h>
-
 #include "hbindicatorgroup_p.h"
 #include "hbindicatorgroup_p_p.h"
 #include "hbstyleoptionindicatorgroup_p.h"
@@ -39,8 +37,7 @@
 #endif // defined(Q_OS_SYMBIAN)
 
 HbIndicatorGroupPrivate::HbIndicatorGroupPrivate() :
-    mIndicatorType(HbIndicatorGroup::NotificationType),
-    mProgressAdded(false), mIndicatorAdded(false), mProgressAnimationFound(false)
+    mIndicatorType(HbIndicatorGroup::NotificationType), mIndicatorAdded(false)
 {
 }
 
@@ -57,8 +54,6 @@ void HbIndicatorGroupPrivate::delayedConstruction()
         QStringList() << "indicator_appear" <<  "indicator_disappear" << "indicator_move_right" << "indicator_move_left",
         QStringList() << "appear" << "disappear" <<  "move_right" << "move_left");
 #endif
-
-    mProgressAnimationFound = HbIconAnimationManager::global()->addDefinitionFile("qtg_status_progress.axml");
 }
 
 void HbIndicatorGroupPrivate::init()
@@ -69,28 +64,8 @@ void HbIndicatorGroupPrivate::init()
 
 int HbIndicatorGroupPrivate::setIconName(HbStyleOptionIndicatorGroup &option, int index)
 {
-    bool ok(mProgressAdded);
-    while (ok && mIndicators.count() > index) {
-        if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
-            ++index;
-        } else {
-            ok = false;
-        }
-    }
-
     if (mIndicators.count() > index) {
-        if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
-            if (!mProgressAdded) {
-                if (mProgressAnimationFound) {
-                    option.iconName = "qtg_status_progress";
-                } else {
-                    option.iconName = "qtg_status_progress_1";
-                }
-                mProgressAdded = true;
-            }
-        } else {
-            option.iconName = mIndicators.at(index).iconPath;
-        }
+        option.iconName = mIndicators.at(index).iconPath;
     } else {
         option.iconName = "";
     }
@@ -114,6 +89,12 @@ void HbIndicatorGroupPrivate::updateIndicators(const QList<IndicatorClientInfo> 
         int index = findIndicator(clientInfo.at(i));
         if (index >= 0) {
             mIndicators[index].iconPath = clientInfo.at(i).iconPath;
+        } else {
+            const IndicatorClientInfo &indicator = clientInfo.at(i);
+            if (canAddIndicator(indicator)) {
+                mIndicators.prepend(indicator);
+                mIndicatorAdded = true;
+            }
         }
     }
 }
@@ -142,15 +123,7 @@ void HbIndicatorGroupPrivate::removeIndicator(const IndicatorClientInfo &indicat
 {
     int index = findIndicator(indicator);
     if (index >= 0) {
-        if (mIndicators.at(index).category == HbIndicatorInterface::ProgressCategory) {
-            if (mProgressAnimationFound) {
-                mRemovedIndicators.append("qtg_status_progress");
-            } else {
-                mRemovedIndicators.append("qtg_status_progress_1");
-            }
-        } else {
-            mRemovedIndicators.append(mIndicators.at(index).iconPath);
-        }
+        mRemovedIndicators.append(mIndicators.at(index).iconPath);
         mIndicators.removeAt(index);
     }
 }
@@ -167,9 +140,6 @@ bool HbIndicatorGroupPrivate::canAddIndicator(const IndicatorClientInfo &indicat
         && mIndicatorType == HbIndicatorGroup::NotificationType) {
         canAdd = true;
     } else if (indicator.category == HbIndicatorInterface::SettingCategory 
-        && mIndicatorType == HbIndicatorGroup::SettingsType) {
-        canAdd = true;
-    } else if (indicator.category == HbIndicatorInterface::ProgressCategory
         && mIndicatorType == HbIndicatorGroup::SettingsType) {
         canAdd = true;
     }
@@ -306,7 +276,6 @@ void HbIndicatorGroup::updatePrimitives()
     Q_D(HbIndicatorGroup);
     HbStyleOptionIndicatorGroup option;
     initStyleOption(&option);
-    d->mProgressAdded = false;
     int index(0);
     index = d->setIconName(option, index);
     style()->updatePrimitive(d->mIcons[0], HbStyle::P_IndicatorGroup_icon1, &option);

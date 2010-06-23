@@ -45,7 +45,8 @@ void HbSystemInfoPrivate::init(bool writer)
             q, SIGNAL(networkSignalStrengthChanged(QSystemNetworkInfo::NetworkMode, int)));
     connect(mSystemNetworkInfo, SIGNAL(networkModeChanged(QSystemNetworkInfo::NetworkMode)),
             this, SLOT(setNetworkMode(QSystemNetworkInfo::NetworkMode)));
-
+    connect(mSystemNetworkInfo, SIGNAL(networkStatusChanged(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)),
+                this, SLOT(setNetworkStatus(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)));
     mSystemDeviceInfo = new QSystemDeviceInfo();
     connect(mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)),
             q, SIGNAL(batteryLevelChanged(int)));
@@ -62,6 +63,11 @@ void HbSystemInfoPrivate::lostForeground()
 
 void HbSystemInfoPrivate::gainedForeground()
 {
+}
+
+QSystemNetworkInfo::NetworkStatus HbSystemInfoPrivate::networkStatus() const
+{
+    return mSystemNetworkInfo->networkStatus(mNetworkMode);
 }
 
 int HbSystemInfoPrivate::networkSignalStrength() const
@@ -88,5 +94,14 @@ void HbSystemInfoPrivate::setNetworkMode(QSystemNetworkInfo::NetworkMode mode)
 {
     Q_Q(HbSystemInfo);
     mNetworkMode = mode;
-    emit q->networkModeChanged(mode);
+    emit q->networkModeChanged(mode, mNetworkStatus);
+}
+
+void HbSystemInfoPrivate::setNetworkStatus(QSystemNetworkInfo::NetworkMode mode, QSystemNetworkInfo::NetworkStatus status)
+{
+    Q_Q(HbSystemInfo);
+    mNetworkMode = mode;
+    mNetworkStatus = status;
+    emit q->networkModeChanged(mode, mNetworkStatus);
+
 }

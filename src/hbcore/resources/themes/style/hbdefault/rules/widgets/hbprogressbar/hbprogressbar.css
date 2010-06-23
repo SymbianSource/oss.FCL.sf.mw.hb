@@ -40,6 +40,7 @@ HbProgressBar[orientation="Horizontal"]::frame
     pref-height: var(hb-param-widget-progress-bar-height);
     size-policy-vertical: fixed;
     size-policy-horizontal: preferred;
+    pref-width:var(hb-param-screen-short-edge);
   
 }
 
@@ -48,6 +49,7 @@ HbProgressBar[orientation="Vertical"]::frame
     pref-width: var(hb-param-widget-progress-bar-height);
     size-policy-vertical: preferred;
     size-policy-horizontal: fixed;
+    pref-height:var(hb-param-screen-short-edge);
 }
 
 HbProgressBar[orientation="Horizontal"]::toucharea

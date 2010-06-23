@@ -37,7 +37,7 @@
 
 class HbLabel;
 class HbListWidgetItem;
-class HbListWidget;
+class HbListView;
 class HbCheckBox;
 
 class HbSelectionDialogPrivate : public HbDialogPrivate
@@ -64,6 +64,7 @@ private:
 	QAbstractItemModel* model() const;
     QItemSelectionModel* selectionModel() const;
     QModelIndexList selectedModelIndexes() const;
+	void clearItems(bool keepItems);
 public:
     bool bOwnItems;
 	HbAbstractItemView::SelectionMode mSelectionMode;
@@ -78,7 +79,10 @@ private:
 	int selectedItemCount() const;
 	int totalItemCount() const;
 public:
-    HbListWidget* mListWidget;
+	void createListWidget();
+	void createListView();
+	void connectSlots();
+	HbListView* mListView;
     HbSelectionDialogPrivate* d;
     HbSelectionDialogContentWidget(HbSelectionDialogPrivate *priv);
     enum { Type = Hb::ItemType_SelectionDialogContentWidget };
@@ -91,6 +95,7 @@ public:
 private:
     HbCheckBox* chkMark;
 	HbTextItem* lbCounter;
+	bool markWidgetShown;
 private slots:    
 	void _q_listWidgetItemSelected(HbListWidgetItem *item);
 	void _q_listItemSelected(QModelIndex index);

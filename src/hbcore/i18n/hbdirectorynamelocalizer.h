@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef DIRECTORYNAMELOCALIZER_H_
-#define DIRECTORYNAMELOCALIZER_H_
+#ifndef DIRECTORYNAMELOCALIZER_H
+#define DIRECTORYNAMELOCALIZER_H
 
 #include <QMap>
 #include <hbi18ndef.h>
@@ -44,4 +44,4 @@ private:
 	HbDirectoryNameLocalizerPrivate* d;
 };
 
-#endif /* DIRECTORYNAMELOCALIZER_H_ */
+#endif /* DIRECTORYNAMELOCALIZER_H */

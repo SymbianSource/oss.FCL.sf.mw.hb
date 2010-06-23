@@ -98,7 +98,7 @@
     \return If a match is found the offset within source string's
     data where the match first occurs. -1 if match is not found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,3}
  */
 int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
@@ -156,7 +156,7 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
     \return Positive if source string is greater, negative if it is less and 
     zero	if the content of both strings match.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,1}
  */
 int HbStringUtil::compareC( const QString &string1, const QString &string2,
@@ -185,7 +185,7 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
 }
 
 /*!
-    Searches for the first occurence of the specified collated 
+    Searches for the first occurrence of the specified collated 
     data sequence in the aStrFrom to the specified maximum
     collation level.
     
@@ -202,7 +202,7 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
     \return Offset of the data sequence from the beginning of the
     aStrFrom. -1 if the data sequence cannot be found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,5}
  */
 int HbStringUtil::findC( const QString &strFrom,
@@ -237,7 +237,7 @@ int HbStringUtil::findC( const QString &strFrom,
     \return If a match is found the offset within source string's
     data where the match first occurs. -1 if match is not found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,4}
  */
 int HbStringUtil::matchF( const QString &strFrom,
@@ -261,7 +261,7 @@ int HbStringUtil::matchF( const QString &strFrom,
 }
 
 /*!
-    Searches for the first occurence of the specified folded 
+    Searches for the first occurrence of the specified folded 
     data sequence in the strFrom.
     
     \attention Cross-Platform API
@@ -273,7 +273,7 @@ int HbStringUtil::matchF( const QString &strFrom,
     strFrom. -1 if the data sequence cannot be found. Zero,
     if the length of search data sequence is zero.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,6}
  */
 int HbStringUtil::findF( const QString &strFrom,
@@ -301,7 +301,7 @@ int HbStringUtil::findF( const QString &strFrom,
     \return Positive if source string is greater, negative if it is less and 
     zero if the content of both strings match.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,2}
  */
 int HbStringUtil::compareF( const QString &string1,
@@ -347,11 +347,7 @@ QString HbStringUtil::convertDigits( const QString str )
 	DigitType digitType = WesternDigit;
 	if (locale.language() == HbExtendedLocale::Arabic) {
 		digitType = ArabicIndicDigit;
-	}
-	if (locale.language() == HbExtendedLocale::Persian) {
-		digitType = EasternArabicIndicDigit;
-	}
-	if (locale.language() == HbExtendedLocale::Urdu) {
+	} else if (locale.language() == HbExtendedLocale::Persian || locale.language() == HbExtendedLocale::Urdu) {
 		digitType = EasternArabicIndicDigit;
 	}
 	QString converted = HbStringUtil::convertDigitsTo(str, digitType);
@@ -400,7 +396,7 @@ QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitT
     
     \param strList List of QStrings which need to be sorted.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,7}
  */
 void HbStringUtil::sort( QStringList &strList )

@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputsettingwidget.h"
 
 #include <hbdataform.h>
 #include <hbdataformmodel.h>
@@ -30,7 +31,6 @@
 #include <hbinputpredictionfactory.h>
 #include <QtAlgorithms>
 
-#include "hbinputsettingwidget.h"
 #include "hbinputcheckboxlist_p.h"
 
 const QString statusOff = QObject::tr("Off");
@@ -54,7 +54,7 @@ public:
     int languageToIndex(const HbInputLanguage &language, const QList<HbInputLanguage> &languageList);
     HbInputLanguage indexToLanguage(int index, const QList<HbInputLanguage> &languageList);
     void createSecondaryLanguageList();
-
+    void updateContentWidgetData();
 public:
     HbDataForm *mForm;
     HbDataFormModelItem *mPrimaryLanguageItem;
@@ -78,6 +78,7 @@ public:
     HbTypingCorrectionLevel mTypingCorrectionLevel;
     HbPrimaryCandidateMode mPrimaryCandidateMode;
     HbInputSettingWidget *q_ptr;
+    HbDataFormModel *mModel;
 };
 
 /*!
@@ -88,7 +89,7 @@ HbInputSettingWidgetPrivate::HbInputSettingWidgetPrivate(HbDataForm *dataForm)
    mSecondaryLanguageItem(NULL), mKeypressTimeoutItem(NULL),
    mCharacterPreviewItem(NULL), mPredictionItem(NULL),
    mAutoCompletionItem(NULL), mCorrectionLevelItem(NULL),
-   mPrimaryCandidateItem(NULL), q_ptr(NULL)
+   mPrimaryCandidateItem(NULL), q_ptr(NULL), mModel(0)
 {
 }
 
@@ -111,8 +112,54 @@ void HbInputSettingWidgetPrivate::initialize()
 
     HbInputUtils::listSupportedInputLanguages(mPrimaryLanguages);
     createSecondaryLanguageList();
+    // if the model is already constructed we do not need to recreate the setting items
+    if (!mModel) {
+        createSettingItems();
+    } else {
+        // simply update the settings dependant content widget data of all the items
+        updateContentWidgetData();
+        //make sure that the items are not expanded
+        QModelIndex index = mModel->indexFromItem(mSecondaryLanguageItem->parent());
+        mForm->setExpanded(index, false);
+        index = mModel->indexFromItem(mKeypressTimeoutItem->parent());
+        mForm->setExpanded(index, false);
+        index = mModel->indexFromItem(mPredictionItem->parent());
+        mForm->setExpanded(index, false);        
+    }
+}
 
-    createSettingItems();
+void HbInputSettingWidgetPrivate::updateContentWidgetData() 
+{
+    // current primary language
+    mPrimaryLanguageItem->setContentWidgetData(QString("currentIndex"), languageToIndex(mPrimaryInputLanguage, mPrimaryLanguages));
+
+    mSecondaryLanguageItem->setContentWidgetData(QString("currentIndex"), languageToIndex(mSecondaryInputLanguage, mSecondaryLanguages));
+    // key press timeout
+    mKeypressTimeoutItem->setContentWidgetData(QString("sliderPosition"), mKeypressTimeout);
+    if (mCharacterPreviewEnabled) {
+        mCharacterPreviewItem->setContentWidgetData(QString("text"), statusOn);
+        mCharacterPreviewItem->setContentWidgetData(QString("additionalText"), statusOff);
+    } else {
+        mCharacterPreviewItem->setContentWidgetData(QString("text"), statusOff);
+        mCharacterPreviewItem->setContentWidgetData(QString("additionalText"), statusOn);
+    }
+    QList<QVariant> predictionEnabled;
+    predictionEnabled << mPredictionStatusForQwerty << mPredictionStatusForITUT;
+    mPredictionItem->setContentWidgetData(QString("selectedItems"), predictionEnabled);
+
+    QList<QVariant> autocompletionEnabled;
+    autocompletionEnabled << mAutocompletionForQwerty << mAutocompletionForITUT;
+    mAutoCompletionItem->setContentWidgetData(QString("selectedItems"), autocompletionEnabled);
+    
+    mCorrectionLevelItem->setContentWidgetData(QString("selected"), mTypingCorrectionLevel);
+
+    if (mPrimaryCandidateMode == HbPrimaryCandidateModeBestPrediction) {
+        mPrimaryCandidateItem->setContentWidgetData(QString("text"), bestPrediction);
+        mPrimaryCandidateItem->setContentWidgetData(QString("additionalText"), exactTyping);
+    } else {
+        mPrimaryCandidateItem->setContentWidgetData(QString("text"), exactTyping);
+        mPrimaryCandidateItem->setContentWidgetData(QString("additionalText"), bestPrediction);
+    }
 }
 
 /*!
@@ -122,14 +169,14 @@ void HbInputSettingWidgetPrivate::createSettingItems()
 {
     Q_Q(HbInputSettingWidget);
 
-    HbDataFormModel *model = new HbDataFormModel();
+    mModel = new HbDataFormModel();
 
     HbInputCheckBoxList *customPrototype = new HbInputCheckBoxList(mForm);
     QList<HbAbstractViewItem*> prototypes = mForm->itemPrototypes();
     prototypes.append(customPrototype);
     mForm->setItemPrototypes(prototypes);
 
-    HbDataFormModelItem *languageGroup = model->appendDataFormGroup(QObject::tr("Language"));
+    HbDataFormModelItem *languageGroup = mModel->appendDataFormGroup(QObject::tr("Language"));
 
     mPrimaryLanguageItem = new HbDataFormModelItem(HbDataFormModelItem::ComboBoxItem, QObject::tr("Primary Writing language"));
     languageGroup->appendChild(mPrimaryLanguageItem);
@@ -149,7 +196,7 @@ void HbInputSettingWidgetPrivate::createSettingItems()
     mSecondaryLanguageItem->setContentWidgetData(QString("objectName"), QString("secondary_writing_language"));
     mForm->addConnection(mSecondaryLanguageItem, SIGNAL(currentIndexChanged(int)), q, SLOT(setSecondaryLanguage(int)));
 
-    HbDataFormModelItem *keyboardGroup = model->appendDataFormGroup(QObject::tr("Keyboard"));
+    HbDataFormModelItem *keyboardGroup = mModel->appendDataFormGroup(QObject::tr("Keyboard"));
 
     mKeypressTimeoutItem = new HbDataFormModelItem(HbDataFormModelItem::SliderItem, QObject::tr("Keypress Timeout"));
     keyboardGroup->appendChild(mKeypressTimeoutItem);
@@ -169,9 +216,10 @@ void HbInputSettingWidgetPrivate::createSettingItems()
         mCharacterPreviewItem->setContentWidgetData(QString("additionalText"), statusOn);
     }
     mCharacterPreviewItem->setContentWidgetData(QString("objectName"), QString("character_bubble"));
-    mForm->addConnection(mCharacterPreviewItem, SIGNAL(clicked(bool)), q, SLOT(setCharacterPreviewState()));
+    
 
-    HbDataFormModelItem *textInputGroup = model->appendDataFormGroup(QObject::tr("Intelligent Text Input"));
+
+    HbDataFormModelItem *textInputGroup = mModel->appendDataFormGroup(QObject::tr("Intelligent Text Input"));
 
     HbDataFormModelItem::DataItemType checkboxList =
         static_cast<HbDataFormModelItem::DataItemType>(HbDataFormModelItem::CustomItemBase);
@@ -217,9 +265,8 @@ void HbInputSettingWidgetPrivate::createSettingItems()
         mPrimaryCandidateItem->setContentWidgetData(QString("additionalText"), bestPrediction);
     }
     mPrimaryCandidateItem->setContentWidgetData(QString("objectName"), QString("primary_candidate"));
-    mForm->addConnection(mPrimaryCandidateItem, SIGNAL(clicked(bool)), q, SLOT(setPrimaryCandidateMode()));
-
-    mForm->setModel(model);
+    mForm->setModel(mModel);    
+    QObject::connect(mModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)), q, SLOT(dataChange(QModelIndex, QModelIndex)));
 }
 
 /*!
@@ -584,5 +631,37 @@ void HbInputSettingWidget::setPrimaryCandidateMode()
     }
     HbInputSettingProxy::instance()->setPrimaryCandidateMode(d->mPrimaryCandidateMode);
 }
+/*
+    This slot is called when ever data in the form model is changed
+*/
+void HbInputSettingWidget::dataChange(const QModelIndex &startIn, const QModelIndex &endIn)
+{
+    Q_D(HbInputSettingWidget);
+    Q_UNUSED(endIn);
+    HbDataFormModelItem *item = d->mModel->itemFromIndex(startIn);    
+    if(item == d->mPrimaryCandidateItem) {
+        setPrimaryCandidateMode();
+    } else if(item == d->mCharacterPreviewItem) {
+        setCharacterPreviewState();
+    } 
+}
+
+/*
+ Resets the widget and disconnects the signals connected to the settings proxy
+*/
+
+void HbInputSettingWidget::resetWidget()
+{
+    HbInputSettingProxy *settings = HbInputSettingProxy::instance();
+    disconnect(settings, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), this, SLOT(updateGlobalInputLanguage(const HbInputLanguage &)));
+    disconnect(settings, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), this, SLOT(updateGlobalSecondaryInputLanguage(const HbInputLanguage &)));
+    disconnect(settings, SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(updatePredictiveInputState(HbKeyboardSettingFlags, bool)));
+    disconnect(settings, SIGNAL(characterPreviewStateForQwertyChanged(bool)), this, SLOT(updateCharacterPreviewStateForQwerty(bool)));
+    disconnect(settings, SIGNAL(keypressTimeoutChanged(int)), this, SLOT(updateKeypressTimeout(int)));
+    disconnect(settings, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(updateAutocompletionState(HbKeyboardSettingFlags, bool)));
+    disconnect(settings, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), this, SLOT(updateTypingCorrectionLevel(HbTypingCorrectionLevel)));
+    disconnect(settings, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), this, SLOT(updatePrimaryCandidateMode(HbPrimaryCandidateMode)));    
+}
+
 
 // End of file

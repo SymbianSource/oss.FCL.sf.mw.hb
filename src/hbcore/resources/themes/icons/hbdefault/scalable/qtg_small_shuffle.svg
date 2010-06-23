@@ -2,48 +2,25 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
-<g>
-<path d="M0,30V0h30v30H0z M23.599,26.25l-8.732-8.732L6.134,26.25H23.599z M26.25,23.599V6.134l-8.732,8.732   L26.25,23.599z M3.75,23.331l8.465-8.465L3.75,6.401V23.331z M14.866,12.215L23.33,3.75H6.402L14.866,12.215z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="0.9941" y2="29.1902">
-<stop offset="0" style="stop-color:#E6E6E6"/>
-<stop offset="0.6182" style="stop-color:#A8A8A8"/>
-<stop offset="1" style="stop-color:#CCCCCC"/>
+<polygon fill-opacity="0.6" points="0.149,23.029 10.737,16.228 10.737,20.374 20.562,20.374 20.562,14 26,14 26,25.687   10.737,25.687 10.737,29.831 "/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="13.4995" x2="13.4995" y1="2.3745" y2="28.1255">
+<stop offset="0" style="stop-color:#FFC144"/>
+<stop offset="1" style="stop-color:#EF6902"/>
 </linearGradient>
-<path d="M0.938,0.938v28.125h28.125V0.938H0.938z M13.541,14.866L2.813,25.595V4.138L13.541,14.866z    M4.139,2.813h21.455L14.866,13.541L4.139,2.813z M14.866,16.192l10.995,10.995H3.871L14.866,16.192z M16.192,14.866L27.188,3.871   v21.99L16.192,14.866z" fill="url(#SVGID_1_)"/>
-<g>
-<polygon fill-opacity="0.6" points="8.547,25.313 7.61,17.813 5.625,17.813 5.625,12.199 24.375,12.199 24.375,17.813 22.391,17.813     21.453,25.313   " stroke-opacity="0.6"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="12.103" y2="23.9943">
-<stop offset="0" style="stop-color:#A0F800"/>
-<stop offset="1" style="stop-color:#319E00"/>
+<polygon fill="url(#SVGID_1_)" points="21.562,15 21.562,21.374 9.737,21.374 9.737,18.059 2,23.029 9.737,28 9.737,24.687   25,24.687 25,15 "/>
+<polygon fill-opacity="0.6" points="4,16 4,4.313 19.263,4.313 19.263,0.169 29.851,6.971 19.263,13.772 19.263,9.626 9.438,9.626   9.438,16 "/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="16.5" x2="16.5" y1="2.375" y2="28.125">
+<stop offset="0" style="stop-color:#FFC144"/>
+<stop offset="1" style="stop-color:#EF6902"/>
 </linearGradient>
-<polygon fill="url(#SVGID_2_)" points="6.563,13.137 6.563,16.875 8.438,16.875 9.375,24.375 20.625,24.375 21.563,16.875     23.438,16.875 23.438,13.137   "/>
-<path d="M13.125,14.063v-2.886c-0.348,0.048-0.692,0.073-1.03,0.073c-0.804,0-1.568-0.139-2.272-0.414    C5.866,9.294,5.955,6.329,5.96,6.204l0.019-0.408l0.312-0.265c0.103-0.088,1.06-0.855,2.881-0.855c0.958,0,1.99,0.212,3.066,0.632    c1.3,0.506,2.174,1.126,2.762,1.716c0.588-0.589,1.462-1.209,2.762-1.716c1.076-0.42,2.108-0.632,3.066-0.632    c1.82,0,2.777,0.767,2.881,0.855l0.313,0.265l0.019,0.408c0.005,0.125,0.094,3.091-3.862,4.632    c-0.704,0.275-1.469,0.414-2.272,0.414c-0.338,0-0.683-0.025-1.03-0.073v2.886H13.125z" fill-opacity="0.6" stroke-opacity="0.6"/>
-<path d="M10.163,9.963c1.436,0.559,2.896,0.346,3.899,0.057v3.105h1.875V10.02    c1.003,0.289,2.464,0.502,3.899-0.057c3.375-1.316,3.267-3.717,3.267-3.717s-1.627-1.379-5.002-0.064    C16.242,6.907,15.392,7.849,15,8.551c-0.392-0.702-1.242-1.644-3.102-2.369C8.523,4.866,6.896,6.246,6.896,6.246    S6.788,8.647,10.163,9.963z" fill="url(#SVGID_3_)"/>
-<defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="14.9995" x2="14.9995" y1="4.9224" y2="12.8702">
-<stop offset="0" style="stop-color:#A0F800"/>
-<stop offset="1" style="stop-color:#319E00"/>
-</linearGradient>
-</defs>
-</g>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="14.9995" x2="14.9995" y1="12.5542" y2="17.3683">
-<stop offset="0" style="stop-color:#D07100"/>
-<stop offset="1" style="stop-color:#A23600"/>
-</linearGradient>
-<rect fill="url(#SVGID_4_)" height="3.738" width="16.875" x="6.563" y="13.137"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="14.9995" x2="14.9995" y1="16.8408" y2="24.5597">
-<stop offset="0" style="stop-color:#D07100"/>
-<stop offset="1" style="stop-color:#A23600"/>
-</linearGradient>
-<polygon fill="url(#SVGID_5_)" points="20.625,24.375 9.375,24.375 8.438,16.875 21.563,16.875  "/>
-<path d="M23.104,6.246c0,0-1.627-1.379-5.002-0.064C16.242,6.907,15.392,7.849,15,8.551   c-0.392-0.702-1.242-1.644-3.102-2.369C8.523,4.866,6.896,6.246,6.896,6.246s-0.109,2.401,3.267,3.717   c1.436,0.559,2.896,0.346,3.899,0.057v3.105h1.875V10.02c1.003,0.289,2.464,0.502,3.899-0.057   C23.212,8.647,23.104,6.246,23.104,6.246z" fill="url(#SVGID_3_)"/>
-<g fill-opacity="0.2" stroke-opacity="0.2">
-<path d="M14.063,9.082c-1.003,0.289-2.464,0.502-3.899-0.057C8.06,8.205,7.31,6.963,7.042,6.144    c-0.094,0.06-0.146,0.102-0.146,0.102s-0.109,2.401,3.267,3.717c1.436,0.559,2.896,0.346,3.899,0.057V9.082z"/>
-<path d="M22.958,6.144c-0.268,0.819-1.018,2.061-3.121,2.881c-1.436,0.559-2.896,0.346-3.899,0.057v0.938    c1.003,0.289,2.464,0.502,3.899-0.057c3.375-1.316,3.267-3.717,3.267-3.717S23.052,6.204,22.958,6.144z"/>
-<rect height="0.938" width="1.875" x="14.063" y="12.188"/>
-</g>
-<rect fill="#FFFFFF" fill-opacity="0.3" height="0.926" stroke-opacity="0.3" width="16.875" x="6.563" y="13.137"/>
-<polygon fill-opacity="0.2" points="21.445,17.813 21.563,16.875 8.438,16.875 8.555,17.813  " stroke-opacity="0.2"/>
+<polygon fill="url(#SVGID_2_)" points="8.438,15 8.438,8.626 20.263,8.626 20.263,11.941 28,6.971 20.263,2 20.263,5.313 5,5.313   5,15 "/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="3.438" x="21.562" y="15"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="11.824" x="9.737" y="21.374"/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="9.737,19.059 9.737,18.059 2,23.029 2.778,23.529 " stroke-opacity="0.4"/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="28,6.971 20.263,2 20.263,3 27.222,7.471 " stroke-opacity="0.4"/>
+<rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="15.263" x="5" y="5.313"/>
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
 </g>
 </g>
 </svg>

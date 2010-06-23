@@ -52,6 +52,8 @@ public:
     void removeGroupPage(const QString &page);
     int activePage();
     void setActivePage(int pageindex);
+    bool setExpanded( bool expanded );
+    void setEnabled( bool enabled );
 
 public:
     static HbDataGroupPrivate *d_ptr( HbDataGroup *item ) {

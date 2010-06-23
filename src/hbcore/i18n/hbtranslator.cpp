@@ -50,6 +50,9 @@ const char* defaultCommon = "common_";
 #endif
 
 #ifdef Q_OS_SYMBIAN
+/*!
+    Convert path to Symbian version
+*/
 static void toSymbianPath(QString &path) {    
     int len=path.length();
     for (int i=0; i<len; i++) {
@@ -61,15 +64,17 @@ static void toSymbianPath(QString &path) {
 }
 #endif
 
-static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool doFallback=true) {
-#ifndef Q_OS_SYMBIAN
-    translator.load(qmFile);
+/*!
+    Load data from translator
+*/
+bool loadTranslatorData(QTranslator &translator, QString &qmFile, uchar* &buffer, bool doFallback=true) {
+#ifndef Q_OS_SYMBIAN    
     Q_UNUSED(doFallback);
-    return 0;
+    buffer = 0;
+    return translator.load(qmFile);
 #else    
     RFile fl;
     RFs& fs = CCoeEnv::Static()->FsSession();
-    // TPtrC ptrFName;
     QString qmFile2;        
     QString delims="_.";
     TInt err;
@@ -81,13 +86,13 @@ static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool d
         err= fl.Open(fs, ptrFName, EFileShareReadersOrWriters | EFileRead | EFileStream );
         if (err == KErrNotFound) { 
            if (!doFallback) { // no fallback, then return
-               return 0;
+               return false;
            }        
            // else continue
         } 
         else {
             if (err != KErrNone ) { // if some other error return error, don't look anymore
-                return 0;
+                return false;
             }
             else {
                 break; // file was found
@@ -102,7 +107,7 @@ static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool d
         }
         else {
             if (err != KErrNotFound) {
-                return 0;
+                return false;
             }
         }
         // check fallback names
@@ -116,7 +121,7 @@ static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool d
 
         // no truncations? fail
         if (rightmost==0) {
-            return 0;
+            return false;
         }
         qmFile.truncate(rightmost);                
     }
@@ -125,21 +130,23 @@ static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool d
     err = fl.Size(sz);
     if (err != KErrNone) {
         fl.Close();
-        return 0;
+        return false;
     }   
     uchar *buf = new uchar[sz];
     TPtr8 bufPtr(buf,0,sz); 
     err = fl.Read(bufPtr, sz);
     if (err != KErrNone) {
         fl.Close();
-        return 0;
+        return false;
     }        
     fl.Close();
     if (!translator.load(bufPtr.Ptr(),sz)) {
         delete buf;
-        return 0;
+        return false;
     }
-    return buf;
+    buffer = buf;
+    return true;
+    
 #endif    
 }
 
@@ -152,7 +159,7 @@ static uchar* loadTranslatorData(QTranslator &translator, QString &qmFile,bool d
 */
 
 /*!
-    Default case: searches translation file from default location (/resource/qt/translations/) with default name, which is <executablename>.qm
+    Default case: searches translation file from default location (/resource/qt/translations/) with default name, which is EXECUTABLENAME.qm
     
     \attention Cross-Platform API
 */
@@ -202,16 +209,30 @@ void HbTranslator::loadCommon()
     QString lang = QLocale::system().name();
     QString commonts = QString(defaultDrive) + QString(defaultPath) + QString(defaultCommon) + lang;
     bool loaded;
-    loaded = (d->commonData=loadTranslatorData(d->common, commonts));
+    loaded = loadTranslatorData(d->common, commonts, d->commonData);
     if (loaded) {
         qApp->installTranslator(&d->common);    
     }
 }
 
-// internal function for common operations of HbTranslator
+/*!
+    Internal function for common operations of HbTranslator.  
+     
+    \param pth path for translation file
+    \param name translation file
+*/ 
 void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &name)
 {
+    QString lang = QLocale::system().name();
+    QString lang2 = lang;
+    languageDowngrade(lang);
     QString path(pth);
+    if (path.at(0) == ':') {
+        QString tsfile = path + name + QString("_") + lang;
+        translator.load(tsfile);
+        qApp->installTranslator(&translator);
+        return;
+    }
 #ifdef Q_OS_SYMBIAN        
     toSymbianPath(path);
 #endif    
@@ -221,23 +242,20 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
         drive = filepath.at(0);
     }    
             
-    QString lang = QLocale::system().name();
-    QString lang2 = lang;
-    languageDowngrade(lang);
     QString tsfile = path + name + QString("_") + lang;
     QString tsfileQM = tsfile + QString(".qm"); 
 
     bool loaded = false;    
     if (HbFindFile::hbFindFile(tsfileQM, drive)) {
         tsfileQM.chop(3);        
-        loaded = (translatorData=loadTranslatorData(translator,tsfileQM));        
+        loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
     }
     else {
         tsfile = path + name + QString("_") + lang2;
         tsfileQM = tsfile + QString(".qm");
         if (HbFindFile::hbFindFile(tsfileQM, drive)) {
             tsfileQM.chop(3);
-            loaded = (translatorData=loadTranslatorData(translator,tsfileQM));        
+            loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
         }
         else {
             QList<QString> fallBack;
@@ -250,7 +268,7 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
                 tsfileQM = tsfile + QString(".qm");
                 if (HbFindFile::hbFindFile(tsfileQM, drive)) {
                     tsfileQM.chop(3);
-                    loaded = (translatorData=loadTranslatorData(translator,tsfileQM));        
+                    loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
                 }    
             }        
         }
@@ -261,6 +279,9 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
     }
 }
 
+/*!
+    Internal helper class.  
+*/ 
 class LanguageHash : public QHash<QString,QString>
 {
 public:
@@ -323,7 +344,12 @@ LanguageHash::LanguageHash(){
                          
 Q_GLOBAL_STATIC(LanguageHash, gs_LanguageHash)
 
-// internal function for solving conflict between QLocale::system().name() and actual ts file naming convention.
+/*!
+    Internal function for solving conflict between QLocale::system().name() and actual ts file naming convention.  
+     
+    \param lang language for downgrading
+    \return true if successful
+*/ 
 bool HbTranslatorPrivate::languageDowngrade(QString &lang)
 {
     QHash<QString,QString> *languageHash = gs_LanguageHash();

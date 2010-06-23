@@ -86,6 +86,12 @@ void HbVirtualQwerty::initializeModeHandlers()
     connect(this, SIGNAL(autoCompletionPopupClosed(QString, int)), mBasicModeHandler, SLOT(autoCompletionPopupClosed(QString, int)));
 
     connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)));
+	connect(HbInputSettingProxy::instance(), SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), this, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags,bool)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), this, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
+    mPredictionModeHandler->setPrimaryCandidateMode(HbInputSettingProxy::instance()->primaryCandidateMode());
+    mPredictionModeHandler->setAutocompletionStatus(HbInputSettingProxy::instance()->isAutocompletionEnabled(HbKeyboardSettingQwerty));
+    mPredictionModeHandler->setTypingCorrectionLevel(HbInputSettingProxy::instance()->typingCorrectionLevel());
 }
 
 // ---------------------------------------------------------------------------
@@ -218,6 +224,7 @@ void HbVirtualQwerty::focusLost(bool focusSwitch)
         disconnect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
     }
 
+    closeExactWordPopup();
     if (!focusSwitch) {
         if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
             // Context switch has happened but the keypad is still open.
@@ -242,7 +249,7 @@ void HbVirtualQwerty::closeKeypad()
 void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimizedMode )
 {
     // if null is sent, just return.
-    if(!keypadToOpen) {
+    if(!keypadToOpen || !focusObject()) {
         return;
     }
     bool disableAnimation = false;
@@ -279,7 +286,10 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
             mVkbHost->openKeypad(mCurrentKeypad, this, !disableAnimation);
         }
 
-        connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mVkbHost, SLOT(ensureCursorVisibility()));
+        if (focusObject()) {
+            connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
+                    mVkbHost, SLOT(ensureCursorVisibility()));
+        }
     }
 }
 
@@ -335,8 +345,8 @@ void HbVirtualQwerty::keypadClosed()
     if (mOrientationAboutToChange) {
         mOrientationAboutToChange = false;
     }
-    if (mExactWordPopup && mExactWordPopup->isVisible()) {
-        mExactWordPopup->hide();
+    if (mVkbHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized) {
+        closeExactWordPopup();
     }	
 }
 
@@ -367,17 +377,14 @@ void HbVirtualQwerty::inputLanguageChanged(const HbInputLanguage &aNewLanguage)
     // load the new key keymappings for newLanguage to all keypads and all mode handlers
     loadKeymap(aNewLanguage);
 
-    if (mCurrentKeypad && mCurrentKeypad != mQwertyAlphaKeypad
-        && mCurrentKeypad != mQwertyNumericKeypad) {
+    if (focusObject() && mCurrentKeypad) {
+        if (mCurrentKeypad != mQwertyAlphaKeypad && mCurrentKeypad != mQwertyNumericKeypad) {
+            mCurrentKeypad->animKeyboardChange();
+            openKeypad(mQwertyAlphaKeypad);
+        }
         mCurrentKeypad->animKeyboardChange();
-        openKeypad(mQwertyAlphaKeypad);
     }
-
     mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionPrimaryLanguageChanged);
-    if (mCurrentKeypad){
-        mCurrentKeypad->animKeyboardChange();
-    }
-
 }
 
 void HbVirtualQwerty::inputStateActivated(const HbInputState& newState)
@@ -437,7 +444,7 @@ keymappings,loads them to all avaialble keyboards and to all mode handlers
 void HbVirtualQwerty::loadKeymap(const HbInputLanguage &newLanguage)
 {
     // inform all the mode handler about the language change.
-    //dont try to get the keymappings if we ( mKeyData) already have keymappings for newLanguage
+    //don't try to get the keymappings if we ( mKeyData) already have keymappings for newLanguage
     if (!mKeymap || mKeymap->language() != newLanguage) {
 
         const HbKeymap* keymap = HbKeymapFactory::instance()->keymap(newLanguage);
@@ -683,6 +690,22 @@ void HbVirtualQwerty::predictiveInputStateChanged(HbKeyboardSettingFlags keyboar
     }
 }
 
+void HbVirtualQwerty::primaryCandidateModeChanged(HbPrimaryCandidateMode mode)
+{
+	mPredictionModeHandler->setPrimaryCandidateMode(mode);
+}
+
+void HbVirtualQwerty::autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState)
+{
+    if (keyboardType & HbKeyboardSettingQwerty) {
+        mPredictionModeHandler->setAutocompletionStatus(newState);
+    }
+}
+
+void HbVirtualQwerty::typingCorrectionLevelChanged(HbTypingCorrectionLevel correctionLevel)
+{
+    mPredictionModeHandler->setTypingCorrectionLevel(correctionLevel);
+}
 /*!
 this function is called whenever there is a hardware keypress Or virtual keypad button is pressed.
 */
@@ -703,7 +726,7 @@ void HbVirtualQwerty::launchExactWordPopup(QString exactWord)
 {
     if (!mExactWordPopup) {
         mExactWordPopup = HbExactWordPopup::instance();
-        connect(mExactWordPopup, SIGNAL(exactWordSelected()), mPredictionModeHandler, SLOT(exactWordPopupClosed()));
+        connect(mExactWordPopup, SIGNAL(exactWordSelected()), mPredictionModeHandler, SLOT(exactWordSelected()));
     }
     mExactWordPopup->setText(exactWord);
     mExactWordPopup->showText(getCursorCoordinatePosition());

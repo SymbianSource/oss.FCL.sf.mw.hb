@@ -171,7 +171,6 @@ public:
     QTimer mScrollBarHideTimer;
 
     bool mFrictionEnabled;
-    bool mScrollbarVisible;
     bool mResetAlignment;
 
     HbScrollArea::ClampingStyle mClampingStyle;

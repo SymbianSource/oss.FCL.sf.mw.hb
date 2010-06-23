@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputbuttongroup.h"
+#include "hbinputbuttongroup_p.h"
 
 #include <QPainter>
 #include <QTextLayout>
@@ -42,8 +44,6 @@
 #include <hbinputregioncollector_p.h>
 #include "hbframedrawerpool_p.h"
 
-#include "hbinputbuttongroup.h"
-#include "hbinputbuttongroup_p.h"
 #include "hbinputbutton.h"
 
 /// @cond
@@ -94,9 +94,9 @@ const qreal HbPreviewMarginInUnits = 3;
 const qreal HbTouchAreaSizeInUnits = 8;
 
 HbInputButtonGroupPrivate::HbInputButtonGroupPrivate()
- : mUnitValue(0), mGridSize(1, 1), mButtonBorderSize(1.0), mEnabled(true),
-   mButtonPreviewEnabled(false), mCharacterSelectionPreviewEnabled(false),
-   mMultiTouchEnabled(true), mCharacterSelectionPreview(0), mBackground(0)
+    : mUnitValue(0), mGridSize(1, 1), mButtonBorderSize(1.0), mEnabled(true),
+      mButtonPreviewEnabled(false), mCharacterSelectionPreviewEnabled(false),
+      mMultiTouchEnabled(true), mCharacterSelectionPreview(0), mBackground(0)
 {
     for (int i = 0; i < HbTextLayoutCount; ++i) {
         mTextLayouts.append(0);
@@ -111,16 +111,16 @@ HbInputButtonGroupPrivate::~HbInputButtonGroupPrivate()
         HbFrameDrawerPool::release(drawer);
     }
 
-    foreach (HbInputButton *button, mButtonData) {
+    foreach(HbInputButton *button, mButtonData) {
         delete button;
     }
     mButtonData.clear();
 
-    foreach (QTextLayout *layout, mTextLayouts) {
+    foreach(QTextLayout *layout, mTextLayouts) {
         delete layout;
     }
 
-    foreach (QTimer *timer, mLongPressTimers) {
+    foreach(QTimer *timer, mLongPressTimers) {
         delete timer;
     }
 
@@ -309,7 +309,7 @@ void HbInputButtonGroupPrivate::updateColorArray()
     }
 }
 
-void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
+void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton *const item)
 {
     Q_Q(HbInputButtonGroup);
 
@@ -319,7 +319,7 @@ void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
         HbInputButtonGroup *group = new HbInputButtonGroup(QSize(1, 1));
         mButtonPreview.insert(index, group);
 
-        QList<HbInputButton*> buttons;
+        QList<HbInputButton *> buttons;
         HbInputButton *previewItem = 0;
         if (!item->icon(HbInputButton::ButtonIconIndexPrimary).isNull()) {
             int keyCode = -1;
@@ -340,7 +340,7 @@ void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
         qreal cellHeight = q->boundingRect().height() / mGridSize.height();
 
         QFont font = HbFontSpec(HbFontSpec::Primary).font();
-        font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
+        font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypeLabel)));
         QFontMetricsF fontMetrics(font);
         qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexPrimary));
 
@@ -371,7 +371,7 @@ void HbInputButtonGroupPrivate::showButtonPreview(HbInputButton * const item)
     }
 }
 
-void HbInputButtonGroupPrivate::hideButtonPreview(HbInputButton * const item)
+void HbInputButtonGroupPrivate::hideButtonPreview(HbInputButton *const item)
 {
     int index = mButtonData.indexOf(item);
     if (mButtonPreview.contains(index)) {
@@ -379,7 +379,7 @@ void HbInputButtonGroupPrivate::hideButtonPreview(HbInputButton * const item)
     }
 }
 
-void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * const item)
+void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton *const item)
 {
     Q_Q(HbInputButtonGroup);
 
@@ -387,10 +387,10 @@ void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * co
         item->mappedCharacters().count() > 1) {
 
         HbWidgetFeedback::triggered(q, Hb::InstantLongPressed);
-        
+
         mProbabilities.clear();
         q->cancelButtonPress();
-        
+
         if (!mCharacterSelectionPreview) {
             mCharacterSelectionPreview = new HbDialog();
             HbInputRegionCollector::instance()->attach(mCharacterSelectionPreview);
@@ -405,17 +405,17 @@ void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * co
         }
 
         HbInputButtonGroup *group = new HbInputButtonGroup(QSize(item->mappedCharacters().count(), 1));
-        QObject::connect(group, SIGNAL(buttonPressed(const QKeyEvent&)), q, SLOT(emitButtonPressed(const QKeyEvent&)));
-        QObject::connect(group, SIGNAL(buttonDoublePressed(const QKeyEvent&)), q, SLOT(emitButtonDoublePressed(const QKeyEvent&)));
-        QObject::connect(group, SIGNAL(buttonReleased(const QKeyEvent&)), q, SLOT(emitButtonReleased(const QKeyEvent&)));
-        QObject::connect(group, SIGNAL(buttonLongPressed(const QKeyEvent&)), q, SLOT(emitButtonLongPressed(const QKeyEvent&)));
-        QObject::connect(group, SIGNAL(pressedButtonChanged(const QKeyEvent&, const QKeyEvent&)), q, SLOT(emitPressedButtonChanged(const QKeyEvent&, const QKeyEvent&)));
-        
+        QObject::connect(group, SIGNAL(buttonPressed(const QKeyEvent &)), q, SLOT(emitButtonPressed(const QKeyEvent &)));
+        QObject::connect(group, SIGNAL(buttonDoublePressed(const QKeyEvent &)), q, SLOT(emitButtonDoublePressed(const QKeyEvent &)));
+        QObject::connect(group, SIGNAL(buttonReleased(const QKeyEvent &)), q, SLOT(emitButtonReleased(const QKeyEvent &)));
+        QObject::connect(group, SIGNAL(buttonLongPressed(const QKeyEvent &)), q, SLOT(emitButtonLongPressed(const QKeyEvent &)));
+        QObject::connect(group, SIGNAL(pressedButtonChanged(const QKeyEvent &, const QKeyEvent &)), q, SLOT(emitPressedButtonChanged(const QKeyEvent &, const QKeyEvent &)));
+
         qreal cellWidth = q->boundingRect().width() / mGridSize.width();
         qreal cellHeight = q->boundingRect().height() / mGridSize.height();
 
         QFont font = HbFontSpec(HbFontSpec::Primary).font();
-        font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
+        font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypeLabel)));
         QFontMetricsF fontMetrics(font);
         qreal textWidth = fontMetrics.width(item->mappedCharacters());
 
@@ -424,7 +424,7 @@ void HbInputButtonGroupPrivate::showCharacterSelectionPreview(HbInputButton * co
         qreal x = q->scenePos().x() + (item->position().x() + 0.5 * item->size().width()) * cellWidth;
         qreal y = q->scenePos().y() + item->position().y() * cellHeight;
 
-        QList<HbInputButton*> buttons;
+        QList<HbInputButton *> buttons;
         for (int i = 0; i < item->mappedCharacters().count(); ++i) {
             HbInputButton *previewItem = new HbInputButton(item->keyCode(), QPoint(i, 0));
             previewItem->setType(HbInputButton::ButtonTypeLabel);
@@ -451,7 +451,7 @@ void HbInputButtonGroupPrivate::pressEvent(const QPointF &position, bool emitSig
     Q_Q(HbInputButtonGroup);
 
     if (!(position.x() >= 0 && position.x() < q->boundingRect().width() &&
-        position.y() >= 0 && position.y() < q->boundingRect().height())) {
+          position.y() >= 0 && position.y() < q->boundingRect().height())) {
         return;
     }
 
@@ -463,8 +463,8 @@ void HbInputButtonGroupPrivate::pressEvent(const QPointF &position, bool emitSig
     if (index >= 0 && index < mButtonData.count()) {
         HbInputButton *item = mButtonData.at(index);
 
-        if ((item->state() != HbInputButton::ButtonStateReleased && 
-            item->state() != HbInputButton::ButtonStateLatched) ||
+        if ((item->state() != HbInputButton::ButtonStateReleased &&
+             item->state() != HbInputButton::ButtonStateLatched) ||
             (mCharacterSelectionPreview && mCharacterSelectionPreview->isVisible())) {
             if (item->state() == HbInputButton::ButtonStateDisabled) {
                 startLongPress(index);
@@ -501,7 +501,7 @@ void HbInputButtonGroupPrivate::doublePressEvent(const QPointF &position, bool e
     Q_Q(HbInputButtonGroup);
 
     if (!(position.x() >= 0 && position.x() < q->boundingRect().width() &&
-        position.y() >= 0 && position.y() < q->boundingRect().height())) {
+          position.y() >= 0 && position.y() < q->boundingRect().height())) {
         return;
     }
 
@@ -513,8 +513,8 @@ void HbInputButtonGroupPrivate::doublePressEvent(const QPointF &position, bool e
     if (index >= 0 && index < mButtonData.count()) {
         HbInputButton *item = mButtonData.at(index);
 
-        if ((item->state() != HbInputButton::ButtonStateReleased && 
-            item->state() != HbInputButton::ButtonStateLatched) ||
+        if ((item->state() != HbInputButton::ButtonStateReleased &&
+             item->state() != HbInputButton::ButtonStateLatched) ||
             (mCharacterSelectionPreview && mCharacterSelectionPreview->isVisible())) {
             if (item->state() == HbInputButton::ButtonStateDisabled) {
                 startLongPress(index);
@@ -562,7 +562,7 @@ void HbInputButtonGroupPrivate::moveEvent(const QPointF &oldPosition, const QPoi
         newPosition.y() >= 0 && newPosition.y() < q->boundingRect().height() &&
         oldPosition.x() >= 0 && oldPosition.x() < q->boundingRect().width() &&
         oldPosition.y() >= 0 && oldPosition.y() < q->boundingRect().height()) {
-        
+
         if (oldIndex != newIndex) {
             releaseEvent(oldPosition, false);
             pressEvent(newPosition, false);
@@ -593,7 +593,7 @@ void HbInputButtonGroupPrivate::releaseEvent(const QPointF &position, bool emitS
     Q_Q(HbInputButtonGroup);
 
     if (!(position.x() >= 0 && position.x() < q->boundingRect().width() &&
-        position.y() >= 0 && position.y() < q->boundingRect().height())) {
+          position.y() >= 0 && position.y() < q->boundingRect().height())) {
         return;
     }
 
@@ -658,7 +658,7 @@ void HbInputButtonGroupPrivate::longPressEvent()
 
         if (item->autoRepeat() &&
             (item->state() == HbInputButton::ButtonStatePressed ||
-            item->state() == HbInputButton::ButtonStateLatched)) {
+             item->state() == HbInputButton::ButtonStateLatched)) {
             mLongPressButtons.append(index);
             mLongPressTimers.append(timer);
             timer->start(HbAutoRepeatTimeout);
@@ -705,7 +705,7 @@ void HbInputButtonGroupPrivate::calculateButtonProbabilities(const QPointF &posi
                               HbTouchAreaSizeInUnits * mUnitValue, HbTouchAreaSizeInUnits * mUnitValue);
 
     qreal probabilities = 0;
-    foreach (HbInputButton *button, mButtonData) {
+    foreach(HbInputButton *button, mButtonData) {
         QRectF intersection = button->boundingRect().intersected(touchArea);
 
         if (intersection.isValid()) {
@@ -734,9 +734,9 @@ void HbInputButtonGroupPrivate::createPrimarySingleTextLayout(int index, const Q
 
     int typeIndex = index % HbTextTypeCount / HbInputButton::ButtonStateCount;
     if (typeIndex == HbInputButton::ButtonTypeLabel) {
-      font.setPixelSize(int(fontSize(ButtonTextTypeLabel)));
+        font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypeLabel)));
     } else {
-      font.setPixelSize(int(fontSize(ButtonTextTypeSingle)));
+        font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypeSingle)));
     }
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
@@ -745,7 +745,7 @@ void HbInputButtonGroupPrivate::createPrimarySingleTextLayout(int index, const Q
     // Create text line for each button with primary text and correct type and state. Layout it
     // to correct position
     mTextLayouts.at(index)->beginLayout();
-    foreach (HbInputButton *item, mButtonData) {
+    foreach(HbInputButton *item, mButtonData) {
         int layoutIndex = item->type() * HbInputButton::ButtonStateCount + item->state() + HbTextTypeCount;
         if (!mEnabled) {
             layoutIndex = item->type() * HbInputButton::ButtonStateCount + HbInputButton::ButtonStateDisabled + HbTextTypeCount;
@@ -758,14 +758,14 @@ void HbInputButtonGroupPrivate::createPrimarySingleTextLayout(int index, const Q
             item->icon(HbInputButton::ButtonIconIndexSecondarySecondRow).isNull()) {
             qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexPrimary));
             qreal textHeight = fontMetrics.height();
-            
+
             QTextLine line = mTextLayouts.at(index)->createLine();
             line.setNumColumns(item->text(HbInputButton::ButtonTextIndexPrimary).length());
 
             if (typeIndex == HbInputButton::ButtonTypeLabel) {
-                layoutTextLine(ButtonTextTypeLabel, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
+                layoutTextLine(HbInputButtonGroup::ButtonTextTypeLabel, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
             } else {
-                layoutTextLine(ButtonTextTypeSingle, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
+                layoutTextLine(HbInputButtonGroup::ButtonTextTypeSingle, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
             }
         }
     }
@@ -779,7 +779,7 @@ void HbInputButtonGroupPrivate::createPrimaryTextLayout(int index, const QHash<i
     qreal cellHeight = size.height() / mGridSize.height();
 
     QFont font = HbFontSpec(HbFontSpec::Primary).font();
-      font.setPixelSize(int(fontSize(ButtonTextTypePrimary)));
+    font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypePrimary)));
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
     QFontMetricsF fontMetrics(font);
@@ -787,7 +787,7 @@ void HbInputButtonGroupPrivate::createPrimaryTextLayout(int index, const QHash<i
     // Create text line for each button with primary text and correct type and state. Layout it
     // to correct position
     mTextLayouts.at(index)->beginLayout();
-    foreach (HbInputButton *item, mButtonData) {
+    foreach(HbInputButton *item, mButtonData) {
         int layoutIndex = item->type() * HbInputButton::ButtonStateCount + item->state();
         if (!mEnabled) {
             layoutIndex = item->type() * HbInputButton::ButtonStateCount + HbInputButton::ButtonStateDisabled;
@@ -795,16 +795,16 @@ void HbInputButtonGroupPrivate::createPrimaryTextLayout(int index, const QHash<i
         if (index == layoutIndex && !item->text(HbInputButton::ButtonTextIndexPrimary).isEmpty() &&
             item->icon(HbInputButton::ButtonIconIndexPrimary).isNull() &&
             !(item->text(HbInputButton::ButtonTextIndexSecondaryFirstRow).isEmpty() &&
-            item->icon(HbInputButton::ButtonIconIndexSecondaryFirstRow).isNull() &&
-            item->text(HbInputButton::ButtonTextIndexSecondarySecondRow).isEmpty() &&
-            item->icon(HbInputButton::ButtonIconIndexSecondarySecondRow).isNull())) {
+              item->icon(HbInputButton::ButtonIconIndexSecondaryFirstRow).isNull() &&
+              item->text(HbInputButton::ButtonTextIndexSecondarySecondRow).isEmpty() &&
+              item->icon(HbInputButton::ButtonIconIndexSecondarySecondRow).isNull())) {
             qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexPrimary));
             qreal textHeight = fontMetrics.height();
 
             QTextLine line = mTextLayouts.at(index)->createLine();
             line.setNumColumns(item->text(HbInputButton::ButtonTextIndexPrimary).length());
 
-            layoutTextLine(ButtonTextTypePrimary, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
+            layoutTextLine(HbInputButtonGroup::ButtonTextTypePrimary, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
         }
     }
     mTextLayouts.at(index)->endLayout();
@@ -817,7 +817,7 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
     qreal cellHeight = size.height() / mGridSize.height();
 
     QFont font = HbFontSpec(HbFontSpec::Primary).font();
-      font.setPixelSize(int(fontSize(ButtonTextTypeSecondaryFirstRow)));
+    font.setPixelSize(int(fontSize(HbInputButtonGroup::ButtonTextTypeSecondaryFirstRow)));
 
     mTextLayouts[index] = new QTextLayout(textContent.value(index), font);
     QFontMetricsF fontMetrics(font);
@@ -825,13 +825,13 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
     // Create text line for each button with secondary first row or second row text and correct type and state.
     // Layout it to correct position
     mTextLayouts.at(index)->beginLayout();
-    foreach (HbInputButton *item, mButtonData) {
+    foreach(HbInputButton *item, mButtonData) {
         int layoutIndex = item->type() * HbInputButton::ButtonStateCount + item->state() + HbTextTypeCount * 2;
         if (!mEnabled) {
             layoutIndex = item->type() * HbInputButton::ButtonStateCount + HbInputButton::ButtonStateDisabled + HbTextTypeCount * 2;
         }
         if (index == layoutIndex) {
-            if (!item->text(HbInputButton::ButtonTextIndexSecondaryFirstRow).isEmpty() && 
+            if (!item->text(HbInputButton::ButtonTextIndexSecondaryFirstRow).isEmpty() &&
                 item->icon(HbInputButton::ButtonIconIndexSecondaryFirstRow).isNull()) {
                 qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexSecondaryFirstRow));
                 qreal textHeight = fontMetrics.height();
@@ -839,10 +839,10 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
                 QTextLine line = mTextLayouts.at(index)->createLine();
                 line.setNumColumns(item->text(HbInputButton::ButtonTextIndexSecondaryFirstRow).length());
 
-                layoutTextLine(ButtonTextTypeSecondaryFirstRow, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
+                layoutTextLine(HbInputButtonGroup::ButtonTextTypeSecondaryFirstRow, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
             }
 
-            if (!item->text(HbInputButton::ButtonTextIndexSecondarySecondRow).isEmpty() && 
+            if (!item->text(HbInputButton::ButtonTextIndexSecondarySecondRow).isEmpty() &&
                 item->icon(HbInputButton::ButtonIconIndexSecondarySecondRow).isNull()) {
                 qreal textWidth = fontMetrics.width(item->text(HbInputButton::ButtonTextIndexSecondarySecondRow));
                 qreal textHeight = fontMetrics.height();
@@ -850,7 +850,7 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
                 QTextLine line = mTextLayouts.at(index)->createLine();
                 line.setNumColumns(item->text(HbInputButton::ButtonTextIndexSecondarySecondRow).length());
 
-                layoutTextLine(ButtonTextTypeSecondarySecondRow, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
+                layoutTextLine(HbInputButtonGroup::ButtonTextTypeSecondarySecondRow, item, QSizeF(cellWidth, cellHeight), line, QSizeF(textWidth, textHeight));
             }
         }
     }
@@ -858,26 +858,26 @@ void HbInputButtonGroupPrivate::createSecondaryTextLayout(int index, const QHash
     mTextLayouts.at(index)->setCacheEnabled(true);
 }
 
-void HbInputButtonGroupPrivate::layoutTextLine(HbInputButtonTextType textType, const HbInputButton *button, const QSizeF &cellSize,
-                                               QTextLine &textLine, const QSizeF &textSize)
+void HbInputButtonGroupPrivate::layoutTextLine(HbInputButtonGroup::HbInputButtonTextType textType, const HbInputButton *button, const QSizeF &cellSize,
+        QTextLine &textLine, const QSizeF &textSize)
 {
     qreal textPositionX = 0.0;
     qreal textPositionY = 0.0;
-    if (textType == ButtonTextTypeSingle ||
-        textType == ButtonTextTypeLabel) {
+    if (textType == HbInputButtonGroup::ButtonTextTypeSingle ||
+        textType == HbInputButtonGroup::ButtonTextTypeLabel) {
         textPositionX = (button->position().x() + 0.5 * button->size().width()) * cellSize.width() - 0.5 * textSize.width();
         textPositionY = (button->position().y() + 0.5 * button->size().height()) * cellSize.height() - 0.5 * textSize.height();
-    } else if (textType == ButtonTextTypePrimary) {
+    } else if (textType == HbInputButtonGroup::ButtonTextTypePrimary) {
         textPositionX = button->position().x() * cellSize.width() + HbHorizontalMarginInUnits * mUnitValue + mButtonBorderSize;
         textPositionY = (button->position().y() + 0.5 * button->size().height()) * cellSize.height() - 0.5 * textSize.height();
-    } else if (textType == ButtonTextTypeSecondaryFirstRow) {
+    } else if (textType == HbInputButtonGroup::ButtonTextTypeSecondaryFirstRow) {
         textPositionX = (button->position().x() + button->size().width()) * cellSize.width() -
-            textSize.width() - HbHorizontalMarginInUnits * mUnitValue - mButtonBorderSize;
+                        textSize.width() - HbHorizontalMarginInUnits * mUnitValue - mButtonBorderSize;
         textPositionY = (button->position().y() + button->size().height()) * cellSize.height() -
-            textSize.height() - HbVerticalMarginInUnits * mUnitValue - mButtonBorderSize;
-    } else if (textType == ButtonTextTypeSecondarySecondRow) {
+                        textSize.height() - HbVerticalMarginInUnits * mUnitValue - mButtonBorderSize;
+    } else if (textType == HbInputButtonGroup::ButtonTextTypeSecondarySecondRow) {
         textPositionX = (button->position().x() + button->size().width()) * cellSize.width() -
-            textSize.width() - HbHorizontalMarginInUnits * mUnitValue - mButtonBorderSize;
+                        textSize.width() - HbHorizontalMarginInUnits * mUnitValue - mButtonBorderSize;
         textPositionY = button->position().y() * cellSize.height() + HbVerticalMarginInUnits * mUnitValue + mButtonBorderSize;
     }
     textLine.setPosition(QPointF(textPositionX, textPositionY));
@@ -941,16 +941,16 @@ QString HbInputButtonGroupPrivate::buttonColor(HbInputButton::HbInputButtonType 
     return QString("");
 }
 
-qreal HbInputButtonGroupPrivate::fontSize(HbInputButtonTextType textType)
+qreal HbInputButtonGroupPrivate::fontSize(HbInputButtonGroup::HbInputButtonTextType textType)
 {
-    if (textType == ButtonTextTypeSingle) {
+    if (textType == HbInputButtonGroup::ButtonTextTypeSingle) {
         return HbTextSizeInUnits * mUnitValue;
-    } else if (textType == ButtonTextTypePrimary) {
+    } else if (textType == HbInputButtonGroup::ButtonTextTypePrimary) {
         return HbPrimaryTextSizeInUnits * mUnitValue;
-    } else if (textType == ButtonTextTypeSecondaryFirstRow ||
-        textType == ButtonTextTypeSecondarySecondRow) {
+    } else if (textType == HbInputButtonGroup::ButtonTextTypeSecondaryFirstRow ||
+               textType == HbInputButtonGroup::ButtonTextTypeSecondarySecondRow) {
         return HbSecondaryTextSizeInUnits * mUnitValue;
-    } else if (textType == ButtonTextTypeLabel) {
+    } else if (textType == HbInputButtonGroup::ButtonTextTypeLabel) {
         return HbLabelTextSizeInUnits * mUnitValue;
     }
     return 0;
@@ -993,56 +993,60 @@ void HbInputButtonGroupPrivate::_q_customActionDestroyed(QObject *object)
 Constructor
 */
 HbInputButtonGroup::HbInputButtonGroup(QGraphicsItem *parent)
- : HbWidget(*new HbInputButtonGroupPrivate, parent)
+    : HbWidget(*new HbInputButtonGroupPrivate, parent)
 {
     Q_D(HbInputButtonGroup);
 
     d->mUnitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
 
     setAcceptedMouseButtons(Qt::LeftButton);
+    setFlag(QGraphicsItem::ItemHasNoContents,false);
 }
 
 /*!
 Constructor
 */
 HbInputButtonGroup::HbInputButtonGroup(HbInputButtonGroupPrivate &dd, QGraphicsItem *parent)
- : HbWidget(dd, parent)
+    : HbWidget(dd, parent)
 {
     Q_D(HbInputButtonGroup);
 
     d->mUnitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
 
     setAcceptedMouseButtons(Qt::LeftButton);
+    setFlag(QGraphicsItem::ItemHasNoContents,false);
 }
 
 /*!
 Constructor
 */
 HbInputButtonGroup::HbInputButtonGroup(const QSize &size, QGraphicsItem *parent)
- : HbWidget(*new HbInputButtonGroupPrivate, parent)
+    : HbWidget(*new HbInputButtonGroupPrivate, parent)
 {
     Q_D(HbInputButtonGroup);
 
     d->mUnitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
 
     setAcceptedMouseButtons(Qt::LeftButton);
-    
+
     setGridSize(size);
+    setFlag(QGraphicsItem::ItemHasNoContents,false);
 }
 
 /*!
 Constructor
 */
 HbInputButtonGroup::HbInputButtonGroup(HbInputButtonGroupPrivate &dd, const QSize &size, QGraphicsItem *parent)
- : HbWidget(dd, parent)
+    : HbWidget(dd, parent)
 {
     Q_D(HbInputButtonGroup);
 
     d->mUnitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
 
     setAcceptedMouseButtons(Qt::LeftButton);
-    
+
     setGridSize(size);
+    setFlag(QGraphicsItem::ItemHasNoContents,false);
 }
 
 /*!
@@ -1090,17 +1094,17 @@ QSize HbInputButtonGroup::gridSize() const
 
 /*!
 Sets the button data and updates button group based on the new data.
-Takes ownership of the button items. Button items that are not in the new list 
+Takes ownership of the button items. Button items that are not in the new list
 will be destroyed.
 
 \sa buttons
 \sa button
 */
-void HbInputButtonGroup::setButtons(const QList<HbInputButton*> &data)
+void HbInputButtonGroup::setButtons(const QList<HbInputButton *> &data)
 {
     Q_D(HbInputButtonGroup);
 
-    foreach (HbInputButton *button, d->mButtonData) {
+    foreach(HbInputButton *button, d->mButtonData) {
         if (!data.contains(button)) {
             delete button;
         }
@@ -1186,7 +1190,7 @@ void HbInputButtonGroup::setButton(HbInputButton *data, HbInputButton::HbInputBu
             break;
         }
     }
-    
+
     setButton(data, index);
 }
 
@@ -1197,7 +1201,7 @@ Ownership of the returned button items is not transferred.
 \sa setButtons
 \sa setButton
 */
-QList<HbInputButton*> HbInputButtonGroup::buttons() const
+QList<HbInputButton *> HbInputButtonGroup::buttons() const
 {
     Q_D(const HbInputButtonGroup);
 
@@ -1231,7 +1235,7 @@ Ownership of the button items is not transferred.
 HbInputButton *HbInputButtonGroup::button(int column, int row) const
 {
     Q_D(const HbInputButtonGroup);
-    
+
     int index = -1;
     if (d->mButtonGridPositions.contains(QPair<int, int>(column, row))) {
         index = d->mButtonGridPositions.value(QPair<int, int>(column, row), -1);
@@ -1250,7 +1254,7 @@ HbInputButton *HbInputButtonGroup::button(HbInputButton::HbInputButtonKeyCode ke
 {
     Q_D(const HbInputButtonGroup);
 
-    foreach (HbInputButton *button, d->mButtonData) {
+    foreach(HbInputButton *button, d->mButtonData) {
         if (button->keyCode() == keyCode) {
             return button;
         }
@@ -1265,7 +1269,7 @@ Ownership of the actions is not transferred.
 
 \sa customButtonActions
 */
-void HbInputButtonGroup::setCustomButtonActions(const QList<HbAction*> &actions)
+void HbInputButtonGroup::setCustomButtonActions(const QList<HbAction *> &actions)
 {
     Q_D(HbInputButtonGroup);
 
@@ -1274,7 +1278,7 @@ void HbInputButtonGroup::setCustomButtonActions(const QList<HbAction*> &actions)
 
     d->mCustomActions = actions;
 
-    foreach (HbAction *action, d->mCustomActions) {
+    foreach(HbAction *action, d->mCustomActions) {
         connect(action, SIGNAL(changed()), this, SLOT(updateCustomButtons()));
         connect(action, SIGNAL(destroyed(QObject *)), this, SLOT(_q_customActionDestroyed(QObject *)));
     }
@@ -1291,7 +1295,7 @@ Ownership of the actions is not transferred.
 
 \sa setCustomButtonActions
 */
-QList<HbAction*> HbInputButtonGroup::customButtonActions() const
+QList<HbAction *> HbInputButtonGroup::customButtonActions() const
 {
     Q_D(const HbInputButtonGroup);
 
@@ -1407,7 +1411,7 @@ Returns multi touch state.
 bool HbInputButtonGroup::isMultiTouchEnabled() const
 {
     Q_D(const HbInputButtonGroup);
-    
+
     return d->mMultiTouchEnabled;
 }
 
@@ -1421,6 +1425,16 @@ void HbInputButtonGroup::setBackground(HbFrameDrawer *background)
 
     HbFrameDrawerPool::release(d->mBackground);
     d->mBackground = background;
+}
+
+/*!
+Returns font size for given text type
+*/
+qreal HbInputButtonGroup::fontSize(HbInputButtonTextType textType)
+{
+    Q_D(HbInputButtonGroup);
+
+    return d->fontSize(textType);
 }
 
 /*!
@@ -1464,7 +1478,7 @@ bool HbInputButtonGroup::isEnabled() const
 /*!
 Draws the button group.
 */
-void HbInputButtonGroup::paint(QPainter* painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void HbInputButtonGroup::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option);
     Q_UNUSED(widget);
@@ -1489,7 +1503,7 @@ void HbInputButtonGroup::paint(QPainter* painter, const QStyleOptionGraphicsItem
 
             painter->save();
             painter->translate(x, y);
-            d->mButtonDrawers.at(i)->paint(painter, QRectF(0, 0, width, height));        
+            d->mButtonDrawers.at(i)->paint(painter, QRectF(0, 0, width, height));
             painter->restore();
         }
 
@@ -1513,9 +1527,9 @@ void HbInputButtonGroup::paint(QPainter* painter, const QStyleOptionGraphicsItem
 
         if (!item->icon(HbInputButton::ButtonIconIndexSecondaryFirstRow).isNull()) {
             qreal x = (item->position().x() + item->size().width()) * cellWidth -
-                HbSecondaryIconSizeInUnits * d->mUnitValue - HbHorizontalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
+                      HbSecondaryIconSizeInUnits * d->mUnitValue - HbHorizontalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
             qreal y = (item->position().y() + item->size().height()) * cellHeight -
-                HbSecondaryIconSizeInUnits * d->mUnitValue - HbVerticalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
+                      HbSecondaryIconSizeInUnits * d->mUnitValue - HbVerticalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
             qreal width = HbSecondaryIconSizeInUnits * d->mUnitValue;
             qreal height = HbSecondaryIconSizeInUnits * d->mUnitValue;
 
@@ -1525,7 +1539,7 @@ void HbInputButtonGroup::paint(QPainter* painter, const QStyleOptionGraphicsItem
 
         if (!item->icon(HbInputButton::ButtonIconIndexSecondarySecondRow).isNull()) {
             qreal x = (item->position().x() + item->size().width()) * cellWidth -
-                HbSecondaryIconSizeInUnits * d->mUnitValue - HbHorizontalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
+                      HbSecondaryIconSizeInUnits * d->mUnitValue - HbHorizontalMarginInUnits * d->mUnitValue - d->mButtonBorderSize;
             qreal y = item->position().y() * cellHeight + HbVerticalMarginInUnits * d->mUnitValue + d->mButtonBorderSize;
             qreal width = HbSecondaryIconSizeInUnits * d->mUnitValue;
             qreal height = HbSecondaryIconSizeInUnits * d->mUnitValue;
@@ -1562,15 +1576,15 @@ bool HbInputButtonGroup::sceneEvent(QEvent *event)
     }
 
     if (event->type() == QEvent::TouchBegin) {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
-        foreach (QTouchEvent::TouchPoint point, touchEvent->touchPoints()) {
-            if (!point.isPrimary() && d->mMultiTouchEnabled) {         
+        QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
+        foreach(const QTouchEvent::TouchPoint &point, touchEvent->touchPoints()) {
+            if (!point.isPrimary() && d->mMultiTouchEnabled) {
                 d->pressEvent(point.pos());
             }
         }
     } else if (event->type() == QEvent::TouchUpdate) {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
-        foreach (QTouchEvent::TouchPoint point, touchEvent->touchPoints()) {
+        QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
+        foreach(const QTouchEvent::TouchPoint &point, touchEvent->touchPoints()) {
             if (!point.isPrimary() && d->mMultiTouchEnabled) {
                 if (point.state() & Qt::TouchPointPressed) {
                     d->pressEvent(point.pos());
@@ -1582,23 +1596,23 @@ bool HbInputButtonGroup::sceneEvent(QEvent *event)
             }
         }
     } else if (event->type() == QEvent::TouchEnd) {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent*>(event);
-        foreach (QTouchEvent::TouchPoint point, touchEvent->touchPoints()) {
-            if (!point.isPrimary() && d->mMultiTouchEnabled) {  
+        QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
+        foreach(const QTouchEvent::TouchPoint &point, touchEvent->touchPoints()) {
+            if (!point.isPrimary() && d->mMultiTouchEnabled) {
                 d->releaseEvent(point.pos());
             }
         }
     } else if (event->type() == QEvent::GraphicsSceneMousePress) {
-        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent *>(event);
         d->pressEvent(mouseEvent->pos());
     } else if (event->type() == QEvent::GraphicsSceneMouseDoubleClick) {
-        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent *>(event);
         d->doublePressEvent(mouseEvent->pos());
     } else if (event->type() == QEvent::GraphicsSceneMouseMove) {
-        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent *>(event);
         d->moveEvent(mouseEvent->lastPos(), mouseEvent->pos());
     } else if (event->type() == QEvent::GraphicsSceneMouseRelease) {
-        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+        QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent *>(event);
         d->releaseEvent(mouseEvent->pos());
         cancelButtonPress();
     } else {
@@ -1632,13 +1646,13 @@ Updates theme graphics
 void HbInputButtonGroup::changeEvent(QEvent *event)
 {
     Q_D(HbInputButtonGroup);
-   
+
     if (event->type() == HbEvent::ThemeChanged) {
         if (d->mBackground) {
             d->mBackground->themeChanged();
         }
 
-        foreach (HbFrameDrawer *drawer, d->mButtonDrawers) {
+        foreach(HbFrameDrawer *drawer, d->mButtonDrawers) {
             drawer->themeChanged();
         }
 

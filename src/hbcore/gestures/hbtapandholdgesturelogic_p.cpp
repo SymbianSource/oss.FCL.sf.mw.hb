@@ -90,24 +90,9 @@ bool HbTapAndHoldGestureLogic::outsideThreshold(HbTapAndHoldGesture *gesture)
     int movementThresholdSquare = mTapRadius * mTapRadius;
     if ( gesture->property("tapRadius").isValid() ) {
         movementThresholdSquare = gesture->property("tapRadius").toInt() * gesture->property("tapRadius").toInt();
-    }
-
+    }    
     return (delta.x() * delta.x() + delta.y() * delta.y()) > movementThresholdSquare;
 };
-
-/*!
-    \internal
-    \brief Starts brand new timer.
-    \param msecs Timer runtime in microseconds
-    \return ID of the timer
-*/
-int HbTapAndHoldGestureLogic::startTimer(
-        HbTapAndHoldGesture* gesture,
-        int msecs)
-{
-    gesture->priv->mRunningTime = msecs;
-    return gesture->startTimer(msecs);
-}
 
 /*!
     \internal
@@ -116,18 +101,15 @@ int HbTapAndHoldGestureLogic::startTimer(
 
 */
 void HbTapAndHoldGestureLogic::resetGesture(HbTapAndHoldGesture *gesture)
-{
+{    
     if ( gesture->priv->mTimerID ) {
         gesture->killTimer(gesture->priv->mTimerID);
-    }
-
+        gesture->priv->mTimerID = 0;
+    }    
     gesture->setProperty("startPos", QPointF(0,0));
-    gesture->setProperty("tapRadius", QPointF(0,0));
+    gesture->setProperty("tapRadius", QVariant());
     gesture->setProperty("position", QPointF(0,0));
     gesture->setProperty("scenePosition", QPointF(0,0));
-
-    gesture->priv->mTimerID = 0;
-    gesture->priv->mRunningTime = 0;
 }
 
 /*!
@@ -144,8 +126,7 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMousePress(
         QObject *watched,
         QMouseEvent *me )
 {
-    Q_UNUSED(gestureState);
-
+	Q_UNUSED(gestureState);
     // Accept only press events from left mouse button.
     if ( me->button() != Qt::LeftButton ) {
         DEBUG() << gesture << QGestureRecognizer::Ignore;
@@ -159,7 +140,11 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMousePress(
     gesture->setProperty("startPos", me->globalPos());
     gesture->setProperty("position", me->globalPos());
     gesture->setProperty("scenePosition", HbGestureUtils::mapToScene(watched, me->globalPos()));
-    gesture->priv->mTimerID = startTimer(gesture, HOLDTAP_ACTIVATION_USECS);
+
+    Q_ASSERT(gesture->priv->mTimerID == 0);
+    Q_ASSERT(gestureState == Qt::NoGesture);
+
+    gesture->priv->mTimerID = gesture->startTimer(HOLDTAP_ACTIVATION_USECS);
     mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
 
     DEBUG() << gesture << QGestureRecognizer::MayBeGesture;
@@ -182,9 +167,13 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMouseMove(
 {
     Q_UNUSED(gestureState);
 
-    // Before anything, check if there is even left button pressed.
-    if (me->buttons() != Qt::LeftButton || !gesture->priv->mRunningTime){
-        DEBUG() << gesture << QGestureRecognizer::Ignore;
+    // Before anything, check if there is left button pressed.
+    if (!(me->buttons() & Qt::LeftButton) ){
+        return QGestureRecognizer::Ignore;
+    }
+
+    // If timer is not running we can ignore move events
+    if(!gesture->priv->mTimerID) {
         return QGestureRecognizer::Ignore;
     }
 
@@ -195,12 +184,12 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMouseMove(
     if (outsideThreshold(gesture)){        
         // Finger has moved outside, so cancel this gesture
         gesture->killTimer(gesture->priv->mTimerID);
+        gesture->priv->mTimerID = 0;
+        DEBUG() <<  gesture << "threshold exceeded";
         return QGestureRecognizer::CancelGesture;
     }
-
-    // Move events should be just ignored.
-    DEBUG() << gesture << QGestureRecognizer::MayBeGesture;
-    return QGestureRecognizer::MayBeGesture;
+    // moving within threshold
+    return QGestureRecognizer::Ignore;
 }
 			
 /*!
@@ -218,29 +207,32 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMouseRelease(
         QObject *watched,
         QMouseEvent *me )
 {
-    Q_UNUSED(gestureState);
     Q_UNUSED(me);
     Q_UNUSED(watched);
+	Q_UNUSED(gestureState);
 
-    // Check if the gesture is already been cancelled. This is an unknown state.
-    if (!gesture->priv->mRunningTime) {
+    // Before anything, check if left button was released.
+    if (!(me->button() == Qt::LeftButton) ){
         DEBUG() << gesture << QGestureRecognizer::Ignore;
         return QGestureRecognizer::Ignore;
     }
 
-    // If release happens, before timer has expired, cancel the gesture.
-    if (gesture->priv->mTimerID) {
+    // make sure we not in invalid state
+    Q_ASSERT(!(gestureState == Qt::GestureFinished && !gesture->priv->mTimerID));
+
+    // Mouse release can only cancel or ignore gesture since timers handle
+    // triggering
+
+    // If timer was started, kill it
+    if(gesture->priv->mTimerID) {
         gesture->killTimer(gesture->priv->mTimerID);
-        return QGestureRecognizer::CancelGesture;
-    } else {
-        // Gesture has already been executed. Just ignore the event and don't
-        // bother UI about it.
         gesture->priv->mTimerID = 0;
-        gesture->priv->mRunningTime = 0;
-
-        DEBUG() << gesture << QGestureRecognizer::Ignore;
-        return QGestureRecognizer::Ignore;
+        // Gesture state in Gesture Manager is MaybeGesture
+        return QGestureRecognizer::CancelGesture;
     }
+    DEBUG() << gesture << QGestureRecognizer::Ignore;
+    return QGestureRecognizer::Ignore;
+
 }			
 		
 /*!
@@ -256,43 +248,35 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMouseRelease(
     \see HbTapAndHoldGestureLogic::HandleGesture()
 */
 QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleTimer(
+        Qt::GestureState gestureState,
         HbTapAndHoldGesture *gesture,
-        QTimerEvent* te)
+        QObject *watched,
+        QTimerEvent *te )
 {
-    // React only to own timer event, please.
-    if ( gesture->priv->mTimerID == te->timerId() ) {
-        // Consume the timer event as nobody will be interested about this.
-        QGestureRecognizer::Result result = QGestureRecognizer::ConsumeEventHint;
+    Q_UNUSED(watched);
+	Q_UNUSED(te);
 
-        // Handle the event and consume the timer event as it doesn't belong
-        // to anybody else.
-        switch ( gesture->priv->mRunningTime )
-        {
-        // Time to invoke the started event.
-        case HOLDTAP_ACTIVATION_USECS:
-            gesture->priv->mTimerID = startTimer(gesture, HOLDTAP_DURATION_USECS);
-            result |= QGestureRecognizer::TriggerGesture;
-            break;
+    // React only to own timer event
+    Q_ASSERT(gesture->priv->mTimerID == te->timerId());
 
-        // Time to invoke finish event.
-        case HOLDTAP_DURATION_USECS:
-            gesture->priv->mTimerID = 0;
-            gesture->priv->mRunningTime = 0;
-            result |= QGestureRecognizer::FinishGesture;
-            break;
+    // Consume the timer event as nobody will be interested about this.
+    QGestureRecognizer::Result result = QGestureRecognizer::ConsumeEventHint;
+    gesture->killTimer(gesture->priv->mTimerID);
+    gesture->priv->mTimerID = 0;
 
-        default:
-            result |= QGestureRecognizer::Ignore;
-            break;
-        }
-
-        DEBUG() << gesture << result;
-        return result;
+    if(gestureState == Qt::NoGesture) {
+        gesture->priv->mTimerID = gesture->startTimer(HOLDTAP_DURATION_USECS);
+        result |= QGestureRecognizer::TriggerGesture;
+    } else if (gestureState ==  Qt::GestureStarted) {
+        result |= QGestureRecognizer::FinishGesture;
     } else {
-        // Not our business.
-        DEBUG() << gesture << QGestureRecognizer::Ignore;
-        return QGestureRecognizer::Ignore;
+        // invalid state
+        Q_ASSERT(false);
     }
+
+    DEBUG() << gesture << result;
+    return result;
+
 }
 
 /*!
@@ -309,34 +293,27 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::recognize(
         HbTapAndHoldGesture *gesture,
         QObject *watched,
         QEvent *event )
-{
-    if (!gesture || !watched || !event )
-    {
-        DEBUG() << "WARNING: Ignoring tap and hold gesture because of invalid arguments from gesture fw.";
-        return QGestureRecognizer::Ignore;
-    }
-
+{    
     switch( event->type() )
     {
     case QEvent::MouseButtonDblClick:
     case QEvent::MouseButtonPress:
         return handleMousePress(
-            gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
+                gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
 
     case QEvent::MouseMove:
         return handleMouseMove(
-            gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
+                gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
 
     case QEvent::MouseButtonRelease:
         return handleMouseRelease(
-            gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
+                gestureState, gesture, watched, static_cast<QMouseEvent*>(event));
 
     case QEvent::Timer:
-        return handleTimer(gesture, static_cast<QTimerEvent*>(event));
+        return handleTimer(
+                gestureState, gesture, watched, static_cast<QTimerEvent*>(event));
 
     default: break;
     }
-
-    DEBUG() << gesture << QGestureRecognizer::Ignore;
     return QGestureRecognizer::Ignore;
 }

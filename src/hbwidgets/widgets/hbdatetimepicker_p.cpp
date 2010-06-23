@@ -26,7 +26,7 @@
 #include "hbdatetimepicker_p.h"
 #include "hbdatetimepicker.h"
 #include "hbstyleoption_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 //TODO:remove frameitem dependency
 #include "hbframeitem.h"

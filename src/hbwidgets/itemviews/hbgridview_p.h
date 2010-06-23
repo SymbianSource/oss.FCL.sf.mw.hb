@@ -65,6 +65,7 @@ public:
 public:
     bool mIconVisible;
     bool mTextVisible;
+    bool mSwapDimensionsOnOrientationChange;
 
     void relayout();
 

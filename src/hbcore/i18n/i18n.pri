@@ -35,6 +35,7 @@ PUBLIC_HEADERS += $$PWD/hbparameterlengthlimiter.h
 PUBLIC_HEADERS += $$PWD/hbfindfile.h
 PUBLIC_HEADERS += $$PWD/hbtranslator.h
 PUBLIC_HEADERS += $$PWD/hblanguageutil.h
+PUBLIC_HEADERS += $$PWD/hblocaleutil.h
 
 PRIVATE_HEADERS += $$PWD/hbdntxmlreader_p.h
 PRIVATE_HEADERS += $$PWD/hbngnormalnumber_p.h
@@ -52,9 +53,10 @@ SOURCES += $$PWD/hbnumbergrouping.cpp
 SOURCES += $$PWD/hbngnormalnumber.cpp
 SOURCES += $$PWD/hbnumbergrpxmlreader.cpp
 SOURCES += $$PWD/hbparameterlengthlimiter.cpp
-SOURCES += $$PWD/hbfindfile.cpp
 SOURCES += $$PWD/hbtranslator.cpp
+SOURCES += $$PWD/hbfindfile.cpp
 SOURCES += $$PWD/hblanguageutil.cpp
+SOURCES += $$PWD/hblocaleutil.cpp
 
 symbian:LIBS += -leuser -lhal -lcentralrepository -lptiengine -lSysLangUtil
 symbian:TARGET.CAPABILITY += WriteDeviceData

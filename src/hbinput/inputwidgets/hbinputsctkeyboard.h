@@ -53,7 +53,7 @@ public slots:
     void sendKeyChangeEvent(const QKeyEvent &pressEvent, const QKeyEvent &releaseEvent);
 
 protected:
-    HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner, const HbKeymap *keymap, QGraphicsItem* parent);
+    HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner, const HbKeymap *keymap, QGraphicsItem *parent);
 
 private slots:
     void updateButtonPreviewStatus(bool status);

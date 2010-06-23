@@ -60,6 +60,7 @@
 HbTransparentWindow::HbTransparentWindow(QGraphicsItem *parent) :
     HbWidget(parent)
 {
+    setFlag(QGraphicsItem::ItemHasNoContents, false);	
 }
 
 

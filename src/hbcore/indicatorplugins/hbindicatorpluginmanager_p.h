@@ -81,7 +81,7 @@ public:
     bool removeIndicator(const QString &indicatorType);
     QList<IndicatorClientInfo> indicatorClientInfoList() const;
     QList<HbIndicatorInterface*> indicators() const;
-    void connectTo(QObject *widget);
+    void signalActiveIndicators(QObject *target);
 signals:
     void indicatorActivated(HbIndicatorInterface *addedIndicator);
     void indicatorActivated(const IndicatorClientInfo &clientInfo);

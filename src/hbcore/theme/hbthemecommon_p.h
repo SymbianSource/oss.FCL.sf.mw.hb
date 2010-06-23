@@ -278,7 +278,7 @@ enum HbThemeServerRequest {
      EInvalidServerRequest = 0,
      EIconLookup = 1,
      EStyleSheetLookup,
-     EThemeSelection,
+     EThemeSelection = 4,
      EMultiPieceIcon,
      EMultiIcon,
      EWidgetMLLookup,

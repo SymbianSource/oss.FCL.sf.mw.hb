@@ -28,15 +28,15 @@
 
 #include <hbwidgetbase.h>
 #include <hbglobal.h>
-QT_FORWARD_DECLARE_CLASS(QGraphicsItem)
-QT_FORWARD_DECLARE_CLASS(HbMeshLayout)
+
+class HbAnchorLayout;
 
 class HB_CORE_PRIVATE_EXPORT HbAnchorArrowDrawer : public HbWidgetBase
 {
     Q_OBJECT
 
 public:
-    explicit HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent = 0);
+    explicit HbAnchorArrowDrawer(HbAnchorLayout *layout, QGraphicsItem *parent = 0);
     virtual ~HbAnchorArrowDrawer();
 
 public slots:
@@ -51,7 +51,7 @@ protected:
     void updateColors();
 
 private:
-    HbMeshLayout* mLayout;
+    HbAnchorLayout* mLayout;
     bool mDrawOutlines;
     bool mDrawArrows;
     bool mDrawSpacers;

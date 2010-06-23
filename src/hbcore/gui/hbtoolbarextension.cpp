@@ -69,6 +69,11 @@ bool HbToolBarExtensionPrivate::extensionEffectsLoaded = false;
     \fn int HbToolBarExtension::type() const
  */
 
+/*!
+  \primitives
+  \primitive{background} HbFrameItem representing the extension background.
+  */
+
 HbToolBarExtensionPrivate::HbToolBarExtensionPrivate() :
         HbDialogPrivate(),
         mToolButtons(),
@@ -152,7 +157,7 @@ void HbToolBarExtensionPrivate::doLayout()
         return;
 
     foreach (HbToolButton* button, mToolButtons) {
-        button->setVisible(button->action()->isVisible());
+        button->setVisible(HbToolButtonPrivate::d_ptr(button)->action->isVisible());
     }
 
     mLayout = new QGraphicsGridLayout();
@@ -160,7 +165,7 @@ void HbToolBarExtensionPrivate::doLayout()
     mLayout->setSpacing(0.0);  // if non zero spacing needed, add to css
     for ( int i(0), j(0), ie(mToolButtons.count()); i < ie; ++i ) {
         HbToolButton *button = mToolButtons.at(i);
-        if ( button->action()->isVisible() ) {
+        if ( HbToolButtonPrivate::d_ptr(button)->action->isVisible() ) {
             // Calculate the row and column indices
             column = ( j % columns );
             row = ( (j - column) / columns );
@@ -204,38 +209,43 @@ void HbToolBarExtensionPrivate::actionAdded( QActionEvent *event )
 {
     Q_Q(HbToolBarExtension);
 
-    HbAction *action = qobject_cast<HbAction *>( event->action() );
+    HbToolButton *button = 0;
 
-    if (action) {
-        HbToolButton *button = new HbToolButton(action, q->contentWidget());
+    HbAction *hbAction = qobject_cast<HbAction *>( event->action() );
 
-        if (!button->action()->icon().isNull()) {
-            if (button->action()->text().isEmpty()) {
-                button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
-            } else {
-                button->setToolButtonStyle(HbToolButton::ToolButtonTextAndIcon);
-            }
+    if (hbAction) {
+        button = new HbToolButton(hbAction, q->contentWidget());
+    } else {
+        button = new HbToolButton(q->contentWidget());
+        HbToolButtonPrivate::d_ptr(button)->action = event->action();
+        QObject::connect(event->action(), SIGNAL(triggered()), button, SLOT(_q_actionTriggered()));
+        QObject::connect(event->action(), SIGNAL(changed()), button, SLOT(_q_actionChanged()));
+    }
+
+    if ((hbAction && !hbAction->icon().isNull()) || !event->action()->icon().isNull()) {
+        if (HbToolButtonPrivate::d_ptr(button)->action->text().isEmpty()) {
+            button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
         } else {
-            button->setToolButtonStyle(HbToolButton::ToolButtonText);
-        }
-
-        button->setProperty("toolbutton_extension_layout", true);
-        button->setSizePolicy( QSizePolicy( QSizePolicy::Preferred, 
-                                            QSizePolicy::Preferred) );
-
-        // Find out index where to insert button
-        int index = q->actions().indexOf( event->action() );
-
-        mToolButtons.insert( index, button );
-        
-        q->connect(button, SIGNAL(clicked()), q, SLOT(_q_animateButtonClicked()));
-        q->connect(action, SIGNAL(triggered()), q, SLOT(close()));
-        
-        if (contentWidget){
-            doLayout();
+            button->setToolButtonStyle(HbToolButton::ToolButtonTextAndIcon);
         }
     } else {
-        qWarning() << "Use HbAction instead of QAction!";
+        button->setToolButtonStyle(HbToolButton::ToolButtonText);
+    }
+
+    button->setProperty("toolbutton_extension_layout", true);
+    button->setSizePolicy( QSizePolicy( QSizePolicy::Preferred,
+                                        QSizePolicy::Preferred) );
+
+    // Find out index where to insert button
+    int index = q->actions().indexOf( event->action() );
+
+    mToolButtons.insert( index, button );
+
+    q->connect(button, SIGNAL(clicked()), q, SLOT(_q_animateButtonClicked()));
+    q->connect(event->action(), SIGNAL(triggered()), q, SLOT(close()));
+
+    if (contentWidget){
+        doLayout();
     }
 }
 
@@ -243,7 +253,7 @@ void HbToolBarExtensionPrivate::actionRemoved( QActionEvent *event )
 {
     for ( int i(0); i < mToolButtons.count(); ++i ) {
         HbToolButton *button = mToolButtons.at(i);
-        if ( button->action() == event->action() ) {            
+        if ( HbToolButtonPrivate::d_ptr(button)->action == event->action() ) {
             mToolButtons.removeAt(i);                   
             if (contentWidget) {
                 mLayout->removeAt(i);
@@ -304,7 +314,7 @@ void HbToolBarExtensionPrivate::_q_animateButtonClicked()
     Q_Q(HbToolBarExtension);
     HbToolButton *button = static_cast<HbToolButton *>(q->sender());
     if (button) {
-        HbEffect::start(button, "TBEButtonClicked", "clicked");
+        HbEffect::start(button, "HB_TBE", "clicked");
     }
 #endif
 }
@@ -444,6 +454,9 @@ bool HbToolBarExtension::event( QEvent *event )
     return HbDialog::event(event);
 }
 
+/*!
+  \reimp
+  */
 void HbToolBarExtension::polish( HbStyleParameters &params )
 {    
     Q_D(HbToolBarExtension);  
@@ -460,9 +473,7 @@ void HbToolBarExtension::polish( HbStyleParameters &params )
     params.addParameter( ColsPortrait );
     params.addParameter( ColsLandscape );
     d->initialiseContent();
-    if (d->mDefaultContentWidget) {
-        QGraphicsWidget *tbeContentWidget = contentWidget();
-        style()->setItemName( tbeContentWidget, "HbToolBarExtension" );
+    if (d->mDefaultContentWidget) {       
         HbDialog::polish(params);
         if ( params.value( Margins ).isValid() 
              && params.value( RowsPortrait ).isValid() 

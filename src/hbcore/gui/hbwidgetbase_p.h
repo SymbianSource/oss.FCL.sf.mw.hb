@@ -28,7 +28,6 @@
 
 #include <hbnamespace.h>
 #include <hbwidgetbase.h>
-#include <hbcssinspector_p.h>
 
 #include <QGraphicsItem>
 //
@@ -42,6 +41,7 @@
 // We mean it.
 //
 
+class HbCssInspectorWindow;
 
 class HB_CORE_PRIVATE_EXPORT HbWidgetBasePrivate
 {
@@ -63,9 +63,10 @@ public:
 		AC_TextAlign = 0x02,
 		AC_IconBrush = 0x04,
 		AC_IconAspectRatioMode = 0x08,
-        AC_TextWrapMode = 0x10,
-        AC_TextLinesMin = 0x20,
-        AC_TextLinesMax = 0x40
+        AC_IconAlign = 0x10,
+        AC_TextWrapMode = 0x20,
+        AC_TextLinesMin = 0x40,
+        AC_TextLinesMax = 0x80
 	};
 
 	inline void setApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att, bool value)

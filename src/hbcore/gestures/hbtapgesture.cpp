@@ -48,27 +48,136 @@ HbTapGesturePrivate::HbTapGesturePrivate(): mTapStyleHint(HbTapGesture::Tap), mT
    @hbcore
    \class HbTapGesture
 
-   \brief HbTapGesture is an extension to Qt standard QTapGesture.
+   \brief The HbTapGesture class provides support for widgets needing both
+   the tap and the tap-and-hold gestures.
+   
+   HbTapGesture is an extension to the Qt standard QTapGesture. It is
+   optimized for mobile touch screens, and also supports recognition of
+   mouse events for development purposes. Moreover, HbTapGesture extends
+   QTapGesture by supporting both tap and tap-and-hold gestures. Use of
+   Qt::TapAndHoldGesture in conjunction with Qt::TapGesture in the same
+   widget would make it difficult to handle state updates and finishes in
+   the widget.
+   
+   Compared to QTapGesture, HbTapGesture also provides additional information
+   about the tap gesture position. Moreover, it has convenience functions for
+   handling the position information directly in scene coordinates, without
+   any need for manual conversions from global to scene coordinates. 
+   
+   Some of the existing Hb widgets (for example HbPushButton) already
+   support tap gestures by emitting a signal such as clicked() or longPress()
+   when they are tapped. If, however, you are implementing a custom widget
+   whose base class does not emit the needed signals, you need to add
+   tap gesture handling by using either QTapGesture or HbTapGesture.
+   HbTapGesture is a recommended choice if your widget needs both tap and
+   tap-and-hold gestures.
+   
+   HbTapGesture does not support double tap.
+   
+   \section _usecases_hbtapgesture Using the HbTapGesture class
+      
+   This example shows how to make a custom widget recognize the tap and
+   tap-and-hold gestures. The custom widget in the example derives from
+   HbWidget.
 
-   HbTapGesture extends QTapGesture with additional information related
-   to the tap gesture, but most important use for HbTapGesture is
-   in widgets needing both tap and tap-and-hold. HbTapGesture
-   provides both -- use of Qt::TapAndHoldGesture
-   in conjunction with Qt::TapGesture in the same widget makes it
-   difficult to handle state updates and finishes in the widget.
-   HbTapGesture::tapStylehint() can be used to query whether
-   the tap was a normal tap, or tap-and-hold at the time of Qt::GestureUpdated
-   of Qt::GestureFinished. A gesture update will be sent at the time
-   when the tap-and-hold timer triggers. No updates are sent
-   of the finger movement during the tap.
+   <ol>
+   <li>   
+   Register for tap gestures by using the base class function
+   QGraphicsObject::grabGesture(). QGraphicsObject::grabGesture() can be
+   called several times with different arguments, if the widget is interested
+   in other gesture types as well.
+   
+   \code
+   // This widget is interested in tap and pan gestures.
+   grabGesture(Qt::TapGesture);
+   grabGesture(Qt::PanGesture);
+   \endcode
+   </li>
+   
+   <li> 
+   Reimplement HbWidgetBase::gestureEvent() to handle gestures that are
+   meaningful for your custom widget.
+   
+   HbTapGesture::tapStyleHint() can be used to query whether the tap was
+   a normal tap or tap-and-hold at the time of Qt::GestureUpdated or
+   Qt::GestureFinished. A gesture update will be sent at the time when
+   the tap-and-hold timer triggers. No updates are sent of the finger
+   movement during the tap.
+     
+   \code
+   void MyWidget::gestureEvent(QGestureEvent *event)
+   {
+       if (HbTapGesture *tap = qobject_cast<HbTapGesture *>
+           (event->gesture(Qt::TapGesture))) {
+       
+           switch (tap->state()) {
+           
+           case Qt::GestureStarted:
+               // Visualize the active state of the widget.
+               break;
+           case Qt::GestureUpdated:
+           
+               // Long tap is triggered if the gesture takes
+               // more than 0.5 seconds. Handle it here.
+               if (tap->tapStyleHint() == HbTapGesture::TapAndHold) {               
+                   // Emit a long tap signal.               
+               }
+               
+               break;
+           case Qt::GestureCanceled:
+               // Visualize the non-active state of the widget.
+               break;
+           case Qt::GestureFinished:
+           
+               // Visualize the non-active state of the widget.
+               
+               // Short tap is handled when the gesture is finished.
+               if (tap->tapStyleHint() == HbTapGesture::Tap) {               
+                   // Emit a short tap signal.               
+               }
+               
+               break;
+           default:
+               break;
+           }           
+       }
+       
+       // Handle other gesture types that have been grabbed. There may be
+       // several, since all gestures that are active at the same moment
+       // are sent within the same gesture event.
+       if (HbPanGesture *pan = qobject_cast<HbPanGesture *>
+           (event->gesture(Qt::PanGesture))) {
+           // handle the pan gesture
+       }
+       
+   }   
+   \endcode
+   </li>
+   </ol>
 
-   \sa QTapGesture, HbTapGesture::TapStyleHint
+   \sa TapStyleHint, QTapGesture
 
 */
 
 /*!
-    \brief HbTapGesture constructor
-    \param parent Parent for the gesture
+    \enum HbTapGesture::TapStyleHint
+    Defines the tap style.
+*/
+
+/*!
+    \var HbTapGesture::TapStyleHint HbTapGesture::Tap
+    Normal (short) tap.
+*/
+
+/*!
+    \var HbTapGesture::TapStyleHint HbTapGesture::TapAndHold
+    Long press (tap-and-hold).
+*/
+
+/*!
+    Constructor.
+    
+    \param parent Parent for the gesture.
 */
 HbTapGesture::HbTapGesture(QObject *parent)
     : QTapGesture(parent), d_ptr(new HbTapGesturePrivate)
@@ -77,9 +186,9 @@ HbTapGesture::HbTapGesture(QObject *parent)
 }
 
 /*!
-    \brief HbTapGesture constructor
-    \param dd Custom private data
-    \param parent Parent for the gesture
+    Constructor required by the shared d-pointer paradigm.
+    \param dd Custom private data.
+    \param parent Parent for the gesture.
 
 */
 HbTapGesture::HbTapGesture( HbTapGesturePrivate &dd, QObject *parent )
@@ -89,7 +198,7 @@ HbTapGesture::HbTapGesture( HbTapGesturePrivate &dd, QObject *parent )
 }
 
 /*!
-    \brief HbTapGesture destructor
+    Destructor.
 */
 HbTapGesture::~HbTapGesture()
 {
@@ -98,8 +207,9 @@ HbTapGesture::~HbTapGesture()
 }
 
 /*!
-    \property startPos
-    \brief Stores the starting position of the tap gesture in screen coordinates.
+    Returns the starting position of the tap gesture in screen coordinates.
+    
+    \sa setStartPos()
 */
 QPointF HbTapGesture::startPos() const
 {
@@ -107,6 +217,13 @@ QPointF HbTapGesture::startPos() const
     return d->mStartPos;
 }
 
+/*!
+    Sets the starting position of the tap gesture in screen coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    
+    \sa startPos()
+*/
 void HbTapGesture::setStartPos(const QPointF &startPos)
 {
     Q_D(HbTapGesture);
@@ -114,8 +231,9 @@ void HbTapGesture::setStartPos(const QPointF &startPos)
 }
 
 /*!
-    \property sceneStartPos
-    \brief Stores the starting position of the tap gesture in scene coordinates.
+    Returns the starting position of the tap gesture in scene coordinates.
+    
+    \sa setSceneStartPos()
 */
 QPointF HbTapGesture::sceneStartPos() const
 {
@@ -123,6 +241,13 @@ QPointF HbTapGesture::sceneStartPos() const
     return d->mSceneStartPos;
 }
 
+/*!
+    Sets the starting position of the tap gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    
+    \sa sceneStartPos()
+*/
 void HbTapGesture::setSceneStartPos(const QPointF &startPos)
 {
     Q_D(HbTapGesture);
@@ -130,9 +255,9 @@ void HbTapGesture::setSceneStartPos(const QPointF &startPos)
 }
 
 /*!
-    \property scenePosition
-    \brief Stores the current position of the tap gesture in scene coordinates.
-    \sa QTapGesture::position()
+    Returns the current position of the tap gesture in scene coordinates.
+    
+    \sa setScenePosition(), QTapGesture::position()
 */
 QPointF HbTapGesture::scenePosition() const
 {
@@ -140,6 +265,13 @@ QPointF HbTapGesture::scenePosition() const
     return d->mScenePosition;
 }
 
+/*!
+    Sets the current position of the tap gesture in scene coordinates.
+    This function is used by the framework gesture recognition logic,
+    and it should not be used by the widget receiving the gesture.
+    
+    \sa scenePosition(), QTapGesture::position()
+*/
 void HbTapGesture::setScenePosition(const QPointF &startPos)
 {
     Q_D(HbTapGesture);
@@ -147,11 +279,11 @@ void HbTapGesture::setScenePosition(const QPointF &startPos)
 }
 
 /*!
-    \property tapStyleHint
-    \brief Indicates whether tap is normal tap or long press.
+    Returns information about whether the tap is a short tap or long press
+    (tap-and-hold).
 
-    TapStyleHint is by default Tap and in case of long press, the gesture
-    update event is sent and TapStyleHint changed to TapAndHold.
+    The tapStyleHint property is by default Tap and in case of long press,
+    a gesture update event is sent and tapStyleHint changed to TapAndHold.
 */
 HbTapGesture::TapStyleHint HbTapGesture::tapStyleHint() const
 {

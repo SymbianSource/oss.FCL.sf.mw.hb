@@ -245,6 +245,9 @@ void HbVolumeSliderPrivate::_q_muteToggled( bool state )
     }
     option.sliderElementIcon = icons.value( HbSlider::IconElement ); 
     q->style( )->updatePrimitive( elementItemMap[HbSlider::IconElement].item,HbStyle::P_SliderElement_icon,&option );
+    q->setProperty("changeincrementState" ,false);
+    q->setProperty("changedecrementState" ,false);
+    q->setProperty("state", "normal");
 
 }
 
@@ -402,6 +405,8 @@ void HbVolumeSlider::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
     Q_D( HbVolumeSlider );
     HbSlider::mouseReleaseEvent( event );
     d->stopRepeatAction( );
+    setProperty("changeincrementState" ,false);
+    setProperty("changedecrementState" ,false);
     setProperty("state", "normal"); 
 }
 

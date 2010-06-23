@@ -175,7 +175,6 @@ public:
     void HandleWidgetMLLookupL(const RMessage2& aMessage);
     void HandleDeviceProfilesReqL(const RMessage2& aMessage);
     void HandleEffectAddAndFileLookupL(const RMessage2 &aMessage);
-    void HandleThemeSelectionL(const RMessage2 & aMessage);
     QColor GetColorFromRgba(TUint32 aRgba, bool aColorFlag);
     void GetSharedMultiIconInfoL(const RMessage2& aMessage);
     void GetMultiIconInfoL(const RMessage2& aMessage);

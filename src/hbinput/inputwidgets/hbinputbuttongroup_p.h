@@ -31,20 +31,15 @@
 #include "hbinputbuttongroup.h"
 #include "hbinputbutton.h"
 
+class HbDialog;
+class QTextLine;
+class QTextLayout;
+
 class HB_INPUT_PRIVATE_EXPORT HbInputButtonGroupPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbInputButtonGroup)
 
 public:
-
-    enum HbInputButtonTextType {
-        ButtonTextTypeSingle,
-        ButtonTextTypePrimary,
-        ButtonTextTypeSecondaryFirstRow,
-        ButtonTextTypeSecondarySecondRow,
-        ButtonTextTypeLabel
-    };
-
     HbInputButtonGroupPrivate();
     ~HbInputButtonGroupPrivate();
 
@@ -54,9 +49,9 @@ public:
     virtual void updateButtonGrid(const QSizeF &size);
     virtual void updateColorArray();
 
-    virtual void showButtonPreview(HbInputButton * const item);
-    virtual void hideButtonPreview(HbInputButton * const item);
-    virtual void showCharacterSelectionPreview(HbInputButton * const item);
+    virtual void showButtonPreview(HbInputButton *const item);
+    virtual void hideButtonPreview(HbInputButton *const item);
+    virtual void showCharacterSelectionPreview(HbInputButton *const item);
 
     virtual void pressEvent(const QPointF &position, bool emitSignal = true);
     virtual void doublePressEvent(const QPointF &position, bool emitSignal = true);
@@ -73,35 +68,35 @@ protected:
     virtual void createPrimaryTextLayout(int index, const QHash<int, QString> &textContent, const QSizeF &size);
     virtual void createSecondaryTextLayout(int index, const QHash<int, QString> &textContentt, const QSizeF &size);
 
-    virtual void layoutTextLine(HbInputButtonTextType textType, const HbInputButton *button, const QSizeF &cellSize,
+    virtual void layoutTextLine(HbInputButtonGroup::HbInputButtonTextType textType, const HbInputButton *button, const QSizeF &cellSize,
                                 QTextLine &textLine, const QSizeF &textSize);
 
     virtual QString buttonGraphics(HbInputButton::HbInputButtonType type, HbInputButton::HbInputButtonState state);
     virtual QString buttonColor(HbInputButton::HbInputButtonType type, HbInputButton::HbInputButtonState state);
 
-    virtual qreal fontSize(HbInputButtonTextType textType);
+    virtual qreal fontSize(HbInputButtonGroup::HbInputButtonTextType textType);
 
     void startLongPress(int index);
     void cancelLongPress(int index);
 
 public:
     qreal mUnitValue;
-    QList<HbFrameDrawer*> mButtonDrawers;
-    QList<QTextLayout*> mTextLayouts;
+    QList<HbFrameDrawer *> mButtonDrawers;
+    QList<QTextLayout *> mTextLayouts;
     QList<QColor> mColors;
-    QList<QTimer*> mLongPressTimers;
+    QList<QTimer *> mLongPressTimers;
     QList<int> mLongPressButtons;
     QSize mGridSize;
-    QList<HbInputButton*> mButtonData;
+    QList<HbInputButton *> mButtonData;
     QList<int> mUsedCustomButtons;
-    QList<HbAction*> mCustomActions;
+    QList<HbAction *> mCustomActions;
     QHash<QPair<int, int>, int> mButtonGridPositions;
     qreal mButtonBorderSize;
     bool mEnabled;
     bool mButtonPreviewEnabled;
     bool mCharacterSelectionPreviewEnabled;
     bool mMultiTouchEnabled;
-    QHash<int, HbInputButtonGroup*> mButtonPreview;
+    QHash<int, HbInputButtonGroup *> mButtonPreview;
     HbDialog *mCharacterSelectionPreview;
     HbFrameDrawer *mBackground;
     QList<HbKeyPressProbability> mProbabilities;

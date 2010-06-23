@@ -1,0 +1,10 @@
+HbProgressDialog::content {
+    left:0 un;
+    right:0 un;
+    top:0 un;
+    bottom:0 un;
+}
+
+HbProgressDialog::controls {	
+    top:0 un;
+}

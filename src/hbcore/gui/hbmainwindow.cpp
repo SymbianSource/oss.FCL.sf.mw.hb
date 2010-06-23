@@ -59,7 +59,7 @@
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbmainwindoworientation_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hboogmwatcher_p.h"
 
 #ifdef Q_OS_SYMBIAN
@@ -309,7 +309,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget *)),
             this, SLOT(_q_viewRemoved(QGraphicsWidget *)));
 
-    // create Titlebar (container for indicators, titlepane and secondary softkey
+    // create Titlebar (container for indicator button, titlepane and navigation button
     d->mTitleBar = new HbTitleBar(this, d->mClippingItem);
     d->mTitleBar->setZValue(HbPrivate::TitleBarZValue);
 
@@ -390,10 +390,10 @@ HbMainWindow::~HbMainWindow()
     HbView's content widget.
 
     When \a widget is a HbView, use HbView::setWidget() to set the content
-    widget for the view. Note that you should never attach child items directly
-    to the HbView instance, even though HbView is also a HbWidget. Instead, create
-    a content widget, set it to the view via HbView::setWidget(), and attach children
-    to that.
+    widget for the view. Note that you should never attach child items or set a layout
+    directly to the HbView instance, even though HbView is also a HbWidget.
+    Instead, create a content widget, set it to the view via HbView::setWidget(),
+    and attach children or set a layout to that.
 
     Use setCurrentView() to switch between the added views. (only one of them is visible at a time)
     The view-specific decorators (toolbar, Options menu, title in the titlebar) and of course
@@ -401,7 +401,7 @@ HbMainWindow::~HbMainWindow()
     when switching views.
 
     For a detailed description of views see the HbView class.
-    
+
     Note that using view switching (i.e. several HbView instances, setCurrentView(), etc.) in
     Hb applications is not mandatory, it is purely optional. For applications that are not really
     view based (e.g. because they only have one screen of content or because they have more "fluid" UI where
@@ -951,7 +951,7 @@ void HbMainWindow::customEvent(QEvent *event)
         // The signal must be emitted always, even when there was no need to do anything.
         emit d->idleEventDispatched();
     } else if (event->type() == HbMainWindowPrivate::IdleOrientationEvent) { // complete the orientation change effect chain
-        if (d->mEffectItem && d->mOrientationChangeOngoing) {
+        if (d->mEffectItem && d->mOrientationChangeOngoing && d->mOrientationEffectFinished) {
             HbEffect::start(d->mEffectItem, "rootItemFinalPhase", this, "rootItemFinalPhaseDone");
         }
     } else if (event->type() == HbMainWindowPrivate::IdleOrientationFinalEvent) {

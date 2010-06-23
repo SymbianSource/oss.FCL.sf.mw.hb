@@ -72,6 +72,9 @@ public:
     QString mPromptText;
     QString mPromptAdditionalText;
     QString mText;
+    HbAction *action1;
+public slots:
+    void textChange(const QString);
 };
 
 #endif //HBINPUTDIALOGPRIVATE_H

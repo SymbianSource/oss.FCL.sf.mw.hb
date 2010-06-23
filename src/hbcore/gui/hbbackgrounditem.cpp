@@ -48,7 +48,7 @@ HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *pa
     mImageMode(Hb::ScaleBackgroundToFit)
 {
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-
+    setFlag(QGraphicsItem::ItemHasNoContents, false);
     mPrtImageName = defaultImageName(Qt::Vertical);
     mLscImageName = defaultImageName(Qt::Horizontal);
     updateBackgroundImage();

@@ -57,9 +57,12 @@ public:
     void createContentWidget();
 
     void setGroupBoxType(GroupBoxType type);
+public:
 
     HbGroupBoxContentWidget *mContentWidget;
     HbGroupBoxHeadingWidget *mHeadingWidget;
+    bool collapsed;
+    bool collapsable;
     GroupBoxType mGroupBoxType;
 };
 

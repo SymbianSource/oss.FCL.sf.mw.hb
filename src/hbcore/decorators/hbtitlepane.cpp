@@ -271,6 +271,9 @@ void HbTitlePane::gestureEvent(QGestureEvent *event)
                     HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                     d->toggle(false);
                 }
+                break;
+            }
+        case Qt::GestureFinished: {
 
                 if(pan->sceneDelta().x() > 0) {
                     emit panRight();
@@ -279,9 +282,6 @@ void HbTitlePane::gestureEvent(QGestureEvent *event)
                     emit panLeft();
                 }
 
-                break;
-            }
-        case Qt::GestureFinished: {
                 if (boundingRect().contains(pointerPos) && !d->mToggled) {
                     d->mMode = QIcon::Selected;
                     updatePrimitives();

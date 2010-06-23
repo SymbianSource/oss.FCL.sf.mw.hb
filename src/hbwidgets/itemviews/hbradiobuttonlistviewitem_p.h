@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBRADIOBUTTONLISTVIEVITEM_H
-#define HBRADIOBUTTONLISTVIEVITEM_H
+#ifndef HBRADIOBUTTONLISTVIEWITEM_P_H
+#define HBRADIOBUTTONLISTVIEWITEM_P_H
 
 #include <hblistviewitem.h>
 

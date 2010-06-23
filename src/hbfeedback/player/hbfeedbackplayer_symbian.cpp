@@ -204,8 +204,13 @@ TTouchLogicalFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::
         break;
     case HbFeedback::ItemPick:
         instantFeedbackSymbian = ETouchFeedbackItemPick;
+        break;
     case HbFeedback::LongPress:
+#ifdef HB_TOUCHFEEDBACK_TYPE_IS_LONGPRESS
+        instantFeedbackSymbian = ETouchFeedbackLongPress;
+#else
         instantFeedbackSymbian = ETouchFeedbackLongTap;
+#endif
         break;
     default:
         break;

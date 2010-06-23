@@ -41,7 +41,7 @@
 #define HB_TUMBLE_ITEM_ANIMATION_TIME 500
 #define HB_TUMBLE_PREFERRED_ITEMS 3
 
-#define HBTUMBLE_DEBUG
+//#define HBTUMBLE_DEBUG
 #ifdef HBTUMBLE_DEBUG
 #include <QDebug>
 #endif
@@ -57,6 +57,7 @@ public:
 
     void setLoopingEnabled(bool looping) ;
     bool isLoopingEnabled() const ;
+    bool isLoopingNeeded() const;
     void removeItem(const QModelIndex &index, bool animate );
     void setModelIndexes(const QModelIndex &startIndex);
 };
@@ -197,6 +198,12 @@ bool HbTumbleViewItemContainer::isLoopingEnabled() const {
     return d->mIsLooped;
 }
 
+bool HbTumbleViewItemContainer::isLoopingNeeded() const
+{
+    Q_D(const HbTumbleViewItemContainer);
+      return (isLoopingEnabled() && (d->mItems.count() < maxItemCount()));
+}
+
 void HbTumbleViewItemContainer::removeItem(const QModelIndex &index, bool animate )
 {
     Q_D(HbTumbleViewItemContainer);
@@ -277,8 +284,6 @@ void HbTumbleViewItemContainer::setModelIndexes(const QModelIndex &startIndex)
         } else {
             for (int itemCounter = lastUsedItem + 1; itemCounter < d->mItems.count(); itemCounter++) {
                 HbAbstractViewItem *item2 = d->mItems.at(itemCounter);
-                qDebug()<<"containeritemsat("<<itemCounter<<")="<<item2->modelIndex()<<"--indexList.at("
-                        <<indexCounter<<")="<<indexList.at(indexCounter);
 
                 if (item2->modelIndex() == indexList.at(indexCounter)) {
                     d->mItems.swap(indexCounter, itemCounter);
@@ -292,8 +297,6 @@ void HbTumbleViewItemContainer::setModelIndexes(const QModelIndex &startIndex)
             }
 
         }
-        qDebug()<<"last used item -"<<lastUsedItem;
-        qDebug()<<"-------------------------------------------------------";
     }
 
     int indexCount(indexList.count());
@@ -454,7 +457,7 @@ void HbTumbleViewPrivate::init(QAbstractItemModel *model)
     q->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
     q->setFrictionEnabled(true);
 
-    //dont want this to occupy entire screen. preferred is few items.
+    //don't want this to occupy entire screen. preferred is few items.
     q->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 
     mDelayedSelectTimer.setSingleShot(true);
@@ -541,7 +544,7 @@ void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint hint)
 
     if (!d->mModelIterator->model()
         ||  index.model() != d->mModelIterator->model()) {
-        return;
+            return;
     }
 
     //If item is in the buffer, just reveal it.
@@ -550,18 +553,19 @@ void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint hint)
     if (itemRecycling()) {
         if (    !d->mContainer->itemByIndex(index)
             ||  hint != EnsureVisible) {
-            //Now the item is not in the buffer.
-            //We must first set the item to be in the buffer
-            //If the item is above let's put it first and if it is below put it last
+                //Now the item is not in the buffer.
+                //We must first set the item to be in the buffer
+                //If the item is above let's put it first and if it is below put it last
 
-            int newIndex = -1;
+                int newIndex = -1;
 
-            switch (hint) {
-            case PositionAtCenter: {
+                switch (hint) {
+            case PositionAtCenter: 
+                {
                     int containerCount = d->mContainer->items().count();
                     newIndex = index.row() - containerCount / 2 ;
                     if(newIndex < 0){
-                        if(isLoopingEnabled()){
+                        if(((HbTumbleViewItemContainer*)(d->mContainer))->isLoopingNeeded()){
                             newIndex = d->mModelIterator->indexCount()+newIndex;
                         }
                         else{
@@ -570,13 +574,17 @@ void HbTumbleView::scrollTo(const QModelIndex &index, ScrollHint hint)
                     }
                     break;
                 }
+
             case EnsureVisible:
             case PositionAtTop:
             case PositionAtBottom:
             default: {
-                    qWarning()<<"Scroll Hint is not supported ";                }
-            }
-            d->mContainer->setModelIndexes(d->mModelIterator->index(newIndex));
+#ifdef HBTUMBLE_DEBUG
+                qWarning()<<"Scroll Hint is not supported "; 
+#endif
+                     }
+                }
+                d->mContainer->setModelIndexes(d->mModelIterator->index(newIndex));
         }
     }
     HbAbstractItemView::scrollTo(index, hint);
@@ -1089,16 +1097,16 @@ void HbTumbleView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bo
     Q_D(const HbListView);
 
     QList<HbAbstractViewItem *> items = d->mContainer->items();
-    bool empty = items.isEmpty();
-    QModelIndex rootIndex = d->mModelIterator->rootIndex();
-    QModelIndex firstIndex = items.first()->modelIndex();
-    QModelIndex lastIndex = items.last()->modelIndex();
+    if (!items.isEmpty()) {
+        QModelIndex rootIndex = d->mModelIterator->rootIndex();
+        QModelIndex firstIndex = items.first()->modelIndex();
+        QModelIndex lastIndex = items.last()->modelIndex();
 
-    if (!empty &&
-        topLeft.parent() == rootIndex
-        /*&& firstIndex.row() <= bottomRight.row()
-        && topLeft.row() <= lastIndex.row()*/) {
-        HbAbstractItemView::dataChanged(topLeft, bottomRight);
+        if ( topLeft.parent() == rootIndex
+            /*&& firstIndex.row() <= bottomRight.row()
+            && topLeft.row() <= lastIndex.row()*/) {
+            HbAbstractItemView::dataChanged(topLeft, bottomRight);
+        }
     }
 }
 

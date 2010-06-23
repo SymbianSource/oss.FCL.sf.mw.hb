@@ -38,7 +38,7 @@
 /*!
     \internal
 */
-HbWidgetLoaderActions::HbWidgetLoaderActions() 
+HbWidgetLoaderActions::HbWidgetLoaderActions()
     : HbXmlLoaderBaseActions(), mWidget(0), mLayout(0)
 {
 }
@@ -57,18 +57,17 @@ HbWidgetLoaderActions::~HbWidgetLoaderActions()
 bool HbWidgetLoaderActions::createMeshLayout( const QString &widget )
 {
     Q_UNUSED( widget );
-    HbMeshLayout *layout = static_cast<HbMeshLayout*>(mWidget->layout());
+    HbAnchorLayout *layout = static_cast<HbAnchorLayout*>(mWidget->layout());
     if (!layout) {
-        layout = new HbMeshLayout();
+        layout = new HbAnchorLayout();
         mWidget->setLayout(layout);
     } else {
         // Reset layout's state
         while (layout->count()) {
             layout->removeAt(0);
         }
-        layout->clearAnchors();
-        layout->clearSpacingOverrides();
-        layout->clearItemIds();
+        layout->removeAnchors();
+        layout->removeMappings();
     }
     mLayout = layout;
     return true;
@@ -77,7 +76,7 @@ bool HbWidgetLoaderActions::createMeshLayout( const QString &widget )
 /*!
     \internal
 */
-bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
                                                const QString &dst, Hb::Edge dstEdge,
                                                const HbXmlLengthValue &spacing, const QString &spacer )
 {
@@ -87,16 +86,16 @@ bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcE
         // divide original mesh definition into two. src->dst becomes src->spacer->dst
         if ( src.isEmpty() ) {
             // if the starting item is layout
-            // "layout --(spacing)--> item" 
-            // becomes 
+            // "layout --(spacing)--> item"
+            // becomes
             // "layout --(spacing)--> spacer --(0)--> item"
             ok &= addMeshLayoutEdge( src, srcEdge, spacer, srcEdge, spacing, QString() );
             HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
             ok &= addMeshLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, val, QString() );
         } else {
             // between two items, or if end item is layout
-            // "item1 --(spacing)--> item2" 
-            // becomes 
+            // "item1 --(spacing)--> item2"
+            // becomes
             // "item1 --(spacing)--> spacer --(0)--> item2"
             ok &= addMeshLayoutEdge( src, srcEdge, spacer, getAnchorOppositeEdge(srcEdge), spacing, QString() );
             HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
@@ -151,20 +150,20 @@ bool HbWidgetLoaderMemoryActions::createMeshLayout( const QString &widget )
 /*!
     \internal
 */
-bool HbWidgetLoaderMemoryActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
+bool HbWidgetLoaderMemoryActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
                                                const QString &dst, Hb::Edge dstEdge,
                                                const HbXmlLengthValue &spacing, const QString &spacer )
-{    
+{
     HbWidgetLoader::MeshItem item(mLayoutDef->type);
     item.src = src;
-    item.dst = dst;    
-    item.srcEdge = srcEdge;    
+    item.dst = dst;
+    item.srcEdge = srcEdge;
     item.dstEdge = dstEdge;
     item.spacingType = spacing.mType;
     item.spacingVal = spacing.mValue;
     item.spacingText = spacing.mString;
     item.spacer = spacer;
-    
+
     mLayoutDef->meshItems.append(item);
 
     return true;

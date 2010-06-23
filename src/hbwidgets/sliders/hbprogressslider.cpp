@@ -23,9 +23,8 @@
 **
 ****************************************************************************/
 
-#include <hbprogressslider.h>
 #include "hbprogressslider_p.h"
-
+#include <hbprogressslider.h>
 #include <hbstyleoptionprogressslider_p.h>
 #include <hbtooltip.h>
 #include <hbwidgetfeedback.h>
@@ -45,7 +44,7 @@ HbProgressSliderPrivate::HbProgressSliderPrivate()
     mDownState=false;
     handle = 0;
     mSliderValue = 0;
-    mHandlePath = QString();
+    mHandlePath.clear();
 }
 
 HbProgressSliderPrivate::~HbProgressSliderPrivate()
@@ -86,17 +85,10 @@ void HbProgressSliderPrivate::setProgressValue(int value)
 void HbProgressSliderPrivate::setEnableFlag(bool flag)
 {
     Q_Q(HbProgressSlider);
-    
+	Q_UNUSED(flag);
     HbStyleOptionProgressSlider option;
     q->initStyleOption(&option);
-    
-    if(!flag) {
-        q->setProgressValue(q->minimum());
-        q->setSliderValue(q->minimum());
-    }
-    if (mFrame) {
-            q->style()->updatePrimitive(mFrame, HbStyle::P_ProgressSlider_frame, &option);          
-    }
+    q->updatePrimitives();
 }
 
 void HbProgressSliderPrivate::init()
@@ -203,9 +195,33 @@ Qt::Orientation HbProgressSliderPrivate::orientation()
 
 void HbProgressSliderPrivate::setRange(int minimum, int maximum)
 {
-    Q_Q( HbProgressSlider );
-    HbProgressBarPrivate::setRange(minimum, maximum);
-    q->setSliderValue(mSliderValue);
+	Q_Q(HbProgressSlider);
+    if( minimum > maximum ){
+        maximum = minimum ;
+    }
+    mMinimum = minimum;
+    mMaximum = maximum;
+
+    if ( mProgressValue < mMinimum){
+        mProgressValue = mMinimum;
+    }
+
+    if(mProgressValue > mMaximum){
+        mProgressValue = mMaximum;
+    }
+
+    HbStyleOptionProgressSlider progressSliderOption;
+    q->initStyleOption(&progressSliderOption);
+
+    if (mSliderGraphicItem) {
+            q->style()->updatePrimitive(mSliderGraphicItem, HbStyle::P_ProgressSlider_slidertrack, &progressSliderOption);
+    }
+
+    if (mTrack) {
+            q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressSlider_track, &progressSliderOption);
+     }
+    
+	q->setSliderValue(mSliderValue);
 }
 
 /*!
@@ -395,7 +411,7 @@ bool HbProgressSlider::isSliderDown() const
 
 /*!
     @beta
-    Sets the inverted appearence of the slider.
+    Sets the inverted appearance of the slider.
     If inverted the slider increases from right to left.
 
     \param inverted true or false
@@ -418,20 +434,20 @@ void HbProgressSlider::setInvertedAppearance(bool inverted)
 void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
     Q_D(HbProgressSlider);
+ 
+    QRectF rect = d->mTouchAreaItem->sceneBoundingRect( );
+    // return if point is outside track touch area
+    if ( !rect.contains( event->scenePos( ) ) ) {
+        event->ignore( );
+        return;
+    }
+
     if(flags().testFlag(ItemIsFocusable)) {
         d->mDownState = true;
         HbStyleOptionProgressSlider option;
         initStyleOption(&option);
         if (d->mFrame) {
             style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressSlider_frame, &option);          
-        }
-        qreal temp = event->scenePos().x();
-        if((d->mMinMaxTextVisible) && (d->mMinMaxTextAlignment== Qt::AlignCenter)) {
-            temp -=  d->mMinTextItem->boundingRect().width();
-        }
-        if( (temp > d->handle->pos().x()) && (temp < (d->handle->boundingRect().width()+d->handle->pos().x())) ) {
-            event->ignore();
-            return;
         }
         
         HbWidgetFeedback::triggered(this, Hb::InstantPressed);
@@ -444,12 +460,14 @@ void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->ignore();
     }
 }
+
 /*!
     \reimp
  */
 void HbProgressSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
 {
     Q_D(HbProgressSlider);
+
     if(flags().testFlag(ItemIsFocusable)) {
         d->mDownState = false;
 

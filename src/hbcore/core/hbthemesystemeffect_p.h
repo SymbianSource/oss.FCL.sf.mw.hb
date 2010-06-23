@@ -46,7 +46,7 @@ public:
 private:
     HbThemeSystemEffect(QObject *parent);
     void setCurrentTheme(const QString &themeName);
-    bool getThemeEffectFolder(QString &path, const QString &themeName);
+    bool getThemeEffectFolder(QString &path);
     void verifyAllEffectsFound(HbThemeSystemEffectMap &effects);
     void registerEffects(const HbThemeSystemEffectMap *effects);
     HbThemeSystemEffectMap *parseBaseThemeEffects();

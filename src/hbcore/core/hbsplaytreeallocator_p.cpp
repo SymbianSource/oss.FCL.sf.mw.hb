@@ -44,7 +44,7 @@ const unsigned int INITIALIZED_ALLOCATOR_IDENTIFIER = 0x53504C59; //'SPLY'
  * Initializes splay tree and internal variables.
  * This can't fail if sharedChunk is valid.
  */
-void HbSplayTreeAllocator::initialize(QSharedMemory *sharedChunk,
+void HbSplayTreeAllocator::initialize(HbSharedMemoryWrapper *sharedChunk,
                                       const unsigned int offset,
                                       HbSharedMemoryAllocator *mainAllocator)
 {
@@ -495,8 +495,8 @@ void HbSplayTreeAllocator::insertLengthNode(unsigned int *root, TreeNode *node)
 int HbSplayTreeAllocator::size()
 {
     // splay the 'pointer' tree to obtain last pointer
-    TreeNode *node = TO_NODE_POINTER(splay(&header->pointerNode,
-                                           reinterpret_cast<unsigned int>(address<char>(chunk->size()))));
+    unsigned int last_offset = static_cast<unsigned int>(chunk->size());
+    TreeNode *node = TO_NODE_POINTER(splay(&header->pointerNode, last_offset));
 
     if (node) {
         TreeNode *right = TO_NODE_POINTER(node->rightNode);

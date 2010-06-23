@@ -30,7 +30,6 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
-#include <hbstandarddirs_p.h>
 #include <hbiniparser_p.h>
 
 #define THEME_INDEX_FILE "index.theme"

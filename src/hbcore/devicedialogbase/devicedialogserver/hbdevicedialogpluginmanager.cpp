@@ -187,17 +187,12 @@ void HbDeviceDialogPluginManager::freeWidget(HbDeviceDialogInterface *widget)
         if (pluginInfo.mFlags & PluginInfo::RecycleWidget &&
             pluginInfo.mRecycledWidget == 0) {
             pluginInfo.mRecycledWidget = widget;
-            sender->disconnect(); // disconnect all signals from receivers
         } else {
-            // Delete widget from a timer as deviceDialogClosed() signal may
-            // come before device dialog is fully closed.
-            sender->disconnect(); // disconnect all signals
+            // Delete widget from a timer
             mDeleteWidgets.append(widget);
-#if defined(Q_OS_SYMBIAN)
-            const int deleteDelay = 2000; // 2s
-#else
-            const int deleteDelay = 500; // 0.5s
-#endif
+            // Delete immediately as widget should be ready to be deleted (close effect ended) when
+            // devicedialogClosed() signal was emitted
+            const int deleteDelay = 0;
             mDeleteTimer.start(deleteDelay);
         }
     }

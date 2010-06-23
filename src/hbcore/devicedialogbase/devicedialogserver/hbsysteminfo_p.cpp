@@ -45,6 +45,12 @@ HbSystemInfo::~HbSystemInfo()
     delete d_ptr;
 }
 
+QSystemNetworkInfo::NetworkStatus HbSystemInfo::networkStatus() const
+{
+    Q_D(const HbSystemInfo);
+    return d->networkStatus();
+}
+
 int HbSystemInfo::networkSignalStrength() const
 {
     Q_D(const HbSystemInfo);

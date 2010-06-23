@@ -249,6 +249,10 @@ HbIcon HbIconItem::icon() const
  icon displayed by the HbIconItem. Use the setters in HbIconItem instead. Of course
  the settings set on \a icon before calling setIcon() will all be taken into account.
 
+ The icon-specific parameters (flags, color, mirroring mode) set via the HbIconItem
+ setters before are lost as this function causes the entire underlying icon to be
+ replaced with a new one.
+ 
  \param icon the HbIcon instance that this HbIconItem displays.
 
  \sa icon()
@@ -291,6 +295,7 @@ void HbIconItem::setSize(const QSizeF &size)
 void HbIconItem::setAlignment(Qt::Alignment alignment)
 {
     Q_D(HbIconItem);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAlign, true);
     if (d->mAlignment != alignment) {
         d->mAlignment = alignment;
         update();

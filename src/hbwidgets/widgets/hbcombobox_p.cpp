@@ -77,11 +77,14 @@ HbComboBoxPrivate::~HbComboBoxPrivate( )
     if( mButtonTouchAreaItem ) {
         static_cast<HbTouchArea*>( mButtonTouchAreaItem )->removeEventFilter( q );
     }
-    if ( !q->scene( ) || !q->scene( )->property( "destructed" ).isValid( ) ) {
-        if( mDropDown ) {
-            delete mDropDown;
-            mDropDown = 0;
-        }
+
+    if ( !mDropDown ) {
+        return;
+    }
+
+    if ( !mDropDown->scene() || !mDropDown->scene( )->property( "destructed" ).isValid( ) ) {
+        delete mDropDown;
+        mDropDown = 0;
     }
 }
 
@@ -131,7 +134,6 @@ void HbComboBoxPrivate::touchAreaReleaseEvent(  )
         HbWidgetFeedback::triggered( q, Hb::InstantReleased );
     }
 
-    q->setProperty( "state", "normal" ); 
 }
 
 void HbComboBoxPrivate::touchAreaClicked( )
@@ -140,6 +142,7 @@ void HbComboBoxPrivate::touchAreaClicked( )
     if ( mModel && mModel->rowCount( ) ) {
         addDropDownToScene( );
         mDropDown->setVisible( true );
+        q->setProperty( "state", "latched" );
         if( !mDropDown->mList ) {
             mDropDown->createList( );
             mDropDown->mList->setModel( mModel );
@@ -203,10 +206,12 @@ void HbComboBoxPrivate::showPopup( QAbstractItemModel *aModel, QModelIndex aInde
 
 void HbComboBoxPrivate::createDropDown( )
 {
+    Q_Q ( HbComboBox );
     if( !mIsDorpdownCreated ) {
         mDropDown = new HbComboDropDown( this );
         mIsDorpdownCreated = true;
         mDropDown->setVisible( false );
+        q->setProperty( "state", "normal" );
     }
 }
 
@@ -407,6 +412,7 @@ void HbComboBoxPrivate::_q_textChanged( const QModelIndex & aIndex )
     }
     if ( mDropDown->isVisible( ) ) {
         mDropDown->setVisible( false );
+        q->setProperty( "state", "normal" );
     }
     currentIndexChanged( mCurrentIndex );
 }
@@ -447,6 +453,7 @@ void HbComboBoxPrivate::setModel( QAbstractItemModel * model )
     createDropDown( );    
     if ( mDropDown->isVisible( ) ) {
         mDropDown->setVisible( false );
+        q->setProperty( "state", "normal" );
     }
     q->clear( );
     delete mModel;

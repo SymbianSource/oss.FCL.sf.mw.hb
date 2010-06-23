@@ -28,7 +28,8 @@
 
 #include <hbmessagebox.h>
 #include "hbdialog_p.h"
-
+#include <hbaction.h>
+#include <QMap>
 class HbMessageBoxContentWidget;
 
 class HbMessageBoxPrivate : public HbDialogPrivate
@@ -44,8 +45,10 @@ public:
     HbMessageBoxContentWidget *mMessageBoxContentWidget;
     HbMessageBox::MessageBoxType mMessageBoxType;
   	bool mIconVisible;
+    QMap <HbAction* , HbMessageBox::StandardButton> mActionList;
+    HbMessageBox::StandardButtons mStandardButtons;
 public slots:
-    void _q_closeOnGesture();
+    void _q_buttonClicked();
 };
 
 #endif // HB_MESSAGEBOX_P_H

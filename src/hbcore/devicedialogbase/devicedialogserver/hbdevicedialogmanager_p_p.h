@@ -160,6 +160,9 @@ private:
     void timerEvent(QTimerEvent *event);
     void markNoClient(quintptr clientTag);
     void setupWindowRegion();
+    void connectIndicatorStatus(HbDeviceDialogInterface *dialogInterface);
+    void disconnectDialogSignals(HbDeviceDialogInterface *dialogInterface);
+    QObject *dialogSignaler(HbDeviceDialogInterface *dialogInterface);
 private:
     // Public interface
     HbDeviceDialogManager * const q;

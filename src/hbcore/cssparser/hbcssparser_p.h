@@ -104,6 +104,7 @@ enum Property {
     Property_Top,
     Property_Width,
     Property_ZValue,
+    Property_Alignment,
     NumProperties
 };
 
@@ -402,9 +403,9 @@ enum KnownPropertyFlag {
 
     ExtractedLayoutDir  = 0x00010000,
     ExtractedZValue     = 0x00020000,
+    ExtractedAlignment  = 0x00040000,
 
     // Text specific
-    ExtractedTextAlign  = 0x00100000,
     ExtractedWrapMode   = 0x00200000,
     ExtractedMinLines   = 0x00400000,
     ExtractedMaxLines   = 0x00800000,
@@ -427,8 +428,8 @@ struct KnownProperties
     QSizePolicy mSizePolicy;
 
     HbCss::LayoutDirection mLayoutDir;    
+    Qt::Alignment mAlignment;
 
-    Qt::Alignment mTextAlignment;
     Hb::TextWrapping mTextWrapMode;
     int mMinLines, mMaxLines;
 

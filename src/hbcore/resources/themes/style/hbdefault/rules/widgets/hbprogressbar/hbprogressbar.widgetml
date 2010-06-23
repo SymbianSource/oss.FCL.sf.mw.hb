@@ -251,7 +251,6 @@
     <meshitem src="toucharea" srcEdge="CENTERV" dst="frame" dstEdge="CENTERV" />
     <meshitem src="toucharea" srcEdge="CENTERH" dst="frame" dstEdge="CENTERH" />
 
-
   </layout>
   
 </hbwidget>

@@ -68,7 +68,7 @@ void CHbThemeListenerPrivate::RunL()
     mRepository->NotifyRequest(HbThemeUtils::CurrentThemeSetting, iStatus);
     SetActive();    
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.themeIndexOffset > 0) {
+    if (info.address) {
         themeClient->handleThemeChange(info.name);
         return;
     }

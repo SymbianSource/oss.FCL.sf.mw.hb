@@ -1,3 +1,4 @@
+
 /****************************************************************************
 **
 ** Copyright (C) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
@@ -27,7 +28,8 @@
 #include <hbinputkeymapfactory.h>
 #include <hbinputpredictionengine.h>
 #include <hbinputbutton.h>
-
+#include <QTextCharFormat>
+#include <HbColorScheme>
 #include "hbinputpredictionqwertyhandler.h"
 #include "hbinputpredictionhandler_p.h"
 #include "hbinputabstractbase.h"
@@ -44,11 +46,20 @@ public:
     bool buttonPressed(const QKeyEvent *event);
     bool buttonReleased(const QKeyEvent *event);
     void init();
+    void updateEditor();
+    void commitSecondaryWord();
+    QString getCommitString();
+    void showExactWordPopupIfNeeded();
 
 public:
     int mButton;    
     HbFnState mFnState;
     bool mExactPopupLaunched;    
+    bool mShowExactWordInTooltip;
+    int mPrimaryCandidateIndex;
+    int mSecondaryCandidateIndex;
+    int mTypingCorrectionLevel;
+    HbTypingCorrectionLevel mCorrectionLevel;
 };
 
 HbInputPredictionQwertyHandlerPrivate::HbInputPredictionQwertyHandlerPrivate()
@@ -277,6 +288,12 @@ void HbInputPredictionQwertyHandler::exactWordPopupClosed()
     commitExactWord();
 }
 
+void HbInputPredictionQwertyHandler::exactWordSelected()
+{
+    Q_D(HbInputPredictionQwertyHandler);    
+    d->commitSecondaryWord();
+}
+
 void HbInputPredictionQwertyHandler::sctCharacterSelected(QString character)
 {	
     HbInputPredictionHandler::sctCharacterSelected(character);
@@ -317,11 +334,8 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
                 mEngine->deleteKeyPress();
                 mEngine->updateCandidates(mBestGuessLocation);
         }
-        if (true == mExactPopupLaunched) {			
-            mBestGuessLocation = 0 ;
-        }
-        //When there is a deletion of key press, no need to update the candidate list
-        //This is because deletion should not cause reprediction.
+
+        mBestGuessLocation = 0 ;
         if(mCandidates->count() && (mCandidates->count()>mBestGuessLocation) && false == mTailShowing && false == mExactPopupLaunched) {
             QString currentWord = mCandidates->at(mBestGuessLocation);
             if(currentWord.length() > mEngine->inputLength()) {
@@ -356,6 +370,159 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
         q->sendAndUpdate(event);
         return;
+    }
+}
+
+void HbInputPredictionQwertyHandler::setPrimaryCandidateMode(HbPrimaryCandidateMode mode)
+{
+    Q_D(HbInputPredictionQwertyHandler);
+    if(mode == HbPrimaryCandidateModeExactTyping) {
+        d->mShowExactWordInTooltip = false;
+    } else {
+        d->mShowExactWordInTooltip = true;
+    }
+    // we need to close the exact word popup when this happens.
+    d->mInputMethod->closeExactWordPopup();
+    d->mExactPopupLaunched = false;
+}
+
+void HbInputPredictionQwertyHandlerPrivate::updateEditor()
+{
+    Q_Q(HbInputPredictionQwertyHandler);
+    if (!mEngine) {
+        return;
+    }
+    HbInputFocusObject *focusedObject = 0;
+    QList<QInputMethodEvent::Attribute> list;
+    focusedObject = mInputMethod->focusObject();
+    QTextCharFormat underlined;    
+    underlined.setFontUnderline(true);
+
+    Q_ASSERT(focusedObject);
+    if (mEngine->inputLength() == 0) {
+        QInputMethodEvent event(QString(), list);
+        q->sendAndUpdate(event);
+    } else {
+        if (mCandidates->count() > 0) {
+            // index of the candidate that is shown on the typing line
+            mPrimaryCandidateIndex = mBestGuessLocation;
+            // index of the candidate that is shown in the tooltip (if any)
+            mSecondaryCandidateIndex = 0;    
+            QString bestGuessWord = mCandidates->at(mBestGuessLocation);
+            QString exactTypedWord = mCandidates->at(0);
+            bool hasAutocompletionPart = (bestGuessWord.length() > exactTypedWord.length()) && (bestGuessWord.left(exactTypedWord.length()) == exactTypedWord);            
+            // when we are showing the autocompletion part we generally do not show the tooltip,
+            // both primary and secondary candidates are the same.
+            if(hasAutocompletionPart && mAutocompletionEnabled && mShowTail) {
+                mPrimaryCandidateIndex = mSecondaryCandidateIndex = mBestGuessLocation;                
+            }
+            // in case of exact tying, exact typed word in the primary candidate
+            // and the best predicted word is the secondary candidate
+            if(!mShowExactWordInTooltip && !(hasAutocompletionPart && mAutocompletionEnabled)) {
+                mPrimaryCandidateIndex = 0;
+                mSecondaryCandidateIndex = mBestGuessLocation;
+            }
+            if (hasAutocompletionPart && mShowTail && mAutocompletionEnabled) {
+                // showing the word with auto completion
+                int taillength = bestGuessWord.length() - exactTypedWord.length();
+                // TODO: Color from skin should be used
+                QColor col = HbColorScheme::color("qtc_input_hint_normal");
+                QBrush brush(col);
+                // underline formatting is applied to only the input length part of the word
+                QInputMethodEvent::Attribute textstyle(QInputMethodEvent::TextFormat, 0, mEngine->inputLength(), underlined);
+                list.append(textstyle);
+
+                QTextCharFormat gray;
+                gray.setForeground(brush);
+                if((focusedObject->object())->inherits("QGraphicsWebView") || (focusedObject->object())->inherits("QWebView")) {
+                    //QGraphicsWebView does not handle partial input length formatting well. Causes crash, a temporary fix provided,
+                    //This makes the whole text field grey insted of just the auto-completion part. Anyways, it does not cause crash.
+                    //This should be treated as a work around till QGraphicsWebView is fixed.
+                    list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, 0, QInputMethodEvent::TextFormat, gray));
+                } else {
+                    list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, mEngine->inputLength(), taillength, gray));
+                }				
+                list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
+                // the best guess word is sent to the editor
+                QInputMethodEvent event(bestGuessWord, list);
+                focusedObject->sendEvent(event);
+                mTailShowing = true;
+            } else {
+                QInputMethodEvent::Attribute textstyle(QInputMethodEvent::TextFormat, 0, mCandidates->at(mPrimaryCandidateIndex).length(), underlined);
+                list.append(textstyle);
+                list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mCandidates->at(mPrimaryCandidateIndex).length(), 0, 0));
+                QInputMethodEvent event(mCandidates->at(mPrimaryCandidateIndex), list);
+                focusedObject->sendEvent(event);
+                mTailShowing = false;
+            }
+
+            if (mShowTooltip && mPrimaryCandidateIndex != mSecondaryCandidateIndex) {                
+                q->processExactWord(mCandidates->at(mSecondaryCandidateIndex));
+            } else {
+                QString empty;
+                q->processExactWord(empty);
+            }
+        } else {
+            QInputMethodEvent event(QString(""), list);
+            focusedObject->sendEvent(event);
+        }
+    }
+}
+
+void HbInputPredictionQwertyHandlerPrivate::commitSecondaryWord()
+{
+    if(mCandidates->count()>mSecondaryCandidateIndex) {
+        QString commitString = mCandidates->at(mSecondaryCandidateIndex);
+        commit(commitString, true, false);
+    }
+}
+
+void HbInputPredictionQwertyHandlerPrivate::showExactWordPopupIfNeeded()
+{
+    Q_Q(HbInputPredictionHandler);
+    if (mShowTooltip && mCandidates->count() > mPrimaryCandidateIndex && mCandidates->at(0).mid(0, mEngine->inputLength()) \
+        != mCandidates->at(mPrimaryCandidateIndex).mid(0, mEngine->inputLength())) {                
+        q->processExactWord(mCandidates->at(mSecondaryCandidateIndex));
+    } else {
+        QString empty;
+        q->processExactWord(empty);
+    }
+}
+
+QString HbInputPredictionQwertyHandlerPrivate::getCommitString()
+{
+    QString commitString;
+    if(mCandidates->count() <= mPrimaryCandidateIndex) {
+        commitString = mCandidates->at(0);
+    } else {
+        commitString = mCandidates->at(mPrimaryCandidateIndex);
+    }
+    return commitString;
+}
+
+void HbInputPredictionQwertyHandler::setTypingCorrectionLevel(HbTypingCorrectionLevel correctionLevel)
+{
+    Q_D(HbInputPredictionQwertyHandler);
+    HbPredictionEngine::HbErrorCorrectionLevel errorCorrectionLevel = HbPredictionEngine::HbErrorCorrectionLevelMedium;
+    if(d->mCorrectionLevel == correctionLevel) {
+        return;
+    }
+    d->mCorrectionLevel = correctionLevel;
+    switch(correctionLevel) {
+        case HbTypingCorrectionLevelLow:
+            errorCorrectionLevel = HbPredictionEngine::HbErrorCorrectionLevelLow;
+            break;
+        case HbTypingCorrectionLevelMedium:
+            errorCorrectionLevel = HbPredictionEngine::HbErrorCorrectionLevelMedium;
+            break;
+        case HbTypingCorrectionLevelHigh:
+            errorCorrectionLevel = HbPredictionEngine::HbErrorCorrectionLevelHigh;
+            break;
+        default:
+            break;
+    }
+    if(d->mEngine) {
+        d->mEngine->setErrorCorrectionLevel(errorCorrectionLevel);
     }
 }
 

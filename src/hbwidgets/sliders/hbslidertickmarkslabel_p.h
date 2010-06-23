@@ -51,7 +51,6 @@ public:
 
     void updateTickLabels( );
     void setTickPosition(Hb::SliderTickPositions position);
-    void setLabelSize();
     virtual bool event ( QEvent * event );
 
 

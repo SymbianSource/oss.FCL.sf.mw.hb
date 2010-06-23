@@ -68,7 +68,7 @@ static const int CHUNKS_IN_ONE_LIST = 512;
  * This allocates memory from main allocator and won't block main allocator's
  * OOM exception.
   */
-void HbMultiSegmentAllocator::initialize(QSharedMemory *sharedChunk,
+void HbMultiSegmentAllocator::initialize(HbSharedMemoryWrapper *sharedChunk,
                                          const unsigned int offset,
                                          HbSharedMemoryAllocator *mainAllocator)
 {

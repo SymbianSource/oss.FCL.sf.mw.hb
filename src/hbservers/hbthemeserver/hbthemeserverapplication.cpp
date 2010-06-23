@@ -101,6 +101,8 @@ bool HbThemeServerApplication::initialize()
         wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
         RThread::RenameMe(KHbThemeServer);
+        User::SetProcessCritical(User::ESystemCritical);
+        User::SetCritical(User::ESystemCritical);
     }
 #endif
 

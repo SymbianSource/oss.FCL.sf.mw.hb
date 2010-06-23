@@ -289,32 +289,25 @@ bool HbThemeServerPrivate::resolveThemePath(const QString &themeName, QString &t
         themeLookupPath.append(themeName);
         QString filename(themeLookupPath);
         filename.append("\\index.theme");
-        QFile file;
 
         filename[0] = 'C';
-        file.setFileName(filename);
-        if (file.open(QIODevice::ReadOnly)) {
+        if (QFile::exists(filename)) {
             themeLookupPath[0] = 'C';
             themePath = themeLookupPath;
-            file.close();
             return true;
         }
 
         filename[0] = 'E';
-        file.setFileName(filename);
-        if (file.open(QIODevice::ReadOnly)) {
+        if (QFile::exists(filename)) {
             themeLookupPath[0] = 'E';
             themePath = themeLookupPath;
-            file.close();
             return true;
         }
 
         filename[0] = 'F';
-        file.setFileName(filename);
-        if (file.open(QIODevice::ReadOnly)) {
+        if (QFile::exists(filename)) {
             themeLookupPath[0] = 'F';
             themePath = themeLookupPath;
-            file.close();
             return true;
         }        
         
@@ -834,10 +827,6 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         GetSharedIconInfoL(aMessage);
         break;
 
-    case EThemeSelection:
-        HandleThemeSelectionL(aMessage);
-        break;
-
     case EMultiPieceIcon:
         GetSharedMultiIconInfoL(aMessage);
         break;
@@ -1303,30 +1292,6 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
 #ifdef THEME_SERVER_TRACES
     qDebug() << "Completed  aMessage.WriteL";
 #endif
-}
-
-/**
- * handleThemeSelectionL
- */
-void HbThemeServerSession::HandleThemeSelectionL(const RMessage2& aMessage)
-{
-    TInt deslen = aMessage.GetDesLength(0);
-    RBuf buffer;
-    buffer.CreateL(deslen);
-    buffer.CleanupClosePushL();
-    aMessage.ReadL(0, buffer, 0);
-    if (buffer.Length() == 0) {
-        User::Leave(ENonNumericString);
-    }
-    QString newTheme((QChar*)buffer.Ptr(), buffer.Length());
-    CleanupStack::PopAndDestroy(); // close the buffer
-
-    QString cleanThemeName = newTheme.trimmed();
-
-    if (cleanThemeName != iServer->iCurrentThemeName) {
-        iServer->HandleThemeSelection(cleanThemeName);
-        sessionData.clear();
-    }
 }
 
 /**

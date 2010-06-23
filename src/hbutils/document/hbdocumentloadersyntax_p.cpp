@@ -882,6 +882,7 @@ bool HbDocumentLoaderSyntax::processContainer()
         }
         if (result) {
             mCurrentContainerNames << propertyName;
+            qDeleteAll(mCurrentContainer);
             mCurrentContainer.clear();
         }
     } else {

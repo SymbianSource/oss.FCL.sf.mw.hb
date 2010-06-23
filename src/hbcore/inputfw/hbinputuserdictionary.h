@@ -45,13 +45,13 @@ public:
     virtual ~HbUserDictionary() {}
 
     virtual int id() const = 0;
-    virtual bool addWord(const QString& word, HbPredictionCallback* callback = 0) = 0;
-    virtual bool addWords(const QStringList& wordList) = 0;
-    virtual bool removeWord(const QString& word) = 0;
+    virtual bool addWord(const QString &word, HbPredictionCallback *callback = 0) = 0;
+    virtual bool addWords(const QStringList &wordList) = 0;
+    virtual bool removeWord(const QString &word) = 0;
     virtual int numberOfWords() const = 0;
     virtual QStringList listWords() = 0;
     virtual void clear() = 0;
-    virtual HbPredictionBase* hostEngine() const = 0;
+    virtual HbPredictionBase *hostEngine() const = 0;
 };
 
 #endif // HB_INPUT_USER_DICTIONARY_H

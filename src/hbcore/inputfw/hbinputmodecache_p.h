@@ -41,17 +41,17 @@ class HB_CORE_PRIVATE_EXPORT HbInputModeCache : public QObject
     Q_OBJECT
 
 public:
-    static HbInputModeCache* instance();
+    static HbInputModeCache *instance();
 
 private:
     HbInputModeCache();
     ~HbInputModeCache();
 
-public:  
-    HbInputMethod* loadInputMethod(const HbInputMethodDescriptor &inputMethod);
+public:
+    HbInputMethod *loadInputMethod(const HbInputMethodDescriptor &inputMethod);
     QList<HbInputMethodDescriptor> listCustomInputMethods();
-    HbInputMethod* findStateHandler(const HbInputState& state); 
-    HbInputMethod* activeMethod() const;
+    HbInputMethod *findStateHandler(const HbInputState &state);
+    HbInputMethod *activeMethod() const;
     QList<HbInputLanguage> listInputLanguages() const;
     bool acceptsState(const HbInputMethod *inputMethod, const HbInputState &state) const;
     HbInputMethodDescriptor descriptor(const HbInputMethod *inputMethod) const;
@@ -61,7 +61,7 @@ public slots:
     void directoryChanged(const QString &directory);
 
 private:
-    HbInputModeCachePrivate * const d_ptr;
+    HbInputModeCachePrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputModeCache)

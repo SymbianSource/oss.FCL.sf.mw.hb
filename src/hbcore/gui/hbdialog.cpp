@@ -41,7 +41,6 @@
 #include <QEventLoop>
 #include <QPointer>
 #include <QDebug>
-#include <QGraphicsLinearLayout>
 #include <QApplication> // krazy:exclude=qclasses
 
 #include <hbfeedbackmanager.h>
@@ -70,10 +69,47 @@
     An example of how to handle dialog signals from previous example.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,53}
 
+    An example of how to handle if finished(int) is connected instead of finished(HbAction*) in above example.
+    \snippet{ultimatecodesnipped/ultimatecodesnippet.cpp,55}
+
     An example of how to create a non-modal dialog and show it.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,26}
 
 */
+
+/*!
+    \fn void HbDialog::finished( int code )
+
+    This signal is emitted when the dialog is closed.
+    This will have the HbDialog::DialogCode as the parameter code.
+
+    \sa done(), accept(), reject()
+*/
+/*!
+    \fn void HbDialog::finished( HbAction *action )
+
+    This signal is emitted when an action has been triggered in a dialog.
+    The parameter will be the triggered action.
+  */
+/*!
+    \fn void HbDialog::accepted( )
+
+    This signal is emitted when the dialog is closed and the user
+    has accepted the dialog. which implies that either action has triggered
+    or through function call the accept method is called, causing this signal.
+
+    \sa done(), accept(), reject()
+*/
+/*!
+    \fn void HbDialog::rejected( )
+
+    This signal is emitted when the dialog is closed and the user
+    has rejected the dialog. which implies that either action triggered
+    or through function call the reject method is called, causing this signal.
+
+    \sa done(), accept(), reject()
+*/
+
 
 /*!
     \reimp
@@ -83,7 +119,6 @@
 HbDialogPrivate::HbDialogPrivate( ) :
     contentWidget(0),
     headingWidget(0),
-    mainLayout(new QGraphicsLinearLayout(Qt::Vertical)),
     primaryAction(0),
     secondaryAction(0),
     closingAction(0),
@@ -95,39 +130,7 @@ HbDialogPrivate::~HbDialogPrivate()
 {
 }
 
-void HbDialogPrivate::init()
-{
-    Q_Q(HbDialog);
-
-    // Content is responsible of adding spacings & margins
-    mainLayout->setSpacing(0);
-    mainLayout->setContentsMargins(0,0,0,0);
-
-    q->setLayout(mainLayout);
-    mainLayout->setMinimumSize(0, 0);    
-}
-
-void HbDialogPrivate::setWidget(int layoutIndex, QGraphicsWidget *&destWidget, QGraphicsWidget *widget)
-{
-    Q_Q(HbDialog);
-    if (destWidget != widget) {
-        if (destWidget) {
-            mainLayout->removeItem(destWidget);
-            delete destWidget;
-            destWidget = 0;
-        }
-        if (widget) {
-            destWidget = widget;
-            destWidget->setParentItem(q);
-            mainLayout->insertItem(layoutIndex, widget);
-            mainLayout->setAlignment(widget, Qt::AlignCenter);
-        }
-
-        doLayout();
-    }
-}
-
-/*
+/*!
   Relayouts the popup. If expandSize is true it the new calculated size of the popup
   cannot be smaller than the current size.
 */
@@ -150,6 +153,19 @@ void HbDialogPrivate::doLayout()
     q->updateGeometry();
 }
 
+/*!
+ Utility function removes the spaces from string if any
+*/
+void HbDialogPrivate::removeSpaces(QString& string)
+{
+    QString tempStr(string);
+    string.clear();
+    foreach(QChar ch, tempStr)
+    {
+        if(!ch.isSpace())
+            string.append(ch);
+    }
+}
 
 /*!
  Constructs a dialog with given  \a parent graphics item.\n
@@ -162,6 +178,7 @@ HbDialog::HbDialog(QGraphicsItem *parent) :
     Q_D(HbDialog);
     d->q_ptr = this;
     d->init();
+    d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
 }
 
 /*!
@@ -173,6 +190,7 @@ HbDialog::HbDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
     Q_D(HbDialog);
     d->q_ptr = this;
     d->init();
+    d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
 }
 
 /*!
@@ -200,8 +218,19 @@ QGraphicsWidget * HbDialog::headingWidget() const
 void HbDialog::setHeadingWidget(QGraphicsWidget *headingWidget)
 {
     Q_D(HbDialog);
-    HbStyle::setItemName(headingWidget,"heading");
-    d->setWidget(0, d->headingWidget, headingWidget);
+    if (d->headingWidget == headingWidget)
+        return;
+    if (d->headingWidget)
+        delete d->headingWidget;
+    d->headingWidget = headingWidget;
+    if (headingWidget) {
+        setProperty("heading_layout", true);
+        headingWidget->setParentItem(this);
+        HbStyle::setItemName(headingWidget,"heading");
+    } else {
+        setProperty("heading_layout", false);
+    }
+    repolish();
 }
 
 /*!
@@ -224,9 +253,18 @@ QGraphicsWidget *HbDialog::contentWidget() const
 */
 void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
 {
-   Q_D(HbDialog);
-   HbStyle::setItemName(contentWidget,"content");
-   d->setWidget((d->headingWidget?1:0), d->contentWidget, contentWidget);
+    Q_D(HbDialog);
+
+    if (d->contentWidget == contentWidget)
+        return;
+    if (d->contentWidget)
+        delete d->contentWidget;
+    d->contentWidget = contentWidget;
+    if (contentWidget) {
+        contentWidget->setParentItem(this);
+        HbStyle::setItemName(contentWidget,"content");
+    }
+    repolish();
 }
 
 /*!
@@ -300,12 +338,21 @@ void HbDialog::setSecondaryAction(HbAction *action)
 }
 
 /*!
+    This is a slot which shows the dialog and returns immediately.
+
+    \sa open(QObject*,const char*)
+*/
+void HbDialog::open()
+{
+    open(0,0);
+}
+/*!
 
  Shows the dialog as modal dialog returning immediately.  
 
- Connects finished(HbAction*) signal to the slot specified by \a receiver and
+ Connects finished(HbAction*) or finished(int) signal to the slot specified by \a receiver and
  \a member. The signal will be disconnected from the slot when the
- popup is closed.
+ popup is closed. disambiguation between which method to connect to is done at runtime.
 
  For non modal popups, use show().  
 */
@@ -314,7 +361,15 @@ void HbDialog::open( QObject* receiver, const char* member )
 {
     Q_D(HbDialog);
     if ( receiver && member ) {
-        connect( this, SIGNAL(finished(HbAction*)), receiver, member );
+
+        QString myStr(member);
+        d->removeSpaces(myStr);
+        if(myStr.contains("(int)")) {
+            connect( this, SIGNAL(finished(int)), receiver, member );
+        }
+        else {
+            connect( this, SIGNAL(finished(HbAction*)), receiver, member );
+        }
         d->receiverToDisconnectOnClose = receiver;
         d->memberToDisconnectOnClose = member;
     } else {
@@ -322,6 +377,56 @@ void HbDialog::open( QObject* receiver, const char* member )
         d->memberToDisconnectOnClose.clear();
     }
     show();
+}
+/*!
+  Closes the dialog and emits finished ,accepted and rejected signals appropriately.
+
+  If the dialog is accepted the code is HbDialog::Accepted, if it is rejected code
+  is HbDialog::Rejected.
+  As with HbWidget::close(), done() deletes the dialog if the
+  Qt::WA_DeleteOnClose flag is set. 
+
+  \sa accept(), reject()
+*/
+void HbDialog::done( int code )
+{  
+    HbAction *action=qobject_cast<HbAction*>(sender());
+    if(!action) {
+        close();
+        //if there is no sender or if there is some sender which is not hbaction
+        //then we need to close the dialog when done is called.
+    }
+    else if(actions().contains(action)==false) {
+        close();
+        //if our actions done have this HbAction. then we need to call the
+        //close method explicitly.
+    } //otherwise close will be called automatically due to connection in base class
+    
+    emit finished(code);
+    if(code == Accepted) {
+        emit accepted();
+    }
+    else if(code == Rejected) {
+        emit rejected();
+    }
+}
+/*!
+  Hides the modal dialog and emits finished(HbDialog::Accepted),accepted() and finished(HbAction*) signals.
+
+  \sa reject(), done()
+*/
+void HbDialog::accept()
+{
+    done(Accepted);
+}
+/*!
+  Hides the modal dialog and emits finished(HbDialog::Rejected),rejected() and finished(HbAction*) signals.
+
+  \sa accept(), done()
+*/
+void HbDialog::reject()
+{
+    done(Rejected);
 }
 
 /*!
@@ -392,14 +497,12 @@ bool HbDialog::event(QEvent *event)
             // TODO: HbToolBar private interface should make it possible to choose
             // different graphics for tool buttons.            
             d->toolBar = new HbToolBar();
-            HbStyle::setItemName(d->toolBar ,"controls");
             d->toolBar->setParentItem(this);
+            HbStyle::setItemName(d->toolBar ,"controls");
+            setProperty("controls_layout", true);
             d->toolBar->setOrientation(Qt::Horizontal);
             HbToolBarPrivate::d_ptr(d->toolBar)->mDialogToolBar = true;
-            // prevent stretching buttons, should the content be small
-            // but dialog size forcibly large
-            d->mainLayout->addStretch();
-            d->mainLayout->addItem(d->toolBar);
+            repolish();
         }
         QActionEvent *actionEvent = static_cast<QActionEvent *>(event);
         d->toolBar->insertAction (actionEvent->before(), actionEvent->action());
@@ -423,9 +526,9 @@ bool HbDialog::event(QEvent *event)
         if (d->toolBar) {
            d->toolBar->removeAction(actionEvent->action());
            if (!d->toolBar->actions().count()) {
-               d->mainLayout->removeItem(d->toolBar);
                d->toolBar->deleteLater();
                d->toolBar = 0;
+               setProperty("controls_layout", false);
            }
         }
         d->doLayout();

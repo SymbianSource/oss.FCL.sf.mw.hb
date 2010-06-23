@@ -41,16 +41,16 @@ public:
     static HbInputRegionCollector *instance();
     ~HbInputRegionCollector();
 
-    void attach (HbWidget *widget);
-    void detach (HbWidget *widget);
-    void setEnabled ( bool enabled );
-    void update ();
+    void attach(HbWidget *widget);
+    void detach(HbWidget *widget);
+    void setEnabled(bool enabled);
+    void update();
 
 protected:
-    bool eventFilter (QObject *obj, QEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event);
 
 signals:
-    void updateRegion (QRegion region);
+    void updateRegion(QRegion region);
 
 private:
     HbInputRegionCollector();

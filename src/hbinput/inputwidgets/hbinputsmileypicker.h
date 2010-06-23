@@ -38,7 +38,7 @@ public:
     HbInputSmileyPicker(int rows, int columns, QGraphicsItem *parent = 0, QStringList smileys = QStringList());
     ~HbInputSmileyPicker();
 
-    void showEvent( QShowEvent *event );
+    void showEvent(QShowEvent *event);
 
 signals:
     void selected(QString smileyText);
@@ -46,7 +46,7 @@ signals:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputSmileyPicker)
     Q_DISABLE_COPY(HbInputSmileyPicker)
-    Q_PRIVATE_SLOT(d_func(), void _q_activated(const QModelIndex & ))
+    Q_PRIVATE_SLOT(d_func(), void _q_activated(const QModelIndex &))
 };
 
 #endif // HB_INPUT_SMILEYPICKER_H

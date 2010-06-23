@@ -31,51 +31,60 @@
 #include <hbglobal.h>
 #include <hbnamespace.h>
 
+class HbAnchorLayoutDebug;
 class HbAnchorLayoutPrivate;
 class HbAnchor;
 
 class HB_CORE_EXPORT HbAnchorLayout : public QGraphicsLayout
 {
 public:
-    typedef Hb::Edge Edge;
 
-    explicit HbAnchorLayout(QGraphicsLayoutItem *parent = 0);
+    typedef Hb::Edge Edge; // need to remove later...
+
+    explicit HbAnchorLayout( QGraphicsLayoutItem *parent = 0 );
     virtual ~HbAnchorLayout();
 
-    bool setAnchor(
-        QGraphicsLayoutItem *startItem,
-        Hb::Edge  startEdge,
-        QGraphicsLayoutItem *endItem,
-        Hb::Edge  endEdge,
-        qreal value);
+    bool setAnchor( const QString &startNodeId, Edge startEdge, const QString &endNodeId, Edge endEdge, qreal length = 0 );
+    bool setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge, qreal length = 0 );
 
-    bool removeAnchor(
-        QGraphicsLayoutItem *startItem,
-        Hb::Edge  startEdge,
-        QGraphicsLayoutItem *endItem,
-        Hb::Edge  endEdge);
+    bool removeAnchor( const QString &startNodeId, Edge startEdge, const QString &endNodeId, Edge endEdge );
+    bool removeAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge );
 
-    void removeAt(int index);
-    void removeItem(QGraphicsLayoutItem* item);
-    void setGeometry(const QRectF &rect);
-    int count() const;
-    QGraphicsLayoutItem *itemAt(int index) const;
-    int indexOf(const QGraphicsLayoutItem* item) const;
+    void removeAnchors();
+
+    bool setMapping( QGraphicsLayoutItem *item, const QString& nodeId );
+    bool removeMapping( QGraphicsLayoutItem *item );
+    bool removeMapping( const QString &nodeId );
+    void removeMappings();
+
+    QString nodeId( QGraphicsLayoutItem *item ) const;
+    QGraphicsLayoutItem *itemByNodeId( const QString &nodeId ) const;
+    QStringList nodeIds() const;
+
+    void removeItem( QGraphicsLayoutItem *item );
+    bool removeNodeId( const QString &nodeId );
+
+    int indexOf(const QGraphicsLayoutItem *item) const;
+
 
     bool isValid() const;
 
-    void invalidate();
-    virtual void widgetEvent(QEvent *e);
+    virtual void removeAt( int index );
+    virtual void setGeometry( const QRectF &rect );
+    virtual int count() const;
+    virtual QGraphicsLayoutItem *itemAt( int index ) const;
+    virtual void invalidate();
+    virtual void widgetEvent( QEvent *e );
 
 protected:
-    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
+    virtual QSizeF sizeHint( Qt::SizeHint which, const QSizeF &constraint = QSizeF() ) const;
 
 protected:
-    HbAnchorLayoutPrivate * const d_ptr;
+    HbAnchorLayoutPrivate *const d_ptr;
 
 private:
-    Q_DISABLE_COPY(HbAnchorLayout)
-    Q_DECLARE_PRIVATE_D(d_ptr, HbAnchorLayout)
+    Q_DISABLE_COPY( HbAnchorLayout )
+    Q_DECLARE_PRIVATE_D( d_ptr, HbAnchorLayout )
 
     friend class HbAnchorLayoutDebug;
 };

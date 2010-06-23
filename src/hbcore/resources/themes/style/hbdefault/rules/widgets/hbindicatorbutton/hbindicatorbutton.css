@@ -1,9 +1,23 @@
-HbIndicatorButton
+HbIndicatorButton[layout="1"]
 {
-    layout:indicatorbuttonlayout;
+    layout:indicatorbuttonlayout1;
+}
+
+HbIndicatorButton[layout="2"]
+{
+    layout:indicatorbuttonlayout2;
 }
 
 HbIndicatorButton::handleindication
 {
-    fixed-width: expr(var(hb-param-widget-chrome-height)/6); 
+    fixed-width: expr((1/6)*var(hb-param-widget-chrome-height));
+    fixed-height: expr((2/3)*var(hb-param-widget-chrome-height));  
+}
+
+HbIndicatorButton::eventindication
+{
+    top: -expr(((2/3)*var(hb-param-widget-chrome-height) - var(hb-param-graphic-size-primary-small))*(1/2));
+    left: -expr((var(hb-param-widget-chrome-height) - var(hb-param-graphic-size-primary-small)*2 - 0.5un)*(1/2));
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height:var(hb-param-graphic-size-primary-small);
 }

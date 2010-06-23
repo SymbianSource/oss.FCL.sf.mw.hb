@@ -55,9 +55,10 @@ public:
     virtual void deleteOneCharacter();
     void commitExactWord();
     void handleEmptyCandidateList();
-    void showExactWordPopupIfNeeded();
+    virtual void showExactWordPopupIfNeeded();
     QList<HbKeyPressProbability> probableKeypresses();
-    void setPreEditTextToEditor(QString string);
+    void setPreEditTextToEditor(QString string, bool showAutocompletionPart);
+    virtual QString getCommitString();
 public:
     HbPredictionEngine  *mEngine;
     QStringList         *mCandidates;
@@ -69,9 +70,9 @@ public:
     bool                mShowTooltip;
     Qt::KeyboardModifiers mModifiers;
     HbInputSpellQuery *mSpellQueryDialog;
-
+    bool mAutocompletionEnabled;
 public:
-    void updateEditor();
+    virtual void updateEditor();
 };
 
 #endif //HB_INPUT_PREDICTION_HANDLER_PRIVATE

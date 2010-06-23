@@ -54,8 +54,8 @@ public:
     void init(QGraphicsItem *parent);
     void clear();
 
-    bool doLayout(const QString& text, const qreal lineWidth, qreal leading);
-    void setSize(const QSizeF &newSize);
+    bool doLayout(const QString& text, const qreal lineWidth, qreal lineSpacing);
+    void rebuildTextLayout(const QSizeF &newSize);
     void updateTextOption();
     void calculateVerticalOffset();
     void updateLayoutDirection();
@@ -65,7 +65,12 @@ public:
     int findIndexOfLastLineBeforeY(qreal y) const;
 
     QString elideLayoutedText(const QSizeF& size, const QFontMetricsF& metrics) const;
-    bool adjustSizeHint();
+    bool isAdjustHightNeeded(const QSizeF& newSize, const QSizeF& prefSize);
+    void clearAdjustedSizeCache();
+
+    QSizeF respectSizeLimits(QSizeF size) const;
+
+    inline QSizeF calculatePrefferedSize(const QSizeF& constraint) const;
 
     bool fadeNeeded(const QRectF& contentRect) const;
     static inline void setupGradient(QLinearGradient *gradient, QColor color);
@@ -112,6 +117,8 @@ public:
     QRectF layoutBoundingRect() const;
     QRectF boundingRect(const QRectF& contentsRect) const;
 
+    inline void scheduleTextBuild();
+
     QString mText;
     Qt::Alignment mAlignment;
     Qt::TextElideMode mElideMode;
@@ -132,13 +139,17 @@ public:
     QRectF mFadeToRect;
     QRectF mFadeFromRect;
 
-    qreal mPrefHeight;
     int mMinLines;
     int mMaxLines;
-    bool mNeedToAdjustSizeHint;
-    QSizeF oldSize;
+    mutable QSizeF mAdjustedSize;
+    mutable qreal mMinWidthForAdjust;
+    mutable qreal mMaxWidthForAdjust;
+    mutable qreal mDefaultHeight;
 
     mutable bool mUpdateColor;
+
+    bool mEventPosted;
+
     static bool outlinesEnabled;
 };
 

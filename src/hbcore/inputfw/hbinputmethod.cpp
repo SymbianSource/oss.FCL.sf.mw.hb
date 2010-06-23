@@ -22,13 +22,14 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputmethod.h"
+#include "hbinputmethod_p.h"
+
 #include <QInputMethodEvent>
 #include <QGraphicsView>
 #include <QGraphicsProxyWidget>
 #include <QLocale>
 
-#include "hbinputmethod.h"
-#include "hbinputmethod_p.h"
 #include "hbinputmodecache_p.h"
 #include "hbinputsettingproxy.h"
 #include "hbinputcontextproxy_p.h"
@@ -39,6 +40,7 @@
 #include "hbinputstandardfilters.h"
 #include "hbinpututils.h"
 #include "hbinputvkbhost.h"
+#include "hbinputvkbhostbridge.h"
 
 /*!
 @alpha
@@ -179,7 +181,7 @@ HbInputMethod::~HbInputMethod()
 /*!
 Initializes the input framework.
 */
-bool HbInputMethod::initializeFramework(QApplication& app)
+bool HbInputMethod::initializeFramework(QApplication &app)
 {
     // Activate singleton shutdown.
     connect(&app, SIGNAL(aboutToQuit()), HbInputModeCache::instance(), SLOT(shutdown()));
@@ -196,11 +198,12 @@ bool HbInputMethod::initializeFramework(QApplication& app)
     master->d_ptr->mIsActive = true;
 
     // Finally set application input context.
-    QInputContext* proxy = master->d_ptr->proxy();    
+    QInputContext *proxy = master->d_ptr->proxy();
     // A check required so that Qt does not delete inputcontext
     // which we are passing.
-    if (proxy != app.inputContext())
+    if (proxy != app.inputContext()) {
         app.setInputContext(proxy);
+    }
 
     return true;
 }
@@ -210,20 +213,20 @@ Returns the active instance of HbInputMethod. There is always active HbInputMeth
 InitializeFramework method has been called, even when there is no focused editor (in some cases it may
 be so called null input method).
 */
-HbInputMethod* HbInputMethod::activeInputMethod()
+HbInputMethod *HbInputMethod::activeInputMethod()
 {
     // First try, try app input context directly. It is possible that it is an instance
     // of HbInputMethod that is installed directly there without framework knowing about it
     // (that shouldn't be done, but it is possible). That's why we rely on app input context as
     // a primary source instead of mode cache.
-    QInputContext* context = qApp->inputContext();
+    QInputContext *context = qApp->inputContext();
     if (context && context->inherits("HbInputMethod")) {
-        HbInputMethod* active = static_cast<HbInputMethod*>(context);
+        HbInputMethod *active = static_cast<HbInputMethod *>(context);
         return active;
     }
 
     // Then check if the 'null' is active.
-    HbInputMethod* nullInstance = HbInputMethodNull::Instance();
+    HbInputMethod *nullInstance = HbInputMethodNull::Instance();
     if (nullInstance && nullInstance->isActiveMethod()) {
         return nullInstance;
     }
@@ -249,16 +252,16 @@ bool HbInputMethod::activateInputMethod(const HbInputMethodDescriptor &inputMeth
 {
     Q_D(HbInputMethod);
 
-    if (!inputMethod.isEmpty()) {       
+    if (!inputMethod.isEmpty()) {
         if (inputMethod.isDefault()) {
-           d->setFocusCommon();
-           return true;
+            d->setFocusCommon();
+            return true;
         } else {
             HbInputMethod *customMethod = HbInputModeCache::instance()->loadInputMethod(inputMethod);
-            if (customMethod) {              
-               d->contextSwitch(customMethod);
-               return true;
-           }
+            if (customMethod) {
+                d->contextSwitch(customMethod);
+                return true;
+            }
         }
     }
 
@@ -314,14 +317,14 @@ activate proper state when the signal is received.
 */
 void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
 {
-    if (!isActiveMethod()) {
+    if (!isActiveMethod() || !HbInputSettingProxy::instance()->orientationChangeCompleted()) {
         return;
     }
 
     Q_D(HbInputMethod);
 
     d->mInputState.setKeyboard(newKeyboard);
-    HbInputMethod* stateHandler = d->findStateHandler(d->mInputState);
+    HbInputMethod *stateHandler = d->findStateHandler(d->mInputState);
     if (stateHandler) {
         d->inputStateToEditor(d->mInputState);
         if (stateHandler != this) {
@@ -361,7 +364,7 @@ void HbInputMethod::focusLost(bool focusSwitch)
 /*!
 Returns pointer to active focus object.
 */
-HbInputFocusObject* HbInputMethod::focusObject() const
+HbInputFocusObject *HbInputMethod::focusObject() const
 {
     Q_D(const HbInputMethod);
     return d->mFocusObject;
@@ -374,18 +377,18 @@ implementation should never override this method unless it knows what it is doin
 
 \sa setFocusObject
 */
-void HbInputMethod::setFocusWidget(QWidget* widget)
+void HbInputMethod::setFocusWidget(QWidget *widget)
 {
     Q_D(HbInputMethod);
-    
+
     if (d->mFocusLocked) {
-	    return;
-	}
-		
-    // attach focuswidget to prxoy inputcontext as proxy is 
+        return;
+    }
+
+    // attach focuswidget to prxoy inputcontext as proxy is
     // the only inputcotext known to qt framework.
     d->proxy()->QInputContext::setFocusWidget(widget);
-    
+
     if (!widget) {
         // Losing focus.
         if (d->mFocusObject) {
@@ -397,7 +400,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
         return;
     }
 
-    QGraphicsView* gView = qobject_cast<QGraphicsView*>(widget);
+    QGraphicsView *gView = qobject_cast<QGraphicsView *>(widget);
     if (gView) {
         // We don't want to focus to graphics view but the items inside the scene, so just return
         return;
@@ -445,7 +448,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
 
     // Attach focus.
     d->mFocusObject = new HbInputFocusObject(widget);
-    connect(widget, SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
+    connect(widget, SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
 
     d->setFocusCommon();
 
@@ -463,7 +466,7 @@ void HbInputMethod::setFocusWidget(QWidget* widget)
 Checks if the destroyed widget is currently focused and clears the focus
 if needed. This method should not be overridden.
 */
-void HbInputMethod::widgetDestroyed(QWidget* widget)
+void HbInputMethod::widgetDestroyed(QWidget *widget)
 {
     Q_D(HbInputMethod);
 
@@ -486,7 +489,7 @@ requestSoftwareInputPanel event.
 \sa setFocusWidget
 \sa HbInputFocusObject
 */
-void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
+void HbInputMethod::setFocusObject(HbInputFocusObject *focusObject)
 {
     Q_D(HbInputMethod);
 
@@ -497,7 +500,7 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
     if (focusObject == 0) {
         // Losing focus.
         if (d->mFocusObject != 0) {
-            disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
+            disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
             focusLost(false);
             d->hideMainWindow();
             delete d->mFocusObject;
@@ -506,8 +509,8 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
         return;
     }
 
-    if(d->compareWithCurrentFocusObject( focusObject )) {
-       // The incoming focus object is either same or points to same
+    if (d->compareWithCurrentFocusObject(focusObject)) {
+        // The incoming focus object is either same or points to same
         // widget that the framework is already focused to and nothing needs to be done here.
         // But because the ownership of the focus object is transferred to the
         // the framework, we need to delete the the incoming focus object in case it is
@@ -524,14 +527,14 @@ void HbInputMethod::setFocusObject(HbInputFocusObject* focusObject)
     if (d->mFocusObject) {
         refreshHost = true;
         focusLost(true);
-        disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
+        disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
         delete d->mFocusObject;
         d->mFocusObject = 0;
     }
 
     // Attach focus.
     d->mFocusObject = focusObject;
-    connect(d->mFocusObject->object(), SIGNAL(destroyed(QObject*)), this, SLOT(editorDeleted(QObject*)));
+    connect(d->mFocusObject->object(), SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
 
     d->setFocusCommon();
 
@@ -593,7 +596,7 @@ bool HbInputMethod::isActiveMethod() const
 The framework calls this method every time the input state changes. This is an empty default
 implementation and the inheriting class should override it.
 */
-void HbInputMethod::inputStateActivated(const HbInputState& newState)
+void HbInputMethod::inputStateActivated(const HbInputState &newState)
 {
     Q_UNUSED(newState);
     // Empty default implementation.
@@ -643,7 +646,7 @@ instance may occur.
 \sa activateNextState
 \sa InputState
 */
-bool HbInputMethod::activateState(const HbInputState& state)
+bool HbInputMethod::activateState(const HbInputState &state)
 {
     Q_D(HbInputMethod);
 
@@ -653,7 +656,7 @@ bool HbInputMethod::activateState(const HbInputState& state)
 
     d->mStateChangeInProgress = true;
 
-    HbInputMethod* stateHandler = HbInputModeCache::instance()->findStateHandler(state);
+    HbInputMethod *stateHandler = HbInputModeCache::instance()->findStateHandler(state);
 
     if (!stateHandler) {
         stateHandler = HbInputMethodNull::Instance();
@@ -699,7 +702,7 @@ void HbInputMethod::updateState()
             currentTextCase = HbTextCaseLower;
             refresh = true;
         }
-    } else if (autoCaseNeeded && currentTextCase != HbTextCaseUpper ) {
+    } else if (autoCaseNeeded && currentTextCase != HbTextCaseUpper) {
         if (!d->isFixedCaseEditor()) {
             currentTextCase = HbTextCaseAutomatic;
             refresh = true;
@@ -721,18 +724,14 @@ orientation and find state handler for it.
 */
 void HbInputMethod::orientationChanged(Qt::Orientation orientation)
 {
+    Q_D(HbInputMethod);
     Q_UNUSED(orientation);
 
-    if (isActiveMethod()) {
-        // Make sure that if there was an editor focus before the orientation change,
-        // it will re-focus.
-        QInputContext *ic = qApp->inputContext();
-        if (ic) {
-            QEvent *event = new QEvent(QEvent::RequestSoftwareInputPanel);
-            ic->filterEvent(event);
-            delete event;
-        }
+    if (d->mOldFocusObject) {
+        setFocusObject(d->mOldFocusObject);
+        d->mOldFocusObject = 0;
     }
+
 }
 
 /*!
@@ -743,6 +742,14 @@ base class implementation is empty.
 */
 void HbInputMethod::orientationAboutToChange()
 {
+    Q_D(HbInputMethod);
+    reset();
+    d->inputStateToEditor(d->mInputState);
+    if (d->mFocusObject) {
+        d->mOldFocusObject = d->mFocusObject;
+        d->mFocusObject = 0;
+    }
+    HbVkbHostBridge::instance()->closeKeypad(true);
 }
 
 /*!
@@ -804,10 +811,10 @@ if (inputContext) {
 */
 void HbInputMethod::forceUnfocus()
 {
-    HbInputMethod* active = activeInputMethod();
+    HbInputMethod *active = activeInputMethod();
 
     if (active) {
-        active->focusLost(false);       
+        active->focusLost(false);
         delete active->d_ptr->mFocusObject;
         active->d_ptr->mFocusObject = 0;
     }
@@ -825,7 +832,7 @@ bool HbInputMethod::automaticTextCaseNeeded() const
 /*!
 Deep copies the input state back to editor interface.
 */
-void HbInputMethod::inputStateToEditor(const HbInputState& source)
+void HbInputMethod::inputStateToEditor(const HbInputState &source)
 {
     Q_D(HbInputMethod);
     d->inputStateToEditor(source);
@@ -854,7 +861,7 @@ void HbInputMethod::editorDeleted(QObject *obj)
     Q_UNUSED(obj);
 
     focusLost();
-	d->hideMainWindow();
+    d->hideMainWindow();
     delete d->mFocusObject;
     d->mFocusObject = 0;
 

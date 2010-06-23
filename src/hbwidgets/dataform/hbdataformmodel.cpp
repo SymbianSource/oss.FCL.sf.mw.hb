@@ -23,11 +23,11 @@
 **
 ****************************************************************************/
 
-#include <hbdataformmodelitem.h>
-#include <hbdataformmodel.h>
-
 #include "hbdataformmodel_p.h"
 #include "hbdataformmodelitem_p.h"
+
+#include <hbdataformmodelitem.h>
+#include <hbdataformmodel.h>
 
 /*
     \internal
@@ -122,7 +122,7 @@ void HbDataFormModelPrivate::rowsRemoved()
 
     HbDataFormModel is derived from QAbstractItemModel. So applications can use,
     QAbstractItemModel API's to create their datamodel. HbDataFormModel also provides
-    convenience API's specific to HbDataForm. These convinience API's are useful in creating 
+    convenience API's specific to HbDataForm. These convenience API's are useful in creating 
     FormPageItem, GroupItem, GroupPageItem and data item.
 
     A HbDataForm can be used to display the contents of the model.

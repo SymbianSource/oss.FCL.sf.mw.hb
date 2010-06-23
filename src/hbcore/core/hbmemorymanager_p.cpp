@@ -33,7 +33,7 @@
 #include "hbmemoryutils_p.h"
 
 #define SHARED_CONTAINER_UNITTEST_PREFIX "unittest_hbsharedcontainer_"
-#define SHARED_MEMORYMANAGER_UNITTEST_PREFIX "unittest_hbmemorymanager"
+#define SHARED_MEMORYMANAGER_UNITTEST_PREFIX "unittest_hbsharedmemory"
 
 /**
 * helper function to know whether process is a shared container unittest

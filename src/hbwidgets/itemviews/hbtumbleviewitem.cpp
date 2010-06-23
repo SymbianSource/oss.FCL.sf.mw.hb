@@ -27,6 +27,8 @@
 #include "hblistviewitem_p.h"
 #include <hbstyleoptionlistviewitem_p.h>
 
+#include <QGestureEvent>
+
 HbTumbleViewItem::HbTumbleViewItem(QGraphicsItem *parent) :
     HbListViewItem(parent)
 {
@@ -70,6 +72,23 @@ void HbTumbleViewItem::updateChildItems()
         d->mSelectionItem->hide();
     }
 }
+
+void HbTumbleViewItem::gestureEvent(QGestureEvent *event)
+{
+    if (event->gesture(Qt::TapGesture)) {
+        Q_D(HbAbstractViewItem);
+        if(itemView()->isScrolling()){
+            event->ignore();
+            event->ignore(Qt::TapGesture);
+            return;
+        }
+        d->tapTriggered(event);
+
+    } else {
+        HbWidget::gestureEvent(event);
+    }
+}
+
 
 #include "moc_hbtumbleviewitem.cpp"
 

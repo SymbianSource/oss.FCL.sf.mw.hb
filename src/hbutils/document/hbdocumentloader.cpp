@@ -210,8 +210,11 @@ QObject *HbDocumentLoader::findObject(const QString &name) const
 
 
 /*!
-    Inserts object tree to documentloader. You can pass as an input parameter 
+    Inserts object tree to document loader. You can pass as an input parameter 
     output of "load" mothod. 
+
+    Document loader does not take ownership of the objects.
+
     \param roots root objects list.
     \return true if success, false otherwise.
 */

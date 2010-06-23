@@ -56,6 +56,7 @@ class HbScreen;
 class HbDockWidget;
 class HbContentWidget;
 class HbTheTestUtility;
+class CssInspectorModel;
 
 #ifdef Q_OS_SYMBIAN
 class HbNativeWindow;
@@ -212,6 +213,7 @@ public slots:
     friend class HbShrinkingVkbHostPrivate;
     friend class HbForegroundWatcher;
     friend class HbDeviceDialogConnectHelperPrivate;
+    friend class CssInspectorModel;
 };
 
 #endif // HBMAINWINDOW_P_H

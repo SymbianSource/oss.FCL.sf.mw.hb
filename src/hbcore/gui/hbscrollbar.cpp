@@ -68,8 +68,23 @@ static const qreal THRESHOLD_VALUE = 2.0;
 /*!
     \fn void HbScrollBar::valueChanged( qreal value, Qt::Orientation orientation )
 
-    This signal is emitted when thumb position is changed from user interaction.
+    This signal is emitted when thumb position is changed by the user.
 */
+
+/*!
+    \fn void valueChangeRequested( qreal value, Qt::Orientation orientation );
+
+    This signal is emitted when the user presses scrollbar groove.
+
+    \param value, the new value of scrollbar after the change
+  */
+
+/*!
+    \primitives
+    \primitive{groove} HbFrameItem representing the groove of a scrollbar.
+    \primitive{handle} HbFrameItem representing the handle of a scrollbar.
+    \primitive{toucharea} HbTouchArea representing the scrollbar toucharea.
+  */
 
 HbScrollBarPrivate::HbScrollBarPrivate():
         mOrientation(Qt::Vertical),
@@ -83,7 +98,8 @@ HbScrollBarPrivate::HbScrollBarPrivate():
         grooveItem(0),
         handleItem(0),
         mTouchArea(0),
-        mBoundingRect(QRectF(0,0,0,0)),
+        mLimitingFactor(0.0),
+        mTopLeft(0.0),
         lastEmittedPos(QPointF()),
         emittedPos(false)
 {
@@ -98,7 +114,6 @@ void HbScrollBarPrivate::init()
     Q_Q(HbScrollBar);
     q->grabGesture(Qt::PanGesture);
     q->grabGesture(Qt::TapGesture);
-    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 void HbScrollBarPrivate::createPrimitives()
@@ -124,13 +139,11 @@ void HbScrollBarPrivate::createPrimitives()
 
 void HbScrollBarPrivate::updatePosition()
 {
-    if(!mHandleGeometry.isValid() || !handleItem)
-        return;
     if (handleItem){
         if (mOrientation == Qt::Vertical) {
-            handleItem->setPos(mHandleGeometry.topLeft().x(), mCurrentPosition * (mBoundingRect.height() - mHandleGeometry.height()));
+            handleItem->setPos(mTopLeft, mCurrentPosition * mLimitingFactor);
         } else {
-            handleItem->setPos(mCurrentPosition * (mBoundingRect.width() - mHandleGeometry.width()), mHandleGeometry.topLeft().y());
+            handleItem->setPos(mCurrentPosition * mLimitingFactor, mTopLeft);
         }
     }
 }
@@ -142,22 +155,25 @@ void HbScrollBarPrivate::sizeHelper()
     Q_Q(HbScrollBar);
     if(handleItem){
         HbFrameItem *item = qgraphicsitem_cast<HbFrameItem*>(handleItem);
-        mBoundingRect = q->boundingRect();
+        QRectF bRect = q->boundingRect();
         if(item){
             if (mOrientation == Qt::Vertical) {
-                qreal height(mPageSize * mBoundingRect.height());
+                qreal height(mPageSize * bRect.height());
                 if(!qFuzzyCompare(item->preferredHeight(),height)){
                     item->setPreferredHeight(height);
                     item->resize(item->size().width(), height);
                 }
+                mLimitingFactor =  bRect.height() - item->geometry().height();
+                mTopLeft = item->geometry().topLeft().x();
             } else {
-                qreal width(mPageSize * mBoundingRect.width());
+                qreal width(mPageSize * bRect.width());
                 if(!qFuzzyCompare(item->preferredWidth(),width)){
                     item->setPreferredWidth(width);
                     item->resize(width, item->size().height());
                 }
+                mLimitingFactor =  bRect.width() - item->geometry().width();
+                mTopLeft = item->geometry().topLeft().y();
             }
-            mHandleGeometry = item->geometry();
             updatePosition();
         }
     }
@@ -240,7 +256,7 @@ HbScrollBar::~HbScrollBar()
     The value corresponds to the position of the thumb.
 
     \sa HbScrollBar::setValue()
-*/
+ */
 qreal HbScrollBar::value() const
 {
     Q_D( const HbScrollBar );
@@ -254,7 +270,7 @@ qreal HbScrollBar::value() const
 
    The size is in range of 0.0 to 1.0.
    \sa HbScrollBar::setPageSize()
-*/
+ */
 qreal HbScrollBar::pageSize() const
 {
     Q_D( const HbScrollBar );
@@ -265,7 +281,7 @@ qreal HbScrollBar::pageSize() const
     Returns the orientation of scrollbar.
 
     \sa HbScrollBar::setOrientation()
-*/
+ */
 Qt::Orientation HbScrollBar::orientation() const
 {
     Q_D( const HbScrollBar );
@@ -318,7 +334,7 @@ void HbScrollBar::setValue( qreal value )
 {
     Q_D(HbScrollBar);        
 
-    value = qBound(static_cast<qreal>(0.0), value, static_cast<qreal>(1.0));
+    value = qBound(qreal(0.0), value, qreal(1.0));
     if( !qFuzzyCompare(d->mCurrentPosition,value )) {
         d->mCurrentPosition = value;
         d->updatePosition();
@@ -336,7 +352,7 @@ void HbScrollBar::setValue( qreal value )
 void HbScrollBar::setPageSize( qreal size )
 {
     Q_D(HbScrollBar);
-    size = qBound(static_cast<qreal>(0.0), size, static_cast<qreal>(1.0));
+    size = qBound(qreal(0.0), size, qreal(1.0));
 
     if(!qFuzzyCompare(d->mPageSize,size)) {
         d->mPageSize = size;
@@ -602,7 +618,14 @@ void HbScrollBar::resizeEvent(QGraphicsSceneResizeEvent *event)
     Q_D(HbScrollBar);
     if (d->handleItem) {
         HbFrameItem* item = (qgraphicsitem_cast<HbFrameItem*>(d->handleItem));
-        d->mHandleGeometry = item->geometry();
+        QRectF geo = item->geometry();
+        if (d->mOrientation == Qt::Vertical) {
+            d->mTopLeft = geo.topLeft().x();
+            d->mLimitingFactor =  boundingRect().height() - geo.height();
+        } else {
+            d->mTopLeft = geo.topLeft().y();
+            d->mLimitingFactor =  boundingRect().width() - geo.width();
+        }
     }
 }
 

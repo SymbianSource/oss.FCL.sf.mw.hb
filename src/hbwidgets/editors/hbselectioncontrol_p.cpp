@@ -127,8 +127,11 @@ void HbSelectionControlPrivate::init()
     createPrimitives();
 
     q->setVisible(false);
-    q->setFlag(QGraphicsItem::ItemIsFocusable,false);
-    q->setFlag(QGraphicsItem::ItemIsPanel,true);
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+    itemFlags |=  QGraphicsItem::ItemSendsGeometryChanges;
+    itemFlags &= ~QGraphicsItem::ItemIsFocusable;
+    itemFlags |=  QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);
     q->setFocusPolicy(Qt::NoFocus);
     q->setActive(false);
 

@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputfocusobject.h"
+
 #include <QInputMethodEvent>
 #include <QGraphicsWidget>
 #include <QGraphicsScene>
@@ -32,14 +34,11 @@
 #include <QGraphicsView>
 
 #include "hbinputmethod.h"
-#include "hbinputfocusobject.h"
 #include "hbinputeditorinterface.h"
 #include "hbinputvkbhost.h"
 #include "hbinputstandardfilters.h"
 #include "hbinpututils.h"
 #include "hbnamespace_p.h"
-
-
 
 /*!
 @alpha
@@ -69,7 +68,7 @@ This function ensures cursor visibility for known editor types.
 void ensureCursorVisible(QObject *widget)
 {
     if (widget) {
-        QTextEdit *textEdit = qobject_cast<QTextEdit*>(widget);
+        QTextEdit *textEdit = qobject_cast<QTextEdit *>(widget);
         if (textEdit) {
             textEdit->ensureCursorVisible();
         }
@@ -109,7 +108,7 @@ HbInputFocusObject::~HbInputFocusObject()
 Creates an input method event where given string is a pre-edit string and sends
 it to focused editor. See QInputMethodEvent for more information on pre-edit strings.
 */
-void HbInputFocusObject::sendPreEditString(const QString& string)
+void HbInputFocusObject::sendPreEditString(const QString &string)
 {
     QList<QInputMethodEvent::Attribute> list;
     QInputMethodEvent event(string, list);
@@ -120,7 +119,7 @@ void HbInputFocusObject::sendPreEditString(const QString& string)
 Creates an input method event where given string is a commit string and sends
 it to focused editor. See QInputMethodEvent for more information on commit strings.
 */
-void HbInputFocusObject::sendCommitString(const QString& string)
+void HbInputFocusObject::sendCommitString(const QString &string)
 {
     QList<QInputMethodEvent::Attribute> list;
     QInputMethodEvent event(QString(), list);
@@ -131,14 +130,14 @@ void HbInputFocusObject::sendCommitString(const QString& string)
 /*!
 Sends given event to focused editor.
 */
-void HbInputFocusObject::sendEvent(QEvent& event)
+void HbInputFocusObject::sendEvent(QEvent &event)
 {
     Q_D(HbInputFocusObject);
 
     if (event.type() == QEvent::InputMethod) {
-        QInputMethodEvent* imEvent = static_cast<QInputMethodEvent*>(&event);
+        QInputMethodEvent *imEvent = static_cast<QInputMethodEvent *>(&event);
         if (imEvent->commitString().size() > 0) {
-            d->mPreEditString = QString();
+            d->mPreEditString.clear();
         } else {
             d->mPreEditString = imEvent->preeditString();
         }
@@ -147,7 +146,7 @@ void HbInputFocusObject::sendEvent(QEvent& event)
     if (d->mFocusedObject) {
         if (event.type() == QEvent::InputMethod) {
             QInputContext *ic = qApp->inputContext();
-            QInputMethodEvent* imEvent = static_cast<QInputMethodEvent*>(&event);
+            QInputMethodEvent *imEvent = static_cast<QInputMethodEvent *>(&event);
             if (ic) {
                 ic->sendEvent(*imEvent);
             }
@@ -168,14 +167,14 @@ void HbInputFocusObject::sendEvent(QEvent& event)
 /*!
 Posts given event to focused editor in an asynchronous manner.
 */
-void HbInputFocusObject::postEvent(QEvent& event)
+void HbInputFocusObject::postEvent(QEvent &event)
 {
     Q_D(HbInputFocusObject);
 
     if (event.type() == QEvent::InputMethod) {
-        QInputMethodEvent* imEvent = static_cast<QInputMethodEvent*>(&event);
+        QInputMethodEvent *imEvent = static_cast<QInputMethodEvent *>(&event);
         if (imEvent->commitString().size() > 0) {
-            d->mPreEditString = QString();
+            d->mPreEditString.clear();
         } else {
             d->mPreEditString = imEvent->preeditString();
         }
@@ -193,19 +192,19 @@ QVariant HbInputFocusObject::inputMethodQuery(Qt::InputMethodQuery query) const
 {
     Q_D(const HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (graphicsObject && graphicsObject->scene()) {
         return graphicsObject->scene()->inputMethodQuery(query);
     }
 
     // check if QWidget is embedded as a proxy in scene. If yes try to get details
     // from the scene.
-    QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+    QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
     QGraphicsProxyWidget *pw = HbInputUtils::graphicsProxyWidget(widget);
     if (pw && pw->scene()) {
         return pw->scene()->inputMethodQuery(query);
     }
-    
+
     if (widget) {
         // QWidget returns microfocus in local coordinate.
         // we need to map it to global coordinate.
@@ -254,7 +253,7 @@ QString HbInputFocusObject::editorSurroundingText()
 /*!
 Returns editor interface object pointing to focused editor.
 */
-HbEditorInterface& HbInputFocusObject::editorInterface() const
+HbEditorInterface &HbInputFocusObject::editorInterface() const
 {
     return d_ptr->mEditorInterface;
 }
@@ -284,9 +283,9 @@ void HbInputFocusObject::releaseFocus()
 {
     Q_D(HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (!graphicsObject) {
-        QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+        QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
         if (widget) {
             if (!(graphicsObject = HbInputUtils::graphicsProxyWidget(widget))) {
                 widget->clearFocus();
@@ -340,9 +339,9 @@ QRectF HbInputFocusObject::editorGeometry() const
 {
     Q_D(const HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (!graphicsObject) {
-        QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+        QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
         if (widget) {
             // check if widget is inside a proxy.
             QGraphicsProxyWidget *pw = HbInputUtils::graphicsProxyWidget(widget);
@@ -353,7 +352,7 @@ QRectF HbInputFocusObject::editorGeometry() const
                 if (pw->widget() == widget) {
                     graphicsObject = pw;
                 } else if (pw->widget() == widget->window()) {
-                    // focused object is not a proxy but it is 
+                    // focused object is not a proxy but it is
                     // inside a proxy, query to proxy about
                     // the focused objects rect.
                     QRectF rect = pw->subWidgetRect(widget);
@@ -366,7 +365,7 @@ QRectF HbInputFocusObject::editorGeometry() const
         }
     }
 
-    // we need to find the editor which is inside 
+    // we need to find the editor which is inside
     if (graphicsObject) {
         return QRectF(graphicsObject->scenePos(), graphicsObject->boundingRect().size());
     }
@@ -401,9 +400,9 @@ qreal HbInputFocusObject::findVkbZValue() const
 {
     Q_D(const HbInputFocusObject);
 
-    QGraphicsObject *editorWidget = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *editorWidget = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (!editorWidget) {
-        QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+        QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
         if (widget) {
             editorWidget = HbInputUtils::graphicsProxyWidget(widget);
         }
@@ -415,7 +414,7 @@ qreal HbInputFocusObject::findVkbZValue() const
             result += parent->zValue();
         }
         result += HbPrivate::VKBValueUnit;
-        if(result >= 0) {
+        if (result >= 0) {
             return result;
         }
     }
@@ -430,12 +429,12 @@ Qt::InputMethodHints HbInputFocusObject::inputMethodHints() const
 {
     Q_D(const HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (graphicsObject) {
         return graphicsObject->inputMethodHints();
     }
 
-    QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+    QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
     if (widget) {
         return widget->inputMethodHints();
     }
@@ -450,13 +449,13 @@ void HbInputFocusObject::setInputMethodHints(Qt::InputMethodHints hints)
 {
     Q_D(HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (graphicsObject) {
         graphicsObject->setInputMethodHints(hints);
         return;
     }
 
-    QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+    QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
     if (widget) {
         widget->setInputMethodHints(hints);
     }
@@ -466,7 +465,7 @@ void HbInputFocusObject::setInputMethodHints(Qt::InputMethodHints hints)
 A convenience method for filtering strings. Uses filter attached to connected editor
 and filters given string with it.
 */
-void HbInputFocusObject::filterStringWithEditorFilter(const QString& source, QString& result)
+void HbInputFocusObject::filterStringWithEditorFilter(const QString &source, QString &result)
 {
     QString intermediate = source;
 
@@ -523,12 +522,12 @@ QPointF HbInputFocusObject::scenePos() const
 {
     Q_D(const HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (graphicsObject) {
         return graphicsObject->scenePos();
     }
 
-    QWidget *w = qobject_cast<QWidget*>(d->mFocusedObject);
+    QWidget *w = qobject_cast<QWidget *>(d->mFocusedObject);
     // check if widget is inside a proxy.
     QGraphicsProxyWidget *pw = HbInputUtils::graphicsProxyWidget(w);
     if (pw) {
@@ -546,7 +545,7 @@ QPointF HbInputFocusObject::scenePos() const
 
     if (w) {
         // not a proxy.. Meaning widget is inside a QWidget window.
-        return w->mapToGlobal(QPoint(0,0));
+        return w->mapToGlobal(QPoint(0, 0));
     }
 
     return QPointF(0.0, 0.0);
@@ -555,7 +554,7 @@ QPointF HbInputFocusObject::scenePos() const
 /*!
 Returns true if all the characters in given string are allowed in active editor.
 */
-bool HbInputFocusObject::stringAllowedInEditor(const QString& string) const
+bool HbInputFocusObject::stringAllowedInEditor(const QString &string) const
 {
     // Two pass filtering. This can be a case constrained editor with a filter.
     Qt::InputMethodHints hints;
@@ -588,11 +587,11 @@ Commits given smiley.
 */
 void HbInputFocusObject::commitSmiley(QString smiley)
 {
-     Q_D(HbInputFocusObject);
+    Q_D(HbInputFocusObject);
 
-     if (d->mFocusedObject) {
-         d->mFocusedObject->setProperty("SmileyIcon", smiley);
-     }
+    if (d->mFocusedObject) {
+        d->mFocusedObject->setProperty("SmileyIcon", smiley);
+    }
 }
 
 /*!
@@ -611,25 +610,25 @@ only for known editor types.
 bool HbInputFocusObject::isReadOnlyWidget(QObject *editorObject)
 {
     if (editorObject) {
-        QWidget *widget = qobject_cast<QWidget*>(editorObject);
+        QWidget *widget = qobject_cast<QWidget *>(editorObject);
         if (widget) {
             if (!widget->testAttribute(Qt::WA_InputMethodEnabled)) {
                 return true;
             }
 
-            QLineEdit *lineEdit = qobject_cast<QLineEdit*>(widget);
+            QLineEdit *lineEdit = qobject_cast<QLineEdit *>(widget);
             if (lineEdit) {
                 return lineEdit->isReadOnly();
             }
 
-            QTextEdit *textEdit = qobject_cast<QTextEdit*>(widget);
+            QTextEdit *textEdit = qobject_cast<QTextEdit *>(widget);
             if (textEdit) {
                 return textEdit->isReadOnly();
             }
 
             return false;
         } else {
-            QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(editorObject);
+            QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(editorObject);
             if (graphicsObject) {
                 if (!(graphicsObject->flags() & QGraphicsItem::ItemAcceptsInputMethod)) {
                     return true;
@@ -672,11 +671,11 @@ void HbInputFocusObject::setFocus()
 {
     Q_D(HbInputFocusObject);
 
-    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(d->mFocusedObject);
     if (graphicsObject && graphicsObject->scene()) {
         graphicsObject->scene()->setFocusItem(graphicsObject);
     } else {
-        QWidget *widget = qobject_cast<QWidget*>(d->mFocusedObject);
+        QWidget *widget = qobject_cast<QWidget *>(d->mFocusedObject);
         if (widget) {
             widget->setFocus();
         }

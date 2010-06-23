@@ -15,8 +15,7 @@ HbTumbleView[scrollDirections="Vertical"]
 }
 
 HbTumbleView::highlight {
-    fixed-height: expr(var(hb-param-text-height-secondary)+2*var(hb-param-margin-gene-middle-vertical));
-    
+    fixed-height: expr(var(hb-param-text-height-primary)+var(hb-param-margin-gene-bottom)+var(hb-param-margin-gene-top));
 }
 
 HbTumbleView::separator{

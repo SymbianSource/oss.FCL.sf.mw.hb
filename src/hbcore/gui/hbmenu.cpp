@@ -487,6 +487,9 @@ HbMenu::HbMenu(const QString &title, QGraphicsItem *parent) :
     setTitle(title);
 }
 
+/*!
+    Protected constructor.
+*/
 HbMenu::HbMenu(HbMenuPrivate &dd, QGraphicsItem *parent) :
         HbPopup(dd, parent)
 {
@@ -675,7 +678,9 @@ void HbMenu::setTitle(const QString &title)
 }
 
 /*!
-    \return the menu title. For a sub-menu, the title is the sub-menu action text.
+    Returns the menu title. For a sub-menu, the title is the sub-menu action text.
+
+    \return the menu title.
 
     \sa setTitle()
 */
@@ -685,7 +690,9 @@ QString HbMenu::title() const
 }
 
 /*!
-    \return the menu type. By default a menu is a context menu.
+    Returns the menu type. By default a menu is a context menu.
+
+    \return the menu type.
 */
 HbMenu::MenuType HbMenu::menuType() const
 {
@@ -747,6 +754,9 @@ bool HbMenu::event(QEvent *event)
     return HbPopup::event(event);
 }
 
+/*!
+  \reimp
+  */
 void HbMenu::polish(HbStyleParameters &params)
 {
     Q_D(HbMenu);
@@ -783,6 +793,10 @@ void HbMenu::polish(HbStyleParameters &params)
     }
 }
 
+/*!
+  \reimp
+  Returns the shape of this item as a QPainterPath.
+ */
 QPainterPath HbMenu::shape() const
 {
     /*QRectF rect = QRectF(-1.0, -1.0, boundingRect().width() + 1.0, boundingRect().height() + 1.0);

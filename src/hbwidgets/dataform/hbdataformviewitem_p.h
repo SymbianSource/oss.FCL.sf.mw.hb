@@ -93,7 +93,7 @@ protected:
 public slots:
     void updateModel( int index );
     void buttonClicked();
-    void dialogClosed(HbAction* action);
+    void dialogClosed(int code);
     void makeEmbedded();
     void makePopup();
     void changeMode();
@@ -101,8 +101,7 @@ public slots:
     void resetSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
-    void itemSelected(int index);
-    void startPreview(int index);
+    
     //popup signals
     void finished(HbAction*);
     void aboutToShow();
@@ -136,7 +135,7 @@ protected:
 
 public slots:
     void launchMultiSelectionList( );
-    void dialogClosed(HbAction*);
+    void dialogClosed(int code);
     void updateModel( const QItemSelection & selected, const QItemSelection &deselected );
     void makeEmbedded();
     void makePopup();
@@ -195,7 +194,7 @@ public:
     QString description() const;
     void updateData();
 
-    void setEnabled(bool enabled);
+    virtual void setEnabled(bool enabled);
 public:
     static HbDataFormViewItemPrivate *d_ptr(HbDataFormViewItem *item) {
         Q_ASSERT(item);

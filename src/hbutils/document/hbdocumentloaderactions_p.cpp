@@ -100,7 +100,7 @@ bool HbDocumentLoaderActions::pushObject( const QString& type, const QString &na
         return false;
     }
 
-    QObject *current = lookUp(type, name).first.data();
+    QObject *current = lookUp(type, name).mObject.data();
 
     if( current == 0 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Not supported object: " ) + type );
@@ -137,7 +137,7 @@ bool HbDocumentLoaderActions::pushWidget( const QString& type, const QString &na
     }
 
     ObjectMapItem item = lookUp(type, name, plugin);
-    QObject *current = item.first.data();
+    QObject *current = item.mObject.data();
 
     if( current == 0 ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Not supported object: " ) + type );
@@ -149,7 +149,7 @@ bool HbDocumentLoaderActions::pushWidget( const QString& type, const QString &na
         parentAsWidget = static_cast<QGraphicsWidget *>(parent);
     }
     QGraphicsWidget *asWidget(0);
-    if (item.second == HbXml::WIDGET) {
+    if (item.mType == HbXml::WIDGET) {
         asWidget = static_cast<QGraphicsWidget *>(current);
     }
 
@@ -194,8 +194,8 @@ bool HbDocumentLoaderActions::pushSpacerItem( const QString &name, const QString
         return false;
     } else {
         ObjectMapItem &item = mObjectMap[ widget ];
-        if (item.second == HbXml::WIDGET) {
-            parent = qobject_cast<HbWidget *>( item.first.data() );
+        if (item.mType == HbXml::WIDGET) {
+            parent = qobject_cast<HbWidget *>( item.mObject.data() );
         }
         if( !parent ) {
             HB_DOCUMENTLOADER_PRINT( QString( "SPACERITEM: CANNOT SET SPACERITEM TO NON-HBWIDGET " ) );
@@ -237,14 +237,14 @@ bool HbDocumentLoaderActions::pushConnect( const QString &srcName, const QString
         return false;
     }
 
-    QObject *src = mObjectMap[ srcName ].first;
+    QObject *src = mObjectMap[ srcName ].mObject;
 
     if( !src ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, already destroyed " ) + srcName );
         return false;
     }
 
-    QObject *dst = mObjectMap[ dstName ].first;
+    QObject *dst = mObjectMap[ dstName ].mObject;
 
     if( !dst ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Unable to establish signal/slot connection, already destroyed " ) + dstName );
@@ -295,7 +295,7 @@ bool HbDocumentLoaderActions::pushProperty( const char *propertyName, const HbXm
 bool HbDocumentLoaderActions::pushRef( const QString &name, const QString &role )
 {
     QObject *current = findFromStack();
-    QObject *ref = mObjectMap[ name ].first.data();
+    QObject *ref = mObjectMap[ name ].mObject.data();
 
     if( ( current == 0 ) || ( ref == 0 ) ) {
         HB_DOCUMENTLOADER_PRINT( QString( "Wrong role name or role context" ) );
@@ -526,8 +526,8 @@ bool HbDocumentLoaderActions::createAnchorLayout( const QString &widget )
         if( isWidget ) {
             parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
-        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].mType == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].mObject.data() );
     }
     if ( !parent ) {
         HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: PARENT NOT FOUND" ) );
@@ -594,8 +594,8 @@ bool HbDocumentLoaderActions::addAnchorLayoutEdge( const QString &src, Hb::Edge 
     } else if ( !( mObjectMap.contains( src ) ) ) {
         item1 = findLayoutItem( *layout, src );
     } else {
-        if (mObjectMap[ src ].second == HbXml::WIDGET) {
-            item1 = static_cast<QGraphicsWidget *>( mObjectMap[ src ].first.data() );
+        if (mObjectMap[ src ].mType == HbXml::WIDGET) {
+            item1 = static_cast<QGraphicsWidget *>( mObjectMap[ src ].mObject.data() );
         }
     }
     if ( !item1 ) {
@@ -608,8 +608,8 @@ bool HbDocumentLoaderActions::addAnchorLayoutEdge( const QString &src, Hb::Edge 
     } else if( !( mObjectMap.contains( dst ) ) ) {
         item2 = findLayoutItem( *layout, dst );
     } else {
-        if (mObjectMap[ dst ].second == HbXml::WIDGET) {
-            item2 = static_cast<QGraphicsWidget *>( mObjectMap[ dst ].first.data() );
+        if (mObjectMap[ dst ].mType == HbXml::WIDGET) {
+            item2 = static_cast<QGraphicsWidget *>( mObjectMap[ dst ].mObject.data() );
         }
     }
     if ( !item2 ) {
@@ -636,8 +636,8 @@ bool HbDocumentLoaderActions::createGridLayout( const QString &widget, const HbX
         if( isWidget ) {
             parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
-        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].mType == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].mObject.data() );
     }
     if ( !parent ) {
         HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: PARENT NOT FOUND" ) );
@@ -681,8 +681,8 @@ bool HbDocumentLoaderActions::addGridLayoutCell(
     if( src.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: TRY TO ADD EMPTY ITEM " ) + src );
         return false;
-    } else if ( mObjectMap.contains( src ) && mObjectMap[ src ].second == HbXml::WIDGET ) {
-        item = static_cast<QGraphicsWidget *>( mObjectMap[ src ].first.data() );
+    } else if ( mObjectMap.contains( src ) && mObjectMap[ src ].mType == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ src ].mObject.data() );
     } else {
         HB_DOCUMENTLOADER_PRINT( QString( "GRIDLAYOUT: NO SUCH ITEM " ) + src );
         return false;
@@ -872,8 +872,8 @@ bool HbDocumentLoaderActions::createLinearLayout(
         if ( isWidget ) {
             parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
-        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].mType == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].mObject.data() );
     }
     if ( !parent ) {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: PARENT NOT FOUND" ) );
@@ -919,8 +919,8 @@ bool HbDocumentLoaderActions::addLinearLayoutItem(
     if ( itemname.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: TRY TO ADD EMPTY ITEM " ) + itemname );
         return false;
-    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].second == HbXml::WIDGET ) {
-        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].first.data() );
+    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].mType == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].mObject.data() );
     } else {
         HB_DOCUMENTLOADER_PRINT( QString( "LINEARLAYOUT: NO SUCH ITEM " ) + itemname );
         return false;
@@ -1015,8 +1015,8 @@ bool HbDocumentLoaderActions::createStackedLayout( const QString &widget )
         if( isWidget ) {
             parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
-        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].mType == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].mObject.data() );
     }
     if ( !parent ) {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: PARENT NOT FOUND" ) );
@@ -1044,8 +1044,8 @@ bool HbDocumentLoaderActions::addStackedLayoutItem( const QString &itemname, int
     if( itemname.isEmpty() ) {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: TRY TO ADD EMPTY ITEM " ) + itemname );
         return false;
-    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].second == HbXml::WIDGET ) {
-        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].first.data() );
+    } else if ( mObjectMap.contains( itemname ) && mObjectMap[ itemname ].mType == HbXml::WIDGET ) {
+        item = static_cast<QGraphicsWidget *>( mObjectMap[ itemname ].mObject.data() );
     } else {
         HB_DOCUMENTLOADER_PRINT( QString( "STACKEDLAYOUT: NO SUCH ITEM " ) + itemname );
         return false;
@@ -1068,8 +1068,8 @@ bool HbDocumentLoaderActions::createNullLayout( const QString &widget )
         if( isWidget ) {
             parent = static_cast<QGraphicsWidget *>( parentObj );
         }
-    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].second == HbXml::WIDGET ) {
-        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].first.data() );
+    } else if ( mObjectMap.contains( widget ) && mObjectMap[ widget ].mType == HbXml::WIDGET ) {
+        parent = static_cast<QGraphicsWidget *>( mObjectMap[ widget ].mObject.data() );
     }
     if ( !parent ) {
         HB_DOCUMENTLOADER_PRINT( QString( "NULL LAYOUT: PARENT NOT FOUND" ) );
@@ -1087,7 +1087,18 @@ bool HbDocumentLoaderActions::createNullLayout( const QString &widget )
 bool HbDocumentLoaderActions::setWidgetRole(
     QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role)
 {
-    return mFactory.setWidgetRole(parent, child, role);
+    bool roleTransfersOwnership = false; 
+
+    // updates roleTransfersOwnership only on succesfull execution
+    const bool result = mFactory.setWidgetRole(parent, child, role, roleTransfersOwnership);
+
+    if ( roleTransfersOwnership ) {
+        // remove ownership from own data structure    
+        ObjectMapItem &item = mObjectMap[child->objectName()];
+        item.mOwned = false;
+    }
+
+    return result;
 }
 
 bool HbDocumentLoaderActions::setObjectRole(

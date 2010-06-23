@@ -43,12 +43,12 @@
 #endif // Q_OS_SYMBIAN
 
 #include "hblanguageutil.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 #if defined(Q_OS_SYMBIAN)
 #define LANGUAGE_LIST_FILE "/resource/hbi18n/translations/language_list.txt"
 #define LANGUAGE_ID_PREFIX "language_"
-#define TRANSLATOR_PATH "/resource/hbi18n/translations/languages"
+#define TRANSLATOR_PATH "/resource/hbi18n/translations/languages_OLD"
 #endif // Q_OS_SYMBIAN
 
 /*!
@@ -56,6 +56,9 @@
     @hbcore
     \class HbLanguageUtil
     \brief HbLanguageUtil provides functions for quering supported languages and switching the system language.
+
+    \deprecated HbLanguageUtil class
+        is deprecated. Please use HbLocaleUtil class instead.
 */
 
 #if defined(Q_OS_SYMBIAN)
@@ -113,34 +116,14 @@ bool setLocale( int language )
 {
     TExtendedLocale dummy;
     dummy.LoadSystemSettings();
-   
-    // Try to load new locale model dll
     QString no;
-    if ( language < 10 ) {
-        no = QString( "00%1" ).arg(language);
-    } else if ( language < 100 ) {
-        no = QString( "0%1" ).arg(language);
-    } else {
-        no = QString( "%1" ).arg(language);
-    }
-    
-    QString name = QString("elocl_lan.").append(no);
+    no = QString( "%1" ).arg( language, 2, 10, QLatin1Char( '0' ) );
+    QString name = QString( "elocl." ).append( no );
     TPtrC nameptr(name.utf16());
     
-    TInt err = dummy.LoadLocaleAspect(nameptr);    
-    if( err != KErrNone ) {
-        // Loading new locale model dll fails
-        // Try to load old locale model dll
-        no = QString("%1").arg(language, 2, 10, QLatin1Char( '0' ));
-        QString name2 = QString("elocl.").append(no);
-        TPtrC nameptr2(name2.utf16());
-        
-        TInt err2 = dummy.LoadLocale(nameptr2);
-        if ( err2 != KErrNone ) {
-            return false;
-        }
-    }
-    
+    TInt err = dummy.LoadLocale( nameptr );
+    if( err != KErrNone )
+        return false;
     dummy.SaveSystemSettings();
     // cause localeprivate update on next qlocale object( glp->m_language_id = 0 )
     QSystemLocale dummy2;
@@ -158,6 +141,9 @@ bool setLocale( int language )
     
     \attention Symbian specific API
     
+    \deprecated HbLanguageUtil::supportedLanguages()
+        is deprecated. Please use HbLocaleUtil::supportedLanguages() instead.
+     
     \return Symbian - localized names and integer identifiers of languages supported in a device  
     \return other platforms - empty QHash    
 */
@@ -215,6 +201,9 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
      
     \attention Symbian specific API
      
+    \deprecated HbLanguageUtil::allLanguages()
+        is deprecated.
+
     \return Symbian - localized names and integer identifiers of known languages 
     \return other platforms - empty QHash    
 */
@@ -261,7 +250,10 @@ QHash<int, QString> HbLanguageUtil::allLanguages()
      
     \attention Symbian specific API
      
-    \param identifier of language to set active
+    \deprecated HbLanguageUtil::changeLanguage( int language )
+        is deprecated. Please use HbLocaleUtil::changeLanguage( const QString &language ) instead.
+
+    \param language identifier of language to set active
     \return true for Symbian if succesfull and false for other platforms
 */ 
 bool HbLanguageUtil::changeLanguage( int language )
@@ -307,6 +299,9 @@ bool HbLanguageUtil::changeLanguage( int language )
   
     \attention Symbian specific API
      
+    \deprecated HbLanguageUtil::currentLanguage()
+        is deprecated. Please use HbLocaleUtil::currentLanguage() instead.
+
     \return identifier of current system language for Symbian and '0' for other platforms
 */ 
 int HbLanguageUtil::currentLanguage()

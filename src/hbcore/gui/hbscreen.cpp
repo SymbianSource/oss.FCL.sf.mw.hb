@@ -32,6 +32,8 @@
 #include "hbview.h"
 #include "hbcontentwidget_p.h"
 #include "hbmainwindow.h"
+#include "hbtooltip.h"
+#include "hbgraphicsscene.h"
 #include "hbevent.h"
 #include "hbmainwindow_p.h"
 #include <QGraphicsLayout>
@@ -278,6 +280,7 @@ void HbScreen::decoratorVisibilityChanged()
 void HbScreen::currentViewChanged(HbView *view)
 {
     Q_UNUSED(view);
+    HbToolTip::hideText(qobject_cast<HbGraphicsScene *>(scene()));
     repolish();
 }
 

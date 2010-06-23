@@ -133,6 +133,7 @@ public:
         P_NavigationButton_background,
         P_IndicatorButton_background,
         P_IndicatorButton_handleindication,
+        P_IndicatorButton_eventindication,
         P_ItemViewItem_frame,   
         P_SelectionControl_selectionstart,
         P_SelectionControl_selectionend,
@@ -251,8 +252,6 @@ private slots:
 private:
     Q_DISABLE_COPY( HbStyle )
     Q_DECLARE_PRIVATE_D( d_ptr, HbStyle )
-
-    Q_PRIVATE_SLOT(d_func(), void _q_onThemeChanged())
 };
 
 

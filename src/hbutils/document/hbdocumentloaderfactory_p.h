@@ -40,7 +40,7 @@ public:
     HbDocumentLoaderFactory();
     virtual ~HbDocumentLoaderFactory();
     QObject *create(const QString& type, const QString& name);
-    bool setWidgetRole(QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role);
+    bool setWidgetRole(QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role, bool &roleTransfersOwnership );
     bool setObjectRole(QObject *parent, QObject *child, const QString &role);
 
 private:

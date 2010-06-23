@@ -34,13 +34,12 @@
 #include <hbcolorscheme.h>
 #include <hbinpututils.h>
 #include <hbinputbutton.h>
-#include "hbinputspellquerydialog.h"
 #include "../touchinput/virtualqwerty.h"
 
 #include "hbinputpredictionhandler_p.h"
 #include "hbinputabstractbase.h"
 
-#define HbDeltaHeight 3.0
+static const qreal HbDeltaHeight = 3.0;
 
 HbInputPredictionHandlerPrivate::HbInputPredictionHandlerPrivate()
     :mEngine(0),
@@ -114,16 +113,8 @@ void HbInputPredictionHandlerPrivate::commitAndAppendCharacter(QChar character)
 
     QString commitString;
     if (mEngine->inputLength() > 0 && mCandidates->count() > 0) {
-        if(mCandidates->count() <= mBestGuessLocation) {
-            commitString = mCandidates->at(0);
-            mEngine->addUsedWord(mCandidates->at(0));
-        } else if (mShowTail == false) {
-            commitString = mCandidates->at(mBestGuessLocation).left(mEngine->inputLength());
-            mEngine->addUsedWord(mCandidates->at(mBestGuessLocation).left(mEngine->inputLength()));
-        } else {
-            commitString = mCandidates->at(mBestGuessLocation);
-            mEngine->addUsedWord(mCandidates->at(mBestGuessLocation));
-        }
+        commitString = getCommitString();
+        mEngine->addUsedWord(commitString);
         if (character == QChar(' ') || character == QChar('\n')) {
             mAutoAddedSpace = true;
         }
@@ -169,15 +160,6 @@ This function shows the exact popup if needed.
 */
 void HbInputPredictionHandlerPrivate::showExactWordPopupIfNeeded()
 {
-    Q_Q(HbInputPredictionHandler);
-    if (mShowTooltip && mBestGuessLocation > 0 &&  mCandidates->count() > 0
-    	&& mCandidates->at(0).mid(0, mEngine->inputLength()) \
-        != mCandidates->at(mBestGuessLocation).mid(0, mEngine->inputLength())) {                
-        q->processExactWord(mCandidates->at(0));
-    } else {
-        QString empty;
-        q->processExactWord(empty);
-    }
 }
 
 QList<HbKeyPressProbability> HbInputPredictionHandlerPrivate::probableKeypresses()
@@ -426,18 +408,15 @@ void HbInputPredictionHandlerPrivate::mouseHandler(int cursorPosition, QMouseEve
     }
 
     //The mouse has been clicked outside of the pre-editing word and hence need to commit the word.
-    if ( cursorPosition < 0 || (mCandidates->size()>0 && cursorPosition >= mCandidates->at(mBestGuessLocation).length())) {
-        if (mEngine->inputLength() > 0 && mCandidates->count() > 0 && mBestGuessLocation < mCandidates->count()) {
-            commit(mCandidates->at(mBestGuessLocation),true);
-        }
+    if ( cursorPosition < 0 || cursorPosition >= mInputMethod->focusObject()->preEditString().length()) {
+        commit();
     } else if (mCandidates->size() > 0) {
         if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {
-			// mouse has been clicked on the pre-editing string ends with "?"
+            // mouse has been clicked on the pre-editing string ends with "?"
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);
             updateEditor();
             q->launchSpellQueryDialog();
-            mCanContinuePrediction = true;
         } else {
 
         //The mouse has been clicked on the pre-editing word, launch candidate list
@@ -448,7 +427,7 @@ void HbInputPredictionHandlerPrivate::mouseHandler(int cursorPosition, QMouseEve
 
 void HbInputPredictionHandlerPrivate::init()
 {
-    mEngine = NULL;
+    mEngine = 0;
     HbInputLanguage language = HbInputSettingProxy::instance()->globalInputLanguage();
     mEngine = HbPredictionFactory::instance()->predictionEngineForLanguage(language.language());
     if (mEngine && !mCandidates) {
@@ -471,17 +450,28 @@ void HbInputPredictionHandlerPrivate::reset()
 void HbInputPredictionHandlerPrivate::commit()
 {
     if (mEngine && mEngine->inputLength() > 0 && mCandidates->count() > 0) {
-        if(!mCanContinuePrediction) {
-            //Remove the "?" mark
-            (*mCandidates)[mBestGuessLocation].chop(1);
-        }
 		
 		// Close exact word pop up in qwerty when the word is committed
 		if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
 			mInputMethod->closeExactWordPopup();
 		}
 		
-        QString commitString;
+        QString commitString = getCommitString();
+
+        // need to update the freq information
+        mEngine->commit(commitString);
+        commit(commitString,false);
+    }
+}
+
+QString HbInputPredictionHandlerPrivate::getCommitString()
+{
+    QString commitString;
+    if(mCandidates->count()) {
+        if(!mCanContinuePrediction) {
+           //Remove the "?" mark
+           (*mCandidates)[mBestGuessLocation].chop(1);
+        }
         if(mCandidates->count() <= mBestGuessLocation) {
             commitString = mCandidates->at(0);
         } else if (mShowTail == false) {
@@ -489,10 +479,8 @@ void HbInputPredictionHandlerPrivate::commit()
         } else {
             commitString = mCandidates->at(mBestGuessLocation);
         }
-        // need to update the freq information
-        mEngine->commit(commitString);
-        commit(commitString,false);
     }
+    return commitString;
 }
 
 /*!
@@ -502,12 +490,8 @@ candidates from prediction engine
 void HbInputPredictionHandlerPrivate::commit(const QString& string, bool addToUsedWordDict, bool isAsync)
 {
     Q_Q(HbInputPredictionHandler);
-    if(!mCanContinuePrediction) {
-        //Remove the "?" mark
-        (*mCandidates)[mBestGuessLocation].chop(1);
-    }
 
-	// Close exact word pop up in qwerty when the word is committed
+    // Close exact word pop up in qwerty when the word is committed
 	if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
 		mInputMethod->closeExactWordPopup();
 	}
@@ -516,9 +500,9 @@ void HbInputPredictionHandlerPrivate::commit(const QString& string, bool addToUs
 
     if(mEngine) {
         if(addToUsedWordDict && !string.isEmpty()) {
-            QString separator = " ";
-            QStringList stringList = string.split(separator, QString::SkipEmptyParts);
-            foreach (QString str, stringList) {
+            QChar spaceChar(' ');
+            QStringList stringList = string.split(spaceChar, QString::SkipEmptyParts);
+            foreach (const QString str, stringList) {
                 mEngine->addUsedWord(str);
             }
         }
@@ -612,13 +596,17 @@ void HbInputPredictionHandlerPrivate::handleEmptyCandidateList()
     }
 }
 
-void HbInputPredictionHandlerPrivate::setPreEditTextToEditor(QString string)
+void HbInputPredictionHandlerPrivate::setPreEditTextToEditor(QString string, bool showAutocompletionPart)
 {
     //update the editor with pre-edit text
     mEngine->setWord(string);
     bool used = false;	 
     mEngine->updateCandidates(mBestGuessLocation, used);
-    mTailShowing = true;
+    if(showAutocompletionPart) {
+        mShowTail = true;
+    } else {
+        mShowTail =  false;
+    }
     updateEditor();
 
 }
@@ -656,7 +644,7 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
         case HbInputModeActionReset:
         case HbInputModeActionCommit:
         case HbInputModeActionFocusLost: {
-            //At the moment we are commiting the text with the autocompletion part as it needs to be committed on clicking outside the editor. 
+            //At the moment we are committing the text with the autocompletion part as it needs to be committed on clicking outside the editor. 
             //TO DO : When We back to the application by pressing Application key the inline word should not commit and remain in the inline editing
             //d->mShowTail = false;
             d->commit();
@@ -875,32 +863,60 @@ void HbInputPredictionHandler::closeSpellQueryDialog()
 }
 
 //
-void HbInputPredictionHandler::spellQueryDialogClosed(QObject *savedFocusObject,bool isOk,QString string)
+void HbInputPredictionHandler::spellQueryDialogClosed(QObject *savedFocusObject
+                                                      ,HbInputSpellQuery::HbSpellCloseReason closeReason,const QString &string)
 {
-    Q_D(HbInputPredictionHandler);
-
-    // set the focus back to the editor which caused the launch of spell dialog.
-    if(savedFocusObject) {
-        HbInputFocusObject *newFocusObject = new HbInputFocusObject(savedFocusObject);
-        newFocusObject->releaseFocus();
-        newFocusObject->setFocus();
-        HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(savedFocusObject);
-        if(abstractEdit) {
-            abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
-        }
-        d->mInputMethod->setFocusObject(newFocusObject);
+    if(!savedFocusObject) {
+        return;
     }
 
-    if (isOk) {
+    Q_D(HbInputPredictionHandler);
+    // set the focus back to the editor which caused the launch of spell dialog.
+    HbInputFocusObject *newFocusObject = new HbInputFocusObject(savedFocusObject);
+    newFocusObject->releaseFocus();
+    newFocusObject->setFocus();
+    HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(savedFocusObject);
+    if(abstractEdit) {
+        abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
+    }
+    d->mInputMethod->setFocusObject(newFocusObject);
+
+    if (closeReason == HbInputSpellQuery::HbOkPressed) {
         d->commit(string,true);
-    } else {
+    } else if(closeReason == HbInputSpellQuery::HbCancelPressed) {
         //update the editor with pre-edit text
-        d->setPreEditTextToEditor(string);
+        d->setPreEditTextToEditor(string, d->mCanContinuePrediction);
         // This update is need for below usecase
         // Editor is empty => enter some data till their is no match => click on word
-        // to lauch spell query => now press cancel => testcase of keypad is uppercase,
+        // to launch spell query => now press cancel => testcase of keypad is uppercase,
         // but it should be lower case
         d->mInputMethod->updateState();
+    } else if (closeReason == HbInputSpellQuery::HbForceClose) {
+        // Force spell query close happens when oriantation is about to change.
+        // In this case nomal commit() on input method does not seems to work.
+        // So we are directly sending commit even to editor.
+        QList<QInputMethodEvent::Attribute> list;
+        QInputMethodEvent event(QString(), list);
+        event.setCommitString(string);
+        QApplication::sendEvent(savedFocusObject, &event);
     }
+    // Enable the flag
+    d->mCanContinuePrediction = true;
+}
+
+
+void HbInputPredictionHandler::setAutocompletionStatus(bool status)
+{
+    Q_D(HbInputPredictionHandler);
+    d->mAutocompletionEnabled = status;
+    if(!d->mEngine) {
+        return;
+    }
+    if(!status) {
+        d->mEngine->disableFeature(HbPredFeatureWordCompletion);
+    } else {
+        d->mEngine->enableFeature(HbPredFeatureWordCompletion);
+    }
+
 }
 // EOF
