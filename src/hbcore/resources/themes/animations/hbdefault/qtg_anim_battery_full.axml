@@ -1,0 +1,14 @@
+<animations>
+<icon name="qtg_anim_battery_full" frame_duration="200" playmode="loop">
+<frame>qtg_anim_battery_full_01</frame>
+<frame>qtg_anim_battery_full_02</frame>
+<frame>qtg_anim_battery_full_03</frame>
+<frame>qtg_anim_battery_full_04</frame>
+<frame frame_duration="800">qtg_anim_battery_full_05</frame>
+<frame>qtg_anim_battery_full_06</frame>
+<frame>qtg_anim_battery_full_07</frame>
+<frame>qtg_anim_battery_full_08</frame>
+<frame>qtg_anim_battery_full_09</frame>
+<frame frame_duration="800">qtg_anim_battery_full_10</frame>
+</icon>
+</animations>

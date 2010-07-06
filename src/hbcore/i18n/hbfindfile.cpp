@@ -35,6 +35,14 @@
 #include <qbasicatomic.h>
 #include <QDir>
 
+#if defined(Q_OS_SYMBIAN)
+    #define PLATFORM_WITH_DRIVES
+#elif defined(Q_OS_WIN32)
+    #define PLATFORM_WITH_DRIVES
+#else
+    #undef PLATFORM_WITH_DRIVES
+#endif
+
 #ifdef Q_OS_SYMBIAN
 /*!
     Convert path to Symbian version
@@ -55,8 +63,16 @@ static void toSymbianPath(QString &path) {
     @hbcore
     \class HbFindFile
     \brief Checks from which drive a certain file is found.
-    Scans drives through and adds drive information to \a str if file is found.
+     
+    Example:
+
+    \snippet{unittest_hbfindfile/unittest_hbfindfile.cpp,1} 
     
+*/
+
+/*!
+    Scans drives through and adds drive information to \a str if file is found.
+
     \attention Cross-Platform API
 
     \param str is file and path beginning with "/"
@@ -66,7 +82,7 @@ static void toSymbianPath(QString &path) {
 */
 bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
 {
-#ifdef Q_OS_SYMBIAN
+#if defined(Q_OS_SYMBIAN)
     RFs& fs = CCoeEnv::Static()->FsSession();
     TFindFile ff(fs);
     QString str2 = str;
@@ -92,7 +108,7 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
     else {
         return false;
     }
-#else
+#elif defined(Q_OS_WIN32)
     QString file = str;
     if (!defaultDrive.isNull()) {
         file = defaultDrive + QString(":") + str;
@@ -116,10 +132,14 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
         }
     }
     return false;
-#endif
-    
+#else
+    Q_UNUSED(defaultDrive);
+    QFileInfo info(str);
+    return info.exists();
+#endif   
 }
 
+#ifdef PLATFORM_WITH_DRIVES
 /*!
     Helper class
 */
@@ -137,6 +157,10 @@ AvailableDrives::AvailableDrives() {
     RFs& fs = CCoeEnv::Static()->FsSession();
     TDriveList driveList;
     fs.DriveList(driveList);
+    if ( driveList.Size() == 0 ) {
+        return;
+    }
+    
     TChar driveLetter;
     
     // add first C and then Y..A and then Z.
@@ -150,8 +174,7 @@ AvailableDrives::AvailableDrives() {
     for (driveNumber = EDriveY; driveNumber >= EDriveA; --driveNumber) {
         if (driveNumber == EDriveC) {
             continue;
-        }
-        else {
+        } else {
             if (driveList[driveNumber]) {
                 fs.DriveToChar(driveNumber, driveLetter);
                 QChar c = static_cast<QChar>(driveLetter);
@@ -164,22 +187,24 @@ AvailableDrives::AvailableDrives() {
         fs.DriveToChar(driveNumber, driveLetter);
         QChar cZ = static_cast<QChar>(driveLetter);
         this->append(cZ);
-    }
-
-    
-#else            
+    }  
+#else // Q_OS_SYMBIAN           
      QFileInfoList fil = QDir::drives();
      for (int j=0; j< fil.length(); j++) {
          QString fp = fil.at(j).filePath();
+         if ( fp.isEmpty() ) {
+            return;
+        }
          
-         if ((!fp.isEmpty()) && (fp[0] != '/') && (fp[0] != '\\')) {                
+         if ( (fp[0] != '/') && (fp[0] != '\\') ) {                
          this->append(fp[0]);
          }        
      }
-#endif     
+#endif // Q_OS_SYMBIAN    
 }
 
 Q_GLOBAL_STATIC(AvailableDrives, gs_AvailableDrives)
+#endif  // PLATFORM_WITH_DRIVES 
 
 /*!
     \attention Cross-Platform API
@@ -189,11 +214,14 @@ Q_GLOBAL_STATIC(AvailableDrives, gs_AvailableDrives)
 */
 QString HbFindFile::availableDrives()
 {
+#ifdef PLATFORM_WITH_DRIVES
      QString *str = gs_AvailableDrives();
      if (str) {
          return *str;         
-     }
-     else {
+     } else {
          return QString(); 
      }
+#else // PLATFORM_WITH_DRIVES           
+     return QString(); 
+#endif  // PLATFORM_WITH_DRIVES 
 }

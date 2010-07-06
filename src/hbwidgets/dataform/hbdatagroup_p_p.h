@@ -42,18 +42,19 @@ public:
     ~HbDataGroupPrivate( );
 
     void init( );
-    void expand( bool expanded );
+    void changeExpansionState( bool expanded );
 
     void setHeading( const QString &heading );
     QString heading( ) const;
 
-    QString groupPage() const;
+    //QString groupPage() const;
     void setGroupPage(const QString &page);
     void removeGroupPage(const QString &page);
     int activePage();
-    void setActivePage(int pageindex);
     bool setExpanded( bool expanded );
     void setEnabled( bool enabled );
+	int pageIndex(const QModelIndex &index) const ;
+	QModelIndex pageModelIndex(int index) const ; 
 
 public:
     static HbDataGroupPrivate *d_ptr( HbDataGroup *item ) {

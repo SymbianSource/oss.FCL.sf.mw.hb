@@ -30,7 +30,9 @@
 #include <hbtoucharea.h>
 #include <hbtextitem.h>
 #include <hbstyleoptioncombobox_p.h>
+#include <hbnamespace_p.h>
 #include <QStandardItemModel>
+#include <QGraphicsScene>
 #include <QDebug>
 
 #include <hbtapgesture.h>
@@ -994,50 +996,53 @@ void HbComboBox::setItemText( int index, const QString &text )
     }
 }
 
+bool HbComboBox::eventFilter( QObject *obj, QEvent *event )
+{
+    return HbWidget::eventFilter(obj,event);
+}
+
 /*!
     reimplementation. 
 */
-bool HbComboBox::eventFilter( QObject* obj, QEvent* event )
+void HbComboBox::gestureEvent(QGestureEvent *event)
 {
     Q_D( HbComboBox );
-    bool accepted = false;
-    if ( !isEnabled( ) ) {
-        return false ;
+
+    if (!isEnabled()) {
+        return;
     }
-    if( obj == static_cast<HbTouchArea*>( d->mButtonTouchAreaItem ) ) {
-        if( event->type( ) == QEvent::Gesture ) {
-            QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event );
-            if( gestureEvent->gesture( Qt::TapGesture ) ) {
-                HbTapGesture *tap =
-                    static_cast<HbTapGesture *>( gestureEvent->gesture( Qt::TapGesture ) );
-                switch( tap->state( ) ) {
-                case Qt::GestureStarted:
-                    {
-                        d->touchAreaPressEvent( );
-                        accepted = true;
-                        break;
-                    }
-                case Qt::GestureCanceled:
-                    {
-                        d->mIsDown = false;
-                        updatePrimitives( );
-                        accepted = true;
-                        break;
-                    }
-                case Qt::GestureFinished:
-                    {
-                        d->touchAreaReleaseEvent( );
-                        accepted = true;
-                        break;
-                        //TODO :: move else part here
-                    }
-                default:
-                    break;
+    if(event->gesture(Qt::TapGesture)) {
+        HbTapGesture *tap =
+                static_cast<HbTapGesture *>(event->gesture(Qt::TapGesture));
+        switch(tap->state()) {
+        case Qt::GestureStarted: {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
                 }
+
+                d->touchAreaPressEvent();
+                break;
             }
+        case Qt::GestureCanceled: {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
+                d->mIsDown = false;
+                updatePrimitives();
+                setProperty( "state", "normal" );
+                break;
+            }
+        case Qt::GestureFinished: {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
+                d->touchAreaReleaseEvent();
+                break;
+                //TODO :: move else part here
+            }
+        default:
+            break;
         }
     }
-    return accepted;
 }
 
 /*!

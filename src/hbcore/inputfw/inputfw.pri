@@ -53,6 +53,7 @@ PUBLIC_HEADERS += $$PWD/hbinputlanguage.h
 PUBLIC_HEADERS += $$PWD/hbinputstandardfilters.h
 PUBLIC_HEADERS += $$PWD/hbinputmethoddescriptor.h
 PUBLIC_HEADERS += $$PWD/hbinputvkbhostbridge.h
+PUBLIC_HEADERS += $$PWD/hbinputcontextplugin.h
 
 # private framework headers
 PRIVATE_HEADERS += $$PWD/hbinputmodecache_p.h
@@ -92,4 +93,5 @@ SOURCES += $$PWD/hbinputmethod_p.cpp
 SOURCES += $$PWD/hbinputmethoddescriptor.cpp
 SOURCES += $$PWD/hbinputvkbhostbridge.cpp
 SOURCES += $$PWD/hbinputmainwindow.cpp
+SOURCES += $$PWD/hbinputcontextplugin.cpp
 

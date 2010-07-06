@@ -62,6 +62,7 @@ private:
     bool mNewEvent;
     int mStyle;
     bool mIndicatorMenuOpen;
+    QGraphicsItem *mTouchArea;
 };
 
 #endif // HBINDICATORBUTTON_P_P_H

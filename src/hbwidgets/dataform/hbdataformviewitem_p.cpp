@@ -45,7 +45,7 @@
 #include <hbaction.h>
 
 #include <QGraphicsLinearLayout>
-#include <QCoreApplication>
+//#include <QCoreApplication>
 
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
@@ -1066,10 +1066,10 @@ void HbDataFormViewItemPrivate::createContentWidget()
             mBackgroundItem, HbStyle::P_DataItem_background, &options );
     }
 
-    if ( mContentWidget ) {
-        QEvent polishEvent( QEvent::Polish );
-        QCoreApplication::sendEvent( mContentWidget, &polishEvent );
-    }
+    //if ( mContentWidget ) {
+    //    QEvent polishEvent( QEvent::Polish );
+    //    QCoreApplication::sendEvent( mContentWidget, &polishEvent );
+    //}
 }
 
 

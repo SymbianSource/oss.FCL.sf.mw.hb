@@ -94,6 +94,10 @@ public:
     bool adjustFontSizeToFitHeight() const;
     void setAdjustFontSizeToFitHeight(bool active);
 
+    bool event(QEvent* event);
+
+    void setAutoCompleteContent(QGraphicsLayoutItem *content);
+
 public slots:
     void setText(const QString &text);
 
@@ -106,6 +110,7 @@ protected:
     HbLineEdit(HbLineEditPrivate &dd, QGraphicsItem *parent);
 
     void inputMethodEvent(QInputMethodEvent *event);
+    QVariant inputMethodQuery(Qt::InputMethodQuery) const;
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
 

@@ -92,4 +92,4 @@ class HB_CORE_EXPORT HbParameterLengthLimiter
         HbParameterLengthLimiterPrivate* p;
 };
 
-#endif // HbParameterLengthLimiter_H
+#endif // HBPARAMETERLENGTHLIMITER_H

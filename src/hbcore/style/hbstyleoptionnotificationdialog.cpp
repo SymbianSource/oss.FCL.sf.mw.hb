@@ -31,21 +31,19 @@
 */
 
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog() :
-        titleAlignment(Qt::AlignLeft|Qt::AlignVCenter),
-        textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
-        iconAlignment(Qt::AlignCenter),
-        titleWrapping(false),
-        textWrapping(false),
-        isLink(false),
-        wrappingTitle(Hb::TextNoWrap),
-        wrappingText(Hb::TextNoWrap)
+    titleAlignment(Qt::AlignLeft|Qt::AlignVCenter),
+    textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
+    iconAlignment(Qt::AlignCenter),
+    isLink(false),
+    titleTextWrapping(Hb::TextNoWrap),
+    textTextWrapping(Hb::TextNoWrap)
 {
     type = Type;
     version = Version;
 }
 
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(
-        const HbStyleOptionNotificationDialog &other) :
+    const HbStyleOptionNotificationDialog &other) :
     HbStyleOptionPopup(other),
     title(other.title),
     text(other.text),
@@ -53,11 +51,9 @@ HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(
     titleAlignment(other.titleAlignment),
     textAlignment(other.textAlignment),
     iconAlignment(other.iconAlignment),
-    titleWrapping(other.titleWrapping),
-    textWrapping(other.textWrapping),
     isLink(other.isLink),
-    wrappingTitle(other.wrappingTitle),
-    wrappingText(other.wrappingText)
+    titleTextWrapping(other.titleTextWrapping),
+    textTextWrapping(other.textTextWrapping)
 {
     type = Type;
     version = Version;

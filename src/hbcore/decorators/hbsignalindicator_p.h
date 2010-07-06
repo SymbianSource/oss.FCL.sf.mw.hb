@@ -54,6 +54,9 @@ public slots:
     virtual void createPrimitives();
     virtual void updatePrimitives();
 
+signals:
+    void levelChanged();
+
 protected:
     void initStyleOption(HbStyleOptionSignalIndicator *option) const;
 

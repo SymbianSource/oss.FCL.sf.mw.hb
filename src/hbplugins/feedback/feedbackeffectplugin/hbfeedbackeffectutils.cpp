@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbnamespace_p.h"
 #include "hbfeedbackeffectutils.h"
+#include "hbnamespace_p.h"
 
 #include <hbtoolbutton.h>
 #include <hbabstractbutton.h>
@@ -156,6 +156,8 @@ HbFeedbackEffectUtils::WidgetFamily HbFeedbackEffectUtils::widgetFamily(const Hb
  
         case Hb::ItemType_ScrollBar:
 
+        case Hb::ItemType_RatingSlider:
+
             family = HbFeedbackEffectUtils::Slider;
             break;
 
@@ -246,13 +248,17 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             }
             
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputButtonGroup) {
+            if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers & Hb::ModifierInputFunctionButton) {
+                effect = HbFeedback::BasicKeypad;
+            }
+            else if (widget->type() == Hb::ItemType_InputButtonGroup) {
                 effect = HbFeedback::SensitiveKeypad;
             } 
             else if (widget->type() == Hb::ItemType_InputFunctionButton) {
                 effect = HbFeedback::BasicKeypad;
             } 
-            else if (widget->type() == Hb::ItemType_CheckBox) {
+            
+            if (widget->type() == Hb::ItemType_CheckBox) {
                 effect = HbFeedback::BasicButton;
             }
 
@@ -355,7 +361,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                 effect = HbFeedback::BasicItem;
             }
             else if(viewItem->type() == Hb::ItemType_TumbleViewItem ) {
-                effect = HbFeedback::SensitiveItem;
+                effect = HbFeedback::BasicItem;
             }
 
             // expandable or collapsable items give a BasicItem feedback
@@ -364,14 +370,17 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                     effect = HbFeedback::BasicItem;
                 }
                 else {
-                    effect = HbFeedback::SensitiveItem;
+                    effect = HbFeedback::BasicItem;
                 }
             }
         }
     }
 
-    if (widget->type() == Hb::ItemType_VirtualTrackPoint) {
+    if (widget->type() == Hb::ItemType_VirtualTrackPoint || QString(widget->metaObject()->className()) == "HbSelectionControl") {
         effect = HbFeedback::BasicButton;
+    }
+    else if (widget->type() == Hb::ItemType_NotificationDialog) {
+        effect = HbFeedback::BasicItem;
     }
 
     if (modifiers & Hb::ModifierScrolling) {
@@ -423,10 +432,14 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             }
 
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputButtonGroup
-             || widget->type() == Hb::ItemType_InputFunctionButton) {
+            if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers & Hb::ModifierInputFunctionButton) {
+                effect = HbFeedback::BasicKeypad;
+            }
+            else if (widget->type() == Hb::ItemType_InputButtonGroup) {
                 effect = HbFeedback::SensitiveKeypad;
-            } else if (widget->type() == Hb::ItemType_CheckBox) {
+            }
+
+            if (widget->type() == Hb::ItemType_CheckBox) {
                 effect = HbFeedback::Checkbox;
             }
 
@@ -520,7 +533,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
                 effect = HbFeedback::Checkbox;
             }
             else if(viewItem->type() == Hb::ItemType_TumbleViewItem ) {
-                effect = HbFeedback::SensitiveItem;
+                effect = HbFeedback::BasicItem;
+            }
+            else if (widget->type() == Hb::ItemType_NotificationDialog) {
+                effect = HbFeedback::BasicItem;
             }
 
             if (modifiers & Hb::ModifierExpandedItem || modifiers & Hb::ModifierCollapsedItem) {
@@ -529,17 +545,13 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
         }
     }
 
-    if (widget->type() == Hb::ItemType_VirtualTrackPoint) {
-        effect = HbFeedback::Editor;
-    }
-
     return effect;
 }
 
 /*!
     Returns the instant feedback effect on key repeat interaction.
 */
-HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyRepeat(const HbWidget *widget)
+HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyRepeat(const HbWidget *widget, Hb::InteractionModifiers modifiers)
 {
     HbFeedback::InstantEffect effect = HbFeedback::Sensitive;
 
@@ -554,10 +566,13 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyRepeat(const HbWidg
             effect = HbFeedback::SensitiveButton;
 
             // input widget special case
-            if (widget->type() == Hb::ItemType_InputButtonGroup
-             || widget->type() == Hb::ItemType_InputFunctionButton) {
+            if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers & Hb::ModifierInputFunctionButton) {
+                effect = HbFeedback::BasicKeypad;
+            }
+            else if (widget->type() == Hb::ItemType_InputButtonGroup) {
                 effect = HbFeedback::SensitiveKeypad;
             }
+
             break;
 
         case HbFeedbackEffectUtils::List:
@@ -840,7 +855,10 @@ HbFeedback::ContinuousEffect HbFeedbackEffectUtils::continuousEffect(const HbWid
 
         default:
             break;
+    }
 
+    if (widget->type() == Hb::ItemType_ScrollBar) {
+        effect = HbFeedback::ContinuousNone;
     }
 
     if (interaction == Hb::ContinuousPinched) {
@@ -880,10 +898,6 @@ int HbFeedbackEffectUtils::intensity(const HbWidget *widget, Hb::ContinuousInter
             default:
                 break;
        }
-    }
-    else if (const HbScrollBar *scrollbar = qobject_cast<const HbScrollBar *>(widget)) {
-        Q_UNUSED(scrollbar);
-        intensity = HbFeedback::IntensitySmooth;
     }
     else {
         // The default intensity for continuous effects

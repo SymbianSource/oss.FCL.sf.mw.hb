@@ -165,7 +165,7 @@ HbInputDialog::InputMode HbInputDialog::inputMode(int row) const
 /*!
     Sets the prompt text for the user field. This prompt text text can be very descriptive like username,password etc.
 
-    \param text The des
+    \param text The promt text string. Maximum number of lines shown is 2.
     \param row This parameter indicates which row of the user field.0 (by default) means the 
     the first user field and 1 means second user field.
 

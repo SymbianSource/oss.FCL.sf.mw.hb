@@ -32,6 +32,11 @@ const int HbEvent::DeviceProfileChanged = registerEventType();
 const int HbEvent::SleepModeEnter = registerEventType();
 const int HbEvent::SleepModeExit = registerEventType();
 const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
+const int HbEvent::InputMethodFocusIn = registerEventType();
+const int HbEvent::InputMethodFocusOut = registerEventType();
+const int HbEvent::WindowObscuredChanged = registerEventType();
+
+
 
 /*!
     @stable
@@ -68,6 +73,20 @@ const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
     DeviceProfileChanged - This event is sent by the system when layout direction of the main
                            window changes. If your application/component needs to take some
                            action upon this event you can do it in event(QEvent *event) method.
+
+    InputMethodFocusIn - This event is sent by the input framework to an editor when input method
+                         is connected to the given editor.
+                         The event can be caught in event(QEvent *event) method.
+
+    InputMethodFocusOut - This event is sent by the input framework to an editor
+                          when input method is disconnected from the given editor.
+                         The event can be caught in event(QEvent *event) method.
+
+    WindowObscuredChanged - This event is sent by the system when an HbMainWindow is
+                            either obscured from or revealed to the user.  If your
+                            application or component needs to take some action upon this
+                            event you can do it in the event(QEvent *event) method.
+
 
     Example of how to send HbEvent
     \snippet{gui/hbwidget.cpp,1}
@@ -124,4 +143,25 @@ HbDeviceProfileChangedEvent::~HbDeviceProfileChangedEvent()
     Returns the old device profile.
 */
 
+/*!
+    Constructs a window obscured changed event with a pointer to the HbMainWindow
+    whose obscured state has changed and the obscured state, respectively.
+*/
+HbWindowObscuredChangedEvent::HbWindowObscuredChangedEvent(bool obscuredState)
+    : HbEvent(WindowObscuredChanged), mObscuredState(obscuredState)
+{
+}
+
+/*!
+  \internal
+*/
+HbWindowObscuredChangedEvent::~HbWindowObscuredChangedEvent()
+{
+}
+
+/*!
+    \fn bool HbWindowObscuredChangedEvent::obscuredState() const
+
+    returns the new obscured state for the window.
+*/
 

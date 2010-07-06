@@ -147,10 +147,19 @@ void HbSliderTrackItem::paint(QPainter * painter, const QStyleOptionGraphicsItem
                 }
             }
         }
-        QPainterPath rectPath;
-        rectPath.addRect(maskRect);
-        frameDrawer().setClipPath(rectPath);
-        setMask = false;
+//        QPainterPath rectPath;
+//        rectPath.addRect(maskRect);
+//        frameDrawer().setClipPath(rectPath);
+//        setMask = false;
+        QPixmap pixmap(boundingRect().size().toSize());
+        pixmap.fill(Qt::white);
+        QPainter painter1;
+        painter1.begin(&pixmap);
+        painter1.setBrush(QBrush(Qt::black));
+        painter1.drawRect(maskRect);
+        painter1.end();
+        frameDrawer().setMask(pixmap);
+
     }
 
     HbFrameItem::paint(painter, option, widget);

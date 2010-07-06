@@ -13,8 +13,8 @@
 <path d="M10.5,16v2h-2v-2H10.5 M11.5,15h-4v4h4V15L11.5,15z" fill-opacity="0.5" stroke-opacity="0.5"/>
 <rect fill-opacity="0.5" height="1.5" stroke-opacity="0.5" width="9" x="13" y="16.25"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="1.6084" y2="7.4429">
-<stop offset="0" style="stop-color:#D07100"/>
-<stop offset="1" style="stop-color:#A23600"/>
+<stop offset="0" style="stop-color:#92603E"/>
+<stop offset="1" style="stop-color:#713631"/>
 </linearGradient>
 <rect fill="url(#SVGID_2_)" height="5" width="10" x="10" y="2"/>
 <rect fill="#FFFFFF" fill-opacity="0.3" height="1" stroke-opacity="0.3" width="10" x="10" y="2"/>

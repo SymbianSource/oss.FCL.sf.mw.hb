@@ -30,6 +30,11 @@
 
 //#pragma hb_header(HbGlobal)
 
+// HB_VERSION_STR="M.N.P-B" (M=major, N=minor, P=patch, B=build=[dev|tag])
+#define HB_VERSION_STR "0.5.0-dev"
+// HB_VERSION=0xMMNNPP (MM=major, NN=minor, PP=patch)
+#define HB_VERSION 0x000500
+
 #define HB_EXPORT \
     HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead \
     { &HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead; }; class
@@ -151,6 +156,8 @@ Flag enables text measurements for localization.
 
 #endif // HB_TEXT_MEASUREMENT_UTILITY
 
+HB_CORE_EXPORT uint hbVersion();
+HB_CORE_EXPORT const char *hbVersionString();
 HB_CORE_EXPORT QString hbTrId(const char *id, int n = -1);
 
 

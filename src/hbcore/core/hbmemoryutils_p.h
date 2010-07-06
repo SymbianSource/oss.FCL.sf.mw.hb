@@ -127,7 +127,7 @@ public:
     static T * getAddress(HbMemoryManager::MemoryType type, int offset)
     {
         // Do not change the condition to (<0), valid address can be negative.
-        if (offset == -1 || offset == -2) {
+        if (offset == -1) {
             return 0;
         }
         GET_MEMORY_MANAGER(type)

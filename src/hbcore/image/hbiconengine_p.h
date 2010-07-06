@@ -99,7 +99,9 @@ public:
     bool isMirrored() const;
     void addBadge(Qt::Alignment alignment,
                   const HbIcon &badge,
-                  int z = 0);
+                  int z,
+                  const QSizeF &sizeFactor,
+                  Qt::AspectRatioMode aspectRatio);
     bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;

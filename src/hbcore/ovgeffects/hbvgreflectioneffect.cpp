@@ -109,23 +109,6 @@ void HbVgReflectionEffect::setFade(qreal fade)
     emit fadeChanged(fade);
 }
 
-QColor HbVgReflectionEffect::color() const
-{
-    Q_D(const HbVgReflectionEffect);
-    return d->color;
-}
-
-void HbVgReflectionEffect::setColor(const QColor &color)
-{
-    Q_D(HbVgReflectionEffect);
-    if (color == d->color) {
-        return;
-    }
-    d->color = color;
-    updateEffect();
-    emit colorChanged(color);
-}
-
 QRectF HbVgReflectionEffect::boundingRectFor(const QRectF &rect) const
 {
     // Double the height of the rectangle but take also the offset into account.

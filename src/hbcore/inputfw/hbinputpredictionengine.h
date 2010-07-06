@@ -132,8 +132,14 @@ public:
 class HB_CORE_EXPORT HbPredictionEngineChinese : public HbPredictionEngine
 {
 public:
+    virtual void updateCnInputMode() = 0;
+    // HbInputModeType deprecated, int are used currently
     virtual void setInputMode(HbInputModeType imMode) = 0;
+    virtual bool setCnInputMode(int imMode) = 0;
+
+    // HbInputModeType deprecated, int are used currently
     virtual HbInputModeType inputMode() const = 0;
+    virtual int cnInputMode() = 0;
 
     virtual bool spelling(int index, QString &out) = 0;
     virtual bool selectSpelling(int index) = 0;
@@ -146,10 +152,17 @@ public:
     virtual bool candidateExist(int index) = 0;
 
     virtual bool pressKey(const int keycode, const Qt::KeyboardModifiers modifiers, const int textCase = 0) = 0;
+
+    // HbInputModeType deprecated, int are used currently
     virtual bool isInputModeSupported(HbInputModeType imMode) = 0;
+    virtual bool isCnInputModeSupported(int imMode) = 0;
+
     // used for hwr engine
     virtual bool addStroke(const QList<QPointF>& traceData) = 0;
     virtual bool inlineSpelling(int idx, QString &out) = 0;
+    virtual QByteArray itutZhuyinKeySequences() = 0;
+    virtual int setInputAreaSize(QSize &size) = 0;
+    virtual int setScreenSize(QSize &size) = 0;
 };
 
 #endif // HB_INPUT_PREDICTION_ENGINE_H

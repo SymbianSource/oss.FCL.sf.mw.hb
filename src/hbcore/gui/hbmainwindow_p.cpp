@@ -47,21 +47,24 @@
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbbackgrounditem_p.h"
-#include "hbforegroundwatcher_p.h"
-#include "hbcorepskeys_p.h"
-#include "hbmainwindoworientation_p.h"
+#include "hbcorepskeys_r.h"
 
 #include <QApplication>
 #include <QGraphicsLayout>
 #include <QLocale>
-#include <QDebug>
 
 #ifdef Q_OS_SYMBIAN
 #include "hbnativewindow_sym_p.h"
 #include "hbdevicedialogserverdefs_p.h"
+#include <qsymbianevent.h>
 
 const TUid deviceDialogUid = {0x20022FC5};
 #endif //Q_OS_SYMBIAN
+
+#if defined(Q_WS_X11)
+#include <X11/Xlib.h>
+#include <qx11info_x11.h>
+#endif // defined(Q_WS_X11)
 
 const int HbMainWindowPrivate::IdleEvent = QEvent::registerEventType();
 const int HbMainWindowPrivate::IdleOrientationEvent = QEvent::registerEventType();
@@ -93,6 +96,7 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mOrientationEffectFinished(false),
     mGVOrientationChangeEffectEnabled(false),
     mPendingPsPublish(false),
+    mMainWindowActive(false),
     mOrientation(Qt::Vertical),
     mRequestedOrientation(Qt::Vertical),
     mCurrentToolbar(0),
@@ -104,13 +108,19 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mTheTestUtility(0),
     mIdleEventHandled(false),
     mToolbarWasAdded(false),
-    mAutomaticOrientationChangeAnimation(true)
+    mAutomaticOrientationChangeAnimation(true),
+    mObscuredState(true)
 #ifdef Q_OS_SYMBIAN
     ,
     mNativeWindow(0),
     mDevDlgClientSession(0)
 #endif
 {
+#if !defined(Q_WS_X11) && !defined(Q_WS_S60)
+    mObscuredState = false;  //For non-x11 and non-symbian we start with revealed state.
+#endif
+
+    qApp->installEventFilter(this);
 }
 
 HbMainWindowPrivate::~HbMainWindowPrivate()
@@ -297,7 +307,14 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         mOrientationEffectFinished = false;
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
-        HbInputSettingProxy::instance()->notifyScreenOrientationChange();
+        
+        // Notify settingproxy only when orientation is actually changing, when this
+        // happens the animate flag is enabled. This is quick fix to prevent wrong keyboard
+        // from opening after splashscreen update. Better and final solution needs to be
+        // designed.
+        if (animate) {
+            HbInputSettingProxy::instance()->notifyScreenOrientationChange();
+        }
     }
 
     mOrientation = orientation;
@@ -774,7 +791,7 @@ void HbMainWindowPrivate::updateVisibleItems()
     if (view) {
         const Hb::SceneItems visibleItems(view->visibleItems());
         view->setTitleBarVisible(visibleItems & Hb::TitleBarItem); // also handles updating of the navigation button
-		view->setStatusBarVisible(visibleItems & Hb::StatusBarItem);
+        view->setStatusBarVisible(visibleItems & Hb::StatusBarItem);
 
         // ToolBar is a special case, since it depens on the current view's toolbar
         if (visibleItems & Hb::ToolBarItem) {
@@ -976,8 +993,6 @@ void HbMainWindowPrivate::_q_delayedConstruction()
         addViewEffects();
         mClippingItem->delayedConstruction();
 
-        mViewStackWidget->delayedConstruction();
-
         connect(hbInstance->theme(), SIGNAL(changed()),
                 q, SLOT(_q_themeChanged()));
 
@@ -1061,12 +1076,64 @@ QSizeF HbMainWindowPrivate::viewPortSize() const
     return mClippingItem->size();
 }
 
+/*
+    Sets the obscured state of the window and emits a signal if nessasary.
+*/
+void HbMainWindowPrivate::setObscuredState(bool state)
+{
+    Q_Q(HbMainWindow);
+    if (state == true) {
+        if (mObscuredState == false) {
+            mObscuredState = true;
+            emit q->obscured();
+        }
+    } else {
+        if (mObscuredState == true) {
+            mObscuredState = false;
+            emit q->revealed();
+        }
+    }
+}
+
+bool HbMainWindowPrivate::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+        case QEvent::ApplicationActivate:
+            mMainWindowActive = true;
+#ifdef Q_OS_SYMBIAN           
+            updateForegroundOrientationPSKey();
+#endif           
+            break;
+        case QEvent::ApplicationDeactivate:
+            mMainWindowActive = false;
+            break;
+        default:
+            break;
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+#if defined(Q_WS_X11)
+bool HbMainWindowPrivate::x11HandleShowEvent(QShowEvent *)
+{
+    Q_Q(HbMainWindow);
+    Display *dpy = QX11Info::display();
+    WId id = q->effectiveWinId();
+    XWindowAttributes attr;
+    if (XGetWindowAttributes(dpy, id, &attr)) {
+        long allEventMask = attr.all_event_masks;
+        allEventMask |= VisibilityChangeMask;
+        XSelectInput(dpy, id, allEventMask);
+    }
+    return false;
+}
+#endif //Q_WS_X11
+
 #ifdef Q_OS_SYMBIAN
 void HbMainWindowPrivate::updateForegroundOrientationPSKey()
 {
-    // check current process is not devicedialog
-    RProcess process;
-    if (process.SecureId().iId != deviceDialogUid.iUid) {
+    RProcess process;    
+    if (process.SecureId().iId != deviceDialogUid.iUid && mMainWindowActive) {
         if (mDevDlgClientSession && !mPendingPsPublish) {
             int orie = mOrientation;
             if (!mAutomaticOrientationSwitch) {

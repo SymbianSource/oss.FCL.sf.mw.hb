@@ -82,7 +82,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
     int buttonId = keyEvent->key();
 
     if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
-        if (buttonId == HbInputButton::ButtonKeyCodeAsterisk) {
+        // mode switch should happen only when Qt::Key_Asterisk key is pressed in non-SCT
+        // keypad.			
+        if (buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
+            !mInputMethod->isSctModeActive()) {
             //Remove the "?" mark if present
             if (!mCanContinuePrediction) {
                 chopQMarkAndUpdateEditor();
@@ -108,7 +111,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
                 deleteOneCharacter();
                 mLongPressHappened = true;
             }
-            if (buttonId != HbInputButton::ButtonKeyCodeDelete) {
+            // commit the first mapped number character when long key press
+            // of character key received in alphanumeric mode						
+            if (buttonId != HbInputButton::ButtonKeyCodeDelete &&
+                !mInputMethod->isSctModeActive()) {
                 q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
                 mLongPressHappened = true;
             }
@@ -169,8 +175,11 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         - Should launch Spell Query Dialog if we cannot continue with prediction 
     - Behavior of Short Press of Asterisk Key when not in inline editing state 
         - Should launch SCT
+    - Behaviour of Short Press of Asterisk Key in SCT keypad
+        - Should input the * character and should not change the keypad mode			
     */
-    else if (buttonId == HbInputButton::ButtonKeyCodeAsterisk ) {
+    else if (buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
+        !mInputMethod->isSctModeActive()) {
         if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {			
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);

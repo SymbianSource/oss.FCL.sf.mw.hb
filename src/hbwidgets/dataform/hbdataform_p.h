@@ -63,7 +63,8 @@ public:
     void removeFormPage(const QString& page);
     void _q_page_changed(int index);
 
-    void _q_item_displayed(const QModelIndex &index);
+    //void _q_item_displayed(const QModelIndex &index);
+    QModelIndex pageModelIndex(int index) const;
     void makeConnection(QModelIndex index, HbWidget* widget);
     void connectNow(HbDataFormModelItem * modelItem, QString signal, 
                     QObject *receiver, QString slot);

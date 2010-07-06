@@ -47,8 +47,7 @@
 #define HB_THEME_SHARED_PIXMAP_CHUNK "themeserver_chunk"
 #endif
 #define ORGANIZATION "Nokia"
-#define THEME_COMPONENT "Hb Themes"
-#define CURRENT_THEME_KEY "CurrentTheme"
+#define THEME_COMPONENT "Hb/Themes"
 
 // To enable/disable debug messages for theme server functionality
 // this is master trace switch that enables all theme server related traces
@@ -310,9 +309,9 @@ enum HbThemeServerRequest {
      EServerAllocReset,
      EFreeGPUMem,
      ETotalGPUMem,
-     EGPULRUSize,
      ERefCount,
 #endif
+     EGPULRUSize,
      EThemeContentUpdate,
      EEffectLookupFilePath,
      EEffectAdd,

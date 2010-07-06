@@ -98,11 +98,8 @@ symbian {
 
     # AllFiles is needed to be able to access icon and effect files in
     # an application's private folder for example.
-    TARGET.CAPABILITY = CAP_SERVER AllFiles ProtServ
+    TARGET.CAPABILITY = CAP_SERVER ProtServ
     
-} else {
-    SOURCES  += $$PWD/hbthemeserver_generic.cpp
-    HEADERS += $$PWD/hbthemeserver_generic_p_p.h
 }
 
 QT = core gui svg network

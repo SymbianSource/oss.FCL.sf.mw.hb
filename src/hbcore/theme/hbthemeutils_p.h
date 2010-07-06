@@ -64,13 +64,18 @@ struct HbThemeIndexInfo
     char *address;
 };
 
+struct HbHeapIndexInfo {
+    HbThemeIndexInfo baseTheme;
+    HbThemeIndexInfo priorityTheme;
+    HbThemeIndexInfo activeTheme;
+};
+
 class HB_CORE_PRIVATE_EXPORT HbThemeUtils
 {
 public:
     enum Setting {
         BaseThemeSetting = 0x1,
         DefaultThemeSetting = 0x2,
-        DefaultThemeRootDirSetting = 0x3,
         CurrentThemeSetting = 0x4,
         OperatorNameSetting = 0x5
     };
@@ -78,14 +83,14 @@ public:
     static QString getThemeSetting(Setting setting);
     static void setThemeSetting(Setting setting, const QString &value);
     static void updateThemeSetting(Setting setting, const QString &value);
-    static const HbThemeInfo &baseTheme();
-    static HbThemeInfo defaultTheme();
-    static bool isThemeValid(const HbThemeInfo &themeInfo);
+    static bool isThemeValid(const QString &themePath);
 
     static HbThemeIndexInfo getThemeIndexInfo(const HbThemeType& type);
 
     static bool isLogicalName(const QString &fileName);
-    static QString themesDir();
+    static char *createHeapThemeIndex(const HbThemeInfo &theme);
+    static void loadHeapThemeIndexes();
+    static void loadHeapThemeIndex(HbThemeType type);
 
     static const char *themeResourceFolder;
     static const char *platformHierarchy;
@@ -93,12 +98,6 @@ public:
     static const char *iconsResourceFolder;
     static const char *effectsResourceFolder;
     static const char *styleResourceFolder;
-
-private:
-    static HbThemeInfo getBaseThemeFromFile(const QString &rootDir);
-    static void saveBaseThemeSettings(HbThemeInfo &baseThemeInfo,
-                                      const QString &defaultTheme,
-                                      const QString &rootDir);
 };
 
 #endif //HBTHEMEUTILS_P_H

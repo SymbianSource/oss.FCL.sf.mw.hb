@@ -162,6 +162,10 @@ void HbThemeSystemEffectMap::registerEffects(RWsSession &wsSession,
     QMapIterator<SystemEffectKey, SystemEffectValue> mapIt(mSystemEffects);
     TPtrC themeResourceDir = mEffectsFolder.utf16();
     TPtrC baseResourceDir = baseEffectsFolder.utf16();
+#ifdef HBTHEMESYSTEMEFFECT_DEBUG
+    qDebug() << "HbThemeSystemEffectMap::registerEffects effect folder:" << mEffectsFolder
+            << "base theme effect folder:" << baseEffectsFolder;
+#endif //HBTHEMESYSTEMEFFECT_DEBUG
     while (mapIt.hasNext()) {
         mapIt.next();
         // Register entry

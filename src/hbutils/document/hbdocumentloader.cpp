@@ -109,7 +109,7 @@ QObjectList HbDocumentLoader::load( const QString &fileName, const QString &sect
 {
     QFile file( fileName );
     
-    if( !file.open( QFile::ReadOnly | QFile::Text ) ) {
+    if( !file.open( QFile::ReadOnly ) ) {
         qWarning( "Unable to open file" );
         if( ok ) {
             *ok = false;

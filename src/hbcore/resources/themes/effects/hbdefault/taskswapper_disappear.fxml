@@ -26,18 +26,5 @@
 			<keyframe at="1.0">0.0</keyframe>
 		</param>
 	</visual>
-	<filter name="Drop Shadow" type="drop_shadow">
-		<param name="offset_x">0.0</param>
-		<param name="offset_y">5.0</param>
-		<param name="opacity" type="anim">
-			<style>linear</style>
-			<duration>0.2</duration>
-			<keyframe at="0.0">1.0</keyframe>
-			<keyframe at="1.0">0.0</keyframe>
-		</param>
-		<param name="steepness">8.0</param>
-		<param name="outline_x">1.0</param>
-		<param name="outline_y">1.0</param>
-		<param name="color">#000000</param>
-	</filter>
+
 </layers>

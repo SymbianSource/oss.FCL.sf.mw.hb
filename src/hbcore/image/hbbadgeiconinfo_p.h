@@ -29,6 +29,7 @@
 #include <hbglobal.h>
 #include <qnamespace.h>
 #include <hbicon.h>
+#include <QSizeF>
 
 class HbBadgeIconInfoPrivate;
 
@@ -36,25 +37,36 @@ class HbBadgeIconInfo
 {
 public:
     HbBadgeIconInfo(const HbIcon &badge,
-                    Qt::Alignment alignment = Qt::AlignCenter,
-                    int zValue = 0);
-    HbBadgeIconInfo(const HbBadgeIconInfo &other);
-    ~HbBadgeIconInfo();
+                    Qt::Alignment alignment,
+                    int zValue,
+                    const QSizeF &sizeFactor,
+                    Qt::AspectRatioMode aspectRatio);
 
     bool operator==(const HbBadgeIconInfo &other) const;
     bool operator!=(const HbBadgeIconInfo &other) const;
 
-    HbIcon icon() const;
-    void setIcon(const HbIcon &);
-    int zValue() const;
-    void setZValue(int);
-    Qt::Alignment alignment() const;
+    HbIcon icon() const { return mIcon; }
+    void setIcon(const HbIcon &icon);
+
+    int zValue() const { return mZValue; }
+    void setZValue(int z);
+
+    Qt::Alignment alignment() const { return mAlignment; }
     void setAlignment(Qt::Alignment align);
+
+    QSizeF sizeFactor() const { return mSizeFactor; }
+    void setSizeFactor(const QSizeF &sizeFactor);
+
+    Qt::AspectRatioMode aspectRatio() const { return mAspectRatio; }
+    void setAspectRatio(Qt::AspectRatioMode aspectRatio);
 
 private:
     HbIcon mIcon;
+    HbIcon mSizedIcon;
     Qt::Alignment mAlignment;
     int mZValue;
+    QSizeF mSizeFactor;
+    Qt::AspectRatioMode mAspectRatio;
 };
 
 #endif

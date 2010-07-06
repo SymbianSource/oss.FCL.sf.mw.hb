@@ -71,12 +71,12 @@ public:
 
     HbMenuListView *menuItemView;
     HbAction *subMenuAction;
-    HbMenu *activeSubMenu;
+    QPointer<HbMenu> activeSubMenu;
     bool actionTriggered;
     bool menuTimedOut(HbMenu* menu);
 
     HbMenu::MenuType menuType;
-    HbMenuItem *mSubMenuItem;
+    QPointer<HbMenuItem> mSubMenuItem;
 
     qreal mRightMargin;
     qreal mDownMargin;

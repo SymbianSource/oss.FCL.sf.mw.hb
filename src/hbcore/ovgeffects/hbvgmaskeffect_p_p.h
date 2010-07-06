@@ -26,15 +26,16 @@
 #ifndef HBVGMASKEFFECT_P_P_H
 #define HBVGMASKEFFECT_P_P_H
 
-#include "hbvgeffect_p_p.h"
+#include "hbvgframeeffect_p_p.h"
 #include "hbvgmaskeffect_p.h"
 
-class HbVgMaskEffectPrivate : public HbVgEffectPrivate
+class HbVgMaskEffectPrivate : public HbVgFrameEffectPrivate
 {
     Q_DECLARE_PUBLIC(HbVgMaskEffect)
 
 public:
     HbVgMaskEffectPrivate();
+    QRectF mapRect(const QRectF &rect, const QSize &srcSize) const;
 
     QPixmap mask;
     QPixmap scaledMask;
@@ -43,6 +44,9 @@ public:
     HbVgMaskEffect::MaskCallback maskCallback;
     void *maskCallbackParam;
     QPixmap callbackResult;
+    QPixmap rotatedPixmap;
+    qreal lastMainWindowRotationAngle;
+    bool includeSourceItemOnly;
 };
 
 #endif

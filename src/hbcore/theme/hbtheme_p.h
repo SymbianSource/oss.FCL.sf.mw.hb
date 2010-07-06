@@ -28,13 +28,13 @@
 #include "hbicontheme_p.h"
 #include "hbthemeindex_p.h"
 #include "hbtheme.h"
+#include "hbthemeutils_p.h"
 
 class HbThemePrivate
 {
     Q_DECLARE_PUBLIC(HbTheme)
 public:
     void handleThemeChange(const QString &str = QString());
-    void fetchCurrentThemeFromSettings();
     void updateTheme(const QStringList &updatedFiles);
     HbThemePrivate();
     ~HbThemePrivate();
@@ -42,9 +42,7 @@ public:
     static HbThemePrivate *instance() { return HbTheme::instance()->d_func(); }
 
 public:
-    QString currentTheme;
     HbIconTheme iconTheme;
     HbTheme *q_ptr;
-
 };
 #endif /* HBTHEME_P_H */

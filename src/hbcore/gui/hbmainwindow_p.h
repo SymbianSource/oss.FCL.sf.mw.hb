@@ -91,7 +91,8 @@ public:
     QRectF contentRect() const;
     void setTransformedOrientation(Qt::Orientation orientation, bool animate = true);
     qreal rotation() const;
-
+    bool eventFilter(QObject *watched, QEvent *event);
+    
     void select(const HbDeviceProfile &profile, HbDeviceProfile *oldGlobalProfile = 0);
     HbDeviceProfile profile() const;
     HbDeviceProfile adjustedProfile(const HbDeviceProfile &profile) const;
@@ -114,6 +115,10 @@ public:
 
     QGraphicsWidget *element(HbMainWindowPrivate::Element element) const;
 
+    void setObscuredState(bool state);
+#if defined(Q_WS_X11)
+    bool x11HandleShowEvent(QShowEvent *event);
+#endif
     HbGraphicsScene *mScene;
     HbBackgroundItem *mBgItem;
     HbScreen *mClippingItem;
@@ -136,6 +141,7 @@ public:
     bool mAnimateOrientationSwitch;
     bool mGVOrientationChangeEffectEnabled;
     bool mPendingPsPublish;
+    bool mMainWindowActive;
     Qt::Orientation mOrientation;
     Qt::Orientation mRequestedOrientation;
     HbToolBar *mCurrentToolbar;
@@ -160,6 +166,7 @@ public:
     bool mToolbarWasAdded;
     bool mAutomaticOrientationChangeAnimation;
     QTranslator mCommonTranslator;
+    bool mObscuredState;
 #ifdef Q_OS_SYMBIAN
     HbNativeWindow *mNativeWindow;
     RHbDeviceDialogClientSession *mDevDlgClientSession;

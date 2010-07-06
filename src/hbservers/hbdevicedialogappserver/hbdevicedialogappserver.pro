@@ -38,6 +38,7 @@ SOURCES += $$PWD/main.cpp
 
 symbian {
     SOURCES += $$PWD/hbddappfactorysymbian.cpp
+    HEADERS += $$PWD/hbddappfactorysymbian_p.h
 
     TARGET.CAPABILITY = ProtServ SwEvent TrustedUI ReadDeviceData
     TARGET.UID3 = 0x20022FC5

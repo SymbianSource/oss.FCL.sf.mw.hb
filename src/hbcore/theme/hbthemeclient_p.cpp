@@ -25,6 +25,7 @@
 
 #include "hbthemeclient_p.h"
 #include "hbthemeclient_p_p.h"
+#include "hbthemeutils_p.h"
 #include "hbsharedmemorymanager_p.h"
 #include "hbmemoryutils_p.h"
 
@@ -35,9 +36,9 @@ static HbThemeClient *clientInst = 0;
 /**
  * Constructor
  */
-HbThemeClient::HbThemeClient():d_ptr(new HbThemeClientPrivate)
+HbThemeClient::HbThemeClient() :
+        d_ptr(new HbThemeClientPrivate)
 {
-
 }
 
 /**
@@ -45,8 +46,12 @@ HbThemeClient::HbThemeClient():d_ptr(new HbThemeClientPrivate)
  */
 bool HbThemeClient::connectToServer()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->connectToServer();
+#else
+    return false;
+#endif
 }
 
 /**
@@ -74,6 +79,7 @@ HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
                                                   const QColor &color,
                                                   HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->getSharedIconInfo(iconPath,
                                 size,
@@ -83,6 +89,18 @@ HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
                                 options,
                                 color,
                                 renderMode);
+#else
+    Q_UNUSED(iconPath);
+    Q_UNUSED(size);
+    Q_UNUSED(aspectRatioMode);
+    Q_UNUSED(mode);
+    Q_UNUSED(mirrored);
+    Q_UNUSED(options);
+    Q_UNUSED(color);
+    Q_UNUSED(renderMode);
+
+    return HbSharedIconInfo();
+#endif
 }
 
 /**
@@ -92,6 +110,7 @@ HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
  */
 QByteArray HbThemeClient::getSharedBlob(const QString &name)
 {
+#ifdef Q_OS_SYMBIAN
     HbSharedIconInfo info = getSharedIconInfo(
         name,
         QSizeF(),
@@ -107,6 +126,10 @@ QByteArray HbThemeClient::getSharedBlob(const QString &name)
                                       info.blobData.offset),
                                   info.blobData.dataSize)
         : QByteArray();
+#else
+    Q_UNUSED(name);
+    return QByteArray();
+#endif
 }
 
 HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPartIconList,
@@ -119,9 +142,23 @@ HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPar
                         const QColor &color,
                         HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->getMultiPartIconInfo(multiPartIconList, multiPartIconData, size,
                                    aspectRatioMode, mode, mirrored, options, color, renderMode);
+#else
+    Q_UNUSED(multiPartIconList);
+    Q_UNUSED(multiPartIconData);
+    Q_UNUSED(size);
+    Q_UNUSED(aspectRatioMode);
+    Q_UNUSED(mode);
+    Q_UNUSED(mirrored);
+    Q_UNUSED(options);
+    Q_UNUSED(color);
+    Q_UNUSED(renderMode);
+
+    return HbSharedIconInfo();
+#endif
 }
 
 /**
@@ -133,9 +170,10 @@ HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPar
 HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
                                                       HbLayeredStyleLoader::LayerPriority priority)
 {
+    HbCss::StyleSheet *styleSheet = 0;
+#ifdef Q_OS_SYMBIAN
     const QString filePathFixed = QDir::fromNativeSeparators(filePath);
 
-    HbCss::StyleSheet *styleSheet = 0;
     bool requestFromServer = true;
     if (filePathFixed.startsWith(QLatin1Char(':')) && !filePathFixed.startsWith(ResourceStylePath)) {
         //filePathFixed is located in application resource, parse it on client side.
@@ -155,6 +193,10 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
             styleSheet = d->getSharedStyleSheet(filePathFixed, priority);
         }
     }
+#else
+    Q_UNUSED(filePath);
+    Q_UNUSED(priority);
+#endif
     return styleSheet;
 }
 
@@ -168,9 +210,10 @@ HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QStri
                                                                      const QString &layout,
                                                                      const QString &section)
 {
+    HbWidgetLoader::LayoutDefinition *layoutDefinition = 0;
+#ifdef Q_OS_SYMBIAN
     const QString filePathFixed = QDir::fromNativeSeparators(filePath);
 
-    HbWidgetLoader::LayoutDefinition *layoutDefinition = 0;
     bool requestFromServer = true;
     if (filePathFixed.startsWith(QLatin1Char(':')) && !filePathFixed.startsWith(ResourceStylePath)) {
         //filePathFixed is located in application resource, parse it on client side.
@@ -187,6 +230,11 @@ HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QStri
             layoutDefinition = d->getSharedLayoutDefs(filePathFixed, layout, section);
         }
     }
+#else
+    Q_UNUSED(filePath);
+    Q_UNUSED(layout);
+    Q_UNUSED(section);
+#endif
     return layoutDefinition;
 }
 /**
@@ -194,8 +242,12 @@ HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QStri
  */
 HbDeviceProfileList *HbThemeClient::deviceProfiles()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->deviceProfiles();
+#else
+    return 0;
+#endif
 }
 
 /**
@@ -203,8 +255,12 @@ HbDeviceProfileList *HbThemeClient::deviceProfiles()
  */
 HbTypefaceInfoVector *HbThemeClient::typefaceInfo()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->typefaceInfo();
+#else
+    return 0;
+#endif
 }
 
 /**
@@ -213,8 +269,10 @@ HbTypefaceInfoVector *HbThemeClient::typefaceInfo()
  */
 void HbThemeClient::notifyForegroundLostToServer()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     d->notifyForegroundLostToServer();
+#endif
 }
 
 /**
@@ -224,6 +282,7 @@ void HbThemeClient::notifyForegroundLostToServer()
  */
 HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
 {
+#ifdef Q_OS_SYMBIAN
     const QString filePathFixed = QDir::fromNativeSeparators(filePath);
 
     int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePathFixed);
@@ -234,6 +293,10 @@ HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
     }
     Q_D(HbThemeClient);
     return d->getSharedEffect(filePathFixed);
+#else
+    Q_UNUSED(filePath);
+    return 0;
+#endif
 }
 
 /**
@@ -243,6 +306,7 @@ HbEffectFxmlData *HbThemeClient::getSharedEffect(const QString &filePath)
  */
 bool HbThemeClient::addSharedEffect(const QString& filePath)
 {
+#ifdef Q_OS_SYMBIAN
     const QString filePathFixed = QDir::fromNativeSeparators(filePath);
 
     int offset = sharedCacheItemOffset(HbSharedCache::Effect, filePathFixed);
@@ -252,6 +316,10 @@ bool HbThemeClient::addSharedEffect(const QString& filePath)
     }
     Q_D(HbThemeClient);
     return d->addSharedEffect(filePathFixed);
+#else
+    Q_UNUSED(filePath);
+    return false;
+#endif
 }
 
 /**
@@ -274,6 +342,7 @@ void HbThemeClient::unloadIcon(const QString& iconPath ,
                                const QColor &color,
                                HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->unloadIcon(iconPath,
                          size,
@@ -282,6 +351,15 @@ void HbThemeClient::unloadIcon(const QString& iconPath ,
                          mirrored,
                          color,
                          renderMode);
+#else
+    Q_UNUSED(iconPath);
+    Q_UNUSED(size);
+    Q_UNUSED(aspectRatioMode);
+    Q_UNUSED(mode);
+    Q_UNUSED(mirrored);
+    Q_UNUSED(color);
+    Q_UNUSED(renderMode);
+#endif
 }
 
 /**
@@ -302,6 +380,7 @@ void HbThemeClient::unLoadMultiIcon(const QStringList& iconPathList,
                     const QColor &color,
                     HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->unLoadMultiIcon(iconPathList,
                          sizeList,
@@ -310,6 +389,15 @@ void HbThemeClient::unLoadMultiIcon(const QStringList& iconPathList,
                          mirrored,
                          color,
                          renderMode);
+#else
+    Q_UNUSED(iconPathList);
+    Q_UNUSED(sizeList);
+    Q_UNUSED(aspectRatioMode);
+    Q_UNUSED(mode);
+    Q_UNUSED(mirrored);
+    Q_UNUSED(color);
+    Q_UNUSED(renderMode);
+#endif
 }
 
 /**
@@ -317,8 +405,10 @@ void HbThemeClient::unLoadMultiIcon(const QStringList& iconPathList,
  */
 HbThemeClient::~HbThemeClient()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     delete d;
+#endif
 }
 
 /**
@@ -326,8 +416,12 @@ HbThemeClient::~HbThemeClient()
  */
 bool HbThemeClient::clientConnected() const
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(const HbThemeClient);
     return d->clientConnected;
+#else
+    return false;
+#endif
 }
 
 /**
@@ -338,6 +432,7 @@ HbThemeClient *HbThemeClient::global()
     if ( !clientInst ) {
         clientInst = new HbThemeClient;
     }
+
     return clientInst;
 }
 
@@ -358,10 +453,15 @@ void HbThemeClient::releaseInstance()
 int HbThemeClient::sharedCacheItemOffset(HbSharedCache::ItemType type, const QString &key)
 {
     int offset = -1;
+#ifdef Q_OS_SYMBIAN
     HbSharedCache *cache = HbSharedCache::instance();
     if (cache) {
         offset = cache->offset(type, key);
     }
+#else
+    Q_UNUSED(type);
+    Q_UNUSED(key);
+#endif
     return offset;
 }
 
@@ -373,10 +473,16 @@ int HbThemeClient::sharedCacheLayoutDefinitionOffset(const QString &fileName,
                                          const QString &section)
 {
     int offset = -1;
+#ifdef Q_OS_SYMBIAN
     HbSharedCache *cache = HbSharedCache::instance();
     if (cache) {
         offset = cache->layoutDefinitionOffset(fileName, layout, section);
     }
+#else
+    Q_UNUSED(fileName);
+    Q_UNUSED(layout);
+    Q_UNUSED(section);
+#endif
     return offset;
 }
 
@@ -387,8 +493,10 @@ int HbThemeClient::sharedCacheLayoutDefinitionOffset(const QString &fileName,
  */
 void HbThemeClient::createMemoryReport() const
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(const HbThemeClient);
     d->createMemoryReport();
+#endif
 }
 #endif
 
@@ -405,9 +513,22 @@ HbSharedIconInfoList HbThemeClient::getMultiIconInfo(const QStringList &multiPar
                         const QColor &color,
                         HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->getMultiIconInfo(multiPartIconList, sizeList,aspectRatioMode, mode,
                                mirrored, options, color, renderMode);
+#else
+    Q_UNUSED(multiPartIconList);
+    Q_UNUSED(sizeList);
+    Q_UNUSED(aspectRatioMode);
+    Q_UNUSED(mode);
+    Q_UNUSED(mirrored);
+    Q_UNUSED(options);
+    Q_UNUSED(color);
+    Q_UNUSED(renderMode);
+
+    return HbSharedIconInfoList();
+#endif
 }
 
 /**
@@ -416,8 +537,12 @@ HbSharedIconInfoList HbThemeClient::getMultiIconInfo(const QStringList &multiPar
  */
 int HbThemeClient::freeSharedMemory()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->freeSharedMemory();
+#else
+     return 0;
+#endif
 }
 
 /**
@@ -426,8 +551,12 @@ int HbThemeClient::freeSharedMemory()
  */
 int HbThemeClient::allocatedSharedMemory()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->allocatedSharedMemory();
+#else
+    return 0;
+#endif
 }
 
 /**
@@ -436,8 +565,12 @@ int HbThemeClient::allocatedSharedMemory()
  */
 int HbThemeClient::allocatedHeapMemory()
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
     return d->allocatedHeapMemory();
+#else
+    return 0;
+#endif
 }
 
 /**
@@ -446,8 +579,13 @@ int HbThemeClient::allocatedHeapMemory()
  */
 bool HbThemeClient::switchRenderingMode(HbRenderingMode renderMode)
 {
+#ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);    
     return d->switchRenderingMode(renderMode);    
+#else
+    Q_UNUSED(renderMode);
+    return true;
+#endif
 }
 
 void HbThemeClient::setTheme(const QString &theme)

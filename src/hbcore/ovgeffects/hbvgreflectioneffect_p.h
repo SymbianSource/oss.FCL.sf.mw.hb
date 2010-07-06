@@ -35,7 +35,6 @@ class HB_CORE_PRIVATE_EXPORT HbVgReflectionEffect : public HbVgFrameEffect
     Q_OBJECT
     Q_PROPERTY(QPointF offset READ offset WRITE setOffset NOTIFY offsetChanged)
     Q_PROPERTY(qreal fade READ fade WRITE setFade NOTIFY fadeChanged)
-    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
 
 public:
     HbVgReflectionEffect(QObject *parent = 0);
@@ -45,7 +44,6 @@ public:
 
     QPointF offset() const;
     qreal fade() const;
-    QColor color() const;
 
 public slots:
     void setOffset(const QPointF &offset);
@@ -53,12 +51,10 @@ public slots:
         setOffset(QPointF(x, y));
     }
     void setFade(qreal fade);
-    void setColor(const QColor &color);
 
 signals:
     void offsetChanged(const QPointF &offset);
     void fadeChanged(qreal fade);
-    void colorChanged(const QColor &color);
 
 protected:
     HbVgReflectionEffect(HbVgReflectionEffectPrivate &dd, QObject *parent = 0);

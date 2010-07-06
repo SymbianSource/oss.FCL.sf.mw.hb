@@ -104,7 +104,7 @@ private:
     HbFrameDrawerPrivate *d;
 
     friend class HbStylePrivate;
+    friend class HbFrameDrawerPrivate;
 };
 
 #endif // HBFRAMEDRAWER_H
-

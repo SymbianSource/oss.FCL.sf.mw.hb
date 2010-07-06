@@ -30,9 +30,6 @@
 #include <assert.h>
 #include <iostream>
 
-#include <QDebug>
-
-
 void showHelp() {
     std::cout << "docml2bin.exe usage:\n\n";
 
@@ -54,15 +51,11 @@ void showHelp() {
 
 int main(int argc, char *argv[])
 {
-
-    qDebug() << "docml2bin, 1";
-
     QCoreApplication app(argc, argv);
 
     if (argc <= 2) {
         showHelp();
     } else {
-        qDebug() << "docml2bin, 2";
         //bool backup = false;
         QString source, target;
         //QStringList restore;
@@ -87,7 +80,6 @@ int main(int argc, char *argv[])
             */
             }
         }
-        qDebug() << "docml2bin, 3";
         /*
         if (restore.count()) {
             for (int i = 0; i < restore.count(); i++) {
@@ -115,24 +107,19 @@ int main(int argc, char *argv[])
                 source = orig;
             }
             */
-            qDebug() << "docml2bin, 4";
             if (!QFile::exists(source)) {
                 std::cout << "Error: file " << source.toStdString() << " does not exist.\n";
             } else {
-                qDebug() << "docml2bin, 5";
                 // Open file and parse lines. Each line should have three value separated with:
                 QFile sourceFile(source);
                 if (sourceFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                    qDebug() << "docml2bin, 6";
                     if (!target.length()) {
                         target = source + ".bin";
                     }
                     QFile targetFile(target);
                     if (targetFile.open(QIODevice::WriteOnly)) {
-                        qDebug() << "docml2bin, 7";
                         HbDocumentLoader loader;
                         loader.createBinary( &sourceFile, &targetFile );
-                        qDebug() << "docml2bin, 8";
                         targetFile.close();
                     }
                     sourceFile.close();
@@ -140,8 +127,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    qDebug() << "docml2bin, 9";
-
     return 0;
 }
 

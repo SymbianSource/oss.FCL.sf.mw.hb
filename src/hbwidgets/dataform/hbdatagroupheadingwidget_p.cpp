@@ -29,6 +29,7 @@
 #include "hbdatagroup_p.h"
 #include "hbdatagroup_p_p.h"
 #include <QGraphicsItem>
+#include <QGraphicsScene>
 #include <hbwidgetfeedback.h>
 
 #ifdef HB_GESTURE_FW
@@ -189,6 +190,10 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
 
         case Qt::GestureStarted:
             {
+                if (scene())
+                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+
                 mDown = true;
                 mLongPressed = false;
                 HbStyleOptionDataGroupHeadingWidget settingGroupOption;
@@ -221,6 +226,10 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
                 }
 
                 HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
+
+                if (scene()) {
+                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+                }
                 break;
             }
         case Qt::GestureCanceled:
@@ -235,6 +244,10 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
             }
 
             HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
+
+            if (scene()) {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+            }
             break;
 
          }

@@ -22,14 +22,14 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
-#include <hbratingslider.h>
 #include "hbratingslider_p.h"
+#include <hbratingslider.h>
 #include <hbtooltip.h>
 #include <hbstyleoptionratingslider_p.h>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <hbtoucharea.h>
+#include <hbwidgetfeedback.h>
 
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
@@ -566,6 +566,7 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                 }
                 QRectF rect = d->mTouchArea->boundingRect();
                 if(rect.contains(xVal,0 )) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
                     d->mMousePressed = true;
                     updatePrimitives();
                     rating = d->calculateProgressValue(xVal);
@@ -606,9 +607,11 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                     HbToolTip::showText(toolTip(),this);
                 }    
                 setCurrentRating(rating);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                 if(d->mCurrentValue) {
                     emit ratingDone (d->mCurrentValue);
                 }
+
                 event->accept();
                 d->mMousePressed = false;
                 updatePrimitives();
@@ -661,6 +664,7 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                                     HbToolTip::showText(toolTip(),this);
                                 }    
                                 setCurrentRating(rating);
+                                HbWidgetFeedback::continuousTriggered(this, Hb::ContinuousDragged);
                                 emit ratingChanged (d->mCurrentValue);
                                 event->accept();
                             }
@@ -691,6 +695,7 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
 
                           rating = d->calculateProgressValue(xVal);
                           setCurrentRating(rating);
+                          HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                           if(d->mCurrentValue) {
                              emit ratingDone (d->mCurrentValue);
                            }                       

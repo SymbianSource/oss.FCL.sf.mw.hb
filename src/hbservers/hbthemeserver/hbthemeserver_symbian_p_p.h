@@ -103,7 +103,6 @@ public :
     static bool gpuMemoryState();
 
     bool openCurrentIndexFile();
-    bool resolveThemePath(const QString &themeName, QString &themePath);
     HbRenderingMode currentRenderingMode() const;
     void setCurrentRenderingMode(HbRenderingMode currentMode);
     void HandleThemeSelection( const QString& themeName);
@@ -111,7 +110,7 @@ public :
     int freeSharedMemory();
     int allocatedSharedMemory();
     int allocatedHeapMemory();
-
+    int gpuLRUSize() const;
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     int cacheIconCount() const;
@@ -130,7 +129,6 @@ public :
     void cleanVectorLRUList();
     int rasterLruCount();
     int vectorLruCount();
-    int gpuLRUSize() const;
     unsigned long freeGPUMemory();
     unsigned long totalGPUMemory();
 #if defined(Q_OS_SYMBIAN)
@@ -143,10 +141,10 @@ public:
     RProperty iThemeProperty;
     QString iCurrentThemeName;
     QString iCurrentThemePath;
-    QStringList romThemeNames;
 
 private:
     void ConstructL();
+    void UpdateThemeIndexes(bool updateBase = true);
     HbIconDataCache * cache;
     HbCache* cssCache;
 

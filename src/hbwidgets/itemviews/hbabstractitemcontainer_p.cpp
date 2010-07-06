@@ -27,7 +27,6 @@
 
 #include "hbabstractviewitem.h"
 #include "hbabstractitemview.h"
-#include "hbabstractitemview_p.h"
 #include "hbmodeliterator.h"
 #include <hbapplication.h>
 
@@ -481,11 +480,7 @@ void HbAbstractItemContainerPrivate::restoreItemPosition(HbAbstractViewItem *ite
         if (!delta.isNull()) {
             q->setPos(q->pos() - delta);
 
-            if (mItemView) {
-                // this will force the HbScrollArea to adjust the content correctly. Adjustment
-                // is not done in the setPos generated event handling by default to speed up scrolling.
-                HbAbstractItemViewPrivate::d_ptr(mItemView)->adjustContent();
-            }
+            adjustContent();
         }
     }
 }

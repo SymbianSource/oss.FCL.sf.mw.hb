@@ -273,9 +273,9 @@ bool HbSharedMemoryManager::initialize()
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
         } else {
+            memset(chunkHeader, 0, sizeof(HbSharedChunkHeader));
             // Load memory file in the beginning of the chunk first.
             int memoryFileSize = 0;
-            chunkHeader->sharedCacheOffset = 0;
 
 #ifdef Q_OS_SYMBIAN
             if (!binCSSConverterApp) {

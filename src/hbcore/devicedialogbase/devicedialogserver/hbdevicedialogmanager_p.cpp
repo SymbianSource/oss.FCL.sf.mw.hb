@@ -39,7 +39,7 @@
 #include <hbinstance.h>
 #include <hbpopup.h>
 #include <hbgraphicsscene.h>
-#include <hbcorepskeys_p.h>
+#include <hbcorepskeys_r.h>
 #if defined(Q_OS_SYMBIAN)
 #include <coemain.h>
 #include <coecntrl.h>
@@ -166,8 +166,16 @@ void HbDeviceDialogManagerPrivate::init()
     bool recycled(true);
     int error(0);
 
+#if defined(Q_OS_SYMBIAN)
+    // Speed-up search by specifying a file name
+    QString pluginBaseFileName("HbIndicatorMenuPlugin");
+#else // Q_OS_SYMBIAN
+    QString pluginBaseFileName;
+#endif // Q_OS_SYMBIAN
+
     HbDeviceDialogInterface *deviceDialogIf =
-        mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), recycled, error);
+        mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), pluginBaseFileName,
+            QString(), recycled, error);
     if (deviceDialogIf) {
         connectIndicatorStatus(deviceDialogIf);
         mPluginManager.freeWidget(deviceDialogIf);
@@ -535,22 +543,23 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
 {
     parameters.mError = HbDeviceDialogNoError;
 
-    if (!mPluginManager.loadPlugin(parameters.mType)) {
+    QString pluginFilePath;
+    if (!mPluginManager.loadPlugin(parameters.mType, QString(), &pluginFilePath)) {
         parameters.mError = HbDeviceDialogNotFoundError;
         return 0;
     }
 
-    const HbDeviceDialogPlugin &plugin = mPluginManager.plugin(parameters.mType);
+    const HbDeviceDialogPlugin &plugin = mPluginManager.plugin(pluginFilePath);
     if (!plugin.deviceDialogInfo(parameters.mType, parameters.mData, &deviceDialogInfo)) {
         // Ensure plugin returns valid error code
         parameters.mError = checkpluginerror(plugin.error());
-        mPluginManager.unloadPlugin(parameters.mType);
+        mPluginManager.unloadPlugin(pluginFilePath);
         return 0;
     }
 
     if (!checkDialogInfo(deviceDialogInfo)) {
         parameters.mError = HbDeviceDialogGeneralError;
-        mPluginManager.unloadPlugin(parameters.mType);
+        mPluginManager.unloadPlugin(pluginFilePath);
         return 0;
     }
 
@@ -560,7 +569,7 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
         addSecurityCredentials(parameters, credentials);
         if (!plugin.accessAllowed(parameters.mType, parameters.mData, credentials)) {
             parameters.mError = HbDeviceDialogAccessDeniedError;
-            mPluginManager.unloadPlugin(parameters.mType);
+            mPluginManager.unloadPlugin(pluginFilePath);
             return 0;
         }
     }
@@ -569,7 +578,7 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
     if (deviceDialogInfo.flags & HbDeviceDialogPlugin::SingleInstance) {
         if (isShowing(parameters.mType)) {
             parameters.mError = HbDeviceDialogAlreadyExists;
-            mPluginManager.unloadPlugin(parameters.mType);
+            mPluginManager.unloadPlugin(pluginFilePath);
             return 0;
         }
     }
@@ -578,12 +587,12 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
     // first time it's shown.
     bool recycled = (deviceDialogInfo.group == HbDeviceDialogPlugin::IndicatorGroup);
     HbDeviceDialogInterface *deviceDialogIf =
-        mPluginManager.createWidget(parameters.mType, parameters.mData, recycled,
-            parameters.mError);
+        mPluginManager.createWidget(parameters.mType, parameters.mData, QString(), pluginFilePath,
+        recycled, parameters.mError);
 
     // Decrease plugin reference count increased by loadPlugin() above. Unload takes place when
     // device dialog widget is deleted.
-    mPluginManager.unloadPlugin(parameters.mType);
+    mPluginManager.unloadPlugin(pluginFilePath);
 
     if (!deviceDialogIf){
         parameters.mError = checkpluginerror(parameters.mError);
@@ -793,7 +802,7 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
     
     if (showingSecurity && !moreDialogs) {
 #if defined(Q_OS_SYMBIAN)
-        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);        
+        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront);        
 #endif
     }    
     TRACE_EXIT
@@ -808,7 +817,7 @@ bool HbDeviceDialogManagerPrivate::eventFilter(QObject *obj, QEvent *event)
     if (event->type() == QEvent::ApplicationActivate) {
 #if defined(Q_OS_SYMBIAN)    
         RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();
-        if (rootWindowGroup.OrdinalPriority() == ECoeWinPriorityAlwaysAtFront-1) {
+        if (rootWindowGroup.OrdinalPriority() == ECoeWinPriorityAlwaysAtFront) {
             moveToForeground(true);
         }
 #endif // Q_OS_SYMBIAN         

@@ -108,11 +108,12 @@ public:
     ~HbFontSpecPrivate();
 
     qreal textHeight() const;
-    QFont font() const;
+    QFont font();
 
 public: // data
     HbFontSpec::Role mRole;
     mutable qreal mTextHeight;
+    QString mFontName;
 };
 
 /*!
@@ -120,7 +121,8 @@ public: // data
 */
 HbFontSpecPrivate::HbFontSpecPrivate() :
     mRole(HbFontSpec::Undefined),
-    mTextHeight(-1.0f)
+    mTextHeight(-1.0f),
+    mFontName("")
 {
 }
 
@@ -173,20 +175,30 @@ qreal HbFontSpecPrivate::textHeight() const
 /*!
 \internal
 */
-QFont HbFontSpecPrivate::font() const
+QFont HbFontSpecPrivate::font()
 {
 #ifdef HB_BOOTSTRAPPED
     return QFont();
 #else
-    if (mRole == HbFontSpec::Undefined) {
+    if (mRole == HbFontSpec::Undefined && mFontName.isEmpty()) {
         return QFont();
     }
-    QString typefaceFamily;
-    int weight;
+    QString typefaceFamily(mFontName);
+    int weight(QFont::Normal);
 
     HbTypefaceInfo *tInfo = HbInstancePrivate::d_ptr()->typefaceInfo(); // Non-owning pointer
 
+    if (mRole != HbFontSpec::Undefined) {
     tInfo->roleToTypeface(mRole, typefaceFamily, weight);
+		mFontName = typefaceFamily;
+	} else if (!tInfo->containsFamily(typefaceFamily)) {
+		QString aliasFamily;
+		if (tInfo->tryGetFamilyFromAliasName(typefaceFamily, aliasFamily, weight)) {
+			typefaceFamily = aliasFamily;
+		}
+	} else {
+		weight = tInfo->getWeight(typefaceFamily);
+	}
     QFont font(typefaceFamily);
 
     font.setWeight(weight);
@@ -216,6 +228,11 @@ HbFontSpec::HbFontSpec(HbFontSpec::Role role)
     : d(new HbFontSpecPrivate())
 {
     d->mRole = role;
+}
+HbFontSpec::HbFontSpec(const QString fontName) 
+    : d(new HbFontSpecPrivate())
+{
+    d->mFontName = fontName;
 }
 
 /*!
@@ -351,4 +368,13 @@ void HbFontSpec::setTextHeight(qreal textHeight)
     d->mTextHeight = textHeight;
 }
 
+void HbFontSpec::setTypefaceFamily(QString fontName)
+{
+    d->mFontName = fontName;
+}
+
+QString HbFontSpec::typefaceFamily() const
+{
+   return d->mFontName;
+}
 // End of File

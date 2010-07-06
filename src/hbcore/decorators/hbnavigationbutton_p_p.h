@@ -38,6 +38,9 @@ public:
     virtual ~HbNavigationButtonPrivate();
 
     void init();
+
+private:
+    QGraphicsItem *mTouchArea;
 };
 
 #endif // HBNAVIGATIONBUTTON_P_P_H

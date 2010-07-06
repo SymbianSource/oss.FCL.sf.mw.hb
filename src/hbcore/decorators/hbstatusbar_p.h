@@ -39,6 +39,15 @@ class HB_CORE_PRIVATE_EXPORT HbStatusBar : public HbWidget
     Q_OBJECT
 
 public:
+    enum ContentChangeFlag {
+    	TimeChanged,
+    	BatteryLevelChanged,
+    	SignalLevelChanged,
+    	IndicatorsChanged,
+    	BatteryCharging
+    };
+    Q_DECLARE_FLAGS(ContentChangeFlags, ContentChangeFlag)
+
     explicit HbStatusBar(HbMainWindow *mainWindow, QGraphicsItem *parent = 0);
     virtual ~HbStatusBar();
 
@@ -59,15 +68,23 @@ signals:
     void activated(const QList<IndicatorClientInfo> &clientInfo);
     void deactivated(const QList<IndicatorClientInfo> &clientInfo);
     void allActivated(const QList<IndicatorClientInfo> &clientInfo);
+    void contentChanged(HbStatusBar::ContentChangeFlags changeType);
 
 protected:
     void initStyleOption(HbStyleOptionStatusBar *option) const;
     void timerEvent(QTimerEvent *event);
     void gestureEvent(QGestureEvent* e);
+    bool event(QEvent *e);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbStatusBar)
     Q_DISABLE_COPY(HbStatusBar)
+
+    Q_PRIVATE_SLOT(d_func(), void _q_signalLevelChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_batteryLevelChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_indicatorsChanged())
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbStatusBar::ContentChangeFlags)
 
 #endif // HBSTATUSBAR_H

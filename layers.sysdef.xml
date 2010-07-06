@@ -7,12 +7,15 @@
     <systemModel>
         <layer name="tools_layer">
             <module name="hbconf">
-                <unit unitID="qtdo.hb.hbconf" mrp="" bldFile="&layer_real_source_path;/src/symbian_installs" name="hbconf" />
+                <unit unitID="qtdo.hb.hbconf" mrp="" bldFile="&layer_real_source_path;/src/platforms/symbian/configurations" name="hbconf" />
             </module>
         </layer>
         <layer name="mw_layer">
             <module name="qtdo.hb">
                 <unit name="qtdo.hb" unitID="qtdo.hb" bldFile="&layer_real_source_path;" mrp=""/>
+            </module>
+             <module name="qtdo.hb.install">
+                <unit unitID="qtdo.hb.install" mrp="" bldFile="&layer_real_source_path;/src/platforms/symbian/installs" name="hbinstall"/>
             </module>
         </layer>
         <layer name="app_layer">

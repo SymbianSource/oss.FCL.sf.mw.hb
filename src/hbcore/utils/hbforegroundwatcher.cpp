@@ -87,17 +87,9 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
     : QObject(parent), mForeground(true), mLights(true), mSensorListener(0)
 {
     connect(QApplication::instance(), SIGNAL(aboutToQuit()), SLOT(handleAboutToQuit()));
-#ifdef Q_OS_SYMBIAN
-    mStaticEnv = CCoeEnv::Static();
-    if (mStaticEnv) {
-        TRAP_IGNORE(mStaticEnv->AddForegroundObserverL(*this));
-    } else {
-        qWarning("HbForegroundWatcher: CoeEnv not available");
-    }
-
-#endif
     QApplication::instance()->installEventFilter(this);
     HbSleepModeListener::instance(); // make sure the instance is created
+    mSleepModeTimer.setSingleShot(true);
     connect(&mSleepModeTimer, SIGNAL(timeout()), this, SLOT(handleSensors()));
 }
 
@@ -214,13 +206,9 @@ bool HbForegroundWatcher::eventFilter(QObject *obj, QEvent *event)
         mLights = true;
         handleSensors();
     } else if (event->type() == QEvent::ApplicationActivate && !mForeground) {
-#ifndef Q_OS_SYMBIAN
         HandleGainingForeground();
-#endif
     } else if (event->type() == QEvent::ApplicationDeactivate && mForeground) {
-#ifndef Q_OS_SYMBIAN
         HandleLosingForeground();
-#endif
     }
     return QObject::eventFilter(obj, event);
 }

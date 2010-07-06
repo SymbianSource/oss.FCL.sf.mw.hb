@@ -62,14 +62,14 @@ public:
     void setFilePath(const QString &path);
     bool init();
     StartElement readToStartElement();
-    bool readMapping(QString &role, QString &family, bool &isBold);
+    bool readMapping(QString &role, QString &family, QString &aliasFamily, bool &isBold);
     bool readMetric(int &textHeight, int &size, int &baseline);
     const QString metricsTypefaceFamily() const;
 	bool readAndPositionTypefaceSet();
     void close();
 
 private:
-    bool readMapItem(QString &role, QString &family, bool &isBold);
+    bool readMapItem(QString &role, QString &family, QString &aliasFamily, bool &isBold);
     bool readMetricItem(int &textHeight, int &size, int &baseline);
 	bool matchLanguageAndCountry() const;
 

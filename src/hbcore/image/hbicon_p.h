@@ -45,7 +45,9 @@ public:
     void clearStoredIconContent();
     bool addBadge(Qt::Alignment alignment,
                   const HbIcon &badge,
-                  int z = 0);
+                  int z,
+                  const QSizeF &sizeFactor,
+                  Qt::AspectRatioMode aspectRatio);
     bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     bool isBadged() const;

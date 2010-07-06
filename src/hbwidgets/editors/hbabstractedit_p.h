@@ -137,7 +137,8 @@ public:
     void sendInputPanelEvent(QEvent::Type type);
     void openInputPanel();
     void closeInputPanel();
-    void minimizeInputPanel();
+    bool hasInputFocus() const;
+    void setInputFocusEnabled(bool enable);
 
     int contentLength() const;
     bool hasAcceptableInput() const;

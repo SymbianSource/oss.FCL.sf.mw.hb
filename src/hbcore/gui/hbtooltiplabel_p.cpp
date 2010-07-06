@@ -57,7 +57,7 @@ HbToolTipLabelPrivate::HbToolTipLabelPrivate():
 void HbToolTipLabelPrivate::init()
 {
     Q_Q(HbToolTipLabel);
-    q->setBackgroundItem(HbStyle::P_ToolTip_background);
+    setBackgroundItem(HbStyle::P_ToolTip_background);
 
     q->setFocusPolicy(Qt::NoFocus);
     q->setTimeout(HbPopup::NoTimeout);

@@ -29,6 +29,7 @@
 #include "hbsplashgenerator_p.h"
 #include "hbsplashdefs_p.h"
 #include "hbsplashindicompositor_p.h"
+#include "hbwidgetenabler_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbsplashgen_server_symbian_p.h"
@@ -83,6 +84,10 @@ int runMain(int argc, char **argv, void *mutexToSignal)
     QMainWindow mw;
     QPushButton *btnRegen = new QPushButton("Regenerate");
     gen.connect(btnRegen, SIGNAL(clicked()), SLOT(uncachedRegenerate()));
+    btnRegen->setEnabled(false); // will be enabled only when the generator is really ready
+    WidgetEnabler widgetEnabler(btnRegen);
+    QObject::connect(&gen, SIGNAL(outputDirContentsUpdated(QString, QStringList)),
+                     &widgetEnabler, SLOT(enable()), Qt::QueuedConnection);
     mw.setCentralWidget(btnRegen);
     mw.show();
 #endif

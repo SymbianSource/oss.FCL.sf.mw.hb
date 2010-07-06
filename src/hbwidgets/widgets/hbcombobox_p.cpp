@@ -38,6 +38,8 @@
 #include <QSortFilterProxyModel>
 #include <QCompleter>
 #include <QItemSelectionModel>
+#include <QApplication>
+
 
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
@@ -107,8 +109,6 @@ void HbComboBoxPrivate::createPrimitives( )
     HbStyle::setItemName( mButton, "combobox_button" );
 
     mButtonTouchAreaItem = q->style( )->createPrimitive( HbStyle::P_ComboBoxButton_toucharea, q );
-    static_cast<HbTouchArea*>( mButtonTouchAreaItem )->installEventFilter( q );
-    q->setHandlesChildEvents( true );
 
     static_cast<HbTouchArea*>( mButtonTouchAreaItem )->grabGesture( Qt::TapGesture );
 }
@@ -148,6 +148,10 @@ void HbComboBoxPrivate::touchAreaClicked( )
             mDropDown->mList->setModel( mModel );
             q->connect( mDropDown->mList, SIGNAL( activated( QModelIndex ) ), q,
                 SLOT( _q_textChanged( QModelIndex ) ) );
+            //send layout request so that geometries of list view item are updated
+            //and proper height is fetched in calculateListItemHeight
+            QEvent layoutEvent(QEvent::LayoutRequest);
+            QApplication::sendEvent(mDropDown->mList->contentWidget(), &layoutEvent);
         }
         if ( mCurrentIndex.isValid( ) ) {
             if( mDropDown->mList->model( ) != mModel ) {

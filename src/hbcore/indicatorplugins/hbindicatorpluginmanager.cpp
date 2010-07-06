@@ -49,8 +49,9 @@ HbIndicatorPluginManager::HbIndicatorPluginManager(QObject *parent) :
     int readOnlyPaths;
     mPluginPathList = HbDeviceDialogPluginManager::pluginPathList("/indicators/", readOnlyPaths);
 
-    // Scan only read-only drives at startup to ensure installed plugins cannot affect device boot
-    for(int i = 0; i < readOnlyPaths; i++) {
+    // Scan only read-only drives + allow eclipsing at startup to ensure installed plugins cannot
+    // affect device boot
+    for(int i = 0; i < mPluginPathList.count(); i++) {
         updateCachePath(mPluginPathList.at(i), true);
     }
 }
@@ -358,47 +359,80 @@ int HbIndicatorPluginManager::loadPlugin(const QString &indicatorType)
 
     // Check if plugin file name is in cache
     int index = -1;
-    const QString filePath = mNameCache.find(indicatorType);
+    QString filePath = mNameCache.find(indicatorType, QString());
     if (!filePath.isEmpty()) {
-        TRACE("cache hit")
+        TRACE("icache hit")
         index = loadPlugin(indicatorType, filePath);
         // If plugin wasn't loaded, the cache has stale information. Rescan the directory.
         if (index < 0) {
-            TRACE("cache stale")
+            TRACE("icache stale")
             updateCachePath(filePath);
         }
     }
     if (index < 0) {
-        TRACE("cache miss")
+        TRACE("icache miss")
         // Plugin name wasn't in cache, try to find it
-        index = scanPlugins(indicatorType);
-        if (index >= 0) {
-            // Plugin was found, update plugin name cache by scanning the directory
-            updateCachePath(mPlugins[index].mLoader->fileName());
+        filePath = scanPlugins(indicatorType);
+        if (!filePath.isEmpty()) {
+            index = loadPlugin(indicatorType, filePath);
+            if (index >= 0) {
+                // Plugin was found, update plugin name cache by scanning the directory
+                updateCachePath(mPlugins[index].mLoader->fileName());
+            }
         }
     }
     TRACE_EXIT
     return index;
 }
 
-// Scan for and load plugin in file system
-int HbIndicatorPluginManager::scanPlugins(const QString &indicatorType)
+// Scan plugins to find one implementing the indicator type
+QString HbIndicatorPluginManager::scanPlugins(const QString &indicatorType)
 {
     TRACE_ENTRY
     const QString fileNameFilter = HbDeviceDialogPluginManager::pluginFileNameFilter();
-    int index = -1;
+    QString pluginFileName;
 
-    foreach (const QString &path, mPluginPathList) {
+    // Scan plugins. All paths in the list are scanned. Eclipsing is allowed only if file names
+    // are the same.
+    QString result;
+    foreach(const QString &path, mPluginPathList) {
         QDir pluginDir(path, fileNameFilter, QDir::NoSort, QDir::Files | QDir::Readable);
         foreach (const QString &fileName, pluginDir.entryList()) {
-            index = loadPlugin(indicatorType, pluginDir.absoluteFilePath(fileName));
-            if (index >= 0) {
-                break;
+            if (pluginFileName.isEmpty() || HbPluginNameCache::compare(pluginFileName, fileName) == 0) {
+                const QString current(pluginDir.absoluteFilePath(fileName));
+                if (scanPlugin(indicatorType, current)) {
+                    result = current;
+                    if (pluginFileName.isEmpty()) {
+                        pluginFileName = fileName;
+                    }
+                }
             }
         }
     }
     TRACE_EXIT
-    return index;
+    return result;
+}
+
+// Scan a plugin to find if it implements the indicator type
+bool HbIndicatorPluginManager::scanPlugin(const QString &indicatorType, const QString &filePath)
+{
+    TRACE_ENTRY
+
+    HbLockedPluginLoader *loader = new HbLockedPluginLoader(mNameCache, filePath);
+    QObject *pluginInstance = loader->instance();
+
+    bool result = false;
+    if (pluginInstance) {
+        HbIndicatorPluginInterface *plugin =
+            qobject_cast<HbIndicatorPluginInterface*>(pluginInstance);
+        if (plugin) {
+            result = plugin->indicatorTypes().contains(indicatorType);
+        }
+    }
+    loader->unload();
+    delete loader;
+    TRACE_EXIT
+    return result;
 }
 
 // Load plugin from file path name
@@ -484,17 +518,26 @@ QString HbIndicatorPluginManager::statusAreaIconPath(
 }
 
 // Update plugin name cache watch/scan list
-void HbIndicatorPluginManager::updateCachePath(const QString &path, bool updateReadOnly)
+void HbIndicatorPluginManager::updateCachePath(const QString &path, bool firstScan)
 {
     QString dirPath = HbPluginNameCache::directoryPath(path);
     QFileInfo fileInfo(dirPath);
     if (fileInfo.exists()) {
         // If directory is writable, watch it. Otherwise scan it only once.
         if (fileInfo.isWritable()) {
-            mNameCache.addWatchPath(dirPath);
+            HbPluginNameCache::ScanParameters::Options scanOptions =
+                HbPluginNameCache::ScanParameters::NoOptions;
+            Q_UNUSED(firstScan)
+#if defined(Q_OS_SYMBIAN)
+            if (firstScan) {
+                scanOptions = HbPluginNameCache::ScanParameters::LimitToSet;
+            }
+#endif // defined(Q_OS_SYMBIAN)
+            mNameCache.addWatchPath(HbPluginNameCache::ScanParameters(dirPath, scanOptions));
         } else {
-            if (updateReadOnly) {
-                mNameCache.scanDirectory(dirPath);
+            if (firstScan) {
+                HbPluginNameCache::ScanParameters parameters(path, HbPluginNameCache::ScanParameters::AddToLimitSet);
+                mNameCache.scanDirectory(parameters);
             }
         }
     } else {

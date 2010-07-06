@@ -27,7 +27,7 @@
 #define HBRATINGSLIDER_P_H
 
 #include "hbwidget_p.h"
-
+#include <hbratingslider.h>
 class HbRatingSliderPrivate :public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbRatingSlider )

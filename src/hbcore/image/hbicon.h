@@ -31,6 +31,7 @@
 #include <QIcon> //krazy:exclude=qclasses
 #include <QMetaType>
 #include <QString>
+#include <QSizeF>
 #include <QExplicitlySharedDataPointer>
 
 class HbIconPrivate;
@@ -112,7 +113,13 @@ public:
 
     bool addBadge(Qt::Alignment alignment,
                   const HbIcon &badge,
-                  int z = 0);
+                  int z = 0,
+                  Qt::AspectRatioMode aspectRatio = Qt::KeepAspectRatio);
+    bool addProportionalBadge(Qt::Alignment alignment,
+                              const HbIcon &badge,
+                              const QSizeF &sizeFactor = QSizeF(0.25, 0.25),
+                              int z = 0,
+                              Qt::AspectRatioMode aspectRatio = Qt::KeepAspectRatio);
     bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
 

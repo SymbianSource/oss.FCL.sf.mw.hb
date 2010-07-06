@@ -50,6 +50,8 @@ public:
     static void forceUnfocus();
     static HbInputMethod *activeInputMethod();
     static QList<HbInputMethodDescriptor> listCustomInputMethods();
+    static QList<HbInputMethodDescriptor> listCustomInputMethods(Qt::Orientation orientation, const HbInputLanguage &language);
+    static HbInputMethodDescriptor defaultInputMethod(Qt::Orientation orientation);
 
     virtual void focusReceived();
     virtual void focusLost(bool focusSwitch = true);

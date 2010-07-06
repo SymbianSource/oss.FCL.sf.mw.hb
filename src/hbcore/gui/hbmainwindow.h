@@ -49,6 +49,8 @@ class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
                RESET unsetOrientation
                NOTIFY orientationChanged)
 
+    Q_PROPERTY(bool obscuredState READ isObscured)
+
 public:
     explicit HbMainWindow(QWidget *parent = 0, Hb::WindowFlags windowFlags = Hb::WindowFlagNone);
     ~HbMainWindow();
@@ -78,6 +80,8 @@ public:
     void setAutomaticOrientationEffectEnabled(bool enabled = true);
     bool automaticOrientationEffectEnabled() const;
 
+    bool isObscured() const;
+
 public slots:
     void broadcastEvent(int eventType);
 
@@ -88,6 +92,8 @@ signals:
     void aboutToChangeOrientation();
     void aboutToChangeOrientation(Qt::Orientation newOrientation, bool animated);
     void orientationChanged(Qt::Orientation orientation);
+    void obscured();
+    void revealed();
 
 protected:
     void changeEvent(QEvent *event);
@@ -99,6 +105,7 @@ protected:
     void scrollContentsBy(int dx, int dy);
     void paintEvent(QPaintEvent *event);
     void showEvent(QShowEvent *event);
+    bool event(QEvent *event);
 
     HbMainWindowPrivate *const d_ptr;
 

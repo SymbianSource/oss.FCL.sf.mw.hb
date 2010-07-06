@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 #ifndef HB_INPUT_VIRTUAL_KEYBOARD_H
-#define HB_INPUT_VIRTUAL_KEYBAORD_H
+#define HB_INPUT_VIRTUAL_KEYBOARD_H
 
 #include <QSizeF>
 

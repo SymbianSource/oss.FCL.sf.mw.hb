@@ -89,7 +89,6 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
 
         ObjectMapItem lookUp(const QString& type, const QString &name, const QString &plugin = QString());
         QObject *findFromStack(bool *isWidgetElement = 0) const;
-        QGraphicsLayoutItem *findSpacerItemFromStackTop() const;
         
         void addToObjectMap(QList<QObject *> objects);
         void addToObjectMap(QList<QGraphicsItem *> objects);

@@ -46,7 +46,7 @@ public:
     virtual ~HbStatusBarPrivate();
 
     void delayedConstruction();
-	void init();
+    void init();
     void updateTime();
     
 #if defined(Q_OS_SYMBIAN)
@@ -54,7 +54,7 @@ public:
     TInt DoEnvChange();
 #endif    
     
-	int mClockTimerId;
+    int mClockTimerId;
     QString mTimeText;
     QGraphicsItem *mTimeTextItem;
 
@@ -72,6 +72,10 @@ public:
     // Notifications about locale and time changes
     CEnvironmentChangeNotifier *mEnvChangeNotifier;
 #endif    
+
+    void _q_signalLevelChanged();
+    void _q_batteryLevelChanged();
+    void _q_indicatorsChanged();
 };
 
 

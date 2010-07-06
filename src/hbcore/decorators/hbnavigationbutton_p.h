@@ -52,6 +52,7 @@ public slots:
 protected:
     virtual void initStyleOption(HbStyleOptionNavigationButton *option) const;
     virtual void changeEvent(QEvent* event);
+    virtual bool hitButton(const QPointF &pos) const;
 
 private slots:
     void handlePress();

@@ -42,6 +42,8 @@ public:
     HbGraphicsScene(QObject *parent = 0);
     ~HbGraphicsScene();
 
+    QVariant inputMethodQuery ( Qt::InputMethodQuery query ) const;
+
 protected:
     void focusInEvent(QFocusEvent *focusEvent);
     void focusOutEvent(QFocusEvent *focusEvent);

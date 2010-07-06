@@ -178,13 +178,6 @@ void HbScreen::delayedConstruction()
     }
 }
 
-void HbScreen::setGeometry(const QRectF &rect)
-{
-    prepareGeometryChange();
-    HbWidget::setGeometry(rect);
-}
-
-
 Qt::Orientation HbScreen::toolBarOrientation() const
 {
     return (Qt::Orientation)mToolBarOrientation;

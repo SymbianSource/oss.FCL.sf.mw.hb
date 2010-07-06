@@ -30,6 +30,7 @@
 
 class HbListView;
 class HbComboBoxPrivate;
+class HbComboDropDownPrivate;
 class  HbComboDropDown : public HbWidget
 {
     Q_OBJECT
@@ -46,6 +47,7 @@ public slots:
 
 protected:
     bool eventFilter( QObject *obj, QEvent *event );
+    Q_DECLARE_PRIVATE_D(d_ptr, HbComboDropDown)
 
 public:
     bool vkbOpened;

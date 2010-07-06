@@ -50,6 +50,8 @@ private:
 public:
     HbInputMethod *loadInputMethod(const HbInputMethodDescriptor &inputMethod);
     QList<HbInputMethodDescriptor> listCustomInputMethods();
+    QList<HbInputMethodDescriptor> listCustomInputMethods(Qt::Orientation orientation, const HbInputLanguage &language);
+    HbInputMethodDescriptor defaultInputMethod(Qt::Orientation orientation);
     HbInputMethod *findStateHandler(const HbInputState &state);
     HbInputMethod *activeMethod() const;
     QList<HbInputLanguage> listInputLanguages() const;

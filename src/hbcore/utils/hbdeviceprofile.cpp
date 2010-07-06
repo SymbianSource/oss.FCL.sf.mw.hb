@@ -307,7 +307,6 @@ HbDeviceProfileList *HbDeviceProfilePrivate::deviceProfiles()
     if (!deviceProfilesList) {
         // This is fall back.Create/Get the HbDeviceProfileDatabase Instance at
         // the client side and read the deviceProfilesList.
-        qDebug() << "DeviceProfile offset not returned by themeserver .. working in fallback mode";
         HbDeviceProfileDatabase *deviceProfileDataBase =
             HbDeviceProfileDatabase::instance(HbMemoryManager::HeapMemory);
         deviceProfilesList = HbMemoryUtils::getAddress<HbDeviceProfileList>(HbMemoryManager::HeapMemory,

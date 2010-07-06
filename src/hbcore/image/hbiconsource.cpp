@@ -303,6 +303,7 @@ QPicture *HbIconSource::picture()
 QImageReader *HbIconSource::imageReader()
 {
     if (!mImageReader) {
+        type(); // make sure type is initialized
         mImageReader = new QImageReader(mFilename, mType.toLatin1());
     }
     return mImageReader && mImageReader->canRead() ? mImageReader : 0;

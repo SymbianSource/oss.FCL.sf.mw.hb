@@ -33,12 +33,20 @@
 #include <hbtranslator.h>
 #include <hbtranslator_p.h>
 
+#if defined(Q_OS_SYMBIAN)
+    #define PLATFORM_WITH_DRIVES
+#elif defined(Q_OS_WIN32)
+    #define PLATFORM_WITH_DRIVES
+#else
+    #undef PLATFORM_WITH_DRIVES
+#endif
+
 #ifdef Q_OS_SYMBIAN
 const char* defaultPath   = "/resource/qt/translations/";
 const char* defaultDrive  = "Z:";
 const char* defaultCommon = "common_";
 #else
-const QString defaultPath = "";
+const char* defaultPath = "";
 const char* defaultDrive  = "";
 const char* defaultCommon = "common_";
 
@@ -89,12 +97,10 @@ bool loadTranslatorData(QTranslator &translator, QString &qmFile, uchar* &buffer
                return false;
            }        
            // else continue
-        } 
-        else {
+        } else {
             if (err != KErrNone ) { // if some other error return error, don't look anymore
                 return false;
-            }
-            else {
+            } else {
                 break; // file was found
             }
         }
@@ -104,8 +110,7 @@ bool loadTranslatorData(QTranslator &translator, QString &qmFile, uchar* &buffer
         err= fl.Open(fs, ptrFName, EFileShareReadersOrWriters | EFileRead | EFileStream );
         if (err == KErrNone) {
             break;
-        }
-        else {
+        } else {
             if (err != KErrNotFound) {
                 return false;
             }
@@ -119,7 +124,6 @@ bool loadTranslatorData(QTranslator &translator, QString &qmFile, uchar* &buffer
             }    
         }
 
-        // no truncations? fail
         if (rightmost==0) {
             return false;
         }
@@ -151,15 +155,24 @@ bool loadTranslatorData(QTranslator &translator, QString &qmFile, uchar* &buffer
 }
 
 /*!
-    @beta
+    @stable
     @hbcore
     \class HbTranslator
     \brief HbTranslator installs QTranslator(s) automatically needed in localisation
     and loads translation files into QTranslator.
+
+    Note: file name should be given without language and .qm postfix.
+    Eg. if English qm file name is testapp_en.qm
+    \code
+    HbTranslator trans("testapp");
+    \endcode
+    which loads correct testapp_xx.qm file from default location, where xx is postfix for current system locale, eg "en".
+
+    \sa hbTrId
 */
 
 /*!
-    Default case: searches translation file from default location (/resource/qt/translations/) with default name, which is EXECUTABLENAME.qm
+    Default case: searches translation file from default location (/resource/qt/translations/) with default name, which is EXECUTABLENAME_xx.qm
     
     \attention Cross-Platform API
 */
@@ -167,6 +180,8 @@ HbTranslator::HbTranslator(): d(new HbTranslatorPrivate())
 {
     QFileInfo info(qApp->applicationFilePath());
     QString defaultName = info.baseName();  // defaultname = <executablename>
+    d->translatorPath=defaultPath;
+    d->translatorFile=defaultName;
     d->installTranslator(defaultPath, defaultName);
 }
 
@@ -177,6 +192,8 @@ HbTranslator::HbTranslator(): d(new HbTranslatorPrivate())
 */
 HbTranslator::HbTranslator(const QString &file): d(new HbTranslatorPrivate())
 {
+    d->translatorPath=defaultPath;
+    d->translatorFile=file;    
     d->installTranslator(defaultPath, file);
 }
 
@@ -191,13 +208,23 @@ HbTranslator::HbTranslator(const QString &file): d(new HbTranslatorPrivate())
 */
 HbTranslator::HbTranslator(const QString &path, const QString &file): d(new HbTranslatorPrivate())
 {
+    d->translatorPath=defaultPath;
+    d->translatorFile=file;    
     d->installTranslator(path, file);
 }
 
+/*!
+    Destructor  
+*/ 
 HbTranslator::~HbTranslator()
 {
     delete d;
 }
+
+static bool commonTr = false;
+#include <QMutex>
+#include <QMutexLocker>
+Q_GLOBAL_STATIC_WITH_ARGS(QMutex, gs_CommonTrMutex, (QMutex::Recursive) )
 
 /*!
     Loads common.ts translations from default location.
@@ -205,14 +232,47 @@ HbTranslator::~HbTranslator()
     \attention Cross-Platform API
 */
 void HbTranslator::loadCommon()
-{    
-    QString lang = QLocale::system().name();
-    QString commonts = QString(defaultDrive) + QString(defaultPath) + QString(defaultCommon) + lang;
-    bool loaded;
-    loaded = loadTranslatorData(d->common, commonts, d->commonData);
-    if (loaded) {
-        qApp->installTranslator(&d->common);    
+{   
+    QMutexLocker ml(gs_CommonTrMutex());
+    if (!commonTr) {
+        QString lang = QLocale::system().name();
+        d->languageDowngrade(lang);    
+        QString commonts;
+        commonts += QString(defaultDrive);
+        commonts += QString(defaultPath);
+        commonts += QString(defaultCommon);
+        commonts += lang;
+#ifdef Q_OS_SYMBIAN        
+        toSymbianPath(commonts);
+#endif    
+        bool loaded;
+        uchar *commonData=0;
+        loaded = loadTranslatorData(d->common, commonts, d->commonData);
+        if (loaded) {
+            d->commonData = commonData;
+            d->commonTr=true;
+            qApp->installTranslator(&d->common);    
+            commonTr=true;
+        }
+    }    
+}
+
+/*!
+    Destructor  
+*/ 
+HbTranslatorPrivate::~HbTranslatorPrivate()
+{
+    qApp->removeTranslator(&translator);    
+    if (translatorData) {
+        delete [] translatorData;
     }
+    qApp->removeTranslator(&common);    
+    if (commonData) {        
+        delete [] commonData;
+    }
+    if (commonTr) {
+       ::commonTr=false;
+    }    
 }
 
 /*!
@@ -227,12 +287,18 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
     QString lang2 = lang;
     languageDowngrade(lang);
     QString path(pth);
-    if (path.at(0) == ':') {
-        QString tsfile = path + name + QString("_") + lang;
-        translator.load(tsfile);
-        qApp->installTranslator(&translator);
+    if (path.isNull() || path.isEmpty()) {
         return;
     }
+    if (path.at(0) == ':') {
+        QString tsfile = path + name + QString("_") + lang;
+        if ( translator.load(tsfile) ) {
+            qApp->installTranslator(&translator);
+        }
+        return;
+    }
+    
+#ifdef PLATFORM_WITH_DRIVES
 #ifdef Q_OS_SYMBIAN        
     toSymbianPath(path);
 #endif    
@@ -277,6 +343,12 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
     if (loaded) {
         qApp->installTranslator(&translator);
     }
+#else    
+    QString tsfile2 = path + name + QString("_") + lang;
+    if ( translator.load(tsfile2) ) {
+        qApp->installTranslator(&translator);
+    }
+#endif    
 }
 
 /*!
@@ -288,6 +360,9 @@ public:
     LanguageHash();    
 };
 
+/*!
+    Table for downgrade.  
+*/ 
 LanguageHash::LanguageHash(){
     (*this)["en_GB"] = "en";
     (*this)["fr_FR"] = "fr";
@@ -333,7 +408,7 @@ LanguageHash::LanguageHash(){
     (*this)["pt_BR"] = "pt_BR";
     (*this)["ro_RO"] = "ro";
     (*this)["sr_YU"] = "sr";
-    (*this)["es_MX"] = "es_MX"; //!!
+    (*this)["es_MX"] = "es_MX";
     (*this)["uk_UA"] = "uk";
     (*this)["ur_PK"] = "ur";
     (*this)["vi_VN"] = "vi";

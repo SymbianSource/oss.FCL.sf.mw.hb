@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
-<rect fill="none" height="30" width="30"/>
-</g>
-<path d="M15,1C7.28,1,1,7.28,1,15s6.28,14,14,14s14-6.28,14-14S22.72,1,15,1z M15,26C8.935,26,4,21.065,4,15S8.935,4,15,4  s11,4.935,11,11S21.065,26,15,26z"/>
-<ellipse cx="9.5" cy="10.5" rx="1.5" ry="2.5"/>
-<ellipse cx="20.5" cy="10.5" rx="1.5" ry="2.5"/>
-<path d="M6,15c0,4.963,4.038,9,9,9c4.963,0,9-4.037,9-9H6z M20.742,19H9.258c-0.422-0.604-0.751-1.277-0.967-2h13.418  C21.493,17.723,21.164,18.396,20.742,19z"/>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="-2 -2 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<path d="M13,0C5.82,0,0,5.82,0,13s5.82,13,13,13s13-5.82,13-13S20.18,0,13,0z M13,23C7.486,23,3,18.514,3,13S7.486,3,13,3  s10,4.486,10,10S18.514,23,13,23z"/>
+<ellipse cx="7.5" cy="9" rx="1.5" ry="2"/>
+<ellipse cx="18.5" cy="9" rx="1.5" ry="2"/>
+<path d="M5,13.063c0,4.411,3.589,8,8,8s8-3.589,8-8H5z M17.501,17H8.499c-0.496-0.566-0.899-1.215-1.156-1.938h11.314  C18.4,15.785,17.997,16.434,17.501,17z"/>
 </svg>

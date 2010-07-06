@@ -52,6 +52,7 @@ public:
 
 protected:
     void gestureEvent(QGestureEvent *event);
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbListViewItem)

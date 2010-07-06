@@ -187,21 +187,21 @@ bool setLocale( const QString &dllExtension )
 */ 
 QString HbLocaleUtil::currentLanguage()
 {
-    #if defined(Q_OS_SYMBIAN)
-        TLanguage l = User::Language();
-        
-        if(mappingList.isEmpty()) {
-            readMappings();
+#if defined(Q_OS_SYMBIAN)
+    TLanguage l = User::Language();
+    
+    if(mappingList.isEmpty()) {
+        readMappings();
+    }
+    
+    for (int i = 0; i < mappingList.count(); ++i) {
+        HbLocaleMapping mapping = mappingList.at(i);
+        if (mapping.symLangValue == l) {
+            return mapping.langName;
         }
-        
-        for (int i = 0; i < mappingList.count(); ++i) {
-            HbLocaleMapping mapping = mappingList.at(i);
-            if (mapping.symLangValue == l) {
-                return mapping.langName;
-            }
-        }
-   #endif
-   return QString("");
+    }
+#endif
+   return QString();
 }
 
 /*!
@@ -217,7 +217,6 @@ QString HbLocaleUtil::currentLanguage()
 QStringList HbLocaleUtil::supportedLanguages()
 {
 #if defined(Q_OS_SYMBIAN)   
-  
     QStringList languages; 
     CArrayFixFlat<TInt>* systemEpocLanguageCodes = 0;
     TInt error = SysLangUtil::GetInstalledLanguages( systemEpocLanguageCodes );
@@ -244,8 +243,7 @@ QStringList HbLocaleUtil::supportedLanguages()
     delete systemEpocLanguageCodes;
     return languages;
 #else 
-    QStringList dummy; 
-    return dummy;
+    return QStringList();
 #endif
 }
 
@@ -284,7 +282,7 @@ QString HbLocaleUtil::localisedLanguageName( const QString &language )
     return translated;
 #else 
     Q_UNUSED(language); 
-    return QString("");
+    return QString();
 #endif
 }
 
@@ -405,9 +403,9 @@ QStringList HbLocaleUtil::supportedRegions()
     }
     
     if(mappingList.isEmpty())
-        {
+    {
         readMappings();
-        }
+    }
     int regCount = regions.count();
     for(int i = 0; i < regCount; i++)
     {
@@ -458,20 +456,20 @@ QString HbLocaleUtil::localisedRegionName( const QString &region )
 
         QCoreApplication::installTranslator(&translator);
             
-        if(availRegions.isEmpty())
+        if(mappingList.isEmpty()) 
         {
-            readRegions();
+            readMappings();
         }
-        int cnt = availRegions.count();
+        int cnt = mappingList.count();
         for(int i = 0 ; i < cnt; i++ )
         {
-            QString reg = availRegions.at(i); 
+            HbLocaleMapping map = mappingList.at(i);
             QString regionName = QString(REGION_ID_PREFIX);
             regionName += '_';
-            regionName += reg;
+            regionName += map.regName;
             QString locRegName = hbTrId(regionName.toAscii().constData());
             if(locRegName != regionName)
-                locRegionNames.insert(reg, locRegName);
+                locRegionNames.insert(map.regName, locRegName);
         }
     }
     
@@ -553,10 +551,8 @@ QString HbLocaleUtil::currentRegion()
             return mapping.regName;
         }
     }
-    return QString();
-#else
-    return QString();
 #endif    
+    return QString();
 }
 
 #if defined(Q_OS_SYMBIAN)      
@@ -614,9 +610,9 @@ QStringList HbLocaleUtil::supportedCollations()
     }
     
     if(mappingList.isEmpty())
-        {
+    {
         readMappings();
-        }
+    }
     int colCount = collations.count();
     for(int i = 0; i < colCount; i++)
     {
@@ -667,20 +663,20 @@ QString HbLocaleUtil::localisedCollationName( const QString &collation )
 
         QCoreApplication::installTranslator(&translator);
             
-        if(availCollations.isEmpty())
+        if(mappingList.isEmpty()) 
         {
-            readCollations();
+            readMappings();
         }
-        int cnt = availCollations.count();
+        int cnt = mappingList.count();
         for(int i = 0 ; i < cnt; i++ )
         {
-            QString col = availCollations.at(i); 
+            HbLocaleMapping map = mappingList.at(i);
             QString collationName = QString(COLLATION_ID_PREFIX);
             collationName += '_';
-            collationName += col;
+            collationName += map.collName;
             QString locColName = hbTrId(collationName.toAscii().constData());
             if(locColName != collationName)
-                locCollationNames.insert(col, locColName);
+                locCollationNames.insert(map.collName, locColName);
         }
     }
     
@@ -773,10 +769,8 @@ QString HbLocaleUtil::currentCollation()
             return mapping.collName;
         }
     }
-    return QString();    
-#else
-    return QString();
 #endif    
+    return QString();    
 }
 
 /*!

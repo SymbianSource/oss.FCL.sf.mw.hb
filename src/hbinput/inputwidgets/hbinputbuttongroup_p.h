@@ -68,6 +68,13 @@ protected:
     virtual void createPrimaryTextLayout(int index, const QHash<int, QString> &textContent, const QSizeF &size);
     virtual void createSecondaryTextLayout(int index, const QHash<int, QString> &textContentt, const QSizeF &size);
 
+    virtual void layoutSecondaryText(int index, HbInputButton *item, QFontMetricsF &fontMetrics, const QSizeF &size,
+                                     HbInputButton::HbInputButtonTextIndex firstTextIndex,
+                                     HbInputButton::HbInputButtonIconIndex firstIconIndex,
+                                     HbInputButton::HbInputButtonTextIndex secondTextIndex,
+                                     HbInputButton::HbInputButtonIconIndex secondIconIndex,
+                                     HbInputButtonGroup::HbInputButtonTextType textType);
+
     virtual void layoutTextLine(HbInputButtonGroup::HbInputButtonTextType textType, const HbInputButton *button, const QSizeF &cellSize,
                                 QTextLine &textLine, const QSizeF &textSize);
 

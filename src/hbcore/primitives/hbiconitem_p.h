@@ -44,6 +44,7 @@ public:
     void clearStoredIconContent();
     void updateIconItem();
     void updateIconParams();
+    void recalculateBoundingRect() const;
     void setThemedColor(const QColor &color);
     static HbIconItemPrivate *d_ptr(HbIconItem *item) {
         return item->d_func();
@@ -57,6 +58,9 @@ public:
     QColor mThemedColor;
     QBrush mBrush;
     QRectF mIconRect;
+    mutable QRectF mBoundingRect;
+    mutable QRectF mAdjustedRect;
+    mutable bool mClearCachedRect;
     static bool outlinesEnabled;
 };
 

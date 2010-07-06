@@ -70,7 +70,9 @@ public:
 
     void addBadge(Qt::Alignment alignment,
                   const HbIcon &badge,
-                  int z = 0);
+                  int z,
+                  const QSizeF &sizeFactor,
+                  Qt::AspectRatioMode aspectRatio);
     bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     const QList<HbBadgeIconInfo> badges() const;
@@ -439,12 +441,14 @@ QColor HbIconEnginePrivate::colorToUse(const QString &iconName) const
 
 void HbIconEnginePrivate::addBadge(Qt::Alignment align,
                                    const HbIcon &icon,
-                                   int z)
+                                   int z,
+                                   const QSizeF &sizeFactor,
+                                   Qt::AspectRatioMode aspectRatio)
 {
     if (!badgeInfo) {
         badgeInfo = new HbBadgeIcon();
     }
-    badgeInfo->addBadge(align, icon, z);
+    badgeInfo->addBadge(align, icon, z, sizeFactor, aspectRatio);
 }
 
 bool HbIconEnginePrivate::removeBadge(const HbIcon &badge)
@@ -778,6 +782,9 @@ QSizeF HbIconEngine::defaultSize() const
         } else {
             HbIconLoader *loader = HbIconLoader::global();
             d->defaultSize = loader->defaultSize(name, QString(), d->iconLoaderOptions());
+            if (d->flags & HbIcon::ResolutionCorrected) {
+                HbIconLoader::global()->applyResolutionCorrection(d->defaultSize);
+            }
         }
         // If default size could not get retrieved,
         // store information about that so it does not need to be checked again.
@@ -1175,9 +1182,11 @@ void HbIconEngine::resetIconImpl() const
 
 void HbIconEngine::addBadge(Qt::Alignment align,
                             const HbIcon &icon,
-                            int z)
+                            int z,
+                            const QSizeF &sizeFactor,
+                            Qt::AspectRatioMode aspectRatio)
 {
-    d->addBadge(align, icon, z);
+    d->addBadge(align, icon, z, sizeFactor, aspectRatio);
 }
 
 bool HbIconEngine::removeBadge(const HbIcon &badge)

@@ -43,12 +43,20 @@ hbAddLibrary(hbutils/HbUtils)
 # Input
 HEADERS += themechangerdefs.h
 HEADERS += themeselectionlist.h
+HEADERS += settingsview.h
+HEADERS += resourceview.h
 SOURCES += themeselectionlist.cpp
 SOURCES += themechangermain.cpp
+SOURCES += settingsview.cpp
+SOURCES += resourceview.cpp
 
 symbian {
     TARGET.CAPABILITY += WriteDeviceData
     SKINICON = qtg_large_personalization
+    
+    myrssrules = \
+    "hidden = KAppIsHidden;"
+    RSS_RULES += myrssrules
 }
 
 # installation

@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<g fill-opacity="0.5" stroke-opacity="0.5">
-<rect fill="none" height="30" width="30"/>
-</g>
-<path d="M15,2C7.82,2,2,7.82,2,15s5.82,13,13,13s13-5.82,13-13S22.18,2,15,2z M15,25C9.486,25,5,20.514,5,15S9.486,5,15,5  s10,4.486,10,10S20.514,25,15,25z"/>
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="-2 -2 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<path d="M13,0C5.82,0,0,5.82,0,13s5.82,13,13,13s13-5.82,13-13S20.18,0,13,0z M13,23C7.486,23,3,18.514,3,13S7.486,3,13,3  s10,4.486,10,10S18.514,23,13,23z"/>
 </svg>

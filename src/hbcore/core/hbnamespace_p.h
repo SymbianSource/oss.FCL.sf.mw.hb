@@ -103,8 +103,8 @@ enum HbZValues {
     RootItemZValue,                  /* Z value of the root parent item */
     BackgroundZValue,                /* Z value of the background layer. */
     ContentZValue,                   /* Z value of the content layer. */
-    TitleBarZValue,                  /* Z value of the titlebar. */
     StatusBarZValue,                 /* Z value of the statusbar. */
+    TitleBarZValue,                  /* Z value of the titlebar. */
     ToolBarZValue,                   /* Z value of the toolbar. */
     DockWidgetZValue,                /* Z value of the dockwidget item. */
     TitlePaneZValue,                 /* Z value of the title pane. */
@@ -148,6 +148,27 @@ static const qreal PopupBackgroundItemZValueUnit         = PopupWithSamePriority
 static const qreal FadingItemZValueUnit                  = PopupBackgroundItemZValueUnit / 2;
 static const qreal VKBValueUnit                          = FadingItemZValueUnit / 2;
 static const qreal SelectionControlHandlesValueUnit      = VKBValueUnit / 2;
+
+
+    // Dynamic properties to control gestures:
+
+    // Tap gesture threshold rect can be defined as restricted to default radius.
+    // Used in case the widget is inside scroll area which is scrollable to given direction.
+    // Both take boolean value.
+    static const QLatin1String VerticallyRestricted("verticallyRestricted");
+    static const QLatin1String HorizontallyRestricted("horizontallyRestricted");
+
+    // Widget can give custom threshold for tap gesture as rect or radius.
+    // Default tap radius is added to thresholdRect to ensure succefull taps.
+    // Radius is taken in int and threshold rect is taken in QRect.
+    static const QLatin1String TapRadius("tapRadius");
+    static const QLatin1String ThresholdRect("thresholdRect");
+
+    // set Qt::GestureType to scene to have a gesture to suppress other gestures.
+    // It's used to have the pan gesture to wait for tap gesture to cancel before
+    // it's allowed to start. Used in combination with vertically and horizontally
+    // restricted dynamic properties.
+    static const QLatin1String OverridingGesture("overridingGesture");
 
 }
 

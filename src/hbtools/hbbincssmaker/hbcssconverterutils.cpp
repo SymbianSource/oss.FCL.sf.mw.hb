@@ -24,9 +24,13 @@
 ****************************************************************************/
 
 #include <QMap>
+#include <QHash>
+#include "hbstring_p.h"
 #include "hbcssconverterutils_p.h"
 #include "hbsharedmemorymanager_p.h"
 #include "hbsharedmemoryallocators_p.h"
+
+static QHash<QString, HbString> strMap;
 
 // Global list that stores pointers to the member variables where shared container instances
 // store offsets returned my memory allocator.
@@ -139,6 +143,7 @@ int HbCssConverterUtils::defragmentChunk()
 {
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
     HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
+    strMap.clear();
 
     // Register shared cache pointer in chunk header
     //as shared cache may also be moved in defragmentation
@@ -207,3 +212,21 @@ int HbCssConverterUtils::defragmentChunk()
     // Return the next free address in the chunk
     return cssBinaryOffset + newCurrentOffset;
 }
+
+void HbCssConverterUtils::addSharedStringData(const QString &str, const HbString &hbstr)
+{
+    if (!strMap.contains(str)) {
+        strMap.insert(str, hbstr);
+    }
+}
+
+HbString* HbCssConverterUtils::sharedStringData(const QString &str)
+{
+    HbString *ret = 0;
+    QHash<QString, HbString>::iterator i = strMap.find(str);
+    if (i != strMap.end()) {
+        ret = &i.value();
+    }
+    return ret;
+}
+

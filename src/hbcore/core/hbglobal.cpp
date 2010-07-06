@@ -37,6 +37,32 @@
 */
 
 /*!
+    \macro HB_VERSION
+    \relates <HbGlobal>
+
+    This macro expands a numeric value of the form 0xMMNNPP (MM =
+    major, NN = minor, PP = patch) that specifies Hb's version
+    number. For example, if you compile your application against Hb
+    1.2.3, the HB_VERSION macro will expand to 0x010203.
+
+    You can use HB_VERSION to use the latest Hb features where
+    available.
+
+    \sa hbVersion(), HB_VERSION_STR
+*/
+
+/*!
+    \macro HB_VERSION_STR
+    \relates <HbGlobal>
+
+    This macro expands to a string that specifies Hb's version number
+    (for example, "1.2.3"). This is the version against which the
+    application is compiled.
+
+    \sa hbVersionString(), HB_VERSION
+*/
+
+/*!
     \macro HB_CORE_EXPORT
     \relates <HbGlobal>
 
@@ -60,8 +86,45 @@
 */
 
 /*!
-    Returns the translation text.
-    \sa QCoreApplication::translate
+    \relates <HbGlobal>
+
+    Returns the version number of Hb at run-time (for example, 0x010203).
+    This may be a different version than the version the application was
+    compiled against.
+
+    \sa HB_VERSION, hbVersionString()
+*/
+uint hbVersion()
+{
+    return HB_VERSION;
+}
+
+/*!
+    \relates <HbGlobal>
+
+    Returns the version number of Hb at run-time as a string (for
+    example, "1.2.3"). This may be a different version than the
+    version the application was compiled against.
+
+    \sa HB_VERSION_STR, hbVersion()
+*/
+const char *hbVersionString()
+{
+    return HB_VERSION_STR;
+}
+
+/*!
+    Returns the translation text from QM file.
+    
+    \param id Text ID identifier for translation. Example: txt_common_button_back
+    \param n Defines numeric argument in case of plural strings.
+    Note! As second parameter is only for plural strings in normal cases you shouldn't use it.
+    For non-plural strings use QString::arg() function.
+    Example: QString text = hbTrId("txt_with_value").arg(value);
+    
+    \return Translation if operation was successful, otherwise given \a id.
+
+    \sa QCoreApplication::translate, QString::arg
 */
 QString hbTrId(const char *id, int n)
 {

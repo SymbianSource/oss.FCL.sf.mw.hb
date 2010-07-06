@@ -217,15 +217,6 @@ HbXmlLoaderBaseActions::ObjectMapItem HbXmlLoaderBaseActions::lookUp(const QStri
     return current;
 }
 
-QGraphicsLayoutItem *HbXmlLoaderBaseActions::findSpacerItemFromStackTop() const
-{
-    QGraphicsLayoutItem *current = 0;
-    if ( mStack.at(mStack.size()-1).type == HbXml::SPACERITEM ) {
-        current = static_cast<QGraphicsLayoutItem*>(mStack.at(mStack.size()-1).data);
-    }
-    return current;
-}
-
 QObject *HbXmlLoaderBaseActions::findFromStack(bool *isWidgetElement) const
 {
     QObject *current = 0;

@@ -45,6 +45,7 @@ class HbDeviceMessageBoxWidget :
     Q_PROPERTY(QString acceptAction READ acceptAction WRITE setAcceptAction)
     Q_PROPERTY(QString rejectAction READ rejectAction WRITE setRejectAction)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
+    Q_PROPERTY(HbMessageBox::StandardButtons standardButtons READ standardButtons WRITE setStandardButtons)
 
 public:
     HbDeviceMessageBoxWidget(HbMessageBox::MessageBoxType type, const QVariantMap &parameters);
@@ -74,6 +75,9 @@ private:
     bool checkProperties(const QVariantMap &parameters);
     void setProperties(const QVariantMap &parameters);
     void resetProperties();
+    void initActions();
+    void deleteActions();
+    void connectToActions();
     QString iconName() const;
     void setIconName(QString &iconName);
     QString acceptAction() const;
@@ -84,6 +88,8 @@ private:
     void showEvent(QShowEvent *event);
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;
+    void setStandardButtons(HbMessageBox::StandardButtons buttons);
+    HbMessageBox::StandardButtons standardButtons() const;
 
     static void parseActionData(QString &data);
     QString actionData(ActionIndex index) const;

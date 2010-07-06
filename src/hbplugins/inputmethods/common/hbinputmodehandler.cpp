@@ -73,34 +73,33 @@ int HbInputModeHandlerPrivate::cursorPosition()
     return -1;
 }
 
-void HbInputModeHandlerPrivate::getAndFilterCharactersBoundToKey(QStringList &spellList, Qt::Key key)
+void HbInputModeHandlerPrivate::getAndFilterCharactersBoundToKey(QString &allowedChars, HbKeyboardType type, \
+                                                                 int key, HbModifiers modifiers)
 {
-    HbInputFocusObject *focusObject = mInputMethod->focusObject();
-
-    spellList.clear();
-    // Get the functionized character
-    const HbMappedKey* mappedKey = mKeymap->keyForKeycode(mInputMethod->inputState().keyboard(), key);
+    allowedChars.clear();
+    HbInputLanguage language = mInputMethod->inputState().language();
+	
+    if (!mKeymap) {
+        mKeymap = HbKeymapFactory::instance()->keymap(language);
+    }
+    const HbMappedKey* mappedKey = mKeymap->keyForKeycode(type, key);
     if (!mappedKey) {
         return;
     }
-
-    if (!mappedKey->characters(HbModifierFnPressed).isNull() && focusObject && focusObject->characterAllowedInEditor(mappedKey->characters(HbModifierFnPressed).at(0))) {
-        spellList.append(mappedKey->characters(HbModifierFnPressed).at(0));
-    }
-
-    // Get the characters mapped to the key.
-    HbInputState inputState = mInputMethod->inputState();
-    HbTextCase textCase = inputState.textCase();
-    HbModifiers modifiers = HbModifierNone;
-	
-    if (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic) {
-        modifiers |= HbModifierShiftPressed;
-    }
-    for (int i=0; i < mappedKey->characters(modifiers).length(); i++) {
-        if (focusObject && focusObject->characterAllowedInEditor(mappedKey->characters(modifiers).at(i))) {
-            spellList.append(mappedKey->characters(modifiers).at(i));
-        }
-    }
+    QString chars = mappedKey->characters(modifiers);
+	// check whether current input language supports native digits. if yes, replace latin digits with native digits    
+    for (int i = 0; i < chars.length(); i++) {
+        if (chars.at(i) >= '0' && chars.at(i) <= '9') {
+            chars = chars.replace(chars.at(i), HbInputUtils::findFirstNumberCharacterBoundToKey(mappedKey,
+				language, HbInputUtils::inputDigitType(language)));
+        }		
+    }		
+    // We need to see which of the characters in keyData are allowed to the editor.
+    // this looks like expensive operation, need to find out a better way/place to do it.
+    HbInputFocusObject *focusedObject = mInputMethod->focusObject();
+    if(focusedObject) {
+        focusedObject->filterStringWithEditorFilter(chars,allowedChars);
+    } 
 }
 
 
@@ -293,30 +292,10 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key, HbKeyboardTy
     if (type != HbKeyboardSctPortrait && (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic)) {
         modifiers |= HbModifierShiftPressed;
     }
-    HbInputLanguage language = d->mInputMethod->inputState().language();
-	
-    if (!d->mKeymap) {
-        d->mKeymap = HbKeymapFactory::instance()->keymap(language);
-    }
-    const HbMappedKey* mappedKey = d->mKeymap->keyForKeycode(type, key);
-    if (!mappedKey) {
-        return 0;
-    }
-    QString chars = mappedKey->characters(modifiers);
-	// check whether current input language supports native digits. if yes, replace latin digits with native digits    
-    for (int i = 0; i < chars.length(); i++) {
-        if (chars.at(i) >= '0' && chars.at(i) <= '9') {
-            chars = chars.replace(chars.at(i), HbInputUtils::findFirstNumberCharacterBoundToKey(mappedKey,
-				language, HbInputUtils::inputDigitType(language)));
-        }		
-    }		
-    // We need to see which of the characters in keyData are allowed to the editor.
-    // this looks like expensive operation, need to find out a better way/place to do it.
-    QString allowedChars = chars;
-    HbInputFocusObject *focusedObject = d->mInputMethod->focusObject();
-    if(focusedObject) {
-        focusedObject->filterStringWithEditorFilter(chars,allowedChars);
-    } 
+
+    QString allowedChars;
+    getAndFilterCharactersBoundToKey(allowedChars,type,key,modifiers);
+
     QChar character = 0;
     if (!allowedChars.isNull()) {
         if (index >= allowedChars.length() || index < 0) {
@@ -324,6 +303,9 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key, HbKeyboardTy
         }
         character = allowedChars.at(index);
         index++;
+        if (index >= allowedChars.length() || index < 0) {
+            index = 0;
+        }
     }
     return character;
 }
@@ -331,10 +313,11 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key, HbKeyboardTy
 /*!
     This function gets all the characters bound to a key and filters those character based on the editor.
 */
-void HbInputModeHandler::getAndFilterCharactersBoundToKey(QStringList &spellList, Qt::Key key)
+void HbInputModeHandler::getAndFilterCharactersBoundToKey(QString &allowedChars, HbKeyboardType type, \
+                                                          int key, HbModifiers modifiers)
 {
     Q_D(HbInputModeHandler);
-    d->getAndFilterCharactersBoundToKey(spellList, key);
+    d->getAndFilterCharactersBoundToKey(allowedChars,type,key,modifiers);
 }
 
 /*!

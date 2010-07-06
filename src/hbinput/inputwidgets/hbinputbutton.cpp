@@ -75,7 +75,8 @@ HbInputButtonPrivate::HbInputButtonPrivate(int keyCode, const QPoint &position, 
         mIcons.append(HbIcon());
     }
 
-    if (keyCode != HbInputButton::ButtonKeyCodeCharacter) {
+    if (keyCode != HbInputButton::ButtonKeyCodeCharacter &&
+        keyCode != HbInputButton::ButtonKeyCodeSpace) {
         mType = HbInputButton::ButtonTypeFunction;
     }
 
@@ -125,22 +126,30 @@ HbInputButtonPrivate::HbInputButtonPrivate(HbInputButton::HbInputButtonType type
 
 void HbInputButtonPrivate::setDefaultGraphics(int keyCode)
 {
-    if (keyCode == HbInputButton::ButtonKeyCodeDelete) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconDelete));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeShift) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconShift));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeSymbol) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeEnter) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconEnter));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeSpace) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSpace));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeAlphabet) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconAlphabet));
-    } else if (keyCode == HbInputButton::ButtonKeyCodePageChange) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconPageChange));
-    } else if (keyCode == HbInputButton::ButtonKeyCodeSmiley) {
-        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSmiley));
+    switch(keyCode) {
+        case HbInputButton::ButtonKeyCodeDelete:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconDelete));
+            break;
+        case HbInputButton::ButtonKeyCodeShift:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconShift));
+            break;
+        case HbInputButton::ButtonKeyCodeSymbol:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
+            break;
+        case HbInputButton::ButtonKeyCodeEnter:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconEnter));
+            break;
+        case HbInputButton::ButtonKeyCodeSpace:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSpace));
+            break;
+        case HbInputButton::ButtonKeyCodeAlphabet:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
+            break;
+        case HbInputButton::ButtonKeyCodeSmiley:
+            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSmiley));
+            break;
+        default:
+            break;
     }
 }
 
@@ -176,7 +185,7 @@ HbInputButton::~HbInputButton()
 }
 
 /*!
-Updates buttons type.
+Updates button's type.
 
 \sa type
 */
@@ -188,7 +197,7 @@ void HbInputButton::setType(HbInputButtonType type)
 }
 
 /*!
-Returns buttons type.
+Returns button's type.
 
 \sa setType
 */
@@ -200,7 +209,7 @@ HbInputButton::HbInputButtonType HbInputButton::type() const
 }
 
 /*!
-Updates buttons state.
+Updates button's state.
 
 \sa state
 */
@@ -212,7 +221,7 @@ void HbInputButton::setState(HbInputButtonState state)
 }
 
 /*!
-Returns buttons state.
+Returns button's state.
 
 \sa setState
 */
@@ -224,7 +233,7 @@ HbInputButton::HbInputButtonState HbInputButton::state() const
 }
 
 /*!
-Updates buttons position.
+Updates button's position.
 
 position is button's position in grid cell units.
 
@@ -238,7 +247,7 @@ void HbInputButton::setPosition(const QPoint &position)
 }
 
 /*!
-Returns buttons position.
+Returns button's position.
 
 \sa setPosition
 */
@@ -250,7 +259,7 @@ QPoint HbInputButton::position() const
 }
 
 /*!
-Updates buttons size.
+Updates button's size.
 
 size is button's size in grid cell units.
 
@@ -264,7 +273,7 @@ void HbInputButton::setSize(const QSize &size)
 }
 
 /*!
-Returns buttons size.
+Returns button's size.
 
 \sa setSize
 */
@@ -276,7 +285,7 @@ QSize HbInputButton::size() const
 }
 
 /*!
-Updates buttons key code.
+Updates button's key code.
 
 \sa keyCode
 */
@@ -288,7 +297,7 @@ void HbInputButton::setKeyCode(int keyCode)
 }
 
 /*!
-Returns buttons key code.
+Returns button's key code.
 
 \sa setKeyCode
 */
@@ -300,7 +309,7 @@ int HbInputButton::keyCode() const
 }
 
 /*!
-Updates buttons auto repeat status.
+Updates button's auto repeat status.
 
 \sa autoRepeat
 */
@@ -312,7 +321,7 @@ void HbInputButton::setAutoRepeat(bool autoRepeat)
 }
 
 /*!
-Returns buttons auto repeat status.
+Returns button's auto repeat status.
 
 \sa setAutoRepeat
 */
@@ -340,11 +349,11 @@ void HbInputButton::setText(const QString &text, HbInputButtonTextIndex index)
 }
 
 /*!
-Updates all button texts.
+Updates all button's texts.
 Button can have three different texts. Text position and size
-will depend of other buttons texts and icons. If list contains
+will depend on other buttons texts and icons. If list contains
 more strings, then the rest will be ignored. Icon with same index
-than text will override the text.
+as text will override the text.
 
 \sa text
 \sa texts
@@ -380,7 +389,7 @@ QString HbInputButton::text(HbInputButtonTextIndex index) const
 }
 
 /*!
-Returns all button texts.
+Returns all button's texts.
 
 \sa setText
 \sa setTexts
@@ -435,9 +444,9 @@ void HbInputButton::setIcon(const HbIcon &icon, HbInputButtonIconIndex index)
 /*!
 Updates all button icons.
 Button can have three different icons. Icon position
-will depend of other buttons icons and texts. If list contains
+will depend on other buttons icons and texts. If list contains
 more icons, then the rest will be ignored. Icon with same index
-than text will override the text.
+as text will override the text.
 
 \sa icon
 \sa icons
@@ -472,7 +481,7 @@ HbIcon HbInputButton::icon(HbInputButtonIconIndex index) const
 }
 
 /*!
-Returns all button icon.
+Returns all button's icons.
 
 \sa setIcon
 \sa setIcons
@@ -497,7 +506,7 @@ void HbInputButton::setBoundingRect(const QRectF &rect)
 }
 
 /*!
-Returns buttons bounding rectangle.
+Returns button's bounding rectangle.
 
 \sa setBoundingRect
 */

@@ -336,7 +336,7 @@ bool HbProgressBar::invertedAppearance() const
 
 /*!
     @beta
-    Sets the inverted appearence. If this is true progress grows from right to 
+    Sets the inverted Appearance. If this is true progress grows from right to 
     left otherwise left to right.
 
     \param inverted true or false.

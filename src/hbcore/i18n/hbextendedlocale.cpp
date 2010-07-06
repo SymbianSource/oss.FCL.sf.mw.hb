@@ -1067,7 +1067,7 @@ QString HbExtendedLocale::formatCurrency( const qint64 amount )
 
     HBufC *bufPtr = HBufC::New(bufferMinSize);
 
-    if ( bufPtr == NULL ) {
+    if ( !bufPtr ) {
         return QString();
     }
 
@@ -1090,7 +1090,7 @@ QString HbExtendedLocale::formatCurrency( const qint64 amount )
 
         HBufC *newBufPtr = bufPtr->ReAlloc(fSize);
 
-        if ( newBufPtr == NULL ) {
+        if ( !newBufPtr ) {
             delete bufPtr;
             return QString();
         }
@@ -1102,8 +1102,10 @@ QString HbExtendedLocale::formatCurrency( const qint64 amount )
         _symbianLocale.LoadSystemSettings();
         _symbianLocale.GetLocale()->FormatCurrency(modifiableBufPtr, overflow, TInt64(amount));
      }
-
-    return QString::fromUtf16(bufPtr->Ptr(), bufPtr->Length());
+    QString value = QString::fromUtf16(bufPtr->Ptr(), bufPtr->Length());
+    delete bufPtr;
+    bufPtr = 0;
+    return value;
 
 #else
     return QString::number(amount);
@@ -1195,7 +1197,9 @@ bool HbExtendedLocale::setZeroDigit( const DigitType type )
     Mapping from Symbian to ISO locale
 */
 struct symbianToISO {
+    // enumeration of symbian language
     int symbian_language;
+    // string of ISO value 
     char iso_name[8];
 };
 
@@ -1204,75 +1208,170 @@ struct symbianToISO {
     Mapping from Symbian to ISO locale
 */
 static const symbianToISO symbian_to_iso_list[] = {
-    { ELangEnglish,             "en_GB" },
-    { ELangFrench,              "fr_FR" },
-    { ELangGerman,              "de_DE" },
-    { ELangSpanish,             "es_ES" },
-    { ELangItalian,             "it_IT" },
-    { ELangSwedish,             "sv_SE" },
-    { ELangDanish,              "da_DK" },
-    { ELangNorwegian,           "no_NO" },
-    { ELangFinnish,             "fi_FI" },
-    { ELangAmerican,            "en_US" },
-    { ELangPortuguese,          "pt_PT" },
-    { ELangTurkish,             "tr_TR" },
-    { ELangIcelandic,           "is_IS" },
-    { ELangRussian,             "ru_RU" },
-    { ELangHungarian,           "hu_HU" },
-    { ELangDutch,               "nl_NL" },
-    { ELangCzech,               "cs_CZ" },
-    { ELangSlovak,              "sk_SK" },
-    { ELangPolish,              "pl_PL" },
-    { ELangSlovenian,           "sl_SI" },
-    { ELangTaiwanChinese,       "zh_TW" },
-    { ELangHongKongChinese,     "zh_HK" },
-    { ELangPrcChinese,          "zh_CN" },
-    { ELangJapanese,            "ja_JP" },
-    { ELangThai,                "th_TH" },
-    { ELangArabic,              "ar_AE" },
-    { ELangTagalog,             "tl_PH" },
-    { ELangBengali,             "bn_IN" }, // Bangladesh/India
-    { ELangBulgarian,           "bg_BG" },
-    { ELangCatalan,             "ca_ES" },
-    { ELangCroatian,            "hr_HR" },
-    { ELangEstonian,            "et_EE" },
-    { ELangFarsi,               "fa_IR" },
-    { ELangCanadianFrench,      "fr_CA" },
-    { ELangGreek,               "el_GR" },
-    { ELangGujarati,            "gu_IN" },
-    { ELangHebrew,              "he_IL" },
-    { ELangHindi,               "hi_IN" },
-    { ELangIndonesian,          "id_ID" },
-    { ELangKannada,             "kn_IN" },
-    { ELangKorean,              "ko_KR" },
-    { ELangLatvian,             "lv_LV" },
-    { ELangLithuanian,          "lt_LT" },
-    { ELangMalay,               "ms_MY" },
-    { ELangMalayalam,           "ml_IN" },
-    { ELangMarathi,             "mr_IN" },
-    { ELangBrazilianPortuguese, "pt_BR" },
-    { ELangRomanian,            "ro_RO" },
-    { ELangSerbian,             "sr_YU" },
-    { ELangLatinAmericanSpanish, "es_MX" },
-    { ELangTamil,               "ta_IN" },
-    { ELangTelugu,              "te_IN" },
-    { ELangUkrainian,           "uk_UA" },
-    { ELangUrdu,                "ur_PK" }, // India/Pakistan
-    { ELangVietnamese,          "vi_VN" },
+        { ELangEnglish,             "en_GB" },
+        { ELangFrench,              "fr_FR" },
+        { ELangGerman,              "de_DE" },
+        { ELangSpanish,             "es_ES" },
+        { ELangItalian,             "it_IT" },
+        { ELangSwedish,             "sv_SE" },
+        { ELangDanish,              "da_DK" },
+        { ELangNorwegian,           "nb_NO" },
+        { ELangFinnish,             "fi_FI" },
+        { ELangAmerican,            "en_US" },
+        { ELangSwissFrench,         "fr_CH" },
+        { ELangSwissGerman,         "de_CH" },
+        { ELangPortuguese,          "pt_PT" },
+        { ELangTurkish,             "tr_TR" },
+        { ELangIcelandic,           "is_IS" },
+        { ELangRussian,             "ru_RU" },
+        { ELangHungarian,           "hu_HU" },
+        { ELangDutch,               "nl_NL" },
+        { ELangBelgianFlemish,      "nl_BE" },
+        { ELangAustralian,          "en_AU" },
+        { ELangBelgianFrench,       "fr_AU" },
+        { ELangAustrian,            "de_AT" },
+        { ELangNewZealand,          "en_NZ" },
+        { ELangInternationalFrench, "fr_ZZ" },
+        { ELangCzech,               "cs_CZ" },
+        { ELangSlovak,              "sk_SK" },
+        { ELangPolish,              "pl_PL" },
+        { ELangSlovenian,           "sl_SI" },
+        { ELangTaiwanChinese,       "zh_TW" },
+        { ELangHongKongChinese,     "zh_HK" },
+        { ELangPrcChinese,          "zh_CN" },
+        { ELangJapanese,            "ja_JP" },
+        { ELangThai,                "th_TH" },
+        { ELangAfrikaans,           "af_ZA" },
+        { ELangAlbanian,            "sq_AL" },
+        { ELangAmharic,             "am_ET" },
+        { ELangArabic,              "ar_AE" },
+        { ELangArmenian,            "hy_AM" },
+        { ELangTagalog,             "tl_PH" },
+        { ELangBelarussian,         "be_BY" },
+        { ELangBengali,             "bn_IN" },
+        { ELangBulgarian,           "bg_BG" },
+        { ELangBurmese,             "my_MM" },
+        { ELangCatalan,             "ca_ES" },
+        { ELangCroatian,            "hr_HR" },
+        { ELangCanadianEnglish,     "en_CA" },
+        { ELangInternationalEnglish,"en_ZZ" },
+        { ELangSouthAfricanEnglish, "en_ZA" },
+        { ELangEstonian,            "et_EE" },
+        { ELangFarsi,               "fa_IR" },
+        { ELangCanadianFrench,      "fr_CA" },
+        { ELangScotsGaelic,         "gd_GB" },
+        { ELangGeorgian,            "ka_GE" },
+        { ELangGreek,               "el_GR" },
+        { ELangCyprusGreek,         "el_CY" },
+        { ELangGujarati,            "gu_IN" },
+        { ELangHebrew,              "he_IL" },
+        { ELangHindi,               "hi_IN" },
+        { ELangIndonesian,          "id_ID" },
+        { ELangIrish,               "ga_IE" },
+        { ELangSwissItalian,        "it_CH" },
+        { ELangKannada,             "kn_IN" },
+        { ELangKazakh,              "kk_KZ" },
+        { ELangKhmer,               "km_KH" },
+        { ELangKorean,              "ko_KR" },
+        { ELangLao,                 "lo_LA" },
+        { ELangLatvian,             "lv_LV" },
+        { ELangLithuanian,          "lt_LT" },
+        { ELangMacedonian,          "mk_MK" },
+        { ELangMalay,               "ms_MY" },
+        { ELangMalayalam,           "ml_IN" },
+        { ELangMarathi,             "mr_IN" },
+        { ELangMoldavian,           "ro_MD" },
+        { ELangMongolian,           "mn_MN" },
+        { ELangNorwegianNynorsk,    "nn_NO" },
+        { ELangBrazilianPortuguese, "pt_BR" },
+        { ELangPunjabi,             "pa_IN" },
+        { ELangRomanian,            "ro_RO" },
+        { ELangSerbian,             "sr_YU" },
+        { ELangSinhalese,           "si_LK" },
+        { ELangSomali,              "so_SO" },
+        { ELangInternationalSpanish,"es_ZZ" },
+        { ELangLatinAmericanSpanish,"es_419" },
+        { ELangSwahili,             "sw_KE" },
+        { ELangFinlandSwedish,      "sv_FI" },
+        { ELangTamil,               "ta_IN" },
+        { ELangTelugu,              "te_IN" },
+        { ELangTibetan,             "bo_CN" },
+        { ELangTigrinya,            "ti_ER" },
+        { ELangCyprusTurkish,       "tr_CY" },
+        { ELangTurkmen,             "tk_TM" },
+        { ELangUkrainian,           "uk_UA" },
+        { ELangUrdu,                "ur_PK" },
+        { ELangVietnamese,          "vi_VN" },
+        { ELangWelsh,               "cy_GB" },
+        { ELangZulu,                "zu_ZA" },
+        { ELangManufacturerEnglish, "en_XZ" },
+        { ELangSouthSotho,          "st_LS" },
 #ifdef __E32LANG_H__
 // 5.0
-    { ELangBasque,              "eu_ES" },
-    { ELangGalician,            "gl_ES" },
+        { ELangBasque,              "eu_ES" },
+        { ELangGalician,            "gl_ES" },
 #endif
-    { ELangEnglish_Apac,        "en_APAC" },
-    { ELangEnglish_Taiwan,      "en_TW" },
-    { ELangEnglish_HongKong,    "en_HK" },
-    { ELangEnglish_Prc,         "en_CN" },
-    { ELangEnglish_Japan,       "en_JP"},
-    { ELangEnglish_Thailand,    "en_TH" },
-    { ELangEnglish_India,       "en_IN" },
-    { ELangMalay_Apac,          "ms_APAC" },
-    { ELangIndonesian_Apac,     "id_APAC" }
+        { ELangJavanese,            "jv_ID" },	
+        { ELangMaithili,            "bh_IN" },
+        { ELangAzerbaijani_Latin,   "az_AZ" }, 
+        { ELangOriya,               "or_IN" },
+        { ELangBhojpuri,            "bh_IN" },
+        { ELangSundanese,           "su_ID" },
+        { ELangKurdish_Latin,       "ku_TR" },
+        { ELangKurdish_Arabic,      "ku_IQ" },
+        { ELangPashto,              "ps_AF" },
+        { ELangHausa,               "ha_NG" }, 
+        { ELangOromo,               "om_ET" },
+        { ELangUzbek_Latin,         "uz_UZ" },
+        { ELangSindhi_Arabic,       "sd_PK" },
+        { ELangSindhi_Devanagari,   "sd_IN" },
+        { ELangYoruba,              "yo_NG" },
+        { ELangIgbo,                "ig_NG" },
+        { ELangMalagasy,            "mg_MG" },
+        { ELangNepali,              "ne_NP" },
+        { ELangAssamese,            "as_IN" },
+        { ELangShona,               "sn_ZW" },
+        { ELangZhuang,              "za_CN" },
+        { ELangEnglish_Taiwan,      "en_TW" },
+        { ELangEnglish_HongKong,    "en_HK" },
+        { ELangEnglish_Prc,         "en_CN" },
+        { ELangEnglish_Japan,       "en_JP" },
+        { ELangEnglish_Thailand,    "en_TH" },
+        { ELangFulfulde,            "ff_NE" },
+        { ELangBolivianQuechua,     "qu_BO" },
+        { ELangPeruQuechua,         "qu_PE" },
+        { ELangEcuadorQuechua,      "qu_EC" },
+        { ELangTajik_Cyrillic,      "tg_TJ" },
+        { ELangNyanja,              "ny_MW" },
+        { ELangHaitianCreole,       "ht_HT" },
+        { ELangKoongo,              "kg_CG" },
+        { ELangAkan,                "ak_GH" },
+        { ELangYi,                  "ii_CN" },
+        { ELangUyghur,              "ug_CN" },
+        { ELangRwanda,              "rw_RW" },
+        { ELangXhosa,               "xh_ZA" },
+        { ELangGikuyu,              "ki_KE" },
+        { ELangRundi,               "rn_BI" },
+        { ELangTswana,              "tn_BW" },
+        { ELangKanuri,              "kr_NE" },
+        { ELangKashmiri_Devanagari, "ks_ZZ" },
+        { ELangKashmiri_PersoArabic,"ks_XZ" },
+        { ELangWolof,               "wo_SN" },
+        { ELangTsonga,              "ts_ZA" },
+        { ELangYiddish,             "yi_IL" },
+        { ELangKirghiz,             "ky_KG" },
+        { ELangGanda,               "lg_UG" },
+        { ELangBambara,             "bm_ML" },
+        { ELangCentralAymara,       "ay_BO" },
+        { ELangLingala,             "ln_CG" },
+        { ELangBashkir,             "ba_RU" },
+        { ELangChuvash,             "cv_RU" },
+        { ELangSwati,               "ss_SZ" },
+        { ELangTatar,               "tt_RU" },
+        { ELangSouthernNdebele,     "nr_ZA" },
+        { ELangSardinian,           "sc_IT" },
+        { ELangWalloon,             "wa_BE" },
+        { ELangEnglish_India,       "en_IN" }
 };
 #endif
 
@@ -1297,8 +1396,7 @@ QString HbExtendedLocale::symbianLangToISO( const int code )
     int cmp = code - symbian_to_iso_list[0].symbian_language;
     if (cmp < 0) {
         return QString();
-    }
-    else {
+    } else {
         if (cmp == 0) {
             return symbian_to_iso_list[0].iso_name;
         }
@@ -1627,6 +1725,9 @@ QString HbExtendedLocale::symbianDateTimeToQt( const QString &sys_fmt )
                 case 'A': {
                     // quickie to get capitalization, can't use s60 string as is because Qt 'hh' format's am/pm logic
                     TAmPmName ampm = TAmPmName();
+                    if ( ampm.Size() == 0 ) {
+                        return QString();
+                    }
                     TChar first(ampm[0]);
                     QString qtampm = QString::fromLatin1(first.IsUpper() ? "AP" : "ap");
 
@@ -1719,7 +1820,12 @@ QString HbExtendedLocale::symbianDateTimeToQt( const QString &sys_fmt )
                     if ( n_mode ) {
                         offset += 10;
                     }
-
+                    
+                    // 'offset + (c.digitValue()-1' cannot be bigger than us_locale_dep, eu_locale_dep or jp_locale_dep table
+                    if ( (offset + (c.digitValue()-1)) > 19 ) {
+                        return QString();
+                    }
+                    
                     result += QLatin1String(locale_dep[offset + (c.digitValue()-1)]);
                     }
                     break;
@@ -1947,6 +2053,13 @@ bool HbExtendedLocale::homeHasDaylightSavingOn() const
     return false;
 #endif    
 }
+
+/*! 
+    \enum HbExtendedLocale::DaylightSavingZone
+     Enumeration for "daylight saving time" settings.
+
+    \sa setHomeDaylightSavingZone(), homeHasDaylightSavingOn()
+ */
 
 /*! 
     Returns the daylight saving zone in which the home city is located.

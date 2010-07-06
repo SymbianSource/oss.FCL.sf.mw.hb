@@ -187,7 +187,8 @@ namespace Hb
     enum WidgetAttribute {
         InteractionDisabled   = 0x00000001,
         InsidePopup = 0x00000002,
-        InputMethodNeutral = 0x00000004
+        InputMethodNeutral = 0x00000004,
+        Widget = 0x00000008
     };
 
     Q_DECLARE_FLAGS(WidgetAttributes, WidgetAttribute)
@@ -323,7 +324,8 @@ namespace Hb
         ModifierSliderElement = 0x2,
         ModifierExpandedItem = 0x4,
         ModifierCollapsedItem = 0x8,
-        ModifierScrolling = 0x10
+        ModifierScrolling = 0x10,
+        ModifierInputFunctionButton = 0x20
     };
 
     Q_DECLARE_FLAGS(InteractionModifiers, InteractionModifier)

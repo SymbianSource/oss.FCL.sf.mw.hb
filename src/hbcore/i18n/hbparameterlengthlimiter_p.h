@@ -25,7 +25,7 @@
 
 
 #ifndef HBPARAMETERLENGTHLIMITER_P_H
-#define HbPARAMETERLENGTHLIMITER_P_H
+#define HBPARAMETERLENGTHLIMITER_P_H
 
 #include <QString>
 
@@ -41,4 +41,4 @@ class HB_CORE_PRIVATE_EXPORT HbParameterLengthLimiterPrivate
         QString str;
 };
 
-#endif // HbParameterLengthLimiter_H
+#endif // HBPARAMETERLENGTHLIMITER_P_H

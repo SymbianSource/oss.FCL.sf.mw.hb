@@ -127,7 +127,10 @@ protected:
     virtual void focusOutEvent(QFocusEvent *event);
     virtual bool scrollByAmount(const QPointF &delta);
     virtual void polish(HbStyleParameters &params);
+    virtual void timerEvent(QTimerEvent *event);
     virtual bool eventFilter(QObject *obj, QEvent *event);
+    virtual void connectNotify(const char *signal);
+    virtual void disconnectNotify(const char *signal);
 #ifdef HB_GESTURE_FW
     virtual void gestureEvent(QGestureEvent *event);    
 #endif
@@ -148,8 +151,6 @@ protected slots:
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbScrollArea)
-    Q_PRIVATE_SLOT(d_func(), void _q_animateScrollTimeout())
-    Q_PRIVATE_SLOT(d_func(), void _q_hideScrollBars())
     Q_PRIVATE_SLOT(d_func(), void _q_thumbPositionChanged(qreal value, Qt::Orientation orientation))
     Q_PRIVATE_SLOT(d_func(), void _q_groovePressed(qreal value, Qt::Orientation orientation))
     Q_PRIVATE_SLOT(d_func(), void _q_thumbPressed())

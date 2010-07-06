@@ -144,7 +144,7 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleMousePress(
     Q_ASSERT(gesture->priv->mTimerID == 0);
     Q_ASSERT(gestureState == Qt::NoGesture);
 
-    gesture->priv->mTimerID = gesture->startTimer(HOLDTAP_ACTIVATION_USECS);
+    gesture->priv->mTimerID = gesture->startTimer(HbTapAndHoldTriggerTimeout);
     mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
 
     DEBUG() << gesture << QGestureRecognizer::MayBeGesture;
@@ -265,7 +265,8 @@ QGestureRecognizer::Result HbTapAndHoldGestureLogic::handleTimer(
     gesture->priv->mTimerID = 0;
 
     if(gestureState == Qt::NoGesture) {
-        gesture->priv->mTimerID = gesture->startTimer(HOLDTAP_DURATION_USECS);
+        const int remainingTime = HbTapAndHoldTimeout-HbTapAndHoldTriggerTimeout;
+        gesture->priv->mTimerID = gesture->startTimer(remainingTime);
         result |= QGestureRecognizer::TriggerGesture;
     } else if (gestureState ==  Qt::GestureStarted) {
         result |= QGestureRecognizer::FinishGesture;

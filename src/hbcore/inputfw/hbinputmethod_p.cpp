@@ -41,6 +41,7 @@
 #include "hbinpututils.h"
 #include "hbinputstandardfilters.h"
 #include "hbinputmainwindow_p.h"
+#include "hbgraphicsscene.h"
 #include <hbcssinspector_p.h>
 #include <hbsettingswindow_p.h>
 
@@ -542,6 +543,12 @@ void HbInputMethodPrivate::transfer(HbInputMethod *source)
         mInputState = source->d_ptr->mInputState;
 
         // we need to transfer focuswidget from current proxy to the next proxy.
+        // Qt may clear the flag in case the focus widget is scene scene with an editor and
+        // the editor is unfocused. Hb input framework does not lose focus in this way, so
+        // we reset the flag if it is unset.
+        if (source->d_ptr->proxy()->focusWidget() && !source->d_ptr->proxy()->focusWidget()->testAttribute(Qt::WA_InputMethodEnabled)) {
+            source->d_ptr->proxy()->focusWidget()->setAttribute(Qt::WA_InputMethodEnabled);
+        }
         proxy()->QInputContext::setFocusWidget(source->d_ptr->proxy()->focusWidget());
 
         // Set this one active.
@@ -563,6 +570,8 @@ void HbInputMethodPrivate::contextSwitch(HbInputMethod *toBeActive)
     Q_Q(HbInputMethod);
 
     if (q == toBeActive) {
+        // Already same input context, just notify focus received
+        q->focusReceived();
         return;
     }
 
@@ -791,10 +800,9 @@ void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
     }
 }
 
-/// @endcond
-
-/*
-create an instance of HbInputMainWindow which is a transparent window.
+/*!
+\internal
+Create an instance of HbInputMainWindow which is a transparent window.
 */
 void HbInputMethodPrivate::showMainWindow()
 {
@@ -804,7 +812,8 @@ void HbInputMethodPrivate::showMainWindow()
     mInsideVanillaWindow = true;
 }
 
-/*
+/*!
+\internal
  This function checks if focused object is inside a hbmainwindow, if it is inside a HbMainWindow
  then it doesn't do anything. And if it finds that focused object is inside a vanilla window (windw != HbMainWindow)
  then it creates a transparent window.
@@ -855,7 +864,8 @@ void HbInputMethodPrivate::checkAndShowMainWindow()
     }
 }
 
-/*
+/*!
+\internal
 hides HbInputMainWindow.
 */
 void HbInputMethodPrivate::hideMainWindow()
@@ -866,5 +876,28 @@ void HbInputMethodPrivate::hideMainWindow()
         mainWindow->hideInputWindow();
     }
 }
+
+/*!
+\internal
+Returns true if given object lives inside HbGraphicsScene. In that case,
+Qt-level setFocusWidget(0) calls should be ignored because input focusing rules inside
+that scene variant are different.
+*/
+bool HbInputMethodPrivate::ignoreFrameworkFocusRelease(QObject *object) const
+{
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(object);
+    if (graphicsObject) {
+        return (qobject_cast<HbGraphicsScene*>(graphicsObject->scene()) != 0);
+    }
+
+    QWidget *widget = qobject_cast<QWidget*>(object);
+    if (widget && widget->graphicsProxyWidget()) {
+        return (qobject_cast<HbGraphicsScene*>(widget->graphicsProxyWidget()->scene()) != 0);
+    }
+
+    return false;
+}
+
+/// @endcond
 
 // End of file

@@ -324,7 +324,7 @@ int HbStringUtil::compareF( const QString &string1,
  */
 static QChar nativeDigitBase(QChar ch)
 {
-	DigitType d[] = { WesternDigit, ArabicIndicDigit, EasternArabicIndicDigit, DevanagariDigit, ThaiDigit };
+    DigitType d[] = { WesternDigit, ArabicIndicDigit, EasternArabicIndicDigit, DevanagariDigit, ThaiDigit };
     int i = 0;
     int num = sizeof(d)/sizeof(d[0]);
     while(i<num) {
@@ -365,7 +365,7 @@ QString HbStringUtil::convertDigits( const QString str )
 QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitType ) 
 {
     QString convDigit;
-	int length = str.length();
+    int length = str.length();
     for(int i=0; i<length; i++) 
        {
        ushort digit = str[i].unicode();

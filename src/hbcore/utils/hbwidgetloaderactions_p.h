@@ -57,10 +57,20 @@ class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
 
         void setWidget( HbWidget *widget );
 #ifndef HB_BIN_CSS
-        bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
-                                const QString &dst, Hb::Edge dstEdge,
-                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+        bool createAnchorLayout( const QString &widget, bool modify );
+        bool addAnchorLayoutItem(
+            const QString &src,
+            const QString &srcId,
+            Hb::Edge srcEdge, 
+            const QString &dst,
+            const QString &dstId,
+            Hb::Edge dstEdge,
+            const HbXmlLengthValue &minLength,
+            const HbXmlLengthValue &prefLength,
+            const HbXmlLengthValue &maxLength,
+            QSizePolicy::Policy *policy, 
+            HbAnchor::Direction *dir,
+            const QString &anchorId );
 #endif
 
     public:
@@ -76,10 +86,21 @@ class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
     public:
         HbWidgetLoaderMemoryActions();
         virtual ~HbWidgetLoaderMemoryActions();
-        bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
-                                const QString &dst, Hb::Edge dstEdge,
-                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+        
+        bool createAnchorLayout( const QString &widget, bool modify );
+        bool addAnchorLayoutItem(
+            const QString &src,
+            const QString &srcId,
+            Hb::Edge srcEdge, 
+            const QString &dst,
+            const QString &dstId,
+            Hb::Edge dstEdge,
+            const HbXmlLengthValue &minLength,
+            const HbXmlLengthValue &prefLength,
+            const HbXmlLengthValue &maxLength,
+            QSizePolicy::Policy *policy, 
+            HbAnchor::Direction *dir,
+            const QString &anchorId );
 
     public:
         Q_DISABLE_COPY(HbWidgetLoaderMemoryActions)

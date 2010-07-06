@@ -29,6 +29,7 @@
 #include "hbstyleoption_p.h"
 #include "hbtooltip.h"
 #include "hbinstance.h"
+#include "hbnamespace_p.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QPointer>
@@ -952,17 +953,21 @@ void HbAbstractButton::gestureEvent(QGestureEvent *event)
     Q_D(HbAbstractButton);
     
     if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
-        bool hit = hitButton(mapFromScene(event->mapToGraphicsScene(tap->position())));
         switch(tap->state()) {
 	        case Qt::GestureStarted:
-                if( hit ){
-                    setDown(true);
-                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-                    updatePrimitives();
-                    d->emitPressed();
-                }
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+                }                
+                setDown(true);
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                updatePrimitives();
+                d->emitPressed();
+
                 break;
             case Qt::GestureCanceled:
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
                 if(d->down) {
                     HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                     setDown(false);
@@ -971,16 +976,18 @@ void HbAbstractButton::gestureEvent(QGestureEvent *event)
                 }
                 break;
             case Qt::GestureFinished:
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
                 if (!d->down){
                     return;
                 }
-                if ( hit ){
-                    HbWidgetFeedback::triggered(this, Hb::InstantClicked);
-                    d->repeatTimer.stop();
-                    d->click();
-                }else{
-                    setDown(false);
-                }
+
+                HbWidgetFeedback::triggered(this, Hb::InstantClicked);
+
+
+                d->repeatTimer.stop();
+                d->click();
+
                 HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                 d->longPress = false;
                 break;

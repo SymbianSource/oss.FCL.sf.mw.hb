@@ -44,7 +44,7 @@ class HB_CORE_PRIVATE_EXPORT HbString
     friend class TestHbString;
 
 public:
-    HbString( HbMemoryManager::MemoryType type = HbMemoryManager::InvalidMemory ); 
+    explicit HbString( HbMemoryManager::MemoryType type = HbMemoryManager::InvalidMemory );
     HbString( const QString &str, HbMemoryManager::MemoryType type );
     HbString( const HbString &Other );
     ~HbString();
@@ -85,7 +85,7 @@ public:
 #endif
 
 private:
-    void copyString( const QChar *arr, int size );
+    void copyString( const QChar *arr, int size, int dataOffset );
     bool compareString( const QChar *rhs, int len ) const;
     void detach( int size );
 
@@ -93,7 +93,6 @@ private: // Data
 
     HbMemoryManager::MemoryType mMemoryType;
     bool mShared;
-
     int mDataOffset;
 };
 

@@ -95,7 +95,15 @@ void HbInputSpellQuery::launch(QString editorText)
     mDidHandleFinish = false;
     mainWindow()->setProperty("SpellQueryLaunched", true);
     open(this,SLOT(dialogClosed(HbAction*)));
-    mPrimaryAction = qobject_cast<HbAction*>(actions().first()); 
+    mPrimaryAction = qobject_cast<HbAction*>(actions().first());
+
+    // Open keypad for the spell query
+    QInputContext *ic = qApp->inputContext();
+    if (ic) {
+        QEvent *event = new QEvent(QEvent::RequestSoftwareInputPanel);
+        ic->filterEvent(event);
+        delete event;
+    }
 }
 
 void HbInputSpellQuery::dialogClosed(HbAction* action)

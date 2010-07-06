@@ -27,6 +27,7 @@
 #define HBSPLASHINDICOMPOSITOR_P_H
 
 #include "hbsplashcompositor_p.h"
+#include "hbstatusbar_p.h"
 #include <QObject>
 #include <QImage>
 #include <QRect>
@@ -49,12 +50,17 @@ public:
 
 private slots:
     void renderStatusBar();
+    void handleStatusBarContentChange(HbStatusBar::ContentChangeFlags changeType);
 
 private:
+    void connectSignals();
+    void queueRender(bool lazy = false);
     void doRender(HbMainWindow *mw, QImage *statusBarImage, QRect *statusBarRect);
     bool eventFilter(QObject *obj, QEvent *event);
 
     HbSplashGenerator *mGenerator;
+    bool mSleeping;
+    bool mSignalsConnected;
     QImage mStatusBarImagePrt;
     QImage mStatusBarImageLsc;
     QRect mStatusBarRectPrt;

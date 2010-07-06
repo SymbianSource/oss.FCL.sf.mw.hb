@@ -42,6 +42,7 @@ PUBLIC_HEADERS += $$PWD/hbinputsettingwidget.h
 PUBLIC_HEADERS += $$PWD/hbinputbuttongroup.h
 PUBLIC_HEADERS += $$PWD/hbinputbutton.h
 PUBLIC_HEADERS += $$PWD/hbinputsctkeyboard.h
+PUBLIC_HEADERS += $$PWD/hbinputmethodselectionlist.h
 
 # hb input widget private headers
 PRIVATE_HEADERS += $$PWD/hbinputvkbwidget_p.h
@@ -65,3 +66,4 @@ SOURCES += $$PWD/hbinputcheckboxlist.cpp
 SOURCES += $$PWD/hbinputbuttongroup.cpp
 SOURCES += $$PWD/hbinputbutton.cpp
 SOURCES += $$PWD/hbinputsctkeyboard.cpp
+SOURCES += $$PWD/hbinputmethodselectionlist.cpp

@@ -26,7 +26,7 @@
 #include "hbcssinspector_p.h"
 
 #ifdef HB_CSS_INSPECTOR
-#include <hbanchor_p.h>
+#include <hbanchor.h>
 #include <hbanchorarrowdrawer_p.h>
 #include <hbcolorscheme.h>
 #include <hbcssformatter_p.h>
@@ -38,7 +38,6 @@
 #include <hblayeredstyleloader_p.h>
 #include <hbmainwindow_p.h>
 #include <hbmarqueeitem.h>
-#include <hbanchorlayoutdebug_p.h>
 #include <hbnamespace_p.h>
 #include <hbscreen_p.h>
 #include <hbtextitem.h>
@@ -173,9 +172,9 @@ static QString itemInParentLayout(const QGraphicsItem *item)
                 if (!anchorLayout) {
                     return QString(); // Non-anchor layout
                 } else {
-                    foreach (HbAnchor *anchor, HbAnchorLayoutDebug::getAnchors(anchorLayout)) {
-                        itemsInLayout << anchor->mStartItem->graphicsItem();
-                        itemsInLayout << anchor->mEndItem->graphicsItem();
+                    foreach (HbAnchor *anchor, anchorLayout->effectiveAnchors()) {
+                        itemsInLayout << anchor->startItem()->graphicsItem();
+                        itemsInLayout << anchor->endItem()->graphicsItem();
                     }
                     itemCache[layout] = itemsInLayout;
                 }
@@ -323,18 +322,7 @@ QString HbCssInspectorWindow::anchorItemName(QGraphicsLayoutItem* item, QGraphic
             }
         }
         if ( name.isEmpty() ) {
-            // Check if it's a spacer
-            QGraphicsItem *asGraphicsItem = layout->parentLayoutItem()->graphicsItem();
-            if ( asGraphicsItem && asGraphicsItem->isWidget() ){
-                HbWidget *asWidget = qobject_cast<HbWidget*>( static_cast<QGraphicsWidget*>(asGraphicsItem) );
-                if( asWidget ) {
-                    HbWidgetPrivate*priv = static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(asWidget));
-                    name = priv->mSpacers.key(item);
-                }
-            }
-            if ( name.isEmpty() ) {
-                name = QString("<unknown>");
-            }
+            name = QString("<unknown>");
         }
     }
 
@@ -364,16 +352,10 @@ QString HbCssInspectorWindow::anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, co
         syntax.lexemValue(HbXmlLoaderAbstractSyntax::LAYOUT_ANCHOR));
 
     if (anchorLayout) {
-        foreach (HbAnchor *anchor, HbAnchorLayoutDebug::getAnchors(anchorLayout)) {
+        foreach (HbAnchor *anchor, anchorLayout->effectiveAnchors()) {
             bool startIdBased, endIdBased;
-            QString startName(anchorItemName(anchor->mStartItem, anchorLayout, startIdBased));
-            QString endName(anchorItemName(anchor->mEndItem, anchorLayout, endIdBased));
-            QString spacingText;
-
-            QGraphicsItem *asGraphicsItem = anchorLayout->parentLayoutItem()->graphicsItem();
-            if (asGraphicsItem && (qAbs<qreal>(anchor->mValue) > 0.01)) {
-                spacingText = convertMeasurementToText(asGraphicsItem, anchor->mValue);
-            }
+            QString startName(anchorItemName(anchor->startItem(), anchorLayout, startIdBased));
+            QString endName(anchorItemName(anchor->endItem(), anchorLayout, endIdBased));
 
             xmlWriter.writeStartElement(syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_ANCHOR));
             xmlWriter.writeAttribute(
@@ -383,7 +365,7 @@ QString HbCssInspectorWindow::anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, co
                         startName);
             xmlWriter.writeAttribute(
                 syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SRC_EDGE), 
-                anchorEdgeName(anchor->mStartEdge));
+                anchorEdgeName(anchor->startEdge()));
             xmlWriter.writeAttribute(
                 syntax.lexemValue( endIdBased
                     ? HbXmlLoaderAbstractSyntax::AL_DST_ID
@@ -391,11 +373,13 @@ QString HbCssInspectorWindow::anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, co
                         endName);
             xmlWriter.writeAttribute(
                 syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_DST_EDGE), 
-                anchorEdgeName(anchor->mEndEdge));
-            if ( !spacingText.isEmpty() ) {
-                xmlWriter.writeAttribute(syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SPACING), spacingText);
+                anchorEdgeName(anchor->endEdge()));
+            if ( !anchor->anchorId().isEmpty() ) {
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SPACER),
+                    anchor->anchorId());
             }
-            xmlWriter.writeEndElement(); // meshitem
+            xmlWriter.writeEndElement(); // anchoritem
         }
 
     }
@@ -1294,7 +1278,7 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
 
         if (hoveredItem) {
             // Ignore primitives
-            while (SKIPPED_CHILD_ITEMS.contains(itemClass(hoveredItem)))
+            while (hoveredItem && SKIPPED_CHILD_ITEMS.contains(itemClass(hoveredItem)))
                 hoveredItem = hoveredItem->parentItem();
 
             if (hoveredItem && hoveredItem != mCurrentItem) {

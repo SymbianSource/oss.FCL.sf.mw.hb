@@ -27,6 +27,7 @@
 #include "hbtapgesturelogic_p.h"
 #include "hbtapgesture.h"
 #include "hbtapgesture_p.h"
+#include "hbnamespace_p.h"
 
 #include <hbdeviceprofile.h>
 #include <QEvent>
@@ -75,7 +76,10 @@ void HbTapGestureLogic::resetGesture(HbTapGesture *gesture)
 {
     gesture->setStartPos(QPointF());
     gesture->setSceneStartPos(QPointF());
-    gesture->setProperty("tapRadius", QVariant());
+    gesture->setProperty(HbPrivate::TapRadius.latin1(), QVariant());
+    gesture->setProperty(HbPrivate::ThresholdRect.latin1(), QVariant());
+    gesture->setProperty(HbPrivate::VerticallyRestricted.latin1(), QVariant());
+    gesture->setProperty(HbPrivate::HorizontallyRestricted.latin1(), QVariant());
 }
 
 /*!
@@ -99,12 +103,12 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMousePress(
         gesture->setStartPos(me->globalPos());
         gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
         gesture->setSceneStartPos(HbGestureUtils::mapToScene(watched, me->globalPos()));
-        mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
+        mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());        
 
         HbTapGesturePrivate* d_ptr = gesture->d_func();
         d_ptr->mTapStyleHint = HbTapGesture::Tap;
         if ( d_ptr->mTimerId ) gesture->killTimer(d_ptr->mTimerId);
-        d_ptr->mTimerId = gesture->startTimer(HOLDTAP_DURATION_USECS);
+        d_ptr->mTimerId = gesture->startTimer(HbTapAndHoldTimeout);
 
         return QGestureRecognizer::TriggerGesture;
     }
@@ -127,20 +131,46 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMouseMove(
         QObject *watched,
         QMouseEvent *me )
 {
-    if(gestureState != Qt::NoGesture && gestureState != Qt::GestureCanceled) {
-        int tapRadiusSquare(mTapRadius * mTapRadius);
-        if(gesture->property("tapRadius").isValid()) {
-            qWarning("WARNING using widget specific properties in HbTapGestureRecognizer");
-            int tapRadius = gesture->property("tapRadius").toInt();
-            tapRadiusSquare = tapRadius * tapRadius;
-        }
-
+    if(gestureState != Qt::NoGesture && gestureState != Qt::GestureCanceled) {         
         gesture->setPosition(me->globalPos());
         gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
         gesture->setHotSpot(me->globalPos());
+
+        int tapRadiusSquare(mTapRadius * mTapRadius);
+        if(gesture->property(HbPrivate::TapRadius.latin1()).isValid()) {
+            qWarning("WARNING using widget specific properties in HbTapGestureRecognizer");
+            int tapRadius = gesture->property(HbPrivate::TapRadius.latin1()).toInt();
+            tapRadiusSquare = tapRadius * tapRadius;
+        }
         QPointF delta = me->globalPos() - gesture->startPos();
-        if((delta.x() * delta.x() + delta.y() * delta.y()) > tapRadiusSquare) {
-            return QGestureRecognizer::CancelGesture;
+
+        QRect thresholdRect = gesture->property(HbPrivate::ThresholdRect.latin1()).toRect();
+        if (thresholdRect.isValid() &&
+            !(gesture->property(HbPrivate::VerticallyRestricted.latin1()).toBool() && gesture->property(HbPrivate::HorizontallyRestricted.latin1()).toBool())) {
+            // cancel long press with radius
+            if((delta.x() * delta.x() + delta.y() * delta.y()) > tapRadiusSquare) {                
+                if (gesture->d_func()->mTimerId) gesture->killTimer(gesture->d_func()->mTimerId);
+                gesture->d_func()->mTimerId = 0;
+            }
+
+            thresholdRect.adjust(-mTapRadius, -mTapRadius, mTapRadius, mTapRadius);
+
+            if (gesture->property(HbPrivate::VerticallyRestricted.latin1()).toBool()) {
+                thresholdRect.setTop(gesture->sceneStartPos().y() - mTapRadius);
+                thresholdRect.setBottom(gesture->sceneStartPos().y() + mTapRadius);
+            }
+            if (gesture->property(HbPrivate::HorizontallyRestricted.latin1()).toBool()){
+                thresholdRect.setLeft(gesture->sceneStartPos().x() - mTapRadius);
+                thresholdRect.setRight(gesture->sceneStartPos().x() + mTapRadius);
+            }
+
+            if (!thresholdRect.contains(gesture->scenePosition().toPoint())) {
+                return QGestureRecognizer::CancelGesture;
+            }
+        } else {            
+            if((delta.x() * delta.x() + delta.y() * delta.y()) > tapRadiusSquare) {
+                return QGestureRecognizer::CancelGesture;
+            }
         }
     }
     return QGestureRecognizer::Ignore;
@@ -185,21 +215,17 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMouseRelease(
 QGestureRecognizer::Result HbTapGestureLogic::handleTimerEvent(
         Qt::GestureState gestureState,
         HbTapGesture *gesture,
-        QObject *watched)
+        QObject *)
 {
-    if (watched == gesture && gestureState == Qt::GestureStarted) {
-        QGestureRecognizer::Result result = QGestureRecognizer::ConsumeEventHint;
-        gesture->killTimer(gesture->d_func()->mTimerId);
-        gesture->d_func()->mTimerId = 0;
-        if(gestureState != Qt::NoGesture) {
-            gesture->d_func()->mTapStyleHint = HbTapGesture::TapAndHold;
-            result |= QGestureRecognizer::TriggerGesture;
-        }
-
-        return result;
+    QGestureRecognizer::Result result = QGestureRecognizer::ConsumeEventHint;
+    gesture->killTimer(gesture->d_func()->mTimerId);
+    gesture->d_func()->mTimerId = 0;
+    if(gestureState != Qt::NoGesture) {
+        gesture->d_func()->mTapStyleHint = HbTapGesture::TapAndHold;
+        result |= QGestureRecognizer::TriggerGesture;
     }
 
-    return QGestureRecognizer::Ignore;
+    return result;
 }
 
 /*!

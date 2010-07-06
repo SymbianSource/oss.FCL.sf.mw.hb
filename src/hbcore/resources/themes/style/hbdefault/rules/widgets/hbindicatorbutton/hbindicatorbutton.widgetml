@@ -12,6 +12,10 @@
     <meshitem src="handleindication" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="handleindication" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="handleindication" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
   </layout>
   
   <layout name="indicatorbuttonlayout2" type="mesh">
@@ -29,6 +33,10 @@
     <meshitem src="handleindication" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="handleindication" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="handleindication" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
   </layout>
 
 </hbwidget>

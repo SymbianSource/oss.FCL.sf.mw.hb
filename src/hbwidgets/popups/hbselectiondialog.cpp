@@ -22,9 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbselectiondialog_p.h"
 #include "hbselectiondialog.h"
 #include "hbwidget_p.h"
-#include "hbselectiondialog_p.h"
+
 #include "hblabel.h"
 #include "hbaction.h"
 #include "hbabstractviewitem.h"

@@ -137,6 +137,14 @@ public:
         VkbLaunched( false ) {
     }
 
+    ~HbCustomLineEdit() {
+        HbEditorInterface editorInterface( this );
+        HbVkbHost *host = editorInterface.vkbHost( );
+        if( host ) {
+            host->disconnect();
+        }
+    }
+
     void setLongPressEnabled( bool enable = true ) {
         if( enable ) {
             scrollArea( )->setLongPressEnabled( true );

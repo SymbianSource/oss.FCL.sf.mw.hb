@@ -64,7 +64,6 @@ public:
     QStringList         *mCandidates;
     int                 mBestGuessLocation;
     bool                mShowTail;
-    bool                mTailShowing;
     bool                mAutoAddedSpace;
     bool                mCanContinuePrediction;
     bool                mShowTooltip;

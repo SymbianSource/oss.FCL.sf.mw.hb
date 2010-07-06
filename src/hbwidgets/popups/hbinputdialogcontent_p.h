@@ -37,7 +37,7 @@ class HbInputDialogContentWidget : public HbWidget
 {
     Q_OBJECT
 public:
-    HbInputDialogContentWidget(HbInputDialogPrivate* priv,QGraphicsItem* parent =0);
+    explicit HbInputDialogContentWidget(HbInputDialogPrivate* priv,QGraphicsItem* parent =0);
 
     enum { Type = HbPrivate::ItemType_HbInputDialogContentWidget };
     int type() const { return Type; }

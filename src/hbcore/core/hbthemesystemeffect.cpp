@@ -147,6 +147,7 @@ bool HbThemeSystemEffect::getThemeEffectFolder(QString &path)
             mBaseEffectsFolder.append("/effects/");
             mBaseEffectsFolder.append(info.name);
             mBaseEffectsFolder.append('/');
+            mBaseEffectsFolder = QDir::toNativeSeparators(mBaseEffectsFolder);
         }
     }
 
@@ -193,9 +194,10 @@ void HbThemeSystemEffect::registerEffects(const HbThemeSystemEffectMap *effects)
         effects->registerEffects(mWsSession, mBaseEffectsFolder);
 #endif //Q_OS_SYMBIAN
     } else {
-        // Disable warning until themes have the conf file
-        //qWarning() << "HbThemeSystemEffect::registerEffects: no system effects configuration"
-        //           << "found - unregistering all system effects.";
+#ifdef HBTHEMESYSTEMEFFECT_DEBUG
+        qDebug() << "HbThemeSystemEffect::registerEffects: no system effects configuration"
+                 << "found - unregistering all system effects.";
+#endif //HBTHEMESYSTEMEFFECT_DEBUG
 #ifdef Q_OS_SYMBIAN
         effects->unregisterAllEffects(mWsSession);
 #endif //Q_OS_SYMBIAN

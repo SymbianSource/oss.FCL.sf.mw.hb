@@ -28,12 +28,10 @@
 #include "hbsplashdefs_p.h"
 #include "hbmainwindow.h"
 #include "hbmainwindow_p.h"
-#include "hbstatusbar_p.h"
 #include "hbsleepmodelistener_p.h"
 #include "hbevent.h"
 #include <QTimer>
 #include <QApplication>
-#include <QDebug>
 
 #ifdef Q_OS_SYMBIAN
 #include <fbs.h>
@@ -48,28 +46,24 @@
 // This ensures that there will be relatively up-to-date indicators in
 // the splash screens.
 
-#define PRE "[hbsplashgenerator] [indicompositor]"
-
 HbSplashIndicatorCompositor::HbSplashIndicatorCompositor(HbSplashGenerator *gen)
-    : mGenerator(gen)
+    : mGenerator(gen), mSleeping(false), mSignalsConnected(false)
 {
-#ifdef HB_SPLASH_STATUSBAR_ENABLED
     // When the splash screens are regenerated the statusbar must be rendered
     // again too because the theme or the splashml files may have changed.
     connect(mGenerator, SIGNAL(finished()), SLOT(renderStatusBar()), Qt::QueuedConnection);
 
-    // Regenerate every minute to have an up-to-date clock.
-    // ### replace with notifications from indicator fw
+    // Regenerate once using a singleshot timer (to have a little delay) but
+    // then start listening to change notifications from the statusbar instead.
     mRenderTimer = new QTimer(this);
+    mRenderTimer->setSingleShot(true);
     connect(mRenderTimer, SIGNAL(timeout()), SLOT(renderStatusBar()));
-    mRenderTimer->setInterval(60000); // 1 min
-    mRenderTimer->start();
+    mRenderTimer->start(5000); // 5 sec
 
     // There must be no activity while the device is sleeping so listen to sleep
     // mode events too.
     HbSleepModeListener::instance(); // just to make sure it is created
     QApplication::instance()->installEventFilter(this);
-#endif
 }
 
 void HbSplashIndicatorCompositor::release()
@@ -77,16 +71,50 @@ void HbSplashIndicatorCompositor::release()
     delete this;
 }
 
+void HbSplashIndicatorCompositor::connectSignals()
+{
+    HbStatusBar *sb = HbMainWindowPrivate::d_ptr(mGenerator->ensureMainWindow())->mStatusBar;
+    connect(sb, SIGNAL(contentChanged(HbStatusBar::ContentChangeFlags)),
+            SLOT(handleStatusBarContentChange(HbStatusBar::ContentChangeFlags)));
+    mSignalsConnected = true;
+}
+
+void HbSplashIndicatorCompositor::handleStatusBarContentChange(
+    HbStatusBar::ContentChangeFlags changeType)
+{
+    // No need to rush when battery level changes while charging
+    // because it is not the real level, just the animation.
+    queueRender(changeType.testFlag(HbStatusBar::BatteryCharging));
+}
+
+void HbSplashIndicatorCompositor::queueRender(bool lazy)
+{
+    // Compress subsequent change notifications into one update.
+    if (!mRenderTimer->isActive() && !mSleeping) {
+        mRenderTimer->start(lazy ? 10000 : 100); // 10 sec or 0.1 sec
+    }
+}
+
 void HbSplashIndicatorCompositor::renderStatusBar()
 {
+    // Do nothing in sleep mode.
+    if (mSleeping) {
+        return;
+    }
     // Try again later if a screen is just being generated. We share the same
     // mainwindow and our changes done here (orientation, statusbar visibility)
     // could possibly ruin the output.
     if (!mGenerator->lockMainWindow()) {
-        QTimer::singleShot(1000, this, SLOT(renderStatusBar()));
+        mRenderTimer->start(1000); // 1 sec
         return;
     }
     try {
+        if (!mSignalsConnected) {
+            connectSignals();
+            // The first rendering may be wrong due to the deferred
+            // polish/layout handling.  So issue a regenerate request.
+            queueRender();
+        }
         HbMainWindow *mw = mGenerator->ensureMainWindow();
         HbSplashGenerator::setStatusBarElementsVisible(mw, true);
         mw->setOrientation(Qt::Vertical, false);
@@ -105,7 +133,6 @@ void HbSplashIndicatorCompositor::doRender(HbMainWindow *mw,
 {
     *statusBarRect = mw->mapFromScene(HbMainWindowPrivate::d_ptr(mw)->mStatusBar->geometry())
                      .boundingRect().intersected(QRect(QPoint(0, 0), mw->size()));
-    qDebug() << PRE << "rendering status bar" << *statusBarRect;
     *statusBarImage = QImage(statusBarRect->size(), QImage::Format_ARGB32_Premultiplied);
     statusBarImage->fill(QColor(Qt::transparent).rgba());
     QPainter painter(statusBarImage);
@@ -123,7 +150,6 @@ void HbSplashIndicatorCompositor::composeToBitmap(void *bitmap,
         const QRect *sbRect = orientation == Qt::Horizontal ? &mStatusBarRectLsc
                               : &mStatusBarRectPrt;
         if (!srcImg->isNull()) {
-            qDebug() << PRE << "composeToBitmap" << bitmap << orientation << splashExtraFlags;
             CFbsBitmap *bmp = static_cast<CFbsBitmap *>(bitmap);
             uchar *dst = reinterpret_cast<uchar *>(bmp->DataAddress());
             const int dstBpl = CFbsBitmap::ScanLineLength(bmp->SizeInPixels().iWidth,
@@ -149,12 +175,11 @@ void HbSplashIndicatorCompositor::composeToBitmap(void *bitmap,
 
 bool HbSplashIndicatorCompositor::eventFilter(QObject *obj, QEvent *event)
 {
-    if (event->type() == HbEvent::SleepModeEnter && mRenderTimer->isActive()) {
-        qDebug() << PRE << "entering sleep mode";
-        mRenderTimer->stop();
-    } else if (event->type() == HbEvent::SleepModeExit && !mRenderTimer->isActive()) {
-        qDebug() << PRE << "leaving sleep mode";
-        mRenderTimer->start();
+    if (event->type() == HbEvent::SleepModeEnter && !mSleeping) {
+        mSleeping = true;
+    } else if (event->type() == HbEvent::SleepModeExit && mSleeping) {
+        mSleeping = false;
+        queueRender();
     }
     return QObject::eventFilter(obj, event);
 }

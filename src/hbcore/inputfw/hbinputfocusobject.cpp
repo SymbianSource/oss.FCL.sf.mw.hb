@@ -39,7 +39,7 @@
 #include "hbinputstandardfilters.h"
 #include "hbinpututils.h"
 #include "hbnamespace_p.h"
-
+#include "hbevent.h"
 /*!
 @alpha
 @hbcore
@@ -96,11 +96,24 @@ public:
 HbInputFocusObject::HbInputFocusObject(QObject *focusedObject)
     : d_ptr(new HbInputFocusObjectPrivate(focusedObject))
 {
+    if (focusedObject) {
+        HbEvent *event = new HbEvent(HbEvent::InputMethodFocusIn);
+        QCoreApplication::sendEvent(focusedObject, event);
+        delete event;
+    }
 }
 
 
 HbInputFocusObject::~HbInputFocusObject()
 {
+    Q_D(HbInputFocusObject);
+
+    if (d->mFocusedObject) {
+        HbEvent *event = new HbEvent(HbEvent::InputMethodFocusOut);
+        QCoreApplication::sendEvent(d->mFocusedObject, event);
+        delete event;
+    }
+
     delete d_ptr;
 }
 
@@ -379,7 +392,15 @@ In case of QGraphicsObject, the returned rectangle is in scene coordinates.
 */
 QRectF HbInputFocusObject::microFocus() const
 {
-    return inputMethodQuery(Qt::ImMicroFocus).toRectF();
+    Q_D(const HbInputFocusObject);
+
+    QRectF rect = inputMethodQuery(Qt::ImMicroFocus).toRectF();
+    QGraphicsObject *editorWidget = qobject_cast<QGraphicsObject*>(d->mFocusedObject);
+    if (editorWidget) {
+        rect = editorWidget->mapRectToScene(rect);
+    }
+
+    return rect;
 }
 
 /*!

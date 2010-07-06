@@ -133,6 +133,10 @@ void HbIndexFeedbackPrivate::init()
         q, SLOT(_q_hideIndexFeedback()));
 
     createPrimitives();
+
+    // ensure that the index feedback is shown on top of the itemView in
+    // all cases. 
+    q->setZValue(1);
 }
 
 /*
@@ -418,7 +422,7 @@ void HbIndexFeedbackPrivate::calculatePopupRects()
         return;
     }
 
-    QRectF contentRect = mItemView->rect();
+    QRectF contentRect = mItemView->mapToItem(q, mItemView->rect()).boundingRect();
     
     HbScrollBar *verticalScrollBar = mItemView->verticalScrollBar();
     HbScrollBar *horizontalScrollBar = mItemView->horizontalScrollBar();

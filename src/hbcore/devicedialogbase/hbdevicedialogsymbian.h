@@ -57,7 +57,8 @@ public:
 
     enum TDeviceDialogFlag{
         ENoDeviceDialogFlags = 0x0,
-        EImmediateResourceReservation = 0x1
+        EImmediateResourceReservation = 0x1,
+        EASyncServerStartup = 0x2
     };
 
     IMPORT_C static CHbDeviceDialogSymbian* NewL(TInt aFlags = ENoDeviceDialogFlags);

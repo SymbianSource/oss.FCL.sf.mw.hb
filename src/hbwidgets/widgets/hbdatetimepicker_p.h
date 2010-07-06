@@ -39,6 +39,8 @@
 #include <QList>
 #include <QHash>
 
+#define VIEWER HbTumbleView
+
 
 #define HBDATETIMEPICKER_TIME_MIN QTime(0, 0, 0, 0)
 #define HBDATETIMEPICKER_TIME_MAX QTime(23, 59, 59, 999)
@@ -164,7 +166,7 @@ public:
         QString (HbDateTimePickerPrivate::*localeFuncPtr)(int), int interval = 1);
 
     void createPrimitives();
-    void deleteAndNull(HbTumbleView*& t) {
+    void deleteAndNull(VIEWER*& t) {
         delete t;t=0;
     }
     void deleteAndNull(QStringListModel*& t) {
@@ -181,13 +183,13 @@ public:
     void _q_ampmChanged(int index);
 
 public:
-    HbTumbleView *mDayPicker;
-    HbTumbleView *mMonthPicker;
-    HbTumbleView *mYearPicker;
-    HbTumbleView *mHourPicker;
-    HbTumbleView *mMinutePicker;
-    HbTumbleView *mSecondPicker;
-    HbTumbleView *mAmPmPicker;
+    VIEWER *mDayPicker;
+    VIEWER *mMonthPicker;
+    VIEWER *mYearPicker;
+    VIEWER *mHourPicker;
+    VIEWER *mMinutePicker;
+    VIEWER *mSecondPicker;
+    VIEWER *mAmPmPicker;
 
     QStringListModel *mDayModel;
     QStringListModel *mMonthModel;

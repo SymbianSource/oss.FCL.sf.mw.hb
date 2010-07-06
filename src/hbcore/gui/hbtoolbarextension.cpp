@@ -41,7 +41,6 @@ bool HbToolBarExtensionPrivate::extensionEffectsLoaded = false;
 #include <QDebug>
 #include <QGraphicsGridLayout>
 #include <QEventLoop>
-#include <QPainter>
 #include <QGraphicsLinearLayout> 
 
 /*!
@@ -112,9 +111,8 @@ void HbToolBarExtensionPrivate::init()
 
 void HbToolBarExtensionPrivate::doLazyInit()
 {
-    Q_Q(HbToolBarExtension);
     if ( !lazyInitDone ) {
-        q->setBackgroundItem( HbStyle::P_ToolBarExtension_background );
+        setBackgroundItem(HbStyle::P_ToolBarExtension_background);
 #ifdef HB_EFFECTS
         if (!extensionEffectsLoaded){
             HbEffectInternal::add("HB_TBE", "tbe_button_click", "clicked");
@@ -214,6 +212,9 @@ void HbToolBarExtensionPrivate::actionAdded( QActionEvent *event )
     HbAction *hbAction = qobject_cast<HbAction *>( event->action() );
 
     if (hbAction) {
+        if (!q->contentWidget()) {
+            initialiseContent(); // create now to prevent mem leak below
+        }
         button = new HbToolButton(hbAction, q->contentWidget());
     } else {
         button = new HbToolButton(q->contentWidget());
@@ -338,7 +339,6 @@ HbToolBarExtension::HbToolBarExtension( QGraphicsItem *parent ) :
  */
 HbToolBarExtension::~HbToolBarExtension()
 {
-    disconnect();
 }
 
 /*!

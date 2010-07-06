@@ -88,12 +88,16 @@ public:
     virtual bool readGeneralStartItem();
     virtual bool readGeneralEndItem();
     virtual bool readLayoutStartItem();
+    virtual bool readAnchorLayoutStartItem(bool idBased);
     virtual bool readLayoutEndItem();
     virtual bool readContainerStartItem();
     virtual bool readContainerEndItem();
 
 protected :
-    bool getAnchorEdge( const QString &edgeString, Hb::Edge &edge ) const;
+    bool toBool( const QString &boolString, bool &value ) const;
+    bool toAnchorEdge( const QString &edgeString, Hb::Edge &edge ) const;
+    bool toAnchorDir( const QString &dirString, HbAnchor::Direction &dir ) const;
+    bool toSizePolicy( const QString& policyS, QSizePolicy::Policy &policy ) const;
     bool loadDevice(QIODevice *device, const QString &section);
 
 protected:

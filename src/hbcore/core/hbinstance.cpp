@@ -108,7 +108,8 @@ HbInstancePrivate::HbInstancePrivate() :
     mOrientation(Qt::Vertical),
     mLibraryPaths(0)
 #ifdef Q_OS_SYMBIAN
-    , testabilityEnabled(false)
+    , testabilityEnabled(false),
+    mSts(0)
 #endif //Q_OS_SYMBIAN
     , mLocaleChangeNotifier(0)
 {
@@ -236,6 +237,12 @@ HbInstancePrivate::~HbInstancePrivate()
         delete mRepo;
         mRepo = 0;
     }
+    
+    if (mSts) {
+        CSystemToneService::Delete(mSts);
+        mSts=0;
+    }
+
 #endif //Q_OS_SYMBIAN
 
 }
@@ -262,6 +269,25 @@ void HbInstancePrivate::addWindow(HbMainWindow *window)
 /*!
 \internal
 */
+
+/*!
+\internal
+*/
+CSystemToneService* HbInstancePrivate::systemTone()
+{
+	#ifdef Q_OS_SYMBIAN
+	
+	if(mSts == 0) {
+		mSts = CSystemToneService::Create();
+	}
+	return mSts;
+	
+	#else
+		return  0;
+	#endif
+	
+}
+
 bool HbInstancePrivate::removeWindow(HbMainWindow *window)
 {
     bool result = mWindows.removeOne(window);
@@ -406,9 +432,12 @@ HbInstance::~HbInstance()
  */
 HbInstance *HbInstance::instance()
 {
+#ifndef Q_OS_SYMBIAN
     if (!QCoreApplication::instance()) {
         qWarning("HbInstance: No application instance present.");
     }
+#endif // Q_OS_SYMBIAN
+
     static HbInstance theInstance;
     return &theInstance;
 }

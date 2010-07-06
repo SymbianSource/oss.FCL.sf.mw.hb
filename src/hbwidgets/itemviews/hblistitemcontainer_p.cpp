@@ -516,6 +516,8 @@ void HbListItemContainer::animationFinished(const HbEffect::EffectStatus &status
             newPos.setY(newPos.y() - item->preferredHeight());
             setPos(newPos);
         }
+
+        d->adjustContent();
     } else {
         item->deleteLater();
     }

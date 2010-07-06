@@ -31,6 +31,7 @@
 #include "hbabstractviewitem.h"
 #include "hbabstractitemview.h"
 #include "hbmodeliterator.h"
+#include "hbabstractitemview_p.h"
 
 #include <QPersistentModelIndex>
 
@@ -95,6 +96,8 @@ public:
 	
     inline HbModelIterator *modelIterator() const;
 
+    inline void adjustContent() const;
+
     mutable QList<HbAbstractViewItem*>  mPrototypes;
     QList<StateItem> mItemStateList;
     QHash<QPersistentModelIndex, QHash<QString, QVariant> > mItemStates;
@@ -116,6 +119,15 @@ HbModelIterator *HbAbstractItemContainerPrivate::modelIterator() const
         return mItemView->modelIterator();
     } else {
         return 0;
+    }
+}
+
+void HbAbstractItemContainerPrivate::adjustContent() const
+{
+    if (mItemView) {
+        // this will force the HbScrollArea to adjust the content correctly. Adjustment
+        // is not done in the setPos generated event handling by default to speed up scrolling.
+        HbAbstractItemViewPrivate::d_ptr(mItemView)->adjustContent();
     }
 }
 

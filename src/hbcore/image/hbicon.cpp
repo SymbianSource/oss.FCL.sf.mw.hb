@@ -345,17 +345,19 @@ QDataStream &operator<<(QDataStream &stream, const HbIconPrivate &icon)
 */
 bool HbIconPrivate::addBadge(Qt::Alignment align,
                              const HbIcon &icon,
-                             int z)
+                             int z,
+                             const QSizeF &sizeFactor,
+                             Qt::AspectRatioMode aspectRatio)
 {
     if (icon.isBadged()) {
         return false;
     } else if (engine) {
-        engine->addBadge(align, icon, z);
+        engine->addBadge(align, icon, z, sizeFactor, aspectRatio);
     } else {
         if (!badgeInfo) {
             badgeInfo = new HbBadgeIcon();
         }
-        badgeInfo->addBadge(align, icon, z);
+        badgeInfo->addBadge(align, icon, z, sizeFactor, aspectRatio);
     }
     return true;
 }
@@ -683,11 +685,13 @@ void HbIcon::paint(QPainter *painter,
 QSizeF HbIcon::size() const
 {
     if ((static_cast<int>(flags()) & HbIcon::ResolutionCorrected)) {
+        if (d->engine) {
+            d->size = d->engine->size();
+        }
         if (d->size.isValid()) {
             return d->size;
         } else {
             QSizeF defSize(defaultSize());
-            HbIconLoader::global()->applyResolutionCorrection(defSize);
             return defSize;
         }
     } else if (d->size.isValid()) {
@@ -908,13 +912,53 @@ bool HbIcon::operator!=(const HbIcon &other) const
  * Adds a badge icon to the existing icon. The badge icons
  * are drawn relative to the alignment you specify with the
  * z-order you provide.
+ * 
+ * By default the badge icon will use its default size.  If this is
+ * not suitable (which is typical in case of vector graphics) then
+ * call setSize() explicitly on \a badge before passing it to this
+ * function.
+ *
+ * The aspect ratio for the badge is kept by default, but this can be
+ * changed in the \a aspectRatio argument.
+ *
+ * \sa addProportionalBadge()
  */
 bool HbIcon::addBadge(Qt::Alignment alignment,
                       const HbIcon &badge,
-                      int z)
+                      int z,
+                      Qt::AspectRatioMode aspectRatio)
 {
     d.detach();
-    return d->addBadge(alignment, badge, z);
+    return d->addBadge(alignment, badge, z, QSizeF(), aspectRatio);
+}
+
+/*!
+ * Adds a badge icon to the existing icon. The badge icons
+ * are drawn relative to the alignment you specify with the
+ * z-order you provide.
+ *
+ * With this function the size of the badge icon will be proportional
+ * to the size of the badged icon.  If the size needs to be explicitly
+ * specified then use addBadge() instead.
+ *
+ * \a sizeFactor's x and y values must be between 0 and 1. They
+ * specify how much space the badge takes. For example (0.25, 0.25)
+ * causes both the width and height to be 1/4 of the full icon width
+ * and height.
+ *
+ * The aspect ratio for the badge is kept by default, but this can be
+ * changed in the \a aspectRatio argument.
+ *
+ * \sa addBadge()
+ */
+bool HbIcon::addProportionalBadge(Qt::Alignment alignment,
+                                  const HbIcon &badge,
+                                  const QSizeF &sizeFactor,
+                                  int z,
+                                  Qt::AspectRatioMode aspectRatio)
+{
+    d.detach();
+    return d->addBadge(alignment, badge, z, sizeFactor, aspectRatio);
 }
 
 /*!

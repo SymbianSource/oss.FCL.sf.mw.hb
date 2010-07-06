@@ -62,9 +62,7 @@ void HbDataGroupPrivate::init( )
 
 bool HbDataGroupPrivate::setExpanded( bool expanded )
 {
-
     Q_Q(HbDataGroup);
-    //HB_SD(HbAbstractViewItem);
     HbAbstractItemContainer *container = 0;
     HbDataFormModelItem::DataItemType itemType = 
             static_cast<HbDataFormModelItem::DataItemType>(
@@ -80,9 +78,10 @@ bool HbDataGroupPrivate::setExpanded( bool expanded )
         if(container->itemTransientState(mIndex).value("expanded")  == expanded || !mSharedData->mItemView) {
             return true;
         }    
-        expand(expanded);
-        //if some one exlicitly calls setExpanded for data group then primitives needs to be
-        //updated.
+        // expand function sets correct expansion itemstate for this item and its children
+        changeExpansionState(expanded);
+        
+        // if some one exlicitly calls setExpanded for data group then primitives needs to be updated.
         if(itemType == HbDataFormModelItem::GroupItem){
             if(mPageCombo) {
                 if(expanded) {
@@ -99,12 +98,13 @@ bool HbDataGroupPrivate::setExpanded( bool expanded )
                     mPageCombo = 0;
                     delete mPageComboBackgroundItem;
                     mPageComboBackgroundItem = 0;
-
                     QEvent polishEvent(QEvent::Polish);
                     QCoreApplication::sendEvent(q, &polishEvent);
                 }
             }
         }
+        // setModelIndexes will be create or delete items according to the 
+        // itemTransient state set using expand function call above
         container->setModelIndexes(mIndex.operator const QModelIndex & ());
     }
     q->updatePrimitives();
@@ -143,10 +143,92 @@ void HbDataGroupPrivate::setEnabled( bool enabled )
     }
 }
 
+// This function gets called  for group item or for grouppage item . It returs the corresponding page index .
+// The relevance of this function is when some items are inserted before group page inside a group.
+// returns -1 if not valid index.
+int HbDataGroupPrivate::pageIndex(const QModelIndex &index) const 
+{
+    const Q_Q(HbDataGroup);
+    int pageIndex = -1;
+    HbDataFormModelItem::DataItemType indexType = static_cast<HbDataFormModelItem::DataItemType>(
+        index.data( HbDataFormModelItem::ItemTypeRole).toInt( ) );
 
-void HbDataGroupPrivate::expand( bool expanded )
+    // Make sure that the child is groupPage type and current item is group.
+    if( (indexType == HbDataFormModelItem::GroupPageItem) || (indexType == HbDataFormModelItem::FormPageItem) ) {
+        HbDataFormModelItem *modelItem = 
+            static_cast<HbDataFormModel*>((q->itemView())->model())->itemFromIndex(
+                q->modelIndex( ));
+        HbDataFormModelItem *groupModelItem = 0;
+        // get the group modelItem pointer depending upon the type
+        if( modelItem->type() == HbDataFormModelItem::GroupItem ) {
+            groupModelItem = modelItem;
+        } else if( modelItem->type() == HbDataFormModelItem::GroupPageItem ) {
+            groupModelItem = modelItem->parent();
+        } else if (modelItem->type() == HbDataFormModelItem::FormPageItem ) {
+            groupModelItem = static_cast<HbDataFormModel*>(q->itemView()->model())->invisibleRootItem();
+        }
+ 
+        int childCount = groupModelItem->childCount();
+        for( int i = 0; i < childCount; i++) {
+            HbDataFormModelItem *child = groupModelItem->childAt(i);
+            if( (child->type() == HbDataFormModelItem::GroupPageItem ) || (child->type() == HbDataFormModelItem::FormPageItem)) {
+                pageIndex ++;
+                // get the index of groupPage
+                QModelIndex childIndex = static_cast<HbDataFormModel*>(q->itemView()->model())->indexFromItem(child);
+                if(childIndex == index) {
+                    break;// we got the page index
+                }
+            }        
+        }
+    }
+    return pageIndex;
+}
+
+QModelIndex HbDataGroupPrivate::pageModelIndex(int index) const 
+{
+    const Q_Q(HbDataGroup);
+    int pageIndex = -1;
+    QModelIndex modelIndex;
+    
+    // Make sure that the child is groupPage type and current item is group.
+    if( index >= 0) {
+
+        HbDataFormModelItem *modelItem = 
+            static_cast<HbDataFormModel*>((q->itemView())->model())->itemFromIndex(
+                q->modelIndex( ));
+        HbDataFormModelItem *groupModelItem = 0;
+        // get the group modelItem pointer depending upon the type
+        if( modelItem->type() == HbDataFormModelItem::GroupItem ) {
+            groupModelItem = modelItem;
+        } else if( modelItem->type() == HbDataFormModelItem::GroupPageItem ) {
+            groupModelItem = modelItem->parent();
+        }
+
+        int childCount = groupModelItem->childCount();
+
+        for( int i = 0; i < childCount; i++) {
+
+            HbDataFormModelItem *child = groupModelItem->childAt(i);
+            if( child->type() == HbDataFormModelItem::GroupPageItem ) {
+                pageIndex ++;
+                // get the index of groupPage
+                if(pageIndex == index) {
+                modelIndex = static_cast<HbDataFormModel*>(q->itemView()->model())->indexFromItem(child);
+                break; 
+                    
+                }
+            }        
+        }
+    }
+    return modelIndex;
+}
+
+
+
+void HbDataGroupPrivate::changeExpansionState( bool expanded )
 {
     Q_Q(HbDataGroup);
+    // get container for setting item state
     HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
         static_cast<QGraphicsWidget *>( mSharedData->mItemView->contentWidget( ) ) );
     HbDataFormModelItem::DataItemType itemType = static_cast<HbDataFormModelItem::DataItemType>(
@@ -157,56 +239,22 @@ void HbDataGroupPrivate::expand( bool expanded )
     }
 
     if( !expanded ) {
-        //collapsing all the expanded child Types.
-        QModelIndex index = mIndex.operator const QModelIndex & ( );
-        QModelIndex childIndex = index.child(0,0);
-        while(childIndex.isValid()) {
-            HbDataFormModelItem::DataItemType childType = static_cast<HbDataFormModelItem::DataItemType>(
-            childIndex.data(HbDataFormModelItem::ItemTypeRole).toInt());
-
-            if(childType <= HbDataFormModelItem::GroupPageItem) {
-                HbDataGroup* group_Item = 
-                static_cast<HbDataGroup*>(mSharedData->mItemView->itemByIndex(
-                    childIndex));
-                if(group_Item && group_Item->isExpanded()) {
-                    HbDataGroupPrivate::d_ptr(group_Item)->expand(false);
-                    // retaining the item state so that next time when this formpage is activated
-                    // previously expanded group will be expanded since we are checking this 
-                    // expansion state from updatechilditems of group
-                    container->setItemTransientStateValue(childIndex, "expanded", true);                
-                }
-            }
-            QModelIndex nextChild = index.child(childIndex.row() +1 ,0);
-            childIndex = nextChild;
-        }
-
         if( mGroupHeading ) {
             mGroupHeading->mExpanded = false;
         }
-
     } else { //expand
-        
+        // here we are checking only for HbDataGroup since for HbDataFormPage expansion will happen through 
+        // setModelIndexes. For group we need to expand the current active grouppage . 
         if(itemType == HbDataFormModelItem::GroupItem){
-            HbDataFormModelItem *modelItem = static_cast<HbDataFormModel*>(
-                mSharedData->mItemView->model())->itemFromIndex(mIndex.operator const QModelIndex & ());
-            QModelIndex childIndex = (mIndex.operator const QModelIndex & ()).child(0,0);
-            HbDataFormModelItem::DataItemType childType = static_cast<HbDataFormModelItem::DataItemType>(
-                childIndex.data(HbDataFormModelItem::ItemTypeRole).toInt());
-            if( childType == HbDataFormModelItem::GroupPageItem ) {
-                QVariant pageIndex = modelItem->contentWidgetData(QString("currentPage"));
-                int activePage;
-                if(!pageIndex.isValid()) {
-                    activePage = 0;
-                    setActivePage(activePage);
-                } else {
-                    activePage = pageIndex.toInt();
-                }
-                //get the group page index
-                QModelIndex groupPageIndex = mIndex.child(activePage,0);
+            int page = activePage();
+            if(page != -1) {
+                QModelIndex groupPageIndex = pageModelIndex(page);
                 
                 if(groupPageIndex.isValid()) {                    
+                    // set transient state for group page so that when it gets created then its  
+                    // child items are also created
                     container->setItemTransientStateValue(groupPageIndex, "expanded", true);
-                    q->emitActivated(groupPageIndex);
+                    q->emitActivated(groupPageIndex);                   
                 }
             }
             if (mGroupHeading )  {
@@ -214,22 +262,23 @@ void HbDataGroupPrivate::expand( bool expanded )
             }
         }
     }
-
+    // save the item state for this item. All the cild item state are saved above
     container->setItemTransientStateValue(mIndex, "expanded", expanded);
 }
 
 
-QString HbDataGroupPrivate::groupPage() const
+/*QString HbDataGroupPrivate::groupPage() const
 {   
     return mPageString;
 }
-
+*/
 
 void HbDataGroupPrivate::setGroupPage( const QString &page ) 
 {
    Q_Q(HbDataGroup);
 
     if( !mPageCombo ) {
+        // This is the first groupPgae getting added so create the combobox to add the page
         mPageCombo = new HbComboBox( q );
         mPageString = ' ';
         q->setProperty("groupPage", page);
@@ -252,8 +301,11 @@ void HbDataGroupPrivate::setGroupPage( const QString &page )
     if(!list.contains(page)) {
         mPageCombo->addItem(page);        
         mPageString = page; 
-    }   
-    mPageCombo->setCurrentIndex(activePage());
+    }
+    int pageIndex = activePage();
+    if(pageIndex!= -1) {
+        mPageCombo->setCurrentIndex(pageIndex);
+    }
 
     QObject::connect(mPageCombo,SIGNAL(currentIndexChanged(int)),
             q ,SLOT(pageChanged(int)));
@@ -261,40 +313,71 @@ void HbDataGroupPrivate::setGroupPage( const QString &page )
 
 void HbDataGroupPrivate::removeGroupPage(const QString &page)
 {    
+
     if(mPageCombo) {
+        // if we are removing the last page then set current page as 0
+        if( mPageCombo->findText(page) + 1 == mPageCombo->count()) {
+	    	mPageCombo->setCurrentIndex(0);
+	    } else {// set next page as the currrent page
+		    mPageCombo->setCurrentIndex(mPageCombo->findText(page) + 1);
+	    }
+        // remove the text from ombobox
         mPageCombo->removeItem(mPageCombo->findText(page));
     }
 }
+/*
+int HbDataGroupPrivate::pageChanged(const QModelIndex &modelIndex)
+{
+
+}*/
 
 int HbDataGroupPrivate::activePage( )
 {
     Q_Q( HbDataGroup );
+    // Here we need to find which page has the itemTransientState  true, 
+    // which in turn will be the active page. If no page is set as true , then
+    // make the 0th page as expanded ie itemTransientState as true
 
+    // This function can be called from Group or GroupPage items 
+    QModelIndex groupIndex ;    
     HbDataFormModelItem *modelItem = 
         static_cast<HbDataFormModel*>((q->itemView())->model())->itemFromIndex(
             q->modelIndex( ));
-    int page = 0;
-    if(modelItem){
-        page = modelItem->contentWidgetData(QString("currentPage")).toInt();
+    HbDataFormModelItem *groupModelItem = 0;
+    // get the group modelItem pointer depending upon the type
+    if( modelItem->type() == HbDataFormModelItem::GroupItem ) {
+        groupModelItem = modelItem;
+    } else if( modelItem->type() == HbDataFormModelItem::GroupPageItem ) {
+        groupModelItem = modelItem->parent();
     }
-    return page;
-}
-
-void HbDataGroupPrivate::setActivePage(int pageindex)
-{  
-    Q_Q( HbDataGroup ); 
-   
-    HbDataFormModelItem *modelItem = 
-        static_cast<HbDataFormModel*>((q->itemView())->model())->itemFromIndex(
-            q->modelIndex());
-    
-    QObject::disconnect( mSharedData->mItemView->model(), SIGNAL( dataChanged( QModelIndex,QModelIndex ) ),
-        mSharedData->mItemView, SLOT( dataChanged( QModelIndex,QModelIndex ) ) );
-
-    modelItem->setContentWidgetData(QString("currentPage"),pageindex);
-
-    QObject::connect( mSharedData->mItemView->model(), SIGNAL( dataChanged( QModelIndex,QModelIndex ) ),
-        mSharedData->mItemView, SLOT( dataChanged( QModelIndex,QModelIndex ) ) );
+    int childCount = groupModelItem->childCount();
+    //int activePage = 0;
+    // get container for setting item state
+    HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+        static_cast<QGraphicsWidget *>( mSharedData->mItemView->contentWidget( ) ) );
+    int currentPage = -1; 
+    bool somePageExpanded = false;
+    for( int i = 0; i < childCount; i++) {
+        // Make sure that the child is groupPage type.
+        HbDataFormModelItem *child = groupModelItem->childAt(i);
+        if( child->type() == HbDataFormModelItem::GroupPageItem ) {
+            // Here we are not using i as the page index since there can other types of children in the same level
+            // so need a seperate variable for this 
+            currentPage ++;
+            
+            // get the index of groupPage
+            QModelIndex pageIndex = static_cast<HbDataFormModel*>(q->itemView()->model())->indexFromItem(child);
+            if(container->itemTransientState(pageIndex).value("expanded").toBool()) {
+                somePageExpanded = true;
+                break;
+            }
+            
+        }        
+    }
+    if(!somePageExpanded && currentPage != -1) {// This means pages are present and no page is expanded so expand first page
+        currentPage = 0;
+    }
+    return currentPage;
 }
 
 void HbDataGroupPrivate::setHeading( const QString &heading )
@@ -362,16 +445,21 @@ bool HbDataGroup::setExpanded( bool expanded )
         if( contentWidgetType == HbDataFormModelItem::GroupItem ) {
             d->setExpanded(expanded);
         } else if (contentWidgetType == HbDataFormModelItem::GroupPageItem) {
+            //We need to change even the combobox state also so call pageChanged fuction
             if(modelItem) {
-                pageChanged(modelItem->parent()->indexOf(modelItem));
+                int page = d->pageIndex(d->mIndex);
+                if(page != -1) {
+                    pageChanged(page);
+                }
             }
         } else if(contentWidgetType == HbDataFormModelItem::FormPageItem) {
             if(modelItem) {
-                HbDataFormPrivate::d_ptr(
-                    static_cast<HbDataForm*>(d->mSharedData->mItemView))->_q_page_changed(
-                        modelItem->parent()->indexOf(modelItem));
+                int formPageIndex = d->pageIndex(d->mIndex);
+                if( formPageIndex!= -1) {
+                    HbDataFormPrivate::d_ptr(
+                    static_cast<HbDataForm*>(d->mSharedData->mItemView))->_q_page_changed(formPageIndex);
+                }
             }
-            
         }
         return true;
     } else {
@@ -385,11 +473,7 @@ bool HbDataGroup::isExpanded() const
     HbDataFormModelItem::DataItemType contentWidgetType =
         static_cast<HbDataFormModelItem::DataItemType>(
         (d->mIndex.data(HbDataFormModelItem::ItemTypeRole)).toInt());
-    if( contentWidgetType == HbDataFormModelItem::GroupItem ) {
-        if(d->mGroupHeading) {
-            return d->mGroupHeading->mExpanded;
-        }
-    } else if ( contentWidgetType == HbDataFormModelItem::GroupPageItem ) {
+    if( contentWidgetType < HbDataFormModelItem::SliderItem ) {
         HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
             static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
         if(container) {
@@ -397,7 +481,6 @@ bool HbDataGroup::isExpanded() const
         }
     }
     return false;
-
 }
 
 void HbDataGroup::updateGroupPageName(int index , const QString &page)
@@ -409,6 +492,7 @@ void HbDataGroup::updateGroupPageName(int index , const QString &page)
         }       
     }
 }
+
 void HbDataGroup::updatePrimitives()
 {
     Q_D(HbDataGroup);
@@ -458,13 +542,19 @@ QVariant HbDataGroup::itemChange( GraphicsItemChange change, const QVariant &val
 void HbDataGroup::pageChanged(int index)
 {
     Q_D(HbDataGroup);
+
     HbDataFormModelItem::DataItemType itemType =
         static_cast<HbDataFormModelItem::DataItemType>(
         (d->mIndex.data(HbDataFormModelItem::ItemTypeRole)).toInt());
+    
 
     if(!itemView()) {
         return;
     }
+
+    HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+                static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
+
     // Get Previous Active Group Page
     QModelIndex previousPageIndex;
     QModelIndex currentPageIndex;
@@ -472,48 +562,61 @@ void HbDataGroup::pageChanged(int index)
     // this function can get called for both group and grouppage
     // active grouppage is always stored in group modelitem so get the next index and 
     // activepage according to group
-    if(itemType == HbDataFormModelItem::GroupItem) {
-        previousPageIndex = modelIndex().child(d->activePage(),0);
-        currentPageIndex = modelIndex().child(index,0);
-    } else if(itemType == HbDataFormModelItem::GroupPageItem) {
+
+    int previous_page = d->activePage();
+    if(previous_page != -1) {
+        previousPageIndex = d->pageModelIndex(previous_page);  
+    }
+    currentPageIndex =  d->pageModelIndex(index); 
+
+    if(itemType == HbDataFormModelItem::GroupPageItem) {
         // need to fetch group (parent) for getting previus page and active page
         group = static_cast<HbDataGroup*>(itemView()->itemByIndex(modelIndex().parent()));
-        previousPageIndex = modelIndex().parent().child(HbDataGroupPrivate::d_ptr(group)->activePage(),0);
-        currentPageIndex = modelIndex().parent().child(index,0);
-        
         if(HbDataGroupPrivate::d_ptr(group)->mPageCombo) {
-        if(HbDataGroupPrivate::d_ptr(group)->mPageCombo->currentIndex() != index) {
-            QObject::disconnect(HbDataGroupPrivate::d_ptr(group)->mPageCombo,SIGNAL(currentIndexChanged(int)),
+            if(HbDataGroupPrivate::d_ptr(group)->mPageCombo->currentIndex() != index) {
+
+                // combobox has to be changed explicitly here since the call happened on GroupPage item
+                QObject::disconnect(HbDataGroupPrivate::d_ptr(group)->mPageCombo,SIGNAL(currentIndexChanged(int)),
                         group ,SLOT(pageChanged(int)));
-            HbDataGroupPrivate::d_ptr(group)->mPageCombo->setCurrentIndex(index);
-            QObject::connect(d->mPageCombo,SIGNAL(currentIndexChanged(int)),
+                HbDataGroupPrivate::d_ptr(group)->mPageCombo->setCurrentIndex(index);
+                QObject::connect(d->mPageCombo,SIGNAL(currentIndexChanged(int)),
                         group ,SLOT(pageChanged(int)));
+            }
         }
-    }
     }
     
     if(index != HbDataGroupPrivate::d_ptr(group)->activePage()) {// If the page is different
+
         // Collapse previous group page
-        HbDataGroup* previousPage = static_cast<HbDataGroup*>(itemView()->itemByIndex(previousPageIndex));
-        HbDataGroupPrivate::d_ptr(group)->setActivePage(index);
-        if(previousPage) {
-            HbDataGroupPrivate::d_ptr(previousPage)->setExpanded(false);
+        if(previousPageIndex.isValid()) {
+            HbDataGroup* previousPage = static_cast<HbDataGroup*>(itemView()->itemByIndex(previousPageIndex));
+            //HbDataGroupPrivate::d_ptr(group)->setActivePage(index);
+            
+            if(previousPage) {
+                HbDataGroupPrivate::d_ptr(previousPage)->setExpanded(false);
+            }else {
+                container->setItemTransientStateValue(previousPageIndex, "expanded", false);
+            }
         }
-        // Expand current selected page set as active page
-        
+
+        // Expand current selected page set as active page        
         if(currentPageIndex.isValid()) {
             HbDataGroup* currentPage = static_cast<HbDataGroup*>(
                 (itemView())->itemByIndex(currentPageIndex));
             if(currentPage) {
                 HbDataGroupPrivate::d_ptr(currentPage)->setExpanded(true);
+            } else {
+                container->setItemTransientStateValue(currentPageIndex, "expanded", true);
             }
         }
     } else {//If selected page is same then expand it if it is not expanded already
-        HbDataGroup* currentPage = static_cast<HbDataGroup*>(//remove this code
+        HbDataGroup* currentPage = static_cast<HbDataGroup*>(
             (itemView())->itemByIndex(previousPageIndex));
         if(currentPage && !currentPage->isExpanded()) {
             HbDataGroupPrivate::d_ptr(currentPage)->setExpanded(true);
-        }
+        } else {
+            container->setItemTransientStateValue(currentPageIndex, "expanded", true);
+        } 
     }
 }
 
@@ -527,6 +630,15 @@ void HbDataGroup::updateChildItems()
 {
     Q_D(HbDataGroup);
     HB_SD(HbAbstractViewItem);
+     if( d->mIndex.isValid( ) ) {
+        d->mType = static_cast<HbDataFormModelItem::DataItemType>(
+            d->mIndex.data(HbDataFormModelItem::ItemTypeRole).toInt( ) );
+    }
+
+    if( d->mSharedData && d->mSharedData->mItemView ) {
+        d->mModel = static_cast<HbDataFormModel*>( d->mSharedData->mItemView->model( ) );
+        d->mModelItem = d->mModel->itemFromIndex( modelIndex( ) );
+    }
     HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
             static_cast<QGraphicsWidget *>(d->mSharedData->mItemView->contentWidget()));
 
@@ -616,6 +728,7 @@ void HbDataGroup::polish(HbStyleParameters& params)
 // TODO: remove this, temporary workaround to return size zero incase of no contentwidget
 QSizeF HbDataGroup::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
+    //TODO: remove this
     QSizeF size;
     HbDataFormModelItem::DataItemType itemType = 
         static_cast<HbDataFormModelItem::DataItemType>(

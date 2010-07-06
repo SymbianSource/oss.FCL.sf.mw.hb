@@ -44,7 +44,6 @@
 #include <QWidget> // for QWIDGETSIZE_MAX
 #include <QActionEvent>
 #include <QDebug>
-#include <QGesture>
 
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
@@ -93,8 +92,6 @@ HbToolBarPrivate::~HbToolBarPrivate()
 
 void HbToolBarPrivate::init()
 {
-    Q_Q(HbToolBar);
-    q->grabGesture(Qt::PanGesture);
 }
 
 void HbToolBarPrivate::doLazyInit()

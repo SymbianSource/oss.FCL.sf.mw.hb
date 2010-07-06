@@ -33,7 +33,7 @@ class RWsSession;
 #endif //Q_OS_SYMBIAN
 
 // Define this to enable debug traces
-//#define HBTHEMESYSTEMEFFECT_DEBUG
+#undef HBTHEMESYSTEMEFFECT_DEBUG
 
 
 class HbThemeSystemEffectMap

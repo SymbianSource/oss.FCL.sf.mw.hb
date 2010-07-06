@@ -128,7 +128,9 @@ void HbSelectionControlPrivate::init()
 
     q->setVisible(false);
     QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+#if QT_VERSION >= 0x040600
     itemFlags |=  QGraphicsItem::ItemSendsGeometryChanges;
+#endif
     itemFlags &= ~QGraphicsItem::ItemIsFocusable;
     itemFlags |=  QGraphicsItem::ItemIsPanel;
     q->setFlags(itemFlags);
@@ -613,7 +615,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
         switch(tap->state()) {
         case Qt::GestureStarted:
             if (d->mEdit) {
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantPressed);
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
             }
             break;
         case Qt::GestureUpdated:
@@ -621,7 +623,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
       case Qt::GestureFinished:
             if (d->mEdit) {
                 d->tapGestureFinished(pos);
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             }
             break;
       case Qt::GestureCanceled:
@@ -646,7 +648,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
         case Qt::GestureFinished:
             if (d->mEdit) {
                 d->panGestureFinished(pan);
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             }
             break;
       case Qt::GestureCanceled:

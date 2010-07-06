@@ -35,6 +35,7 @@
 #include <hbabstractitemview_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbtapgesture.h>
+#include <hbnamespace_p.h>
 
 #include <QPersistentModelIndex>
 #include <QGraphicsLayout>
@@ -42,6 +43,7 @@
 #include <QCoreApplication>
 #include <QEvent>
 #include <QTimer>
+#include <QGraphicsScene>
 #include <QDebug>
 
 #include <QGesture>
@@ -263,6 +265,11 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
 
     switch (gesture->state()) {
         case Qt::GestureStarted: {
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            if (!gesture->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                gesture->setProperty(HbPrivate::ThresholdRect.latin1(), q->mapRectToScene(q->boundingRect()).toRect());
+            }
+
             setPressed(true, true);
             emit q->pressed(position);
             break;
@@ -281,6 +288,8 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
             break;
         }
         case Qt::GestureFinished: {
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
             if (gesture->tapStyleHint() == HbTapGesture::Tap 
                 || (mSharedData->mItemView
                 && !mSharedData->mItemView->longPressEnabled())) {
@@ -306,6 +315,7 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
             break;
         }
         case Qt::GestureCanceled: {
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             // hides focus immediately
             setPressed(false, false);
 
@@ -894,13 +904,18 @@ void HbAbstractViewItem::updateChildItems()
     }
 
     // items visibility or items content has really changed
-    d->mSizeHintPolish = false;
     updatePrimitives();
     if (!d->mContentChangedSupported
         || d->mItemsChanged) {
         updateGeometry();   // ensures that sizehint is calculated again in case items have been created or deleted
         d->mRepolishRequested = true;
+        // handle QEvent::Polish & QEvent::LayoutRequest event itself in ::sizeHint() as our performance is slightly better
+        // (saving a layoutrequest and going event loop through twice)
+        if (sd->mItemView && sd->mItemView->isScrolling()) {
+            d->mHandlingRepolishSynchronously = true;
+        }
         repolish();
+        d->mHandlingRepolishSynchronously = false;
     }
     d->mItemsChanged = false;
 }
@@ -954,7 +969,7 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
         if (!d->mFocusItem) {
             d->mFocusItem = style()->createPrimitive(HbStyle::P_ItemViewItem_focus, this);
         }
-            
+
         HbStyleOptionAbstractViewItem styleOption;
         initStyleOption(&styleOption);
 
@@ -1004,13 +1019,8 @@ void HbAbstractViewItem::polish(HbStyleParameters& params)
 {
     HB_SDD(HbAbstractViewItem);
 
-	if (!d->polished && layout()) {
-		return;
-	}
-	
-    if (d->mSizeHintPolish) {
-        d->mSizeHintPolish = false;
-        return;
+    if (!d->polished && layout()) {
+    return;
     }
 
     if (sd->mItemView) {
@@ -1040,16 +1050,17 @@ QSizeF HbAbstractViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 {
     Q_D(const HbAbstractViewItem);
     if (d->mRepolishRequested) {
-        // force the polish event in order to get the real size
-        const_cast<HbAbstractViewItemPrivate *>(d)->mRepolishRequested = false;
-        QEvent polishEvent(QEvent::Polish);
-        QCoreApplication::sendEvent(const_cast<HbAbstractViewItem *>(this), &polishEvent);
-        // HbAbstractItemView::scrollByAmount() [recycleItems()]
-        // causes updateChildItems() to be called, which posts Polish to be posted via repolish().
-        // Next statement in the scrollByAmount() [refreshContainerGeometry()]
-        // causes synchronous call of this method. This is a quick way to disable another
-        // ::polish() to be called.
-        d->mSizeHintPolish = true;
+        if (d->repolishOutstanding) {
+            // force the polish event in order to get the real size
+            // updateGeometry() in ::updateChildItems() causes this function to be called
+            // before QEvent::Polish of repolish() is handled from the event loop
+            QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem*>(this), QEvent::Polish);
+        } else {
+            // needed for pure widget or at startup phase, if first polish has not yet been done
+            QEvent polishEvent(QEvent::Polish);
+            QCoreApplication::sendEvent(const_cast<HbAbstractViewItem *>(this), &polishEvent);
+        }
+        QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem *>(this), QEvent::LayoutRequest);
     }
     return HbWidget::sizeHint(which, constraint);
 }

@@ -59,16 +59,17 @@ public:
     explicit HbDeviceDialogPluginManager(Flags flags = NoFlags, QObject *parent = 0);
     virtual ~HbDeviceDialogPluginManager();
 
-    void preloadPlugins();
     HbDeviceDialogInterface *createWidget(const QString &deviceDialogType,
-        const QVariantMap &parameters, bool &recycled, int &error);
+        const QVariantMap &parameters, const QString &baseFileName, const QString &pluginFilePath,
+        bool &recycled, int &error);
     void freeWidget(HbDeviceDialogInterface *widget);
-    bool loadPlugin(const QString &deviceDialogType);
-    bool unloadPlugin(const QString &deviceDialogType);
-    const HbDeviceDialogPlugin &plugin(const QString &deviceDialogType);
+    bool loadPlugin(const QString &deviceDialogType, const QString &baseFileName, QString *pluginFilePath);
+    bool unloadPlugin(const QString &pluginFilePath);
+    const HbDeviceDialogPlugin &plugin(const QString &pluginFilePath);
 
     static QStringList pluginPathList(const QString &subDir, int &readOnlyPaths);
     static QString pluginFileNameFilter();
+    static QString fileNameExtension();
     static int trimPluginPathList(QStringList &pathList);
 
 private: // types
@@ -79,7 +80,7 @@ private: // types
         };
         Q_DECLARE_FLAGS(Flags, Flag)
 
-        QStringList mTypes; // device dialog types implemented by the plugin
+        QList<HbDeviceDialogInterface*> mWidgets; // widgets created by the plugin
         HbLockedPluginLoader *mLoader; // loaded plugin
         int mRefCount; // number of references into the plugin
         HbDeviceDialogPlugin::PluginFlags mPluginFlags;
@@ -94,14 +95,16 @@ private: // types
         (HbLockedPluginLoader*, const QString&);
 
 private: // functions
-    void scanPlugins(PluginScanCallback func, const QString &deviceDialogType, bool stopIfFound = true);
+    QString scanPlugins(const QString &deviceDialogType, const QString &baseFileName);
     bool scanPlugin(PluginScanCallback func, const QString &deviceDialogType, const QString &filePath);
-    HbLockedPluginLoader *preloadPluginCallback(HbLockedPluginLoader *loader, const QString& unused);
     HbLockedPluginLoader *loadPluginCallback(HbLockedPluginLoader *loader, const QString &deviceDialogType);
+    HbLockedPluginLoader *scanPluginCallback(HbLockedPluginLoader *loader, const QString &deviceDialogType);
 
-    int findPlugin(const QString &deviceDialogType) const;
+    int findPlugin(const QString &pluginFilePath) const;
+    int findPlugin(HbDeviceDialogInterface* widget) const;
+    void incPluginRefCount(const QString &pluginFilePath);
     void freeRecycleWidgets();
-    void updateCachePath(const QString &path, bool updateReadOnly = false);
+    void updateCachePath(const QString &path, bool firstScan = false);
     static QStringList pluginKeys(QObject *pluginInstance);
 
 private slots:

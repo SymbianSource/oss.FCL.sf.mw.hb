@@ -10,11 +10,17 @@ docml2bin.commands = "$$QMAKE_DOCML2BIN" -s "${QMAKE_FILE_IN}" -t "${QMAKE_FILE_
 docml2bin.name = DOCML2BIN ${QMAKE_FILE_IN}
 docml2bin.CONFIG = no_link
 
-rcc.depends += compiler_docml2bin_make_all
+for(DOCMLFILE, $$list($$unique(DOCML))) {
+    DOCMLFILE_PWD = $${_PRO_FILE_PWD_}/$${DOCMLFILE}
+    rcc.depends += $${DOCMLFILE_PWD}.bin
 
-## how to add ".bin" for each variable?
-#rcc.depends += for(DOCMLFILE, $$list(DOCML)) { DOCMLFILE }
-#rcc.depends += $${first(DOCML)}.bin
-#rcc.depends += $${last(DOCML)}.bin
+    DOCML2BINEXTENSION = \
+        "START EXTENSION qt/qmake_extra_pre_targetdep.export" \
+        "OPTION PREDEP_TARGET $${DOCMLFILE_PWD}.bin" \
+        "OPTION DEPS $${DOCMLFILE_PWD}" \
+        "OPTION COMMAND $${QMAKE_DOCML2BIN} -s $${DOCMLFILE_PWD} -t $${DOCMLFILE_PWD}.bin" \
+        "END"    
+    BLD_INF_RULES.prj_extensions += DOCML2BINEXTENSION
+}
 
 QMAKE_EXTRA_COMPILERS += docml2bin

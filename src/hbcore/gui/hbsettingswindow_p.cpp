@@ -103,6 +103,9 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     mAnimationButton = new QPushButton(tr("&Animation on"), this); //krazy:exclude=qclasses
     mViewPortSizeButton = new QPushButton(tr("&Set custom ViewPortSize"), this); //krazy:exclude=qclasses
 
+    mWindowObscured = false;
+    mWindowObscuredButton = new QPushButton(tr("Obscure"), this);
+
     resolutionComboBox->addItems(HbDeviceProfile::profileNames());
     directionComboBox->addItems(QStringList() << tr("Left to right") << tr("Right to left"));
     dragToResizeComboBox->addItems(QStringList() << tr("Disabled") << tr("Enabled"));
@@ -120,7 +123,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     connect(mLightsButton, SIGNAL(pressed()), SLOT(toggleLights()));
     connect(mAnimationButton, SIGNAL(pressed()), SLOT(toggleAnimation()));
     connect(mViewPortSizeButton, SIGNAL(pressed()), SLOT(resizeViewPort()));
-
+    connect(mWindowObscuredButton, SIGNAL(pressed()), SLOT(toggleWindowObscured()));
     QVBoxLayout *boxLayout = new QVBoxLayout(this); //krazy:exclude=qclasses
 
     QGroupBox *mainGroup = new QGroupBox(this); //krazy:exclude=qclasses
@@ -130,6 +133,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     layout->addRow(tr("&Direction"), directionComboBox);
     layout->addRow(tr("&Drag to resize"), dragToResizeComboBox);
     layout->addRow(mViewPortSizeButton);
+    layout->addRow(mWindowObscuredButton);
 
     mainGroup->setLayout(layout);
     boxLayout->addWidget(mainGroup);
@@ -410,5 +414,22 @@ void HbSettingsWindow::resizeViewPort()
         mViewPortSizeButton->setText(tr("&Set custom ViewPortSize"));
     }
 
+}
+
+void HbSettingsWindow::toggleWindowObscured()
+{
+    if (!mWindowObscured) {
+        mWindowObscured = true;
+        mWindowObscuredButton->setText(tr("Reveal"));
+    } else {
+        mWindowObscured = false;
+        mWindowObscuredButton->setText(tr("Obscure"));
+    }
+
+    QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
+    for (int i = 0; i < mainWindowList.count(); ++i) {
+        HbEvent *obscureChangedEvent = new HbWindowObscuredChangedEvent(mWindowObscured);
+        QCoreApplication::postEvent(mainWindowList[i], obscureChangedEvent);
+    }
 }
 

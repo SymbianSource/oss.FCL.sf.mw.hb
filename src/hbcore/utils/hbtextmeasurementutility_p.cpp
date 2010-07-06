@@ -292,9 +292,9 @@ void HbTextMeasurementUtility::measureItems(int after)
         QTimer::singleShot(after, this, SLOT(doMeasureItems()));
     } else {
         // Synchronous
-        QCoreApplication::processEvents();
-        QCoreApplication::processEvents();
-        QCoreApplication::processEvents();
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::sendPostedEvents();
         doMeasureItems();
     }
 }

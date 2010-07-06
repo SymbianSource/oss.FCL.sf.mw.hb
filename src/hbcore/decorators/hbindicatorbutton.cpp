@@ -46,7 +46,8 @@ static const char noteIndicatorType[] = {"com.nokia.hb.indicatormenu/1.0"};
 
 HbIndicatorButtonPrivate::HbIndicatorButtonPrivate() :
     mHandleIcon(0), mDefaultAction(0), mNewEventAction(0), mProgressAction(0), mDeviceDialog(0), 
-    mProgressAnimationFound(false), mNewEventIcon(0), mNewEvent(false), mStyle(0), mIndicatorMenuOpen(false)
+    mProgressAnimationFound(false), mNewEventIcon(0), mNewEvent(false), mStyle(0), mIndicatorMenuOpen(false),
+    mTouchArea(0)
 {
 
 }
@@ -135,24 +136,24 @@ void HbIndicatorButtonPrivate::updateIcon()
     switch (mStyle)
     {
     case 0:
+        q->setProperty("layout_type", 1);
         q->setAction(mDefaultAction);
-        q->setProperty("layout", 1);
         break;
     case 1:
+        q->setProperty("layout_type", 1);
         q->setAction(mNewEventAction);
-        q->setProperty("layout", 1);
         break;
     case 2:
+        q->setProperty("layout_type", 1);
         q->setAction(mProgressAction);
-        q->setProperty("layout", 1);
         break;
     case 3:
+        q->setProperty("layout_type", 2);
         q->setAction(mProgressAction);
-        q->setProperty("layout", 2);
         break;
     default:
+        q->setProperty("layout_type", 1);
         q->setAction(mDefaultAction);
-        q->setProperty("layout", 1);
         break;
     }
     q->repolish();
@@ -186,7 +187,7 @@ HbIndicatorButton::HbIndicatorButton(QGraphicsItem *parent)
     : HbToolButton(*new HbIndicatorButtonPrivate, parent)
 {
     Q_D(HbIndicatorButton);
-    setProperty("layout", 1);
+    setProperty("layout_type", 1);
     d->init(); 
 
     setAction(d->mDefaultAction);
@@ -234,7 +235,7 @@ int HbIndicatorButton::buttonStyle() const
 void HbIndicatorButton::currentViewChanged(HbView *view)
 {
     Q_D(HbIndicatorButton);
-    HbIconItem *item = dynamic_cast<HbIconItem *>(d->iconItem);
+    HbIconItem *item = qgraphicsitem_cast<HbIconItem *>(d->iconItem);
     if (item) {
         item->animator().setOwnerView(view);
     }
@@ -246,7 +247,11 @@ void HbIndicatorButton::createPrimitives()
     d->mHandleIcon = style()->createPrimitive(HbStyle::P_IndicatorButton_handleindication, this);
     d->mHandleIcon->setVisible(false);
     d->mNewEventIcon = style()->createPrimitive(HbStyle::P_IndicatorButton_eventindication, this);
-    setBackgroundItem(HbStyle::P_IndicatorButton_background); // calls updatePrimitives()
+    d->mTouchArea = style()->createPrimitive(HbStyle::P_IndicatorButton_toucharea, this);
+    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(d->mTouchArea);
+    touchArea->grabGesture(Qt::TapGesture);
+    ungrabGesture(Qt::TapGesture);
+    d->setBackgroundItem(HbStyle::P_IndicatorButton_background);
 }
 
 void HbIndicatorButton::updatePrimitives()
@@ -257,6 +262,7 @@ void HbIndicatorButton::updatePrimitives()
     style()->updatePrimitive(backgroundItem(), HbStyle::P_IndicatorButton_background, &option);
     style()->updatePrimitive(d->mHandleIcon, HbStyle::P_IndicatorButton_handleindication, &option);
     style()->updatePrimitive(d->mNewEventIcon, HbStyle::P_IndicatorButton_eventindication, &option);
+    style()->updatePrimitive(d->mTouchArea, HbStyle::P_IndicatorButton_toucharea, &option);
     HbToolButton::updatePrimitives();
 }
 
@@ -312,6 +318,17 @@ void HbIndicatorButton::changeEvent(QEvent* event)
     HbToolButton::changeEvent(event);
 }
 
+/*
+  Overloaded hit detection to include touch area
+ */
+bool HbIndicatorButton::hitButton(const QPointF &pos) const
+{
+    Q_D(const HbIndicatorButton);
+    QRectF compRect = d->mTouchArea->boundingRect();
+    compRect.translate(d->mTouchArea->pos());
+    return compRect.contains(pos);
+}
+
 void HbIndicatorButton::handlePress()
 {
 #ifdef HB_EFFECTS
@@ -323,9 +340,7 @@ void HbIndicatorButton::handlePress()
 void HbIndicatorButton::handleRelease()
 {
     Q_D(HbIndicatorButton);
-    if (isUnderMouse()) {
-        d->showIndicatorMenu();
-    }
+    d->showIndicatorMenu();
 #ifdef HB_EFFECTS
     HbEffect::start(this, "decorator", "released");
 #endif

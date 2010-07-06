@@ -196,7 +196,10 @@ Populates the candidate list with text strings given as parameter.
 void HbCandidateList::populateList(const QStringList &candidates, bool addSpellQuery)
 {
     Q_D(HbCandidateList);
-
+	// Only for the first time when we launch candidate list its not setting a layout, 
+	// Mostly the problem is form Qt side, for the time being to resolve issue related to candidate list
+	// making visible property true.  
+    setVisible(true);
     setContentWidget(d->mList);
 
     d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.

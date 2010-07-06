@@ -51,9 +51,6 @@
 #include "hbinputprediction12keyhandler.h"
 #include "hbinputnumeric12keyhandler.h"
 
-const int HbSmileyNumberOfRows = 5;
-const int HbSmileyNumberOfColumns = 5;
-
 /*!
 \class HbVirtual12Key
 \brief Input method implementations for virtual ITU-T mode in HbInputs framework.
@@ -385,9 +382,7 @@ Call back indicating that the keypad is closed.
 */
 void HbVirtual12Key::keypadClosed()
 {
-    if (mOrientationAboutToChange) {
-        mOrientationAboutToChange = false;
-    }
+    mOrientationAboutToChange = false;
 }
 
 /*!
@@ -411,7 +406,14 @@ void HbVirtual12Key::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod
                 if (mCandidatePopup) {
                     mCandidatePopup->hide();
                 }
-                mVkbHost->minimizeKeypad(!stateChangeInProgress());
+
+                // Close input.
+                QInputContext* ic = qApp->inputContext();
+                if (ic) {
+                    QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
+                    ic->filterEvent(closeEvent);
+                    delete closeEvent;
+                }
             }
         }
     }
@@ -758,7 +760,7 @@ void HbVirtual12Key::smileySelected(QString smiley)
 void HbVirtual12Key::selectSpecialCharacterTableMode()
 {
     if (mItutKeypad) {
-        mItutKeypad->showSmileyPicker(HbSmileyNumberOfRows, HbSmileyNumberOfColumns);
+        mItutKeypad->showSmileyPicker();
     }
 }
 

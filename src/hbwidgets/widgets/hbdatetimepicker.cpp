@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbdatetimepicker_p.h"
 #include "hbdatetimepicker.h"
+#include "hbdatetimepicker_p.h"
 #include "hbstyleoption_p.h"
 
 /*!
@@ -215,7 +215,7 @@ QString HbDateTimePicker::displayFormat() const
             a minus sign is prepended in addition.</i></TD></TR>
     </TABLE>
 
-    NOTE:setDisplayFormat works only when the seperators are mentioned in the format like 'dd.mm.yy' or 'dd mm yy', this
+    NOTE:setDisplayFormat works only when the separators are mentioned in the format like 'dd.mm.yy' or 'dd mm yy', this
          will be fixed in the future versions.
 
     \param format is the display format, for datetime picker widget, in QString format.
@@ -678,23 +678,27 @@ void HbDateTimePicker::setInterval(QDateTimeEdit::Section section,int interval)
 
     d->mIntervals[section] = interval;
 
-    if((section == QDateTimeEdit::MinuteSection) && (d->mMinuteModel)){
-
-        d->mMinuteModel->removeRows(0, d->mMinuteModel->rowCount());
-
-        int newStart = d->mMinimumDate.time().minute();
-        if(interval <= newStart && !d->isMinimumHour()){
-            int i = 0;
-            for(i = newStart; i > 0; i -= interval){
-
+    //trigger minute range change
+    int start=0,end=0;
+    if(d->mMinutePicker) {
+        start=d->mMinuteOffset;
+        end=start+d->mMinuteModel->rowCount()-1;
+        if(d->isMinimumHour() )  {
+            start = d->mMinimumDate.time().minute();
+        } else {               
+            if((d->mIntervals[QDateTimeEdit::MinuteSection]!=1) && (d->mIntervals[section]>0)) {
+                start = d->mMinimumDate.time().minute()%d->mIntervals[section];
+            } else {
+                start = 0;
             }
-
-            newStart = i;
-
+        }
+        if(d->isMaximumHour()) {
+            end = d->mMaximumDate.time().minute();
+        } else {
+            end = 59;
         }
 
-        d->resizeModel(d->mMinuteModel, newStart, d->isMaximumHour()?d->mMaximumDate.time().minute():59,
-            newStart, d->isMaximumHour()?d->mMaximumDate.time().minute():59,&HbDateTimePickerPrivate::localeMinute, d->mIntervals[section]);
+        d->setMinuteRange(start,end);
     }
 }
 

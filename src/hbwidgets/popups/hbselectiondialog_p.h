@@ -65,10 +65,29 @@ private:
     QItemSelectionModel* selectionModel() const;
     QModelIndexList selectedModelIndexes() const;
 	void clearItems(bool keepItems);
+	void showActions(HbAbstractItemView::SelectionMode selectionMode);
 public:
     bool bOwnItems;
 	HbAbstractItemView::SelectionMode mSelectionMode;
     void close();
+private:
+	HbAction *action1;
+	HbAction *action2;
+};
+
+class HbSelectionDialogMarkWidget : public HbWidget
+{
+	Q_OBJECT
+public:
+    QGraphicsItem *mBackgroundItem;
+    HbCheckBox* chkMark;
+	HbTextItem* lbCounter;
+	HbSelectionDialogMarkWidget(QGraphicsItem *parent = 0);
+	~HbSelectionDialogMarkWidget();
+	void createPrimitives();
+	void updatePrimitives();
+	QVariant itemChange( GraphicsItemChange change, const QVariant &value );
+	QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 };
 
 class HB_AUTOTEST_EXPORT HbSelectionDialogContentWidget :public HbWidget
@@ -93,9 +112,7 @@ public:
 	bool bMultiSelection;
 	void updateCounter();
 private:
-    HbCheckBox* chkMark;
-	HbTextItem* lbCounter;
-	bool markWidgetShown;
+	HbSelectionDialogMarkWidget* markWidget;
 private slots:    
 	void _q_listWidgetItemSelected(HbListWidgetItem *item);
 	void _q_listItemSelected(QModelIndex index);

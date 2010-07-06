@@ -198,6 +198,7 @@ enum HbEditorConstraint {
     HbEditorConstraintLatinAlphabetOnly    = 0x08    /**< Editor allows only languages and input modes that produce latin alphabets. */
 };
 Q_DECLARE_FLAGS(HbEditorConstraints, HbEditorConstraint)
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbEditorConstraints)
 
 /*!
 \enum HbInputDigitType

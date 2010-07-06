@@ -93,7 +93,6 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataForm)
     Q_DISABLE_COPY(HbDataForm)
     Q_PRIVATE_SLOT(d_func(), void _q_page_changed(int))
-    Q_PRIVATE_SLOT(d_func(), void _q_item_displayed(const QModelIndex&))
     
     friend class HbDataFormViewItem;
 };

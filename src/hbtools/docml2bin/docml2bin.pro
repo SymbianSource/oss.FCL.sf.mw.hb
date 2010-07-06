@@ -30,10 +30,12 @@ TARGET = docml2bin
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbutils/document
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/core
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/utils
+DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 #INCLUDEPATH += .
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbutils/document
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/core
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/utils
+INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 DEFINES += HB_BOOTSTRAPPED
 CONFIG += console
 CONFIG -= app_bundle
@@ -42,6 +44,8 @@ CONFIG -= app_bundle
 DESTDIR = $${HB_BUILD_DIR}/bin
 
 # dependencies
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/layouts/hbanchor.h
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/layouts/hbanchor.cpp
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/utils/hbfontspec.h
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbfontspec.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderabstractsyntax_p.cpp

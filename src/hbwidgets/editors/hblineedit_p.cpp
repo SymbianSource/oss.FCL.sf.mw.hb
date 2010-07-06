@@ -36,7 +36,6 @@
 
 #include "hblineedit_p.h"
 #include "hblineedit.h"
-#include "hbmeshlayout_p.h"
 #include "hbcolorscheme.h"
 
 #include <QTextDocument>
@@ -58,7 +57,9 @@ HbLineEditPrivate::HbLineEditPrivate () :
     clearOnEdit(false),
     emitTextChanged(true),
     adjustFontSizeToFitHeight(false),
-    stretchedToLineCount(-1)
+    stretchedToLineCount(-1),
+    mCustomAutoCompContent(0),
+    mCustomAutoCompPopup(0)
 {
 }
 
@@ -79,12 +80,29 @@ void HbLineEditPrivate::init()
     scrollArea->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff); 
     defaultWrapMode = doc->defaultTextOption().wrapMode(); // cannot be changed.
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    q->setBackgroundItem(HbStyle::P_LineEdit_frame_normal);
+    setBackgroundItem(HbStyle::P_LineEdit_frame_normal);
     q->setFocusHighlight(HbStyle::P_LineEdit_frame_highlight,HbWidget::FocusHighlightActive);
     updateWrappingMode();
 
     Q_ASSERT(scrollArea);
     scrollArea->installEventFilter(q); // needed for resize event processing
+
+    // createCustomAutoCompPopup();
+}
+
+void HbLineEditPrivate::createCustomAutoCompPopup()
+{
+    Q_Q(HbLineEdit);
+
+    mCustomAutoCompPopup = new HbPopup(q);
+    mCustomAutoCompPopup->setVisible(false);
+    mCustomAutoCompPopup->setFlag(QGraphicsItem::ItemIsPanel, true);
+    mCustomAutoCompPopup->setActive(false);
+    mCustomAutoCompPopup->setFocusPolicy(Qt::NoFocus);
+    mCustomAutoCompPopup->setBackgroundFaded(false);
+    mCustomAutoCompPopup->setDismissPolicy(HbPopup::NoDismiss);
+    mCustomAutoCompPopup->setTimeout(HbPopup::NoTimeout);
+    HbStyle::setItemName(mCustomAutoCompPopup, QString("autoCompletePopup"));
 }
 
 void HbLineEditPrivate::updatePaletteFromTheme()
@@ -176,6 +194,12 @@ void HbLineEditPrivate::_q_textChanged()
 
     if(adjustFontSizeToFitHeight) {
         readjustStretchFont();
+    }
+
+    if (doc->isEmpty()) {
+        hideCustomAutoCompPopup();
+    } else {
+        showCustomAutoCompPopup();
     }
 }
 
@@ -297,11 +321,10 @@ QString HbLineEditPrivate::passwordString(const QString &text) const
 
 QString HbLineEditPrivate::echoString(const QString &text)
 {
-    Q_Q(HbLineEdit);
 
     QString retText(text);
 
-    if(echoMode == HbLineEdit::Password || (echoMode == HbLineEdit::PasswordEchoOnEdit && !q->hasFocus())) {
+    if(echoMode == HbLineEdit::Password || (echoMode == HbLineEdit::PasswordEchoOnEdit && !hasInputFocus())) {
         retText = passwordString(text);
     } else if (echoMode == HbLineEdit::NoEcho) {
         retText.clear();
@@ -393,6 +416,38 @@ void HbLineEditPrivate::setVisibleRows(int rowCount)
         deltaFont.setPixelSize(static_cast<int>(singleLineHeight));
         canvas->setFont(deltaFont);
     }
+}
+
+void HbLineEditPrivate::showCustomAutoCompPopup()
+{
+    if (mCustomAutoCompContent) {
+        Q_ASSERT(mCustomAutoCompPopup);
+
+        if (!mCustomAutoCompPopup->isVisible() && !doc->isEmpty()) {
+            mCustomAutoCompPopup->show();
+        }
+    }
+}
+
+void HbLineEditPrivate::hideCustomAutoCompPopup()
+{
+    if (mCustomAutoCompContent) {
+        Q_ASSERT(mCustomAutoCompPopup);
+
+        if (mCustomAutoCompPopup->isVisible()) {
+            mCustomAutoCompPopup->hide();
+        }
+    }
+}
+
+void HbLineEditPrivate::editingFinished()
+{
+    Q_Q(HbLineEdit);
+
+    if(q->echoMode() == HbLineEdit::PasswordEchoOnEdit) {
+        q->setPlainText(passwordString(passwordText));
+     }
+    emit q->editingFinished();
 }
 
 #include "moc_hblineedit.cpp"

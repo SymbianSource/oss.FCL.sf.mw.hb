@@ -64,7 +64,6 @@ private:
     friend class HbWidgetLoader;
     friend class HbEffectController;
     friend class HbDeviceProfile;
-    friend class HbEffectTheme;
     friend class HbThemeIndexResource;
     Q_DECLARE_PRIVATE_D( d_ptr, HbTheme )
     Q_DISABLE_COPY(HbTheme)

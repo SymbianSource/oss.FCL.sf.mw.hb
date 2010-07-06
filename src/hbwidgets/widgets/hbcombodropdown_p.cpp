@@ -25,22 +25,26 @@
 
 #include "hbcombodropdown_p.h"
 #include "hbcombobox_p.h"
+#include "hbwidget_p.h"
 #include <hblistview.h>
 #include <hbwidgetfeedback.h>
 
-#ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
 #include <hbpangesture.h>
-#endif
+#include <QGestureEvent>
 
+class HbComboDropDownPrivate : public HbWidgetPrivate
+{
+};
 HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsItem *parent )
-    :HbWidget( parent ),
+    :HbWidget( *new HbComboDropDownPrivate(), parent ),
      mList( 0 ),
      comboPrivate( comboBoxPrivate ),
      vkbOpened( false ),
      backgroundPressed( false )
 {
-    setBackgroundItem( HbStyle::P_ComboBoxPopup_background );
+    Q_D(HbComboDropDown);
+    d->setBackgroundItem(HbStyle::P_ComboBoxPopup_background);
     #if QT_VERSION >= 0x040600
     //this is to keep the focus in the previous widget.
     setFlag( QGraphicsItem::ItemIsPanel, true );
@@ -100,10 +104,13 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
             {
                 if( !this->isUnderMouse( ) ) {
                     //if its a pan gesture then don't accept the event so that list can be scrolled
-                    //even if mouse is outside drop down area
-                    if( QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {
+                    //even if mouse is outside drop down area. Also tap might finish outside the
+                    //dropdown area
+                    if( QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {                        
+                        HbTapGesture *tapGesture = qobject_cast<HbTapGesture *>(gestureEvent->gesture(Qt::TapGesture));
                         if( !qobject_cast<HbPanGesture *>( 
-                                gestureEvent->gesture( Qt::PanGesture ) ) ) {
+                                gestureEvent->gesture( Qt::PanGesture ) ) &&
+                            !(tapGesture && tapGesture->state() != Qt::GestureStarted)) {
                             accepted = true;
                         }
                     }

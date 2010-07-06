@@ -27,10 +27,10 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS += hbdevicedialogappserver hbthemeserver hbsplashgenerator
+SUBDIRS += hbdevicedialogappserver hbsplashgenerator
 
 symbian {
-    SUBDIRS += hbthemeserveroogmplugin
+    SUBDIRS += hbthemeserver hbthemeserveroogmplugin
 }
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)

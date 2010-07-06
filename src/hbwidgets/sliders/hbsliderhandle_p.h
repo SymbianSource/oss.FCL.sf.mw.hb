@@ -71,7 +71,6 @@ protected:
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     virtual void gestureEvent(QGestureEvent *event);
-    //void updatePrimitive();
     //virtual void polish( HbStyleParameters& params );
 
 private:

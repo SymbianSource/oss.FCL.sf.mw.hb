@@ -10,6 +10,10 @@ HbVolumeSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertica
     min-width:0.0un;
     size-policy-horizontal:fixed;
     size-policy-vertical:minimum-expanding;
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);   
 }
 
 HbZoomSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
@@ -18,6 +22,10 @@ HbZoomSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"
     min-width:0.0un;
     size-policy-horizontal:fixed;
     size-policy-vertical:minimum-expanding;
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);   
 }
 
 HbSlider[orientation="Vertical"]::control

@@ -130,9 +130,9 @@ class  vector_iterator
     : public const_vector_iterator<T, Pointer>
 {
 public:
-    typedef T           value_type;
-    typedef value_type &         reference;
-    typedef int                         difference_type;
+    typedef T value_type;
+    typedef value_type & reference;
+    typedef int difference_type;
 public:
 
     vector_iterator()
@@ -232,38 +232,37 @@ public:
     //Owing to OOM condition, the ctor of HbVector can throw, the exception is 
     // propagated to the caller.
     HbVector(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-       : mData(0,type),
-         mMemoryType(type),
+       : mData(0, type),
          mShared(false)
    {
-       GET_MEMORY_MANAGER(type);
-       HbSmartOffset smartOffset(manager->alloc(sizeof(HbVectorData)), type );
-       mData = new((char*)manager->base() + smartOffset.get()) HbVectorData(type);
-       smartOffset.release();
-
+       if (type == HbMemoryManager::HeapMemory) {
+           static int heapNullOffset(createNullOffset(HbMemoryManager::HeapMemory));
+           mData.setOffset(heapNullOffset);
+           mData->mRef.ref();
+       } else if (type == HbMemoryManager::SharedMemory) {
+           static int sharedNullOffset(createNullOffset(HbMemoryManager::SharedMemory));
+           mData.setOffset(sharedNullOffset);
+           mData->mRef.ref();
 #ifdef HB_BIN_CSS
-       HbCssConverterUtils::registerOffsetHolder(mData.offsetPtr());
+           HbCssConverterUtils::registerOffsetHolder(mData.offsetPtr());
 #endif
+       } else {
+           HbMemoryManager *manager = memoryManager();
+           HbSmartOffset smartOffset(manager->alloc(sizeof(HbVectorData)), type );
+           mData = new((char*)manager->base() + smartOffset.get()) HbVectorData(type);
+           smartOffset.release();
+       }
    }
 
-    HbVector(const HbVector<T> &other)
-    { 
-       mMemoryType = other.mMemoryType;
-       GET_MEMORY_MANAGER(other.mMemoryType)
-       // Deep copy , if current vector is in client side and it copies data which is in shared memory.
-       // else Do normal Implicit sharing.
-       mData = other.mData;
-
-       if(!manager->isWritable() || other.mShared == true){
+    HbVector(const HbVector<T> &other) : mData(other.mData), mShared(other.mShared)
+    {
+       HbMemoryManager *manager = memoryManager();
+       if(!manager->isWritable()){
            mShared = true;
-           mMemoryType = HbMemoryManager::HeapMemory;
-       } else {
-           mShared = false;
+       }
+       if (!mShared) {
            mData->mRef.ref();
        }
-       Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory 
-                || mMemoryType == HbMemoryManager::HeapMemory);
-
 #ifdef HB_BIN_CSS
        HbCssConverterUtils::registerOffsetHolder(mData.offsetPtr());
 #endif
@@ -271,7 +270,7 @@ public:
     
     ~HbVector()
     {
-       GET_MEMORY_MANAGER(mMemoryType);
+       HbMemoryManager *manager = memoryManager();
        // if the memory where the vector is not writable it means it's client process, so do nothing
        if(!mData || !manager->isWritable()) 
            return;
@@ -286,7 +285,7 @@ public:
     
     HbMemoryManager::MemoryType memoryType() const
     {
-       return mMemoryType;
+       return mShared ?  HbMemoryManager::HeapMemory : mData.memoryType();
     }
     
     #ifdef CSS_PARSER_TRACES
@@ -399,8 +398,9 @@ public:
     // reserve() can throw owing to OOM
     void reserve(int newSize)
     {
-        if( mShared || newSize > mData->mCapacity || mData->mRef != 1) {
-            GET_MEMORY_MANAGER(mMemoryType);
+        if( newSize > 0
+            && (mShared || newSize > mData->mCapacity || mData->mRef != 1)) {
+            HbMemoryManager *manager = memoryManager();
             int offset = (char*)mData->mStart.get() - (char*)manager->base();
             int newOffset = -1;
             if(newSize > mData->mCapacity)
@@ -542,40 +542,31 @@ public:
 
     HbVector<T> & operator=(const HbVector<T> &other)
     {
-        GET_MEMORY_MANAGER(mMemoryType);
-        if(!manager->isWritable())
-            Q_ASSERT(mMemoryType != HbMemoryManager::SharedMemory);
-        
+        Q_ASSERT(memoryType() == HbMemoryManager::SharedMemory
+                 || memoryType() == HbMemoryManager::HeapMemory);
         // if the Current vector and other Vector memory type is not same then do Deep Copy.
         //To Do: mShared == true is just Quick fix for unit-test where the other vector is in heap but 
         // its data shared to shared memory also the current vector is same state. this needs to fix
         // and decision making is required very clear for all the scenarios.
-        if (other.mMemoryType != mMemoryType || other.mShared == true || mShared == true ) 
+        if (other.memoryType() != memoryType() || other.mShared || mShared)
         {
             if(!mShared && !mData->mRef.deref()) {
                 destroyData();
             }
             mShared = true;
-            // Here assumption is that two memory type will be different in
-            // client side. so this code will not be execute in the server side so
-            // memoryType will be heap but data still shared to Shared memory.
-            mMemoryType = HbMemoryManager::HeapMemory;
         } else {
             if(!mData->mRef.deref() ) {
                destroyData();
             }
             other.mData->mRef.ref();
-            mMemoryType = other.mMemoryType;
             mShared = other.mShared;
         }
         mData = other.mData;
-        Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
         return *this;
     }
 
     HbVector<T> & operator=(const QVector<T> &other)
     {
-        Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
         clear();
         foreach (T obj, other) {
             append(obj);
@@ -593,12 +584,11 @@ public:
 private:
     void detach()
     {
-        if(mData->mRef != 1 || mShared == true) {
+        if(mData->mRef != 1 || mShared) {
             copyData(size(), size());
             // Here assumption is the new copy of data is created in heap.
             // so disabling the shared flag.
-            if(mShared)
-                mShared = false;
+            mShared = false;
         }
     }
 
@@ -614,12 +604,13 @@ private:
 // mData is not freed, because it is assumed, that it is owned by another HbVector (mData->mRef > 1)
     void copyData(int newSize, int oldSize)
     {
+        HbMemoryManager::MemoryType memType = memoryType();
         DataPointer tempData(mData);
-        DataPointer newData(0, mMemoryType);
-        GET_MEMORY_MANAGER(mMemoryType)
-        HbSmartOffset offset(manager->alloc(sizeof(HbVectorData)), mMemoryType);
+        DataPointer newData(0, memType);
+        HbMemoryManager *manager = memoryManager();
+        HbSmartOffset offset(manager->alloc(sizeof(HbVectorData)), memType);
         newData = new ((char*)manager->base() + offset.get())
-                        HbVectorData(mMemoryType, oldSize, newSize);
+                        HbVectorData(memType, oldSize, newSize);
         mData = newData;
         offset.release();
         if(!mShared && !tempData->mRef.deref()) {
@@ -643,13 +634,12 @@ private:
 // the exception is propagated to the caller
     int reAlloc(int oldOffset, int newSize , int oldSize)
     {   
-        GET_MEMORY_MANAGER(mMemoryType);
-        if(mData->mRef != 1 || mShared == true) {
+        HbMemoryManager *manager = memoryManager();
+        if(mData->mRef != 1 || mShared) {
             copyData( newSize, oldSize );
             // Here assumption is the new copy of data is created in heap.
             // so disabling the shared flag.
-            if(mShared)
-                mShared = false;
+            mShared = false;
             return (char*)mData->mStart.get() - (char*)manager->base();
         } else {
             // this statement can throw
@@ -671,19 +661,34 @@ private:
    }
 
 private : // Data
-   void deAllocateData()
-   {
-       GET_MEMORY_MANAGER(mMemoryType);
-       mData->deAllocateAll(mMemoryType);
+    static int createNullOffset(HbMemoryManager::MemoryType type)
+    {
+        GET_MEMORY_MANAGER(type);
+        int nullOffset(manager->alloc(sizeof(HbVectorData)));
+        HbVectorData* data = HbMemoryUtils::getAddress<HbVectorData>(type, nullOffset);
+        new(data) HbVectorData(type);
+        return nullOffset;
+    }
+    void deAllocateData()
+    {
+       HbMemoryManager *manager = memoryManager();
+       mData->deAllocateAll(manager);
        int dataOffset = (char*) mData.get() - (char*)manager->base();
        manager->free(dataOffset);
        mData = 0;
-   }   
+    }
+    HbMemoryManager *memoryManager()
+    {
+        Q_ASSERT(memoryType() == HbMemoryManager::SharedMemory
+                 || memoryType() == HbMemoryManager::HeapMemory);
+        return HbMemoryManager::instance(memoryType());
+    }
+
     struct HbVectorData
     {
         // The ctor of HbVectorData can throw owing to manager->alloc, we're not catching the exception
         // if any and simply allow to propagate it to caller.
-        HbVectorData(HbMemoryManager::MemoryType type, unsigned int size=0, unsigned int capacity = 0)
+        HbVectorData(HbMemoryManager::MemoryType type, unsigned int size = 0, unsigned int capacity = 0)
             : mStart(0,type),
               mSize(size), 
               mCapacity(capacity),
@@ -702,16 +707,15 @@ private : // Data
         ~HbVectorData()
         { 
 #ifdef HB_BIN_CSS	
-			HbCssConverterUtils::unregisterOffsetHolder(mStart.offsetPtr());
+            HbCssConverterUtils::unregisterOffsetHolder(mStart.offsetPtr());
 #endif //HB_BIN_CSS
-			destroyAll();
+            destroyAll();
         }
 
-        void deAllocateAll(HbMemoryManager::MemoryType type)
+        void deAllocateAll(HbMemoryManager *manager)
         {
             if(!mCapacity) return;
-            GET_MEMORY_MANAGER(type);
-            int offset = (char*)mStart.get() - (char*)manager->base();
+            int offset = (char*) mStart.get() - (char*) manager->base();
             manager->free(offset);
             mStart = 0;
             mSize = 0;
@@ -766,7 +770,6 @@ private : // Data
     };
     typedef smart_ptr<HbVectorData> DataPointer;
     DataPointer mData;
-    HbMemoryManager::MemoryType mMemoryType;
     bool mShared;
 
 };
@@ -778,8 +781,8 @@ HbVector<T>::insert(const_iterator before, int count, const_reference value)
 {
     int offset = before - mData->mStart;
     if(count != 0) {
-        if(mShared || mData->mRef !=1 || mData->mSize + count > mData->mCapacity) {
-            GET_MEMORY_MANAGER(mMemoryType);
+        if(mShared || mData->mRef != 1 || mData->mSize + count > mData->mCapacity) {
+            HbMemoryManager *manager = memoryManager();
             int offset = (char*)mData->mStart.get() - (char*)manager->base();
             int newCapacity = mData->mSize + count;
             if(newCapacity < mData->mCapacity) {
@@ -791,8 +794,9 @@ HbVector<T>::insert(const_iterator before, int count, const_reference value)
         if(QTypeInfo<value_type>::isStatic) {
             pointer b = mData->mStart + mData->mSize;
             pointer i = b + count;
+            HbMemoryManager::MemoryType memType = memoryType();
             while(i != b)
-                new(--i) T(mMemoryType);
+                new(--i) T(memType);
             i = mData->mStart + mData->mSize;
             pointer j = i + count;
             b = mData->mStart + offset;
@@ -828,7 +832,7 @@ void HbVector<T>::append(const value_type &value)
             mData->mStart[mData->mSize] = value;
         }
     } else {
-        GET_MEMORY_MANAGER(mMemoryType);
+        HbMemoryManager *manager = memoryManager();
         int offset = (char*)mData->mStart.get() - (char*)manager->base();
 #ifdef HB_BIN_CSS
         int capacity = (mData->mCapacity == 0) ? HbVectorDefaultCapacity : mData->mCapacity + 1;

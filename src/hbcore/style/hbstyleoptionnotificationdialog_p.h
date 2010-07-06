@@ -49,11 +49,9 @@ public:
     Qt::Alignment titleAlignment;
     Qt::Alignment textAlignment;
     Qt::Alignment iconAlignment;
-    bool titleWrapping;
-    bool textWrapping;
     bool isLink;    
-    Hb::TextWrapping wrappingTitle;
-    Hb::TextWrapping wrappingText;
+    Hb::TextWrapping titleTextWrapping;
+    Hb::TextWrapping textTextWrapping;
 };
 
 

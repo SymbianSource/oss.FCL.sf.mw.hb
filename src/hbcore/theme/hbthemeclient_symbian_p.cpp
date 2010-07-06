@@ -61,22 +61,21 @@ HbThemeClientPrivate::HbThemeClientPrivate():
 bool HbThemeClientPrivate::connectToServer()
 {
     TInt error(KErrNone);
-    for(int tries(0); tries < 3; tries++) {
+    for(int tries = 0;;++tries) {
         error = CreateSession(KThemeServerName, Version(), KDefaultMessageSlots);
-        if(!error) {
-            // connected to existing server - OK
+        if(!error || tries >= 3) {
+            //session created ok or give up trying.
             break;
         }
         if(error != KErrNotFound && error != KErrServerTerminated) {
-            // problem other than server not here - propagate error
+            // problem other than server not here.
             break;
         }
         error = StartServer();
-        if(!error || (error == KErrAlreadyExists)) {
-            // If server launched ok , try again to connect
-            continue;
+        if (error != KErrNone && error != KErrAlreadyExists) {
+            // unexpected error occurred.
+            break;
         }
-        break; // server not launched : don't cycle round again.
     }
 #ifdef HB_SGIMAGE_ICON
     if (!error && !sgDriverInit) {
@@ -86,7 +85,7 @@ bool HbThemeClientPrivate::connectToServer()
         }
     }
 #endif
-    return ( clientConnected = (KErrNone == error) );
+    return (clientConnected = (KErrNone == error));
 }
 
 

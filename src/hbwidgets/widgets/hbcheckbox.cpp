@@ -55,8 +55,9 @@ public:
 HbCheckBoxSpacer::HbCheckBoxSpacer( QGraphicsItem *parent )
     : HbWidgetBase( parent )
 {
-    // seems to be 4.6 only?
-    //    setFlag( QGraphicsItem::ItemHasNoContents, true );
+#if QT_VERSION >= 0x040600
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
+#endif
 }
 
 QSizeF HbCheckBoxSpacer::sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const

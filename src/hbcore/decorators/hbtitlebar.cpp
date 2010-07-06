@@ -32,7 +32,8 @@
 #include <hbwidgetfeedback.h>
 #include <hbinstance.h>
 #include <hbnamespace.h>
-#include <hbpangesture.h>
+
+#include <hbswipegesture.h>
 
 #include "hbtitlebar_p.h"
 #include "hbtitlebar_p_p.h"
@@ -79,13 +80,13 @@ void HbTitleBarPrivate::delayedConstruction()
         mIndicatorButton, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
     q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
     q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));  
-
-    q->setFlag(QGraphicsItem::ItemIsPanel, true);
 }
 
 void HbTitleBarPrivate::init()
 {
     Q_Q(HbTitleBar);
+
+    q->setFlag(QGraphicsItem::ItemIsPanel, true);
 
     // create title pane
     mTitlePane = new HbTitlePane(q);
@@ -110,8 +111,8 @@ void HbTitleBarPrivate::init()
     
     mPreviousTitleBarProperties = 0; // view not yet ready
 
-    QObject::connect(this->mTitlePane, SIGNAL(panRight()), q, SLOT(gestureRight()));
-    QObject::connect(this->mTitlePane, SIGNAL(panLeft()), q, SLOT(gestureLeft()));
+    QObject::connect(this->mTitlePane, SIGNAL(swipeRight()), q, SLOT(gestureSwipeRight()));
+    QObject::connect(this->mTitlePane, SIGNAL(swipeLeft()), q, SLOT(gestureSwipeLeft()));
 }
 
 void HbTitleBarPrivate::initSceneEventFilters(HbView *view)
@@ -124,7 +125,7 @@ void HbTitleBarPrivate::initSceneEventFilters(HbView *view)
             mTouchAreaItem->setAcceptedMouseButtons(Qt::LeftButton);
             mTouchAreaItem->installSceneEventFilter(q);
             QGraphicsObject *touchAreaItemGraphicsObject = static_cast<QGraphicsObject*>(mTouchAreaItem);
-            touchAreaItemGraphicsObject->grabGesture(Qt::PanGesture);
+            touchAreaItemGraphicsObject->grabGesture(Qt::SwipeGesture);
         }
     } else { // Remove scene event filter
         if (mTouchAreaItem) {
@@ -173,6 +174,7 @@ HbTitleBar::HbTitleBar(HbMainWindow *mainWindow, QGraphicsItem *parent /*= 0*/)
     d->q_ptr = this;
     d->mMainWindow = mainWindow;
     d->init();
+    setFlag(QGraphicsItem::ItemIsPanel, true);
 }
 
 HbTitleBar::HbTitleBar(HbTitleBarPrivate &dd, HbMainWindow *mainWindow,
@@ -204,8 +206,8 @@ HbTitleBar::~HbTitleBar()
  */
 void HbTitleBar::delayedConstruction()
 {
-       Q_D(HbTitleBar);
-       d->delayedConstruction();
+    Q_D(HbTitleBar);
+    d->delayedConstruction();
 }
 
 /*
@@ -275,17 +277,17 @@ void HbTitleBar::setDefaultNavigationAction()
 }
 
 /*
-    gestureRight. Handles left-to-right flick.
-            if(layoutDirection() == Qt::LeftToRight) {
+    gestureSwipeRight. Handles left-to-right flick.
 */
 
-void HbTitleBar::gestureRight()
+void HbTitleBar::gestureSwipeRight()
 {
     Q_D(HbTitleBar);
 
-    if (!minimizable()) {
+    if (!minimizable()) {      
         return;
     }
+
     HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
 
     Position p(position());
@@ -296,7 +298,6 @@ void HbTitleBar::gestureRight()
         d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Original) {
 #ifdef HB_EFFECTS
-        //grabMouse(); // this prevents taps/gestures on top of animating titlebar
         QRectF extRect(scenePos().x(), 0.0, screenSize.width(), 10.0);
         HbEffect::start(this, "titlebar", "minimize", this, "effectFinished", QVariant(), extRect);
 #else // no effects, just do the translation
@@ -306,16 +307,17 @@ void HbTitleBar::gestureRight()
 }
 
 /*
-    gestureLeft. Handles right-to-left flick.
+    gestureSwipeLeft. Handles right-to-left flick.
 */
 
-void HbTitleBar::gestureLeft()
+void HbTitleBar::gestureSwipeLeft()
 {
     Q_D(HbTitleBar);
 
     if (!minimizable()) {
         return;
     }
+
     HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
 
     Position p(position());
@@ -327,7 +329,6 @@ void HbTitleBar::gestureLeft()
         d->mIndicatorButton->isVisible() &&
         p == HbTitleBar::Minimized) {
 #ifdef HB_EFFECTS
-        //grabMouse(); // this prevents taps/gestures on top of animating titlebar
         // effect translates widget from rect's right x-coordinate to left x-coordinate
         QRectF extRect(-handleRect.width(), 0.0, scenePos().x(), 10.0); // height not used in effect
         HbEffect::start(this, "titlebar", "maximize", this, "effectFinished", QVariant(), extRect);
@@ -434,7 +435,7 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 
     Q_D(HbTitleBar);
     bool filterOutEvent = false;
-    switch(event->type()){
+    switch(event->type()){    
     case QEvent::GraphicsSceneMousePress:
         HbWidgetFeedback::triggered(this, Hb::InstantPressed);
         event->accept(); //we need to catch the mouse release and move events also
@@ -462,24 +463,23 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
         }
         filterOutEvent = true;
-        break;
+        break;    
     }
     case QEvent::Gesture: {
         QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
-        if (HbPanGesture *pan = qobject_cast<HbPanGesture*>(gestureEvent->gesture(Qt::PanGesture))) {
-            if (pan->state() == Qt::GestureFinished) {
-                if(pan->sceneDelta().x() < -0) {
-                    gestureLeft();
-                }
-                else if (pan->sceneDelta().x() > 0) {
-                    gestureRight();
-                }
-                gestureEvent->accept();
+        HbSwipeGesture *swipe = qobject_cast<HbSwipeGesture*>(gestureEvent->gesture(Qt::SwipeGesture));
+        if(swipe) {
+            if(swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
+                gestureSwipeRight();
+            } else if(swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
+                gestureSwipeLeft();
             }
+            gestureEvent->accept();
         }
+
         filterOutEvent = true;
         break;
-    }
+    }   
     default:
         break;
     }

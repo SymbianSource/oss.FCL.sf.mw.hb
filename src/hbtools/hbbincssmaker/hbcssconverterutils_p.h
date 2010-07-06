@@ -28,6 +28,7 @@
 
 #include <QList>
 #include <QMultiHash>
+#include <hbstring_p.h>
 
 class HbCssConverterUtils
 {
@@ -43,6 +44,10 @@ public:
     static void cellFreed(int offset);
     static void cellMoved(int offset, int newOffset);
     static int defragmentChunk();
+
+    //shared string management
+    static void addSharedStringData(const QString &str, const HbString &hbstr);
+    static HbString* sharedStringData(const QString &str);
 
 private:
 

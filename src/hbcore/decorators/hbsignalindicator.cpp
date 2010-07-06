@@ -77,6 +77,7 @@ void HbSignalIndicatorPrivate::_q_setNetworkMode(QSystemNetworkInfo::NetworkMode
     mNetworkMode = mode;
     mNetworkStatus = status;
     q->updatePrimitives();
+    emit q->levelChanged(); // this signal should be emitted for any kind of change
 }
 #endif // HB_HAVE_QT_MOBILITY
 
@@ -125,6 +126,7 @@ void HbSignalIndicator::setLevel(int levelPercent)
     if (d->mLevelPercent != levelPercent) {
         d->mLevelPercent = levelPercent;
         updatePrimitives();
+        emit levelChanged();
     }
 }
 

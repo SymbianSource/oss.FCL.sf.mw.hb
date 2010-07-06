@@ -2,19 +2,19 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
-<rect fill-opacity="0.6" height="30" stroke-opacity="0.6" width="30"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15" x2="15" y1="1.219" y2="29.44">
-<stop offset="0" stop-color="#4EDEFF"/>
-<stop offset="1" stop-color="#16A0D4"/>
+<rect fill-opacity="0.6" height="30" width="30"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 -578.9609 -812.0391)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="593.9609" x2="593.9609" y1="813.2588" y2="841.4798">
+<stop offset="0" style="stop-color:#6DADC1"/>
+<stop offset="1" style="stop-color:#3B518A"/>
 </linearGradient>
 <rect fill="url(#SVGID_1_)" height="28" width="28" x="1" y="1"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="15" x2="15" y1="3.188" y2="27.38">
-<stop offset="0" stop-color="#E0E1E2"/>
-<stop offset="1" stop-color="#FFFFFF"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 -578.9609 -812.0391)" gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="593.9609" x2="593.9609" y1="815.2285" y2="839.4205">
+<stop offset="0" style="stop-color:#E1E1E1"/>
+<stop offset="1" style="stop-color:#FFFFFF"/>
 </linearGradient>
 <rect fill="url(#SVGID_2_)" height="24" width="24" x="3" y="3"/>
-<path d="M3,3v24h2v-20c0-0.55,0.45-1,1-1h18c0.55,0,1,0.45,1,1v20h2v-24h-24z" fill-opacity="0.05" stroke-opacity="0.05"/>
-<path d="M3,3v24h1v-21c0-0.55,0.45-1,1-1h20c0.55,0,1,0.45,1,1v21h1v-24h-24z" fill-opacity="0.1" stroke-opacity="0.1"/>
-<rect fill-opacity="0.1" height="1" stroke-opacity="0.1" width="24" x="3" y="3"/>
+<path d="M3,3v24h2V7c0-0.55,0.45-1,1-1h18c0.55,0,1,0.45,1,1v20h2V3H3z" fill-opacity="0.05"/>
+<path d="M3,3v24h1V6c0-0.55,0.45-1,1-1h20c0.55,0,1,0.45,1,1v21h1V3H3z" fill-opacity="0.1"/>
+<rect fill-opacity="0.1" height="1" width="24" x="3" y="3"/>
 </g>
 </svg>

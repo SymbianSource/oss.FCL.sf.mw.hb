@@ -92,6 +92,8 @@ public:
     void checkAndShowMainWindow();
     void showMainWindow();
     void hideMainWindow();
+    bool ignoreFrameworkFocusRelease(QObject *object) const;
+
 public:
     HbInputMethod *q_ptr;
     QPointer<HbInputContextProxy > mProxy;

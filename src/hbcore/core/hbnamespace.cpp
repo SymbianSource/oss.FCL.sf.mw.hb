@@ -161,9 +161,16 @@
     Indicates whether widget and its children (classes derived from HbWidgetBase) are inside popup.
 */
 
-/*! \var Hb::WidgetAttribute Hb::InputMethodNeutral
+/*! \deprecated
+
+    \var Hb::WidgetAttribute Hb::InputMethodNeutral
     Indicates that the widget does not want to change the state of the input method.
     In practice this means that virtual keyboard is not closed if focus is changed from editor to this widget.
+*/
+
+/*!  \var Hb::WidgetAttribute Hb::Widget
+
+    Indicates that a HbWidgetBase derived item is Hb widget. Constructors of HbWidget set this flag on.
 */
 
 /*!

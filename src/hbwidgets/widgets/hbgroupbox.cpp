@@ -424,7 +424,7 @@ void HbGroupBox::setCollapsed( bool collapsed )
                 #ifdef HB_EFFECTS
                 HbEffect::start( d->mContentWidget, HB_GROUPBOX_TYPE, "collapse");  
                 #endif
-                HbStyle::setItemName( d->mContentWidget , "");
+                HbStyle::setItemName( d->mContentWidget , QString());
                 d->mContentWidget->setVisible(false);
             }
             else {
@@ -433,11 +433,11 @@ void HbGroupBox::setCollapsed( bool collapsed )
                 #endif
                 HbStyle::setItemName( d->mContentWidget , "contentwidget");
                 d->mContentWidget->setVisible(true);
+                repolish();
             }
             d->mHeadingWidget->updatePrimitives();
             emit toggled( d->collapsed );
         }
-        repolish();
     }    
 }
 
@@ -531,13 +531,8 @@ void HbGroupBox::setContentWidget( HbWidget *widget )
         d->mContentWidget->setContentWidget(widget);
         if(d->mHeadingWidget){
             d->setGroupBoxType(GroupBoxCollapsingContainer);
-        }else
+        }else{
             d->setGroupBoxType(GroupBoxRichLabel);
-
-        // collapsed property is set before setContentWidget
-        if ( d->mGroupBoxType == GroupBoxCollapsingContainer && d->collapsed ) {	
-            d->mContentWidget->setVisible(false);
-            HbStyle::setItemName( d->mContentWidget , "");
         }
         // update content widget primitve
         d->mContentWidget->updatePrimitives();

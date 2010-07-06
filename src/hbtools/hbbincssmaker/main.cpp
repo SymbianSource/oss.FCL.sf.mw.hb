@@ -135,13 +135,13 @@ void testStyleSheet(HbCss::StyleSheet *styleSheet)
 
 void testLayoutDef(const HbWidgetLoader::LayoutDefinition *layoutDef)
 {
-    VERBOSELN("mesh items count: " << layoutDef->meshItems.count());
-    for (int i = 0; i < layoutDef->meshItems.count(); ++i) {
-        const HbWidgetLoader::MeshItem &meshItem = layoutDef->meshItems.at(i);
-        VERBOSELN("src: " << meshItem.src);
-        VERBOSELN("dst: " << meshItem.dst);
-        VERBOSELN("spacing text: " << meshItem.spacingText);
-        VERBOSELN("spacer: " << meshItem.spacer);
+    VERBOSELN("anchor items count: " << layoutDef->anchorItems.count());
+    for (int i = 0; i < layoutDef->anchorItems.count(); ++i) {
+        const HbWidgetLoader::AnchorItem &anchorItem = layoutDef->anchorItems.at(i);
+        VERBOSELN("srcId: " << anchorItem.srcId);
+        VERBOSELN("dstId: " << anchorItem.dstId);
+        VERBOSELN("prefLength text: " << anchorItem.prefText);
+        VERBOSELN("anchorId: " << anchorItem.anchorId);
     }
 }
 
@@ -443,6 +443,7 @@ bool writeCssBinary(const QStringList &inputFiles, const QString &targetFile)
     // Create shared cache to shared memory.
     QByteArray data(offsetMap.result());
     bool success = false;
+
     if (shared->createSharedCache(data.data(), data.size(), offsetMap.size())) {
         // Defragment the chunk contents before dumping it in a file
         int endOffset = HbCssConverterUtils::defragmentChunk();

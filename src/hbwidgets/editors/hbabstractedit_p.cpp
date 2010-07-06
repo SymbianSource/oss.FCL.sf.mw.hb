@@ -39,7 +39,6 @@
 #include "hbstyleoption_p.h"
 #include "hbscrollarea.h"
 #include "hbvalidator.h"
-#include "hbmeshlayout_p.h"
 #include "hbmenu.h"
 #include "hbselectioncontrol_p.h"
 #include "hbcolorscheme.h"
@@ -48,6 +47,9 @@
 #include "hbfeaturemanager_r.h"
 #include "hbinputeditorinterface.h"
 #include "hbinputvkbhost.h"
+#include "hbinputmethod.h"
+#include "hbinputfocusobject.h"
+
 
 #include <QValidator>
 #include <QTextLayout>
@@ -95,6 +97,7 @@ public:
 
     HbEditItem(HbAbstractEdit *parent) : HbWidget(parent), edit(parent)
     {
+    	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
     };
 
     virtual ~HbEditItem() {};
@@ -377,7 +380,7 @@ void HbAbstractEditPrivate::setCursorPosition(int pos, QTextCursor::MoveMode mod
     }
 
     cursor.setPosition(pos, mode);
-
+    ensureCursorVisible();
     cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
@@ -581,13 +584,11 @@ void HbAbstractEditPrivate::ensureCursorVisible()
 
 void HbAbstractEditPrivate::setTextInteractionFlags(Qt::TextInteractionFlags flags)
 {
-    Q_Q(HbAbstractEdit);
-
     if (flags == interactionFlags)
         return;
     interactionFlags = flags;
 
-    if (q->hasFocus()) {
+    if (hasInputFocus()) {
         setBlinkingCursorEnabled(flags & Qt::TextEditable);
     }
 }
@@ -777,7 +778,7 @@ QAbstractTextDocumentLayout::PaintContext HbAbstractEditPrivate::getPaintContext
     if (cursor.hasSelection()) {
         QAbstractTextDocumentLayout::Selection selection;
         selection.cursor = cursor;
-        QPalette::ColorGroup cg = q->hasFocus() ? QPalette::Active : QPalette::Inactive;
+        QPalette::ColorGroup cg = hasInputFocus() ? QPalette::Active : QPalette::Inactive;
         selection.format.setBackground(ctx.palette.brush(cg, QPalette::Highlight));
         selection.format.setForeground(ctx.palette.brush(cg, QPalette::HighlightedText));
 
@@ -1078,16 +1079,24 @@ void HbAbstractEditPrivate::tapGesture(const QPointF &point)
     } else {
         // Currently focused widget to listen to InputContext before updating the cursor position
         sendMouseEventToInputContext(point);
+
+        // translate the point to have the Y ccordinate inside the viewport
+        QPointF translatedPoint(point);
+        if(translatedPoint.y() < viewPortRect().top()) {
+            translatedPoint.setY(viewPortRect().top() + 1);
+        } else if(translatedPoint.y() > viewPortRect().bottom()){
+            translatedPoint.setY(viewPortRect().bottom() - 1);
+        }
+
         // need to get the cursor position again since input context can change the document
-        newCursorPos = hitTest(point, Qt::FuzzyHit);
+        newCursorPos = hitTest(translatedPoint, Qt::FuzzyHit);
         setCursorPosition(newCursorPos);
 
         if (interactionFlags & Qt::TextEditable) {
             updateCurrentCharFormat();
         }
-        cursorChanged(HbValidator::CursorChangeFromMouse);
 
-        QString anchor(q->anchorAt(point));
+        QString anchor(q->anchorAt(translatedPoint));
         if(!anchor.isEmpty()) {
             emit q->anchorTapped(anchor);
         }
@@ -1234,16 +1243,27 @@ void HbAbstractEditPrivate::closeInputPanel()
     sendInputPanelEvent(QEvent::CloseSoftwareInputPanel);
 }
 
-#include "hbinputeditorinterface.h"
-#include "hbinputvkbhost.h"
-
-void HbAbstractEditPrivate::minimizeInputPanel()
+bool HbAbstractEditPrivate::hasInputFocus() const
 {
-    Q_Q(HbAbstractEdit);
+    Q_Q(const HbAbstractEdit);
 
-    HbEditorInterface ei(q);
-    HbVkbHost* vkbHost = ei.vkbHost();
-    vkbHost->minimizeKeypad();
+    HbInputMethod* inputMethod = HbInputMethod::activeInputMethod();
+    if (inputMethod && inputMethod->focusObject() &&
+        qobject_cast<HbAbstractEdit*>(inputMethod->focusObject()->object()) == q) {
+        return true;
+    }
+    return false;
+}
+
+void HbAbstractEditPrivate::setInputFocusEnabled(bool enable)
+{
+    QGraphicsItem *focusItem = focusPrimitive(HbWidget::FocusHighlightActive);
+    if (focusItem) {
+        focusItem->setVisible(enable);
+    }
+
+    setBlinkingCursorEnabled(enable);
+    repaintOldAndNewSelection(selectionCursor);
 }
 
 #include "moc_hbabstractedit.cpp"

@@ -154,7 +154,7 @@ QPixmap HbVgOutlineEffect::makeOutline(const QVariant &vgImage, const QSize &vgI
     VGImage dstImage = d->ensurePixmap(&d->dstPixmap, vgImageSize);
 
     if (d->paramsChanged) {
-        VGubyte stpc = (VGubyte) clamp(d->steepness, 0.0f, 32.0f);
+        VGubyte stpc = (VGubyte) clamp(d->steepness, 0.0f, 255.0f);
         VGubyte unnormalisedOpacity = (VGubyte)(clamp(d->opacity, 0.0f, 1.0f) * 255.0f);
         for (int i = 0; i < 256; ++i) {
             VGubyte alpha = (i * stpc > unnormalisedOpacity) ? unnormalisedOpacity : i * stpc;

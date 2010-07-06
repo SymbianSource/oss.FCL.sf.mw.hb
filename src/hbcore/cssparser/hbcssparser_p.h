@@ -40,6 +40,7 @@
 #include <hbnamespace.h>
 #include <hbdeviceprofile.h>
 #include <hbfontspec.h>
+#include <hbanchor.h>
 
 // smart containers and memory manager inclusion
 #include "hbmemorymanager_p.h"
@@ -53,6 +54,8 @@ namespace HbCss
 
 enum Property {
     Property_Unknown,
+    Property_Alignment,
+    Property_AnchorDirection,
     Property_AspectRatio,
     Property_BorderWidth,
     Property_BorderWidthBottom,
@@ -64,6 +67,7 @@ enum Property {
     Property_CenterVertical,
     Property_Color,
     Property_FixedHeight,
+    Property_FixedLength,
     Property_FixedSize,
     Property_FixedWidth,
     Property_Font,
@@ -72,18 +76,19 @@ enum Property {
     Property_FontStyle,
     Property_FontVariant,
     Property_FontWeight,
-    Property_Height,
     Property_Layout,
     Property_LayoutDirection,
     Property_Left,
     Property_MaximumHeight,
+    Property_MaximumLength,
     Property_MaximumSize,
     Property_MaximumWidth,
     Property_MinimumHeight,
+    Property_MinimumLength,
     Property_MinimumSize,
     Property_MinimumWidth,
-    Property_Mirroring, // deprecated
     Property_PreferredHeight,
+    Property_PreferredLength,
     Property_PreferredSize,
     Property_PreferredWidth,
     Property_Right,
@@ -91,9 +96,6 @@ enum Property {
     Property_SizePolicy,
     Property_SizePolicyHorizontal,
     Property_SizePolicyVertical,
-    Property_Spacing,
-    Property_SpacingHorizontal,
-    Property_SpacingVertical,
     Property_TextAlignment,
     Property_TextDecoration,
     Property_TextHeight,
@@ -102,9 +104,7 @@ enum Property {
     Property_TextTransform,
     Property_TextWrapMode,
     Property_Top,
-    Property_Width,
     Property_ZValue,
-    Property_Alignment,
     NumProperties
 };
 
@@ -128,12 +128,6 @@ enum KnownValue {
     Value_Uppercase,
     Value_Lowercase,
 
-    Value_Disabled,
-    Value_Active,
-    Value_Selected,
-    Value_On,
-    Value_Off,
-
     Value_Ignore,
     Value_Keep,
     Value_KeepExpand,
@@ -152,7 +146,6 @@ enum KnownValue {
     Value_MinimumExpanding,
     Value_Ignored,
     
-    Value_Mirrored, // deprecated
     Value_LeftToRight,
     Value_RightToLeft,
     Value_Parent,
@@ -160,6 +153,9 @@ enum KnownValue {
     Value_NoWrap,
     Value_WordWrap,
     Value_WrapAnywhere,
+
+    Value_Positive,
+    Value_Negative,
 
     NumKnownValues
 };
@@ -416,8 +412,10 @@ enum KnownPropertyFlag {
     ExtractedAspectRatioMode    = 0x10000000,
 
     // Frame specific
-    ExtractedBorderWidths       = 0x20000000
+    ExtractedBorderWidths       = 0x20000000,
 
+    // Anchor specific
+    ExtractedAnchorDir          = 0x80000000
 };
 Q_DECLARE_FLAGS(KnownPropertyFlags, KnownPropertyFlag)
 
@@ -439,6 +437,8 @@ struct KnownProperties
     Qt::AspectRatioMode mAspectRatioMode;
 
     qreal mBorderWidths[HbCss::NumEdges];
+
+    HbAnchor::Direction mAnchorDir;
 
     KnownPropertyFlags mFlags;
 };

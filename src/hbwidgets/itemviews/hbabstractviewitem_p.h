@@ -99,7 +99,6 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
           mRepolishRequested(false),
           mContentChangedSupported(false),
           mItemsChanged(false),
-          mSizeHintPolish(false),
           mPressed(false),
           mFocusItem(0),
           mMultiSelectionTouchArea(0),                    
@@ -123,7 +122,6 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
             mRepolishRequested(false),
             mContentChangedSupported(source.mContentChangedSupported),
             mItemsChanged(false),
-            mSizeHintPolish(false),
             mPressed(false),
             mFocusItem(0),
             mMultiSelectionTouchArea(0),
@@ -144,7 +142,6 @@ class HbAbstractViewItemPrivate : public HbWidgetPrivate
             mRepolishRequested = false;
             mContentChangedSupported = source.mContentChangedSupported;
             mItemsChanged = false;
-            mSizeHintPolish = false;
             mPressed = false;
             mFocusItem = 0;
             mSharedData = source.mSharedData;
@@ -196,7 +193,6 @@ public:
         bool mContentChangedSupported;
         // Status of child item existence changed.
         bool mItemsChanged;
-        mutable bool mSizeHintPolish;
         bool mPressed;
 
         QGraphicsItem *mFocusItem;

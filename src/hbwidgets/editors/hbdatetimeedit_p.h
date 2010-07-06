@@ -59,7 +59,6 @@ public:
     void init(const QDateTime &dateTime);
 
     virtual void _q_textChanged();
-    void _q_regainFocus();
 
     QDateTime dateTime;
     HbDateTimeValidator *validator;

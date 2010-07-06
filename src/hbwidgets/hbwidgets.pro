@@ -74,6 +74,8 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022FCC
+    
+    LIBS += -lsystemtoneservice
 
     # DEPLOYMENT_PLUGIN += qjpeg # TODO: Removed because this is already in qt.sis and that caused problems
     DEFINES += SYMBIAN_TARGET_ICON_CACHE_SIZE # TODO: what's this? why not use Q_OS_SYMBIAN?

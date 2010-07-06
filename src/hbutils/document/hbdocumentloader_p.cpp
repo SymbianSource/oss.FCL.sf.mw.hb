@@ -31,8 +31,6 @@
 #include <hbxmlloaderbinaryactions_p.h>
 #include <hbxmlloaderbinarysyntax_p.h>
 
-#include <QDebug>
-
 #ifndef HB_BOOTSTRAPPED
 
 #include <QGraphicsWidget>
@@ -112,7 +110,6 @@ HbDocumentLoaderPrivate::~HbDocumentLoaderPrivate()
 
 bool HbDocumentLoaderPrivate::createBinary( QIODevice *srcDevice, QIODevice *dstDevice )
 {
-    qDebug() << "createBinary, 1";
     bool result = true;
     syntax->setActions( binaryactions );
 #ifdef DEBUG_TIMES
@@ -124,32 +121,23 @@ bool HbDocumentLoaderPrivate::createBinary( QIODevice *srcDevice, QIODevice *dst
     QList<QString> sectionsList;
     QHash< QString, qint64 > sectionsPositionList;
     qint64 startPos = srcDevice->pos();
-    qDebug() << "createBinary, 2";
     if( syntax->scanForSections( srcDevice, sectionsList ) ) {
-        qDebug() << "createBinary, 3";
         srcDevice->seek( startPos );
-        qDebug() << "createBinary, 4";
         result = syntax->load( srcDevice, "" );
         if( !sectionsList.isEmpty() ) {
             for( int i = 0; i < sectionsList.size(); i++ ) {
                 sectionsPositionList[ sectionsList.at( i ) ] = dstDevice->pos();
                 srcDevice->seek( startPos );
-                qDebug() << "createBinary, 5, " << i;
                 result &= syntax->load( srcDevice, sectionsList.at( i ) );
-                qDebug() << "createBinary, 6, " << i;
             }
         }
     } else {
         result = false;
     }
-    qDebug() << "createBinary, 7";
     qint64 sectionsMetaDataPos = dstDevice->pos();
     QDataStream stream( dstDevice );
     stream << sectionsPositionList;
     stream << sectionsMetaDataPos;
-
-    qDebug() << "createBinary, 8";
-
 #ifdef DEBUG_TIMES
     debugPrintX("MYTRACE: DocML create binary, end: %d", debugTime.elapsed());
 #endif
@@ -165,7 +153,10 @@ bool HbDocumentLoaderPrivate::load( QIODevice *device, const QString &section )
 #else
     bool result(true);
 
+    const bool originalTextMode = device->isTextModeEnabled();
+
     if (binarysyntax->isBinary(device)) {
+        device->setTextModeEnabled( false );    
         binarysyntax->setActions(actions);
 #ifdef DEBUG_TIMES
         debugTime.restart();
@@ -176,6 +167,7 @@ bool HbDocumentLoaderPrivate::load( QIODevice *device, const QString &section )
         debugPrintX("MYTRACE: DocML load binary, end: %d", debugTime.elapsed());
 #endif
     } else {
+        device->setTextModeEnabled( true );    
         syntax->setActions(actions);
 #ifdef DEBUG_TIMES
         debugTime.restart();
@@ -186,6 +178,7 @@ bool HbDocumentLoaderPrivate::load( QIODevice *device, const QString &section )
         debugPrintX("MYTRACE: DocML load plain text, end: %d", debugTime.elapsed());
 #endif
     }
+    device->setTextModeEnabled( originalTextMode );    
     return result;
 #endif
 }

@@ -80,8 +80,8 @@ signals:
     void allActivated(const QList<IndicatorClientInfo> &clientInfo);
 
 public slots:
-    void gestureRight();
-    void gestureLeft();
+    void gestureSwipeRight();
+    void gestureSwipeLeft();
     void currentViewChanged(HbView *view);
 #ifdef HB_EFFECTS
     void effectFinished(const HbEffect::EffectStatus &status);

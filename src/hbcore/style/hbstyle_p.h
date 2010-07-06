@@ -44,26 +44,9 @@
 #include "hbcssparser_p.h"
 
 class HbWidget;
-class HbPluginLoader;
-class HbStyleInterface;
 class HbWidgetBasePrivate;
+class HbAnchor;
 
-class HbStylePluginInfo
-{
-public:    
-    int primitiveBaseId;
-    int primitiveCount;
-    int refCount;
-};
-
-class HbStyleInterfaceInfo
-{
-public: 
-    HbPluginLoader* loader;
-    int primitiveBaseId;
-};
-
-static QHash<const QGraphicsWidget*, QString> widgetLayoutNames;
 
 class HbStylePrivate
 {
@@ -75,12 +58,24 @@ public:
     QString logicalName(HbStyle::Primitive primitive, const QStyleOption *option) const;
     QIcon::Mode iconMode(QStyle::State state) const;
     QIcon::State iconState(QStyle::State state) const;
-	HbStyleInterface *stylePluginInterface( HbStyle::Primitive primitive ) const;
 
-    void polishItem(const HbVector<HbCss::StyleRule> &styleRules, HbWidget *widget,
-		QGraphicsItem *item, const QString &name, bool layoutDefined) const;
-    void updateThemedItems( const HbVector<HbCss::StyleRule> &styleRules,
-		QGraphicsItem *item ) const;
+
+    void polishItem(
+        const HbVector<HbCss::StyleRule> &styleRules,
+        HbWidget *widget,
+		QGraphicsItem *item,
+        const QString &name,
+        HbDeviceProfile &profile,
+        bool layoutDefined) const;
+    void polishAnchor(
+        const HbVector<HbCss::StyleRule> &styleRules,
+        HbWidget *widget,
+        HbAnchor *anchor,
+        HbDeviceProfile &profile) const;
+    void updateThemedItems(
+        const HbVector<HbCss::StyleRule> &styleRules,
+		QGraphicsItem *item,
+        HbDeviceProfile &profile) const;
 
     void ensureLayoutParameters(const HbDeviceProfile &profile) const;
 
@@ -90,10 +85,6 @@ public:
 
     HbStyle* q_ptr;
 
-    mutable QHash<int, HbStyleInterfaceInfo*> customPrimitives;
-    mutable QHash<QString, HbStylePluginInfo*> registeredPlugins;
-    mutable QHash<QString, QString> pluginStylePaths;
-    mutable int nextAvailableId;
 
     mutable QHash<QString, HbCss::Declaration> layoutParameters;
     mutable QString layoutParametersProfileName;

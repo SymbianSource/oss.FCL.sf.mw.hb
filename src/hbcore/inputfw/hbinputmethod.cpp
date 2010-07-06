@@ -119,7 +119,7 @@ Say that we have implemented touch input methods for 12 key portrait mode and qw
 Then we have Chinese touch input method for both portrait and landscape orientations and also
 Chinese handwriting recognition input mode for portrait mode.
 
-Touch input methods resolve to language range, which means that they will be handle all
+Touch input methods resolve to language range, which means that they will handle all
 the other languages, except Chinese, which has its own designated input method.
 
 Touch input methods also implement support for numeric mode. Because Chinese language uses
@@ -237,11 +237,27 @@ HbInputMethod *HbInputMethod::activeInputMethod()
 }
 
 /*!
-Lists custom input methods.
+Lists all custom input methods.
 */
 QList<HbInputMethodDescriptor> HbInputMethod::listCustomInputMethods()
 {
     return HbInputModeCache::instance()->listCustomInputMethods();
+}
+
+/*!
+Lists custom input methods for given parameters.
+*/
+QList<HbInputMethodDescriptor> HbInputMethod::listCustomInputMethods(Qt::Orientation orientation, const HbInputLanguage &language)
+{
+    return HbInputModeCache::instance()->listCustomInputMethods(orientation, language);
+}
+
+/*!
+Returns default input method for given orientation.
+*/
+HbInputMethodDescriptor HbInputMethod::defaultInputMethod(Qt::Orientation orientation)
+{
+    return HbInputModeCache::instance()->defaultInputMethod(orientation);
 }
 
 /*!
@@ -258,7 +274,7 @@ bool HbInputMethod::activateInputMethod(const HbInputMethodDescriptor &inputMeth
             return true;
         } else {
             HbInputMethod *customMethod = HbInputModeCache::instance()->loadInputMethod(inputMethod);
-            if (customMethod) {
+            if (customMethod && HbInputModeCache::instance()->acceptsState(customMethod, d->mInputState)) {
                 d->contextSwitch(customMethod);
                 return true;
             }
@@ -385,20 +401,30 @@ void HbInputMethod::setFocusWidget(QWidget *widget)
         return;
     }
 
-    // attach focuswidget to prxoy inputcontext as proxy is
-    // the only inputcotext known to qt framework.
-    d->proxy()->QInputContext::setFocusWidget(widget);
-
     if (!widget) {
-        // Losing focus.
+        bool unfocus = true;
+
         if (d->mFocusObject) {
+            // If the input focus is inside HbGraphicsScene then do not unfocus automatically.
+            if (d->ignoreFrameworkFocusRelease(d->mFocusObject->object())) {
+                unfocus = false;
+            }
+        }
+
+        // Losing focus.
+        if (d->mFocusObject && unfocus) {
             focusLost(false);
             d->hideMainWindow();
             delete d->mFocusObject;
             d->mFocusObject = 0;
         }
+
         return;
     }
+		
+    // attach focuswidget to prxoy inputcontext as proxy is 
+    // the only inputcotext known to qt framework.
+    d->proxy()->QInputContext::setFocusWidget(widget);
 
     QGraphicsView *gView = qobject_cast<QGraphicsView *>(widget);
     if (gView) {
@@ -476,6 +502,7 @@ void HbInputMethod::widgetDestroyed(QWidget *widget)
         // passing to actual QInputContext which is attached to Qt framework.
         // which will internally set QInputContext::focusWidget to Null.
         d->proxy()->QInputContext::widgetDestroyed(widget);
+        d->proxy()->QInputContext::setFocusWidget(0);
     }
 }
 
@@ -511,13 +538,7 @@ void HbInputMethod::setFocusObject(HbInputFocusObject *focusObject)
 
     if (d->compareWithCurrentFocusObject(focusObject)) {
         // The incoming focus object is either same or points to same
-        // widget that the framework is already focused to and nothing needs to be done here.
-        // But because the ownership of the focus object is transferred to the
-        // the framework, we need to delete the the incoming focus object in case it is
-        // dirrefent than current one.
-        if (d->mFocusObject != focusObject) {
-            delete focusObject;
-        }
+        // widget that the framework is already focused to and nothing needs to be done here.      
         return;
     }
 
@@ -743,7 +764,9 @@ base class implementation is empty.
 void HbInputMethod::orientationAboutToChange()
 {
     Q_D(HbInputMethod);
-    reset();
+	if(isActiveMethod()) {
+		reset();
+	}
     d->inputStateToEditor(d->mInputState);
     if (d->mFocusObject) {
         d->mOldFocusObject = d->mFocusObject;
@@ -799,13 +822,15 @@ Removes input method focus and asks active input plugin to close its active UI-c
 (such as touch keypads). This may be needed in some special cases where the underlying
 application wants to make sure that there are no input related elements on the screen.
 
-This is a if-all-else fails backup method. Same can be done (more efficiently) by doing
+This is a if-all-else fails backup method. Same can be done by doing
 following.
 
 \code
-QInputContext* inputContext = qApp->inputContext();
-if (inputContext) {
-    inputContext->setFocusWidget(0);
+QInputContext* ic = qApp->inputContext();
+if (ic) {
+    QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
+    ic->filterEvent(closeEvent);
+    delete closeEvent;
 }
 \endcode
 */

@@ -31,7 +31,6 @@
 #include <hbglobal.h>
 #include <hbnamespace.h>
 
-class HbAnchorLayoutDebug;
 class HbAnchorLayoutPrivate;
 class HbAnchor;
 
@@ -44,13 +43,18 @@ public:
     explicit HbAnchorLayout( QGraphicsLayoutItem *parent = 0 );
     virtual ~HbAnchorLayout();
 
-    bool setAnchor( const QString &startNodeId, Edge startEdge, const QString &endNodeId, Edge endEdge, qreal length = 0 );
-    bool setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge, qreal length = 0 );
+    HbAnchor *setAnchor( const QString &startNodeId, Edge startEdge, const QString &endNodeId, Edge endEdge, qreal length = 0 );
+    HbAnchor *setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge, qreal length = 0 );
+    HbAnchor *setAnchor( HbAnchor *anchor );
 
     bool removeAnchor( const QString &startNodeId, Edge startEdge, const QString &endNodeId, Edge endEdge );
     bool removeAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge );
+    bool removeAnchor( HbAnchor *anchor );
 
     void removeAnchors();
+
+    QList<HbAnchor*> anchors() const;
+    QList<HbAnchor*> effectiveAnchors();
 
     bool setMapping( QGraphicsLayoutItem *item, const QString& nodeId );
     bool removeMapping( QGraphicsLayoutItem *item );
@@ -85,8 +89,6 @@ protected:
 private:
     Q_DISABLE_COPY( HbAnchorLayout )
     Q_DECLARE_PRIVATE_D( d_ptr, HbAnchorLayout )
-
-    friend class HbAnchorLayoutDebug;
 };
 
 #endif // HBANCHORLAYOUT_H

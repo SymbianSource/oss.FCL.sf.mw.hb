@@ -39,7 +39,6 @@
 #include "hbinputsettingproxy.h"
 #include "hbframeitem.h"
 #include "hbframedrawer.h"
-#include "hbcolorscheme.h"
 #include "hbdialog_p.h"
 
 const qreal HbExactWordPopupHeight = 50.0;
@@ -201,11 +200,6 @@ void HbExactWordPopup::updatePrimitives()
     d->mPopupBackground->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
     d->mPopupBackground->frameDrawer().setFrameGraphicsName("qtg_fr_popup_secondary");
     d->mPopupBackground->setGeometry(boundingRect());
-
-	QColor col = HbColorScheme::color( "qtc_editor_normal" ); //popupforeground
-    if (col.isValid()) {
-        d->mText->setTextColor(col);
-    }
 }
 
 // this method is called whenever there is a switch of keypad usage from h/w to virtual

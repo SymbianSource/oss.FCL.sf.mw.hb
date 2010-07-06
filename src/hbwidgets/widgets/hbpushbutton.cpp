@@ -417,6 +417,9 @@ void HbPushButton::setAdditionalText( const QString &additionalText )
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
             style( )->updatePrimitive( d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption);
+            if ( isEnabled() ) {
+                setProperty("state", "normal");
+            }
         }
         if( doPolish ) {
             repolish();
@@ -449,7 +452,8 @@ void HbPushButton::setIcon( const HbIcon &icon )
     Q_D(HbPushButton);
 
     if ( d->icon != icon ) {
-        bool doPolish = icon.isNull( ) || d->icon.isNull();
+        //checking for d->polished to avoid extra polish loop
+        bool doPolish = (icon.isNull( ) || d->icon.isNull()) && d->polished;
         d->icon = icon;
         d->createPrimitives( );
         //updatePrimitives();
@@ -463,13 +467,7 @@ void HbPushButton::setIcon( const HbIcon &icon )
 
         }
         if( doPolish ) {
-            //Instead of posting an event we are directly sending polish and layout request
-            //event because during runtime if icon is set for the first time some
-            //flickering was coming. That was coming because icon was getting painted
-            //before polish.
-            QEvent* polishEvent = new QEvent( QEvent::Polish );
-            QCoreApplication::sendEvent(this, polishEvent);
-            QApplication::sendPostedEvents(this, QEvent::LayoutRequest);
+            repolish();
         }
     }
 }

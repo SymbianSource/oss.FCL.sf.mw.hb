@@ -47,6 +47,7 @@ public:
     void initializeWidget();
     
     void resetWidget();
+    void resetChineseInputMode();
 
 public slots:
     void updateGlobalInputLanguage(const HbInputLanguage &newLanguage);
@@ -68,6 +69,10 @@ public slots:
     void setPrimaryCandidateMode();
     void dataChange(const QModelIndex &startIn, const QModelIndex &endIn);
 
+    void setPortraitInputMethod(int index);
+    void setLandscapeInputMethod(int index);
+    void setHwrSpeed(int index);
+    void setCangjieMode(int index);
 protected:
     HbInputSettingWidgetPrivate *const d_ptr;
 

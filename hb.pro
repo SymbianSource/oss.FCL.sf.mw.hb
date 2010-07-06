@@ -55,19 +55,10 @@ else {
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/.qmake.cache)
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/hb_install.prf)
 
-hbvar.path = .
-hbvar.commands += $(QMAKE) -set HB \"hbcore hbwidgets hbutils\"
-QMAKE_EXTRA_TARGETS += hbvar
-INSTALLS += hbvar
 
 symbian {
     exists(rom):include(rom/rom.pri)
-    install.depends += hbvar
     install.depends += cssbinary
-    install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
-    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
-    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/mkspecs/hb_functions.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
-    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/mkspecs/docml2bin.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
     QMAKE_EXTRA_TARGETS += install
 }
 
@@ -81,6 +72,7 @@ QMAKE_EXTRA_TARGETS += cssbinmaker
 cssbinary.depends = cssbinmaker
 cssbinary.path = $$HB_RESOURCES_DIR/themes
 cssbinary.files = $$cssbinmaker.output
+cssbinary.CONFIG += no_check_exist
 INSTALLS += cssbinary
 
 symbian {
@@ -103,3 +95,4 @@ symbian {
 
 exists(doc):include(doc/doc.pri)
 include(src/hbcommon.pri)
+#include(src/symbian_installs/symbian_deployment.pri)

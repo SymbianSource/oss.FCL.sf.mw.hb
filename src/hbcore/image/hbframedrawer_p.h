@@ -66,6 +66,10 @@ public:
 
     void themeChange(const QStringList &updatedFiles);
 
+    static HbFrameDrawerPrivate *d_ptr(HbFrameDrawer *frameDrawer) {
+        return frameDrawer->d;
+    }
+
 private:
     void calculateShrinkedNinePieceCorners(
         HbMultiPartSizeData &data,
@@ -78,6 +82,7 @@ private:
     // disabled
     HbFrameDrawerPrivate &operator=(const HbFrameDrawerPrivate &other);
     HbIconFormatType iconType;
+
 public:
     QString frameGraphicsName;
     HbFrameDrawer::FrameType type;

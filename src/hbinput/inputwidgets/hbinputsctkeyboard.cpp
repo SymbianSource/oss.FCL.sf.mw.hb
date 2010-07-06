@@ -38,9 +38,9 @@
 #include "hbinputbuttongroup.h"
 #include "hbinputbutton.h"
 
-const qreal HbPortraitKeyboardHeightInUnits = 46.8;
+const qreal HbPortraitKeyboardHeightInUnits = 45.9;
 const qreal HbPortraitKeyboardWidthInUnits = 53.8;
-const qreal HbLandscapeKeyboardHeightInUnits = 34.6;
+const qreal HbLandscapeKeyboardHeightInUnits = 33.7;
 const qreal HbLandscapeKeyboardWidthInUnits = 95.5;
 
 const int HbSctPortraitNumberOfRows = 5;
@@ -117,6 +117,17 @@ const int HbLandscapeButtonKeyCodeTable[HbSctLandscapeNumberOfRows *HbSctLandsca
     HbInputButton::ButtonKeyCodeCustom
 };
 
+const int HbSctSpaceMarker = 0xE118;
+const int HbSctEnterMarker = 0xE125;
+
+#if defined(Q_OS_SYMBIAN)
+const QChar HbSctSpaceGlyph = 0xF800;
+const QChar HbSctEnterGlyph = 0xF801;
+#else
+const QChar HbSctSpaceGlyph = ' ';
+const QChar HbSctEnterGlyph = ' ';
+#endif
+
 /*!
 @proto
 @hbinput
@@ -175,10 +186,15 @@ void HbSctKeyboardPrivate::init()
                 ++key;
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeDelete &&
                        mType == HbKeyboardSctPortrait) {
+                // Portrait SCT has different delete icon from the default one
                 item->setIcon(HbIcon(HbInputButtonIconDelete2), HbInputButton::ButtonIconIndexPrimary);
-            } else if (keyCode(i) == HbInputButton::ButtonKeyCodePageChange &&
-                       mType == HbKeyboardSctPortrait) {
-                item->setIcon(HbIcon(HbInputButtonIconPageChange2), HbInputButton::ButtonIconIndexPrimary);
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAlphabet) {
+                // Button that is used to return to normal keypad should be shown as latched
+                item->setState(HbInputButton::ButtonStateLatched);
+                if (mType == HbKeyboardSctPortrait) {
+                    // Portrait SCT has different symbol icon from the default one
+                    item->setIcon(HbIcon(HbInputButtonIconSymbol2), HbInputButton::ButtonIconIndexPrimary);
+                }
             }
             ++key;
         }
@@ -234,6 +250,15 @@ void HbSctKeyboardPrivate::applyEditorConstraints()
                 } else if (item->state() == HbInputButton::ButtonStateDisabled) {
                     state = HbInputButton::ButtonStateReleased;
                 }
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAlphabet) {
+                state = HbInputButton::ButtonStateLatched;
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeSpace) {
+                bool allowed = focusedObject->characterAllowedInEditor(QChar(' '));
+                if (!allowed) {
+                    state = HbInputButton::ButtonStateDisabled;
+                } else if (item->state() == HbInputButton::ButtonStateDisabled) {
+                    state = HbInputButton::ButtonStateReleased; 
+                }
             }
             item->setState(state);
         }
@@ -264,7 +289,14 @@ void HbSctKeyboardPrivate::updateKeyCodes()
                 HbInputButton *item = buttons.at(i);
 
                 if (keyboardMap && key < keyboardMap->keys.count()) {
-                    item->setKeyCode(keyboardMap->keys.at(key)->keycode.unicode());
+                    // Replace space and enter markers with correct keycodes
+                    if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctSpaceMarker) {
+                        item->setKeyCode(HbInputButton::ButtonKeyCodeSpace);
+                    } else if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctEnterMarker) {
+                        item->setKeyCode(HbInputButton::ButtonKeyCodeEnter);
+                    } else {
+                        item->setKeyCode(keyboardMap->keys.at(key)->keycode.unicode());
+                    }
                 } else {
                     item->setKeyCode(-1);
                 }
@@ -289,12 +321,23 @@ void HbSctKeyboardPrivate::updateButtons()
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
                 if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(HbModifierNone) != QString("")) {
                     QString keydata = keyboardMap->keys.at(key)->characters(HbModifierNone);
-                    item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
+                    // Replace space and enter markers with correct glyphs.
+                    // These only exist in symbian fonts, so if we are not using symbian, use blank.
+                    if (keydata.at(0) == HbSctSpaceMarker) {
+                        item->setText(HbSctSpaceGlyph, HbInputButton::ButtonTextIndexPrimary);
+                    } else if (keydata.at(0) == HbSctEnterMarker) {
+                        item->setText(HbSctEnterGlyph, HbInputButton::ButtonTextIndexPrimary);
+                    } else {
+                        item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
+                    }
                 } else {
                     item->setText("", HbInputButton::ButtonTextIndexPrimary);
                 }
 
                 ++key;
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodePageChange) {
+                HbInputButton *item = buttons.at(i);
+                item->setText(QString::number(mActivePage+1) + '/' + QString::number(mPages), HbInputButton::ButtonTextIndexSecondaryFirstRow);
             }
         }
         buttonGroup->setButtons(buttons);
@@ -435,9 +478,9 @@ void HbSctKeyboard::changePage(HbInputVkbWidget::HbFlickDirection flickDirection
 
     if (flickDirection == HbInputVkbWidget::HbFlickDirectionRight ||
         flickDirection == HbInputVkbWidget::HbFlickDirectionLeft) {
-        int direction = -1;
+        int direction = 1;
         if (flickDirection == HbInputVkbWidget::HbFlickDirectionRight) {
-            direction = 1;
+            direction = -1;
         }
 
         d->mActivePage = (d->mActivePage + direction) % d->mPages;
@@ -466,12 +509,10 @@ Sends key event to owning input method.
 */
 void HbSctKeyboard::sendKeyReleaseEvent(const QKeyEvent &event)
 {
-    Q_D(HbSctKeyboard);
-
     if (event.key() == HbInputButton::ButtonKeyCodePageChange) {
-        changePage(HbInputVkbWidget::HbFlickDirectionRight);
+        changePage(HbInputVkbWidget::HbFlickDirectionLeft);
     } else if (event.key() == HbInputButton::ButtonKeyCodeSmiley) {
-        showSmileyPicker(d->mRows, d->mColumns);
+        showSmileyPicker();
     } else {
         HbInputVkbWidget::sendKeyReleaseEvent(event);
     }

@@ -205,10 +205,10 @@ bool HbVgImageIconRenderer::draw(QPainter *painter, const QPointF &topLeft, cons
 
 void HbVgImageIconRenderer::updatePainterTransformation(QPainter *painter, const QPointF &pos)
 {
-    VGfloat devh = painter->device()->height() - 1;
+    VGfloat devh = painter->device()->height();
     QTransform viewport(1.0f, 0.0f, 0.0f,
                         0.0f, -1.0f, 0.0f,
-                        0.5f, devh + 0.5f, 1.0f);
+                        0.0f, devh, 1.0f);
     QTransform imageTransform = painter->transform() * viewport;
     imageTransform.translate(pos.x(), pos.y());
 

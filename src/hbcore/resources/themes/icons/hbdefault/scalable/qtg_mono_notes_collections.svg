@@ -4,11 +4,6 @@
 <g fill-opacity="0.5" stroke-opacity="0.5">
 <rect fill="none" height="30" width="30"/>
 </g>
-<polygon points="5.999,1 5.999,4 26,4 26,24 29,24 29,1 "/>
-<polygon points="1,21 4,21 4,9 21,9 21,26 9,26 9,29 24,29 24,6 1,6 "/>
-<polygon points="8,29 8,22 1,22 "/>
-<rect height="2" width="2" x="7" y="17"/>
-<rect height="2" width="8" x="10" y="17"/>
-<rect height="2" width="2" x="7" y="12"/>
-<rect height="2" width="8" x="10" y="12"/>
+<path d="M27,1H8C6.896,1,6,1.896,6,3v1h20v17v3h1c1.104,0,2-0.896,2-2V3C29,1.896,28.104,1,27,1z"/>
+<path d="M22,6H3C1.896,6,1,6.896,1,8v14l7,7h14c1.104,0,2-0.896,2-2V8C24,6.896,23.104,6,22,6z M5,11h2v2H5V11z M5,16h2v2H5V16z   M8,26.879L3.121,22H6c1.104,0,2,0.896,2,2V26.879z M20,18H8v-2h12V18z M20,13H8v-2h12V13z"/>
 </svg>

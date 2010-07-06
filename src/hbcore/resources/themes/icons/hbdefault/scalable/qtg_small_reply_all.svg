@@ -6,13 +6,13 @@
 <rect fill="none" height="30" width="30"/>
 <polygon fill-opacity="0.6" points="17.81,7.626,17.81,0.938,4.161,12.31,6.692,14.42,1.348,18.88,15,30.25,15,23.56,28.12,23.56,28.12,15.13,28.12,14.19,28.12,7.626" stroke-opacity="0.6"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1" x1="16.41" x2="16.41" y1="2.87" y2="14.34">
-<stop offset="0" stop-color="#86D100"/>
-<stop offset="1" stop-color="#2F9600"/>
+<stop offset="0" stop-color="#59923F"/>
+<stop offset="1" stop-color="#2D6943"/>
 </linearGradient>
 <polygon fill="url(#SVGID_1)" points="15,7.5,15,14.19,27.19,14.19,27.19,8.564,16.88,8.564,16.88,2.939,5.625,12.31,7.424,13.81"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2" x1="15" x2="15" y1="9.39" y2="28.5">
-<stop offset="0" stop-color="#A0F800"/>
-<stop offset="1" stop-color="#319E00"/>
+<stop offset="0" stop-color="#85AE4A"/>
+<stop offset="1" stop-color="#2F6F44"/>
 </linearGradient>
 <polygon fill="url(#SVGID_2)" points="14.06,22.63,27.19,22.63,27.19,15.13,14.06,15.13,14.06,9.501,2.813,18.88,14.06,28.25"/>
 <polygon fill="#FFFFFF" fill-opacity="0.5" points="14.06,10.56,14.06,9.501,2.813,18.88,3.451,19.41" stroke-opacity="0.5"/>

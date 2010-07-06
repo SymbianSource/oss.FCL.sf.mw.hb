@@ -46,6 +46,9 @@ public:
     static const int SleepModeEnter;
     static const int SleepModeExit;
     static const int WindowLayoutDirectionChanged;
+    static const int InputMethodFocusIn;
+    static const int InputMethodFocusOut;
+    static const int WindowObscuredChanged;
     HbEvent(int eventType);
 };
 
@@ -64,6 +67,19 @@ public:
     }
 protected:
     HbDeviceProfile mProfile, mOldProfile;
+};
+
+class HB_CORE_EXPORT HbWindowObscuredChangedEvent: public HbEvent
+{
+public:
+    HbWindowObscuredChangedEvent(bool obscuredState);
+    ~HbWindowObscuredChangedEvent();
+
+    inline bool obscuredState() const {
+        return mObscuredState;
+    }
+protected:
+    bool mObscuredState;
 };
 
 #endif // HB_EVENTS_H

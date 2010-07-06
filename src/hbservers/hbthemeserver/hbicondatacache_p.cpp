@@ -955,15 +955,14 @@ void HbIconDataCache::removeFromCache(const HbIconKey &key, const HbIconCacheIte
     }
 }
 
+int HbIconDataCache::gpuLRUSize() const
+{
+    return gpuLruListSize;
+}
 #ifdef HB_ICON_CACHE_DEBUG
 int HbIconDataCache::count() const
 {
     return cache->count();
-}
-
-int HbIconDataCache::gpuLRUSize() const
-{
-    return gpuLruListSize;
 }
 
 int HbIconDataCache::freeVectorMemory()

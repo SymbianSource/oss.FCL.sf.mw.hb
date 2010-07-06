@@ -133,6 +133,7 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
     case HbInputButton::ButtonKeyCodeSymbol: { // Ctrl/Chr
     case HbInputButton::ButtonKeyCodeAlphabet:
         mInputMethod->switchSpecialCharacterTable();
+        q->HbInputPredictionHandler::actionHandler(HbInputModeHandler::HbInputModeActionSetKeypad);
         }		
         break;
     case HbInputButton::ButtonKeyCodeSettings:
@@ -152,12 +153,6 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
                 modifiers |= Qt::ShiftModifier;
             }
 
-            if (key != HbInputButton::ButtonKeyCodeDelete &&
-                key != HbInputButton::ButtonKeyCodeEnter &&
-                mInputMethod->currentKeyboardType() == HbKeyboardSctLandscape) {
-                q->sctCharacterSelected(QChar(key));
-                return true;
-            }
 
             // let's pass it to the base class.
             ret = q->HbInputPredictionHandler::filterEvent(event);
@@ -253,7 +248,6 @@ void HbInputPredictionQwertyHandler::commitAndUpdate(const QString& string, int 
     HbInputModeHandler::commitAndUpdate(string, replaceFrom, replaceLength);
     d->mInputMethod->closeExactWordPopup();
     d->mExactPopupLaunched = false;  
-    d->mTailShowing = false;
 }
 
 /*!
@@ -315,6 +309,9 @@ bool HbInputPredictionQwertyHandler::isActive() const
 
 void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
 {
+    if (!mEngine && !mInputMethod->focusObject()) {
+        return;
+    }
     mShowTail = true;
     mShowTooltip = true;
     // A backspace in predictive means updating the engine for the delete key press
@@ -329,19 +326,16 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         //we actually reduce ambiguity in the engine and hence we should have
         //some word getting predicted as a result to that.
         mCanContinuePrediction = true;
- 
-        if(false == mTailShowing && true == mExactPopupLaunched) {
-                mEngine->deleteKeyPress();
-                mEngine->updateCandidates(mBestGuessLocation);
+
+        int tailLength =  mInputMethod->focusObject()->preEditString().length() - mEngine->inputLength();
+        if(tailLength <= 0 && true == mExactPopupLaunched) {
+            mEngine->deleteKeyPress();
+            mEngine->updateCandidates(mBestGuessLocation);
         }
 
-        mBestGuessLocation = 0 ;
-        if(mCandidates->count() && (mCandidates->count()>mBestGuessLocation) && false == mTailShowing && false == mExactPopupLaunched) {
+        mBestGuessLocation = 0;
+        if(mCandidates->count() && (mCandidates->count()>mBestGuessLocation) && tailLength <= 0 && false == mExactPopupLaunched) {
             QString currentWord = mCandidates->at(mBestGuessLocation);
-            if(currentWord.length() > mEngine->inputLength()) {
-                //chop off the autocompletion part
-                currentWord = currentWord.left(mEngine->inputLength());
-            }
             if(currentWord.length()) {
                 currentWord.chop(1);
                 mEngine->deleteKeyPress();
@@ -352,7 +346,7 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
             } else {
                 commit(QString(""),false);
             }
-                
+
         } else if(!mCandidates->count() && mEngine->inputLength() >= 1) {
             //If Input length greater or equal to one then Append the current word to candidate 
             mCandidates->append(mEngine->currentWord());
@@ -446,14 +440,12 @@ void HbInputPredictionQwertyHandlerPrivate::updateEditor()
                 // the best guess word is sent to the editor
                 QInputMethodEvent event(bestGuessWord, list);
                 focusedObject->sendEvent(event);
-                mTailShowing = true;
             } else {
                 QInputMethodEvent::Attribute textstyle(QInputMethodEvent::TextFormat, 0, mCandidates->at(mPrimaryCandidateIndex).length(), underlined);
                 list.append(textstyle);
                 list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mCandidates->at(mPrimaryCandidateIndex).length(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mPrimaryCandidateIndex), list);
                 focusedObject->sendEvent(event);
-                mTailShowing = false;
             }
 
             if (mShowTooltip && mPrimaryCandidateIndex != mSecondaryCandidateIndex) {                

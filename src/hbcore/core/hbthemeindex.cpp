@@ -65,6 +65,9 @@ void HbThemeIndexResource::getResourceData()
     // First check base theme, which should be always valid
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
     if (!info.address) { // This shouldn't happen, as there must be valid base theme
+#ifdef THEME_INDEX_TRACES
+        qDebug("HbThemeUtils::getThemeIndexInfo(BaseTheme) returned null address");
+#endif
         return; // Data will be 0
     }
     
@@ -72,6 +75,9 @@ void HbThemeIndexResource::getResourceData()
     const HbThemeIndexItemData *baseItemData = baseIndex.getItemData(resourceName);
 
     if (!baseItemData) { // If the item is not found from base theme, it can't be found elsewhere
+#ifdef THEME_INDEX_TRACES
+        qDebug("HbThemeIndex::getItemData(%s) returned null data", qPrintable(resourceName));
+#endif
         return; // Data will be 0
     }
 
@@ -334,9 +340,13 @@ QString HbThemeIndexResource::fullMirroredFileName()
 QColor HbThemeIndexResource::colorValue()
 {
     if (!data || data->itemType != HbThemeIndexItemData::ColorItem) {
+        qWarning("HbThemeIndexResource::colorValue(): cannot fetch color for 0x%x::%i",
+                 qptrdiff(data), data ? data->itemType : (uint) -1);
         return QColor();
     }
-
+#ifdef THEME_INDEX_TRACES
+    qDebug("HbThemeIndexResource::colorValue(): constructing QColor(%x)", data->colorValue);
+#endif // THEME_INDEX_TRACES
     return QColor(data->colorValue);
 }
 

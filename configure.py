@@ -257,6 +257,7 @@ class OptionParser(optparse.OptionParser):
                          help="Specify the host qmake tool.")
         group.add_option("--host-make-bin", dest="hostmakebin", metavar="path",
                          help="Specify the host make tool (make, nmake, mingw32-make, gmake...).")
+        self.add_option_group(group)
         self.set_defaults(hostqmakebin=None)
         self.set_defaults(hostmakebin=None)
 
@@ -299,8 +300,13 @@ class OptionParser(optparse.OptionParser):
                          help="Assumes that MeeGoTouch UI is available without performing a compilation test.")
         group.add_option("--no-meegotouch", action="store_false", dest="meegotouch",
                          help="Assumes that MeeGoTouch UI is not available without performing a compilation test.")
+        group.add_option("--qt-openvg", action="store_true", dest="qtopenvg",
+                         help="Assumes that OpenVG is available without performing a compilation test.")
+        group.add_option("--no-qt-openvg", action="store_false", dest="qtopenvg",
+                         help="Assumes that OpenVG is not available without performing a compilation test.")
         self.add_option_group(group)
         self.set_defaults(qtmobility=None)
+        self.set_defaults(qtopenvg=None)
 
         group = optparse.OptionGroup(self, "Developer options")
         group.add_option("--developer", action="store_true", dest="developer",
@@ -603,11 +609,16 @@ class ConfigTest:
                         code = -1
             else:
                 # on other platforms, check that the resulting executable exists
-                executable = os.path.join(builddir, "hbconftest_" + basename)
                 if os.name == "nt":
-                    executable.append(".exe")
-                if not os.path.exists(executable) or not os.access(executable, os.X_OK):
-                    code = -1
+                    executable = os.path.join(os.path.join(builddir, "debug"), "hbconftest_" + basename + ".exe")
+                    if not os.path.exists(executable) or not os.access(executable, os.X_OK):
+                        executable = os.path.join(os.path.join(builddir, "release"), "hbconftest_" + basename + ".exe")
+                        if not os.path.exists(executable) or not os.access(executable, os.X_OK):
+                            code = -1
+                else:
+                    executable = os.path.join(builddir, "hbconftest_" + basename)
+                    if not os.path.exists(executable) or not os.access(executable, os.X_OK):
+                        code = -1
 
             # clean
             run_process(MAKE.command("clean"))
@@ -709,6 +720,12 @@ def main():
     if options.qtmobility:
         config.add_value("DEFINES", "HB_HAVE_QT_MOBILITY")
     print("INFO: Qt Mobility:\t\t\t%s" % options.qtmobility)
+    if options.qtopenvg == None:
+        options.qtopenvg = test.compile("config.tests/all/openvg")
+    if options.qtopenvg:
+        config.add_value("DEFINES", "HB_EFFECTS_OPENVG")
+        config.add_value("DEFINES", "HB_FILTER_EFFECTS")
+    print("INFO: OpenVG:\t\t\t\t%s" % options.qtopenvg)
     if QMAKE.platform() == "symbian":
         sgimagelite_result = test.compile("config.tests/symbian/sgimagelite")
         if sgimagelite_result:

@@ -56,7 +56,7 @@ class HbThemeClient;
 
 #define hbInstance (HbInstance::instance())
 
-// cache at the client side to store the mesh items.
+// cache at the client side to store the anchor items.
 // key used here is the filename+layoutname+sectionname.
 
 typedef QHash<QString,HbWidgetLoader::LayoutDefinition*> ClientHashForLayoutDefs;
@@ -146,14 +146,14 @@ QString HbWidgetLoader::version()
 /*!
     Loads and processes a WidgetML file.
 
-    If the widget already has a layout assumes it's HbMeshLayout.
-    If the widget doesn't have a layout creates HbMeshLayout and sets it to widget.
+    If the widget already has a layout assumes it's HbAnchorLayout.
+    If the widget doesn't have a layout creates HbAnchorLayout and sets it to widget.
     Creates the anchor edge attachments based on WidgetML.
 
     \param fileName file to be processed.
     \param name the name of the layout to be loaded.
     \param section space separated route to section, that you want to load.
-    \param storage specifies where to store the mesh items.
+    \param storage specifies where to store the anchor items.
     \return true if file was loaded and processed successfully.
 */
 bool HbWidgetLoader::load(
@@ -268,7 +268,7 @@ bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
     const QString &section,
     HbWidgetLoader::LayoutDefinition *&layoutDef )
 {
-    // check in the client side cache if the vector of meshitems is present.
+    // check in the client side cache if the vector of anchor items is present.
     QString key (fileName + name + section);
     if (clientLayoutDefsCache()->contains(key)){
         // present in the client cache.

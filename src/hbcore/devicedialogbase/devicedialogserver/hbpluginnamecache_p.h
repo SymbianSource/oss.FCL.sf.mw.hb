@@ -48,6 +48,19 @@ class HB_CORE_PRIVATE_EXPORT HbPluginNameCache : public QObject
 
 public:
 
+    class ScanParameters {
+    public:
+        enum Options {NoOptions, AddToLimitSet, LimitToSet};
+        ScanParameters(){mOptions = NoOptions;}
+        ScanParameters(const QString &path, Options options = NoOptions):
+            mOptions(options), mDirPath(path){}
+        bool operator ==(const ScanParameters &other) const;
+        void clear(){mDirPath.clear();}
+
+        Options mOptions; // scan options
+        QString mDirPath; // directory to scan
+    };
+
     typedef QStringList (*GetPluginKeys)(QObject *pluginInstance);
     typedef QString (*PluginFileNameFilter)();
 
@@ -55,16 +68,30 @@ public:
         PluginFileNameFilter pluginFileNameFilter = 0, QObject *parent = 0);
     ~HbPluginNameCache();
 
-    void addWatchPath(const QString &path);
+    void addWatchPath(const ScanParameters &parameters);
     void removeWatchPath(const QString &path);
-    void scanDirectory(const QString &path);
-    QString find(const QString &key);
+    void scanDirectory(const ScanParameters &parameters);
+    QString find(const QString &key, const QString &fileName);
     static QString directoryPath(const QString &path);
-
+    static int compare(const QString &s1, const QString &s2);
     void print();
+
 private:
-    void insert(const QStringList &keys, const QString &filePath);
-    void remove(const QString &key);
+    class FileItem {
+    public:
+        bool operator ==(const FileItem &other) const;
+        QString mFile;
+        QStringList mKeys;
+    };
+    class DirItem {
+    public:
+        bool operator ==(const DirItem &other) const;
+        QString mPath;
+        QList<FileItem> mFiles;
+    };
+
+    void insertPath(const QString &dirPath);
+    void insert(const QStringList &keys, const QString &dirPath, const QString &fileName);
     void removePath(const QString &filePath);
     static QString pluginFileNameFilter();
 
@@ -73,7 +100,7 @@ private slots:
 
 private: // data
     Q_DISABLE_COPY(HbPluginNameCache)
-    QHash<QString, QString> mCache;
+    QList<DirItem> mCache;
     HbPluginNameCacheThread *mThread;
     QFileSystemWatcher mWatcher;
 };

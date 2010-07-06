@@ -37,7 +37,7 @@ const int HbRepeatTimeoutShort = 150;
 const QString backgroundGraphics("qtg_fr_input_v_bg");
 const QString HbInputVkbHandleIcon("qtg_graf_input_v_swipe");
 const qreal HbCloseHandleHeight = 0;
-const qreal HbCloseHandleHeightInUnits = 2.23;
+const qreal HbCloseHandleHeightInUnits = 3.13;
 const qreal HbCloseHandleWidthInUnits = 18.8;
 
 class HbInputVkbWidgetPrivate;
@@ -71,7 +71,7 @@ public:
         HbSctViewSmiley
     };
 
-    HbInputVkbWidget(QGraphicsItem *parent = 0);
+    HbInputVkbWidget(QGraphicsItem *parent = 0);  
     virtual ~HbInputVkbWidget();
 
 public: // From HbVirtualKeyboard
@@ -127,7 +127,7 @@ public slots:
     void executeMethodDialog();
     void closeSettingList();
     void settingsClosed();
-    void showSmileyPicker(int rows, int columns);
+    void showSmileyPicker(int rows = 0, int columns = 0);
     void keypadLanguageChangeAnimationUpdate(qreal value);
     void keypadLanguageChangeFinished();
 
@@ -150,9 +150,9 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputVkbWidget)
     Q_DISABLE_COPY(HbInputVkbWidget)
-    Q_PRIVATE_SLOT(d_func(), void _q_inputMethodSelectionDialogFinished(HbAction *))
-    Q_PRIVATE_SLOT(d_func(), void _q_handleRockerChange(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode))
+    Q_PRIVATE_SLOT(d_func(), void _q_activateInputMethod(const HbInputMethodDescriptor &, const QByteArray &))
     Q_PRIVATE_SLOT(d_func(), void _q_settingsClosed(HbAction *action))
+    Q_PRIVATE_SLOT(d_func(), void _q_smileyPickerClosed())
 
     friend class HbTouchKeypadButton;
     friend class HbInputUsedSymbolPane;

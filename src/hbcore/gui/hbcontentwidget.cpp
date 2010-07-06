@@ -49,6 +49,8 @@ HbContentWidget::HbContentWidget(HbMainWindow *mainWindow, QGraphicsItem *parent
     mHidingView(0),
     mMainWindow(mainWindow)
 {
+    // Do not defer this, it causes invalidation and updating.
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -78,11 +80,6 @@ QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) c
     }
 
     return size;
-}
-
-void HbContentWidget::delayedConstruction()
-{
-    setFocusPolicy(Qt::StrongFocus);
 }
 
 void HbContentWidget::setTargetView(HbView *view)

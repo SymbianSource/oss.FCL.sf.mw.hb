@@ -151,6 +151,8 @@ public:
 
     void handleForegroundLost();
 
+    static bool isInPrivateDirectory(const QString &filename);
+
 signals:
     void defaultSizeAdjustmentChanged();
 

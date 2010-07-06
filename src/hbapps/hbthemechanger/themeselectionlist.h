@@ -50,22 +50,23 @@ public slots:
     void displayThemes();
     void setChosen(HbListWidgetItem *item);
     void onLongPressed(HbListWidgetItem* listViewItem, const QPointF& coords);
-    void applySelection();
     void updateThemeList(const QString &path);
     void sendThemeName(const QString& name);
-    void cancelTheme();
+    void cancel();
     void applyTheme();
+    void showSettingsView();
+    void showResourceView();
+    void themeChanged();
 #ifdef THEME_CHANGER_TIMER_LOG
     void processWhenIdle();
-    void themeChanged();
 #endif
 
 protected:
     void resizeEvent(QResizeEvent* event);
 private:
     static QStringList rootPaths();
+    QStringList rootThemes;
     QDir dir; 
-    int oldItemIndex;
     HbListWidget *themelist;
     HbIcon* rightMark;
     HbIcon* noMark;
@@ -76,6 +77,8 @@ private:
     HbMainWindow *mMainWindow;
     HbListWidgetItem* previewItem;
     HbView *previewView;
+    HbView *settingsView;
+    HbView *resourceView;
 
     QFileSystemWatcher *watcher;
     QString iCurrentTheme;

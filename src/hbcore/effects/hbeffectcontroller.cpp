@@ -181,7 +181,7 @@ void HbEffectController::unsetSharing()
 QString HbEffectController::expandFileName(const QString &fn, bool *fromTheme, bool *shared)
 {
     // Sharing not supported if the file is in Qt resource.
-    if (fn.startsWith(QLatin1String(":/")) && shared && *shared) {
+    if (shared && *shared && (fn.startsWith(QLatin1String(":/")) || HbIconLoader::isInPrivateDirectory(fn))) {
         *shared = false;
         return fn;
     } else {

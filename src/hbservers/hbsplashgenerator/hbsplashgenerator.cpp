@@ -74,7 +74,8 @@ HbSplashGenerator::HbSplashGenerator()
                           .arg(QString::number(hbsplash_server_uid3.iUid, 16));
     mSettings = new QSettings(iniFileName, QSettings::IniFormat, this);
 #else
-    mSettings = new QSettings("Nokia", "HbSplash", this);
+    mSettings = new QSettings("Nokia", "Hb", this);
+    mSettings->beginGroup("Splash");
 #endif
     // Effects on decorators (started when they are shown) would ruin
     // the screenshot. So disable everything (except the orientation
@@ -158,6 +159,7 @@ void HbSplashGenerator::doStart()
     qDebug() << PRE << "last regen:" << lastTheme << lastLang << lastFileCount << lastOutputDir
              << "current:" << currentTheme << currentLang << currentFileCount << currentOutputDir;
     if (mForceRegen
+            || currentFileCount == 0 // not having any files is wrong for sure
             || currentTheme != lastTheme
             || currentLang != lastLang
             || currentFileCount != lastFileCount

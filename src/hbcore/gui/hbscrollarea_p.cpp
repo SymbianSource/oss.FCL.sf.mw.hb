@@ -85,7 +85,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mIsScrolling(false),
         mIsAnimating(false),
         mScrollSpeed (QPointF (0,0)),
-        mScrollTimer(0),
+        mScrollTimerId(0),
         mScrollElapsedTime(),
         mLastElapsedTime(0.0),
         mTargetAnimationInProgress(false),
@@ -94,7 +94,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mTargetDelta(QPointF(0,0)),
         mAnimationInitialPosition (QPointF(0,0)),
         mAnimationShape (0),
-        mScrollBarHideTimer(0),
+        mScrollBarHideTimerId(0),
         mFrictionEnabled(true),
         mResetAlignment(true),
         mClampingStyle(HbScrollArea::BounceBackClamping),
@@ -105,6 +105,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mLayoutDirection(Qt::LeftToRight),
         mAlignment(Qt::AlignLeft | Qt::AlignTop),
         mContinuationIndicators(false),
+        mEmitPositionChangedSignal(false),
         continuationIndicatorTopItem(0),
         continuationIndicatorBottomItem(0),
         continuationIndicatorLeftItem(0),
@@ -123,15 +124,12 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
 
 HbScrollAreaPrivate::~HbScrollAreaPrivate()
 {    
+    delete mAnimationShape;
 }
 
 void HbScrollAreaPrivate::init()
 {
     Q_Q( HbScrollArea );
-
-    mScrollTimer.setParent(q);
-    mScrollBarHideTimer.setParent(q);
-    mScrollBarHideTimer.setSingleShot(true);
 
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     q->setFlag( QGraphicsItem::ItemClipsChildrenToShape, true );
@@ -172,8 +170,7 @@ void HbScrollAreaPrivate::doLazyInit()
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChanged(qreal, Qt::Orientation)), q, SLOT(_q_thumbPositionChanged(qreal, Qt::Orientation)));
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChangeRequested(qreal, Qt::Orientation)), q, SLOT(_q_groovePressed(qreal, Qt::Orientation)));
 
-    QObject::connect(&(mScrollTimer), SIGNAL(timeout()), q, SLOT(_q_animateScrollTimeout()));
-    QObject::connect(&(mScrollBarHideTimer), SIGNAL(timeout()), q, SLOT(_q_hideScrollBars()));
+
 }
 
 void HbScrollAreaPrivate::replaceScrollBar(Qt::Orientation orientation, HbScrollBar *scrollBar)
@@ -294,9 +291,8 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
         if (mAbleToScrollY && mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
             displayScrollBar(Qt::Vertical);
         }
-        if (mScrollBarHideTimer.isActive()) {
-            mScrollBarHideTimer.stop();
-        }
+        stopScrollbarHideTimer();
+
     } else {
 
         if (mAbleToScrollX && mHorizontalScrollBar->isVisible()) {
@@ -358,11 +354,16 @@ void HbScrollAreaPrivate::startAnimating()
     // Launch the animation timer
     if (!mContents)
         return;
-    if (!mScrollTimer.isActive()) {
-        mScrollElapsedTime.restart();
-        mLastElapsedTime = 0.0;
-        mScrollTimer.start(ANIMATION_INTERVAL);
-        mIsAnimating = true;
+    if (mScrollTimerId == 0) {
+        Q_Q( HbScrollArea );
+        mScrollTimerId = q->startTimer(ANIMATION_INTERVAL);
+
+        //make sure we where able to start the timer
+        if (mScrollTimerId != 0) {
+            mScrollElapsedTime.restart();
+            mLastElapsedTime = 0.0;
+            mIsAnimating = true;
+        }
     }
 }
 
@@ -371,7 +372,7 @@ void HbScrollAreaPrivate::stopScrolling()
     Q_Q( HbScrollArea );
     if (mHorizontalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide ||
         mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
-        mScrollBarHideTimer.start(SCROLLBAR_HIDE_TIMEOUT);
+        startScrollbarHideTimer();
     }
     if (mIsScrolling) {
         if (mScrollFeedbackOngoing) {
@@ -386,11 +387,37 @@ void HbScrollAreaPrivate::stopScrolling()
 
 void HbScrollAreaPrivate::stopAnimating()
 {
-    mScrollTimer.stop();
+    if (mIsAnimating) {
+        Q_Q( HbScrollArea );
+        q->killTimer(mScrollTimerId);
+        mScrollTimerId = 0;
+        mIsAnimating = false;
+        stopScrolling();
+    }
+}
 
-    mIsAnimating = false;
+void HbScrollAreaPrivate::startScrollbarHideTimer()
+{
+    if (mScrollBarHideTimerId == 0){
+        Q_Q( HbScrollArea );
+        mScrollBarHideTimerId = q->startTimer(INITIAL_SCROLLBAR_HIDE_TIMEOUT);
+    }
 
-    stopScrolling();
+}
+
+void HbScrollAreaPrivate::stopScrollbarHideTimer()
+{
+    if (mScrollBarHideTimerId != 0) {
+        Q_Q( HbScrollArea );
+        q->killTimer(mScrollBarHideTimerId);
+        mScrollBarHideTimerId = 0;
+    }
+}
+
+void HbScrollAreaPrivate::reStartScrollbarHideTimer()
+{
+  stopScrollbarHideTimer();
+  startScrollbarHideTimer();
 }
 
 /*
@@ -559,6 +586,7 @@ void HbScrollAreaPrivate::setContentPosition(const QPointF &newPosition)
         Q_Q(HbScrollArea);
 
         mContents->setPos(newPosition);
+     if (mEmitPositionChangedSignal)
         emit q->scrollPositionChanged(-newPosition);
     }
 }
@@ -850,8 +878,8 @@ void HbScrollAreaPrivate::prepareScrollBars()
             mVerticalScrollBar->setVisible(false);
     }
 
-    if (scrollBarsVisible && !mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.start(INITIAL_SCROLLBAR_HIDE_TIMEOUT);
+    if (scrollBarsVisible) {
+        startScrollbarHideTimer();
     }
 }
 
@@ -906,9 +934,10 @@ void HbScrollAreaPrivate::_q_hideScrollBars()
     if (mHorizontalScrollBar && mHorizontalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
         if (HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->isPressed() ||
             (mVerticalScrollBar && HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->isPressed())) {
-            mScrollBarHideTimer.start();
+            startScrollbarHideTimer();
         } else if(mHorizontalScrollBarPolicy != HbScrollArea::ScrollBarAlwaysOn
                   && mHorizontalScrollBar->isVisible()){
+            stopScrollbarHideTimer();
             mHorizontalScrollBar->setVisible(false);
 
         }
@@ -916,9 +945,10 @@ void HbScrollAreaPrivate::_q_hideScrollBars()
     if (mVerticalScrollBar && mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
         if (HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->isPressed() ||
             (mHorizontalScrollBar && HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->isPressed())) {
-            mScrollBarHideTimer.start();
+            startScrollbarHideTimer();
         } else if(mVerticalScrollBarPolicy != HbScrollArea::ScrollBarAlwaysOn
                   && mVerticalScrollBar->isVisible()){
+            stopScrollbarHideTimer();
             mVerticalScrollBar->setVisible(false);
         }
     }
@@ -947,10 +977,7 @@ void HbScrollAreaPrivate::_q_thumbPositionChanged(qreal value, Qt::Orientation o
 
     setContentPosition(value, orientation, false);
 
-    if (mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.stop();
-        mScrollBarHideTimer.start();
-    }
+    reStartScrollbarHideTimer();
     if (mContinuationIndicators) {
         updateIndicators(-mContents->pos());
     }
@@ -976,10 +1003,7 @@ void HbScrollAreaPrivate::_q_groovePressed(qreal value, Qt::Orientation orientat
 
     setContentPosition(value, orientation, true);
 
-    if (mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.stop();
-        mScrollBarHideTimer.start();
-    }
+    reStartScrollbarHideTimer();
     if (mContinuationIndicators) {
         updateIndicators(-mContents->pos());
     }

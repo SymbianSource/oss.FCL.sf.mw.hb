@@ -54,7 +54,6 @@ private:
     bool parsePushDocument();
     bool parsePushObject();
     bool parsePushWidget();
-    bool parsePushSpacerItem();
     bool parsePushConnect();
     bool parsePushProperty();
     bool parsePushRef();
@@ -65,9 +64,8 @@ private:
     bool parseSetSizeHint();
     bool parseSetToolTip();
     bool parseCreateAnchorLayout();
-    bool parseAddAnchorLayoutEdge();
-    bool parseCreateMeshLayout();
-    bool parseAddMeshLayoutEdge();
+    bool parseAddAnchorLayoutItem();
+    bool parseSetAnchorLayoutMapping();
     bool parseCreateGridLayout();
     bool parseAddGridLayoutCell();
     bool parseSetGridLayoutRowProperties();

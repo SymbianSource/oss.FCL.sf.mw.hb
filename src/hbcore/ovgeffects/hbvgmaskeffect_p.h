@@ -26,16 +26,17 @@
 #ifndef HBVGMASKEFFECT_P_H
 #define HBVGMASKEFFECT_P_H
 
-#include "hbvgeffect_p.h"
+#include "hbvgframeeffect_p.h"
 
 class HbVgMaskEffectPrivate;
 
-class HB_CORE_PRIVATE_EXPORT HbVgMaskEffect : public HbVgEffect
+class HB_CORE_PRIVATE_EXPORT HbVgMaskEffect : public HbVgFrameEffect
 {
     Q_OBJECT
     Q_PROPERTY(QRectF maskRect READ maskRect WRITE setMaskRect NOTIFY maskRectChanged)
     Q_PROPERTY(QRectF maskDeviceRect READ maskDeviceRect WRITE setMaskDeviceRect NOTIFY maskRectChanged)
     Q_PROPERTY(QPixmap mask READ mask WRITE setMask NOTIFY maskChanged)
+    Q_PROPERTY(bool includeSourceItemOnly READ includeSourceItemOnly WRITE setIncludeSourceItemOnly NOTIFY includeSourceItemOnlyChanged)
 
 public:
     HbVgMaskEffect(QObject *parent = 0);
@@ -47,12 +48,12 @@ public:
 
     QPixmap mask() const;
     QPixmap scaledMask() const;
-
     QRectF maskRect() const;
     QRectF maskDeviceRect() const;
-
     MaskCallback maskCallback() const;
     void *maskCallbackParam() const;
+
+    bool includeSourceItemOnly() const;
 
 public slots:
     void clear();
@@ -66,16 +67,19 @@ public slots:
         setMaskDeviceRect(QRectF(x, y, w, h));
     }
     void setMaskCallback(MaskCallback callback, void *param = 0);
+    void setIncludeSourceItemOnly(bool b);
 
 signals:
     void maskChanged(const QPixmap &mask);
     void maskRectChanged(const QRectF &rect);
     void maskCallbackChanged(MaskCallback callback);
+    void includeSourceItemOnlyChanged(bool b);
 
 protected:
     HbVgMaskEffect(HbVgMaskEffectPrivate &dd, QObject *parent = 0);
     void performEffect(QPainter *painter, const QPointF &offset,
                        const QVariant &vgImage, const QSize &vgImageSize);
+    void performEffectSw(QPainter *painter);
 
 private:
     Q_DECLARE_PRIVATE(HbVgMaskEffect)

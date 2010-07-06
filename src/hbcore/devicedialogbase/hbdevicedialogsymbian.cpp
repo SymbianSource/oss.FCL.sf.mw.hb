@@ -29,7 +29,7 @@
 #include "hbdevicedialogerrors_p.h"
 #include "hbdevicedialogclientsession_p.h"
 #include <e32cmn.h>
-
+#include "hbdevicedialoglaunchhelper_p.h"
 #include "hbdevicedialogsymbian.h"
 #include "hbsymbianvariant.h"
 #include "hbsymbianvariantconverter_p.h"
@@ -191,7 +191,24 @@ TInt CHbDeviceDialogSymbianPrivate::Initialize()
             return KErrNoMemory;
         }
     }
-    return iHbSession.Connect();
+
+    TInt error(KErrNone);
+    if (iFlags & CHbDeviceDialogSymbian::EASyncServerStartup) {
+        HbDeviceDialogLaunchHelper *helper(0);
+        TRAP(error, helper = HbDeviceDialogLaunchHelper::NewL());
+        
+        if (helper) {            
+            helper->Start();
+            error = helper->Error();
+            delete helper;
+            helper = 0;
+            }        
+    }
+
+    if (error == KErrNone || error == KErrAlreadyExists) {
+        error = iHbSession.Connect();
+    }
+    return error;
 }
 
 TInt CHbDeviceDialogSymbianPrivate::Show(const QByteArray& aArray)

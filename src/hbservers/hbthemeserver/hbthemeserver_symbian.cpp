@@ -103,34 +103,14 @@ void HbThemeServerPrivate::ConstructL()
     TInt error = iThemeProperty.Attach(KServerUid3, KThemeName );
     User::LeaveIfError(error);
 
+    QString currentTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+
     // Store the active theme name in a member string
-    iCurrentThemeName = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);    
+    // and resolve the path of the current theme
+    QDir path(currentTheme);
+    iCurrentThemeName = path.dirName();
+    iCurrentThemePath = path.absolutePath();
 
-    if (iCurrentThemeName.isEmpty()) {
-        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
-    }
-
-    // Cache ROM theme(name)s
-    QString romPath = "Z:\\resource\\hb\\themes\\icons\\";
-    QDir dir(romPath);
-    romThemeNames = dir.entryList(QDir::Dirs);
-
-    // Resolve the path of the current theme
-    QDir path(iCurrentThemeName);
-    if (!path.isAbsolute()) {
-        // Resolve the path of the current theme
-        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
-    } else {
-        iCurrentThemeName = path.dirName();
-        iCurrentThemePath = path.absolutePath();
-    }          
-    
-    // Open index file to prevent uninstallation of the active theme
-    if (!openCurrentIndexFile()) {
-        // theme doesn't exist activate default theme
-        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
-        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
-    }
     cache = 0;
     cssCache = 0;
 
@@ -146,17 +126,34 @@ void HbThemeServerPrivate::ConstructL()
     }
     setMaxGpuCacheSize(GPU_CACHE_SIZE);
     setMaxCpuCacheSize(CPU_CACHE_SIZE);
-#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
     renderMode = EHWRendering;
 #else
     renderMode = ESWRendering;
 #endif
-    
-    // Process base theme index, it is used as parent index also when the current theme is something else
-    QString basePath;
-    resolveThemePath(HbThemeUtils::getThemeSetting(HbThemeUtils::BaseThemeSetting), basePath);
-    
-    HbThemeServerUtils::createThemeIndex(basePath, BaseTheme);
+
+    // Load theme indexes
+    UpdateThemeIndexes();
+
+    // Start the splash screen generator app.
+    QProcess::startDetached("hbsplashgenerator.exe");
+}
+
+void HbThemeServerPrivate::UpdateThemeIndexes(bool updateBase)
+{
+    // Start watching the current theme.index for uninstallation
+    if (!openCurrentIndexFile()) {
+        // theme doesn't exist activate default theme
+        QString defaultTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::DefaultThemeSetting);
+        QDir path(defaultTheme);
+        iCurrentThemeName = path.dirName();
+        iCurrentThemePath = path.absolutePath();
+    }
+
+    if (updateBase) {
+        // Process base theme index, it is used as parent index also when the current theme is something else
+        HbThemeServerUtils::createThemeIndex(HbThemeUtils::getThemeSetting(HbThemeUtils::BaseThemeSetting), BaseTheme);
+    }
     // Process operator theme indexes
     QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
     if (!operatorName.isEmpty()) {
@@ -164,30 +161,24 @@ void HbThemeServerPrivate::ConstructL()
         operatorPath.append(KOperatorCPath);
         operatorPath.append(operatorName);
         HbThemeServerUtils::createThemeIndex(operatorPath, OperatorC);
-        // Process operator Drive Z theme index
-        QString operatorROMPath;
-        operatorROMPath.append(KOperatorZPath);
-        operatorROMPath.append(operatorName);
-        HbThemeServerUtils::createThemeIndex(operatorROMPath, OperatorROM);
+        if (updateBase) {
+            // Process operator Drive Z theme index
+            QString operatorROMPath;
+            operatorROMPath.append(KOperatorZPath);
+            operatorROMPath.append(operatorName);
+            HbThemeServerUtils::createThemeIndex(operatorROMPath, OperatorROM);
+        }
     }
+
     // Process current theme index
     HbThemeServerUtils::createThemeIndex(iCurrentThemePath, ActiveTheme);
 
-    // Register theme system effects in construction
+    // Register theme system effects
     // TODO: fix parameter
     HbThemeSystemEffect::handleThemeChange(iCurrentThemeName);
 
     // Set the current theme also in the cenrep key that is used to notify clients.
-    HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, iCurrentThemePath);    
-    
-    // Temporary hack for pre-loading app. background graphics in server startup to give more realistic
-    // results in performance tests. (Normally these graphics get loaded anyway when the first hb app is started.)
-#ifndef HB_NVG_CS_ICON
-    QProcess::startDetached("hbiconpreloader.exe");
-#endif
-
-    // Start the splash screen generator app.
-    QProcess::startDetached("hbsplashgenerator.exe");
+    HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, iCurrentThemePath);
 }
 
 /**
@@ -241,7 +232,6 @@ HbThemeServerPrivate::~HbThemeServerPrivate()
  */
 bool HbThemeServerPrivate::openCurrentIndexFile()
 {
-    // Open index file to prevent uninstallation of the active theme
     if (!iCurrentThemePath.isEmpty() && iCurrentThemePath[0] != 'z' && 
         iCurrentThemePath[0] != 'Z' && iCurrentThemePath[0] != ':') {
         QString indexFileName;
@@ -267,97 +257,18 @@ bool HbThemeServerPrivate::openCurrentIndexFile()
     return true;
 }
 
-bool HbThemeServerPrivate::resolveThemePath(const QString &themeName, QString &themePath)
-{
-    if (themeName == "hbdefault") {
-        themePath = ":\\themes\\icons\\hbdefault";
-        return true;
-    }
-    
-    if (!themeName.isEmpty()) {
-        // Check for the theme's icon directory in different drives.
-        // ROM is checked first and then phone memory and memory card drives.
-
-        QString themeLookupPath = "Z:\\resource\\hb\\themes\\icons\\";
-    
-        if (romThemeNames.contains(themeName)) {
-            themeLookupPath.append(themeName);    
-            themePath = themeLookupPath;
-            return true;
-        }
-
-        themeLookupPath.append(themeName);
-        QString filename(themeLookupPath);
-        filename.append("\\index.theme");
-
-        filename[0] = 'C';
-        if (QFile::exists(filename)) {
-            themeLookupPath[0] = 'C';
-            themePath = themeLookupPath;
-            return true;
-        }
-
-        filename[0] = 'E';
-        if (QFile::exists(filename)) {
-            themeLookupPath[0] = 'E';
-            themePath = themeLookupPath;
-            return true;
-        }
-
-        filename[0] = 'F';
-        if (QFile::exists(filename)) {
-            themeLookupPath[0] = 'F';
-            themePath = themeLookupPath;
-            return true;
-        }        
-        
-    }
-    return false;
-}
-
 /**
 Handles theme selection
 */
 void HbThemeServerPrivate::HandleThemeSelection( const QString& themeName)
 {
-    //Make a copy for ourselves
-	
-	
-    QString cleanThemeName = themeName.trimmed();
+    QDir path(themeName.trimmed());
+    iCurrentThemeName = path.dirName();
+    iCurrentThemePath = path.absolutePath();
 
-    iCurrentThemeName = cleanThemeName;    
-
-    QDir path(cleanThemeName);
-    if (!path.isAbsolute()) {
-        // Resolve the path of the current theme
-        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
-    } else {
-        iCurrentThemeName = path.dirName();
-        iCurrentThemePath = path.absolutePath();
-    }
-    
     #ifdef THEME_INDEX_TRACES
-    qDebug() << "ThemeIndex: theme change request, new theme =" << cleanThemeName.toUtf8();
+    qDebug() << "ThemeIndex: theme change request, new theme =" << themeName.toUtf8();
     #endif
-
-    
-    // Open index file to prevent uninstallation of the active theme
-    if (!openCurrentIndexFile()) {
-        // theme doesn't exist activate default theme
-        iCurrentThemeName = HbThemeUtils::defaultTheme().name;
-        resolveThemePath(iCurrentThemeName, iCurrentThemePath);
-    }
-
-    // Process operator Drive C theme index
-    QString operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting);
-    if (!operatorName.isEmpty()) {
-        QString operatorPath;
-        operatorPath.append(KOperatorCPath);
-        operatorPath.append(operatorName);
-        HbThemeServerUtils::createThemeIndex(operatorPath, OperatorC);
-    }
-    // Process current theme index
-    HbThemeServerUtils::createThemeIndex(iCurrentThemePath, ActiveTheme);
 
     // Clear cached icons and session data
     clearIconCache();
@@ -367,12 +278,9 @@ void HbThemeServerPrivate::HandleThemeSelection( const QString& themeName)
         session.ClearSessionData();
         iSessionIter++;
     }
-	
-    // TODO: fix parameter
-    HbThemeSystemEffect::handleThemeChange(iCurrentThemeName);
- 
-    // Update settings and notify clients
-    HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting,iCurrentThemePath);
+
+    // Update current theme index
+    UpdateThemeIndexes(false);
 }
 
 /**
@@ -705,11 +613,12 @@ int HbThemeServerPrivate::vectorLruCount()
     return cache->vectorLruCount();
 }
 
+#endif
+
 int HbThemeServerPrivate::gpuLRUSize() const
 {
     return cache->gpuLRUSize();
 }
-#endif
 
 /**
  * HbThemeServerPrivate::doCleanup()
@@ -954,12 +863,6 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         aMessage.WriteL(1, out);
         break;
     }
-    case EGPULRUSize: {
-        TInt gpuLRUSize = iServer->gpuLRUSize();
-        TPckg<TInt> out(gpuLRUSize);
-        aMessage.WriteL(1, out);
-        break;
-    }
     case ERefCount: {
         TInt refCount = iServer->iconRefCount(aMessage);
         TPckg<TInt> out(refCount);
@@ -1007,6 +910,12 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         break;
     }
 #endif
+    case EGPULRUSize: {
+        TInt gpuLRUSize = iServer->gpuLRUSize();
+        TPckg<TInt> out(gpuLRUSize);
+        aMessage.WriteL(1, out);
+        break;
+    }
     case EMemoryGood: {
         if(iServer->currentRenderingMode() == ESWRendering){
             iServer->setCurrentRenderingMode(EHWRendering);

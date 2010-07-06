@@ -52,6 +52,7 @@ PRIVATE_HEADERS += $$PWD/hbsymbianvariantconverter_p.h
 PRIVATE_HEADERS += $$PWD/hbdeleteguardsymbian_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogconnecthelper_p.h
 PRIVATE_HEADERS += $$PWD/hbdevicedialogconnecthelper_p_p.h
+PRIVATE_HEADERS += $$PWD/hbdevicedialoglaunchhelper_p.h
 
 SOURCES += $$PWD/hbsymbianvariant.cpp
 SOURCES += $$PWD/hbdevicedialogsymbian.cpp 
@@ -64,6 +65,7 @@ SOURCES += $$PWD/hbsymbianvariantconverter.cpp
 SOURCES += $$PWD/hbtextresolversymbian.cpp
 SOURCES += $$PWD/hbdeleteguardsymbian.cpp
 SOURCES += $$PWD/hbdevicedialogconnecthelper.cpp
+SOURCES += $$PWD/hbdevicedialoglaunchhelper.cpp
 }
 
 !symbian {

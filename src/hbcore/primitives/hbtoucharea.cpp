@@ -30,9 +30,9 @@
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsLayout>
 #include <QPainter>
+#include <QGraphicsScene>
 #include <hbmainwindow.h>
 #include <hbinstance.h>
-#include <qgraphicsscene.h>
 
 bool HbTouchAreaPrivate::outlinesEnabled = false;
 

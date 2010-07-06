@@ -181,8 +181,8 @@ void HbIndicatorGroupPrivate::startAddingEffect()
 
 void HbIndicatorGroupPrivate::startRemovingEffect()
 {
-#ifdef HB_EFFECTS
     Q_Q(HbIndicatorGroup);
+#ifdef HB_EFFECTS
     for (int i = 0; i < mRemovedIndicators.size(); ++i) {   
         int index = findIndicatorIcon(mRemovedIndicators[i]);
         if (index >= 0) {
@@ -202,7 +202,7 @@ void HbIndicatorGroupPrivate::startRemovingEffect()
         }
     }
 #else 
-    updatePrimitives();
+    q->updatePrimitives();
 #endif
 }
 
@@ -231,7 +231,7 @@ HbIndicatorGroup::HbIndicatorGroup(IndicatorType indicatorType, QGraphicsItem *p
     Q_D(HbIndicatorGroup);
     d->init();
     d->mIndicatorType = indicatorType;
-    setProperty("layout", d->mIndicatorType);
+    setProperty("alignment", d->mIndicatorType);
 }
 
 /*
@@ -255,7 +255,7 @@ void HbIndicatorGroup::currentViewChanged(HbView *view)
 {
     Q_D(HbIndicatorGroup);
     for (int i = 0; i < d->mIcons.size(); ++i) {
-        HbIconItem *iconItem = dynamic_cast<HbIconItem *>(d->mIcons.at(i));
+        HbIconItem *iconItem = qgraphicsitem_cast<HbIconItem *>(d->mIcons.at(i));
         if (iconItem) {
             iconItem->animator().setOwnerView(view);
         }

@@ -130,68 +130,45 @@ HbTumbleViewItemContainer::HbTumbleViewItemContainer(QGraphicsItem* parent )
 
 QPointF HbTumbleViewItemContainer::recycleItems(const QPointF &delta)
 {
-    Q_D(HbTumbleViewItemContainer);
-    QRectF viewRect(d->itemBoundingRect(d->mItemView));
-    viewRect.moveTopLeft(viewRect.topLeft() + delta);
+    if(size().height() > itemView()->size().height()){
+            Q_D(HbTumbleViewItemContainer);
+            const qreal diff = d->getDiffWithoutScrollareaCompensation(delta);
+          
+            if(diff !=0.0){      
+                  QPointF newDelta(0.0, 0.0);
+                  qreal result = 0.0;
+                  HbAbstractViewItem *item = 0;
+                  if (diff < 0.0) {
+                        while (-newDelta.y() > diff) {
+                              item = d->shiftUpItem(newDelta);
+                              if (!item) {
+                                    break;
+                              }
+                        }
+                  }
 
-    int firstVisibleBufferIndex = -1;
-    int lastVisibleBufferIndex = -1;
-    d->firstAndLastVisibleBufferIndex(firstVisibleBufferIndex, lastVisibleBufferIndex, viewRect, false);
+                  else {
+                        while (-newDelta.y() < diff) {
+                              item = d->shiftDownItem(newDelta);
+                              if (!item) {
+                                    break;
+                              }
+                        }
+                  }
 
-    int hiddenAbove = firstVisibleBufferIndex;
-    int hiddenBelow = d->mItems.count() - lastVisibleBufferIndex - 1;
+                  result = newDelta.y();
+                  return QPointF(delta.x(),delta.y()+result);
+            }
+      }
 
-    if (d->mItems.count()
-        && (firstVisibleBufferIndex == -1 || lastVisibleBufferIndex == -1)) {
-        // All items out of sight.
-        if (d->itemBoundingRect(d->mItems.first()).top() < 0) {
-            // All items above view.
-            hiddenAbove = d->mItems.count();
-            hiddenBelow = 0;
-        } else {
-            // All items below view.
-            hiddenAbove = 0;
-            hiddenBelow = d->mItems.count();
-        }
-    }
-
-    QPointF newDelta(delta);
-
-    while (hiddenAbove > hiddenBelow + 1) {
-        HbAbstractViewItem *item = d->shiftDownItem(newDelta);
-        if (!item){
-            break;
-        }
-
-        if (!d->visible(item, viewRect)) {
-            hiddenBelow++;
-        }
-        hiddenAbove--;
-    }
-
-    while (hiddenBelow > hiddenAbove + 1) {
-        HbAbstractViewItem *item = d->shiftUpItem(newDelta);
-        if (!item) {
-            break;
-        }
-
-        if (!d->visible( item, viewRect)) {
-            hiddenAbove++;
-        }
-        hiddenBelow--;
-    }
-
-    return newDelta;
+    return delta;
 }
 void HbTumbleViewItemContainer::setLoopingEnabled(bool looped) {
     Q_D(HbTumbleViewItemContainer);
-    d->mIsLooped = looped;
-    if(looped){
-        recycleItems(QPointF());
-    }
-    else{
-        setModelIndexes(d->mItemView->currentIndex());
-    }
+    d->mIsLooped = looped;    
+
+    d->mItemView->scrollTo(d->mItemView->currentIndex(),HbAbstractItemView::PositionAtCenter);
+    recycleItems(QPointF());
 }
 bool HbTumbleViewItemContainer::isLoopingEnabled() const {
     Q_D(const HbTumbleViewItemContainer);

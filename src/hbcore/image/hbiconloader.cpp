@@ -924,13 +924,6 @@ QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
 #ifdef HB_ICON_TRACES
     qDebug() << params.cleanIconName << " => " << iconPath;
 #endif
-    // If not found then it can still be a normal file specified with a relative path.
-    if (!iconFound) {
-        iconFound = QFile::exists(params.iconName);
-        if (iconFound) {
-            iconPath = params.iconName;
-        }
-    }
     // Use the 'unknown' icon, if needed, when the queried icon was not found.
     if (!iconFound) {
         if (params.options.testFlag(ReturnUnknownIcon)) {
@@ -949,7 +942,6 @@ QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
  */
 HbIconImpl *HbIconLoader::getIconFromServer(HbIconLoadingParams &params)
 {
-
     HbIconImpl *icon = 0;
 
 #ifdef HB_ICON_TRACES
@@ -1353,10 +1345,12 @@ HbIconImpl *HbIconLoader::loadIcon(
             return ptr;
         }
 #endif
+
+        // Resolve used icon filename. It uses themeindex for themed icons.
+        params.iconFileName = resolveIconFileName(params);
+
         if (HbThemeUtils::isLogicalName(iconName)) {
             params.iconFileName = resolveIconFileName(params);
-        } else {
-            params.iconFileName = iconName;
         }
 
         // If icon filename could not be resolved, return
@@ -1367,6 +1361,11 @@ HbIconImpl *HbIconLoader::loadIcon(
             icon = new HbPixmapIconImpl(params.canvasPixmap);
             return icon;
         }
+
+#ifdef Q_OS_SYMBIAN
+        // Check whether icon is in a private directory which cannot be accessed by the theme server
+        bool privateDirectory = isInPrivateDirectory(iconName);
+#endif // Q_OS_SYMBIAN
 
         QString format = formatFromPath(params.iconFileName);
 
@@ -1379,6 +1378,7 @@ HbIconImpl *HbIconLoader::loadIcon(
                 && format != "MNG"
                 && format != "GIF"
                 && !iconName.startsWith(':') // not using server for app's own resources (iconName is a logical name for theme elements)
+                && !privateDirectory // server cannot load from protected private dir
                 && manager) {
 
             //Initiate an IPC to themeserver to get the icon-data from the server.
@@ -1815,6 +1815,24 @@ void HbIconLoader::unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls)
                 multiPieceImpls[0]->iconRenderingMode()
                                                 );
     }
+}
+
+bool HbIconLoader::isInPrivateDirectory(const QString &filename)
+{
+    Q_UNUSED(filename);
+    bool isPrivate = false;
+    
+#ifdef Q_OS_SYMBIAN
+    if (filename.length() > 11) {
+        // Private dir starts with e.g. "z:/private/"
+        if (filename[1] == ':' && (filename[2] == '/' || filename[2] == '\\') &&
+           (filename[10] == '/' || filename[10] == '\\') && filename.mid(3, 7).compare("private"), Qt::CaseInsensitive) {
+            isPrivate = true;
+        }
+    }
+#endif
+
+    return isPrivate;
 }
 
 // End of File

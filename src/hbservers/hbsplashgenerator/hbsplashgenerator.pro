@@ -38,6 +38,7 @@ HEADERS += $$PWD/hbsplashdirs_p.h
 HEADERS += $$PWD/hbsplashcompositor_p.h
 HEADERS += $$PWD/hbsplashindicompositor_p.h
 HEADERS += $$PWD/hbsplashblacklist_p.h
+HEADERS += $$PWD/hbwidgetenabler_p.h
 symbian: HEADERS += $$PWD/hbsplashgen_server_symbian_p.h
 
 symbian {

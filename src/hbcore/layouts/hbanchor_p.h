@@ -23,23 +23,20 @@
 **
 ****************************************************************************/
 
-#ifndef HBANCHORPRIVATE_H
-#define HBANCHORPRIVATE_H
+#ifndef HBANCHOR_P_H
+#define HBANCHOR_P_H
 
-#include <hbanchorlayout.h>
+#include <hbnamespace.h>
+#include <hbanchor.h>
 
-class HB_CORE_PRIVATE_EXPORT HbAnchor
+class HbAnchorLayout;
+class QGraphicsLayoutItem;
+
+class HbAnchorPrivate
 {
 public:
-    HbAnchor();
-    HbAnchor(
-        QGraphicsLayoutItem *startItem,
-        Hb::Edge startEdge,
-        QGraphicsLayoutItem *endItem,
-        Hb::Edge endEdge,
-        qreal value );
-    HbAnchor(const HbAnchor &anchor);
-    HbAnchor &operator=(const HbAnchor &anchor);
+    HbAnchorPrivate();
+    void setInitialLength( qreal length );
 
     QGraphicsLayoutItem *mStartItem;
     Hb::Edge mStartEdge;
@@ -47,8 +44,20 @@ public:
     QGraphicsLayoutItem *mEndItem;
     Hb::Edge mEndEdge;
     QString mEndId;
-    qreal mValue;
+
+    qreal mMinValue;
+    qreal mPrefValue;
+    qreal mMaxValue;
+
+    QSizePolicy::Policy mPolicy;
+
+    HbAnchor::Direction mDir;
+
+    HbAnchorLayout *mParent;
+
+    QString mAnchorId;
 };
 
-#endif
+
+#endif // HBANCHOR_P_H
 

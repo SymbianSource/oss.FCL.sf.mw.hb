@@ -41,6 +41,7 @@ public:
     ~HbMessageBoxPrivate();
 
     void init();
+	void _q_appearEffectEnded(HbEffect::EffectStatus status);
     HbIcon mIcon;
     HbMessageBoxContentWidget *mMessageBoxContentWidget;
     HbMessageBox::MessageBoxType mMessageBoxType;

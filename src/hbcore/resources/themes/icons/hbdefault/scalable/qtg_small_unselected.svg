@@ -9,7 +9,7 @@
 <path d="M0,0v30h30v-30h-30zm29,29h-28v-28h28v28z" fill-opacity="0.6" stroke-opacity="0.6"/>
 <defs>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15" x2="15" y1="1.219" y2="29.44">
-<stop offset="0" stop-color="#E0E1E2"/>
+<stop offset="0" stop-color="#E1E1E1"/>
 <stop offset="1" stop-color="#FFFFFF"/>
 </linearGradient>
 </defs>

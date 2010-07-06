@@ -85,7 +85,7 @@ public:
 
     // Utility functions.
     void commitFirstMappedNumber(int key, HbKeyboardType type);
-    void getAndFilterCharactersBoundToKey(QStringList &list, Qt::Key key);
+    void getAndFilterCharactersBoundToKey(QString &allowedChars, HbKeyboardType type, int key, HbModifiers modifiers);
     virtual QChar getNthCharacterInKey(int &index, int key, HbKeyboardType type);
     virtual void commitAndAppendString(const QString& string);
     virtual void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0, bool isAsync = false);

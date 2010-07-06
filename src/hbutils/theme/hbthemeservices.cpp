@@ -84,10 +84,6 @@ const QString HbThemeServices::themePath()
         path.append(info.path);
         path.append("/icons/");
         path.append(info.name);
-    } else {
-        path.append(HbThemeUtils::getThemeSetting(HbThemeUtils::DefaultThemeRootDirSetting));
-        path.append("/themes/icons/");
-        path.append(HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting));
     }
     return path;
 }

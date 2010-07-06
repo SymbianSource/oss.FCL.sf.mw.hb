@@ -114,6 +114,7 @@ public:
         P_TitlePane_background,
         P_TitlePane_text,
         P_TitlePane_icon,
+        P_TitlePane_toucharea,
         P_TitleBar_toucharea,
         P_SignalIndicator_icon,
         P_SignalLevel_background,
@@ -131,9 +132,11 @@ public:
         P_ProgressBar_mintext,
         P_ProgressBar_maxtext,
         P_NavigationButton_background,
+        P_NavigationButton_toucharea,
         P_IndicatorButton_background,
         P_IndicatorButton_handleindication,
         P_IndicatorButton_eventindication,
+        P_IndicatorButton_toucharea,
         P_ItemViewItem_frame,   
         P_SelectionControl_selectionstart,
         P_SelectionControl_selectionend,
@@ -223,9 +226,6 @@ public:
 
     virtual QGraphicsItem *createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent = 0 ) const;
     virtual void updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive, const QStyleOption *option ) const;
-
-    int registerPlugin(const QString &pluginName);
-    void unregisterPlugin(const QString &pluginName);
 
     static void setItemName( QGraphicsItem *item, const QString &name );
     static QString itemName( const QGraphicsItem *item );

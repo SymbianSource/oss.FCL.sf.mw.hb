@@ -38,6 +38,11 @@
 #include <hbdialog_p.h>
 #include <hbinputregioncollector_p.h>
 
+const int HbLandscapeRows = 3;
+const int HbLandscapeColumns = 7;
+const int HbPortraitRows = 4;
+const int HbPortraitColumns = 5;
+
 /// @cond
 
 class HbInputSmileyPickerPrivate: public HbDialogPrivate
@@ -59,14 +64,14 @@ public:
 HbInputSmileyPickerPrivate::HbInputSmileyPickerPrivate(int rows, int columns)
     : mView(0), mModel(0)
 {
+    Q_UNUSED(rows);
+    Q_UNUSED(columns);
     Q_Q(HbInputSmileyPicker);
     // we should make sure that it comes above vkb
     setPriority(HbPopupPrivate::VirtualKeyboard + 1);
 
     // create a view and set the rows and columns.
     mView = new HbGridView(q);
-    mView->setRowCount(rows);
-    mView->setColumnCount(columns);
     mView->setScrollDirections(Qt::Horizontal);
     mView->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
     mModel = new QStandardItemModel(q);
@@ -94,7 +99,7 @@ void HbInputSmileyPickerPrivate::_q_activated(const QModelIndex &index)
     if (!hidingInProgress) {
         HbIcon smileyIcon = index.model()->data(index, Qt::DecorationRole).value<HbIcon>();
         emit q->selected(smileyIcon.iconName());
-        q->hide();
+        q->close();
     }
 }
 
@@ -121,6 +126,18 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     // Make sure the smiley picker never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
+
+    if (!rows || !columns) {
+        if (mainWindow()->orientation() == Qt::Horizontal) {
+            rows = HbLandscapeRows;
+            columns = HbLandscapeColumns;
+        } else {
+            rows = HbPortraitRows;
+            columns = HbPortraitColumns;
+        }
+    }
+    d->mView->setRowCount(rows);
+    d->mView->setColumnCount(columns);
 
     // set dialog properties
     setFocusPolicy(Qt::ClickFocus);

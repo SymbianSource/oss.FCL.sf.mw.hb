@@ -84,7 +84,6 @@ void HbMainWindowOrientation::forceSensorOrientationValue(Qt::Orientation orient
 void HbMainWindowOrientation::handleForegroundGained()
 {
     mForeground = true;
-    notifyOrientationChange(false, true);
 }
 
 void HbMainWindowOrientation::handleForegroundLost()
@@ -167,9 +166,7 @@ void HbMainWindowOrientation::sensorStatusChanged(bool status, bool notify)
 
 // Notifies orientation change only if
 // 1) automatic orientation change is enabled
-// 2) application is in foreground
-// 3) application has not set fixed orientation for the main window
-// 4) mainwindow's windowSurface exists
+// 2) application has not set fixed orientation for the main window
 void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyWhenDisabled)
 {
     Qt::Orientation newOrientation = mOrientation;
@@ -178,17 +175,16 @@ void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyW
         newOrientation = mDefaultOrientation;
     }
     foreach(HbMainWindow * window, mWindowList) {
-        void *surface(0);
-        if (window) {
-            surface = (void *)window->windowSurface();
-        }
         if (!HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationChangeAnimation) {
             animate = false;
         }
-
-        if ((isEnabled() || notifyWhenDisabled) && (mForeground || surface)
+        if ((isEnabled() || notifyWhenDisabled)
                 && HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) {
-            HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
+            if (mForeground){
+                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
+            } else {
+                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, false);
+            }
         }
     }
 }

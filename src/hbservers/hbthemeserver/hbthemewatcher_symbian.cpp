@@ -90,7 +90,7 @@ void CHbThemeWatcher::RunL()
     }
 
     // theme doesn't exist, change active theme to default
-    iObserver.HandleThemeSelection(HbThemeUtils::defaultTheme().name);
+    iObserver.HandleThemeSelection(HbThemeUtils::getThemeSetting(HbThemeUtils::DefaultThemeSetting));
 }
  
 void CHbThemeWatcher::DoCancel()

@@ -243,11 +243,12 @@ QSizeF HbToolButtonPrivate::getMinimumSize()
     Q_Q(HbToolButton);
     mRepolishRequested = true;
     polishPending = false;
-    q->updateGeometry();
-    QSizeF size = q->minimumSize();
     //Workaround (causing extra polish)
     mSizeHintPolish = false;
     //workaround ends
+    q->updateGeometry();
+    QCoreApplication::sendPostedEvents(q, QEvent::LayoutRequest);
+    QSizeF size = q->minimumSize();
     return size;
 }
 

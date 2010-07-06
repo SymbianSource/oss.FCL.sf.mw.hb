@@ -20,8 +20,8 @@
 <stop offset="1" style="stop-color:#FFFFFF"/>
 </linearGradient>
 <path d="M17.227,22.083V2.378h25.547v19.705H17.227 M16.57,22.739H43.43V1.724H16.57V22.739L16.57,22.739z" fill="url(#SVGID_3_)"/>
-<rect fill="#231F20" fill-opacity="0.4" height="0.638" stroke-opacity="0.4" width="26.859" x="16.57" y="21.034"/>
-<rect fill="#231F20" fill-opacity="0.15" height="0.639" stroke-opacity="0.15" width="26.859" x="16.57" y="20.378"/>
+<rect fill="#222021" fill-opacity="0.4" height="0.638" stroke-opacity="0.4" width="26.859" x="16.57" y="21.034"/>
+<rect fill="#222021" fill-opacity="0.15" height="0.639" stroke-opacity="0.15" width="26.859" x="16.57" y="20.378"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="30" x2="30" y1="59" y2="22.2708">
 <stop offset="0" style="stop-color:#EBEBEB"/>
 <stop offset="0.7455" style="stop-color:#000000"/>

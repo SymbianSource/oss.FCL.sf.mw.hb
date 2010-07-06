@@ -34,6 +34,7 @@
 #include "hbtooltip.h"
 #include "hbglobal_p.h"
 #include "hbvgmaskeffect_p.h"
+#include "hbvgchainedeffect_p.h"
 #include <QTimer>
 #include <QGraphicsSceneMouseEvent>
 #include <QShowEvent>
@@ -42,6 +43,7 @@
 #include <QPointer>
 #include <QDebug>
 #include <QBitmap>
+#include <hbinstance_p.h>
 #include <QApplication> // krazy:exclude=qclasses
 
 #include <hbwidgetfeedback.h>
@@ -303,6 +305,8 @@ HbPopupPrivate::HbPopupPrivate( ) :
 
 HbPopupPrivate::~HbPopupPrivate()
 {
+    stopTimeout();
+    delete timeoutTimerInstance;
 }
 
 void HbPopupPrivate::init()
@@ -313,7 +317,9 @@ void HbPopupPrivate::init()
 
     // By default popups are focusable
     q->setFocusPolicy(Qt::StrongFocus);    
-    q->setBackgroundItem(HbStyle::P_Popup_background);    
+    setBackgroundItem(HbStyle::P_Popup_background);
+    q->updatePrimitives();
+
 
     // Only for popup without parent
     if (!q->parentItem()) {
@@ -323,21 +329,23 @@ void HbPopupPrivate::init()
         // Popup is invisible by default (explicit show or open call is required)
         q->setVisible(false);
     }
-    hidingInProgress = false;   
-
-    q->setFlag(QGraphicsItem::ItemClipsToShape);
-    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
-
-#if QT_VERSION > 0x040602
-    q->grabGesture(Qt::TapGesture);
-    q->grabGesture(Qt::TapAndHoldGesture);
-    q->grabGesture(Qt::PanGesture);
-    q->grabGesture(Qt::SwipeGesture);
-    q->grabGesture(Qt::PinchGesture);
-#endif
-
+    hidingInProgress = false; 
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+    itemFlags |= QGraphicsItem::ItemClipsToShape;
+    itemFlags |= QGraphicsItem::ItemClipsChildrenToShape;
+    itemFlags |= QGraphicsItem::ItemSendsGeometryChanges;
+    //itemFlags |= QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);  
+}
+void HbPopupPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
+{
+	Q_UNUSED(status);
 }
 
+CSystemToneService* HbPopupPrivate::systemToneService()
+{
+	return HbInstancePrivate::d_ptr()->systemTone();
+}
 /*
  Sets the priority for a popup.
  A popup with higher priority is always shown on top of a popup with lower priority.
@@ -442,7 +450,7 @@ QTimer *HbPopupPrivate::timeoutTimer()
 {
     Q_Q(HbPopup);
     if (!timeoutTimerInstance) {
-        timeoutTimerInstance = new QTimer(q);
+        timeoutTimerInstance = new QTimer();
         timeoutTimerInstance->setSingleShot(true);
         q->connect(timeoutTimerInstance, SIGNAL(timeout()), q, SLOT(_q_timeoutFinished()));
     }
@@ -578,23 +586,38 @@ void HbPopupPrivate::calculateShape()
 {
 #if 0
     Q_Q(HbPopup);
+    // Contrary to the name, HbVgMaskEffect has a software
+    // implementation too, and we will actually force the usage of
+    // that here, ignoring the pure OpenVG version.
     if (!mVgMaskEffect) {
-        mVgMaskEffect = new HbVgMaskEffect();
-        mVgMaskEffect->install(q);
+        mVgMaskEffect = new HbVgMaskEffect;
+        // Masking does not work reliably on HW.
+        mVgMaskEffect->setForceSwMode(true);
+        // There may be children (like the scroll area in menus) that
+        // would mess up the masking so exclude those.
+        mVgMaskEffect->setIncludeSourceItemOnly(true);
+        if (!q->graphicsEffect()) {
+            // Attach the effect. Ownership is transferred to q.
+            mVgMaskEffect->install(q);
+        } else {
+            // Avoid replacing already set effects. Do not mask if
+            // this is not possible, otherwise we would unexpectedly
+            // delete the previously set graphics effect.
+            HbVgChainedEffect *c = qobject_cast<HbVgChainedEffect *>(q->graphicsEffect());
+            if (c) {
+                c->add(mVgMaskEffect);
+            } else {
+                delete mVgMaskEffect;
+            }
+        }
     }
-
     QPixmap image(QSize(static_cast<int>(q->backgroundItem()->boundingRect().width()),
-                            static_cast<int>(q->backgroundItem()->boundingRect().height())));
+                        static_cast<int>(q->backgroundItem()->boundingRect().height())));
     image.fill(Qt::transparent);
-
     QPainter imagePainter(&image);
-
     q->backgroundItem()->paint(&imagePainter, 0, 0);
-
     imagePainter.end();
-
     mVgMaskEffect->setMask(image);
-
 #endif
 }
 
@@ -789,11 +812,11 @@ void HbPopup::setFrameType(HbPopup::FrameType frameType)
     if ( d->frameType != frameType ) {
         switch( frameType ) {
         case HbPopup::Weak:
-            setBackgroundItem(HbStyle::P_Popup_background_weak);
+            d->setBackgroundItem(HbStyle::P_Popup_background_weak);
             break;
         case HbPopup::Strong:
         default:
-            setBackgroundItem(HbStyle::P_Popup_background);
+            d->setBackgroundItem(HbStyle::P_Popup_background);
             break;
         }
         d->frameType = frameType;
@@ -842,10 +865,11 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                -boundingRect().height(),
                                boundingRect().width(),
                                0);
+                d->mStartEffect = true;
                 HbEffect::cancel(this);
-                HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);
-#endif//HB_EFFECTS
                 d->mStartEffect = false;
+                HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);
+#endif//HB_EFFECTS
             } else {
                 d->mStartEffect = true;
             }
@@ -885,6 +909,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                          this, "_q_delayedHide",
                                          QVariant(), extRect)) {
                         d->delayedHide = false;
+                        return HbWidget::itemChange(change, value);
                     }
 #endif
                 }
@@ -907,6 +932,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
             connect( w, SIGNAL(orientationChanged(Qt::Orientation)),
                      this, SLOT(_q_orientationChanged()) );
         }
+
     }
     return HbWidget::itemChange(change, value);
 }
@@ -985,6 +1011,7 @@ void HbPopup::showEvent(QShowEvent *event)
         if(d->addPopupToScene()) {
               d->duplicateShowEvent = true;
         }
+        //setActive(true);
         // Popup clears closed state
         d->closed = false;
         if (d->backgroundItem) {
@@ -1048,12 +1075,10 @@ void HbPopup::resizeEvent( QGraphicsSceneResizeEvent * event )
 {    
     HbWidget::resizeEvent(event);
     updatePrimitives();
-#if 1
     Q_D(HbPopup);
     if (d->polished) {
         d->calculateShape();
     }
-#endif
 }
 
 /*!
@@ -1136,12 +1161,14 @@ bool HbPopup::event(QEvent *event)
                            -boundingRect().height(),
                            boundingRect().width(),
                            0);
+            d->mStartEffect = true;
             HbEffect::cancel(this);
-            HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);            
+            d->mStartEffect = false;
+            HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);            
         }
 #endif//HB_EFFECTS
         //workaround ends
-    }    
+    }
     return HbWidget::event(event);
 }
 

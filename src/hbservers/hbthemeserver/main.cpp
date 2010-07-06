@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
     // We need to be up and running fast
     HbThemeServerApplication::setPriority();
 
-    if(!HbThemeServerApplication::acquireLock()) {
+    HbThemeServerLocker locker;
+    if(!locker.lock()) {
         return 0;
     }
     

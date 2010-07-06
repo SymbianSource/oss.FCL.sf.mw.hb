@@ -458,7 +458,7 @@ void HbColorDialog::polish(HbStyleParameters &params)
 
         if ( d->mDefaultColors ) {
             d->addDatatoModel( d->mNoneBlockVisible ?
-                               d->mDefaultColorList.mid(0, d->mDefaultColorList.count() -1 ) :
+                               d->mDefaultColorList.mid(0, (unsigned int)d->mDefaultColorList.count() -1 ) :
                                d->mDefaultColorList );
         }
     }    

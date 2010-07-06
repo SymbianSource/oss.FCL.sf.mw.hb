@@ -64,7 +64,6 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
 
         bool pushObject( const QString& type, const QString &name );
         bool pushWidget( const QString& type, const QString &name, const QString &role, const QString &plugin );
-        bool pushSpacerItem( const QString &name, const QString &widget );
         bool pushConnect( const QString &srcName, const QString &signalName, const QString &dstName, const QString &slotName );
         bool pushProperty( const char *propertyName, const HbXmlVariable &variable );
         bool pushRef( const QString &name, const QString &role );
@@ -85,12 +84,17 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
         bool setSizeHint(Qt::SizeHint hint, const HbXmlLengthValue &hintWidth, const HbXmlLengthValue &hintHeight, bool fixed);
         bool setToolTip( const HbXmlVariable &tooltip );
 
-        bool createAnchorLayout( const QString &widget );
-        bool addAnchorLayoutEdge( const QString &src, Hb::Edge srcEdge, 
-                                  const QString &dst, Hb::Edge dstEdge,
-                                  const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+        bool createAnchorLayout( const QString &widget, bool modify );
+        bool addAnchorLayoutItem( const QString &src, const QString &srcId, Hb::Edge srcEdge, 
+                                  const QString &dst, const QString &dstId, Hb::Edge dstEdge,
+                                  const HbXmlLengthValue &minLength,
+                                  const HbXmlLengthValue &prefLength,
+                                  const HbXmlLengthValue &maxLength,
+                                  QSizePolicy::Policy *policy, HbAnchor::Direction *dir,
+                                  const QString &anchorId );
+        bool setAnchorLayoutMapping( const QString &item, const QString &id, bool remove );
         
-        bool createGridLayout( const QString &widget, const HbXmlLengthValue &spacing );
+        bool createGridLayout( const QString &widget, const HbXmlLengthValue &spacing, bool modify );
         bool addGridLayoutCell( const QString &src, int row, int column,
                                 int *rowspan, int *columnspan, Qt::Alignment *alignment );
         bool setGridLayoutRowProperties( int row, int *rowStretchFactor, Qt::Alignment *alignment );
@@ -110,7 +114,8 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
 
         bool createLinearLayout( const QString &widget,
                                  Qt::Orientation *orientation, 
-                                 const HbXmlLengthValue &spacing );
+                                 const HbXmlLengthValue &spacing,
+                                 bool modify );
         bool addLinearLayoutItem( const QString &itemname,
                                   int *index,
                                   int *stretchfactor, 
@@ -123,7 +128,7 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
                                        const HbXmlLengthValue &right,
                                        const HbXmlLengthValue &bottom );
 
-        bool createStackedLayout( const QString &widget );
+        bool createStackedLayout( const QString &widget, bool modify );
         bool addStackedLayoutItem( const QString &itemname, int *index );
                                 
         bool createNullLayout( const QString &widget );

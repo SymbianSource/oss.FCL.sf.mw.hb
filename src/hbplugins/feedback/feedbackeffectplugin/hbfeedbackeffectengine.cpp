@@ -354,7 +354,10 @@ void HbFeedbackEffectEngine::longPressed(const HbWidget *widget)
         effect = overrider.newInstantEffect;
     } else {
         effect = HbFeedback::None;
-        if (widget->type() == Hb::ItemType_InputButtonGroup) {
+        if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers() & Hb::ModifierInputFunctionButton) {
+            effect = HbFeedback::BasicKeypad;
+        }
+        else if(widget->type() == Hb::ItemType_InputButtonGroup) {
             effect = HbFeedback::SensitiveKeypad;
         }
         else {
@@ -412,7 +415,7 @@ void HbFeedbackEffectEngine::keyRepeated(const HbWidget *widget)
     if(widgetOverridesEffect( widget, interaction)) {
         effect = overrider.newInstantEffect;
     } else {
-        effect = HbFeedbackEffectUtils::instantOnKeyRepeat(widget);
+        effect = HbFeedbackEffectUtils::instantOnKeyRepeat(widget, modifiers());
     }
 
     if(widgetOverridesModalities(widget,interaction)) {
@@ -708,6 +711,45 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
             if (widget->type() == HbPrivate::ItemType_MenuListView) {
                 feedbackPlayed = true;
             }
+            if(widget->type() == Hb::ItemType_TumbleView)
+            {
+                if (const HbAbstractItemView * itemView = qobject_cast<const HbAbstractItemView *>(widget)) {
+                    feedbackPlayed = true;
+                    QList<HbAbstractViewItem *> visibleItems = itemView->visibleItems();
+                    bool newItemFound(false);
+                    int index(-1);
+                    QList<int> visibleIndexes;
+                    if (widget == activelyScrollingItemView) {
+                        foreach (HbAbstractViewItem * item, visibleItems) {
+                            index = item->modelIndex().row();
+                            if (!oldVisibleIndexes.contains(index)) {
+                                newItemFound = true;
+                            }
+                            visibleIndexes.append(index);
+                        }
+                    }
+                    if (widget != activelyScrollingItemView){
+                        activelyScrollingItemView = widget;
+                        newItemFound = false;
+                    }
+                    // To prevent the uninitialized list to cause false new item detections
+                    if (oldVisibleIndexes.empty()) {
+                        newItemFound = false;
+                    }
+                    oldVisibleIndexes.clear();
+                    oldVisibleIndexes = visibleIndexes;
+
+                    if (newItemFound) {
+                        if(!widgetOverridesModalities(widget,interaction)) {
+                            modalities = HbFeedback::Audio | HbFeedback::Tactile;
+                        }
+                        playInstantFeedback(widget, HbFeedback::ItemScroll, modalities);
+
+                    }
+                }
+            }
+
+
             
             // generic scroll areas don't emit continuous feedback
             if (const HbScrollArea* scrollArea = qobject_cast<const HbScrollArea *>(widget)) {
@@ -785,35 +827,22 @@ void HbFeedbackEffectEngine::playInstantFeedback(const HbWidget* widget, HbFeedb
 void HbFeedbackEffectEngine::playContinuousFeedback(const HbWidget* widget, HbFeedback::ContinuousEffect effect, int intensity, HbFeedback::Modalities modalities)
 {
     const QGraphicsView* view = widget->mainWindow();
+    HbContinuousFeedback* feedback;
 
-    // if feedback can be played
     if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget)) {
 
-        // if this widget has been playing
         if (continuousFeedbacks.contains(widget)) {
-            HbContinuousFeedback* feedback = continuousFeedbacks.value(widget);
-
-            // if this feedback is already playing then only its effect and intensity are updated
-            feedback->setModalities(modalities);
-            feedback->setOwningWindow(view);
-            feedback->setRect(widget, view);
-            feedback->setContinuousEffect(effect);
-            feedback->setIntensity(intensity);
-            // if this feedback is not being played, play it
-            if (!feedback->isPlaying()) {
-                feedback->play();
-            }
+            feedback = continuousFeedbacks.value(widget);
         } else {
-            // this widget has not played anything before
-            HbContinuousFeedback *feedback = new HbContinuousFeedback();
-            feedback->setModalities(modalities);
-            feedback->setOwningWindow(view);
-            feedback->setRect(widget, view);
-            feedback->setContinuousEffect(effect);
-            feedback->setIntensity(intensity);
+            feedback = new HbContinuousFeedback();
             continuousFeedbacks.insert(widget, feedback);
-            feedback->play();
         }
+        feedback->setModalities(modalities);
+        feedback->setOwningWindow(view);
+        feedback->setRect(widget, view);
+        feedback->setContinuousEffect(effect);
+        feedback->setIntensity(intensity);
+        feedback->play();
     }
 }
 

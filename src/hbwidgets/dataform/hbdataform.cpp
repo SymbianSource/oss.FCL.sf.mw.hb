@@ -269,10 +269,15 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
             static_cast<HbDataFormViewItem *>(d->mContainer->itemByIndex(index));
         if (item) {
             item->setExpanded(expanded);
-            d->mContainer->setModelIndexes();
         }
-
-        d->mContainer->setItemTransientStateValue(index, "expanded", expanded);    
+        // If view item is not yet created then set the ItemTransientState so that 
+        // when ever it gets created expansion state will be considered . This is valid for formPage group 
+        // and group page . Itemstate for the leaf items also will be set but does not have any
+        // significance since these items cannot expand( do not have children )
+        
+        else {
+            d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
+        } 
     }
 }
 

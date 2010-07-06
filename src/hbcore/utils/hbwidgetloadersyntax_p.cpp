@@ -49,7 +49,7 @@
 
 // Widget loader version number
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 2
+#define VERSION_MINOR 3
 
 #define MIN_SUPPORTED_VERSION_MAJOR 0
 #define MIN_SUPPORTED_VERSION_MINOR 1
@@ -157,13 +157,14 @@ bool HbWidgetLoaderSyntax::processLayout()
     const QString layout_name = attribute( ATTR_NAME );
     bool result = false;
     
-    if( layout_type == lexemValue(LAYOUT_MESH) ) {
+    if( layout_type == lexemValue(LAYOUT_ANCHOR) ||
+        layout_type == lexemValue(LAYOUT_MESH) ) {
         if( layout_name == mLayoutName ) {
-            mCurrentLayoutType = LAYOUT_MESH_TARGET;
+            mCurrentLayoutType = LAYOUT_ANCHOR;
             mLayoutFound = true;
-            result = mActions->createMeshLayout( QString() );
+            result = mActions->createAnchorLayout( QString(), false );
         } else {
-            mCurrentLayoutType = LAYOUT_MESH_ALIEN;
+            mCurrentLayoutType = LAYOUT_ALIEN;
             result = true;
         }
     } else {        
@@ -180,36 +181,18 @@ bool HbWidgetLoaderSyntax::readLayoutStartItem()
 {
     bool result = false;
     switch( mCurrentLayoutType ) {
-        case LAYOUT_MESH_ALIEN:
+        case LAYOUT_ALIEN:
         {
-            HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: ALIEN MESH ITEM" );
+            HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: ALIEN" );
             result = true;
             break;
         }
-        case LAYOUT_MESH_TARGET: 
+        case LAYOUT_ANCHOR: 
         {
-            HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: TARGET MESH ITEM" );
-            if( mReader.name() == lexemValue(ML_MESHITEM) ) {
-                result = true;
-                
-                const QString src = attribute( ML_SRC_NAME );  
-                const QString dst = attribute( ML_DST_NAME );
-                const QString srcEdgeStr = attribute( ML_SRC_EDGE );
-                const QString dstEdgeStr = attribute( ML_DST_EDGE );
-                const QString spacing = attribute( ML_SPACING );
-                const QString spacer = attribute( ML_SPACER );
-                
-                HbXmlLengthValue spacingVal;
-                if ( !spacing.isEmpty() ) {
-                    result = toLengthValue(spacing, spacingVal);
-                }
-                Hb::Edge srcEdge, dstEdge;
-                result &= getAnchorEdge( srcEdgeStr, srcEdge );
-                result &= getAnchorEdge( dstEdgeStr, dstEdge );
-                if (result) {
-                    result = mActions->addMeshLayoutEdge( src, srcEdge, dst, dstEdge, spacingVal, spacer );
-                }
-              
+            HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: TARGET ANCHOR ITEM" );
+            if( mReader.name() == lexemValue(AL_ANCHOR) ||
+                mReader.name() == lexemValue(ML_MESHITEM) ) {
+                result = readAnchorLayoutStartItem(true);
             }
             break;
         }
@@ -263,14 +246,35 @@ bool HbWidgetLoaderMemorySyntax::load( HbWidgetLoader::LayoutDefinition* layoutD
     bool retVal(true);
 
     // Construct layout from layout definition
-    retVal = mActions->createMeshLayout(QString());
-    for (int i = 0; retVal && i < layoutDef->meshItems.count(); i++){
-		const HbWidgetLoader::MeshItem &item = layoutDef->meshItems.at(i);
-        HbXmlLengthValue spacingVal;
-        spacingVal.mType = item.spacingType;
-        spacingVal.mValue = item.spacingVal;
-        spacingVal.mString = item.spacingText;
-        retVal = mActions->addMeshLayoutEdge( item.src, item.srcEdge, item.dst, item.dstEdge, spacingVal, item.spacer );
+    retVal = mActions->createAnchorLayout(QString(), false);
+    for (int i = 0; retVal && i < layoutDef->anchorItems.count(); i++){
+		const HbWidgetLoader::AnchorItem &item = layoutDef->anchorItems.at(i);
+        HbXmlLengthValue minLength, prefLength, maxLength;
+        minLength.mType = item.minType;
+        minLength.mValue = item.minVal;
+        minLength.mString = item.minText;
+        prefLength.mType = item.prefType;
+        prefLength.mValue = item.prefVal;
+        prefLength.mString = item.prefText;
+        maxLength.mType = item.maxType;
+        maxLength.mValue = item.maxVal;
+        maxLength.mString = item.maxText;
+        QSizePolicy::Policy sizepolicy;
+        QSizePolicy::Policy *sizepolicy_p = 0;
+        if ( item.sizepolicy != -1 ) {
+            sizepolicy = (QSizePolicy::Policy)item.sizepolicy;
+            sizepolicy_p = &sizepolicy;
+        }
+        HbAnchor::Direction direction;
+        HbAnchor::Direction *direction_p = 0;
+        if ( item.direction != -1 ) {
+            direction = (HbAnchor::Direction)item.direction;
+            direction_p = &direction;
+        }
+
+        retVal = mActions->addAnchorLayoutItem(
+            QString(), item.srcId, item.srcEdge, QString(), item.dstId, item.dstEdge,
+            minLength, prefLength, maxLength, sizepolicy_p, direction_p, item.anchorId );
     }
 
     return retVal;

@@ -65,10 +65,14 @@ public:
     int findIndexOfLastLineBeforeY(qreal y) const;
 
     QString elideLayoutedText(const QSizeF& size, const QFontMetricsF& metrics) const;
-    bool isAdjustHightNeeded(const QSizeF& newSize, const QSizeF& prefSize);
+    bool isAdjustHightNeeded(qreal newWidth,
+                             qreal prefHeight,
+                             qreal minHeight,
+                             qreal maxHeight);
+
     void clearAdjustedSizeCache();
 
-    QSizeF respectSizeLimits(QSizeF size) const;
+    qreal respectHeightLimits(qreal height) const;
 
     inline QSizeF calculatePrefferedSize(const QSizeF& constraint) const;
 
@@ -145,6 +149,7 @@ public:
     mutable qreal mMinWidthForAdjust;
     mutable qreal mMaxWidthForAdjust;
     mutable qreal mDefaultHeight;
+    mutable QSizeF mLastConstraint;
 
     mutable bool mUpdateColor;
 

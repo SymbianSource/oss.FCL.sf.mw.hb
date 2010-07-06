@@ -100,8 +100,10 @@ void HbSliderControlPrivate::init( )
     handle = createHandle();
     if(handle) {
         HbStyle::setItemName( handle, "handle" );
-    } 
+    }
+#if defined( QT_KEYPAD_NAVIGATION ) && !defined( Q_OS_SYMBIAN )    
     q->setFocusPolicy( Qt::FocusPolicy( ( qApp->style( ) )->styleHint( QStyle::SH_Button_FocusPolicy ) ) );
+#endif
     groove = createGroove();
     if(groove) {
         HbStyle::setItemName( groove, "groove" );
@@ -120,7 +122,9 @@ void HbSliderControlPrivate::init( )
     q->connect( hbInstance->theme( ), SIGNAL( changed( ) ), q, SLOT( updateTheme( ) ) );
     q->connect( q , SIGNAL( actionTriggered( int ) ), q , SLOT( showToolTip( ) ) );
     q->connect( q , SIGNAL( sliderReleased( ) ), q , SLOT( hideToolTip( ) ) );
+#if defined( QT_KEYPAD_NAVIGATION ) && !defined( Q_OS_SYMBIAN )
     q->setFlags( QGraphicsItem::ItemIsFocusable );
+#endif
 }
 
 
@@ -593,7 +597,7 @@ void HbSliderControl::showToolTip( )
 {
     Q_D( HbSliderControl );
     if ( isSliderDown( ) && d->displayCurrValueToolTip ) {
-        HbToolTip::showText( toolTip( ) , d->handle , d->toolTipAlignment );
+        HbToolTip::showText( toolTip( ) , d->handle->primitive(HbStyle::P_SliderElement_touchhandle) , d->toolTipAlignment );
     }
 }
 
@@ -973,7 +977,6 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
         }
     }
 
-  //  HbAbstractSliderControl::gestureEvent(event);
 }
 #endif
 
@@ -981,7 +984,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
 bool HbSliderControl::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 {
     Q_D(HbSliderControl);
-    if( obj == d->grooveTouchArea) {
+    if( obj == d->grooveTouchArea  ) {
         if (!isEnabled() ) {
             return false;
         }
@@ -992,6 +995,12 @@ bool HbSliderControl::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
     }
     else if ( obj == d->handle) {
         event->ignore();
+	    if (event->type() == QEvent::Gesture){
+            QGestureEvent *gestureEvent = static_cast<QGestureEvent *> (event);
+            foreach(QGesture *g, gestureEvent->gestures()) {
+                gestureEvent->ignore(g);
+            }
+        }
     }
 	return false;
 }
@@ -1159,7 +1168,8 @@ void HbSliderControl::sliderChange( SliderChange  change)
             }
         } else {
             if (!d->userDefinedTooltipAlign) {
-                d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignRight );
+                // Bug in tooltip, cannot align it with top right
+                d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignHCenter );
             }
         }
         repolish( );
@@ -1338,7 +1348,6 @@ bool HbSliderControl::isTrackEventHandlingEnabled ( )
     Q_D( HbSliderControl );
     return d->trackHandlingEnable ;
 }
-
 /*!
  Gets the size of the handle
  */

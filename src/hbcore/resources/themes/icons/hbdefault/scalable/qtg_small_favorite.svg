@@ -8,8 +8,8 @@
 <rect fill="none" height="30" width="30"/>
 <defs>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15" x2="15" y1="2.9937" y2="27.438">
-<stop offset="0" style="stop-color:#FFE896"/>
-<stop offset="1" style="stop-color:#FFB701"/>
+<stop offset="0" style="stop-color:#E0D9B5"/>
+<stop offset="1" style="stop-color:#B3964D"/>
 </linearGradient>
 </defs>
 </g>

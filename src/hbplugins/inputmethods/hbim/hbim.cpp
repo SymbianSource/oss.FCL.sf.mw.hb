@@ -28,6 +28,7 @@
 #include <private/hbmainwindow_p.h>
 #include <hbinputmethod.h>
 #include <hbinputmethod_p.h>
+#include <hbapplication.h>
 
 bool HbInputInitializer::mRecursive = false;
 // ---------------------------------------------------------------------------
@@ -51,29 +52,33 @@ HbInputInitializer::~HbInputInitializer()
 }
 
 // ---------------------------------------------------------------------------
-// Virtual12KeyImpl::create
+// HbInputInitializer::create
 // 
 // ---------------------------------------------------------------------------
 //
 QInputContext* HbInputInitializer::create(const QString& key)
 {
     if (key == QString("hbim")) {
-        // this function is called from Qt framework's QApplication::inputContext()
-        // now if inside this function or any function which is called from this function.
+        // This function is called from Qt framework's QApplication::inputContext().
+        // Now if this function or any function which is called from this function
         // calls QApplication::inputContext() it will result in infinite recursion.
-        // to guard this we are using this with mRecursive.
-        // also setting HbMainWindowPrivate::initializeInputs to false will avoid 
-        // re-initialization of inputfw when HbMainWindow is launched.
+        // To guard this we are using mRecursive.
+        // Also setting HbMainWindowPrivate::initializeInputs to false will avoid 
+        // re-initialization of inputfw if HbMainWindow is launched.
+        // If the app is HbApplication, we don't do the initialization yet,
+        // but let HbMainWindow do deferred construction later.
         if (!mRecursive) {
-            HbMainWindowPrivate::initializeInputs = false;
             mRecursive = true;
-            HbInputMethod::initializeFramework(*qApp);
+            if (!qobject_cast<HbApplication*>(qApp)) {
+                HbMainWindowPrivate::initializeInputs = false;
+                HbInputMethod::initializeFramework(*qApp);
+            }
             QInputContext *ic = qApp->inputContext();
             mRecursive = false;
             return ic;
         } else {
-            // it was a recursive call, so for clarity return 0 from here.
-            // this function is called only when QApplicaion's inputContext is null.
+            // It was a recursive call, so for clarity return 0 from here.
+            // This function is called only when QApplication's inputContext is null,
             // so returning a null for a recursive call.
             return 0;
         }

@@ -64,7 +64,7 @@ public:
     HbInputCustomButtonBank *mCustomButtonBank;
     HbInputCustomButton *mDotButton;
     HbInputCustomButton *mDashButton;
-    HbValidator *mValid;
+    QPointer<HbValidator> mValid;
     
     HbInputDialog::InputMode mPrimaryMode;
     HbInputDialog::InputMode mSecondaryMode;

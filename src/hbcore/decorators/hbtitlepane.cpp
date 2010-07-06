@@ -34,7 +34,9 @@
 #include <hbview.h>
 #include <hbmenu.h>
 #include <hbtapgesture.h>
+#include <hbswipegesture.h>
 #include <hbpangesture.h>
+#include <hbmarqueeitem.h>
 
 #include <QGestureEvent>
 #include <QGesture>
@@ -52,30 +54,22 @@
 */
 
 HbTitlePanePrivate::HbTitlePanePrivate() :
-    mText(),
-    mTextItem(0),
-    mToggled(false),
-    mIcon(0),
-    mMode(QIcon::Normal)
+    mText(), mTextItem(0), mToggled(false), mIcon(0), mMode(QIcon::Normal), mTouchArea(0)
 {
 
 }
 
 void HbTitlePanePrivate::delayedConstruction()
 {
-    Q_Q(HbTitlePane);
-    q->grabGesture(Qt::TapGesture);
-    q->grabGesture(Qt::PanGesture);
 }
 
 void HbTitlePanePrivate::init()
 {
     Q_Q(HbTitlePane);
 
+    createPrimitives();
     q->setAcceptedMouseButtons(Qt::LeftButton);
     q->setText(HbApplication::applicationName());
-
-    createPrimitives();
 }
 
 void HbTitlePanePrivate::toggle(bool on)
@@ -89,22 +83,29 @@ void HbTitlePanePrivate::createPrimitives()
 
     mTextItem = q->style()->createPrimitive(HbStyle::P_TitlePane_text, q);
     mIcon = q->style()->createPrimitive(HbStyle::P_TitlePane_icon, q);
-    q->setBackgroundItem(HbStyle::P_TitlePane_background); // calls updatePrimitives
+    mTouchArea = q->style()->createPrimitive(HbStyle::P_TitlePane_toucharea, q);
+
+    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(mTouchArea);
+    touchArea->grabGesture(Qt::TapGesture);
+    touchArea->grabGesture(Qt::SwipeGesture);
+    touchArea->grabGesture(Qt::PanGesture);
+
+    q->ungrabGesture(Qt::TapGesture);
+    q->ungrabGesture(Qt::SwipeGesture);
+    q->ungrabGesture(Qt::PanGesture);
+
+    setBackgroundItem(HbStyle::P_TitlePane_background);
 }
 
 void HbTitlePanePrivate::updatePrimitives()
 {
     Q_Q(HbTitlePane);
     HbStyleOptionTitlePane option;
-
-    if (q->backgroundItem() == 0 || mTextItem == 0) {
-        return;
-    }
-
     q->initStyleOption(&option);
     q->style()->updatePrimitive(q->backgroundItem(), HbStyle::P_TitlePane_background, &option);
     q->style()->updatePrimitive(mTextItem, HbStyle::P_TitlePane_text, &option);
     q->style()->updatePrimitive(mIcon, HbStyle::P_TitlePane_icon, &option);
+    q->style()->updatePrimitive(mTouchArea, HbStyle::P_TitlePane_toucharea, &option);
 }
 
 // ======== MEMBER FUNCTIONS ========
@@ -187,6 +188,10 @@ void HbTitlePane::setText(const QString &text)
     if (tmp != d->mText) {
         d->mText = tmp;
         updatePrimitives();
+        HbMarqueeItem* marquee = qgraphicsitem_cast<HbMarqueeItem*>(d->mTextItem);
+        if (marquee) {
+            marquee->startAnimation();
+        }
     }
 }
 
@@ -220,9 +225,23 @@ void HbTitlePane::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbTitlePane);
 
-    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
+    if (mainWindow() && mainWindow()->currentView()) {
+        if (mainWindow()->currentView()->menu()->isEmpty()) {
+            return;
+        }
+    }
+    HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture));
+    HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture));
+    HbSwipeGesture *swipe = qobject_cast<HbSwipeGesture*>(event->gesture(Qt::SwipeGesture));
+
+    if(tap) {
+
         switch(tap->state()) {
         case Qt::GestureStarted: {
+                if (scene()) {
+                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+                }
                 d->mMode = QIcon::Active;
                 updatePrimitives();
 #ifdef HB_EFFECTS
@@ -232,7 +251,24 @@ void HbTitlePane::gestureEvent(QGestureEvent *event)
                 d->toggle(true);
                 break;
             }
+        case Qt::GestureCanceled: {
+                if (scene()) {
+                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+                }
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+
+                if (d->mMode != QIcon::Normal) {
+                    d->mMode = QIcon::Normal;
+                    updatePrimitives();
+                }
+                d->toggle(false);
+
+                break;
+            }
         case Qt::GestureFinished: {
+                if (scene()) {
+                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+                }
                 d->mMode = QIcon::Selected;
                 updatePrimitives();
 #ifdef HB_EFFECTS
@@ -248,66 +284,21 @@ void HbTitlePane::gestureEvent(QGestureEvent *event)
             }
         default:
             break;
-        }        
-    } else if (HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
-        QPointF pointerPos = mapFromScene(event->mapToGraphicsScene(pan->startPos() + pan->offset()));
-        switch(pan->state()) {
-        case Qt::GestureUpdated: {
-                if (boundingRect().contains(pointerPos)) {
-                    if (d->mMode != QIcon::Active) {
-                        d->mMode = QIcon::Active;
-                        updatePrimitives();
-                    }
-                } else {
-                    if (d->mMode != QIcon::Normal) {
-                        d->mMode = QIcon::Normal;
-                        updatePrimitives();
-                    }
-                }
-                if (boundingRect().contains(pointerPos) && !d->mToggled) {
-                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-                    d->toggle(true);
-                } else if (!boundingRect().contains(pointerPos) && d->mToggled) {
-                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-                    d->toggle(false);
-                }
-                break;
-            }
-        case Qt::GestureFinished: {
+        }
+    } else if(pan) {
+       if(d->mMode != QIcon::Normal) {
+           HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+           d->toggle(false);
+           d->mMode = QIcon::Normal;
+           updatePrimitives();
+        }
+   } else if(swipe) {
+        HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
 
-                if(pan->sceneDelta().x() > 0) {
-                    emit panRight();
-                }
-                else if(pan->sceneDelta().x() < 0) {
-                    emit panLeft();
-                }
-
-                if (boundingRect().contains(pointerPos) && !d->mToggled) {
-                    d->mMode = QIcon::Selected;
-                    updatePrimitives();
-#ifdef HB_EFFECTS
-                    HbEffect::start(this, "decorator", "latched");
-#endif
-                    if (d->mToggled) {
-                        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-                    }
-
-                    HbWidgetFeedback::triggered(this, Hb::InstantClicked);
-                    QPointF launchPos(scenePos().x() + boundingRect().width() / 2 + 3, scenePos().y() + boundingRect().height());
-                    emit launchPopup(launchPos);
-                }
-                else {
-                    if (d->mMode != QIcon::Normal) {
-                        HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-                        d->toggle(false);
-                        d->mMode = QIcon::Normal;
-                        updatePrimitives();
-                    }
-                }
-                break;
-            }
-        default:
-            break;
+        if(swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
+            emit swipeRight();
+        } else if(swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
+            emit swipeLeft();
         }
     }
 }
@@ -376,12 +367,12 @@ QGraphicsItem *HbTitlePane::primitive(const QString &itemName) const
     } else {
         if (itemName == "background") {
             return this->backgroundItem();
-        }
-        else if (itemName == "text") {
+        } else if (itemName == "text") {
             return d->mTextItem;
-        }
-        else if (itemName == "icon") {
+        } else if (itemName == "icon") {
             return d->mIcon;
+        } else if (itemName == "toucharea") {
+            return d->mTouchArea;
         } else {
             return 0;
         }

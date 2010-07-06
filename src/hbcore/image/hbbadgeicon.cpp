@@ -73,16 +73,18 @@ HbBadgeIcon::~HbBadgeIcon()
  */
 void HbBadgeIcon::addBadge(Qt::Alignment alignment,
                            const HbIcon &icon,
-                           int zValue)
+                           int zValue,
+                           const QSizeF &sizeFactor,
+                           Qt::AspectRatioMode aspectRatio)
 {
-    HbBadgeIconInfo info(icon, alignment, zValue);
-    int size = mBadgeIcons.size();
-    if (size == 0) {
+    HbBadgeIconInfo info(icon, alignment, zValue, sizeFactor, aspectRatio);
+    int badgeCount = mBadgeIcons.count();
+    if (badgeCount == 0) {
         mBadgeIcons.append(info);
     } else {
         bool added = false;
         //Find a spot to insert the badgeinfo in the list.
-        for (int i = size - 1; i >= 0; i--) {
+        for (int i = badgeCount - 1; i >= 0; i--) {
             if (mBadgeIcons[i].zValue() > zValue) {
                 mBadgeIcons.insert(i + 1, info);
                 added = true;
@@ -154,12 +156,12 @@ void HbBadgeIcon::paint(QPainter *painter,
     int count = mBadgeIcons.count();
 
     for (int i = count - 1; i >= 0; i--) {
-        HbBadgeIconInfo aIcon = mBadgeIcons[i];
-        Qt::Alignment align = aIcon.alignment();
+        HbBadgeIconInfo badge = mBadgeIcons.at(i);
+        // Fix the alignment.
+        Qt::Alignment align = badge.alignment();
         Qt::Alignment absAlign = align;
         if (mirror) {
             absAlign = align & ~(Qt::AlignRight | Qt::AlignLeft);
-
             if (align & Qt::AlignLeft) {
                 absAlign |= Qt::AlignRight;
             }
@@ -167,10 +169,22 @@ void HbBadgeIcon::paint(QPainter *painter,
                 absAlign |= Qt::AlignLeft;
             }
         }
-        // ... and then draw at the specified location.
-        aIcon.icon().paint(painter,
+        // Update the size.
+        QSizeF sizeFactor = badge.sizeFactor();
+        if (!sizeFactor.isNull()) {
+            QSizeF targetSizeF(sizeFactor.width() * rect.width(), sizeFactor.height() * rect.height());
+            QSize targetSize = targetSizeF.toSize();
+            HbIcon icon = badge.icon();
+            if (targetSize != icon.size().toSize()) {
+                icon.setSize(targetSize);
+                badge.setIcon(icon);
+                mBadgeIcons[i] = badge;
+            }
+        }
+        // And finally draw the badge.
+        badge.icon().paint(painter,
                            rect,
-                           Qt::KeepAspectRatio,
+                           badge.aspectRatio(),
                            absAlign,
                            mode,
                            state);
@@ -182,15 +196,17 @@ void HbBadgeIcon::paint(QPainter *painter,
  */
 void HbBadgeIcon::externalize(QDataStream &stream)
 {
-    int size = mBadgeIcons.size();
+    int count = mBadgeIcons.count();
     // Write out how many badges we'll save first
-    stream << size;
+    stream << count;
     // And write each item
-    for (int i = 0; i < size; i++) {
-        HbBadgeIconInfo aIcon = mBadgeIcons[i];
-        stream << aIcon.icon();
-        stream << (qint32)(aIcon.alignment());
-        stream << aIcon.zValue();
+    for (int i = 0; i < count; i++) {
+        const HbBadgeIconInfo &badge(mBadgeIcons.at(i));
+        stream << badge.icon();
+        stream << (qint32) badge.alignment();
+        stream << badge.zValue();
+        stream << badge.sizeFactor();
+        stream << (qint32) badge.aspectRatio();
     }
 }
 
@@ -206,11 +222,16 @@ void HbBadgeIcon::internalize(QDataStream &stream)
         qint32 align;
         qint32 zValue;
         HbIcon icon;
+        QSizeF sizeFactor;
+        qint32 aspectRatio;
         stream >> icon;
         stream >> align;
         stream >> zValue;
+        stream >> sizeFactor;
+        stream >> aspectRatio;
 
-        HbBadgeIconInfo info(icon, (Qt::Alignment)align, zValue);
+        HbBadgeIconInfo info(icon, (Qt::Alignment) align, zValue,
+                             sizeFactor, (Qt::AspectRatioMode) aspectRatio);
         mBadgeIcons.append(info);
-    };
+    }
 }

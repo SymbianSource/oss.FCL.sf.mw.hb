@@ -572,7 +572,7 @@ A convenience method for setting up the editor as completing email field.
 void HbEditorInterface::setUpAsCompletingEmailField()
 {
     setMode(HbInputModeNone);
-    setInputConstraints((HbEditorConstraint)(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField));
+    setInputConstraints(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField);
     setFilter(HbEmailAddressFilter::instance());
     setEditorClass(HbInputEditorClassEmail);
     setExtraDictionaryId(HbInputEditorClassEmail);
@@ -586,7 +586,7 @@ A convenience method for setting up the editor as completing url field.
 void HbEditorInterface::setUpAsCompletingUrlField()
 {
     setMode(HbInputModeNone);
-    setInputConstraints((HbEditorConstraint)(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField));
+    setInputConstraints(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField);
     setFilter(HbUrlFilter::instance());
     setEditorClass(HbInputEditorClassUrl);
     setExtraDictionaryId(HbInputEditorClassUrl);

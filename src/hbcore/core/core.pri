@@ -69,7 +69,7 @@ PRIVATE_HEADERS += $$PWD/hbthemesystemeffectmap_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p_p.h
 symbian {
-    PRIVATE_HEADERS += $$PWD/hbcorepskeys_p.h
+    RESTRICTED_HEADERS += $$PWD/hbcorepskeys_r.h
     PRIVATE_HEADERS += $$PWD/hbsensornotifyhandler_p.h
 }
 

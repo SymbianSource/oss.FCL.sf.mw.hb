@@ -38,6 +38,7 @@ class HB_WIDGETS_EXPORT HbDeviceMessageBox : public QObject
     Q_OBJECT
 
     Q_PROPERTY(HbMessageBox::MessageBoxType messageBoxType READ messageBoxType WRITE setMessageBoxType)
+    Q_PROPERTY(HbMessageBox::StandardButtons standardButtons READ standardButtons WRITE setStandardButtons)
     Q_PROPERTY(QString text READ text WRITE setText)
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
     Q_PROPERTY(bool iconVisible READ iconVisible WRITE setIconVisible)
@@ -53,18 +54,19 @@ public:
 
 public:
     explicit HbDeviceMessageBox(
-        HbMessageBox::MessageBoxType type = HbMessageBox::MessageTypeInformation,
+        HbMessageBox::MessageBoxType type = HbMessageBox::MessageTypeNone,
         QObject *parent = 0);
     explicit HbDeviceMessageBox(const QString &text,
-        HbMessageBox::MessageBoxType type = HbMessageBox::MessageTypeInformation,
+        HbMessageBox::MessageBoxType type = HbMessageBox::MessageTypeNone,
         QObject *parent=0);
     virtual ~HbDeviceMessageBox();
 
     static bool question(
         const QString &text,
-        const QString &acceptButtonText = QString(),
-        const QString &rejectButtonText = QString());
-
+        const QString &acceptButtonText,
+        const QString &rejectButtonText);
+    static bool question(const QString &text, HbMessageBox::StandardButtons buttons =
+        HbMessageBox::Yes|HbMessageBox::No);
     static void information(const QString &text);
     static void warning(const QString &text);
 
@@ -77,6 +79,9 @@ public:
 
     void setMessageBoxType(HbMessageBox::MessageBoxType type);
     HbMessageBox::MessageBoxType messageBoxType() const;
+
+    void setStandardButtons(HbMessageBox::StandardButtons buttons);
+    HbMessageBox::StandardButtons standardButtons() const;
 
     void setText(const QString &text);
     QString text() const;

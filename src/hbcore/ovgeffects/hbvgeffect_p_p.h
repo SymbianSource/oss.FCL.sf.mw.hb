@@ -134,6 +134,8 @@ public:
     mutable qreal lastUsedRotation;
     mutable QTransform lastRotationTransform;
     mutable qreal lastRotationTransformAngle;
+
+    bool forceSwMode;
 };
 
 #endif

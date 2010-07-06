@@ -87,8 +87,6 @@
 #include <hbindicatorleveliconitem_p.h>
 
 #include <hbglobal.h>
-#include <hbpluginloader_p.h>
-#include "hbstyleinterface_p.h"
 #include <hbstyleparameters.h>
 
 #include "hbstyleselector_p.h"
@@ -100,8 +98,7 @@
 
 
 #include "hbanchorlayout.h"
-#include "hbanchorlayoutdebug_p.h"
-#include "hbanchor_p.h"
+#include <hbanchor.h>
 
 #include <QGraphicsWidget>
 #include <hbwidget.h>
@@ -110,6 +107,9 @@
 #include "hbrepeatitem_p.h"
 
 #include <QDebug>
+#include <QMetaClassInfo>
+
+Q_DECLARE_METATYPE(QGraphicsLayout*)
 
 //Uncomment next define(s) in order to get more debug prints.
 //Similar define exists also in the engine side.
@@ -136,6 +136,9 @@
     Generally primitives should be updated only when a state change occurs. When a widget uses primitives to construct
     itself it does not need a paint() method at all since primitives (widget's children) are doing the drawing. 
     Painting for the primitives occurs from the graphics scene.
+
+    HbStyle has some caching functionality and thus it should not be instantiated explicitly, but 
+    accessed only through HbWidget::style() or HbInstance::style() APIs.
 
 */
 
@@ -793,22 +796,35 @@ static const int TOUCHAREA_ZVALUE = 1000;
 
 static const QString GLOBAL_PARAMETERS_LOCATION = QLatin1String(":/themes/style/hbdefault/variables/layout/zoom/0/hbglobalparameters.css");
 
+static const char* LAYOUT_PTR_PROPERTY = "HbStyle_layout_ptr";
+static const char* LAYOUT_NAME_PROPERTY = "HbStyle_layout_name";
+
 inline void overrideSpacing( HbAnchorLayout *layout, const QString &name, Hb::Edge edge, qreal val )
 {
     if( name.isNull() ) {
         return;
     }
-    QList<HbAnchor*> list = HbAnchorLayoutDebug::getOriginalAnchors( layout );
+    QList<HbAnchor*> list = layout->anchors();
     for( int i = 0; i < list.size(); i++ ) {
         HbAnchor *anchor = list.at(i);
-        if( ( anchor->mStartId == name ) && ( anchor->mStartEdge == edge ) ) {
-            layout->setAnchor( anchor->mStartId, anchor->mStartEdge, anchor->mEndId, anchor->mEndEdge, val );
+        if( ( anchor->startNodeId() == name ) && ( anchor->startEdge() == edge ) ) {
+            anchor->setDirection( val < 0 ? HbAnchor::Negative : HbAnchor::Positive );
+            anchor->setPreferredLength( qAbs(val) );
+            if (anchor->anchorId().isEmpty()) {
+                // assuming it's a fixed anchor
+                anchor->setSizePolicy( QSizePolicy::Fixed );
+            } else {
+                // assuming it's a "spacer" and we want to override the minimum length
+                anchor->setMinimumLength( qAbs(val) );
+            }
         }
     }
 }
 
 /*!
 Constructor
+
+Should not be called explicitly. Use HbWidget::style() or HbInstance::style() instead.
 */
 HbStyle::HbStyle() :
     d_ptr(new HbStylePrivate)
@@ -823,149 +839,6 @@ Destructor
 HbStyle::~HbStyle()
 {
     delete d_ptr;
-}
-
-/*!
-
-    \deprecated HbStyle::registerPlugin(const QString&)
-    is deprecated. Style plugins are not supported anymore.
-
-    Registers the style plugin with the Style system. This method can be called by a custom widget
-    or application in order to register the style plugin that implements the custom graphics primitives.
-    This method results in loading of the plugin, if the plugin is registered for the first time.
-    It returns the base ID for the primitives implemented by the style plugin. The custom widget
-    can use the range of integers from (BaseID) to (BaseID+count-1) to refer to the custom
-    primitives, where count is the number of primitives supported by the plugin. The style
-    plugin must return the correct number of primitives when the primitiveCount() method is called.
-    In case of errors the method returns < 0. Note also that for each registerPlugin there must be
-    a unregisterPlugin call, the last unregisterPlugin call for a plugin causes the plugin to be unloaded.
-
-    If the style plugin implementation returns valid path with layout defition files (CSS+WidgetML)
-    from layoutPath() method the layout definitions CSSs gets read when calling registerPlugin().
-
-    \param pluginName, name of the Plugin library to be dynamically loaded
-    \return int the base ID to be used for the primitives implemented by the style plugin
-    \sa unregisterPlugin()
- */
-int HbStyle::registerPlugin(const QString &pluginName)
-{
-    Q_D( const HbStyle );
-
-    // check if the plugin is already registered
-    if (d->registeredPlugins.contains(pluginName)) {
-        // increase the reference count
-        d->registeredPlugins.value(pluginName)->refCount++;
-        // return the base ID of the primitives enumeration
-        return d->registeredPlugins.value(pluginName)->primitiveBaseId;
-    }
-
-    // load the plugin
-    HbPluginLoader* loader = new HbPluginLoader(pluginName);
-    if (!loader)
-        return -1;
-
-    // get the instance pointer
-    QObject* pluginInstance = loader->instance();
-    if (!pluginInstance) {
-
-        // try the additional paths
-        QFileInfo fileInfo(pluginName);
-        foreach (QString additionalPath, hbInstance->libraryPaths()) {
-            const QDir pluginDir(additionalPath);
-            loader->setPluginName(pluginDir.absoluteFilePath(fileInfo.fileName()));
-            pluginInstance = loader->instance();
-            if (pluginInstance) {
-                break;
-            }
-        }
-
-        if (!pluginInstance) {
-            delete loader;
-            return -1;
-        }
-    }
-
-    HbStyleInterface *stylePlugin = qobject_cast<HbStyleInterface *>(pluginInstance);
-
-    int primitiveCount = stylePlugin->primitiveCount();
-    if (primitiveCount <= 0) {
-        delete pluginInstance;
-        delete loader;
-        return -1;
-    }
-
-    HbStyleInterfaceInfo* info = new HbStyleInterfaceInfo();
-    info->loader = loader;
-    info->primitiveBaseId = d->nextAvailableId;
-
-    // make entries for the primitives in the hash table
-    for (int i=d->nextAvailableId; i<(d->nextAvailableId+primitiveCount); i++)
-    {
-        d->customPrimitives.insert(i, info);
-    }
-
-    // make entry for the plugin in the registered plugins hash table
-    HbStylePluginInfo* pluginInfo = new HbStylePluginInfo();
-    pluginInfo->primitiveBaseId = d->nextAvailableId;
-    pluginInfo->primitiveCount = primitiveCount;
-    pluginInfo->refCount = 1;
-
-    d->registeredPlugins.insert(pluginName, pluginInfo);
-    d->nextAvailableId += primitiveCount;
-
-    // register associated style files
-    HbWidgetStyleLoader::instance()->addFilePath(
-        stylePlugin->layoutPath(),
-        HbLayeredStyleLoader::Concern_Layouts,
-        HbLayeredStyleLoader::Priority_Core);
-    d->pluginStylePaths.insert(pluginName, stylePlugin->layoutPath());
-
-    return pluginInfo->primitiveBaseId;
-}
-
-
-/*!
-
-    \deprecated HbStyle::unregisterPlugin(const QString&)
-    is deprecated. Style plugins are not supported anymore.
-
-    Un-registers the style plugin.
-    If the reference count becomes zero, the plugin is unloaded and the primitive IDs are de-registered
-    If a client has called registerPlugin() it must unregister the style plugin with this method.
-
-    \param pluginName, name of the Plugin library
- */
-void HbStyle::unregisterPlugin(const QString &pluginName)
-{
-    Q_D( const HbStyle );
-    if (d->registeredPlugins.contains(pluginName)) {
-        HbStylePluginInfo *info = d->registeredPlugins.value(pluginName);
-        info->refCount--;
-        // unload plugin and remove from list
-        if (info->refCount == 0) {
-            HbStyleInterfaceInfo* styleInfo = d->customPrimitives.value(info->primitiveBaseId);
-            delete styleInfo->loader->instance();
-            delete styleInfo->loader;
-            delete styleInfo;
-            for (int i=info->primitiveBaseId; i< (info->primitiveBaseId+info->primitiveCount); i++) {
-                  d->customPrimitives.remove(i);
-            }
-            d->registeredPlugins.remove(pluginName);
-
-            // unregister associated style files
-            HbWidgetStyleLoader::instance()->removeFilePath(
-                d->pluginStylePaths.value(pluginName),
-                HbLayeredStyleLoader::Concern_Layouts,
-                HbLayeredStyleLoader::Priority_Core);
-            d->pluginStylePaths.remove(pluginName);
-
-            if( d->registeredPlugins.count() == 0 ){
-                // no plugins loaded, can reset the id counter
-                d->nextAvailableId = HbStyle::P_CustomBase;
-            }
-
-        }
-    }
 }
 
 
@@ -992,15 +865,6 @@ void HbStyle::unregisterPlugin(const QString &pluginName)
  */
 QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent ) const
 {
-
-    Q_D( const HbStyle );
-
-    if (d->customPrimitives.contains(primitive)) {
-        HbStyleInterfaceInfo* info = d->customPrimitives.value(primitive);
-        QObject* pluginInstance = info->loader->instance();
-        HbStyleInterface *stylePlugin = qobject_cast<HbStyleInterface *>(pluginInstance);
-        return stylePlugin->createPrimitive((HbStyle::Primitive)(primitive-info->primitiveBaseId), parent);
-    }
 
         switch (primitive){
             case P_MenuItem_submenuindicator:
@@ -1117,7 +981,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 setItemName(ta, QLatin1String("toucharea"));
                 ta->setZValue(TOUCHAREA_ZVALUE);
                 if(parent){
-                    parent->setHandlesChildEvents(true);
+                    parent->setFiltersChildEvents(true);
                 }
                 return ta;
                 }
@@ -1137,7 +1001,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
                 setItemName(ta, QLatin1String("toucharea"));
                 if(parent){
-                    parent->setHandlesChildEvents(true);
+                    parent->setFiltersChildEvents(true);
                 }
                 return ta;
                 }
@@ -1157,15 +1021,28 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 HbTouchArea *ta = new HbTouchArea(parent);
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
                 setItemName(ta, QLatin1String("combobox_button_toucharea"));
-                /*if(parent){
-                    parent->setHandlesChildEvents(true);
-                }*/
+                if(parent){
+                    parent->setFiltersChildEvents(true);
+                }
                 return ta;
                 }
-             case P_TitleBar_toucharea: {
+             case P_TitleBar_toucharea: 
+                {
                 HbTouchArea *ta = new HbTouchArea(parent);
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
                 setItemName(ta, QLatin1String("toucharea"));
+                return ta;
+                }
+             case P_IndicatorButton_toucharea:
+             case P_TitlePane_toucharea:
+             case P_NavigationButton_toucharea:
+                {
+                HbTouchArea *ta = new HbTouchArea(parent);
+                ta->setFlag(QGraphicsItem::ItemIsFocusable);
+                setItemName(ta, QLatin1String("toucharea"));
+                if (parent){
+                    parent->setHandlesChildEvents(true);
+                }
                 return ta;
                 }
              case P_SliderElement_touchdecrease:
@@ -1175,7 +1052,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 HbTouchArea *ta = new HbTouchArea(parent);
                 ta->setFlag(QGraphicsItem::ItemIsFocusable);
                 if(parent){
-                    //parent->setHandlesChildEvents(true);
+                    parent->setFiltersChildEvents(true);
                 }
                 return ta;
                 }
@@ -1575,6 +1452,7 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
 
             case P_ItemViewItem_background: {
                 HbIconItem *iconItem = q_check_ptr(new HbIconItem(parent));
+                iconItem->setZValue(-3.0);
                 setItemName(iconItem, QLatin1String("background"));
                 return iconItem;
             }
@@ -1637,15 +1515,16 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
                 return n;
             }
             case P_ItemViewItem_focus: {
-                HbFrameItem *item = q_check_ptr(new HbFrameItem(parent));
-                //setItemName(item, QLatin1String("focus-indicator"));
-                return item;
+                HbFrameItem *frameItem = q_check_ptr(new HbFrameItem(parent));
+                frameItem->setZValue(-1.0);
+                return frameItem;
             }
             case P_ItemHighlight_background:
                 return new HbFrameItem(parent);
 
             case P_ItemViewItem_frame: {
                 HbFrameItem *item = q_check_ptr(new HbFrameItem(parent));
+                item->setZValue(-4.0);
                 setItemName(item,"frame");
                 return item;
             }
@@ -1744,13 +1623,6 @@ QGraphicsItem *HbStyle::createPrimitive( HbStyle::Primitive primitive, QGraphics
 void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive, const QStyleOption *option ) const
 {
     Q_D( const HbStyle );
-
-    if (d->customPrimitives.contains(primitive)) {
-        HbStyleInterfaceInfo* info = d->customPrimitives.value(primitive);
-        QObject* pluginInstance = info->loader->instance();
-        HbStyleInterface *stylePlugin = qobject_cast<HbStyleInterface *>(pluginInstance);
-        return stylePlugin->updatePrimitive(item, (HbStyle::Primitive)(primitive-info->primitiveBaseId), option);
-    }
 
     switch(primitive){
             case P_PushButton_icon:
@@ -1869,6 +1741,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ComboBoxButton_toucharea:
             case P_CheckBox_toucharea:
             case P_TitleBar_toucharea:
+            case P_IndicatorButton_toucharea:
+            case P_TitlePane_toucharea:
+            case P_NavigationButton_toucharea:
             case P_SliderElement_touchdecrease:
             case P_SliderElement_touchincrease:
             case P_SliderElement_touchgroove:
@@ -2399,7 +2274,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     HbMarqueeItem *marqueeItem = static_cast<HbMarqueeItem*>( item );
                     if (marqueeItem) {
                         marqueeItem->setText(opt->caption);
-                        marqueeItem->startAnimation();
                     }
                 }
                 break;
@@ -3162,7 +3036,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
                     textItem->setAlignment(opt->textAlignment);
                     textItem->setFontSpec(HbFontSpec(HbFontSpec::Secondary));
-                    textItem->setTextWrapping(opt->wrappingText);
+                    textItem->setTextWrapping(opt->textTextWrapping);
                     textItem->setText(opt->text);
                 }
                 break;
@@ -3170,10 +3044,14 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                 if (const HbStyleOptionNotificationDialog *opt =
                         qstyleoption_cast<const HbStyleOptionNotificationDialog *>(option)) {
                     HbTextItem *textItem = static_cast<HbTextItem*>(item);
-
                     textItem->setAlignment(opt->titleAlignment);
                     textItem->setFontSpec(HbFontSpec(HbFontSpec::Primary));
-                    textItem->setTextWrapping(opt->wrappingTitle);
+                    textItem->setTextWrapping(opt->titleTextWrapping);
+                    if (opt->titleTextWrapping == Hb::TextNoWrap) {
+                        textItem->setElideMode(Qt::ElideNone);
+                    } else {
+                        textItem->setElideMode(Qt::ElideRight);
+                    }
                     textItem->setText(opt->title);
                 }
                 break;
@@ -3279,7 +3157,9 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
 
                     setItemName(iconItem, QLatin1String("icon-") + QString::number(opt->index + 1));
-                    iconItem->setZValue(opt->index + 1);
+                    if (iconItem->zValue() != opt->index + 1) {
+                        iconItem->setZValue(opt->index + 1);
+                    }
 
                     if (opt->content.canConvert<HbIcon>()){
                         iconItem->setIcon(opt->content.value<HbIcon>());
@@ -3596,7 +3476,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ItemViewItem_background:
                 if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
                     HbIconItem *iconItem = static_cast<HbIconItem*>(item);
-                    iconItem->setZValue(-3.0);
                     iconItem->setGeometry(opt->boundingRect);
                     if (opt->background.canConvert<HbIcon>()){
                         iconItem->setIcon(opt->background.value<HbIcon>());
@@ -3609,7 +3488,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ItemViewItem_frame:
                 if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
-                    frameItem->setZValue(-4.0);
                     frameItem->setGeometry(opt->boundingRect);
 
                     if (opt->background.canConvert<HbFrameBackground>()) {
@@ -3653,7 +3531,6 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_ItemViewItem_focus:
                 if (const HbStyleOptionAbstractViewItem *opt = qstyleoption_cast<const HbStyleOptionAbstractViewItem *>(option)) {
                     HbFrameItem *frameItem = static_cast<HbFrameItem*>(item);
-                    frameItem->setZValue(-1.0);
                     frameItem->setGeometry(opt->boundingRect);
 
                     if (opt->viewItemType == Hb::ItemType_TreeViewItem
@@ -3723,7 +3600,24 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
             case P_TumbleView_background:
                 if (const HbStyleOption *opt = qstyleoption_cast<const HbStyleOption*>(option)) {
                     if(HbFrameItem *frameItem = qgraphicsitem_cast<HbFrameItem*>(item)) {
-                        frameItem->frameDrawer().setFrameGraphicsName("qtg_fr_tumbler_bg");
+
+                        //Temporary source to avoid introducing new style primitive for selection dialog mark widget background item.
+                        QGraphicsItem *parent = frameItem->parentItem();
+                        const QMetaObject *obj = parent->toGraphicsObject()->metaObject();
+
+                        QString className;
+                        if(obj){
+                            className = obj->className();
+                        }
+                        ///////////////////////////////////////////////////////////
+                        
+                        if( !className.compare("HbTumbleView") ){
+                            frameItem->frameDrawer().setFrameGraphicsName("qtg_fr_tumbler_bg");
+                        }
+                        else if( !className.compare("HbSelectionDialogMarkWidget") )
+                        {
+                            frameItem->frameDrawer().setFrameGraphicsName("qtg_fr_groupbox");
+                        }
                         frameItem->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
                         frameItem->setZValue(-5);
                         //TODO:temp fix, issue with css rule picking in derived class
@@ -3835,6 +3729,7 @@ void HbStyle::updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive
                     textItem->setText(opt->additionalText);
                 }
                 break;
+
              default:
                 return;
     };
@@ -3895,9 +3790,10 @@ static HbVector<HbCss::Declaration> declarations(
 */
 void HbStylePrivate::polishItem(
     const HbVector<HbCss::StyleRule> &styleRules,
-    HbWidget* widget,
+    HbWidget *widget,
     QGraphicsItem *item,
     const QString &name,
+    HbDeviceProfile &profile,
     bool layoutDefined) const
 {
     if (name.isEmpty() && widget != item) {
@@ -3914,17 +3810,6 @@ void HbStylePrivate::polishItem(
         qDebug() << "HbStyle::polishItem : -- item name: " << name << "(missing item)";
     }
 #endif
-
-    QGraphicsLayoutItem* lItem = (item && item->isWidget()) ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item) : 0;
-    if ( !lItem ) {
-        lItem = widget->layoutPrimitive(name);
-        if ( lItem && !lItem->graphicsItem() ) {
-            // assume it is spacer
-            static_cast<HbAnchorLayout*>(widget->layout())->setMapping( lItem, name );
-        }
-    }
-
-    HbDeviceProfile profile(HbDeviceProfile::profile(widget));
 
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, widget, profile);
 #ifdef HBSTYLE_DEBUG
@@ -4104,6 +3989,9 @@ void HbStylePrivate::polishItem(
         }
     }
 
+    QGraphicsLayoutItem* lItem = (item && item->isWidget())
+        ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item)
+        : 0;
     if ( lItem ) {
         if ( prop.mFlags & HbCss::ExtractedMinW ) {
 #ifdef HBSTYLE_DEBUG
@@ -4200,6 +4088,70 @@ void HbStylePrivate::polishItem(
     }
 }
 
+void HbStylePrivate::polishAnchor(
+    const HbVector<HbCss::StyleRule> &styleRules,
+    HbWidget *widget,
+    HbAnchor *anchor,
+    HbDeviceProfile &profile) const
+{
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::polish : -- --";
+    qDebug() << "HbStyle::polishAnchor : -- anchor id: " << anchor->anchorId();
+#endif
+
+    const HbVector<HbCss::Declaration> decl = declarations(styleRules, anchor->anchorId(), widget, profile);
+#ifdef HBSTYLE_DEBUG
+    qDebug() << "HbStyle::polishAnchor : -- Number of matching CSS declarations: " << decl.count();
+#endif
+    HbCss::ValueExtractor extractor(decl, layoutParameters, profile);
+    HbCss::KnownProperties prop;
+
+    if ( !extractor.extractKnownProperties(prop) ) {
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- No polish overrides found";
+#endif
+        return;
+    }
+
+
+    if ( prop.mFlags & HbCss::ExtractedMinH || prop.mFlags & HbCss::ExtractedMinW ) {
+        qreal minLength = prop.mFlags & HbCss::ExtractedMinH ? prop.mMinH : prop.mMinW;
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- Setting minimum length: " << minLength;
+#endif
+        anchor->setMinimumLength( minLength );
+    }
+    if ( prop.mFlags & HbCss::ExtractedPrefH || prop.mFlags & HbCss::ExtractedPrefW ) {
+        qreal prefLength = prop.mFlags & HbCss::ExtractedPrefH ? prop.mPrefH : prop.mPrefW;
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- Setting preferred length: " << prefLength;
+#endif
+        anchor->setPreferredLength( prefLength );
+    }
+    if ( prop.mFlags & HbCss::ExtractedMaxH || prop.mFlags & HbCss::ExtractedMaxW ) {
+        qreal maxLength = prop.mFlags & HbCss::ExtractedMaxH ? prop.mMaxH : prop.mMaxW;
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- Setting maximum length: " << maxLength;
+#endif
+        anchor->setMaximumLength( maxLength );
+    }
+    if ( prop.mFlags & HbCss::ExtractedPolVer || prop.mFlags & HbCss::ExtractedPolHor ) {
+        QSizePolicy::Policy policy = prop.mFlags & HbCss::ExtractedPolVer
+            ? prop.mSizePolicy.verticalPolicy() : prop.mSizePolicy.horizontalPolicy();
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- Setting size policy: " << policy;
+#endif
+        anchor->setSizePolicy( policy );
+    }
+    if ( prop.mFlags & HbCss::ExtractedAnchorDir ) {
+#ifdef HBSTYLE_DEBUG
+        qDebug() << "HbStyle::polishAnchor : -- Setting anchor direction: " << prop.mAnchorDir;
+#endif
+        anchor->setDirection( prop.mAnchorDir );
+    }
+}
+
+
 
 #define NODEPTR_N(x) HbCss::StyleSelector::NodePtr n = {n.ptr = (void *)x};
 /*!
@@ -4289,67 +4241,81 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     }
 #endif
 
-    QStringList meshIds;
-    HbAnchorLayout *meshLayout(0);
+    QStringList nodeIds;
+    HbAnchorLayout *anchorLayout(0);
     if (layoutDefined) {
 
-        QString cachedLayoutName = widgetLayoutNames[widget];
-        bool cached = (cachedLayoutName == layoutName );
-        if ( !cached ) {
-#ifdef HBSTYLE_DEBUG
-            qDebug() << "LayoutName cache miss.";
-#endif
-            HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
-            if ( !loader->loadWidgetML(widget, layoutName, sectionName)) {
-#ifdef HBSTYLE_DEBUG
-                qDebug() << "HbStyle::polish : Failed to load WidgetML";
-#endif
-                return;
-            }
-            widgetLayoutNames[widget] = layoutName;
-            if (cachedLayoutName.isNull()) {
-                // Cached for the first time. Connect to destroyed signal.
-                QObject::connect(widget, SIGNAL(destroyed(QObject*)), this, SLOT(widgetDestroyed(QObject*)));
-#ifdef HBSTYLE_DEBUG
-                qDebug() << "Cached first time. Connected to destroy signal.";
-            } else {
-                qDebug() << "Cached nth time.";
-#endif
-            }
-        }
-        meshLayout = static_cast<HbAnchorLayout*>(widget->layout());
-        if (cached) {
-#ifdef HBSTYLE_DEBUG
-            qDebug() << "LayoutName cache hit.";
-#endif
-            meshLayout->removeMappings();
-        }
+        // check that we do not override the user defined layout
+        const QVariant layoutPtrByStyleV = widget->property( LAYOUT_PTR_PROPERTY );
+        const QGraphicsLayout *layoutPtrByStyle = layoutPtrByStyleV.isValid() ? layoutPtrByStyleV.value<QGraphicsLayout*>() : 0;
+        const QGraphicsLayout *existingLayoutPtr = widget->layout();
 
-        meshLayout->setMapping(meshLayout, "");
-        meshIds = meshLayout->nodeIds();
+        if ( existingLayoutPtr && (existingLayoutPtr!=layoutPtrByStyle) ) {
+            // widget has a layout, but it is not created by the style -> we cannot override.
+#ifdef HBSTYLE_DEBUG
+            qDebug() << "HbStyle::polish : layout overridden by user";
+#endif // HBSTYLE_DEBUG
+        } else {
+            const QVariant existingLayoutNameV = widget->property( LAYOUT_NAME_PROPERTY );
+            const QString existingLayoutName = existingLayoutNameV.isValid() ? existingLayoutNameV.toString() : QString();
+            const bool cached = (existingLayoutName == layoutName );
+            if ( !cached ) {
+#ifdef HBSTYLE_DEBUG
+                qDebug() << "LayoutName cache miss.";
+#endif
+                HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
+                if ( !loader->loadWidgetML(widget, layoutName, sectionName)) {
+#ifdef HBSTYLE_DEBUG
+                    qDebug() << "HbStyle::polish : Failed to load WidgetML";
+#endif
+                    return;
+                }
+                const QVariant ptrVariant = QVariant::fromValue( widget->layout() );
+                widget->setProperty( LAYOUT_PTR_PROPERTY, ptrVariant );
+                widget->setProperty( LAYOUT_NAME_PROPERTY, QVariant( layoutName ) );
+            }
 
+            anchorLayout = static_cast<HbAnchorLayout*>(widget->layout());
+            if (cached) {
+#ifdef HBSTYLE_DEBUG
+                qDebug() << "LayoutName cache hit.";
+#endif
+                anchorLayout->removeMappings();
+            }
+
+            anchorLayout->setMapping(anchorLayout, "");
+            nodeIds = anchorLayout->nodeIds();
+        }
     }
 
     // polish widget and subitems
-    d->polishItem(styleRules, widget, widget, "", false);
+    d->polishItem(styleRules, widget, widget, "", profile, false);
     QList<QGraphicsItem*> list = widget->childItems();
     foreach (QGraphicsItem* item, list) {
         QString name = HbStyle::itemName(item);
-        if ( meshLayout && !name.isEmpty() ) {
+        if ( anchorLayout && !name.isEmpty() ) {
             // Assuming that all items with "itemName" are widgets.
-            meshLayout->setMapping(static_cast<QGraphicsWidget*>(item), name);
-            // Remove from "meshIds" so that we don't call polishItem
+            anchorLayout->setMapping(static_cast<QGraphicsWidget*>(item), name);
+            // Remove from "nodeIds" so that we don't call polishItem
             // twice for this item.
-            meshIds.removeAll(name);
+            nodeIds.removeAll(name);
         }
-        d->polishItem(styleRules, widget, item, name, layoutDefined);
+        d->polishItem(styleRules, widget, item, name, profile, layoutDefined);
     }
-    foreach (QString meshId, meshIds) {
-        // These are the "missing" mesh items. Need to call polishItem
-        // for them, too, for getting the mesh anchor spacings right.
-        // if there are mesh ids, layoutDefined is always true.
-        if ( !meshId.isEmpty() ) {
-            d->polishItem(styleRules, widget, 0, meshId, true);
+    foreach (QString nodeId, nodeIds) {
+        // These are the "missing" anchor items. Need to call polishItem
+        // for them, too, for getting the anchor spacings right.
+        // if there are anchor node ids, layoutDefined is always true.
+        if ( !nodeId.isEmpty() ) {
+            d->polishItem(styleRules, widget, 0, nodeId, profile, true);
+        }
+    }
+    if ( anchorLayout ) {
+        QList<HbAnchor*> anchors = anchorLayout->anchors();
+        foreach (HbAnchor* anchor, anchors) {
+            if ( !anchor->anchorId().isEmpty() ) {
+                d->polishAnchor(styleRules, widget, anchor, profile);
+            }
         }
     }
 }
@@ -4362,8 +4328,10 @@ void HbStyle::polish(HbWidget *widget, HbStyleParameters &params)
     \param widget, widget whose themed parameters are supposed to be updated
     \param item, graphics item whose themed parameters are supposed to be updated
 */
-void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleRules,
-    QGraphicsItem *item ) const
+void HbStylePrivate::updateThemedItems(
+    const HbVector<HbCss::StyleRule> &styleRules,
+    QGraphicsItem *item,
+    HbDeviceProfile &profile) const
 {
 
     QString name = HbStyle::itemName(item);
@@ -4372,13 +4340,13 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
     }
 
     HbTextItem* text = qgraphicsitem_cast<HbTextItem*>( item );
+    HbRichTextItem* richtext = qgraphicsitem_cast<HbRichTextItem*>( item );
     HbIconItem* iconItem = qgraphicsitem_cast<HbIconItem*>( item );
     HbMarqueeItem* marqueeItem = qgraphicsitem_cast<HbMarqueeItem*>( item );
-    if(! (text || iconItem || marqueeItem ) ){
+    if(! (text || richtext || iconItem || marqueeItem ) ){
         return;
     }
 
-    HbDeviceProfile profile;
     const HbVector<HbCss::Declaration> decl = declarations(styleRules, name, 0, profile);
 
 #ifdef HBSTYLE_DEBUG
@@ -4405,6 +4373,19 @@ void HbStylePrivate::updateThemedItems( const HbVector<HbCss::StyleRule> &styleR
             HbWidgetBasePrivate::d_ptr(text)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
         }
     }
+
+    if(richtext) {
+#ifdef HBSTYLE_DEBUG
+        if ( !extracted ) {
+            qDebug() << "HbStyle::getColor : -- No color information found";
+        }
+#endif
+        if ( !HbWidgetBasePrivate::d_ptr(richtext)->testApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor ) ){
+            richtext->setTextDefaultColor(col);
+            HbWidgetBasePrivate::d_ptr(richtext)->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, false);
+        }
+    }
+
     if (iconItem) {
         // Applying color to mono-colorised icons from theme. Using setColor()
         // here would be wrong. It would lead to loosing the user-supplied color
@@ -4463,7 +4444,7 @@ void HbStyle::updateThemedParams(HbWidget *widget)
     // update themed items
     QList<QGraphicsItem*> list = widget->childItems();
     foreach (QGraphicsItem* item, list) {
-        d->updateThemedItems(styleRules, item);
+        d->updateThemedItems(styleRules, item, profile);
     }
 }
 
@@ -4484,7 +4465,7 @@ bool HbStyle::hasOrientationSpecificStyleRules(HbWidget *widget)
 */
 void HbStyle::widgetDestroyed(QObject* obj)
 {
-    widgetLayoutNames.remove((const QGraphicsWidget *)obj);
+    Q_UNUSED( obj );
 }
 
 /*!
@@ -4511,7 +4492,9 @@ void HbStyle::setItemName( QGraphicsItem *item, const QString &name )
         QGraphicsLayoutItem* lItem = (item->isWidget()) ? (QGraphicsLayoutItem*)static_cast<QGraphicsWidget*>(item) : 0;
         if (lItem && parent && parent->isWidget()) {
             QGraphicsWidget* parentW = static_cast<QGraphicsWidget*>(parent);
-            if ( parentW->layout() && widgetLayoutNames.contains(parentW) ) {
+            const QVariant layoutPtrByStyleV = parentW->property( LAYOUT_PTR_PROPERTY );
+            const QGraphicsLayout *layoutPtrByStyle = layoutPtrByStyleV.isValid() ? layoutPtrByStyleV.value<QGraphicsLayout*>() : 0;
+            if ( parentW->layout() && (parentW->layout()==layoutPtrByStyle)) {
                 HbAnchorLayout* layout = static_cast<HbAnchorLayout*>(parentW->layout());
                 if ( layout->indexOf(lItem) != -1 ) {
                     if( name.isEmpty() ) {
@@ -4674,7 +4657,6 @@ void HbStyle::widgetParameters(HbStyleParameters &params, HbWidget* widget) cons
 */
 HbStylePrivate::HbStylePrivate()
 {
-    nextAvailableId = HbStyle::P_CustomBase;
     HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
     if(loader){
         loader->addFilePath(STYLE_LOCATION, HbLayeredStyleLoader::Concern_Layouts,
@@ -4768,20 +4750,6 @@ QIcon::State HbStylePrivate::iconState(QStyle::State state) const
     return icon;
 }
 
-/*!
-\internal
-*/
-HbStyleInterface *HbStylePrivate::stylePluginInterface( HbStyle::Primitive primitive ) const
-{
-
-    if (customPrimitives.contains(primitive)) {
-        HbStyleInterfaceInfo* info = customPrimitives.value(primitive);
-        QObject* pluginInstance = info->loader->instance();
-        HbStyleInterface *stylePlugin = qobject_cast<HbStyleInterface *>(pluginInstance);
-        return stylePlugin;
-    }
-    return 0;
-}
 
 /*!
 \internal
@@ -4855,7 +4823,6 @@ void HbStylePrivate::ensureLayoutParameters(const HbDeviceProfile &profile) cons
 */
 void HbStylePrivate::clearStyleSheetCaches()
 {
-    widgetLayoutNames.clear();
     styleRulesCache.clear();
 }
 
@@ -4863,6 +4830,5 @@ HbWidgetBasePrivate *HbStylePrivate::widgetBasePrivate(HbWidgetBase *widgetBase)
 {
     return HbWidgetBasePrivate::d_ptr(widgetBase);
 }
-
 
 #include "moc_hbstyle.cpp"

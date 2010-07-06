@@ -277,6 +277,8 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
 
     // assign new keypad to be opened to varable mCurrentKeypad
     mCurrentKeypad =  keypadToOpen;
+    activeKeyboardChanged(currentKeyboardType());
+
 
     if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusOpened) {
         connect(mVkbHost, SIGNAL(keypadClosed()), this, SLOT(keypadClosed()));
@@ -342,9 +344,8 @@ void HbVirtualQwerty::mouseHandler(int x, QMouseEvent* event)
 
 void HbVirtualQwerty::keypadClosed()
 {
-    if (mOrientationAboutToChange) {
-        mOrientationAboutToChange = false;
-    }
+    mOrientationAboutToChange = false;
+    
     if (mVkbHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized) {
         closeExactWordPopup();
     }	
@@ -360,7 +361,14 @@ void HbVirtualQwerty::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMetho
             if (mCandidatePopup) {
                 mCandidatePopup->hide();
             }
-            mVkbHost->minimizeKeypad(!stateChangeInProgress());
+
+            // Close input.
+            QInputContext* ic = qApp->inputContext();
+            if (ic) {
+                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
+                ic->filterEvent(closeEvent);
+                delete closeEvent;
+            }
         }
     }
 }
@@ -518,7 +526,7 @@ void HbVirtualQwerty::smileySelected(QString smiley)
 void HbVirtualQwerty::selectSpecialCharacterTableMode()
 {
     mQwertyAlphaKeypad = constructKeyboard(EModeAbc);
-    mQwertyAlphaKeypad->showSmileyPicker(4, 10);
+    mQwertyAlphaKeypad->showSmileyPicker();
 }
 
 /*!
@@ -745,7 +753,19 @@ void HbVirtualQwerty::closeExactWordPopup()
 QPointF HbVirtualQwerty::getCursorCoordinatePosition()
 {
     QRectF microRect = focusObject()->microFocus();
-    return microRect.topLeft();
+    QPointF cursorPos = microRect.topLeft();
+	
+    if (mVkbHost) {
+        QSizeF exactPopupSize = mExactWordPopup->size();
+        QRectF activeViewRect = mVkbHost->applicationArea();
+        // if the exact word doesnt fit inside the visible area, then show it on the right side of
+        // the current cursor position        
+        if (microRect.left() + exactPopupSize.width() > activeViewRect.width()) {
+            qreal startPos = microRect.left() - exactPopupSize.width();
+			cursorPos.setX((startPos > activeViewRect.left()) ? startPos : activeViewRect.left());
+		} 		
+    }
+    return cursorPos;
 }
 
 /*!

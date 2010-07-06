@@ -90,13 +90,14 @@ public:
             case Hb::InteractionDisabled: bit = 1; break;
         case Hb::InsidePopup: bit = 2; break;
         case Hb::InputMethodNeutral: bit = 3; break;
+        case Hb::Widget: bit = 4; break;
         default: break;
         }
         return bit;
     }
 
     quint32 mApiProtectionFlags;
-    quint32 attributes : 4;
+    quint32 attributes : 5;
     HbFontSpec fontSpec;
     HbWidgetBase *q_ptr;
 
@@ -109,6 +110,7 @@ private:
     friend class HbStylePrivate;
     friend class HbDocumentLoaderActions;
     friend class HbWidgetLoaderActions;
+    friend class HbInputCheckBoxList; // for accessing setBackgroundItem
 #ifdef HB_CSS_INSPECTOR
     friend class HbCssInspectorWindow;
 #endif

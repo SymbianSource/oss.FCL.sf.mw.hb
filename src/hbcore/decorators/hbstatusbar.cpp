@@ -29,6 +29,7 @@
 #include <hbmainwindow.h>
 #include <hbview.h>
 #include <hbextendedlocale.h>
+#include <hbevent.h>
 
 #include "hbstatusbar_p.h"
 #include "hbstatusbar_p_p.h"
@@ -125,6 +126,15 @@ void HbStatusBarPrivate::delayedConstruction()
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
 
+    q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
+        q, SLOT(_q_indicatorsChanged()));
+    q->connect(mIndicatorPrivate, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
+        q, SLOT(_q_indicatorsChanged()));
+    q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
+        q, SLOT(_q_indicatorsChanged()));
+    q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
+        q, SLOT(_q_indicatorsChanged()));
+
     mClockTimerId = q->startTimer(clockUpdateDelay);
     mIndicatorPrivate->startListen();
 
@@ -154,6 +164,31 @@ void HbStatusBarPrivate::init()
 
     mIndicatorPrivate = new HbIndicatorPrivate;
     mIndicatorPrivate->init();
+
+    QObject::connect(mSignalIndicator, SIGNAL(levelChanged()), q, SLOT(_q_signalLevelChanged()));
+    QObject::connect(mBatteryIndicator, SIGNAL(levelChanged()), q, SLOT(_q_batteryLevelChanged()));
+}
+
+void HbStatusBarPrivate::_q_signalLevelChanged()
+{
+    Q_Q(HbStatusBar);
+    emit q->contentChanged(HbStatusBar::SignalLevelChanged);
+}
+
+void HbStatusBarPrivate::_q_batteryLevelChanged()
+{
+    Q_Q(HbStatusBar);
+    HbStatusBar::ContentChangeFlags flags = HbStatusBar::BatteryLevelChanged;
+    if (mBatteryIndicator->isCharging()) {
+        flags |= HbStatusBar::BatteryCharging;
+    }
+    emit q->contentChanged(flags);
+}
+
+void HbStatusBarPrivate::_q_indicatorsChanged()
+{
+    Q_Q(HbStatusBar);
+    emit q->contentChanged(HbStatusBar::IndicatorsChanged);
 }
 
 void HbStatusBarPrivate::updateTime()
@@ -173,9 +208,14 @@ void HbStatusBarPrivate::updateTime()
     QTime current = QTime::currentTime();
 
     // set time, using a proper formatting
+    QString oldTimeText = mTimeText;
     mTimeText = current.toString(timeFormat);
 
     q->updatePrimitives();
+
+    if (mTimeText != oldTimeText) {
+        emit q->contentChanged(HbStatusBar::TimeChanged);
+    }
 }
 
 #if defined(Q_OS_SYMBIAN)
@@ -216,9 +256,9 @@ HbStatusBar::HbStatusBar(HbMainWindow *mainWindow, QGraphicsItem *parent)
  */
 HbStatusBar::~HbStatusBar()
 { 
-	Q_D(HbStatusBar);
-
-	if (d->mClockTimerId != 0) {
+    Q_D(HbStatusBar);
+    
+    if (d->mClockTimerId != 0) {
         killTimer(d->mClockTimerId);
         d->mClockTimerId = 0;
     }
@@ -228,9 +268,9 @@ HbStatusBar::~HbStatusBar()
     Delayed constructor.
  */
 void HbStatusBar::delayedConstruction()
-{
-   Q_D(HbStatusBar);
-   d->delayedConstruction();
+{   
+    Q_D(HbStatusBar);
+    d->delayedConstruction();
 }
 
 void HbStatusBar::propertiesChanged()
@@ -246,19 +286,19 @@ void HbStatusBar::createPrimitives()
     Q_D(HbStatusBar);
 
     d->mTimeTextItem = style()->createPrimitive(HbStyle::P_StatusBar_timetext, this);
-    setBackgroundItem(HbStyle::P_StatusBar_background);
+    d->setBackgroundItem(HbStyle::P_StatusBar_background);
 
-	d->updateTime();
+    d->updateTime();
 }
 
 void HbStatusBar::updatePrimitives()
 {
     Q_D(HbStatusBar);
-	HbStyleOptionStatusBar option;
-
-	initStyleOption(&option);
+    HbStyleOptionStatusBar option;
+    
+    initStyleOption(&option);
     style()->updatePrimitive(backgroundItem(), HbStyle::P_StatusBar_background, &option);
-	style()->updatePrimitive(d->mTimeTextItem, HbStyle::P_StatusBar_timetext, &option);
+    style()->updatePrimitive(d->mTimeTextItem, HbStyle::P_StatusBar_timetext, &option);
 }
 
 /*
@@ -302,7 +342,7 @@ void HbStatusBar::timerEvent(QTimerEvent *event)
     Q_D(HbStatusBar);
     if (event->timerId() == d->mClockTimerId) {
         d->updateTime(); // get current time
-	}
+    }
 }
 
 /*!
@@ -346,3 +386,22 @@ void HbStatusBar::gestureEvent(QGestureEvent *event)
     // all gesture events accepted by default
 }
 
+/*!
+    \reimp
+*/
+bool HbStatusBar::event(QEvent *e)
+{
+    Q_D(HbStatusBar);
+    if (e->type() == HbEvent::SleepModeEnter) {
+        if (d->mClockTimerId != 0) {
+            killTimer(d->mClockTimerId);
+            d->mClockTimerId = 0;
+        }
+    } else if (e->type() == HbEvent::SleepModeExit) {
+        d->updateTime();
+        d->mClockTimerId = startTimer(clockUpdateDelay);
+    }
+    return HbWidget::event(e);
+}
+
+#include "moc_hbstatusbar_p.cpp"

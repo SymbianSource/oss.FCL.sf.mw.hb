@@ -56,6 +56,7 @@ struct HbCssKnownValue
 
 static const HbCssKnownValue properties[NumProperties - 1] = {
     { "alignment", Property_Alignment },
+    { "anchor-direction", Property_AnchorDirection },
     { "aspect-ratio", Property_AspectRatio },
     { "border-width", Property_BorderWidth },
     { "border-width-bottom", Property_BorderWidthBottom },
@@ -67,6 +68,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "center-vertical", Property_CenterVertical },
     { "color", Property_Color },
     { "fixed-height", Property_FixedHeight },
+    { "fixed-length", Property_FixedLength },
     { "fixed-size", Property_FixedSize },
     { "fixed-width", Property_FixedWidth },
     { "font", Property_Font },
@@ -75,18 +77,19 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "font-style", Property_FontStyle },
     { "font-variant", Property_FontVariant },
     { "font-weight", Property_FontWeight },
-    { "height", Property_Height },
     { "layout", Property_Layout },
     { "layout-direction", Property_LayoutDirection },
     { "left", Property_Left },
     { "max-height", Property_MaximumHeight },
+    { "max-length", Property_MaximumLength },
     { "max-size", Property_MaximumSize },
     { "max-width", Property_MaximumWidth },
     { "min-height", Property_MinimumHeight },
+    { "min-length", Property_MinimumLength },
     { "min-size", Property_MinimumSize },
     { "min-width", Property_MinimumWidth },
-    { "mirroring", Property_Mirroring, }, // deprecated
     { "pref-height", Property_PreferredHeight },
+    { "pref-length", Property_PreferredLength },
     { "pref-size", Property_PreferredSize },
     { "pref-width", Property_PreferredWidth },
     { "right", Property_Right },
@@ -94,9 +97,6 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "size-policy", Property_SizePolicy },
     { "size-policy-horizontal", Property_SizePolicyHorizontal },
     { "size-policy-vertical", Property_SizePolicyVertical },
-    { "spacing", Property_Spacing },
-    { "spacing-horizontal", Property_SpacingHorizontal },
-    { "spacing-vertical", Property_SpacingVertical },
     { "text-align", Property_TextAlignment },
     { "text-decoration", Property_TextDecoration },
     { "text-height", Property_TextHeight },
@@ -105,17 +105,14 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "text-transform", Property_TextTransform },
     { "text-wrap-mode", Property_TextWrapMode },
     { "top", Property_Top },
-    { "width", Property_Width },
     { "zvalue", Property_ZValue }
 };
 
 static const HbCssKnownValue values[NumKnownValues - 1] = {
-    { "active", Value_Active },
     { "bold", Value_Bold },
     { "bottom", Value_Bottom },
     { "center", Value_Center },
     { "digital", Value_Digital },
-    { "disabled", Value_Disabled },
     { "expanding", Value_Expanding },
     { "fixed", Value_Fixed },
     { "ignore", Value_Ignore },
@@ -130,22 +127,20 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "maximum", Value_Maximum },
     { "minimum", Value_Minimum },
     { "minimum-expanding", Value_MinimumExpanding },
-    { "mirrored", Value_Mirrored },  // deprecated
+    { "negative", Value_Negative },
     { "no-wrap", Value_NoWrap },
     { "none", Value_None },
     { "normal", Value_Normal },
     { "oblique", Value_Oblique },
-    { "off", Value_Off },
-    { "on", Value_On },
     { "overline", Value_Overline },
     { "parent", Value_Parent },
+    { "positive", Value_Positive },
     { "preferred", Value_Preferred },
     { "primary", Value_Primary },
     { "primary-small", Value_PrimarySmall },
     { "right", Value_Right },
     { "right-to-left", Value_RightToLeft },
     { "secondary", Value_Secondary },
-    { "selected", Value_Selected },
     { "small-caps", Value_SmallCaps },
     { "title", Value_Title },
     { "top", Value_Top },
@@ -255,6 +250,13 @@ qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok)
                 *ok = false;
             }
             return 0;
+    } else if (type == Value::Percentage) {
+        qreal result = s.toDouble(ok) /100.0;
+        if (ok && !(*ok)) {
+            return 0;
+        } else {
+            return result;
+        }
     }
 
     enum { None, Px, Un, Mm } unit = None;
@@ -340,11 +342,9 @@ static HbCss::LayoutDirection parseLayoutDirectionValue(const Value v)
             retVal = HbCss::LayoutDirection_RightToLeft;
             break;
         case Value_LeftToRight:
-        case Value_Disabled: // legacy support
             retVal = HbCss::LayoutDirection_LeftToRight;
             break;
         case Value_Parent:
-        case Value_Mirrored: // legacy support
         default:
             break;
         }
@@ -362,10 +362,25 @@ static Qt::AspectRatioMode parseAspectRatioMode(const Value& v)
     case Value_KeepExpand:
         mode = Qt::KeepAspectRatioByExpanding;
         break;
+    case Value_Keep:
     default:
         break;
     }
     return mode;
+}
+
+static HbAnchor::Direction parseAnchorDirection(const Value& v)
+{
+    HbAnchor::Direction dir = HbAnchor::Positive;
+    switch (v.variant.toInt()) {
+    case Value_Negative:
+        dir = HbAnchor::Negative;
+        break;
+    case Value_Positive:
+    default:
+        break;
+    }
+    return dir;
 }
 
 static Qt::Alignment parseAlignment(const Declaration &decl)
@@ -582,15 +597,19 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
         const Declaration &decl = declarations.at(i);
         switch (decl.propertyId) {
         case Property_MinimumWidth: prop.mMinW = asReal(decl); flags|=ExtractedMinW; break;
+        case Property_MinimumLength: // fall-through
         case Property_MinimumHeight: prop.mMinH = asReal(decl); flags|=ExtractedMinH; break;
         case Property_MaximumWidth: prop.mMaxW = asReal(decl); flags|=ExtractedMaxW; break;
+        case Property_MaximumLength: // fall-through
         case Property_MaximumHeight: prop.mMaxH = asReal(decl); flags|=ExtractedMaxH; break;
         case Property_PreferredWidth: prop.mPrefW = asReal(decl); flags|=ExtractedPrefW; break;
+        case Property_PreferredLength: // fall-through
         case Property_PreferredHeight: prop.mPrefH = asReal(decl); flags|=ExtractedPrefH; break;
         case Property_FixedWidth:
             prop.mPrefW = asReal(decl); flags|=ExtractedPrefW;
             prop.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolHor;
             break;
+        case Property_FixedLength: // fall-through
         case Property_FixedHeight:
             prop.mPrefH = asReal(decl); flags|=ExtractedPrefH;
             prop.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolVer;
@@ -656,7 +675,6 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
             prop.mCenterV = asReal(decl); flags|=ExtractedCenterV; break;
 
         case Property_LayoutDirection: // fall-through
-        case Property_Mirroring:
             prop.mLayoutDir = parseLayoutDirectionValue(decl.values.at(0));
             flags|=ExtractedLayoutDir;
             break;
@@ -702,6 +720,10 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
         case Property_TextHeight: 
             tphSet = true; prop.mFontSpec.setTextHeight(asReal(decl)); break;
 
+        case Property_AnchorDirection:
+            prop.mAnchorDir = parseAnchorDirection(decl.values.at(0));
+            flags|=ExtractedAnchorDir;
+            break;
         default: continue;
         }
         hit = true;
@@ -1054,10 +1076,8 @@ bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<
                     case Value::VariableNegative:
                     case Value::Expression:
                     case Value::ExpressionNegative:
-                        values[j] = asReal(val);
-                        break;
                     case Value::Percentage:
-                        values[j] = val.variant.toDouble() / 100;
+                        values[j] = asReal(val);
                         break;
                     case Value::KnownIdentifier:
                         values[j] = (QString)val.original;

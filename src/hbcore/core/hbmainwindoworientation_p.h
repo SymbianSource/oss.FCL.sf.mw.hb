@@ -32,7 +32,6 @@
 
 class HbMainWindow;
 class HbForegroundWatcher;
-class HbSleepModeListener;
 
 class HB_AUTOTEST_EXPORT HbMainWindowOrientation : public QObject,
     public HbSensorListenerObserver
@@ -79,4 +78,3 @@ private:
 };
 
 #endif //HBMAINWINDOWORIENTATION_P_H
-

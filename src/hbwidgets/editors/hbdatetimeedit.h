@@ -65,17 +65,17 @@ public:
     void setTimeFormat(const QLocale& locale = QLocale());
     void setDateTimeFormat(const QLocale& locale = QLocale());
 
+    bool event(QEvent* event);
+
 protected:
     HbDateTimeEdit (HbDateTimeEditPrivate &dd, QGraphicsItem *parent);
 
     void setMaxLength (int length);
     void setText (const QString &text);
-    void focusOutEvent(QFocusEvent *event);
 
 private:
     Q_DISABLE_COPY(HbDateTimeEdit)
     Q_DECLARE_PRIVATE_D(d_ptr, HbDateTimeEdit)
-    Q_PRIVATE_SLOT(d_func(), void _q_regainFocus())
 };
 
 #endif // HBDATETIMEEDIT_H

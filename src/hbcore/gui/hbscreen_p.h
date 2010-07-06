@@ -54,7 +54,6 @@ public:
     bool contentUnderStatusBar() const;
     bool titleBarMinimizable() const;
     void delayedConstruction();
-    void setGeometry(const QRectF &rect);
     virtual bool event(QEvent *e);
 
 public slots:

@@ -207,6 +207,22 @@ void HbVgChainedEffect::performEffect(QPainter *painter,
 }
 
 /*!
+ * \reimp
+ */
+void HbVgChainedEffect::performEffectSw(QPainter *painter)
+{
+    Q_D(HbVgChainedEffect);
+    foreach(HbVgEffect * effect, d->effects) {
+        effect->performEffectSw(painter);
+        HbVgEffectPrivate *effD = HbVgEffectPrivate::d_ptr(effect);
+        effD->paramsChanged = effD->cacheInvalidated = false;
+    }
+    if (d->effects.isEmpty()) {
+        drawSource(painter);
+    }
+}
+
+/*!
   \reimp
 */
 void HbVgChainedEffectPrivate::notifyCacheInvalidated()

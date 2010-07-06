@@ -61,6 +61,8 @@
 #include "hbmainwindoworientation_p.h"
 #include "hbfeaturemanager_r.h"
 #include "hboogmwatcher_p.h"
+#include "hbwindowobscured_p.h"
+#include "hbsleepmodelistener_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <coecntrl.h>
@@ -197,6 +199,61 @@
  */
 
 /*!
+    \fn void HbMainWindow::obscured()
+
+    This signal is emited whenever the window is completely overlaped by another
+    window.
+
+    Application developers can use this signal to pause or stop painting when
+    the window is not visible to the user at all.
+
+    This signal has real implementation only for Symbian and X11 platforms. On
+    desktop platforms it is simulated via a settings window option.
+
+    The typical use case is to use the obscured() and revealed() signals in
+    connection with device dialogs (global pop-ups): When such a dialog is
+    shown, the application loses foreground (focus), but it may still be
+    partially visible because the dialogs will not fill the entire screen. To
+    get notified about such cases, combine your application's
+    foreground-background handling with handling also these signals.
+
+    Consider this as a best-effort solution only, the exact behavior depends on
+    the platform and may have limitations. For example on Symbian transparent
+    windows will never obscure another window, regardless of the content.
+
+    These signals are not a replacement to the focus-based ApplicationActivate
+    and ApplicationDeactivate events. An application may lose the focus
+    completely (i.e. lose foreground) even when it is still partially visible to
+    the user.
+
+    \sa revealed()
+    \sa isObscured()
+*/
+
+/*!
+    \fn void HbMainWindow::revealed()
+
+    This signal is emited whenever the window is visible to the user partially
+    or completely.
+
+    This signal has real implementation only for Symbian and X11 platforms. On
+    desktop platforms it is simulated via the settings option.
+
+    Consider this as a best-effort solution only, the exact behavior depends on
+    the platform and may have limitations. For example on Symbian transparent
+    windows may cause the revealed signal to be emitted even when the content is
+    not really visible.
+
+    These signals are not a replacement to the focus-based ApplicationActivate
+    and ApplicationDeactivate events. An application may lose the focus
+    completely (i.e. lose foreground) even when it is still partially visible to
+    the user.
+
+    \sa obscured()
+    \sa isObscured()
+*/
+
+/*!
   \class HbRootItem
 
   \brief The parent of all graphics items (including the clipping item (HbScreen)
@@ -230,6 +287,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     // No need for any default (e.g. blank white) background for this window.
     setAttribute(Qt::WA_NoSystemBackground);
+    setOptimizationFlag(QGraphicsView::DontSavePainterState);
 
     // Continue with basic initialization. Note: Prefer doing everything that is
     // not absolutely compulsory in _q_delayedConstruction instead.
@@ -274,7 +332,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
+    setFrameStyle(QFrame::NoFrame);
 
     // create scene and style
     d->mScene = new HbGraphicsScene(this);
@@ -336,6 +394,11 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // Make sure the oogm watcher is initialized (so that wserv events
     // are routed to it properly).
     HbOogmWatcher::instance();
+
+    // Make sure the sleep mode listener instance is created.
+    HbSleepModeListener::instance();
+
+    HbWindowObscured::installWindowEventFilter();
 
 #ifdef HB_GESTURE_FW
     // @todo remove after view auto-subscribes to gestures
@@ -937,15 +1000,16 @@ void HbMainWindow::customEvent(QEvent *event)
                     d->mTheTestUtility = new HbTheTestUtility(this);
                 }
             }
-            // get rid of the splash screen widget (it is not visible to the user anyway at this point)
-            HbSplashScreen::destroy();
 #ifdef Q_OS_SYMBIAN
-            // disable surface transparency unless we were really asked to be transparent
+            // Disable surface transparency unless we were really asked to be transparent.
+            // Must be done before destroying the splash screen widget.
             if (!testAttribute(Qt::WA_TranslucentBackground)) {
                 RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
                 window->SetSurfaceTransparency(false);
             }
 #endif
+            // Get rid of the splash screen widget. (it is not visible to the user anyway at this point)
+            HbSplashScreen::destroy();
         }
         // Notify that mainwindow is (most probably) ready.
         // The signal must be emitted always, even when there was no need to do anything.
@@ -1022,6 +1086,12 @@ void HbMainWindow::showEvent(QShowEvent *event)
         window->SetSurfaceTransparency(true);
     }
 #endif
+
+#if defined(Q_WS_X11)
+    Q_D(HbMainWindow);
+    d->x11HandleShowEvent(event);
+#endif // defined(Q_WS_X11)
+
     QGraphicsView::showEvent(event);
 }
 
@@ -1048,6 +1118,29 @@ void HbMainWindow::broadcastEvent(int eventType)
 {
     Q_D(HbMainWindow);
     d->broadcastEvent(eventType);
+}
+
+/*!
+    True if the window is not visible to the user.  False if one or more pixels are visible.
+*/
+bool HbMainWindow::isObscured() const
+{
+    Q_D(const HbMainWindow);
+
+    return d->mObscuredState;
+}
+
+/*
+    // reimplemented from QWidget
+*/
+bool HbMainWindow::event(QEvent *event)
+{
+    Q_D(HbMainWindow);
+    if (event->type() == HbEvent::WindowObscuredChanged) {
+        HbWindowObscuredChangedEvent *wosEvent = static_cast<HbWindowObscuredChangedEvent *>(event);
+        d->setObscuredState(wosEvent->obscuredState());
+    }
+    return QGraphicsView::event(event);
 }
 
 HbRootItem::HbRootItem(QGraphicsItem *parent)

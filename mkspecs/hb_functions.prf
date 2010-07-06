@@ -91,9 +91,7 @@ defineTest(hbExportHeaders) {
 # params: -
 # eg. $$hbUnixStyle():CMD=/path/to/cmd else:CMD=\path\to\cmd
 defineTest(hbUnixStyle) {
-    symbian|win32:!win32-g++ {
-        unixstyle = false
-    } else:win32-g++:isEmpty(QMAKE_SH) {
+    contains(QMAKE_HOST.os, Windows):isEmpty(QMAKE_SH) {
         unixstyle = false
     } else {
         unixstyle = true
@@ -104,29 +102,46 @@ defineTest(hbUnixStyle) {
 # params: <path>
 # eg. features.path = $$hbNativePath($$[QMAKE_MKSPECS]/features)
 defineReplace(hbNativePath) {
-    hbUnixStyle() {
-        return($$quote(\"$$replace(1, "\\", "/")\"))
+    contains(QMAKE_HOST.os, Windows) {
+        isEmpty(QMAKE_SH) {
+            1 = $$replace(1, \\\\, $$QMAKE_DIR_SEP)
+            1 = $$replace(1, /, $$QMAKE_DIR_SEP)
+        } else {
+            1 = $$replace(1, \\\\, /)
+            1 = $$replace(1, /, /)
+        }
     } else {
-        return($$quote(\"$$replace(1, "/", "\\")\"))
+        1 = $$replace(1, \\\\, $$QMAKE_DIR_SEP)
+        1 = $$replace(1, /, $$QMAKE_DIR_SEP)
     }
+    
+    return($$quote(\"$$1\"))
 }
 
 # params: <tool name>
 # eg. hbfoo.command = $$hbToolCommand(hbfoo)
 defineReplace(hbToolCommand) {
-    # tool in PATH?
-    hbUnixStyle():DEVNULL = /dev/null
-    else:DEVNULL = nul
-    system($$1 > $$DEVNULL 2>&1):return($$1)
+    symbian {
+        # tool in PATH?
+        exists(/dev/null) {
+            DEVNULL = /dev/null
+        } else {
+            DEVNULL = nul
+        }
+        system($$1 > $$DEVNULL 2>&1):return($$1)
 
-    # host build is runnable?
-    hbtoolcmd = $$hbNativePath($$HB_BUILD_DIR/bin/$$1)
-    system($$hbtoolcmd > $$DEVNULL 2>&1):return($$hbtoolcmd)
+        # host build is runnable?
+        hbtoolcmd = $$hbNativePath($$HB_BUILD_DIR/bin/$$1)
+        system($$hbtoolcmd > $$DEVNULL 2>&1):return($$hbtoolcmd)
 
-    # pre-built tool is runnable?
-    hbtoolcmd = $$hbNativePath($$sprintf("%1%2", $$HB_SOURCE_DIR/bin/$$1, "_symbian.exe"))
-    system($$hbtoolcmd > $$DEVNULL 2>&1):return($$hbtoolcmd)
+        # tool in HB_BIN_DIR?
+        hbtoolcmd = $$hbNativePath($$HB_BIN_DIR/$$1)
+        system($$hbtoolcmd > $$DEVNULL 2>&1):return($$hbtoolcmd)
 
+        # pre-built tool is runnable?
+        hbtoolcmd = $$hbNativePath($$sprintf("%1%2", $$HB_SOURCE_DIR/bin/$$1, "_symbian.exe"))
+        system($$hbtoolcmd > $$DEVNULL 2>&1):return($$hbtoolcmd)
+    }
     # fall back to <builddir>/bin
     return($$hbNativePath($$HB_BUILD_DIR/bin/$$1))
 }
@@ -136,11 +151,17 @@ defineReplace(hbCopyCommand) {
     file = $$hbNativePath($$1)
     dir = $$hbNativePath($$2)
 
-    chk_dir_exists = $$QMAKE_CHK_DIR_EXISTS $$dir
-    mkdir = $$QMAKE_MKDIR $$dir
-    copy = $$QMAKE_COPY $$file $$dir
+    contains(QMAKE_HOST.os, Windows):isEmpty(QMAKE_SH) {
+        chk_dir_exists = if not exist $$dir
+        mkdir = mkdir $$dir
+        copy = copy /y $$file $$dir
+    } else {
+        chk_dir_exists = test -d $$dir
+        mkdir = mkdir -p $$dir
+        copy = cp $$file $$dir
+    }
 
-    hbUnixStyle():chk_dir_exists_mkdir = $$chk_dir_exists || $$mkdir
+    hbUnixStyle(): chk_dir_exists_mkdir = $$chk_dir_exists || $$mkdir
     else:chk_dir_exists_mkdir = $$chk_dir_exists $$mkdir
 
     return(($$chk_dir_exists_mkdir) && $$copy)

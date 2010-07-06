@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBNGNORMALNUMBER_H
-#define HBNGNORMALNUMBER_H
+#ifndef HBNGNORMALNUMBER_P_H
+#define HBNGNORMALNUMBER_P_H
 
 #include <QLocale>
 #include <QHash>
@@ -63,4 +63,4 @@ private:
 								   const QList<int> &patternBlockSizes );
 };
 
-#endif
+#endif // HBNGNORMALNUMBER_P_H

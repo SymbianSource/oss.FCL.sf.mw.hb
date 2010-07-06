@@ -58,6 +58,10 @@
     The sizing and number of characters to display are controlled by the IndexFeedbackPolicy.
 
     \sa HbAbstractItemView, HbIndexFeedback::IndexFeedbackPolicy.
+
+    \primitives
+    \primitive{index-text} HbTextItem representing the text in the HbIndexFeedback. 
+    \primitive{index-background} HbFrameItem representing the background of the HbIndexFeedback. 
 */
 
 /*!

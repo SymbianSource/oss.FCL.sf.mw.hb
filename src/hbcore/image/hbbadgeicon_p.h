@@ -30,6 +30,7 @@
 #include "hbicon.h"
 #include <QList>
 #include <QIcon>
+#include <QPointF>
 
 class HbBadgeIcon
 {
@@ -40,7 +41,9 @@ public:
 public:
     void addBadge(Qt::Alignment alignment,
                   const HbIcon &badge,
-                  int zValue = 0);
+                  int zValue,
+                  const QSizeF &sizeFactor,
+                  Qt::AspectRatioMode aspectRatio);
     bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     bool isBadged() const;
@@ -57,11 +60,7 @@ public:
 
 
 private:
-    QRectF badgeLocation(const HbBadgeIconInfo &iconInfo,
-                         const QRectF &parentRect,
-                         bool mirror);
     QList<HbBadgeIconInfo> mBadgeIcons;
 };
 
 #endif /* HBBADGEICON_P_H */
-

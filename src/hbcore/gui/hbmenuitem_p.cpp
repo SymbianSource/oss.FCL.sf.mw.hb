@@ -35,9 +35,14 @@
 #include "hbevent.h"
 #include "hbcolorscheme.h"
 #include "hbwidgetfeedback.h"
+#include "hbtapgesture.h"
+#include "hbnamespace_p.h"
+
+#include <QGraphicsScene>
 #ifdef HB_GESTURE_FW
 #include <QGesture>
 #endif
+
 Q_DECLARE_METATYPE (QAction*)
 
 /*!
@@ -266,19 +271,27 @@ void HbMenuItem::changeEvent(QEvent *event)
 void HbMenuItem::gestureEvent(QGestureEvent *event)
 {
     //Q_D(HbMenuItem);
-    if(QTapGesture *gesture = qobject_cast<QTapGesture *>(event->gesture(Qt::TapGesture))) {
-        if (gesture->state() == Qt::GestureStarted) {           
+    if(HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        if (gesture->state() == Qt::GestureStarted) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            gesture->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+
             // Tactile feedback                        
             HbWidgetFeedback::triggered(this, Hb::InstantPressed);
 
             pressStateChanged(true);
             event->accept();
         } else if (gesture->state() == Qt::GestureFinished) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             pressStateChanged(false);
             event->accept();            
             HbMenuPrivate::d_ptr(menu())->_q_triggerAction(this);
         } else if (gesture->state() == Qt::GestureCanceled) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             pressStateChanged(false);
         }
     }

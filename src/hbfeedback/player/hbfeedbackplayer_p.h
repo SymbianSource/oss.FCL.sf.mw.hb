@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBFEEDBACKPLAYER_H
-#define HBFEEDBACKPLAYER_H
+#ifndef HBFEEDBACKPLAYER_P_H
+#define HBFEEDBACKPLAYER_P_H
 
 #include <hbfeedbacknamespace.h>
 #include <QObject>
@@ -60,4 +60,4 @@ private:
     HbFeedbackPlayerPrivate* const d;
 };
 
-#endif // HBFEEDBACKPLAYER_H
+#endif // HBFEEDBACKPLAYER_P_H

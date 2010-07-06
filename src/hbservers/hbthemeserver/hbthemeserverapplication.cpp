@@ -94,6 +94,8 @@ bool HbThemeServerApplication::initialize()
         _LIT(KHbThemeServer, "HbThemeServer");
         CApaWindowGroupName *wgName = CApaWindowGroupName::NewLC(env->WsSession());
         env->RootWin().SetOrdinalPosition(0, ECoeWinPriorityNeverAtFront); // avoid coming to foreground
+        env->WsSession().ComputeMode(RWsSession::EPriorityControlDisabled);
+        setPriority();
         wgName->SetHidden(ETrue); // hides us from FSW and protects us from OOM FW etc.
         wgName->SetSystem(ETrue); // Allow only application with PowerManagement cap to shut us down    
         wgName->SetCaptionL(KHbThemeServer);
@@ -204,20 +206,18 @@ void HbThemeServerApplication::receiveMessage(const QString &message)
     }
 }
 
-bool HbThemeServerApplication::acquireLock() {
+bool HbThemeServerLocker::lock()
+{
 #ifdef Q_OS_SYMBIAN
-    // Guard against starting multiple copies of the server
-    Lock lock;
     Lock::State lockState;
-    for(;;) {
-        lockState = lock.acquire();
-        if (lockState == Lock::Acquired) {
-            break;
-        } else if (lockState == Lock::Reserved) {
+    
+    Q_FOREVER {
+        lockState = mLock.acquire();
+        if (lockState == Lock::Reserved) {
             // Process may be starting, wait for server object to be created
-            if (Lock::serverExists()) {
+            if (serverExists()) {
 #ifdef THEME_SERVER_TRACES
-        qDebug() << "HbThemeServer::main: serverExists!!!";
+                qDebug() << "HbThemeServerLocker::lock: serverExists";
 #endif
                 break;
             } else {
@@ -250,6 +250,8 @@ void HbThemeServerApplication::setPriority()
 }
 
 #ifdef Q_OS_SYMBIAN
+_LIT(KLockFileName, "lockFile");
+
 Lock::Lock()
 {
     // Using a file for interprocess lock
@@ -257,11 +259,9 @@ Lock::Lock()
     if (mFs.Connect(NumMessageSlots) == KErrNone) {
         mFs.CreatePrivatePath(EDriveC);
         if (mFs.SetSessionToPrivate(EDriveC) == KErrNone) {
-            _LIT(KFileName, "lockFile");
-            const TUint mode = EFileShareReadersOrWriters;
-            if (mFile.Create(mFs, KFileName, mode) == KErrAlreadyExists) {
-                mFile.Open(mFs, KFileName, mode);
-            }
+            RFile file;
+            file.Create(mFs, KLockFileName, EFileShareReadersOrWriters);
+            file.Close();
         }
     }
 }
@@ -270,20 +270,17 @@ Lock::Lock()
 Lock::State Lock::acquire()
 {
     State state = Error;
-    // If process holding the lock crashes, file server releases the lock
-    if (mFile.SubSessionHandle()) {
-        TInt error = mFile.Lock(0, 1);
-        if (error == KErrNone) {
-            state = Acquired;
-        } else if (error == KErrLocked) {
-            state = Reserved;
-        }
+    TInt status = mFile.Open(mFs, KLockFileName, EFileShareExclusive);
+    if (status == KErrNone) {
+        state = Acquired;
+    } else if (status == KErrInUse) {
+        state = Reserved;
     }
     return state;
 }
 
 // Check if Symbian server exists
-bool Lock::serverExists()
+bool HbThemeServerLocker::serverExists()
 {
     TFindServer findHbServer(KThemeServerName);
     TFullName name;

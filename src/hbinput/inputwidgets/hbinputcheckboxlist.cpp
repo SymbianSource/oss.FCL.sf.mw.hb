@@ -28,6 +28,7 @@
 #include <hblistwidgetitem.h>
 #include <hbdataformmodelitem.h>
 #include <hbdataformmodel.h>
+#include "hbwidget_p.h"
 
 /// @cond
 
@@ -115,7 +116,10 @@ HbWidget *HbInputCheckBoxList::createCustomWidget()
     d->mListWidget = new HbListWidget();
     d->mListWidget->setSelectionMode(HbAbstractItemView::MultiSelection);
     d->mListWidget->contentWidget()->setContentsMargins(10, 10, 10, 10);
-    d->mListWidget->setBackgroundItem(HbStyle::P_DataItem_background);
+    
+    // get listwidget's widget private ptr
+    HbWidgetPrivate *priv = static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(d->mListWidget));
+    priv->setBackgroundItem(HbStyle::P_DataItem_background);
     d->mListWidget->setScrollDirections(0);
 
     QStringList items = modelItem->contentWidgetData(QString("items")).toStringList();

@@ -50,6 +50,7 @@ public:
 
     inline int type() const { return Type; }
     int level() const;
+    bool isCharging() const;
 
 public slots:
     virtual void createPrimitives();
@@ -57,9 +58,13 @@ public slots:
 
     void setLevel(int levelPercent);
 
+signals:
+    void levelChanged();
+
 protected:
     void timerEvent(QTimerEvent *event);
     void initStyleOption(HbStyleOptionBatteryIndicator *option) const;
+    bool event(QEvent *event);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbBatteryIndicator)

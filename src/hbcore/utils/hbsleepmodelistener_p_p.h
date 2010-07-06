@@ -61,7 +61,10 @@ private:
     TInt InitializeStatusArray(RLightStatusArray &aArray) const;
 
     static TInt FindByTarget(const TInt *aTarget, const THWRMStatusInfo &aItem);
+
 private:
+    TInt lastStatus;
+    bool lastStatusValid;
     RProperty sleepModeState;
 };
 

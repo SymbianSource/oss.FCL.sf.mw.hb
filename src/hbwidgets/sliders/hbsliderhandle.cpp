@@ -40,6 +40,7 @@
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
 #include <hbpangesture.h>
+#include <hbtapandholdgesture.h>
 #endif
 /*!
     This is internal class for HbSlider
@@ -63,6 +64,7 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
     // create handle icon item
     gItem = slider->style()->createPrimitive(HbStyle::P_Slider_thumb, this); 
     HbStyle::setItemName(gItem , "icon");
+    setFiltersChildEvents(true) ;
 
     // create touch area for handle
     touchItem = slider->style()->createPrimitive(HbStyle::P_SliderElement_touchhandle, this); 
@@ -72,11 +74,12 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
 #ifdef HB_GESTURE_FW    
     grabGesture(Qt::TapGesture);
     grabGesture(Qt::PanGesture);
+    grabGesture(Qt::TapAndHoldGesture);
     if(touchItem) {
         if(QGraphicsObject *touchArea = touchItem->toGraphicsObject()) {
-            Q_UNUSED(touchArea);
-               touchArea->grabGesture(Qt::PanGesture);
-               touchArea->grabGesture(Qt::TapGesture);
+            touchArea->grabGesture(Qt::PanGesture);
+            touchArea->grabGesture(Qt::TapGesture);
+            touchArea->grabGesture(Qt::TapAndHoldGesture);
         }
     }
 #endif 
@@ -95,6 +98,8 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
     //HbEffectInternal::add(HB_SLIDERHANDLE_TYPE,"sliderhandle_v_outofbound", "v_outofbound");
 #endif
 }
+
+
 
 /*!
     Destroys the slider handle.
@@ -162,7 +167,6 @@ void HbSliderHandle::setHandleItem(QGraphicsItem *item)
         mHandleItem->removeSceneEventFilter(this);
         mHandleItem->installSceneEventFilter(this);
     }
-	mHandleItem->setFlag(QGraphicsItem::ItemIsMovable,true);//required as the press has to be accepted to filter move events.
 
 }
 
@@ -190,18 +194,27 @@ bool HbSliderHandle::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 {
     //TODO: touch area does not work with the current filtering mechanism. find better solution
 	if( obj == mHandleItem) {
-		if(event->type() == QEvent::GraphicsSceneMouseMove){
-			mouseMoveEvent ( (QGraphicsSceneMouseEvent *) event ) ;
-			return true;
-		}
-		else if (event->type() == QEvent::GraphicsSceneMousePress){
-			mousePressEvent((QGraphicsSceneMouseEvent *) event);
-		}
-		else if (event->type() == QEvent::GraphicsSceneMouseRelease){
-			mouseReleaseEvent((QGraphicsSceneMouseEvent *) event);
-		}
+        if(event->type() == QEvent::GraphicsSceneMouseMove){
+            mouseMoveEvent ((QGraphicsSceneMouseEvent *) event) ;
+            return true;
+        } else if (event->type() == QEvent::GraphicsSceneMousePress){
+            mousePressEvent((QGraphicsSceneMouseEvent *) event);
+            return true;
+        } else if (event->type() == QEvent::GraphicsSceneMouseRelease){
+            mouseReleaseEvent((QGraphicsSceneMouseEvent *) event);
+            return true;
+        }
 	} 
-	return false;
+    if( obj == touchItem ) {
+        if (!isEnabled() ) {
+            return false;
+        }
+	    if (event->type() == QEvent::Gesture){
+            gestureEvent( (QGestureEvent *) (event));
+            return true;
+        }
+    }
+    return false;
 }
  
 /*!
@@ -210,6 +223,7 @@ bool HbSliderHandle::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 */
 void HbSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+#ifndef HB_GESTURE_FW
     qreal span = 0;
     HbWidget::mousePressEvent(event);
     QRectF sliderBounds=sliderControl->boundingRect();
@@ -239,6 +253,9 @@ void HbSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
         updatePrimitives();
     }
     event->accept();
+#else
+    Q_UNUSED(event)
+#endif 
 }
 
 /*!
@@ -247,6 +264,7 @@ void HbSliderHandle::mousePressEvent(QGraphicsSceneMouseEvent *event)
 */
 void HbSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+#ifndef HB_GESTURE_FW
     HbWidget::mouseReleaseEvent(event);
 #ifdef HB_EFFECTS
     if( sliderControl->orientation() == Qt::Horizontal ) {
@@ -270,6 +288,9 @@ void HbSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         sliderControl->updateSliderPosToTick();
     }
     updatePrimitives();
+#else
+    Q_UNUSED(event)
+#endif 
 }
 
 /*!
@@ -278,6 +299,7 @@ void HbSliderHandle::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 */
 void HbSliderHandle::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
+#ifndef HB_GESTURE_FW
     qreal span = 0;
     HbWidget::mouseMoveEvent(event);
     QRectF sliderBounds=sliderControl->boundingRect();
@@ -312,6 +334,9 @@ void HbSliderHandle::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         sliderPos, static_cast<int>(span),opt.upsideDown);
     sliderControl->setSliderPosition(pressValue);
     sliderControl->showToolTip();
+#else
+    Q_UNUSED(event)
+#endif 
 }
 
 /*!
@@ -319,8 +344,123 @@ void HbSliderHandle::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 */
 void HbSliderHandle::gestureEvent(QGestureEvent *event)
-{  
-    Q_UNUSED(event);
+{ 
+    if(HbTapAndHoldGesture *tapandHold= qobject_cast<HbTapAndHoldGesture *>(event->gesture(Qt::TapAndHoldGesture))) {
+        if(tapandHold->state() == Qt::GestureStarted) {
+            sliderControl->showToolTip();
+        }
+    }
+    if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        switch(tap->state()) {
+        case Qt::GestureStarted: {
+            if (!sliderControl->isSliderDown( ) ) {
+                sliderControl->setSliderDown(true);
+                updatePrimitives();
+            }
+            HbWidgetFeedback::triggered(sliderControl, Hb::InstantPressed, Hb::ModifierSliderHandle);
+            if (scene()){
+                HbStyleOptionSlider opt;
+                sliderControl->initStyleOption(&opt);
+                if (sliderControl->orientation() == Qt::Horizontal) {
+#ifdef HB_EFFECTS
+                    HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "h_thumbpress");
+#endif
+                } else {
+#ifdef HB_EFFECTS
+                    HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "v_thumbpress");
+#endif
+                }
+                event->accept();
+            }
+        }
+        break;
+        case Qt::GestureFinished:
+         {
+#ifdef HB_EFFECTS
+            if( sliderControl->orientation() == Qt::Horizontal ) {
+                HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "h_thumbrelease");
+            }  else {
+                HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "v_thumbrelease");
+            }
+#endif
+            HbWidgetFeedback::triggered(sliderControl, Hb::InstantReleased, Hb::ModifierSliderHandle);
+            sliderControl->setSliderDown(false);
+            updatePrimitives();
+            break;
+        }
+        default:
+            break;
+                                  
+        }
+    }
+    if (HbPanGesture *panGesture = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
+        switch(panGesture->state( )) {
+        case Qt::GestureStarted: 
+        case Qt::GestureUpdated:{
+            QPointF eventScenePos =panGesture->sceneOffset( )+panGesture->sceneStartPos( );
+            QPointF relativePos = mapToParent( mapFromScene(eventScenePos ));
+            qreal span = 0;
+            QRectF sliderBounds=sliderControl->boundingRect();
+            QRectF handleBounds=boundingRect();
+            HbStyleOptionSlider opt;
+            sliderControl->initStyleOption(&opt);
+            int sliderPos;
+            if ( sliderControl->orientation() == Qt::Horizontal ) {
+#ifdef HB_EFFECTS
+                if( sliderBounds.topLeft().x() > relativePos.rx( ) ||
+                    sliderBounds.bottomRight().x() < relativePos.rx()) {
+                    HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "h_outofbound");
+                }
+#endif
+                sliderBounds.adjust(0, 0, -handleBounds.width(), 0);
+                span = sliderBounds.width();
+                sliderPos = relativePos.rx();
+                sliderPos-=handleBounds.width()/2;
+            } else {
+#ifdef HB_EFFECTS
+                if( sliderBounds.topLeft().y() > relativePos.ry() ||
+                    sliderBounds.bottomRight().y() < relativePos.ry()) {
+                    HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "v_outofbound");
+                }
+#endif
+                sliderBounds.adjust(0, 0, 0, -handleBounds.height());
+                span = sliderBounds.height();
+                sliderPos = relativePos.ry();
+                sliderPos -=  handleBounds.height() / 2;
+                    
+            }
+            int pressValue= QStyle::sliderValueFromPosition(opt.minimum, opt.maximum,
+                sliderPos, static_cast<int>(span),opt.upsideDown);
+            sliderControl->setSliderPosition(pressValue);
+            sliderControl->showToolTip();
+            break;
+        }
+        case Qt::GestureFinished:
+        case Qt::GestureCanceled: {
+#ifdef HB_EFFECTS
+            if( sliderControl->orientation() == Qt::Horizontal ) {
+                HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "h_thumbrelease");
+            }  else {
+                HbEffect::start(gItem, HB_SLIDERHANDLE_TYPE, "v_thumbrelease");
+            }
+#endif
+            HbWidgetFeedback::triggered(sliderControl, Hb::InstantReleased, Hb::ModifierSliderHandle);
+            sliderControl->setSliderDown(false);
+            QRectF controlRect = sliderControl->sceneBoundingRect();
+            if(sliderControl->singleStep() != 0) {
+                HbWidgetFeedback::continuousStopped(sliderControl, Hb::ContinuousDragged);
+            }
+            if( sliderControl->snappingMode()!= HbSliderControl::NoSnapping ){
+                sliderControl->updateSliderPosToTick();
+            }
+            updatePrimitives();
+            break;
+            }
+            default:
+                break;
+        }
+    }
+
 }
 
 /*!

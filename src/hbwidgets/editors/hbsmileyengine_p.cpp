@@ -157,6 +157,9 @@ void HbSmileyEnginePrivate::insertSmiley( QTextCursor cursor, const QString& nam
 
 void HbSmileyEnginePrivate::insertSmileys( QTextCursor cursor, bool insertOne)
 {
+    QTextCursor initialCursor = cursor;
+    initialCursor.beginEditBlock();
+
     QString regexpStr;
     foreach (QString pattern, mSmileyTheme.patterns()) {
         regexpStr += QRegExp::escape(pattern) + "|";
@@ -172,6 +175,7 @@ void HbSmileyEnginePrivate::insertSmileys( QTextCursor cursor, bool insertOne)
         }
         cursor = mDocument->find(rx, cursor);
     }
+    initialCursor.endEditBlock();
 }
 
 

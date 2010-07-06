@@ -31,13 +31,12 @@
 #include <hbview.h>
 #include <hbtransparentwindow.h>
 #include <hbstackedlayout.h>
-#include <QTranslator>
 #if defined (Q_OS_SYMBIAN)
 #include <aknappui.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
 #include <hbdevicedialogserverdefs_p.h>
-#include "hbddappfactorysymbian.h"
+#include "hbddappfactorysymbian_p.h"
 #endif // Q_OS_SYMBIAN
 
 #if defined (Q_OS_SYMBIAN)
@@ -99,7 +98,6 @@ bool Lock::serverExists()
     TFullName name;
     return findHbServer.Next(name) == KErrNone;
 }
-
 #endif // Q_OS_SYMBIAN
 
 #define USE_LOCKER 1
@@ -136,7 +134,7 @@ int main(int arg, char *args[])
     RThread().RenameMe(KThreadName); // nicer panic info
     RThread().SetProcessPriority(EPriorityHigh);
     
-    HbApplication app(deviceDialogAppFactory, arg, args, Hb::NoSplash);
+    HbDeviceDialogServerApp app(deviceDialogAppFactory, arg, args, Hb::NoSplash);
 #else // Q_OS_SYMBIAN
     HbApplication app(arg, args);
 #endif // Q_OS_SYMBIAN

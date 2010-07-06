@@ -46,7 +46,6 @@ HbInputPredictionHandlerPrivate::HbInputPredictionHandlerPrivate()
     mCandidates(0),
     mBestGuessLocation(0),
     mShowTail(true),
-    mTailShowing(false),
     mAutoAddedSpace(true),
     mCanContinuePrediction(true),
     mShowTooltip(true),
@@ -64,13 +63,17 @@ HbInputPredictionHandlerPrivate::~HbInputPredictionHandlerPrivate()
 
 void HbInputPredictionHandlerPrivate::deleteOneCharacter()
 {
+    if (!mEngine && !mInputMethod->focusObject()) {
+        return;
+    }
     mShowTail = true;
     mShowTooltip = true;
     // A backspace in predictive means updating the engine for the delete key press
     // and get the new candidate list from the engine.
     if ( mEngine->inputLength() >= 1 ) {
-        //Only autocomplition part should be deleted when autocompliton part is enable and user pressed a delete key
-        if(false == mTailShowing) {
+        int tailLength =  mInputMethod->focusObject()->preEditString().length() - mEngine->inputLength();
+        //Only autocomplition part should be deleted when autocompliton part is shown and user pressed a delete key
+        if(tailLength <= 0) { // no autocompletion part displayed
             mEngine->deleteKeyPress( this );
         }
         //To prevent showing autocompletion part while deleting the characters using backspace key
@@ -218,12 +221,10 @@ void HbInputPredictionHandlerPrivate::updateEditor()
 				list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mBestGuessLocation), list);
                 focusedObject->sendEvent(event);
-                mTailShowing = true;
             } else {
 				list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mCandidates->at(mBestGuessLocation).length(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mBestGuessLocation).left(mEngine->inputLength()), list);
                 focusedObject->sendEvent(event);
-                mTailShowing = false;
             }
             if (mShowTooltip && mBestGuessLocation > 0 && mCandidates->at(0).mid(0, mEngine->inputLength()) \
                 != mCandidates->at(mBestGuessLocation).mid(0, mEngine->inputLength())) {                
@@ -273,59 +274,16 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
 		}
         ret = true;
         break;
-    case Qt::Key_Period: // TODO: better handling for punctuation
-    case Qt::Key_Comma: { // Need to take fn, shift etc. in account
-            HbModifier modifier = HbModifierNone;
-            int currentTextCase = focusObject->editorInterface().textCase();
-            if ( HbTextCaseUpper == currentTextCase || HbTextCaseAutomatic == currentTextCase ) {
-                modifier = HbModifierShiftPressed;
-            }
-            QString qc;
-            const HbMappedKey* mappedKey = mKeymap->keyForKeycode(mInputMethod->inputState().keyboard(), event->key());
-
-            if (mappedKey) {
-                if (modifier == HbModifierNone) {
-                    qc = mappedKey->characters(HbModifierNone).left(1);
-                } else if (modifier == HbModifierShiftPressed) {
-                    qc = mappedKey->characters(HbModifierShiftPressed).left(1);
-                }
-            }
-
-            if (mEngine->inputLength() == 0) {
-                QList<QInputMethodEvent::Attribute> list;
-                QInputMethodEvent event(QString(), list);
-                if (mAutoAddedSpace) {
-                    int cursorPos = mInputMethod->focusObject()->inputMethodQuery(Qt::ImCursorPosition).toInt();
-                    QString text = mInputMethod->focusObject()->inputMethodQuery(Qt::ImSurroundingText).toString();
-                    if (cursorPos > 0 && text.at(cursorPos-1).isSpace()) {
-                        event.setCommitString(qc, -1, 1);
-                    } else {
-                        event.setCommitString(qc);
-                    }
-                } else {
-                    event.setCommitString(qc);
-                }
-                mAutoAddedSpace = false;
-                q->sendAndUpdate(event);
-            } else {
-                // Fix for input stopping after ,. keys in qwerty predictive
-                commitAndAppendCharacter(qc.at(0));
-                QString empty;
-                q->processExactWord(empty);
-            }
-            ret = true;
-        }
-        break;
+    
     case HbInputButton::ButtonKeyCodeEnter:
     case HbInputButton::ButtonKeyCodeSpace:
-    case Qt::Key_0: {//Space
+    
+        {
             // A space means we have to commit the candidates when we are in predictive mode.
             QChar qc(event->key());
             if (qc == Qt::Key_Enter) {
                 qc = QChar('\n');  // Editor expects normal line feed.
-            } else if (qc == Qt::Key_0) {
-                qc = QChar(' ');
-            }
+            } 
             commitAndAppendCharacter(qc);
             // if exact word popup functionality is on then we should inform exact word popup
             // about the space.//++TODO
@@ -443,8 +401,6 @@ void HbInputPredictionHandlerPrivate::reset()
     if (mCandidates) {
         mCandidates->clear();
     }
-
-    mTailShowing = false;
 }
 
 void HbInputPredictionHandlerPrivate::commit()
@@ -511,7 +467,6 @@ void HbInputPredictionHandlerPrivate::commit(const QString& string, bool addToUs
 
     //Enable the flag after commit
     mCanContinuePrediction = true;
-	mTailShowing = false;
 }
 
 /*!
@@ -540,8 +495,6 @@ void HbInputPredictionHandlerPrivate::commit(QInputMethodEvent & event,bool addT
 
     //Enable the flag after commit
     mCanContinuePrediction = true;
-	mTailShowing = false;
-
 }
 
 void HbInputPredictionHandlerPrivate::commitExactWord()

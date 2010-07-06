@@ -9,9 +9,9 @@
 <polygon fill="#FFFFFF" fill-opacity="0.4" points="11,17 11,16 5,16 5.833,17 " stroke-opacity="0.4"/>
 <rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="8" x="11" y="2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="1.8545" y2="28.0011">
-<stop offset="0" style="stop-color:#4EDEFF"/>
-<stop offset="1" style="stop-color:#048CC6"/>
+<linearGradient gradientTransform="matrix(1 0 0 1 -578.9609 -812.0391)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="593.9609" x2="593.9609" y1="813.8945" y2="840.0411">
+<stop offset="0" style="stop-color:#6DADC1"/>
+<stop offset="1" style="stop-color:#3B518A"/>
 </linearGradient>
 </defs>
 </g>

@@ -117,7 +117,8 @@ HbIconItemPrivate::HbIconItemPrivate(const HbIcon &icon) :
     mAlignment(HbIconItem::defaultAlignment),
     mAspectRatioMode(HbIconItem::defaultAspectRatioMode),
     mState(HbIconItem::defaultState),
-    mMode(HbIconItem::defaultMode)
+    mMode(HbIconItem::defaultMode),
+    mClearCachedRect(true)
 {
     q_ptr = 0;
 }
@@ -155,6 +156,17 @@ void HbIconItemPrivate::updateIconParams()
         mAnimator.setIcon(mIcon);
     }
     q->update();
+}
+
+void HbIconItemPrivate::recalculateBoundingRect() const
+{
+    Q_Q(const HbIconItem);
+    mBoundingRect = q->HbWidgetBase::boundingRect();
+    //workaround for qt bug http://bugreports.qt.nokia.com/browse/QTBUG-8820
+    mAdjustedRect.setWidth(qMax(qreal(0),mBoundingRect.width() - qreal(2.0)));
+    mAdjustedRect.setHeight(qMax(qreal(0),mBoundingRect.height() - qreal(2.0)));
+    //workaround ends
+    mClearCachedRect = false;
 }
 
 void HbIconItemPrivate::setThemedColor(const QColor &color)
@@ -617,18 +629,22 @@ void HbIconItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(widget)
     Q_UNUSED(option)
     Q_D(HbIconItem);
-    const QRectF rect(boundingRect());
-    if (!rect.isEmpty()) {
-        if (d->mIconRect != rect) {
-            d->mIconRect = rect;
+    if (d->mClearCachedRect){
+        d->recalculateBoundingRect();
+    }
+    if (!d->mBoundingRect.isEmpty()){
+        if (d->mIconRect != d->mBoundingRect) {
+            d->mIconRect = d->mBoundingRect;
             if (!d->mIcon.isNull()) {
                 HbIconPrivate::d_ptr_detached(&d->mIcon)->setThemedColor(d->mThemedColor);
             }
             d->mIcon.setSize(d->mIconRect.size());
             d->mAnimator.setIcon(d->mIcon);
         }
-        painter->fillRect(rect, d->mBrush);
-        d->mAnimator.paint(painter, rect,
+        if (d->mBrush != Qt::NoBrush) {
+            painter->fillRect(d->mBoundingRect, d->mBrush);
+        }
+        d->mAnimator.paint(painter, d->mBoundingRect,
                            d->mAspectRatioMode, d->mAlignment,
                            d->mMode, d->mState);
     }
@@ -636,6 +652,29 @@ void HbIconItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
         painter->setBrush(QBrush(QColor(0, 255, 0, 50)));
         painter->drawRect(contentsRect());
     }
+}
+
+/*!
+ \reimp
+ */
+QRectF HbIconItem::boundingRect() const
+
+{
+    Q_D(const HbIconItem);
+    if (d->mClearCachedRect) {
+        d->recalculateBoundingRect();
+    }
+    return d->mAdjustedRect;
+}
+
+/*!
+ \reimp
+ */
+void HbIconItem::setGeometry(const QRectF& rect)
+{
+    Q_D(HbIconItem);
+    d->mClearCachedRect = true;
+    HbWidgetBase::setGeometry(rect);
 }
 
 /*!

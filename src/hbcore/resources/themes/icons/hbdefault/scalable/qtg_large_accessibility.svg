@@ -3,17 +3,17 @@
 <svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
 <linearGradient gradientTransform="matrix(1 0 0 1 -574.9609 -786.0391)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="604.9609" x2="604.9609" y1="788.3066" y2="844.3066">
-<stop offset="0" style="stop-color:#A1DCFF"/>
-<stop offset="0.3879" style="stop-color:#2A93EE"/>
-<stop offset="0.6788" style="stop-color:#085BC2"/>
-<stop offset="1" style="stop-color:#36B5FF"/>
+<stop offset="0" style="stop-color:#BDE3D5"/>
+<stop offset="0.3879" style="stop-color:#6598B3"/>
+<stop offset="0.6788" style="stop-color:#40568A"/>
+<stop offset="1" style="stop-color:#72B9C3"/>
 </linearGradient>
 <circle cx="30" cy="30" fill="url(#SVGID_1_)" r="28"/>
 <radialGradient cx="605.2275" cy="791.2412" gradientTransform="matrix(1 0 0 1 -574.9609 -786.0391)" gradientUnits="userSpaceOnUse" id="SVGID_2_" r="51.4678">
-<stop offset="0" style="stop-color:#36B5FF"/>
-<stop offset="0.1576" style="stop-color:#36B5FF"/>
-<stop offset="0.8242" style="stop-color:#1B66D8"/>
-<stop offset="1" style="stop-color:#2183E0"/>
+<stop offset="0" style="stop-color:#72B9C3"/>
+<stop offset="0.1576" style="stop-color:#72B9C3"/>
+<stop offset="0.8242" style="stop-color:#546F9F"/>
+<stop offset="1" style="stop-color:#5A82A7"/>
 </radialGradient>
 <path d="M30.001,57.197c-15,0-27.2-12.199-27.2-27.197c0-15,12.2-27.2,27.2-27.2C45,2.8,57.201,15,57.201,30  C57.201,44.998,45,57.197,30.001,57.197L30.001,57.197z" fill="url(#SVGID_2_)"/>
 <circle cx="30.001" cy="18.348" r="6.724"/>
@@ -23,13 +23,13 @@
 <linearGradient gradientTransform="matrix(1 0 0 1 -574.9609 -786.0391)" gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="604.9609" x2="604.9609" y1="796.9902" y2="835.9901">
 <stop offset="0" style="stop-color:#FFFFFF"/>
 <stop offset="0.5273" style="stop-color:#FFFFFF"/>
-<stop offset="1" style="stop-color:#CAD1D4"/>
+<stop offset="1" style="stop-color:#CDD1CF"/>
 </linearGradient>
 <circle cx="30.001" cy="17.675" fill="url(#SVGID_3_)" r="6.724"/>
 <linearGradient gradientTransform="matrix(1 0 0 1 -574.9609 -786.0391)" gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="605.6348" x2="605.6348" y1="796.9932" y2="835.9828">
 <stop offset="0" style="stop-color:#FFFFFF"/>
 <stop offset="0.5273" style="stop-color:#FFFFFF"/>
-<stop offset="1" style="stop-color:#CAD1D4"/>
+<stop offset="1" style="stop-color:#CDD1CF"/>
 </linearGradient>
 <path d="M49.466,23.513c-0.694-1.098-2.146-1.425-3.243-0.729c-18.279,11.575-30.235,0.748-30.744,0.275  c-0.941-0.887-2.426-0.848-3.317,0.094c-0.896,0.941-0.859,2.429,0.084,3.324c0.079,0.075,4.402,4.065,11.705,5.646V49.27h12.104  V32.107c3.881-0.815,8.131-2.465,12.688-5.35C49.837,26.064,50.166,24.611,49.466,23.513z" fill="url(#SVGID_4_)"/>
 <rect fill="none" height="60" width="60"/>

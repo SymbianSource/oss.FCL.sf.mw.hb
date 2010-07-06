@@ -81,6 +81,7 @@ HbColorGridViewItemPrivate::HbColorGridViewItemPrivate(HbAbstractViewItem *proto
 
 HbColorGridViewItemPrivate::~HbColorGridViewItemPrivate()
 {
+    delete mFrameBackGround;
 }
 
 bool HbColorGridViewItemPrivate::isChecked() const

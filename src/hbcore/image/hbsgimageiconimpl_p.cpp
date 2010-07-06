@@ -280,7 +280,7 @@ void HbSgimageIconImpl::paint(QPainter *painter,
 
     if (vgImageRenderer) {
         vgImageRenderer->draw(painter, topLeft, clipPath);
-        eglWaitClient();
+        //eglWaitClient();
         return;
     }
 }

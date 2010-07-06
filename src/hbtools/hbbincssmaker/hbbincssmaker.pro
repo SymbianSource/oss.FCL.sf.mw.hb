@@ -55,6 +55,7 @@ QT = core gui svg
 QT += network
 
 CONFIG += console
+CONFIG -= app_bundle
 
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin

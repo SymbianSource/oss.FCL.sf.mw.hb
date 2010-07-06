@@ -31,7 +31,7 @@
 class HbInputInitializer : public QInputContextPlugin
 {
     Q_OBJECT
-    
+
 public:
     HbInputInitializer(QObject *parent = 0);
     ~HbInputInitializer();
@@ -43,7 +43,7 @@ public:
     QStringList keys() const;
     QStringList languages(const QString& key);
 private:
-    static bool mRecursive;    
+    static bool mRecursive;
 };
 
 #endif  //HB_IM

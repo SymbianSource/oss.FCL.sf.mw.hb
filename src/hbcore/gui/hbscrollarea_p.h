@@ -73,6 +73,9 @@ public:
 
     void startAnimating();
     void stopAnimating();
+    void startScrollbarHideTimer();
+    void stopScrollbarHideTimer();
+    void reStartScrollbarHideTimer();
     virtual void stopScrolling();
 
     void animateScroll(QPointF speed); // speed in pixels per millisecond
@@ -157,7 +160,7 @@ public:
     bool mIsAnimating;
 
     QPointF mScrollSpeed; // in pixels per ms
-    QTimer mScrollTimer;
+    int mScrollTimerId;
     QTime mScrollElapsedTime;
     qreal mLastElapsedTime;
 
@@ -168,7 +171,7 @@ public:
     QPointF mAnimationInitialPosition;
     QEasingCurve* mAnimationShape;
 
-    QTimer mScrollBarHideTimer;
+    int mScrollBarHideTimerId;
 
     bool mFrictionEnabled;
     bool mResetAlignment;
@@ -192,6 +195,7 @@ public:
 
     Qt::Alignment mAlignment;
     bool mContinuationIndicators;
+    bool mEmitPositionChangedSignal;
     QGraphicsItem *continuationIndicatorTopItem;
     QGraphicsItem *continuationIndicatorBottomItem;
     QGraphicsItem *continuationIndicatorLeftItem;

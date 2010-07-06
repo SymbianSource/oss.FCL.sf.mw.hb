@@ -61,7 +61,6 @@ private:
     bool processDocument();
     bool processObject();
     bool processWidget();
-    bool processSpacerItem();
     bool processLayout();
     bool processConnect();
     bool processContainer();
@@ -85,8 +84,6 @@ private:
     bool readLayoutStartItem();
     bool readContainerStartItem();
     bool readContainerEndItem();
-
-    static bool toFontSpecRole(const QString &roleString, HbFontSpec::Role &role);
 
 };
 

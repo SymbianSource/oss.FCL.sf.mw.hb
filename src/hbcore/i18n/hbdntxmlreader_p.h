@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBDNTXMLREADER_H
-#define HBDNTXMLREADER_H
+#ifndef HBDNTXMLREADER_P_H
+#define HBDNTXMLREADER_P_H
 
 #include <QMap>
 #include <QString>
@@ -82,4 +82,4 @@ private:
 	bool twoDone;
 };
 
-#endif // HBDNTXMLREADER_H
+#endif // HBDNTXMLREADER_P_H

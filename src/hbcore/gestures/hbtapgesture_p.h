@@ -27,8 +27,6 @@
 #define HBTAPGESTURE_P_H
 #include "hbtapgesture.h"
 
-const int HOLDTAP_DURATION_USECS = 500;
-
 class HB_CORE_PRIVATE_EXPORT HbTapGesturePrivate
 {
     Q_DECLARE_PUBLIC(HbTapGesture)

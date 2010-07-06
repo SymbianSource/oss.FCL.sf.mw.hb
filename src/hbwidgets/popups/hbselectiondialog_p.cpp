@@ -33,12 +33,79 @@
 #include <QtDebug>
 #include <hbcheckbox.h>
 #include <hbaction.h>
+#include <hbstyleoption_p.h>
+
+HbSelectionDialogMarkWidget::HbSelectionDialogMarkWidget(QGraphicsItem *parent):HbWidget(parent),mBackgroundItem(0){
+	chkMark = new HbCheckBox(this);
+	chkMark->setText("Mark All");
+	lbCounter = new HbTextItem(this);
+	HbStyle::setItemName(chkMark,"checkbox");
+	HbStyle::setItemName(lbCounter,"counter");
+	createPrimitives();
+}
+
+void HbSelectionDialogMarkWidget::createPrimitives()
+{
+    if ( !mBackgroundItem ) {
+        mBackgroundItem = style( )->createPrimitive( HbStyle::P_TumbleView_background , this );
+        style()->setItemName( mBackgroundItem , "background" );
+    }
+}
+
+void HbSelectionDialogMarkWidget::updatePrimitives()
+{
+    HbStyleOption option;
+    initStyleOption( &option );
+   
+    if ( mBackgroundItem ) {
+            style( )->updatePrimitive( mBackgroundItem , HbStyle::P_TumbleView_background , &option );
+    }       
+}
+
+/*!
+    \reimp
+ */
+QVariant HbSelectionDialogMarkWidget::itemChange( GraphicsItemChange change, const QVariant &value )
+{
+    switch ( change ) {
+        case ItemVisibleHasChanged: {
+			updatePrimitives( );
+            }
+            break;
+
+        case ItemSceneHasChanged: {
+            updatePrimitives();
+            }
+            break;
+        default:
+            break;
+    }
+    return HbWidget::itemChange( change, value );
+}
+/*!
+    Returns the pointer for \a primitive passed.
+    Will return NULL if \a primitive passed is invalid
+*/
+QGraphicsItem* HbSelectionDialogMarkWidget::primitive(HbStyle::Primitive primitive) const
+{
+    switch (primitive) {
+        case HbStyle::P_TumbleView_background:
+            return mBackgroundItem;
+        default:
+            return 0;
+    }
+}
+
+HbSelectionDialogMarkWidget::~HbSelectionDialogMarkWidget()
+{
+}
 
 HbSelectionDialogContentWidget::HbSelectionDialogContentWidget(HbSelectionDialogPrivate *priv):HbWidget(),
-                        mListView(0),d(priv),chkMark(0),lbCounter(0),markWidgetShown(false)
+                        mListView(0),d(priv),markWidget(0)
 {
     
 }
+
 void HbSelectionDialogContentWidget::_q_listWidgetItemSelected(HbListWidgetItem *item)
 {
 	Q_UNUSED(item)
@@ -78,21 +145,21 @@ void HbSelectionDialogContentWidget::updateCounter()
 {
 	if(!mListView) return;
     if(mListView->selectionMode()!= HbAbstractItemView::MultiSelection) return;
-    if(chkMark && lbCounter){
+    if(markWidget){
         int totalItems = totalItemCount();
         int selectedItems = selectedItemCount();
-
-        lbCounter->setText(QString(QString::number(selectedItems) + "/" + QString::number(totalItems)));
+		markWidget->updatePrimitives();
+        markWidget->lbCounter->setText(QString(QString::number(selectedItems) + "/" + QString::number(totalItems)));
         //update checked state of "MarkAll" checkbox 
         if (totalItems > 0 && (selectedItems == totalItems)){
-            chkMark->blockSignals(true); //should not call _q_checkboxclicked()
-            chkMark->setChecked(true);
-            chkMark->blockSignals(false);
+            markWidget->chkMark->blockSignals(true); //should not call _q_checkboxclicked()
+            markWidget->chkMark->setChecked(true);
+            markWidget->chkMark->blockSignals(false);
         }
         else{
-            chkMark->blockSignals(true); //should not call _q_checkboxclicked()
-            chkMark->setChecked(false);
-            chkMark->blockSignals(false);
+            markWidget->chkMark->blockSignals(true); //should not call _q_checkboxclicked()
+            markWidget->chkMark->setChecked(false);
+            markWidget->chkMark->blockSignals(false);
         }
     }
 }
@@ -125,25 +192,18 @@ void HbSelectionDialogContentWidget::_q_checkboxclicked(int value)
 void HbSelectionDialogContentWidget::showMarkWidget(bool bShow)
 {
 	if(bShow){
-		if(!markWidgetShown){
-            chkMark = new HbCheckBox(this);
-            chkMark->setText("Mark All");
-            lbCounter = new HbTextItem(this);
-            HbStyle::setItemName(chkMark,"checkbox");
-            HbStyle::setItemName(lbCounter,"counter");
-            setProperty("multiSelection",true);
-            connect(chkMark,SIGNAL(stateChanged ( int )),this,SLOT(_q_checkboxclicked(int)));
+		if(!markWidget){
+			markWidget = new HbSelectionDialogMarkWidget(this);
+			HbStyle::setItemName(markWidget,"markwidget");
+			setProperty("multiSelection",true);
+            connect(markWidget->chkMark,SIGNAL(stateChanged ( int )),this,SLOT(_q_checkboxclicked(int)));
             updateCounter();
-			markWidgetShown = true;
 		}
     }
     else{
-        delete chkMark;chkMark=0;
-        delete lbCounter;lbCounter=0;
-        HbStyle::setItemName(chkMark,"");
-        HbStyle::setItemName(lbCounter,"");
-        setProperty("multiSelection",false);
-		markWidgetShown = false;
+		delete markWidget; markWidget = 0;
+		HbStyle::setItemName(markWidget,"");
+		setProperty("multiSelection",false);
     }
 }
 
@@ -192,6 +252,7 @@ HbSelectionDialogPrivate::HbSelectionDialogPrivate()
     :HbDialogPrivate()
 {
     bOwnItems = false;
+	action1 = action2 = 0;
 }
 
 HbSelectionDialogPrivate::~HbSelectionDialogPrivate()
@@ -209,18 +270,30 @@ void HbSelectionDialogPrivate::init()
     HbSelectionDialogContentWidget* contentWidget = new HbSelectionDialogContentWidget(this);
     q->setContentWidget(contentWidget);
 
-    HbAction *action1=new HbAction(hbTrId("txt_common_button_ok"),q);
-    q->addAction(action1);
-    q->connect(action1,SIGNAL(triggered()),q,SLOT(accept()));
-
-    HbAction *action2=new HbAction(hbTrId("txt_common_button_cancel"),q);
-    q->addAction(action2);
-    q->connect(action2,SIGNAL(triggered()),q,SLOT(reject()));
-
-
     q->setDismissPolicy(HbPopup::NoDismiss);
     q->setTimeout(HbPopup::NoTimeout);      
     q->setModal(true);
+	showActions(mSelectionMode);
+}
+
+void HbSelectionDialogPrivate::showActions(HbAbstractItemView::SelectionMode selectionMode)
+{
+	Q_Q(HbSelectionDialog);
+	if(selectionMode == HbAbstractItemView::SingleSelection){
+		delete action1;action1=0;delete action2;action2=0;
+		action1=new HbAction(hbTrId("txt_common_button_cancel"),q);
+		q->addAction(action1);
+		q->connect(action1,SIGNAL(triggered()),q,SLOT(reject()));
+	}
+	else{
+		delete action1;action1=0;delete action2;action2=0;
+		action1=new HbAction(hbTrId("txt_common_button_ok"),q);
+		q->addAction(action1);
+		q->connect(action1,SIGNAL(triggered()),q,SLOT(accept()));
+		action2=new HbAction(hbTrId("txt_common_button_cancel"),q);
+		q->addAction(action2);
+		q->connect(action2,SIGNAL(triggered()),q,SLOT(reject()));
+	}
 }
 
 void HbSelectionDialogPrivate::setSelectionMode(HbAbstractItemView::SelectionMode mode)
@@ -241,6 +314,7 @@ void HbSelectionDialogPrivate::setSelectionMode(HbAbstractItemView::SelectionMod
 			else
 				cWidget->showMarkWidget(false);    
 		}
+		showActions(mSelectionMode);
     }
     break;
     case HbAbstractItemView::NoSelection:

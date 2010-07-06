@@ -40,6 +40,7 @@ class HB_CORE_PRIVATE_EXPORT HbVgEffect : public QGraphicsEffect
     Q_OBJECT
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity NOTIFY opacityChanged)
     Q_PROPERTY(bool caching READ caching WRITE setCaching NOTIFY cachingChanged)
+    Q_PROPERTY(bool forceSwMode READ forceSwMode WRITE setForceSwMode NOTIFY forceSwModeChanged)
 
 public:
     HbVgEffect(QObject *parent = 0);
@@ -47,27 +48,31 @@ public:
 
     void install(QGraphicsItem *item);
 
-    qreal opacity() const;
-
     virtual void performEffect(QPainter *painter,
                                const QPointF &offset,
                                const QVariant &vgImage,
                                const QSize &vgImageSize) = 0;
 
+    virtual void performEffectSw(QPainter *painter);
+
     void setChainRoot(HbVgEffect *effect);
     HbVgEffect *chainRoot() const;
 
+    qreal opacity() const;
     bool caching() const;
+    bool forceSwMode() const;
 
     static void releaseCachedResources();
 
 public slots:
     void setOpacity(qreal opacity);
     void setCaching(bool caching);
+    void setForceSwMode(bool b);
 
 signals:
     void opacityChanged(qreal opacity);
     void cachingChanged(bool caching);
+    void forceSwModeChanged(bool b);
 
 protected:
     HbVgEffect(HbVgEffectPrivate &dd, QObject *parent = 0);

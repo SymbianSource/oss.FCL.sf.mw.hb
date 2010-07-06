@@ -116,7 +116,6 @@ public:
     void setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlight focusHighlight);
     HbStyle::Primitive focusHighlight(HbWidget::FocusHighlight focusHighlight);
 
-    void setBackgroundItem(HbStyle::Primitive type, int zValue = -1);
     void setBackgroundItem(QGraphicsItem *item, int zValue = -1);
     QGraphicsItem *backgroundItem() const;
 
@@ -138,6 +137,8 @@ protected:
     void repolish();
 
     void setPluginBaseId(int baseId);
+
+    bool sceneEventFilter (QGraphicsItem *watched, QEvent *event);
 
 protected:
     HbWidget(HbWidgetPrivate &dd, QGraphicsItem *parent, Qt::WindowFlags wFlags=0);

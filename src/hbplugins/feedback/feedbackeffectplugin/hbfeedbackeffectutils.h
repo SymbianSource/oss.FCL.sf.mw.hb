@@ -60,7 +60,7 @@ public:
     static WidgetFamily widgetFamily(const HbWidget *widget);
     static HbFeedback::InstantEffect instantOnPress(const HbWidget *widget, Hb::InteractionModifiers modifiers);
     static HbFeedback::InstantEffect instantOnRelease(const HbWidget *widget, Hb::InteractionModifiers modifiers);
-    static HbFeedback::InstantEffect instantOnKeyRepeat(const HbWidget *widget);
+    static HbFeedback::InstantEffect instantOnKeyRepeat(const HbWidget *widget, Hb::InteractionModifiers modifiers);
     static HbFeedback::InstantEffect instantOnDrag(const HbWidget *widget, Hb::InteractionModifiers modifiers);
     static HbFeedback::InstantEffect instantOnKeyPress(const HbWidget *widget, Hb::InteractionModifiers modifiers);
     static HbFeedback::InstantEffect instantOnEditorHighlight(const HbWidget *widget, int previousCursorFocus);

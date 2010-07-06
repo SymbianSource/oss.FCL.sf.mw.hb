@@ -50,7 +50,7 @@ const QString KDriveFPath("F:\\data\\log\\");
 const QString KDriveEPath("E:\\data\\log\\");
 const QString KDriveCPath("C:\\data\\log\\");
 const QString KTheConfigureFile("TheTestUtility.txt"); // todo: proper name for configuration file
-
+const QString KUnixPath("HbTestUtility");
 
 class HbTheTestUtilityPrivate
 {
@@ -103,7 +103,11 @@ bool HbTheTestUtilityPrivate::checkConfigFile()
 #elif defined (Q_OS_WIN32)
     return doCheckConfigFile(KDriveCPath);
 #else
-    return false; // only Symbian and Windows are supported
+    QString path(QDir::homePath());
+    path.append(QDir::separator());
+    path.append(KUnixPath);
+    path.append(QDir::separator());
+    return doCheckConfigFile(path);
 #endif
 }
 
@@ -273,7 +277,10 @@ void HbTheTestUtility::invokeSlots(const int button)
 #elif defined (Q_OS_WIN)
     QString filePath("C:\\data\\log\\");
 #else
-    QString filePath(QDir::tempPath());
+    QString filePath(QDir::homePath());
+    filePath.append(QDir::separator());
+    filePath.append(KUnixPath);
+    filePath.append(QDir::separator());
 #endif
 
     filePath = QDir::toNativeSeparators(filePath);

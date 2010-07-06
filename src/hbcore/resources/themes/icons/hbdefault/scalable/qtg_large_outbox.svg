@@ -3,44 +3,44 @@
 <svg baseProfile="tiny" height="60" viewBox="0 0 60 60" width="60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="30.0044" x2="30.0044" y1="5.3496" y2="38.0188">
-<stop offset="0" style="stop-color:#87C126"/>
-<stop offset="1" style="stop-color:#2D5C00"/>
+<stop offset="0" style="stop-color:#719355"/>
+<stop offset="1" style="stop-color:#1C4033"/>
 </linearGradient>
 <polygon fill="url(#SVGID_1_)" points="23.453,37.822 23.453,19.443 17.357,19.443 30.118,5.075 42.652,19.443 36.719,19.443   36.719,37.823 "/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="30.0132" x2="30.0132" y1="5.6895" y2="37.326">
-<stop offset="0" style="stop-color:#C6FF45"/>
-<stop offset="1" style="stop-color:#4C8609"/>
+<stop offset="0" style="stop-color:#B3C77D"/>
+<stop offset="1" style="stop-color:#2F613B"/>
 </linearGradient>
 <polygon fill="url(#SVGID_2_)" points="41.822,18.757 30.113,5.424 18.205,18.757 24.14,18.757 24.14,37.136 36.031,37.137   36.031,18.757 "/>
-<rect fill="#7BB71C" height="0.688" width="11.892" x="24.14" y="36.449"/>
+<rect fill="#5D894A" height="0.688" width="11.892" x="24.14" y="36.449"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="30.0132" x2="30.0132" y1="5.5356" y2="18.8368">
-<stop offset="0" style="stop-color:#EBFFCC"/>
-<stop offset="1" style="stop-color:#A9D36E"/>
+<stop offset="0" style="stop-color:#EBF0DB"/>
+<stop offset="1" style="stop-color:#A6B58C"/>
 </linearGradient>
 <polygon fill="url(#SVGID_3_)" points="30.113,6.471 40.903,18.757 41.822,18.757 30.113,5.424 18.205,18.757 19.139,18.757 "/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_4_" x1="29.9995" x2="29.9995" y1="33.4199" y2="54.6772">
-<stop offset="0" style="stop-color:#C8CED1"/>
-<stop offset="1" style="stop-color:#84888B"/>
+<stop offset="0" style="stop-color:#CBCECD"/>
+<stop offset="1" style="stop-color:#868889"/>
 </linearGradient>
 <path d="M4.57,54.924c-1.417,0-2.57-1.152-2.57-2.57V33.48h10.791v9.457c0,0.658,0.538,1.195,1.197,1.195  h32.023c0.66,0,1.196-0.537,1.196-1.195V33.48H58v18.873c0,1.418-1.152,2.57-2.568,2.57H4.57z" fill="url(#SVGID_4_)"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_5_" x1="30.0005" x2="30.0005" y1="33.4238" y2="53.3199">
-<stop offset="0" style="stop-color:#E1E2E6"/>
-<stop offset="0.8061" style="stop-color:#BBBCBF"/>
-<stop offset="0.9152" style="stop-color:#A4A5A8"/>
-<stop offset="1" style="stop-color:#C8CACC"/>
+<stop offset="0" style="stop-color:#E3E4E4"/>
+<stop offset="0.8061" style="stop-color:#BCBEBE"/>
+<stop offset="0.9152" style="stop-color:#A5A6A7"/>
+<stop offset="1" style="stop-color:#C9CBCA"/>
 </linearGradient>
 <path d="M47.895,33.48v8.77c0,1.035-0.848,1.883-1.883,1.883H13.988c-1.035,0-1.883-0.848-1.883-1.883v-8.77  H2.687v18.187c0,1.036,0.848,1.884,1.884,1.884h50.861c1.035,0,1.883-0.848,1.883-1.884V33.48H47.895z" fill="url(#SVGID_5_)"/>
 <path d="M12.105,42.938c0,1.034,0.848,1.882,1.883,1.882h32.023  c1.035,0,1.883-0.848,1.883-1.882V42.25c0,1.035-0.848,1.883-1.883,1.883H13.988c-1.035,0-1.883-0.848-1.883-1.883V42.938z" fill="#FFFFFF" fill-opacity="0.75"/>
 <rect fill="#FFFFFF" fill-opacity="0.5" height="0.687" width="9.419" x="2.687" y="33.48"/>
 <rect fill="#FFFFFF" fill-opacity="0.5" height="0.687" width="9.42" x="47.895" y="33.48"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_6_" x1="18.2197" x2="24.0671" y1="18.4141" y2="18.4141">
-<stop offset="0" style="stop-color:#AAE535"/>
-<stop offset="1" style="stop-color:#5D9C0A"/>
+<stop offset="0" style="stop-color:#9AB06A"/>
+<stop offset="1" style="stop-color:#367039"/>
 </linearGradient>
 <polygon fill="url(#SVGID_6_)" points="24.14,18.07 18.818,18.07 18.205,18.757 24.14,18.757 "/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_7_" x1="41.8545" x2="35.9584" y1="18.4136" y2="18.4136">
-<stop offset="0" style="stop-color:#AAE535"/>
-<stop offset="1" style="stop-color:#5D9C0A"/>
+<stop offset="0" style="stop-color:#9AB06A"/>
+<stop offset="1" style="stop-color:#367039"/>
 </linearGradient>
 <polygon fill="url(#SVGID_7_)" points="36.031,18.07 36.031,18.757 41.822,18.757 41.219,18.07 "/>
 <rect fill="none" height="60" width="60"/>

@@ -364,6 +364,7 @@ void HbTheTestWidget::setApplicationBackground()
 
 void HbTheTestWidget::showThemeServerMemoryInfo()
 {
+#ifdef Q_OS_SYMBIAN
     HbDialog *dialog = new HbDialog();
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -393,13 +394,16 @@ void HbTheTestWidget::showThemeServerMemoryInfo()
     dialog->setContentWidget(textItem);
 
     dialog->show();
+#endif
 }
 
 void HbTheTestWidget::createSharedMemoryReport() const
 {
+#ifdef Q_OS_SYMBIAN
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     HbThemeClient::global()->createMemoryReport();
 #endif
+#endif // Q_OS_SYMBIAN
 }
 
 void HbTheTestWidget::launchThemeChanger()

@@ -177,6 +177,7 @@ symbian {
     LIBS += -lws32
     LIBS += -lapgrfx
     LIBS += -lcone
+    LIBS += -lsystemtoneservice
 
     # central repository
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C304.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C304.txt"

@@ -53,6 +53,7 @@ public:
     void freeUnusedGpuResources();
     QVector<const HbIconKey *> getKeys(const QString &filename) const;
 
+    int gpuLRUSize() const;
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     void cleanVectorLRUList();
@@ -69,7 +70,6 @@ public:
     int cacheMissCount();
     int rasterLruCount();
     int vectorLruCount();
-    int gpuLRUSize() const;
 #endif
 
 private:

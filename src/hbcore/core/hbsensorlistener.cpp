@@ -70,6 +70,9 @@ HbSensorListener::~HbSensorListener()
         mSensrvChannel->CloseChannel();
         delete mSensrvChannel;
     }
+    if (mNotifyHandler) {
+        delete mNotifyHandler;
+    }
 #endif
 }
 
@@ -101,6 +104,7 @@ void HbSensorListener::checkCenrepValue()
         } else {
             qWarning("HbSensorListener::checkCenrepValue: repository->Get fails, error code = %d", err);
         }
+    delete repository;
     }
     if (!mNotifyHandler) {
         TRAPD(err, mNotifyHandler = HbSensorNotifyHandler::NewL(*this));

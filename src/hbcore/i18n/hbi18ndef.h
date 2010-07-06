@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_I18N_DEF_H
-#define HB_I18N_DEF_H
+#ifndef HBI18NDEF_H
+#define HBI18NDEF_H
 
 #include <QtGlobal>
 #include <hbglobal.h>
@@ -85,4 +85,4 @@ enum DigitType {
 // 13:15, 03:05 (minutes with leading zero and seconds) // separators are locale dependent.
 #define r_qtn_time_durat_min_sec_with_zero "%:0%T%:2%S%:3"
 
-#endif // HB_I18N_DEF_H
+#endif // HBI18NDEF_H

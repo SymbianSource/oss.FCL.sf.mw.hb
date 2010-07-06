@@ -79,7 +79,8 @@ public:
     static const Qt::Alignment defaultAlignment;
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-
+    QRectF boundingRect() const;
+    void setGeometry(const QRectF& rect);
     HbIconAnimator &animator();
 
     enum { Type = Hb::ItemType_IconItem };

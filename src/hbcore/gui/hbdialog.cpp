@@ -177,7 +177,6 @@ HbDialog::HbDialog(QGraphicsItem *parent) :
 {
     Q_D(HbDialog);
     d->q_ptr = this;
-    d->init();
     d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
 }
 
@@ -189,7 +188,6 @@ HbDialog::HbDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
 {
     Q_D(HbDialog);
     d->q_ptr = this;
-    d->init();
     d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
 }
 
@@ -259,12 +257,13 @@ void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
         return;
     if (d->contentWidget)
         delete d->contentWidget;
+    prepareGeometryChange(); // needed to paint screen properly
     d->contentWidget = contentWidget;
     if (contentWidget) {
         contentWidget->setParentItem(this);
         HbStyle::setItemName(contentWidget,"content");
     }
-    repolish();
+    repolish();    
 }
 
 /*!

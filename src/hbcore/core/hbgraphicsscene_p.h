@@ -60,6 +60,8 @@ public:
     HbToolTipLabel *mToolTip;
     bool mInputFocusSet;
     bool mPolishWidgets;
+    bool mRepolishWidgets;
+    int mPolishItemsIndex;
     // fps counter
     static bool fpsCounterEnabled;
     int mDrawCount;
@@ -68,6 +70,14 @@ public:
     qreal mMaxFPS;
 
 private:
+
+    class GraphicsObject: public QGraphicsObject
+    {
+    public:
+        using QGraphicsObject::inputMethodEvent;
+        using QGraphicsObject::inputMethodQuery;
+    };
+
     static HbGraphicsScenePrivate *d_ptr(HbGraphicsScene *scene) {
         Q_ASSERT(scene);
         return scene->d_func();

@@ -145,6 +145,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_delayedHide(HbEffect::EffectStatus status))
     Q_PRIVATE_SLOT(d_func(), void _q_orientationAboutToChange(Qt::Orientation orient, bool animate))
     Q_PRIVATE_SLOT(d_func(), void _q_orientationChanged())
+	Q_PRIVATE_SLOT(d_func(), void _q_appearEffectEnded(HbEffect::EffectStatus status))
 #endif // HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void _q_timeoutFinished())
 };

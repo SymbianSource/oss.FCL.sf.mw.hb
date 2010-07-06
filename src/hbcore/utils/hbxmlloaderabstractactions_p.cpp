@@ -82,13 +82,6 @@ bool HbXmlLoaderAbstractActions::pushWidget(
     return RETURNVALUE;
 }
 
-bool HbXmlLoaderAbstractActions::pushSpacerItem( const QString &name, const QString &widget )
-{
-    Q_UNUSED(name);
-    Q_UNUSED(widget);
-    return RETURNVALUE;
-}
-
 bool HbXmlLoaderAbstractActions::pushConnect(
     const QString &srcName,
     const QString &signalName,
@@ -180,57 +173,62 @@ bool HbXmlLoaderAbstractActions::setToolTip( const HbXmlVariable &tooltip )
     return RETURNVALUE;
 }
 
-bool HbXmlLoaderAbstractActions::createAnchorLayout( const QString &widget )
+bool HbXmlLoaderAbstractActions::createAnchorLayout( const QString &widget, bool modify )
 {
     Q_UNUSED(widget);
+    Q_UNUSED(modify);
     return RETURNVALUE;
 }
 
-bool HbXmlLoaderAbstractActions::addAnchorLayoutEdge(
+bool HbXmlLoaderAbstractActions::addAnchorLayoutItem(
     const QString &src,
+    const QString &srcId,
     Hb::Edge srcEdge, 
     const QString &dst,
+    const QString &dstId,
     Hb::Edge dstEdge,
-    const HbXmlLengthValue &spacing,
-    const QString &spacer )
+    const HbXmlLengthValue &minLength,
+    const HbXmlLengthValue &prefLength,
+    const HbXmlLengthValue &maxLength,
+    QSizePolicy::Policy *policy, 
+    HbAnchor::Direction *dir,
+    const QString &anchorId )
 {
     Q_UNUSED(src);
+    Q_UNUSED(srcId);
     Q_UNUSED(srcEdge);
     Q_UNUSED(dst);
+    Q_UNUSED(dstId);
     Q_UNUSED(dstEdge);
-    Q_UNUSED(spacing);
-    Q_UNUSED(spacer);
+    Q_UNUSED(minLength);
+    Q_UNUSED(prefLength);
+    Q_UNUSED(maxLength);
+    Q_UNUSED(policy);
+    Q_UNUSED(dir);
+    Q_UNUSED(anchorId);
     return RETURNVALUE;
 }
 
-
-bool HbXmlLoaderAbstractActions::createMeshLayout( const QString &widget )
+bool HbXmlLoaderAbstractActions::setAnchorLayoutMapping(
+    const QString &item,
+    const QString &id,
+    bool remove)
 {
-    Q_UNUSED(widget);
+    Q_UNUSED(item);
+    Q_UNUSED(id);
+    Q_UNUSED(remove);
     return RETURNVALUE;
 }
 
-bool HbXmlLoaderAbstractActions::addMeshLayoutEdge(
-    const QString &src,
-    Hb::Edge srcEdge, 
-    const QString &dst,
-    Hb::Edge dstEdge,
+
+bool HbXmlLoaderAbstractActions::createGridLayout(
+    const QString &widget,
     const HbXmlLengthValue &spacing,
-    const QString &spacer )
-{
-    Q_UNUSED(src);
-    Q_UNUSED(srcEdge);
-    Q_UNUSED(dst);
-    Q_UNUSED(dstEdge);
-    Q_UNUSED(spacing);
-    Q_UNUSED(spacer);
-    return RETURNVALUE;
-}
-
-bool HbXmlLoaderAbstractActions::createGridLayout( const QString &widget, const HbXmlLengthValue &spacing )
+    bool modify )
 {
     Q_UNUSED(widget);
     Q_UNUSED(spacing);
+    Q_UNUSED(modify);
     return RETURNVALUE;
 }
 
@@ -309,11 +307,13 @@ bool HbXmlLoaderAbstractActions::setGridLayoutColumnWidths(
 bool HbXmlLoaderAbstractActions::createLinearLayout(
     const QString &widget,
     Qt::Orientation *orientation, 
-    const HbXmlLengthValue &spacing )
+    const HbXmlLengthValue &spacing,
+    bool modify )
 {
     Q_UNUSED(widget);
     Q_UNUSED(orientation);
     Q_UNUSED(spacing);
+    Q_UNUSED(modify);
     return RETURNVALUE;
 }
 
@@ -353,9 +353,10 @@ bool HbXmlLoaderAbstractActions::setLayoutContentsMargins(
     Q_UNUSED(bottom);
     return RETURNVALUE;
 }
-bool HbXmlLoaderAbstractActions::createStackedLayout( const QString &widget )
+bool HbXmlLoaderAbstractActions::createStackedLayout( const QString &widget, bool modify )
 {
     Q_UNUSED(widget);
+    Q_UNUSED(modify);
     return RETURNVALUE;
 }
 

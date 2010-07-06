@@ -199,6 +199,7 @@ bool HbDNTXmlReader::characters(const QString& text)
                 
                 localizedStr = QCoreApplication::translate(0,charPtr);
                 delete ba;
+                ba = 0;
                 
                 if( localizedStr == t ){
 					localizedStr = "";                
@@ -235,6 +236,9 @@ bool HbDNTXmlReader::characters(const QString& text)
 			validElement = false;    				
 		}
 	}
+    if (ba) {
+        delete ba;
+    }
     return true;
 }
 

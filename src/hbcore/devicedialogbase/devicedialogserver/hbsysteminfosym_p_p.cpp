@@ -28,6 +28,7 @@
 #include <qcoreevent.h>
 
 const TUint32 secureId = 0x20022FC5;
+const TUint32 splashGenServerSecureId = 0x2002E68B;
 
 // publish & subscribe 
 const TUid PropertyCategoryUid = {secureId};
@@ -45,6 +46,7 @@ HbSystemInfoPrivate::HbSystemInfoPrivate()
 
 HbSystemInfoPrivate::~HbSystemInfoPrivate()
 {
+    Cancel();
     if (!mWriter) {
         lostForeground();
     }
@@ -60,8 +62,10 @@ void HbSystemInfoPrivate::init(bool writer)
     if (writer) {
         RProcess me;
         if ((me.SecureId().iId != secureId )) {
+            me.Close();
             return;
         }
+        me.Close();
     }
     
     if (writer) {
@@ -101,7 +105,15 @@ void HbSystemInfoPrivate::init(bool writer)
             mPtr.Set(mDataBuffer->Des());
             mInfoProperty.Attach(PropertyCategoryUid, InfoKey);
         }
-        
+
+        // hbsplashgenerator will not have any Qt widget shown (and
+        // thus created) so we cannot rely on foreground-background
+        // notifications. Instead, invoke gainedForeground manually.
+        RProcess me;
+        if (me.SecureId().iId == splashGenServerSecureId) {
+            QMetaObject::invokeMethod(this, "gainedForeground", Qt::QueuedConnection);
+        }
+        me.Close();
     }
 }
 
@@ -263,11 +275,15 @@ void HbSystemInfoPrivate::setPowerState(QSystemDeviceInfo::PowerState state)
 
 void HbSystemInfoPrivate::lostForeground()
 {
-    if (mListening) {
+    // Statusbars are rendered in the background by hbsplashgenerator
+    // so cannot stop listening in that case.
+    RProcess me;
+    if (mListening && me.SecureId().iId != splashGenServerSecureId) {
         mInfoProperty.Cancel();
         Cancel();
         mListening = false;
     }
+    me.Close();
 }
 
 void HbSystemInfoPrivate::gainedForeground()

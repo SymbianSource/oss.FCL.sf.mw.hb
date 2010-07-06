@@ -33,6 +33,7 @@
 
 #include "hbinpututils.h"
 #include "hbinputmethod.h"
+#include "hbinputcontextplugin.h"
 #include "hbinputsettingproxy.h"
 #include "hbinputmodeproperties.h"
 #include "hbinputkeymapfactory.h"
@@ -150,6 +151,13 @@ void HbInputModeCachePrivate::refresh(const QString &directory)
                 foreach(const QString &key, contextKeys) {
                     listItem.descriptor.setKey(key);
                     listItem.descriptor.setDisplayName(inputContextPlugin->displayName(key));
+
+                    HbInputContextPlugin *extension = qobject_cast<HbInputContextPlugin *>(inputContextPlugin);
+                    if (extension) {
+                        listItem.descriptor.setDisplayNames(extension->displayNames(key));
+                        listItem.descriptor.setIcon(extension->icon(key));
+                        listItem.descriptor.setIcons(extension->icons(key));
+                    }
 
                     int index = mMethods.indexOf(listItem);
                     if (index >= 0) {
@@ -364,7 +372,7 @@ HbInputMethod *HbInputModeCache::loadInputMethod(const HbInputMethodDescriptor &
 
 /*!
 \internal
-Lists custom input methods.
+Lists all custom input methods.
 */
 QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
 {
@@ -377,6 +385,61 @@ QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods()
             HbInputModeProperties properties = d->propertiesFromString(language);
             if (properties.inputMode() == HbInputModeCustom) {
                 result.append(item.descriptor);
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/*!
+\internal
+Lists custom input methods for given parameters.
+*/
+QList<HbInputMethodDescriptor> HbInputModeCache::listCustomInputMethods(Qt::Orientation orientation, const HbInputLanguage &language)
+{
+    Q_D(HbInputModeCache);
+
+    QList<HbInputMethodDescriptor> result;
+
+    foreach (const HbInputMethodListItem &item, d->mMethods) {
+        foreach (const QString &lang, item.languages) {
+            HbInputModeProperties properties = d->propertiesFromString(lang);
+            
+            // Find custom methods that supports given language or any language and
+            // supports given orientation
+            if (properties.inputMode() == HbInputModeCustom &&
+                (properties.language() == language || properties.language() == HbInputLanguage()) &&
+                ((orientation == Qt::Vertical && properties.keyboard() == HbKeyboardTouchPortrait) ||
+                (orientation == Qt::Horizontal && properties.keyboard() == HbKeyboardTouchLandscape))) {
+                result.append(item.descriptor);
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/*!
+\internal
+Returns default input method for given orientation.
+*/
+HbInputMethodDescriptor HbInputModeCache::defaultInputMethod(Qt::Orientation orientation)
+{
+    Q_D(HbInputModeCache);
+
+    HbInputMethodDescriptor result;
+    foreach (const HbInputMethodListItem &item, d->mMethods) {
+        foreach (const QString &language, item.languages) {
+            HbInputModeProperties properties = d->propertiesFromString(language);
+
+            // Find default method that supports given orientation
+            if (properties.inputMode() == HbInputModeDefault &&
+                ((orientation == Qt::Vertical && properties.keyboard() == HbKeyboardTouchPortrait) ||
+                (orientation == Qt::Horizontal && properties.keyboard() == HbKeyboardTouchLandscape))) {
+                result = item.descriptor;
                 break;
             }
         }

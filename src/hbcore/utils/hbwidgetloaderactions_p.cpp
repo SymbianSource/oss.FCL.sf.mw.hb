@@ -54,9 +54,10 @@ HbWidgetLoaderActions::~HbWidgetLoaderActions()
 /*!
     \internal
 */
-bool HbWidgetLoaderActions::createMeshLayout( const QString &widget )
+bool HbWidgetLoaderActions::createAnchorLayout( const QString &widget, bool modify )
 {
     Q_UNUSED( widget );
+    Q_UNUSED( modify );
     HbAnchorLayout *layout = static_cast<HbAnchorLayout*>(mWidget->layout());
     if (!layout) {
         layout = new HbAnchorLayout();
@@ -76,45 +77,69 @@ bool HbWidgetLoaderActions::createMeshLayout( const QString &widget )
 /*!
     \internal
 */
-bool HbWidgetLoaderActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
-                                               const QString &dst, Hb::Edge dstEdge,
-                                               const HbXmlLengthValue &spacing, const QString &spacer )
+bool HbWidgetLoaderActions::addAnchorLayoutItem(
+    const QString &src,
+    const QString &srcId,
+    Hb::Edge srcEdge, 
+    const QString &dst,
+    const QString &dstId,
+    Hb::Edge dstEdge,
+    const HbXmlLengthValue &minLength,
+    const HbXmlLengthValue &prefLength,
+    const HbXmlLengthValue &maxLength,
+    QSizePolicy::Policy *policy, 
+    HbAnchor::Direction *dir,
+    const QString &anchorId )
 {
-    bool ok = true;
-    if ( !spacer.isEmpty() ) {
-        // spacer is added
-        // divide original mesh definition into two. src->dst becomes src->spacer->dst
-        if ( src.isEmpty() ) {
-            // if the starting item is layout
-            // "layout --(spacing)--> item"
-            // becomes
-            // "layout --(spacing)--> spacer --(0)--> item"
-            ok &= addMeshLayoutEdge( src, srcEdge, spacer, srcEdge, spacing, QString() );
-            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
-            ok &= addMeshLayoutEdge( spacer, getAnchorOppositeEdge(srcEdge), dst, dstEdge, val, QString() );
+    // widgetml is purely id based.
+    Q_UNUSED(src); 
+    Q_UNUSED(dst);
+
+    HbAnchor* anchor = new HbAnchor( srcId, srcEdge, dstId, dstEdge );
+
+    if ( minLength.mType != HbXmlLengthValue::None ) {
+        qreal minVal(0);
+        if ( !toPixels(minLength, minVal) ) {
+            delete anchor;
+            return false;
         } else {
-            // between two items, or if end item is layout
-            // "item1 --(spacing)--> item2"
-            // becomes
-            // "item1 --(spacing)--> spacer --(0)--> item2"
-            ok &= addMeshLayoutEdge( src, srcEdge, spacer, getAnchorOppositeEdge(srcEdge), spacing, QString() );
-            HbXmlLengthValue val(0, HbXmlLengthValue::Pixel);
-            ok &= addMeshLayoutEdge( spacer, srcEdge, dst, dstEdge, val, QString() );
-        }
-        if ( ok & !mWidget->layoutPrimitive( spacer ) ) {
-            static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(mWidget))
-                ->createSpacerItem(spacer);
-        }
-    } else {
-        qreal spacingPx=0.0;
-        if (spacing.mType != HbXmlLengthValue::None ) {
-            ok = toPixels(spacing, spacingPx);
-        } // else default to zero.
-        if ( ok ) {
-            mLayout->setAnchor(src, srcEdge, dst, dstEdge, spacingPx);
+            anchor->setMinimumLength( minVal );
         }
     }
-    return ok;
+
+    if ( prefLength.mType != HbXmlLengthValue::None ) {
+        qreal prefVal(0);
+        if ( !toPixels(prefLength, prefVal) ) {
+            delete anchor;
+            return false;
+        } else {
+            anchor->setPreferredLength( prefVal );
+        }
+    }
+
+    if ( maxLength.mType != HbXmlLengthValue::None ) {
+        qreal maxVal(0);
+        if ( !toPixels(maxLength, maxVal) ) {
+            delete anchor;
+            return false;
+        } else {
+            anchor->setMaximumLength( maxVal );
+        }
+    }
+
+    if ( policy ) {
+        anchor->setSizePolicy( *policy );
+    }
+
+    if ( dir ) {
+        anchor->setDirection( *dir );
+    }
+
+    if ( !anchorId.isEmpty() ) {
+        anchor->setAnchorId( anchorId );
+    }
+
+    return mLayout->setAnchor( anchor );
 }
 #endif
 /*
@@ -140,32 +165,54 @@ HbWidgetLoaderMemoryActions::~HbWidgetLoaderMemoryActions()
 /*!
     \internal
 */
-bool HbWidgetLoaderMemoryActions::createMeshLayout( const QString &widget )
+bool HbWidgetLoaderMemoryActions::createAnchorLayout( const QString &widget, bool modify )
 {
     Q_UNUSED(widget);
-    mLayoutDef->meshItems.clear();
+    Q_UNUSED(modify);
+    mLayoutDef->anchorItems.clear();
     return true;
 }
 
 /*!
     \internal
 */
-bool HbWidgetLoaderMemoryActions::addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge,
-                                               const QString &dst, Hb::Edge dstEdge,
-                                               const HbXmlLengthValue &spacing, const QString &spacer )
+bool HbWidgetLoaderMemoryActions::addAnchorLayoutItem(
+    const QString &src,
+    const QString &srcId,
+    Hb::Edge srcEdge, 
+    const QString &dst,
+    const QString &dstId,
+    Hb::Edge dstEdge,
+    const HbXmlLengthValue &minLength,
+    const HbXmlLengthValue &prefLength,
+    const HbXmlLengthValue &maxLength,
+    QSizePolicy::Policy *policy, 
+    HbAnchor::Direction *dir,
+    const QString &anchorId )
 {
-    HbWidgetLoader::MeshItem item(mLayoutDef->type);
-    item.src = src;
-    item.dst = dst;
+    // widgetml is purely id based.
+    Q_UNUSED(src); 
+    Q_UNUSED(dst);
+
+    HbWidgetLoader::AnchorItem item(mLayoutDef->type);
+    item.srcId = srcId;
+    item.dstId = dstId;
     item.srcEdge = srcEdge;
     item.dstEdge = dstEdge;
-    item.spacingType = spacing.mType;
-    item.spacingVal = spacing.mValue;
-    item.spacingText = spacing.mString;
-    item.spacer = spacer;
+    item.minType = minLength.mType;
+    item.minVal = minLength.mValue;
+    item.minText = minLength.mString;
+    item.prefType = prefLength.mType;
+    item.prefVal = prefLength.mValue;
+    item.prefText = prefLength.mString;
+    item.maxType = maxLength.mType;
+    item.maxVal = maxLength.mValue;
+    item.maxText = maxLength.mString;
+    item.sizepolicy = policy ? *policy : -1;
+    item.direction = dir ? *dir : -1;
+    item.anchorId = anchorId;
 
-    mLayoutDef->meshItems.append(item);
-
+    mLayoutDef->anchorItems.append(item);
     return true;
 }
 

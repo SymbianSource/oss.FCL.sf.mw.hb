@@ -5,7 +5,8 @@
     <meshitem src="signal" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="notificationindicators" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
     <meshitem src="notificationindicators" srcEdge="LEFT" dst="signal" dstEdge="RIGHT" />
-    <meshitem src="timetext" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="timetext" srcEdge="LEFT" dst="notificationindicators" dstEdge="RIGHT" />
+    <meshitem src="timetext" srcEdge="RIGHT" dst="settingsindicators" dstEdge="LEFT" />
     <meshitem src="timetext" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
     <meshitem src="settingsindicators" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
     <meshitem src="settingsindicators" srcEdge="RIGHT" dst="battery" dstEdge="LEFT" />

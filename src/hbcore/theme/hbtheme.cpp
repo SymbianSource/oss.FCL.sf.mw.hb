@@ -112,7 +112,6 @@ QColor HbTheme::color(const QString &colorRole) const
 HbTheme::HbTheme() : d_ptr(new HbThemePrivate) 
 {
     d_ptr->q_ptr = this;
-    d_ptr->fetchCurrentThemeFromSettings();
     d_ptr->handleThemeChange();
 }
 
@@ -129,12 +128,14 @@ HbTheme::~HbTheme()
 */
 HbThemePrivate::HbThemePrivate()
 {
+#ifdef Q_OS_SYMBIAN
     // Condition added to check if the client itself is server.
     if(THEME_SERVER_NAME != HbMemoryUtils::getCleanAppName()) {
         if(!HbThemeClient::global()->connectToServer()) {
             qWarning() << "ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
         }
     }
+#endif
 }
 
 /*!
@@ -142,29 +143,13 @@ HbThemePrivate::HbThemePrivate()
 */
 HbThemePrivate::~HbThemePrivate()
 {
+#ifdef Q_OS_SYMBIAN
     HbThemeClient::releaseInstance();
     GET_MEMORY_MANAGER( HbMemoryManager::HeapMemory )
     if (manager) {
         manager->releaseInstance(HbMemoryManager::HeapMemory);
     }
-}
-
-/*!
-    Retrieves the current theme from setting
-*/
-void HbThemePrivate::fetchCurrentThemeFromSettings()
-{
-    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.address) {
-        currentTheme = info.name;
-        return;
-    }
-    
-    // Fallback to settings
-    currentTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
-    if (currentTheme.trimmed().isEmpty()){
-        currentTheme = HbThemeUtils::defaultTheme().name;
-    }
+#endif
 }
 
 /*!
@@ -190,9 +175,6 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     iconTheme.setCurrentTheme(newTheme);
     HbEffectTheme::instance()->setCurrentTheme(newTheme);
     
-    // The server sends the signal only if the theme is changed from the previous theme
-    // Hence here, we need not check whether the theme differs from currentTheme or not.
-    currentTheme = newTheme;
     // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
     // In application side this is needed only when icon size can be different in different theme.
     iconTheme.emitUpdateIcons();
@@ -203,7 +185,7 @@ void HbThemePrivate::handleThemeChange(const QString &str)
 }
 
 /*!
-    Clears the contents to reload new css files
+    Clears the contents to reload new files
 */
 void HbThemePrivate::updateTheme(const QStringList &updatedFiles)
 {

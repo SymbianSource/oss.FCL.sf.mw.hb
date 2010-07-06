@@ -144,4 +144,4 @@ public:
     QString format( const QTime &time, const QString &timeFormat );
 };
 
-#endif
+#endif // HBEXTENDEDLOCALE_H

@@ -24,8 +24,8 @@
 ****************************************************************************/
 
 #include "hbanchorlayout.h"
+#include "hbanchor.h"
 #include "hbanchor_p.h"
-#include "hbanchorlayoutdebug_p.h"
 #include "hbanchorlayoutengine_p.h"
 
 #include <QLayout>
@@ -38,41 +38,35 @@
 //Similar define exists also in the engine side.
 //#define HBANCHORLAYOUT_DEBUG
 
-#ifdef HBANCHORLAYOUT_DEBUG
-#ifndef Q_WS_S60
-#include "hbspaceritem_p.h"
-#endif
-#endif
-
 /*!
     \class HbAnchorLayout
     \brief HbAnchorLayout manages geometries of its child items with anchors
     that connect the layout items with each other.
 
     It also allows layout items to be missing and can fix anchor attachments.
-    Here are some simple rules how anchor fixation can be created (the example
-    is only for horizontal direction - the same needs to be done for portrait as well).
+    Here is an example and some simple rules how anchor fixing works (the example is
+    only for horizontal direction - the same needs to be done for portrait as well).
 
-    If anchors set allow ambiguos positioning of items, then layout tries to set items size as
-    close to preferred as possible.
+    If anchors set allow ambiguos positioning of items, then layout tries to set items
+    size as close to preferred as possible.
 
-    \image html hbmeshlayout1.png
+    \image html hbanchorlayout1.png
 
     From the image above, we have decided that the green node is always present. This
     means that all the other nodes in the horizontal graph can be optional.
 
-    \image html hbmeshlayout2.png
+    \image html hbanchorlayout2.png
 
     Then, we create the anchors starting from the non-optional node and point towards
-    the edges of the layout. The mesh layout definition in the WidgetML would look like:
+    the edges of the layout. The anchor layout definition in the WidgetML would look like:
 
     \code
 
-    <meshitem src="green_item" srcEdge="LEFT" dst="blue_item" dstEdge="RIGHT" />
-    <meshitem src="blue_item" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="green_item" srcEdge="RIGHT" dst="red_item" dstEdge="LEFT" />
-    <meshitem src="red_item" srcEdge="RIGHT" dst="yellow_item" dstEdge="LEFT" />
-    <meshitem src="yellow_item" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <anchoritem srcId="green_item" srcEdge="LEFT" dstId="blue_item" dstEdge="RIGHT" />
+    <anchoritem srcId="blue_item" srcEdge="LEFT" dstId="" dstEdge="LEFT" />
+    <anchoritem srcId="green_item" srcEdge="RIGHT" dstId="red_item" dstEdge="LEFT" />
+    <anchoritem srcId="red_item" srcEdge="RIGHT" dstId="yellow_item" dstEdge="LEFT" />
+    <anchoritem srcId="yellow_item" srcEdge="RIGHT" dstId="" dstEdge="RIGHT" />
 
     \endcode
 
@@ -81,10 +75,9 @@
     name "green_item". \c HbStyle::setItemName for more details.
 
     If an optional node is missing, the anchors pointing to the node are
-    changed to point to the node after (=towards the parent layout) the missing one - this
-    is called "fixing the mesh".
+    changed to point to the node after (=towards the parent layout) the missing one.
 
-    \image html hbmeshlayout3.png
+    \image html hbanchorlayout3.png
 
     In the picture above, the blue and yellow items are missing. The anchor is fixed by removing
     the anchor definitions starting from the missing nodes.
@@ -111,19 +104,23 @@ enum EdgeType {
     Type for mapping from layout item to node identifier.
     \internal
 */
-typedef QMap<QGraphicsLayoutItem*, QString> HbMeshItemMap;
-typedef HbMeshItemMap::iterator HbMeshItemMapIterator;
-typedef HbMeshItemMap::const_iterator HbMeshItemMapConstIterator;
+typedef QMap<QGraphicsLayoutItem*, QString> ItemToNodeIdMap;
+typedef ItemToNodeIdMap::iterator ItemToNodeIdMapIterator;
+typedef ItemToNodeIdMap::const_iterator ItemToNodeIdMapConstIterator;
 
 
 /*
     Result of findEndItem.
 */
-struct HbMeshEndItemResult
+struct HbFixedEndItemResult
 {
     QGraphicsLayoutItem *mItem;
     HbAnchorLayout::Edge mEdge;
-    qreal mValue;
+    qreal mMin;
+    qreal mPref;
+    qreal mMax;
+    QSizePolicy::Policy mPolicy;
+    HbAnchor::Direction mDirection;
 };
 
 class HbAnchorLayoutPrivate
@@ -145,15 +142,16 @@ public:
     int getEdgeIndex(QGraphicsLayoutItem *item, Hb::Edge edge);
 
     bool findEndItem(
-        QList<HbMeshEndItemResult> &resultList,
+        QList<HbFixedEndItemResult> &resultList,
         const HbAnchor *anchor,
         QStringList &ids) const;
     void resolveAnchors();
     void removeItemIfNeeded( QGraphicsLayoutItem *item );
 
-    bool setAnchor( HbAnchor *anchor );
+    HbAnchor *setAnchor( HbAnchor *anchor );
 
     void setSizeProp( SizeProperty *v, QGraphicsLayoutItem *item, EdgeType type );
+    void setSizeProp( SizeProperty *v, HbAnchor *item );
     GraphVertex *createCenterEdge( EdgeType type, QGraphicsLayoutItem *item,  Hb::Edge edge );
     void defineNextGeometry( const int itemIndexStart, const int itemIndexEnd, const int anchorIndex, const int definedItemIndex );
 
@@ -173,10 +171,9 @@ public:
     QList<HbAnchor*> mResolvedStaticAnchors; // references to anchors, that remains the same after resolving
     QList<HbAnchor*> mResolvedAnchors; // anchors that are passed to engine
 
-    // mesh layout data
     QList<QGraphicsLayoutItem*> mItems; // for addItem
     QList<QGraphicsLayoutItem*> mActualItems; // layouted items
-    HbMeshItemMap mMeshMap;
+    ItemToNodeIdMap mItemToNodeIdMap;
 
     QRectF mUsedRect;
 
@@ -211,76 +208,86 @@ public:
 
 
 
+/*!
+    \internal functions
+*/
 
+inline bool idConditionStartStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( !anchor1->startNodeId().isNull() ) && ( anchor1->startNodeId() == anchor2->startNodeId() );
+}
+inline bool idConditionEndEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( !anchor1->endNodeId().isNull() ) && ( anchor1->endNodeId() == anchor2->endNodeId() );
+}
+inline bool idConditionStartEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( !anchor1->startNodeId().isNull() ) && ( anchor1->startNodeId() == anchor2->endNodeId() );
+}
+inline bool idConditionEndStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( !anchor1->endNodeId().isNull() ) && ( anchor1->endNodeId() == anchor2->startNodeId() );
+}
+
+inline bool itemConditionStartStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( anchor1->startItem() != 0 ) && ( anchor1->startItem() == anchor2->startItem() );
+}
+inline bool itemConditionEndEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( anchor1->endItem() != 0 ) && ( anchor1->endItem() == anchor2->endItem() );
+}
+inline bool itemConditionStartEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( anchor1->startItem() != 0 ) && ( anchor1->startItem() == anchor2->endItem() );
+}
+inline bool itemConditionEndStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return ( anchor1->endItem() != 0 ) && ( anchor1->endItem() == anchor2->startItem() );
+}
+
+inline bool edgeConditionStartStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return anchor1->startEdge() == anchor2->startEdge();
+}
+inline bool edgeConditionEndEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return anchor1->endEdge() == anchor2->endEdge();
+}
+inline bool edgeConditionStartEnd( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return anchor1->startEdge() == anchor2->endEdge();
+}
+inline bool edgeConditionEndStart( HbAnchor *anchor1, HbAnchor *anchor2 )
+{
+    return anchor1->endEdge() == anchor2->startEdge();
+}
+
+inline int directionMultiplier( HbAnchor *anchor )
+{
+    return ( ( anchor->direction() == HbAnchor::Positive )?(1):(-1) );
+}
 
 
 /*!
-    \internal
+    Returns list of effective anchors - those which has mappings to QGraphicsItem
+    \return list of effective anchors.
 */
-HbAnchor::HbAnchor()
-    : mStartItem(0),
-    mStartEdge(Hb::LeftEdge),
-    mEndItem(0),
-    mEndEdge(Hb::LeftEdge),
-    mValue(0)
+QList<HbAnchor*> HbAnchorLayout::effectiveAnchors()
 {
+    Q_D( HbAnchorLayout );
+    d->resolveAnchors();
+    return d->mResolvedAnchors;
 }
-
-HbAnchor::HbAnchor(const HbAnchor &anchor)
-: mStartItem(anchor.mStartItem),
-  mStartEdge(anchor.mStartEdge),
-  mStartId(anchor.mStartId),
-  mEndItem(anchor.mEndItem),
-  mEndEdge(anchor.mEndEdge),
-  mEndId(anchor.mEndId),
-  mValue(anchor.mValue)
-{
-}
-
-HbAnchor::HbAnchor( QGraphicsLayoutItem *startItem,
-                   HbAnchorLayout::Edge startEdge,
-                   QGraphicsLayoutItem *endItem,
-                   HbAnchorLayout::Edge endEdge,
-                   qreal value )
-    : mStartItem(startItem),
-    mStartEdge(startEdge),
-    mEndItem(endItem),
-    mEndEdge(endEdge),
-    mValue(value)
-{
-}
-
-
-HbAnchor &HbAnchor::operator=(const HbAnchor &anchor)
-{
-    if (this != &anchor) {
-        mStartItem = anchor.mStartItem;
-        mStartId = anchor.mStartId;
-        mStartEdge = anchor.mStartEdge;
-        mEndItem = anchor.mEndItem;
-        mEndId = anchor.mEndId;
-        mEndEdge = anchor.mEndEdge;
-        mValue = anchor.mValue;
-    }
-    return *this;
-}
-
-
-
-
 
 /*!
-    \internal
+    Returns list of all anchors set to this layout
+    \return list of all anchors.
 */
-QList<HbAnchor*> HbAnchorLayoutDebug::getAnchors( HbAnchorLayout* layout )
+QList<HbAnchor*> HbAnchorLayout::anchors() const
 {
-    layout->d_ptr->resolveAnchors();
-    return layout->d_ptr->mResolvedAnchors;
-}
-
-QList<HbAnchor*> HbAnchorLayoutDebug::getOriginalAnchors( HbAnchorLayout* layout )
-{
-    return layout->d_ptr->mAllAnchors;
+    Q_D( const HbAnchorLayout );
+    return d->mAllAnchors;
 }
 
 /*
@@ -374,13 +381,6 @@ static QString itemAsText(QGraphicsLayoutItem* item, QGraphicsLayout *layout)
             if (gItem->isWidget()) {
                 result = static_cast<QGraphicsWidget*>(gItem)->metaObject()->className();
             }
-#ifndef Q_WS_S60
-        } else {
-            HbSpacerItem *spacer = dynamic_cast<HbSpacerItem *>(item);
-            if ( spacer ) {
-                result = "HbSpacerItem";
-            }
-#endif
         }
     }
     return result;
@@ -399,23 +399,23 @@ void HbAnchorLayoutPrivate::updateAnchorsAndItems()
 #ifdef HBANCHORLAYOUT_DEBUG
     QGraphicsWidget* w = HbLayoutUtils::parentWidget( q );
     if ( w ) {
-        qDebug() << "MeshLayout: Mesh anchors for" << w->metaObject()->className();
+        qDebug() << "AnchorLayout: Updating anchors for" << w->metaObject()->className();
     }
     const QString parentId =
-        mMeshMap.contains(q) ? mMeshMap.value(q) : QString();
+        mItemToNodeIdMap.contains(q) ? mItemToNodeIdMap.value(q) : QString();
     qDebug() << "-- -- resolved";
     qDebug() << "-- count: " << mResolvedAnchors.size() << ", parent: " << parentId;
     foreach (const HbAnchor *item, mResolvedAnchors) {
         const QString itemTemplate("-- (%1 [%2], %3) - (%4 [%5], %6) = %7");
         qDebug() <<
             itemTemplate
-            .arg(item->mStartId)
-            .arg(itemAsText(item->mStartItem, q))
-            .arg(edgeAsText(item->mStartEdge))
-            .arg(item->mEndId)
-            .arg(itemAsText(item->mEndItem, q))
-            .arg(edgeAsText(item->mEndEdge))
-            .arg(item->mValue).toAscii().data();
+            .arg(item->startNodeId())
+            .arg(itemAsText(item->startItem(), q))
+            .arg(edgeAsText(item->startEdge()))
+            .arg(item->endNodeId())
+            .arg(itemAsText(item->endItem(), q))
+            .arg(edgeAsText(item->endEdge()))
+            .arg(item->preferredLength()).toAscii().data();
     }
     qDebug() << "-- -- all";
     qDebug() << "-- count: " << mAllAnchors.size() << ", parent: " << parentId;
@@ -423,13 +423,13 @@ void HbAnchorLayoutPrivate::updateAnchorsAndItems()
         const QString itemTemplate("-- (%1 [%2], %3) - (%4 [%5], %6) = %7");
         qDebug() <<
             itemTemplate
-            .arg(item->mStartId)
-            .arg(itemAsText(item->mStartItem, q))
-            .arg(edgeAsText(item->mStartEdge))
-            .arg(item->mEndId)
-            .arg(itemAsText(item->mEndItem, q))
-            .arg(edgeAsText(item->mEndEdge))
-            .arg(item->mValue).toAscii().data();
+            .arg(item->startNodeId())
+            .arg(itemAsText(item->startItem(), q))
+            .arg(edgeAsText(item->startEdge()))
+            .arg(item->endNodeId())
+            .arg(itemAsText(item->endItem(), q))
+            .arg(edgeAsText(item->endEdge()))
+            .arg(item->preferredLength()).toAscii().data();
     }
     qDebug() << "-- ";
 #endif // HBANCHORLAYOUT_DEBUG
@@ -442,15 +442,43 @@ void HbAnchorLayoutPrivate::updateAnchorsAndItems()
 
         const HbAnchor* item = *it;
 
-        if (item->mStartItem != q && !mActualItems.contains(item->mStartItem)) {
-            mActualItems.append(item->mStartItem);
+        if (item->startItem() != q && !mActualItems.contains(item->startItem())) {
+            mActualItems.append(item->startItem());
         }
-        if (item->mEndItem != q && !mActualItems.contains(item->mEndItem)) {
-            mActualItems.append(item->mEndItem);
+        if (item->endItem() != q && !mActualItems.contains(item->endItem())) {
+            mActualItems.append(item->endItem());
         }
     }
 
 }
+
+void HbAnchorLayoutPrivate::setSizeProp( SizeProperty *v, HbAnchor *item )
+{
+    const QSizePolicy::Policy policy = item->sizePolicy();
+
+    if ( policy & QSizePolicy::ShrinkFlag ) {
+        v->min = item->minimumLength();
+    } else {
+        v->min = item->preferredLength();
+    }
+
+    if ( policy & (QSizePolicy::GrowFlag | QSizePolicy::ExpandFlag) ) {
+        v->max = item->maximumLength();
+    } else {
+        v->max = item->preferredLength();
+    }
+
+    v->pref = qBound( v->min, item->preferredLength(), v->max );
+
+    v->flags |= (v->min == v->max) ? SizeProperty::FlagFixed : 0;
+    v->flags |= (policy & QSizePolicy::ExpandFlag) ? SizeProperty::FlagExpanding : 0;
+
+    if( policy & QSizePolicy::IgnoreFlag ) {
+        v->pref = v->min;
+        v->flags |= SizeProperty::FlagExpanding;
+    }
+}
+
 
 
 void HbAnchorLayoutPrivate::setSizeProp( SizeProperty *v, QGraphicsLayoutItem *item, EdgeType type )
@@ -618,21 +646,22 @@ void HbAnchorLayoutPrivate::defineNextGeometry(
     Hb::Edge knownEdge, unKnownEdge;
     int sign;
     qreal itemSize;
+    qreal anchorSize;
     bool isHorizontal;
     HbAnchor *anchor = mResolvedAnchors.at( anchorIndex );
     qreal leftPoint(0), rightPoint(0), sourcePoint(0), dstPointLeft(0);
 
     mAnchorsVisited[ anchorIndex ] = true;
 
-    if( edgeType( anchor->mStartEdge ) == Horizontal ) {
+    if( edgeType( anchor->startEdge() ) == Horizontal ) {
         isHorizontal = true;
     } else {
         isHorizontal = false;
     }
 
     if( itemIndexEnd != definedItemIndex ) {
-        knownEdge = anchor->mStartEdge;
-        unKnownEdge =  anchor->mEndEdge;
+        knownEdge = anchor->startEdge();
+        unKnownEdge =  anchor->endEdge();
 
         knownItemGeom = &mItemsGeometry[itemIndexStart];
         unKnownItemGeom = &mItemsGeometry[itemIndexEnd];
@@ -640,15 +669,17 @@ void HbAnchorLayoutPrivate::defineNextGeometry(
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexEnd] = true;
             itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mActualItems.at(itemIndexEnd) ) );
+            anchorSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( anchor ) ) * directionMultiplier( anchor );
         } else {
             mGeometryDefinedV[itemIndexEnd] = true;
             itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mActualItems.at(itemIndexEnd) ) );
+            anchorSize = mSolutionVertical.value( mVariablesVertical.findVariable( anchor ) ) * directionMultiplier( anchor );
         }
 
         sign = 1;
     } else {
-        knownEdge =  anchor->mEndEdge;
-        unKnownEdge = anchor->mStartEdge;
+        knownEdge =  anchor->endEdge();
+        unKnownEdge = anchor->startEdge();
 
         knownItemGeom = &mItemsGeometry[itemIndexEnd];
         unKnownItemGeom = &mItemsGeometry[itemIndexStart];
@@ -656,9 +687,11 @@ void HbAnchorLayoutPrivate::defineNextGeometry(
         if( isHorizontal ) {
             mGeometryDefinedH[itemIndexStart] = true;
             itemSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( mActualItems.at(itemIndexStart) ) );
+            anchorSize = mSolutionHorizontal.value( mVariablesHorizontal.findVariable( anchor ) ) * directionMultiplier( anchor );
         } else {
             mGeometryDefinedV[itemIndexStart] = true;
             itemSize = mSolutionVertical.value( mVariablesVertical.findVariable( mActualItems.at(itemIndexStart) ) );
+            anchorSize = mSolutionVertical.value( mVariablesVertical.findVariable( anchor ) ) * directionMultiplier( anchor );
         }
 
         sign = -1;
@@ -697,19 +730,19 @@ void HbAnchorLayoutPrivate::defineNextGeometry(
         case Hb::LeftEdge:
         case Hb::TopEdge:
         {
-            dstPointLeft = sourcePoint + sign * anchor->mValue;
+            dstPointLeft = sourcePoint + sign * anchorSize;
             break;
         }
         case Hb::CenterHEdge:
         case Hb::CenterVEdge:
         {
-            dstPointLeft = sourcePoint + sign * anchor->mValue - itemSize / 2;
+            dstPointLeft = sourcePoint + sign * anchorSize - itemSize / 2;
             break;
         }
         case Hb::RightEdge:
         case Hb::BottomEdge:
         {
-            dstPointLeft = sourcePoint + sign * anchor->mValue - itemSize;
+            dstPointLeft = sourcePoint + sign * anchorSize - itemSize;
             break;
         }
     }
@@ -723,7 +756,6 @@ void HbAnchorLayoutPrivate::defineNextGeometry(
         unKnownItemGeom->y1 = dstPointLeft;
         unKnownItemGeom->y2 = dstPointLeft + itemSize;
     }
-
 }
 
 
@@ -828,10 +860,10 @@ void HbAnchorLayoutPrivate::setItemGeometries()
 
             int layoutIndex = mActualItems.size();
 
-            mItemsGeometry[ layoutIndex ].x1 = 0;//newRect.left();
-            mItemsGeometry[ layoutIndex ].x2 = newRect.width();//newRect.right();
-            mItemsGeometry[ layoutIndex ].y1 = 0;//newRect.top();
-            mItemsGeometry[ layoutIndex ].y2 = newRect.height();//newRect.bottom();
+            mItemsGeometry[ layoutIndex ].x1 = 0;
+            mItemsGeometry[ layoutIndex ].x2 = newRect.width();
+            mItemsGeometry[ layoutIndex ].y1 = 0;
+            mItemsGeometry[ layoutIndex ].y2 = newRect.height();
             mGeometryDefinedH[ layoutIndex ] = true;
             mGeometryDefinedV[ layoutIndex ] = true;
 
@@ -841,16 +873,16 @@ void HbAnchorLayoutPrivate::setItemGeometries()
                 HbAnchor *anchor = mResolvedAnchors.at(i);
 
 
-                if( ( anchor->mStartItem != q ) && ( anchor->mEndItem != q ) ) {
+                if( ( anchor->startItem() != q ) && ( anchor->endItem() != q ) ) {
                     continue;
                 }
 
-                int startIndex = mActualItems.indexOf( anchor->mStartItem ); // returns -1 if not found => this is layout
-                int endIndex = mActualItems.indexOf( anchor->mEndItem );
+                int startIndex = mActualItems.indexOf( anchor->startItem() ); // returns -1 if not found => this is layout
+                int endIndex = mActualItems.indexOf( anchor->endItem() );
 
-                mAnchorsVisited[i] = true; // Temporary overkill, if both anchors connected to layout. Must be restricted on setAnchor() level
+                mAnchorsVisited[i] = true;
 
-                if( edgeType( anchor->mStartEdge ) == Horizontal ) {
+                if( edgeType( anchor->startEdge() ) == Horizontal ) {
                     if( startIndex > -1 ) {
                         if( ! mGeometryDefinedH.at( startIndex ) ) {
                             defineNextGeometry( startIndex, layoutIndex, i, layoutIndex );
@@ -887,12 +919,12 @@ void HbAnchorLayoutPrivate::setItemGeometries()
                     }
                     HbAnchor *anchor = mResolvedAnchors.at(i);
 
-                    startIndex = mActualItems.indexOf( anchor->mStartItem );
-                    endIndex = mActualItems.indexOf( anchor->mEndItem );
+                    startIndex = mActualItems.indexOf( anchor->startItem() );
+                    endIndex = mActualItems.indexOf( anchor->endItem() );
 #ifdef HBANCHORLAYOUT_DEBUG
                     qDebug() << "startIndex:" << startIndex << "  endIndex" << endIndex;
 #endif //HBANCHORLAYOUT_DEBUG
-                    if( edgeType( anchor->mStartEdge ) == Horizontal ) {
+                    if( edgeType( anchor->startEdge() ) == Horizontal ) {
                         startDefined = mGeometryDefinedH.at( startIndex );
                         endDefined = mGeometryDefinedH.at( endIndex );
                     } else {
@@ -941,7 +973,6 @@ void HbAnchorLayoutPrivate::setItemGeometries()
 
 #ifdef HBANCHORLAYOUT_DEBUG
                 qDebug( "Item %d: (%lf, %lf) : (%lf %lf)", i, calcGeom.x1, calcGeom.y1, calcGeom.x2, calcGeom.y2 );
-        //        qDebug() << "Item " <<  i << "(" << ((QGraphicsWidget*)mActualItems.at(i))->metaObject()->className() << ")" << " geom " << geom;
 #endif // HBANCHORLAYOUT_DEBUG
                 mActualItems.at(i)->setGeometry( geom );
             }
@@ -1061,24 +1092,24 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
 
         for( int i = 0; i < mResolvedAnchors.count(); i++) {
             HbAnchor* anchor = mResolvedAnchors.at(i);
-            if ( edgeType( anchor->mStartEdge ) == type ) {
+            if ( edgeType( anchor->startEdge() ) == type ) {
                 itemStart = 0;
                 itemEnd = 0;
                 for( int j = 0; j < vertices->size(); j++ ) {
-                    if( ( vertices->at(j)->itemRef == anchor->mStartItem ) &&
-                            ( vertices->at(j)->itemSide == anchor->mStartEdge ) ) {
+                    if( ( vertices->at(j)->itemRef == anchor->startItem() ) &&
+                            ( vertices->at(j)->itemSide == anchor->startEdge() ) ) {
                         itemStart = vertices->at(j);
-                    } else if( ( vertices->at(j)->itemRef == anchor->mEndItem ) &&
-                        ( vertices->at(j)->itemSide == anchor->mEndEdge ) ) {
+                    } else if( ( vertices->at(j)->itemRef == anchor->endItem() ) &&
+                        ( vertices->at(j)->itemSide == anchor->endEdge() ) ) {
                         itemEnd = vertices->at(j);
                     }
                 }
 
                 if( !itemStart ) {
-                    itemStart = createCenterEdge( type, anchor->mStartItem,  anchor->mStartEdge );
+                    itemStart = createCenterEdge( type, anchor->startItem(),  anchor->startEdge() );
                 }
                 if( !itemEnd ) {
-                    itemEnd = createCenterEdge( type, anchor->mEndItem,  anchor->mEndEdge );
+                    itemEnd = createCenterEdge( type, anchor->endItem(),  anchor->endEdge() );
                 }
 
                 if( !itemStart ){
@@ -1100,9 +1131,12 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
 
                 newEdge->startVertex = itemStart;
                 newEdge->endVertex = itemEnd;
-                se.mVar = v1;
-                se.mCoef = anchor->mValue;
+
+                se.mVar = vs->createVariable(anchor);
+                se.mCoef = directionMultiplier( anchor );
+                setSizeProp( &(se.mVar->sizeProp), anchor );
                 newEdge->expr->plusSimpleExpression( se );
+
                 edges->append( newEdge );
             }
         }
@@ -1211,11 +1245,11 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
         infinite recursion, don't visit already visited.
 */
 bool HbAnchorLayoutPrivate::findEndItem(
-    QList<HbMeshEndItemResult> &resultList,
+    QList<HbFixedEndItemResult> &resultList,
     const HbAnchor *problem,
     QStringList &ids) const
 {
-    HbMeshEndItemResult result;
+    HbFixedEndItemResult result;
     bool found = false;
 
     for (QList<HbAnchor*>::const_iterator it = mAllAnchors.constBegin();
@@ -1224,33 +1258,28 @@ bool HbAnchorLayoutPrivate::findEndItem(
 
         const HbAnchor* currentItem = *it;
 
-        if (!currentItem->mStartId.isNull() &&
-            currentItem->mStartId == problem->mEndId &&
-            currentItem->mStartEdge == problem->mStartEdge &&
-            !ids.contains(currentItem->mStartId)) {
+        if (!currentItem->startNodeId().isNull() &&
+            currentItem->startNodeId() == problem->endNodeId() &&
+            currentItem->startEdge() == problem->startEdge() &&
+            !ids.contains(currentItem->startNodeId())) {
 
-            qreal currentSpacing = currentItem->mValue;
-
-            QGraphicsLayoutItem *item = currentItem->mEndItem;
-
+            QGraphicsLayoutItem *item = currentItem->endItem();
 
             if (item) {
                 found = true;
-                result.mEdge = currentItem->mEndEdge;
+                result.mEdge = currentItem->endEdge();
                 result.mItem = item;
-                result.mValue = currentSpacing;
+                result.mMin = currentItem->minimumLength();
+                result.mPref = currentItem->preferredLength();
+                result.mMax = currentItem->maximumLength();
+                result.mPolicy = currentItem->sizePolicy();
+                result.mDirection = currentItem->direction();
                 resultList.append( result );
             } else {
-                ids.append(currentItem->mStartId);
+                ids.append(currentItem->startNodeId());
                 found |= findEndItem(resultList, currentItem, ids);
                 ids.takeLast();
             }
-            /*
-            if (found) {
-                // We have found an end item. There can be multiple end items,
-                // but (for now) the first one is selected.
-                return true;
-            }*/
         }
     }
 
@@ -1286,26 +1315,25 @@ void HbAnchorLayoutPrivate::resolveAnchors()
 
         HbAnchor *anchor = mAllAnchors.at(i);
 
-        if( ( anchor->mStartItem ) && ( anchor->mEndItem ) ) {
+        if( ( anchor->startItem() ) && ( anchor->endItem() ) ) {
             mResolvedStaticAnchors.append( anchor );
             continue;
         }
 
-        if (anchor->mStartItem && !anchor->mEndId.isNull()) {
-            QList<HbMeshEndItemResult> resultList;
+        if (anchor->startItem() && !anchor->endNodeId().isNull()) {
+            QList<HbFixedEndItemResult> resultList;
 
             QStringList ids;
-            ids.append(anchor->mStartId);
+            ids.append(anchor->startNodeId());
 
             if (findEndItem(resultList, anchor, ids)) {
                 for( int j = 0; j < resultList.size(); j++ ) {
-                    item = new HbAnchor();
-                    item->mStartItem = anchor->mStartItem;
-                    item->mStartId = anchor->mStartId;
-                    item->mStartEdge = anchor->mStartEdge;
-                    item->mEndEdge = resultList.at(j).mEdge;
-                    item->mEndItem = resultList.at(j).mItem;
-                    item->mValue = resultList.at(j).mValue;
+                    item = new HbAnchor( anchor->startItem(), anchor->startEdge(), resultList.at(j).mItem, resultList.at(j).mEdge );
+                    item->setMinimumLength( resultList.at(j).mMin );
+                    item->setPreferredLength( resultList.at(j).mPref );
+                    item->setMaximumLength( resultList.at(j).mMax );
+                    item->setSizePolicy( resultList.at(j).mPolicy );
+                    item->setDirection( resultList.at(j).mDirection );
                     mResolvedDynamicAnchors.append(item);
                 }
             }
@@ -1317,90 +1345,78 @@ void HbAnchorLayoutPrivate::resolveAnchors()
     mResolvedAnchors = mResolvedDynamicAnchors + mResolvedStaticAnchors;
 }
 
-bool HbAnchorLayoutPrivate::setAnchor( HbAnchor *anchor )
+HbAnchor *HbAnchorLayoutPrivate::setAnchor( HbAnchor *anchor )
 {
+    Q_Q( HbAnchorLayout );
     // This method is called from HbAnchorLayout::setAnchor.
 
-    if (HbAnchorLayoutPrivate::edgeType(anchor->mStartEdge) !=
-        HbAnchorLayoutPrivate::edgeType(anchor->mEndEdge)) {
+    if (HbAnchorLayoutPrivate::edgeType(anchor->startEdge()) !=
+        HbAnchorLayoutPrivate::edgeType(anchor->endEdge())) {
         qWarning() << "HbAnchorLayout::setAnchor : You can't connect different type of edges";
-        return false;
+        return 0;
     }
 
-    if ( ( anchor->mStartId.isNull() && ( anchor->mStartItem == 0 ) ) ||
-        ( anchor->mEndId.isNull() && ( anchor->mEndItem == 0 ) ) ){
+    if ( ( anchor->startNodeId().isNull() && ( anchor->startItem() == 0 ) ) ||
+        ( anchor->endNodeId().isNull() && ( anchor->endItem() == 0 ) ) ){
         qWarning() << "HbAnchorLayout::setAnchor : Both ids must be valid";
-        return false;
+        return 0;
     }
 
-    if ( ( anchor->mStartId == anchor->mEndId ) && ( ( anchor->mStartItem == anchor->mEndItem ) ) &&
-        ( anchor->mStartEdge == anchor->mEndEdge ) ) {
+    if ( ( anchor->startNodeId() == anchor->endNodeId() ) && ( ( anchor->startItem() == anchor->endItem() ) ) &&
+        ( anchor->startEdge() == anchor->endEdge() ) ) {
         qWarning() << "HbAnchorLayout::setAnchor : You cannot set anchor between the same edge";
-        return false;
+        return 0;
     }
-
-    bool modified = false;
 
     const int count = mAllAnchors.size();
     for (int i = 0; i < count; ++i) {
         HbAnchor *item = mAllAnchors.at(i);
 
-
-        bool idConditionStartStart = ( !item->mStartId.isNull() ) && ( item->mStartId == anchor->mStartId );
-        bool idConditionEndEnd = ( !item->mEndId.isNull() ) && ( item->mEndId == anchor->mEndId );
-        bool idConditionStartEnd = ( !item->mStartId.isNull() ) && ( item->mStartId == anchor->mEndId );
-        bool idConditionEndStart = ( !item->mEndId.isNull() ) && ( item->mEndId == anchor->mStartId );
-
-        bool itemConditionStartStart = ( item->mStartItem != 0 ) && ( item->mStartItem == anchor->mStartItem );
-        bool itemConditionEndEnd = ( item->mEndItem != 0 ) && ( item->mEndItem == anchor->mEndItem );
-        bool itemConditionStartEnd = ( item->mStartItem != 0 ) && ( item->mStartItem == anchor->mEndItem );
-        bool itemConditionEndStart = ( item->mEndItem != 0 ) && ( item->mEndItem == anchor->mStartItem );
-
-        bool edgeConditionStartStart = item->mStartEdge == anchor->mStartEdge;
-        bool edgeConditionEndEnd = item->mEndEdge == anchor->mEndEdge;
-        bool edgeConditionStartEnd = item->mStartEdge == anchor->mEndEdge;
-        bool edgeConditionEndStart = item->mEndEdge == anchor->mStartEdge;
-
-
-        if((idConditionStartStart || itemConditionStartStart) &&
-            (idConditionEndEnd || itemConditionEndEnd) &&
-            (edgeConditionStartStart) &&
-            (edgeConditionEndEnd) ){
-                modified = true;
-                item->mValue = anchor->mValue;
+        if( ( idConditionStartStart( item, anchor ) || itemConditionStartStart( item, anchor ) ) &&
+            ( idConditionEndEnd( item, anchor ) || itemConditionEndEnd( item, anchor ) ) &&
+            ( edgeConditionStartStart( item, anchor ) ) &&
+            ( edgeConditionEndEnd( item, anchor ) ) ){
+                item->setSizePolicy( anchor->sizePolicy() );
+                item->setMinimumLength( anchor->minimumLength() );
+                item->setPreferredLength( anchor->preferredLength() );
+                item->setMaximumLength( anchor->maximumLength() );
+                item->setDirection( anchor->direction() );
                 delete anchor;
-                break;
-        } else if( (idConditionStartEnd || itemConditionStartEnd) &&
-            (idConditionEndStart || itemConditionEndStart) &&
-            (edgeConditionStartEnd) &&
-            (edgeConditionEndStart) ){
-                modified = true;
-                item->mValue = -anchor->mValue;
+                return item;
+        } else if( ( idConditionStartEnd( item, anchor ) || itemConditionStartEnd( item, anchor ) ) &&
+            ( idConditionEndStart( item, anchor )  || itemConditionEndStart( item, anchor ) ) &&
+            ( edgeConditionStartEnd( item, anchor ) ) &&
+            ( edgeConditionEndStart( item, anchor ) ) ){
+                item->setSizePolicy( anchor->sizePolicy() );
+                item->setMinimumLength( anchor->minimumLength() );
+                item->setPreferredLength( anchor->preferredLength() );
+                item->setMaximumLength( anchor->maximumLength() );
+                item->setDirection( ( anchor->direction() == HbAnchor::Positive )?( HbAnchor::Negative ):( HbAnchor::Positive ) );
                 delete anchor;
-                break;
+                return item;
         }
     }
 
-    if (!modified) {
-        if( anchor->mStartItem != 0 ){
-            anchor->mStartId = mMeshMap.value( anchor->mStartItem );
-        } else if( ! anchor->mStartId.isNull() ) {
-            anchor->mStartItem = mMeshMap.key( anchor->mStartId );
-        }
-
-        if( anchor->mEndItem != 0 ){
-            anchor->mEndId = mMeshMap.value( anchor->mEndItem );
-        } else if( ! anchor->mEndId.isNull() ) {
-            anchor->mEndItem = mMeshMap.key( anchor->mEndId );
-        }
-
-        addItemIfNeeded( anchor->mStartItem );
-        addItemIfNeeded( anchor->mEndItem );
-
-        mAllAnchors.append(anchor);
+    if( anchor->startItem() != 0 ){
+        anchor->d_ptr->mStartId = mItemToNodeIdMap.value( anchor->startItem() );
+    } else if( ! anchor->startNodeId().isNull() ) {
+        anchor->d_ptr->mStartItem = mItemToNodeIdMap.key( anchor->startNodeId() );
     }
 
-    return true;
+    if( anchor->endItem() != 0 ){
+        anchor->d_ptr->mEndId = mItemToNodeIdMap.value( anchor->endItem() );
+    } else if( ! anchor->endNodeId().isNull() ) {
+        anchor->d_ptr->mEndItem = mItemToNodeIdMap.key( anchor->endNodeId() );
+    }
+
+    addItemIfNeeded( anchor->startItem() );
+    addItemIfNeeded( anchor->endItem() );
+
+    anchor->d_ptr->mParent = q;
+
+    mAllAnchors.append(anchor);
+
+    return anchor;
 }
 
 void HbAnchorLayoutPrivate::removeItemIfNeeded( QGraphicsLayoutItem *item )
@@ -1413,7 +1429,7 @@ void HbAnchorLayoutPrivate::removeItemIfNeeded( QGraphicsLayoutItem *item )
 
     for ( int i = 0; i < mAllAnchors.size(); i++ ) {
         HbAnchor *anchor = mAllAnchors.at(i);
-        if ( ( anchor->mStartItem == item ) || ( anchor->mEndItem == item ) ) {
+        if ( ( anchor->startItem() == item ) || ( anchor->endItem() == item ) ) {
             return;
         }
     }
@@ -1490,27 +1506,25 @@ HbAnchorLayout::~HbAnchorLayout()
     \param endItem target item.
     \param endEdge target edge.
     \param length spacing (in pixels).
-    \return true if anchor was successfully added, false otherwise
+    \return created anchor if it was successfully added, or zero otherwise
 */
-bool HbAnchorLayout::setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge, qreal length )
+HbAnchor *HbAnchorLayout::setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, QGraphicsLayoutItem *endItem, Edge endEdge, qreal length )
 {
     Q_D( HbAnchorLayout );
 
-    HbAnchor *anchor = new HbAnchor();
-    anchor->mStartItem = startItem;
-    anchor->mStartEdge = startEdge;
-    anchor->mEndItem = endItem;
-    anchor->mEndEdge = endEdge;
-    anchor->mValue = length;
 
-    if (d->setAnchor(anchor)) {
+    HbAnchor *anchor = new HbAnchor( startItem, startEdge, endItem, endEdge, length );
+
+    HbAnchor *result = d->setAnchor( anchor );
+
+    if( result ) {
         invalidate();
-        return true;
+        return result;
     }
 
     delete anchor;
 
-    return false;
+    return 0;
 }
 
 /*!
@@ -1521,27 +1535,45 @@ bool HbAnchorLayout::setAnchor( QGraphicsLayoutItem *startItem, Edge startEdge, 
     \param endId end id.
     \param endEdge end edge.
     \param length spacing value for all edges starting from (\a startId, \a startEdge).
-    \return true if success, false otherwise.
+    \return created anchor if it was successfully added, or zero otherwise
 */
-bool HbAnchorLayout::setAnchor( const QString& startId, Edge startEdge, const QString& endId, Edge endEdge, qreal length )
+HbAnchor *HbAnchorLayout::setAnchor( const QString& startId, Edge startEdge, const QString& endId, Edge endEdge, qreal length )
 {
     Q_D( HbAnchorLayout );
 
-    HbAnchor *anchor = new HbAnchor();
-    anchor->mStartId = startId;
-    anchor->mStartEdge = startEdge;
-    anchor->mEndId = endId;
-    anchor->mEndEdge = endEdge;
-    anchor->mValue = length;
+    HbAnchor *anchor = new HbAnchor( startId, startEdge, endId, endEdge, length );
 
-    if (d->setAnchor(anchor)) {
+    HbAnchor *result = d->setAnchor( anchor );
+
+    if( result ) {
         invalidate();
-        return true;
+        return result;
     }
 
     delete anchor;
 
-    return false;
+    return 0;
+}
+
+
+/*!
+    Set previously created anchor. Ownership is passed to layout.
+
+    \param anchor anchor, created somewhere outside
+    \return reference to updated/created anchor (not necessary the same as in input parameter), or zero if something was wrong.
+*/
+HbAnchor *HbAnchorLayout::setAnchor( HbAnchor *anchor )
+{
+    Q_D( HbAnchorLayout );
+
+    HbAnchor *result = d->setAnchor( anchor );
+
+    if( result ) {
+        invalidate();
+        return result;
+    }
+
+    return 0;
 }
 
 
@@ -1561,19 +1593,18 @@ bool HbAnchorLayout::removeAnchor( const QString& startNodeId, Edge startEdge, c
 
     for (int i = d->mAllAnchors.size() - 1; i >= 0; --i) {
         HbAnchor* anchor = d->mAllAnchors[i];
-        if( ( anchor->mStartId == startNodeId && anchor->mStartEdge == startEdge &&
-                anchor->mEndId == endNodeId && anchor->mEndEdge == endEdge ) ||
-            ( anchor->mStartId == endNodeId && anchor->mStartEdge == endEdge &&
-                anchor->mEndId == startNodeId && anchor->mEndEdge == startEdge ) ){
+        if( ( anchor->startNodeId() == startNodeId && anchor->startEdge() == startEdge &&
+                anchor->endNodeId() == endNodeId && anchor->endEdge() == endEdge ) ||
+            ( anchor->startNodeId() == endNodeId && anchor->startEdge() == endEdge &&
+                anchor->endNodeId() == startNodeId && anchor->endEdge() == startEdge ) ){
             delete d->mAllAnchors.takeAt(i);
             modified = true;
-            break;
         }
     }
 
     if (modified) {
-        d->removeItemIfNeeded( d->mMeshMap.key( startNodeId ) );
-        d->removeItemIfNeeded( d->mMeshMap.key( endNodeId ) );
+        d->removeItemIfNeeded( d->mItemToNodeIdMap.key( startNodeId ) );
+        d->removeItemIfNeeded( d->mItemToNodeIdMap.key( endNodeId ) );
         invalidate();
         return true;
     }
@@ -1601,13 +1632,12 @@ bool HbAnchorLayout::removeAnchor( QGraphicsLayoutItem *startItem, Edge startEdg
 
     for (int i = d->mAllAnchors.size() - 1; i >= 0; --i) {
         HbAnchor* anchor = d->mAllAnchors[i];
-        if( ( anchor->mStartItem == startItem && anchor->mStartEdge == startEdge &&
-                anchor->mEndItem == endItem && anchor->mEndEdge == endEdge ) ||
-                ( anchor->mStartItem == endItem && anchor->mStartEdge == endEdge &&
-                anchor->mEndItem == startItem && anchor->mEndEdge == startEdge ) ){
+        if( ( anchor->startItem() == startItem && anchor->startEdge() == startEdge &&
+                anchor->endItem() == endItem && anchor->endEdge() == endEdge ) ||
+                ( anchor->startItem() == endItem && anchor->startEdge() == endEdge &&
+                anchor->endItem() == startItem && anchor->endEdge() == startEdge ) ){
             delete d->mAllAnchors.takeAt(i);
             modified = true;
-            break;
         }
     }
 
@@ -1621,6 +1651,64 @@ bool HbAnchorLayout::removeAnchor( QGraphicsLayoutItem *startItem, Edge startEdg
 }
 
 
+/*!
+
+    Removes and deletes an anchor (\a anchor) from layout.
+
+    If layout contains exactly the same anchor, with the same reference, then only this
+    one is removed and deleted. Otherwise all anchors with the same start and end points
+    are removed and deleted ( \a anchor is not deleted in this case because this instance
+    is not in layout ).
+
+    Notice: The item will be removed from the layout if this is the last
+    anchor connecting the item.
+
+    \param anchor anchor to be removed.
+    \return true if anchor was successfully removed, false otherwise
+*/
+bool HbAnchorLayout::removeAnchor( HbAnchor *anchor )
+{
+    Q_D( HbAnchorLayout );
+
+    if( d->mAllAnchors.removeOne( anchor ) ) {
+        d->removeItemIfNeeded( anchor->startItem() );
+        d->removeItemIfNeeded( anchor->endItem() );
+        delete anchor;
+        invalidate();
+        return true;
+    }
+
+    bool modified = true;
+
+    for (int i = d->mAllAnchors.size() - 1; i >= 0; --i) {
+        HbAnchor* item = d->mAllAnchors[i];
+        if( ( ( idConditionStartStart( item, anchor ) || itemConditionStartStart( item, anchor ) ) &&
+            ( idConditionEndEnd( item, anchor ) || itemConditionEndEnd( item, anchor ) ) &&
+            ( edgeConditionStartStart( item, anchor ) ) &&
+            ( edgeConditionEndEnd( item, anchor ) ) )    // condition for same direction anchor
+
+            ||
+
+            ( ( idConditionStartEnd( item, anchor ) || itemConditionStartEnd( item, anchor ) ) &&
+            ( idConditionEndStart( item, anchor )  || itemConditionEndStart( item, anchor ) ) &&
+            ( edgeConditionStartEnd( item, anchor ) ) &&
+            ( edgeConditionEndStart( item, anchor ) ) ) ){  // condition for opposite direction anchor
+            delete d->mAllAnchors.takeAt(i);
+            modified = true;
+            break;
+        }
+    }
+
+    if( modified ) {
+        d->removeItemIfNeeded( anchor->startItem() );
+        d->removeItemIfNeeded( anchor->endItem() );
+        invalidate();
+        return true;
+    }
+
+
+    return modified;
+}
 
 /*!
     Removes all anchors starting or ending to \a nodeId.
@@ -1638,9 +1726,9 @@ bool HbAnchorLayout::removeNodeId( const QString& nodeId )
 
     for (int i = d->mAllAnchors.size() - 1; i >= 0; --i) {
         HbAnchor *anchor = d->mAllAnchors.at(i);
-        if (anchor->mStartId == nodeId || anchor->mEndId == nodeId) {
-            QGraphicsLayoutItem *startItem = anchor->mStartItem;
-            QGraphicsLayoutItem *endItem = anchor->mEndItem;
+        if (anchor->startNodeId() == nodeId || anchor->endNodeId() == nodeId) {
+            QGraphicsLayoutItem *startItem = anchor->startItem();
+            QGraphicsLayoutItem *endItem = anchor->endItem();
 
             delete d->mAllAnchors.takeAt(i);
             d->removeItemIfNeeded( startItem );
@@ -1694,35 +1782,35 @@ bool HbAnchorLayout::setMapping( QGraphicsLayoutItem *item, const QString& nodeI
 
         for( int i = 0; i < d->mAllAnchors.size(); i++ ) {
             HbAnchor *anchor = d->mAllAnchors.at(i);
-            if( anchor->mStartItem == item ) {
-                anchor->mStartId = nodeId;
+            if( anchor->startItem() == item ) {
+                anchor->d_ptr->mStartId = nodeId;
                 modified = true;
-            } else if( anchor->mStartId == nodeId ) {
-                anchor->mStartItem = item;
+            } else if( anchor->startNodeId() == nodeId ) {
+                anchor->d_ptr->mStartItem = item;
                 modified = true;
             }
 
-            if( anchor->mEndItem == item ) {
-                anchor->mEndId = nodeId;
+            if( anchor->endItem() == item ) {
+                anchor->d_ptr->mEndId = nodeId;
                 modified = true;
-            } else if( anchor->mEndId == nodeId ) {
-                anchor->mEndItem = item;
+            } else if( anchor->endNodeId() == nodeId ) {
+                anchor->d_ptr->mEndItem = item;
                 modified = true;
             }
 
         }
 
         // Remove previous item -> id.
-        HbMeshItemMapIterator it = d->mMeshMap.begin();
-        while ( it != d->mMeshMap.end() ) {
+        ItemToNodeIdMapIterator it = d->mItemToNodeIdMap.begin();
+        while ( it != d->mItemToNodeIdMap.end() ) {
             if ( it.value() == nodeId ) {
-                it = d->mMeshMap.erase( it );
+                it = d->mItemToNodeIdMap.erase( it );
             } else {
                 ++it;
             }
         }
         d->addItemIfNeeded( item );
-        d->mMeshMap.insert( item, nodeId );
+        d->mItemToNodeIdMap.insert( item, nodeId );
     } else {
         return false;
     }
@@ -1754,19 +1842,19 @@ bool HbAnchorLayout::removeMapping( QGraphicsLayoutItem *item )
     for( int i = 0; i < d->mAllAnchors.size(); i++ ) {
         HbAnchor *anchor = d->mAllAnchors.at(i);
 
-        if( anchor->mStartItem == item ) {
-            anchor->mStartId = QString();
+        if( anchor->startItem() == item ) {
+            anchor->d_ptr->mStartId = QString();
             modified = true;
         }
 
-        if( anchor->mEndItem == item ) {
-            anchor->mEndId = QString();
+        if( anchor->endItem() == item ) {
+            anchor->d_ptr->mEndId = QString();
             modified = true;
         }
     }
 
 
-    d->mMeshMap.remove(item);
+    d->mItemToNodeIdMap.remove(item);
 
     if( modified ){
         invalidate();
@@ -1795,22 +1883,22 @@ bool HbAnchorLayout::removeMapping( const QString& nodeId )
     for( int i = 0; i < d->mAllAnchors.size(); i++ ) {
         HbAnchor *anchor = d->mAllAnchors.at(i);
 
-        if( anchor->mStartId == nodeId ) {
-            anchor->mStartItem = 0;
+        if( anchor->startNodeId() == nodeId ) {
+            anchor->d_ptr->mStartItem = 0;
             modified = true;
         }
 
-        if( anchor->mEndId == nodeId ) {
-            anchor->mEndItem = 0;
+        if( anchor->endNodeId() == nodeId ) {
+            anchor->d_ptr->mEndItem = 0;
             modified = true;
         }
     }
 
 
-    HbMeshItemMapIterator it = d->mMeshMap.begin();
-    while ( it != d->mMeshMap.end() ) {
+    ItemToNodeIdMapIterator it = d->mItemToNodeIdMap.begin();
+    while ( it != d->mItemToNodeIdMap.end() ) {
         if ( it.value() == nodeId ) {
-            it = d->mMeshMap.erase( it );
+            it = d->mItemToNodeIdMap.erase( it );
         } else {
             ++it;
         }
@@ -1829,17 +1917,17 @@ bool HbAnchorLayout::removeMapping( const QString& nodeId )
 void HbAnchorLayout::removeMappings()
 {
     Q_D( HbAnchorLayout );
-    d->mMeshMap.clear();
+    d->mItemToNodeIdMap.clear();
 
     for( int i = 0; i < d->mAllAnchors.size(); i++ ) {
         HbAnchor *anchor = d->mAllAnchors.at(i);
 
-        if( !anchor->mStartId.isNull() ) {
-            anchor->mStartItem = 0;
+        if( !anchor->startNodeId().isNull() ) {
+            anchor->d_ptr->mStartItem = 0;
         }
 
-        if( !anchor->mEndId.isNull() ) {
-            anchor->mEndItem = 0;
+        if( !anchor->endNodeId().isNull() ) {
+            anchor->d_ptr->mEndItem = 0;
         }
 
     }
@@ -1856,17 +1944,14 @@ void HbAnchorLayoutPrivate::addItemIfNeeded(QGraphicsLayoutItem *item)
     Q_Q(HbAnchorLayout);
 
     if (!item) {
-        //qWarning() << "HbAnchorLayout::addItemIfNeeded : item is NULL";
         return;
     }
 
     if (item == q) {
-        //qWarning() << "HbAnchorLayout::addItemIfNeeded : layout cannot be added";
         return;
     }
 
     if (mItems.contains(item)) {
-        //qWarning() << "HbAnchorLayout::addItemIfNeeded : item is already in layout";
         return;
     }
 
@@ -1922,8 +2007,8 @@ bool HbAnchorLayout::isValid() const
 QString HbAnchorLayout::nodeId( QGraphicsLayoutItem *item ) const
 {
     Q_D( const HbAnchorLayout );
-    if( d->mMeshMap.contains( item ) ) {
-        return d->mMeshMap.value( item );
+    if( d->mItemToNodeIdMap.contains( item ) ) {
+        return d->mItemToNodeIdMap.value( item );
     }
     return QString();
 }
@@ -1938,11 +2023,11 @@ QStringList HbAnchorLayout::nodeIds() const
     QStringList list;
     int c = d->mAllAnchors.count();
     while (c--) {
-        QString id = d->mAllAnchors.at(c)->mStartId;
+        QString id = d->mAllAnchors.at(c)->startNodeId();
         if (!list.contains(id) && !id.isNull()) {
             list.append(id);
         }
-        id = d->mAllAnchors.at(c)->mEndId;
+        id = d->mAllAnchors.at(c)->endNodeId();
         if (!list.contains(id) && !id.isNull()) {
             list.append(id);
         }
@@ -1958,7 +2043,7 @@ QStringList HbAnchorLayout::nodeIds() const
 QGraphicsLayoutItem *HbAnchorLayout::itemByNodeId( const QString& nodeId ) const
 {
     Q_D( const HbAnchorLayout );
-    return d->mMeshMap.key( nodeId );
+    return d->mItemToNodeIdMap.key( nodeId );
 }
 
 
@@ -1974,13 +2059,13 @@ void HbAnchorLayout::removeAt(int index)
     QGraphicsLayoutItem *item = itemAt( index );
     if ( item ) {
         for ( int i = d->mAllAnchors.count() - 1; i >= 0; i-- ) {
-            if ( ( ( d->mAllAnchors.at(i)->mStartItem == item ) && ( d->mAllAnchors.at(i)->mStartId.isNull() ) ) ||
-                 ( ( d->mAllAnchors.at(i)->mEndItem == item ) && ( d->mAllAnchors.at(i)->mEndId.isNull() ) ) ) {
+            if ( ( ( d->mAllAnchors.at(i)->startItem() == item ) && ( d->mAllAnchors.at(i)->startNodeId().isNull() ) ) ||
+                 ( ( d->mAllAnchors.at(i)->endItem() == item ) && ( d->mAllAnchors.at(i)->endNodeId().isNull() ) ) ) {
                     delete d->mAllAnchors.takeAt(i);
             }
         }
 
-        removeMapping( d->mMeshMap.value(item) );
+        removeMapping( d->mItemToNodeIdMap.value(item) );
         item->setParentLayoutItem( 0 );
         d->mItems.removeAt( index );
     }

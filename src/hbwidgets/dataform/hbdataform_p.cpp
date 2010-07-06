@@ -83,7 +83,9 @@ void HbDataFormPrivate::init()
 void  HbDataFormPrivate::_q_page_changed(int index)
 {
     Q_Q(const HbDataForm);
-    QModelIndex childIndex = q->model()->index(index,0);
+
+    QModelIndex childIndex = pageModelIndex(index);
+    //QModelIndex childIndex = q->model()->index(index,0);
     HbDataFormModelItem::DataItemType itemType =
         static_cast<HbDataFormModelItem::DataItemType>(
         (childIndex.data(HbDataFormModelItem::ItemTypeRole)).toInt());
@@ -103,13 +105,16 @@ void  HbDataFormPrivate::_q_page_changed(int index)
     QModelIndex changedIndex = model->index(index, 0);*/
     if(itemType == HbDataFormModelItem::FormPageItem) {
         if(index != mHeadingWidget->mActivePage) {
-            QModelIndex prevPageIndex = q->model()->index(mHeadingWidget->mActivePage,0);
-            QModelIndex newPageIndex = q->model()->index(index,0);
+            QModelIndex prevPageIndex = pageModelIndex( mHeadingWidget->mActivePage );
+            QModelIndex newPageIndex = pageModelIndex( index );
             if(prevPageIndex.isValid()) {
                 HbDataGroup *prevPage = static_cast<HbDataGroup *>(
                                                q->itemByIndex(prevPageIndex));
                 if(prevPage) {
                     HbDataGroupPrivate::d_ptr(prevPage)->setExpanded(false);
+                } else {
+                    mContainer->setItemTransientStateValue(prevPageIndex, "expanded", false);
+
                 }
             }
             if(newPageIndex.isValid()) {
@@ -117,6 +122,8 @@ void  HbDataFormPrivate::_q_page_changed(int index)
                                                q->itemByIndex(newPageIndex));
                 if(newPage) {
                     HbDataGroupPrivate::d_ptr(newPage)->setExpanded(true);
+                } else {
+                    mContainer->setItemTransientStateValue(newPageIndex, "expanded", true);
                 }
             }
             mHeadingWidget->mActivePage = index;
@@ -124,6 +131,35 @@ void  HbDataFormPrivate::_q_page_changed(int index)
     }
 }
 
+/*
+    Function to return valid modelIndex for corresponding formpage combo index.
+*/
+QModelIndex HbDataFormPrivate::pageModelIndex(int index) const 
+{
+    const Q_Q(HbDataForm);
+    int pageIndex = -1;
+    QModelIndex modelIndex;
+    
+    // Make sure that the child is groupPage type and current item is group.
+    if( index >= 0) {
+
+        HbDataFormModelItem *groupModelItem = static_cast<HbDataFormModel*>(q->model())->invisibleRootItem();
+        int childCount = groupModelItem->childCount();
+
+        for( int i = 0; i < childCount; i++) {
+            HbDataFormModelItem *child = groupModelItem->childAt(i);
+            if( child->type() == HbDataFormModelItem::FormPageItem ) {
+                pageIndex ++;
+                // get the index of groupPage
+                if(pageIndex == index) {
+                    modelIndex = static_cast<HbDataFormModel*>(q->model())->indexFromItem(child);
+                    break;                  
+                }
+            }        
+        }
+    }
+    return modelIndex;
+}
 
 /*!
     Creates a DataForm Page \a page in DataForm .
@@ -145,7 +181,7 @@ void HbDataFormPrivate::addFormPage(const QString& page)
     if(!mHeadingWidget->mPageCombo) {
         mHeadingWidget->createPrimitives();
         mHeadingWidget->mPageCombo = new HbComboBox(mHeadingWidget);
-		HbStyle::setItemName(mHeadingWidget->mPageCombo,"dataForm_Combo");
+        HbStyle::setItemName(mHeadingWidget->mPageCombo,"dataForm_Combo");
         QEvent polishEvent(QEvent::Polish);
         QCoreApplication::sendEvent(mHeadingWidget->mPageCombo, &polishEvent);
         // setFormHeading to the layout
@@ -181,30 +217,37 @@ void HbDataFormPrivate::removeFormPage(const QString& page)
     Q_Q(HbDataForm);    
 
     if(mHeadingWidget && mHeadingWidget->mPageCombo) {
+        // if we are emoving the current page
         if(mHeadingWidget->mPageCombo->currentText() == page){
-            mHeadingWidget->mPageCombo->setCurrentIndex(mHeadingWidget->mActivePage+1);
+        // if we are removing the last page then set the current page as 0th
+            if( mHeadingWidget->mPageCombo->findText(page) + 1 == mHeadingWidget->mPageCombo->count()) {
+                mHeadingWidget->mPageCombo->setCurrentIndex(0);
+            } else {// set next page as the curent page
+                mHeadingWidget->mPageCombo->setCurrentIndex(mHeadingWidget->mPageCombo->findText(page) + 1);
+            }
         }
     }
-        QObject::disconnect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+    QObject::disconnect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
 
-        mHeadingWidget->mPageCombo->removeItem(mHeadingWidget->mPageCombo->findText(page));
-        mHeadingWidget->mActivePage = mHeadingWidget->mPageCombo->currentIndex();
+    mHeadingWidget->mPageCombo->removeItem(mHeadingWidget->mPageCombo->findText(page));
+    mHeadingWidget->mActivePage = mHeadingWidget->mPageCombo->currentIndex();
         
-         QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+    QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
+
 
    mHeadingWidget->callPolish();    
 }
 
-void HbDataFormPrivate::_q_item_displayed(const QModelIndex &index)
+/*void HbDataFormPrivate::_q_item_displayed(const QModelIndex &index)
 {
     Q_Q( HbDataForm);
     emit q->itemShown(index);
     emit q->activated(index);
     qWarning("activated signal will not be emitted when items are created ," 
         "instead itemShown SIGNAL should be used");
-}
+}*/
 
 void HbDataFormPrivate::makeConnection(QModelIndex index, HbWidget* widget)
 {

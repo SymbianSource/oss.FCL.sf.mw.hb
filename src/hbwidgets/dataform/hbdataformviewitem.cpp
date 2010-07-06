@@ -25,6 +25,7 @@
 
 #include "hbdataformviewitem.h"
 #include "hbdataformviewitem_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 
 #include "hbdataformmodelitem_p.h"
 #include "hbdataform_p.h"
@@ -398,7 +399,11 @@ void HbDataFormViewItem::setExpanded(bool expanded)
     // Expansion is valid only for group ,form page and group page
     if( d->mType < HbDataFormModelItem::SliderItem ) {
         static_cast<HbDataGroup*>(this)->setExpanded(expanded);
-    } 
+    }  else {
+        HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+        static_cast<QGraphicsWidget *>( d->mSharedData->mItemView->contentWidget( ) ) );
+        container->setItemTransientStateValue(d->mIndex, "expanded", expanded);
+    }
 }
 
 /*!
@@ -412,13 +417,18 @@ bool HbDataFormViewItem::isExpanded() const
     Q_D( const HbDataFormViewItem);
     // Expansion is valid only for group ,form page and group page
     if( d->mType < HbDataFormModelItem::SliderItem ) {
-        HbDataGroup *group = qobject_cast<HbDataGroup *>(const_cast<HbDataFormViewItem*>(this));
+        HbDataGroup *group = qobject_cast< HbDataGroup *>(const_cast<HbDataFormViewItem*>(this));
         if( group ) {
             return group->isExpanded();
-        } else {
-            return false;
         }
     } 
+    if(d->mSharedData->mItemView) {
+        HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+            static_cast<QGraphicsWidget *>( d->mSharedData->mItemView->contentWidget( ) ) );
+        if(container) {
+            return container->itemTransientState(d->mIndex).value("expanded").toBool();
+        }
+    }
     return false;
 }
 
@@ -435,26 +445,25 @@ bool HbDataFormViewItem::isExpanded() const
 HbWidget* HbDataFormViewItem::dataItemContentWidget()const
 {
     Q_D(const HbDataFormViewItem);
-    HbWidget *widget = d->mContentWidget;;
+    HbWidget *widget = d->mContentWidget;
 
-    switch( d->mType ) {
-        case HbDataFormModelItem::RadioButtonListItem:
-            {
+    if(d->mContentWidget) {
+        switch( d->mType ) {
+            case HbDataFormModelItem::RadioButtonListItem:{
                 widget = static_cast<HbRadioItem*>(d->mContentWidget)->createRadioButton();
             }
             break;
-        case HbDataFormModelItem::MultiselectionItem:
-            {
+            case HbDataFormModelItem::MultiselectionItem:{
                 widget = NULL;
             }
             break;
-        case HbDataFormModelItem::ToggleValueItem:
-            {
+            case HbDataFormModelItem::ToggleValueItem:{
                 widget = static_cast<HbToggleItem*>(d->mContentWidget)->contentWidget();
             }
             break;
-        default:
+            default:
             break;
+        }
     }
     return widget;
 }

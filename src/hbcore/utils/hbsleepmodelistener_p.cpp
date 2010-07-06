@@ -32,7 +32,7 @@
 
 #include <hwrmlight.h>
 #include <hwrmextendedlight.h>
-#include "hbcorepskeys_p.h"
+#include "hbcorepskeys_r.h"
 
 // app uid of sleepmode application
 const TUid KSleepModeProperty = {0x101F7A01};
@@ -51,7 +51,7 @@ CSleepModeListenerPrivate::~CSleepModeListenerPrivate()
 }
 
 CSleepModeListenerPrivate::CSleepModeListenerPrivate()
-    : CActive(EPriorityNormal)
+    : CActive(EPriorityNormal), lastStatus(0), lastStatusValid(false)
 {
     User::LeaveIfError(sleepModeState.Attach(KSleepModeProperty, KSleepModeOn));
     CActiveScheduler::Add(this);
@@ -75,20 +75,24 @@ void CSleepModeListenerPrivate::RunL()
             TInt index = currentStatus.FindInOrder(KHWRMLightFirstTarget, FindByTarget);
             if (index >= 0 && index < KHWRMLightMaxTargets) {
                 status = static_cast<CHWRMLight::TLightStatus>(currentStatus[index].iStatus);
-                RProcess process;
-                //If prosess is something else than themeserver
-                if (process.SecureId().iId != KHbPsHardwareCoarseOrientationCategoryUid.iUid) {
-                    QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
-                    for (int i = 0; i < mainWindowList.count(); ++i) {
-                        if (status == CHWRMLight::ELightOff) {
-                            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
-                        } else {
-                            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
+                if (!lastStatusValid || lastStatus != status) {
+                    lastStatusValid = true;
+                    lastStatus = status;
+                    RProcess process;
+                    // If process is something else than themeserver
+                    if (process.SecureId().iId != KHbPsHardwareCoarseOrientationCategoryUid.iUid) {
+                        QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
+                        for (int i = 0; i < mainWindowList.count(); ++i) {
+                            if (status == CHWRMLight::ELightOff) {
+                                mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
+                            } else {
+                                mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
+                            }
                         }
+                    } else {
+                        HbEvent event(status == CHWRMLight::ELightOff ? HbEvent::SleepModeEnter : HbEvent::SleepModeExit);
+                        QCoreApplication::sendEvent(qApp, &event);
                     }
-                } else {
-                    HbEvent event(status == CHWRMLight::ELightOff ? HbEvent::SleepModeEnter : HbEvent::SleepModeExit);
-                    QCoreApplication::sendEvent(qApp, &event);
                 }
             }
         }

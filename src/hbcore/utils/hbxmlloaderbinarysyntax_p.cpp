@@ -143,7 +143,6 @@ bool HbXmlLoaderBinarySyntax::processDocument( const QString &section )
         case HbXml::ActionPushDocument: result = parsePushDocument(); break;
         case HbXml::ActionPushObject: result = parsePushObject(); break;
         case HbXml::ActionPushWidget: result = parsePushWidget(); break;
-        case HbXml::ActionPushSpacerItem: result = parsePushSpacerItem(); break;
         case HbXml::ActionPushConnect: result = parsePushConnect(); break;
         case HbXml::ActionPushProperty: result = parsePushProperty(); break;
         case HbXml::ActionPushRef: result = parsePushRef(); break;
@@ -154,9 +153,8 @@ bool HbXmlLoaderBinarySyntax::processDocument( const QString &section )
         case HbXml::ActionSetSizeHint: result = parseSetSizeHint(); break;
         case HbXml::ActionSetToolTip: result = parseSetToolTip(); break;
         case HbXml::ActionCreateAnchorLayout: result = parseCreateAnchorLayout(); break;
-        case HbXml::ActionAddAnchorLayoutEdge: result = parseAddAnchorLayoutEdge(); break;
-        case HbXml::ActionCreateMeshLayout: result = parseCreateMeshLayout(); break;
-        case HbXml::ActionAddMeshLayoutEdge: result = parseAddMeshLayoutEdge(); break;
+        case HbXml::ActionAddAnchorLayoutItem: result = parseAddAnchorLayoutItem(); break;
+        case HbXml::ActionSetAnchorLayoutMapping: result = parseSetAnchorLayoutMapping(); break;
         case HbXml::ActionCreateGridLayout: result = parseCreateGridLayout(); break;
         case HbXml::ActionAddGridLayoutCell: result = parseAddGridLayoutCell(); break;
         case HbXml::ActionSetGridLayoutRowProperties: result = parseSetGridLayoutRowProperties(); break;
@@ -267,13 +265,6 @@ bool HbXmlLoaderBinarySyntax::parsePushWidget()
     return mActions->pushWidget(type, name, role, plugin);
 }
 
-bool HbXmlLoaderBinarySyntax::parsePushSpacerItem()
-{
-    QString name, widget;
-    mIn >> name >> widget;
-    return mActions->pushSpacerItem(name, widget);
-}
-
 bool HbXmlLoaderBinarySyntax::parsePushConnect()
 {
     QString srcName, signalName, dstName, slotName;
@@ -287,6 +278,9 @@ bool HbXmlLoaderBinarySyntax::parsePushProperty()
     HbXmlVariable buffer;
     mIn >> propertyName >> buffer;
     bool res = mActions->pushProperty(propertyName, buffer);
+    if ( !res ) {
+        qDebug() << "HbXmlLoaderBinarySyntax, failed at pushProperty " << propertyName;
+    }
     delete[] propertyName;
     return res;
 }
@@ -388,41 +382,65 @@ bool HbXmlLoaderBinarySyntax::parseSetToolTip()
 bool HbXmlLoaderBinarySyntax::parseCreateAnchorLayout()
 {
     QString widget;
-    mIn >> widget;
-    return mActions->createAnchorLayout(widget);
+    bool modify;
+    mIn >> widget >> modify;
+    return mActions->createAnchorLayout(widget, modify);
 }
 
-bool HbXmlLoaderBinarySyntax::parseAddAnchorLayoutEdge()
+bool HbXmlLoaderBinarySyntax::parseAddAnchorLayoutItem()
 {
-    QString src, dst, spacer;
-    quint8 srcEdge, dstEdge;
-    HbXmlLengthValue spacing;
-    mIn >> src >> srcEdge >> dst >> dstEdge >> spacing >> spacer;
-    return mActions->addAnchorLayoutEdge(src, (Hb::Edge)srcEdge, dst, (Hb::Edge)dstEdge, spacing, spacer);
+    QString src, srcId, dst, dstId, anchorId;
+    Hb::Edge srcEdge, dstEdge;
+    HbXmlLengthValue minLength, prefLength, maxLength;
+    QSizePolicy::Policy policy; 
+    QSizePolicy::Policy *policy_p = 0;
+    HbAnchor::Direction dir;
+    HbAnchor::Direction *dir_p = 0;
+
+    bool temp;
+    quint8 tempEnum;
+
+    mIn >> src >> srcId >> tempEnum;
+    srcEdge = (Hb::Edge)tempEnum;
+
+    mIn >> dst >> dstId >> tempEnum;
+    dstEdge = (Hb::Edge)tempEnum;
+
+    mIn >> minLength >> prefLength >> maxLength;
+
+    // Optional parameters
+    mIn >> temp;
+    if ( temp ) {
+        mIn >> tempEnum;
+        policy = (QSizePolicy::Policy)tempEnum;
+        policy_p = &policy;
+    }
+    mIn >> temp;
+    if ( temp ) {
+        mIn >> tempEnum;
+        dir = (HbAnchor::Direction)tempEnum;
+        dir_p = &dir;
+    }
+    mIn >> anchorId;
+
+    return mActions->addAnchorLayoutItem( src, srcId, srcEdge, dst, dstId, dstEdge, minLength, prefLength, maxLength, policy_p, dir_p, anchorId );
 }
 
-bool HbXmlLoaderBinarySyntax::parseCreateMeshLayout()
+bool HbXmlLoaderBinarySyntax::parseSetAnchorLayoutMapping()
 {
-    QString widget;
-    mIn >> widget;
-    return mActions->createMeshLayout(widget);
-}
-
-bool HbXmlLoaderBinarySyntax::parseAddMeshLayoutEdge()
-{
-    QString src, dst, spacer;
-    quint8 srcEdge, dstEdge;
-    HbXmlLengthValue spacing;
-    mIn >> src >> srcEdge >> dst >> dstEdge >> spacing >> spacer;
-    return mActions->addMeshLayoutEdge(src, (Hb::Edge)srcEdge, dst, (Hb::Edge)dstEdge, spacing, spacer);
+    QString item, id;
+    bool remove;
+    mIn >> item >> id >> remove;
+    return mActions->setAnchorLayoutMapping(item, id, remove);
 }
 
 bool HbXmlLoaderBinarySyntax::parseCreateGridLayout()
 {
     QString widget;
     HbXmlLengthValue spacing;
-    mIn >> widget >> spacing;
-    return mActions->createGridLayout(widget, spacing);
+    bool modify;
+    mIn >> widget >> spacing >> modify;
+    return mActions->createGridLayout(widget, spacing, modify);
 }
 
 bool HbXmlLoaderBinarySyntax::parseAddGridLayoutCell()
@@ -553,6 +571,7 @@ bool HbXmlLoaderBinarySyntax::parseCreateLinearLayout()
     Qt::Orientation orientation;
     Qt::Orientation *orientation_p = 0;
     HbXmlLengthValue spacing;
+    bool modify;
     mIn >> widget;
 
     // Optional parameter
@@ -564,9 +583,9 @@ bool HbXmlLoaderBinarySyntax::parseCreateLinearLayout()
         orientation = (Qt::Orientation)tempEnum;
         orientation_p = &orientation;
     }
-    mIn >> spacing;
+    mIn >> spacing >> modify;
 
-    return mActions->createLinearLayout(widget, orientation_p, spacing);
+    return mActions->createLinearLayout(widget, orientation_p, spacing, modify);
 }
 
 bool HbXmlLoaderBinarySyntax::parseAddLinearLayoutItem()
@@ -640,8 +659,9 @@ bool HbXmlLoaderBinarySyntax::parseSetLayoutContentsMargins()
 bool HbXmlLoaderBinarySyntax::parseCreateStackedLayout()
 {
     QString widget;
-    mIn >> widget;
-    return mActions->createStackedLayout(widget);
+    bool modify;
+    mIn >> widget >> modify;
+    return mActions->createStackedLayout(widget, modify);
 }
 
 bool HbXmlLoaderBinarySyntax::parseAddStackedLayoutItem()

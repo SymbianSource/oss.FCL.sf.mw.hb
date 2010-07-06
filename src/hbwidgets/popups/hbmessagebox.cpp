@@ -23,9 +23,9 @@
 **
 ****************************************************************************/
 
+#include "hbmessagebox_p.h"
 #include "hbnamespace_p.h"
 #include <hbmessagebox.h>
-#include "hbmessagebox_p.h"
 #include <hbstyleoptionmessagebox_p.h>
 #include <hbmainwindow.h>
 #include <hbaction.h>
@@ -37,6 +37,9 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QTimer>
 #include <QTextOption>
+#ifdef Q_OS_SYMBIAN
+#include <systemtoneservice.h>
+#endif
 
 class HbStyle;
 
@@ -67,8 +70,14 @@ public:
     void setHtmlText(const QString &text)
     {
         mText = text;
-        setHtml(text);
-    }
+        if(Qt::mightBeRichText(mText)){
+            setHtml(text);
+        }
+        else {
+             QString htmlString = Qt::convertFromPlainText(mText);
+             setHtml(htmlString);
+        }
+     }
 
     QString htmlText() const
     {
@@ -153,6 +162,34 @@ void HbMessageBoxPrivate::init()
         
     }
 
+}
+void HbMessageBoxPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
+{
+#ifdef Q_OS_SYMBIAN 
+	
+    	if ( (status.reason == Hb::EffectFinished) ||  ( (status.reason == Hb::EffectCancelled) && (!mStartEffect) ))  {
+	        CSystemToneService *pSystemTone = systemToneService();
+			if(!pSystemTone) {
+				return ;
+			}
+			switch(mMessageBoxType) {
+    		case HbMessageBox::MessageTypeInformation:
+    			pSystemTone->PlayTone(CSystemToneService::EInformationBeep); 
+    			break;
+    		case HbMessageBox::MessageTypeWarning:
+    			pSystemTone->PlayTone(CSystemToneService::EWarningBeep); 
+    			break;
+    		case HbMessageBox::MessageTypeQuestion:
+    			pSystemTone->PlayTone(CSystemToneService::EConfirmationBeep); 
+        	break;
+      	default:
+      		break;        
+    	}
+
+		}
+#else
+	Q_UNUSED(status);
+#endif // Q_OS_SYMBIAN
 }
 
 /*!
@@ -346,7 +383,7 @@ void HbMessageBox::updatePrimitives()
 }
 
 /*!
-    Sets the descriptive text for the messagebox.
+    Sets the descriptive text for the messagebox. It can be in plain text format or html format.
     \param text Descriptive text for the MessageBox
     \sa text()
 */

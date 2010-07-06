@@ -45,6 +45,12 @@
     \brief HbWidgetBase is a common base for all Hb widgets and primitives. 
     It contains common functionality shared between these two types.
 
+    HbWidgetBase disables the ItemSendsGeometryChanges and ItemUsesExtendedStyleOption flags
+    by default for performance reasons.
+    Custom widget should enable ItemSendsGeometryChanges flag to receive notifications for position
+    and transform changes.You should enable ItemUsesExtendedStyleOption if widget uses QStyleOptionGraphicsItem
+    i.eduring painting.
+
     Currently HbWidgetBase offers the following functionality:
         - Layout direction locking                 
 */
@@ -64,6 +70,12 @@ void HbWidgetBasePrivate::init()
 {
     Q_Q( HbWidgetBase );
     QGraphicsItem *item = q->parentItem();
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+#if QT_VERSION >= 0x040600
+    itemFlags &=  ~QGraphicsItem::ItemSendsGeometryChanges;
+#endif
+    itemFlags &= ~QGraphicsItem::ItemUsesExtendedStyleOption;
+    q->setFlags(itemFlags);
     if ( item ) {
         handleInsidePopup(item);
     }
@@ -192,7 +204,25 @@ QVariant HbWidgetBase::itemChange(GraphicsItemChange change, const QVariant &val
 {
     Q_D(HbWidgetBase);
 
-    if( change == QGraphicsItem::ItemParentChange) {
+    if( change == QGraphicsItem::ItemVisibleChange) {
+        if (value.toBool()) {
+            // Applies same initialisation for Hb widgets as QGraphicsWidget.
+            // For Hb primitives size is not set as they will be later layouted by Hb widgets.
+            // This is done to avoid flickering as primitives tend to paint themselves before layouting, 
+            // if they are added to existing layout.
+            // If Hb primitives are used standalone, their size and position must be set explicitly.
+
+            // Send Show event before the item has been shown.
+            QShowEvent event;
+            QApplication::sendEvent(this, &event);
+            bool resized = testAttribute(Qt::WA_Resized);
+            if (!resized && testAttribute(Hb::Widget)) {
+                adjustSize();
+                setAttribute(Qt::WA_Resized, false);
+            } 
+            return QGraphicsItem::itemChange(change, value);
+        }
+    } else if( change == QGraphicsItem::ItemParentChange) {
         d->handleInsidePopup(value.value<QGraphicsItem *>());
     }
     return QGraphicsWidget::itemChange(change, value);

@@ -23,23 +23,26 @@
 **
 ****************************************************************************/
 
-#ifndef HBTRANSLATORPRIVATE_H
-#define HBTRANSLATORPRIVATE_H
+#ifndef HBTRANSLATOR_P_H
+#define HBTRANSLATOR_P_H
 
 class QTranslator;
 
 class HB_CORE_PRIVATE_EXPORT HbTranslatorPrivate
 {
 public:
-	void installTranslator(const QString &name, const QString &path);
-	bool languageDowngrade(QString &lang);
-	HbTranslatorPrivate(): translatorData(0), commonData(0){}
-	~HbTranslatorPrivate()  { delete [] translatorData; delete [] commonData; }
-    QTranslator translator;
-    QTranslator common;
+    void installTranslator(const QString &name, const QString &path);
+    bool languageDowngrade(QString &lang);
+    HbTranslatorPrivate(): translatorData(0), commonData(0), commonTr(false){}
+    ~HbTranslatorPrivate();
+    QTranslator translator;    
+    QTranslator common;    
     uchar *translatorData;
     uchar *commonData;
+    bool commonTr;
+    QString translatorPath;
+    QString translatorFile;
 };
 
-#endif
+#endif // HBTRANSLATOR_P_H
 

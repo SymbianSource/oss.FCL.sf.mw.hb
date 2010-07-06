@@ -70,7 +70,7 @@ public:
 HbInputTransparentWindow::HbInputTransparentWindow(QGraphicsItem *parent) :
     HbWidget(parent)
 {
-    setFlag(QGraphicsItem::ItemHasNoContents, false);
+	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
 }
 
 
@@ -300,8 +300,7 @@ void HbInputMainWindow::showInputWindow()
     // this is done to come on top of all the controls in symbian OS, done to overlap soft keys as well.
     RWindow *rWindow = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
     const int positionForeground(0);
-    rWindow->SetOrdinalPosition(positionForeground,
-                                ECoeWinPriorityAlwaysAtFront);
+    rWindow->SetOrdinalPosition(positionForeground);
 #endif
 }
 
@@ -316,7 +315,7 @@ void HbInputMainWindow::hideInputWindow()
 #if defined(Q_OS_SYMBIAN)
         RWindow *rWindow = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
         const int positionBackground(-1);
-        rWindow->SetOrdinalPosition(positionBackground, ECoeWinPriorityNormal);
+        rWindow->SetOrdinalPosition(positionBackground);
 #endif
     }
 

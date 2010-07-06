@@ -98,6 +98,10 @@ void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
         if (!widget) {
             mTarget->setFocusObject(0);
         } else if (HbInputFocusObject::isEditor(widget) && !HbInputFocusObject::isReadOnlyWidget(widget)) {
+            if (mTarget->focusObject() && mTarget->focusObject()->object() == widget) {
+                // Already focused to given widget.                 
+                return;
+            } 
             mTarget->setFocusObject(new HbInputFocusObject(widget));
         }
     }
@@ -110,12 +114,11 @@ void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
 bool HbInputContextProxy::filterEvent(const QEvent *event)
 {
     if (mTarget) {
-#if QT_VERSION >= 0x040600
         bool orientationCompleted = HbInputSettingProxy::instance()->orientationChangeCompleted();
         if (event->type() == QEvent::CloseSoftwareInputPanel && orientationCompleted) {
             setInputFrameworkFocus(0);
             return true;
-        } else if (event->type() == QEvent::RequestSoftwareInputPanel && orientationCompleted) {           
+        } else if (event->type() == QEvent::RequestSoftwareInputPanel && orientationCompleted) {
             if (QWidget *focusedWidget =  qApp->focusWidget()) {
                 // see if the focused widget is graphics view, if so get the focused graphics item in the view
                 // and acivate inputmethod for the focused graphics item
@@ -138,7 +141,6 @@ bool HbInputContextProxy::filterEvent(const QEvent *event)
             }
             return true;
         }
-#endif
 
 #ifdef Q_OS_SYMBIAN
         const quint32 HbInputContextProxyExternalKeyboardModifier = 0x00200000;

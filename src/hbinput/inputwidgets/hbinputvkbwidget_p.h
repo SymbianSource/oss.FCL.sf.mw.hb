@@ -52,7 +52,6 @@ class QTimeLine;
 class QBitmap;
 class QPixmap;
 class QGraphicsGridLayout;
-class HbInputVirtualRocker;
 class HbPushButton;
 class HbFrameDrawer;
 class QAction;
@@ -67,7 +66,7 @@ class QGraphicsLinearLayout;
 class HbInputScreenshotWidget;
 class HbInputFocusObject;
 class HbInputSettingList;
-class HbSelectionDialog;
+class HbInputMethodDescriptor;
 class HbInputSettingWidget;
 
 const qreal VerticalSpacing = 0.0, HorizontalSpacing = 0.0; //vertical and horizontal spacing for buttons in layout
@@ -104,8 +103,6 @@ public:
     virtual void updateButtons();
     virtual void settingListPosition(QPointF &position, HbPopup::Placement &placement);
 
-    virtual void setRockerPosition();
-
     void captureScreenshot();
     void updateMouseHitItem(HbTouchKeypadButton *button, QPointF position);
     void normalizeProbabilities(QList<HbKeyPressProbability> &allProbableKeys);
@@ -114,9 +111,9 @@ public:
     bool isKeyboardDimmed();
 
     void showInputMethodSelectionDialog();
-    void _q_inputMethodSelectionDialogFinished(HbAction *action);
-    void _q_handleRockerChange(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode);
+    void _q_activateInputMethod(const HbInputMethodDescriptor &descriptor, const QByteArray &customData);
     void _q_settingsClosed(HbAction *action);
+    void _q_smileyPickerClosed();
 
     virtual QChar numberCharacterBoundToKey(int key);
     friend class HbTouchKeypadButton;
@@ -145,13 +142,10 @@ public:
     QSignalMapper *mReleaseMapper;
     QSignalMapper *mActionMapper;
 
-    QPointer<HbInputVirtualRocker> mRocker;
-
     HbFrameDrawer *mBackgroundDrawer;
     HbFrameDrawer *mIconDrawer;
 
     bool mMainWinConnected;
-    bool mShowRocker;
     QGraphicsLinearLayout *mLayout;
     QPointer<HbVkbHost> mCurrentHost;
     bool mDrawbackground;
@@ -165,6 +159,7 @@ public:
     HbTouchKeypadButton *mMostRecentlyAccessedButton;
     QPointF mMostRecentlyClickedLocation;
     HbInputFocusObject  *mFocusedObject;
+    QObject *mCurrentFocusedObject;
     bool mFlickAnimation;
     bool mSettingsListOpen;
     bool mAnimateWhenDialogCloses;
@@ -175,7 +170,6 @@ public:
     HbView *mSettingView;
     HbView *mCurrentView;
     bool mKeyboardDimmed;
-    HbSelectionDialog *mImSelectionDialog;
     HbInputSettingWidget *mSettingWidget;
 };
 

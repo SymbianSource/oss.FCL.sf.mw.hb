@@ -42,6 +42,7 @@
 #include <QGraphicsView>
 #include <QTime>
 #include <QDebug>
+#include <QMetaMethod>
 
 bool HbGraphicsScenePrivate::fpsCounterEnabled = false; // Fps counter off by default.
 
@@ -76,6 +77,7 @@ HbGraphicsScenePrivate::HbGraphicsScenePrivate()
       mToolTip(0),
       mInputFocusSet(0),
       mPolishWidgets(false),
+	  mRepolishWidgets(false),
       mDrawCount(0),
       mFPS(0),
       mFPSTime(0),
@@ -191,6 +193,7 @@ HbGraphicsScene::HbGraphicsScene(QObject *parent) : QGraphicsScene(parent),
     }
 #endif
     setStickyFocus(true);
+    d->mPolishItemsIndex = metaObject()->indexOfSlot("_q_polishItems()");
 }
 
 /*!
@@ -200,6 +203,23 @@ HbGraphicsScene::~HbGraphicsScene()
 {
     setProperty("destructed", true);
     delete d_ptr;
+}
+
+/*!
+  \reimp
+  \sa QGraphicsScene
+ */
+QVariant HbGraphicsScene::inputMethodQuery ( Qt::InputMethodQuery query ) const
+{
+    HbInputMethod* inputMethod = HbInputMethod::activeInputMethod();
+    if (inputMethod && inputMethod->focusObject()) {
+        QGraphicsObject *gObject = qobject_cast<QGraphicsObject*>(inputMethod->focusObject()->object());
+        if (gObject){
+            return static_cast<HbGraphicsScenePrivate::GraphicsObject*>(gObject)-> inputMethodQuery(query);
+        }
+    }
+
+    return QGraphicsScene::inputMethodQuery(query);
 }
 
 /*!
@@ -226,22 +246,7 @@ void HbGraphicsScene::focusOutEvent(QFocusEvent *focusEvent)
  */
 void HbGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    QGraphicsScene::mousePressEvent(mouseEvent);
-
-    // If the focused item is not HbWidget (and not an editor) then we send an event to close the input panel
-    QGraphicsItem *focusedItem = focusItem();
-    if (focusedItem) {
-        QGraphicsObject *focusedObject = focusedItem->toGraphicsObject();
-        if (focusedObject && !focusedObject->inherits("HbWidget") &&
-                ((focusedObject->flags() & QGraphicsItem::ItemAcceptsInputMethod) == 0)) {
-            QInputContext *ic = qApp->inputContext();
-            if (ic) {
-                QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
-                ic->filterEvent(closeEvent);
-                delete closeEvent;
-            }
-        }
-    }
+    QGraphicsScene::mousePressEvent(mouseEvent);  
 }
 
 /*!
@@ -284,16 +289,36 @@ void HbGraphicsScene::drawItems(QPainter *painter, int numItems,
 void HbGraphicsScene::drawBackground(QPainter *painter, const QRectF &rect)
 {
     Q_D(HbGraphicsScene);
-    if (d->mPolishWidgets) {
+    if (d->mPolishWidgets || d->mRepolishWidgets) {
         // mPolishWidgets is set to true in HbWidget when a widget's scene has
         // changed. We invoke polish slot of qgraphicsscene here so that layout
         // requests resulting from polish can be handled before drawing the
         // widget. This is done more than once because most widgets try to create their
         // primitives in polish event. It will also make sure that we do not
         // have any pending layout requests in event loop.
+        // It also handles the case when widget layout is changing dynamically after it has been polished and
+        //visible on screen.
+        QMetaMethod method = metaObject()->method(d->mPolishItemsIndex);
+        // As we want to handle all the polish events before handling layout requests,
+        // we do this in two seperate loops. We handle all the repolish and polish requests first
+        // and than handle the layout requests.
+        for (int i = 0; i < 2; ++i) {
+            //This is run twice so that we handle all polish and itemChangeNotifications of widget
+            //and if any primitives are created in the polish event.
+
+            //handle any pending repolish requests first.As Widgets could add new child items
+            // in repolish call.
+            if (d->mRepolishWidgets) {
+                d->mRepolishWidgets = false;
+                QApplication::sendPostedEvents(0, QEvent::Polish);
+            }
+            // invoke the slot in graphicsscene.This makes sure we handle the adjustSize()
+            //in itemChange notification sent by qgraphicsscene.These makes sure all layout requests
+            //are handled before paint.
+            method.invoke(this);
+        }
         for (int i = 0; i < 3; ++i) {
-            QMetaObject::invokeMethod(this, "_q_polishItems");
-            QApplication::sendPostedEvents(0, QEvent::LayoutRequest);
+        QApplication::sendPostedEvents(0, QEvent::LayoutRequest);
         }
         d->mPolishWidgets = false;
     }
@@ -349,12 +374,37 @@ bool HbGraphicsScene::event(QEvent *event)
 {
     Q_D(HbGraphicsScene);
 
+    if (event->type() == QEvent::InputMethod) {
+        HbInputMethod* inputMethod = HbInputMethod::activeInputMethod();
+        if (inputMethod && inputMethod->focusObject()) {
+            QGraphicsObject *gObject = qobject_cast<QGraphicsObject*>(inputMethod->focusObject()->object());
+            if (gObject){
+                static_cast<HbGraphicsScenePrivate::GraphicsObject*>(gObject)->
+                        inputMethodEvent(static_cast<QInputMethodEvent*>(event));
+                return true;
+            }
+        }
+    } else if (event->type() == QEvent::KeyPress ||
+               event->type() == QEvent::KeyRelease) {
+        HbInputMethod* inputMethod = HbInputMethod::activeInputMethod();
+        if (inputMethod && inputMethod->focusObject()) {
+            QGraphicsObject *gObject = qobject_cast<QGraphicsObject*>(inputMethod->focusObject()->object());
+            if (gObject){
+                bool result = static_cast<HbGraphicsScenePrivate::GraphicsObject*>(gObject)->event(event);
+                if (result) {
+                    return result;
+                }
+            }
+        }
+    }
+
     if (d->mToolTip) {
         d->mToolTip->eventHook(event);
     }
     if (d->mPopupManager) {
         d->mPopupManager->eventHook(event);
     }
+
     bool result = QGraphicsScene::event(event);
 
     if (event->type() == QEvent::KeyPress && !event->isAccepted()) {

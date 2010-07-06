@@ -36,7 +36,7 @@
 #include "hbinputbutton.h"
 #include "hbinputmodeindicator.h"
 
-const qreal HbKeyboardHeightInUnits = 37.8;
+const qreal HbKeyboardHeightInUnits = 36.9;
 const qreal HbKeyboardWidthInUnits = 53.8;
 
 const int HbFirstRowIndex = 0;
@@ -254,9 +254,20 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                 ++key;
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeShift) {
                 if (mMode == EModeNumeric) {
-                    item->setText(QString("#"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                    item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexPrimary);
+                    item->setText(QString("#"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString(), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                 } else if (mMode == EModeAbc) {
+                    item->setIcon(HbIcon(HbInputButtonIconShift), HbInputButton::ButtonIconIndexPrimary);
                     item->setText(QString(" "), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                }
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAsterisk) {
+                if (mMode == EModeNumeric) {
+                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString(""), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                } else if (mMode == EModeAbc) {
+                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString("+"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                 }
             }
         }
@@ -342,6 +353,21 @@ QSizeF Hb12KeyTouchKeyboard::preferredKeyboardSize()
     result.setWidth(HbKeyboardWidthInUnits * unitValue);
 
     return QSizeF(result);
+}
+
+/*!
+Sends key event to owning input method.
+*/
+void Hb12KeyTouchKeyboard::sendLongPressEvent(const QKeyEvent &event)
+{
+    Q_D(Hb12KeyTouchKeyboard);
+    if (d->mMode == EModeAbc) {
+        HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+        if (buttonGroup) {
+            buttonGroup->cancelButtonPress();
+        }
+    }
+    HbInputVkbWidget::sendLongPressEvent(event);
 }
 
 // End of file

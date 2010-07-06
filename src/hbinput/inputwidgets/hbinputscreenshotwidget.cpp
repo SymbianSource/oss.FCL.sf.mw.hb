@@ -96,7 +96,6 @@ HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem *parent)
     // Make sure the keypad never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-    setFlag(QGraphicsItem::ItemHasNoContents, false);
 }
 
 /*!

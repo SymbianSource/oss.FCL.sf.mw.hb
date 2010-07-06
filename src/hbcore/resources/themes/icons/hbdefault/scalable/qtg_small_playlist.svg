@@ -24,9 +24,9 @@
 <rect fill="none" height="15" width="15" x="15" y="15"/>
 <defs>
 <linearGradient gradientTransform="matrix(0.8824 0 0 0.8824 -252.2905 -982.9092)" gradientUnits="userSpaceOnUse" id="SVGID_1__" x1="311.4" x2="311.4" y1="1131" y2="1148">
-<stop offset="0" stop-color="#DE8029"/>
-<stop offset="0.2606" stop-color="#DE4E29"/>
-<stop offset="1" stop-color="#D82E09"/>
+<stop offset="0" stop-color="#A8835F"/>
+<stop offset="0.2606" stop-color="#A86F5F"/>
+<stop offset="1" stop-color="#9A5047"/>
 </linearGradient>
 </defs>
 <rect fill="none" height="30" width="30"/>

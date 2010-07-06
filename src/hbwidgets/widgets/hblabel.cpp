@@ -160,7 +160,7 @@ void HbLabelPrivate::setText(const QString &text, HbStyle::Primitive primitiveId
         if (mActivePrimitive != primitiveId) {
             mActivePrimitive = primitiveId;
             createPrimitives();
-            q->repolish(); // reconecting new primitive to HbMeshLayout so it is really needed!
+            q->repolish(); // reconecting new primitive to HbAnchorLayout so it is really needed!
         }
         q->updatePrimitives();
     }
@@ -185,7 +185,7 @@ void HbLabelPrivate::setIcon(const HbIcon &icon)
         if (mActivePrimitive != HbStyle::P_Label_icon) {
             mActivePrimitive = HbStyle::P_Label_icon;
             createPrimitives();
-            q->repolish(); // reconecting new primitive to HbMeshLayout so it is really needed!
+            q->repolish(); // reconecting new primitive to HbAnchorLayout so it is really needed!
         }
         q->updatePrimitives();
     }

@@ -155,8 +155,12 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
     switch (event->key()) {
     case Qt::Key_Backspace:
     case HbInputButton::ButtonKeyCodeDelete: {
-        QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);
-        sendAndUpdate(keyEvent);
+        // passing both the keypress and keyrelease events
+        // as webkit requires both the events to be delivered to them.
+        QKeyEvent keyEventPress(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);
+        QKeyEvent keyEventRelease(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
+        sendAndUpdate(keyEventPress);
+        sendAndUpdate(keyEventRelease);
         // pass event to auto completer.
         deleteCharacterInAutoCompleter();
         // return false since the event is sent forward
@@ -173,6 +177,10 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
         }
         break;
     case HbInputButton::ButtonKeyCodeSettings:
+        // Hide the autocompletion popup when InputSetting dialog is launched
+        if(d->mAutoCompleter) {
+            d->mInputMethod->closeAutoCompletionPopup();
+        }
 		break;
     default:
         ret = HbInputModeHandler::filterEvent(event);

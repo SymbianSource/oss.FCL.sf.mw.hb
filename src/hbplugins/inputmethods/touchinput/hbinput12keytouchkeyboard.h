@@ -46,6 +46,9 @@ public:  // From HbVirtualKeyboard
 public: // From HbInputVkbWidget
     QSizeF preferredKeyboardSize();
 
+public slots:
+    void sendLongPressEvent(const QKeyEvent &event);
+
 protected:
     Hb12KeyTouchKeyboard(Hb12KeyTouchKeyboardPrivate &dd, HbInputMethod *owner, const HbKeymap *keymap, QGraphicsItem* parent);
 

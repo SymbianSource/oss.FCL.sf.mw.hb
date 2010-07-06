@@ -39,7 +39,7 @@
 
 // Document loader version number
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 1
+#define VERSION_MINOR 2
 
 #define MIN_SUPPORTED_VERSION_MAJOR 0
 #define MIN_SUPPORTED_VERSION_MINOR 1
@@ -88,6 +88,18 @@ class AccessToMetadata : public QObject
                 return e.keysToValue( str );
             }
     };
+
+static bool toFontSpecRole(const QString &roleString, HbFontSpec::Role &role)
+{
+    bool success(false);
+    int enumInt = HbFontSpec::staticMetaObject.enumerator(
+            HbFontSpec::staticMetaObject.indexOfEnumerator("Role")).keyToValue(roleString.toLatin1());
+    if (enumInt >= 0) {
+        success = true;
+        role = static_cast<HbFontSpec::Role>(enumInt);
+    }
+    return success;
+}
 
 /*
     \class HbDocumentLoaderSyntax
@@ -138,24 +150,22 @@ bool HbDocumentLoaderSyntax::readLayoutStartItem()
         {
             HB_DOCUMENTLOADER_PRINT( "GENERAL LAYOUT START ITEM: ANCHOR ITEM" );
             if( mReader.name() == lexemValue( AL_ANCHOR ) ) {
+                result = readAnchorLayoutStartItem(false);
+            } else if( mReader.name() == lexemValue( AL_MAPPING ) ) {
+                const QString item = attribute( AL_MAPPING_ITEM );
+                const QString id = attribute( AL_MAPPING_ID );
+                const QString action = attribute( ATTR_ACTION );
+                bool remove = false;
+                if ( !action.isEmpty() ) {
+                    if (!action.compare("remove", Qt::CaseInsensitive)) {
+                        remove = true;
+                    } else if (action.compare("set", Qt::CaseInsensitive)) {
+                        qWarning() << "Invalid anchoritem action, line " << mReader.lineNumber();
+                        return false;
+                    }
+                }
 
-                const QString src = attribute( AL_SRC_NAME );
-                const QString dst = attribute( AL_DST_NAME );
-                const QString srcEdgeStr = attribute( AL_SRC_EDGE );
-                const QString dstEdgeStr = attribute( AL_DST_EDGE );
-                const QString spacing = attribute( AL_SPACING );
-                const QString spacer = attribute( AL_SPACER );
-                HbXmlLengthValue spacingVal;
-                result = true;
-                if( !spacing.isEmpty() ) {
-                    result = toLengthValue( spacing, spacingVal );
-                }
-                Hb::Edge srcEdge, dstEdge;
-                result &= getAnchorEdge( srcEdgeStr, srcEdge );
-                result &= getAnchorEdge( dstEdgeStr, dstEdge );
-                if ( result ) {
-                    result = mActions->addAnchorLayoutEdge( src, srcEdge, dst, dstEdge, spacingVal, spacer );
-                }
+                result = mActions->setAnchorLayoutMapping( item, id, remove );
             }
             break;
         }
@@ -653,7 +663,8 @@ bool HbDocumentLoaderSyntax::readGeneralStartItem()
          case HbXml::SPACERITEM:
          {
             HB_DOCUMENTLOADER_PRINT( "GENERAL START ITEM: SPACERITEM" );
-            result = processSpacerItem();
+            qWarning() << "spaceritem is deprecated " << mReader.lineNumber();
+            result = true;
             break;
          }
          case HbXml::CONNECT:
@@ -762,29 +773,26 @@ bool HbDocumentLoaderSyntax::processWidget()
     return true;
 }
 
-bool HbDocumentLoaderSyntax::processSpacerItem()
-{
-    const QString name = attribute( ATTR_NAME );
-    const QString widget = attribute( ATTR_WIDGET );
-
-    bool pushOK = mActions->pushSpacerItem( name, widget );
-    if( !pushOK ) {
-        qWarning() << "Error in object processing, line " << mReader.lineNumber();
-        return false;
-    }
-    return true;
-}
-
 bool HbDocumentLoaderSyntax::processLayout()
 {
     bool result = false;
     const QString layout_type = attribute( ATTR_TYPE );
     const QString widget = attribute( ATTR_WIDGET );
+    const QString action = attribute( ATTR_ACTION );
+    bool modify = false;
+    if ( !action.isEmpty() ) {
+        if (!action.compare("modify", Qt::CaseInsensitive)) {
+            modify = true;
+        } else if (action.compare("create", Qt::CaseInsensitive)) {
+            qWarning() << "Invalid layout action, line " << mReader.lineNumber();
+            return false;
+        }
+    }
 
     if( layout_type == lexemValue( LAYOUT_ANCHOR ) ) {
 
         mCurrentLayoutType = LAYOUT_ANCHOR;
-        result = mActions->createAnchorLayout( widget );
+        result = mActions->createAnchorLayout( widget, modify );
 
     } else if( layout_type == lexemValue( LAYOUT_GRID ) ) {
 
@@ -796,7 +804,7 @@ bool HbDocumentLoaderSyntax::processLayout()
             result = toLengthValue( spacing, spacingValue );
         }
         if (result) {
-            result = mActions->createGridLayout( widget, spacingValue );
+            result = mActions->createGridLayout( widget, spacingValue, modify );
         }
 
     } else if( layout_type == lexemValue( LAYOUT_LINEAR ) ) {
@@ -826,13 +834,13 @@ bool HbDocumentLoaderSyntax::processLayout()
             result = toLengthValue( spacing, spacingValue );
         }
         if (result) {
-            result = mActions->createLinearLayout( widget, orient_p, spacingValue );
+            result = mActions->createLinearLayout( widget, orient_p, spacingValue, modify );
         }
 
     } else if( layout_type == lexemValue( LAYOUT_STACK ) ) {
 
         mCurrentLayoutType = LAYOUT_STACK;
-        result = mActions->createStackedLayout( widget );
+        result = mActions->createStackedLayout( widget, modify );
 
     } else if( layout_type == lexemValue( LAYOUT_NULL ) ) {
 
@@ -944,27 +952,6 @@ bool HbDocumentLoaderSyntax::processRef()
     return true;
 }
 
-static bool convertSizePolicy_Policy( const QString& policyS, QSizePolicy::Policy *&policy )
-{
-    if ( policyS.isEmpty() ) {
-        return false;
-    }
-
-    const QMetaObject *meta = &QSizePolicy::staticMetaObject;
-    const int enumIndex = meta->indexOfEnumerator("Policy");
-    Q_ASSERT( enumIndex != -1 );
-    QMetaEnum metaEnum = meta->enumerator(enumIndex);
-    const QByteArray byteArray = policyS.toUtf8();
-    const int policyI = metaEnum.keyToValue(byteArray.data());
-
-    if ( policyI == -1 ) {
-        return false;
-    }
-
-    policy = (QSizePolicy::Policy *)new int(policyI);
-    return true;
-}
-
 bool HbDocumentLoaderSyntax::processVariable()
 {
     bool result = false;
@@ -1008,34 +995,42 @@ bool HbDocumentLoaderSyntax::processVariable()
 
         result = true;
 
-        QSizePolicy::Policy *hPol = 0;
+        QSizePolicy::Policy hPol;
+        QSizePolicy::Policy *hPolP = 0;
         if ( !horizontalPolicyS.isEmpty() ) {
-            result = convertSizePolicy_Policy( horizontalPolicyS, hPol );
+            result = toSizePolicy( horizontalPolicyS, hPol );
+            hPolP = &hPol;
         }
 
-        QSizePolicy::Policy *vPol = 0;
+        QSizePolicy::Policy vPol;
+        QSizePolicy::Policy *vPolP = 0;
         if ( result && !verticalPolicyS.isEmpty() ) {
-            result = convertSizePolicy_Policy( verticalPolicyS, vPol );
+            result = toSizePolicy( verticalPolicyS, vPol );
+            vPolP = &vPol;
         }
 
-        int *hStretch = 0;
+        int hStretch;
+        int *hStretchP = 0;
         if ( result && !horizontalStretchS.isEmpty() ) {
             const int intValue = horizontalStretchS.toInt( &result );
             if ( result ) {
                 if ( intValue >= 0 && intValue < 256 ) {
-                    hStretch = new int( intValue );
+                    hStretch = intValue;
+                    hStretchP = &hStretch;
                 } else {
                     result = false;
                 }
             }
         }
 
-        int *vStretch = 0;
+        int vStretch;
+        int *vStretchP = 0;
         if ( result && !verticalStretchS.isEmpty() ) {
             const int intValue = verticalStretchS.toInt( &result );
             if ( result ) {
                 if ( intValue >= 0 && intValue < 256 ) {
-                    vStretch = new int( intValue );
+                    vStretch = intValue;
+                    vStretchP = &vStretch;
                 } else {
                     result = false;
                 }
@@ -1043,12 +1038,8 @@ bool HbDocumentLoaderSyntax::processVariable()
         }
 
         if ( result ) {
-            result = mActions->setSizePolicy( hPol, vPol, hStretch, vStretch );
+            result = mActions->setSizePolicy( hPolP, vPolP, hStretchP, vStretchP );
         }
-        delete hPol;
-        delete vPol;
-        delete hStretch;
-        delete vStretch;
 
         if (!result) {
             qWarning() << "Invalid size policy, line " << mReader.lineNumber();
@@ -1193,13 +1184,7 @@ bool HbDocumentLoaderSyntax::createVariable( HbXmlVariable& variable )
     } else if ( type == lexemValue( TYPE_BOOL ) ) {
         bool *boolVal = new bool();
         const QString value = attribute( ATTR_VALUE );
-        if (value == lexemValue( VALUE_BOOL_TRUE ) ) {
-            *boolVal = true;
-        } else if (value == lexemValue( VALUE_BOOL_FALSE ) ) {
-            *boolVal = false;
-        } else {
-            ok = false;
-        }
+        ok = toBool( value, *boolVal );
         if (ok) {
             variable.mType = HbXmlVariable::BOOL;
             variable.mParameters.append(boolVal);
@@ -1397,14 +1382,3 @@ QString HbDocumentLoaderSyntax::version()
             + QString::number( MIN_SUPPORTED_VERSION_MINOR ) + QString( ")" ) );
 }
 
-bool HbDocumentLoaderSyntax::toFontSpecRole(const QString &roleString, HbFontSpec::Role &role)
-{
-    bool success(false);
-    int enumInt = HbFontSpec::staticMetaObject.enumerator(
-            HbFontSpec::staticMetaObject.indexOfEnumerator("Role")).keyToValue(roleString.toLatin1());
-    if (enumInt >= 0) {
-        success = true;
-        role = static_cast<HbFontSpec::Role>(enumInt);
-    }
-    return success;
-}

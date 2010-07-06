@@ -297,7 +297,9 @@ HbSliderTickmarksLabel::HbSliderTickmarksLabel( QGraphicsItem *parent )
     d->q_ptr = this;
     d->slider=dynamic_cast<HbSlider*>( parentItem() );
     d->createTickLabels();
+#if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);
+#endif
 }
 
 /*!
