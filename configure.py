@@ -423,7 +423,7 @@ class QMake:
         return self._qtdir
 
     def qtversion(self):
-        return self._version
+        return self._qtversion
 
     def _run_qmake(self):
         # write .pro
@@ -460,7 +460,7 @@ class QMake:
             if not self._platform:
                 self._platform = re.search("Project MESSAGE: platform:(\S+)", output).group(1)
             self._features = re.search("Project MESSAGE: features:(\S+)", output).group(1)
-            self._version = re.search("Project MESSAGE: qtversion:(\S+)", output).group(1)
+            self._qtversion = re.search("Project MESSAGE: qtversion:(\S+)", output).group(1)
             self._qtdir = re.search("Project MESSAGE: qtdir:(\S+)", output).group(1)
         except:
             self._error = "Unable to parse qmake output (%s)" % output.strip()
