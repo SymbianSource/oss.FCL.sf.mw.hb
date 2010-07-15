@@ -28,7 +28,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += hbthemechanger
-SUBDIRS += hbfeatureconfigapp
+#SUBDIRS += hbfeatureconfigapp
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)
 
