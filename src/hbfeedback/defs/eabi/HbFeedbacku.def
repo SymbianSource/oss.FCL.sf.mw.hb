@@ -1,0 +1,227 @@
+EXPORTS
+	_ZN14HbTactileUtils10idToStringEN9HbTactile10TacticonIdE @ 1 NONAME ABSENT
+	_ZN14HbTactileUtils10idToStringEN9HbTactile12ContinuousIdE @ 2 NONAME ABSENT
+	_ZN14HbTactileUtils10idToStringEN9HbTactile9InstantIdE @ 3 NONAME ABSENT
+	_ZN14HbTactileUtils12typeToStringEN9HbTactile11HitAreaTypeE @ 4 NONAME ABSENT
+	_ZN14HbTactileUtils12typeToStringEN9HbTactile4TypeE @ 5 NONAME ABSENT
+	_ZN14HbTactileUtils8toStringE7QStringRK17HbHitAreaFeedbacki @ 6 NONAME ABSENT
+	_ZN14HbTactileUtils8toStringE7QStringRK17HbInstantFeedback @ 7 NONAME ABSENT
+	_ZN14HbTactileUtils8toStringE7QStringRK18HbTacticonFeedback @ 8 NONAME ABSENT
+	_ZN14HbTactileUtils8toStringE7QStringRK20HbContinuousFeedback @ 9 NONAME ABSENT
+	_ZN14HbTactileUtils9idToColorEN9HbTactile10TacticonIdE @ 10 NONAME ABSENT
+	_ZN14HbTactileUtils9idToColorEN9HbTactile12ContinuousIdEi @ 11 NONAME ABSENT
+	_ZN14HbTactileUtils9idToColorEN9HbTactile9InstantIdE @ 12 NONAME ABSENT
+	_ZN15HbTactileClient11qt_metacallEN11QMetaObject4CallEiPPv @ 13 NONAME ABSENT
+	_ZN15HbTactileClient11qt_metacastEPKc @ 14 NONAME ABSENT
+	_ZN15HbTactileClient12playTacticonERK18HbTacticonFeedback @ 15 NONAME ABSENT
+	_ZN15HbTactileClient13hitAreaExistsEi @ 16 NONAME ABSENT
+	_ZN15HbTactileClient13insertHitAreaERK17HbHitAreaFeedback @ 17 NONAME ABSENT
+	_ZN15HbTactileClient13removeHitAreaEi @ 18 NONAME ABSENT
+	_ZN15HbTactileClient13updateHitAreaEiRK17HbHitAreaFeedback @ 19 NONAME ABSENT
+	_ZN15HbTactileClient14removeHitAreasEv @ 20 NONAME ABSENT
+	_ZN15HbTactileClient15instantFeedbackERK17HbInstantFeedback @ 21 NONAME ABSENT
+	_ZN15HbTactileClient16staticMetaObjectE @ 22 NONAME DATA 16 ABSENT
+	_ZN15HbTactileClient19getStaticMetaObjectEv @ 23 NONAME ABSENT
+	_ZN15HbTactileClient23startContinuousFeedbackERK20HbContinuousFeedback @ 24 NONAME ABSENT
+	_ZN15HbTactileClient24cancelContinuousFeedbackEi @ 25 NONAME ABSENT
+	_ZN15HbTactileClient24updateContinuousFeedbackEiRK20HbContinuousFeedback @ 26 NONAME ABSENT
+	_ZN15HbTactileClient25cancelContinuousFeedbacksEv @ 27 NONAME ABSENT
+	_ZN15HbTactileClient25continuousFeedbackOngoingEi @ 28 NONAME ABSENT
+	_ZN15HbTactileClient6handleEv @ 29 NONAME ABSENT
+	_ZN15HbTactileClient8settingsEv @ 30 NONAME ABSENT
+	_ZN15HbTactileClientC1Ev @ 31 NONAME ABSENT
+	_ZN15HbTactileClientC2Ev @ 32 NONAME ABSENT
+	_ZN15HbTactileClientD0Ev @ 33 NONAME ABSENT
+	_ZN15HbTactileClientD1Ev @ 34 NONAME ABSENT
+	_ZN15HbTactileClientD2Ev @ 35 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC1Ev @ 36 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC2Ev @ 37 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackD0Ev @ 38 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackD1Ev @ 39 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackD2Ev @ 40 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackaSERKS_ @ 41 NONAME ABSENT
+	_ZN17HbInstantFeedbackC1Ev @ 42 NONAME
+	_ZN17HbInstantFeedbackC2Ev @ 43 NONAME
+	_ZN17HbInstantFeedbackD0Ev @ 44 NONAME
+	_ZN17HbInstantFeedbackD1Ev @ 45 NONAME
+	_ZN17HbInstantFeedbackD2Ev @ 46 NONAME
+	_ZN17HbInstantFeedbackaSERKS_ @ 47 NONAME
+	_ZN17HbTactileSettings10enableTypeEN9HbTactile4TypeE @ 48 NONAME ABSENT
+	_ZN17HbTactileSettings11disableTypeEN9HbTactile4TypeE @ 49 NONAME ABSENT
+	_ZN17HbTactileSettings11qt_metacallEN11QMetaObject4CallEiPPv @ 50 NONAME ABSENT
+	_ZN17HbTactileSettings11qt_metacastEPKc @ 51 NONAME ABSENT
+	_ZN17HbTactileSettings13enableTactileEv @ 52 NONAME ABSENT
+	_ZN17HbTactileSettings13isTypeEnabledEN9HbTactile4TypeE @ 53 NONAME ABSENT
+	_ZN17HbTactileSettings14disableTactileEv @ 54 NONAME ABSENT
+	_ZN17HbTactileSettings14tactileEnabledEv @ 55 NONAME ABSENT
+	_ZN17HbTactileSettings15tactileDisabledEv @ 56 NONAME ABSENT
+	_ZN17HbTactileSettings16isTactileEnabledEv @ 57 NONAME ABSENT
+	_ZN17HbTactileSettings16staticMetaObjectE @ 58 NONAME DATA 16 ABSENT
+	_ZN17HbTactileSettings16tactileSupportedEv @ 59 NONAME ABSENT
+	_ZN17HbTactileSettings17isFeedbackAllowedEN9HbTactile4TypeE @ 60 NONAME ABSENT
+	_ZN17HbTactileSettings18tactileTypeEnabledEN9HbTactile4TypeE @ 61 NONAME ABSENT
+	_ZN17HbTactileSettings19getStaticMetaObjectEv @ 62 NONAME ABSENT
+	_ZN17HbTactileSettings19tactileTypeDisabledEN9HbTactile4TypeE @ 63 NONAME ABSENT
+	_ZN17HbTactileSettingsC1EP7QObject @ 64 NONAME ABSENT
+	_ZN17HbTactileSettingsC2EP7QObject @ 65 NONAME ABSENT
+	_ZN17HbTactileSettingsD0Ev @ 66 NONAME ABSENT
+	_ZN17HbTactileSettingsD1Ev @ 67 NONAME ABSENT
+	_ZN17HbTactileSettingsD2Ev @ 68 NONAME ABSENT
+	_ZN18HbAbstractFeedback15setOwningWindowEPK7QWidget @ 69 NONAME
+	_ZN18HbAbstractFeedback7setRectEPK13QGraphicsItemPK13QGraphicsView @ 70 NONAME
+	_ZN18HbAbstractFeedback7setRectEPK7QWidget @ 71 NONAME
+	_ZN18HbAbstractFeedbackC2Ev @ 72 NONAME
+	_ZN18HbAbstractFeedbackD0Ev @ 73 NONAME
+	_ZN18HbAbstractFeedbackD1Ev @ 74 NONAME
+	_ZN18HbAbstractFeedbackD2Ev @ 75 NONAME
+	_ZN18HbAbstractFeedbackaSERKS_ @ 76 NONAME
+	_ZN18HbTacticonFeedbackC1Ev @ 77 NONAME ABSENT
+	_ZN18HbTacticonFeedbackC2Ev @ 78 NONAME ABSENT
+	_ZN18HbTacticonFeedbackD0Ev @ 79 NONAME ABSENT
+	_ZN18HbTacticonFeedbackD1Ev @ 80 NONAME ABSENT
+	_ZN18HbTacticonFeedbackD2Ev @ 81 NONAME ABSENT
+	_ZN18HbTacticonFeedbackaSERKS_ @ 82 NONAME ABSENT
+	_ZN20HbContinuousFeedback10setTimeoutEi @ 83 NONAME
+	_ZN20HbContinuousFeedback12setIntensityEi @ 84 NONAME
+	_ZN20HbContinuousFeedbackC1Ev @ 85 NONAME
+	_ZN20HbContinuousFeedbackC2Ev @ 86 NONAME
+	_ZN20HbContinuousFeedbackD0Ev @ 87 NONAME
+	_ZN20HbContinuousFeedbackD1Ev @ 88 NONAME
+	_ZN20HbContinuousFeedbackD2Ev @ 89 NONAME
+	_ZN20HbContinuousFeedbackaSERKS_ @ 90 NONAME
+	_ZNK15HbTactileClient10metaObjectEv @ 91 NONAME ABSENT
+	_ZNK17HbHitAreaFeedbackeqERKS_ @ 92 NONAME ABSENT
+	_ZNK17HbHitAreaFeedbackneERKS_ @ 93 NONAME ABSENT
+	_ZNK17HbInstantFeedbackeqERKS_ @ 94 NONAME
+	_ZNK17HbInstantFeedbackneERKS_ @ 95 NONAME
+	_ZNK17HbTactileSettings10metaObjectEv @ 96 NONAME ABSENT
+	_ZNK18HbAbstractFeedbackeqERKS_ @ 97 NONAME
+	_ZNK18HbAbstractFeedbackneERKS_ @ 98 NONAME
+	_ZNK18HbTacticonFeedbackeqERKS_ @ 99 NONAME ABSENT
+	_ZNK18HbTacticonFeedbackneERKS_ @ 100 NONAME ABSENT
+	_ZNK20HbContinuousFeedback7isValidEv @ 101 NONAME
+	_ZNK20HbContinuousFeedbackeqERKS_ @ 102 NONAME
+	_ZNK20HbContinuousFeedbackneERKS_ @ 103 NONAME
+	_ZTI15HbTactileClient @ 104 NONAME ABSENT
+	_ZTI17HbHitAreaFeedback @ 105 NONAME ABSENT
+	_ZTI17HbInstantFeedback @ 106 NONAME
+	_ZTI17HbTactileSettings @ 107 NONAME ABSENT
+	_ZTI18HbAbstractFeedback @ 108 NONAME
+	_ZTI18HbTacticonFeedback @ 109 NONAME ABSENT
+	_ZTI20HbContinuousFeedback @ 110 NONAME
+	_ZTV15HbTactileClient @ 111 NONAME ABSENT
+	_ZTV17HbHitAreaFeedback @ 112 NONAME ABSENT
+	_ZTV17HbInstantFeedback @ 113 NONAME
+	_ZTV17HbTactileSettings @ 114 NONAME ABSENT
+	_ZTV18HbAbstractFeedback @ 115 NONAME
+	_ZTV18HbTacticonFeedback @ 116 NONAME ABSENT
+	_ZTV20HbContinuousFeedback @ 117 NONAME
+	_ZN17HbHitAreaFeedbackC1EN9HbTactile9InstantIdEPK13QGraphicsViewPK13QGraphicsItem @ 118 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC1EN9HbTactile9InstantIdEPK7QWidget5QRect @ 119 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC2EN9HbTactile9InstantIdEPK13QGraphicsViewPK13QGraphicsItem @ 120 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC2EN9HbTactile9InstantIdEPK7QWidget5QRect @ 121 NONAME ABSENT
+	_ZN17HbInstantFeedbackC1EN9HbTactile9InstantIdE @ 122 NONAME ABSENT
+	_ZN17HbInstantFeedbackC2EN9HbTactile9InstantIdE @ 123 NONAME ABSENT
+	_ZN18HbTacticonFeedbackC1EN9HbTactile10TacticonIdE @ 124 NONAME ABSENT
+	_ZN18HbTacticonFeedbackC2EN9HbTactile10TacticonIdE @ 125 NONAME ABSENT
+	_ZN20HbContinuousFeedbackC1EN9HbTactile12ContinuousIdEPK7QWidget @ 126 NONAME ABSENT
+	_ZN20HbContinuousFeedbackC2EN9HbTactile12ContinuousIdEPK7QWidget @ 127 NONAME ABSENT
+	_ZN16HbFeedbackPlayer11qt_metacallEN11QMetaObject4CallEiPPv @ 128 NONAME
+	_ZN16HbFeedbackPlayer11qt_metacastEPKc @ 129 NONAME
+	_ZN16HbFeedbackPlayer13hitAreaExistsEi @ 130 NONAME ABSENT
+	_ZN16HbFeedbackPlayer13insertHitAreaERK17HbHitAreaFeedback @ 131 NONAME ABSENT
+	_ZN16HbFeedbackPlayer13removeHitAreaEi @ 132 NONAME ABSENT
+	_ZN16HbFeedbackPlayer13updateHitAreaEiRK17HbHitAreaFeedback @ 133 NONAME ABSENT
+	_ZN16HbFeedbackPlayer14removeHitAreasEv @ 134 NONAME ABSENT
+	_ZN16HbFeedbackPlayer16staticMetaObjectE @ 135 NONAME DATA 16
+	_ZN16HbFeedbackPlayer19getStaticMetaObjectEv @ 136 NONAME
+	_ZN16HbFeedbackPlayer19playInstantFeedbackERK17HbInstantFeedback @ 137 NONAME
+	_ZN16HbFeedbackPlayer20playTacticonFeedbackERK18HbTacticonFeedback @ 138 NONAME ABSENT
+	_ZN16HbFeedbackPlayer23startContinuousFeedbackERK20HbContinuousFeedback @ 139 NONAME
+	_ZN16HbFeedbackPlayer24cancelContinuousFeedbackEi @ 140 NONAME
+	_ZN16HbFeedbackPlayer24updateContinuousFeedbackEiRK20HbContinuousFeedback @ 141 NONAME
+	_ZN16HbFeedbackPlayer25cancelContinuousFeedbacksEv @ 142 NONAME
+	_ZN16HbFeedbackPlayer25continuousFeedbackOngoingEi @ 143 NONAME
+	_ZN16HbFeedbackPlayer8instanceEv @ 144 NONAME
+	_ZN16HbFeedbackPlayer8settingsEv @ 145 NONAME
+	_ZN16HbFeedbackPlayerC1Ev @ 146 NONAME
+	_ZN16HbFeedbackPlayerC2Ev @ 147 NONAME
+	_ZN16HbFeedbackPlayerD0Ev @ 148 NONAME
+	_ZN16HbFeedbackPlayerD1Ev @ 149 NONAME
+	_ZN16HbFeedbackPlayerD2Ev @ 150 NONAME
+	_ZN17HbHitAreaFeedback14setHitAreaTypeEN10HbFeedback11HitAreaTypeE @ 151 NONAME ABSENT
+	_ZN17HbHitAreaFeedback9setZValueEf @ 152 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC1EN10HbFeedback13InstantEffectEPK13QGraphicsViewPK13QGraphicsItem @ 153 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC1EN10HbFeedback13InstantEffectEPK7QWidget5QRect @ 154 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC2EN10HbFeedback13InstantEffectEPK13QGraphicsViewPK13QGraphicsItem @ 155 NONAME ABSENT
+	_ZN17HbHitAreaFeedbackC2EN10HbFeedback13InstantEffectEPK7QWidget5QRect @ 156 NONAME ABSENT
+	_ZN17HbInstantFeedback16setInstantEffectEN10HbFeedback13InstantEffectE @ 157 NONAME
+	_ZN17HbInstantFeedback4playEN10HbFeedback13InstantEffectE @ 158 NONAME
+	_ZN17HbInstantFeedback4playEv @ 159 NONAME
+	_ZN17HbInstantFeedbackC1EN10HbFeedback13InstantEffectE @ 160 NONAME
+	_ZN17HbInstantFeedbackC2EN10HbFeedback13InstantEffectE @ 161 NONAME
+	_ZN18HbAbstractFeedback7setRectE5QRect @ 162 NONAME
+	_ZN18HbFeedbackSettings10enableTypeEN10HbFeedback4TypeE @ 163 NONAME ABSENT
+	_ZN18HbFeedbackSettings11disableTypeEN10HbFeedback4TypeE @ 164 NONAME ABSENT
+	_ZN18HbFeedbackSettings11qt_metacallEN11QMetaObject4CallEiPPv @ 165 NONAME
+	_ZN18HbFeedbackSettings11qt_metacastEPKc @ 166 NONAME
+	_ZN18HbFeedbackSettings13isTypeEnabledEN10HbFeedback4TypeE @ 167 NONAME ABSENT
+	_ZN18HbFeedbackSettings14enableFeedbackEv @ 168 NONAME
+	_ZN18HbFeedbackSettings15disableFeedbackEv @ 169 NONAME
+	_ZN18HbFeedbackSettings15feedbackEnabledEv @ 170 NONAME
+	_ZN18HbFeedbackSettings16feedbackDisabledEv @ 171 NONAME
+	_ZN18HbFeedbackSettings16staticMetaObjectE @ 172 NONAME DATA 16
+	_ZN18HbFeedbackSettings17feedbackSupportedEv @ 173 NONAME
+	_ZN18HbFeedbackSettings17isFeedbackAllowedEN10HbFeedback4TypeE @ 174 NONAME ABSENT
+	_ZN18HbFeedbackSettings17isFeedbackEnabledEv @ 175 NONAME
+	_ZN18HbFeedbackSettings19feedbackTypeEnabledEN10HbFeedback4TypeE @ 176 NONAME ABSENT
+	_ZN18HbFeedbackSettings19getStaticMetaObjectEv @ 177 NONAME
+	_ZN18HbFeedbackSettings20feedbackTypeDisabledEN10HbFeedback4TypeE @ 178 NONAME ABSENT
+	_ZN18HbFeedbackSettingsC1EP7QObject @ 179 NONAME
+	_ZN18HbFeedbackSettingsC2EP7QObject @ 180 NONAME
+	_ZN18HbFeedbackSettingsD0Ev @ 181 NONAME
+	_ZN18HbFeedbackSettingsD1Ev @ 182 NONAME
+	_ZN18HbFeedbackSettingsD2Ev @ 183 NONAME
+	_ZN18HbTacticonFeedback17setTacticonEffectEN10HbFeedback14TacticonEffectE @ 184 NONAME ABSENT
+	_ZN18HbTacticonFeedback4playEN10HbFeedback14TacticonEffectE @ 185 NONAME ABSENT
+	_ZN18HbTacticonFeedback4playEv @ 186 NONAME ABSENT
+	_ZN18HbTacticonFeedbackC1EN10HbFeedback14TacticonEffectE @ 187 NONAME ABSENT
+	_ZN18HbTacticonFeedbackC2EN10HbFeedback14TacticonEffectE @ 188 NONAME ABSENT
+	_ZN20HbContinuousFeedback19setContinuousEffectEN10HbFeedback16ContinuousEffectE @ 189 NONAME
+	_ZN20HbContinuousFeedbackC1EN10HbFeedback16ContinuousEffectEPK7QWidget @ 190 NONAME
+	_ZN20HbContinuousFeedbackC2EN10HbFeedback16ContinuousEffectEPK7QWidget @ 191 NONAME
+	_ZNK16HbFeedbackPlayer10metaObjectEv @ 192 NONAME
+	_ZNK17HbHitAreaFeedback11hitAreaTypeEv @ 193 NONAME ABSENT
+	_ZNK17HbHitAreaFeedback6zValueEv @ 194 NONAME ABSENT
+	_ZNK17HbHitAreaFeedback7isValidEv @ 195 NONAME ABSENT
+	_ZNK17HbInstantFeedback13instantEffectEv @ 196 NONAME
+	_ZNK17HbInstantFeedback7isValidEv @ 197 NONAME
+	_ZNK18HbAbstractFeedback4rectEv @ 198 NONAME
+	_ZNK18HbAbstractFeedback6windowEv @ 199 NONAME
+	_ZNK18HbAbstractFeedback9isLocatedEv @ 200 NONAME
+	_ZNK18HbFeedbackSettings10metaObjectEv @ 201 NONAME
+	_ZNK18HbTacticonFeedback14tacticonEffectEv @ 202 NONAME ABSENT
+	_ZNK18HbTacticonFeedback7isValidEv @ 203 NONAME ABSENT
+	_ZNK20HbContinuousFeedback16continuousEffectEv @ 204 NONAME
+	_ZNK20HbContinuousFeedback7timeoutEv @ 205 NONAME
+	_ZNK20HbContinuousFeedback9intensityEv @ 206 NONAME
+	_ZTI16HbFeedbackPlayer @ 207 NONAME
+	_ZTI18HbFeedbackSettings @ 208 NONAME
+	_ZTV16HbFeedbackPlayer @ 209 NONAME
+	_ZTV18HbFeedbackSettings @ 210 NONAME
+	_ZN18HbAbstractFeedback13setModalitiesE6QFlagsIN10HbFeedback8ModalityEE @ 211 NONAME
+	_ZN20HbContinuousFeedback4playEv @ 212 NONAME
+	_ZN20HbContinuousFeedback4stopEv @ 213 NONAME
+	_ZN20HbContinuousFeedback9isPlayingEv @ 214 NONAME
+	_ZNK18HbAbstractFeedback10modalitiesEv @ 215 NONAME
+	_ZN19HbFeedbackTestEvent7eventIdEv @ 216 NONAME ABSENT
+	_ZN19HbFeedbackTestEventC1ERK18HbAbstractFeedback @ 217 NONAME ABSENT
+	_ZN19HbFeedbackTestEventC1ERK18HbAbstractFeedbackNS_13FeedbackStateEi @ 218 NONAME ABSENT
+	_ZN19HbFeedbackTestEventC2ERK18HbAbstractFeedback @ 219 NONAME ABSENT
+	_ZN19HbFeedbackTestEventC2ERK18HbAbstractFeedbackNS_13FeedbackStateEi @ 220 NONAME ABSENT
+	_ZN19HbFeedbackTestEventD0Ev @ 221 NONAME ABSENT
+	_ZN19HbFeedbackTestEventD1Ev @ 222 NONAME ABSENT
+	_ZN19HbFeedbackTestEventD2Ev @ 223 NONAME ABSENT
+	_ZTI19HbFeedbackTestEvent @ 224 NONAME ABSENT
+	_ZTV19HbFeedbackTestEvent @ 225 NONAME ABSENT
+

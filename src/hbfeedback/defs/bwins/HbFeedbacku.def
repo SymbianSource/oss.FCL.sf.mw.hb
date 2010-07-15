@@ -1,0 +1,210 @@
+EXPORTS
+	?setTacticonId@HbTacticonFeedback@@QAEXW4TacticonId@HbTactile@@@Z @ 1 NONAME ABSENT ; void HbTacticonFeedback::setTacticonId(enum HbTactile::TacticonId)
+	?setRect@HbAbstractFeedback@@QAEXPBVQWidget@@@Z @ 2 NONAME ; void HbAbstractFeedback::setRect(class QWidget const *)
+	??1HbTactileSettings@@UAE@XZ @ 3 NONAME ABSENT ; HbTactileSettings::~HbTactileSettings(void)
+	?window@HbAbstractFeedback@@QBEPAVQWidget@@XZ @ 4 NONAME ; class QWidget * HbAbstractFeedback::window(void) const
+	?tactileTypeEnabled@HbTactileSettings@@IAEXW4Type@HbTactile@@@Z @ 5 NONAME ABSENT ; void HbTactileSettings::tactileTypeEnabled(enum HbTactile::Type)
+	?tactileEnabled@HbTactileSettings@@IAEXXZ @ 6 NONAME ABSENT ; void HbTactileSettings::tactileEnabled(void)
+	??8HbAbstractFeedback@@UBE_NABV0@@Z @ 7 NONAME ; bool HbAbstractFeedback::operator==(class HbAbstractFeedback const &) const
+	?staticMetaObject@HbTactileClient@@2UQMetaObject@@B @ 8 NONAME ABSENT ; struct QMetaObject const HbTactileClient::staticMetaObject
+	?enableTactile@HbTactileSettings@@QAEXXZ @ 9 NONAME ABSENT ; void HbTactileSettings::enableTactile(void)
+	?isValid@HbContinuousFeedback@@UBE_NXZ @ 10 NONAME ; bool HbContinuousFeedback::isValid(void) const
+	?toString@HbTactileUtils@@SA?AVQString@@V2@ABVHbContinuousFeedback@@@Z @ 11 NONAME ABSENT ; class QString HbTactileUtils::toString(class QString, class HbContinuousFeedback const &)
+	?type@HbInstantFeedback@@UBE?AW4Type@HbTactile@@XZ @ 12 NONAME ABSENT ; enum HbTactile::Type HbInstantFeedback::type(void) const
+	??_EHbContinuousFeedback@@UAE@I@Z @ 13 NONAME ; HbContinuousFeedback::~HbContinuousFeedback(unsigned int)
+	?updateHitArea@HbTactileClient@@QAEXHABVHbHitAreaFeedback@@@Z @ 14 NONAME ABSENT ; void HbTactileClient::updateHitArea(int, class HbHitAreaFeedback const &)
+	?rect@HbAbstractFeedback@@QBE?AVQRect@@XZ @ 15 NONAME ; class QRect HbAbstractFeedback::rect(void) const
+	?staticMetaObject@HbTactileSettings@@2UQMetaObject@@B @ 16 NONAME ABSENT ; struct QMetaObject const HbTactileSettings::staticMetaObject
+	??8HbTacticonFeedback@@QBE_NABV0@@Z @ 17 NONAME ABSENT ; bool HbTacticonFeedback::operator==(class HbTacticonFeedback const &) const
+	?insertHitArea@HbTactileClient@@QAEHABVHbHitAreaFeedback@@@Z @ 18 NONAME ABSENT ; int HbTactileClient::insertHitArea(class HbHitAreaFeedback const &)
+	?trUtf8@HbTactileClient@@SA?AVQString@@PBD0H@Z @ 19 NONAME ABSENT ; class QString HbTactileClient::trUtf8(char const *, char const *, int)
+	?idToColor@HbTactileUtils@@SA?AVQColor@@W4ContinuousId@HbTactile@@H@Z @ 20 NONAME ABSENT ; class QColor HbTactileUtils::idToColor(enum HbTactile::ContinuousId, int)
+	??9HbHitAreaFeedback@@QBE_NABV0@@Z @ 21 NONAME ABSENT ; bool HbHitAreaFeedback::operator!=(class HbHitAreaFeedback const &) const
+	?tr@HbTactileSettings@@SA?AVQString@@PBD0H@Z @ 22 NONAME ABSENT ; class QString HbTactileSettings::tr(char const *, char const *, int)
+	??9HbInstantFeedback@@QBE_NABV0@@Z @ 23 NONAME ; bool HbInstantFeedback::operator!=(class HbInstantFeedback const &) const
+	?setRect@HbAbstractFeedback@@QAEXPBVQGraphicsItem@@PBVQGraphicsView@@@Z @ 24 NONAME ; void HbAbstractFeedback::setRect(class QGraphicsItem const *, class QGraphicsView const *)
+	??0HbHitAreaFeedback@@QAE@XZ @ 25 NONAME ABSENT ; HbHitAreaFeedback::HbHitAreaFeedback(void)
+	?toString@HbTactileUtils@@SA?AVQString@@V2@ABVHbTacticonFeedback@@@Z @ 26 NONAME ABSENT ; class QString HbTactileUtils::toString(class QString, class HbTacticonFeedback const &)
+	??1HbTactileClient@@UAE@XZ @ 27 NONAME ABSENT ; HbTactileClient::~HbTactileClient(void)
+	?updateContinuousFeedback@HbTactileClient@@QAEXHABVHbContinuousFeedback@@@Z @ 28 NONAME ABSENT ; void HbTactileClient::updateContinuousFeedback(int, class HbContinuousFeedback const &)
+	?qt_metacast@HbTactileClient@@UAEPAXPBD@Z @ 29 NONAME ABSENT ; void * HbTactileClient::qt_metacast(char const *)
+	?type@HbContinuousFeedback@@UBE?AW4Type@HbTactile@@XZ @ 30 NONAME ABSENT ; enum HbTactile::Type HbContinuousFeedback::type(void) const
+	?isValid@HbInstantFeedback@@UBE_NXZ @ 31 NONAME ; bool HbInstantFeedback::isValid(void) const
+	?tactileTypeDisabled@HbTactileSettings@@IAEXW4Type@HbTactile@@@Z @ 32 NONAME ABSENT ; void HbTactileSettings::tactileTypeDisabled(enum HbTactile::Type)
+	?disableTactile@HbTactileSettings@@QAEXXZ @ 33 NONAME ABSENT ; void HbTactileSettings::disableTactile(void)
+	??_EHbTacticonFeedback@@UAE@I@Z @ 34 NONAME ABSENT ; HbTacticonFeedback::~HbTacticonFeedback(unsigned int)
+	?trUtf8@HbTactileSettings@@SA?AVQString@@PBD0H@Z @ 35 NONAME ABSENT ; class QString HbTactileSettings::trUtf8(char const *, char const *, int)
+	?trUtf8@HbTactileSettings@@SA?AVQString@@PBD0@Z @ 36 NONAME ABSENT ; class QString HbTactileSettings::trUtf8(char const *, char const *)
+	?trUtf8@HbTactileClient@@SA?AVQString@@PBD0@Z @ 37 NONAME ABSENT ; class QString HbTactileClient::trUtf8(char const *, char const *)
+	??4HbAbstractFeedback@@UAEAAV0@ABV0@@Z @ 38 NONAME ; class HbAbstractFeedback & HbAbstractFeedback::operator=(class HbAbstractFeedback const &)
+	??9HbAbstractFeedback@@UBE_NABV0@@Z @ 39 NONAME ; bool HbAbstractFeedback::operator!=(class HbAbstractFeedback const &) const
+	?continuousFeedbackOngoing@HbTactileClient@@QAE_NH@Z @ 40 NONAME ABSENT ; bool HbTactileClient::continuousFeedbackOngoing(int)
+	?tr@HbTactileClient@@SA?AVQString@@PBD0@Z @ 41 NONAME ABSENT ; class QString HbTactileClient::tr(char const *, char const *)
+	?isLocated@HbAbstractFeedback@@QBE_NXZ @ 42 NONAME ; bool HbAbstractFeedback::isLocated(void) const
+	??4HbTacticonFeedback@@QAEAAV0@ABV0@@Z @ 43 NONAME ABSENT ; class HbTacticonFeedback & HbTacticonFeedback::operator=(class HbTacticonFeedback const &)
+	?setContinuousId@HbContinuousFeedback@@QAEXW4ContinuousId@HbTactile@@@Z @ 44 NONAME ABSENT ; void HbContinuousFeedback::setContinuousId(enum HbTactile::ContinuousId)
+	?isTypeEnabled@HbTactileSettings@@QAE_NW4Type@HbTactile@@@Z @ 45 NONAME ABSENT ; bool HbTactileSettings::isTypeEnabled(enum HbTactile::Type)
+	?typeToString@HbTactileUtils@@SA?AVQString@@W4HitAreaType@HbTactile@@@Z @ 46 NONAME ABSENT ; class QString HbTactileUtils::typeToString(enum HbTactile::HitAreaType)
+	?toString@HbTactileUtils@@SA?AVQString@@V2@ABVHbInstantFeedback@@@Z @ 47 NONAME ABSENT ; class QString HbTactileUtils::toString(class QString, class HbInstantFeedback const &)
+	??0HbAbstractFeedback@@QAE@XZ @ 48 NONAME ; HbAbstractFeedback::HbAbstractFeedback(void)
+	?qt_metacast@HbTactileSettings@@UAEPAXPBD@Z @ 49 NONAME ABSENT ; void * HbTactileSettings::qt_metacast(char const *)
+	?disableType@HbTactileSettings@@QAEXW4Type@HbTactile@@@Z @ 50 NONAME ABSENT ; void HbTactileSettings::disableType(enum HbTactile::Type)
+	??9HbTacticonFeedback@@QBE_NABV0@@Z @ 51 NONAME ABSENT ; bool HbTacticonFeedback::operator!=(class HbTacticonFeedback const &) const
+	?enableType@HbTactileSettings@@QAEXW4Type@HbTactile@@@Z @ 52 NONAME ABSENT ; void HbTactileSettings::enableType(enum HbTactile::Type)
+	?tactileSupported@HbTactileSettings@@QAE_NXZ @ 53 NONAME ABSENT ; bool HbTactileSettings::tactileSupported(void)
+	?qt_metacall@HbTactileClient@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 54 NONAME ABSENT ; int HbTactileClient::qt_metacall(enum QMetaObject::Call, int, void * *)
+	??4HbInstantFeedback@@QAEAAV0@ABV0@@Z @ 55 NONAME ; class HbInstantFeedback & HbInstantFeedback::operator=(class HbInstantFeedback const &)
+	?type@HbTacticonFeedback@@UBE?AW4Type@HbTactile@@XZ @ 56 NONAME ABSENT ; enum HbTactile::Type HbTacticonFeedback::type(void) const
+	?startContinuousFeedback@HbTactileClient@@QAEHABVHbContinuousFeedback@@@Z @ 57 NONAME ABSENT ; int HbTactileClient::startContinuousFeedback(class HbContinuousFeedback const &)
+	??1HbInstantFeedback@@UAE@XZ @ 58 NONAME ; HbInstantFeedback::~HbInstantFeedback(void)
+	?tactileDisabled@HbTactileSettings@@IAEXXZ @ 59 NONAME ABSENT ; void HbTactileSettings::tactileDisabled(void)
+	?instantFeedback@HbTactileClient@@QAEXABVHbInstantFeedback@@@Z @ 60 NONAME ABSENT ; void HbTactileClient::instantFeedback(class HbInstantFeedback const &)
+	??1HbAbstractFeedback@@UAE@XZ @ 61 NONAME ; HbAbstractFeedback::~HbAbstractFeedback(void)
+	??_EHbInstantFeedback@@UAE@I@Z @ 62 NONAME ; HbInstantFeedback::~HbInstantFeedback(unsigned int)
+	?zValue@HbHitAreaFeedback@@QBEMXZ @ 63 NONAME ABSENT ; float HbHitAreaFeedback::zValue(void) const
+	?setRect@HbAbstractFeedback@@QAEXVQRect@@@Z @ 64 NONAME ; void HbAbstractFeedback::setRect(class QRect)
+	?qt_metacall@HbTactileSettings@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 65 NONAME ABSENT ; int HbTactileSettings::qt_metacall(enum QMetaObject::Call, int, void * *)
+	?continuousId@HbContinuousFeedback@@QBE?AW4ContinuousId@HbTactile@@XZ @ 66 NONAME ABSENT ; enum HbTactile::ContinuousId HbContinuousFeedback::continuousId(void) const
+	??0HbTacticonFeedback@@QAE@XZ @ 67 NONAME ABSENT ; HbTacticonFeedback::HbTacticonFeedback(void)
+	?idToColor@HbTactileUtils@@SA?AVQColor@@W4InstantId@HbTactile@@@Z @ 68 NONAME ABSENT ; class QColor HbTactileUtils::idToColor(enum HbTactile::InstantId)
+	?isTactileEnabled@HbTactileSettings@@QAE_NXZ @ 69 NONAME ABSENT ; bool HbTactileSettings::isTactileEnabled(void)
+	?setIntensity@HbContinuousFeedback@@QAEXH@Z @ 70 NONAME ; void HbContinuousFeedback::setIntensity(int)
+	?metaObject@HbTactileClient@@UBEPBUQMetaObject@@XZ @ 71 NONAME ABSENT ; struct QMetaObject const * HbTactileClient::metaObject(void) const
+	?cancelContinuousFeedback@HbTactileClient@@QAEXH@Z @ 72 NONAME ABSENT ; void HbTactileClient::cancelContinuousFeedback(int)
+	?removeHitArea@HbTactileClient@@QAEXH@Z @ 73 NONAME ABSENT ; void HbTactileClient::removeHitArea(int)
+	??0HbTactileSettings@@QAE@PAVQObject@@@Z @ 74 NONAME ABSENT ; HbTactileSettings::HbTactileSettings(class QObject *)
+	??8HbContinuousFeedback@@QBE_NABV0@@Z @ 75 NONAME ; bool HbContinuousFeedback::operator==(class HbContinuousFeedback const &) const
+	?getStaticMetaObject@HbTactileClient@@SAABUQMetaObject@@XZ @ 76 NONAME ABSENT ; struct QMetaObject const & HbTactileClient::getStaticMetaObject(void)
+	??4HbHitAreaFeedback@@QAEAAV0@ABV0@@Z @ 77 NONAME ABSENT ; class HbHitAreaFeedback & HbHitAreaFeedback::operator=(class HbHitAreaFeedback const &)
+	??9HbContinuousFeedback@@QBE_NABV0@@Z @ 78 NONAME ; bool HbContinuousFeedback::operator!=(class HbContinuousFeedback const &) const
+	?isValid@HbHitAreaFeedback@@UBE_NXZ @ 79 NONAME ABSENT ; bool HbHitAreaFeedback::isValid(void) const
+	?hitAreaType@HbHitAreaFeedback@@QBE?AW4HitAreaType@HbTactile@@XZ @ 80 NONAME ABSENT ; enum HbTactile::HitAreaType HbHitAreaFeedback::hitAreaType(void) const
+	?typeToString@HbTactileUtils@@SA?AVQString@@W4Type@HbTactile@@@Z @ 81 NONAME ABSENT ; class QString HbTactileUtils::typeToString(enum HbTactile::Type)
+	??1HbContinuousFeedback@@UAE@XZ @ 82 NONAME ; HbContinuousFeedback::~HbContinuousFeedback(void)
+	?handle@HbTactileClient@@SAPAV1@XZ @ 83 NONAME ABSENT ; class HbTactileClient * HbTactileClient::handle(void)
+	??1HbTacticonFeedback@@UAE@XZ @ 84 NONAME ABSENT ; HbTacticonFeedback::~HbTacticonFeedback(void)
+	??_EHbTactileClient@@UAE@I@Z @ 85 NONAME ABSENT ; HbTactileClient::~HbTactileClient(unsigned int)
+	?metaObject@HbTactileSettings@@UBEPBUQMetaObject@@XZ @ 86 NONAME ABSENT ; struct QMetaObject const * HbTactileSettings::metaObject(void) const
+	?getStaticMetaObject@HbTactileSettings@@SAABUQMetaObject@@XZ @ 87 NONAME ABSENT ; struct QMetaObject const & HbTactileSettings::getStaticMetaObject(void)
+	?isFeedbackAllowed@HbTactileSettings@@QAE_NW4Type@HbTactile@@@Z @ 88 NONAME ABSENT ; bool HbTactileSettings::isFeedbackAllowed(enum HbTactile::Type)
+	??_EHbTactileSettings@@UAE@I@Z @ 89 NONAME ABSENT ; HbTactileSettings::~HbTactileSettings(unsigned int)
+	??0HbContinuousFeedback@@QAE@XZ @ 90 NONAME ; HbContinuousFeedback::HbContinuousFeedback(void)
+	?type@HbHitAreaFeedback@@UBE?AW4Type@HbTactile@@XZ @ 91 NONAME ABSENT ; enum HbTactile::Type HbHitAreaFeedback::type(void) const
+	?setInstantId@HbInstantFeedback@@QAEXW4InstantId@HbTactile@@@Z @ 92 NONAME ABSENT ; void HbInstantFeedback::setInstantId(enum HbTactile::InstantId)
+	?idToString@HbTactileUtils@@SA?AVQString@@W4ContinuousId@HbTactile@@@Z @ 93 NONAME ABSENT ; class QString HbTactileUtils::idToString(enum HbTactile::ContinuousId)
+	?intensity@HbContinuousFeedback@@QBEHXZ @ 94 NONAME ; int HbContinuousFeedback::intensity(void) const
+	?setHitAreaType@HbHitAreaFeedback@@QAEXW4HitAreaType@HbTactile@@@Z @ 95 NONAME ABSENT ; void HbHitAreaFeedback::setHitAreaType(enum HbTactile::HitAreaType)
+	?idToString@HbTactileUtils@@SA?AVQString@@W4InstantId@HbTactile@@@Z @ 96 NONAME ABSENT ; class QString HbTactileUtils::idToString(enum HbTactile::InstantId)
+	?setOwningWindow@HbAbstractFeedback@@QAEXPBVQWidget@@@Z @ 97 NONAME ; void HbAbstractFeedback::setOwningWindow(class QWidget const *)
+	??0HbInstantFeedback@@QAE@XZ @ 98 NONAME ; HbInstantFeedback::HbInstantFeedback(void)
+	?timeout@HbContinuousFeedback@@QBEHXZ @ 99 NONAME ; int HbContinuousFeedback::timeout(void) const
+	??1HbHitAreaFeedback@@UAE@XZ @ 100 NONAME ABSENT ; HbHitAreaFeedback::~HbHitAreaFeedback(void)
+	??0HbTactileClient@@QAE@XZ @ 101 NONAME ABSENT ; HbTactileClient::HbTactileClient(void)
+	?tacticonId@HbTacticonFeedback@@QBE?AW4TacticonId@HbTactile@@XZ @ 102 NONAME ABSENT ; enum HbTactile::TacticonId HbTacticonFeedback::tacticonId(void) const
+	?hitAreaExists@HbTactileClient@@QAE_NH@Z @ 103 NONAME ABSENT ; bool HbTactileClient::hitAreaExists(int)
+	??_EHbHitAreaFeedback@@UAE@I@Z @ 104 NONAME ABSENT ; HbHitAreaFeedback::~HbHitAreaFeedback(unsigned int)
+	?idToString@HbTactileUtils@@SA?AVQString@@W4TacticonId@HbTactile@@@Z @ 105 NONAME ABSENT ; class QString HbTactileUtils::idToString(enum HbTactile::TacticonId)
+	?tr@HbTactileClient@@SA?AVQString@@PBD0H@Z @ 106 NONAME ABSENT ; class QString HbTactileClient::tr(char const *, char const *, int)
+	??_EHbAbstractFeedback@@UAE@I@Z @ 107 NONAME ; HbAbstractFeedback::~HbAbstractFeedback(unsigned int)
+	?isValid@HbTacticonFeedback@@UBE_NXZ @ 108 NONAME ABSENT ; bool HbTacticonFeedback::isValid(void) const
+	?setTimeout@HbContinuousFeedback@@QAEXH@Z @ 109 NONAME ; void HbContinuousFeedback::setTimeout(int)
+	?setZValue@HbHitAreaFeedback@@QAEXM@Z @ 110 NONAME ABSENT ; void HbHitAreaFeedback::setZValue(float)
+	??8HbHitAreaFeedback@@QBE_NABV0@@Z @ 111 NONAME ABSENT ; bool HbHitAreaFeedback::operator==(class HbHitAreaFeedback const &) const
+	??8HbInstantFeedback@@QBE_NABV0@@Z @ 112 NONAME ; bool HbInstantFeedback::operator==(class HbInstantFeedback const &) const
+	?tr@HbTactileSettings@@SA?AVQString@@PBD0@Z @ 113 NONAME ABSENT ; class QString HbTactileSettings::tr(char const *, char const *)
+	?idToColor@HbTactileUtils@@SA?AVQColor@@W4TacticonId@HbTactile@@@Z @ 114 NONAME ABSENT ; class QColor HbTactileUtils::idToColor(enum HbTactile::TacticonId)
+	?toString@HbTactileUtils@@SA?AVQString@@V2@ABVHbHitAreaFeedback@@H@Z @ 115 NONAME ABSENT ; class QString HbTactileUtils::toString(class QString, class HbHitAreaFeedback const &, int)
+	?cancelContinuousFeedbacks@HbTactileClient@@QAEXXZ @ 116 NONAME ABSENT ; void HbTactileClient::cancelContinuousFeedbacks(void)
+	?settings@HbTactileClient@@QAEAAVHbTactileSettings@@XZ @ 117 NONAME ABSENT ; class HbTactileSettings & HbTactileClient::settings(void)
+	?playTacticon@HbTactileClient@@QAEXABVHbTacticonFeedback@@@Z @ 118 NONAME ABSENT ; void HbTactileClient::playTacticon(class HbTacticonFeedback const &)
+	?removeHitAreas@HbTactileClient@@QAEXXZ @ 119 NONAME ABSENT ; void HbTactileClient::removeHitAreas(void)
+	??4HbContinuousFeedback@@QAEAAV0@ABV0@@Z @ 120 NONAME ; class HbContinuousFeedback & HbContinuousFeedback::operator=(class HbContinuousFeedback const &)
+	?instantId@HbInstantFeedback@@QBE?AW4InstantId@HbTactile@@XZ @ 121 NONAME ABSENT ; enum HbTactile::InstantId HbInstantFeedback::instantId(void) const
+	??0HbInstantFeedback@@QAE@W4InstantId@HbTactile@@@Z @ 122 NONAME ABSENT ; HbInstantFeedback::HbInstantFeedback(enum HbTactile::InstantId)
+	??0HbTacticonFeedback@@QAE@W4TacticonId@HbTactile@@@Z @ 123 NONAME ABSENT ; HbTacticonFeedback::HbTacticonFeedback(enum HbTactile::TacticonId)
+	??0HbHitAreaFeedback@@QAE@W4InstantId@HbTactile@@PBVQGraphicsView@@PBVQGraphicsItem@@@Z @ 124 NONAME ABSENT ; HbHitAreaFeedback::HbHitAreaFeedback(enum HbTactile::InstantId, class QGraphicsView const *, class QGraphicsItem const *)
+	??0HbHitAreaFeedback@@QAE@W4InstantId@HbTactile@@PBVQWidget@@VQRect@@@Z @ 125 NONAME ABSENT ; HbHitAreaFeedback::HbHitAreaFeedback(enum HbTactile::InstantId, class QWidget const *, class QRect)
+	??0HbContinuousFeedback@@QAE@W4ContinuousId@HbTactile@@PBVQWidget@@@Z @ 126 NONAME ABSENT ; HbContinuousFeedback::HbContinuousFeedback(enum HbTactile::ContinuousId, class QWidget const *)
+	?tr@HbFeedbackSettings@@SA?AVQString@@PBD0@Z @ 127 NONAME ; class QString HbFeedbackSettings::tr(char const *, char const *)
+	?updateContinuousFeedback@HbFeedbackPlayer@@QAEXHABVHbContinuousFeedback@@@Z @ 128 NONAME ; void HbFeedbackPlayer::updateContinuousFeedback(int, class HbContinuousFeedback const &)
+	?playTacticonFeedback@HbFeedbackPlayer@@QAEXABVHbTacticonFeedback@@@Z @ 129 NONAME ABSENT ; void HbFeedbackPlayer::playTacticonFeedback(class HbTacticonFeedback const &)
+	?isTypeEnabled@HbFeedbackSettings@@QAE_NW4Type@HbFeedback@@@Z @ 130 NONAME ABSENT ; bool HbFeedbackSettings::isTypeEnabled(enum HbFeedback::Type)
+	?cancelContinuousFeedbacks@HbFeedbackPlayer@@QAEXXZ @ 131 NONAME ; void HbFeedbackPlayer::cancelContinuousFeedbacks(void)
+	?cancelContinuousFeedback@HbFeedbackPlayer@@QAEXH@Z @ 132 NONAME ; void HbFeedbackPlayer::cancelContinuousFeedback(int)
+	?play@HbTacticonFeedback@@QAEXXZ @ 133 NONAME ABSENT ; void HbTacticonFeedback::play(void)
+	?qt_metacast@HbFeedbackPlayer@@UAEPAXPBD@Z @ 134 NONAME ; void * HbFeedbackPlayer::qt_metacast(char const *)
+	??0HbFeedbackPlayer@@QAE@XZ @ 135 NONAME ; HbFeedbackPlayer::HbFeedbackPlayer(void)
+	?playInstantFeedback@HbFeedbackPlayer@@QAEXABVHbInstantFeedback@@@Z @ 136 NONAME ; void HbFeedbackPlayer::playInstantFeedback(class HbInstantFeedback const &)
+	?trUtf8@HbFeedbackSettings@@SA?AVQString@@PBD0@Z @ 137 NONAME ; class QString HbFeedbackSettings::trUtf8(char const *, char const *)
+	?setTacticonEffect@HbTacticonFeedback@@QAEXW4TacticonEffect@HbFeedback@@@Z @ 138 NONAME ABSENT ; void HbTacticonFeedback::setTacticonEffect(enum HbFeedback::TacticonEffect)
+	?disableType@HbFeedbackSettings@@QAEXW4Type@HbFeedback@@@Z @ 139 NONAME ABSENT ; void HbFeedbackSettings::disableType(enum HbFeedback::Type)
+	??0HbHitAreaFeedback@@QAE@W4InstantEffect@HbFeedback@@PBVQWidget@@VQRect@@@Z @ 140 NONAME ABSENT ; HbHitAreaFeedback::HbHitAreaFeedback(enum HbFeedback::InstantEffect, class QWidget const *, class QRect)
+	?tr@HbFeedbackPlayer@@SA?AVQString@@PBD0@Z @ 141 NONAME ; class QString HbFeedbackPlayer::tr(char const *, char const *)
+	?staticMetaObject@HbFeedbackSettings@@2UQMetaObject@@B @ 142 NONAME ; struct QMetaObject const HbFeedbackSettings::staticMetaObject
+	?startContinuousFeedback@HbFeedbackPlayer@@QAEHABVHbContinuousFeedback@@@Z @ 143 NONAME ; int HbFeedbackPlayer::startContinuousFeedback(class HbContinuousFeedback const &)
+	?getStaticMetaObject@HbFeedbackPlayer@@SAABUQMetaObject@@XZ @ 144 NONAME ; struct QMetaObject const & HbFeedbackPlayer::getStaticMetaObject(void)
+	?feedbackDisabled@HbFeedbackSettings@@IAEXXZ @ 145 NONAME ; void HbFeedbackSettings::feedbackDisabled(void)
+	?enableType@HbFeedbackSettings@@QAEXW4Type@HbFeedback@@@Z @ 146 NONAME ABSENT ; void HbFeedbackSettings::enableType(enum HbFeedback::Type)
+	?tacticonEffect@HbTacticonFeedback@@QBE?AW4TacticonEffect@HbFeedback@@XZ @ 147 NONAME ABSENT ; enum HbFeedback::TacticonEffect HbTacticonFeedback::tacticonEffect(void) const
+	?disableFeedback@HbFeedbackSettings@@QAEXXZ @ 148 NONAME ; void HbFeedbackSettings::disableFeedback(void)
+	?feedbackSupported@HbFeedbackSettings@@QAE_NXZ @ 149 NONAME ; bool HbFeedbackSettings::feedbackSupported(void)
+	?qt_metacall@HbFeedbackPlayer@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 150 NONAME ; int HbFeedbackPlayer::qt_metacall(enum QMetaObject::Call, int, void * *)
+	?settings@HbFeedbackPlayer@@QAEAAVHbFeedbackSettings@@XZ @ 151 NONAME ABSENT ; class HbFeedbackSettings & HbFeedbackPlayer::settings(void)
+	??_EHbFeedbackSettings@@UAE@I@Z @ 152 NONAME ; HbFeedbackSettings::~HbFeedbackSettings(unsigned int)
+	?feedbackTypeDisabled@HbFeedbackSettings@@IAEXW4Type@HbFeedback@@@Z @ 153 NONAME ABSENT ; void HbFeedbackSettings::feedbackTypeDisabled(enum HbFeedback::Type)
+	?setInstantEffect@HbInstantFeedback@@QAEXW4InstantEffect@HbFeedback@@@Z @ 154 NONAME ; void HbInstantFeedback::setInstantEffect(enum HbFeedback::InstantEffect)
+	?isFeedbackAllowed@HbFeedbackSettings@@QAE_NW4Type@HbFeedback@@@Z @ 155 NONAME ABSENT ; bool HbFeedbackSettings::isFeedbackAllowed(enum HbFeedback::Type)
+	?continuousEffect@HbContinuousFeedback@@QBE?AW4ContinuousEffect@HbFeedback@@XZ @ 156 NONAME ; enum HbFeedback::ContinuousEffect HbContinuousFeedback::continuousEffect(void) const
+	?trUtf8@HbFeedbackPlayer@@SA?AVQString@@PBD0@Z @ 157 NONAME ; class QString HbFeedbackPlayer::trUtf8(char const *, char const *)
+	??1HbFeedbackPlayer@@UAE@XZ @ 158 NONAME ; HbFeedbackPlayer::~HbFeedbackPlayer(void)
+	?type@HbTacticonFeedback@@UBE?AW4Type@HbFeedback@@XZ @ 159 NONAME ABSENT ; enum HbFeedback::Type HbTacticonFeedback::type(void) const
+	?setContinuousEffect@HbContinuousFeedback@@QAEXW4ContinuousEffect@HbFeedback@@@Z @ 160 NONAME ; void HbContinuousFeedback::setContinuousEffect(enum HbFeedback::ContinuousEffect)
+	?type@HbInstantFeedback@@UBE?AW4Type@HbFeedback@@XZ @ 161 NONAME ; enum HbFeedback::Type HbInstantFeedback::type(void) const
+	??1HbFeedbackSettings@@UAE@XZ @ 162 NONAME ; HbFeedbackSettings::~HbFeedbackSettings(void)
+	?getStaticMetaObject@HbFeedbackSettings@@SAABUQMetaObject@@XZ @ 163 NONAME ; struct QMetaObject const & HbFeedbackSettings::getStaticMetaObject(void)
+	??0HbContinuousFeedback@@QAE@W4ContinuousEffect@HbFeedback@@PBVQWidget@@@Z @ 164 NONAME ; HbContinuousFeedback::HbContinuousFeedback(enum HbFeedback::ContinuousEffect, class QWidget const *)
+	?instance@HbFeedbackPlayer@@SAPAV1@XZ @ 165 NONAME ; class HbFeedbackPlayer * HbFeedbackPlayer::instance(void)
+	?staticMetaObject@HbFeedbackPlayer@@2UQMetaObject@@B @ 166 NONAME ; struct QMetaObject const HbFeedbackPlayer::staticMetaObject
+	?enableFeedback@HbFeedbackSettings@@QAEXXZ @ 167 NONAME ; void HbFeedbackSettings::enableFeedback(void)
+	?play@HbInstantFeedback@@QAEXXZ @ 168 NONAME ; void HbInstantFeedback::play(void)
+	?type@HbContinuousFeedback@@UBE?AW4Type@HbFeedback@@XZ @ 169 NONAME ; enum HbFeedback::Type HbContinuousFeedback::type(void) const
+	??0HbInstantFeedback@@QAE@W4InstantEffect@HbFeedback@@@Z @ 170 NONAME ; HbInstantFeedback::HbInstantFeedback(enum HbFeedback::InstantEffect)
+	?tr@HbFeedbackPlayer@@SA?AVQString@@PBD0H@Z @ 171 NONAME ; class QString HbFeedbackPlayer::tr(char const *, char const *, int)
+	?isFeedbackEnabled@HbFeedbackSettings@@QAE_NXZ @ 172 NONAME ; bool HbFeedbackSettings::isFeedbackEnabled(void)
+	?updateHitArea@HbFeedbackPlayer@@QAEXHABVHbHitAreaFeedback@@@Z @ 173 NONAME ABSENT ; void HbFeedbackPlayer::updateHitArea(int, class HbHitAreaFeedback const &)
+	?trUtf8@HbFeedbackSettings@@SA?AVQString@@PBD0H@Z @ 174 NONAME ; class QString HbFeedbackSettings::trUtf8(char const *, char const *, int)
+	?setHitAreaType@HbHitAreaFeedback@@QAEXW4HitAreaType@HbFeedback@@@Z @ 175 NONAME ABSENT ; void HbHitAreaFeedback::setHitAreaType(enum HbFeedback::HitAreaType)
+	??0HbTacticonFeedback@@QAE@W4TacticonEffect@HbFeedback@@@Z @ 176 NONAME ABSENT ; HbTacticonFeedback::HbTacticonFeedback(enum HbFeedback::TacticonEffect)
+	?instantEffect@HbInstantFeedback@@QBE?AW4InstantEffect@HbFeedback@@XZ @ 177 NONAME ; enum HbFeedback::InstantEffect HbInstantFeedback::instantEffect(void) const
+	?feedbackTypeEnabled@HbFeedbackSettings@@IAEXW4Type@HbFeedback@@@Z @ 178 NONAME ABSENT ; void HbFeedbackSettings::feedbackTypeEnabled(enum HbFeedback::Type)
+	?hitAreaExists@HbFeedbackPlayer@@QAE_NH@Z @ 179 NONAME ABSENT ; bool HbFeedbackPlayer::hitAreaExists(int)
+	?qt_metacall@HbFeedbackSettings@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 180 NONAME ; int HbFeedbackSettings::qt_metacall(enum QMetaObject::Call, int, void * *)
+	?metaObject@HbFeedbackPlayer@@UBEPBUQMetaObject@@XZ @ 181 NONAME ; struct QMetaObject const * HbFeedbackPlayer::metaObject(void) const
+	?hitAreaType@HbHitAreaFeedback@@QBE?AW4HitAreaType@HbFeedback@@XZ @ 182 NONAME ABSENT ; enum HbFeedback::HitAreaType HbHitAreaFeedback::hitAreaType(void) const
+	??_EHbFeedbackPlayer@@UAE@I@Z @ 183 NONAME ; HbFeedbackPlayer::~HbFeedbackPlayer(unsigned int)
+	?play@HbInstantFeedback@@SAXW4InstantEffect@HbFeedback@@@Z @ 184 NONAME ; void HbInstantFeedback::play(enum HbFeedback::InstantEffect)
+	?continuousFeedbackOngoing@HbFeedbackPlayer@@QAE_NH@Z @ 185 NONAME ; bool HbFeedbackPlayer::continuousFeedbackOngoing(int)
+	?qt_metacast@HbFeedbackSettings@@UAEPAXPBD@Z @ 186 NONAME ; void * HbFeedbackSettings::qt_metacast(char const *)
+	?type@HbHitAreaFeedback@@UBE?AW4Type@HbFeedback@@XZ @ 187 NONAME ABSENT ; enum HbFeedback::Type HbHitAreaFeedback::type(void) const
+	?removeHitAreas@HbFeedbackPlayer@@QAEXXZ @ 188 NONAME ABSENT ; void HbFeedbackPlayer::removeHitAreas(void)
+	?tr@HbFeedbackSettings@@SA?AVQString@@PBD0H@Z @ 189 NONAME ; class QString HbFeedbackSettings::tr(char const *, char const *, int)
+	?removeHitArea@HbFeedbackPlayer@@QAEXH@Z @ 190 NONAME ABSENT ; void HbFeedbackPlayer::removeHitArea(int)
+	?play@HbTacticonFeedback@@SAXW4TacticonEffect@HbFeedback@@@Z @ 191 NONAME ABSENT ; void HbTacticonFeedback::play(enum HbFeedback::TacticonEffect)
+	?metaObject@HbFeedbackSettings@@UBEPBUQMetaObject@@XZ @ 192 NONAME ; struct QMetaObject const * HbFeedbackSettings::metaObject(void) const
+	?insertHitArea@HbFeedbackPlayer@@QAEHABVHbHitAreaFeedback@@@Z @ 193 NONAME ABSENT ; int HbFeedbackPlayer::insertHitArea(class HbHitAreaFeedback const &)
+	?trUtf8@HbFeedbackPlayer@@SA?AVQString@@PBD0H@Z @ 194 NONAME ; class QString HbFeedbackPlayer::trUtf8(char const *, char const *, int)
+	??0HbFeedbackSettings@@QAE@PAVQObject@@@Z @ 195 NONAME ; HbFeedbackSettings::HbFeedbackSettings(class QObject *)
+	??0HbHitAreaFeedback@@QAE@W4InstantEffect@HbFeedback@@PBVQGraphicsView@@PBVQGraphicsItem@@@Z @ 196 NONAME ABSENT ; HbHitAreaFeedback::HbHitAreaFeedback(enum HbFeedback::InstantEffect, class QGraphicsView const *, class QGraphicsItem const *)
+	?feedbackEnabled@HbFeedbackSettings@@IAEXXZ @ 197 NONAME ; void HbFeedbackSettings::feedbackEnabled(void)
+	?stop@HbContinuousFeedback@@QAEXXZ @ 198 NONAME ; void HbContinuousFeedback::stop(void)
+	?play@HbContinuousFeedback@@QAEXXZ @ 199 NONAME ; void HbContinuousFeedback::play(void)
+	?setModalities@HbAbstractFeedback@@QAEXV?$QFlags@W4Modality@HbFeedback@@@@@Z @ 200 NONAME ; void HbAbstractFeedback::setModalities(class QFlags<enum HbFeedback::Modality>)
+	?isPlaying@HbContinuousFeedback@@QAE_NXZ @ 201 NONAME ; bool HbContinuousFeedback::isPlaying(void)
+	?modalities@HbAbstractFeedback@@QBE?AV?$QFlags@W4Modality@HbFeedback@@@@XZ @ 202 NONAME ; class QFlags<enum HbFeedback::Modality> HbAbstractFeedback::modalities(void) const
+	??_EHbFeedbackTestEvent@@UAE@I@Z @ 203 NONAME ABSENT ; HbFeedbackTestEvent::~HbFeedbackTestEvent(unsigned int)
+	??1HbFeedbackTestEvent@@UAE@XZ @ 204 NONAME ABSENT ; HbFeedbackTestEvent::~HbFeedbackTestEvent(void)
+	?eventId@HbFeedbackTestEvent@@SAHXZ @ 205 NONAME ABSENT ; int HbFeedbackTestEvent::eventId(void)
+	??0HbFeedbackTestEvent@@QAE@ABVHbAbstractFeedback@@@Z @ 206 NONAME ABSENT ; HbFeedbackTestEvent::HbFeedbackTestEvent(class HbAbstractFeedback const &)
+	??0HbFeedbackTestEvent@@QAE@ABVHbAbstractFeedback@@W4FeedbackState@0@H@Z @ 207 NONAME ABSENT ; HbFeedbackTestEvent::HbFeedbackTestEvent(class HbAbstractFeedback const &, enum HbFeedbackTestEvent::FeedbackState, int)
+	?settings@HbFeedbackPlayer@@QAEPAVHbFeedbackSettings@@XZ @ 208 NONAME ; class HbFeedbackSettings * HbFeedbackPlayer::settings(void)
+
