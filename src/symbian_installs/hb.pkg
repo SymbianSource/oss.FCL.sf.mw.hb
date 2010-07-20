@@ -1,0 +1,93 @@
+;
+; Copyright (C) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
+; All rights reserved.
+; Contact: Nokia Corporation (developer.feedback@nokia.com)
+;
+; This file is part of the HbCore module of the UI Extensions for Mobile.
+;
+; GNU Lesser General Public License Usage
+; This file may be used under the terms of the GNU Lesser General Public
+; License version 2.1 as published by the Free Software Foundation and
+; appearing in the file LICENSE.LGPL included in the packaging of this file.
+; Please review the following information to ensure the GNU Lesser General
+; Public License version 2.1 requirements will be met:
+; http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+;
+; In addition, as a special exception, Nokia gives you certain additional
+; rights.  These rights are described in the Nokia Qt LGPL Exception
+; version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+;
+; If you have questions regarding the use of this file, please contact
+; Nokia at developer.feedback@nokia.com.
+
+
+; Language
+&EN
+
+
+; SIS header: name, uid, version
+#{"Hb"},(0x2002FF63),1,0,0,TYPE=SA, RU
+
+; Localised Vendor name
+%{"Nokia, Qt Software"}
+
+; Unique Vendor name
+:"Nokia, Qt Software"
+
+
+; Dependencies
+[0x101F7961],0,0,0,{"S60ProductID"}
+[0x102032BE],0,0,0,{"S60ProductID"}
+[0x102752AE],0,0,0,{"S60ProductID"}
+[0x1028315F],0,0,0,{"S60ProductID"}
+(0x2001E61C),4,6,0,{"QtLibs pre-release"}
+ 
+
+; DEPLOYMENT
+
+; Hb
+"/epoc32/release/armv5/urel/HbCore.dll"    - "!:/sys/bin/HbCore.dll"
+"/epoc32/release/armv5/urel/HbWidgets.dll"    - "!:/sys/bin/HbWidgets.dll"
+"/epoc32/release/armv5/urel/HbUtils.dll"    - "!:/sys/bin/HbUtils.dll"
+
+; Servers
+"/epoc32/release/armv5/urel/hbthemeserver.exe"    - "!:/sys/bin/hbthemeserver.exe"
+"/epoc32/release/armv5/urel/hbthemechanger.exe"- "!:/sys/bin/hbthemechanger.exe"
+"/epoc32/release/armv5/urel/hbsplashgenerator.exe"    - "!:/sys/bin/hbsplashgenerator.exe"
+"/epoc32/release/armv5/urel/hbdevicedialogappserver.exe"    - "!:/sys/bin/hbdevicedialogappserver.exe"
+"/epoc32/release/armv5/urel/hbiconpreloader.exe"    - "!:/sys/bin/hbiconpreloader.exe"
+
+; Plugins
+"/epoc32/release/armv5/urel/HbDeviceNotificationDialogPlugin.dll"    - "!:/sys/bin/HbDeviceNotificationDialogPlugin.dll"
+"/epoc32/release/armv5/urel/HbIndicatorMenuPlugin.dll"    - "!:/sys/bin/HbIndicatorMenuPlugin.dll"
+"/epoc32/release/armv5/urel/HbDeviceProgressDialogPlugin.dll"    - "!:/sys/bin/HbDeviceProgressDialogPlugin.dll"
+"/epoc32/release/armv5/urel/HbDeviceMessageBoxPlugin.dll"    - "!:/sys/bin/HbDeviceMessageBoxPlugin.dll"
+
+; EcomPlugins
+"/epoc32/data/z/resource/plugins/hbthemeserveroogmplugin.rsc"- "!:/resource/plugins/hbthemeserveroogmplugin.rsc"
+"/epoc32/release/armv5/urel/hbthemeserveroogmplugin.dll"    - "!:/sys/bin/hbthemeserveroogmplugin.dll"
+
+; HbFeedback
+"/epoc32/release/armv5/urel/HbFeedback.dll"    - "!:/sys/bin/HbFeedback.dll"
+"/epoc32/release/armv5/urel/HbFeedbackEffectPlugin.dll"    - "!:/sys/bin/HbFeedbackEffectPlugin.dll"
+
+; HbInput
+"/epoc32/release/armv5/urel/HbInput.dll"    - "!:/sys/bin/HbInput.dll"
+"/epoc32/release/armv5/urel/HbTouchInput.dll"    - "!:/sys/bin/HbTouchInput.dll"
+"/epoc32/release/armv5/urel/HbAutoComplete.dll"    - "!:/sys/bin/HbAutoComplete.dll"
+"/epoc32/data/z/resource/plugins/inputengines/HbAutoComplete.qtplugin"    - "!:/resource/plugins/HbAutoComplete.qtplugin"
+"/epoc32/data/z/resource/plugins/inputmethods/HbTouchInput.qtplugin"    - "!:/resource/plugins/HbTouchInput.qtplugin"
+
+; Misc
+"/epoc32/winscw/c/resource/hbi18n/translations/directorylocalizer_en_GB.qm"    - "!:/resource/hbi18n/translations/directorylocalizer_en_GB.qm"
+"/epoc32/winscw/c/resource/hbi18n/translations/directorylocalizer_de_DE.qm"    - "!:/resource/hbi18n/translations/directorylocalizer_de_DE.qm"
+"/epoc32/winscw/c/resource/hbi18n/translations/languages.qm"    - "!:/resource/hbi18n/translations/languages.qm"
+"/epoc32/winscw/c/resource/hbi18n/translations/language_list.txt"    - "!:/resource/hbi18n/translations/language_list.txt"
+
+"/epoc32/data/z/resource/displaydefinition.xml"    - "!:/resource/displaydefinition.xml"
+
+; Central repository files
+"/epoc32/data/z/private/10202BE9/2002C304.txt"    -"!:/system/data/10202BE9/2002C304.txt"
+"/epoc32/data/z/private/10202BE9/2002C3AE.txt"    -"!:/system/data/10202BE9/2002C3AE.txt"
+"/epoc32/data/z/private/10202BE9/2002C384.txt"    -"!:/system/data/10202BE9/2002C384.txt"
+"/epoc32/data/z/private/10202BE9/20022E82.txt"    -"!:/system/data/10202BE9/20022E82.txt"
