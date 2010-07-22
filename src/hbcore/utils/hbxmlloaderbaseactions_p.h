@@ -54,7 +54,14 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
 {
     public:
 
-        typedef QPair<QPointer<QObject>, HbXml::ElementType> ObjectMapItem;                
+        struct ObjectMapItem
+        {
+            ObjectMapItem() : mObject(0), mType(HbXml::UNKNOWN), mOwned(true) {};
+
+            QPointer<QObject> mObject;
+            HbXml::ElementType mType;
+            bool mOwned;
+        };
         typedef QMap<QString, ObjectMapItem> ObjectMap;
         
     public:    
@@ -82,7 +89,6 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
 
         ObjectMapItem lookUp(const QString& type, const QString &name, const QString &plugin = QString());
         QObject *findFromStack(bool *isWidgetElement = 0) const;
-        QGraphicsLayoutItem *findSpacerItemFromStackTop() const;
         
         void addToObjectMap(QList<QObject *> objects);
         void addToObjectMap(QList<QGraphicsItem *> objects);
@@ -101,7 +107,9 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
     private:
         Q_DISABLE_COPY(HbXmlLoaderBaseActions)
     public:
+#ifndef HB_BIN_CSS
         HbDeviceProfile mCurrentProfile;
+#endif
 };
 
 #endif // HBXMLLOADERBASEACTIONS_P_H

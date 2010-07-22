@@ -70,7 +70,7 @@ public:
     void addEffect(HbEffectAbstract *effect);
     void removeEffect(HbEffectAbstract *effect);
     void fixEffectOrder();
-    
+
     void setObserver(QObject *observer, const QString &effectFinishedSlotName);
     void updateItemTransform();
 
@@ -127,7 +127,7 @@ private:
     bool mDirty;
 
     QList<HbEffectAbstract *> mEffects;
-    
+
     HbVgChainedEffect *mVgEffect;
     bool mVgEffectActivated;
     QPointer<QGraphicsEffect> mVgEffectGuard;

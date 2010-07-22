@@ -32,7 +32,8 @@
 #include <hbtapgesture.h>
 #include <hbtapandholdgesture.h>
 #include <QGesture>
-#endif 
+#include <QGraphicsScene>
+#endif
 
 /*
     internal
@@ -123,11 +124,13 @@ void HbGroupBoxContentWidget::setType(GroupBoxType type)
     if( groupBoxType != type ){
         groupBoxType = type;
         // set dynamic properties for type
-        if(groupBoxType == GroupBoxCollapsingContainer)
+        if(groupBoxType == GroupBoxCollapsingContainer){
             setProperty("groupBoxType",3);
-        else if(groupBoxType == GroupBoxRichLabel)
+        }
+        else if(groupBoxType == GroupBoxRichLabel){
+            contentPressed = false;
             setProperty("groupBoxType",2);
-
+        }
         if(groupBoxType != GroupBoxSimpleLabel){
            createPrimitives();
            //createConnection();
@@ -142,22 +145,15 @@ void HbGroupBoxContentWidget::setType(GroupBoxType type)
 */
 void HbGroupBoxContentWidget::setContentWidget( HbWidget *widget )
 {
-    // delete old content set
-    if ( mContent ) {
-        delete mContent; 
-        mContent = 0;
-    }
-     // if NULL widget is passed don't do anything
-    if ( !widget   ) {
-        return;
-    }
-
-    mContent = widget;
-    style()->setItemName( mContent , "content" );
-    mContent->setParentItem( this);
-
-    if(groupBoxType == GroupBoxRichLabel){
-        contentPressed = false;
+    if ( widget != mContent ) {      
+        // delete old content set
+        if ( mContent ) {
+            delete mContent; 
+            mContent = 0;
+        }
+        mContent = widget;
+        style()->setItemName( mContent , "content" );
+        mContent->setParentItem( this);
     }
 }
 
@@ -199,7 +195,8 @@ QVariant HbGroupBoxContentWidget::itemChange( GraphicsItemChange change, const Q
         case ItemChildRemovedChange:
             repolish();
              break;
-        case ItemSceneHasChanged:		
+        case ItemSceneHasChanged:
+        case ItemVisibleChange:
             updatePrimitives();
             break;
         default:
@@ -272,10 +269,17 @@ void HbGroupBoxContentWidget::gestureEvent(QGestureEvent *event)
     if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         switch(tap->state()) {
         case Qt::GestureStarted:  //
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+            }
+
             contentPressed=true;
             updatePrimitives();
             break;
         case Qt::GestureCanceled: // Reset state
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
             contentPressed=false;
             updatePrimitives();
             break;
@@ -285,6 +289,7 @@ void HbGroupBoxContentWidget::gestureEvent(QGestureEvent *event)
             }
             break;
         case Qt::GestureFinished: // emit clicked
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             contentPressed=false;
             updatePrimitives();
             if(tap->tapStyleHint() == HbTapGesture::Tap) {

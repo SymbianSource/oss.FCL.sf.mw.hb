@@ -29,7 +29,7 @@
 #include "hbdevicedialogerrors_p.h"
 #include "hbdevicedialogclientsession_p.h"
 #include <e32cmn.h>
-
+#include "hbdevicedialoglaunchhelper_p.h"
 #include "hbdevicedialogsymbian.h"
 #include "hbsymbianvariant.h"
 #include "hbsymbianvariantconverter_p.h"
@@ -79,6 +79,11 @@
     \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::ESystemCancelledError
     Operation was cancelled by device dialog framework.
 */
+/*!
+    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::EInstanceExistsError
+    A single instance device dialog widget exists already (has been launched).
+    See HbDeviceDialogPlugin::SingleInstance.
+*/
 
 /*!
    \fn void MHbDeviceDialogObserver::DataReceived(CHbSymbianVariantMap& aData)
@@ -111,21 +116,22 @@
 class CHbDeviceDialogSymbianPrivate : public CActive
 {
 public:
-        CHbDeviceDialogSymbianPrivate();
+        CHbDeviceDialogSymbianPrivate(TInt aFlags);
         ~CHbDeviceDialogSymbianPrivate();
-        TInt Show( const QByteArray& aArray );
-        TInt Update( const QByteArray& aArray );
+        TInt Initialize();
+        TInt Show(const QByteArray& aArray);
+        TInt Update(const QByteArray& aArray);
         void CancelDialog();
         TInt Error() const;
-        void SetObserver( MHbDeviceDialogObserver* aObserver );
+        void SetObserver(MHbDeviceDialogObserver* aObserver);
 
         // CActive
         void RunL();
         void DoCancel();
-        TInt RunError( TInt aError );
+        TInt RunError(TInt aError);
 
         void Start();
-        TInt SymToDeviceDialogError( TInt errorCode );
+        TInt SymToDeviceDialogError(TInt errorCode);
         void SetError(TInt aError);
         bool CallDialogClosedObserver(TInt aCompletionCode);
         bool CallDataReceivedObserver(CHbSymbianVariantMap& aData);
@@ -145,28 +151,18 @@ public:
     bool *iDeleted;
 };
 
-CHbDeviceDialogSymbianPrivate::CHbDeviceDialogSymbianPrivate():
-CActive( EPriorityStandard ),
-iFlags(0),
-iLastError(0),
-iDeviceDialogId(0),
-iBuffer(NULL),
-iDataPtr(NULL, 0, 0),
-iRequesting(EFalse),
-iObserver(NULL)
+CHbDeviceDialogSymbianPrivate::CHbDeviceDialogSymbianPrivate(TInt aFlags):
+CActive(EPriorityStandard),
+iFlags(aFlags),
+iDataPtr(NULL, 0, 0)
 {
-    if (!iBuffer) {
-        iBuffer = HBufC8::NewL(64);
-        if (iBuffer) {
-            iDataPtr.Set(iBuffer->Des());
-        }
-    }
+    CActiveScheduler::Add(this);
 }
 
 CHbDeviceDialogSymbianPrivate::~CHbDeviceDialogSymbianPrivate()
 {
     // Inform the server to finish the dialog session and not to cancel it
-    if(!iObserver) {
+    if (!iObserver) {
         iHbSession.SendSyncRequest(EHbSrvClientClosing);
     }
 
@@ -185,14 +181,50 @@ CHbDeviceDialogSymbianPrivate::~CHbDeviceDialogSymbianPrivate()
     }
 }
 
-TInt CHbDeviceDialogSymbianPrivate::Show(const QByteArray& aArray )
+TInt CHbDeviceDialogSymbianPrivate::Initialize()
+{
+    if (!iBuffer) {
+        TRAP_IGNORE(iBuffer = HBufC8::NewL(64));
+        if (iBuffer) {
+            iDataPtr.Set(iBuffer->Des());
+        } else {
+            return KErrNoMemory;
+        }
+    }
+
+    TInt error(KErrNone);
+    if (iFlags & CHbDeviceDialogSymbian::EASyncServerStartup) {
+        HbDeviceDialogLaunchHelper *helper(0);
+        TRAP(error, helper = HbDeviceDialogLaunchHelper::NewL());
+        
+        if (helper) {            
+            helper->Start();
+            error = helper->Error();
+            delete helper;
+            helper = 0;
+            }        
+    }
+
+    if (error == KErrNone || error == KErrAlreadyExists) {
+        error = iHbSession.Connect();
+    }
+    return error;
+}
+
+TInt CHbDeviceDialogSymbianPrivate::Show(const QByteArray& aArray)
 {
     TInt error = iLastError = KErrNone;
 
+    error = SymToDeviceDialogError(Initialize());
+    if (error != HbDeviceDialogNoError){
+        SetError(error);
+        return error;
+    }
+
     TPtrC8 ptr( reinterpret_cast<const TUint8*>(aArray.data()), aArray.size() );
     // Synchronous call to server to show dialog.
-    error = iHbSession.SendSyncRequest( EHbSrvShowDeviceDialog, ptr, &iDeviceDialogId );
-    //error = SymToDeviceDialogError(error);
+    error = iHbSession.SendSyncRequest(EHbSrvShowDeviceDialog, ptr, &iDeviceDialogId);
+    error = SymToDeviceDialogError(error);
 
     if (error == KErrNone) {
         // Start listening for server updates. Device dialog update and closing is
@@ -219,14 +251,14 @@ TInt CHbDeviceDialogSymbianPrivate::Update( const QByteArray& aArray )
         TPtrC8 ptr( reinterpret_cast<const TUint8*>(aArray.data()), aArray.size() );
 
         error = iHbSession.SendSyncRequest( EHbSrvUpdateDeviceDialog, ptr );
-        //error = SymToDeviceDialogError(error);
+        error = SymToDeviceDialogError(error);
         if (error != KErrNone) {
             SetError(error);
         }
     }
     else {
-        SetError(KErrBadHandle);
-        error = KErrBadHandle;
+        error = SymToDeviceDialogError(KErrBadHandle);
+        SetError(error);
     }
     return error;
 }
@@ -240,12 +272,12 @@ TInt CHbDeviceDialogSymbianPrivate::Update( const QByteArray& aArray )
 void CHbDeviceDialogSymbianPrivate::CancelDialog()
 {
     iLastError = KErrNone;
-    int error = KErrNotFound;
+    int error = SymToDeviceDialogError(KErrNotFound);
 
     if (iRequesting) {
         // Ignore other than server errors.
         error = iHbSession.SendSyncRequest(EHbSrvCancelDeviceDialog, iDeviceDialogId());
-        // error = SymToDeviceDialogError(error);
+        error = SymToDeviceDialogError(error);
     }
     if (error != KErrNone) {
         SetError(error);
@@ -273,14 +305,14 @@ void CHbDeviceDialogSymbianPrivate::SetObserver( MHbDeviceDialogObserver* aObser
 void CHbDeviceDialogSymbianPrivate::RunL()
 {
     TInt completionCode = iStatus.Int();
-    //int errorCode = SymToDeviceDialogError(completionCode);
+    int errorCode = SymToDeviceDialogError(completionCode);
 
     if (completionCode < KErrNone) {
         // Any Symbian error, stop requesting, sycnhoronous requests are stopped
         // in the end of the RunL
         iRequesting = EFalse;
-        SetError(completionCode);
-        if (CallDialogClosedObserver(completionCode)) {
+        SetError(errorCode);
+        if (CallDialogClosedObserver(errorCode)) {
             return; // observed deleted this object, do not touch it
         }
     }
@@ -299,13 +331,13 @@ void CHbDeviceDialogSymbianPrivate::RunL()
                     iBuffer = HBufC8::NewL(updateInfo.iInfo.iDataInfo.iDataSize);
                     iDataPtr.Set(iBuffer->Des());
                     completionCode = iHbSession.SendSyncRequest(EHbSrvUpdateData, iDataPtr);
-                    //errorCode = SymToDeviceDialogError(completionCode);
+                    errorCode = SymToDeviceDialogError(completionCode);
 
                     // data request failed
                     if (completionCode < KErrNone) {
                         iRequesting = EFalse;
-                        SetError(completionCode);
-                        if (CallDialogClosedObserver(completionCode)) {
+                        SetError(errorCode);
+                        if (CallDialogClosedObserver(errorCode)) {
                             return; // observed deleted this object, do not touch it
                         }
                     }
@@ -340,10 +372,10 @@ void CHbDeviceDialogSymbianPrivate::RunL()
             case EHbDeviceDialogUpdateClosed:
                 // Signal possible cancelled error
                 if (completionCode != KErrNone) {
-                    SetError(completionCode);
+                    SetError(errorCode);
                 }
                 iRequesting = EFalse;
-                if (CallDialogClosedObserver(completionCode)) {
+                if (CallDialogClosedObserver(errorCode)) {
                     return; // observed deleted this object, do not touch it
                 }
                 break;
@@ -373,9 +405,9 @@ void CHbDeviceDialogSymbianPrivate::DoCancel()
     \internal
     RunError from CActive.
 */
-TInt CHbDeviceDialogSymbianPrivate::RunError( TInt /*aError*/ )
+TInt CHbDeviceDialogSymbianPrivate::RunError(TInt /*aError*/)
 {
-    SetError( KErrGeneral );
+    SetError(SymToDeviceDialogError(KErrGeneral));
     return KErrNone;
 }
 
@@ -395,16 +427,12 @@ void CHbDeviceDialogSymbianPrivate::Start()
 }
 
 // Convert symbian error code into HbDeviceDialog error code
-int CHbDeviceDialogSymbianPrivate::SymToDeviceDialogError( TInt errorCode )
+int CHbDeviceDialogSymbianPrivate::SymToDeviceDialogError(TInt errorCode)
 {
     if (errorCode != HbDeviceDialogNoError) {
-        // Any Symbian error, close session handle. It will be reopened on next show()
-        if (errorCode < KErrNone) {
-            iHbSession.Close();
-        }
-        // All Symbian errors are connected to HbDeviceDialogConnectError
-        if (errorCode < KErrNone) {
-            errorCode = HbDeviceDialogConnectError;
+        // Convert from internal to public error code
+        if (errorCode == HbDeviceDialogAlreadyExists) {
+            errorCode = CHbDeviceDialogSymbian::EInstanceExistsError;
         }
     }
     return errorCode;
@@ -442,24 +470,23 @@ bool CHbDeviceDialogSymbianPrivate::CallDataReceivedObserver(CHbSymbianVariantMa
 }
 
 /*!
-    Constructs CHbDeviceDialogSymbian object. \a f contains construct flags. Device
-    dialog service will clean all dialogs launched when the instance is deleted.
+    Constructs CHbDeviceDialogSymbian object. \a f contains construct flags.
 */
-
-EXPORT_C CHbDeviceDialogSymbian* CHbDeviceDialogSymbian::NewL( TInt aFlags )
+EXPORT_C CHbDeviceDialogSymbian* CHbDeviceDialogSymbian::NewL(TInt aFlags)
 {
-     CHbDeviceDialogSymbian* deviceDialog = new (ELeave) CHbDeviceDialogSymbian(aFlags);
-     int error = KErrNone;
-     if(deviceDialog->d) {
-         error = deviceDialog->d->iHbSession.Connect();
+     CHbDeviceDialogSymbian* self = new (ELeave) CHbDeviceDialogSymbian;
+     CleanupStack::PushL(self);
+     self->d = new (ELeave) CHbDeviceDialogSymbianPrivate(aFlags);
+
+     if (aFlags & EImmediateResourceReservation) {
+         User::LeaveIfError(self->d->Initialize());
      }
-     if(error != KErrNone) {
-         CleanupStack::PushL(deviceDialog);
-         User::Leave(error);
-         delete deviceDialog;
-         deviceDialog = 0;
-     }
-     return deviceDialog;
+     CleanupStack::Pop(); // self
+     return self;
+}
+
+CHbDeviceDialogSymbian::CHbDeviceDialogSymbian()
+{
 }
 
 EXPORT_C CHbDeviceDialogSymbian::~CHbDeviceDialogSymbian()
@@ -555,14 +582,4 @@ EXPORT_C void CHbDeviceDialogSymbian::Cancel()
 EXPORT_C void CHbDeviceDialogSymbian::SetObserver(MHbDeviceDialogObserver* aObserver)
 {
     d->SetObserver(aObserver);
-}
-
-CHbDeviceDialogSymbian::CHbDeviceDialogSymbian(TInt aFlags) : d(NULL)
-{
-  d = new CHbDeviceDialogSymbianPrivate;
-  d->iFlags = aFlags;
-  CActiveScheduler::Add(d);
-
-  // Is needed to implement?
-  //if (mDeviceDialogFlags & HbDeviceDialog::ImmediateResourceReservationFlag)
 }

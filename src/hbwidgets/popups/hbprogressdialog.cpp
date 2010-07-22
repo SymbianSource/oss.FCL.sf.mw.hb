@@ -111,7 +111,7 @@ void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
         mContentWidget->mProgressBar->setRange(0,100);
     }
     
-    HbAction *action = new HbAction(q->tr("Cancel"), q);
+    HbAction *action = new HbAction(hbTrId("txt_common_button_cancel"), q);
     QObject::connect(action, SIGNAL(triggered()), q, SLOT(_q_userCancel()));
     q->addAction(action);
     
@@ -231,20 +231,21 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
     \class HbProgressDialog
     \brief HbProgressDialog provides feedback on the progress of a slow operation.
 
-    \image html hbprogressdialog.png  A progress dialog.
+    \image html progressdialog1.png  "A normal Progress Dialog with icon and text"
+    \image html progressdialog2.png  "A wait Progress Dialog with icon and text"
 
-    ProgressDialog widget displays that a process is active and also the completion level of the process to the user.
+    ProgressDialog widget displays that an application is active and also the completion level of the process to the user.
 
     A progress dialog is used to give the user an indication of how long an operation is going to take, and 
     to demonstrate that the application has not frozen. It can also give the user an opportunity to abort the operation.
 
-    Progress dialog provides several types of notifications. The supported  types are:
+    Progress dialog provides 2 types of notifications. They are:
     
     \code
     enum ProgressDialogType { ProgressDialog, WaitDialog };
     \endcode
 
-    Progress dialog has the following mandatory elements:
+    Progress dialog has the following default elements:
     \li Progress bar (Determinate type) 
     \li Description
     \li Cancel button (for canceling the process) 
@@ -252,7 +253,6 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
     Optionally, progress dialog may also includes:
     \li  Icon
     \li  Heading
-    \li  Close button (same as ‘Cancel’ button during active process, closes the dialog after successful process)
 
     Progress dialog is modal and requires user intervention to dismiss it. 
     \sa HbDialog
@@ -270,7 +270,7 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
     \endcode
 
     The progress note is closed explicitly when the user clicks Cancel button or the application 
-    calls cancel().
+    calls cancel() API.
 
     Another use case is an application downloading a file. 
     \code
@@ -284,6 +284,13 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
       pDialog->setText(QString("Downloaded %1/1000 KB").arg(i));
     }
 
+    \endcode
+
+    Below sample code shows how the \a cancel() signal can be connected so that application  can terminate the task. 
+
+    \code
+    HbProgressDialog *pDialog = new HbProgressDialog(HbProgressDialog::ProgressDialog);
+    connect(pDialog,SIGNAL(cancelled()),this,SLOT(dialogCancelled()));
     \endcode
 */
 
@@ -309,7 +316,7 @@ void HbProgressDialogPrivate::_q_progressValueChanged(int value)
 /*!
     \var HbProgressDialog::WaitDialog
 
-    TThis enum describes the type value as WaitDialog.
+    This enum describes the type value as WaitDialog.
  */
 
 

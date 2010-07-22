@@ -35,12 +35,17 @@
 #include "hbevent.h"
 #include "hbcolorscheme.h"
 #include "hbwidgetfeedback.h"
+#include "hbtapgesture.h"
+#include "hbnamespace_p.h"
+
+#include <QGraphicsScene>
 #ifdef HB_GESTURE_FW
 #include <QGesture>
 #endif
+
 Q_DECLARE_METATYPE (QAction*)
 
-/*
+/*!
     \class HbMenuItem
     \brief HbMenuItem is a menu item graphics widget.
 
@@ -59,6 +64,16 @@ Q_DECLARE_METATYPE (QAction*)
     \property HbMenuItem::menuType
     \brief
 */
+
+/*!
+    \primitives
+    \primitive{frame} HbFrameItem representing the background frame of the menu item.
+    \primitive{focus-indicator} HbFrameItem representing the background frame of the menu item when the item is focused.
+    \primitive{text} HbTextItem representing the menu item text.
+    \primitive{submenu-indicator} HbIconItem representing the icon that indicates that the menu item opens a sub-menu.
+    \primitive{check-indicator} HbIconItem representing the check icon of the menu item.
+    \primitive{separator} HbIconItem representing a menu separator.
+  */
 
         HbMenuItemPrivate::HbMenuItemPrivate() :
         HbWidgetPrivate(),
@@ -172,7 +187,7 @@ void HbMenuItemPrivate::_q_updateItem(bool forcedUpdate)
     }
 }
 
-/*
+/*!
     Constructs a new HbMenuItem with \a action and \a parent. Ownership of the
     \a action remains on it's parent.
 */
@@ -188,14 +203,14 @@ HbMenuItem::HbMenuItem(HbMenu *menu, QGraphicsItem *parent)
     setAcceptedMouseButtons (Qt::NoButton);
 }
 
-/*
+/*!
     Destructs the menu item.
 */
 HbMenuItem::~HbMenuItem()
 {
 }
 
-/*
+/*!
     Returns the action representing this menu item.
 */
 QAction* HbMenuItem::action() const
@@ -204,7 +219,7 @@ QAction* HbMenuItem::action() const
     return d->action;
 }
 
-/*
+/*!
     Returns the menu which handles this item.
 */
 HbMenu* HbMenuItem::menu() const
@@ -213,7 +228,7 @@ HbMenu* HbMenuItem::menu() const
     return d->menu;
 }
 
-/*
+/*!
     \reimp
  */
 void HbMenuItem::initStyleOption(HbStyleOptionMenuItem *option) const
@@ -236,7 +251,7 @@ void HbMenuItem::initStyleOption(HbStyleOptionMenuItem *option) const
 }
 
 
-/*
+/*!
     \reimp
  */
 void HbMenuItem::changeEvent(QEvent *event)
@@ -256,26 +271,34 @@ void HbMenuItem::changeEvent(QEvent *event)
 void HbMenuItem::gestureEvent(QGestureEvent *event)
 {
     //Q_D(HbMenuItem);
-    if(QTapGesture *gesture = qobject_cast<QTapGesture *>(event->gesture(Qt::TapGesture))) {
-        if (gesture->state() == Qt::GestureStarted) {           
+    if(HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        if (gesture->state() == Qt::GestureStarted) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            gesture->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+
             // Tactile feedback                        
             HbWidgetFeedback::triggered(this, Hb::InstantPressed);
 
             pressStateChanged(true);
             event->accept();
         } else if (gesture->state() == Qt::GestureFinished) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             pressStateChanged(false);
             event->accept();            
             HbMenuPrivate::d_ptr(menu())->_q_triggerAction(this);
         } else if (gesture->state() == Qt::GestureCanceled) {
+            if (scene())
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             pressStateChanged(false);
         }
     }
 }
 #endif
 
-/*
+/*!
     Sets the action,which is represented by the menu item.
 */
 void HbMenuItem::setAction(QAction *action)
@@ -298,7 +321,7 @@ void HbMenuItem::setAction(QAction *action)
 
 }
 
-/*
+/*!
     This is for convienience.This functionality can be internal to menu item
     also and cal be done by following changed() signal emitted from action.But this gives more precise
     control for menu container.This is called when action has been made invisible and
@@ -331,7 +354,7 @@ bool HbMenuItem::separatorExists()
     return (d->separatorItem != 0);
 }
 
-/*
+/*!
     Returns the type of the menu where menu item belongs.
 */
 HbMenu::MenuType HbMenuItem::menuType() const

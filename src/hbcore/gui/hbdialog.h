@@ -37,6 +37,8 @@ class HB_CORE_EXPORT HbDialog : public HbPopup
     Q_OBJECT
 
 public:
+    enum DialogCode { Rejected, Accepted };
+
     explicit HbDialog( QGraphicsItem *parent = 0 );
     virtual  ~HbDialog();
 
@@ -52,14 +54,22 @@ public:
     HbAction *secondaryAction() const;
     void setSecondaryAction( HbAction *action );
 
+    void open( QObject* receiver, const char* member );
+
     enum { Type = Hb::ItemType_Dialog }; // TODO: Hb::ItemType_Dialog
     int type() const { return Type; }
 
 public slots:
-    void open( QObject* receiver = 0, const char* member = 0 );
+    void open();
+    virtual void done(int code);
+    virtual void accept();
+    virtual void reject();   
 
- signals:
+signals:
     void finished(HbAction*); 
+    void finished(int);
+    void accepted();
+    void rejected();
 
 protected:
     HbDialog( HbDialogPrivate &dd, QGraphicsItem *parent );

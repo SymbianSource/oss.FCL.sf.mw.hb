@@ -1,23 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="40px" version="1.1" viewBox="0 0 40 40" width="40px" x="0px" y="0px">
+<svg baseProfile="tiny" height="40px" version="1.1" viewBox="0 0 40 40" width="40px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <rect fill="none" height="40" width="40"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="20" x2="20" y1="2.6904" y2="38.7789">
-<stop offset="0" style="stop-color:#6E6E6E"/>
+<rect fill="url(#SVGID_1_)" fill-opacity="0.6" height="40" stroke-opacity="0.6" width="40"/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="0,39 39,39 39,1 0,1 0,0 40,0 40,40 0,40 " stroke-opacity="0.4"/>
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="20" x2="20" y1="-0.3335" y2="39.847">
+<stop offset="0" style="stop-color:#4D4D4D"/>
 <stop offset="1" style="stop-color:#000000"/>
 </linearGradient>
-<rect fill="url(#SVGID_1_)" fill-opacity="0.6" height="39" stroke-opacity="0.6" width="40"/>
-<rect fill="#FFFFFF" fill-opacity="0.1" height="2" stroke-opacity="0.1" width="40" y="38"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="20" x2="20" y1="1" y2="17.5058">
-<stop offset="0" style="stop-color:#FFFFFF"/>
-<stop offset="0.011" style="stop-color:#FFFFFF"/>
-<stop offset="1" style="stop-color:#262626"/>
-</linearGradient>
-<rect fill="url(#SVGID_2_)" fill-opacity="0.25" height="1" stroke-opacity="0.25" width="40" y="1"/>
-<rect fill="#C8C8C8" fill-opacity="0.05" height="16" stroke-opacity="0.05" width="40" y="2"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="39.5" x2="39.5" y1="2" y2="38.0005">
-<stop offset="0" style="stop-color:#FFFFFF"/>
-<stop offset="1" style="stop-color:#505050"/>
-</linearGradient>
-<rect fill="url(#SVGID_3_)" fill-opacity="0.4" height="36" stroke-opacity="0.4" width="1" x="39" y="2"/>
+</defs>
 </svg>

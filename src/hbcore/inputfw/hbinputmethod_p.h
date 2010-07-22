@@ -26,71 +26,85 @@
 #define HB_INPUT_METHOD_P_H
 
 #include <QString>
+#include <QPointer>
 
 #include <hbinputmodeproperties.h>
 #include <hbinputstate.h>
 #include <hbinputlanguage.h>
+#include "hbinputcontextproxy_p.h"
 
 class HbInputStateMachine;
 class HbInputFilter;
 class HbInputMethod;
+class HbInputMainWindow;
+class HbInputContextProxy;
 
 class HB_CORE_PRIVATE_EXPORT HbInputMethodPrivate
 {
     Q_DECLARE_PUBLIC(HbInputMethod)
 
 public:
-    explicit HbInputMethodPrivate(HbInputMethod* owner)
+    explicit HbInputMethodPrivate(HbInputMethod *owner)
         : q_ptr(owner),
-        mIsActive(false),
-        mFocusObject(0),
-        mInputState(HbInputModeNone, HbTextCaseNone, HbKeyboardNone),        
-        mFocusLocked(false),
-        mStateChangeInProgress(false)
+          mProxy(0),
+          mIsActive(false),
+          mFocusObject(0),
+          mOldFocusObject(0),
+          mInputState(HbInputModeNone, HbTextCaseNone, HbKeyboardNone),
+          mFocusLocked(false),
+          mStateChangeInProgress(false),
+          mInsideVanillaWindow(false)
     {}
     ~HbInputMethodPrivate();
 
     HbInputFilter *editorFilter() const;
     int editorConstraints() const;
-    void inputStateFromEditor(HbInputState& result);
-    void inputStateToEditor(const HbInputState& source);
+    void inputStateFromEditor(HbInputState &result);
+    void inputStateToEditor(const HbInputState &source);
     HbInputLanguage activeLanguage() const;
     bool modeAllowedInEditor(HbInputModeType mode) const;
-    bool stateAllowedInEditor(const HbInputState& state);
-    HbInputMethod* findStateHandler(HbInputState& startingState);
+    bool stateAllowedInEditor(const HbInputState &state);
+    HbInputMethod *findStateHandler(HbInputState &startingState);
     HbInputLanguage findStateLanguage() const;
     bool automaticTextCaseNeeded() const;
     bool textCaseApplies() const;
     HbKeyboardType activeKeyboard() const;
     void setFocusCommon();
     void refreshState();
-    bool compareWithCurrentFocusObject(HbInputFocusObject* focusObject) const;
-    QInputContext* newProxy();
+    bool compareWithCurrentFocusObject(HbInputFocusObject *focusObject) const;
+    QInputContext *proxy();
     bool isFixedCaseEditor() const;
     bool isLowerCaseOnlyEditor() const;
     bool isUpperCaseOnlyEditor() const;
-    void transfer(HbInputMethod* source);
-    void contextSwitch(HbInputMethod* toBeActive);
+    void transfer(HbInputMethod *source);
+    void contextSwitch(HbInputMethod *toBeActive);
     void editorRootState(HbInputState &result) const;
     void constructLatinState(HbInputState &result) const;
-    HbTextCase initialTextCase(HbInputModeType inputMode) const; 
+    HbTextCase initialTextCase(HbInputModeType inputMode) const;
     HbInputModeType initialInputMode(const HbInputLanguage &language) const;
-    HbInputModeType defaultInputMode(const HbInputLanguage &inputLanguage) const;  
+    HbInputModeType defaultInputMode(const HbInputLanguage &inputLanguage) const;
     void setUpFocusedObjectAsDigitsOnlyEditor();
     void setUpFocusedObjectAsFormattedNumberEditor();
     void setUpFocusedObjectAsPhoneNumberEditor();
     void setUpFocusedObjectAsEmailEditor();
     void setUpFocusedObjectAsUrlEditor();
+    void initMainWindow(QWidget *window);
+    void checkAndShowMainWindow();
+    void showMainWindow();
+    void hideMainWindow();
+    bool ignoreFrameworkFocusRelease(QObject *object) const;
 
 public:
     HbInputMethod *q_ptr;
+    QPointer<HbInputContextProxy > mProxy;
     bool mIsActive;
-    HbInputFocusObject* mFocusObject;
-    HbInputState mInputState;   
+    HbInputFocusObject *mFocusObject;
+    HbInputFocusObject *mOldFocusObject;
+    HbInputState mInputState;
     bool mFocusLocked;
     bool mStateChangeInProgress;
     QList<HbInputModeProperties> mInputModes;
-
+    bool mInsideVanillaWindow;
 private: // For unit test.
     static HbInputMethodPrivate *d_ptr(HbInputMethod *inputMethod) {
         Q_ASSERT(inputMethod);

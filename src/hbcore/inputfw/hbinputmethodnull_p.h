@@ -31,7 +31,7 @@
 class HB_CORE_PRIVATE_EXPORT HbInputMethodNull : public HbInputMethod
 {
 public:
-    static HbInputMethodNull* Instance();
+    static HbInputMethodNull *Instance();
 
 private: // This is singleton
     HbInputMethodNull();
@@ -43,7 +43,7 @@ public: // From QInputContext
     QString language();
     void reset();
     bool filterEvent(const QEvent *event);
-    void mouseHandler(int x, QMouseEvent* event);
+    void mouseHandler(int x, QMouseEvent *event);
 };
 
 #endif // HB_INPUT_METHOD_NULL_H

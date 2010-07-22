@@ -34,18 +34,18 @@ class HbDeviceModeInfoPrivate;
 class HbScreenMode;
 
 class HB_AUTOTEST_EXPORT HbDeviceModeInfo
-    {
+{
 public:
-    HbDeviceModeInfo();
+    HbDeviceModeInfo(const QString &wsIniFile = QString());
     ~HbDeviceModeInfo();
-    
+
     QList<int> modeNumbers() const;
     HbScreenMode *mode(int modeNumber);
 
 private:
-    HbDeviceModeInfoPrivate * const d_ptr;
+    HbDeviceModeInfoPrivate *const d_ptr;
     Q_DISABLE_COPY(HbDeviceModeInfo)
     Q_DECLARE_PRIVATE_D(d_ptr, HbDeviceModeInfo)
-    };
+};
 
 #endif // HBDEVICEMODEINFO_H

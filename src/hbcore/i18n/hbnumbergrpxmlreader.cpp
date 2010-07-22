@@ -29,6 +29,11 @@
 
 using namespace HbNumberGrpXmlReaderHelp;
 
+/*!
+    Constructor of class  
+    
+    \param localeId identifier for locale
+*/ 
 HbNumberGrpXmlReader::HbNumberGrpXmlReader( int localeId )
 {
 	locale.setNum(localeId);
@@ -50,35 +55,54 @@ HbNumberGrpXmlReader::HbNumberGrpXmlReader( int localeId )
 	}	
 } 	
 
+/*!
+    \return pattern for grouping 
+*/ 
 QString HbNumberGrpXmlReader::getPattern()
 {
 	return pattern;
 }
 
+/*!
+    \return character(s) for group 
+*/ 
 QString HbNumberGrpXmlReader::getGroup()
 {
 	return group;
 }
 
+/*!
+    \return character(s) for decimal 
+*/ 
 QString HbNumberGrpXmlReader::getDecimal()
 {
 	return decimal;
 }
 
-HbNumberGrpXmlReader::HbNumberGrpXmlReader()
-{
-}
-
+/*!
+    Destructor of class. 
+*/ 
 HbNumberGrpXmlReader::~HbNumberGrpXmlReader()
 {
 
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \return true 
+*/ 
 bool HbNumberGrpXmlReader::startDocument()
 {
     return true;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param qName element which will be readed
+    \return true 
+*/ 
 bool HbNumberGrpXmlReader::startElement( const QString &,
 				   const QString &,
 				   const QString &qName,
@@ -102,6 +126,12 @@ bool HbNumberGrpXmlReader::startElement( const QString &,
     return true;	
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param text readed element
+    \return true 
+*/ 
 bool HbNumberGrpXmlReader::characters( const QString &text )
 {  
     if ( done ) {
@@ -113,7 +143,7 @@ bool HbNumberGrpXmlReader::characters( const QString &text )
 	// This little trick is needed because of limitation in XML reader
 	// XML reader doesn't read space character corretly
     if ( text.at(0).toAscii() == 32 ) {  // " "
-        tmpText = " ";    
+        tmpText = ' ';    
     } else {
         tmpText = text;
     }
@@ -132,6 +162,12 @@ bool HbNumberGrpXmlReader::characters( const QString &text )
     return true;	
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param qName element which was readed
+    \return true 
+*/ 
 bool HbNumberGrpXmlReader::endElement( const QString &,
         const QString &,
         const QString &qName )
@@ -143,6 +179,11 @@ bool HbNumberGrpXmlReader::endElement( const QString &,
 	return true;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \return true 
+*/ 
 bool HbNumberGrpXmlReader::endDocument()
 {
     return true;

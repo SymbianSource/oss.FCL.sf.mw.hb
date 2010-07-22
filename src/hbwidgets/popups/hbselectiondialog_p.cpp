@@ -33,29 +33,89 @@
 #include <QtDebug>
 #include <hbcheckbox.h>
 #include <hbaction.h>
+#include <hbstyleoption_p.h>
+
+HbSelectionDialogMarkWidget::HbSelectionDialogMarkWidget(QGraphicsItem *parent):HbWidget(parent),mBackgroundItem(0){
+	chkMark = new HbCheckBox(this);
+	chkMark->setText("Mark All");
+	lbCounter = new HbTextItem(this);
+	HbStyle::setItemName(chkMark,"checkbox");
+	HbStyle::setItemName(lbCounter,"counter");
+	createPrimitives();
+}
+
+void HbSelectionDialogMarkWidget::createPrimitives()
+{
+    if ( !mBackgroundItem ) {
+        mBackgroundItem = style( )->createPrimitive( HbStyle::P_TumbleView_background , this );
+        style()->setItemName( mBackgroundItem , "background" );
+    }
+}
+
+void HbSelectionDialogMarkWidget::updatePrimitives()
+{
+    HbStyleOption option;
+    initStyleOption( &option );
+   
+    if ( mBackgroundItem ) {
+            style( )->updatePrimitive( mBackgroundItem , HbStyle::P_TumbleView_background , &option );
+    }       
+}
+
+/*!
+    \reimp
+ */
+QVariant HbSelectionDialogMarkWidget::itemChange( GraphicsItemChange change, const QVariant &value )
+{
+    switch ( change ) {
+        case ItemVisibleHasChanged: {
+			updatePrimitives( );
+            }
+            break;
+
+        case ItemSceneHasChanged: {
+            updatePrimitives();
+            }
+            break;
+        default:
+            break;
+    }
+    return HbWidget::itemChange( change, value );
+}
+/*!
+    Returns the pointer for \a primitive passed.
+    Will return NULL if \a primitive passed is invalid
+*/
+QGraphicsItem* HbSelectionDialogMarkWidget::primitive(HbStyle::Primitive primitive) const
+{
+    switch (primitive) {
+        case HbStyle::P_TumbleView_background:
+            return mBackgroundItem;
+        default:
+            return 0;
+    }
+}
+
+HbSelectionDialogMarkWidget::~HbSelectionDialogMarkWidget()
+{
+}
 
 HbSelectionDialogContentWidget::HbSelectionDialogContentWidget(HbSelectionDialogPrivate *priv):HbWidget(),
-                        mListWidget(0),d(priv),chkMark(0),lbCounter(0)
+                        mListView(0),d(priv),markWidget(0)
 {
-    mListWidget = new HbListWidget(this);
-    HbStyle::setItemName(mListWidget, "list");
-    QObject::connect(mListWidget,SIGNAL(activated(const QModelIndex&)),this,SLOT(_q_listItemSelected(QModelIndex)));
-    QObject::connect(mListWidget,SIGNAL(activated(HbListWidgetItem *)),this,SLOT(_q_listWidgetItemSelected(HbListWidgetItem *)));
+    
 }
 
 void HbSelectionDialogContentWidget::_q_listWidgetItemSelected(HbListWidgetItem *item)
 {
-    if(item){
-        updateCounter();
-    }
+	Q_UNUSED(item)
 }
 
 void HbSelectionDialogContentWidget::_q_listItemSelected(QModelIndex index)
 {
     Q_UNUSED(index)
-    if(mListWidget->selectionMode()== HbAbstractItemView::SingleSelection ||
-       mListWidget->selectionMode()== HbAbstractItemView::NoSelection){
-       d->close();   
+	if(mListView->selectionMode()== HbAbstractItemView::SingleSelection){
+       d->close();
     }
     updateCounter();
 }
@@ -63,36 +123,43 @@ void HbSelectionDialogContentWidget::_q_listItemSelected(QModelIndex index)
 int HbSelectionDialogContentWidget::selectedItemCount() const
 {
     int selectedItems = 0;
-    QItemSelectionModel* selectionModel = mListWidget->selectionModel();
-    if(selectionModel){
-        selectedItems = selectionModel->selectedRows().count();
-    }
+	if(mListView){
+		QItemSelectionModel* selectionModel = mListView->selectionModel();
+		if(selectionModel){
+			selectedItems = selectionModel->selectedRows().count();
+		}
+	}
     return selectedItems;
 }
 
 int HbSelectionDialogContentWidget::totalItemCount() const
 {
-    return mListWidget->count();
+	int nCount = 0;
+	if(mListView && mListView->model()){
+		nCount = mListView->model()->rowCount();
+	}
+	return nCount;
 }
 
 void HbSelectionDialogContentWidget::updateCounter()
 {
-    if(mListWidget->selectionMode()!= HbAbstractItemView::MultiSelection) return;
-    if(chkMark && lbCounter){
+	if(!mListView) return;
+    if(mListView->selectionMode()!= HbAbstractItemView::MultiSelection) return;
+    if(markWidget){
         int totalItems = totalItemCount();
         int selectedItems = selectedItemCount();
-
-        lbCounter->setText(QString(QString::number(selectedItems) + "/" + QString::number(totalItems)));
+		markWidget->updatePrimitives();
+        markWidget->lbCounter->setText(QString(QString::number(selectedItems) + "/" + QString::number(totalItems)));
         //update checked state of "MarkAll" checkbox 
-        if (selectedItems == totalItems){
-            chkMark->blockSignals(true); //should not call _q_checkboxclicked()
-            chkMark->setChecked(true);
-            chkMark->blockSignals(false);
+        if (totalItems > 0 && (selectedItems == totalItems)){
+            markWidget->chkMark->blockSignals(true); //should not call _q_checkboxclicked()
+            markWidget->chkMark->setChecked(true);
+            markWidget->chkMark->blockSignals(false);
         }
         else{
-            chkMark->blockSignals(true); //should not call _q_checkboxclicked()
-            chkMark->setChecked(false);
-            chkMark->blockSignals(false);
+            markWidget->chkMark->blockSignals(true); //should not call _q_checkboxclicked()
+            markWidget->chkMark->setChecked(false);
+            markWidget->chkMark->blockSignals(false);
         }
     }
 }
@@ -101,7 +168,7 @@ void HbSelectionDialogContentWidget::_q_checkboxclicked(int value)
 {
     int totalItems = 0;
     int selectedItems = 0;
-    QAbstractItemModel* itemModel = mListWidget->model();
+    QAbstractItemModel* itemModel = mListView->model();
     QModelIndex indexStart,indexEnd;
     if(itemModel){
         indexStart = itemModel->index(0,0);
@@ -109,7 +176,7 @@ void HbSelectionDialogContentWidget::_q_checkboxclicked(int value)
         totalItems = itemModel->rowCount();
     }
 
-    QItemSelectionModel* selectionModel = mListWidget->selectionModel();
+    QItemSelectionModel* selectionModel = mListView->selectionModel();
     if(selectionModel){
         selectedItems = selectionModel->selectedRows().count();
         if(value){ //Select All
@@ -124,50 +191,73 @@ void HbSelectionDialogContentWidget::_q_checkboxclicked(int value)
 
 void HbSelectionDialogContentWidget::showMarkWidget(bool bShow)
 {
-    if(bShow){
-            chkMark = new HbCheckBox(this);
-            chkMark->setText("Mark All");
-            lbCounter = new HbTextItem(this);
-            HbStyle::setItemName(chkMark,"checkbox");
-            HbStyle::setItemName(lbCounter,"counter");
-            setProperty("multiSelection",true);
-            connect(chkMark,SIGNAL(stateChanged ( int )),this,SLOT(_q_checkboxclicked(int)));
+	if(bShow){
+		if(!markWidget){
+			markWidget = new HbSelectionDialogMarkWidget(this);
+			HbStyle::setItemName(markWidget,"markwidget");
+			setProperty("multiSelection",true);
+            connect(markWidget->chkMark,SIGNAL(stateChanged ( int )),this,SLOT(_q_checkboxclicked(int)));
             updateCounter();
+		}
     }
     else{
-        delete chkMark;chkMark=0;
-        delete lbCounter;lbCounter=0;
-        HbStyle::setItemName(chkMark,"");
-        HbStyle::setItemName(lbCounter,"");
-        setProperty("multiSelection",false);
+		delete markWidget; markWidget = 0;
+		HbStyle::setItemName(markWidget,"");
+		setProperty("multiSelection",false);
     }
+}
+
+void HbSelectionDialogContentWidget::connectSlots()
+{
+    QObject::connect(mListView,SIGNAL(activated(const QModelIndex&)),this,SLOT(_q_listItemSelected(QModelIndex)));
+}
+
+void HbSelectionDialogContentWidget::createListWidget()
+{
+	if(mListView){
+		HbListWidget* mView = qobject_cast<HbListWidget*>(mListView);
+		if(!mView){
+			delete mListView;
+			mListView = new HbListWidget(this);
+			HbStyle::setItemName(mListView, "list");
+			connectSlots();
+		}
+	}
+	else{
+			mListView = new HbListWidget(this);
+			HbStyle::setItemName(mListView, "list");
+			connectSlots();
+	}
+}
+
+void HbSelectionDialogContentWidget::createListView()
+{
+	if(mListView){
+		HbListView* mView = qobject_cast<HbListView*>(mListView);
+		if(!mView){
+			delete mListView;
+			mListView = new HbListView(this);
+			HbStyle::setItemName(mListView, "list");
+			connectSlots();
+		}
+	}
+	else{
+			mListView = new HbListView(this);
+			HbStyle::setItemName(mListView, "list");
+			connectSlots();
+	}
 }
 
 HbSelectionDialogPrivate::HbSelectionDialogPrivate()
     :HbDialogPrivate()
 {
     bOwnItems = false;
+	action1 = action2 = 0;
 }
 
 HbSelectionDialogPrivate::~HbSelectionDialogPrivate()
 {
-    if(!bOwnItems){
-            Q_Q(HbSelectionDialog);
-            HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
-            if(cWidget){
-                if(cWidget->mListWidget){
-                    int nRows = 0;
-                    QAbstractItemModel* itemModel = cWidget->mListWidget->model();
-                    if(itemModel){
-                        nRows = itemModel->rowCount();
-                        while(nRows){
-                            cWidget->mListWidget->takeItem(0);
-                            nRows = itemModel->rowCount();
-                        }
-                    }
-                }
-            }
-    }
+	clearItems(bOwnItems);	
 }
 
 void HbSelectionDialogPrivate::init()
@@ -176,15 +266,34 @@ void HbSelectionDialogPrivate::init()
     Q_Q(HbSelectionDialog);
 
     bOwnItems = false;
-
+	mSelectionMode = HbAbstractItemView::SingleSelection;
     HbSelectionDialogContentWidget* contentWidget = new HbSelectionDialogContentWidget(this);
     q->setContentWidget(contentWidget);
 
-    q->addAction(new HbAction(q->tr("Ok"), q));
-
-    q->addAction(new HbAction(q->tr("Cancel"), q));
-    q->setTimeout(0);
+    q->setDismissPolicy(HbPopup::NoDismiss);
+    q->setTimeout(HbPopup::NoTimeout);      
     q->setModal(true);
+	showActions(mSelectionMode);
+}
+
+void HbSelectionDialogPrivate::showActions(HbAbstractItemView::SelectionMode selectionMode)
+{
+	Q_Q(HbSelectionDialog);
+	if(selectionMode == HbAbstractItemView::SingleSelection){
+		delete action1;action1=0;delete action2;action2=0;
+		action1=new HbAction(hbTrId("txt_common_button_cancel"),q);
+		q->addAction(action1);
+		q->connect(action1,SIGNAL(triggered()),q,SLOT(reject()));
+	}
+	else{
+		delete action1;action1=0;delete action2;action2=0;
+		action1=new HbAction(hbTrId("txt_common_button_ok"),q);
+		q->addAction(action1);
+		q->connect(action1,SIGNAL(triggered()),q,SLOT(accept()));
+		action2=new HbAction(hbTrId("txt_common_button_cancel"),q);
+		q->addAction(action2);
+		q->connect(action2,SIGNAL(triggered()),q,SLOT(reject()));
+	}
 }
 
 void HbSelectionDialogPrivate::setSelectionMode(HbAbstractItemView::SelectionMode mode)
@@ -192,23 +301,57 @@ void HbSelectionDialogPrivate::setSelectionMode(HbAbstractItemView::SelectionMod
     Q_Q(HbSelectionDialog);
 
     mSelectionMode = mode;
-    switch(mode)
+    switch(mSelectionMode)
     {
     case HbAbstractItemView::SingleSelection:
     case HbAbstractItemView::MultiSelection:
-    case HbAbstractItemView::NoSelection:
     {
         HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
-        if(cWidget){
-            cWidget->mListWidget->setSelectionMode(mode);
-        }
-        if(mode == HbAbstractItemView::MultiSelection)
-            cWidget->showMarkWidget(true);    
-        else
-            cWidget->showMarkWidget(false);    
+        if(cWidget && cWidget->mListView){
+            cWidget->mListView->setSelectionMode(mSelectionMode);
+			if(mode == HbAbstractItemView::MultiSelection)
+				cWidget->showMarkWidget(true);    
+			else
+				cWidget->showMarkWidget(false);    
+		}
+		showActions(mSelectionMode);
     }
     break;
-    }
+    case HbAbstractItemView::NoSelection:
+	break;
+	}
+}
+
+
+void HbSelectionDialogPrivate::clearItems(bool keepItems)
+{
+	Q_Q(HbSelectionDialog);
+	HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
+	if(cWidget){
+		HbListWidget* mWidget = qobject_cast<HbListWidget*>(cWidget->mListView);
+		if(mWidget){
+				if(keepItems){
+				int nRows = 0;
+				QAbstractItemModel* itemModel = mWidget->model();
+				if(itemModel){
+					nRows = itemModel->rowCount();
+					while(nRows){
+						mWidget->takeItem(0);
+						nRows = itemModel->rowCount();
+					}
+				}
+			}
+			else{
+				mWidget->clear();
+			}
+			bOwnItems = false;
+			return;
+		}
+		HbListView* mView = qobject_cast<HbListView*>(cWidget->mListView);
+		if(mView){
+			cWidget->mListView->setModel(0);
+		}
+	}
 }
 
 QList<HbListWidgetItem*> HbSelectionDialogPrivate::widgetItems() const
@@ -218,7 +361,7 @@ QList<HbListWidgetItem*> HbSelectionDialogPrivate::widgetItems() const
     QList<HbListWidgetItem*> rows;
     HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
     if(cWidget){
-        HbListWidget* widget = qobject_cast<HbListWidget*>(cWidget->mListWidget);
+        HbListWidget* widget = qobject_cast<HbListWidget*>(cWidget->mListView);
         if(widget){
             int count = 0;
             QAbstractItemModel* itemModel = widget->model();
@@ -240,16 +383,19 @@ void HbSelectionDialogPrivate::setStringItems(const QStringList &items, int curr
     if(!cWidget) return;
     
     int nRows = 0;
-
-    if(cWidget->mListWidget){
+	cWidget->createListWidget();
+	setSelectionMode(mSelectionMode);
+    if(cWidget->mListView){
         int count = items.size();
+		if(count > 0) clearItems(bOwnItems); //Clear the existing items first
         for (int i = 0; i < count; ++i) {
             HbListWidgetItem* modelItem = new HbListWidgetItem();
             QString str = items.at(i);
             modelItem->setText(str);
-            cWidget->mListWidget->addItem(modelItem);
+			HbListWidget* widget = (HbListWidget*)cWidget->mListView;
+            widget->addItem(modelItem);
             
-            QAbstractItemModel* itemModel = cWidget->mListWidget->model();
+            QAbstractItemModel* itemModel = cWidget->mListView->model();
             if(itemModel)
                 nRows = itemModel->rowCount();
         }
@@ -282,7 +428,9 @@ void HbSelectionDialogPrivate::setModel(QAbstractItemModel* model)
 
     HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
     if(cWidget){
-        cWidget->mListWidget->HbListView::setModel(model); //HbListView's implementation of setModel()
+		cWidget->createListView();
+		setSelectionMode(mSelectionMode);
+        cWidget->mListView->setModel(model); 
     }
 }
 
@@ -292,12 +440,16 @@ void HbSelectionDialogPrivate::setWidgetItems(const QList<HbListWidgetItem*> &it
 
     HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
     if(cWidget){
-        if(cWidget->mListWidget){
+		cWidget->createListWidget();
+		setSelectionMode(mSelectionMode);
+        if(cWidget->mListView){
+			HbListWidget* widget = (HbListWidget*)cWidget->mListView;
             int count = items.count();
+			if(count > 0) clearItems(bOwnItems); //Clear the existing items first
             for(int i = 0; i < count; i++){
-                cWidget->mListWidget->addItem(items[i]);
+                widget->addItem(items[i]);
             }
-            cWidget->mListWidget->setCurrentRow(currentIndex);
+            widget->setCurrentRow(currentIndex);
             
         }
         bOwnItems = transferOwnership;
@@ -309,8 +461,8 @@ QAbstractItemModel* HbSelectionDialogPrivate::model() const
     Q_Q(const HbSelectionDialog);
     
     HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
-    if(cWidget){
-        return cWidget->mListWidget->HbListView::model(); //HbListView's implementation of model()
+    if(cWidget && cWidget->mListView){
+		return cWidget->mListView->model();
     }
     return 0;
 }
@@ -320,8 +472,8 @@ QItemSelectionModel* HbSelectionDialogPrivate::selectionModel() const
     Q_Q(const HbSelectionDialog);
     
     HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
-    if(cWidget){
-        return cWidget->mListWidget->selectionModel();
+    if(cWidget && cWidget->mListView){
+        return cWidget->mListView->selectionModel();
     }
     return 0;
 }
@@ -332,15 +484,16 @@ void HbSelectionDialogPrivate::setSelectedItems(const QList<QVariant> items)
     QItemSelectionModel *model = 0;
     model = selectionModel();
     if(model){
+		model->clearSelection();
         Q_FOREACH(QVariant i,items) {
                 model->select(model->model()->index(i.toInt(),0),
                     QItemSelectionModel::Select);
         }
-    }
-    HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
-    if(cWidget){
-        cWidget->updateCounter();
-    }
+		HbSelectionDialogContentWidget* cWidget = qobject_cast<HbSelectionDialogContentWidget*>(q->contentWidget());
+		if(cWidget){
+			cWidget->updateCounter();
+		}
+	}
 }
 
 QList<QVariant> HbSelectionDialogPrivate::selectedItems() const
@@ -375,5 +528,6 @@ QModelIndexList HbSelectionDialogPrivate::selectedModelIndexes() const
 void HbSelectionDialogPrivate::close()
 {
     Q_Q(HbSelectionDialog);
-    q->close();
+	q->accept(); //emit the signal
 }
+

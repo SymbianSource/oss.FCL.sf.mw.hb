@@ -23,27 +23,25 @@
 **
 ****************************************************************************/
 
+#include "hbdevicemodeinfo_p.h"
+#include "hbwsiniparser_p.h"
 #include <QMap>
 #include <QFile>
 #include <QDebug>
 
-#include "hbdevicemodeinfo_p.h"
-#include "hbwsiniparser_p.h"
-
 class HbDeviceModeInfoPrivate
-    {
-
+{
 public:
     HbDeviceModeInfoPrivate();
-    void init();
+    void init(const QString &wsIniFile);
 
 public:
     QMap<int, HbScreenMode> mModes;
-    };
+};
 
-void HbDeviceModeInfoPrivate::init()
+void HbDeviceModeInfoPrivate::init(const QString &wsIniFile)
 {
-    HbWsiniParser::parseModes(mModes);
+    HbWsiniParser::parseModes(mModes, wsIniFile);
 }
 
 HbDeviceModeInfoPrivate::HbDeviceModeInfoPrivate()
@@ -55,17 +53,13 @@ HbDeviceModeInfoPrivate::HbDeviceModeInfoPrivate()
     \brief Provides information abstracted from the platform information on all the valid device modes
 
     All valid hardware and distinct user physical configurations should be accessed here.
-    
+
 */
 
-// ======== LOCAL FUNCTIONS ========
-
-// ======== MEMBER FUNCTIONS ========
-
-HbDeviceModeInfo::HbDeviceModeInfo()
-:   d_ptr(new HbDeviceModeInfoPrivate())
+HbDeviceModeInfo::HbDeviceModeInfo(const QString &wsIniFile)
+    :   d_ptr(new HbDeviceModeInfoPrivate())
 {
-    d_ptr->init();
+    d_ptr->init(wsIniFile);
 }
 
 HbDeviceModeInfo::~HbDeviceModeInfo()
@@ -85,13 +79,10 @@ QList<int> HbDeviceModeInfo::modeNumbers() const
 HbScreenMode *HbDeviceModeInfo::mode(int key)
 {
     HbScreenMode *result(0);
-    if (d_ptr->mModes.contains(key)){
+    if (d_ptr->mModes.contains(key)) {
         HbScreenMode &resultRef = d_ptr->mModes[key];
         result = &resultRef;
     }
 
     return result;
 }
-
-
-

@@ -74,7 +74,9 @@ public:
     QPointF mapOffset(const QPointF &point) const;
     QSizeF mapSize(const QSizeF &size) const;
 
-    static HbVgEffectPrivate *d_ptr(HbVgEffect *effect) { return effect->d_func(); }
+    static HbVgEffectPrivate *d_ptr(HbVgEffect *effect) {
+        return effect->d_func();
+    }
 
     void ensureCacheInvalidated();
 
@@ -113,7 +115,7 @@ public:
 
     QPixmap dstPixmap;
     QPixmap tmpPixmap;
-    
+
     // Root of the chain, null by default.  If non-null then updates are
     // delegated to this effect.  Note that the sourceXxxx() functions in
     // QGraphicsEffect are not valid for chained effects so call those functions
@@ -132,6 +134,8 @@ public:
     mutable qreal lastUsedRotation;
     mutable QTransform lastRotationTransform;
     mutable qreal lastRotationTransformAngle;
+
+    bool forceSwMode;
 };
 
 #endif

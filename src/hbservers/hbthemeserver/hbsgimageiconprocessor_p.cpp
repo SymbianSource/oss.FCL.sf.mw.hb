@@ -274,6 +274,7 @@ bool HbSgimageIconProcessor::createMultiPieceIconData(const QVector<HbSharedIcon
     }
 
     int iconCount = multiPieceIconParams.multiPartIconList.count();
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
     for (int i = 0; i < iconCount; i++) {
         HbIconFormatType type = multiPieceIconInfo[i].type;
         bool success = false;
@@ -285,14 +286,10 @@ bool HbSgimageIconProcessor::createMultiPieceIconData(const QVector<HbSharedIcon
                 int  pieceTopRight = position.x() + multiPieceIconParams.multiPartIconData.targets[i].width();
                 position.setX(consolidatedIconWidth - pieceTopRight);
             }
-
-
-            HbIconSource *source = HbThemeServerUtils::getIconSource(multiPieceIconParams.multiPartIconList[i]);
-            QByteArray *sourceByteArray = source->byteArray();
-            if( !sourceByteArray ) {
-                return false;
-            }
-            byteArray = *sourceByteArray;
+           
+            byteArray = QByteArray::fromRawData((char*)manager->base() + multiPieceIconInfo[i].nvgData.offset,
+                                       multiPieceIconInfo[i].nvgData.dataSize);
+           
             success = renderNvg(byteArray, QRect(position,
                                                  multiPieceIconParams.multiPartIconData.pixmapSizes[i]), (Qt::AspectRatioMode)multiPieceIconParams.aspectRatioMode,
                                 mirrored);

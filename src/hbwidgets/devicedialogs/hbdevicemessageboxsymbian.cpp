@@ -80,6 +80,7 @@ public:
         EType = EFirstIntProperty,
         EIconVisible,
         ETimeout,
+        EStandardButtons,
         EDismissPolicy,
         ELastIntProperty = EDismissPolicy,
         EFirstStringProperty,
@@ -100,12 +101,14 @@ public:
     void SetPropertyValue(TPropertyId aId, TInt aValue);
     void SetButtonNull(CHbDeviceMessageBoxSymbian::TButtonId aButtonId, bool aValue);
     void SetButtonTextL(CHbDeviceMessageBoxSymbian::TButtonId aButtonId, const TDesC &aValue);
+    void SetStandardButtons(TUint aButtons);
     void SendToServerL(bool aShow = false);
     void Close();
     bool WaitForClosed();
     static const TPtrC PropertyName(TPropertyId aId);
     static TPropertyId ButtonPropertyId(TPropertyId aId, CHbDeviceMessageBoxSymbian::TButtonId aButtonId);
     static HBufC *CreateActionDataLC(TBool aNull, const TDesC &text);
+    static TInt CountBits(TUint aValue);
 
 public: // MHbDeviceDialogObserver
     void DataReceived(CHbSymbianVariantMap& aData);
@@ -250,12 +253,21 @@ void CHbDeviceMessageBoxPrivate::InitProperties(CHbDeviceMessageBoxSymbian::TTyp
     mProperties[EIconVisible].Set(ETrue);
 
     switch(aType) {
+    case CHbDeviceMessageBoxSymbian::ENone:
+        mProperties[EIconVisible].Set(EFalse);
+        // Fall through
     case CHbDeviceMessageBoxSymbian::EInformation:
     case CHbDeviceMessageBoxSymbian::EWarning: {
         const TInt KStandardTimeout = 3000; // 3s
         mProperties[ETimeout].Set(KStandardTimeout);
         const TInt KTapAnywhere = 0x03; // HbPopup::TapAnywhere
         mProperties[EDismissPolicy].Set(KTapAnywhere);
+        // Initialize standard buttons but do not send to server as
+        // HbMessageBox sets standard buttons by default
+        const TInt KStandardButtons = 0x00000400; // Ok
+        mProperties[EStandardButtons].Set(KStandardButtons);
+        mProperties[EStandardButtons].SetModified(false);
+        mProperties[EStandardButtons].SetValid(false);
 
         // Plugin has accept button by default
         mProperties[ERejectText].SetNullAction(true);
@@ -266,6 +278,10 @@ void CHbDeviceMessageBoxPrivate::InitProperties(CHbDeviceMessageBoxSymbian::TTyp
         mProperties[ETimeout].Set(KNoTimeout);
         const TInt KNoDismiss = 0; // HbPopup::NoDismiss
         mProperties[EDismissPolicy].Set(KNoDismiss);
+        // Initialize standard buttons and send to server as
+        // HbMessageBox currently sets standard buttons to "Ok" by default
+        const TInt KStandardButtons = 0x00002000|0x00010000; // Yes|No
+        mProperties[EStandardButtons].Set(KStandardButtons);
         break;
     }
     default:
@@ -312,6 +328,35 @@ void CHbDeviceMessageBoxPrivate::SetButtonTextL(
 {
     TPropertyId id = ButtonPropertyId(EAcceptText, aButtonId);
     mProperties[id].SetL(aValue);
+}
+
+// Set standard buttons property
+void CHbDeviceMessageBoxPrivate::SetStandardButtons(TUint aButtons)
+{
+    static const CHbDeviceMessageBoxSymbian::TButtonId buttonIds[] = {
+        CHbDeviceMessageBoxSymbian::EAcceptButton, CHbDeviceMessageBoxSymbian::ERejectButton
+    };
+    const TInt KNumButtonIds = sizeof(buttonIds) / sizeof(buttonIds[0]);
+    TInt buttonCount = Min(KNumButtonIds, CountBits(aButtons));
+    // Mark buttons present
+    TInt i = 0;
+    for(; i < buttonCount; i++) {
+        TPropertyId id = ButtonPropertyId(EAcceptText, buttonIds[i]);
+        // Set property value but don't send to server
+        mProperties[id].SetNullAction(false);
+        mProperties[id].SetValid(false);
+        mProperties[id].SetModified(false);
+    }
+    // Mark extra buttons not present
+    for(; i < KNumButtonIds; i++) {
+        TPropertyId id = ButtonPropertyId(EAcceptText, buttonIds[i]);
+        // Set property value but don't send to server
+        mProperties[id].SetNullAction(true);
+        mProperties[id].SetValid(false);
+        mProperties[id].SetModified(false);
+    }
+    SetPropertyValue(EStandardButtons, aButtons);
+
 }
 
 // Send properties to server. Show or update.
@@ -361,11 +406,15 @@ void CHbDeviceMessageBoxPrivate::SendToServerL(bool aShow)
     if (aShow) {
         mReceivedButton = CHbDeviceMessageBoxSymbian::EInvalidButton;
         error = mDeviceDialog->Show(KDeviceDialogType, *parameters, this);
-        User::LeaveIfError(error);
+        if (error != KErrNone) {
+            User::Leave(error); // error can be positive or negative
+        }
         mShowCalled = true;
     } else {
         error = mDeviceDialog->Update(*parameters);
-        User::LeaveIfError(error);
+        if (error != KErrNone) {
+            User::Leave(error); // error can be positive or negative
+        }
     }
     CleanupStack::PopAndDestroy(); // parameters
 }
@@ -396,6 +445,7 @@ const TPtrC CHbDeviceMessageBoxPrivate::PropertyName(TPropertyId aId)
         L"type",
         L"iconVisible",
         L"timeout",
+        L"standardButtons",
         L"dismissPolicy",
         L"text",
         L"iconName",
@@ -438,6 +488,17 @@ HBufC *CHbDeviceMessageBoxPrivate::CreateActionDataLC(TBool aNull, const TDesC &
     }
     CleanupStack::PushL(actionData);
     return actionData;
+}
+
+// Count number of bits on
+TInt CHbDeviceMessageBoxPrivate::CountBits(TUint aValue)
+{
+    TInt count = 0;
+    while(aValue) {
+        count += aValue & 1;
+        aValue >>= 1;
+    }
+    return count;
 }
 
 // Observer, data received from device message box
@@ -516,8 +577,9 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     change, e.g. objects may get deleted. Preferred way is to use asynchoronous ShowL() instead.
 
     Device message box is closed when user dismisses it, when Close()
-    is called, timeout triggers or system closes the dialog. Default return value is a reject
-    button. The default is returned in all other cases than user pressing an accept button.
+    is called, timeout triggers or system closes the dialog. Default return value is
+    CHbDeviceMessageBoxSymbian::EInvalidButton. The default is returned in all other cases
+    than user pressing an accept or reject button.
 
     Static convenience functions are provided for ease of use. Message boxes created by these
     static functions contain a default set of properties depending on the message box type and their
@@ -555,7 +617,7 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
 
     _LIT(KText, "Accept connection ?");
     CHbDeviceMessageBoxSymbian::TButtonId selection =
-        CHbDeviceMessageBoxSymbian::QuestionL(KText, KNullDesC, KNullDesC);
+        CHbDeviceMessageBoxSymbian::QuestionL(KText);
     if (selection == CHbDeviceMessageBoxSymbian::EAcceptButton) {
         // user pressed yes
     }
@@ -614,6 +676,10 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     Predefined device message boxes.
 */
 /*!
+    \var CHbDeviceMessageBoxSymbian::TType CHbDeviceMessageBoxSymbian::ENone
+    Message box with no icon and audio defined by default.
+*/
+/*!
     \var CHbDeviceMessageBoxSymbian::TType CHbDeviceMessageBoxSymbian::EInformation
     Information message box.
 */
@@ -629,6 +695,10 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
 /*!
     \enum CHbDeviceMessageBoxSymbian::TButtonId
     Selects message box button.
+*/
+/*!
+    \var CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::EInvalidButton
+    No button.
 */
 /*!
     \var CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::EAcceptButton
@@ -700,10 +770,9 @@ EXPORT_C CHbDeviceMessageBoxSymbian* CHbDeviceMessageBoxSymbian::NewL(TType aTyp
     <b> Beware that Symbian event processing is running while the function executes. For example
     application may have exited when the function returns.</b>
 
-
     \param aText Message box text.
-    \param aAcceptButtonText Accept button text. If text is empty, default text is used.
-    \param aRejectButtonText Reject button text. If text is empty, default text is used.
+    \param aAcceptButtonText Accept button text. If text is empty, a default (Yes) button is used.
+    \param aRejectButtonText Reject button text. If text is empty, a default (No) button is used.
 */
 EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::QuestionL(
     const TDesC& aText, const TDesC& aAcceptButtonText, const TDesC& aRejectButtonText)
@@ -711,12 +780,40 @@ EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::Quest
     CHbDeviceMessageBoxSymbian* messageBox = NewL(EQuestion);
     CleanupStack::PushL(messageBox);
     messageBox->SetTextL(aText);
+    messageBox->SetStandardButtons(0x00002000|0x00010000); // Yes|No
     if (aAcceptButtonText.Length()) {
         messageBox->SetButtonTextL(EAcceptButton, aAcceptButtonText);
     }
     if (aRejectButtonText.Length()) {
         messageBox->SetButtonTextL(ERejectButton, aRejectButtonText);
     }
+    TButtonId buttonId = messageBox->ExecL();
+    CleanupStack::PopAndDestroy(); // messageBox
+    return buttonId;
+}
+
+/*!
+    Static convenience function to create and show a question device message box. Waits for
+    the message box to close and returns button selected. If message box was closed for other
+    reason than button press, returns EInvalidButton.
+
+    <b> Beware that Symbian event processing is running while the function executes. For example
+    application may have exited when the function returns.</b>
+
+    \param aText Message box text.
+    \param aStandardButtons Specifies message box buttons. If 0, default buttons "Yes" and "No" are
+    used. See SetStandardButtons() for format.
+*/
+EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::QuestionL(
+    const TDesC& aText, TUint aStandardButtons)
+{
+    CHbDeviceMessageBoxSymbian* messageBox = NewL(EQuestion);
+    CleanupStack::PushL(messageBox);
+    messageBox->SetTextL(aText);
+    if (!aStandardButtons) {
+        aStandardButtons = 0x00002000|0x00010000; // Yes|No
+    }
+    messageBox->SetStandardButtons(aStandardButtons);
     TButtonId buttonId = messageBox->ExecL();
     CleanupStack::PopAndDestroy(); // messageBox
     return buttonId;
@@ -1035,6 +1132,32 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::HasButton(TButtonId aButton) const
         CHbDeviceMessageBoxPrivate::ButtonPropertyId(
             CHbDeviceMessageBoxPrivate::EAcceptText, aButton);
     return !d->mProperties[id].IsNullAction();
+}
+
+/*!
+    Sets message box buttons to standard buttons.
+
+    \param aButtons Message box buttons. A combination of flags,
+    eg. HbMessageBox::Yes | HbMessageBox::No. Button flags are scanned starting from lsb.
+    First button found goes to accept position and so forth.
+
+    \sa StandardButtons()
+*/
+EXPORT_C void CHbDeviceMessageBoxSymbian::SetStandardButtons(TUint aButtons)
+{
+    return d->SetStandardButtons(aButtons);
+}
+
+/*!
+    Returns standard buttons set to a message box. A default value for question message box is
+    HbMessageBox::Yes|HbMessageBox::No. For all other message box types the default is
+    HbMessageBox::Ok.
+
+    \sa SetStandardButtons()
+*/
+EXPORT_C TUint CHbDeviceMessageBoxSymbian::StandardButtons() const
+{
+    return d->mProperties[CHbDeviceMessageBoxPrivate::EStandardButtons].IntValue();
 }
 
 /*!

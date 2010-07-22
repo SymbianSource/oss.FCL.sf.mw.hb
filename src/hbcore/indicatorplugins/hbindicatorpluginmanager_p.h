@@ -81,7 +81,7 @@ public:
     bool removeIndicator(const QString &indicatorType);
     QList<IndicatorClientInfo> indicatorClientInfoList() const;
     QList<HbIndicatorInterface*> indicators() const;
-    void connectTo(QObject *widget);
+    void signalActiveIndicators(QObject *target);
 signals:
     void indicatorActivated(HbIndicatorInterface *addedIndicator);
     void indicatorActivated(const IndicatorClientInfo &clientInfo);
@@ -103,14 +103,15 @@ private:
         const QVariantMap &securityCredentials);    
     int loadPlugin(const QString &indicatorType);
     int loadPlugin(const QString &indicatorType, const QString &filePath);
-    int scanPlugins(const QString &indicatorType);
+    QString scanPlugins(const QString &indicatorType);
+    bool scanPlugin(const QString &indicatorType, const QString &filePath);
     int findPlugin(const QString &indicatorType) const;
     int findPlugin(const QString &indicatorType,
                    IndicatorInfo **indicatorInfo, int *infoIndex = 0);
     QString statusAreaIconPath(
             const HbIndicatorInterface *indicator) const;
 
-    void updateCachePath(const QString &path, bool updateReadOnly = false);
+    void updateCachePath(const QString &path, bool firstScan = false);
     static QStringList pluginKeys(QObject *pluginInstance);
 
     bool hasMenuData(const HbIndicatorInterface &indicator) const;

@@ -41,10 +41,11 @@ public:
     ~HbContentWidget() {}
 
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
-    void delayedConstruction();
     void setTargetView(HbView *view);
     void runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitchFlags flags);
-    bool isSwitchingViews() const { return mViewSwitchRunning; }
+    bool isSwitchingViews() const {
+        return mViewSwitchRunning;
+    }
 
 private slots:
     void hideEffectFinished(HbEffect::EffectStatus status);

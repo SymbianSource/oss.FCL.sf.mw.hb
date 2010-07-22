@@ -40,14 +40,15 @@ class CSensrvChannel;
 #endif
 class HbSensorNotifyHandler;
 
-class HbSensorListenerObserver {
+class HbSensorListenerObserver
+{
 public:
     virtual void sensorOrientationChanged(Qt::Orientation newOrientation) = 0;
     virtual void sensorStatusChanged(bool status, bool notify) = 0;
     virtual ~HbSensorListenerObserver() {}
 };
 
-class HB_AUTOTEST_EXPORT HbSensorListener 
+class HB_AUTOTEST_EXPORT HbSensorListener
 #ifdef Q_OS_SYMBIAN
     : public MSensrvDataListener
 #endif
@@ -64,37 +65,37 @@ public:
     void setSensorOrientation(Qt::Orientation dataOrientation);
     void enableSensors(bool enable, bool notify);
     bool isEnabled() const;
-    	
+
 
 #ifdef Q_OS_SYMBIAN
     void cenrepValueChanged(TInt aValue, bool notify = true);
 #endif
-    
+
 private:
     void checkCenrepValue();
     void startSensorChannel();
 
 #ifdef Q_OS_SYMBIAN
-    Qt::Orientation orientationFromData(CSensrvChannel& aChannel, TInt aCount);
-    Qt::Orientation sensorOrientationToQtOrientation(TSensrvOrientationData::TSensrvDeviceOrientation 
-                                                      sensorOrientation) const;
+    Qt::Orientation orientationFromData(CSensrvChannel &aChannel, TInt aCount);
+    Qt::Orientation sensorOrientationToQtOrientation(TSensrvOrientationData::TSensrvDeviceOrientation
+            sensorOrientation) const;
 
     void enableSensorListening(bool enable);
     //From MSensrvDataListener
-    void DataReceived(CSensrvChannel& aChannel, TInt aCount, TInt aDataLost);
-    void DataError(CSensrvChannel& aChannel, TSensrvErrorSeverity aError);
+    void DataReceived(CSensrvChannel &aChannel, TInt aCount, TInt aDataLost);
+    void DataError(CSensrvChannel &aChannel, TSensrvErrorSeverity aError);
     void GetDataListenerInterfaceL(TUid aInterfaceUid, TAny*& aInterface);
 #endif
-    
+
 private:
-    HbSensorListenerObserver& mObserver;
+    HbSensorListenerObserver &mObserver;
     Qt::Orientation mDefaultOrientation;
     Qt::Orientation mOrientation;
     bool mEnabled;
     bool mSettingsEnabled;
 #ifdef Q_OS_SYMBIAN
-    HbSensorNotifyHandler* mNotifyHandler;
-    CSensrvChannel* mSensrvChannel;
+    HbSensorNotifyHandler *mNotifyHandler;
+    CSensrvChannel *mSensrvChannel;
     friend class TestHbSensorOrientation;
 #endif
 };

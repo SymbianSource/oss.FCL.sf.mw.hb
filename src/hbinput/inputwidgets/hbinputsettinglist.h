@@ -32,13 +32,14 @@
 class HbInputSettingListPrivate;
 class HbListWidgetItem;
 class HbInputLanguage;
+class HbInputMethodDescriptor;
 
 class HB_INPUT_EXPORT HbInputSettingList : public HbDialog
 {
     Q_OBJECT
 
 public:
-    HbInputSettingList(QGraphicsWidget* parent = 0);
+    HbInputSettingList(QGraphicsWidget *parent = 0);
     virtual ~HbInputSettingList();
 
 public:
@@ -47,20 +48,23 @@ public:
     void setPredictionSelectionEnabled(bool disabled);
 
 public slots:
+    void aboutToClose();
     void languageButtonClicked();
     void predictionButtonClicked();
     void listItemActivated(HbListWidgetItem *item);
     void primaryLanguageChanged(const HbInputLanguage &newLanguage);
     void secondaryLanguageChanged(const HbInputLanguage &newLanguage);
     void predictionStatusChanged(HbKeyboardSettingFlags keyboardType, bool newStatus);
+    void closeSettings(const HbInputMethodDescriptor &descriptor, const QByteArray &customData);
 
 signals:
     void inputMethodsButtonClicked();
     void inputSettingsButtonClicked();
+    void inputMethodSelected(const HbInputMethodDescriptor &descriptor, const QByteArray &customData);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputSettingList)
-    Q_DISABLE_COPY(HbInputSettingList)   
+    Q_DISABLE_COPY(HbInputSettingList)
 };
 
 #endif // HB_INPUT_SETTING_LIST_H

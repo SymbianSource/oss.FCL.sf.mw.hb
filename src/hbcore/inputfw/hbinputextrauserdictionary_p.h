@@ -53,7 +53,7 @@ class HbExtraUDHeader
 {
 public:
     HbExtraUDHeader() : numUsers(0), numWords(0), modified(false), dataSize(0)
-      {}
+    {}
 
 public:
     int numUsers;
@@ -67,46 +67,51 @@ class HbExtraUserDictionaryPrivate
 {
 public:
     HbExtraUserDictionaryPrivate() : id(0), hostEngine(0)
-        {}
+    {}
 
-     bool createSharedBlock(int aSize);
-     QString name() const;
-     QString fileName() const;
+    bool createSharedBlock(int aSize);
+    QString name() const;
+    QString fileName() const;
 
-     void removeEntry(int index);
-     void addEntry(int index, const QString& newWord);
+    void removeEntry(int index);
+    void addEntry(int index, const QString &newWord);
 
-     HbExtraUDDirectoryEntry *directory() const {
-         return (HbExtraUDDirectoryEntry*)((char*)sharedMemory.data() + sizeof(HbExtraUDHeader));
-     }
+    HbExtraUDDirectoryEntry *directory() const {
+        return (HbExtraUDDirectoryEntry *)((char *)sharedMemory.data() + sizeof(HbExtraUDHeader));
+    }
 
-     QChar *dataArea() const {
-         return (QChar*)((char*)sharedMemory.data() + sizeof(HbExtraUDHeader) + (dataHeader()->numWords * sizeof(HbExtraUDDirectoryEntry)));
-     }
+    QChar *dataArea() const {
+        return (QChar *)((char *)sharedMemory.data() + sizeof(HbExtraUDHeader) + (dataHeader()->numWords * sizeof(HbExtraUDDirectoryEntry)));
+    }
 
-     int findWord(int start, int end, const QString& newWord, Qt::CaseSensitivity caseSensitivity= Qt::CaseSensitive) const;
-     int findIndexForNewWord(int start, int end, const QString& newWord) const;
-     int findFirstMatch(int start, int end, const QString& searchString, int knownMatch = -1, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
-     int compareWords(int index, const QString& otherWord, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
-     bool hasEnoughSpaceForNewWord(const QString& newWord) const;
+    int findWord(int start, int end, const QString &newWord, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
+    int findIndexForNewWord(int start, int end, const QString &newWord) const;
+    int findFirstMatch(int start, int end, const QString &searchString, int knownMatch = -1, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
+    int compareWords(int index, const QString &otherWord, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
+    bool hasEnoughSpaceForNewWord(const QString &newWord) const;
 
-     bool save(QString aFileName);
+    bool save(QString aFileName);
 
-     HbExtraUDHeader* dataHeader() const {
-         return (HbExtraUDHeader*)sharedMemory.data();
-     }
+    HbExtraUDHeader *dataHeader() const {
+        return (HbExtraUDHeader *)sharedMemory.data();
+    }
 
-     int dataAreaSize() const {
-         return sharedMemory.size() - sizeof(HbExtraUDHeader) - (dataHeader()->numWords * sizeof(HbExtraUDDirectoryEntry));
-     }
+    int dataAreaSize() const {
+        return sharedMemory.size() - sizeof(HbExtraUDHeader) - (dataHeader()->numWords * sizeof(HbExtraUDDirectoryEntry));
+    }
 
-     void lock() { sharedMemory.lock(); }
-     void unlock() { sharedMemory.unlock(); }
+    void lock() {
+        sharedMemory.lock();
+    }
+
+    void unlock() {
+        sharedMemory.unlock();
+    }
 
 public:
-     int id;
-     HbPredictionBase* hostEngine;
-     QSharedMemory sharedMemory;
+    int id;
+    HbPredictionBase *hostEngine;
+    QSharedMemory sharedMemory;
 };
 
 /// @endcond

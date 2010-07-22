@@ -22,8 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#ifndef HB_LANGUAGE_DATABASE_H
-#define HB_LANGUAGE_DATABASE_H
+#ifndef HB_INPUT_LANGUAGE_DATABASE_H
+#define HB_INPUT_LANGUAGE_DATABASE_H
 
 #include <QObject>
 #include <QList>
@@ -33,13 +33,12 @@
 class HB_CORE_EXPORT HbLanguageDatabase
 {
 public:
-    virtual ~HbLanguageDatabase()
-    {
+    virtual ~HbLanguageDatabase() {
     }
 
     virtual int hostId() const = 0;
     virtual int languageCode() const = 0;
-    virtual char* languageData(void* aNativeParams = 0) const = 0;
+    virtual char *languageData(void *aNativeParams = 0) const = 0;
     virtual int nativeId() const = 0;
 };
 
@@ -48,13 +47,12 @@ class HB_CORE_EXPORT HbLanguageDatabaseInterface : public QObject
     Q_OBJECT
 
 public:
-    virtual ~HbLanguageDatabaseInterface()
-    {
+    virtual ~HbLanguageDatabaseInterface() {
     }
     virtual QList<int> listLanguages() = 0;
-    virtual HbLanguageDatabase* languageDatabase(int aLanguage) = 0;
+    virtual HbLanguageDatabase *languageDatabase(int aLanguage) = 0;
 };
 
-#endif // HB_LANGUAGE_DATABASE_H
+#endif // HB_INPUT_LANGUAGE_DATABASE_H
 
 // End of file

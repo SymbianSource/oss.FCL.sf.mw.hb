@@ -51,11 +51,14 @@ public:
         EPluginErrors = 0x10000000,
         EErrorTypeMask = 0xf0000000,
         ECancelledError = 0x0fffffff,
-        ESystemCancelledError = 0x0ffffffe
+        ESystemCancelledError = 0x0ffffffe,
+        EInstanceExistsError = 0x0ffffffd
     };
 
     enum TDeviceDialogFlag{
-        ENoDeviceDialogFlags = 0x0
+        ENoDeviceDialogFlags = 0x0,
+        EImmediateResourceReservation = 0x1,
+        EASyncServerStartup = 0x2
     };
 
     IMPORT_C static CHbDeviceDialogSymbian* NewL(TInt aFlags = ENoDeviceDialogFlags);
@@ -73,13 +76,10 @@ public:
     IMPORT_C void SetObserver(MHbDeviceDialogObserver* aObserver);
 
 private:
-
-    CHbDeviceDialogSymbian(TInt aFlags = ENoDeviceDialogFlags);
-
-    void ConstructL(TInt aFlags = ENoDeviceDialogFlags);
+    CHbDeviceDialogSymbian();
 
     CHbDeviceDialogSymbianPrivate* d;
-    };
+};
 
 #endif // defined(__SYMBIAN32__) || defined(SYMBIAN) || defined(HB_DOXYGEN)
 

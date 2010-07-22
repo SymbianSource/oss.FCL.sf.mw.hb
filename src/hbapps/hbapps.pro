@@ -28,10 +28,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += hbthemechanger
-
-symbian {
-    SUBDIRS += hbiconpreloader
-}
+#SUBDIRS += hbfeatureconfigapp
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)
 

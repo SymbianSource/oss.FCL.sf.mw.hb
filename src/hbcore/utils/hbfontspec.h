@@ -40,8 +40,7 @@ class HB_CORE_EXPORT HbFontSpec
     Q_ENUMS(Role)
 
 public:
-    enum Role
-    {
+    enum Role {
         Undefined = 0,
         Primary,
         Secondary,
@@ -54,6 +53,7 @@ public:
     explicit HbFontSpec(HbFontSpec::Role role);
 
     HbFontSpec(const HbFontSpec &other);
+	HbFontSpec(const QString fontName); 
     HbFontSpec &operator=(const HbFontSpec &other);
 
     ~HbFontSpec();
@@ -72,6 +72,8 @@ public:
     bool operator==(const HbFontSpec &other) const;
     bool operator!=(const HbFontSpec &other) const;
 
+	QString typefaceFamily() const;
+	void setTypefaceFamily(QString fontName);
 private:
     HbFontSpecPrivate *d;
 };

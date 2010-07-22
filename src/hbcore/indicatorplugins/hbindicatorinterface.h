@@ -68,6 +68,7 @@ public:
     void processClientRequest(RequestType type, const QVariant &parameter);
     virtual bool handleInteraction(InteractionType type);
     virtual QVariant indicatorData(int role) const = 0;
+    virtual bool refreshData();
     virtual ~HbIndicatorInterface();
 signals:
     void dataChanged();

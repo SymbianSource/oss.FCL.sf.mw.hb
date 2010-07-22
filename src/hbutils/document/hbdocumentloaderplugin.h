@@ -39,7 +39,7 @@ public:
 };
 Q_DECLARE_INTERFACE(HbDocumentLoaderPluginInterface, "com.nokia.hb.HbDocumentLoaderPlugin/1.0")
 
-class HB_TOOLS_EXPORT HbDocumentLoaderPlugin : public QObject, public HbDocumentLoaderPluginInterface
+class HB_UTILS_EXPORT HbDocumentLoaderPlugin : public QObject, public HbDocumentLoaderPluginInterface
 {
     Q_OBJECT 
     Q_INTERFACES(HbDocumentLoaderPluginInterface)

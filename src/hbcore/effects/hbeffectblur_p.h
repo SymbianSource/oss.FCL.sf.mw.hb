@@ -48,8 +48,7 @@ class HbEffectGroup;
 class HB_AUTOTEST_EXPORT HbEffectBlur : public HbEffectFilter
 {
 public:
-    enum Type
-    {
+    enum Type {
         Blur = 0x01,
         Glow = 0x02
     };

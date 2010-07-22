@@ -22,11 +22,14 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#include <QAbstractItemModel>
 
-#include "hbdataformmodelitem.h"
-#include "hbdataformmodel.h"
+#ifndef HBDATAFORMMODELITEM_P_H
+#define HBDATAFORMMODELITEM_P_H
+
 #include "hbdataformmodel_p.h"
+
+#include <hbdataformmodelitem.h>
+#include <hbdataformmodel.h>
 
 class QAbstractItemModel;
 
@@ -41,6 +44,7 @@ public:
 
     void setModel(const QAbstractItemModel *model);
     QAbstractItemModel* model() const;
+    void setContentWidgetData(const QString& propertyName ,const QVariant &value);
 
 public:
 
@@ -62,5 +66,7 @@ public:
         Q_ASSERT(item);
         return item->d_func();
     }
-};
+}; 
+
+#endif //HBDATAFORMMODELITEM_P_H
 

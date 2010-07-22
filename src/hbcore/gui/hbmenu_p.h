@@ -54,14 +54,14 @@ public:
     void changeToOptionsMenu();
     HbMenuItem *subMenuItem();
     void setSubMenuItem(HbMenuItem *menuItem);
-    void closeMenuAfterOrientationChange();
+    void closeMenu();
     void closeMenuRecursively(HbAction* menuAction);
 
     void _q_triggerAction(HbMenuItem *currentItem);
     void _q_onActionTriggered();
     void _q_subMenuItemTriggered(HbAction *action);
     void _q_subMenuTimedOut();
-    void _q_handleMenuAfterOrientationChange();
+    void _q_handleMenuClose();
     void actionAdded(QActionEvent *actionEvent);
     void actionRemoved(QActionEvent *actionEvent);
     void actionChanged(QActionEvent *actionEvent);
@@ -71,13 +71,12 @@ public:
 
     HbMenuListView *menuItemView;
     HbAction *subMenuAction;
-    HbMenu *activeSubMenu;
-    HbAction *resultAction;
+    QPointer<HbMenu> activeSubMenu;
     bool actionTriggered;
     bool menuTimedOut(HbMenu* menu);
 
     HbMenu::MenuType menuType;
-    HbMenuItem *mSubMenuItem;
+    QPointer<HbMenuItem> mSubMenuItem;
 
     qreal mRightMargin;
     qreal mDownMargin;
@@ -85,6 +84,7 @@ public:
 
     QPointer<QObject> receiverToDisconnectOnClose;
     QByteArray memberToDisconnectOnClose;
+    int mNumberOfColumns;
 
 private:
     static bool menuEffectsLoaded;

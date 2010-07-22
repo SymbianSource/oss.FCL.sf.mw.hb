@@ -88,6 +88,8 @@ public:
     static HbIndicatorInterface *indicatorFromIndex(
         const QModelIndex &modelIndex);
 
+    void handleAboutToShow();
+
 signals:
     void aboutToClose();
     void userActivity();

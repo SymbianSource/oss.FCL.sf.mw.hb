@@ -52,11 +52,15 @@ public:
 
 public slots:
     void setOutline(const QPointF &outline);
-    inline void setOutline(qreal x, qreal y) { setOutline(QPointF(x, y)); }
+    inline void setOutline(qreal x, qreal y) {
+        setOutline(QPointF(x, y));
+    }
     void setColor(const QColor &color);
     void setSteepness(qreal steepness);
     void setOffset(const QPointF &offset);
-    inline void setOffset(qreal x, qreal y) { setOffset(QPointF(x, y)); }
+    inline void setOffset(qreal x, qreal y) {
+        setOffset(QPointF(x, y));
+    }
 
 signals:
     void outlineChanged(const QPointF &outline);

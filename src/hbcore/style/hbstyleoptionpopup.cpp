@@ -25,31 +25,17 @@
 
 #include "hbstyleoptionpopup_p.h"
 
-/*!
+/*
     \class HbStyleOptionPopup
     \brief HbStyleOptionPopup has the style component for popup primitives
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionPopup::HbStyleOptionPopup()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionPopup::HbStyleOptionPopup()
 {
     type = Type;
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionPopup::HbStyleOptionPopup(const HbStyleOptionPopup&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionPopup::HbStyleOptionPopup(const HbStyleOptionPopup &other) :
     HbStyleOption(other)
 {

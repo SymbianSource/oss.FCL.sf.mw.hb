@@ -11,6 +11,7 @@ HbRatingSlider::frame
 	top:0.0un;
 	bottom: 0.0un;
 	fixed-height: var(hb-param-graphic-size-primary-small);	
+	pref-width:var(hb-param-screen-short-edge);
 }
 
 HbRatingSlider::toucharea{

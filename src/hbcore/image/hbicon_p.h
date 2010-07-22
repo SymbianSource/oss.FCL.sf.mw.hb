@@ -31,36 +31,47 @@
 
 class HbIconAnimator;
 class HbBadgeIcon;
+
 class HbIconPrivate : public QSharedData
 {
 public:
     HbIconPrivate();
-    HbIconPrivate( const QIcon &qicon );
-    HbIconPrivate( const QString &iconName );
-    HbIconPrivate( const HbIconPrivate &other );
+    HbIconPrivate(const QIcon &qicon);
+    HbIconPrivate(const QString &iconName);
+    HbIconPrivate(const HbIconPrivate &other);
     ~HbIconPrivate();
 
     void clear();
     void clearStoredIconContent();
     bool addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int z=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int z,
+                  const QSizeF &sizeFactor,
+                  Qt::AspectRatioMode aspectRatio);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
     bool isBadged() const;
+    void setThemedColor(const QColor &color);
+    QColor themedColor() const;
 
 private:
     // disabled
-    HbIconPrivate & operator=( const HbIconPrivate &other );
+    HbIconPrivate &operator=(const HbIconPrivate &other);
 
 public:
-    static HbIconPrivate *d_ptr(HbIcon *icon) { return icon->d.data(); }
-    
+    static HbIconPrivate *d_ptr(HbIcon *icon) {
+        return icon->d.data();
+    }
+    static HbIconPrivate *d_ptr_detached(HbIcon *icon) {
+        icon->d.detach();
+        return icon->d.data();
+    }
+
     QSizeF size;
     HbIconEngine *engine; // this is 0 if HbIcon was copy constructed from QIcon.
     QIcon qicon;
 
-    HbBadgeIcon* badgeInfo;
+    HbBadgeIcon *badgeInfo;
 };
 
 QDataStream &operator<<(QDataStream &stream, const HbIconPrivate &icon);

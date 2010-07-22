@@ -23,14 +23,11 @@
 **
 ****************************************************************************/
 
-// namespace added to avoid symbol conflicts with QT.
-namespace HbQCss {
-
 // auto generated. DO NOT EDIT.
-class QCssScanner_Generated
+class HbCssScanner_Generated
 {
 public:
-    QCssScanner_Generated(const QString &inp);
+    HbCssScanner_Generated(const QString &inp);
 
     inline QChar next() {
         return (pos < input.length()) ? input.at(pos++).toLower() : QChar();
@@ -44,7 +41,7 @@ public:
     int lexemLength;
 };
 
-QCssScanner_Generated::QCssScanner_Generated(const QString &inp)
+HbCssScanner_Generated::HbCssScanner_Generated(const QString &inp)
 {
     input = inp;
     pos = 0;
@@ -52,8 +49,20 @@ QCssScanner_Generated::QCssScanner_Generated(const QString &inp)
     lexemLength = 0;
 }
 
+int HbCssScanner_Generated::handleCommentStart()
+{
+    while (pos < input.size() - 1) {
+        if (input.at(pos) == QLatin1Char('*')
+            && input.at(pos + 1) == QLatin1Char('/')) {
+            pos += 2;
+            break;
+        }
+        ++pos;
+    }
+    return HbCss::S;
+}
 
-int QCssScanner_Generated::lex()
+int HbCssScanner_Generated::lex()
 {
     lexemStart = pos;
     lexemLength = 0;
@@ -1130,6 +1139,3 @@ int QCssScanner_Generated::lex()
     }
     return token;
 }
-
-} // namespace
-

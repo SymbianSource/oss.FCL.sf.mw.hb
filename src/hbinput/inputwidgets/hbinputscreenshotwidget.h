@@ -44,11 +44,13 @@ public:
     void setScreenshot(QPixmap &pixmap);
 
 protected: // From QGraphicsItem
-    virtual QPainterPath shape () const;
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent* event);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event);
-    virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
-    virtual int type() const { return Hb::ItemType_InputVkbWidget; }
+    virtual QPainterPath shape() const;
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    virtual int type() const {
+        return Hb::ItemType_InputVkbWidget;
+    }
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputScreenshotWidget)

@@ -22,6 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#ifndef HB_BIN_CSS
+#define HB_USETHEMESERVER
+#endif
 
 #include "hbwidgetloader_p.h"
 #include "hbwidgetloadersyntax_p.h"
@@ -29,7 +32,9 @@
 
 #include "hbinstance.h"
 #include "hbtheme_p.h"
+#ifdef HB_USETHEMESERVER
 #include "hbthemeclient_p.h"
+#endif
 
 #include <QtDebug>
 #include <QFile>
@@ -51,7 +56,7 @@ class HbThemeClient;
 
 #define hbInstance (HbInstance::instance())
 
-// cache at the client side to store the mesh items.
+// cache at the client side to store the anchor items.
 // key used here is the filename+layoutname+sectionname.
 
 typedef QHash<QString,HbWidgetLoader::LayoutDefinition*> ClientHashForLayoutDefs;
@@ -63,11 +68,11 @@ Q_GLOBAL_STATIC(ClientHashForLayoutDefs, clientLayoutDefsCache)
 Q_GLOBAL_STATIC(QStringList, filesNotPresent)
 
 // Layout caching
-static HbWidgetLoader::LayoutDefinition *staticCacheLayout = NULL;
-static QString staticCacheFileName = QString();
-static QString staticCacheName = QString();
-static QString staticCacheSection = QString();
-static QDateTime staticCacheModified = QDateTime();
+static HbWidgetLoader::LayoutDefinition *staticCacheLayout = 0;
+static QString staticCacheFileName;
+static QString staticCacheName;
+static QString staticCacheSection;
+static QDateTime staticCacheModified;
 
 class HbWidgetLoaderPrivate
 {
@@ -141,14 +146,14 @@ QString HbWidgetLoader::version()
 /*!
     Loads and processes a WidgetML file.
 
-    If the widget already has a layout assumes it's HbMeshLayout.
-    If the widget doesn't have a layout creates HbMeshLayout and sets it to widget.
+    If the widget already has a layout assumes it's HbAnchorLayout.
+    If the widget doesn't have a layout creates HbAnchorLayout and sets it to widget.
     Creates the anchor edge attachments based on WidgetML.
 
     \param fileName file to be processed.
     \param name the name of the layout to be loaded.
     \param section space separated route to section, that you want to load.
-    \param storage specifies where to store the mesh items.
+    \param storage specifies where to store the anchor items.
     \return true if file was loaded and processed successfully.
 */
 bool HbWidgetLoader::load(
@@ -237,6 +242,12 @@ HbWidgetLoaderPrivate::~HbWidgetLoaderPrivate()
     delete mActions;
 }
 
+#ifdef HB_BIN_CSS
+void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
+{
+    Q_UNUSED(widget)
+}
+#else
 /*!
     \internal
 */
@@ -246,6 +257,7 @@ void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
     mActions->mWidget = widget;
     mActions->mCurrentProfile = HbDeviceProfile::profile(widget);
 }
+#endif
 
 /*!
     \internal
@@ -256,7 +268,7 @@ bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
     const QString &section,
     HbWidgetLoader::LayoutDefinition *&layoutDef )
 {
-    // check in the client side cache if the vector of meshitems is present.
+    // check in the client side cache if the vector of anchor items is present.
     QString key (fileName + name + section);
     if (clientLayoutDefsCache()->contains(key)){
         // present in the client cache.
@@ -280,10 +292,12 @@ bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
     }
 
     // get the shared layout definition address.
+#ifdef HB_USETHEMESERVER
     layoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section);
     if (layoutDef) {
         clientLayoutDefsCache()->insert(key, layoutDef);
     }
+#endif
     return true;
 }
 

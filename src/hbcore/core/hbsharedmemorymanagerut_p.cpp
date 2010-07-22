@@ -28,8 +28,8 @@
 #include <QString>
 #include <QDebug>
 
-
 #include "hbthemecommon_p.h"
+#include "hbsharedcache_p.h"
 
 #define HB_THEME_SHARED_AUTOTEST_CHUNK "hbthemesharedautotest"
 
@@ -43,7 +43,7 @@ bool HbSharedMemoryManagerUt::initialize()
     bool success = false;
     
     if ( !chunk ) {
-        chunk = new QSharedMemory(HB_THEME_SHARED_AUTOTEST_CHUNK);
+        chunk = new HbSharedMemoryWrapper(HB_THEME_SHARED_AUTOTEST_CHUNK);
         success = chunk->create( CACHE_SIZE, QSharedMemory::ReadWrite );
         // If SharedMemory Already Exists.
         // (This can happpen if ThemeServer crashed without releasing QSharedMemory)
@@ -63,17 +63,34 @@ bool HbSharedMemoryManagerUt::initialize()
     if (success) {
         // if we are recovering from theme server crash, shared chunk may
         // already be ready
+        bool enableRecovery = false;
         HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(chunk->data());
-        if (chunkHeader->identifier == INITIALIZED_CHUNK_IDENTIFIER) {
+        if (enableRecovery && chunkHeader->identifier == INITIALIZED_CHUNK_IDENTIFIER) {
             // just reconnect allocators to the shared chunk
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
         } else {
             chunkHeader->mainAllocatorOffset = sizeof(HbSharedChunkHeader);
+            // Clear also allocator identifier so that they will not try to re-connect
+            int *mainAllocatorIdentifier = reinterpret_cast<int *>(static_cast<char *>(base()) + chunkHeader->mainAllocatorOffset);
+            *mainAllocatorIdentifier = 0;
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
+            int *subAllocatorIdentifier = reinterpret_cast<int *>(static_cast<char *>(base()) + chunkHeader->subAllocatorOffset);
+            *subAllocatorIdentifier = 0;
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
+
+            // Create empty shared cache for unit test purposes
+            HbSharedCache *cachePtr = createSharedCache(0, 0, 0);
+            if (cachePtr) {
+                const QString &appName = HbMemoryUtils::getCleanAppName();
+                if (appName == THEME_SERVER_NAME) {
+                    cachePtr->initServer();
+                } else {
+                    cachePtr->initClient();
+                }
+            }
         }
 		success = true;
 	}

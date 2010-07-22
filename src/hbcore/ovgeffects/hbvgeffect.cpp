@@ -40,7 +40,7 @@
  * \brief Abstract base class for OpenVG effects.
  *
  * \internal
- * 
+ *
  * Brief guide for creating new effects:
  * <ul>
  *
@@ -103,7 +103,8 @@ HbVgEffectPrivate::HbVgEffectPrivate()
       sourceGraphicsItem(0),
       mainWindow(0),
       lastUsedRotation(0),
-      lastRotationTransformAngle(0)
+      lastRotationTransformAngle(0),
+      forceSwMode(false)
 {
 }
 
@@ -122,10 +123,11 @@ HbVgEffectPrivate::~HbVgEffectPrivate()
  *
  * \internal
  */
-VGImage HbVgEffectPrivate::ensurePixmap(QPixmap *pixmap, const QSize& size)
+VGImage HbVgEffectPrivate::ensurePixmap(QPixmap *pixmap, const QSize &size)
 {
-    if (pixmap->size() != size)
+    if (pixmap->size() != size) {
         *pixmap = QPixmap(size);
+    }
     return qPixmapToVGImage(*pixmap);
 }
 #endif
@@ -165,10 +167,11 @@ qreal HbVgEffectPrivate::mainWindowRotation() const
             QGraphicsScene *scene = srcItem->scene();
             if (scene) {
                 QList<QGraphicsView *> views = scene->views();
-                foreach (QGraphicsView *view, views) {
+                foreach(QGraphicsView * view, views) {
                     mainWindow = qobject_cast<HbMainWindow *>(view);
-                    if (mainWindow)
+                    if (mainWindow) {
                         break;
+                    }
                 }
             }
         }
@@ -190,7 +193,7 @@ QTransform HbVgEffectPrivate::rotationTransform() const
     }
     return lastRotationTransform;
 }
-    
+
 /*!
  * Maps the given translation offset to an offset that is based on the current
  * rotation of the graphics view. Effects are drawing directly, in device
@@ -349,11 +352,56 @@ qreal HbVgEffect::opacity() const
 void HbVgEffect::setOpacity(qreal opacity)
 {
     Q_D(HbVgEffect);
-    if (d->opacity == opacity)
+    if (d->opacity == opacity) {
         return;
+    }
     d->opacity = opacity;
     updateEffect();
     emit opacityChanged(opacity);
+}
+
+/*!
+ * Returns the current setting for sw mode forcing. By default this is
+ * disabled (false).
+ */
+bool HbVgEffect::forceSwMode() const
+{
+    Q_D(const HbVgEffect);
+    return d->forceSwMode;
+}
+
+/*!
+ * When enabled the sw implementation is used always.
+ *
+ * Many effects have no software implementation so enabling this will
+ * lead to the same result as trying to paint the hw accelerated
+ * effects on a non-hw paint engine: Only the source is painted,
+ * without any effects.
+ */
+void HbVgEffect::setForceSwMode(bool b)
+{
+    Q_D(HbVgEffect);
+    if (d->forceSwMode == b) {
+        return;
+    }
+    d->forceSwMode = b;
+    updateEffect();
+    emit forceSwModeChanged(b);
+}
+
+/*!
+ * Called when using a non-OpenVG paint engine. The default
+ * implementation simply calls drawSource(), i.e. paints the source
+ * item without any effect.
+ *
+ * Note that the source pixmap is not requested and the painter's
+ * world transform is not reset before calling this, in contrast to
+ * performEffect(). (this means that neither d->srcPixmap nor
+ * d->worldTransform is available).
+ */
+void HbVgEffect::performEffectSw(QPainter *painter)
+{
+    drawSource(painter);
 }
 
 /*!
@@ -365,15 +413,27 @@ void HbVgEffect::setOpacity(qreal opacity)
  */
 void HbVgEffect::draw(QPainter *painter)
 {
+    Q_D(HbVgEffect);
+
+    // Invalidate the cache if the rotation of the graphics view has changed.
+    qreal rotation = d->mainWindowRotation();
+    if (rotation != d->lastUsedRotation) {
+        d->lastUsedRotation = rotation;
+        d->ensureCacheInvalidated();
+    }
+
     // Just draw the source without effects if the painter's paint engine
     // is not using OpenVG.
-    if (painter->paintEngine()->type() != QPaintEngine::OpenVG) {
-        drawSource(painter);
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (d->forceSwMode || !paintEngine || paintEngine->type() != QPaintEngine::OpenVG) {
+        // No sourcePixmap() and world transform change here because
+        // in most cases we will just call drawSource().
+        performEffectSw(painter);
+        d->paramsChanged = d->cacheInvalidated = false;
         return;
     }
 
 #ifdef HB_EFFECTS_OPENVG
-    Q_D(HbVgEffect);
     // Render the source into a pixmap. Note that the effect's modified bounding
     // rectangle is already taken into account in the size of the pixmap created
     // here, so there is no need to waste time with boundingRectFor() calls
@@ -394,13 +454,6 @@ void HbVgEffect::draw(QPainter *painter)
     // Save the world transformation and then reset it.
     d->worldTransform = painter->worldTransform();
     painter->setWorldTransform(QTransform());
-
-    // Invalidate the cache if the rotation of the graphics view has changed.
-    qreal rotation = d->mainWindowRotation();
-    if (rotation != d->lastUsedRotation) {
-        d->lastUsedRotation = rotation;
-        d->ensureCacheInvalidated();
-    }
 
     // Enter raw VG mode.
     painter->beginNativePainting();
@@ -462,8 +515,9 @@ bool HbVgEffect::caching() const
 void HbVgEffect::setCaching(bool caching)
 {
     Q_D(HbVgEffect);
-    if (d->caching == caching)
+    if (d->caching == caching) {
         return;
+    }
     d->caching = caching;
     emit cachingChanged(caching);
 }
@@ -492,8 +546,7 @@ QPixmap HbVgEffect::cached(const QSize &size) const
             // causes a clipping to the device viewport, therefore the cached
             // pixmap for an item that was/is clipped should not be used.
             if (QPixmapCache::find(key, &cachedPm)
-                && (size.isNull() || cachedPm.size() == size))
-            {
+                    && (size.isNull() || cachedPm.size() == size)) {
 #ifdef HBVG_TRACES
                 qDebug("HbVgEffect [%x]: cache hit", (int) this);
 #endif
@@ -534,7 +587,7 @@ void HbVgEffect::tryCache(const QPixmap &pm)
 void HbVgEffect::releaseCachedResources()
 {
     QSet<QString> *keys = cacheKeys();
-    foreach (const QString &key, *keys) {
+    foreach(const QString & key, *keys) {
         QPixmapCache::remove(key);
     }
     keys->clear();

@@ -85,7 +85,7 @@ public:
 
     QMap<EffectMapKey, HbEffectGroup *> mEventEffectList;
     bool mEnabled;
-    QList<QGraphicsItem*> mDisabledItems;
+    QList<QGraphicsItem *> mDisabledItems;
     bool mViewChangeConnected;
     bool mEffectsEnabled;
 };

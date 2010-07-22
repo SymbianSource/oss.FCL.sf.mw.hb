@@ -36,7 +36,7 @@
   @stable
   @hbcore
   \class HbIconItem
-  \brief HbIconItem displays an HbIcon instance.
+  \brief HbIconItem displays an icon provided in form of an HbIcon
 
 
   HbIconItem derives from HbWidgetBase and so can be added to a layout.
@@ -61,7 +61,7 @@
   icon->setPos(10,150);
   icon->setSize(icon->defaultSize());
   \endcode
-  
+
   Example of how to add HbIconItem to a layout.
   \code
   HbButton *button = new HbButton("Button 1");
@@ -102,28 +102,41 @@
 const QIcon::Mode HbIconItem::defaultMode = QIcon::Normal;
 const QIcon::State HbIconItem::defaultState = QIcon::Off;
 const Qt::AspectRatioMode HbIconItem::defaultAspectRatioMode = Qt::KeepAspectRatio;
-const Qt::Alignment HbIconItem::defaultAlignment = Qt::AlignCenter;
+    
+// Note: No center aligning by default to prevent interesting rounding issues
+// in certain cases (e.g. 50.25x50.25 sized icon item would lead to having an
+// icon sized 50x50 drawn at (0.12499, 0.12499) which may or may not fit visually
+// the other primitives of the same widget).
+const Qt::Alignment HbIconItem::defaultAlignment = 0;
 
 bool HbIconItemPrivate::outlinesEnabled = false;
 
 HbIconItemPrivate::HbIconItemPrivate(const HbIcon &icon) :
-        mIcon(icon),
-        mAnimator(),
-        mAlignment(HbIconItem::defaultAlignment),
-        mAspectRatioMode(HbIconItem::defaultAspectRatioMode),
-        mState(HbIconItem::defaultState),
-        mMode(HbIconItem::defaultMode)
+    mIcon(icon),
+    mAnimator(),
+    mAlignment(HbIconItem::defaultAlignment),
+    mAspectRatioMode(HbIconItem::defaultAspectRatioMode),
+    mState(HbIconItem::defaultState),
+    mMode(HbIconItem::defaultMode),
+    mClearCachedRect(true)
 {
     q_ptr = 0;
 }
 
-HbIconItemPrivate::~HbIconItemPrivate ()
+HbIconItemPrivate::~HbIconItemPrivate()
 {
 }
 
 void HbIconItemPrivate::updateIconItem()
 {
-    Q_Q( HbIconItem );
+    Q_Q(HbIconItem);
+    if (!mIcon.isNull()) {
+        // This must be done before the setIcon() call below due to the
+        // possibility of detaching. Doing it afterwards would lead to
+        // colorization errors as the themed color might potentially be set for
+        // a different icon engine, not for the one that is used in painting.
+        HbIconPrivate::d_ptr_detached(&mIcon)->setThemedColor(mThemedColor);
+    }
     const QRectF boundingRect = q->rect();
     if (!boundingRect.size().isEmpty()) {
         mIconRect = boundingRect;
@@ -131,6 +144,35 @@ void HbIconItemPrivate::updateIconItem()
         mAnimator.setIcon(mIcon);
         q->update();
     }
+}
+
+void HbIconItemPrivate::updateIconParams()
+{
+    Q_Q(HbIconItem);
+    if (mIconRect.isValid()) {
+        if (!mIcon.isNull()) {
+            HbIconPrivate::d_ptr_detached(&mIcon)->setThemedColor(mThemedColor);
+        }
+        mAnimator.setIcon(mIcon);
+    }
+    q->update();
+}
+
+void HbIconItemPrivate::recalculateBoundingRect() const
+{
+    Q_Q(const HbIconItem);
+    mBoundingRect = q->HbWidgetBase::boundingRect();
+    //workaround for qt bug http://bugreports.qt.nokia.com/browse/QTBUG-8820
+    mAdjustedRect.setWidth(qMax(qreal(0),mBoundingRect.width() - qreal(2.0)));
+    mAdjustedRect.setHeight(qMax(qreal(0),mBoundingRect.height() - qreal(2.0)));
+    //workaround ends
+    mClearCachedRect = false;
+}
+
+void HbIconItemPrivate::setThemedColor(const QColor &color)
+{
+    mThemedColor = color;
+    updateIconItem();
 }
 
 /*!
@@ -142,7 +184,7 @@ void HbIconItemPrivate::updateIconItem()
 HbIconItem::HbIconItem(const QString &iconName, QGraphicsItem *parent) :
     HbWidgetBase(*new HbIconItemPrivate(iconName), parent)
 {
-    Q_D( HbIconItem );
+    Q_D(HbIconItem);
     d->q_ptr = this;
     // Set this graphics item to be updated on icon animations
     d->mAnimator.setGraphicsItem(this);
@@ -157,7 +199,7 @@ HbIconItem::HbIconItem(const QString &iconName, QGraphicsItem *parent) :
 HbIconItem::HbIconItem(const HbIcon &icon, QGraphicsItem *parent) :
     HbWidgetBase(*new HbIconItemPrivate(icon), parent)
 {
-    Q_D( HbIconItem );
+    Q_D(HbIconItem);
     d->q_ptr = this;
     // Set this graphics item to be updated on icon animations
     d->mAnimator.setGraphicsItem(this);
@@ -171,7 +213,7 @@ HbIconItem::HbIconItem(const HbIcon &icon, QGraphicsItem *parent) :
 HbIconItem::HbIconItem(QGraphicsItem *parent) :
     HbWidgetBase(*new HbIconItemPrivate(QString()), parent)
 {
-    Q_D( HbIconItem );
+    Q_D(HbIconItem);
     d->q_ptr = this;
     // Set this graphics item to be updated on icon animations
     d->mAnimator.setGraphicsItem(this);
@@ -182,7 +224,7 @@ HbIconItem::HbIconItem(QGraphicsItem *parent) :
 /*!
  \internal
  */
-HbIconItem::HbIconItem(HbIconItemPrivate &dd, QGraphicsItem * parent) :
+HbIconItem::HbIconItem(HbIconItemPrivate &dd, QGraphicsItem *parent) :
     HbWidgetBase(dd, parent)
 {
     // Set this graphics item to be updated on icon animations
@@ -195,7 +237,10 @@ HbIconItem::HbIconItem(HbIconItemPrivate &dd, QGraphicsItem * parent) :
  */
 HbIconItem::~HbIconItem()
 {
-    HbOogmWatcher::instance()->unregisterIconItem(this);
+    HbOogmWatcher *w = HbOogmWatcher::instance();
+    if (w) {
+        w->unregisterIconItem(this);
+    }
 }
 
 /*!
@@ -205,39 +250,31 @@ HbIconItem::~HbIconItem()
  */
 HbIcon HbIconItem::icon() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mIcon;
 }
 
 /*!
  Sets the HbIcon instance associated with this HbIconItem.
 
+ Calling any function on \a icon after this one may not have any effect on the
+ icon displayed by the HbIconItem. Use the setters in HbIconItem instead. Of course
+ the settings set on \a icon before calling setIcon() will all be taken into account.
+
+ The icon-specific parameters (flags, color, mirroring mode) set via the HbIconItem
+ setters before are lost as this function causes the entire underlying icon to be
+ replaced with a new one.
+ 
  \param icon the HbIcon instance that this HbIconItem displays.
 
- When \a takeIconSettings is false, the following settings are not
- taken (ignored) from \a icon: flags, color, mirroring mode.  Instead,
- the previous values set via HbIconItem's setters are used.
-
- \sa icon
+ \sa icon()
 */
-void HbIconItem::setIcon(const HbIcon &icon, bool takeIconSettings)
+void HbIconItem::setIcon(const HbIcon &icon, bool reserved)
 {
-    Q_D(HbIconItem );
+    Q_UNUSED(reserved);
+    Q_D(HbIconItem);
     if (d->mIcon != icon) {
-        if (takeIconSettings) {
-            d->mIcon = icon;
-        } else {
-            // Must preserve settings like flags, colors, etc. In this case the
-            // settings made previously through HbIconItem take precedence over the
-            // newly set HbIcon's own settings.
-            HbIcon::Flags prevFlags = d->mIcon.flags();
-            QColor prevColor = d->mIcon.color();
-            HbIcon::MirroringMode prevMirroringMode = d->mIcon.mirroringMode();
-            d->mIcon = icon;
-            d->mIcon.setFlags(prevFlags);
-            d->mIcon.setColor(prevColor);
-            d->mIcon.setMirroringMode(prevMirroringMode);
-        }
+        d->mIcon = icon;
         d->updateIconItem();
     }
 }
@@ -269,7 +306,8 @@ void HbIconItem::setSize(const QSizeF &size)
  */
 void HbIconItem::setAlignment(Qt::Alignment alignment)
 {
-    Q_D(HbIconItem );
+    Q_D(HbIconItem);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAlign, true);
     if (d->mAlignment != alignment) {
         d->mAlignment = alignment;
         update();
@@ -287,7 +325,7 @@ void HbIconItem::setAlignment(Qt::Alignment alignment)
  */
 void HbIconItem::setAspectRatioMode(Qt::AspectRatioMode aspectRatioMode)
 {
-    Q_D(HbIconItem );
+    Q_D(HbIconItem);
     d->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAspectRatioMode, true);
     if (d->mAspectRatioMode != aspectRatioMode) {
         d->mAspectRatioMode = aspectRatioMode;
@@ -300,13 +338,13 @@ void HbIconItem::setAspectRatioMode(Qt::AspectRatioMode aspectRatioMode)
  If this method is not called, the icon uses the default mode which is QIcon::Normal.
 
  \param mode the new icon mode.
- \warning Currently this method makes use of pixmap() routine in case of NVG icons. 
+ \warning Currently this method makes use of pixmap() routine in case of NVG icons.
  pixmap() slows down the hardware accelerated rendering.
  \sa mode
  */
 void HbIconItem::setMode(QIcon::Mode mode)
 {
-    Q_D(HbIconItem );
+    Q_D(HbIconItem);
     if (d->mMode != mode) {
         d->mMode = mode;
         update();
@@ -323,7 +361,7 @@ void HbIconItem::setMode(QIcon::Mode mode)
  */
 void HbIconItem::setState(QIcon::State state)
 {
-    Q_D(HbIconItem );
+    Q_D(HbIconItem);
     if (d->mState != state) {
         d->mState = state;
         update();
@@ -340,7 +378,7 @@ void HbIconItem::setState(QIcon::State state)
  */
 void HbIconItem::setIconName(const QString &iconName)
 {
-    Q_D(HbIconItem );
+    Q_D(HbIconItem);
     if (d->mIcon.iconName() != iconName) {
         d->mIcon.setIconName(iconName);
         d->updateIconItem();
@@ -359,9 +397,7 @@ void HbIconItem::setFlags(HbIcon::Flags flags)
     Q_D(HbIconItem);
     if (d->mIcon.flags() != flags) {
         d->mIcon.setFlags(flags);
-        if (d->mIconRect.isValid())
-            d->mAnimator.setIcon(d->mIcon);
-        update();
+        d->updateIconParams();
     }
 }
 
@@ -378,9 +414,7 @@ void HbIconItem::setMirroringMode(HbIcon::MirroringMode mode)
     Q_D(HbIconItem);
     if (d->mIcon.mirroringMode() != mode) {
         d->mIcon.setMirroringMode(mode);
-        if (d->mIconRect.isValid())
-            d->mAnimator.setIcon(d->mIcon);
-        update();
+        d->updateIconParams();
     }
 }
 
@@ -413,27 +447,28 @@ void HbIconItem::setBrush(const QBrush &brush)
  */
 void HbIconItem::setIconName(const QString &iconName, QIcon::Mode mode, QIcon::State state)
 {
-    Q_D( HbIconItem );
+    Q_D(HbIconItem);
     d->mIcon.setIconName(iconName, mode, state);
     d->updateIconItem();
 }
 
 /*!
-  Sets the new icon color for the HbIconItem. Note that the color is just
-  stored but not actually used if the HbIcon::Colorized flag is not set and the
-  icon is not a mono icon from the theme.
+  Sets the new icon color for the HbIconItem. Note that the color
+  is just stored but not actually used if the HbIcon::Colorized flag
+  is not set and the icon is not a mono icon from the theme.
 
- \param  color to be set.
- \sa HbIconItem::color(), HbIcon::setColor()
+  See HbIcon::setColor() for more information on colorization of mono
+  icons in widgets.
+
+  \param  color to be set.
+  \sa HbIconItem::color(), HbIcon::setColor()
 */
 void HbIconItem::setColor(const QColor &color)
 {
-    Q_D( HbIconItem );
+    Q_D(HbIconItem);
     if (d->mIcon.color() != color) {
         d->mIcon.setColor(color);
-        if (d->mIconRect.isValid())
-            d->mAnimator.setIcon(d->mIcon);
-        update();
+        d->updateIconParams();
     }
 }
 
@@ -443,20 +478,20 @@ void HbIconItem::setColor(const QColor &color)
 */
 QColor HbIconItem::color() const
 {
-    Q_D(const  HbIconItem );
+    Q_D(const  HbIconItem);
     return d->mIcon.color();
 }
 
 /*!
  Returns the default size of the icon.
- 
+
  For raster images this is the original size of the image.
 
  \sa HbIcon::defaultSize()
  */
 QSizeF HbIconItem::defaultSize() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mIcon.defaultSize();
 }
 
@@ -477,7 +512,7 @@ QSizeF HbIconItem::iconItemSize() const
  */
 Qt::AspectRatioMode HbIconItem::aspectRatioMode() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mAspectRatioMode;
 }
 
@@ -488,7 +523,7 @@ Qt::AspectRatioMode HbIconItem::aspectRatioMode() const
  */
 Qt::Alignment HbIconItem::alignment() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mAlignment;
 }
 
@@ -499,7 +534,7 @@ Qt::Alignment HbIconItem::alignment() const
  */
 QIcon::Mode HbIconItem::mode() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mMode;
 }
 
@@ -510,7 +545,7 @@ QIcon::Mode HbIconItem::mode() const
  */
 QIcon::State HbIconItem::state() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mState;
 }
 
@@ -522,7 +557,7 @@ QIcon::State HbIconItem::state() const
  */
 QString HbIconItem::iconName() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mIcon.iconName();
 }
 
@@ -536,7 +571,7 @@ QString HbIconItem::iconName() const
  */
 QString HbIconItem::iconName(QIcon::Mode mode, QIcon::State state) const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mIcon.iconName(mode, state);
 }
 
@@ -580,7 +615,7 @@ QBrush HbIconItem::brush() const
  */
 bool HbIconItem::isNull() const
 {
-    Q_D(const HbIconItem );
+    Q_D(const HbIconItem);
     return d->mIcon.isNull();
 }
 
@@ -594,22 +629,52 @@ void HbIconItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(widget)
     Q_UNUSED(option)
     Q_D(HbIconItem);
-    const QRectF rect(boundingRect());
-    if(!rect.isEmpty()){
-        if (d->mIconRect != rect) {
-            d->mIconRect = rect;
+    if (d->mClearCachedRect){
+        d->recalculateBoundingRect();
+    }
+    if (!d->mBoundingRect.isEmpty()){
+        if (d->mIconRect != d->mBoundingRect) {
+            d->mIconRect = d->mBoundingRect;
+            if (!d->mIcon.isNull()) {
+                HbIconPrivate::d_ptr_detached(&d->mIcon)->setThemedColor(d->mThemedColor);
+            }
             d->mIcon.setSize(d->mIconRect.size());
             d->mAnimator.setIcon(d->mIcon);
         }
-        painter->fillRect(rect, d->mBrush);
-        d->mAnimator.paint(painter, rect,
+        if (d->mBrush != Qt::NoBrush) {
+            painter->fillRect(d->mBoundingRect, d->mBrush);
+        }
+        d->mAnimator.paint(painter, d->mBoundingRect,
                            d->mAspectRatioMode, d->mAlignment,
                            d->mMode, d->mState);
     }
     if (HbIconItemPrivate::outlinesEnabled) {
         painter->setBrush(QBrush(QColor(0, 255, 0, 50)));
-        painter->drawRect(contentsRect()); 
+        painter->drawRect(contentsRect());
     }
+}
+
+/*!
+ \reimp
+ */
+QRectF HbIconItem::boundingRect() const
+
+{
+    Q_D(const HbIconItem);
+    if (d->mClearCachedRect) {
+        d->recalculateBoundingRect();
+    }
+    return d->mAdjustedRect;
+}
+
+/*!
+ \reimp
+ */
+void HbIconItem::setGeometry(const QRectF& rect)
+{
+    Q_D(HbIconItem);
+    d->mClearCachedRect = true;
+    HbWidgetBase::setGeometry(rect);
 }
 
 /*!
@@ -630,13 +695,13 @@ void HbIconItem::changeEvent(QEvent *event)
     }
 }
 
- /*!
-    \reimp
- */
+/*!
+   \reimp
+*/
 QVariant HbIconItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     Q_D(HbIconItem);
-    if (QGraphicsItem::ItemEnabledHasChanged==change) {
+    if (QGraphicsItem::ItemEnabledHasChanged == change) {
         d->mMode = value.toBool() ? QIcon::Normal : QIcon::Disabled;
     }
 

@@ -94,12 +94,6 @@ bool HbXmlLoaderBinaryActions::pushWidget(
     return true;
 }
 
-bool HbXmlLoaderBinaryActions::pushSpacerItem( const QString &name, const QString &widget )
-{
-    mOut << (quint8)HbXml::ActionPushSpacerItem << name << widget;
-    return true;
-}
-
 bool HbXmlLoaderBinaryActions::pushConnect(
     const QString &srcName,
     const QString &signalName,
@@ -198,46 +192,61 @@ bool HbXmlLoaderBinaryActions::setToolTip( const HbXmlVariable &tooltip )
     return true;
 }
 
-bool HbXmlLoaderBinaryActions::createAnchorLayout( const QString &widget )
+bool HbXmlLoaderBinaryActions::createAnchorLayout( const QString &widget, bool modify )
 {
-    mOut << (quint8)HbXml::ActionCreateAnchorLayout << widget;
+    mOut << (quint8)HbXml::ActionCreateAnchorLayout << widget << modify;
     return true;
 }
 
-bool HbXmlLoaderBinaryActions::addAnchorLayoutEdge(
+bool HbXmlLoaderBinaryActions::addAnchorLayoutItem(
     const QString &src,
-    Hb::Edge srcEdge,
+    const QString &srcId,
+    Hb::Edge srcEdge, 
     const QString &dst,
+    const QString &dstId,
     Hb::Edge dstEdge,
+    const HbXmlLengthValue &minLength,
+    const HbXmlLengthValue &prefLength,
+    const HbXmlLengthValue &maxLength,
+    QSizePolicy::Policy *policy, 
+    HbAnchor::Direction *dir,
+    const QString &anchorId )
+{
+    mOut << (quint8)HbXml::ActionAddAnchorLayoutItem;
+    mOut << src << srcId << (quint8)srcEdge;
+    mOut << dst << dstId << (quint8)dstEdge;
+    mOut << minLength << prefLength << maxLength;
+    if (policy) {
+        mOut << true << (quint8)*policy;
+    } else {
+        mOut << false;
+    }
+    if (dir) {
+        mOut << true << (quint8)*dir;
+    } else {
+        mOut << false;
+    }
+    mOut << anchorId;
+    return true;
+}
+
+bool HbXmlLoaderBinaryActions::setAnchorLayoutMapping(
+    const QString &item,
+    const QString &id,
+    bool remove)
+{
+    mOut << (quint8)HbXml::ActionSetAnchorLayoutMapping;
+    mOut << item << id << remove;
+    return true;
+}
+
+
+bool HbXmlLoaderBinaryActions::createGridLayout(
+    const QString &widget,
     const HbXmlLengthValue &spacing,
-    const QString &spacer )
+    bool modify )
 {
-    mOut << (quint8)HbXml::ActionAddAnchorLayoutEdge << src << (quint8)srcEdge << dst << (quint8)dstEdge << spacing << spacer;
-    return true;
-}
-
-
-bool HbXmlLoaderBinaryActions::createMeshLayout( const QString &widget )
-{
-    mOut << (quint8)HbXml::ActionCreateMeshLayout << widget;
-    return true;
-}
-
-bool HbXmlLoaderBinaryActions::addMeshLayoutEdge(
-    const QString &src,
-    Hb::Edge srcEdge,
-    const QString &dst,
-    Hb::Edge dstEdge,
-    const HbXmlLengthValue &spacing,
-    const QString &spacer )
-{
-    mOut << (quint8)HbXml::ActionAddMeshLayoutEdge << src << (quint8)srcEdge << dst << (quint8)dstEdge << spacing << spacer;
-    return true;
-}
-
-bool HbXmlLoaderBinaryActions::createGridLayout( const QString &widget, const HbXmlLengthValue &spacing )
-{
-    mOut << (quint8)HbXml::ActionCreateGridLayout << widget << spacing;
+    mOut << (quint8)HbXml::ActionCreateGridLayout << widget << spacing << modify;
     return true;
 }
 
@@ -332,7 +341,8 @@ bool HbXmlLoaderBinaryActions::setGridLayoutColumnWidths(
 bool HbXmlLoaderBinaryActions::createLinearLayout(
     const QString &widget,
     Qt::Orientation *orientation,
-    const HbXmlLengthValue &spacing )
+    const HbXmlLengthValue &spacing,
+    bool modify )
 {
     mOut << (quint8)HbXml::ActionCreateLinearLayout << widget;
     if ( orientation ) {
@@ -340,7 +350,7 @@ bool HbXmlLoaderBinaryActions::createLinearLayout(
     } else {
         mOut << false;
     }
-    mOut << spacing;
+    mOut << spacing << modify;
     return true;
 }
 
@@ -398,9 +408,9 @@ bool HbXmlLoaderBinaryActions::setLayoutContentsMargins(
     mOut << (quint8)HbXml::ActionSetLayoutContentsMargins << left << top << right << bottom;
     return true;
 }
-bool HbXmlLoaderBinaryActions::createStackedLayout( const QString &widget )
+bool HbXmlLoaderBinaryActions::createStackedLayout( const QString &widget, bool modify )
 {
-    mOut << (quint8)HbXml::ActionCreateStackedLayout << widget;
+    mOut << (quint8)HbXml::ActionCreateStackedLayout << widget << modify;
     return true;
 }
 

@@ -42,6 +42,7 @@
 
 #include <QGraphicsSceneHelpEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QCoreApplication>
 
 /*!
     @stable
@@ -119,6 +120,13 @@
     \reimp
     \fn int HbToolButton::type() const
  */
+
+/*!
+  \primitives
+  \primitive{background} HbFrameItem representing the background frame of the button.
+  \primitive{icon} HbIconItem representing the icon of the button.
+  \primitive{text} HbTextItem representing button text.
+  */
 
 HbToolButtonPrivate::HbToolButtonPrivate() :
     action(0),
@@ -235,24 +243,30 @@ QSizeF HbToolButtonPrivate::getMinimumSize()
     Q_Q(HbToolButton);
     mRepolishRequested = true;
     polishPending = false;
-    q->updateGeometry();
-    QSizeF size = q->minimumSize();
     //Workaround (causing extra polish)
     mSizeHintPolish = false;
     //workaround ends
+    q->updateGeometry();
+    QCoreApplication::sendPostedEvents(q, QEvent::LayoutRequest);
+    QSizeF size = q->minimumSize();
     return size;
 }
 
 void HbToolButtonPrivate::_q_actionTriggered()
 {
     Q_Q(HbToolButton);
-    emit q->triggered(action);
+    // Only emit triggered signal for HbActions, not QActions.
+    // triggered(QAction*) requires an API change we don't want to do right now.
+    HbAction *hbAction = qobject_cast<HbAction *>(action);
+    if (hbAction)
+        emit q->triggered(hbAction);
 }
 
 void HbToolButtonPrivate::_q_actionChanged()
 {
     Q_Q(HbToolButton);
-    if (!action->icon().isNull()) {
+    HbAction *hbAction = qobject_cast<HbAction *>(action);
+    if ((hbAction && !hbAction->icon().isNull()) || !action->icon().isNull()) {
         if (orientation == Qt::Horizontal) {
             buttonStyle = HbToolButton::ToolButtonIcon;
         } else if (!action->text().isEmpty()) {
@@ -265,7 +279,8 @@ void HbToolButtonPrivate::_q_actionChanged()
     }
     // action text/icon may have changed,            
     if (polished) {
-        q->repolish();
+        q->repolish();        
+        QCoreApplication::sendPostedEvents(q, QEvent::Polish);
     }
 }
 
@@ -314,7 +329,7 @@ HbToolButton::~HbToolButton()
 HbAction *HbToolButton::action() const
 {
     Q_D(const HbToolButton);
-    return d->action;
+    return qobject_cast<HbAction *>(d->action);
 }
 
 /*!
@@ -336,7 +351,7 @@ void HbToolButton::setAction(HbAction *action)
         disconnect(d->action, SIGNAL(changed()), this, SLOT(_q_actionChanged()));
     }
 
-    HbAction *oldAction = d->action;
+    QAction *oldAction = d->action;
     d->action = action;
     if (d->action) {
         connect(action, SIGNAL(triggered()), this, SLOT(_q_actionTriggered()));
@@ -480,14 +495,16 @@ void HbToolButton::updatePrimitives()
     }
     if (d->iconItem) {
         style()->updatePrimitive(d->iconItem, HbStyle::P_ToolButton_icon, &option);
-        if (d->action && d->action->icon().flags() & HbIcon::Colorized) {
-            static_cast<HbIconItem *>(d->iconItem)->setFlags(HbIcon::Colorized);            
+        HbAction *hbAction = qobject_cast<HbAction *>(d->action);
+        if (hbAction) {
+            if (hbAction->icon().flags() & HbIcon::Colorized) {
+                static_cast<HbIconItem *>(d->iconItem)->setFlags(HbIcon::Colorized);
+            }
+            if (hbAction->icon().mirroringMode() != HbIcon::Default) {
+                HbIconItem *iconItem = static_cast<HbIconItem *>(d->iconItem);
+                iconItem->setMirroringMode( hbAction->icon().mirroringMode() );
+            }
         }
-        if (d->action && d->action->icon().mirroringMode() != HbIcon::Default) {
-            HbIconItem *iconItem = static_cast<HbIconItem *>(d->iconItem);
-            iconItem->setMirroringMode( d->action->icon().mirroringMode() );
-        }
-
 
     }
 }
@@ -518,7 +535,12 @@ void HbToolButton::initStyleOption(HbStyleOptionToolButton *option)
 
     if (d->action) {
         option->text = d->action->text();
-        option->icon = d->action->icon();        
+        HbAction *hbAction = qobject_cast<HbAction*>(d->action);
+        if (hbAction)
+            option->icon = hbAction->icon();
+        else
+            option->icon = d->action->icon();
+
         option->isToolBarExtension = d->toolbarExtensionFrame;
     }
 }
@@ -541,8 +563,9 @@ void HbToolButton::resizeEvent(QGraphicsSceneResizeEvent *event)
     if (event->newSize() !=  event->oldSize() && d->polished && isVisible()) {
         updatePrimitives();
     }
-    if (action() && action()->toolBarExtension()) {
-        HbToolBarExtensionPrivate::d_ptr(action()->toolBarExtension())->placeToolBarExtension();
+    HbAction *hbAction = qobject_cast<HbAction *>(d->action);
+    if ( hbAction && hbAction->toolBarExtension()) {
+        HbToolBarExtensionPrivate::d_ptr(hbAction->toolBarExtension())->placeToolBarExtension();
     }
 }
 
@@ -556,9 +579,10 @@ void HbToolButton::nextCheckState()
     if (!d->action) {
         return;
     }
-    if ( d->action->toolBarExtension() ) {
-        HbToolBarExtensionPrivate::d_ptr(d->action->toolBarExtension())->mExtendedButton = this;
-        d->action->toolBarExtension()->show();
+    HbAction *hbAction = qobject_cast<HbAction *>(d->action);
+    if ( hbAction && hbAction->toolBarExtension() ) {
+        HbToolBarExtensionPrivate::d_ptr(hbAction->toolBarExtension())->mExtendedButton = this;
+        hbAction->toolBarExtension()->show();
     }
 
     d->action->trigger();

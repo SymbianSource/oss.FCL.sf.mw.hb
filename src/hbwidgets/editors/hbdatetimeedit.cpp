@@ -24,11 +24,13 @@
 ****************************************************************************/
 
 #include <QDateTime>
+#include <QMetaMethod>
 
 #include "hblineedit.h"
 #include "hbdatetimevalidator_p.h"
 #include "hbdatetimeedit.h"
 #include "hbdatetimeedit_p.h"
+#include "hbevent.h"
 
 /*!
     @alpha
@@ -233,13 +235,14 @@ void HbDateTimeEdit::setText (const QString &text)
 /*!
     \reimp
 */
-void HbDateTimeEdit::focusOutEvent(QFocusEvent *event)
+bool HbDateTimeEdit::event(QEvent* event)
 {
-    HbAbstractEdit::focusOutEvent(event);
-
     Q_D(HbDateTimeEdit);
-    if(d->validator->fixDate(&d->cursor, true)) {
-        // fixing so restore focus to editor
-        setFocus(event->reason());
+
+    if (event->type() == HbEvent::InputMethodFocusOut) {
+        d->validator->fixDate(&d->cursor, true);
     }
+
+    return HbLineEdit::event(event);
 }
+

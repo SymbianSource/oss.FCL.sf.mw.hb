@@ -41,7 +41,7 @@ class HbSensorListener;
 
 class HB_CORE_PRIVATE_EXPORT HbForegroundWatcher : public QObject
 #ifdef Q_OS_SYMBIAN
-, public MCoeForegroundObserver
+    , public MCoeForegroundObserver
 #endif
 {
     Q_OBJECT
@@ -49,7 +49,7 @@ class HB_CORE_PRIVATE_EXPORT HbForegroundWatcher : public QObject
 public:
     static HbForegroundWatcher *instance();
     void setSensorListener(HbSensorListener *sensorListener);
-        
+
 signals:
     void foregroundGained();
     void foregroundLost();

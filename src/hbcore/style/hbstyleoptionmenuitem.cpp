@@ -25,17 +25,9 @@
 
 #include "hbstyleoptionmenuitem_p.h"
 
-/*!
+/*
     \class HbStyleOptionMenuItem
     \brief HbStyleOptionMenuItem has the style component for menu item primitives
-*/
-
-
-/*!
-
-    \deprecated HbStyleOptionMenuItem::HbStyleOptionMenuItem()
-    is deprecated. Styleoptions will not be public.
-
 */
 HbStyleOptionMenuItem::HbStyleOptionMenuItem() :
     text(),
@@ -48,13 +40,6 @@ HbStyleOptionMenuItem::HbStyleOptionMenuItem() :
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionMenuItem::HbStyleOptionMenuItem(const HbStyleOptionMenuItem&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionMenuItem::HbStyleOptionMenuItem(const HbStyleOptionMenuItem &other) :
     HbStyleOption(other),
     text(other.text),

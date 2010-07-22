@@ -22,9 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#include "hbtreeviewitem_p.h"
 
 #include "hbtreeviewitem.h"
+#include "hbtreeviewitem_p.h"
+
 #include "hbtreeview.h"
 #include "hbabstractitemview.h"
 #include "hbabstractitemcontainer_p.h"
@@ -56,6 +57,8 @@
 
     See HbListViewItem for commmon view item subclassing reference. 
 
+    \primitives
+    \primitive{subitem-indicator} HbIconItem representing the expand/collapse icon in an HbTreeViewItem that has child items.
 */
 
 
@@ -299,7 +302,7 @@ void HbTreeViewItem::setExpanded(bool expanded)
 /*!
     Returns true if the item is expanded; otherwise returns false.
 
-    \sa setExpanded
+    \sa setExpanded()
 */
 bool HbTreeViewItem::isExpanded() const
 {
@@ -352,7 +355,7 @@ void HbTreeViewItem::initStyleOption(HbStyleOptionTreeViewItem *option) const
 
     This method will change the user expandable value for all view items.
 
-    \sa isUserExpandable
+    \sa isUserExpandable()
 */
 void HbTreeViewItem::setUserExpandable(bool expandable)
 {
@@ -366,7 +369,7 @@ void HbTreeViewItem::setUserExpandable(bool expandable)
 /*!
     Returns true if the items are expandable by the user; otherwise returns false.
 
-    \sa setUserExpandable
+    \sa setUserExpandable()
 */
 bool HbTreeViewItem::isUserExpandable() const
 {

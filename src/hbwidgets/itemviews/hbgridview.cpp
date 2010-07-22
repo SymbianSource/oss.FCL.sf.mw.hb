@@ -49,20 +49,20 @@
  Items are arranged according to the scroll direction i.e Qt::Horizontal lays out items 
  horizontally and Qt::Vertical lays out items vertically.
 
- By default the HbScrollArea::ClampingStyle used is BounceBackClamping, the HbScrollArea::ScrollingStyle is PanOrFlick,
+ By default the HbScrollArea::ClampingStyle used is BounceBackClamping, the HbScrollArea::ScrollingStyle is PanWithFollowOn,
  scrollbars are invisible and recycling and inertia are disabled.
 
  The following code snippet demonstrates the use of HbGridView
  \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,21}
- */
+*/
 
 /*!
  GridView recycling is in proto state.
- */
+*/
 
 /*!    
   See also  HbAbstractItemView,HbAbstractViewitem,HbGridViewItem,HbScrollArea
- */
+*/
 
 /*!
  \fn void HbGridView::setUniformItemSizes(bool enabled) is public from HbAbstractItemView but for HbGridView
@@ -72,7 +72,7 @@
 
 /*!
  Constructs a new HbGridView with \a parent.
- */
+*/
 HbGridView::HbGridView(QGraphicsItem *parent) :
     HbAbstractItemView(*new HbGridViewPrivate(), new HbGridItemContainer(), new HbModelIterator(), parent)
 {
@@ -84,7 +84,7 @@ HbGridView::HbGridView(QGraphicsItem *parent) :
 /*!
     Constructs a grid view with a private class object \a dd, 
     \a container and \a parent.
- */
+*/
 HbGridView::HbGridView(HbGridViewPrivate &dd, HbAbstractItemContainer *container, QGraphicsItem *parent) :
     HbAbstractItemView(dd, container, new HbModelIterator(), parent)
 {
@@ -104,7 +104,7 @@ HbGridView::~HbGridView()
     Returns the total number of rows in the view.
 
     \sa setRowCount()
- */
+*/
 int HbGridView::rowCount() const
 {
     Q_D(const HbGridView);
@@ -115,7 +115,7 @@ int HbGridView::rowCount() const
     Sets the total number of rows to \a rowCount.
 
     \sa HbGridView::rowCount()
- */
+*/
 void HbGridView::setRowCount(int rowCount)
 {
     Q_D(HbGridView);
@@ -131,7 +131,7 @@ void HbGridView::setRowCount(int rowCount)
     Returns the total number of columns in the view.
 
     \sa setColumnCount()
- */
+*/
 int HbGridView::columnCount() const
 {
     Q_D(const HbGridView);
@@ -142,7 +142,7 @@ int HbGridView::columnCount() const
     Sets the total number of columns to \a columnCount.
 
     \sa columnCount()
- */
+*/
 void HbGridView::setColumnCount(int columnCount)
 {
     Q_D(HbGridView);
@@ -159,7 +159,7 @@ void HbGridView::setColumnCount(int columnCount)
     Returns true if icons are currently displayed in GridView.
  
     \sa setIconVisible()
- */
+*/
 bool HbGridView::iconVisible() const
 {
     Q_D(const HbGridView);
@@ -172,7 +172,7 @@ bool HbGridView::iconVisible() const
     By default icons are visible.
 
     \sa iconVisible()
- */
+*/
 void HbGridView::setIconVisible(bool visible)
 {
     Q_D(HbGridView);
@@ -183,7 +183,7 @@ void HbGridView::setIconVisible(bool visible)
     Returns visibility of text in grid view.
 
     \sa setTextVisible()
- */
+*/
 bool HbGridView::textVisible() const
 {
     Q_D(const HbGridView);
@@ -196,16 +196,43 @@ bool HbGridView::textVisible() const
     By default text is visible.
 
     \sa HbGridView::textVisible()
- */
+*/
 void HbGridView::setTextVisible(bool visible)
 {
     Q_D(HbGridView);
     d->setTextVisible(visible);
 }
 
+
+/*!
+    Returns true if the HbGridView will automatically swap the row and column counts in orientation change.
+
+    \sa HbGridView::setSwapDimensionsOnOrientationChange()
+ */
+bool HbGridView::swapDimensionsOnOrientationChange() const
+{
+    Q_D(const HbGridView);
+    return d->mSwapDimensionsOnOrientationChange;
+}
+
+/*!
+    Sets automatic row and column count swapping in orientatation change to \a swap. 
+
+    By default the row and column counts are swapped in orientation change. 
+
+    \sa HbGridView::swapDimensionsOnOrientationChange()
+ */
+
+void HbGridView::setSwapDimensionsOnOrientationChange(bool swap)
+{
+    Q_D(HbGridView);
+    d->mSwapDimensionsOnOrientationChange = swap;
+}
+
+
 /*!
     Returns item at \a row and \a column.
- */
+*/
 HbAbstractViewItem *HbGridView::itemAt(int row, int column) const
 {
     Q_D(const HbGridView);
@@ -221,12 +248,12 @@ HbAbstractViewItem *HbGridView::itemAt(int row, int column) const
 
 /*!
  \reimp
- */
+*/
 void HbGridView::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
     Q_D(HbGridView);
     // always use container, event if recycling is off and all items are 
-    // in container, but still aditional action is needed -
+    // in container, but still additional action is needed -
     // container::scrollTo is responsible for procesing all
     // posponed events (DelayedLayoutRequest)
     if (    d->mModelIterator->model()
@@ -248,7 +275,7 @@ void HbGridView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 /*!
     \reimp
- */
+*/
 void HbGridView::orientationAboutToBeChanged()
 {
     Q_D(HbGridView);
@@ -257,14 +284,16 @@ void HbGridView::orientationAboutToBeChanged()
 
 /*!
     \reimp
- */
+*/
 void HbGridView::orientationChanged(Qt::Orientation newOrientation)
 {
     Q_D(HbGridView);
     d->mContainer->setPos(0,0);
-    d->itemContainer()->orientationChanged(newOrientation);
+    if (d->mSwapDimensionsOnOrientationChange) {
+        d->itemContainer()->orientationChanged(newOrientation);
+    }
 
-    // abstract part is enought - container update buffer
+    // abstract part is enough - container update buffer
     HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
 
     d->mVisibleIndex = QModelIndex();
@@ -361,7 +390,7 @@ void HbGridView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bott
 
 /*!
     This slot is connected to scrollDirectionsChanged signal emitted from HbScrollArea.
- */
+*/
 void HbGridView::scrollDirectionChanged(Qt::Orientations scrollDirection)
 {
     Q_D(HbGridView);
@@ -371,7 +400,7 @@ void HbGridView::scrollDirectionChanged(Qt::Orientations scrollDirection)
     d->mContainer->setPos(0,0);
     d->itemContainer()->scrollDirectionChanged(scrollDirection);
 
-    // abstract part is enought - container update buffer
+    // abstract part is enough - container update buffer
     HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
 
     d->mVisibleIndex = QModelIndex();

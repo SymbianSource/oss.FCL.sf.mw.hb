@@ -34,17 +34,17 @@
 class HbIconItemPrivate;
 class HbIconAnimator;
 
-class HB_CORE_EXPORT HbIconItem: public HbWidgetBase 
+class HB_CORE_EXPORT HbIconItem: public HbWidgetBase
 {
     Q_OBJECT
 
 public:
-    explicit HbIconItem(const QString& iconName, QGraphicsItem *parent = 0);
+    explicit HbIconItem(const QString &iconName, QGraphicsItem *parent = 0);
     explicit HbIconItem(const HbIcon &icon, QGraphicsItem *parent = 0);
     explicit HbIconItem(QGraphicsItem *parent = 0);
     virtual ~HbIconItem();
 
-    void setIcon(const HbIcon &icon, bool takeIconSettings = false);
+    void setIcon(const HbIcon &icon, bool reserved = false);
     void setSize(const QSizeF &size);
     void setAspectRatioMode(Qt::AspectRatioMode mode);
     void setAlignment(Qt::Alignment alignment);
@@ -56,8 +56,8 @@ public:
     void setMirroringMode(HbIcon::MirroringMode mode);
     void setBrush(const QBrush &brush);
 
-    void setColor(const QColor &color);	
-    QColor color() const;	
+    void setColor(const QColor &color);
+    QColor color() const;
     HbIcon icon() const;
     QSizeF defaultSize() const;
     QSizeF iconItemSize() const;
@@ -79,11 +79,14 @@ public:
     static const Qt::Alignment defaultAlignment;
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-
+    QRectF boundingRect() const;
+    void setGeometry(const QRectF& rect);
     HbIconAnimator &animator();
 
     enum { Type = Hb::ItemType_IconItem };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
 protected:
     HbIconItem(HbIconItemPrivate &dd, QGraphicsItem *parent);
@@ -93,7 +96,7 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbIconItem)
     Q_DISABLE_COPY(HbIconItem)
-	
+
     friend class HbStylePrivate;
 };
 

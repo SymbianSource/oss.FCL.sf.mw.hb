@@ -37,7 +37,7 @@
 
 This class is needed when the framework resolves input state handler. An input method
 plugin reports a set of implemented input modes as an array of HbInputModeProperties
-coverted to strings.
+converted to strings.
 
 This class is not needed in application code.
 
@@ -47,36 +47,34 @@ This class is not needed in application code.
 class HbInputModeProperties
 {
 public:
-    HbInputModeProperties()
-    {
+    HbInputModeProperties() {
     }
 
     HbInputModeProperties(HbInputModeType mode, const HbInputLanguage &language, HbKeyboardType keyboard)
-        : iMode(mode), iLanguage(language), iKeyboard(keyboard)
-    {
+        : mMode(mode), mLanguage(language), mKeyboard(keyboard) {
     }
 
-    HbInputModeProperties& operator=(const HbInputModeProperties& other) {
-        iMode = other.iMode;
-        iLanguage = other.iLanguage;
-        iKeyboard = other.iKeyboard;
+    HbInputModeProperties &operator=(const HbInputModeProperties &other) {
+        mMode = other.mMode;
+        mLanguage = other.mLanguage;
+        mKeyboard = other.mKeyboard;
         return *this;
     }
 
-    bool operator==(const HbInputModeProperties& other) const {
-        if (iMode == other.iMode
-            && iLanguage == other.iLanguage
-            && iKeyboard == other.iKeyboard) {
-                return true;
+    bool operator==(const HbInputModeProperties &other) const {
+        if (mMode == other.mMode
+            && mLanguage == other.mLanguage
+            && mKeyboard == other.mKeyboard) {
+            return true;
         }
         return false;
     }
 
-    bool operator!=(const HbInputModeProperties& other) const {
-        if (iMode != other.iMode
-            || iLanguage != other.iLanguage
-            || iKeyboard != other.iKeyboard) {
-                return true;
+    bool operator!=(const HbInputModeProperties &other) const {
+        if (mMode != other.mMode
+            || mLanguage != other.mLanguage
+            || mKeyboard != other.mKeyboard) {
+            return true;
         }
         return false;
     }
@@ -84,45 +82,57 @@ public:
     /*!
     Returns input mode.
     */
-    HbInputModeType inputMode() const { return iMode; }
+    HbInputModeType inputMode() const {
+        return mMode;
+    }
 
     /*!
     Sets input mode.
     */
-    void setInputMode(HbInputModeType newInputMode) { iMode = newInputMode; }
+    void setInputMode(HbInputModeType newInputMode) {
+        mMode = newInputMode;
+    }
 
     /*!
     Return language.
     */
-    HbInputLanguage language() const { return HbInputLanguage(iLanguage); }
+    HbInputLanguage language() const {
+        return HbInputLanguage(mLanguage);
+    }
 
     /*!
     Sets language.
     */
-    void setLanguage(const HbInputLanguage &newLanguage) { iLanguage = newLanguage; } 
+    void setLanguage(const HbInputLanguage &newLanguage) {
+        mLanguage = newLanguage;
+    }
 
     /*!
     Returns keyboard type.
     */
-    HbKeyboardType keyboard() const { return iKeyboard; }
+    HbKeyboardType keyboard() const {
+        return mKeyboard;
+    }
 
     /*!
     Sets keyboard type.
     */
-    void setKeyboard(HbKeyboardType newKeyboard) { iKeyboard = newKeyboard; }
+    void setKeyboard(HbKeyboardType newKeyboard) {
+        mKeyboard = newKeyboard;
+    }
 
     /*!
     Returns mode properties in string format. This is used for input method resolving and
     only needed by input method developers.
     */
     QString asString() const {
-        return iLanguage.asString() + QString(" ") + QString::number(iMode) + QString(" ") + QString::number(iKeyboard);
+        return mLanguage.asString() + QString(" ") + QString::number(mMode) + QString(" ") + QString::number(mKeyboard);
     }
 
 private:
-    HbInputModeType iMode;
-    HbInputLanguage iLanguage;
-    HbKeyboardType iKeyboard;
+    HbInputModeType mMode;
+    HbInputLanguage mLanguage;
+    HbKeyboardType mKeyboard;
 };
 
 #endif // HB_INPUT_MODE_PROPERTIES_H

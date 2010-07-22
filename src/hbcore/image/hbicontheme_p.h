@@ -34,16 +34,15 @@ class HbIconThemePrivate;
 
 class HB_AUTOTEST_EXPORT HbIconTheme : public QObject
 {
-Q_OBJECT
+    Q_OBJECT
 
 public:
     explicit HbIconTheme();
     ~HbIconTheme();
     void setCurrentTheme(const QString &theme);
     QString currentTheme() const;
-    QStringList dirList() const;
     QString description() const;
-    void clearDirList();
+    QString name() const;
     void emitUpdateIcons(const QStringList &fileNames = QStringList());
 //    For future addition:
 //    QSizeF actualSize(HbIconLoader::Purpose purpose) const;

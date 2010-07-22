@@ -41,10 +41,13 @@ class HB_INPUT_EXPORT HbInputSettingWidget : public QObject
     Q_OBJECT
 
 public:
-    explicit HbInputSettingWidget(HbDataForm *dataForm, QGraphicsWidget* parent = 0);
+    explicit HbInputSettingWidget(HbDataForm *dataForm, QGraphicsWidget *parent = 0);
     virtual ~HbInputSettingWidget();
 
     void initializeWidget();
+    
+    void resetWidget();
+    void resetChineseInputMode();
 
 public slots:
     void updateGlobalInputLanguage(const HbInputLanguage &newLanguage);
@@ -64,9 +67,14 @@ public slots:
     void setAutocompletionState(const QModelIndex &index);
     void setCorrectionLevel(int index);
     void setPrimaryCandidateMode();
+    void dataChange(const QModelIndex &startIn, const QModelIndex &endIn);
 
+    void setPortraitInputMethod(int index);
+    void setLandscapeInputMethod(int index);
+    void setHwrSpeed(int index);
+    void setCangjieMode(int index);
 protected:
-    HbInputSettingWidgetPrivate * const d_ptr;
+    HbInputSettingWidgetPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputSettingWidget)

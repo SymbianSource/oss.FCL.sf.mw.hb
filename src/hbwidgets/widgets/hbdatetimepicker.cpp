@@ -23,36 +23,44 @@
 **
 ****************************************************************************/
 
-#include "hbdatetimepicker_p.h"
 #include "hbdatetimepicker.h"
+#include "hbdatetimepicker_p.h"
 #include "hbstyleoption_p.h"
 
 /*!
     @beta
     \class HbDateTimePicker
-    \brief HbDateTimePicker class provides a widget for picking the date, time, date and time. 
+    \brief HbDateTimePicker class provides a widget for picking the date, time, date and time. <br>
+    
     By default date picker will be created, with date functionality only.
     For exclusive time or datetime picker creation, use QTime or QDateTime variable as parameter for the constructor.
     \li Date and Time
     \li Date
     \li Time
     
+    Below is a sample code snippet for datetime picker creation:
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,51}
 
-    By default, display format is from HbExtendedLocale. User can set the format using \sa setDisplayFormat.
-    Based on the display format the tumblers or sections will be rearranged.
+    By default, display format is from HbExtendedLocale. User can set the format using setDisplayFormat API. \sa setDisplayFormat.<br>
+    Based on the display format the tumblers or sections will be rearranged.<br>
+    For each tumbler(TumbleView) in datetime picker, loopingEnabled property is always true.<br>
     
-    HbDateTimePicker provides various date and time range functionalities.
-    currently the date range is independent of the time range.
+    HbDateTimePicker provides various date and time range functionalities.<br>
+    Currently the date range is independent of the time range.
     \sa setDateRange \sa setTimeRange \sa setDateTimeRange
     \sa setMinimumTime \sa setMaximumTime \sa setMinimumDate \sa setMaximumDate
     \sa setMinimumDateTime \sa setMaximumDateTime
+
+    \image html hbdatetimepicker_date.png  "Datetime picker with date functionalities, in d/MMMM format"
+    \image html hbdatetimepicker_time.png  "Datetime picker with time functionalities, in h.m.AP format"
+
+    <b>Note:</b>Graphics in the above images varies depending on theme.
 */
 
 /*!
     \fn void dateChanged(const QDate &date)
 
-    This signal is emitted when item selection changes in any of the date pickers in the datetimepicker widget.
+    This signal is emitted when item selection changes in any of the date pickers(day, month, year) in the datetimepicker widget.
     
     \param date  selected by the user.
 
@@ -61,7 +69,7 @@
 /*!
     \fn void timeChanged(const QTime &time)
 
-    This signal is emitted when item selection changes in any of the time pickers in the datetimepicker widget.
+    This signal is emitted when item selection changes in any of the time pickers(hour, minute, second, am/pm) in the datetimepicker widget.
     \param time  selected by the user.
 
 */
@@ -69,7 +77,7 @@
 /*!
     \fn void dateTimeChanged(const QDateTime &datetime)
 
-    This signal is emitted when item selection changes in any of the pickers in the datetimepicker widget.
+    This signal is emitted when item selection changes in any of the date and time pickers in the datetimepicker widget.
     \param datetime  selected by the user.
 
 */
@@ -77,35 +85,34 @@
 /*!
     Constructs date picker widget by default.
 
-    \param parent parent item.
+    \param parent parent item for datetime picker widget.
 */
 HbDateTimePicker::HbDateTimePicker( QGraphicsItem *parent ):
 HbWidget(*new HbDateTimePickerPrivate, parent)
 {
-	Q_D(HbDateTimePicker);
+    Q_D(HbDateTimePicker);
 
-	//no mode passed so it should take date as mode by default
-	d->init(QVariant::Date);
+    //no mode passed so it should take date as mode by default
+    d->init(QVariant::Date);
 
-	setDateTime(QDateTime::currentDateTime());
+    setDateTime(QDateTime::currentDateTime());
 }
 
 /*!
-    Constructs datetime picker widget.
-
-    \param datetime QDateTime value.
+    Constructs datetime picker widget with both date and time functionalities and with default locale's datetime format. 
+    \param datetime Value to be set on datetime picker widget, which has both date and time related tumblers.
 */
 HbDateTimePicker::HbDateTimePicker(const QDateTime &datetime, QGraphicsItem *parent ):
 HbWidget(*new HbDateTimePickerPrivate, parent)
 {
     Q_D(HbDateTimePicker);
 
-	d->init(QVariant::DateTime);
-	setDateTime(datetime);
+    d->init(QVariant::DateTime);
+    setDateTime(datetime);
 }
 
 /*!
-    Constructs date picker widget with default locale's date format.
+    Constructs datetime picker widget with only date functionalities and with default locale's date format.
     
     \param date QDate value.
 */
@@ -114,12 +121,12 @@ HbWidget(*new HbDateTimePickerPrivate, parent)
 {
     Q_D(HbDateTimePicker);
 
-	d->init(QVariant::Date);
+    d->init(QVariant::Date);
     setDate(date);
 }
 
 /*!
-    Constructs time picker widget with default locale's time format.
+    Constructs datetime picker widget with only time functionalities and with with default locale's time format.
     
     \param time QTime value.
 */
@@ -128,12 +135,13 @@ HbWidget(*new HbDateTimePickerPrivate, pParent)
 {
     Q_D(HbDateTimePicker);
 
-	d->init(QVariant::Time);
+    d->init(QVariant::Time);
     setTime(time);
 }
 
 /*!
-    Internal. Protected constructor for derivations.
+    \internal
+    Protected constructor for derivations.
     the default mode is DateTimeMode, if other mode is required, set the mDateTimeMode variable.
     this does not set any default datetime, needs to be explicitly done in the derived constructor.
 
@@ -144,7 +152,7 @@ HbWidget(dd, parent)
 {
     Q_D(HbDateTimePicker);
 
-	d->init(QVariant::DateTime);
+    d->init(QVariant::DateTime);
 }
 
 /*!
@@ -169,7 +177,7 @@ HbDateTimePicker::~HbDateTimePicker()
 /*!
     Returns current display format as QString value.
 
-    \return display format.
+    \return display format of datetime picker widget.
 
     \sa setDisplayFormat()
  */
@@ -207,29 +215,43 @@ QString HbDateTimePicker::displayFormat() const
             a minus sign is prepended in addition.</i></TD></TR>
     </TABLE>
 
-    NOTE:setDisplayFormat works only when the seperators are mentioned in the format like 'dd.mm.yy' or 'dd mm yy', this
+    NOTE:setDisplayFormat works only when the separators are mentioned in the format like 'dd.mm.yy' or 'dd mm yy', this
          will be fixed in the future versions.
 
-    \param format is the display format in QString format.
+    \param format is the display format, for datetime picker widget, in QString format.
 
     \sa displayFormat()
 */
 void HbDateTimePicker::setDisplayFormat(const QString &format)
 {
-	Q_D(HbDateTimePicker);
+    Q_D(HbDateTimePicker);
 
-	if(d->isFormatValid(format)){ 
-		d->mFormat = format;
-		d->parseDisplayFormat(format);        
-		d->rearrangeTumbleViews();
+    if(d->isFormatValid(format)){ 
+        d->mFormat = format;
+        d->parseDisplayFormat(format);        
+        d->rearrangeTumbleViews();
         d->emitDateTimeChange();
-	}//End If format is valid
+    }//End If format is valid
 }
 
 /*!
     Returns the current date in QDate format.
 
-    \return Date Picker's current date.
+    \return current selected date in datetime picker.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'date' is a QDate property of HbDateTimePicker. -->
+        <string name="date" value="02-02-15" />
+    </widget>
+    ...
+    \endcode
 
     \sa setDate
 */
@@ -243,7 +265,7 @@ QDate HbDateTimePicker::date() const
 /*!
     Sets the current \a date in the form of QDate.
 
-    \param date date in QDate format
+    \param date date to be set on the datetime picker in QDate format
 
     \sa date
 */
@@ -256,7 +278,21 @@ void HbDateTimePicker::setDate(const QDate& date)
 /*!
     Returns minimum date in QDate format.
 
-    \return Minimum date in QDate format.
+    \return Minimum date set on datetime picker in QDate format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'minimumDate' is a QDate property of HbDateTimePicker. -->
+        <string name="minimumDate" value="02-02-15" />
+    </widget>
+    ...
+    \endcode
 
     \sa setMinimumDate
 */
@@ -269,7 +305,7 @@ QDate HbDateTimePicker::minimumDate()const
 /*!
     Sets minimum \a date in QDate format.
 
-    \param Minimum date in QDate format.
+    \param Minimum date to be set on datetime picker in QDate format.
     
     \sa minimumDate
 */
@@ -282,7 +318,21 @@ void HbDateTimePicker::setMinimumDate(const QDate& date)
 /*!
     Returns maximum date in QDate format.
 
-    \return Maximum Date in QDate format.
+    \return Maximum Date set on datetime picker in QDate format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'maximumDate' is a QDate property of HbDateTimePicker. -->
+        <string name="maximumDate" value="02-02-15" />
+    </widget>
+    ...
+    \endcode
 
     \sa setMaximumDate
 */
@@ -295,7 +345,7 @@ QDate HbDateTimePicker::maximumDate()const
 /*!
     Sets maximum \a date in QDate format.
 
-    \param date Maximum date in QDate format.
+    \param date Maximum date to be set on datetime picker in QDate format.
 
     \sa maximumDate
 */
@@ -306,7 +356,7 @@ void HbDateTimePicker::setMaximumDate(const QDate& date)
 }
 
 /*!
-    Sets minimum \a minDate and maximum \a maxDate dates in QDate format.
+    Sets minimum \a minDate and maximum \a maxDate dates in QDate format. This will allow user to set date range on datetime picker.
 
     \param minDate Minimum date in QDate format.
     \param maxDate Maximum date in QDate format.
@@ -321,9 +371,23 @@ void HbDateTimePicker::setDateRange(const QDate &minDate, const QDate &maxDate)
 }
 
 /*!
-    Returns the current datetime in QDateTime format.
+    Returns the current date and time value, selected in datetime picker, in QDateTime format.
 
     \return date and time value in QDateTime format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'dateTime' is a QDateTime property of HbDateTimePicker. -->
+        <string name="dateTime" value="02-02-15T02-15-30" />
+    </widget>
+    ...
+    \endcode
 
     \sa setDateTime
 */
@@ -334,7 +398,7 @@ QDateTime HbDateTimePicker::dateTime()const
 }
 
 /*!
-    Sets the current \a datetime in the form of QDateTime.
+    Sets the current \a datetime value to be set on datetime picker in QDateTime format.
 
     \param datetime in QDateTime format.
 
@@ -347,9 +411,23 @@ void HbDateTimePicker::setDateTime(const QDateTime &datetime)
 }
 
 /*!
-    Returns minimum date time in QDateTime format.
+    Returns minimum date time value set on datetime picker in QDateTime format.
 
     \return Minimum date and minimum time in QDateTime format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'minimumDateTime' is a QDateTime property of HbDateTimePicker. -->
+        <string name="minimumDateTime" value="02-02-15T02-15-30" />
+    </widget>
+      ...
+    \endcode
 
     \sa setMinimumDateTime
 */
@@ -360,9 +438,10 @@ QDateTime HbDateTimePicker::minimumDateTime()const
 }
 
 /*!
-    Sets minimum \a datetime in QDateTime format.
-	<b><i>Note:</i></b> There's no link between Date and time in this API, using this API as of now
-	would be similar to using combination of \sa setMinimumDate and \sa setMinimumTime
+    Sets minimum \a datetime for datetime picker in QDateTime format.
+
+    <b>Note:</b> There's no link between Date functionality and time functionality in this API. Using this API, for now,
+    would be similar to using a combination of setMinimumDate and setMinimumTime APIs.
 
     \param datetime minimum date and minimum time in QDateTime format.
 
@@ -375,11 +454,25 @@ void HbDateTimePicker::setMinimumDateTime(const QDateTime& datetime)
 }
 
 /*!
-    Returns maximum date time in QDateTime format.
+    Returns maximum date time, set on datetime picker, in QDateTime format.
 
     \return Maximum date and maximum time in QDateTime format.
 
-    \sa setMaximumDate
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'maximumDateTime' is a QDateTime property of HbDateTimePicker. -->
+        <string name="maximumDateTime" value="02-02-15T02-15-30" />
+    </widget>
+      ...
+    \endcode
+
+    \sa setMaximumDateTime
 */
 QDateTime HbDateTimePicker::maximumDateTime()const
 {
@@ -388,10 +481,10 @@ QDateTime HbDateTimePicker::maximumDateTime()const
 }
 
 /*!
-    Sets maximum \a datetime in QDateTime format.
-	
-	<b><i>Note:</i></b> There's no link between Date and time in this API, using this API as of now
-	would be similar to using combination of \sa setMaximumDate and \sa setMaximumTime
+    Sets maximum \a datetime, to be set on datetime picker, in QDateTime format.
+    
+    <b>Note:</b> There's no link between Date functionality and time functionality in this API, using this API for now
+    would be similar to using a combination of setMaximumDate and setMaximumTime APIs.
 
     \param date Maximum date and maximum time in QDateTime format.
 
@@ -404,17 +497,18 @@ void HbDateTimePicker::setMaximumDateTime(const QDateTime& date)
 }
 
 /*!
-    Sets minimum \a minDatetime and maximum \a maxDatetime datetimes in QDateTime format.
+    Sets minimum \a minDatetime and maximum \a maxDatetime date and time values, to be set on datetime picker, in QDateTime format.
+    This will allow the user to set date and time range on datetime picker.
 
-	<b><i>Note:</i></b> There's no link between Date and time in this API, using this API as of now
-	would be similar to using combination of \sa setMinimumDate \sa setMaximumTime and 
-	\sa setMinimumTime, \sa setMaximumTime.
+    <b>Note:</b> There's no link between Date and time in this API, using this API for now
+    would be similar to using a combination of setMinimumDate, setMaximumTime and 
+    setMinimumTime, setMaximumTime APIs.
 
     \param minDateTime minimum date and time in QDateTime format.
     \param maxDateTime maximum date and time in QDateTime format.
 
     \sa setMinimumDateTime \sa setMaximumDateTime \sa setMinimumDate \sa setMaximumDate
-	\sa setMinimumTime \sa setMaximumTime
+    \sa setMinimumTime \sa setMaximumTime
 */
 void HbDateTimePicker::setDateTimeRange(const QDateTime &minDateTime, const QDateTime &maxDateTime)
 {
@@ -423,9 +517,23 @@ void HbDateTimePicker::setDateTimeRange(const QDateTime &minDateTime, const QDat
 }
 
 /*!
-    Returns the current time in QTime format.
+    Returns the current time, selected in datetime picker widget, in QTime format.
 
     \return time in QTime format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'time' is a QTime property of HbDateTimePicker. -->
+        <string name="time" value="02-15-30" />
+    </widget>
+      ...
+    \endcode
 
     \sa setTime
 */
@@ -436,7 +544,7 @@ QTime HbDateTimePicker::time() const
 }
 
 /*!
-    Sets the current \a time in the form of QTime.
+    Sets the current \a time, to be set on datetime picker widget, in QTime format.
 
     \param time in QTime format.
 
@@ -449,9 +557,23 @@ void HbDateTimePicker::setTime(const QTime &time)
 }
 
 /*!
-    Returns minimum time in QTime format.
+    Returns minimum time, set on datetime picker, in QTime format.
 
     \return Minimum time in QTime format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'minimumTime' is a QTime property of HbDateTimePicker. -->
+        <string name="minimumTime" value="02-15-30" />
+    </widget>
+      ...
+    \endcode
 
     \sa setMinimumTime
 */
@@ -462,7 +584,7 @@ QTime HbDateTimePicker::minimumTime()const
 }
 
 /*!
-    Sets minimum \a time in QTime format.
+    Sets minimum \a time, to be set on datetime picker, in QTime format.
 
     \param time minimum time in QTime format.
 
@@ -475,9 +597,23 @@ void HbDateTimePicker::setMinimumTime(const QTime& time)
 }
 
 /*!
-    Returns maximum time in QTime format.
+    Returns maximum time, set on datetime picker, in QTime format.
 
     \return maximum time in QTime format.
+
+    <b>Note:</b> The DocML does not support directly the properties which uses QDate/QTime/QDateTime as parameters. For the properties to work user has to pass date, time or datetime
+    as a string, in a valid ISO date format. 
+    
+    ISO 8601 extended format: either YYYY-MM-DD for dates or YYYY-MM-DDTHH:MM:SS for combined dates and times.
+
+    \code
+    ...
+    <widget name="t:dtp" type="HbDateTimePicker">
+        <!-- 'maximumTime' is a QTime property of HbDateTimePicker. -->
+        <string name="maximumTime" value="02-15-30" />
+    </widget>
+      ...
+    \endcode
 
     \sa setMaximumTime
 */
@@ -488,7 +624,7 @@ QTime HbDateTimePicker::maximumTime()const
 }
 
 /*!
-    Sets maximum \a time in QTime format.
+    Sets maximum \a time, to be set on datetime picker, in QTime format.
 
     \param time maximum time in QTime format
 
@@ -501,7 +637,7 @@ void HbDateTimePicker::setMaximumTime(const QTime& time)
 }
 
 /*!
-    Sets minimum \a minTime and maximum \a maxTime in QTime format.
+    Sets minimum \a minTime and maximum \a maxTime in QTime format. This will allow the user to set a time range on datetime picker.
 
     \param minTime minimum time in QTime format.
     \param maxTime maximum time in QTime format.
@@ -516,9 +652,10 @@ void HbDateTimePicker::setTimeRange(const QTime &minTime, const QTime &maxTime)
 }
 
 /*!
-  sets the \a interval for the corresponding \a section.
+  Sets the \a interval or periodic gap for the corresponding \a section.
 
-  Note: Only MinuteSection is supported at this time.
+  <b>Note</b>: Only MinuteSection is supported at this time.<br> 
+  <b>Note</b>: Minute interval must be a divisor of 60. Divisors of 60 are 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30 
 
   \param section can be a MinuteSection.
   \param interval to be set on each picker.
@@ -534,14 +671,34 @@ void HbDateTimePicker::setInterval(QDateTimeEdit::Section section,int interval)
         return;
     }
 
+    if(60 % interval)
+    {
+        return;
+    }
+
     d->mIntervals[section] = interval;
 
-    if((section == QDateTimeEdit::MinuteSection) && (d->mMinuteModel)){
+    //trigger minute range change
+    int start=0,end=0;
+    if(d->mMinutePicker) {
+        start=d->mMinuteOffset;
+        end=start+d->mMinuteModel->rowCount()-1;
+        if(d->isMinimumHour() )  {
+            start = d->mMinimumDate.time().minute();
+        } else {               
+            if((d->mIntervals[QDateTimeEdit::MinuteSection]!=1) && (d->mIntervals[section]>0)) {
+                start = d->mMinimumDate.time().minute()%d->mIntervals[section];
+            } else {
+                start = 0;
+            }
+        }
+        if(d->isMaximumHour()) {
+            end = d->mMaximumDate.time().minute();
+        } else {
+            end = 59;
+        }
 
-        d->mMinuteModel->removeRows(0, d->mMinuteModel->rowCount());
-
-        d->resizeModel(d->mMinuteModel, d->mMinimumDate.time().minute(), d->mMaximumDate.time().minute(),
-            d->mMinimumDate.time().minute(), d->mMaximumDate.time().minute(),&HbDateTimePickerPrivate::localeMinute, interval);
+        d->setMinuteRange(start,end);
     }
 }
 
@@ -560,7 +717,6 @@ int HbDateTimePicker::interval(QDateTimeEdit::Section section) const
 }
 
 /*!
-
     \deprecated HbDateTimePicker::primitive(HbStyle::Primitive)
         is deprecated.
 

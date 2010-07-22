@@ -30,14 +30,16 @@
 #include "hbscrollarea.h"
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
+#include "hbevent.h"
 
 #include <QFontMetrics>
 #include <QPainter>
 #include <QTextBlock>
 #include <QTextDocument>
 #include <QGraphicsSceneResizeEvent>
+#include <QGraphicsLinearLayout>
 
 /*!
  \class HbLineEdit
@@ -283,7 +285,8 @@ void HbLineEdit::inputMethodEvent(QInputMethodEvent *e)
 {
     Q_D(HbLineEdit);
     
-    if(d->echoMode == HbLineEdit::PasswordEchoOnEdit && d->clearOnEdit) {
+    if((!e->commitString().isEmpty() || e->replacementLength()) &&
+         d->echoMode == HbLineEdit::PasswordEchoOnEdit && d->clearOnEdit) {
         d->doc->clear();
         d->passwordText.clear();
         d->clearOnEdit = false;
@@ -310,6 +313,21 @@ void HbLineEdit::inputMethodEvent(QInputMethodEvent *e)
     }
     HbAbstractEdit::inputMethodEvent(e);
 }
+
+
+/*!
+ \reimp
+*/
+QVariant HbLineEdit::inputMethodQuery(Qt::InputMethodQuery property) const
+{
+    switch(property) {
+    case Qt::ImMaximumTextLength:
+        return QVariant(maxLength());
+    default:
+        return HbAbstractEdit::inputMethodQuery(property);
+    }
+}
+
 
 /*!
  \reimp
@@ -357,7 +375,7 @@ void HbLineEdit::keyReleaseEvent (QKeyEvent *event)
     Q_D(HbLineEdit);
 
     if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return) {
-        emit editingFinished();
+        d->editingFinished();
     }
 
     if(d->forwardKeyEvent(event)) {
@@ -594,7 +612,14 @@ void HbLineEdit::setText(const QString &text)
  */
 bool HbLineEdit::canInsertFromMimeData(const QMimeData *source) const
 {
-    return source->hasText() && !source->text().isEmpty();
+    Q_D(const HbLineEdit);
+    if(source->hasText() && !source->text().isEmpty()) {
+        QString text(source->text());
+        d->filterInputText(text);
+        return !text.isEmpty();
+    } else {
+        return false;
+    }
 }
 
 /*!
@@ -628,15 +653,7 @@ void HbLineEdit::insertFromMimeData(const QMimeData *source)
  */
 void HbLineEdit::focusOutEvent(QFocusEvent * event)
 {
-    Q_D(HbLineEdit);
-
-    if(echoMode() == HbLineEdit::PasswordEchoOnEdit) {
-        setPlainText(d->passwordString(d->passwordText));
-    }
-
-    HbAbstractEdit::focusOutEvent(event);
-
-    emit editingFinished();
+    HbAbstractEdit::focusOutEvent(event);  
 }
 
 /*!
@@ -644,13 +661,6 @@ void HbLineEdit::focusOutEvent(QFocusEvent * event)
  */
 void HbLineEdit::focusInEvent(QFocusEvent * event)
 {
-    Q_D(HbLineEdit);
-
-    if(echoMode() == HbLineEdit::PasswordEchoOnEdit) {
-        // we need to clear the editor when typing starts
-        d->clearOnEdit = true;
-    }
-
     HbAbstractEdit::focusInEvent(event);
 }
 
@@ -683,6 +693,29 @@ void HbLineEdit::setAdjustFontSizeToFitHeight(bool active)
 }
 
 /*!
+    \reimp
+*/
+bool HbLineEdit::event(QEvent* event)
+{
+    Q_D(HbLineEdit);
+
+    if (event->type() == HbEvent::InputMethodFocusIn) {
+        if(echoMode() == HbLineEdit::PasswordEchoOnEdit) {
+            // we need to clear the editor when typing starts
+            d->clearOnEdit = true;
+        }
+        d->showCustomAutoCompPopup();
+    } else if (event->type() == HbEvent::InputMethodFocusOut) {
+        d->hideCustomAutoCompPopup();
+        d->editingFinished();
+    }
+
+    return HbAbstractEdit::event(event);
+}
+
+
+
+/*!
     @proto
 
     Returns true if vertical font streach mode is active.
@@ -707,4 +740,36 @@ bool HbLineEdit::eventFilter(QObject *obj, QEvent *event)
         d->onResizeFontChange();
     }
     return HbAbstractEdit::eventFilter(obj, event);
+}
+
+/*!
+    set content of custum auto-complate pupup.
+ */
+void HbLineEdit::setAutoCompleteContent(QGraphicsLayoutItem *content)
+{
+    Q_D(HbLineEdit);
+
+    if (!d->mCustomAutoCompPopup) {
+        d->createCustomAutoCompPopup();
+        repolish();
+    }
+
+    if (d->mCustomAutoCompContent!=content) {
+        if (d->mCustomAutoCompContent) {
+            delete d->mCustomAutoCompContent;
+        }
+
+        d->mCustomAutoCompContent = content;
+
+        if (content->isLayout()) {
+            d->mCustomAutoCompPopup->setLayout(static_cast<QGraphicsLayout *>(content));
+        } else {
+            QGraphicsLinearLayout *linLayout = new QGraphicsLinearLayout(Qt::Horizontal,
+                                                                         d->mCustomAutoCompPopup);
+            linLayout->addItem(content);
+        }
+        if (hasFocus()) {
+            d->showCustomAutoCompPopup();
+        }
+    }
 }

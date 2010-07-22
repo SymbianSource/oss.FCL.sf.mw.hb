@@ -39,6 +39,7 @@
 #include <hbdevicedialogserverstatus_p.h>
 #include <hbtapgesture.h>
 #include <hbpangesture.h>
+#include <hbwidgetfeedback.h>
 
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
@@ -301,7 +302,12 @@ void HbNotificationDialog::setText(const QString& text)
 {
     Q_D(HbNotificationDialog);
     d->checkAndCreateContentWidget();
-    d->content->setText( text );
+    d->content->setText(text);
+    if (text.isEmpty()) {
+        d->titleTextWrapping = Hb::TextWordWrap;
+    } else {
+        d->titleTextWrapping = Hb::TextNoWrap;
+    }
     d->setNotificationDialogContent();
 }
 
@@ -346,7 +352,7 @@ void HbNotificationDialog::setIcon(const HbIcon& icon)
 Hb::TextWrapping HbNotificationDialog::titleTextWrapping() const
 {
     Q_D(const HbNotificationDialog);
-    return d->titleWrapping;
+    return d->titleTextWrapping;
 }
 
 /*!
@@ -358,10 +364,10 @@ Hb::TextWrapping HbNotificationDialog::titleTextWrapping() const
 void HbNotificationDialog::setTitleTextWrapping(Hb::TextWrapping wrapping)
 {
     Q_D(HbNotificationDialog);
-    if (d->titleWrapping != wrapping) {
-        d->titleWrapping = wrapping;
+    if (d->titleTextWrapping != wrapping) {
+        d->titleTextWrapping = wrapping;
         if (d->content) {
-            d->content->setTitleTextWrapping(d->titleWrapping);
+            d->content->setTitleTextWrapping(d->titleTextWrapping);
         }
         d->doLayout();
     }
@@ -433,9 +439,11 @@ void HbNotificationDialog::gestureEvent(QGestureEvent *event)
     Q_D(HbNotificationDialog);
     if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
         if(tap->state() == Qt::GestureStarted) {
+            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
             d->stopTimeout();
         } else if(tap->state() == Qt::GestureFinished) {
             if (d->isTouchActivating) {
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                 emit activated();
             }
             close();
@@ -507,9 +515,8 @@ void HbNotificationDialog::orientationChanged(Qt::Orientation orientation)
 }
 
 HbNotificationDialogPrivate::HbNotificationDialogPrivate() :
-        HbDialogPrivate(), isTouchActivating(false),
-        titleWrapping(Hb::TextWordWrap),
-        content(0), sequentialShow(true)
+    HbDialogPrivate(), isTouchActivating(false), titleTextWrapping(Hb::TextWordWrap),
+    content(0), sequentialShow(true)
 {
 }
 
@@ -527,15 +534,14 @@ void HbNotificationDialogPrivate::checkAndCreateContentWidget()
 }
 void HbNotificationDialogPrivate::setBackgroundStyle()
 {
-    Q_Q(HbNotificationDialog);
-    q->setBackgroundItem(HbStyle::P_NotificationDialog_frame);
+    setBackgroundItem(HbStyle::P_NotificationDialog_frame);
 }
 
 void HbNotificationDialogPrivate::setNotificationDialogContent()
 {
     Q_Q(HbNotificationDialog);
     content->enableTouchActivation(isTouchActivating);
-    content->setTitleTextWrapping(titleWrapping);
+    content->setTitleTextWrapping(titleTextWrapping);
     if (q->contentWidget() == content) {
         doLayout();
     } else {

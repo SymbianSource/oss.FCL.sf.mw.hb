@@ -22,9 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputvkbhost.h"
+
 #include <QVariant>
 
-#include "hbinputvkbhost.h"
 #include "hbinputmethod.h"
 
 const char HbVkbHostPropertyName[] = "HbVkbHost";
@@ -47,7 +48,7 @@ so that the virtual keyboard widget never covers it. Application developer or ed
 developer doesn't need to care about that.
 
 There can be several vkb hosts in the system because in some situations the keyboard
-needs to behave differently than in others. 
+needs to behave differently than in others.
 
 The input framework finds active vkb host by traversing editor widget's parent chain
 to see if there is a host attached to editor widget or any of its parents. If
@@ -61,7 +62,7 @@ there is no need to care about vkb hosting system in application code.
 */
 
 /*!
-\fn virtual void HbVkbHost::openKeypad(HbVirtualKeyboard *vkb, bool animationAllowed = true)
+\fn virtual void HbVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, bool animationAllowed = true)
 Opens given virtual keyboard. If animation is used, emits signal
 keypadOpened after animation is completed.
 */
@@ -78,9 +79,9 @@ Returns true if virtual keypad is open on the screen.
 
 /*!
 \fn virtual QSizeF HbVkbHost::keyboardArea() const
-Returns the size of a rectangular area of the screen where virtual keyboard will be displayed. If 
+Returns the size of a rectangular area of the screen where virtual keyboard will be displayed. If
 virtual keyboard's preferredKeyboardSize method returns larger area than returned by this method,
-the vkb host will shrink keyboard to fit into this rectangle. 
+the vkb host will shrink keyboard to fit into this rectangle.
 */
 
 /*!
@@ -115,7 +116,7 @@ animation or updating the split-view status.
 /*!
 Attaches given host to given object. Deletes previously attached host.
 */
-void HbVkbHost::attachHost(HbVkbHost* host, QObject* object)
+void HbVkbHost::attachHost(HbVkbHost *host, QObject *object)
 {
     if (object) {
         delete getVkbHost(object);  // delete previous host.
@@ -128,7 +129,7 @@ void HbVkbHost::attachHost(HbVkbHost* host, QObject* object)
 /*!
 Removes (possible) vkb host from given object.
 */
-void HbVkbHost::detachHost(QObject* object)
+void HbVkbHost::detachHost(QObject *object)
 {
     if (object) {
         QObject *hostObject = 0;
@@ -146,8 +147,8 @@ HbVkbHost *HbVkbHost::getVkbHost(QObject *object)
     if (object) {
         QVariant variant = object->property(HbVkbHostPropertyName);
         if (variant.isValid()) {
-            QObject *hostObject = variant.value<QObject*>();
-            HbVkbHost *host = static_cast<HbVkbHost*>(hostObject); 
+            QObject *hostObject = variant.value<QObject *>();
+            HbVkbHost *host = static_cast<HbVkbHost *>(hostObject);
             return host;
         }
     }
@@ -156,7 +157,7 @@ HbVkbHost *HbVkbHost::getVkbHost(QObject *object)
 }
 
 /*!
-Returns active virtual keyboard host if there is one currently available. 
+Returns active virtual keyboard host if there is one currently available.
 */
 HbVkbHost *HbVkbHost::activeVkbHost()
 {

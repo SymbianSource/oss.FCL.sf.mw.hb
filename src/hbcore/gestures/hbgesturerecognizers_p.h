@@ -49,7 +49,7 @@ public:
 class HB_CORE_PRIVATE_EXPORT HbTapGestureRecognizer : public QGestureRecognizer, public HbTapGestureLogic
 {
 public:
-    explicit HbTapGestureRecognizer(int tapRadius = HbDefaultTapRadius);
+    explicit HbTapGestureRecognizer();
     virtual ~HbTapGestureRecognizer();
 
     QGesture* create(QObject *);
@@ -60,7 +60,7 @@ public:
 class HB_CORE_PRIVATE_EXPORT HbTapAndHoldGestureRecognizer : public QGestureRecognizer, public HbTapAndHoldGestureLogic
 {
 public:
-    explicit HbTapAndHoldGestureRecognizer(int tapRadius = HbDefaultTapRadius);
+    explicit HbTapAndHoldGestureRecognizer();
     virtual ~HbTapAndHoldGestureRecognizer();
 
     QGesture* create(QObject *);

@@ -40,16 +40,12 @@
 class HbThemeClientPrivate;
 class HbEffectFxmlData;
 
-class HB_AUTOTEST_EXPORT HbThemeClient
+class HB_CORE_PRIVATE_EXPORT HbThemeClient
 {
-
 public:
-
     bool connectToServer();
 
-    QSizeF getSharedIconDefaultSize(const QString &iconPath);
-
-    HbSharedIconInfo getSharedIconInfo(const QString& iconPath ,
+    HbSharedIconInfo getSharedIconInfo(const QString &iconPath,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -60,20 +56,23 @@ public:
 
     QByteArray getSharedBlob(const QString &name);
 
-    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section);
-
-    HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
+    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,
+                                                          const QString &layout,
+                                                          const QString &section);
+    HbCss::StyleSheet *getSharedStyleSheet(
+            const QString &filePath,
+            HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
 
-    bool addSharedEffect(const QString& filePath);
+    bool addSharedEffect(const QString &filePath);
 
     HbDeviceProfileList *deviceProfiles();
     HbTypefaceInfoVector *typefaceInfo();
 
     void notifyForegroundLostToServer();
 
-    void unloadIcon(const QString& iconPath ,
+    void unloadIcon(const QString &iconPath,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -81,7 +80,7 @@ public:
                         const QColor &color,
                         HbRenderingMode renderMode);
 
-    void unLoadMultiIcon(const QStringList& iconPathList,
+    void unLoadMultiIcon(const QStringList &iconPathList,
                         const QVector<QSizeF> &sizeList,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -90,7 +89,7 @@ public:
                         HbRenderingMode renderMode);
 
     HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
-                        const HbMultiPartSizeData &multiPartIconData ,
+                        const HbMultiPartSizeData &multiPartIconData,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -100,16 +99,18 @@ public:
                         HbRenderingMode renderMode);
 
     HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
-                            const QVector<QSizeF>  &sizeList ,
+                            const QVector<QSizeF>  &sizeList,
                             Qt::AspectRatioMode aspectRatioMode,
                             QIcon::Mode mode,
                             bool mirrored,
                             HbIconLoader::IconLoaderOptions options,
                             const QColor &color,
                             HbRenderingMode renderMode);
-							
+
     bool switchRenderingMode(HbRenderingMode renderMode);
 
+    void setTheme(const QString &theme);
+    
     bool clientConnected() const;
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -127,6 +128,9 @@ public:
 private:
     HbThemeClient();
     int sharedCacheItemOffset(HbSharedCache::ItemType type, const QString &key);
+    int sharedCacheLayoutDefinitionOffset(const QString &filePath,
+                                          const QString &layout,
+                                          const QString &section);
     HbThemeClientPrivate *d_ptr;
     Q_DECLARE_PRIVATE_D(d_ptr, HbThemeClient)
 };

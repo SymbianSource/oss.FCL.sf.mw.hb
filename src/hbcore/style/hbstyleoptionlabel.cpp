@@ -25,43 +25,38 @@
 
 #include <hbstyleoptionlabel_p.h>
 
-/*!
+/*
     \class HbStyleOptionLabel
     \brief HbStyleOptionLabel has the style component for label primitives
 */
 
-/*!
+/*
     \var HbStyleOptionLabel::text
     Text shown in the label, if not NULL. 
 */
 
-/*!
+/*
     \var HbStyleOptionLabel::alignment
     Alignment of text or icon in the bounding rectangular 
 */
 
-/*!
+/*
     \var HbStyleOptionLabel::elideMode
     Elide mode of the text.
 */
 
-/*!
+/*
     \var HbStyleOptionLabel::icon
     Icon shown in the label, if not NULL. 
 */
 
-/*!
+/*
     \var HbStyleOptionLabel::aspectRatioMode
     Aspect ratio mode of icon. 
 */
 
 
-/*!
 
-    \deprecated   HbStyleOptionLabel::HbStyleOptionLabel()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionLabel::HbStyleOptionLabel() : HbStyleOption(HbSO_Label),
     text(),
     fontSpec(), /*HbFontSpec::Primary*/
@@ -75,13 +70,6 @@ HbStyleOptionLabel::HbStyleOptionLabel() : HbStyleOption(HbSO_Label),
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionLabel::HbStyleOptionLabel(const HbStyleOptionLabel&) 
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionLabel::HbStyleOptionLabel(const HbStyleOptionLabel &other) :
     HbStyleOption(other),
     text(other.text),

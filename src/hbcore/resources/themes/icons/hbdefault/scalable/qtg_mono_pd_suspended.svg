@@ -1,25 +1,13 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
-<svg baseProfile="tiny" height="30px" style="enable-background:new 0 0 30 30;" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-
-<polygon fill="none" points="19.27,4.229,16.46,6.598,16.46,3.663,19.27,3.663"/>
-
-<polygon fill="none" points="14.34,3.663,14.34,6.632,11.46,4.247,11.46,3.663"/>
-
-<path d="M21.38,1.548v3.664l-4.918,4.154v5.74h-2.115v-5.737l-4.994-4.13v-3.695h12.03zm-7.04,5.084v-2.969h-2.881v0.585l2.88,2.384zm2.12-0.034l2.803-2.369v-0.566h-2.803v2.935z"/>
-
-<polygon points="24.77,22.22,24.77,24.57,20.51,24.57,20.51,24.57,14.72,24.57,16.69,22.22"/>
-
-<polygon points="5.954,22.22,11.08,22.22,9.095,24.57,5.954,24.57"/>
-
-<polygon points="24.77,17.36,24.77,19.72,18.78,19.72,20.75,17.36"/>
-
-<polygon points="5.954,19.72,5.954,17.36,15.17,17.36,13.19,19.72"/>
-
-<polygon points="21.57,14.73,21.65,14.79,21.6,14.85,10.89,27.61,9.923,28.76,8.117,27.25,9.493,25.61,19.84,13.27"/>
-
-<rect fill="none" height="29.03" width="29.03" x="0.846" y="0.639"/>
-
-<rect fill="none" height="29.03" width="29.03" x="0.846" y="0.639"/>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<polygon fill="none" points="19.034,3.709 16.132,6.157 16.132,3.124 19.034,3.124 "/>
+<polygon fill="none" points="13.947,3.124 13.947,6.192 10.971,3.729 10.971,3.124 "/>
+<path d="M21.214,0.939v3.785l-5.082,4.294v5.931h-2.185V9.025L8.786,4.758V0.939H21.214z M13.947,6.192V3.124h-2.977v0.604  L13.947,6.192z M16.132,6.157l2.897-2.448V3.124h-2.897V6.157z"/>
+<polygon points="24.721,22.299 24.721,24.732 20.316,24.732 20.318,24.732 14.341,24.732 16.373,22.299 "/>
+<polygon points="5.279,22.299 10.579,22.299 8.525,24.732 5.279,24.732 "/>
+<polygon points="24.721,17.28 24.721,19.715 18.53,19.715 20.564,17.28 "/>
+<polygon points="5.279,19.715 5.279,17.28 14.801,17.28 12.753,19.715 "/>
+<polygon points="21.421,14.559 21.497,14.619 21.448,14.68 10.378,27.869 9.38,29.059 7.514,27.494 8.936,25.801 19.631,13.056 "/>
+<rect fill="none" height="30" width="30"/>
 </svg>

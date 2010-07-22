@@ -122,7 +122,6 @@ private:
 
     Q_DECLARE_PRIVATE_D( d_ptr, HbPushButton )
     Q_DISABLE_COPY( HbPushButton )
-    Q_PRIVATE_SLOT( d_func(),void _q_handleLongPress(QPointF) )
     Q_PRIVATE_SLOT( d_func(),void _q_handleLongKeyPress( ) )
 
 };

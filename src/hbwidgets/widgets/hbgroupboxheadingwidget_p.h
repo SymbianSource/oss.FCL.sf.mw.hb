@@ -63,8 +63,6 @@ public:
     QGraphicsItem *mBackgroundItem;
 
     QString headingText;
-    bool collapsable;
-    bool collapsed;
     bool marqueeEnabled;
     bool headingPressed;
     GroupBoxType groupBoxType;

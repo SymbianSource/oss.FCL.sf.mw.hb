@@ -22,7 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#include <hblistwidgetitem.h>
+
+#include "hblistwidgetitem.h"
 #include "hblistwidgetitem_p.h"
 
 #include "hblistmodel_p.h"
@@ -35,31 +36,28 @@
     @beta
     @hbwidgets
     \class HbListWidgetItem
-    \brief HbListWidgetItem represents a list item. It is part of convenience list API together with HbListWidget. 
+    \brief The HbListWidgetItem class provides an item for use with the HbListWidget class.
 
-    As this is a convenience API it is supposed to be easy to use. For that reason complicated list items are not possible
-    to be created. HbListWidgetItem supports at maximum two text items and two icon items. 
-    Either primary text or primary icon must always be provided. Icons are shown only in default size.
+    As HbListWidget by itself supports the use of very basic items in simple lists, HbListWidgetItem provides together with HbListWidget a convenience API for adding, modifying, and removing more versatile items in simple lists. So, if you want to have list items consisting of more than an icon and a text, create HbListWidgetItem objects and add them to an HbListWidget object. The list item of HbListWidgetItem class consists of three columns and its features are as follows:
+    - The left and right columns have one row and they can contain an icon.
+    - The middle column can have two rows and both rows can contain text.
+    - At least the primary text is required.
+    
+    \section _usecases_hblistwidgetitem Using the HbListWidgetItem class
+    
+    \subsection _uc_hblistwidgetitem_001 Creating a list item and adding two icons and two rows of text into it.
 
-    A view item created from this item consists of three columns at maximum.
-    - First column contains primary icon
-    - Middle column has one or two rows to show text(s)
-    - Last column contains secondary icon
-    - Any column can be empty 
-
-    The following code snippet presents how to create an list item with icons in the left 
-    and right columns and two rows of text in the middle column.
+    The following code snippet creates a list item with icons in the left and right columns and two rows of text in the middle column.
 
     \snippet{unittest_hblistwidgetitem.cpp,1}
 
     \sa HbListWidget
-
 */
 
 /*!
     \fn QBrush HbListWidgetItem::background() const
 
-    Returns item's background.
+    Returns the background of the item.
 
     \sa setBackground
 */
@@ -67,17 +65,18 @@
 /*!
     \fn void HbListWidgetItem::setBackground(const QVariant &background)
 
-    Sets the item's background to the specified \a background. Supported
-    background types are HbIcon and QBrush types plus any type that can be
-    converted to those types.
+    Sets the background of the item to the given \a background. Supported types are as follows:
+    - HbIcon
+    - QBrush
+    - any type that can be converted to HbIcon or QBrush
 
     \sa background
 */
 
 /*!
-    Constructs an empty list widget item with the given \a type. 
+    Constructs an empty list widget item of the given \a type. If no type is specified then Hb::StandardItem is used.
     
-    Default type for item is Hb::StandardItem.
+    
 */
 HbListWidgetItem::HbListWidgetItem(int type) :
     d(new HbListWidgetItemPrivate(this))
@@ -103,8 +102,9 @@ HbListWidgetItem::~HbListWidgetItem()
 
 
 /*!
-    Returns the item's application-specific data for the given role, 
-    or an invalid QVariant if there is no data for the role.
+    Returns
+    - the item's application-specific data of the given \a role if the data exists.
+    - an invalid QVariant if there is no data of the given \a role for the item.
  */
 QVariant HbListWidgetItem::data(int role) const
 {
@@ -112,16 +112,11 @@ QVariant HbListWidgetItem::data(int role) const
 }
 
 /*!
-    Sets the item's data for the given role to the specified value.
-    Can be used to store application-specific data in an item. 
+    Sets the item's data for the given \a role to the given \a value. It can be used to store application-specific data into an item.
 
-    Specialised functions in section 'see also' are recommended setting user data. 
-
-    \sa setText()
-    \sa setSecondaryText()
-    \sa setIcon()
-    \sa setSecondaryIcon()
-*/
+    Specialized functions in section 'see also' are recommended setting user data. 
+    \param role - Role for the data of the item.
+ */
 void HbListWidgetItem::setData(const QVariant &value, int role)
 {
     d->setData(value,role);
@@ -141,7 +136,7 @@ QString HbListWidgetItem::text() const
 
 
 /*!
-    Sets the item's primary text to the specified \a text. 
+    Sets the item's primary text to the given \a text. 
 
     \sa text
 */
@@ -153,7 +148,7 @@ void HbListWidgetItem::setText(const QString &text)
 }
 
 /*!
-    Returns item's secondary text. 
+    Returns the secondary text of the item.
 
     \sa setSecondaryText
 */
@@ -163,7 +158,7 @@ QString HbListWidgetItem::secondaryText() const
 }
 
 /*!
-    Sets the item's secondary text to the specified \a text.
+    Sets the item's secondary text to the given \a text.
 
     \sa secondaryText
 */
@@ -175,7 +170,7 @@ void HbListWidgetItem::setSecondaryText(const QString &text)
 }
 
 /*!
-    Returns item's icon. 
+    Returns the item's icon. 
 
     \sa setIcon
 */
@@ -185,7 +180,7 @@ HbIcon HbListWidgetItem::icon() const
 }
 
 /*!
-    Sets the item's icon to the specified \a icon.
+    Sets the item's icon to the given \a icon.
 
     \sa icon
 */
@@ -197,7 +192,7 @@ void HbListWidgetItem::setIcon(const HbIcon &icon)
 }
 
 /*!
-    Returns item's secondary icon. 
+    Returns the item's secondary icon. 
 
     \sa setSecondaryIcon
 */
@@ -207,7 +202,7 @@ HbIcon HbListWidgetItem::secondaryIcon() const
 }
 
 /*!
-    Sets the item's secondary icon to the specified \a icon.
+    Sets the item's secondary icon to the given \a icon.
 
     \sa secondaryIcon
 */
@@ -219,10 +214,9 @@ void HbListWidgetItem::setSecondaryIcon(const HbIcon &icon)
 }
 
 /*!
-    Sets whether the item is enabled. 
+    Enables the user interaction with item. 
     
-    If enabled is true, the item is \a enabled, meaning that the user can interact with the item; if \a enabled is false, 
-    the user cannot interact with the item.
+    \param enabled - If the value is \c true, the user can interact with the item. If the value is \c false, the user cannot interact with the item.
 */
 void HbListWidgetItem::setEnabled(bool enabled)
 {

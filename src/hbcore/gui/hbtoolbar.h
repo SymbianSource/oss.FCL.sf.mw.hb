@@ -72,6 +72,7 @@ protected:
     void resizeEvent( QGraphicsSceneResizeEvent *event );
     void hideEvent(QHideEvent *event);
     bool event( QEvent *event );
+    virtual void polish(HbStyleParameters &params);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbToolBar )

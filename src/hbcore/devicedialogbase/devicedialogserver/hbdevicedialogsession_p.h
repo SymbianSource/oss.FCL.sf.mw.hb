@@ -67,6 +67,7 @@ private:
     void UpdateDataRequestL( const RMessage2 &aMessage );
     void CancelUpdateChannel(const RMessage2 aMessage);
     void WriteUpdateData(const QVariantMap &parameters, int deviceDialogId);
+    void PublishOrientation(const RMessage2 &aMessage);
     int WriteCloseData(int deviceDialogId, int closeReason);
     QString indicatorTypeFromMessageL(const RMessage2 &aMessage) const;
     HbDeviceDialogSession();

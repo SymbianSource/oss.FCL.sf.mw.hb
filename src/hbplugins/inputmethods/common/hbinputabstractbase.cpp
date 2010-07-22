@@ -27,6 +27,8 @@
 #include <hbinputvkbwidget.h>
 #include <hbinputcandidatelist.h>
 #include <hbmainwindow.h>
+#include <hbaction.h>
+#include <hbinputsettingproxy.h>
 
 #include "hbinputabstractbase.h"
 
@@ -38,6 +40,7 @@ const qreal HbDeltaHeight = 2.0;
 // ---------------------------------------------------------------------------
 HbInputAbstractMethod::HbInputAbstractMethod()
 {
+    mVanillQwertySwitch = new HbAction(QString("QTY"));
 }
 
 // ---------------------------------------------------------------------------
@@ -46,6 +49,7 @@ HbInputAbstractMethod::HbInputAbstractMethod()
 // ---------------------------------------------------------------------------
 HbInputAbstractMethod::~HbInputAbstractMethod()
 {
+    delete mVanillQwertySwitch;
 }
 
 // ---------------------------------------------------------------------------
@@ -156,18 +160,60 @@ void HbInputAbstractMethod::getCandidatePositionAndSize(HbCandidateList *candida
     }
 }
 
-void HbInputAbstractMethod::showThaiSpecialCharacters(uint buttonId)
-{
-	Q_UNUSED(buttonId);
-}
 
 bool HbInputAbstractMethod::isSctModeActive() const
 {
 	return false;
 }
 
+
 HbKeyboardType HbInputAbstractMethod::currentKeyboardType() const
 {
     return HbKeyboardNone;
 }
+
+void HbInputAbstractMethod::focusReceived()
+{
+    bool isVannilaApp = false;
+    QInputContext* context = qApp->inputContext();
+    if (context && context->focusWidget()) {
+        QWidget *focusedWidget = context->focusWidget();
+        if (!focusedWidget->inherits("HbMainWindow")) {
+            isVannilaApp = true;
+        }
+    }
+    
+    if(isVannilaApp && focusObject() ) {
+        QList<HbAction*> customActions= focusObject()->editorInterface().actions();
+        if(!customActions.contains(mVanillQwertySwitch)) {
+            disconnect(mVanillQwertySwitch, SIGNAL(triggered(bool)));
+            connect(mVanillQwertySwitch, SIGNAL(triggered(bool)), this, SLOT(switchKeypad(bool)));
+            focusObject()->editorInterface().addAction(mVanillQwertySwitch);
+        }
+    }
+}
+
+void HbInputAbstractMethod::switchKeypad(bool isActive)
+{
+    Q_UNUSED(isActive);
+    HbKeyboardType keyboard = HbInputSettingProxy::instance()->activeKeyboard();
+    if (keyboard == HbKeyboardVirtual12Key) {
+        HbInputSettingProxy::instance()->setActiveKeyboard(HbKeyboardVirtualQwerty);
+    } else if (keyboard == HbKeyboardVirtualQwerty) {
+        HbInputSettingProxy::instance()->setActiveKeyboard(HbKeyboardVirtual12Key);
+    }
+}
+
+// EOF
+
+
+
    
+QChar HbInputAbstractMethod ::previousChar()
+{
+	return QChar();
+}
+
+
+// EOF
+

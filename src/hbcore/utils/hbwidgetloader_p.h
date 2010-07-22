@@ -28,6 +28,7 @@
 
 #include <hbglobal.h>
 #include <hbnamespace.h>
+#include <hbanchor.h>
 #include <QString>
 #include "hbstring_p.h"
 #include "hbvector_p.h"
@@ -44,25 +45,39 @@ class HB_CORE_PRIVATE_EXPORT HbWidgetLoader
 {
 public:
 
-    struct MeshItem
+    struct AnchorItem
     {
-        HbString src;
-        HbString dst;
+        HbString srcId;
+        HbString dstId;
         Hb::Edge srcEdge;
         Hb::Edge dstEdge;
-        HbXmlLengthValue::Type spacingType;
-        qreal spacingVal;
-        HbString spacingText;
-        HbString spacer;
-        MeshItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-            : src(type), dst(type), spacingText(type), spacer(type) {}
+        
+        HbXmlLengthValue::Type minType;
+        float minVal;
+        HbString minText;
+
+        HbXmlLengthValue::Type prefType;
+        float prefVal;
+        HbString prefText;
+
+        HbXmlLengthValue::Type maxType;
+        float maxVal;
+        HbString maxText;
+
+        int sizepolicy;
+        int direction;
+
+        HbString anchorId;
+
+        AnchorItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+            : srcId(type), dstId(type), minText(type), prefText(type), maxText(type), anchorId(type) {}
     };
 
     struct LayoutDefinition {
         HbMemoryManager::MemoryType type;
-        HbVector<MeshItem> meshItems;
+        HbVector<AnchorItem> anchorItems;
         LayoutDefinition(HbMemoryManager::MemoryType memtype)
-            : type(memtype), meshItems(memtype)
+            : type(memtype), anchorItems(memtype)
         {
         }
     };

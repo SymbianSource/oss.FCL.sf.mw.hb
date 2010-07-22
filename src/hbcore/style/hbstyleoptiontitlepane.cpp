@@ -25,18 +25,12 @@
 
 #include "hbstyleoptiontitlepane_p.h"
 
-/*!
+/*
     \class HbStyleOptionTitlePane
     \brief HbStyleOptionTitlePane has the style component for title pane
 */
 
 
-/*!
-
-    \deprecated HbStyleOptionTitlePane::HbStyleOptionTitlePane()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionTitlePane::HbStyleOptionTitlePane() :
     HbStyleOption(), caption(""), mode(QIcon::Normal), transparent(false)
 {
@@ -44,13 +38,6 @@ HbStyleOptionTitlePane::HbStyleOptionTitlePane() :
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionTitlePane::HbStyleOptionTitlePane(const HbStyleOptionTitlePane&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionTitlePane::HbStyleOptionTitlePane(const HbStyleOptionTitlePane &other) :
     HbStyleOption(other), caption(other.caption), mode(other.mode), transparent(other.transparent)
 {

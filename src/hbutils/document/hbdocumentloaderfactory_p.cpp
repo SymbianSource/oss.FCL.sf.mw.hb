@@ -76,6 +76,8 @@
 #include <hbgridviewitem.h>
 #include <hbtreeviewitem.h>
 #include <hbdataformviewitem.h>
+#include <hbtumbleview.h>
+#include <hbtumbleviewitem.h>
 
 enum HbDocumentLoaderFactoryWidgetRoles {
     HbWidgetRoleUnknown, // needs to be the first one = 0
@@ -238,6 +240,8 @@ QObject *HbDocumentLoaderFactory::create(const QString& type, const QString& nam
     CHECK_OBJECT_0(HbGridViewItem)
     CHECK_OBJECT_0(HbDataFormViewItem)
     CHECK_OBJECT_0(HbTreeViewItem)
+    CHECK_OBJECT_0(HbTumbleView)
+    CHECK_OBJECT_0(HbTumbleViewItem)
 #if QT_VERSION >= 0x040600 && defined(HBUTILS_WEBKIT)
     CHECK_OBJECT_0(QGraphicsWebView)
 #endif
@@ -257,11 +261,18 @@ QObject *HbDocumentLoaderFactory::create(const QString& type, const QString& nam
     \param parent parent widget.
     \param child child widget.
     \param role desired role for child widget.
+    \param roleTransfersOwnership Must be updated to 'true' if owership of the child is
+           moved to the parent, but the graphicsitem parent is not
     \return true upon success, false on failure.
 */
 bool HbDocumentLoaderFactory::setWidgetRole(
-    QGraphicsWidget *parent, QGraphicsWidget *child, const QString &role)
+    QGraphicsWidget *parent, 
+    QGraphicsWidget *child, 
+    const QString &role, 
+    bool &roleTransfersOwnership )
 {
+    roleTransfersOwnership = false;
+
     if (role.isEmpty()) {
         child->setParentItem(parent);
         return true;
@@ -316,6 +327,7 @@ bool HbDocumentLoaderFactory::setWidgetRole(
             if (view) {
                 child->setParentItem(parent);
                 view->setToolBar(qobject_cast<HbToolBar *>(child));
+                roleTransfersOwnership = true;
             }
         }
         break;
@@ -326,6 +338,7 @@ bool HbDocumentLoaderFactory::setWidgetRole(
             success = (view != 0);
             if (view) {
                 view->setMenu(qobject_cast<HbMenu *>(child));
+                roleTransfersOwnership = true;
             }
         }
         break;
@@ -336,6 +349,7 @@ bool HbDocumentLoaderFactory::setWidgetRole(
             success = (menu != 0);
             if (menu) {
                 menu->addMenu(qobject_cast<HbMenu *>(child));
+                roleTransfersOwnership = true;
             }
         }
         break;

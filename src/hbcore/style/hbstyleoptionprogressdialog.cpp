@@ -25,18 +25,11 @@
 
 #include "hbstyleoptionprogressdialog_p.h"
 
-/*!
+/*
     \class HbStyleOptionProgressDialog
     \brief HbStyleOptionProgressDialog has the style component for progress dialog primitives
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionProgressDialog::HbStyleOptionProgressDialog()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionProgressDialog::HbStyleOptionProgressDialog()  :
     HbStyleOption(),
     icon(),
@@ -46,13 +39,6 @@ HbStyleOptionProgressDialog::HbStyleOptionProgressDialog()  :
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionProgressDialog::HbStyleOptionProgressDialog(const HbStyleOptionProgressDialog&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionProgressDialog::HbStyleOptionProgressDialog(const HbStyleOptionProgressDialog &other)  :
     HbStyleOption(other),
     icon(other.icon),

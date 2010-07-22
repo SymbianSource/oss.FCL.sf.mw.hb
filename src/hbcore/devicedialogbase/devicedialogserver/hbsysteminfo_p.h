@@ -43,6 +43,7 @@ public:
     explicit HbSystemInfo(QObject *parent = 0, bool writer = false);
     virtual ~HbSystemInfo();
 
+    QSystemNetworkInfo::NetworkStatus networkStatus() const;
     int networkSignalStrength() const;
     QSystemNetworkInfo::NetworkMode networkMode() const;
     int batteryLevel() const;
@@ -50,7 +51,7 @@ public:
     
 signals:    
     void networkSignalStrengthChanged(QSystemNetworkInfo::NetworkMode, int);
-    void networkModeChanged(QSystemNetworkInfo::NetworkMode);
+    void networkModeChanged(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus);
     void batteryLevelChanged(int);
     void powerStateChanged(QSystemDeviceInfo::PowerState);
         

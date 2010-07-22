@@ -210,7 +210,8 @@ bool HbInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent *event)
             return true;
         }
 
-        if (event->key() == HbInputButton::ButtonKeyCodeDelete || event->key() == Qt::Key_Backspace) {
+        if (event->key() == HbInputButton::ButtonKeyCodeDelete || event->key() == Qt::Key_Backspace ||
+            event->key() == HbInputButton::ButtonKeyCodeCustom) {
             return false;
         }
 

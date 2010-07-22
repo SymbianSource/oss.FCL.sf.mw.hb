@@ -24,6 +24,17 @@
 ****************************************************************************/
 
 #include "hbthemeutils_p.h"
+#include "hbtheme.h"
+#include "hbiniparser_p.h"
+#include "hbthemecommon_p.h"
+#include "hbthemeclient_p.h"
+#include "hbtheme_p.h"
+
+#ifdef Q_OS_SYMBIAN
+#include "hbthemecommon_symbian_p.h"
+#include <e32std.h>
+#include <centralrepository.h>
+#endif
 
 #include <QLocale>
 #include <QSettings>
@@ -33,53 +44,42 @@
 #include <QMap>
 #include <QVariant>
 
-#include <hbapplication.h>
-#include <hbtheme.h>
-#include "hbstandarddirs_p.h"
-#include "hbiniparser_p.h"
-#include "hblayeredstyleloader_p.h"
-#include "hbthemecommon_p.h"
-
-#ifdef Q_OS_SYMBIAN
-#include "hbthemecommon_symbian_p.h"
-#include <e32std.h>
-#include <centralrepository.h>
-#endif
-
 // Standard folder names
-
+const char *HbThemeUtils::themeResourceFolder = "theme";
+const char *HbThemeUtils::platformHierarchy = "themes";
+const char *HbThemeUtils::operatorHierarchy = "prioritytheme";
 const char *HbThemeUtils::iconsResourceFolder = "icons";
 const char *HbThemeUtils::effectsResourceFolder = "effects";
 const char *HbThemeUtils::styleResourceFolder = "style";
-const char *HbThemeUtils::themeResourceFolder = "theme";
-const char *HbThemeUtils::operatorHierarchy = "operatortheme";
-const char *HbThemeUtils::appHierarchy = "apptheme";
-const char *HbThemeUtils::platformHierarchy = "themes";
 
-const char *operatorNameKey = "OperatorName";
 static const char *themeSettingFile = "theme.theme";
 static const char *baseThemeVariable = "BaseTheme";
 static const char *defaultThemeVariable = "DefaultActiveTheme";
 
+// Core resource root dir
+static const char *coreResourcesRootDir = ":";
+
 // These are the used setting names corresponding to HbThemeUtils::Setting enumeration.
-static const QString settingNames[6] = {"", "basetheme", "defaulttheme", "defaultthemedir", "currenttheme", "operatorbasepath"};
-static const char *getResourceFolderName(Hb::ResourceType resType)
+static const QString settingNames[6] = {"", "basetheme", "defaulttheme",
+                                        "", "currenttheme", "operatorbasepath"};
+
+static HbHeapIndexInfo *heapIndex = 0;
+
+QString themesDir()
 {
-    switch(resType) {
-    case Hb::IconResource:
-        return HbThemeUtils::iconsResourceFolder;
-    case Hb::EffectResource:
-        return HbThemeUtils::effectsResourceFolder;
-    case Hb::ThemeResource:
-        return HbThemeUtils::themeResourceFolder;
-    case Hb::StyleSheetResource:
-        return HbThemeUtils::styleResourceFolder;
-    default:
-        break;
+#ifdef Q_OS_SYMBIAN
+    static QString mainThemesDir("z:/resource/hb");
+#else
+    static QString mainThemesDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
+    // Do not call absolutePath if the path is empty,
+    // because it would return current path in that case.
+    if (!mainThemesDir.isEmpty()) {
+        mainThemesDir = QDir(mainThemesDir).absolutePath();
     }
-    // This just to avoid warning
-    return HbThemeUtils::iconsResourceFolder;
+#endif
+    return mainThemesDir;
 }
+
 
 /*!
     @proto
@@ -94,64 +94,48 @@ static const char *getResourceFolderName(Hb::ResourceType resType)
 */
 
 
-class HbThemeUtilsPrivate
+class HbThemeSettings
 {
 public:
-    HbThemeUtilsPrivate() : settingsRetrieved(false)
+    HbThemeSettings() : settingsRetrieved(false)
     {
-         // add the operator level, app level and platform level hierarchies in the hierarchy list.
-        hierarchies << HbHierarchy(HbThemeUtils::operatorHierarchy, HbLayeredStyleLoader::Priority_Operator)
-#ifdef USE_APPTHEMES
-                    << HbHierarchy(HbThemeUtils::appHierarchy, HbLayeredStyleLoader::Priority_Application)
-#endif
-                    << HbHierarchy(HbThemeUtils::platformHierarchy, HbLayeredStyleLoader::Priority_Theme);
     }
-    QString constructOperatorPath(const QString &operatorPath, const QString &fileName) const
-    {
-        return operatorPath + '/' + fileName;
-    }
-    void initSettings();
+
+    ~HbThemeSettings();
 
     void readSettings();
+    void initSettings();
+    QString getThemeFromFile(const QString &variable, const QString &rootDir);
 
 public: // data
-    QString operatorName;
-    QVector<HbHierarchy> hierarchies;
-
     bool settingsRetrieved;
     // Setting values are stored here to avoid overhead of reading from QSettings every time.
     QString currentTheme;
     QString defaultTheme;
-    QString defaultThemeRootDir;
     QString baseTheme;
-    QString operatorPath;
+    QString operatorName;
 };
 
-void HbThemeUtilsPrivate::initSettings()
+HbThemeSettings::~HbThemeSettings()
 {
-    // read the operator name from settings
-    operatorName = HbThemeUtils::getThemeSetting(HbThemeUtils::OperatorNameSetting).trimmed();
-    
-    // construct operator path
-    if (!operatorName.isEmpty()) {
-        QStringList operatorPaths;
-        operatorPaths << QLatin1String(HbThemeUtils::operatorHierarchy) + '/';
-        operatorPaths = HbStandardDirs::findExistingFolderList(operatorPaths, QString(), Hb::IconResource);
-        for (int i=0;i < operatorPaths.size();i++) {
-            if (operatorPaths[i] == operatorName) {
-            operatorPath = operatorPaths[i] + '/' + operatorName;
-            break;
-            }
+    if (heapIndex) {
+        // Free allocated memory
+        if (heapIndex->baseTheme.address) {
+            delete heapIndex->baseTheme.address;
         }
-    }    
+        if (heapIndex->priorityTheme.address) {
+            delete heapIndex->priorityTheme.address;
+        }
+        if (heapIndex->activeTheme.address) {
+            delete heapIndex->activeTheme.address;
+        }
+        delete heapIndex;
+    }
 }
 
-void HbThemeUtilsPrivate::readSettings()
+void HbThemeSettings::readSettings()
 {
-    // Read settings from QSettings and store them in member variables to
-    // avoid slow instantiating of QSettings in advance.
-
-    // The only changing setting is currentThemeSetting and its value is updated in theme change event.
+    // The only changing setting is currentThemeSetting and its value is updated in server side in theme change event.
 
     if (!settingsRetrieved) {
 #ifdef Q_OS_SYMBIAN
@@ -159,239 +143,128 @@ void HbThemeUtilsPrivate::readSettings()
         TRAP_IGNORE(repository = CRepository::NewL(KServerUid3));
         if (repository) {
             TBuf<256> value;
-            if (KErrNone == repository->Get(HbThemeUtils::CurrentThemeSetting,value)) {
-                QString qvalue((QChar*)value.Ptr(),value.Length());
+            if (KErrNone == repository->Get(HbThemeUtils::CurrentThemeSetting, value)) {
+                QString qvalue((QChar*)value.Ptr(), value.Length());
                 currentTheme = qvalue.trimmed();
             }
             value.Zero();            
-            if (KErrNone == repository->Get(HbThemeUtils::DefaultThemeSetting,value)) {
-                QString qvalue((QChar*)value.Ptr(),value.Length());
+            if (KErrNone == repository->Get(HbThemeUtils::DefaultThemeSetting, value)) {
+                QString qvalue((QChar*)value.Ptr(), value.Length());
                 defaultTheme = qvalue.trimmed();
             }
             value.Zero();
-            if (KErrNone == repository->Get(HbThemeUtils::DefaultThemeRootDirSetting,value)) {
-                QString qvalue((QChar*)value.Ptr(),value.Length());
-                defaultThemeRootDir = qvalue.trimmed();
-            } else {
-                // Use the default value
-                defaultThemeRootDir = HbStandardDirs::themesDir();           
-            }
-            value.Zero();
-            if (KErrNone == repository->Get(HbThemeUtils::BaseThemeSetting,value)) {
-                QString qvalue((QChar*)value.Ptr(),value.Length());
+            if (KErrNone == repository->Get(HbThemeUtils::BaseThemeSetting, value)) {
+                QString qvalue((QChar*)value.Ptr(), value.Length());
                 baseTheme = qvalue.trimmed();
             }
             value.Zero();
-            if (KErrNone == repository->Get(HbThemeUtils::OperatorNameSetting,value)) {
-                QString qvalue((QChar*)value.Ptr(),value.Length());
+            if (KErrNone == repository->Get(HbThemeUtils::OperatorNameSetting, value)) {
+                QString qvalue((QChar*)value.Ptr(), value.Length());
                 operatorName = qvalue.trimmed();
             }
             delete repository;
         }
 #else
-        QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
+        QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
 
         currentTheme = settings.value(settingNames[HbThemeUtils::CurrentThemeSetting]).toString();
         defaultTheme = settings.value(settingNames[HbThemeUtils::DefaultThemeSetting]).toString();
-        defaultThemeRootDir = settings.value(settingNames[HbThemeUtils::DefaultThemeRootDirSetting]).toString();
         baseTheme = settings.value(settingNames[HbThemeUtils::BaseThemeSetting]).toString();
         operatorName = settings.value(settingNames[HbThemeUtils::OperatorNameSetting]).toString();
 #endif
+        initSettings();
+
         settingsRetrieved = true;
     }
 }
 
-static HbThemeUtilsPrivate d;
-
-void HbThemeUtils::initSettings()
+void HbThemeSettings::initSettings()
 {
-    d.initSettings();
-}
-
-/* Adds a new hierarchy level to be used for attribute look-up
- * 
- * @param newHierrachy the name of the new hierrachy
- * @param priorityOrder priority order of the new hierarchy top be added.
- * if priorityOrder is greater than the currently existing hierarchies, this hierarchy will be appended
- * at the end of the hierarchy list
- *
- * @return the positon in the new hierarchy in the hierarchy list. -1 if the new hierarchy is not added.
- */
-
-int HbThemeUtils::addHierarchy(const QString &newHierarchy, int priorityOrder)
-{    
-    int retValue = -1;
-    if (priorityOrder >= 0) {
-        // check that the hierarchy to be added is neither of opertor level,app level and platform level.
-        if(newHierarchy != HbThemeUtils::operatorHierarchy
-            && newHierarchy != HbThemeUtils::appHierarchy
-            && newHierarchy != HbThemeUtils::platformHierarchy){
-
-            // if priority given is more than the number of hierarchies already existing, append the new
-            // hierarchy at end.
-            HbHierarchy add(newHierarchy, HbLayeredStyleLoader::Priority_Theme);
-            if (priorityOrder > d.hierarchies.count()) {
-                d.hierarchies.append(add);
-                retValue = d.hierarchies.count() - 1;
-            }
-            // else insert it at the correct position
-            else {
-                d.hierarchies.insert(priorityOrder,add);
-                retValue = priorityOrder;
-            }
+    // Validate base theme
+    bool modified = false;
+    if (baseTheme.isEmpty()) {
+        modified = true;
+        baseTheme = getThemeFromFile(baseThemeVariable, themesDir());
+        if (baseTheme.isEmpty()) {
+            baseTheme = getThemeFromFile(baseThemeVariable, coreResourcesRootDir);
         }
     }
-    return retValue;
-}
-
-/* Removes a hierarchy level from the hierarchy list
- *
- * @param newHierrachy the name of the hierrachy to be removed.
- *
- * @ret true if the hierarchy has been removed, else false.
- */
-bool HbThemeUtils::removeHierarchy(const QString &hierarchyName)
-{
-    bool retValue = false;
-    // check whether an attempt is made to remove operator level, app level or platform level hierarchy
-    if (hierarchyName != HbThemeUtils::operatorHierarchy
-        && hierarchyName != HbThemeUtils::appHierarchy
-        && hierarchyName != HbThemeUtils::platformHierarchy) {
-        QVector<HbHierarchy>::iterator end = d.hierarchies.end();
-        for (QVector<HbHierarchy>::iterator i = d.hierarchies.begin(); i != end; ++i) {
-            if (i->name == hierarchyName) {
-                d.hierarchies.erase(i);
-                retValue = true;
-                break;
-            }
+    if (!HbThemeUtils::isThemeValid(baseTheme)) {
+        modified = true;
+        // check if the theme name is logical
+        baseTheme = themesDir() + '/' + HbThemeUtils::platformHierarchy + '/' +
+                    HbThemeUtils::iconsResourceFolder + '/' + baseTheme;
+        if (!HbThemeUtils::isThemeValid(baseTheme)) {
+            baseTheme = getThemeFromFile(baseThemeVariable, coreResourcesRootDir);
         }
     }
-    return retValue;
-}
+    // Save if needed
+    if (modified) {
+        HbThemeUtils::setThemeSetting(HbThemeUtils::BaseThemeSetting, baseTheme);
+        modified = false;
+    }
 
-QString HbThemeUtils::operatorBasePath()
-{
-    return d.operatorPath;
-}
-/* @ret hierarchy of themes in priority.
- */
-QVector<HbHierarchy> HbThemeUtils::hierarchies()
-{
-   return d.hierarchies;
-}
-
-/* It constructs the hierarchy list with complete path info using the existing hierarchy list.
- * 
- * @param fileName  name of the file to be appended at end of all hierarchy levels
- * @param currentTheme Name of the currently used theme
- * @param resType type of Resource whether "style" or "icons"
- *
- * @ret list of hierarchy of themes in priority.Also appends the default path with least priority.
- */
-QMap<int, QString> HbThemeUtils::constructHierarchyListWithPathInfo(const QString &fileName,
-                                                                   const QString &currentTheme,
-                                                                   const Hb::ResourceType resType)
-{
-    QMap<int,QString> hierarchyListWithPathInfo;
-
-    // Map the resource enum to string here
-    const QString &resourcePath = getResourceFolderName(resType);
-
-    foreach (const HbHierarchy &hierarchy, d.hierarchies) {
-        switch(hierarchy.layerPriority) {
-        case HbLayeredStyleLoader::Priority_Operator:
-            if (!d.operatorPath.isEmpty()) {
-                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Operator,
-                                                 d.constructOperatorPath(operatorBasePath(), fileName));
-            }
-            break;
-        case HbLayeredStyleLoader::Priority_Application:
-            hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Application, 
-                    (hierarchy.name + '/' + HbMemoryUtils::getCleanAppName() + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
-            break;
-        case HbLayeredStyleLoader::Priority_Theme:
-            // Add platform theme folder only if it is different from base theme
-            // Base theme is anyway added at the core priority
-            if (currentTheme != baseTheme().name) {
-                hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme, 
-                        (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
-            }
-            break;
-        default:
-            // this is for a new hierarchy level and for the time being HbLayeredStyleLoader::Priority_Theme prirority is used,since there is no enum defined in hblayeredstyleloader_p.h
-            // priority should be replaced with respective enum.
-            hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Theme, 
-                    (hierarchy.name + '/' + resourcePath + '/' + currentTheme + '/' + fileName));
+    // Validate default theme    
+    if (defaultTheme.isEmpty()) {
+        modified = true;
+        defaultTheme = getThemeFromFile(defaultThemeVariable, themesDir());
+        if (defaultTheme.isEmpty()) {
+            defaultTheme = getThemeFromFile(defaultThemeVariable, coreResourcesRootDir);
         }
     }
-    
-    if (resType == Hb::StyleSheetResource || resType == Hb::EffectResource) {
-        // lets add base CSS path too in this list for now
-        // This comes last in base hierarchy
-        hierarchyListWithPathInfo.insert(HbLayeredStyleLoader::Priority_Core, 
-                (QLatin1String("themes/") + resourcePath + '/' + baseTheme().name + '/' + fileName));
-    }
-
-    return hierarchyListWithPathInfo;
-}
-
-/* returns information of base theme
- */
-const HbThemeInfo &HbThemeUtils::baseTheme()
-{
-    static HbThemeInfo baseThemeInfo;
-   
-    if (baseThemeInfo.name.isEmpty()) {
-        // basetheme is empty, means it was not yet filled with appropriate values      
-        // Check if its value is stored in settings.
-        baseThemeInfo.name = getThemeSetting(BaseThemeSetting).trimmed();
-        if ( baseThemeInfo.name.isEmpty() ) {
-            // Settings not yet initialized
-            // Check if Base theme is defined in theme.theme
-            baseThemeInfo = getBaseThemeFromFile(HbStandardDirs::themesDir());
-            if (baseThemeInfo.name.isEmpty()) {
-                // Base theme does not exists in rom
-                // Get the base theme info from core resources
-                baseThemeInfo = getBaseThemeFromFile(coreResourcesRootDir);
-            }
-        } else {
-            // So settings are initialized, it will have other value as well
-            baseThemeInfo.rootDir = getThemeSetting(DefaultThemeRootDirSetting).trimmed();            
+    if (!HbThemeUtils::isThemeValid(defaultTheme)) {
+        modified = true;
+        // check if the theme name is logical
+        defaultTheme = themesDir() + '/' + HbThemeUtils::platformHierarchy + '/' +
+                    HbThemeUtils::iconsResourceFolder + '/' + defaultTheme;
+        if (!HbThemeUtils::isThemeValid(defaultTheme)) {
+            defaultTheme = getThemeFromFile(defaultThemeVariable, coreResourcesRootDir);
         }
     }
-    
-    return baseThemeInfo;
+    if (modified) {
+        HbThemeUtils::setThemeSetting(HbThemeUtils::DefaultThemeSetting, defaultTheme);
+        modified = false;
+    }
+
+    // Validate current theme
+    if (!HbThemeUtils::isThemeValid(currentTheme)) {
+        currentTheme = defaultTheme;
+        HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, currentTheme);
+    }
 }
 
-/* returns name of default theme
+/* reads the theme from theme.theme file
  */
-HbThemeInfo HbThemeUtils::defaultTheme()
+QString HbThemeSettings::getThemeFromFile(const QString &variable, const QString &rootDir)
 {
+    QFile themeSetting(rootDir + '/' + HbThemeUtils::platformHierarchy + '/' + themeSettingFile);
+    QString theme;
+    HbIniParser iniParser;
 
-    // getting base theme makes sure that default theme was added in
-    // QSettings, if it was not already done
-    const HbThemeInfo &themeInfo = baseTheme(); 
-
-    // Assuming the path of default theme and base theme are same
-    return HbThemeInfo(getThemeSetting(DefaultThemeSetting), themeInfo.rootDir);    
+    if (themeSetting.open(QIODevice::ReadOnly) && iniParser.read(&themeSetting)){
+        theme = rootDir + '/' + HbThemeUtils::platformHierarchy + '/' +
+                HbThemeUtils::iconsResourceFolder + '/' +
+                iniParser.value("Default", variable).trimmed();
+    }
+    return theme;
 }
+
+Q_GLOBAL_STATIC(HbThemeSettings, themeSettings);
 
 QString HbThemeUtils::getThemeSetting(Setting setting)
 {
     // Make sure settings are read from QSettings.
-    d.readSettings();
+    themeSettings()->readSettings();
 
     switch (setting) {
         case CurrentThemeSetting:
-            return d.currentTheme;
+            return themeSettings()->currentTheme;
         case DefaultThemeSetting:
-            return d.defaultTheme;
-        case DefaultThemeRootDirSetting:
-            return d.defaultThemeRootDir;
+            return themeSettings()->defaultTheme;
         case BaseThemeSetting:
-            return d.baseTheme;
+            return themeSettings()->baseTheme;
         case OperatorNameSetting:
-            return d.operatorName;
+            return themeSettings()->operatorName;
         default:
             return QString();
     }
@@ -404,142 +277,237 @@ void HbThemeUtils::setThemeSetting(Setting setting, const QString &value)
     TRAP_IGNORE(repository = CRepository::NewL(KServerUid3));
     if (repository) {
         TPtrC valueptr(reinterpret_cast<const TUint16 *>(value.constData()));
-        if (KErrNotFound == repository->Set(setting,valueptr)) {
-            repository->Create(setting,valueptr);
+        if (KErrNotFound == repository->Set(setting, valueptr)) {
+            repository->Create(setting, valueptr);
         }
 
         delete repository;
     }
 #else
-    QSettings settings(QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
     settings.setValue(settingNames[setting], QVariant(value));
     // Destructor of QSettings flushes the changed setting in the INI file.
 #endif
+    updateThemeSetting(setting, value);
 }   
 
 /**
 * Updates the setting's value in stored member variables.
 * Normally the settings are loaded from QSettings when method getThemeSetting() is called for the first time.
-* When there is a change in settings, this method can be used to sync the setting value stored in HbThemeUtilsPrivate.
+* When there is a change in settings, this method can be used to sync the setting value stored in HbThemeSettings.
 * E.g. theme change event updates the current theme setting, currently no other settings are changing their values.
 */
 void HbThemeUtils::updateThemeSetting(Setting setting, const QString &value)
 {
     switch (setting) {
         case CurrentThemeSetting:
-            d.currentTheme = value;
+            themeSettings()->currentTheme = value;
             break;
         case DefaultThemeSetting:
-            d.defaultTheme = value;
-            break;
-        case DefaultThemeRootDirSetting:
-            d.defaultThemeRootDir = value;
+            themeSettings()->defaultTheme = value;
             break;
         case BaseThemeSetting:
-            d.baseTheme = value;
+            themeSettings()->baseTheme = value;
             break;
         case OperatorNameSetting:
-            d.operatorName = value;
+            themeSettings()->operatorName = value;
             break;
         default:
             break;
     }
 }   
- 
-/* reads the theme name from theme.theme file, stores the same in theme settings,
-   returns the pair of theme name and its root directory
- */
-HbThemeInfo HbThemeUtils::getBaseThemeFromFile(const QString &rootDir)
-{
-    QFile themeSetting(rootDir + '/' + platformHierarchy + '/' + themeSettingFile);
-    HbThemeInfo themeInfo;
-    HbIniParser iniParser;
-
-    if (themeSetting.open(QIODevice::ReadOnly) && iniParser.read(&themeSetting)){
-        themeInfo.name = iniParser.value("Default", baseThemeVariable).trimmed();
-        
-        QString defaultTheme = iniParser.value("Default", defaultThemeVariable).trimmed();
-
-        // default theme name may not exist, in which case using base theme as default theme
-        if (defaultTheme.isEmpty()) {
-            defaultTheme = themeInfo.name;
-        }
-
-        // Save theme names in settings
-        saveBaseThemeSettings(themeInfo, defaultTheme, rootDir);
-    }
-    return themeInfo;
-}
-
-void HbThemeUtils::saveBaseThemeSettings(HbThemeInfo &baseThemeInfo,
-                                                const QString &defaultTheme,
-                                                const QString &rootDir)
-{
-    // If there is any base theme
-    if ((!baseThemeInfo.name.isEmpty()) && isThemeValid(HbThemeInfo(baseThemeInfo.name,rootDir))) {
-        // Save these theme names in settings
-        setThemeSetting(BaseThemeSetting, baseThemeInfo.name);
-        setThemeSetting(DefaultThemeRootDirSetting, rootDir);
-
-        // Store default theme also in settings, only if it is valid
-        if (baseThemeInfo.name == defaultTheme || isThemeValid(HbThemeInfo(defaultTheme, rootDir))) {
-            setThemeSetting(DefaultThemeSetting, defaultTheme);
-        }
-        baseThemeInfo.rootDir = rootDir;
-        d.settingsRetrieved = false;
-    }
-}
 
 /* checks whether the theme is valid
  */
-bool HbThemeUtils::isThemeValid(const HbThemeInfo &themeInfo)
+bool HbThemeUtils::isThemeValid(const QString &themePath)
 {
-    // If the theme contains index.theme in icons resources
+    // If the theme contains .themeindex and index.theme files
     // it will be assumed valid
-    QFile themeIndexFile(themeInfo.rootDir + '/' + platformHierarchy + '/' + iconsResourceFolder + "/" + themeInfo.name + "/index.theme");
-    return themeIndexFile.open(QIODevice::ReadOnly);
+    QString indexFile = QString(themePath).replace("/icons/", QString('/')) + ".themeindex";
+    return (QFile::exists(themePath + "/index.theme") && QFile::exists(indexFile));
 }
 
-const HbThemeIndexInfo HbThemeUtils::getThemeIndexInfo(const HbThemeType &type)
+HbThemeIndexInfo HbThemeUtils::getThemeIndexInfo(const HbThemeType &type)
 {
     HbThemeIndexInfo info;
-    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(manager->base());
-    
-    switch(type) {
-    case BaseTheme:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->baseThemeNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->baseThemePathOffset));
-        info.themeIndexOffset = chunkHeader->baseThemeIndexOffset;
-        break;
-    case OperatorC:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->operatorThemeDriveCNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->operatorThemeDriveCPathOffset));
-        info.themeIndexOffset = chunkHeader->operatorThemeDriveCIndexOffset;
-        break;
-    case OperatorROM:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->operatorThemeRomPathOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->operatorThemeRomPathOffset));
-        info.themeIndexOffset = chunkHeader->operatorThemeRomIndexOffset;
-        break;
-    case ActiveTheme:
-        info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                       chunkHeader->activeThemeNameOffset));
-        info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                        chunkHeader->activeThemePathOffset));
-        info.themeIndexOffset = chunkHeader->activeThemeIndexOffset;
-        break;
-    default:
-        break;
+
+#ifndef Q_OS_SYMBIAN
+    if (!heapIndex) {
+        heapIndex = new HbHeapIndexInfo();
+        HbThemeUtils::loadHeapThemeIndexes();
     }
-    
+
+    if (heapIndex) {
+        switch(type) {
+        case BaseTheme:
+            info = heapIndex->baseTheme;
+            break;
+        case OperatorC:
+            info = heapIndex->priorityTheme;
+            break;
+        case ActiveTheme:
+            info = heapIndex->activeTheme;
+            break;
+        default:
+            break;
+        }
+    }
+#else
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    if (manager) { 
+        HbSharedChunkHeader *chunkHeader = (HbSharedChunkHeader*)(manager->base());
+        
+        switch(type) {
+        case BaseTheme:
+            if (chunkHeader->baseThemeIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->baseThemeNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->baseThemePathOffset));
+                info.address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                               chunkHeader->baseThemeIndexOffset);
+            }
+            break;
+        case OperatorC:
+            if (chunkHeader->operatorThemeDriveCIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->operatorThemeDriveCNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->operatorThemeDriveCPathOffset));
+                info.address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                               chunkHeader->operatorThemeDriveCIndexOffset);
+            }
+            break;
+        case OperatorROM:
+            if (chunkHeader->operatorThemeRomIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->operatorThemeRomNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->operatorThemeRomPathOffset));
+                info.address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                               chunkHeader->operatorThemeRomIndexOffset);
+            }
+            break;
+        case ActiveTheme:
+            if (chunkHeader->activeThemeIndexOffset > 0) {
+                info.name = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                               chunkHeader->activeThemeNameOffset));
+                info.path = QString(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
+                                                                chunkHeader->activeThemePathOffset));
+                info.address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory,
+                                                               chunkHeader->activeThemeIndexOffset);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+#endif // Q_OS_SYMBIAN
     return info;
 }
 
+bool HbThemeUtils::isLogicalName(const QString &fileName)
+{
+    return !(fileName.contains(QChar(':'), Qt::CaseSensitive) ||
+             fileName.contains(QChar('/'), Qt::CaseSensitive) ||
+             fileName.contains(QChar('\\'), Qt::CaseSensitive));
+}
 
+char *HbThemeUtils::createHeapThemeIndex(const HbThemeInfo &theme)
+{
+    char *address = 0;
+
+    QString path = QDir::toNativeSeparators(theme.rootDir);
+    QString filename;
+
+    filename.append(path);
+    filename.append('/');
+    filename.append(theme.name);
+    filename.append(".themeindex");
+
+    QFile indexFile(filename);
+    if (indexFile.open(QIODevice::ReadOnly)) {
+        GET_MEMORY_MANAGER(HbMemoryManager::HeapMemory);
+        qint64 byteSize = indexFile.size();
+        int indexOffset = manager->alloc(byteSize);
+        if (indexOffset != -1) {
+            address = HbMemoryUtils::getAddress<char>(HbMemoryManager::HeapMemory, indexOffset);
+            indexFile.read(address, byteSize);
+            indexFile.close();
+        }
+    }
+
+    return address;
+}
+
+void HbThemeUtils::loadHeapThemeIndex(HbThemeType type)
+{
+    if (heapIndex) {
+        switch(type) {
+        case BaseTheme: {
+            if (heapIndex->baseTheme.address) {
+                delete heapIndex->baseTheme.address;
+            }
+            QString baseThemeName = getThemeSetting(BaseThemeSetting);
+            HbThemeInfo baseInfo;
+            QDir path(baseThemeName);
+            baseInfo.name = path.dirName();
+            QString absolutePath = path.absolutePath();
+            baseInfo.rootDir = absolutePath.left(absolutePath.indexOf("/icons/"));
+
+            heapIndex->baseTheme.address = createHeapThemeIndex(baseInfo);
+            if (heapIndex->baseTheme.address) {
+                heapIndex->baseTheme.name = baseInfo.name;
+                heapIndex->baseTheme.path = baseInfo.rootDir;
+            }
+            break;
+        }
+        case OperatorC: {
+            if (heapIndex->priorityTheme.address) {
+                delete heapIndex->priorityTheme.address;
+            }
+            HbThemeInfo operatorInfo;
+            operatorInfo.name = getThemeSetting(OperatorNameSetting);
+            if (!operatorInfo.name.isEmpty()) {
+                operatorInfo.rootDir.append(themesDir() + '/' + QLatin1String(operatorHierarchy));
+                heapIndex->priorityTheme.address =  createHeapThemeIndex(operatorInfo);
+                if (heapIndex->priorityTheme.address) {
+                    heapIndex->priorityTheme.name = operatorInfo.name;
+                    heapIndex->priorityTheme.path = operatorInfo.rootDir;
+                }
+            }
+            break;
+        }
+        case ActiveTheme: {
+            if (heapIndex->activeTheme.address) {
+                delete heapIndex->activeTheme.address;
+            }
+            QString currentThemeName = getThemeSetting(CurrentThemeSetting);
+            QDir path(currentThemeName);
+            HbThemeInfo activeInfo;
+            activeInfo.name = path.dirName();
+            QString absolutePath = path.absolutePath();
+            activeInfo.rootDir = absolutePath.left(absolutePath.indexOf("/icons/"));
+
+            heapIndex->activeTheme.address = createHeapThemeIndex(activeInfo);
+            if (heapIndex->activeTheme.address) {
+                heapIndex->activeTheme.name = activeInfo.name;
+                heapIndex->activeTheme.path = activeInfo.rootDir;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+}
+
+void HbThemeUtils::loadHeapThemeIndexes()
+{
+    // Process base theme index, it is used as parent index also when the current theme is something else
+    loadHeapThemeIndex(BaseTheme);
+    // Process operator theme indexes
+    loadHeapThemeIndex(OperatorC);
+    // Process current theme index
+    loadHeapThemeIndex(ActiveTheme);
+}

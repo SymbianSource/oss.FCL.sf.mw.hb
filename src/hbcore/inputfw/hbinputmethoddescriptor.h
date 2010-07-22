@@ -27,6 +27,7 @@
 
 #include <QString>
 #include <hbinputdef.h>
+#include <hbicon.h>
 
 class HB_CORE_EXPORT HbInputMethodDescriptor
 {
@@ -40,6 +41,12 @@ public:
     void setKey(const QString &newKey);
     QString displayName() const;
     void setDisplayName(const QString &name);
+    QStringList displayNames() const;
+    void setDisplayNames(const QStringList &names);
+    HbIcon icon() const;
+    void setIcon(const HbIcon &icon);
+    QList<HbIcon> icons() const;
+    void setIcons(const QList<HbIcon> &icons);
     bool isEmpty() const;
     void operator=(const HbInputMethodDescriptor &descriptor);
     void setDefault();
@@ -49,6 +56,9 @@ private:
     QString mPluginNameAndPath;
     QString mKey;
     QString mDisplayName;
+    QStringList mDisplayNames;
+    HbIcon mIcon;
+    QList<HbIcon> mIcons;
 };
 
 #endif // HB_INPUT_METHOD_DESCRIPTOR_H

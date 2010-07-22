@@ -50,7 +50,7 @@ Returns true if given character is valid.
 Performs filtering operation for string "in". Filtered string "out" is a copy of "in" without
 invalid characters.
 */
-void HbInputFilter::filterString(const QString& in, QString& out)
+void HbInputFilter::filterString(const QString &in, QString &out)
 {
     for (int i = 0; i < in.length(); i++) {
         if (filter(in[i])) {

@@ -72,6 +72,7 @@ static const char *knownLexems[HbXmlLoaderAbstractSyntax::NUMBER_OF_LEXEMS] = {
 
     "textpaneheight",   // ...Deprecated... ATTR_TEXTPANEHEIGHT
     "locid",            // ATTR_LOCID
+    "action",           // ATTR_ACTION
 
     "hbdocument",       // TYPE_DOCUMENT
     "hbwidget",         // TYPE_HBWIDGET
@@ -104,19 +105,15 @@ static const char *knownLexems[HbXmlLoaderAbstractSyntax::NUMBER_OF_LEXEMS] = {
     "fontspec",         // TYPE_FONTSPEC
 
     "anchor",           // LAYOUT_ANCHOR
-    "mesh",             // LAYOUT_MESH
-    "",                 // LAYOUT_MESH_TARGET
-    "",                 // LAYOUT_MESH_ALIEN
+    "mesh",             // ...deprecated... LAYOUT_MESH
     "grid",             // LAYOUT_GRID
     "linear",           // LAYOUT_LINEAR
     "stacked",          // LAYOUT_STACK
     "null",             // LAYOUT_NULL
+    "",                 // LAYOUT_ALIEN
 
     "stringlist",       // CONTAINER_STRINGLIST
     "null",             // CONTAINER_NULL
-
-    "TRUE",             // VALUE_BOOL_TRUE
-    "FALSE",            // VALUE_BOOL_FALSE
 
     "un",               // UNIT_UNIT
     "px",               // UNIT_PIXEL
@@ -130,19 +127,25 @@ static const char *knownLexems[HbXmlLoaderAbstractSyntax::NUMBER_OF_LEXEMS] = {
 
     "anchoritem",       // AL_ANCHOR
     "src",              // AL_SRC_NAME
+    "srcId",            // AL_SRC_ID
     "srcEdge",          // AL_SRC_EDGE
     "dst",              // AL_DST_NAME
+    "dstId",            // AL_DST_ID
     "dstEdge",          // AL_DST_EDGE
+    "minLength",        // AL_MIN_LENGTH
+    "prefLength",       // AL_PREF_LENGTH
+    "maxLength",        // AL_MAX_LENGTH
+    "sizepolicy",       // AL_SIZEPOLICY
+    "direction",        // AL_DIRECTION
+    "anchorId",         // AL_ANCHOR_ID
     "spacing",          // AL_SPACING
     "spacer",           // AL_SPACER
 
-    "meshitem",         // ML_MESHITEM
-    "src",              // ML_SRC_NAME
-    "srcEdge",          // ML_SRC_EDGE
-    "dst",              // ML_DST_NAME
-    "dstEdge",          // ML_DST_EDGE
-    "spacing",          // ML_SPACING
-    "spacer",           // ML_SPACER
+    "anchormapping",    // AL_MAPPING
+    "item",             // AL_MAPPING_ITEM
+    "id",               // AL_MAPPING_ID
+
+    "meshitem",         // ...deprecated... ML_MESHITEM
 
     "griditem",         // GL_GRIDCELL
     "itemname",         // GL_ITEMNAME
@@ -186,7 +189,7 @@ QDataStream &operator<<(QDataStream &stream, const HbXmlLengthValue &value)
         case HbXmlLengthValue::Unit:
         case HbXmlLengthValue::Millimeter:
             {
-            double f_value = (double)value.mValue;
+            double f_value = (double)value.mValue; //krazy:exclude=typedefs
             stream << f_value;
             break;
             }
@@ -213,7 +216,7 @@ QDataStream &operator>>(QDataStream &stream, HbXmlLengthValue &value)
         case HbXmlLengthValue::Unit:
         case HbXmlLengthValue::Millimeter:
             {
-            double f_value;
+            double f_value; //krazy:exclude=typedefs
             stream >> f_value;
             value.mValue = f_value;
             break;

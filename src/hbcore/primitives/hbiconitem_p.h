@@ -26,16 +26,6 @@
 #ifndef HBICONITEM_P_H
 #define HBICONITEM_P_H
 
-//
-//  W A R N I N G
-//  -------------
-//
-// This file is not part of the Hb API.  It exists purely as an
-// implementation detail. This file may change from version to
-// version without notice, or even be removed.
-//
-// We mean it.
-//
 #include "hbwidgetbase_p.h"
 #include "hbicon.h"
 #include "hbiconanimator.h"
@@ -46,22 +36,31 @@
 
 class HbIconItemPrivate : public HbWidgetBasePrivate
 {
-    Q_DECLARE_PUBLIC( HbIconItem)
+    Q_DECLARE_PUBLIC(HbIconItem)
 
 public:
     HbIconItemPrivate(const HbIcon &icon);
     ~HbIconItemPrivate();
     void clearStoredIconContent();
     void updateIconItem();
-    static HbIconItemPrivate *d_ptr(HbIconItem *item) { return item->d_func(); }
+    void updateIconParams();
+    void recalculateBoundingRect() const;
+    void setThemedColor(const QColor &color);
+    static HbIconItemPrivate *d_ptr(HbIconItem *item) {
+        return item->d_func();
+    }
     HbIcon mIcon;
     HbIconAnimator mAnimator;
     Qt::Alignment mAlignment;
     Qt::AspectRatioMode mAspectRatioMode;
     QIcon::State mState;
     QIcon::Mode mMode;
+    QColor mThemedColor;
     QBrush mBrush;
     QRectF mIconRect;
+    mutable QRectF mBoundingRect;
+    mutable QRectF mAdjustedRect;
+    mutable bool mClearCachedRect;
     static bool outlinesEnabled;
 };
 

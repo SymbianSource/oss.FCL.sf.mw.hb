@@ -34,8 +34,6 @@
 #include "hbnvgiconimpl_p.h"
 #include "hbnvgenginepool_p.h"
 
-class HbNvgIconImpl;
-
 class HbEglStates: public QObject
 {
     Q_OBJECT
@@ -74,15 +72,15 @@ public:
         return init;
     }
     
-    void deref(HbEglStates *& instance)
+    void deref(HbEglStates *&instance)
     {
         if (instance && --(instance->refCount) == 0) {
         }
     }
 
-    void removeVGImage(VGImage * image);
+    void removeVGImage(VGImage *image);
 
-    void addVGImage(VGImage * image)
+    void addVGImage(VGImage *image)
     {
         if (image) {
             imageList.insert(image);
@@ -108,16 +106,16 @@ private:
                 EGLContext  c = 0,
                 EGLConfig cfg = 0 );
 
-    int         refCount;
-    int         init;
-    typedef QSet<VGImage*>     ImageList;
+    int                         refCount;
+    int                         init;
+    typedef QSet<VGImage*>      ImageList;
     typedef ImageList::iterator ImageListIter;
 
-    ImageList           imageList;
-    QMutex              mutex;
+    ImageList                   imageList;
+    QMutex                      mutex;
 };
 
-/* HbEglStateRestorer
+/*! HbEglStateRestorer
  *
  * Saves the EGL state passed in the constructor.
  * This class will help in saving the state even in the case of exception.
@@ -132,9 +130,10 @@ public:
             : display(d),
               currentReadSurface(rs),
               currentWriteSurface(ds),
-              eglContext(c)
+              eglContext(c),
+              restored(0)
     {
-        restored = 0;
+
     }
 
     void restore();
@@ -153,5 +152,4 @@ private:
     int         restored;
 };
 
-#endif
-
+#endif /* HBEGLSTATE_P_H */

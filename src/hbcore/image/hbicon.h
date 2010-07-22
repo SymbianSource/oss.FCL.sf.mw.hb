@@ -31,6 +31,7 @@
 #include <QIcon> //krazy:exclude=qclasses
 #include <QMetaType>
 #include <QString>
+#include <QSizeF>
 #include <QExplicitlySharedDataPointer>
 
 class HbIconPrivate;
@@ -100,20 +101,26 @@ public:
     void setFlags(Flags flags);
 
     void paint(QPainter *painter,
-                const QRectF &rect,
-                Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
-                Qt::Alignment alignment = Qt::AlignCenter,
-                QIcon::Mode mode = QIcon::Normal,
-                QIcon::State state = QIcon::Off) const;
+               const QRectF &rect,
+               Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio,
+               Qt::Alignment alignment = Qt::AlignCenter,
+               QIcon::Mode mode = QIcon::Normal,
+               QIcon::State state = QIcon::Off) const;
 
     operator QVariant() const;
 
     QIcon &qicon() const;
 
     bool addBadge(Qt::Alignment alignment,
-                      const HbIcon& badge,
-                      int z=0);
-    bool removeBadge(const HbIcon& badge);
+                  const HbIcon &badge,
+                  int z = 0,
+                  Qt::AspectRatioMode aspectRatio = Qt::KeepAspectRatio);
+    bool addProportionalBadge(Qt::Alignment alignment,
+                              const HbIcon &badge,
+                              const QSizeF &sizeFactor = QSizeF(0.25, 0.25),
+                              int z = 0,
+                              Qt::AspectRatioMode aspectRatio = Qt::KeepAspectRatio);
+    bool removeBadge(const HbIcon &badge);
     void removeAllBadges();
 
 private:

@@ -43,7 +43,7 @@ public:
 
 #ifdef HB_HAVE_QT_MOBILITY
     void _q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode mode, int strength);
-    void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode);
+    void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode, QSystemNetworkInfo::NetworkStatus status);
 #endif // HB_HAVE_QT_MOBILITY
 
 private:
@@ -56,6 +56,7 @@ private:
 #ifdef HB_HAVE_QT_MOBILITY
     HbSystemInfo *mSystemNetworkInfo;
     QSystemNetworkInfo::NetworkMode mNetworkMode;
+    QSystemNetworkInfo::NetworkStatus mNetworkStatus;
 #endif // HB_HAVE_QT_MOBILITY
 };
 

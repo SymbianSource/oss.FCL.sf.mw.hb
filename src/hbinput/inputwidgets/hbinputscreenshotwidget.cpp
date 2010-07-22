@@ -22,16 +22,17 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputscreenshotwidget.h"
+
 #include <QPixmap>
 #include <QPainter>
 
 #include <hbeffect.h>
 #include <hbwidget_p.h>
+#include <hbinputregioncollector_p.h>
 #include "hbframedrawerpool_p.h"
 
-#include "hbinputscreenshotwidget.h"
 #include "hbinputvkbwidget.h"
-
 
 /*!
 @proto
@@ -64,7 +65,7 @@ public:
 };
 
 HbInputScreenshotWidgetPrivate::HbInputScreenshotWidgetPrivate()
- : mIconDrawer(0), mCloseHandleHeight(0), mCloseHandleWidth(0)
+    : mIconDrawer(0), mCloseHandleHeight(0), mCloseHandleWidth(0)
 {
 }
 
@@ -79,30 +80,29 @@ HbInputScreenshotWidgetPrivate::~HbInputScreenshotWidgetPrivate()
 /*!
 Costructs the object.
 */
-HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem* parent)
+HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem *parent)
     : HbWidget(*new HbInputScreenshotWidgetPrivate, parent)
 {
     Q_D(HbInputScreenshotWidget);
     d->q_ptr = this;
+    HbInputRegionCollector::instance()->attach(this);
 
-    setPos(QPointF(0,0));
+    setPos(QPointF(0, 0));
 
 #ifdef HB_EFFECTS
     HbEffect::disable(this);
 #endif // HB_EFFECTS
 
-#if QT_VERSION >= 0x040600
     // Make sure the keypad never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-#endif
 }
 
 /*!
 Destructs the object.
 */
 HbInputScreenshotWidget::~HbInputScreenshotWidget()
-{ 
+{
 }
 
 void HbInputScreenshotWidget::setScreenshot(QPixmap &pixmap)
@@ -124,7 +124,7 @@ void HbInputScreenshotWidget::setScreenshot(QPixmap &pixmap)
 /*!
 handles mouse press event.
 */
-void HbInputScreenshotWidget::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void HbInputScreenshotWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event);
 }
@@ -132,7 +132,7 @@ void HbInputScreenshotWidget::mousePressEvent(QGraphicsSceneMouseEvent* event)
 /*!
 Handles mouse release event.
 */
-void HbInputScreenshotWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void HbInputScreenshotWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event);
 }
@@ -140,13 +140,13 @@ void HbInputScreenshotWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 /*!
 The paint method. Draws the widget.
 */
-void HbInputScreenshotWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void HbInputScreenshotWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option);
     Q_UNUSED(widget);
 
     Q_D(HbInputScreenshotWidget);
-    if (!d->mPixmap.isNull()){
+    if (!d->mPixmap.isNull()) {
         QRectF rect = boundingRect();
 
         painter->save();
@@ -158,7 +158,7 @@ void HbInputScreenshotWidget::paint(QPainter* painter, const QStyleOptionGraphic
 
         painter->save();
         painter->translate(0, d->mCloseHandleHeight);
-    	painter->drawPixmap(0, 0, d->mPixmap);
+        painter->drawPixmap(0, 0, d->mPixmap);
         painter->restore();
     }
 }

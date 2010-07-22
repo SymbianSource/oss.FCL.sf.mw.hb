@@ -64,6 +64,7 @@ protected:
     void changeEvent(QEvent *event);
     void resizeEvent ( QGraphicsSceneResizeEvent * event );
     QVariant itemChange ( GraphicsItemChange change, const QVariant & value );
+    bool event(QEvent *e);
 
     HbMarqueeItem(HbMarqueeItemPrivate &dd, QGraphicsItem *parent );
 

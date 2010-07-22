@@ -57,6 +57,7 @@ public:
     virtual void updateChildItems( );
     virtual bool canSetModelIndex( const QModelIndex &index ) const;
     void polish( HbStyleParameters& params );
+    void emitActivated(const QModelIndex &index)const;
 
 public slots:
     void updatePrimitives( );
@@ -67,9 +68,12 @@ protected:
     void initStyleOption( HbStyleOptionDataGroup *option );    
     virtual QSizeF sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const;
     virtual void pressStateChanged( bool value, bool animate );
+	virtual QVariant itemChange( GraphicsItemChange change, const QVariant &value );
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbDataGroup )
 };
 
 #endif // HBDATAGROUP_H
+
+

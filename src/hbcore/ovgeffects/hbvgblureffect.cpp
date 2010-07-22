@@ -63,8 +63,9 @@ QPointF HbVgBlurEffect::radius() const
 void HbVgBlurEffect::setRadius(const QPointF &radius)
 {
     Q_D(HbVgBlurEffect);
-    if (d->radius == radius)
+    if (d->radius == radius) {
         return;
+    }
     d->radius = radius;
     updateEffectBoundingRect();
     emit radiusChanged(radius);
@@ -73,9 +74,9 @@ void HbVgBlurEffect::setRadius(const QPointF &radius)
 QRectF HbVgBlurEffect::boundingRectFor(const QRectF &rect) const
 {
     Q_D(const HbVgBlurEffect);
-    QSizeF mappedRadius = d->mapSize(QSizeF(d->radius.x(), d->radius.y())); 
-    qreal deltaX = mappedRadius.width(); 
-    qreal deltaY = mappedRadius.height(); 
+    QSizeF mappedRadius = d->mapSize(QSizeF(d->radius.x(), d->radius.y()));
+    qreal deltaX = mappedRadius.width();
+    qreal deltaY = mappedRadius.height();
     return rect.adjusted(-deltaX, -deltaY, deltaX, deltaY);
 }
 
@@ -105,8 +106,9 @@ QPixmap HbVgBlurEffect::makeBlur(const QVariant &vgImage, const QSize &vgImageSi
 {
 #ifdef HB_EFFECTS_OPENVG
     QPixmap cachedPm = cached(vgImageSize);
-    if (!cachedPm.isNull())
+    if (!cachedPm.isNull()) {
         return cachedPm;
+    }
 
     Q_D(HbVgBlurEffect);
     VGImage srcImage = vgImage.value<VGImage>();
@@ -119,14 +121,15 @@ QPixmap HbVgBlurEffect::makeBlur(const QVariant &vgImage, const QSize &vgImageSi
         VGImage tmpImage = d->ensurePixmap(&d->tmpPixmap, vgImageSize);
         vgGaussianBlur(tmpImage, srcImage, blurX, blurY, VG_TILE_PAD);
         if (d->paramsChanged) {
-            for (int i = 0; i < 256; ++i)
-                d->alphaLUT[i] = (VGubyte) (i * opacity);
+            for (int i = 0; i < 256; ++i) {
+                d->alphaLUT[i] = (VGubyte)(i * opacity);
+            }
         }
         vgLookup(dstImage, tmpImage,
                  identityLUT, identityLUT, identityLUT, d->alphaLUT,
                  VG_TRUE, VG_FALSE);
     } else {
-        vgGaussianBlur(dstImage, srcImage, blurX, blurY, VG_TILE_PAD);   
+        vgGaussianBlur(dstImage, srcImage, blurX, blurY, VG_TILE_PAD);
     }
 
     tryCache(d->dstPixmap);

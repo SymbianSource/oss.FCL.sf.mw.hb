@@ -30,7 +30,7 @@
 #include <hbglobal.h>
 #include <hbwidget.h>
 #include <hbstring_p.h>
-#include <hbmeshlayout_p.h>
+#include <hbanchorlayout.h>
 #include <hbmemorymanager_p.h>
 #include "hbwidgetloader_p.h"
 #include "hbwidgetloaderactions_p.h"
@@ -41,9 +41,9 @@
 
 // Uncomment the following in order to get additional debug prints
 //#define HB_DOCUMENTLOADER_DEBUG
- 
+
 #ifndef HB_DOCUMENTLOADER_DEBUG
-#define HB_DOCUMENTLOADER_PRINT(a) 
+#define HB_DOCUMENTLOADER_PRINT(a)
 #else
 #include <QDebug>
 #define HB_DOCUMENTLOADER_PRINT(a) qDebug() << QString(a);
@@ -56,18 +56,29 @@ class HbWidgetLoaderActions : public HbXmlLoaderBaseActions
         virtual ~HbWidgetLoaderActions();
 
         void setWidget( HbWidget *widget );
-
-        bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
-                                const QString &dst, Hb::Edge dstEdge,
-                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+#ifndef HB_BIN_CSS
+        bool createAnchorLayout( const QString &widget, bool modify );
+        bool addAnchorLayoutItem(
+            const QString &src,
+            const QString &srcId,
+            Hb::Edge srcEdge, 
+            const QString &dst,
+            const QString &dstId,
+            Hb::Edge dstEdge,
+            const HbXmlLengthValue &minLength,
+            const HbXmlLengthValue &prefLength,
+            const HbXmlLengthValue &maxLength,
+            QSizePolicy::Policy *policy, 
+            HbAnchor::Direction *dir,
+            const QString &anchorId );
+#endif
 
     public:
         Q_DISABLE_COPY(HbWidgetLoaderActions)
 
         HbWidget *mWidget;
     private:
-        HbMeshLayout *mLayout;
+        HbAnchorLayout *mLayout;
 };
 
 class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
@@ -75,11 +86,21 @@ class HbWidgetLoaderMemoryActions : public HbXmlLoaderAbstractActions
     public:
         HbWidgetLoaderMemoryActions();
         virtual ~HbWidgetLoaderMemoryActions();
-
-        bool createMeshLayout( const QString &widget );
-        bool addMeshLayoutEdge( const QString &src, Hb::Edge srcEdge, 
-                                const QString &dst, Hb::Edge dstEdge,
-                                const HbXmlLengthValue &spacing, const QString &spacer = QString() );
+        
+        bool createAnchorLayout( const QString &widget, bool modify );
+        bool addAnchorLayoutItem(
+            const QString &src,
+            const QString &srcId,
+            Hb::Edge srcEdge, 
+            const QString &dst,
+            const QString &dstId,
+            Hb::Edge dstEdge,
+            const HbXmlLengthValue &minLength,
+            const HbXmlLengthValue &prefLength,
+            const HbXmlLengthValue &maxLength,
+            QSizePolicy::Policy *policy, 
+            HbAnchor::Direction *dir,
+            const QString &anchorId );
 
     public:
         Q_DISABLE_COPY(HbWidgetLoaderMemoryActions)

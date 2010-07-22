@@ -33,7 +33,8 @@
 #include "hbgraphicsscene.h"
 #include "hbgraphicsscene_p.h"
 #include "hbdeviceprofile.h"
-#include "hbspaceritem_p.h"
+#include "hbtapgesture.h"
+#include "hbnamespace_p.h"
 #include <QCoreApplication>
 #include <QMetaType>
 #include <QAction>
@@ -67,8 +68,8 @@ HbWidgetPrivate::HbWidgetPrivate()
     polishPending(false),
     themingPending(true),
     repolishOutstanding(false),
+    mHandlingRepolishSynchronously(false),
     notifyScene(false),
-    pluginBaseId(0),
     focusGroup(0),
     focusActiveType(HbStyle::P_None),
     focusResidualType(HbStyle::P_None),
@@ -89,70 +90,30 @@ HbWidgetPrivate::~HbWidgetPrivate()
         delete backgroundItem;
         backgroundItem = 0;
     }
-
-    // need to delete the hash values
-    QList<QGraphicsLayoutItem *> deletedSpacers = mSpacers.values();
-    mSpacers.clear();
-    qDeleteAll( deletedSpacers );            
 }
+
+void HbWidgetPrivate::setBackgroundItem(HbStyle::Primitive type, int zValue)
+{
+    Q_Q(HbWidget);
+    if(type!=backgroundPrimitiveType || type == HbStyle::P_None) {
+        if (backgroundItem) {
+            delete backgroundItem;
+            backgroundItem = 0;
+        }
+        backgroundPrimitiveType = type;
+        backgroundItem = q->style()->createPrimitive(backgroundPrimitiveType, const_cast<HbWidget*>(q));
+        if(backgroundItem) {
+            backgroundItem->setParentItem(q);
+        }
+    q->updatePrimitives();
+}
+    if(backgroundItem && zValue != backgroundItem->zValue()) {
+        backgroundItem->setZValue(zValue);
+    }
+} 
+
 
 /*!
-    Creates a new spacer item with the given \a name.
-
-    Returns a pointer to the newly created spacer item. Widget keeps the ownership.
-*/
-QGraphicsLayoutItem *HbWidgetPrivate::createSpacerItem( const QString &name )
-{
-#ifndef Q_OS_SYMBIAN
-    Q_ASSERT( !name.isEmpty() );
-    // check in desktop environments that the item does not exist already
-    Q_ASSERT( !mSpacers.contains( name ) );
-#endif
-
-    HbSpacerItem *newSpacer = new HbSpacerItem();
-    mSpacers.insert( name, newSpacer );
-    return newSpacer;
-}
-
-/*
-    
-    \deprecated HbWidget::setBackgroundItem(HbStyle::Primitive, int)
-    is deprecated. Use HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue) instead.
-    
-    Creates background item to the widget from style primitive.
-    
-    Creates a new background item to the widget and the reparents it to
-    be child of the widget. Also Z-value of the background item will be 
-    changed to zValue. By default the zValue is -1, which should be 
-    behind other widget content. Background item will be always resized 
-    to be same size as the widgets bounding rect. 
-    
-    If type is HbStyle::P_None, the background item will be removed from
-    widget.
-    
-    Previously set background item will be deleted.
- */
-void HbWidget::setBackgroundItem(HbStyle::Primitive type, int zValue)
-{
-    Q_D(HbWidget);
-    if(type!=d->backgroundPrimitiveType || type == HbStyle::P_None) {
-        if (d->backgroundItem) {
-            delete d->backgroundItem;
-            d->backgroundItem = 0;
-        }
-        d->backgroundPrimitiveType = type;
-        d->backgroundItem = style()->createPrimitive(d->backgroundPrimitiveType, const_cast<HbWidget*>(this));
-        if(d->backgroundItem) {
-            d->backgroundItem->setParentItem(this);
-        }
-        updatePrimitives();
-    }
-    if(d->backgroundItem && zValue != d->backgroundItem->zValue()) {
-        d->backgroundItem->setZValue(zValue);
-    }
-}
-
-/*
     Sets background item to the widget.
     
     The item will be reparented to be child of the widget. Also Z-value 
@@ -182,9 +143,10 @@ void HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue)
         d->backgroundItem->setZValue(zValue);
         d->updateBackgroundItemSize();
     }
+    updatePrimitives();
 }
 
-/*
+/*!
     Returns background item. 0 is returned if there isn't background
     item in the widget.
  */
@@ -194,7 +156,7 @@ QGraphicsItem *HbWidget::backgroundItem() const
     return d->backgroundItem;
 }
 
-/*
+/*!
     Returns focusItem primitive items.
     Focus primitive is created if has not been created already.
  */
@@ -221,7 +183,7 @@ QGraphicsItem *HbWidgetPrivate::focusPrimitive(HbWidget::FocusHighlight highligh
     return 0;
 }
 
-/*
+/*!
     Hides or shows focus primitive depending on the focus state of the widget.
 */
 void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
@@ -265,7 +227,7 @@ void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
 
 }
 
-/*
+/*!
     Find closest parent with focus group and update the focused child.
 */
 void HbWidgetPrivate::updateCurrentFocusChild()
@@ -279,7 +241,7 @@ void HbWidgetPrivate::updateCurrentFocusChild()
     }
 }
 
-/*
+/*!
     Find and return the closest parent with focus group if any. If propagate
     is true then the closest parent with focus group and children is accepted as
     valid focus group e.g. used for a widget which has the key for changing the 
@@ -316,7 +278,7 @@ HbFocusGroup *HbWidgetPrivate::getFocusGroup(bool propagate) const {
     return (group) ? group : 0;
 }
 
-/*
+/*!
     Set focus to child widget depending on the set focus delegation
     policy. 
 */
@@ -343,30 +305,6 @@ void HbWidgetPrivate::updateBackgroundItemSize()
     }
 }
 
-/*
-    Test if some item in our parent hierarchy has
-    the Hb::InputMethodNeutral flag set.
-*/
-bool HbWidgetPrivate::isInputMethodNeutral()
-{
-    Q_Q(HbWidget);
-
-    // Test the widget itself...
-    if(q->testAttribute(Hb::InputMethodNeutral)) {
-        return true;
-    }
-
-    // and then all parents
-    QGraphicsWidget* i = q->parentWidget();
-    while(i) {
-        HbWidget* w = qobject_cast<HbWidget *>(i);
-        if(w && w->testAttribute(Hb::InputMethodNeutral)) {
-            return true;
-        }
-        i = i->parentWidget();
-    }
-    return false;
-}
 
 /*!
     \class HbWidget
@@ -464,6 +402,7 @@ HbWidget::HbWidget( QGraphicsItem *parent, Qt::WindowFlags wFlags ):
 {
     Q_D( HbWidget );
     d->q_ptr = this;
+    setAttribute(Hb::Widget, true);
 
 #ifdef HB_TESTABILITY 
 	if(d->testabilitySignal) {
@@ -482,6 +421,7 @@ HbWidget::HbWidget(HbWidgetPrivate &dd, QGraphicsItem *parent, Qt::WindowFlags w
 {
     Q_D( HbWidget );
     d->q_ptr = this;
+    setAttribute(Hb::Widget, true);
 
 #ifdef HB_TESTABILITY 
 	if (d->testabilitySignal) {
@@ -523,21 +463,6 @@ void HbWidget::focusInEvent(QFocusEvent *event)
         QCoreApplication::sendEvent( parentWidget(), &event1 );        
         //End of snippet 1
     }
-
-#if QT_VERSION >= 0x040600
-    if(!d->isInputMethodNeutral() && !(flags() & QGraphicsItem::ItemAcceptsInputMethod)) {
-        // Make sure the input panel is closed if this widget is not input method neutral or
-        // it does not accept input method
-        // Send close input panel event.
-        QInputContext *ic = qApp->inputContext();
-        if (ic) {
-            QEvent *closeEvent = new QEvent(QEvent::CloseSoftwareInputPanel);
-            ic->filterEvent(closeEvent);
-            delete closeEvent;
-        }
-    }
-#endif
-
 }
 
 /*! 
@@ -619,22 +544,21 @@ void HbWidget::clearActions()
 }
 
 /*!
-    This function returns the base id of the style plugin of the widget or
-	\c 0 if the widget is not plugin based.
+    \deprecated HbWidget::pluginBaseId()
+        is deprecated. Style plugins are deprecated.
 */
 int HbWidget::pluginBaseId() const
 {
-    Q_D(const HbWidget);
-    return d->pluginBaseId;
+    return 0; // deprecated
 }
 
 /*!
-    Sets the base id of the style plugin of the widget.
+    \deprecated HbWidget::setPluginBaseId(int)
+        is deprecated. Style plugins are deprecated.
 */
 void HbWidget::setPluginBaseId( int baseId )
 {
-    Q_D(HbWidget);
-    d->pluginBaseId = baseId;
+    Q_UNUSED(baseId); // deprecated
 }
 
 /*!
@@ -697,7 +621,6 @@ void HbWidget::updatePrimitives()
         }
         d->updateBackgroundItemSize();
     }
-
     if (d->focusPrimitive(HbWidget::FocusHighlightResidual)) {
         style()->updatePrimitive(d->focusPrimitive(HbWidget::FocusHighlightResidual),
             d->focusResidualType, &option);        
@@ -860,6 +783,15 @@ QVariant HbWidget::itemChange ( GraphicsItemChange change, const QVariant & valu
             d->polishPending = false;
             HbStyleParameters params;
             polish( params );
+            if (scene()) {
+             // The widget is polished again or is beign polished now. As we set layout to widget in polishEvent,
+             // inform scene to polish any new child items and handle any resulting layoutrequest
+             // events before drawing.
+                HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(scene());
+                if (hbscene) {
+                    HbGraphicsScenePrivate::d_ptr(hbscene)->mPolishWidgets = true;
+                }
+            }
         }
     }
     else if (change == QGraphicsItem::ItemChildAddedChange) {
@@ -932,12 +864,9 @@ void HbWidget::polishEvent()
     backend). When overriding, always call the base classes 
     impelentation.
 
-    If you are implementing a custom widget that has a style plugin
-    you must make sure that pluginBaseId is set.
-
     \param params, For querying (custom) style parameters from HbStyle.
 
-    \sa polish(), pluginBaseId()
+    \sa polish()
 */
 void HbWidget::polish( HbStyleParameters& params )
 {
@@ -975,6 +904,17 @@ void HbWidget::repolish()
         d->repolishOutstanding = true;
         QEvent* polishEvent = new QEvent( QEvent::Polish );
         QCoreApplication::postEvent(this, polishEvent);
+        // If no one is handling repolish synchronously, lets make sure they are handled
+        // before painting. For example view items handle them synchronously.
+        if (scene() && !d->mHandlingRepolishSynchronously) {
+            // The widget needs to be polished again. As we set layout to widget in polishEvent,
+            // inform scene to handle polish and any resulting layoutrequest
+            // events before drawing.
+            HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(scene());
+            if (hbscene) {
+                HbGraphicsScenePrivate::d_ptr(hbscene)->mRepolishWidgets = true;
+            }
+        }
     }
 }
 
@@ -1034,17 +974,15 @@ QGraphicsItem *HbWidget::primitive(const QString &itemName) const
 /*!
     Returns primitive which HbStyle::itemName equals to \a itemName.
     
-    If the \a itemName is empty, the layout is returned. 
+    If the \a itemName is empty, the layout is returned, otherwise
+    returns the primitive that matches the \a itemName.
     
-    If the \a itemName does not match any primitive, \a itemName is mapped to owned spacers.
-
     If the \a itemName cannot be mapped to any of the above, returns 0.
 
     \sa HbStyle::itemName()
 */
 QGraphicsLayoutItem *HbWidget::layoutPrimitive(const QString &itemName) const
 {
-    Q_D(const HbWidget);
     if ( itemName == "" ) {
         return layout();
     } else {
@@ -1056,11 +994,6 @@ QGraphicsLayoutItem *HbWidget::layoutPrimitive(const QString &itemName) const
             }
         }
     }
-
-    if ( d->mSpacers.contains(itemName) ) {
-        return d->mSpacers.value(itemName); 
-    }
- 
     return 0;
 }
 
@@ -1366,4 +1299,19 @@ HbStyle::Primitive HbWidget::focusHighlight(HbWidget::FocusHighlight highlightTy
         primitive = d->focusResidualType;
     }
     return primitive;
+}
+
+bool HbWidget::sceneEventFilter (QGraphicsItem *watched, QEvent *event)
+{
+    if(event->type() == QEvent::Gesture && watched->type() == Hb::ItemType_TouchArea) {
+        QGestureEvent* ge = static_cast<QGestureEvent*>(event);
+        HbTapGesture* tap = qobject_cast<HbTapGesture*>(ge->gesture(Qt::TapGesture));
+
+        if (tap && tap->state() == Qt::GestureStarted) {
+            tap->setProperty(HbPrivate::ThresholdRect.latin1(), watched->mapRectToScene(watched->boundingRect()).toRect());
+        }
+        sceneEvent(event);
+        return true;
+    }
+    return HbWidgetBase::sceneEventFilter(watched, event);
 }

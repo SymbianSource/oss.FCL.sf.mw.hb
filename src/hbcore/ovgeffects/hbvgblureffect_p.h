@@ -45,7 +45,9 @@ public:
 
 public slots:
     void setRadius(const QPointF &radius);
-    inline void setRadius(qreal x, qreal y) { setRadius(QPointF(x, y)); }
+    inline void setRadius(qreal x, qreal y) {
+        setRadius(QPointF(x, y));
+    }
 
 signals:
     void radiusChanged(const QPointF &radius);

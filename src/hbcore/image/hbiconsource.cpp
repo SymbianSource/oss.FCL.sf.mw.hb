@@ -52,27 +52,26 @@ QString iconTypeFromFilename(const QString &iconPath)
 {
     QString loweredIconPath = iconPath.toLower();
 
-    if (loweredIconPath.endsWith(".svgz") ) {
-        return "SVG";
+    if (loweredIconPath.endsWith(QLatin1String(".svgz"))) {
+        return QLatin1String("SVG");
     }
-    if (loweredIconPath.endsWith(".qpic") ) {
-        return "PIC";
+    if (loweredIconPath.endsWith(QLatin1String(".qpic"))) {
+        return QLatin1String("PIC");
     }
 
-    if (loweredIconPath.endsWith(".svg")
-        || loweredIconPath.endsWith(".png")
-        || loweredIconPath.endsWith(".mng")
-        || loweredIconPath.endsWith(".gif")
-        || loweredIconPath.endsWith(".xpm")
-        || loweredIconPath.endsWith(".jpg")
-        || loweredIconPath.endsWith(".nvg")) {
+    if (loweredIconPath.endsWith(QLatin1String(".svg"))
+            || loweredIconPath.endsWith(QLatin1String(".png"))
+            || loweredIconPath.endsWith(QLatin1String(".mng"))
+            || loweredIconPath.endsWith(QLatin1String(".gif"))
+            || loweredIconPath.endsWith(QLatin1String(".xpm"))
+            || loweredIconPath.endsWith(QLatin1String(".jpg"))
+            || loweredIconPath.endsWith(QLatin1String(".nvg"))) {
         return iconPath.right(3).toUpper();
     }
 
-    if (loweredIconPath.endsWith(".xml")
-        || loweredIconPath.endsWith(".axml")
-        || loweredIconPath.endsWith(".fxml"))
-    {
+    if (loweredIconPath.endsWith(QLatin1String(".xml"))
+            || loweredIconPath.endsWith(QLatin1String(".axml"))
+            || loweredIconPath.endsWith(QLatin1String(".fxml"))) {
         return "BLOB";
     }
 
@@ -86,21 +85,22 @@ static const qint32 NVG_VIEWBOX_HEIGHT_OFS  = 48;
 // to avoid NVG dependency in ThemeIndexer
 QSize nvgContentDimensions(const QByteArray &buffer)
 {
-    QSize ret(0,0);
-     if (buffer.length() < static_cast<qint32>(NVG_VIEWBOX_HEIGHT_OFS + sizeof (float))){
+    QSize ret(0, 0);
+    if (buffer.length() < static_cast<qint32>(NVG_VIEWBOX_HEIGHT_OFS + sizeof(float))) {
         ret = QSize(0, 0);
-        } 
-     
-    const quint8* lBuf = (quint8*) buffer.data();
-    if((buffer.length() > NVG_VIEWBOX_WIDTH_OFS) && (buffer.length() > NVG_VIEWBOX_HEIGHT_OFS)) {	
-	    float lViewboxWidth = * (float*)(lBuf + NVG_VIEWBOX_WIDTH_OFS);
-	    float lViewboxHeight = * (float*)(lBuf + NVG_VIEWBOX_HEIGHT_OFS);
+    }
 
-	    if (lViewboxWidth > 0 && lViewboxHeight > 0) {
-	        ret = QSize((int)lViewboxWidth, (int)lViewboxHeight);
-	    } else {
-	        ret = QSize(0, 0);
-	    }
+    const quint8 *lBuf = (quint8 *) buffer.data();
+    if ((buffer.length() > NVG_VIEWBOX_WIDTH_OFS) && (buffer.length() > NVG_VIEWBOX_HEIGHT_OFS)) {
+        // Do not change to qreal, no matter what krazy says.
+        float lViewboxWidth = * (float *)(lBuf + NVG_VIEWBOX_WIDTH_OFS);
+        float lViewboxHeight = * (float *)(lBuf + NVG_VIEWBOX_HEIGHT_OFS);
+
+        if (lViewboxWidth > 0 && lViewboxHeight > 0) {
+            ret = QSize((int)lViewboxWidth, (int)lViewboxHeight);
+        } else {
+            ret = QSize(0, 0);
+        }
     }
     return ret;
 }
@@ -110,7 +110,7 @@ QSize nvgContentDimensions(const QByteArray &buffer)
 
 /*!
   \class HbIconSource
-  
+
   \brief Encapsulates access (size and pixel data reading) to image files.
 
   \internal
@@ -173,37 +173,35 @@ QSizeF HbIconSource::defaultSize()
         if (mType == "NVG") {
 #ifndef HB_BOOTSTRAPPED
 #ifdef HB_NVG_CS_ICON
-        if(!mByteArray){
-            QFile file(mFilename);
-            if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
-                return QSizeF();
-            }                
-            mByteArray = new QByteArray(file.readAll());
-        }
-        HbNvgEngine nvgEngine; 
-        mDefaultSize = nvgEngine.contentDimensions(*mByteArray);
+            if (!mByteArray) {
+                QFile file(mFilename);
+                if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
+                    return QSizeF();
+                }
+                mByteArray = new QByteArray(file.readAll());
+            }
+            HbNvgEngine nvgEngine;
+            mDefaultSize = nvgEngine.contentDimensions(*mByteArray);
 #endif // HB_NVG_CS_ICON
 #else // HB_BOOTSTRAPPED
 
-        if(!mByteArray){
-            QFile file(mFilename);
-            if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
-                return QSizeF();
-            }                
-            mByteArray = new QByteArray (file.readAll());
-        }
+            if (!mByteArray) {
+                QFile file(mFilename);
+                if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
+                    return QSizeF();
+                }
+                mByteArray = new QByteArray(file.readAll());
+            }
 
-        mDefaultSize = nvgContentDimensions(*mByteArray);
+            mDefaultSize = nvgContentDimensions(*mByteArray);
 #endif
-        }
-        else if (mType == "SVG") {
+        } else if (mType == "SVG") {
             QSvgRenderer *renderer = svgRenderer();
             if (renderer) { // isValid() is already checked in svgRenderer()
                 mDefaultSize = renderer->defaultSize();
             }
             releaseSvgRenderer();
-        }
-        else if (mType == "PIC") {
+        } else if (mType == "PIC") {
             if (!mPicture) {
                 mPicture = new QPicture;
                 mPicture->load(mFilename);
@@ -229,8 +227,7 @@ QSizeF HbIconSource::defaultSize()
                 }
             }
             releaseImageReader();
-        }
-        else if (mType != "BLOB") {
+        } else if (mType != "BLOB") {
             if (!mPixmap) {
                 mPixmap = new QPixmap(mFilename);
             }
@@ -270,20 +267,20 @@ void HbIconSource::takeSvgRenderer()
 {
     mSvgRenderer = 0;
 }
-    
-QByteArray* HbIconSource::byteArray()
+
+QByteArray *HbIconSource::byteArray()
 {
     if (!mByteArray) {
-    #ifdef HB_NVG_CS_ICON
+#ifdef HB_NVG_CS_ICON
         QFile file(mFilename);
         if (!file.open(QIODevice::NotOpen | QIODevice::ReadOnly)) {
             return 0;
         }
-        mByteArray = new QByteArray (file.readAll());
-    #endif//nvg 
+        mByteArray = new QByteArray(file.readAll());
+#endif
     }
-    
-    if (!mByteArray->isEmpty()) {
+
+    if (mByteArray && !mByteArray->isEmpty()) {
         return mByteArray;
     } else {
         return 0;
@@ -306,6 +303,7 @@ QPicture *HbIconSource::picture()
 QImageReader *HbIconSource::imageReader()
 {
     if (!mImageReader) {
+        type(); // make sure type is initialized
         mImageReader = new QImageReader(mFilename, mType.toLatin1());
     }
     return mImageReader && mImageReader->canRead() ? mImageReader : 0;

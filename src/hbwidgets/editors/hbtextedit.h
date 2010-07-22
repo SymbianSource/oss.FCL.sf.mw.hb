@@ -37,9 +37,7 @@ class HB_WIDGETS_EXPORT HbTextEdit: public HbAbstractEdit
     Q_OBJECT
 
     Q_PROPERTY(QString plainText READ toPlainText WRITE setPlainText USER true)
-    Q_PROPERTY(bool lined
-               READ isLined
-               WRITE setLined)
+    Q_PROPERTY(bool lined READ isLined WRITE setLined)
 
 public:
 

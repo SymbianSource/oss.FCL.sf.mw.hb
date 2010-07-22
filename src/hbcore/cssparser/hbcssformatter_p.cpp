@@ -66,7 +66,8 @@ QString HbCssFormatter::weightedStyleRulesToString(const HbVector<HbCss::Weighte
 /*!
  @internal
 */
-QString HbCssFormatter::weightedDeclarationsToString(const HbVector<HbCss::WeightedDeclaration> &decls)
+QString HbCssFormatter::weightedDeclarationsToString(
+    const HbVector<HbCss::WeightedDeclaration> &decls)
 {
     QString str;
 #ifdef HB_DEVELOPER
@@ -198,7 +199,10 @@ QString HbCssFormatter::styleRuleToString(const HbCss::StyleRule &rule, int spec
 
 
 // Worker function
-QString HbCssFormatter::styleRuleToHtml(const HbCss::StyleRule &rule, QVector<const HbCss::Declaration*> usedDecls, int specificity)
+QString HbCssFormatter::styleRuleToHtml(
+    const HbCss::StyleRule &rule, 
+    QVector<const HbCss::Declaration*> usedDecls, 
+    int specificity)
 {
     QString str;
 #ifdef HB_DEVELOPER
@@ -237,7 +241,10 @@ QString HbCssFormatter::styleRuleToHtml(const HbCss::StyleRule &rule, QVector<co
 
 
 // Worker function
-QString HbCssFormatter::selectorsToString(const HbVector<HbCss::Selector> &selectors, int specificity, bool html)
+QString HbCssFormatter::selectorsToString(
+    const HbVector<HbCss::Selector> &selectors, 
+    int specificity, 
+    bool html)
 {
     QString str;
 #ifdef HB_DEVELOPER

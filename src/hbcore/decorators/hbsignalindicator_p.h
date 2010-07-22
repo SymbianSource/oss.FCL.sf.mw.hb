@@ -54,6 +54,9 @@ public slots:
     virtual void createPrimitives();
     virtual void updatePrimitives();
 
+signals:
+    void levelChanged();
+
 protected:
     void initStyleOption(HbStyleOptionSignalIndicator *option) const;
 
@@ -63,7 +66,7 @@ private:
 
 #ifdef HB_HAVE_QT_MOBILITY
     Q_PRIVATE_SLOT(d_func(), void _q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int))
-    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode))
+    Q_PRIVATE_SLOT(d_func(), void _q_setNetworkMode(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus))
 #endif // HB_HAVE_QT_MOBILITY
 };
 

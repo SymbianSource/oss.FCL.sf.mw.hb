@@ -38,8 +38,7 @@ public:
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
     bool isActive() const; 
-    void processCustomWord(QString customWord);
-	void mouseHandler(int cursorPosition, QMouseEvent* mouseEvent);
+    void mouseHandler(int cursorPosition, QMouseEvent* mouseEvent);
 protected:
 	HbInputPrediction12KeyHandler(HbInputPrediction12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
 private:

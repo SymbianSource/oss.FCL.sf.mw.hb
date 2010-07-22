@@ -36,9 +36,11 @@
 #include "hbinputbutton.h"
 #include "hbinputmodeindicator.h"
 
-const qreal HbKeyboardHeightInUnits = 37.8;
+const qreal HbKeyboardHeightInUnits = 36.9;
 const qreal HbKeyboardWidthInUnits = 53.8;
 
+const int HbFirstRowIndex = 0;
+const int HbSecondRowIndex = 2;
 const int HbVirtual12KeyNumberOfRows = 4;
 const int HbVirtual12KeyNumberOfColumns = 4;
 const int HbButtonKeyCodeTable[HbVirtual12KeyNumberOfRows * HbVirtual12KeyNumberOfColumns] =
@@ -193,47 +195,58 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
 
                 if (mMode == EModeNumeric) {
                     QChar numChr;
-                    const HbKeyboardMap *keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
-                    if (keyboardMap && key < keyboardMap->keys.count()) {
-                        numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(keyboardMap->keys.at(key), mKeymap->language());
+                    const HbKeyboardMap *labelMap = mKeymap->keyboard(HbKeyboardVirtual12KeyLabels);
+                    const HbKeyboardMap *keyMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                    if (labelMap && key < labelMap->keys.count()) {
+                        numChr = labelMap->keys.at(key)->keycode;
                     }
 
-                    if (numChr > 0) {
-                        item->setText(numChr, HbInputButton::ButtonTextIndexPrimary);
-                    } else {
-                        item->setText(QString(), HbInputButton::ButtonTextIndexPrimary);
+                    // Fallback to normal keymappings if key labels are not present
+                    if (keyMap && key < keyMap->keys.count() && numChr.isNull()) {
+                        numChr = numberCharacterBoundToKey(key);
                     }
+
+                    item->setText(numChr, HbInputButton::ButtonTextIndexPrimary);
                     item->setText(QString(), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                     item->setText(QString(), HbInputButton::ButtonTextIndexSecondarySecondRow);
                     item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexPrimary);
                     item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexSecondaryFirstRow);
                     item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexSecondarySecondRow);
                 } else if (mMode == EModeAbc) {
-                    QString keydata;
+                    QString firstRow;
+                    QString secondRow;
                     QChar numChr;
-                    const HbKeyboardMap *keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
-                    if (keyboardMap && key < keyboardMap->keys.count()) {
-                        keydata = keyboardMap->keys.at(key)->characters(mModifiers);
-                        numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(keyboardMap->keys.at(key), mKeymap->language());
+                    const HbKeyboardMap *labelMap = mKeymap->keyboard(HbKeyboardVirtual12KeyLabels);
+                    const HbKeyboardMap *keyMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                    if (labelMap && key < labelMap->keys.count()) {
+                        firstRow = keyLabel(labelMap->keys.at(key)->chars, HbFirstRowIndex | mModifiers);
+                        secondRow = keyLabel(labelMap->keys.at(key)->chars, HbSecondRowIndex | mModifiers);
+                        numChr = labelMap->keys.at(key)->keycode;
                     }
 
-                    QString title("");
-                    if (mOwner->focusObject()) {
-                        QString allowedData;
-                        mOwner->focusObject()->filterStringWithEditorFilter(keydata, allowedData);
-                        title.append(allowedData.left(numberOfCharactersToShow(key)));
-                    } else {
-                        title.append(keydata.left(numberOfCharactersToShow(key)));
+                    // Fallback to normal keymappings if key labels are not present
+                    if (keyMap && key < keyMap->keys.count()) {
+                        if (firstRow.isEmpty()) {
+                            firstRow = keyMap->keys.at(key)->characters(mModifiers);
+                            if (mOwner->focusObject()) {
+                                QString allowedData;
+                                mOwner->focusObject()->filterStringWithEditorFilter(firstRow, allowedData);
+                                firstRow = allowedData.left(3);
+                            } else {
+                                firstRow = firstRow.left(3);
+                           }
+                        }
+                        if (numChr.isNull()) {
+                            numChr = numberCharacterBoundToKey(key);
+                        }
                     }
 
-                    if (numChr == QChar('0')) {
+                    if (key == 9) {
                         item->setText(numChr, HbInputButton::ButtonTextIndexPrimary);
                         item->setIcon(HbIcon(HbInputButtonIconSpace2), HbInputButton::ButtonIconIndexSecondaryFirstRow);
-                        // Set space as secondaty text so that the layout is correct if icon is not found. This can be removed when
-                        // new space graphics are included in the main line.
-                        item->setText(QString(" "), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                     } else {
-                        item->setText(title, HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                        item->setText(firstRow, HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                        item->setText(secondRow, HbInputButton::ButtonTextIndexSecondarySecondRow);
                         item->setText(numChr, HbInputButton::ButtonTextIndexPrimary);
                     }
                 }
@@ -241,9 +254,20 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                 ++key;
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeShift) {
                 if (mMode == EModeNumeric) {
-                    item->setText(QString("#"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                    item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexPrimary);
+                    item->setText(QString("#"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString(), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                 } else if (mMode == EModeAbc) {
+                    item->setIcon(HbIcon(HbInputButtonIconShift), HbInputButton::ButtonIconIndexPrimary);
                     item->setText(QString(" "), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                }
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAsterisk) {
+                if (mMode == EModeNumeric) {
+                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString(""), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                } else if (mMode == EModeAbc) {
+                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString("+"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
                 }
             }
         }
@@ -251,19 +275,18 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
     }
 }
 
-int Hb12KeyTouchKeyboardPrivate::numberOfCharactersToShow(int key)
+QString Hb12KeyTouchKeyboardPrivate::keyLabel(const QStringList &labels, int index)
 {
-    QChar keyCode;
-    const HbKeyboardMap *keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
-    if (keyboardMap && key < keyboardMap->keys.count()) {
-        keyCode = keyboardMap->keys.at(key)->keycode;
+    if (index == HbFirstRowIndex && labels.count() >= 2) {
+        return labels.at(1);
+    } else if (index == (HbFirstRowIndex | HbModifierShiftPressed) && labels.count() >= 3) {
+        return labels.at(2);
+    } else if (index == HbSecondRowIndex && labels.count() >= 4) {
+        return labels.at(3);
+    } else if (index == (HbSecondRowIndex | HbModifierShiftPressed) && labels.count() >= 5) {
+        return labels.at(4);
     }
-
-    if (keyCode == QChar('7') || keyCode == QChar('9')) {
-        return 4;
-    } else {
-        return 3;
-    }
+    return QString();
 }
 
 /*!
@@ -330,6 +353,21 @@ QSizeF Hb12KeyTouchKeyboard::preferredKeyboardSize()
     result.setWidth(HbKeyboardWidthInUnits * unitValue);
 
     return QSizeF(result);
+}
+
+/*!
+Sends key event to owning input method.
+*/
+void Hb12KeyTouchKeyboard::sendLongPressEvent(const QKeyEvent &event)
+{
+    Q_D(Hb12KeyTouchKeyboard);
+    if (d->mMode == EModeAbc) {
+        HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+        if (buttonGroup) {
+            buttonGroup->cancelButtonPress();
+        }
+    }
+    HbInputVkbWidget::sendLongPressEvent(event);
 }
 
 // End of file

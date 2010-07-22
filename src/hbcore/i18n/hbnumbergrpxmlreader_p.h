@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef NUMBERGRPXMLREADER_H_
-#define NUMBERGRPXMLREADER_H_
+#ifndef NUMBERGRPXMLREADER_P_H
+#define NUMBERGRPXMLREADER_P_H
 
 #include <QMap>
 #include <QString>
@@ -57,8 +57,6 @@ public:
     QString getPattern();
     QString getGroup();
     QString getDecimal();
-private:
-	HbNumberGrpXmlReader();
 	
 private:
 	QString locale;
@@ -71,4 +69,4 @@ private:
 	
 };
 
-#endif // NUMBERGRPXMLREADER_H_
+#endif // NUMBERGRPXMLREADER_P_H

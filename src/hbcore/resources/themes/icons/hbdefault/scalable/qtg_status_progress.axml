@@ -1,9 +1,0 @@
-<animations>
-<icon name="qtg_status_progress" frame_duration="50" playmode="loop">
-<frame>qtg_status_progress_1</frame>
-<frame>qtg_status_progress_2</frame>
-<frame>qtg_status_progress_3</frame>
-<frame>qtg_status_progress_4</frame>
-<frame>qtg_status_progress_5</frame>
-</icon>
-</animations>

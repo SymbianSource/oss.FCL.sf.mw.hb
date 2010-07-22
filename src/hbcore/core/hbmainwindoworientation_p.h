@@ -32,9 +32,8 @@
 
 class HbMainWindow;
 class HbForegroundWatcher;
-class HbSleepModeListener;
 
-class HB_AUTOTEST_EXPORT HbMainWindowOrientation : public QObject, 
+class HB_AUTOTEST_EXPORT HbMainWindowOrientation : public QObject,
     public HbSensorListenerObserver
 {
     Q_OBJECT
@@ -54,12 +53,12 @@ private slots:
     void handleForegroundGained();
     void handleForegroundLost();
     void handleWindowAdded(HbMainWindow *window);
-    void handleWindowRemoved(HbMainWindow *window);    
+    void handleWindowRemoved(HbMainWindow *window);
 
-private: 
+private:
     HbMainWindowOrientation(QObject *parent = 0);
     void sensorOrientationChanged(Qt::Orientation newOrientation);
-    void sensorStatusChanged(bool status, bool notify);    
+    void sensorStatusChanged(bool status, bool notify);
     void notifyOrientationChange(bool animate, bool notifyWhenDisabled = false);
 
 private:
@@ -79,4 +78,3 @@ private:
 };
 
 #endif //HBMAINWINDOWORIENTATION_P_H
-

@@ -38,8 +38,10 @@ class HbSelectionDialog;
 class HbAction;
 class HbDialog;
 class HbListWidget;
+class HbListWidgetItem;
 class QGraphicsLinearLayout;
 class QItemSelection;
+class HbAction;
 
 QT_FORWARD_DECLARE_CLASS(QGraphicsLinearLayout)
 
@@ -91,7 +93,7 @@ protected:
 public slots:
     void updateModel( int index );
     void buttonClicked();
-    void dialogClosed(HbAction* action);
+    void dialogClosed(int code);
     void makeEmbedded();
     void makePopup();
     void changeMode();
@@ -99,6 +101,12 @@ public slots:
     void resetSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
+    
+    //popup signals
+    void finished(HbAction*);
+    void aboutToShow();
+    void aboutToHide();
+    void aboutToClose(); 
 
 private:
     HbRadioButtonList* mRadioButtonList;
@@ -127,7 +135,7 @@ protected:
 
 public slots:
     void launchMultiSelectionList( );
-    void dialogClosed(HbAction*);
+    void dialogClosed(int code);
     void updateModel( const QItemSelection & selected, const QItemSelection &deselected );
     void makeEmbedded();
     void makePopup();
@@ -135,6 +143,14 @@ public slots:
     void makeSelection();
 signals:
     void valueChanged(QPersistentModelIndex, QVariant);
+    void aboutToShow();
+    void aboutToHide();
+    void aboutToClose();
+    void finished(HbAction*);
+    void activated(HbListWidgetItem *item);
+    void pressed(HbListWidgetItem *item);
+    void released(HbListWidgetItem *item);
+    void longPressed(HbListWidgetItem *item, const QPointF &coords);
 
 private:
 
@@ -178,7 +194,7 @@ public:
     QString description() const;
     void updateData();
 
-    void setEnabled(bool enabled);
+    virtual void setEnabled(bool enabled);
 public:
     static HbDataFormViewItemPrivate *d_ptr(HbDataFormViewItem *item) {
         Q_ASSERT(item);

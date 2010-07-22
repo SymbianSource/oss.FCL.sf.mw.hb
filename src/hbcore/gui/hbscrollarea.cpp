@@ -31,6 +31,8 @@
 #include <hbwidgetfeedback.h>
 #include <hbevent.h>
 #include "hbglobal_p.h"
+#include <hbtapgesture.h>
+#include <hbnamespace_p.h>
 
 #include <QGesture>
 
@@ -142,7 +144,7 @@
 
 /*!
     \fn void HbScrollArea::scrollPositionChanged(QPointF newposition)
-    This signal is emitted when scroll position is changed.
+    This signal is emitted when scroll position is changed and someone is connected to the signal.
 */
 
 /*!
@@ -222,6 +224,14 @@
 */
 
 /*!
+    \primitives
+    \primitives{continuation-indicator-bottom} HbFrameItem representing the scrollarea continuation indicator on the bottom of the scrollarea.
+    \primitives{continuation-indicator-top} HbFrameItem representing the scrollarea continuation indicator on the top of the scrollarea.
+    \primitives{continuation-indicator-left} HbFrameItem representing the scrollarea continuation indicator on the left side of the scrollarea.
+    \primitives{continuation-indicator-right} HbFrameItem representing the scrollarea continuation indicator on the right side of the scrollarea.
+  */
+
+/*!
   Constructor
  
   \sa HbScrollArea::HbScrollArea
@@ -234,6 +244,9 @@ HbScrollArea::HbScrollArea(QGraphicsItem* parent) :
     d->init();
 }
 
+/*!
+  Protected constructor.
+  */
 HbScrollArea::HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent):
         HbWidget( dd, parent  )
 {
@@ -430,7 +443,13 @@ void HbScrollArea::setScrollDirections(Qt::Orientations value)
 
     bool isChanged = (d->mScrollDirections != value);
 
-    d->mScrollDirections = value;
+    d->mScrollDirections = value;        
+    if (d->mContents && isChanged) {
+        QPointF pos = d->mContents->pos();
+        QEvent layoutRequest(QEvent::LayoutRequest);
+        QCoreApplication::sendEvent(this, &layoutRequest);
+        d->mContents->setPos(pos);
+    }
 
     if (isChanged) {
         emit scrollDirectionsChanged( value );
@@ -619,9 +638,9 @@ void HbScrollArea::longPressGesture(const QPointF &)
     HB_DEPRECATED("HbScrollArea::longPressGesture(const QPointF &) is deprecated. Use gesture FW.");
 }
 
-/*
+/*!
     \reimp
-*/
+ */
 void HbScrollArea::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED (event);
@@ -680,10 +699,18 @@ bool HbScrollArea::event(QEvent *event)
                 d->stopAnimating();
             }
         } else if( event->type() == QEvent::GestureOverride ) {
-            if(static_cast<QGestureEvent *>(event)->gesture(Qt::TapGesture) &&
-                    d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
-                event->accept();
-                return true;
+            if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(static_cast<QGestureEvent *>(event)->gesture(Qt::TapGesture))) {
+                if (d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
+                    event->accept();
+                    return true;
+                } else if (tap->state() == Qt::GestureStarted){
+                    if (d->mAbleToScrollY) {
+                        tap->setProperty(HbPrivate::VerticallyRestricted.latin1(), true);
+                    }
+                    if (d->mAbleToScrollX){
+                        tap->setProperty(HbPrivate::HorizontallyRestricted.latin1(), true);
+                    }
+                }
             }
         } else if (event->type() == QEvent::LayoutRequest) {
             if (d->mContents) {
@@ -757,6 +784,14 @@ bool HbScrollArea::eventFilter(QObject *obj, QEvent *event)
         if (isVisible()) {            
             d->adjustContent();
         }
+
+        if (d->mAbleToScrollX && d->mHorizontalScrollBar->isVisible()) {
+            d->updateScrollBar(Qt::Horizontal);
+        }
+
+        if (d->mAbleToScrollY && d->mVerticalScrollBar->isVisible()) {
+            d->updateScrollBar(Qt::Vertical);
+        }
     }  // no else
 
     return false;
@@ -815,6 +850,7 @@ void HbScrollArea::gestureEvent(QGestureEvent *event)
         if (gesture->state() == Qt::GestureStarted) {
             if (d->mIsAnimating && !d->positionOutOfBounds() && !d->mMultiFlickEnabled) {
                 d->stopAnimating();
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierScrolling);
                 event->accept(gesture);
             } else {
                 event->ignore(gesture);
@@ -838,7 +874,6 @@ void HbScrollArea::gestureEvent(QGestureEvent *event)
 
     \sa horizontalScrollBarPolicy(), setVerticalScrollBarPolicy()
 */
-
 HbScrollArea::ScrollBarPolicy HbScrollArea::verticalScrollBarPolicy() const
 {
     Q_D(const HbScrollArea);
@@ -895,7 +930,6 @@ void HbScrollArea::setVerticalScrollBar(HbScrollBar *scrollBar)
 
     \sa verticalScrollBarPolicy(), setHorizontalScrollBarPolicy()
 */
-
 HbScrollArea::ScrollBarPolicy HbScrollArea::horizontalScrollBarPolicy() const
 {
     Q_D(const HbScrollArea);
@@ -1040,16 +1074,19 @@ void HbScrollArea::ensureVisible(const QPointF& position, qreal xMargin, qreal y
 */
 void HbScrollArea::scrollContentsTo (const QPointF& newPosition, int time) {
     Q_D(HbScrollArea);
+
+    if (!contentWidget())
+        return;
+
     if (time > 0){
         d->startTargetAnimation (newPosition, qMax (0, time));
     } else {
         scrollByAmount(newPosition - (-d->mContents->pos()));
         d->stopScrolling();
-
     }
 }
 
-/*
+/*!
   \reimp
  */
 void HbScrollArea::polish(HbStyleParameters& params)
@@ -1097,4 +1134,45 @@ void HbScrollArea::polish(HbStyleParameters& params)
     }
 }
 
+/*!
+  \reimp
+
+ */
+void HbScrollArea::timerEvent(QTimerEvent *event)
+{
+    Q_D(HbScrollArea);
+    if (event->timerId() == d->mScrollTimerId) {
+        d->_q_animateScrollTimeout();
+    } else if (event->timerId() == d->mScrollBarHideTimerId) {
+        d->_q_hideScrollBars();
+    }
+}
+
+/*!
+    \reimp
+*/
+void HbScrollArea::disconnectNotify (const char *signal)
+{
+    Q_D(HbScrollArea);
+    if (d->mEmitPositionChangedSignal &&
+        QLatin1String(signal) == SIGNAL(scrollPositionChanged(QPointF))) {
+        if (receivers(SIGNAL(scrollPositionChanged(QPointF))) == 0) {
+            d->mEmitPositionChangedSignal = false;
+        }
+    }
+    HbWidget::disconnectNotify(signal);
+}
+
+/*!
+    \reimp
+*/
+void HbScrollArea::connectNotify(const char * signal)
+{
+    Q_D(HbScrollArea);
+    if (!d->mEmitPositionChangedSignal &&
+        QLatin1String(signal) == SIGNAL(scrollPositionChanged(QPointF))) {
+        d->mEmitPositionChangedSignal = true;
+    }
+    HbWidget::connectNotify(signal);
+}
 #include "moc_hbscrollarea.cpp"

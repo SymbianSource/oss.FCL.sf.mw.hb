@@ -87,7 +87,7 @@ public:
         ButtonTypeNormal,
         ButtonTypeFunction,
         ButtonTypeLabel,
-        ButtonTypeCount 
+        ButtonTypeCount
     };
 
     enum HbInputButtonState {
@@ -152,7 +152,7 @@ public:
     QRectF boundingRect() const;
 
 protected:
-    HbInputButtonPrivate * const d_ptr;
+    HbInputButtonPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputButton)

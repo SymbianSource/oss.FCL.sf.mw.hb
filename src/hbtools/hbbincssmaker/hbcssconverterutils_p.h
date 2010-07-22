@@ -27,6 +27,8 @@
 #define HBCSSCONVERTERUTILS_P_H
 
 #include <QList>
+#include <QMultiHash>
+#include <hbstring_p.h>
 
 class HbCssConverterUtils
 {
@@ -34,7 +36,7 @@ public:
     // Shared chunk offset management
     static void registerOffsetHolder(int *offset);
     static void unregisterOffsetHolder(int *offset);
-    static QList<int *> registeredOffsetHolders();
+    static QMultiHash<int, int *> registeredOffsetHolders();
     static void unregisterAll();
 
     // Shared chunk allocation management
@@ -42,6 +44,10 @@ public:
     static void cellFreed(int offset);
     static void cellMoved(int offset, int newOffset);
     static int defragmentChunk();
+
+    //shared string management
+    static void addSharedStringData(const QString &str, const HbString &hbstr);
+    static HbString* sharedStringData(const QString &str);
 
 private:
 

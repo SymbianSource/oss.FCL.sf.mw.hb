@@ -58,7 +58,7 @@ coverage:!symbian {
         }
 
         measure_coverage.depends = pre_coverage
-        unix:measure_coverage.depends = test
+        unix:measure_coverage.depends = unittest
         post_coverage.depends = measure_coverage
         coverage.depends = post_coverage
         QMAKE_EXTRA_TARGETS *= coverage pre_coverage measure_coverage post_coverage

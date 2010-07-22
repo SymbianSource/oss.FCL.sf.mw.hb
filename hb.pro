@@ -25,6 +25,7 @@
 #############################################################################
 #
 
+
 TEMPLATE = subdirs
 CONFIG += root
 
@@ -34,64 +35,64 @@ SUBDIRS += src
     SUBDIRS += tutorials
 }
 
-feature.files += $$HB_SOURCE_DIR/hb.prf
-feature.files += $$HB_BUILD_DIR/hb_install.prf
-feature.files += $$HB_MKSPECS_DIR/hb_functions.prf
-#feature.files += $$HB_MKSPECS_DIR/docml2bin.prf
-feature.path = $$HB_FEATURES_DIR
-INSTALLS += feature
+!symbian {
+    feature.files += $$HB_SOURCE_DIR/hb.prf
+    feature.files += $$HB_BUILD_DIR/hb_install.prf
+    feature.files += $$HB_SOURCE_DIR/mkspecs/hb_functions.prf
+    feature.files += $$HB_SOURCE_DIR/mkspecs/docml2bin.prf
+    feature.path = $$HB_FEATURES_DIR
+    INSTALLS += feature
+}
+else {
+    tmp = $$split(HB_FEATURES_DIR, :)
+    HB_SYMBIAN_PRF_EXPORT_DIR = $$last(tmp)
+    BLD_INF_RULES.prj_exports += "hb.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb.prf"
+    BLD_INF_RULES.prj_exports += "hb_install.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_install.prf"
+    BLD_INF_RULES.prj_exports += "mkspecs/hb_functions.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_functions.prf"
+    BLD_INF_RULES.prj_exports += "mkspecs/docml2bin.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/docml2bin.prf"
+}
 
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/.qmake.cache)
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/hb_install.prf)
 
-hbvar.path = .
-hbvar.commands += $(QMAKE) -set HB \"hbcore hbwidgets hbutils\"
-QMAKE_EXTRA_TARGETS += hbvar
-INSTALLS += hbvar
 
 symbian {
     exists(rom):include(rom/rom.pri)
-    install.depends += index hbvar
-#    install.depends += cssbinary
-    install.commands += $$QMAKE_COPY $$hbNativePath($$HB_SOURCE_DIR/hb.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
-    install.commands += && $$QMAKE_COPY $$hbNativePath($$HB_BUILD_DIR/hb_install.prf) $$hbNativePath($$[QMAKE_MKSPECS]/features)
+    install.depends += cssbinary
     QMAKE_EXTRA_TARGETS += install
 }
 
-# theme indexing
-
-symbian:HB_THEMES_DIR = $${EPOCROOT}epoc32/data/z/resource/hb/themes
-else:HB_THEMES_DIR = $(HB_THEMES_DIR)/themes
-isEmpty(HB_THEMES_DIR):index.commands += echo HB_THEMES_DIR environment variable not set
-else {
-    index.path = .
-    index.name = hbdefault
-    index.source = $$PWD/src/hbcore/resources/themes/icons/hbdefault
-    index.targets = $$HB_THEMES_DIR
-    symbian {
-        index.targets += $${EPOCROOT}epoc32/release/winscw/urel/z/resource/hb/themes
-        index.targets += $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes
-    }
-    for(index.target, index.targets) {
-        !isEmpty(index.commands):index.commands += &&
-        index.commands += $$hbToolCommand(hbthemeindexer) -n $$index.name -s $$index.source -t $$index.target
-    }
-    QMAKE_EXTRA_TARGETS += index
-    INSTALLS += index
-}
-
 # css binary generation
+cssbinmaker.input = $$HB_SOURCE_DIR/src/hbcore/resources/themes/style/hbdefault
+cssbinmaker.output = $$HB_BUILD_DIR/src/hbcore/resources/themes/hbdefault.cssbin
+cssbinmaker.commands = $$hbToolCommand(hbbincssmaker) -i $$cssbinmaker.input -o $$cssbinmaker.output
+QMAKE_DISTCLEAN += $$cssbinmaker.output
+QMAKE_EXTRA_TARGETS += cssbinmaker
 
+cssbinary.depends = cssbinmaker
+cssbinary.path = $$HB_RESOURCES_DIR/themes
+cssbinary.files = $$cssbinmaker.output
+cssbinary.CONFIG += no_check_exist
+INSTALLS += cssbinary
+
+symbian {
+    cssbinary.commands += $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/data/z/resource/hb/themes/)
+    cssbinary.commands += && $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/)
+    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/data/z/resource/hb/themes/$$cssbinary.files
+    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/$$cssbinary.files
+    QMAKE_EXTRA_TARGETS += cssbinary
+}
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
     test.depends = sub-src
     test.commands += cd tsrc && $(MAKE) test
     autotest.depends = sub-src
     autotest.commands += cd tsrc && $(MAKE) autotest
-    loctest.depends = sub-src
-    loctest.commands += cd tsrc/loc && $(MAKE) loctest
-    QMAKE_EXTRA_TARGETS += test autotest loctest
+    unittest.depends = sub-src
+    unittest.commands += cd tsrc/unit && $(MAKE) test
+    QMAKE_EXTRA_TARGETS += test autotest unittest
 }
 
 exists(doc):include(doc/doc.pri)
 include(src/hbcommon.pri)
+#include(src/symbian_installs/symbian_deployment.pri)

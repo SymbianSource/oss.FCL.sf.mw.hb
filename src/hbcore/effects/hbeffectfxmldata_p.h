@@ -31,7 +31,7 @@
 #include <hbstring_p.h>
 #include <hbvector_p.h>
 
-QT_FORWARD_DECLARE_CLASS(QGraphicsItem) 
+QT_FORWARD_DECLARE_CLASS(QGraphicsItem)
 
 struct HbKeyFrame {
     // Cannot change to qreal even though krazy may insist on that.
@@ -44,8 +44,7 @@ struct HbKeyFrame {
         : stringValue(memType) { }
 };
 
-struct HbEffectFxmlAttrListEntry
-{
+struct HbEffectFxmlAttrListEntry {
     HbEffectFxmlAttrListEntry(HbMemoryManager::MemoryType memType = HbMemoryManager::HeapMemory)
         : mKey(memType), mValue(memType) { }
     HbString mKey;
@@ -79,9 +78,9 @@ public:
     void append(const HbKeyFrame &keyFrame);
 
     QString startRef() const;
-    void setStartRef(const QString& value);
+    void setStartRef(const QString &value);
     QString endRef() const;
-    void setEndRef(const QString& value);
+    void setEndRef(const QString &value);
 
     bool loopDefined() const;
 
@@ -166,7 +165,7 @@ public:
     QString xmlFileFullPath() const;
     QString effectEvent() const;
     bool inUse() const;
-	bool fromTheme() const;
+    bool fromTheme() const;
     QGraphicsItem *item() const;
     bool shared() const;
 
@@ -184,7 +183,7 @@ private:
     bool mShared;
     QGraphicsItem *mItem; // for object specific effects
     // local or shared (depends on HbEffectFxmlData memory type)
-    HbEffectFxmlData mFxmlData; 
+    HbEffectFxmlData mFxmlData;
     // Effect controller fills the info
     friend class HbEffectController;
 };

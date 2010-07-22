@@ -38,9 +38,6 @@ HbDeviceDialogsContainer::Dialog::Dialog()
     mId = InvalidId;
     mPtr = 0;
     mFlags = NoFlags;
-    for(int i = 0; i < NumVariables; i++) {
-        mVariables[i] = 0;
-    }
     mIndex = InvalidIndex;
 #ifndef QT_NO_DEBUG
     mContainer = 0;
@@ -188,7 +185,7 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
 
 // Get next dialog with matching variable value
 HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
-    const Dialog &from, Dialog::Variable variable, quintptr value)
+    const Dialog &from, Dialog::Variable variable, const QVariant &value)
 {
     // With invalid from start from beginning, otherwise start from next
     int i = from.isValid() ? from.mIndex + 1 : 0;
@@ -208,4 +205,10 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
     Dialog &dialog = mDialogs[i];
     dialog.mIndex = i;
     return dialog;
+}
+
+// check is the dialog list empty
+bool HbDeviceDialogsContainer::isEmpty() const
+{
+    return mDialogs.isEmpty();
 }

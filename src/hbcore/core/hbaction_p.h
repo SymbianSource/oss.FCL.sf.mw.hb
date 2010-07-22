@@ -35,7 +35,7 @@ public:
     HbMenu *menu;
     HbToolBarExtension *extension;
     HbAction::CommandRole commandRole;
-	QString tooltip;
+    QString tooltip;
 };
 
 #endif // HBACTION_P_H

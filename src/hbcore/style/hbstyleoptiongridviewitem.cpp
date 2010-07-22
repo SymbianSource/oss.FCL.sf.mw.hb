@@ -25,31 +25,23 @@
 
 #include "hbstyleoptiongridviewitem_p.h"
 
-/*!
+/*
     \class HbStyleOptionGridViewItem
     \brief HbStyleOptionGridViewItem has the style component for grid view item primitives
 */
 
-/*!
+/*
     \var HbStyleOptionGridViewItem::text
 
     Text shown in the grid view item, if not NULL. 
 */
 
-/*!
+/*
     \var HbStyleOptionGridViewItem::icon
 
     Icon shown in the grid view item, if not NULL. 
 */
 
-
-
-/*!
-
-    \deprecated HbStyleOptionGridViewItem::HbStyleOptionGridViewItem()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionGridViewItem::HbStyleOptionGridViewItem() :
     HbStyleOptionAbstractViewItem()
 {
@@ -57,12 +49,6 @@ HbStyleOptionGridViewItem::HbStyleOptionGridViewItem() :
     version = Version;
 }
 
-/*!
-
-    \deprecated HbStyleOptionGridViewItem::HbStyleOptionGridViewItem(const HbStyleOptionGridViewItem&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionGridViewItem::HbStyleOptionGridViewItem(const HbStyleOptionGridViewItem &other) :
     HbStyleOptionAbstractViewItem(other)
 {

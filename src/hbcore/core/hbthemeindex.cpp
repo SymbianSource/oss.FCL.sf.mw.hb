@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include <QDebug>
 #include "hbthemeindex_p.h"
+#include <QDebug>
 #ifndef HB_BOOTSTRAPPED
 #include "hbthemeclient_p.h"
 #include "hbinstance.h"
@@ -44,7 +44,7 @@ void HbThemeIndexResource::getResourceData()
 {
 #ifndef HB_BOOTSTRAPPED
 #ifdef THEME_INDEX_TRACES
-    qDebug() << "HbThemeIndexResource::getResourceData(: get item for" << resourceName.toUtf8();
+    qDebug() << "HbThemeIndexResource::getResourceData(), resourceName: " << resourceName;
 #endif
     // Theme index tables are always valid in shared memory
 
@@ -64,16 +64,20 @@ void HbThemeIndexResource::getResourceData()
 
     // First check base theme, which should be always valid
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
-    if (info.themeIndexOffset == 0) { // This shouldn't happen, as there must be valid base theme
+    if (!info.address) { // This shouldn't happen, as there must be valid base theme
+#ifdef THEME_INDEX_TRACES
+        qDebug("HbThemeUtils::getThemeIndexInfo(BaseTheme) returned null address");
+#endif
         return; // Data will be 0
     }
     
-    const char *baseAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                              info.themeIndexOffset);
-    HbThemeIndex baseIndex(baseAddress);
+    HbThemeIndex baseIndex(info.address);
     const HbThemeIndexItemData *baseItemData = baseIndex.getItemData(resourceName);
 
     if (!baseItemData) { // If the item is not found from base theme, it can't be found elsewhere
+#ifdef THEME_INDEX_TRACES
+        qDebug("HbThemeIndex::getItemData(%s) returned null data", qPrintable(resourceName));
+#endif
         return; // Data will be 0
     }
 
@@ -86,10 +90,8 @@ void HbThemeIndexResource::getResourceData()
 
     // Base wasn't locked, next check operator theme in C-drive
     info = HbThemeUtils::getThemeIndexInfo(OperatorC);
-    if (info.themeIndexOffset > 0) {
-        const char *operatorCAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                       info.themeIndexOffset);
-        HbThemeIndex operatorCIndex(operatorCAddress);
+    if (info.address) {
+        HbThemeIndex operatorCIndex(info.address);
         const HbThemeIndexItemData *operatorCItemData = operatorCIndex.getItemData(resourceName);
 
         if (operatorCItemData) { // Found, use it
@@ -103,10 +105,8 @@ void HbThemeIndexResource::getResourceData()
 
     // Not found from operator theme in C-drive, next check operator theme in ROM
     info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
-    if (info.themeIndexOffset > 0) {
-        const char *operatorZAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                       info.themeIndexOffset);
-        HbThemeIndex operatorZIndex(operatorZAddress);
+    if (info.address) {
+        HbThemeIndex operatorZIndex(info.address);
         const HbThemeIndexItemData *operatorZItemData = operatorZIndex.getItemData(resourceName);
 
         if (operatorZItemData) { // Found, use it
@@ -120,11 +120,10 @@ void HbThemeIndexResource::getResourceData()
 
     // Not found from operator themes, try active theme
     info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
-    if (info.themeIndexOffset > 0) {
-        const char *activeThemeAddress = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, 
-                                                                         info.themeIndexOffset);
-        HbThemeIndex activeThemeIndex(activeThemeAddress);
-        const HbThemeIndexItemData *activeThemeItemData = activeThemeIndex.getItemData(resourceName);
+    if (info.address) {
+        HbThemeIndex activeThemeIndex(info.address);
+        const HbThemeIndexItemData *activeThemeItemData =
+                activeThemeIndex.getItemData(resourceName);
 
         if (activeThemeItemData) { // Found, use it
             type = ActiveTheme;
@@ -151,6 +150,12 @@ HbThemeIndexResource::~HbThemeIndexResource()
 
 bool HbThemeIndexResource::isValid()
 {
+    if (data && data->itemType == HbThemeIndexItemData::ColorItem) {
+        Q_ASSERT_X(!(data->flags & HbThemeIndexItemData::Reference),
+            "HbThemeIndexResource::isValid()",
+            "Reference to another color variable not supported");
+    }
+
     if (data) {
         return true;
     }
@@ -244,12 +249,12 @@ QString HbThemeIndexResource::fullFileName()
             }
         case HbThemeIndexItemData::AxmlItem:
             {
-            fullName = fullName + "/animations/" + themeName + "/" + resourceName;
+            fullName = fullName + "/animations/" + themeName + '/' + resourceName;
             break;
             }
         case HbThemeIndexItemData::FxmlItem:
             {
-            fullName = fullName + "/effects/" + themeName + "/" + resourceName;
+            fullName = fullName + "/effects/" + themeName + '/' + resourceName;
             break;
             }
         default:
@@ -271,57 +276,78 @@ QString HbThemeIndexResource::fullMirroredFileName()
     switch (data->mirroredItemType) {
         case HbThemeIndexItemData::SvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".svg";
             break;
             }
         case HbThemeIndexItemData::PngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".png";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".png";
             break;
             }
         case HbThemeIndexItemData::MngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".mng";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".mng";
             break;
             }
         case HbThemeIndexItemData::GifItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".gif";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".gif";
             break;
             }
         case HbThemeIndexItemData::XpmItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".xpm";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".xpm";
             break;
             }
         case HbThemeIndexItemData::JpgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".jpg";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".jpg";
             break;
             }
         case HbThemeIndexItemData::NvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".nvg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".nvg";
             break;
             }
         case HbThemeIndexItemData::SvgzItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/" + resourceName + ".svgz";
+            fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
+                       + resourceName + ".svgz";
             break;
             }
         case HbThemeIndexItemData::QpicItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/" + resourceName + ".qpic";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
+                       + resourceName + ".qpic";
             break;
             }
         default:
             {
             return fullFileName(); // There was no mirrored icon, return normal icon
-            break;
             }
         }
 
     return fullName;
+}
+
+QColor HbThemeIndexResource::colorValue()
+{
+    if (!data || data->itemType != HbThemeIndexItemData::ColorItem) {
+        qWarning("HbThemeIndexResource::colorValue(): cannot fetch color for 0x%x::%i",
+                 qptrdiff(data), data ? data->itemType : (uint) -1);
+        return QColor();
+    }
+#ifdef THEME_INDEX_TRACES
+    qDebug("HbThemeIndexResource::colorValue(): constructing QColor(%x)", data->colorValue);
+#endif // THEME_INDEX_TRACES
+    return QColor(data->colorValue);
 }
 
 
@@ -344,9 +370,11 @@ void HbThemeIndex::init()
 {
     //int version = *(reinterpret_cast<const int *>(mBaseAddress));
     // Assumes version 1 for now
-    const HbThemeIndexHeaderV1 *header = reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
+    const HbThemeIndexHeaderV1 *header =
+            reinterpret_cast<const HbThemeIndexHeaderV1 *>(mBaseAddress);
     mItemCount = header->itemCount;
-    mThemeItemDataArray = reinterpret_cast<const HbThemeIndexItemData *>(mBaseAddress + sizeof(HbThemeIndexHeaderV1));
+    mThemeItemDataArray = reinterpret_cast<const HbThemeIndexItemData *>
+                            (mBaseAddress + sizeof(HbThemeIndexHeaderV1));
 
     initialized = true;
 }
@@ -381,7 +409,7 @@ const HbThemeIndexItemData *HbThemeIndex::getItemData(const QString &itemName)
 
     // binary search
     while (begin <= end) {
-        int mid = begin + (end-begin)/2;
+        int mid = begin + (end - begin) / 2;
 
         if (mThemeItemDataArray[mid].itemNameHash == hashValue) {
             retItem = &mThemeItemDataArray[mid];
@@ -414,38 +442,18 @@ bool HbThemeIndex::validateItems(qint64 byteSize)
 
     bool indexOK = false;
 
-    if (sizeof(HbThemeIndexHeaderV1)
-        + (mItemCount * sizeof(HbThemeIndexItemData)) == byteSize) {
+    qint64 indexCalculatedSize = (qint64)(sizeof(HbThemeIndexHeaderV1) +
+        (mItemCount * sizeof(HbThemeIndexItemData)));
+
+    if (indexCalculatedSize == byteSize) {
         indexOK = true;
     }
 
     #ifdef THEME_INDEX_TRACES
     if (!indexOK) {
-        qDebug() <<  "ThemeIndex: Index file corrupted!";
+        qDebug() <<  "ThemeIndex: Index file corrupted (index size is wrong)!";
     }
     #endif    
-
-    /* Todo: fix
-    // Validate items
-    for (int i = 0; i < mItemCount; i++) {
-        const HbThemeIndexItem *item = mThemeItemArray++;
-        if (!item ||
-            item->itemNameOffset < stringAreaStart || item->itemNameOffset >= byteSize ||
-            item->itemFolderOffset < stringAreaStart || item->itemFolderOffset >= byteSize ||
-            item->extOffset < stringAreaStart || item->extOffset >= byteSize ||
-            (item->mirroredExtOffset != -1 &&
-            (item->mirroredExtOffset < stringAreaStart || item->mirroredExtOffset >= byteSize))) {
-
-            indexOK = false;
-            break;
-        }
-    }
-*/
-    #ifdef THEME_INDEX_TRACES
-    if (!indexOK) {
-        qDebug() <<  "ThemeIndex: Icons NOK! Stopping validation.";
-    }
-    #endif
 
     return indexOK;
 }

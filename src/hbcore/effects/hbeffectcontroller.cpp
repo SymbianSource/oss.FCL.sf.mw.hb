@@ -40,10 +40,10 @@
 
 /*
   \class HbEffectController hbeffectcontroller.h
-  \brief HbEffectController is used to read and store effects data. 
+  \brief HbEffectController is used to read and store effects data.
 */
 
-/* 
+/*
    Constructs a HbEffectController.
 */
 HbEffectController::HbEffectController()
@@ -53,7 +53,7 @@ HbEffectController::HbEffectController()
 {
 }
 
-/* 
+/*
    Destructor.
 */
 HbEffectController::~HbEffectController()
@@ -65,7 +65,7 @@ HbEffectFxmlData HbEffectController::fetchFxmlData(
     const QString &componentType,
     QGraphicsItem *component,
     const QString &effectEvent,
-    bool shared ) const
+    bool shared) const
 {
     Q_UNUSED(shared); // not yet needed since we have a list of added items in local process
     int componentTypeMatchIndex = -1;
@@ -75,15 +75,14 @@ HbEffectFxmlData HbEffectController::fetchFxmlData(
         const HbEffectInfo &info = mEffectEntries.at(i);
         // If found a definition matching the graphics item, return that.
         if (info.item() // not null
-            && info.item() == component // matches the component
-            && info.inUse() // the effect is in use (not removed)
-            && info.effectEvent() == effectEvent) // matches the event
-        {
+                && info.item() == component // matches the component
+                && info.inUse() // the effect is in use (not removed)
+                && info.effectEvent() == effectEvent) { // matches the event
             // sharing support -  if it's shared get the FxML data from server and return the object
             // with parsed FxML data
-            if( info.shared() ) {
+            if (info.shared()) {
                 HbEffectFxmlData *dataFromSrv = HbThemeClient::global()->getSharedEffect(info.mDefFileFullPath);
-                if(dataFromSrv) {
+                if (dataFromSrv) {
                     return *dataFromSrv;
                 }
             } else {
@@ -100,10 +99,10 @@ HbEffectFxmlData HbEffectController::fetchFxmlData(
     }
     if (componentTypeMatchIndex >= 0) {
         const HbEffectInfo &info = mEffectEntries.at(componentTypeMatchIndex);
-        if ( info.shared() ) {
+        if (info.shared()) {
             HbEffectFxmlData *dataFromSrv =
                 HbThemeClient::global()->getSharedEffect(info.mDefFileFullPath);
-            if(dataFromSrv) {
+            if (dataFromSrv) {
                 return *dataFromSrv;
             }
         } else {
@@ -131,9 +130,8 @@ void HbEffectController::removeFXML(const QString &componentType, const QString 
     for (int i = mEffectEntries.count() - 1; i >= 0; i--) {
         const HbEffectInfo &info = mEffectEntries[i];
         if (info.componentType() == componentType &&
-            info.xmlFileFullPath() == fullPath &&
-            info.effectEvent() == effectEvent)
-        {
+                info.xmlFileFullPath() == fullPath &&
+                info.effectEvent() == effectEvent) {
             // Remove the definition for the given component type
             mEffectEntries.removeAt(i);
         }
@@ -146,9 +144,8 @@ void HbEffectController::removeFXML(QGraphicsItem *item, const QString &filePath
     for (int i = mEffectEntries.count() - 1; i >= 0; i--) {
         const HbEffectInfo &info = mEffectEntries[i];
         if (info.item() == item &&
-            info.xmlFileFullPath() == fullPath &&
-            info.effectEvent() == effectEvent)
-        {
+                info.xmlFileFullPath() == fullPath &&
+                info.effectEvent() == effectEvent) {
             // Remove the definition for the given item
             mEffectEntries.removeAt(i);
         }
@@ -184,7 +181,7 @@ void HbEffectController::unsetSharing()
 QString HbEffectController::expandFileName(const QString &fn, bool *fromTheme, bool *shared)
 {
     // Sharing not supported if the file is in Qt resource.
-    if (fn.startsWith(":/") && shared && *shared) {
+    if (shared && *shared && (fn.startsWith(QLatin1String(":/")) || HbIconLoader::isInPrivateDirectory(fn))) {
         *shared = false;
         return fn;
     } else {
@@ -202,7 +199,7 @@ bool HbEffectController::addEffectDefinitionFile(
         shared = mShared;
     }
     // If client is not connected due to any reason, any kind of sharing is not possible
-    if ( !HbThemeClient::global()->clientConnected() ) {
+    if (!HbThemeClient::global()->clientConnected()) {
         shared = mShared = mSharingSet = false;
     }
     bool fromTheme = false;
@@ -215,9 +212,8 @@ bool HbEffectController::addEffectDefinitionFile(
         HbEffectInfo &info = mEffectEntries[i];
 
         if ((item && info.item() == item)
-            || (!componentType.isEmpty() && info.componentType() == componentType))
-        {
-            if (info.effectEvent() == effectEvent) {    
+                || (!componentType.isEmpty() && info.componentType() == componentType)) {
+            if (info.effectEvent() == effectEvent) {
                 if (info.xmlFileFullPath() == filePath) {
                     // parsed already, just set in use
                     info.mInUse = true;
@@ -233,7 +229,7 @@ bool HbEffectController::addEffectDefinitionFile(
         }
     }
 
-    if ( shared ) {
+    if (shared) {
         if (!HbThemeClient::global()->addSharedEffect(filePath)) {
             // Themeserver failed, try to parse locally.
             shared = false;

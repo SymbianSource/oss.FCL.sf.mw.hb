@@ -49,17 +49,11 @@ public:
     void adjustHandle();
     bool onHandle(QPointF pos);
     int getNearbyTick();
-    void updateTickAndLabel();
-    void deleteTickAndLabel();
-
     virtual HbSliderHandle *createHandle();
     virtual QGraphicsItem *createGroove();
     virtual QGraphicsItem *createProgressGroove();
-    void createSliderTicks( );
-    void positionTickMarks( );
-    void createSliderTickLabels( );
-    void positionTickMarksLabel ( );
 
+   
     HbSliderHandle *handle;
     Hb::SliderTickPositions tickPosition;
     HbSliderControl::SnappingMode  snappingMode;
@@ -67,10 +61,8 @@ public:
     int minorTickInterval;
     QGraphicsItem *groove;
     QGraphicsItem *progressGroove;
-    HbSliderTickmarks *tickmarksLeft;
-    HbSliderTickmarks *tickmarksRight;
-    HbSliderTickmarksLabel *tickmarkslabelLeft;
-    HbSliderTickmarksLabel *tickmarkslabelRight;
+
+ 
     bool displayCurrValueToolTip;
     QPointF oldPos;
     Qt::Alignment toolTipAlignment;

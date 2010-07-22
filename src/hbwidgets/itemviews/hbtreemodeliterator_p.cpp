@@ -41,7 +41,7 @@ HbTreeModelIterator::~HbTreeModelIterator()
 
 /*!
     \reimp
-
+    Returns count of visible indexes under \a parent.
     Children of collapsed parents are not taken into account.
 */
 int HbTreeModelIterator::indexCount(const QModelIndex &parent) const
@@ -73,7 +73,8 @@ int HbTreeModelIterator::indexCount(const QModelIndex &parent) const
 
 /*!
     \reimp
-    Position depends on item state - expanded/colapsed
+    Returns ordinal of index starting from root. Ordinal for first index under root is 0.
+    Indexes in collapsed parents are taken into account.
 */
 int HbTreeModelIterator::indexPosition(const QModelIndex &index) const
 {
@@ -94,8 +95,9 @@ int HbTreeModelIterator::indexPosition(const QModelIndex &index) const
 
 /*!
     \reimp
-    Index is calculated from position and it depends on item state - expanded/colapsed
-    Very slow - need to interate throught whole model in worst case!
+    Returnes index of item, which is visible at pos ordinal under parent. 
+    Indexes in collapsed parents are not taken into account.
+    Very slow - need to interate through whole model in worst case!
 */
 QModelIndex HbTreeModelIterator::index(int pos, const QModelIndex &parent) const
 {
@@ -175,12 +177,13 @@ int HbTreeModelIterator::childCount(const QModelIndex &parent) const
 /*!
     \reimp
 
-    Next index for valid index is determined in following way:
-    - If index is in collapsed branch QModelIndex is returned
+    Next visible index for valid index is determined in following way:
+    - If index is in collapsed branch QModelIndex is returned. 
     - If index has children and it is expanded then first child is returned
     - Otherwise if index has next sibling then that is returned
     - Otherwise next valid sibling for parent is returned
     - Otherwise QModelIndex is returned
+    If index was invalid then first valid index is returned.
 
     \a index must belong to mRootIndex branch, otherwise result is not determined.
 
@@ -231,7 +234,7 @@ QModelIndex HbTreeModelIterator::nextIndex(const QModelIndex &index) const
 /*!
     \reimp
 
-    Previous index for valid index is determined in following way:
+    Previous visible index for valid index is determined in following way:
     - If index is in collapsed branch QModelIndex is returned
     - If index has previous sibling last child from it is returned
     - Otherwise previous sibling is returned
@@ -292,6 +295,8 @@ void HbTreeModelIterator::setModel(QAbstractItemModel *model,
                     this, SLOT(columnsInserted(QModelIndex,int,int)));
             connect(d->mModel, SIGNAL(columnsRemoved(QModelIndex,int,int)),
                     this, SLOT(columnsRemoved(QModelIndex,int,int)));
+            connect(d->mModel, SIGNAL(layoutChanged()),
+                    this, SLOT(modelLayoutChanged()));
         }
     } else {
         setRootIndex(rootIndex);
@@ -387,6 +392,12 @@ void HbTreeModelIterator::columnsRemoved(const QModelIndex &parent, int start, i
     Q_UNUSED(parent);
     Q_UNUSED(start);
     Q_UNUSED(end);
+    d->resetCache();
+}
+
+void HbTreeModelIterator::modelLayoutChanged()
+{
+    Q_D(HbTreeModelIterator);
     d->resetCache();
 }
 

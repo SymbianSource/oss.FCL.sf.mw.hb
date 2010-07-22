@@ -25,18 +25,12 @@
 
 #include "hbstyleoptionslider_p.h"
 
-/*!
+/*
     \class HbStyleOptionSlider
     \brief HbStyleOptionSlider has the style component for slider primitives
  */
 
 
-/*!
-
-    \deprecated HbStyleOptionSlider::HbStyleOptionSlider()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionSlider::HbStyleOptionSlider() :
     maximum(0),
     minimum(0),
@@ -61,12 +55,7 @@ HbStyleOptionSlider::HbStyleOptionSlider() :
     type = Type;
     version = Version;
 }
-/*!
 
-    \deprecated HbStyleOptionSlider::HbStyleOptionSlider(const HbStyleOptionSlider&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionSlider::HbStyleOptionSlider(const HbStyleOptionSlider &other) :
     HbStyleOption(other),
     maximum(other.maximum),

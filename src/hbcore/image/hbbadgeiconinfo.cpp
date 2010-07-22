@@ -23,60 +23,43 @@
 **
 ****************************************************************************/
 
-#include "hbicon.h"
 #include "hbbadgeiconinfo_p.h"
+#include "hbicon.h"
 #include "hbbadgeicon_p.h"
 #include <QPainter>
-
 #include <QDebug>
+#include <QPointF>
 
-
-HbBadgeIconInfo::HbBadgeIconInfo(const HbIcon& badge,
+HbBadgeIconInfo::HbBadgeIconInfo(const HbIcon &badge,
                                  Qt::Alignment alignment,
-                                 int zValue): mIcon(badge),mAlignment(alignment),mZValue(zValue)
+                                 int zValue,
+                                 const QSizeF &sizeFactor,
+                                 Qt::AspectRatioMode aspectRatio)
+    : mIcon(badge), mAlignment(alignment), mZValue(zValue),
+      mSizeFactor(sizeFactor), mAspectRatio(aspectRatio)
 {
 }
 
-HbBadgeIconInfo::HbBadgeIconInfo(const HbBadgeIconInfo& other)
-{
-    *this = other;
-}
-
-HbBadgeIconInfo::~HbBadgeIconInfo()
-{
-}
-
-bool HbBadgeIconInfo::operator==(const HbBadgeIconInfo &other)
+bool HbBadgeIconInfo::operator==(const HbBadgeIconInfo &other) const
 {
     return !(*this != other);
 }
 
-bool HbBadgeIconInfo::operator!=(const HbBadgeIconInfo &other)
+bool HbBadgeIconInfo::operator!=(const HbBadgeIconInfo &other) const
 {
     if ((icon() != other.icon()) ||
-        (zValue() != other.zValue()) ||
-        (alignment() != other.alignment())
-       )
-    {
+            (zValue() != other.zValue()) ||
+            (alignment() != other.alignment())
+       ) {
         return true;
     }
 
     return false;
 }
 
-HbIcon HbBadgeIconInfo::icon() const
-{
-    return mIcon;
-}
-
-void HbBadgeIconInfo::setIcon(const HbIcon& icon)
+void HbBadgeIconInfo::setIcon(const HbIcon &icon)
 {
     mIcon = icon;
-}
-
-int HbBadgeIconInfo::zValue() const
-{
-    return mZValue;
 }
 
 void HbBadgeIconInfo::setZValue(int zValue)
@@ -84,13 +67,17 @@ void HbBadgeIconInfo::setZValue(int zValue)
     mZValue = zValue;
 }
 
-Qt::Alignment HbBadgeIconInfo::alignment() const
-{
-    return mAlignment;
-}
-
 void HbBadgeIconInfo::setAlignment(Qt::Alignment align)
 {
     mAlignment = align;
 }
 
+void HbBadgeIconInfo::setSizeFactor(const QSizeF &sizeFactor)
+{
+    mSizeFactor = sizeFactor;
+}
+
+void HbBadgeIconInfo::setAspectRatio(Qt::AspectRatioMode aspectRatio)
+{
+    mAspectRatio = aspectRatio;
+}

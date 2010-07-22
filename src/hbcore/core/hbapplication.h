@@ -62,18 +62,18 @@ public:
     HbActivityManager *activityManager();
     Hb::ActivationReason activateReason() const;
     QVariantHash activateParams() const;
-    QString activateId() const; 
-    QVariant activateData();     
+    QString activateId() const;
+    QVariant activateData();
 
     void hideSplash();
 
 protected:
     HbApplicationPrivate *d_ptr;
-    
+
 private:
     Q_DISABLE_COPY(HbApplication)
-    Q_DECLARE_PRIVATE_D(d_ptr, HbApplication)    
-    
+    Q_DECLARE_PRIVATE_D(d_ptr, HbApplication)
+
 };
 
 #endif // HBAPPLICATION_H

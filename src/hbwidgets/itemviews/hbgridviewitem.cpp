@@ -52,6 +52,11 @@
  implement the state() and setState() functions in the derived class.
  
  See also HbGridView, HbAbstractItemView, HbAbstractViewItem, HbStyleOptionAbstractViewItem
+
+ \primitives
+ \primitive{icon} HbIconItem representing the icon in the HbGridViewItem. 
+ \primitive{text} HbTextItem representing the text in the HbGridViewItem. 
+
  */
 
 /*!
@@ -108,7 +113,7 @@ HbAbstractViewItem* HbGridViewItem::createItem()
 
 /*!
  Assigns the \a source grid view item to this grid view item and returns a reference to this item.
- */
+*/
 HbGridViewItem &HbGridViewItem::operator=(const HbGridViewItem &source)
 {
     Q_D(HbGridViewItem);

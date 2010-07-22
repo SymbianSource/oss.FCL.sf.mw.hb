@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef SMARTPOINTER_P_H
-#define SMARTPOINTER_P_H
+#ifndef HBSMARTPOINTER_P_H
+#define HBSMARTPOINTER_P_H
 
 #include "hbmemoryutils_p.h"
 
@@ -44,7 +44,7 @@ public:
     smart_ptr( pointer ptr = 0, HbMemoryManager::MemoryType type = HbMemoryManager::InvalidMemory )
     { 
         mType = type;
-        this->setOffset(ptr);
+        setOffset(ptr);
     }
     
     /*
@@ -54,9 +54,9 @@ public:
     smart_ptr( U *ptr, HbMemoryManager::MemoryType type ) 
     {  
         mType = type;
-        pointer p (ptr);
+        pointer p(ptr);
         (void)p;
-        this->setOffset(p);
+        setOffset(p);
     }
 
     /*
@@ -65,7 +65,7 @@ public:
     smart_ptr( const smart_ptr &other )
     { 
         mType = other.mType;
-        this->setOffset( other.get() );
+        setOffset(other.get());
     }
 
     /*
@@ -75,15 +75,14 @@ public:
     template<class T2>
     smart_ptr( const smart_ptr<T2> &other ) 
     {  
-        this->mType = other.memoryType();
-        pointer p( other.get() );
-        (void)p;
-        this->setOffset(p);
+        mType = other.memoryType();
+        pointer p(other.get());
+        setOffset(p);
     }
 
     smart_ptr operator+( difference_type offset )
     {
-        return smart_ptr( get() + offset, this->mType );
+        return smart_ptr(get() + offset, mType);
     }
 
     reference operator*() const
@@ -93,7 +92,7 @@ public:
 
     reference operator[]( difference_type idx ) const
     {
-        return this->get()[idx];
+        return get()[idx];
     }
 
     smart_ptr & operator++( void )
@@ -111,7 +110,7 @@ public:
 
     smart_ptr & operator-- (void) 
     {  
-        this->decOffset(sizeof (T));
+        decOffset(sizeof(T));
         return *this;
     }
 
@@ -124,17 +123,17 @@ public:
 
     bool operator == ( const smart_ptr<T> &other )
     { 
-        return ( get() == other.get() && mType == other.mType );
+        return (get() == other.get() && mType == other.mType);
     }
 
     bool operator != ( const smart_ptr<T> &other )
     { 
-        return ( get() != other.get() && mType == other.mType );
+        return (get() != other.get() && mType == other.mType);
     }
 
     bool operator! () const
     {
-        return this->get() == 0;   
+        return get() == 0;
     }
 
     pointer get() const
@@ -154,12 +153,12 @@ public:
        mOffset = offset;
     }
 
-	// This function is here for being able to modify offset when
-	// cells in shared memory are moved.
-	difference_type *offsetPtr()
-	{
-		return &mOffset;
-	}
+    // This function is here for being able to modify offset when
+    // cells in shared memory are moved.
+    difference_type *offsetPtr()
+    {
+        return &mOffset;
+    }
 
     HbMemoryManager::MemoryType memoryType() const
     {
@@ -168,14 +167,13 @@ public:
 
     pointer operator->() const           
     {
-        return this->get();
+        return get();
     }
 
-    smart_ptr & operator= ( const smart_ptr &other )
+    smart_ptr & operator = ( const smart_ptr &other )
     { 
         mType = other.mType;    
-        pointer p( other.get() );
-        (void)p; 
+        pointer p(other.get());
         this->setOffset(p); 
         return *this;
     }
@@ -184,50 +182,50 @@ public:
 * Assignment From other smart_ptr
 */
     template <class T2>
-    smart_ptr & operator= ( const smart_ptr<T2> & other )
+    smart_ptr & operator = ( const smart_ptr<T2> & other )
     {  
         mType = other.memoryType();
-        pointer p( other.get() );
-        this->setOffset(p);
+        pointer p(other.get());
+        setOffset(p);
         return *this;
     }
 
-    smart_ptr & operator= ( pointer from )
+    smart_ptr & operator = ( pointer from )
     {
-        this->setOffset(from); 
+        setOffset(from);
         return *this;
     }
 
     smart_ptr operator+ ( difference_type offset ) const   
     {  
-        return smart_ptr( this->get() + offset, this->mType );
+        return smart_ptr(get() + offset, mType);
     }
 
     smart_ptr operator- ( difference_type offset ) const   
     {  
-        return smart_ptr( this->get() - offset, this->mType );
+        return smart_ptr(get() - offset, mType);
     }
 
-    smart_ptr &operator+= ( difference_type offset )
+    smart_ptr &operator += ( difference_type offset )
     {  
-        this->incOffset( offset * sizeof (T) );
+        incOffset(offset * sizeof(T));
         return *this; 
     }
 
     smart_ptr &operator-= ( difference_type offset )
     {  
-        this->decOffset( offset * sizeof (T) );
+        decOffset(offset * sizeof(T));
         return *this;
     }
 
     operator void *()
     {
-        return (void*)this->get();
+        return (void*)get();
     }
 
 private:
 
-   typedef smart_ptr<T>           self_t;
+   typedef smart_ptr<T> self_t;
 
    void unspecified_bool_type_func() const {}
    typedef void ( self_t::*unspecified_bool_type )() const;
@@ -301,4 +299,4 @@ template<class T, class T2>
 inline int operator- ( const smart_ptr<T> &pt, const smart_ptr<T2> &pt2 )
 {  return pt.get() - pt2.get();   }
 
-#endif // SMARTPOINTER_P_H
+#endif // HBSMARTPOINTER_P_H

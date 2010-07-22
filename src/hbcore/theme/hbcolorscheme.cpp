@@ -31,7 +31,8 @@
     \class HbColorScheme
     \brief HbColorScheme class is used to query colors from theme.
 
-    HbColorScheme class has a single static functions to query colors from theme. 
+    HbColorScheme class has a single static functions to query colors from current theme. If
+    color is not found from current theme then it is queried from base theme.
      
      \sa QColor HbColorScheme::color(const QString &colorRole)
      
@@ -39,9 +40,9 @@
     look and feel and be themable. For example, a custom widget may want to have background color 
     same as that of HbDialog. In such scenario the widget can query standard "popupbackground" color
     from theme.
-    Following code queries color of popoup forground and applies it to a text item.
+    Following code queries color of HbTextEdit's normal text color and applies it to a text item.
     \code
-    QColor col = HbColorScheme::color("popupforeground");
+    QColor col = HbColorScheme::color("qtc_textedit_normal");
     if (col.isValid()) {
        mytextitem->setTextColor(col);
     }
@@ -52,30 +53,21 @@
     need not to do it again by themselves. It is sufficient that widgets make sure that colors being
     used to paint the graphics item has been updated in the handler of HbEvent::ThemeChanged.
        
-       - The color-role may contain information about the state also, e.g. "foreground_enabled".
-    
-    \warning List of standard color roles is not yet finalized
+       - The color-role may contain information about the state also, e.g. "qtc_button_pressed".
 */ 
 
 /*!
  * \fn QColor HbColorScheme::color(const QString &colorRole))
- * This function returns value of some predefined \a colorRole. 
+ * This function returns value of \a colorRole. 
  *
  * See class level document for detailed example
  *.
  */
 
 #include <hbcolorscheme.h>
-#include "hbcolortheme_p.h"
-
-/*!
-Constructor
-*/
-HbColorScheme::HbColorScheme()
-{
-}
+#include <hbtheme.h>
 
 QColor HbColorScheme::color( const QString &colorRole )
 {
-    return HbColorTheme::instance()->color(colorRole);
+    return HbTheme::instance()->color(colorRole);
 }

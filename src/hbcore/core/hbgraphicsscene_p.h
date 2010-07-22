@@ -44,7 +44,7 @@ public:
     HbGraphicsScenePrivate();
     virtual ~HbGraphicsScenePrivate();
 
-    void setInputFocus(QGraphicsItem* focusingWidget);
+    void setInputFocus(QGraphicsItem *focusingWidget);
     void clearInputFocus();
 
     bool focusChangeEvent(const QKeyEvent *event);
@@ -52,7 +52,7 @@ public:
     void showPopup(HbPopup *popup);
     void hidePopup(HbPopup *popup);
 
-    HbPopupManager* popupManager();
+    HbPopupManager *popupManager();
 
 public:
     HbGraphicsScene *q_ptr;
@@ -60,14 +60,24 @@ public:
     HbToolTipLabel *mToolTip;
     bool mInputFocusSet;
     bool mPolishWidgets;
+    bool mRepolishWidgets;
+    int mPolishItemsIndex;
     // fps counter
     static bool fpsCounterEnabled;
     int mDrawCount;
     qreal mFPS;
-    QTime *mFPSTime; 
+    QTime *mFPSTime;
     qreal mMaxFPS;
 
 private:
+
+    class GraphicsObject: public QGraphicsObject
+    {
+    public:
+        using QGraphicsObject::inputMethodEvent;
+        using QGraphicsObject::inputMethodQuery;
+    };
+
     static HbGraphicsScenePrivate *d_ptr(HbGraphicsScene *scene) {
         Q_ASSERT(scene);
         return scene->d_func();

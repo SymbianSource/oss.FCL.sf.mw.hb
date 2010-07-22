@@ -61,22 +61,21 @@ HbThemeClientPrivate::HbThemeClientPrivate():
 bool HbThemeClientPrivate::connectToServer()
 {
     TInt error(KErrNone);
-    for( int tries(0); tries < 100; tries++) {
+    for(int tries = 0;;++tries) {
         error = CreateSession(KThemeServerName, Version(), KDefaultMessageSlots);
-        if(!error) {
-            // connected to existing server - OK
+        if(!error || tries >= 3) {
+            //session created ok or give up trying.
             break;
         }
         if(error != KErrNotFound && error != KErrServerTerminated) {
-            // problem other than server not here - propagate error
+            // problem other than server not here.
             break;
         }
         error = StartServer();
-        if(!error || (error ==KErrAlreadyExists)) {
-            // If server launched ok , try again to connect
-            continue;
+        if (error != KErrNone && error != KErrAlreadyExists) {
+            // unexpected error occurred.
+            break;
         }
-        break; // server not launched : don't cycle round again.
     }
 #ifdef HB_SGIMAGE_ICON
     if (!error && !sgDriverInit) {
@@ -86,7 +85,7 @@ bool HbThemeClientPrivate::connectToServer()
         }
     }
 #endif
-    return ( clientConnected = (KErrNone == error) );
+    return (clientConnected = (KErrNone == error));
 }
 
 
@@ -103,36 +102,12 @@ TVersion HbThemeClientPrivate::Version(void) const
                     KThemeServerBuildVersionNumber));
 }
 
-QSizeF HbThemeClientPrivate::getSharedIconDefaultSize(const QString& iconPath)
-{
-    if (!clientConnected) {
-        return QSizeF();
-    }
-
-    QSizeF defaultSize;
-
-    TBuf<256> buffer(iconPath.utf16());
-    TPckg<QSizeF> retPckg(defaultSize);
-
-    TIconParams params;
-    params.fileName = buffer;
-
-    TPckg<TIconParams> paramPckg(params);
-    TIpcArgs args(&paramPckg, &retPckg);
-
-    TInt err = SendReceive(EIconDefaultSize, args);
-    if (KErrNone != err) {
-        defaultSize = QSizeF();
-    }
-    return defaultSize;
-}
-
 /**
  * HbThemeClientPrivate::getSharedIconInfo()
  *
  * Returns the shared icon information
 */
-HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath ,
+HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString &iconPath,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -178,15 +153,16 @@ HbSharedIconInfo HbThemeClientPrivate::getSharedIconInfo(const QString& iconPath
  * getMultiPartIconInfo
  */
 
-HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &multiPartIconList,
-                                                            const HbMultiPartSizeData  &multiPartIconData ,
-                                                            const QSizeF &size,
-                                                            Qt::AspectRatioMode aspectRatioMode,
-                                                            QIcon::Mode mode,
-                                                            bool mirrored,
-                                                            HbIconLoader::IconLoaderOptions options,
-                                                            const QColor &color,
-                                                            HbRenderingMode renderMode)
+HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(
+        const QStringList &multiPartIconList,
+        const HbMultiPartSizeData &multiPartIconData,
+        const QSizeF &size,
+        Qt::AspectRatioMode aspectRatioMode,
+        QIcon::Mode mode,
+        bool mirrored,
+        HbIconLoader::IconLoaderOptions options,
+        const QColor &color,
+        HbRenderingMode renderMode)
 {
     HbSharedIconInfo sharedIconInfo;
     sharedIconInfo.type = INVALID_FORMAT;
@@ -205,10 +181,10 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
         params.multiPartIconList[i].Copy(pieceIconId);
     }
      int noOfPieces = 1;
-     if (multiPartIconData.multiPartIconId.contains("_3PV",Qt::CaseInsensitive)
-           || multiPartIconData.multiPartIconId.contains("_3PH",Qt::CaseInsensitive)) {
+     if (multiPartIconData.multiPartIconId.contains("_3PV", Qt::CaseInsensitive)
+           || multiPartIconData.multiPartIconId.contains("_3PH", Qt::CaseInsensitive)) {
         noOfPieces = 3;
-    } else if (multiPartIconData.multiPartIconId.contains("_9P",Qt::CaseInsensitive)) {
+    } else if (multiPartIconData.multiPartIconId.contains("_9P", Qt::CaseInsensitive)) {
         noOfPieces = 9;
     }
 
@@ -247,12 +223,13 @@ HbSharedIconInfo HbThemeClientPrivate::getMultiPartIconInfo(const QStringList &m
  *
  * Returns the shared css(stylesheet) information
 */
-HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
+HbCss::StyleSheet *HbThemeClientPrivate::getSharedStyleSheet(
+        const QString &fileName, HbLayeredStyleLoader::LayerPriority priority)
 {
     if ( !clientConnected ) {
         return 0;
     }
-    HbCss::StyleSheet* styleSheet(0);
+    HbCss::StyleSheet *styleSheet(0);
 
     TBuf<256> fileDes(fileName.utf16());
     TBuf<5> layerPriority;
@@ -316,7 +293,8 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
 
     if (KErrNone == err) {
 #ifdef THEME_SERVER_TRACES
-        qDebug() << "HbThemeClientPrivate::getSharedEffect effectInfo.offSet is:" <<  effectInfo.offset;
+        qDebug() << "HbThemeClientPrivate::getSharedEffect effectInfo.offSet is:"
+                 <<  effectInfo.offset;
 #endif
         if (effectInfo.offset >= 0) {
             fxmlData = HbMemoryUtils::getAddress<HbEffectFxmlData>(
@@ -335,7 +313,7 @@ HbEffectFxmlData *HbThemeClientPrivate::getSharedEffect(const QString &filePath)
  *
  * Adds the shared effect information
 */
-bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
+bool HbThemeClientPrivate::addSharedEffect(const QString &filePath)
 {
 #ifdef THEME_SERVER_TRACES
     qDebug() << "HbThemeClientPrivate::addSharedEffect" << filePath;
@@ -384,7 +362,7 @@ bool HbThemeClientPrivate::addSharedEffect(const QString& filePath)
  *
  * unload icon
 */
-void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
+void HbThemeClientPrivate::unloadIcon(const QString &iconPath,
                         const QSizeF &size,
                         Qt::AspectRatioMode aspectRatioMode,
                         QIcon::Mode mode,
@@ -411,7 +389,7 @@ void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
     params.renderMode = (TUint8)renderMode;
 
     TPckg<TIconParams> paramPckg(params);
-    TIpcArgs args(&paramPckg,0);
+    TIpcArgs args(&paramPckg, 0);
     SendReceive(EUnloadIcon, args);
 }
 
@@ -420,7 +398,7 @@ void HbThemeClientPrivate::unloadIcon(const QString& iconPath ,
  *
  * unload multiple icons
 */
-void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
+void HbThemeClientPrivate::unLoadMultiIcon(const QStringList &iconPathList,
                 const QVector<QSizeF> &sizeList,
                 Qt::AspectRatioMode aspectRatioMode,
                 QIcon::Mode mode,
@@ -458,13 +436,14 @@ void HbThemeClientPrivate::unLoadMultiIcon(const QStringList& iconPathList,
  *
  * Returns the layout definition for the given file name,layout name,section name
 */
-HbWidgetLoader::LayoutDefinition* HbThemeClientPrivate::getSharedLayoutDefs(const QString &fileName,const QString &layout,const QString &section)
+HbWidgetLoader::LayoutDefinition *HbThemeClientPrivate::getSharedLayoutDefs(
+        const QString &fileName, const QString &layout, const QString &section)
 {
     if ( !clientConnected ) {
         return 0;
     }
 
-    HbWidgetLoader::LayoutDefinition* layoutDef(0);
+    HbWidgetLoader::LayoutDefinition *layoutDef(0);
 
     TBuf<256> fileDes(fileName.utf16());
     TBuf<256> layoutDes(layout.utf16());
@@ -492,9 +471,9 @@ Returns the list of Device Profiles.
 HbDeviceProfileList *HbThemeClientPrivate::deviceProfiles()
 {
     if ( !clientConnected ) {
-		if(!connectToServer()) {
-        	qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::deviceProfiles";
-	    	return 0;
+        if(!connectToServer()) {
+            qWarning() << "Theme client unable to connect to server in HbThemeClientPrivate::deviceProfiles";
+            return 0;
         }
     }
 
@@ -558,22 +537,21 @@ TInt HbThemeClientPrivate::StartServer()
 TInt HbThemeClientPrivate::CreateServerProcess()
 {
     TInt result;
-    const TUid KServerUid2={0x100039CE};
-    const TUidType serverUid( KNullUid, KServerUid2, KServerUid3 );
+    const TUid KServerUid2 = {0x100039CE};
+    const TUidType serverUid(KNullUid, KServerUid2, KServerUid3);
     RProcess server;
     _LIT(KThemeServerExe,"hbthemeserver.exe");
 
-    result = server.Create( KThemeServerExe, KNullDesC, EOwnerProcess );
+    result = server.Create(KThemeServerExe, KNullDesC, EOwnerProcess);
 
     if (KErrNone != result) {
         return  result;
     }
     TRequestStatus status;
     server.Rendezvous(status);
-    if (status!=KRequestPending) {
+    if (status != KRequestPending) {
         server.Kill(0); // abort startup
-    }
-    else {
+    } else {
         server.Resume(); // logon OK - start the server
     }
     User::WaitForRequest(status);// wait for start or death
@@ -585,14 +563,15 @@ TInt HbThemeClientPrivate::CreateServerProcess()
  * getMultiIconInfo  function returns a list of HbSharedIconInfo
  * for the given list of frameitems.
  */
-HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &multiPartIconList,
-                                                            const QVector<QSizeF>  &sizeList ,
-                                                            Qt::AspectRatioMode aspectRatioMode,
-                                                            QIcon::Mode mode,
-                                                            bool mirrored,
-                                                            HbIconLoader::IconLoaderOptions options,
-                                                            const QColor &color,
-                                                            HbRenderingMode renderMode)
+HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(
+        const QStringList &multiPartIconList,
+        const QVector<QSizeF> &sizeList,
+        Qt::AspectRatioMode aspectRatioMode,
+        QIcon::Mode mode,
+        bool mirrored,
+        HbIconLoader::IconLoaderOptions options,
+        const QColor &color,
+        HbRenderingMode renderMode)
 {
     Q_UNUSED(options)
 
@@ -625,6 +604,15 @@ HbSharedIconInfoList HbThemeClientPrivate::getMultiIconInfo(const QStringList &m
 }
 
 /**
+ * HbThemeClientPrivate::setTheme()
+ */
+void HbThemeClientPrivate::setTheme(const QString &theme)
+{
+    // In Symbian P&S is used to change active theme
+    Q_UNUSED(theme);
+}
+
+/**
  *  Notifies the server about the foreground lost event.
  */
 void HbThemeClientPrivate::notifyForegroundLostToServer()
@@ -644,14 +632,16 @@ int HbThemeClientPrivate::freeSharedMemory()
 {
     int freeSharedMem = -1;
     if ( !clientConnected ) {
-        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::freeSharedMemory";
+        qWarning() << "Theme client unable to connect to server in HbThemeClientPrivate::freeSharedMemory";
         return freeSharedMem;
     }
 
     TPckg<int> freeInfo(freeSharedMem);
     TIpcArgs args(0, &freeInfo);
     TInt err = SendReceive(EFreeSharedMem, args);
+#ifdef THEME_SERVER_TRACES
     qDebug() << "HbThemeClientPrivate::freeSharedMemory end";
+#endif
     return freeSharedMem;
 }
 
@@ -662,7 +652,7 @@ int HbThemeClientPrivate::allocatedSharedMemory()
 {
     int allocatedSharedMem = -1;
     if ( !clientConnected ) {
-        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::allocatedSharedMemory";
+        qWarning() << "Theme client unable to connect to server in HbThemeClientPrivate::allocatedSharedMemory";
         return allocatedSharedMem;
     }
 
@@ -679,7 +669,7 @@ int HbThemeClientPrivate::allocatedHeapMemory()
 {
     int allocatedHeapMem = -1;
     if ( !clientConnected ) {
-        qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::allocatedHeapMemory";
+        qWarning() << "Theme client unable to connect to server in HbThemeClientPrivate::allocatedHeapMemory";
         return allocatedHeapMem;
     }
 
@@ -736,7 +726,7 @@ HbTypefaceInfoVector *HbThemeClientPrivate::typefaceInfo()
 {
     if ( !clientConnected ) {
         if(!connectToServer()) {
-            qWarning()<<"Theme client unable to connect to server in HbThemeClientPrivate::typefaceInfo";
+            qWarning() << "Theme client unable to connect to server in HbThemeClientPrivate::typefaceInfo";
             return 0;
         }
     }

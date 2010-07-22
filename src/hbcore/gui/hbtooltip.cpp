@@ -138,7 +138,12 @@ void HbToolTip::showText( const QString &text, QGraphicsItem *item, const QRectF
 void HbToolTip::hideText( HbGraphicsScene *scene )
 {
     if ( scene && scene->d_ptr->mToolTip) {
-        scene->d_ptr->mToolTip->hide();
+        if (scene->d_ptr->mToolTip->isVisible()) {
+            scene->d_ptr->mToolTip->hide();
+        } else {
+            //reset tooltip timers
+            scene->d_ptr->mToolTip->hideTextImmediately();
+        }
     }
 }
 

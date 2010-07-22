@@ -52,7 +52,7 @@
 
     \note order of element can not be changed
 
-    Orientation of HbVolumeSliderPopup can not be changed. If orientation change is need, 
+    Orientation of HbVolumeSliderPopup can not be changed. If orientation change is needed, 
     then first create HbSliderPopup and set needed elements.
 
     It is positioned at Right side of the screen in non mirrored layout.
@@ -65,7 +65,7 @@
     \endcode
 
     Note:: position and size of these elements cant be change.
-    use HbVolumeSlider instead if you want to change position or size
+    use HbSlider and set the elements instead if you want to change position or size
 
     Note:: if setElement is called on this slider , application is reponsible for
     inconsitent UI.
@@ -199,7 +199,8 @@ bool HbVolumeSliderPopup::isCurrentValueVisible() const
  */
 void HbVolumeSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
 {
-   switch (keyevent->key()) {
+    Q_D( HbVolumeSliderPopup);
+    switch (keyevent->key()) {
        //hide popup for following key press event
     case Qt::Key_Enter:
     case Qt::Key_Return:
@@ -212,6 +213,11 @@ void HbVolumeSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
          hide();
     break;
     case Qt::Key_Left:
+        if (d->keyNavigation()) {
+            hide();
+            keyevent->accept();
+            break;
+        }
     case Qt::Key_Backspace:
     case Qt::Key_Back:
          hide();
@@ -225,13 +231,21 @@ void HbVolumeSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
  }
 
 /*!
+   \reimp
     Reimplemented from QGraphicsItem::keyPressEvent().
  */
 void HbVolumeSliderPopup::keyPressEvent(QKeyEvent *keyevent)
 {
-   switch (keyevent->key()) {
+    Q_D( HbVolumeSliderPopup);
+    switch (keyevent->key()) {
     case Qt::Key_Left:
     case Qt::Key_Right:
+        if( d->keyNavigation() ) {
+            hide();
+            keyevent->accept();
+            break;
+        }
+    
     case Qt::Key_Back:
     case Qt::Key_Backspace:
          hide();

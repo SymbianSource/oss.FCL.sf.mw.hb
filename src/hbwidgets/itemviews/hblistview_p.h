@@ -68,7 +68,9 @@ public:
 
     virtual bool panTriggered(QGestureEvent *event);
 
-    virtual bool animationEnabled(bool insertOperation);
+    void arrangeModeSetup(bool newMode);
+
+
 public:
     bool mArrangeMode;
     QPersistentModelIndex mDraggedItemIndex;
@@ -79,7 +81,10 @@ public:
     QPointF mLastScrollPos;
     QTransform mOriginalTransform;
 
+    bool mMoveOngoing;
     bool mOriginalFriction;    
+    bool mOriginalLongPressEnabled;    
+    bool mOriginalInteractiveScrollBar;    
 };
 
 #endif // HBLISTVIEW_PRIVATE_H

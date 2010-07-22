@@ -29,7 +29,6 @@
 #include <hbinstantfeedback.h>
 #include <hbcontinuousfeedback.h>
 #include <hbfeedbacksettings.h>
-#include "hbfeedbackplayer_stub_p.h"
 
 #ifdef FEEDBACK_TEST_EVENT
 #include "hbfeedbacktestevent_p.h"

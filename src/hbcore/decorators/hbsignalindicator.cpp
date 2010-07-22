@@ -48,6 +48,7 @@ HbSignalIndicatorPrivate::HbSignalIndicatorPrivate() :
 #ifdef HB_HAVE_QT_MOBILITY
     ,mSystemNetworkInfo(new HbSystemInfo(0, false))
     ,mNetworkMode(QSystemNetworkInfo::UnknownMode)
+    ,mNetworkStatus(QSystemNetworkInfo::UndefinedStatus)
 #endif // HB_HAVE_QT_MOBILITY
 {
 }
@@ -65,16 +66,18 @@ void HbSignalIndicatorPrivate::_q_setNetworkSignalStrength(QSystemNetworkInfo::N
     Q_Q(HbSignalIndicator);
     if (mode != mNetworkMode) {
         mNetworkMode = mode;
-        _q_setNetworkMode(mNetworkMode);
+        _q_setNetworkMode(mNetworkMode, mNetworkStatus);
     }
     q->setLevel(strength);
 }
 
-void HbSignalIndicatorPrivate::_q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode)
+void HbSignalIndicatorPrivate::_q_setNetworkMode(QSystemNetworkInfo::NetworkMode mode, QSystemNetworkInfo::NetworkStatus status)
 {
     Q_Q(HbSignalIndicator);
     mNetworkMode = mode;
+    mNetworkStatus = status;
     q->updatePrimitives();
+    emit q->levelChanged(); // this signal should be emitted for any kind of change
 }
 #endif // HB_HAVE_QT_MOBILITY
 
@@ -92,8 +95,8 @@ HbSignalIndicator::HbSignalIndicator(QGraphicsItem *parent)
     Q_D(HbSignalIndicator);
     connect(d->mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(QSystemNetworkInfo::NetworkMode, int)), 
         this, SLOT(_q_setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int)));
-    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(QSystemNetworkInfo::NetworkMode)), 
-        this, SLOT(_q_setNetworkMode(QSystemNetworkInfo::NetworkMode)));
+    connect(d->mSystemNetworkInfo, SIGNAL(networkModeChanged(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)), 
+        this, SLOT(_q_setNetworkMode(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)));
 #endif // HB_HAVE_QT_MOBILITY
 }
 
@@ -123,6 +126,7 @@ void HbSignalIndicator::setLevel(int levelPercent)
     if (d->mLevelPercent != levelPercent) {
         d->mLevelPercent = levelPercent;
         updatePrimitives();
+        emit levelChanged();
     }
 }
 
@@ -159,6 +163,14 @@ void HbSignalIndicator::initStyleOption(HbStyleOptionSignalIndicator *option) co
     // style option should default to unknown mode if not set
 #ifdef HB_HAVE_QT_MOBILITY    
     option->networkMode = d->mNetworkMode;
+        
+    if (d->mNetworkStatus != QSystemNetworkInfo::Connected &&
+        d->mNetworkStatus != QSystemNetworkInfo::Roaming &&
+        d->mNetworkStatus != QSystemNetworkInfo::HomeNetwork) {
+        option->networkMode = QSystemNetworkInfo::UnknownMode;
+        option->signalLevel = HbStyleOptionSignalIndicator::Zero;
+        return;
+    }
 #endif // HB_HAVE_QT_MOBILITY    
 
     //signal level setting

@@ -45,7 +45,7 @@ public:
     ~HbIconAnimationManagerPrivate();
 
     bool addDefinitionFile(const QString &definitionFileName);
-    
+
     void addDefinition(
         const QString &iconName,
         const HbIconAnimationDefinition &definition);
@@ -58,8 +58,7 @@ public:
     void animPlaying(HbIconAnimation *anim);
     void animNotPlaying(HbIconAnimation *anim);
 
-    static HbIconAnimationManagerPrivate *d_ptr(HbIconAnimationManager *mgr)
-    {
+    static HbIconAnimationManagerPrivate *d_ptr(HbIconAnimationManager *mgr) {
         return mgr->d;
     }
 
@@ -68,7 +67,7 @@ public slots:
     void handleAnimationPause();
     void handleThemeChanged();
     void handleThemeChangeFinished();
-    void handleViewChanged(HbView*);
+    void handleViewChanged(HbView *);
 
 private:
     Q_DISABLE_COPY(HbIconAnimationManagerPrivate)

@@ -32,6 +32,7 @@
 class HbTouchAreaPrivate;
 
 class HB_CORE_EXPORT HbTouchArea: public HbWidgetBase {
+    //Q_OBJECT
 public:
     explicit HbTouchArea (QGraphicsItem *parent = 0);
     virtual ~HbTouchArea ();

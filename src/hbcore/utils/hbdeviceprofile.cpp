@@ -35,20 +35,20 @@
 #include <QDebug>
 
 // To store the pointer to the deviceProfiles at the client side.
-static HbDeviceProfileList *deviceProfilesList = NULL;
+static HbDeviceProfileList *deviceProfilesList = 0;
 
 #define MM_PER_INCH 25.4
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbDeviceProfile
-    \brief HbDeviceProfile holds read-only device parameters. 
-    
-    Instances of this class hold both concrete device specific information 
-    (e.g. physical display size) and aspects that have been configured for 
+    \brief HbDeviceProfile holds read-only device parameters.
+
+    Instances of this class hold both concrete device specific information
+    (e.g. physical display size) and aspects that have been configured for
     a specific device (e.g. orientation, unit value).
-   
+
 */
 
 /*!
@@ -79,7 +79,7 @@ HbDeviceProfile::HbDeviceProfile(const QString &name) : d_ptr(new HbDeviceProfil
 {
     if (d_ptr->deviceProfiles()) {
         int count = deviceProfilesList->count();
-        bool found( false );
+        bool found(false);
         for (int i = 0; !found && i < count; i++) {
             if (deviceProfilesList->at(i).mName == name) {
                 d_ptr->mProfile = deviceProfilesList->at(i);
@@ -174,8 +174,8 @@ bool HbDeviceProfile::touch() const
 }
 
 /*!
-    Returns name of alternate profile. 
-    
+    Returns name of alternate profile.
+
     Currently this holds information of the profile which is activated
     on layout switch. Use this information if you need to optimize
     layout switch.
@@ -189,7 +189,7 @@ QString HbDeviceProfile::alternateProfileName() const
     Returns standard unit value (denoted by 'un').
 
     The unit value is a display-specific multiplier. It is used in intenal
-    layout calculation. 
+    layout calculation.
 */
 qreal HbDeviceProfile::unitValue() const
 {
@@ -209,7 +209,7 @@ qreal HbDeviceProfile::ppmValue() const
 
 /*!
     Returns current global profile reflecting properties of primary display.
-    
+
     Usually, you should not use this method. Instead, use one of \c profile
     methods.
 */
@@ -236,7 +236,7 @@ HbDeviceProfile HbDeviceProfile::profile(const HbMainWindow *window)
 
 /*!
     Returns current profile for this graphics item.
-    
+
     Graphics item must be tied to a scene and scene needs to be part of
     main window. Otherwise, value returned by \c current is provided.
 
@@ -253,10 +253,10 @@ HbDeviceProfile HbDeviceProfile::profile(const QGraphicsItem *item)
         return current();
     }
     QList<QGraphicsView *> views = scene->views();
-    foreach(QGraphicsView *view, views) {
+    foreach(QGraphicsView * view, views) {
         HbMainWindow *window = qobject_cast<HbMainWindow *>(view);
         if (window) {
-            HbDeviceProfile profile = 
+            HbDeviceProfile profile =
                 HbMainWindowPrivate::d_ptr(window)->profile();
 
             if (!profile.isNull()) {
@@ -280,9 +280,9 @@ QStringList HbDeviceProfile::profileNames()
 QStringList HbDeviceProfilePrivate::profileNames()
 {
     QStringList profileNames;
-    if(deviceProfiles()){
+    if (deviceProfiles()) {
         int profilesCount = deviceProfilesList->count();
-        for(int i = 0;i < profilesCount ; i++) {
+        for (int i = 0; i < profilesCount ; i++) {
             profileNames.append(deviceProfilesList->at(i).mName);
         }
     }
@@ -299,19 +299,18 @@ HbDeviceProfilePrivate::~HbDeviceProfilePrivate()
 
 HbDeviceProfileList *HbDeviceProfilePrivate::deviceProfiles()
 {
-    if(!deviceProfilesList) {
-	// Will result in IPC call. gets the shared memory offset from themeserver.
+    if (!deviceProfilesList) {
+        // Will result in IPC call. gets the shared memory offset from themeserver.
         deviceProfilesList = HbThemeClient::global()->deviceProfiles();
     }
-       
-    if(!deviceProfilesList) {
+
+    if (!deviceProfilesList) {
         // This is fall back.Create/Get the HbDeviceProfileDatabase Instance at
         // the client side and read the deviceProfilesList.
-        qDebug()<<"DeviceProfile offset not returned by themeserver .. working in fallback mode";
         HbDeviceProfileDatabase *deviceProfileDataBase =
-                HbDeviceProfileDatabase::instance(HbMemoryManager::HeapMemory);
+            HbDeviceProfileDatabase::instance(HbMemoryManager::HeapMemory);
         deviceProfilesList = HbMemoryUtils::getAddress<HbDeviceProfileList>(HbMemoryManager::HeapMemory,
-                                 deviceProfileDataBase->deviceProfilesOffset());
+                             deviceProfileDataBase->deviceProfilesOffset());
     }
     return deviceProfilesList;
 }

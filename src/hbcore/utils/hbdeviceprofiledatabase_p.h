@@ -38,20 +38,20 @@ class HB_CORE_PRIVATE_EXPORT HbDeviceProfileDatabase
 {
 public:
     static HbDeviceProfileDatabase *instance(HbMemoryManager::MemoryType type =
-                                             HbMemoryManager::HeapMemory);
+                HbMemoryManager::HeapMemory);
 
     int deviceProfilesOffset();
 
 private:
     HbDeviceProfileDatabase(HbMemoryManager::MemoryType type =
-                            HbMemoryManager::HeapMemory);
+                                HbMemoryManager::HeapMemory);
     void init();
     void completeProfileData();
 #ifdef Q_OS_SYMBIAN
     void initOrientationStatus();
 #endif //Q_OS_SYMBIAN
     Q_DISABLE_COPY(HbDeviceProfileDatabase)
-    
+
 private:
     HbDeviceProfileList *mDeviceProfiles;
     HbDeviceModeInfo *mDeviceModes;

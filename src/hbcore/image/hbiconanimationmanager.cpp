@@ -33,7 +33,6 @@
 #include "hbiconanimator.h"
 #include "hbiconanimator_p.h"
 #include "hbtheme.h"
-#include "hbimagetraces_p.h"
 #include "hbiconanimation_p.h"
 #include "hbimagetraces_p.h"
 
@@ -65,14 +64,20 @@ HbIconAnimationManagerPrivate::~HbIconAnimationManagerPrivate()
 bool HbIconAnimationManagerPrivate::addDefinitionFile(const QString &definitionFileName)
 {
     // Stop right away if the file has already been added.
-    foreach (const QString &iconName, animations.keys()) {
+    QList<QString> keys = animations.keys();
+    foreach(const QString & iconName, keys) {
         if (animations.operator[](iconName).definitionFileName == definitionFileName) {
             return true;
         }
     }
 
     // Check if there is a file with the given name in the current theme.
-    QString pathInTheme = HbIconLoader::global()->findSharedResource(definitionFileName, Hb::AnimationResource);
+    // Attach the .axml suffix if needed, just for the theme lookup.
+    QString fileNameWithSuffix = definitionFileName;
+    if (!fileNameWithSuffix.contains('.')) {
+        fileNameWithSuffix.append(QLatin1String(".axml"));
+    }
+    QString pathInTheme = HbIconLoader::global()->findSharedResource(fileNameWithSuffix, Hb::AnimationResource);
 #ifdef HB_ICON_TRACES
     qDebug() << definitionFileName << " => " << pathInTheme;
 #endif
@@ -83,7 +88,7 @@ bool HbIconAnimationManagerPrivate::addDefinitionFile(const QString &definitionF
 
     // Parse the filename and add entries in the hash table, first try the themeserver.
     bool ret = parser.parseDefinitionFileShared(definitionFileName,
-                                                animations, *realFileName);
+               animations, *realFileName);
     if (!ret) {
         // If themeserver did not return anything then try the file locally.
         ret = parser.parseDefinitionFile(definitionFileName,
@@ -153,12 +158,12 @@ HbIconAnimationDefinition HbIconAnimationManagerPrivate::getDefinition(const QSt
 void HbIconAnimationManagerPrivate::handleAnimationResume()
 {
     // resume all paused animations
-    foreach (HbIconAnimation *anim, playingAnims) {
+    foreach(HbIconAnimation * anim, playingAnims) {
         if (anim->pausedDueToBackground()) {
 
-            #ifdef HB_ICON_TRACES
+#ifdef HB_ICON_TRACES
             qDebug() << "Foreground gained - resuming animation:" << anim->iconName();
-            #endif
+#endif
 
             anim->resume();
         }
@@ -171,13 +176,13 @@ void HbIconAnimationManagerPrivate::handleAnimationResume()
 void HbIconAnimationManagerPrivate::handleAnimationPause()
 {
     // pause all playing animations
-    foreach (HbIconAnimation *anim, playingAnims) {
+    foreach(HbIconAnimation * anim, playingAnims) {
         if (!anim->paused()) {
-            
-            #ifdef HB_ICON_TRACES
+
+#ifdef HB_ICON_TRACES
             qDebug() << "Foreground lost - pausing animation:" << anim->iconName();
-            #endif            
-            
+#endif
+
             anim->pause();
             anim->setPausedDueToBackground(true);
         }
@@ -190,7 +195,7 @@ void HbIconAnimationManagerPrivate::handleAnimationPause()
 void HbIconAnimationManagerPrivate::handleThemeChanged()
 {
     // The theme is being changed, stop all on-going animations.
-    foreach (HbIconAnimation *anim, playingAnims) {
+    foreach(HbIconAnimation * anim, playingAnims) {
         anim->stop();
     }
 }
@@ -204,7 +209,8 @@ void HbIconAnimationManagerPrivate::handleThemeChangeFinished()
     // animation definitions (or at least try to reload; some defs may now be
     // missing if they were present in the previous theme but not in the new
     // one).
-    foreach (const QString &iconName, animations.keys()) {
+    QList<QString> keys = animations.keys();
+    foreach(const QString & iconName, keys) {
         // Do not remove animations that were not created from files.
         if (!animations.operator[](iconName).definitionFileName.isEmpty()) {
             animations.remove(iconName);
@@ -220,7 +226,7 @@ void HbIconAnimationManagerPrivate::handleThemeChangeFinished()
     //
     // 3. Theme changes to another theme that _does_ contain somethingFromTheme.
     //
-    foreach (const QString &name, allDefNames) {
+    foreach(const QString & name, allDefNames) {
         addDefinitionFile(name);
     }
 }
@@ -228,18 +234,18 @@ void HbIconAnimationManagerPrivate::handleThemeChangeFinished()
 void HbIconAnimationManagerPrivate::handleViewChanged(HbView *view)
 {
     // Pause all playing animations which do not belong to the new view, resume the ones belonging to it
-    foreach (HbIconAnimation *anim, playingAnims) {
+    foreach(HbIconAnimation * anim, playingAnims) {
         // If the view of the animation is not resolved, do nothing
         if (anim->view()) {
             if (anim->view() == view) {
-                #ifdef HB_ICON_TRACES
+#ifdef HB_ICON_TRACES
                 qDebug() << "View activated - resuming animation:" << anim->iconName();
-                #endif
+#endif
                 anim->resume();
             } else {
-                #ifdef HB_ICON_TRACES
+#ifdef HB_ICON_TRACES
                 qDebug() << "View deactivated - pausing animation:" << anim->iconName();
-                #endif
+#endif
                 anim->pause();
             }
         }
@@ -261,8 +267,8 @@ void HbIconAnimationManagerPrivate::animPlaying(HbIconAnimation *anim)
     // Connect to view change signals if not done yet
     if (!viewChangeConnected) {
         QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
-        Q_FOREACH(const HbMainWindow *window, windowList) {
-            connect(window, SIGNAL(currentViewChanged(HbView*)), SLOT(handleViewChanged(HbView*)));
+        Q_FOREACH(const HbMainWindow * window, windowList) {
+            connect(window, SIGNAL(currentViewChanged(HbView *)), SLOT(handleViewChanged(HbView *)));
         }
         viewChangeConnected = true;
     }
@@ -282,7 +288,7 @@ void HbIconAnimationManagerPrivate::animPlaying(HbIconAnimation *anim)
                 if (scene) {
                     // Resolve the main window having the same scene that the item belongs to
                     QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
-                    Q_FOREACH(const HbMainWindow *window, windowList) {
+                    Q_FOREACH(const HbMainWindow * window, windowList) {
                         if (window->scene() == scene) {
                             anim->setView(window->currentView());
                             break;
@@ -390,7 +396,7 @@ HbIconAnimationManager *HbIconAnimationManager::global()
 * </animations>
 *
 * \endcode
-* 
+*
 * The frame names e.g. "anim1_frame1" in the example above correspond to the icon name
 * parameters passed in HbIcon constructor when the animation frame icons are loaded.
 *

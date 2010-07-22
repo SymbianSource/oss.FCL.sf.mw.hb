@@ -35,18 +35,18 @@ class HB_CORE_PRIVATE_EXPORT HbTestabilitySignal_p : public QObject
     Q_OBJECT
 
 public:
-	HbTestabilitySignal_p(QObject *parent = 0);
-	~HbTestabilitySignal_p();
-	void enableSignal(bool enabled = false);
-	bool signalEnabled() const;
-    void notifySignalEnabled(void (*observer)(bool, void*), void *param);
-    
+    HbTestabilitySignal_p(QObject *parent = 0);
+    ~HbTestabilitySignal_p();
+    void enableSignal(bool enabled = false);
+    bool signalEnabled() const;
+    void notifySignalEnabled(void (*observer)(bool, void *), void *param);
+
 signals:
-	void propertyChanges(QGraphicsItem::GraphicsItemChange change, const QVariant &value);
+    void propertyChanges(QGraphicsItem::GraphicsItemChange change, const QVariant &value);
 
 private:
-	bool testabilitySignal;
-    void (*enabledChangeObserver)(bool, void*);
+    bool testabilitySignal;
+    void (*enabledChangeObserver)(bool, void *);
     void *observerParam;
 
     friend class HbWidget;

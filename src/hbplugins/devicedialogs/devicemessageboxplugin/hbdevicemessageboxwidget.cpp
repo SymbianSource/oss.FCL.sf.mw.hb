@@ -39,17 +39,8 @@ HbDeviceMessageBoxWidget::HbDeviceMessageBoxWidget(
     TRACE_ENTRY
     mLastError = NoError;
     mShowEventReceived = false;
-    QList<QAction*> actList = actions();
-    for(int i = 0; i < NumActions; i++) {
-        mActions[i].mAction = 0;
-        mActions[i].mOwned = false; // we haven't created the action
-        mActions[i].mInDialog = false; // action has not been inserted to the dialog
-        if (i < actList.count()) {
-            mActions[i].mAction = actList[i];
-            mActions[i].mInDialog = true;
-            connect(mActions[i].mAction, SIGNAL(triggered()), SLOT(actionTriggered()));
-        }
-    }
+    initActions();
+    connectToActions();
     resetProperties();
     constructDialog(parameters);
     TRACE_EXIT
@@ -58,11 +49,7 @@ HbDeviceMessageBoxWidget::HbDeviceMessageBoxWidget(
 // Destructor
 HbDeviceMessageBoxWidget::~HbDeviceMessageBoxWidget()
 {
-    for(int i = 0; i < NumActions; i++) {
-        if (mActions[i].mOwned) {
-            delete mActions[i].mAction;
-        }
-    }
+    deleteActions();
 }
 
 // Set parameters
@@ -155,11 +142,27 @@ bool HbDeviceMessageBoxWidget::checkProperties(const QVariantMap &parameters)
 void HbDeviceMessageBoxWidget::setProperties(const QVariantMap &parameters)
 {
     TRACE_ENTRY
+    // Set properties other than accept/reject action first
+    const char *acceptKey = "acceptAction";
+    const char *rejectKey = "rejectAction";
     QVariantMap::const_iterator i = parameters.constBegin();
-    while (i != parameters.constEnd()) {
-        QByteArray key = i.key().toAscii();
-        if (property(key.constData()).isValid()) {
-            setProperty(key.constData(), i.value());
+    while(i != parameters.constEnd()) {
+        if (i.key() != acceptKey && i.key() != rejectKey) {
+            QByteArray key = i.key().toAscii();
+            if (property(key.constData()).isValid()) {
+                setProperty(key.constData(), i.value());
+            }
+        }
+        ++i;
+    }
+    // Set accept/reject action last
+    i = parameters.constBegin();
+    while(i != parameters.constEnd()) {
+        if (i.key() == acceptKey || i.key() == rejectKey) {
+            QByteArray key = i.key().toAscii();
+            if (property(key.constData()).isValid()) {
+                setProperty(key.constData(), i.value());
+            }
         }
         ++i;
     }
@@ -178,6 +181,45 @@ void HbDeviceMessageBoxWidget::resetProperties()
     mSendAction = true;
     TRACE_EXIT
     return;
+}
+
+// Delete actions we own
+void HbDeviceMessageBoxWidget::deleteActions()
+{
+    TRACE_ENTRY
+    for(int i = 0; i < NumActions; i++) {
+        if (mActions[i].mOwned) {
+            delete mActions[i].mAction;
+        }
+        mActions[i].mAction = 0;
+        mActions[i].mOwned = false; // we haven't created the action
+        mActions[i].mInDialog = false; // action has not been inserted to the dialog
+    }
+    TRACE_EXIT
+}
+
+// Initialize actions
+void HbDeviceMessageBoxWidget::initActions()
+{
+    TRACE_ENTRY
+    for(int i = 0; i < NumActions; i++) {
+        mActions[i].mAction = 0;
+        mActions[i].mOwned = false; // we haven't created the action
+        mActions[i].mInDialog = false; // action has not been inserted to the dialog
+    }
+    TRACE_EXIT
+}
+
+// Connect to message box triggered actions
+void HbDeviceMessageBoxWidget::connectToActions()
+{
+    QList<QAction*> actList = actions();
+    int count = qMin(static_cast<int>(NumActions), actList.count());
+    for(int i = 0; i < count; i++) {
+        mActions[i].mAction = actList[i];
+        mActions[i].mInDialog = true;
+        connect(mActions[i].mAction, SIGNAL(triggered()), SLOT(actionTriggered()));
+    }
 }
 
 QString HbDeviceMessageBoxWidget::iconName() const
@@ -247,6 +289,21 @@ void HbDeviceMessageBoxWidget::setAnimationDefinition(QString &animationDefiniti
 QString HbDeviceMessageBoxWidget::animationDefinition() const
 {
     return mAnimationDefinition;
+}
+
+void HbDeviceMessageBoxWidget::setStandardButtons(HbMessageBox::StandardButtons buttons)
+{
+    // Clear buttons first. Otherwise display doesn't get updated always.
+    HbMessageBox::setStandardButtons(HbMessageBox::NoButton);
+    HbMessageBox::setStandardButtons(buttons);
+    deleteActions();
+    initActions();
+    connectToActions();
+}
+
+HbMessageBox::StandardButtons HbDeviceMessageBoxWidget::standardButtons() const
+{
+    return HbMessageBox::standardButtons();
 }
 
 // Action (accept or reject) was triggered

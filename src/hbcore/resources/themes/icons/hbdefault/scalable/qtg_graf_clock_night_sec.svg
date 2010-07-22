@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="216px" version="1.1" viewBox="0 0 216 216" width="216px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<linearGradient gradientTransform="matrix(-1 0 0 -1 -475.6777 -632.6445)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="-583.6777" x2="-583.6777" y1="-659.3726" y2="-763.5606">
+<stop offset="0" style="stop-color:#FF0000"/>
+<stop offset="1" style="stop-color:#A8000B"/>
+</linearGradient>
+<path d="M98.182,108c0.001,3.632,1.978,6.796,4.909,8.494l0.001,9.506c-0.001,2.701,2.207,4.91,4.908,4.91  c2.701-0.001,4.909-2.209,4.908-4.908l0.001-9.506c2.933-1.698,4.908-4.863,4.909-8.496c-0.001-4.864-3.54-8.89-8.182-9.671V26.182  h-3.273V98.33C101.723,99.108,98.183,103.136,98.182,108z" fill="url(#SVGID_1_)"/>
+<path d="M108,132c-3.309,0-6-2.691-6-6v-8.79c-3.098-2.022-5-5.499-5-9.21c0-4.934,3.318-9.26,8-10.584V25h6v72.416  c4.682,1.324,8,5.651,8,10.584c0,3.711-1.902,7.188-5,9.21V126C114,129.309,111.309,132,108,132L108,132z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="108.0005" x2="107.9992" y1="26.5474" y2="131.0065">
+<stop offset="0" style="stop-color:#FF0000"/>
+<stop offset="1" style="stop-color:#C10007"/>
+</linearGradient>
+<path d="M118,108c0-4.838-3.436-8.873-8-9.799V26h-4v72.201c-4.564,0.926-8,4.961-8,9.799  c0,3.699,2.014,6.922,5,8.651V126c0,2.762,2.239,5,5,5c2.762,0,5-2.238,5-5v-9.349C115.986,114.922,118,111.699,118,108z" fill="url(#SVGID_2_)"/>
+<circle cx="108" cy="108" fill="#1E1E28" fill-opacity="0.2" r="6" stroke-opacity="0.2"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="107.9995" x2="107.9995" y1="103.2773" y2="113.0161">
+<stop offset="0" style="stop-color:#FAFAFA"/>
+<stop offset="0" style="stop-color:#FAFAFA"/>
+<stop offset="1" style="stop-color:#E6E6E6"/>
+</linearGradient>
+<circle cx="108" cy="108" fill="url(#SVGID_3_)" r="5"/>
+<rect fill="none" height="216" width="216"/>
+</svg>

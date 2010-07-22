@@ -36,7 +36,7 @@ class HbAbstractItemView;
 class HB_WIDGETS_EXPORT HbModelIterator
 {
 public:
-    HbModelIterator(QAbstractItemModel *model = 0, QModelIndex rootIndex = QModelIndex());
+    explicit HbModelIterator(QAbstractItemModel *model = 0, QModelIndex rootIndex = QModelIndex());
     virtual ~HbModelIterator();
 
     virtual int indexCount(const QModelIndex &parent = QModelIndex()) const;

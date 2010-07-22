@@ -54,8 +54,8 @@ public:
     void init(QGraphicsItem *parent);
     void clear();
 
-    bool doLayout(const QString& text, const qreal lineWidth, qreal leading);
-    void setSize(const QSizeF &newSize);
+    bool doLayout(const QString& text, const qreal lineWidth, qreal lineSpacing);
+    void rebuildTextLayout(const QSizeF &newSize);
     void updateTextOption();
     void calculateVerticalOffset();
     void updateLayoutDirection();
@@ -65,7 +65,16 @@ public:
     int findIndexOfLastLineBeforeY(qreal y) const;
 
     QString elideLayoutedText(const QSizeF& size, const QFontMetricsF& metrics) const;
-    bool adjustSizeHint();
+    bool isAdjustHightNeeded(qreal newWidth,
+                             qreal prefHeight,
+                             qreal minHeight,
+                             qreal maxHeight);
+
+    void clearAdjustedSizeCache();
+
+    qreal respectHeightLimits(qreal height) const;
+
+    inline QSizeF calculatePrefferedSize(const QSizeF& constraint) const;
 
     bool fadeNeeded(const QRectF& contentRect) const;
     static inline void setupGradient(QLinearGradient *gradient, QColor color);
@@ -76,12 +85,34 @@ public:
                              const QPen& pen,
                              const QPointF& lineBegin);
 
+    void paintArea(QPainter *painter,
+                  int firstItemToPaint,
+                  int lastItemToPaint,
+                  const QPen& normalPen,
+                  const QPen& fadePen,
+                  qreal criticalX) const;
+
+    int paintArea(QPainter *painter,
+                  int firstItemToPaint,
+                  const QPen& normalPen,
+                  qreal lastValidY) const;
+
+    int paintHorizontalSection(QPainter *painter,
+                               int firstItemToPaint,
+                               QLinearGradient& gradient,
+                               qreal startY,
+                               qreal stopY) const;
+
     int paintFaded(QPainter *painter,
                     int firstItemToPaint,
                     const QPen& leftPen,
                     const QPen& centerPen,
                     const QPen& rightPen,
-                    const QRectF& area ) const;
+                    const QPainterPath& area ) const;
+
+    bool setClipPath(QPainter *painter,
+                     const QRectF& rect,
+                     const QPainterPath& initialCliping) const;
 
     void paintWithFadeEffect(QPainter *painter) const;
 
@@ -90,11 +121,11 @@ public:
     QRectF layoutBoundingRect() const;
     QRectF boundingRect(const QRectF& contentsRect) const;
 
+    inline void scheduleTextBuild();
+
     QString mText;
     Qt::Alignment mAlignment;
     Qt::TextElideMode mElideMode;
-    bool mDontPrint;  // needed to fake text flags
-    bool mDontClip;   // needed to fake text flags
 
     bool mInvalidateShownText;
     QRectF mOldContentsRect;
@@ -112,13 +143,18 @@ public:
     QRectF mFadeToRect;
     QRectF mFadeFromRect;
 
-    qreal mPrefHeight;
     int mMinLines;
     int mMaxLines;
-    bool mNeedToAdjustSizeHint;
-    QSizeF oldSize;
+    mutable QSizeF mAdjustedSize;
+    mutable qreal mMinWidthForAdjust;
+    mutable qreal mMaxWidthForAdjust;
+    mutable qreal mDefaultHeight;
+    mutable QSizeF mLastConstraint;
 
     mutable bool mUpdateColor;
+
+    bool mEventPosted;
+
     static bool outlinesEnabled;
 };
 

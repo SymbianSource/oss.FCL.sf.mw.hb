@@ -25,29 +25,18 @@
 
 #include "hbstyleoptiontooltip_p.h"
 
-/*!
+/*
     \class HbStyleOptionToolTip
     \brief HbStyleOptionToolTip has the style component for tooltip primitives
 */
 
-/*!
 
-    \deprecated HbStyleOptionToolTip::HbStyleOptionToolTip()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionToolTip::HbStyleOptionToolTip()
 {
     type = Type;
     version = Version;
 }
 
-/*!
-
-    \deprecated HbStyleOptionToolTip::HbStyleOptionToolTip(const HbStyleOptionToolTip&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionToolTip::HbStyleOptionToolTip(const HbStyleOptionToolTip &other) :
     HbStyleOptionPopup(other)
 {

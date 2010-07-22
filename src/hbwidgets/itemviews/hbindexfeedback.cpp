@@ -58,6 +58,10 @@
     The sizing and number of characters to display are controlled by the IndexFeedbackPolicy.
 
     \sa HbAbstractItemView, HbIndexFeedback::IndexFeedbackPolicy.
+
+    \primitives
+    \primitive{index-text} HbTextItem representing the text in the HbIndexFeedback. 
+    \primitive{index-background} HbFrameItem representing the background of the HbIndexFeedback. 
 */
 
 /*!
@@ -82,7 +86,7 @@
     Index feedback will be the first letter of the contents of Hb::IndexFeedbackRole
     cast as a string.  It will be displayed using a larger font centered over the list.
     
-    Recomended use is for alphabetically sorted lists.
+    Recommended use is for alphabetically sorted lists.
 */
 
 /*!
@@ -92,7 +96,7 @@
     Hb::IndexFeedbackRole cast as a string.  It will be displayed using a larger font
     centered over the list.  
     
-    Recomended us is for month abreviations.
+    Recommended us is for month abreviations.
 */
 
 /*!
@@ -236,7 +240,9 @@ HbAbstractItemView* HbIndexFeedback::itemView() const
     return d->mItemView;
 }
 
-/*
+/*!
+    \reimp
+
     A scene event filter.  It's purpose is to call calculatePopupRects on
     a resize event for the item view.
 */
@@ -251,7 +257,9 @@ bool HbIndexFeedback::sceneEventFilter(QGraphicsItem *watched, QEvent *ev)
     return QGraphicsItem::sceneEventFilter(watched, ev);
 }
 
-/*
+/*!
+    \reimp
+
     Rather than adding signals to HbScrollBar specifically to implement 
     index feedback, an event filter is used.
 

@@ -53,7 +53,7 @@ symbian {
   
     myrssrules = \
      "START RESOURCE hbthemeserveroogmplugin.rss" \
-	 "TARGETPATH resource\plugins" \
+	 "TARGETPATH resource/plugins" \
 	 "TARGET     hbthemeserveroogmplugin.rsc" \
 	 "END"
     

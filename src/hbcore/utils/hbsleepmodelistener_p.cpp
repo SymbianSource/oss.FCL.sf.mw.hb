@@ -23,17 +23,16 @@
 **
 ****************************************************************************/
 
-#include <hbinstance.h>
-#include <hbevent.h>
-
 #include "hbsleepmodelistener_p.h"
 #include "hbsleepmodelistener_p_p.h"
+#include <hbinstance.h>
+#include <hbevent.h>
 
 #if defined(Q_OS_SYMBIAN)
 
 #include <hwrmlight.h>
 #include <hwrmextendedlight.h>
-#include "hbcorepskeys_p.h"
+#include "hbcorepskeys_r.h"
 
 // app uid of sleepmode application
 const TUid KSleepModeProperty = {0x101F7A01};
@@ -52,7 +51,7 @@ CSleepModeListenerPrivate::~CSleepModeListenerPrivate()
 }
 
 CSleepModeListenerPrivate::CSleepModeListenerPrivate()
-                      :CActive( EPriorityNormal )
+    : CActive(EPriorityNormal), lastStatus(0), lastStatusValid(false)
 {
     User::LeaveIfError(sleepModeState.Attach(KSleepModeProperty, KSleepModeOn));
     CActiveScheduler::Add(this);
@@ -70,26 +69,30 @@ void CSleepModeListenerPrivate::RunL()
     TInt err = InitializeStatusArray(currentStatus);
     if (err == KErrNone) {
         TInt arraySize = sizeof(THWRMStatusInfo) * KHWRMLightMaxTargets;
-        TPtr8 arrayPtr((TUint8*)&currentStatus[0], arraySize, arraySize);
+        TPtr8 arrayPtr((TUint8 *)&currentStatus[0], arraySize, arraySize);
         err = sleepModeState.Get(arrayPtr);
         if (err == KErrNone) {
             TInt index = currentStatus.FindInOrder(KHWRMLightFirstTarget, FindByTarget);
             if (index >= 0 && index < KHWRMLightMaxTargets) {
                 status = static_cast<CHWRMLight::TLightStatus>(currentStatus[index].iStatus);
-                RProcess process;
-                //If prosess is something else than themeserver
-                if (process.SecureId().iId != KHbPsOrientationCategoryUid.iUid) {
-                    QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
-                    for (int i = 0; i < mainWindowList.count(); ++i) {
-                        if (status == CHWRMLight::ELightOff) {
-                            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
-                        } else {
-                            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
+                if (!lastStatusValid || lastStatus != status) {
+                    lastStatusValid = true;
+                    lastStatus = status;
+                    RProcess process;
+                    // If process is something else than themeserver
+                    if (process.SecureId().iId != KHbPsHardwareCoarseOrientationCategoryUid.iUid) {
+                        QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
+                        for (int i = 0; i < mainWindowList.count(); ++i) {
+                            if (status == CHWRMLight::ELightOff) {
+                                mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
+                            } else {
+                                mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
+                            }
                         }
+                    } else {
+                        HbEvent event(status == CHWRMLight::ELightOff ? HbEvent::SleepModeEnter : HbEvent::SleepModeExit);
+                        QCoreApplication::sendEvent(qApp, &event);
                     }
-                } else {
-                    HbEvent event(status == CHWRMLight::ELightOff ? HbEvent::SleepModeEnter : HbEvent::SleepModeExit);
-                    QCoreApplication::sendEvent(qApp, &event);
                 }
             }
         }
@@ -105,11 +108,11 @@ void CSleepModeListenerPrivate::DoCancel()
 }
 
 TInt CSleepModeListenerPrivate::InitializeStatusArray(
-    RLightStatusArray& aArray) const
+    RLightStatusArray &aArray) const
 {
     TInt err = KErrNone;
     TInt currentTarget(KHWRMLightFirstTarget);
-    for( TInt i = 0; i < KHWRMLightMaxTargets; ++i) {
+    for (TInt i = 0; i < KHWRMLightMaxTargets; ++i) {
         THWRMStatusInfo info;
         info.iTarget = currentTarget;
         info.iStatus = CHWRMLight::ELightStatusUnknown;
@@ -125,16 +128,16 @@ TInt CSleepModeListenerPrivate::InitializeStatusArray(
     return err;
 }
 
-TInt CSleepModeListenerPrivate::FindByTarget(const TInt* aTarget,
-    const THWRMStatusInfo& aItem)
-    {
+TInt CSleepModeListenerPrivate::FindByTarget(const TInt *aTarget,
+        const THWRMStatusInfo &aItem)
+{
     if (*aTarget < aItem.iTarget) {
         return -1;
-    } else if ( *aTarget > aItem.iTarget ) {
+    } else if (*aTarget > aItem.iTarget) {
         return 1;
     }
     return 0;
-    }
+}
 
 #else
 
@@ -153,7 +156,7 @@ HbSleepModeListenerPrivate::~HbSleepModeListenerPrivate()
 /*!
     Returns static instance
  */
-HbSleepModeListener* HbSleepModeListener::instance()
+HbSleepModeListener *HbSleepModeListener::instance()
 {
     static HbSleepModeListener theInstance;
     return &theInstance;

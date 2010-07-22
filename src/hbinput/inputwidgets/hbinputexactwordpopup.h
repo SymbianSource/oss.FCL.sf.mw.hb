@@ -21,10 +21,10 @@
 ** If you have questions regarding the use of this file, please contact
 ** Nokia at developer.feedback@nokia.com.
 **
-****************************************************************************/ 
+****************************************************************************/
 
-#ifndef HBEXACTWORDPOPUP_H
-#define HBEXACTWORDPOPUP_H
+#ifndef HB_INPUT_EXACT_WORD_POPUP_H
+#define HB_INPUT_EXACT_WORD_POPUP_H
 
 #include <hbdialog.h>
 #include <hbinputdef.h>
@@ -36,15 +36,17 @@ class HB_INPUT_EXPORT HbExactWordPopup : public HbDialog
     Q_OBJECT
 
 public:
-    enum HbExactWordPopupIndicator{
+    enum HbExactWordPopupIndicator {
         HbNoIndicatorArrow,
         HbIndicatorArrow
     };
 
-    static HbExactWordPopup* instance(HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow);
+    static HbExactWordPopup *instance(HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow);
 
     QString text();
-    int type() const {return Type;}
+    int type() const {
+        return Type;
+    }
 
 public slots:
     void setText(const QString &text);
@@ -65,5 +67,5 @@ private:
     Q_DISABLE_COPY(HbExactWordPopup)
 };
 
-#endif // HBEXACTWORDPOPUP_H
+#endif // HB_INPUT_EXACT_WORD_POPUP_H
 

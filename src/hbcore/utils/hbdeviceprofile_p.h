@@ -31,11 +31,10 @@
 #include "hbvector_p.h"
 #include <QSharedData>
 
-struct DeviceProfile
-{
+struct DeviceProfile {
     HbString mName;
     HbString mAltName;
-	
+
     QSize mLogicalSize;
     qreal mUnitValue;
     qreal mPpiValue;
@@ -45,8 +44,7 @@ struct DeviceProfile
 
     DeviceProfile(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         : mName(type), mAltName(type), mUnitValue(1), mPpiValue(1),
-          mTouch(true), mUiMetricsFile(type), mOrientationAngle(0)
-    {
+          mTouch(true), mUiMetricsFile(type), mOrientationAngle(0) {
     }
 };
 

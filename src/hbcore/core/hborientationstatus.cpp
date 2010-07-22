@@ -25,11 +25,11 @@
 #include "hborientationstatus_p.h"
 
 #ifdef Q_OS_SYMBIAN
-#include "hbcorepskeys_p.h"
+#include "hbcorepskeys_r.h"
 #include "hbforegroundwatcher_p.h"
 
 // UID for process checking (write orientation value only when in theme server)
-const TUid KWriterServerUid = KHbPsOrientationCategoryUid;
+const TUid KWriterServerUid = KHbPsHardwareCoarseOrientationCategoryUid;
 
 // PS related constants
 _LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
@@ -49,8 +49,9 @@ void HbOrientationStatus::init(QObject *parent, Qt::Orientation defaultOrientati
         if (process.SecureId().iId == KWriterServerUid.iUid) {
             orientationStatus = new HbOrientationStatus(parent, defaultOrientation);
         }
+        process.Close();
     }
-#else 
+#else
     Q_UNUSED(parent);
     Q_UNUSED(defaultOrientation);
     orientationStatus = 0;
@@ -71,7 +72,8 @@ bool HbOrientationStatus::currentOrientation(Qt::Orientation &orientation)
 #ifdef Q_OS_SYMBIAN
     if (!orientationStatus) {
         int currentOrientation = Qt::Vertical;
-        if (RProperty::Get(KHbPsOrientationCategoryUid, KHbPsOrientationKey, currentOrientation) == KErrNone) {
+        if (RProperty::Get(KHbPsHardwareCoarseOrientationCategoryUid,
+                           KHbPsHardwareCoarseQtOrientationKey, currentOrientation) == KErrNone) {
             orientation = (Qt::Orientation)currentOrientation;
             success = true;
         }
@@ -82,8 +84,7 @@ bool HbOrientationStatus::currentOrientation(Qt::Orientation &orientation)
     if (settings.value("Orientation").toInt() == 1) {
         orientation = Qt::Horizontal;
         success = true;
-    }
-    else if (settings.value("Orientation").toInt() == 2) {
+    } else if (settings.value("Orientation").toInt() == 2) {
         orientation = Qt::Vertical;
         success = true;
     }
@@ -92,22 +93,22 @@ bool HbOrientationStatus::currentOrientation(Qt::Orientation &orientation)
 }
 
 HbOrientationStatus::HbOrientationStatus(QObject *parent, Qt::Orientation defaultOrientation)
-: QObject(parent)
-#ifdef Q_OS_SYMBIAN 
-,mSensorListener(new HbSensorListener(*this, defaultOrientation, false))
-,mDefaultOrientation(defaultOrientation)
+    : QObject(parent)
+#ifdef Q_OS_SYMBIAN
+    , mSensorListener(new HbSensorListener(*this, defaultOrientation, false))
+    , mDefaultOrientation(defaultOrientation)
 #endif
 {
 #ifdef Q_OS_SYMBIAN
     HbForegroundWatcher::instance()->setSensorListener(mSensorListener);
     // Create orientation property
-    RProperty::Define(
-            KHbPsOrientationCategoryUid, KHbPsOrientationKey, RProperty::EInt, KRdPolicy, KWrPolicy);
-    mProperty.Attach(KHbPsOrientationCategoryUid, KHbPsOrientationKey);
+    RProperty::Define(KHbPsHardwareCoarseOrientationCategoryUid, KHbPsHardwareCoarseQtOrientationKey,
+                      RProperty::EInt, KRdPolicy, KWrPolicy);
+    mProperty.Attach(KHbPsHardwareCoarseOrientationCategoryUid, KHbPsHardwareCoarseQtOrientationKey);
     storeOrientation(defaultOrientation);
 #else
-	Q_UNUSED(parent);
-	Q_UNUSED(defaultOrientation);
+    Q_UNUSED(parent);
+    Q_UNUSED(defaultOrientation);
 #endif
 }
 
@@ -120,9 +121,10 @@ void HbOrientationStatus::sensorStatusChanged(bool status, bool notify)
 {
     Q_UNUSED(notify)
 #ifdef Q_OS_SYMBIAN
-    if (status == false)
+    if (status == false) {
         storeOrientation(mDefaultOrientation);
-#else 
+    }
+#else
     Q_UNUSED(status)
 #endif
 }
@@ -131,8 +133,7 @@ void HbOrientationStatus::storeOrientation(Qt::Orientation orientation)
 {
 #ifdef Q_OS_SYMBIAN
     mProperty.Set(orientation);
-#else 
+#else
     Q_UNUSED(orientation);
 #endif
 }
-

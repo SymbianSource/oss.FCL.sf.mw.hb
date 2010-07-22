@@ -45,8 +45,8 @@ public:
     HbTypefaceInfoPrivate() : initialized(false) {}
     ~HbTypefaceInfoPrivate();
     void initialize();
-    bool containsRole( HbFontSpec::Role role, int &index );
-    bool containsFamily( const QString& typefaceFamily, int &index );
+    bool containsRole(HbFontSpec::Role role, int &index) const;
+    bool containsFamily(const QString &typefaceFamily, int &index) const;
 
 public: // data
     bool initialized;
@@ -65,7 +65,6 @@ void HbTypefaceInfoPrivate::initialize()
     mTypefaceVector = HbThemeClient::global()->typefaceInfo();
 
     if( !mTypefaceVector ) {
-        qWarning() << "HbTypefaceInfo, no theme server connection - working in fallback mode";
         HbTypefaceInfoDatabase *heapDatabase = HbTypefaceInfoDatabase::instance( HbMemoryManager::HeapMemory );
         mTypefaceVector = HbMemoryUtils::getAddress<HbTypefaceInfoVector>(HbMemoryManager::HeapMemory,
                                                 heapDatabase->typefaceInfoVectorOffset());
@@ -103,14 +102,15 @@ HbTypefaceInfo::~HbTypefaceInfo()
     delete d;
 }
 
-bool HbTypefaceInfoPrivate::containsRole( HbFontSpec::Role role, int &index )
+bool HbTypefaceInfoPrivate::containsRole(HbFontSpec::Role role, int &index) const
 {
     if( ! initialized ) {
         qWarning( "HbTypefaceInfoPrivate in not initialized, line %d", __LINE__ );
         return false;
     }
     for( int i = 0; i < mTypefaceVector->size(); i++ ) {
-        if( mTypefaceVector->at(i).mRoleEnum == role ) {
+        if (mTypefaceVector->at(i).mRoleEnum == role && 
+			mTypefaceVector->at(i).mIsAlias == false) {
             index = i;
             return true;
         }
@@ -119,22 +119,51 @@ bool HbTypefaceInfoPrivate::containsRole( HbFontSpec::Role role, int &index )
 }
 
 
-bool HbTypefaceInfoPrivate::containsFamily( const QString& typefaceFamily, int &index )
+bool HbTypefaceInfoPrivate::containsFamily(const QString &typefaceFamily, int &index) const
 {
     if( ! initialized ) {
         qWarning( "HbTypefaceInfoPrivate in not initialized, line %d", __LINE__ );
         return false;
     }
     for( int i = 0; i < mTypefaceVector->size(); i++ ) {
-        if( mTypefaceVector->at(i).mFamily == typefaceFamily ) {
+        if (!typefaceFamily.compare(mTypefaceVector->at(i).mFamily, Qt::CaseInsensitive)) {
             index = i;
             return true;
         }
     }
     return false;
 }
-
-
+bool HbTypefaceInfo::containsFamily(const QString &typefaceFamily) const
+{
+	int dummy;
+	return d->containsFamily(typefaceFamily, dummy);
+}
+bool HbTypefaceInfo::tryGetFamilyFromAliasName( 
+	const QString &aliasFamily, 
+	QString &typefaceFamily,
+	int &weight) const
+{
+    for (int i = 0; i < d->mTypefaceVector->size(); i++) {
+        if (d->mTypefaceVector->at(i).mIsAlias == true &&
+            !aliasFamily.compare(d->mTypefaceVector->at(i).mAliasedFamily, Qt::CaseInsensitive)) {
+            typefaceFamily = d->mTypefaceVector->at(i).mFamily ;
+			weight = d->mTypefaceVector->at(i).mIsBold ? QFont::Bold : QFont::Normal;
+			return true;
+        }
+    }
+	return false;
+}
+int HbTypefaceInfo::getWeight(const QString &typefaceFamily) const
+{
+	int index, weight;
+	if (d->containsFamily( typefaceFamily, index)) {
+		weight = d->mTypefaceVector->at(index).mIsBold ? QFont::Bold : QFont::Normal;
+	}
+	else {
+		weight = QFont::Normal;
+	}
+	return weight;
+}
 void HbTypefaceInfo::roleToTypeface(HbFontSpec::Role role, QString& typefaceFamily, int& weight) const
 {
     int index;
@@ -143,10 +172,10 @@ void HbTypefaceInfo::roleToTypeface(HbFontSpec::Role role, QString& typefaceFami
 	if (!validRole) {
 		role = HbFontSpec::Undefined;
 		validRole = d->containsRole( role, index );
-	}
 	if( !validRole ) {
-	    qWarning( "HbTypefaceInfo: cannot find corresponding font role, line %d", __LINE__ );
+		    qWarning( "HbTypefaceInfo: cannot find corresponding font role %d, line %d", role, __LINE__ );
 	    return;
+		}
 	}
 
 	typefaceFamily = d->mTypefaceVector->at( index ).mFamily;

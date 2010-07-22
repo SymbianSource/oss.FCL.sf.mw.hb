@@ -47,6 +47,7 @@ HbProgressDialogContentWidget[text="true"][icon="true"]::text
 {
     text-line-count-min:1;
     text-line-count-max:3;
+    min-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen)-3*var(hb-param-margin-gene-popup)-var(hb-param-graphic-size-primary-large));
 }
 
 /* Text line count for only text Layout use cases */
@@ -54,5 +55,6 @@ HbProgressDialogContentWidget[text="true"][icon="false"]::text
 {
     text-line-count-min:1;
     text-line-count-max:5;
+    min-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen)-2*var(hb-param-margin-gene-popup));
 }
 

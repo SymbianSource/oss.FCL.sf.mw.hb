@@ -40,7 +40,7 @@ public:
     void ConstructL();
 
 protected:
-    void Draw(const TRect& aRect) const;
+    void Draw(const TRect &aRect) const;
 };
 
 #endif  // HBNATIVEWINDOW_P_H

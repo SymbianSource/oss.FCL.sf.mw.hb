@@ -63,10 +63,10 @@ protected:
     qreal mCenterX;
     qreal mCenterY;
     bool mPosChanged;
-	
-	HbEffectFxmlParamData originXData;
-	HbEffectFxmlParamData originYData;
-	
+
+    HbEffectFxmlParamData originXData;
+    HbEffectFxmlParamData originYData;
+
 
 };
 

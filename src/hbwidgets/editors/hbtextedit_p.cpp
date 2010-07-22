@@ -58,7 +58,7 @@ void HbTextEditPrivate::init()
     mTextBaseLinePen.setWidthF((qreal)1.0);
 
     q->setScrollable(true);
-    q->setBackgroundItem(HbStyle::P_TextEdit_frame_normal);
+    setBackgroundItem(HbStyle::P_TextEdit_frame_normal);
     q->setFocusHighlight(HbStyle::P_TextEdit_frame_highlight,HbWidget::FocusHighlightActive);
 }
 

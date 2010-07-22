@@ -39,6 +39,7 @@ class HB_WIDGETS_EXPORT HbGroupBox : public HbWidget
     Q_PROPERTY( bool marqueeHeading READ marqueeHeading WRITE setMarqueeHeading )    
 
 public:
+
     explicit HbGroupBox( QGraphicsItem *parent = 0 );
     ~HbGroupBox( );
 
@@ -48,7 +49,7 @@ public:
     bool isCollapsable( ) const;
     bool isCollapsed( ) const;
 
-    void setMarqueeHeading( bool marquee = false );
+    void setMarqueeHeading( bool marquee = true );
     bool marqueeHeading( ) const;
     
     void setContentWidget( HbWidget *widget );
@@ -56,20 +57,31 @@ public:
 
     virtual QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
-    enum { Type = Hb::ItemType_GroupBox };
-    int type( ) const { return Type; }
+    enum { 
+        Type = Hb::ItemType_GroupBox 
+    };
+
+    int type( ) const {
+        return Type;
+    }
+protected:
+
+    QSizeF sizeHint( Qt::SizeHint which, const QSizeF &constraint = QSizeF() ) const;
 
 public slots:
+
     void updatePrimitives( );
     void setCollapsed( bool collapsed = true );
     void setCollapsable( bool collapsable = true );
 
-    signals:
+signals:
+
     void clicked(); 
-    void longPress(const QPointF &delta); 
-    void toggled(bool state);
+    void longPress( const QPointF &delta ); 
+    void toggled( bool state );
 
 protected:
+
     HbGroupBox( HbGroupBoxPrivate &dd, QGraphicsItem *parent );
 
 private:

@@ -39,6 +39,7 @@ DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/gui
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/image
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/style
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/feedback
+DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 
 INCLUDEPATH += .
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/core
@@ -49,10 +50,12 @@ INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/gui
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/image
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/style
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/feedback
+INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 QT = core gui svg
 QT += network
 
 CONFIG += console
+CONFIG -= app_bundle
 
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin
@@ -91,6 +94,15 @@ SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hblayeredstyleloader_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbwidgetstyleloader_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbstyleselector_p.cpp
 
+# widgetml parsing.
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbwidgetloader.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbwidgetloaderactions_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbwidgetloadersyntax_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderbaseactions_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderabstractsyntax_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderbasesyntax_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderabstractactions_p.cpp
+
 DEFINES += HB_BOOTSTRAPPED
 DEFINES += HB_BIN_CSS
 DEFINES -= HB_GESTURE_FW
@@ -100,9 +112,12 @@ DEFINES += HB_BIN_DIR=\"\\\"$${HB_BIN_DIR}\\\"\"
 DEFINES += HB_PLUGINS_DIR=\"\\\"$${HB_PLUGINS_DIR}\\\"\"
 
 # Input
-SOURCES += main.cpp
 HEADERS += hbcssconverterutils_p.h
+HEADERS += hboffsetmapbuilder_p.h
+
+SOURCES += main.cpp
 SOURCES += hbcssconverterutils.cpp
+SOURCES += hboffsetmapbuilder.cpp
 
 # installation
 !local {

@@ -19,7 +19,8 @@ HbInputDialogContentWidget[additionalRowVisible="true"]:landscape{
 HbInputDialogContentWidget::label-1:portrait {
 	top:-var(hb-param-margin-gene-popup);
 	
-	text-line-count-max: 1;
+	text-line-count-min:1;
+    text-line-count-max:2;
 	font-variant:secondary;
 	text-height:var(hb-param-text-height-secondary);
 	text-align:left;
@@ -38,7 +39,8 @@ HbInputDialogContentWidget::text-1:portrait {
 
 HbInputDialogContentWidget::label-2:portrait 
 {
-    text-line-count-max: 1;
+    text-line-count-min:1;
+    text-line-count-max:2;
     
 	font-variant:secondary;
 	text-height:var(hb-param-text-height-secondary);
@@ -59,7 +61,8 @@ HbInputDialogContentWidget::label-1:landscape {
 	min-width: expr((((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)))/2)); 
 	
 	size-policy-horizontal: preferred;	
-    	text-line-count-max: 1;
+    	    text-line-count-min:1;
+    text-line-count-max:2;
     
 	font-variant:secondary;
 	text-height:var(hb-param-text-height-secondary);
@@ -81,7 +84,8 @@ HbInputDialogContentWidget::text-1:landscape {
 
 HbInputDialogContentWidget::label-2:landscape {
     	size-policy-horizontal: expanding;	
-	text-line-count-max: 1;
+	    text-line-count-min:1;
+    text-line-count-max:2;
     
     	min-width: expr((((var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))-(2*var(hb-param-margin-gene-popup)))/2)); 
 		

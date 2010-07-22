@@ -32,8 +32,9 @@
 class HB_CORE_PRIVATE_EXPORT HbBackgroundItem : public HbWidget
 {
     Q_OBJECT
+
 public:
-    HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent = 0);
+    explicit HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent = 0);
     ~HbBackgroundItem();
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
@@ -41,11 +42,16 @@ public:
     bool event(QEvent *e);
 
     enum { Type = HbPrivate::ItemType_BackgroundItem };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
     void setImageName(Qt::Orientation orientation, const QString &name);
     QString imageName(Qt::Orientation orientation) const;
     QString defaultImageName(Qt::Orientation orientation) const;
+
+    void setImageMode(Hb::BackgroundImageMode mode);
+    Hb::BackgroundImageMode imageMode() const;
 
     void updateBackgroundImage();
 
@@ -58,6 +64,7 @@ private:
     HbMainWindow *mMainWindow;
     QString mPrtImageName;
     QString mLscImageName;
+    Hb::BackgroundImageMode mImageMode;
 };
 
 #endif // HBBACKGROUNDITEM_H

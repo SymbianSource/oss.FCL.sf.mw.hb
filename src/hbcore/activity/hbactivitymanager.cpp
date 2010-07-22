@@ -32,18 +32,18 @@
 
 #include "hbmainwindow.h"
 #include "hbinstance.h"
-#include "hbactivityplugininterface_p.h"
+#include "hbactivityplugininterface_r.h"
 
 /*!
     @stable
     @hbcore
     \class HbActivityManager
     \brief HbActivityManager is an access point for Activities features.
-    
+
     Activities can be described as stored application states (for example bookmarks
     in web browser) or actions that can be performed using application (play next
     song, start new game).
-    
+
     The HbActivityManager class allows to use Activities features in Hb application.
     It can be used to access, add, remove and modify activities. It also notifies the
     application about activity change requests from other applications.
@@ -69,27 +69,27 @@ HbActivityManagerPrivate::~HbActivityManagerPrivate()
 HbActivityPluginInterface *HbActivityManagerPrivate::activityPlugin() const
 {
     if (!mActivityPlugin) {
-        foreach (const QString &path, QCoreApplication::libraryPaths()) {
+        foreach(const QString & path, QCoreApplication::libraryPaths()) {
             QString pluginPath;
             QString libPath = QDir(path).filePath(QLatin1String("hbactivityplugin"));
 #ifdef Q_OS_SYMBIAN
             libPath += QLatin1String(".qtplugin");
-            QLibrary library(libPath);           
+            QLibrary library(libPath);
             if (QFile::exists(libPath) && library.load()) {
                 library.unload();
                 pluginPath = libPath;
             }
 #else
-            QLibrary library(libPath);           
+            QLibrary library(libPath);
             if (library.load()) {
                 library.unload();
                 pluginPath = library.fileName();
-            }     
-#endif      
+            }
+#endif
             QPluginLoader loader(pluginPath);
             QObject *pluginInstance = loader.instance();
             if (pluginInstance) {
-                mActivityPlugin = qobject_cast<HbActivityPluginInterface*>(pluginInstance);
+                mActivityPlugin = qobject_cast<HbActivityPluginInterface *>(pluginInstance);
                 if (mActivityPlugin) {
                     q->connect(pluginInstance, SIGNAL(activityRequested(QString)), q, SIGNAL(activityRequested(QString)));
                 } else {
@@ -217,9 +217,9 @@ HbActivityManager::~HbActivityManager()
 /*!
     Allows to save activity.
     \a activityId. Activity name used as identifier of activities
-    \a data. Activity data that should be stored. It will allow application to restore its state later 
+    \a data. Activity data that should be stored. It will allow application to restore its state later
     \a parameters. Activity properties: screenshot, localized name, hidden flag, etc.
-    Returns true if activity was succesfully saved, otherwise returns false.
+    Returns true if activity was successfully saved, otherwise returns false.
  */
 bool HbActivityManager::addActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters)
 {
@@ -230,7 +230,7 @@ bool HbActivityManager::addActivity(const QString &activityId, const QVariant &d
 /*!
     Allows to delete activity.
     \a activityId. Activity name used as identifier of activities
-    Returns true if activity was succesfully deleted, otherwise returns false.
+    Returns true if activity was successfully deleted, otherwise returns false.
  */
 bool HbActivityManager::removeActivity(const QString &activityId)
 {
@@ -241,9 +241,9 @@ bool HbActivityManager::removeActivity(const QString &activityId)
 /*!
     Allows to update saved activity.
     \a activityId. Activity name used as identifier of activities
-    \a data. Activity data that should be stored. It will allow application to restore its state later 
+    \a data. Activity data that should be stored. It will allow application to restore its state later
     \a parameters. Activity properties: screenshot, localized name, hidden flag, etc.
-    Returns true if activity was succesfully updated, otherwise returns false.
+    Returns true if activity was successfully updated, otherwise returns false.
  */
 bool HbActivityManager::updateActivity(const QString &activityId, const QVariant &data, const QVariantHash &parameters)
 {
@@ -272,7 +272,7 @@ QVariant HbActivityManager::activityData(const QString &activityId) const
 /*!
     Subscribes to activity manager
  */
-bool HbActivityManager::waitActivity() 
+bool HbActivityManager::waitActivity()
 {
     Q_D(HbActivityManager);
     return d->waitActivity();

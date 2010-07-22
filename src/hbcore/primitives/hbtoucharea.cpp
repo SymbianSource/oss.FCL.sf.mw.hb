@@ -30,9 +30,9 @@
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsLayout>
 #include <QPainter>
+#include <QGraphicsScene>
 #include <hbmainwindow.h>
 #include <hbinstance.h>
-#include <qgraphicsscene.h>
 
 bool HbTouchAreaPrivate::outlinesEnabled = false;
 
@@ -62,7 +62,7 @@ void HbTouchAreaPrivate::setOutlineDrawing(bool enabled)
     // Because this method is static we need to toggle QGraphicsItem::ItemHasNoContents flag 
     // value hard way. This is RnD feature anyway.
     foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
-        QGraphicsScene *scene = static_cast<QGraphicsScene*>(window->scene());
+        QGraphicsScene *scene = static_cast<QGraphicsScene*>(window->scene()); //krazy:exclude=qclasses
         foreach( QGraphicsItem *item, scene->items() ) {
             if (HbTouchArea *widget = qgraphicsitem_cast<HbTouchArea *>(item)) {
                 widget->setFlag(QGraphicsItem::ItemHasNoContents, !enabled);
@@ -132,7 +132,7 @@ void HbTouchArea::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
     // The paint method is called only if HbTouchAreaPrivate::outlinesEnabled is true (RnD feature)
     // because flag QGraphicsItem::ItemHasNoContents is set otherwise.
     if (HbTouchAreaPrivate::outlinesEnabled) {
-        painter->setPen(Qt::red);
+        painter->setPen(Qt::red); //krazy:exclude=qenums
         painter->drawLine(contentsRect().topLeft(), contentsRect().bottomRight());
         painter->drawLine(contentsRect().topRight(), contentsRect().bottomLeft()); 
         painter->setBrush(QBrush(QColor(255, 0, 0, 50)));

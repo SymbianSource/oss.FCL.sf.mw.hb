@@ -36,10 +36,6 @@
 #include "hbiconsource_p.h"
 #include "hbthemeserverutils_p.h"
 
-#if defined (Q_OS_SYMBIAN)
-#include <VG/openvg.h>
-#include <VG/vgcontext_symbian.h>
-#endif //Q_OS_SYMBIAN
 
 /*!
     @hbserver
@@ -131,9 +127,9 @@ bool HbPixmapIconProcessor::createIconData(const QString& iconPath)
     } else if (iconType == "PIC") {
         isIconCreated = renderPicToPixmap(iconPath);
     } else if (iconType == "NVG") {
-#if defined (Q_OS_SYMBIAN)    
+#if defined (HB_NVG_CS_ICON)    
 		isIconCreated = renderNvgToPixmap(iconPath);
-#endif //Q_OS_SYMBIAN
+#endif //HB_NVG_CS_ICON
     } else {
         isIconCreated = renderOtherFormatsToPixmap(iconPath);
     }
@@ -367,7 +363,39 @@ bool HbPixmapIconProcessor::createMultiPieceIconData(const QVector<HbSharedIconI
     return true;
 }
 
-#if defined (Q_OS_SYMBIAN)
+#if defined (HB_NVG_CS_ICON)
+
+VGIColorBufferFormat HbPixmapIconProcessor::mapToVgiDisplayFormat( QImage::Format imageFormat ) const
+{ 
+    VGIColorBufferFormat format; 
+    switch(imageFormat) 
+    { 
+    case QImage::Format_Mono:                  
+    case QImage::Format_RGB32:                 
+    case QImage::Format_ARGB32:       
+            format = VGI_COLOR_BUFFER_FORMAT_ARGB8888;
+            break;
+    case QImage::Format_ARGB32_Premultiplied: 
+            format = VGI_COLOR_BUFFER_FORMAT_ARGB8888_PRE;
+            break;
+    case QImage::Format_RGB16:                 
+    case QImage::Format_ARGB8565_Premultiplied: 
+    case QImage::Format_RGB666:                
+    case QImage::Format_ARGB6666_Premultiplied: 
+    case QImage::Format_RGB555:                
+    case QImage::Format_ARGB8555_Premultiplied: 
+            break; 
+    case QImage::Format_RGB888: 
+            format = VGI_COLOR_BUFFER_FORMAT_RGB888; 
+            break;                
+    case QImage::Format_RGB444:                
+    case QImage::Format_ARGB4444_Premultiplied: 
+    case QImage::Format_Invalid:               
+        break; 
+    } 
+    return format; 
+}
+
 /**
  * HbNvgIconProcessor::renderNvgToPixmap()
  * This is used to render NVG data to a pixmap using the Software OpenVG
@@ -376,6 +404,14 @@ bool HbPixmapIconProcessor::createMultiPieceIconData(const QVector<HbSharedIconI
 bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
 {
     bool isIconCreated = false;
+    
+    CNvgEngine* nvgengine = 0;
+    TRAPD(error, nvgengine = CNvgEngine::NewL());
+    if (error != KErrNone) {
+        return isIconCreated;
+    }
+    QScopedPointer<CNvgEngine> nvgEngine(nvgengine); 
+    
     bool isDefaultSize =  iconKey.size.isNull();
     HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
     QByteArray *sourceByteArray = source->byteArray();
@@ -391,6 +427,15 @@ bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
     size = renderSize.toSize();          
     TSize surfaceSize(TSize(size.width(), size.height()));
 
+/*    QImage img(size,QImage::Format_ARGB32_Premultiplied);
+    
+    VGIColorBufferFormat format;
+    TInt stride = img.bytesPerLine(); 
+    TUint8* imageBuffer = img.bits(); // get the pointer to image buffer. 
+    // Map Qimage display modes to the VGI display modes. 
+    format = mapToVgiDisplayFormat(img.format()); 
+    qDebug()<<"Format = " <<format; */
+    
     QScopedPointer<CFbsBitmap> bitmapData(new CFbsBitmap());    
     
     TInt err = bitmapData.data()->Create(surfaceSize, EColor16MA);    
@@ -398,33 +443,40 @@ bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
         return isIconCreated;
     }
     
+    
     //Reset the surface incase already present
     VGISymbianTerminate();
     
     // Surface creation
-    err =  VGISymbianInitialize( surfaceSize, VGI_COLORSPACE_SRGB );
+    /*TInt*/ err =  VGISymbianInitialize( surfaceSize, VGI_COLORSPACE_SRGB );
     if( err != KErrNone) {
         return isIconCreated;
     }
     
-    QScopedPointer<CNvgEngine> nvgEngine(CNvgEngine::NewL());
-    //CNvgEngine* nvgEngine = CNvgEngine::NewL();
     HbNvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(iconKey.aspectRatioMode);
     nvgEngine.data()->SetPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
     // Rendering onto active surface
     TPtr8 data ((unsigned char*)byteArray.data(), byteArray.length(), byteArray.length());
-    err = nvgEngine.data()->DrawNvg(data, surfaceSize, bitmapData.data(), 0);    
+    err = nvgEngine.data()->DrawNvg(data, surfaceSize, 0, 0);    
     if(err !=KErrNone) {  
         return isIconCreated;
     }
     
     //Copy the data from the surface
+/*    err = VGICopyToTarget(format, stride, imageBuffer, 0, NULL, VGI_COPY_TRANSPARENT_PIXELS); 
+#ifdef __DEBUG    
+	qDebug() << "error code for VGICopyToTarget()"<< err;
+#endif
+    //Get Pixmap from the Qimage.
+    pixmap = QPixmap::fromImage(img); */
+
     err = VGISymbianCopyToBitmap(bitmapData.data(), 0, VGI_COPY_TRANSPARENT_PIXELS);
     if(err !=KErrNone) { 
         return isIconCreated;
     }
     //Get Pixmap from the Symbian Native format.
     pixmap = QPixmap::fromSymbianCFbsBitmap(bitmapData.data());
+    
     isIconCreated = true;    
         
     //Clean Up
@@ -465,5 +517,5 @@ HbNvgAspectRatioSettings HbPixmapIconProcessor::mapKeyAspectRatioToNvgAspectRati
     }
     return settings;
 }
-#endif //Q_OS_SYMBIAN
+#endif //HB_NVG_CS_ICON
 

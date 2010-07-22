@@ -37,7 +37,7 @@ class HB_INPUT_EXPORT HbInputModeIndicator : public QObject
 {
     Q_OBJECT
 public:
-    HbInputModeIndicator(HbInputButton *button, QGraphicsWidget *parent = 0);
+    explicit HbInputModeIndicator(HbInputButton *button, QGraphicsWidget *parent = 0);
     virtual ~HbInputModeIndicator();
 
 public slots:
@@ -46,7 +46,7 @@ public slots:
 
 private:
     Q_DISABLE_COPY(HbInputModeIndicator)
-    HbInputModeIndicatorPrivate* mPrivate;
+    HbInputModeIndicatorPrivate *mPrivate;
 };
 
 #endif // HB_INPUT_MODE_INDICATOR_H

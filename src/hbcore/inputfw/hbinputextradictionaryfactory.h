@@ -48,13 +48,13 @@ public:
     static HbExtraDictionaryFactory *instance();
 
     HbExtraUserDictionary *existingDictionary(int dictionaryId);
-    HbExtraUserDictionary *createDictionary(int dictionaryId, const QStringList& initialContent = QStringList());
+    HbExtraUserDictionary *createDictionary(int dictionaryId, const QStringList &initialContent = QStringList());
 
 public slots:
     void shutdown();
 
 protected:
-   HbExtraDictionaryFactoryPrivate* const d_ptr;
+    HbExtraDictionaryFactoryPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbExtraDictionaryFactory)

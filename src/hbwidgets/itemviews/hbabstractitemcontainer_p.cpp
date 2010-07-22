@@ -27,7 +27,6 @@
 
 #include "hbabstractviewitem.h"
 #include "hbabstractitemview.h"
-#include "hbabstractitemview_p.h"
 #include "hbmodeliterator.h"
 #include <hbapplication.h>
 
@@ -279,7 +278,7 @@ void HbAbstractItemContainerPrivate::increaseBufferSize(int amount)
     }
 
     int itemsAdded = 0;
-    // in practise following conditions must apply: itemview is empty and scrollTo() has been called.
+    // in practize following conditions must apply: itemview is empty and scrollTo() has been called.
     // Starts populating items from given mFirstItemIndex
     if (    !index.isValid()
         &&  mFirstItemIndex.isValid()) {
@@ -289,7 +288,7 @@ void HbAbstractItemContainerPrivate::increaseBufferSize(int amount)
 
         mFirstItemIndex = QModelIndex();
     }
- 
+
     while (itemsAdded < amount) {
         index = mItemView->modelIterator()->nextIndex(index);
         if (!index.isValid()) {
@@ -362,35 +361,29 @@ void HbAbstractItemContainerPrivate::decreaseBufferSize(int amount)
 HbAbstractViewItem* HbAbstractItemContainerPrivate::item(const QModelIndex &index) const
 {
     int itemCount = mItems.count();
-    for (int i = 0; i < itemCount; ++i) {
-        // This could use binary search as model indexes are in sorted.
-        if (mItems.at(i)->modelIndex() == index) {
-            return mItems.at(i);
-        }
-    }
+    if (index.isValid()) {
+        if (itemCount > 0) { 
+            HbModelIterator *iterator = mItemView->modelIterator();
+            int positionFirstIndex = iterator->indexPosition(mItems.first()->modelIndex());
 
-    // TODO: The lower (commented out) part of the code is an optimized version of the above.
-    // However, there are problems with TreeView's deep models concerning the optimized version.
-    // The optimized version should be fixed and taken into use later on.
-
-    /*
-    int itemCount = mItems.count();
-    if (itemCount > 0) {
-        if (index.isValid()) {
-            int itemIndex = mItemView->indexPosition(index) - mItemView->indexPosition(mItems.first()->modelIndex());
-            return mItems.value(itemIndex);
-        } else {
-            for (int i = 0; i < itemCount; ++i) {
-                // This could use binary search as model indexes are in sorted.
-                HbAbstractViewItem *item = mItems.at(i);
-                if (item->modelIndex() == index) {
+            // when new items are inserted, they will appear in the end of container before a model index is assigned to them
+            if (positionFirstIndex >= 0) {
+                int positionIndex = iterator->indexPosition(index);
+                HbAbstractViewItem *item = mItems.value(positionIndex - positionFirstIndex);
+                if (    item
+                    &&  item->modelIndex() == index) { 
                     return item;
                 }
             }
         }
+    } else {
+        // searching items e.g. removed from model 
+        for (int i = 0; i < itemCount; ++i) {
+            if (!mItems.at(i)->modelIndex().isValid()) {
+                return mItems.at(i);
+            }
+        }
     }
-    */
-
     return 0;
 }
 
@@ -487,11 +480,7 @@ void HbAbstractItemContainerPrivate::restoreItemPosition(HbAbstractViewItem *ite
         if (!delta.isNull()) {
             q->setPos(q->pos() - delta);
 
-            if (mItemView) {
-                // this will force the HbScrollArea to adjust the content correctly. Adjustment
-                // is not done in the setPos generated event handling by default to speed up scrolling.
-                HbAbstractItemViewPrivate::d_ptr(mItemView)->adjustContent();
-            }
+            adjustContent();
         }
     }
 }
@@ -1184,7 +1173,7 @@ void HbAbstractItemContainer::resizeContainer()
             newSize.setWidth(d->mItemView->size().width());
         }
     }
-       
+
     resize(newSize);
 }
 

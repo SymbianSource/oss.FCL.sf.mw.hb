@@ -33,7 +33,7 @@
 #include <QFont>
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbFontSpec
     \brief HbFontSpec is used to request a system font.
@@ -108,11 +108,12 @@ public:
     ~HbFontSpecPrivate();
 
     qreal textHeight() const;
-    QFont font() const;
+    QFont font();
 
 public: // data
     HbFontSpec::Role mRole;
     mutable qreal mTextHeight;
+    QString mFontName;
 };
 
 /*!
@@ -120,7 +121,8 @@ public: // data
 */
 HbFontSpecPrivate::HbFontSpecPrivate() :
     mRole(HbFontSpec::Undefined),
-    mTextHeight(-1.0f)
+    mTextHeight(-1.0f),
+    mFontName("")
 {
 }
 
@@ -142,58 +144,68 @@ qreal HbFontSpecPrivate::textHeight() const
 #ifdef HB_BOOTSTRAPPED
     return 0;
 #else
-    if ( (mRole != HbFontSpec::Undefined) && (mTextHeight < 0) ) {
+    if ((mRole != HbFontSpec::Undefined) && (mTextHeight < 0)) {
         qreal parameterValue;
         QString parameterName;
-        switch (mRole){
-            case HbFontSpec::Primary:
-                parameterName = "hb-param-text-height-primary";
-                break;
-            case HbFontSpec::Secondary:
-                parameterName = "hb-param-text-height-secondary";
-                break;
-            case HbFontSpec::Title:    
-                parameterName = "hb-param-text-height-title";
-                break;
-            case HbFontSpec::PrimarySmall:
-                parameterName = "hb-param-text-height-tiny";
-                break;
-            case HbFontSpec::Digital:
-            default: // Usage of Secondary as the default system typeface
-                parameterName = "hb-param-text-height-secondary";
-                break;
+        switch (mRole) {
+        case HbFontSpec::Primary:
+            parameterName = "hb-param-text-height-primary";
+            break;
+        case HbFontSpec::Secondary:
+            parameterName = "hb-param-text-height-secondary";
+            break;
+        case HbFontSpec::Title:
+            parameterName = "hb-param-text-height-title";
+            break;
+        case HbFontSpec::PrimarySmall:
+            parameterName = "hb-param-text-height-tiny";
+            break;
+        case HbFontSpec::Digital:
+        default: // Usage of Secondary as the default system typeface
+            parameterName = "hb-param-text-height-secondary";
+            break;
         }
-        HbInstance::instance()->style()->parameter( parameterName, parameterValue );
+        HbInstance::instance()->style()->parameter(parameterName, parameterValue);
         mTextHeight = parameterValue;
     }
-	return mTextHeight;
+    return mTextHeight;
 #endif
 }
 
 /*!
 \internal
 */
-QFont HbFontSpecPrivate::font() const
+QFont HbFontSpecPrivate::font()
 {
 #ifdef HB_BOOTSTRAPPED
     return QFont();
 #else
-    if ( mRole == HbFontSpec::Undefined ) {
+    if (mRole == HbFontSpec::Undefined && mFontName.isEmpty()) {
         return QFont();
     }
-    QString typefaceFamily;
-    int weight;
+    QString typefaceFamily(mFontName);
+    int weight(QFont::Normal);
 
     HbTypefaceInfo *tInfo = HbInstancePrivate::d_ptr()->typefaceInfo(); // Non-owning pointer
 
+    if (mRole != HbFontSpec::Undefined) {
     tInfo->roleToTypeface(mRole, typefaceFamily, weight);
+		mFontName = typefaceFamily;
+	} else if (!tInfo->containsFamily(typefaceFamily)) {
+		QString aliasFamily;
+		if (tInfo->tryGetFamilyFromAliasName(typefaceFamily, aliasFamily, weight)) {
+			typefaceFamily = aliasFamily;
+		}
+	} else {
+		weight = tInfo->getWeight(typefaceFamily);
+	}
     QFont font(typefaceFamily);
 
     font.setWeight(weight);
 
     // Sets default size if text height is not set explicitly.
     qreal height = textHeight();
-	int downSizedSize = tInfo->textHeightToSizeInPixels(typefaceFamily, weight, height);
+    int downSizedSize = tInfo->textHeightToSizeInPixels(typefaceFamily, weight, height);
     font.setPixelSize(downSizedSize);
 
     return font;
@@ -212,10 +224,15 @@ HbFontSpec::HbFontSpec()
 /*!
     Constructs a new font spec with the given font \a role.
 */
-HbFontSpec::HbFontSpec(HbFontSpec::Role role) 
+HbFontSpec::HbFontSpec(HbFontSpec::Role role)
     : d(new HbFontSpecPrivate())
 {
     d->mRole = role;
+}
+HbFontSpec::HbFontSpec(const QString fontName) 
+    : d(new HbFontSpecPrivate())
+{
+    d->mFontName = fontName;
 }
 
 /*!
@@ -307,9 +324,9 @@ HbFontSpec::operator QVariant() const
     Returns true if this fontSpec is equal to \a other fontSpec; otherwise returns false.
 */
 bool HbFontSpec::operator==(const HbFontSpec &other) const
-{    
+{
     return ((d->mRole == other.d->mRole)
-        && qFuzzyCompare(d->textHeight(), other.d->textHeight()));
+            && qFuzzyCompare(d->textHeight(), other.d->textHeight()));
 }
 
 /*!
@@ -329,7 +346,7 @@ bool HbFontSpec::operator!=(const HbFontSpec &other) const
 */
 qreal HbFontSpec::textHeight() const
 {
-	return d->textHeight();
+    return d->textHeight();
 }
 
 /*!
@@ -351,4 +368,13 @@ void HbFontSpec::setTextHeight(qreal textHeight)
     d->mTextHeight = textHeight;
 }
 
+void HbFontSpec::setTypefaceFamily(QString fontName)
+{
+    d->mFontName = fontName;
+}
+
+QString HbFontSpec::typefaceFamily() const
+{
+   return d->mFontName;
+}
 // End of File

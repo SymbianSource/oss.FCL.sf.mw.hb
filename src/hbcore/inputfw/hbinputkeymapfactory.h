@@ -23,10 +23,11 @@
 **
 ****************************************************************************/
 
-#ifndef HB_KEYMAP_FACTORY_H
-#define HB_KEYMAP_FACTORY_H
+#ifndef HB_INPUT_KEYMAP_FACTORY_H
+#define HB_INPUT_KEYMAP_FACTORY_H
 
 #include <hbinputdef.h>
+#include <QLocale>
 
 class HbKeymapFactoryPrivate;
 class HbKeymap;
@@ -35,11 +36,11 @@ class HbInputLanguage;
 class HB_CORE_EXPORT HbKeymapFactory
 {
 public:
-    static HbKeymapFactory* instance();
+    static HbKeymapFactory *instance();
 
-    const HbKeymap* keymap(const QLocale::Language language,
+    const HbKeymap *keymap(const QLocale::Language language,
                            const QLocale::Country country = QLocale::AnyCountry);
-    const HbKeymap* keymap(const HbInputLanguage language);
+    const HbKeymap *keymap(const HbInputLanguage language);
 
     static QList<HbInputLanguage> availableLanguages();
 
@@ -50,9 +51,9 @@ private:
     Q_DISABLE_COPY(HbKeymapFactory)
 
 private:
-    HbKeymapFactoryPrivate* mPrivate;
+    HbKeymapFactoryPrivate *mPrivate;
 };
 
-#endif // HB_KEYMAP_FACTORY_H
+#endif // HB_INPUT_KEYMAP_FACTORY_H
 
 // End of file

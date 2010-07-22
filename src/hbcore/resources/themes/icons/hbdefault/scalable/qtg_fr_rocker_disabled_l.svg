@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="220px" version="1.1" viewBox="0 0 220 220" width="220px" x="0px" y="0px">
+<svg baseProfile="tiny" height="220px" version="1.1" viewBox="0 0 220 220" width="220px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path d="M61,110c0-13.531,5.484-25.781,14.352-34.648L35.754,35.754C16.752,54.755,5,81.005,5,110  c0,28.994,11.752,55.244,30.754,74.246l39.598-39.598C66.484,135.781,61,123.531,61,110z" fill="#141414" fill-opacity="0.4" stroke-opacity="0.4"/>
 <path d="M37.206,181.38C18.363,162.177,8,136.868,8,110s10.363-52.177,29.206-71.38l36.739,36.738  C64.944,84.716,60,96.979,60,110s4.944,25.284,13.944,34.642L37.206,181.38z" fill="#BEBEBE" fill-opacity="0.8" stroke-opacity="0.8"/>
 <polygon fill="#787878" points="44,121 26,110 44,99 "/>

@@ -36,7 +36,7 @@
 \class HbStaticVkbHost
 \brief Static virtual keyboard host
 
-The virtual keyboard host takes care of keyboard animations. 
+The virtual keyboard host takes care of keyboard animations.
 This version, unlike other vkb host implementations,  only brings up the virtual keyboard but does not
 move the underlying view or reposition the editor in case it is fully or partially covered by the virtual
 keyboard. In other words, it does not gurantee that the editor cursor remains visible.
@@ -59,7 +59,7 @@ public:
 };
 
 HbStaticVkbHostPrivate::HbStaticVkbHostPrivate(HbAbstractVkbHost *myHost, HbWidget *widget)
-: HbAbstractVkbHostPrivate(myHost, widget)
+    : HbAbstractVkbHostPrivate(myHost, widget)
 {
 }
 
@@ -77,8 +77,8 @@ bool HbStaticVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus st
 Constructs the object.
 */
 HbStaticVkbHost::HbStaticVkbHost(HbWidget *widget) : HbAbstractVkbHost(new HbStaticVkbHostPrivate(this, widget))
-{  
-    setParent(widget);  
+{
+    setParent(widget);
 }
 
 /*!

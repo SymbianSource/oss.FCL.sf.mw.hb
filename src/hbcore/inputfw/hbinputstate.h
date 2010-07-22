@@ -36,7 +36,7 @@
 
 This class describes the state of the input framework.
 Active input method is notified every time the state changes.
-If the active input method cannot handle new state, the framework will find 
+If the active input method cannot handle new state, the framework will find
 suitable handler for it. The input state is a combination of input mode, text case,
 keyboard type and language.
 
@@ -61,19 +61,19 @@ public:
           mLanguage(language)
     {}
 
-    void operator=(const HbInputState& other) {
+    void operator=(const HbInputState &other) {
         mModeType = other.mModeType;
         mTextCase = other.mTextCase;
         mKeyboardType = other.mKeyboardType;
         mLanguage = other.mLanguage;
     }
 
-    bool operator==(const HbInputState& other) {
+    bool operator==(const HbInputState &other) const {
         if (mModeType == other.mModeType
             && mTextCase == other.mTextCase
             && mKeyboardType == other.mKeyboardType
             && mLanguage == other.mLanguage) {
-                return true;
+            return true;
         }
         return false;
     }
@@ -83,24 +83,24 @@ public:
     states being compared has undefined language value, it will match to any language.
     If both language values are defined, then they are compared directly.
     */
-    bool isMatch(const HbInputState& other) {
+    bool isMatch(const HbInputState &other) const {
         if (mModeType == other.mModeType
             && mTextCase == other.mTextCase
             && mKeyboardType == other.mKeyboardType
             && (mLanguage == other.mLanguage ||
                 mLanguage.undefined() ||           // Undefined matches to anything.
-        other.mLanguage.undefined())) {
-                return true;
+                other.mLanguage.undefined())) {
+            return true;
         }
         return false;
     }
 
-    bool operator!=(const HbInputState& other) {
+    bool operator!=(const HbInputState &other) const {
         if (mModeType != other.mModeType
             || mTextCase != other.mTextCase
             || mKeyboardType != other.mKeyboardType
             || mLanguage != other.mLanguage) {
-                return true;
+            return true;
         }
         return false;
     }
@@ -108,42 +108,58 @@ public:
     /*!
     Returns input mode.
     */
-    HbInputModeType inputMode() const { return mModeType; }
+    HbInputModeType inputMode() const {
+        return mModeType;
+    }
 
     /*!
     Sets input mode.
     */
-    void setInputMode(HbInputModeType newMode) { mModeType = newMode; }
+    void setInputMode(HbInputModeType newMode) {
+        mModeType = newMode;
+    }
 
     /*!
     Returns text case.
     */
-    HbTextCase textCase() const { return mTextCase; }
+    HbTextCase textCase() const {
+        return mTextCase;
+    }
 
     /*!
     Sets text case.
     */
-    void setTextCase(HbTextCase newCase) { mTextCase = newCase; }
+    void setTextCase(HbTextCase newCase) {
+        mTextCase = newCase;
+    }
 
     /*!
     Returns keyboard type.
     */
-    HbKeyboardType keyboard() const { return mKeyboardType; }
+    HbKeyboardType keyboard() const {
+        return mKeyboardType;
+    }
 
     /*!
     Sets keyboard type.
     */
-    void setKeyboard(HbKeyboardType newKeyboard) { mKeyboardType = newKeyboard; }
+    void setKeyboard(HbKeyboardType newKeyboard) {
+        mKeyboardType = newKeyboard;
+    }
 
     /*!
     Returns language.
     */
-    HbInputLanguage language() const { return HbInputLanguage(mLanguage); }
+    HbInputLanguage language() const {
+        return HbInputLanguage(mLanguage);
+    }
 
     /*!
-    Sets language. 
+    Sets language.
     */
-    void setLanguage(const HbInputLanguage &newLanguage) { mLanguage = newLanguage; }
+    void setLanguage(const HbInputLanguage &newLanguage) {
+        mLanguage = newLanguage;
+    }
 
 private:
     HbInputModeType mModeType;

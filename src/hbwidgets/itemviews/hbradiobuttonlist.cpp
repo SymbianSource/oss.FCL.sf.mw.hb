@@ -37,8 +37,6 @@
 const int HB_RADIOBUTTONLIST_ITEM_ACTIVATION_TIMER = 150;
 const int HB_RADIOBUTTONLIST_PREVIEW_TIMER = 500;
 
-const int HB_RADIOBUTTONLIST_MINIMUM_ITEM_COUNT_IN_SIZE_HINT = 4;
-
 /*!
     \class HbRadioButtonList
     \brief HbRadioButtonList provides a widget for a string list with radio buttons
@@ -66,6 +64,8 @@ const int HB_RADIOBUTTONLIST_MINIMUM_ITEM_COUNT_IN_SIZE_HINT = 4;
 
     An example of how to create a radiobuttonlist inside a popup.
     \snippet{decoratorlistdemo/contentwidget.cpp,3}
+
+    By default the radio button list has uniformItemSizes property set to true.
 
 */
 
@@ -128,15 +128,13 @@ public:
     HbRadioButtonList::PreviewMode mPreviewMode;
     bool mPreviewGoingOn;
     bool mStartUp;
-    qreal mHeight;
 };
 
 HbRadioButtonListPrivate::HbRadioButtonListPrivate() :
     HbListViewPrivate(),
     mPreviewMode(HbRadioButtonList::NoPreview),
     mPreviewGoingOn(false),
-    mStartUp(true),
-    mHeight(0)
+    mStartUp(true)
 {     
 }
 
@@ -170,26 +168,7 @@ void HbRadioButtonListPrivate::init(QAbstractItemModel *model, int selected,
     q->setSelected(selected);   
     q->setPreviewMode(previewMode);
     q->setLongPressEnabled(false);
-    calculateItemHeight();
-}
-
-void HbRadioButtonListPrivate::calculateItemHeight()
-{
-    Q_Q(HbRadioButtonList);
-    if (!q->items().isEmpty()) {
-        //Let's create a temporary item and take the height for the size hint
-        HbAbstractViewItem *tempItem = q->itemPrototypes().first()->createItem();
-        tempItem->setModelIndex(mModelIterator->nextIndex(QModelIndex()));
-
-        qreal oldHeight = mHeight;
-        mHeight = tempItem->effectiveSizeHint(Qt::PreferredSize).height();
-
-        delete tempItem;
-
-        if (mHeight != oldHeight) {
-            q->updateGeometry();
-        }
-    }
+    q->setUniformItemSizes(true);
 }
 
 void HbRadioButtonListPrivate::emitStartPreview(int row)
@@ -249,10 +228,6 @@ void HbRadioButtonList::setItems(const QStringList &list)
     QStringListModel *stringListModel = qobject_cast<QStringListModel *>(d->mModelIterator->model());
     if (stringListModel) {
         stringListModel->setStringList(list);
-        //Calculate the item height only if needed
-        if(d->mHeight==0){
-            d->calculateItemHeight();
-        }
         updateGeometry();
     } else {
         //TODO: set the item here using the base model class
@@ -407,21 +382,7 @@ bool HbRadioButtonList::event(QEvent *e)
 */
 QSizeF HbRadioButtonList::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    Q_D(const HbRadioButtonList);
-    if (which == Qt::PreferredSize) {
-        QSizeF defaultSize = HbListView::sizeHint(which,constraint);
-        qreal minHeight = (d->mHeight) * HB_RADIOBUTTONLIST_MINIMUM_ITEM_COUNT_IN_SIZE_HINT;
-        defaultSize.setHeight(qMax(defaultSize.height(), minHeight));
-        
-        qreal height = (d->mHeight) * (d->mModelIterator->indexCount());
-        if( height <= defaultSize.height()) {
-            return QSizeF(defaultSize.width(), height);
-        } else {
-            return defaultSize;
-        } 
-    } else {
-        return HbListView::sizeHint(which, constraint);
-    }
+    return HbListView::sizeHint(which, constraint);
 }
 
 /*!
@@ -429,13 +390,7 @@ QSizeF HbRadioButtonList::sizeHint(Qt::SizeHint which, const QSizeF &constraint)
 */
 void HbRadioButtonList::rowsInserted(const QModelIndex &parent, int start, int end)
 {
-    Q_D(HbRadioButtonList);
     HbListView::rowsInserted(parent,start,end);
-    //Calculate the item height only if needed
-    if(d->mHeight==0){
-        d->calculateItemHeight();
-    }
-    updateGeometry();
 }
 
 /*!
@@ -444,7 +399,6 @@ void HbRadioButtonList::rowsInserted(const QModelIndex &parent, int start, int e
 void HbRadioButtonList::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     HbListView::rowsRemoved(parent,start,end);
-    updateGeometry();
 }
 
 /*!
@@ -453,7 +407,6 @@ void HbRadioButtonList::rowsRemoved(const QModelIndex &parent, int start, int en
 void HbRadioButtonList::reset()
 {
     HbListView::reset();
-    updateGeometry();
 }
 #include "moc_hbradiobuttonlist.cpp"
 

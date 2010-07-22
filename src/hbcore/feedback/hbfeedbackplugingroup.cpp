@@ -123,8 +123,8 @@ void HbFeedbackPluginGroup::loadPlugins()
 
     foreach (const QFileInfo &driveInfo, driveInfoList) {
         const QString drive = driveInfo.absolutePath();
-        if (drive.startsWith("z:", Qt::CaseInsensitive) ||
-            drive.startsWith("c:", Qt::CaseInsensitive)) {
+        if (drive.startsWith(QLatin1String("z:"), Qt::CaseInsensitive) ||
+            drive.startsWith(QLatin1String("c:"), Qt::CaseInsensitive)) {
             QString path(drive + pluginRelativePath);
             pluginPathList << path;
         }

@@ -36,7 +36,7 @@
 #include "hbinputbutton.h"
 #include "hbinputmodeindicator.h"
 
-const qreal HbKeyboardHeightInUnits = 34.6;
+const qreal HbKeyboardHeightInUnits = 33.7;
 const qreal HbKeyboardWidthInUnits = 95.5;
 
 const int HbVirtualQwertyNumberOfRows = 4;
@@ -137,21 +137,6 @@ void HbQwerty11x4KeyboardPrivate::init()
 int HbQwerty11x4KeyboardPrivate::keyCode(int buttonId)
 {
     return HbButtonKeyCodeTable[buttonId];
-}
-
-void HbQwerty11x4KeyboardPrivate::setRockerPosition()
-{
-    Q_Q(HbQwerty11x4Keyboard);
-
-    HbInputVkbWidgetPrivate::setRockerPosition();
-
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
-    if (buttonGroup) {
-        QPointF position = mRocker->pos();
-        position.setX(position.x() + 0.5 * buttonGroup->size().width() / HbVirtualQwertyNumberOfColumns);
-
-        mRocker->setPos(position);
-    }
 }
 
 /*!

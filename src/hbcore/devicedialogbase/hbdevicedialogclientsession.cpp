@@ -118,7 +118,7 @@ TInt RHbDeviceDialogClientSession::Connect()
 
 TBool RHbDeviceDialogClientSession::ServerRunning()
 {
-    TRACE_ENTRY
+    TRACE_STATIC_ENTRY
     TFindServer findHbServer(KHbServerName);
     TFullName name;
     TRACE_EXIT

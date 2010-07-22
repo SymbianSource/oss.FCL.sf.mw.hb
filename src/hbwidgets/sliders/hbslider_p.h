@@ -29,9 +29,12 @@
 
 #include "hbwidget_p.h"
 #include <QHash>
+#include <hbslider.h>
 
 class HbSliderControl;
 class QGraphicsItem;
+class HbSliderTickmarksLabel;
+class HbSliderTickmarks;
 
 struct ItemPrimitive
 {
@@ -50,11 +53,26 @@ public:
     void init();
     void setElements( QList<HbSlider::SliderElement> elementList);
     void elementWidget(HbSlider::SliderElement element);
+    QSizeF getHandleSize( );
     void updateElements();
     void startIncrementing();
     void startDecrementing();
     void stopRepeatAction();
-    void setTickLabelPresentProperty();
+    void updateTickMarks();
+    void updateTickLabels();
+    void deleteTickMarks();
+    void deleteTickLabels();
+    void createTickMarks( );
+    void createTickLabels( );
+    void setTickOrientation( );
+
+public:
+    static HbSliderPrivate *d_ptr(HbSlider *slider) {
+        Q_ASSERT(slider);
+        return slider->d_func();
+    }
+
+
 
 #ifdef HB_EFFECTS
     void _q_startIconPressedEffect();
@@ -72,6 +90,12 @@ public:
     QString thumbPath;   
     bool  pressOnIncrement;
     QMap<HbSlider::SliderElement , ItemPrimitive> elementItemMap;
+    HbSliderTickmarks *tickmarksLeft;
+    HbSliderTickmarks *tickmarksRight;
+    HbSliderTickmarksLabel *tickmarkslabelLeft;
+    HbSliderTickmarksLabel *tickmarkslabelRight;
+    friend class HbSliderTickmarks;
+    friend class HbSliderTickmarksLabel;
 
 };
 

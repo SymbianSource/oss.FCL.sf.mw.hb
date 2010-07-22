@@ -36,17 +36,21 @@ class HB_WIDGETS_EXPORT HbCheckBox : public HbAbstractButton
 {
     Q_OBJECT
     Q_PROPERTY( QString text READ text WRITE setText )
-    Q_PROPERTY(bool tristate READ isTristate WRITE setTristate)
-    Q_PROPERTY(Qt::CheckState checkState READ checkState WRITE setCheckState)
+    Q_PROPERTY( bool tristate READ isTristate WRITE setTristate )
+    Q_PROPERTY( Qt::CheckState checkState READ checkState WRITE setCheckState )
 
 public:
 
     explicit HbCheckBox( QGraphicsItem *parent = 0 );
     explicit HbCheckBox( const QString &text, QGraphicsItem *parent = 0 );
-    virtual ~HbCheckBox();  
+    virtual ~HbCheckBox( );  
 
-    enum { Type = Hb::ItemType_CheckBox };
-    int type() const { return Type; }
+    enum { 
+        Type = Hb::ItemType_CheckBox 
+    };
+    int type() const {
+        return Type;
+    }
 
     void setText( const QString &text );
     QString text( ) const;
@@ -56,7 +60,7 @@ public:
 
     Qt::CheckState checkState( ) const;
 
-    virtual QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
+    virtual QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
 public slots:
 
@@ -64,28 +68,32 @@ public slots:
     virtual void updatePrimitives();
 
 protected:
+
     void initStyleOption( HbStyleOptionCheckBox *option ) const;
-    void resizeEvent(QGraphicsSceneResizeEvent *event);
+    void resizeEvent( QGraphicsSceneResizeEvent *event );
 
     virtual bool hitButton( const QPointF &pos ) const;
     virtual void checkStateSet( );
     virtual void nextCheckState( );
 #ifndef HB_GESTURE_FW
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent( QGraphicsSceneMouseEvent *event );
 #endif
+
 #ifdef HB_GESTURE_FW
-    virtual void gestureEvent(QGestureEvent *event);
+    virtual void gestureEvent( QGestureEvent *event );
 #endif
-    void keyPressEvent(QKeyEvent *keyEvent);
+    void keyPressEvent( QKeyEvent *keyEvent );
     QVariant itemChange( GraphicsItemChange change, const QVariant &value );
 
 signals:
+
     void stateChanged ( int state );
 
 private:
-    Q_DECLARE_PRIVATE_D(d_ptr, HbCheckBox)
-    Q_DISABLE_COPY(HbCheckBox)
+
+    Q_DECLARE_PRIVATE_D( d_ptr, HbCheckBox )
+    Q_DISABLE_COPY( HbCheckBox )
     
 
 };

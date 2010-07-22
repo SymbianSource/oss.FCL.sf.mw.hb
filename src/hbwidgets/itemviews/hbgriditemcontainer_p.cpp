@@ -154,7 +154,7 @@ void HbGridItemContainer::reset()
     Set model indexes starting from \a startIndex. If \a startIndex is not
     a index of first item in a row, then it is calculated automatically 
     (prevent) from different content looking (grid items arrangement should be
-    always the same). If there is not enought items function fetch data that
+    always the same). If there is not enough items function fetch data that
     are before \a startIndex. After calling this function item, with specified 
     index is in container but it position depends on model size.
     If \a startIndex is invlaid then container is filled starting from first 
@@ -528,12 +528,12 @@ void HbGridItemContainer::layoutAnimationFinished(QGraphicsLayoutItem *item, HbG
 
 /*!
     \reimp
-    In grid case items are allways same size
+    In grid case items are always same size
 */
 void HbGridItemContainer::setUniformItemSizes(bool enable)
 {
     Q_UNUSED(enable);
-    // d->mUniformItemSizes - allways true
+    // d->mUniformItemSizes - always true
 }
 
 /*!

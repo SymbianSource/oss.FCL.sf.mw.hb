@@ -52,6 +52,8 @@ HbGroupBoxPrivate::HbGroupBoxPrivate()
     :HbWidgetPrivate(),
     mContentWidget( 0 ),
     mHeadingWidget( 0 ),
+    collapsed( false),
+    collapsable( true ),
     mGroupBoxType( GroupBoxTypeUnknown )
 {
 }
@@ -89,7 +91,7 @@ void HbGroupBoxPrivate::createContentWidget()
 
 /*!
     \internal
-    Sets the group box type
+    Sets the groupbox type
 */
 void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
 {
@@ -106,48 +108,19 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
     // set the type and makes necesary primitive creation/deletion
     switch(mGroupBoxType) {
         case GroupBoxSimpleLabel:
-            {
-            if(mHeadingWidget){
-                mHeadingWidget->setType(type);				
-                mHeadingWidget->setVisible(true);
-             
-            }else{
-                createHeadingWidget();
-            }
-
-            if(mContentWidget){
-                mContentWidget->setVisible(false);
-                HbStyle::setItemName( mContentWidget , "");
-            }
-            
+            {               
+                mHeadingWidget->setType(type);                        
             }
             break;
         case GroupBoxRichLabel:
             {
-            if(mHeadingWidget){
-                mHeadingWidget->setVisible(false);
-
-            }
-            if(mContentWidget){
                 mContentWidget->setType(type);
-                mContentWidget->setVisible(true);
                 HbStyle::setItemName( mContentWidget , "contentwidget");
-            }else{
-                createContentWidget();
-            }
-
             }
             break;
         case GroupBoxCollapsingContainer:
             {
-            if((mHeadingWidget)){
                 mHeadingWidget->setType(type);
-                mHeadingWidget->setVisible(true);                
-            }else{
-                createHeadingWidget();
-            }
-
-            if(mContentWidget){
                 mContentWidget->setType(type);
                 if(!q->isCollapsed()){
                     mContentWidget->setVisible(true);
@@ -156,9 +129,6 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
                     mContentWidget->setVisible(false);
                     HbStyle::setItemName( mContentWidget , "");
                 }
-            }else{
-                createContentWidget();
-            }
             }
             break;
         default:
@@ -171,59 +141,60 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
 
 
 /*!
-    @alpha
+    @beta
     @hbwidgets
     \class HbGroupBox
 
     \brief HbGroupBox shows the user that a set of controls belong together.
     
-    HbGroupBox is a container that provides the following : 
+    HbGroupBox is a container, which can have following Elementes: 
 
-    \li Heading: text only
-    \li Body content: arbitrary content (any HbWidget)
-    \li Disclosure mechanism: expands and collapses the body content;
+    \li Heading: A heading contains one row text and disclosure indicator if the disclosure mechanism is on.
+    \li Body content: Can have arbitrary content (any HbWidget)and application is responsible for its layout.
+    \li Disclosure Indicator: Indicates the expands and collapses state of body;
 
     There are three types of GroupBox:
 
-    \li Simple Label - it's only function is to show relationship between items.
-    simple Label shows a heading with marquee, no disclosure mechanism, and 
-    no body content. Marquee is disabled by default.Also it is not focusable. 
+    \li Simple Label - Simple Label is to indicate the users position in the application hierarchy 
+    or to display a textual label and its noninteractive. 
+    Simple Label has a heading text with marquee, no disclosure mechanism, and 
+    no body content.Simple label only has heading element. 
+    Marquee is disabled by default, can be enabled using setMarqueeHeading () .Also it is not focusable. 
 
     Example usage: For SimpleLabel type groupbox
     \code
     // create groupBox and set only heading; without any body content
     HbGroupBox *simpleLabel = new HbGroupBox();
     simpleLabel->setHeading("Simple label groupBox comes with marquee disabled by default");
+    //to make marqee enabled
+    simpleLabel->setMarqueeHeading(true);
     \endcode 
     
     \image html simpleLabelgroupbox.png A SimpleLabel groupbox
 
 
-    \li Rich Label - does not show a heading and all content is in the body area 
-    with no marquee and no disclosure control.Body Content must describe its own behavior and layout. 
+    \li Rich Label - Rich label can contain dynamic content,which themselves can be interactive,or informative
+    with no heading ,no marquee and no disclosure control.Body Content must describe its own behavior and layout. 
 
     Example usage: For RichLabel type groupbox
     \code
     // create groupBox and set only content; without any heading
-    HbGroupBox *richHeading = new HbGroupBox();
-    // content widget can be any HbWidget
-    // layouting and interaction behaviour inside Content widget is application's responsiblity
-    HbPushButton *button = new HbPushButton(HbIcon(":/icons/ovi.png"),"Ovi");
+    HbGroupBox *richLabel = new HbGroupBox();
+    HbPushButton *button = new HbPushButton(HbIcon(QString("qtg_large_info")),"Ovi");
     button->setAdditionalText("Launch Ovi Music store");
-    button->setOrientation(Qt::Vertical);
-    button->setTextAlignment(Qt::AlignLeft);
-    richHeading->setContentWidget(button);
+    richLabel->setContentWidget(button);
+    mainlayout->addItem(richLabel);
     \endcode 
 
     \image html richLabelgroupbox.png A RichLabel groupbox.
     In RichLabel type, groupbox provides background for body content.
 
-    \li Collapsing container - also allows the user to show or hide the content of the groupBox.
+    \li Collapsing container - Collapsing container allows the user to show or hide the content of the groupBox.
     It always has a heading and body content; optionally has a disclosure mechanism.
-    The heading does not marquee.The collapse/expand disclosure mechanism is located 
-    in the heading and is the chief utility of this type of group box.
+    The heading does not marquee.The body content must describe its own behavior and layout.
+    The collapse/expand disclosure mechanism is located in the heading and is the chief utility of this type of groupbox.
 
-    If disclosure mechanism is Off, then heading will appear without expand/collapse indication icon 
+    If disclosure mechanism is Off,then heading will appear without expand/collapse indication icon 
     heading.Also the user will not be able to expand/collapse the body content.
 
     Example usage:For collapsingContainer groupbox
@@ -241,7 +212,7 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
     \image html collapsableContainergroupbox.png A Collapsing container groupbox.
 
     In this type, groupBox body content can be expanded/collapsed, 
-    depending on whether or not the group box is collapsed.
+    depending on whether or not the groupbox is collapsed.
 
     CollapsingContainer type groupBox comes with disclosure mechanism On by default.
 
@@ -262,7 +233,7 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
 
     This signal is emitted only in case of richLabel and collapsing container groupbox,
     whenever click happened on body content.If the body content set is an interactive widget
-    and consumes mouse press event, then clicked signal will not get emitted from groupBox in that case.
+    and consumes mouse press event, then in that case clicked signal will not get emitted from groupBox.
  */
 
 /*!
@@ -273,8 +244,8 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
  */
 
 /*!
-    @alpha
-    Constructs a group box with the given \a parent.
+    @beta
+    Constructs a groupbox with the given \a parent.
 */
 HbGroupBox::HbGroupBox( QGraphicsItem *parent)
     : HbWidget(*new HbGroupBoxPrivate, parent)
@@ -294,18 +265,22 @@ HbGroupBox::HbGroupBox(HbGroupBoxPrivate &dd, QGraphicsItem *parent)
 }
 
 /*!
-    Destructs the group box.
+    Destructs the groupbox.
 */
 HbGroupBox::~HbGroupBox()
 {
 }
 
 /*!
-    @alpha
+    @beta
     
-    Sets the group box heading
+    Sets the groupbox heading
 
     Note: heading property is valid for simpleLabel & collapsing container type.
+    In case of collapsing container,
+    if empty heading is set on runtime Groupbox will change to RichLabel.
+    For Collapsing container,
+    if body content is collapsible ,heading will appear along with Disclosure indicator.
     If heading is set on richLabel type groupBox, it will be ignored
 
     \sa heading
@@ -314,19 +289,32 @@ void HbGroupBox::setHeading( const QString &text )
 {
     Q_D( HbGroupBox );
 
-    if(!d->mHeadingWidget)
-        d->createHeadingWidget();
-    
-    d->mHeadingWidget->setHeading(text);
-
-    if(d->mContentWidget){
-        d->setGroupBoxType(GroupBoxCollapsingContainer);
-    }else
-        d->setGroupBoxType(GroupBoxSimpleLabel);
+    if( !text.isEmpty() ){
+        if( !d->mHeadingWidget ){
+            d->createHeadingWidget( );
+        }
+        d->mHeadingWidget->setHeading( text );
+        if( d->mContentWidget ){
+            d->setGroupBoxType(GroupBoxCollapsingContainer);
+        }else {
+            d->setGroupBoxType(GroupBoxSimpleLabel);
+        }
+    }else{
+        if( d->mHeadingWidget ){
+            delete d->mHeadingWidget;
+            d->mHeadingWidget = 0;
+            if( d->mContentWidget ) {
+                d->setGroupBoxType( GroupBoxRichLabel );
+            }else{
+                d->setGroupBoxType( GroupBoxTypeUnknown );
+            }
+        }        
+    }
+    repolish();
 }
 
 /*!
-    @alpha
+    @beta
 
     Returns text shown on the groupBox heading.
 
@@ -346,7 +334,7 @@ QString HbGroupBox::heading( ) const
 }
 
 /*!
-    @alpha
+    @beta
 
     Sets whether the groupbox is collapsable or not
 
@@ -362,19 +350,19 @@ void HbGroupBox::setCollapsable( bool collapsable )
     Q_D( HbGroupBox );
 
     if(d->mGroupBoxType == GroupBoxCollapsingContainer){
-        if(d->mHeadingWidget->collapsable  == collapsable)
+        if(d->collapsable  == collapsable)
         {
             return;
         }
-        d->mHeadingWidget->collapsable  = collapsable;
+        d->collapsable  = collapsable;
 
         d->mHeadingWidget->createPrimitives();
 
-        // make it expand otherwise groupBox can't be expanded at all, after this scenario
-        if(!collapsable && d->mHeadingWidget->collapsed){
+        // make it expand otherwise groupBox can't be collapsed at all, after this scenario
+        if(!collapsable && d->collapsed){
             d->mContentWidget->setVisible(true);
             HbStyle::setItemName( d->mContentWidget , "contentwidget");
-            d->mHeadingWidget->collapsed  = false;            
+            d->collapsed  = false;            
         }
         d->mHeadingWidget->updatePrimitives();
         repolish();
@@ -382,11 +370,11 @@ void HbGroupBox::setCollapsable( bool collapsable )
 }
 
 /*!
-    @alpha
+    @beta
 
     Returns whether the groupbox is collapsable or not
 
-    By default, group boxes are collapsable.
+    By default, groupbox is collapsable.
 
     \sa setCollapsable
 */
@@ -394,23 +382,23 @@ bool HbGroupBox::isCollapsable( ) const
 {
     Q_D( const HbGroupBox );
     if(d->mHeadingWidget && d->mGroupBoxType == GroupBoxCollapsingContainer)
-        return d->mHeadingWidget->collapsable;
+        return d->collapsable;
     return false;
 }
 
 /*!
-    @alpha
+    @beta
 
     Sets whether the groupbox collapsed or expanded
 
-    If the groupbox is collapsed,the group box's content widget are hidden; 
+    If the groupbox is collapsed,the groupbox's content widget are hidden; 
     otherwise they will be visible
 
     setCollapsed on groupbox will emit signal toggled( bool ) 
     upon collapse\expand of content widget
 
-    Only collapsable groupboxes can be collapsed. (i.e)this API will not do anything 
-    if group box is not collapsable.By default, group boxes are not collapsed.
+    Only collapsable groupbox can be collapsed. (i.e)this API will not do anything 
+    if groupbox is not collapsable.By default, groupbox is not collapsed.
 
     Note: collapsed property is valid only for collapsing container type.
     If collapsed is set on simpleLabel or richLabel type groupBox, it will be ignored
@@ -421,22 +409,22 @@ void HbGroupBox::setCollapsed( bool collapsed )
 {
     Q_D( HbGroupBox );
     if(d->mGroupBoxType == GroupBoxCollapsingContainer){
-        if( d->mContentWidget && d->mHeadingWidget->collapsable) {
-            if ( d->mHeadingWidget->collapsed == collapsed )
+        if( d->mContentWidget && d->collapsable) {
+            if ( d->collapsed == collapsed )
                 return;
 
-            d->mHeadingWidget->collapsed = collapsed;
+            d->collapsed = collapsed;
 
             #ifdef HB_EFFECTS
             HbEffectInternal::add(HB_GROUPBOX_TYPE,"groupbox_expand", "expand");
             //HbEffectInternal::add(HB_GROUPBOX_TYPE,"groupbox_collapse", "collapse");
             #endif
 
-            if ( d->mHeadingWidget->collapsed ) {
+            if ( d->collapsed ) {
                 #ifdef HB_EFFECTS
                 HbEffect::start( d->mContentWidget, HB_GROUPBOX_TYPE, "collapse");  
                 #endif
-                HbStyle::setItemName( d->mContentWidget , "");
+                HbStyle::setItemName( d->mContentWidget , QString());
                 d->mContentWidget->setVisible(false);
             }
             else {
@@ -445,19 +433,20 @@ void HbGroupBox::setCollapsed( bool collapsed )
                 #endif
                 HbStyle::setItemName( d->mContentWidget , "contentwidget");
                 d->mContentWidget->setVisible(true);
+                repolish();
             }
             d->mHeadingWidget->updatePrimitives();
-            emit toggled( d->mHeadingWidget->collapsed );
+            emit toggled( d->collapsed );
         }
-    }
+    }    
 }
 
 /*!
-    @alpha
+    @beta
 
-    Returns whether the group box is collapsed or expanded
+    Returns whether the groupbox is collapsed or expanded
 
-    By default, groupboxes are not collapsed.
+    By default, groupbox is not collapsed.
      
     \sa setCollapsed \sa setCollapsable
 */
@@ -465,13 +454,13 @@ bool HbGroupBox::isCollapsed( ) const
 {
     Q_D ( const HbGroupBox );
     if(d->mGroupBoxType == GroupBoxCollapsingContainer)
-        return d->mHeadingWidget->collapsed;
+        return d->collapsed;
 		
     return false;
 }
 
 /*!
-    @alpha
+    @beta
 
     Enables the marquee for heading if marqueeHeading is true, otherwise the 
     heading will not marquee.
@@ -491,7 +480,7 @@ void HbGroupBox::setMarqueeHeading( bool marquee )
 }
 
 /*!
-    @alpha
+    @beta
 
     Returns true if marquee is enabled for  groupbox heading; 
     otherwise returns false.
@@ -511,7 +500,7 @@ bool HbGroupBox::marqueeHeading( ) const
 
 
 /*!
-    @alpha
+    @beta
 
     Sets the groupbox content widget
 
@@ -519,6 +508,7 @@ bool HbGroupBox::marqueeHeading( ) const
     Ownership of the content widget is transferred to groupbox.
 
     If \a widget to set is NULL then content is removed.
+    And Groupbox type is changed to simpleLabel , if heading is present.
 
     contentWidget is valid only for richLabel & collapsing container type.
     If content Widget is set on simpleLabel type groupBox, it will be ignored
@@ -537,25 +527,30 @@ void HbGroupBox::setContentWidget( HbWidget *widget )
     if(!d->mContentWidget)
         d->createContentWidget();
     
-    d->mContentWidget->setContentWidget(widget);
+    if(widget){
+        d->mContentWidget->setContentWidget(widget);
+        if(d->mHeadingWidget){
+            d->setGroupBoxType(GroupBoxCollapsingContainer);
+        }else{
+            d->setGroupBoxType(GroupBoxRichLabel);
+        }
+        // update content widget primitve
+        d->mContentWidget->updatePrimitives();
 
-    if(d->mHeadingWidget){
-        d->setGroupBoxType(GroupBoxCollapsingContainer);
-    }else
-        d->setGroupBoxType(GroupBoxRichLabel);
-
-     // collapsed property is set before setContentWidget
-    if ( d->mGroupBoxType == GroupBoxCollapsingContainer && d->mHeadingWidget->collapsed ) {	
-        d->mContentWidget->setVisible(false);
-        HbStyle::setItemName( d->mContentWidget , "");
+    }else{
+        delete d->mContentWidget;
+        d->mContentWidget = 0;
+        if(d->mHeadingWidget){
+            d->setGroupBoxType(GroupBoxSimpleLabel);
+        }else{
+            d->setGroupBoxType(GroupBoxTypeUnknown);
+        }
     }
-    // update content widget primitve
-    d->mContentWidget->updatePrimitives();
     repolish();
 }
 
 /*!
-    @alpha
+    @beta
 
     Returns groupbox content widget
     
@@ -605,6 +600,21 @@ QGraphicsItem* HbGroupBox::primitive(HbStyle::Primitive primitive) const
     }
     return 0;	
 }
+
+/*!
+    \reimp
+*/
+
+QSizeF HbGroupBox::sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const
+{
+    Q_D( const HbGroupBox );
+
+    //group box will have size zero in case contentwidget and heading not their.
+    if( !d->mHeadingWidget && !d->mContentWidget )
+        return QSizeF( 0.f, 0.f );
+    return HbWidget::sizeHint(which, constraint);
+}
+
 
 /*!
     \reimp

@@ -27,8 +27,9 @@
 #define HBSHAREDMEMORYALLOCATORS_P_H
 
 #include "hbthemecommon_p.h"
+#include <QSharedMemory>
 
-#define ALIGN_SIZE 4
+static const int ALIGN_SIZE = 4;
 #define ALIGN(x) ((x + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1))
 
 // space for multisegment allocator bookkeeping - to be allocated from shared memory
@@ -46,12 +47,41 @@ static const int MAIN_ALLOCATOR_IDENTIFIER = 0x80000000;
 // max. amount of different chunk sizes in multisegment allocator
 static const int AMOUNT_OF_DIFFERENT_CHUNK_SIZES = 8;
 
-class QSharedMemory;
 
-class HB_CORE_PRIVATE_EXPORT HbSharedMemoryAllocator
+// wrapper for hiding Symbian specific protected chunk
+class HbSharedMemoryWrapper
 {
 public:
-    virtual void initialize(QSharedMemory *sharedChunk,
+    HbSharedMemoryWrapper(const QString &key, QObject *parent = 0);
+    ~HbSharedMemoryWrapper();
+    
+    bool create(int size, QSharedMemory::AccessMode mode = QSharedMemory::ReadWrite);
+    QSharedMemory::SharedMemoryError error() const;
+    bool attach(QSharedMemory::AccessMode mode = QSharedMemory::ReadWrite);
+    void *data();
+    int size() const;
+    
+#ifdef HB_HAVE_PROTECTED_CHUNK    
+    void setErrorString(const QString &function, TInt errorCode);
+#endif    
+private:
+#ifdef HB_HAVE_PROTECTED_CHUNK
+    QSharedMemory::SharedMemoryError wrapperError;
+    QString errorString;
+    const QString key;
+    RChunk chunk;
+    int memorySize;
+    void *memory;
+#else
+    QSharedMemory *chunk;
+#endif
+};
+
+
+class HbSharedMemoryAllocator
+{
+public:
+    virtual void initialize(HbSharedMemoryWrapper *sharedChunk,
         const unsigned int offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0) = 0;
     virtual int alloc(int size) = 0;
@@ -64,8 +94,7 @@ public:
 };
 
 
-
-class HB_CORE_PRIVATE_EXPORT HbSplayTreeAllocator : public HbSharedMemoryAllocator
+class HbSplayTreeAllocator : public HbSharedMemoryAllocator
 {
 public:
     HbSplayTreeAllocator();
@@ -74,7 +103,7 @@ public:
     int alloc(int size);
     int allocatedSize(int offset);
     void free(int offset);
-    void initialize(QSharedMemory *sharedChunk,
+    void initialize(HbSharedMemoryWrapper *sharedChunk,
         const unsigned int offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0);
     int size();
@@ -122,16 +151,21 @@ private:
     void deleteLengthNode(unsigned int *root, TreeNode *node, bool splayed);
 
     void *toPointer(unsigned int offset) const;
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
+    }
 
 private:
-    QSharedMemory *chunk;
+    HbSharedMemoryWrapper *chunk;
     unsigned int offset;
     HeapHeader *header;
 };
 
 
 
-class HB_CORE_PRIVATE_EXPORT HbMultiSegmentAllocator : public HbSharedMemoryAllocator
+class HbMultiSegmentAllocator : public HbSharedMemoryAllocator
 {
 public:
     HbMultiSegmentAllocator();
@@ -140,7 +174,7 @@ public:
     int alloc(int size);
     int allocatedSize(int offset);
     void free(int offset);
-	void initialize(QSharedMemory *sharedChunk,
+	void initialize(HbSharedMemoryWrapper *sharedChunk,
         const unsigned int offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0);
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -171,9 +205,14 @@ private:
     // helper methods
     void addList(int index, int offset);
     bool setFreeList(int index);
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
+    }
 
 private:
-    QSharedMemory *chunk;
+    HbSharedMemoryWrapper *chunk;
     unsigned int offset;
     HbSharedMemoryAllocator *mainAllocator;
     MultiAllocatorHeader *header;

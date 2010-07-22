@@ -33,6 +33,7 @@
 
 #include <QGesture>
 #include <QTime>
+#include <QGraphicsObject>
 
 //#define RECOGNIZERS_DEBUG
 #ifdef RECOGNIZERS_DEBUG
@@ -116,9 +117,8 @@ void HbPanGestureRecognizer::reset(QGesture *state)
     \return
 
 */
-HbTapGestureRecognizer::HbTapGestureRecognizer(int tapRadius)
-{
-    HbTapGestureLogic::mTapRadius = tapRadius;
+HbTapGestureRecognizer::HbTapGestureRecognizer()
+{    
     DEBUG() << "Creating HbTapGestureRecognizer" << this;
 }
 
@@ -140,7 +140,7 @@ HbTapGestureRecognizer::~HbTapGestureRecognizer()
 
 */
 QGesture* HbTapGestureRecognizer::create(QObject *)
-{
+{    
     return new HbTapGesture;
 }
 
@@ -182,12 +182,11 @@ void HbTapGestureRecognizer::reset(QGesture *state)
     \return
 
 */
-HbTapAndHoldGestureRecognizer::HbTapAndHoldGestureRecognizer(int tapRadius)
+HbTapAndHoldGestureRecognizer::HbTapAndHoldGestureRecognizer()
     :
     QGestureRecognizer(),
     HbTapAndHoldGestureLogic()
-{
-    HbTapAndHoldGestureLogic::mTapRadius = tapRadius;
+{    
     DEBUG() << "Creating HbTapAndHoldGestureRecognizer" << this;
 }
 
@@ -209,7 +208,7 @@ HbTapAndHoldGestureRecognizer::~HbTapAndHoldGestureRecognizer()
 
 */
 QGesture* HbTapAndHoldGestureRecognizer::create(QObject *)
-{
+{    
     return new HbTapAndHoldGesture;
 }
 
@@ -273,8 +272,14 @@ HbPinchGestureRecognizer::~HbPinchGestureRecognizer()
     \return
 
 */
-QGesture* HbPinchGestureRecognizer::create(QObject *)
+QGesture* HbPinchGestureRecognizer::create(QObject *target)
 {
+    if (target && target->isWidgetType()) {
+        static_cast<QWidget *>(target)->setAttribute(Qt::WA_AcceptTouchEvents);
+    }
+    if (QGraphicsObject *o = qobject_cast<QGraphicsObject *>(target)){
+        o->setAcceptTouchEvents(true);
+    }
     return new HbPinchGesture;
 }
 

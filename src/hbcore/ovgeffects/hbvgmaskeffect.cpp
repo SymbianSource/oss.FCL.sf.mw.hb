@@ -38,21 +38,32 @@
  * defined by a pixmap's alpha channel transparent. The opacity effect
  * parameter is ignored.
  *
+ * With certain OpenVG implementations masking with vgMask() may be
+ * problematic.  In such cases enable the pure QPainter implementation
+ * with setForceSwMode().
+ *
+ * Currently the sw version only support masks set by setMask() or
+ * provided via the callback.  Mask rectangles are not supported.
+ *
  * \internal
  */
 
 HbVgMaskEffectPrivate::HbVgMaskEffectPrivate()
-    : maskRectIsInDeviceCoords(false), maskCallback(0)
+    : maskRectIsInDeviceCoords(false),
+      maskCallback(0),
+      maskCallbackParam(0),
+      lastMainWindowRotationAngle(-1),
+      includeSourceItemOnly(false)
 {
 }
 
 HbVgMaskEffect::HbVgMaskEffect(QObject *parent)
-    : HbVgEffect(*new HbVgMaskEffectPrivate, parent)
+    : HbVgFrameEffect(*new HbVgMaskEffectPrivate, parent)
 {
 }
 
 HbVgMaskEffect::HbVgMaskEffect(HbVgMaskEffectPrivate &dd, QObject *parent)
-    : HbVgEffect(dd, parent)
+    : HbVgFrameEffect(dd, parent)
 {
 }
 
@@ -86,7 +97,8 @@ QPixmap HbVgMaskEffect::mask() const
 /*!
  * Returns the scaled version of the mask that was used during the previous
  * paint. Will return a null pixmap if no painting took place since the last
- * setMask() call.
+ * setMask() call. Any other automatic transformation (e.g. rotation) of the
+ * mask is not included in the returned pixmap.
  */
 QPixmap HbVgMaskEffect::scaledMask() const
 {
@@ -99,7 +111,8 @@ QPixmap HbVgMaskEffect::scaledMask() const
  * is 0 will be set transparent. The pixmap is subject to scaling and therefore
  * distortion may occur. If this is not acceptable then use the callback
  * version. Any previously set mask pixmap or rectangle will not be effective
- * anymore.
+ * anymore. If the graphics view is rotated (due to a transformed screen
+ * orientation) then the mask will be rotated automatically too.
  */
 void HbVgMaskEffect::setMask(const QPixmap &mask)
 {
@@ -141,8 +154,9 @@ void *HbVgMaskEffect::maskCallbackParam() const
 void HbVgMaskEffect::setMaskCallback(MaskCallback callback, void *param)
 {
     Q_D(HbVgMaskEffect);
-    if (d->maskCallback == callback)
+    if (d->maskCallback == callback) {
         return;
+    }
     clear();
     d->maskCallback = callback;
     d->maskCallbackParam = param;
@@ -176,8 +190,9 @@ QRectF HbVgMaskEffect::maskDeviceRect() const
 void HbVgMaskEffect::setMaskRect(const QRectF &rect)
 {
     Q_D(HbVgMaskEffect);
-    if (rect == d->maskRect && !d->maskRectIsInDeviceCoords)
+    if (rect == d->maskRect && !d->maskRectIsInDeviceCoords) {
         return;
+    }
     clear();
     d->maskRect = rect;
     d->maskRectIsInDeviceCoords = false;
@@ -189,17 +204,49 @@ void HbVgMaskEffect::setMaskRect(const QRectF &rect)
  * Similar to setMask() but the rectangle is assumed to be in device coordinates
  * (i.e. relative to the entire screen instead of the source item), meaning that
  * the source item will be clipped where it intersects with \a rect.
+ *
+ * Even when the graphics view is transformed (e.g. when being in "landscape
+ * orientation") the rectangle passed here is treated as being in device
+ * coordinates, ignoring the rotation of the graphics view.
  */
 void HbVgMaskEffect::setMaskDeviceRect(const QRectF &rect)
 {
     Q_D(HbVgMaskEffect);
-    if (rect == d->maskRect && d->maskRectIsInDeviceCoords)
+    if (rect == d->maskRect && d->maskRectIsInDeviceCoords) {
         return;
+    }
     clear();
     d->maskRect = rect;
     d->maskRectIsInDeviceCoords = true;
     updateEffect();
     emit maskRectChanged(rect);
+}
+
+/*!
+ * Returns the current setting for masking only the source graphics item. By
+ * default this is disabled.
+ */
+bool HbVgMaskEffect::includeSourceItemOnly() const
+{
+    Q_D(const HbVgMaskEffect);
+    return d->includeSourceItemOnly;
+}
+
+/*!
+ * When enabled, only the source item (excluding its children) is masked.  This
+ * is needed when shaping e.g. a pop-up or other widget that has a scroll area
+ * in it. The real size, together with all the children, is usually much bigger
+ * then the size of the widget itself (and it depends on the position in the
+ * scroll area etc.).  To solve this issue, enable this setting when shaping
+ * such widgets.
+ */
+void HbVgMaskEffect::setIncludeSourceItemOnly(bool b)
+{
+    Q_D(HbVgMaskEffect);
+    clear();
+    d->includeSourceItemOnly = b;
+    updateEffect();
+    emit includeSourceItemOnlyChanged(b);
 }
 
 /*!
@@ -222,7 +269,35 @@ inline int toVgYH(int y, int h, QPaintDevice *pdev)
 }
 
 /*!
+ * \internal
+ */
+QRectF HbVgMaskEffectPrivate::mapRect(const QRectF &rect, const QSize &srcSize) const
+{
+    qreal rotationAngle = mainWindowRotation();
+    qreal x1 = 0;
+    qreal y1 = 0;
+
+    QPointF mp = mapOffset(QPointF(rect.x(), rect.y()));
+    QSizeF sz = mapSize(rect.size());
+
+    if (rotationAngle == -90 || rotationAngle == 270) {
+        x1 = mp.x();
+        y1 = mp.y() + srcSize.height() - sz.height();
+    } else if (rotationAngle == 90 || rotationAngle == -270) {
+        x1 = mp.x() + srcSize.width() - sz.width();
+        y1 = mp.y();
+    } else {
+        x1 = mp.x();
+        y1 = mp.y();
+    }
+
+    return QRectF(x1, y1, sz.width(), sz.height());
+}
+
+/*!
  * \reimp
+ *
+ * OpenVG-based implementation. Supports all masking options.
  */
 void HbVgMaskEffect::performEffect(QPainter *painter,
                                    const QPointF &offset,
@@ -233,19 +308,36 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     Q_UNUSED(vgImage);
     Q_D(HbVgMaskEffect);
 
+    if (!painter->paintEngine()) {
+        return;
+    }
+
+    // Find out the target size and position.
+    QPaintDevice *pdev = painter->paintEngine()->paintDevice();
+    QRectF srcDevRect(d->deviceRectForSource(HbVgFrameEffectPrivate::ExcludeChildren, pdev));
+    QSize targetSize = d->includeSourceItemOnly ? srcDevRect.size().toSize() : vgImageSize;
+    int posX = (int) offset.x();
+    int posY = (int) offset.y();
+    if (d->includeSourceItemOnly) {
+        posX = (int) srcDevRect.x();
+        posY = (int) srcDevRect.y();
+    }
+
     // Initialize scaledMask if the mask has changed or the size of the source
     // is different than before.
     if (!d->mask.isNull()) {
-        if (d->scaledMask.isNull())
+        if (d->scaledMask.isNull()) {
             d->scaledMask = d->mask;
+        }
         // Scale only when really needed, i.e. when the size is different than
         // before (or there is a new mask).
-        if (d->scaledMask.size() != vgImageSize)
-            d->scaledMask = d->mask.scaled(vgImageSize);
+        if (d->scaledMask.size() != targetSize) {
+            d->scaledMask = d->mask.scaled(targetSize);
+            d->rotatedPixmap = QPixmap();
+        }
     }
 
     vgSeti(VG_MASKING, VG_TRUE);
-    QPaintDevice *pdev = painter->paintEngine()->paintDevice();
     // Set the mask for the entire surface to 1 (i.e. nothing is transparent).
     vgMask(VG_INVALID_HANDLE, VG_FILL_MASK,
            0, 0, pdev->width(), pdev->height());
@@ -254,17 +346,16 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     // of these is set then try the callback, if that is not set either then
     // just draw the source normally.
     QPixmap *maskPtr = 0;
-    int ox = (int) offset.x();
-    int oy = (int) offset.y();
     if (d->scaledMask.isNull() && !d->maskRect.isNull()) {
-        int x1 = (int) d->maskRect.x();
-        int y1 = (int) d->maskRect.y();
-        int w = (int) d->maskRect.width();
-        int h = (int) d->maskRect.height();
+        QRectF mappedRect = d->maskRect;
         if (!d->maskRectIsInDeviceCoords) {
-            x1 += ox;
-            y1 += oy;
+            mappedRect = d->mapRect(d->maskRect, targetSize);
+            mappedRect.adjust(posX, posY, posX, posY);
         }
+        int x1 = (int) mappedRect.x();
+        int y1 = (int) mappedRect.y();
+        int w = (int) mappedRect.width();
+        int h = (int) mappedRect.height();
         // Make the area defined by the rectangle transparent. Passing
         // VG_CLEAR_MASK results in writing 0 to the mask which results in
         // transparent pixels at that position.
@@ -276,18 +367,30 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     } else if (d->maskCallback) {
         // Invoke the callback but only if it has just been set or the size of
         // the source is different than before.
-        if (d->callbackResult.isNull() || d->callbackResult.size() != vgImageSize)
-            d->callbackResult = d->maskCallback(vgImageSize, d->maskCallbackParam);
+        if (d->callbackResult.isNull() || d->callbackResult.size() != targetSize) {
+            d->callbackResult = d->maskCallback(targetSize, d->maskCallbackParam);
+            d->rotatedPixmap = QPixmap();
+        }
         maskPtr = &d->callbackResult;
     }
 
     if (maskPtr) {
-        int w = vgImageSize.width();
-        int h = vgImageSize.height();
+        int w = targetSize.width();
+        int h = targetSize.height();
+        QPixmap pm;
+        qreal rotationAngle = d->mainWindowRotation();
+        if (rotationAngle != 0) {
+            if (d->rotatedPixmap.isNull() || rotationAngle != d->lastMainWindowRotationAngle) {
+                d->rotatedPixmap = maskPtr->transformed(d->rotationTransform()).scaled(targetSize);
+                d->lastMainWindowRotationAngle = rotationAngle;
+            }
+            pm = d->rotatedPixmap;
+        }
+        QPixmap *finalMaskPtr = pm.isNull() ? maskPtr : &pm;
         // Will use the alpha channel from the image, alpha=0 => 0 in the mask
         // => transparent pixel, alpha=255 => 1 in the mask => opaque pixel.
-        vgMask(qPixmapToVGImage(*maskPtr), VG_SET_MASK,
-               ox, toVgYH(oy, h, pdev),
+        vgMask(qPixmapToVGImage(*finalMaskPtr), VG_SET_MASK,
+               posX, toVgYH(posY, h, pdev),
                w, h);
     }
 
@@ -301,4 +404,88 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
     Q_UNUSED(vgImage);
     Q_UNUSED(vgImageSize);
 #endif
+}
+
+/*!
+ * \reimp
+ *
+ * QPainter-based implementation. Currently only supports masking via pixmaps.
+ *
+ * The behavior for partially visible items (clipped by the device rect) is
+ * somewhat wrong, the mask is never clipped, it is just scaled down to match
+ * the visible part of the item.
+ */
+void HbVgMaskEffect::performEffectSw(QPainter *painter)
+{
+    Q_D(HbVgMaskEffect);
+
+    QPoint offset;
+    QPixmap srcPixmap = sourcePixmap(Qt::DeviceCoordinates, &offset); // needs the original world transform
+    if (srcPixmap.isNull()) {
+        return;
+    }
+
+    QPaintDevice *pdev = painter->paintEngine()->paintDevice();
+    d->worldTransform = painter->worldTransform(); // deviceRectForSource needs this
+    // The full source rect (without child items) would be
+    // d->worldTransform.mapRect(sourceItemForRoot()->boundingRect()).toRect()
+    // but we only care about the visible part here so clipping must be applied.
+    QRect srcDevRect(d->deviceRectForSource(HbVgFrameEffectPrivate::ExcludeChildren, pdev).toRect());
+    QPoint pos = d->includeSourceItemOnly ? srcDevRect.topLeft() : offset;
+    QSize size = d->includeSourceItemOnly ? srcDevRect.size() : srcPixmap.size();
+    if (size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
+
+    QPixmap maskPixmap;
+    if (d->maskCallback) {
+        if (d->callbackResult.isNull() || d->callbackResult.size() != size) {
+            d->callbackResult = d->maskCallback(size, d->maskCallbackParam);
+            d->rotatedPixmap = QPixmap();
+        }
+        maskPixmap = d->callbackResult;
+    } else if (!d->mask.isNull()) {
+        if (d->scaledMask.isNull()) {
+            d->scaledMask = d->mask;
+        }
+        if (d->scaledMask.size() != size) {
+            d->scaledMask = d->mask.scaled(size);
+            d->rotatedPixmap = QPixmap();
+        }
+        maskPixmap = d->scaledMask;
+    } else {
+        // Masking via rectangles is not supported here.
+        drawSource(painter);
+        return;
+    }
+
+    qreal rotationAngle = d->mainWindowRotation();
+    if (rotationAngle != 0) {
+        if (d->rotatedPixmap.isNull() || rotationAngle != d->lastMainWindowRotationAngle) {
+            d->rotatedPixmap = maskPixmap.transformed(d->rotationTransform()).scaled(size);
+            d->lastMainWindowRotationAngle = rotationAngle;
+        }
+        maskPixmap = d->rotatedPixmap;
+    }
+
+    if (d->includeSourceItemOnly) {
+        // Take only the source item itself, excluding its children.
+        srcPixmap = srcPixmap.copy(srcDevRect.adjusted(-offset.x(), -offset.y(), -offset.x(), -offset.y()));
+    }
+
+    painter->setWorldTransform(QTransform());
+
+    QImage image(size, QImage::Format_ARGB32_Premultiplied);
+    QPainter p(&image);
+    p.setCompositionMode(QPainter::CompositionMode_Source);
+    p.fillRect(image.rect(), Qt::transparent);
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    p.drawPixmap(0, 0, srcPixmap);
+    p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+    p.drawPixmap(0, 0, maskPixmap);
+    p.end();
+
+    painter->drawImage(pos, image);
+
+    painter->setWorldTransform(d->worldTransform);
 }

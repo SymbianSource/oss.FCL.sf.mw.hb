@@ -57,6 +57,8 @@ private slots:
     void unsetOrientation();
     void toggleLights();
     void toggleAnimation();
+    void resizeViewPort();
+    void toggleWindowObscured();
 
 private:
     void initStartUpValues();
@@ -77,8 +79,13 @@ private:
     QPushButton *mUnsetOrientationButton;
     QPushButton *mLightsButton;
     QPushButton *mAnimationButton;
+    QPushButton *mViewPortSizeButton;
+    QPushButton *mWindowObscuredButton;
     bool mLights;
     bool mAnimation;
+    bool mCustomViewPortSize;
+    bool mWindowObscured;
+    QSizeF mViewPortOriginalSize;
 
 #ifdef HB_CSS_INSPECTOR
     QPushButton *cssWindowButton;

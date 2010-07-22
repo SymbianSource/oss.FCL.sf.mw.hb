@@ -36,14 +36,13 @@
 /**
 * Data structure used to handle light status information.
 */
-struct THWRMStatusInfo
-    {
+struct THWRMStatusInfo {
     // Light target.
     TInt iTarget;
 
     // Status of the target.
     TInt iStatus;
-    };
+};
 
 /**
 * Defines THWRMStatusInfo array.
@@ -59,10 +58,13 @@ private:
     void RunL();
     void DoCancel();
 
-    TInt InitializeStatusArray(RLightStatusArray& aArray) const;
+    TInt InitializeStatusArray(RLightStatusArray &aArray) const;
 
-    static TInt FindByTarget(const TInt* aTarget, const THWRMStatusInfo& aItem);
+    static TInt FindByTarget(const TInt *aTarget, const THWRMStatusInfo &aItem);
+
 private:
+    TInt lastStatus;
+    bool lastStatusValid;
     RProperty sleepModeState;
 };
 

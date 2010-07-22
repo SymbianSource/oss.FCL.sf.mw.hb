@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBDATAFORMITEM_H
-#define HBDATAFORMITEM_H
+#ifndef HBDATAFORMVIEWITEM_H
+#define HBDATAFORMVIEWITEM_H
 
 #include <hbabstractviewitem.h>
 
@@ -41,6 +41,8 @@ class HB_WIDGETS_EXPORT HbDataFormViewItem : public HbAbstractViewItem
     
 public:
 
+
+
     explicit HbDataFormViewItem(QGraphicsItem *parent = 0);
     virtual ~HbDataFormViewItem();
 
@@ -55,7 +57,7 @@ public:
     
     void setExpanded(bool expanded);
     bool isExpanded() const;
-    
+   
     HbWidget* dataItemContentWidget()const;
 
 public slots:
@@ -77,9 +79,10 @@ protected:
     void initStyleOption(HbStyleOptionDataFormViewItem *option) const;
 
     void showEvent(QShowEvent * event);
+    QVariant itemChange( GraphicsItemChange change, const QVariant &value );
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataFormViewItem)
 };
 
-#endif //HBDATAFORMITEM_H
+#endif //HBDATAFORMVIEWITEM_H

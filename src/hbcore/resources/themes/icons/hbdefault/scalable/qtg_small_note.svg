@@ -1,23 +1,19 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
-<defs>
-</defs>
+<polygon fill-opacity="0.6" points="28,28 28,2 2,2 2,21.414 8.586,28 "/>
+<polygon fill="url(#SVGID_1_)" points="27,3 27,27 9,27 3,21 3,3 "/>
+<polygon fill="#DCD6AD" points="3,21 9,21 9,27 "/>
+<rect fill-opacity="0.5" height="1.5" stroke-opacity="0.5" width="20" x="5" y="8.5"/>
+<rect fill-opacity="0.5" height="1.5" stroke-opacity="0.5" width="20" x="5" y="12.5"/>
+<rect fill-opacity="0.5" height="1.5" stroke-opacity="0.5" width="14" x="5" y="16.5"/>
 <rect fill="none" height="30" width="30"/>
-<polygon fill-opacity="0.6" points="2,28 2,2 28,2 28,21.414 21.414,28 "/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="3" y2="27.0005">
-	<stop offset="0" style="stop-color:#FFD338"/>
-	<stop offset="1" style="stop-color:#F6A800"/>
+<defs>
+<linearGradient gradientTransform="matrix(-1 0 0 1 854 0)" gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="839" x2="839" y1="3" y2="27.0005">
+<stop offset="0" style="stop-color:#C3B474"/>
+<stop offset="1" style="stop-color:#AC8A4A"/>
 </linearGradient>
-<polygon fill="url(#SVGID_1_)" points="3,3 3,27 21,27 27,21 27,3 "/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="20.959" x2="23.9587" y1="20.959" y2="23.9587">
-	<stop offset="0" style="stop-color:#FEFFD9"/>
-	<stop offset="1" style="stop-color:#FFCF01"/>
-</linearGradient>
-<polygon fill="url(#SVGID_2_)" points="27,21 21,21 21,27 "/>
-<rect height="1.5" opacity="0.5" width="20" x="5" y="8.5"/>
-<rect height="1.5" opacity="0.5" width="20" x="5" y="12.5"/>
-<rect height="1.5" opacity="0.5" width="14" x="5" y="16.5"/>
+</defs>
 </g>
 </svg>

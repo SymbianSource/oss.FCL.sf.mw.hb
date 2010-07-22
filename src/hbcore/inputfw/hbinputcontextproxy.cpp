@@ -29,6 +29,7 @@
 #include <QGraphicsProxyWidget>
 #include <QGraphicsView>
 #include <hbinputmethod.h>
+#include <hbinputsettingproxy.h>
 
 /*!
 @alpha
@@ -50,7 +51,7 @@ This class is not needed outside of framework code.
 \sa HbInputMethod
 */
 
-HbInputContextProxy::HbInputContextProxy(HbInputMethod* target) : mTarget(target)
+HbInputContextProxy::HbInputContextProxy(HbInputMethod *target) : mTarget(target)
 {
 }
 
@@ -68,7 +69,7 @@ QList<QAction *> HbInputContextProxy::actions()
         return mTarget->actions();
     }
 
-    return QList<QAction*>();
+    return QList<QAction *>();
 }
 
 /*!
@@ -93,10 +94,14 @@ Sets input framework focus to given widget if it is valid.
 */
 void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
 {
-    if(mTarget) {
-        if(!widget) {
+    if (mTarget) {
+        if (!widget) {
             mTarget->setFocusObject(0);
-        } else if (HbInputFocusObject::isEditor(widget) && !HbInputFocusObject::isReadOnlyWidget(widget)) {           
+        } else if (HbInputFocusObject::isEditor(widget) && !HbInputFocusObject::isReadOnlyWidget(widget)) {
+            if (mTarget->focusObject() && mTarget->focusObject()->object() == widget) {
+                // Already focused to given widget.                 
+                return;
+            } 
             mTarget->setFocusObject(new HbInputFocusObject(widget));
         }
     }
@@ -106,22 +111,25 @@ void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
 \internal
 \reimp
 */
-bool HbInputContextProxy::filterEvent(const QEvent* event)
+bool HbInputContextProxy::filterEvent(const QEvent *event)
 {
     if (mTarget) {
-#if QT_VERSION >= 0x040600
-        if (event->type() == QEvent::CloseSoftwareInputPanel) {
+        bool orientationCompleted = HbInputSettingProxy::instance()->orientationChangeCompleted();
+        if (event->type() == QEvent::CloseSoftwareInputPanel && orientationCompleted) {
             setInputFrameworkFocus(0);
-            return true;            
-        } else if (event->type() == QEvent::RequestSoftwareInputPanel) {           
-            if(QWidget * focusedWidget =  qApp->focusWidget()) {              
+            return true;
+        } else if (event->type() == QEvent::RequestSoftwareInputPanel && orientationCompleted) {
+            if (QWidget *focusedWidget =  qApp->focusWidget()) {
                 // see if the focused widget is graphics view, if so get the focused graphics item in the view
                 // and acivate inputmethod for the focused graphics item
-                if(QGraphicsView * graphicsView = qobject_cast<QGraphicsView*>(focusedWidget)) {
-                    if(QGraphicsScene * scene = graphicsView->scene()) {
-                        if(QGraphicsItem * focusingWidget = scene->focusItem()) {
-                            if (focusingWidget->isWidget()) {
-                                setInputFrameworkFocus(static_cast<QGraphicsWidget*>(focusingWidget));
+                if (QGraphicsView *graphicsView = qobject_cast<QGraphicsView *>(focusedWidget)) {
+                    if (QGraphicsScene *scene = graphicsView->scene()) {
+                        if (QGraphicsItem *fItem = scene->focusItem()) {
+                            QGraphicsProxyWidget *proxy  = qgraphicsitem_cast<QGraphicsProxyWidget *>(fItem);
+                            if (proxy) {
+                                setInputFrameworkFocus(proxy->widget()->focusWidget());
+                            } else {
+                                setInputFrameworkFocus(static_cast<QGraphicsWidget *>(fItem));
                             }
                         }
                     }
@@ -133,13 +141,12 @@ bool HbInputContextProxy::filterEvent(const QEvent* event)
             }
             return true;
         }
-#endif
 
 #ifdef Q_OS_SYMBIAN
         const quint32 HbInputContextProxyExternalKeyboardModifier = 0x00200000;
 
         if (event->type() == QEvent::QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
-            const QKeyEvent *keyEvent = static_cast<const QKeyEvent*>(event);
+            const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
             if (keyEvent->nativeModifiers() & HbInputContextProxyExternalKeyboardModifier) {
                 // Operating system indicates that the event originated from an external keyboard.
                 // We let it pass here untouched.
@@ -147,19 +154,19 @@ bool HbInputContextProxy::filterEvent(const QEvent* event)
                     mTarget->reset();
                 }
                 return false;
-			}
-		} 
+            }
+        }
 #endif
-		if(event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
-			const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
-			if (Qt::Key_unknown == keyEvent->key()) {
-				return false;
-			}
-		}
-		return mTarget->filterEvent(event);
-	}
+        if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+            const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
+            if (Qt::Key_unknown == keyEvent->key()) {
+                return false;
+            }
+        }
+        return mTarget->filterEvent(event);
+    }
 
-	return false;
+    return false;
 }
 
 /*!
@@ -206,7 +213,7 @@ bool HbInputContextProxy::isComposing() const
 \reimp
 */
 QString HbInputContextProxy::language()
-{   
+{
     if (mTarget) {
         return mTarget->language();
     }
@@ -218,7 +225,7 @@ QString HbInputContextProxy::language()
 \internal
 \reimp
 */
-void HbInputContextProxy::mouseHandler(int x, QMouseEvent* event)
+void HbInputContextProxy::mouseHandler(int x, QMouseEvent *event)
 {
     if (mTarget) {
         mTarget->mouseHandler(x, event);
@@ -240,7 +247,7 @@ void HbInputContextProxy::reset()
 \internal
 \reimp
 */
-void HbInputContextProxy::sendEvent(const QInputMethodEvent& event)
+void HbInputContextProxy::sendEvent(const QInputMethodEvent &event)
 {
     if (mTarget) {
         mTarget->sendEvent(event);
@@ -262,7 +269,7 @@ void HbInputContextProxy::update()
 \internal
 \reimp
 */
-void HbInputContextProxy::widgetDestroyed(QWidget* widget)
+void HbInputContextProxy::widgetDestroyed(QWidget *widget)
 {
     if (mTarget) {
         mTarget->widgetDestroyed(widget);
@@ -273,7 +280,7 @@ void HbInputContextProxy::widgetDestroyed(QWidget* widget)
 \internal
 \reimp
 */
-void HbInputContextProxy::setFocusWidget(QWidget* widget)
+void HbInputContextProxy::setFocusWidget(QWidget *widget)
 {
     if (mTarget) {
         mTarget->setFocusWidget(widget);

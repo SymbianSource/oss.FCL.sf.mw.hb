@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputhwtoolcluster.h"
 
 #include <QGraphicsGridLayout>
 
@@ -36,7 +37,6 @@
 #include <hbdataform.h>
 
 #include "hbinputvkbwidget_p.h"
-#include "hbinputhwtoolcluster.h"
 #include "hbinputmodeindicator.h"
 
 const QString HbCustomButtonObjName = "Mini VKB custom button ";
@@ -81,9 +81,9 @@ HbHwToolClusterPrivate::~HbHwToolClusterPrivate()
 /*!
 Constructs the object.
 */
-HbHwToolCluster::HbHwToolCluster(HbInputMethod* owner,
-                                       QGraphicsItem* parent)
-                                       : HbInputVkbWidget(*new HbHwToolClusterPrivate, parent)
+HbHwToolCluster::HbHwToolCluster(HbInputMethod *owner,
+                                 QGraphicsItem *parent)
+    : HbInputVkbWidget(*new HbHwToolClusterPrivate, parent)
 {
     if (0 == owner) {
         return;
@@ -136,7 +136,7 @@ void HbHwToolCluster::aboutToOpen(HbVkbHost *host)
     qreal height = size.height() - HbCloseHandleHeight;
 
     qreal width = size.width() / (qreal)HbMiniVirtualKeypadNumberOfColumn;
-    for (int i=0; i < HbMiniVirtualKeypadNumberOfColumn ;i++) {
+    for (int i = 0; i < HbMiniVirtualKeypadNumberOfColumn ; i++) {
         d->mButtonLayout->setColumnFixedWidth(i, width);
     }
     //There is only one row
@@ -157,7 +157,7 @@ QSizeF HbHwToolCluster::preferredKeyboardSize()
         ret = d->mCurrentHost->keyboardArea();
         //Since this is a mini VKB, it has a lesser size than the available
         //area for the keypad.
-        ret.setHeight(ret.height()/HbMiniVirtualKeypadReductionFactor);
+        ret.setHeight(ret.height() / HbMiniVirtualKeypadReductionFactor);
         return ret;
     }
 
@@ -172,7 +172,7 @@ void HbHwToolCluster::showMethodDialog()
     Q_D(HbHwToolCluster);
 
     HbInputMethodDescriptor method
-        = HbInputCommonDialogs::showCustomInputMethodSelectionDialog(HbInputSettingProxy::instance()->globalInputLanguage());
+    = HbInputCommonDialogs::showCustomInputMethodSelectionDialog(HbInputSettingProxy::instance()->globalInputLanguage());
     if (!method.isEmpty() && d->mOwner) {
         d->mOwner->activateInputMethod(method);
     }

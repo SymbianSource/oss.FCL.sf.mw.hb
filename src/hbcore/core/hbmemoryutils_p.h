@@ -56,7 +56,7 @@ public:
     static T * create(HbMemoryManager::MemoryType memType)
     {
         GET_MEMORY_MANAGER(memType);
-        T* temp = 0;
+        T *temp = 0;
         if (manager->isWritable()) {
             HbSmartOffset offset(manager->alloc(sizeof(T)), memType);
             temp = new((char*)manager->base() + offset.get()) T(memType);
@@ -75,7 +75,7 @@ public:
     static T * create(const T &other, HbMemoryManager::MemoryType memType)
     {
         GET_MEMORY_MANAGER(memType);
-        T* temp = 0;        
+        T *temp = 0;
         if (manager->isWritable()) {
             HbSmartOffset offset(manager->alloc(sizeof(T)),memType);
             temp = new((char*)manager->base() + offset.get()) T(other, memType);
@@ -126,7 +126,8 @@ public:
     template <typename T>
     static T * getAddress(HbMemoryManager::MemoryType type, int offset)
     {
-        if (offset == -1 || offset == -2 ) {
+        // Do not change the condition to (<0), valid address can be negative.
+        if (offset == -1) {
             return 0;
         }
         GET_MEMORY_MANAGER(type)
@@ -136,7 +137,7 @@ public:
     /*
     * returns application file name without extension.
     */
-    static const QString& getCleanAppName()
+    static const QString &getCleanAppName()
     {
         // making static to avoid string multiple string operation on each call..
         static QString cleanAppName;

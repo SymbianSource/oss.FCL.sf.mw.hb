@@ -30,7 +30,7 @@
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 #include "hbdeviceprofile.h"
@@ -549,6 +549,26 @@ QVariant HbMarqueeItem::itemChange(GraphicsItemChange change, const QVariant &va
 }
 
 /*!
+    \reimp
+*/
+bool HbMarqueeItem::event(QEvent *e)
+{
+    Q_D(HbMarqueeItem);
+    if (e->type() == HbEvent::SleepModeEnter) {
+        bool oldAnimationPending = d->mAnimationPending;
+        stopAnimation();
+        d->mAnimationPending = oldAnimationPending;
+    } else if (e->type() == HbEvent::SleepModeExit) {
+        if (d->mAnimationPending) {
+            startAnimation();
+        }
+    }
+    return HbWidgetBase::event(e);
+}
+
+
+
+/*!
     Sets the text color into \a color.
     If invalid color is used color from theme will be used.
 
@@ -583,7 +603,6 @@ QColor HbMarqueeItem::textColor() const
     }
     return d->mDefaultColor;
 }
-
 
 #include "moc_hbmarqueeitem.cpp"
 // end of file

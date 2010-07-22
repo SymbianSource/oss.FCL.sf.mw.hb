@@ -46,7 +46,7 @@ Returns a list of languages the engine supports.
 
 /*!
 \fn virtual void HbPredictionBase::setWord(const QString& word, HbPredictionCallback* callback = 0)
-Sets current word. Given word will be the active word.  
+Sets current word. Given word will be the active word.
 */
 
 /*!
@@ -59,7 +59,7 @@ Sets current word. Given word will be the active word.
 \fn bool HbPredictionBase::updateCandidates(int& bestGuessLocation)
 Updates the candidate list to match active input sequence. Typically appendKeyPress and deleteKeyPress
 do that automatically but in same cases it may be required to update the situation explicitly.
-Paramter bestGuessLocation specifies the best match index in the candidate list. Typically it is
+Parameter bestGuessLocation specifies the best match index in the candidate list. Typically it is
 the first location but with some engines it may vary.
 Returns true if active input sequence produces valid candidates. Otherwise returns false and
 doesn not update the existing candidate list (in other words HbPredictionEngine::candidates() will
@@ -71,7 +71,7 @@ still return same set of candidates as it did before calling this method unsucce
 Handles a key press event.
 
 \sa appendCharacter
-*/ 
+*/
 
 /*!
 \fn virtual void HbPredictionBase::deleteKeyPress(HbPredictionCallback* callback = 0)
@@ -86,7 +86,7 @@ the result is same as after calling setWord(word) and commit().
 
 /*!
 \fn virtual void HbPredictionBase::clear()
-Clears the active word without commiting it.
+Clears the active word without committing it.
 */
 
 /*!
@@ -115,7 +115,7 @@ engine.
 */
 
 /*!
-\fn virtual bool HbPredictionBase::supportsKeyboardType(const HbInputLanguage &language, HbKeyboardType keyboard)
+\fn virtual bool HbPredictionBase::supportsKeyboardType(const HbInputLanguage& language, HbKeyboardType keyboard) const
 Returns true if the engine supports given combination of language and keyboard type.
 */
 
@@ -155,31 +155,31 @@ void HbPredictionBase::setExtraUserDictionaries(const QList<int>& idList)
 
 /*!
 Returns pointer to active user dictionary. There are two kind of user dictionaries, default and
-extra. This one returns the default user dictionary. Default implementation of this method is empty, 
+extra. This one returns the default user dictionary. Default implementation of this method is empty,
 override if the engine supports user dictionaries.
 
 \sa setExtraUserDictionary
 \sa HbExtraUserDictionary
 */
-HbUserDictionary* HbPredictionBase::userDictionary() const
+HbUserDictionary *HbPredictionBase::userDictionary() const
 {
     return 0;
 }
 
 /*!
 Sets active prediction language. Returns true if given language is recognized
-by the engine and was succesfully activated. 
+by the engine and was successfully activated.
 */
 bool HbPredictionBase::setLanguage(const HbInputLanguage &language, HbInputModeType inputMode)
 {
-    Q_UNUSED(language); 
+    Q_UNUSED(language);
     Q_UNUSED(inputMode);
 
     return false;
 }
 
 /*!
-Returns active prediction language.  
+Returns active prediction language.
 */
 HbInputLanguage HbPredictionBase::language() const
 {
@@ -198,7 +198,7 @@ HbKeyboardType HbPredictionBase::keyboardType() const
 \class HbPredictionEngine
 \brief Prediction API for latin based langauges.
 
-This interface defines abstract prediction API for latin-based languages. 
+This interface defines abstract prediction API for latin-based languages.
 Also some non-latin languages whose prediction features are functionally similar to
 latin-based languages use this API. Those are for example Arabic and Hebrew.
 */
@@ -267,16 +267,16 @@ HbPredictionEngine::HbErrorCorrectionLevel HbPredictionEngine::errorCorrectionLe
 
 /*!
 Sets active secondary language for prediction engine. Returns true if given language is recognized
-by the engine and was succesfully activated. 
+by the engine and was successfully activated.
 */
-bool HbPredictionEngine::setSecondaryLanguage(const HbInputLanguage& language)
+bool HbPredictionEngine::setSecondaryLanguage(const HbInputLanguage &language)
 {
     Q_UNUSED(language);
     return false;
 }
 
 /*!
-Returns active secondary prediction language.  
+Returns active secondary prediction language.
 */
 HbInputLanguage HbPredictionEngine::secondaryLanguage() const
 {
@@ -294,7 +294,7 @@ QString HbPredictionEngine::currentWord() const
 }
 
 /*!
-Enables a specified feature for the prediction engine. 
+Enables a specified feature for the prediction engine.
 Returns true if the engine supports the feature and is able to enable the feature,
 otherwise, returns false.
 
@@ -321,7 +321,7 @@ bool HbPredictionEngine::isFeatureEnabled(HbInputPredictionFeature feature)
 }
 
 /*!
-Disables a specified feature for the prediction engine. 
+Disables a specified feature for the prediction engine.
 Returns true if the engine supports the feature and is able to disable the feature,
 otherwise, returns false.
 Note: There is temporary default implementation for this method. It will be made
@@ -343,7 +343,7 @@ supports next word prediction.
 
 \sa supportedFeatures
 */
-QStringList HbPredictionEngine::nextWordCandidateList(HbPredictionCallback* callback)
+QStringList HbPredictionEngine::nextWordCandidateList(HbPredictionCallback *callback)
 {
     Q_UNUSED(callback);
     return QStringList();

@@ -31,11 +31,13 @@
 
 class HbIndicatorButtonPrivate;
 class HbStyleOptionIndicatorButton;
+class HbView;
 struct IndicatorClientInfo;
 
 class HB_CORE_PRIVATE_EXPORT HbIndicatorButton : public HbToolButton
 {
     Q_OBJECT
+    Q_PROPERTY(int buttonStyle READ buttonStyle)
 
 public:
     explicit HbIndicatorButton(QGraphicsItem *parent = 0);
@@ -49,15 +51,22 @@ public:
     void showHandleIndication(bool show);
     bool handleVisible() const;
 
+    int buttonStyle() const;
+
+    void currentViewChanged(HbView *view);
+
 public slots:
     virtual void createPrimitives();
     virtual void updatePrimitives();
     void activate(const QList<IndicatorClientInfo> &clientInfo);
     void deactivate(const QList<IndicatorClientInfo> &clientInfo);
+    void activateAll(const QList<IndicatorClientInfo> &clientInfo);
+    void resetBackground();
 
 protected:
     virtual void initStyleOption(HbStyleOptionIndicatorButton *option) const;
     virtual void changeEvent(QEvent* event);
+    virtual bool hitButton(const QPointF &pos) const;
 
 private slots:
     void handlePress();

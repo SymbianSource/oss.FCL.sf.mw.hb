@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputvirtualrocker.h"
+
 #include <QGraphicsSceneMouseEvent>
 #include <QPixmap>
 #include <QBitmap>
@@ -33,7 +35,6 @@
 #include <hbwidgetfeedback.h>
 
 #include "hbinputvkbwidget.h"
-#include "hbinputvirtualrocker.h"
 
 /// @cond
 
@@ -42,75 +43,60 @@ const qreal HbRockerYThreshold = 50.0;
 const qreal HbRockerDimOpacity = 1.0;
 const qreal HbRockerNormalOpacity = 1.0;
 const qreal HbRockerWidth = 50.0;
-const int HbIconWidth = 30;
-const int HbPointerWidth = 15;
-
+const qreal HbNormalSizeInUnits = 5;
+const qreal HbPressedSizeInUnits = 9.5;
+const qreal HbActivatedSizeInUnits = 9.5;
 
 class HbInputVirtualRockerPrivate
 {
 public:
-    explicit HbInputVirtualRockerPrivate(HbInputVirtualRocker *rocker, HbInputVkbWidget* parent = 0);
+    explicit HbInputVirtualRockerPrivate(HbInputVirtualRocker *rocker);
     ~HbInputVirtualRockerPrivate();
     int rockerEventRepeats(qreal distance);
-    void setCenter();
 
 public:
     HbInputVirtualRocker *q_ptr;
-    HbIcon* mIconNormal;
+    HbIcon mIconNormal;
+    HbIcon mIconPressed;
+    HbIcon mIconActivated;
     HbInputVirtualRocker::RockerSelectionMode mShifted;
     QPointF mLastPoint;
-    QPointF mCenterPosition;
-    QPointF mPointerPosition;
     QPointF mMousePressPoint;
-    HbInputVkbWidget* mKeyboard;
     bool mPressed;
 };
 
-HbInputVirtualRockerPrivate::HbInputVirtualRockerPrivate(HbInputVirtualRocker *rocker, HbInputVkbWidget* parent)
-        : q_ptr(rocker),
-          mIconNormal(0),
-          mShifted(HbInputVirtualRocker::RockerSelectionModeOff),
-          mLastPoint(0.0,0.0),
-          mCenterPosition(0.0,0.0),
-          mMousePressPoint(0.0,0.0),
-          mKeyboard(parent),
-          mPressed(false)
-{    
-    mIconNormal = new HbIcon("qtg_graf_trackpoint_normal" );
-    mIconNormal->setSize( QSizeF( HbIconWidth, HbIconWidth ));
+HbInputVirtualRockerPrivate::HbInputVirtualRockerPrivate(HbInputVirtualRocker *rocker)
+    : q_ptr(rocker),
+      mShifted(HbInputVirtualRocker::RockerSelectionModeOff),
+      mLastPoint(0.0, 0.0),
+      mMousePressPoint(0.0, 0.0),
+      mPressed(false)
+{
+    mIconNormal = HbIcon("qtg_graf_trackpoint_normal" );
+    mIconPressed = HbIcon("qtg_graf_trackpoint_pressed" );
+    mIconActivated = HbIcon("qtg_graf_trackpoint_activated" );
 
-    q_ptr->grabGesture(Qt::SwipeGesture);    
+    q_ptr->grabGesture(Qt::SwipeGesture);
     q_ptr->grabGesture(Qt::TapGesture);
     q_ptr->grabGesture(Qt::PanGesture);
 }
 
 HbInputVirtualRockerPrivate::~HbInputVirtualRockerPrivate()
 {
-    delete mIconNormal;
 }
 
 int HbInputVirtualRockerPrivate::rockerEventRepeats(qreal distance)
 {
     // cursor move multiplier for cursor moving signals, depending on the rocker move speed
     int repeats = 1;
-    if (distance > 30){
+    if (distance > 30) {
         repeats = 30;
     } else if (distance > 20) {
         repeats = 10;
-    } else if(distance > 10) {
+    } else if (distance > 10) {
         repeats = 2;
     }
     return repeats;
-}
-
-void HbInputVirtualRockerPrivate::setCenter()
-{
-    if(mCenterPosition.isNull()){
-        mCenterPosition.setX(q_ptr->pos().x()+HbRockerWidth/2);
-        mCenterPosition.setY(q_ptr->pos().y()+HbRockerWidth/2);
-    }
-    mPointerPosition.setX((HbRockerWidth - HbPointerWidth)/2);
-    mPointerPosition.setY((HbRockerWidth - HbPointerWidth)/2);
 }
 
 /// @endcond
@@ -146,24 +132,33 @@ This enum defines virtual rocker selection modes.
 */
 
 /*!
+\deprecated HbInputVirtualRocker::HbInputVirtualRocker(HbInputVkbWidget*)
+    is deprecated.
+
 Constructs the object.
 */
-HbInputVirtualRocker::HbInputVirtualRocker(HbInputVkbWidget* parent)
-    : HbWidget(parent), d_ptr(new HbInputVirtualRockerPrivate(this, parent))
+HbInputVirtualRocker::HbInputVirtualRocker(HbInputVkbWidget *parent)
+    : HbWidget(parent), d_ptr(new HbInputVirtualRockerPrivate(this))
 {
     setOpacity(HbRockerDimOpacity);
 }
 
 /*!
+\deprecated HbInputVirtualRocker::HbInputVirtualRocker(HbInputVirtualRockerPrivate&, QGraphicsWidget*)
+    is deprecated.
+
 Constructs the object.
 */
-HbInputVirtualRocker::HbInputVirtualRocker(HbInputVirtualRockerPrivate &dd, QGraphicsWidget* parent)
+HbInputVirtualRocker::HbInputVirtualRocker(HbInputVirtualRockerPrivate &dd, QGraphicsWidget *parent)
     : HbWidget(parent), d_ptr(&dd)
 {
     setOpacity(HbRockerDimOpacity);
 }
 
 /*!
+\deprecated HbInputVirtualRocker::~HbInputVirtualRocker()
+    is deprecated.
+
 Destroys the widget.
 */
 HbInputVirtualRocker::~HbInputVirtualRocker()
@@ -172,26 +167,23 @@ HbInputVirtualRocker::~HbInputVirtualRocker()
 }
 
 /*!
-    \reimp
-    \sa QGraphicsWidget.
+\deprecated HbInputVirtualRocker::mousePressEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
-void HbInputVirtualRocker::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void HbInputVirtualRocker::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_D(HbInputVirtualRocker);
 
     QPointF position = event->pos();
-    QPointF delta = position - QPointF(HbRockerWidth/2, HbRockerWidth/2);
+    QPointF delta = position - QPointF(HbRockerWidth / 2, HbRockerWidth / 2);
 
-    qreal squareDistance = delta.y()*delta.y() + delta.x()*delta.x();
-    qreal squareRadius = HbRockerWidth*HbRockerWidth/4;
+    qreal squareDistance = delta.y() * delta.y() + delta.x() * delta.x();
+    qreal squareRadius = HbRockerWidth * HbRockerWidth / 4;
     if (squareRadius > squareDistance) {
         // the touch point is inside circle which diameter is HbRockerWidth
-        d->setCenter();
         d->mLastPoint = position;
         d->mMousePressPoint = position;
-        if (d->mKeyboard) {
-            d->mKeyboard->setKeyboardDimmed(true);
-        }
+        emit rockerDirection(HbRockerDirectionPress, d->mShifted);
         HbWidgetFeedback::triggered(this, Hb::InstantPressed);
         setOpacity(HbRockerNormalOpacity);
         d->mPressed = true;
@@ -202,30 +194,27 @@ void HbInputVirtualRocker::mousePressEvent(QGraphicsSceneMouseEvent* event)
 }
 
 /*!
-    \reimp
-    \sa QGraphicsWidget.
+\deprecated HbInputVirtualRocker::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
-void HbInputVirtualRocker::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void HbInputVirtualRocker::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event)
     Q_D(HbInputVirtualRocker);
 
-    if (d->mKeyboard) {
-        d->mKeyboard->setKeyboardDimmed(false);
-        setOpacity(HbRockerDimOpacity);
-    }
+    emit rockerDirection(HbRockerDirectionRelease, d->mShifted);
+    setOpacity(HbRockerDimOpacity);
     d->mPressed = false;
     update();
-    d->setCenter();
     d->mShifted = RockerSelectionModeOff;
     HbWidgetFeedback::triggered(this, Hb::InstantReleased);
 }
 
 /*!
-    \reimp
-    \sa QGraphicsWidget.
+\deprecated HbInputVirtualRocker::mouseMoveEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
-void HbInputVirtualRocker::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+void HbInputVirtualRocker::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_D(HbInputVirtualRocker);
 
@@ -237,13 +226,13 @@ void HbInputVirtualRocker::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         HbWidgetFeedback::triggered(this, Hb::InstantDraggedOver);
 
         if (delta.x() > HbRockerXThreshold) {
-            repeats = d->rockerEventRepeats( delta.x() );
+            repeats = d->rockerEventRepeats(delta.x());
             for (int i = 0; i < repeats; i++) {
                 emit rockerDirection(HbRockerDirectionRight, d->mShifted);
             }
             d->mLastPoint = event->pos();
         } else if (delta.x() < -HbRockerXThreshold) {
-            repeats = d->rockerEventRepeats( -delta.x() );
+            repeats = d->rockerEventRepeats(-delta.x());
             for (int i = 0; i < repeats; i++) {
                 emit rockerDirection(HbRockerDirectionLeft, d->mShifted);
             }
@@ -258,20 +247,15 @@ void HbInputVirtualRocker::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
             emit rockerDirection(HbRockerDirectionUp, d->mShifted);
             d->mLastPoint = event->pos();
         }
-
-        d->mPointerPosition = HbIconWidth * deltaPressLoc / d->mCenterPosition.x() / 2
-            + QPointF((HbRockerWidth-HbPointerWidth)/2, (HbRockerWidth-HbPointerWidth)/2);
-
         update();
-
     }
 }
 
 /*!
-    \reimp
-    \sa QGraphicsWidget.
+\deprecated HbInputVirtualRocker::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+    is deprecated.
 */
-void HbInputVirtualRocker::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+void HbInputVirtualRocker::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event)
     Q_D(HbInputVirtualRocker);
@@ -282,18 +266,15 @@ void HbInputVirtualRocker::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event
         d->mShifted = RockerSelectionModeOff;
     }
 
-    // dim the keypad.
-    if (d->mKeyboard) {
-        d->mKeyboard->setKeyboardDimmed(true);
-    }
+    emit rockerDirection(HbRockerDirectionDoubleClick, d->mShifted);
     setOpacity(HbRockerNormalOpacity);
 }
 
 /*!
-    \reimp
-    \sa QGraphicsWidget.
+\deprecated HbInputVirtualRocker::paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*)
+    is deprecated.
 */
-void HbInputVirtualRocker::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void HbInputVirtualRocker::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option)
     Q_UNUSED(widget)
@@ -301,30 +282,22 @@ void HbInputVirtualRocker::paint(QPainter* painter, const QStyleOptionGraphicsIt
 
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    if (d->mIconNormal &&
-        !d->mIconNormal->isNull()) {
-        // We have icon, lets draw it.
-
-        d->mIconNormal->paint(painter, rect(), Qt::IgnoreAspectRatio);
-        if (d->mPressed) {
-            painter->setBrush(Qt::blue);
-            painter->setPen(Qt::blue);
-            painter->drawEllipse(static_cast<int>(d->mPointerPosition.x()),
-                                 static_cast<int>(d->mPointerPosition.y()),
-                                 HbPointerWidth, HbPointerWidth);
-        }
-
+    qreal unitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
+    if (selectionMode() == RockerSelectionModeOn) {
+        d->mIconActivated.setSize(QSizeF(HbActivatedSizeInUnits * unitValue, HbActivatedSizeInUnits * unitValue));
+        d->mIconActivated.paint(painter, rect());
+    } else if (d->mPressed) {
+        d->mIconPressed.setSize(QSizeF(HbPressedSizeInUnits * unitValue, HbPressedSizeInUnits * unitValue));
+        d->mIconPressed.paint(painter, rect());
     } else {
-        // Otherwise just draw a white ellipse as a fallback.
-        painter->setBrush(Qt::white);
-        painter->setPen(Qt::white);
-        painter->drawEllipse(boundingRect());
+        d->mIconNormal.setSize(QSizeF(HbNormalSizeInUnits * unitValue, HbNormalSizeInUnits * unitValue));
+        d->mIconNormal.paint(painter, rect());
     }
 }
 
 /*!
-Returns true if virtual rocker is in selection state, ie. it sends event with shift modifier
-on.
+\deprecated HbInputVirtualRocker::selectionMode() const
+    is deprecated.
 */
 HbInputVirtualRocker::RockerSelectionMode HbInputVirtualRocker::selectionMode() const
 {
@@ -332,9 +305,13 @@ HbInputVirtualRocker::RockerSelectionMode HbInputVirtualRocker::selectionMode() 
     return d->mShifted;
 }
 
+/*!
+\deprecated HbInputVirtualRocker::gestureEvent(QGestureEvent*)
+    is deprecated.
+*/
 void HbInputVirtualRocker::gestureEvent(QGestureEvent *event)
 {
-    Q_UNUSED (event);
+    Q_UNUSED(event);
 }
 
 // End of file

@@ -43,29 +43,29 @@ class HB_CORE_EXPORT HbVkbHost : public QObject
     Q_OBJECT
 
 public:
-      /*!
-      Enumerates different keypad states.
-      */
-      enum HbVkbStatus {
+    /*!
+    Enumerates different keypad states.
+    */
+    enum HbVkbStatus {
         HbVkbStatusClosed,
         HbVkbStatusMinimized,
         HbVkbStatusOpened,
-      };
+    };
 
 public:
     virtual ~HbVkbHost() {}
-    virtual void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod* owner = 0, bool animationAllowed = true) = 0;
-    virtual void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner) = 0;
+    virtual void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod *owner = 0, bool animationAllowed = true) = 0;
+    virtual void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner) = 0;
     virtual void closeKeypad(bool animationAllowed = true) = 0;
     virtual void minimizeKeypad(bool animationAllowed = true) = 0;
-    virtual HbVkbStatus keypadStatus() const = 0;  
+    virtual HbVkbStatus keypadStatus() const = 0;
     virtual QSizeF keyboardArea() const = 0;
-    virtual HbVirtualKeyboard* activeKeypad() const = 0;
+    virtual HbVirtualKeyboard *activeKeypad() const = 0;
     virtual QRectF applicationArea() const = 0;
     virtual HbVkbStatus keypadStatusBeforeOrientationChange() const = 0;
 
-    static void attachHost(HbVkbHost* host, QObject* object);
-    static void detachHost(QObject* object);
+    static void attachHost(HbVkbHost *host, QObject *object);
+    static void detachHost(QObject *object);
     static HbVkbHost *getVkbHost(QObject *object);
     static HbVkbHost *activeVkbHost();
 

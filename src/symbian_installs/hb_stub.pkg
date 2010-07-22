@@ -1,0 +1,82 @@
+;
+; Copyright (C) 2008-2010 Nokia Corporation and/or its subsidiary(-ies).
+; All rights reserved.
+; Contact: Nokia Corporation (developer.feedback@nokia.com)
+;
+; This file is part of the HbCore module of the UI Extensions for Mobile.
+;
+; GNU Lesser General Public License Usage
+; This file may be used under the terms of the GNU Lesser General Public
+; License version 2.1 as published by the Free Software Foundation and
+; appearing in the file LICENSE.LGPL included in the packaging of this file.
+; Please review the following information to ensure the GNU Lesser General
+; Public License version 2.1 requirements will be met:
+; http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+;
+; In addition, as a special exception, Nokia gives you certain additional
+; rights.  These rights are described in the Nokia Qt LGPL Exception
+; version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+;
+; If you have questions regarding the use of this file, please contact
+; Nokia at developer.feedback@nokia.com.
+
+; Description: Installation file for Hb stub SIS
+
+; Languages
+&EN
+
+; SIS header: name, uid, version
+# {"Hb"}, (0x2002FF63), 1, 0, 0, TYPE=SA
+
+; Localised Vendor name
+%{"Nokia, Qt Software"}
+
+; Unique Vendor name
+:"Nokia, Qt Software"
+
+; Install files
+
+; Hb
+""- "z:\sys\bin\HbCore.dll"
+""- "z:\sys\bin\HbWidgets.dll"
+""- "z:\sys\bin\HbUtils.dll"
+
+; Servers
+""- "z:\sys\bin\hbthemeserver.exe"
+""- "z:\sys\bin\hbthemechanger.exe"
+""- "z:\sys\bin\hbsplashgenerator.exe"
+""- "z:\sys\bin\hbdevicedialogappserver.exe"
+
+; Plugins
+""- "z:\sys\bin\HbDeviceNotificationDialogPlugin.dll"
+""- "z:\sys\bin\HbIndicatorMenuPlugin.dll"
+""- "z:\sys\bin\HbDeviceProgressDialogPlugin.dll"
+""- "z:\sys\bin\HbDeviceMessageBoxPlugin.dll"
+
+; EcomPlugins
+""- "z:\resource\plugins\hbthemeserveroogmplugin.rsc"
+""- "z:\sys\bin\hbthemeserveroogmplugin.dll"
+
+; HbFeedback
+""- "z:\sys\bin\HbFeedback.dll"
+""- "z:\sys\bin\HbFeedbackEffectPlugin.dll"
+
+; HbInput
+""- "z:\sys\bin\HbInput.dll"
+""- "z:\sys\bin\HbTouchInput.dll"
+""- "z:\sys\bin\HbAutoComplete.dll"
+""- "z:\resource\plugins\HbAutoComplete.qtplugin"
+""- "z:\resource\plugins\HbTouchInput.qtplugin"
+
+; Misc
+""- "z:\resource\hbi18n\translations\directorylocalizer_en_GB.qm"
+""- "z:\resource\hbi18n\translations\directorylocalizer_de_DE.qm"
+""- "z:\resource\hbi18n\translations\languages.qm"
+""- "z:\resource\hbi18n\translations\language_list.txt"
+""- "z:\resource\displaydefinition.xml"
+
+; Central repository files
+""-"z:\system\data\10202BE9\2002C304.txt"
+""-"z:\system\data\10202BE9\2002C3AE.txt"
+""-"z:\system\data\10202BE9\2002C384.txt"
+""-"z:\system\data\10202BE9\20022E82.txt"

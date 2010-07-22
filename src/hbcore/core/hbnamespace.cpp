@@ -26,7 +26,7 @@
 #include <hbnamespace.h>
 
 /*!
-    @beta
+    @stable
     @hbcore
     \namespace Hb
     \brief The Hb namespace contains miscellaneous identifiers used throughout the Hb library.
@@ -42,7 +42,7 @@
     Navigation action for quitting the application.
 */
 
-/*! \var Hb::NavigationAction Hb::BackNaviAction 
+/*! \var Hb::NavigationAction Hb::BackNaviAction
     Navigation action for back.
 */
 
@@ -80,7 +80,7 @@
 */
 
 /*! \var Hb::UiAttribute Hb::Ui_NoAttributes
-    No UI attributes. 
+    No UI attributes.
 */
 
 /*! \var Hb::UiAttribute Hb::Ui_VisibleInTouch
@@ -90,10 +90,10 @@
 /*! \var Hb::UiAttribute Hb::Ui_VisibleInNonTouch
     The visibility of an UI component in non-touch device.
 */
- 
- /*!
-    \enum TouchGesture
-    Enum that for different touch gestures.
+
+/*!
+   \enum TouchGesture
+   Enum that for different touch gestures.
 */
 
 /*! \var Hb::TouchGesture Hb::Tap
@@ -103,10 +103,10 @@
     Long press.
 */
 /*! \var Hb::TouchGesture Hb::Pan
-     Panning gesture. 
+     Panning gesture.
 */
 /*! \var Hb::TouchGesture Hb::Flick
-    Flicking gesture. 
+    Flicking gesture.
 */
 
 /*!
@@ -115,11 +115,11 @@
     This enum describes the item data roles in LibHb.
 */
 /*! \var Hb::ItemDataRole Hb::ItemTypeRole
-    This role specifies the type of the model item. If no type is specified StandardItem type is 
+    This role specifies the type of the model item. If no type is specified StandardItem type is
     used.
 */
 /*! \var Hb::ItemDataRole Hb::UserRole
-    The first role that can be used for application-specific purposes. 
+    The first role that can be used for application-specific purposes.
 */
 
 /*!
@@ -135,7 +135,7 @@
     This is the parent item type. Parent item is an item that has or can have child items.
 */
 /*! \var Hb::ModelItemType Hb::UserItem
-    The first item type that can be used for application-specific purposes. 
+    The first item type that can be used for application-specific purposes.
 */
 
 /*!
@@ -161,17 +161,24 @@
     Indicates whether widget and its children (classes derived from HbWidgetBase) are inside popup.
 */
 
-/*! \var Hb::WidgetAttribute Hb::InputMethodNeutral
+/*! \deprecated
+
+    \var Hb::WidgetAttribute Hb::InputMethodNeutral
     Indicates that the widget does not want to change the state of the input method.
     In practice this means that virtual keyboard is not closed if focus is changed from editor to this widget.
 */
 
- /*!
-    \enum ListContentType
-        LibHb's predefined (list) item content types.
+/*!  \var Hb::WidgetAttribute Hb::Widget
 
-        This enum describes the (list) item content types available in LibHb.
-     */
+    Indicates that a HbWidgetBase derived item is Hb widget. Constructors of HbWidget set this flag on.
+*/
+
+/*!
+   \enum ListContentType
+       LibHb's predefined (list) item content types.
+
+       This enum describes the (list) item content types available in LibHb.
+    */
 
 /*!
     \enum ListItemColumn
@@ -187,24 +194,24 @@
         This enum describes the (list) item content visibility values available in LibHb.
      */
 
- /*!
-    \enum SceneItem
-        LibHb's built-in scene items.
+/*!
+   \enum SceneItem
+       LibHb's built-in scene items.
 
-        This enum describes the scene items available in LibHb.
-     */
+       This enum describes the scene items available in LibHb.
+    */
 
- /*!
-    \enum ResourceType
-        Resource types.
+/*!
+   \enum ResourceType
+       Resource types.
 
-        This enum describes the available types of resources in LibHb.
-     */
+       This enum describes the available types of resources in LibHb.
+    */
 
 /*!
     \enum WindowFlag
         HbMainWindow's window flags.
-        
+
         This enum describes the window flags which could be set to HbMainWindow.
  */
 
@@ -213,10 +220,10 @@
 */
 
 /*! \var Hb::WindowFlag Hb::WindowFlagTransparent
-    Indicates that HbMainWindow should use alpha blending for composition. 
+    Indicates that HbMainWindow should use alpha blending for composition.
     With this flag you can have transparent areas in UI. Setting this flag will
     cause HbMainWindow to set Qt::FramelessWindowHint to it's flags and
-    Qt::WA_TranslucentBackground to it's attributes. 
+    Qt::WA_TranslucentBackground to it's attributes.
 */
 
 /*! \var Hb::WindowFlag Hb::WindowFlagNoBackground
@@ -225,13 +232,13 @@
 */
 
 /*! \var Hb::WindowFlag Hb::WindowFlagFixedVertical
-    Indicates that the application uses vertical orientation at startup. If flag is not 
+    Indicates that the application uses vertical orientation at startup. If flag is not
     used or both WindowFlagFixedVertical and WindowFlagFixedHorizontal are used at the same time,
     both flags are ignored and the orientation is managed automatically based on hw sensors.
 */
 
 /*! \var Hb::WindowFlag Hb::WindowFlagFixedHorizontal
-    Indicates that the application uses horizontal orientation at startup. If flag is not 
+    Indicates that the application uses horizontal orientation at startup. If flag is not
     used or both WindowFlagFixedVertical and WindowFlagFixedHorizontal are used at the same time,
     both flags are ignored and the orientation is managed automatically based on hw sensors.
 */
@@ -300,7 +307,7 @@
 
   The view switch effect is applied not just to the view's content but also other
   decorators, e.g. the titlebar, the toolbar, etc. The background is not included.
-  
+
   This flag automatically implies ViewSwitchSequential.
 */
 
@@ -324,11 +331,11 @@
 
   Forces the usage of the "show_alt" and "hide_alt" (also "show_alt_back" and "hide_alt_back")
   events instead of "show" and "hide" (even when combined with other flags).
-  
+
   This flag is typically used when the alternative default effect is wanted, which is typically
   a flip effect (although it is not guaranteed to be that for every theme).
 
-  The alternative effects can be overriden using HbEffect::add() just like the normal ones.
+  The alternative effects can be overridden using HbEffect::add() just like the normal ones.
 
   This flag automatically implies ViewSwitchSequential. (the default effect is parallel, the alternative is sequential)
 */
@@ -568,10 +575,63 @@
     \var Hb::ActivationReason Hb::ActivationReasonService
     Application was started as QtHighway service.
  */
- 
+
 /*!
     \var Hb::ActivationReason Hb::ActivationReasonNormal
     Application was started by other means.
- */ 
+ */
 
+/*!
+    \enum Hb::BackgroundImageMode
+
+    Controls how the background image is drawn.
+*/
+
+/*!
+    \var Hb::BackgroundImageMode Hb::ScaleBackgroundToFit
+
+    The background image is scaled to cover the entire available area. The
+    aspect ratio is kept (by expanding the size if needed). The image is
+    centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::ScaleBackgroundToFitWithoutExpanding
+
+    The background image is scaled to cover most of the available area. The
+    aspect ratio is kept (without expanding) so the image may not occupy the
+    entire available area. The image is centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::StretchBackgroundToFit
+
+    The background image is stretched to cover the entire available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::KeepOriginalBackgroundSize
+
+    Keeps the original size of the image, no up or downscaling occurs. The image
+    is centered in the available area.
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::KeepOriginalBackgroundSizeIfSmaller
+
+    Keeps the original size of the image only when the size is smaller than the
+    available area (i.e. dynamically switches between Hb::ScaleBackgroundToFit
+    and Hb::KeepOriginalBackgroundSize depending on the size of the source
+    image).
+ */
+
+/*!
+    \var Hb::BackgroundImageMode Hb::DoNotDrawBackground
+
+    Does not draw the background, i.e. the paint() function of the background
+    item will not do anything when this mode is set. Use this only to
+    temporarily prevent the background from showing. If you need to hide the
+    background item permanently then pass Hb::WindowFlagNoBackground to the
+    HbMainWindow constructor because that is more efficient.
+*/
 

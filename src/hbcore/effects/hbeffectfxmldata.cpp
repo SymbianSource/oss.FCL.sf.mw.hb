@@ -104,7 +104,7 @@ QList<HbEffectFxmlParamData> HbEffectFxmlFilterData::paramData() const
     // Make a regular QList. Note that some of the underlying structures may
     // still stay in shared memory.
     QList<HbEffectFxmlParamData> paramDataList;
-    foreach (const HbEffectFxmlParamData &data, mFxmlParams) {
+    foreach(const HbEffectFxmlParamData & data, mFxmlParams) {
         paramDataList.append(data);
     }
     return paramDataList;
@@ -159,9 +159,10 @@ void HbEffectFxmlParamData::setDuration(const QString &value)
 
 QString HbEffectFxmlParamData::getAttribute(const QString &attrName) const
 {
-    foreach (const HbEffectFxmlAttrListEntry &a, mAttributes) {
-        if (a.mKey == attrName)
+    foreach(const HbEffectFxmlAttrListEntry & a, mAttributes) {
+        if (a.mKey == attrName) {
             return a.mValue;
+        }
     }
     return QString();
 }
@@ -209,7 +210,7 @@ QList<HbKeyFrame> HbEffectFxmlParamData::keyFrames() const
     // Make a regular QList. Note that some of the underlying structures may
     // still stay in shared memory.
     QList<HbKeyFrame> keyFrameList;
-    foreach (const HbKeyFrame &keyFrame, mKeyFrames) {
+    foreach(const HbKeyFrame & keyFrame, mKeyFrames) {
         keyFrameList.append(keyFrame);
     }
     return keyFrameList;
@@ -225,7 +226,7 @@ QString HbEffectFxmlParamData::startRef() const
     return mStartRef;
 }
 
-void HbEffectFxmlParamData::setStartRef(const QString& value)
+void HbEffectFxmlParamData::setStartRef(const QString &value)
 {
     mStartRef = value;
 }
@@ -235,7 +236,7 @@ QString HbEffectFxmlParamData::endRef() const
     return mEndRef;
 }
 
-void HbEffectFxmlParamData::setEndRef(const QString& value)
+void HbEffectFxmlParamData::setEndRef(const QString &value)
 {
     mEndRef = value;
 }
@@ -301,7 +302,7 @@ QList<HbEffectFxmlParamData> HbEffectFxmlData::paramData() const
     // Make a regular QList. Note that some of the underlying structures may
     // still stay in shared memory.
     QList<HbEffectFxmlParamData> paramDataList;
-    foreach (const HbEffectFxmlParamData &data, mFxmlParams) {
+    foreach(const HbEffectFxmlParamData & data, mFxmlParams) {
         paramDataList.append(data);
     }
     return paramDataList;
@@ -317,7 +318,7 @@ QList<HbEffectFxmlFilterData> HbEffectFxmlData::filterData() const
     // Make a regular QList. Note that some of the underlying structures may
     // still stay in shared memory.
     QList<HbEffectFxmlFilterData> paramDataList;
-    foreach (const HbEffectFxmlFilterData &data, mFilters) {
+    foreach(const HbEffectFxmlFilterData & data, mFilters) {
         paramDataList.append(data);
     }
     return paramDataList;
@@ -327,7 +328,7 @@ HbMemoryManager::MemoryType HbEffectFxmlData::memoryType() const
 {
     return mMemoryType;
 }
-HbEffectInfo::HbEffectInfo():mItem(0)
+HbEffectInfo::HbEffectInfo(): mItem(0)
 {
 
 }
@@ -362,7 +363,7 @@ QGraphicsItem *HbEffectInfo::item() const
 }
 bool HbEffectInfo::shared() const
 {
-    return mShared;	
+    return mShared;
 }
 
 

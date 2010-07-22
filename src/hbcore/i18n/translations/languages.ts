@@ -3,207 +3,207 @@
 <TS version="1.0" language="en">
 <context>
 	<name>hblanguageswitch</name>
-	<message id="language_1">
+	<message id="language_en">
 		<source>English</source>
 		<translation variants="no">English</translation>
 	</message>
-	<message id="language_2">
+	<message id="language_fr">
 		<source>French</source>
 		<translation variants="no">Français</translation>
 	</message>
-	<message id="language_3">
+	<message id="language_de">
 		<source>German</source>
 		<translation variants="no">Deutsch</translation>
 	</message>
-	<message id="language_4">
+	<message id="language_es">
 		<source>Spanish</source>
 		<translation variants="no">Español</translation>
 	</message>
-	<message id="language_5">
+	<message id="language_it">
 		<source>Italian</source>
 		<translation variants="no">Italiano</translation>
 	</message>
-	<message id="language_6">
+	<message id="language_sv">
 		<source>Swedish</source>
 		<translation variants="no">Svenska</translation>
 	</message>
-	<message id="language_7">
+	<message id="language_da">
 		<source>Danish</source>
 		<translation variants="no">Dansk</translation>
 	</message>
-	<message id="language_8">
+	<message id="language_no">
 		<source>Norwegian</source>
 		<translation variants="no">Norsk</translation>
 	</message>
-	<message id="language_9">
+	<message id="language_fi">
 		<source>Finnish</source>
 		<translation variants="no">Suomi</translation>
 	</message>
-	<message id="language_10">
+	<message id="language_en_US">
 		<source>English (American)</source>
 		<translation variants="no">English</translation>
 	</message>
-	<message id="language_13">
+	<message id="language_pt">
 		<source>Portuguese</source>
 		<translation variants="no">Português</translation>
 	</message>
-	<message id="language_14">
+	<message id="language_tr">
 		<source>Turkish</source>
 		<translation variants="no">Türkçe</translation>
 	</message>
-	<message id="language_15">
+	<message id="language_is">
 		<source>Icelandic</source>
 		<translation variants="no">Íslenska</translation>
 	</message>
-	<message id="language_16">
+	<message id="language_ru">
 		<source>Russian</source>
 		<translation variants="no">Русский</translation>
 	</message>
-	<message id="language_17">
+	<message id="language_hu">
 		<source>Hungarian</source>
 		<translation variants="no">Magyar</translation>
 	</message>
-	<message id="language_18">
+	<message id="language_nl">
 		<source>Dutch</source>
 		<translation variants="no">Nederlands</translation>
 	</message>
-	<message id="language_25">
+	<message id="language_cs">
 		<source>Czech</source>
 		<translation variants="no">Čeština</translation>
 	</message>
-	<message id="language_26">
+	<message id="language_sk">
 		<source>Slovak</source>
 		<translation variants="no">Slovenčina</translation>
 	</message>
-	<message id="language_27">
+	<message id="language_pl">
 		<source>Polish</source>
 		<translation variants="no">Polski</translation>
 	</message>
-	<message id="language_28">
+	<message id="language_sl">
 		<source>Slovenian</source>
 		<translation variants="no">Slovenščina</translation>
 	</message>
-	<message id="language_29">
+	<message id="language_zh_TW">
 		<source>Chinese TW</source>
 		<translation variants="no">繁體中文(台灣)</translation>
 	</message>
-	<message id="language_30">
+	<message id="language_zh_HK">
 		<source>Chinese HK</source>
 		<translation variants="no">繁體中文(香港)</translation>
 	</message>
-	<message id="language_31">
+	<message id="language_zh">
 		<source>Chinese PRC</source>
 		<translation variants="no">简体中文</translation>
 	</message>
-	<message id="language_32">
+	<message id="language_ja">
 		<source>Japanese</source>
 		<translation variants="no">日本語</translation>
 	</message>
-	<message id="language_33">
+	<message id="language_th">
 		<source>Thai</source>
 		<translation variants="no">ภาษาไทย</translation>
 	</message>
-	<message id="language_37">
+	<message id="language_ar">
 		<source>Arabic</source>
 		<translation variants="no">العربية</translation>
 	</message>
-	<message id="language_39">
+	<message id="language_tl">
 		<source>Pilipino</source>
 		<translation variants="no">Pilipino</translation>
 	</message>
-	<message id="language_42">
+	<message id="language_bg">
 		<source>Burgarian</source>
 		<translation variants="no">Български</translation>
 	</message>
-	<message id="language_44">
+	<message id="language_ca">
 		<source>Catalan</source>
 		<translation variants="no">Català</translation>
 	</message>
-	<message id="language_45">
+	<message id="language_hr">
 		<source>Croatian</source>
 		<translation variants="no">Hrvatski</translation>
 	</message>
-	<message id="language_49">
+	<message id="language_et">
 		<source>Estonian</source>
 		<translation variants="no">Eesti</translation>
 	</message>
-	<message id="language_50">
+	<message id="language_fa">
 		<source>Farsi</source>
 		<translation variants="no">فارسى</translation>
 	</message>
-	<message id="language_51">
+	<message id="language_fr_CA">
 		<source>French (Canadian)</source>
 		<translation variants="no">Français</translation>
 	</message>
-	<message id="language_54">
+	<message id="language_el">
 		<source>Greek</source>
 		<translation variants="no">Ελληνικά</translation>
 	</message>
-	<message id="language_57">
+	<message id="language_he">
 		<source>Hebrew</source>
 		<translation variants="no">עברית</translation>
 	</message>
-	<message id="language_58">
+	<message id="language_hi">
 		<source>Hindi</source>
 		<translation variants="no">हिन्दी</translation>
 	</message>
-	<message id="language_59">
+	<message id="language_id">
 		<source>Indonesian</source>
 		<translation variants="no">Indonesia</translation>
 	</message>
-	<message id="language_65">
+	<message id="language_ko">
 		<source>Korean</source>
 		<translation variants="no">한국어</translation>
 	</message>
-	<message id="language_67">
+	<message id="language_lv">
 		<source>Latvian</source>
 		<translation variants="no">Latviešu</translation>
 	</message>
-	<message id="language_68">
+	<message id="language_lt">
 		<source>Lithuanian</source>
 		<translation variants="no">Lietuvių</translation>
 	</message>
-	<message id="language_70">
+	<message id="language_ms">
 		<source>Malay</source>
 		<translation variants="no">Melayu</translation>
 	</message>
-	<message id="language_72">
+	<message id="language_mr">
 		<source>Marathi</source>
 		<translation variants="no">मराठी</translation>
 	</message>
-  <message id="language_76">
+  <message id="language_pt_BR">
 		<source>Portuguese (Brazil)</source>
 		<translation variants="no">Português</translation>
 	</message>
-	<message id="language_78">
+	<message id="language_ro">
 		<source>Romanian</source>
 		<translation variants="no">Română</translation>
 	</message>
-	<message id="language_79">
+	<message id="language_sr">
 		<source>Serbian</source>
 		<translation variants="no">Srpski</translation>
 	</message>
-	<message id="language_83">
+	<message id="language_419">
 		<source>Spanish (American)</source>
 		<translation variants="no">Español</translation>
 	</message>
-	<message id="language_93">
+	<message id="language_uk">
 		<source>Ukrainian</source>
 		<translation variants="no">Українська</translation>
 	</message>
-	<message id="language_94">
+	<message id="language_ur">
 		<source>Urdu</source>
 		<translation variants="no">اردو</translation>
 	</message>
-	<message id="language_96">
+	<message id="language_vi">
 		<source>Vietnamese</source>
 		<translation variants="no">Tiếng Việt</translation>
 	</message>
-	<message id="language_102">
+	<message id="language_eu">
 		<source>Basque</source>
 		<translation variants="no">Euskara</translation>
 	</message>
-	<message id="language_103">
+	<message id="language_gl">
 		<source>Galician</source>
 		<translation variants="no">Galego</translation>
 	</message>

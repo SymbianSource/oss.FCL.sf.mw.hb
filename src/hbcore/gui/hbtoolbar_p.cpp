@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbtoolbar.h"
 #include "hbtoolbar_p.h"
+#include "hbtoolbar.h"
 #include "hbaction.h"
 #include "hbtoolbutton.h"
 #include "hbtoolbutton_p.h"
@@ -44,13 +44,16 @@
 #include <QWidget> // for QWIDGETSIZE_MAX
 #include <QActionEvent>
 #include <QDebug>
-#include <QGesture>
 
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
 #define HB_TOOLBAR_ITEM_TYPE "HB_TOOLBAR"
 bool HbToolBarPrivate::effectsLoaded = false;
 #endif
+
+//If minimum button size cannot be calculated
+//more button will appear after default button count is exceeded
+static const int DEFAULT_TOOLBUTTON_COUNT = 5;
 
 HbToolBarPrivate::HbToolBarPrivate() :
         mLayout(0),
@@ -89,8 +92,6 @@ HbToolBarPrivate::~HbToolBarPrivate()
 
 void HbToolBarPrivate::init()
 {
-    Q_Q(HbToolBar);
-    q->grabGesture(Qt::PanGesture);
 }
 
 void HbToolBarPrivate::doLazyInit()
@@ -172,7 +173,7 @@ void HbToolBarPrivate::setOrientation( Qt::Orientation orientation )
 
 void HbToolBarPrivate::calculateMaximumButtons() {
     Q_Q(HbToolBar);
-    maxToolBarButtons = 2;
+    maxToolBarButtons = DEFAULT_TOOLBUTTON_COUNT;
     if (!minimumToolButtonSize.isEmpty()) {
         if (mOrientation == Qt::Horizontal) {
             if ((q->size().width() > 0) && (q->size().width() > minimumToolButtonSize.width()))
@@ -233,7 +234,7 @@ void HbToolBarPrivate::actionRemoved(int index,HbToolButton *button)
     }
 }
 
-//This is called when toolbar recives resizeevent.
+//This is called when toolbar receives resize event.
 //we check if a full layout is needed than call doLayout.
 //if maxVisiblebuttons have changed than also we do a complete
 //layout
@@ -248,9 +249,11 @@ void HbToolBarPrivate::updateToolBarForSizeChange()
     calculateMaximumButtons();
     if (currentMaxButtons == maxToolBarButtons)
         return;
+
     if (mVisibleToolButtons.count()<=maxToolBarButtons  &&
         (!moreExtensionButton  ||
-         (moreExtensionButton && !moreExtensionButton->action()->isVisible()))) {
+         (moreExtensionButton &&
+          !HbToolButtonPrivate::d_ptr(moreExtensionButton)->action->isVisible()))) {
         return;
     }
     doLayout();
@@ -262,13 +265,16 @@ bool HbToolBarPrivate::fullUpdateNeeded()
     if (maxToolBarButtons == -1 || !minimumToolButtonSize.isValid() || !mLayout)
         return true;
     int totalButtons = mVisibleToolButtons.count()-1;
+
     if (totalButtons>maxToolBarButtons -1 &&
         (!moreExtensionButton  ||
-         (moreExtensionButton && !moreExtensionButton->action()->isVisible()))) {
+         (moreExtensionButton &&
+          !HbToolButtonPrivate::d_ptr(moreExtensionButton)->action->isVisible()))) {
         return true;
     }
     if (totalButtons<=maxToolBarButtons  &&
-        (moreExtensionButton && moreExtensionButton->action()->isVisible())) {
+        (moreExtensionButton &&
+         HbToolButtonPrivate::d_ptr(moreExtensionButton)->action->isVisible())) {
         return true;
     }
     return false;
@@ -307,7 +313,8 @@ void HbToolBarPrivate::prepareButtonForExtension(HbToolButton *button)
     setExtensionLayout(button, true);
     if (!button->parentItem() || button->parentItem() != moreExtension->contentWidget()){
         button->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred));
-        QObject::connect(button->action(), SIGNAL(triggered(bool)),
+        QAction *action = HbToolButtonPrivate::d_ptr(button)->action;
+        QObject::connect(action, SIGNAL(triggered(bool)),
                          moreExtension, SLOT(close()));
         button->setParentItem(moreExtension->contentWidget());
     }
@@ -328,7 +335,8 @@ void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button,bool handleP
             button->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Ignored));
 
         if (movingFromExtension){
-            QObject::disconnect(button->action(), SIGNAL(triggered(bool) ),
+            QAction *action = HbToolButtonPrivate::d_ptr(button)->action;
+            QObject::disconnect(action, SIGNAL(triggered(bool) ),
                                 moreExtension, SLOT(close()));
             HbToolButtonPrivate::d_ptr(button)->setExtensionBackgroundVisible(false);
             polishButtons = true;
@@ -341,13 +349,14 @@ void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button,bool handleP
     }
 }
 
-//resets all visible buttons list.This is called when actionChange event is recieved
+//resets all visible buttons list.This is called when actionChange event is received
 //by toolbar and from doLayout when mDoLayoutPending is true
 void HbToolBarPrivate::resetVisibleButtonsList()
 {
     mVisibleToolButtons.clear();
     foreach(HbToolButton *button, mToolButtons) {
-        if (button->action()->isVisible()) {
+        QAction *action = HbToolButtonPrivate::d_ptr(button)->action;
+        if (action->isVisible()) {
             mVisibleToolButtons.append(button);
             button->setVisible(true);
         } else {
@@ -358,55 +367,64 @@ void HbToolBarPrivate::resetVisibleButtonsList()
 
 //creates a new toolbutton and calls actionAdded if update is true.
 //update can be true in cases where toolbar is polished and actionAdded
-//event is recieved by toolbar.
+//event is received by toolbar.
 //we emit visibilitychanged signal here if this is the firstAction added in cases
 //after toolbar is polished and visible.
-void HbToolBarPrivate::createToolButton(QAction *Action, bool update)
+void HbToolBarPrivate::createToolButton(QAction *newAction, bool update)
 {
     Q_Q(HbToolBar);
-    if(!Action)
+    if(!newAction)
         return;
-    HbAction* action = qobject_cast<HbAction*>(Action);
+    
+    HbAction* hbAction = qobject_cast<HbAction*>(newAction);
 
-    if (action) {
-        // Find out index where to insert button
-        int index = q->actions().indexOf(Action);
+    // Find out index where to insert button
+    int index = q->actions().indexOf(newAction);
 
+    HbToolButton *button = new HbToolButton;
+
+    if (hbAction) {
         // Lets give the action manager possibility to calculate position for the action
-        if (action->commandRole() != HbAction::NoRole) {
+        if (hbAction->commandRole() != HbAction::NoRole) {
             // Create action manager when needed
             if (!actionManager) {
                 actionManager = new HbActionManager(HbView::ToolBar, q, q->mainWindow());
             }
             if (actionManager){
-                index = actionManager->position(action, q->actions(), mVisibleToolButtons.count());
+                index = actionManager->position(hbAction, q->actions(), mVisibleToolButtons.count());
             }
             
         }
-        HbToolButton *button = new HbToolButton(action);
-        HbToolButtonPrivate::d_ptr(button)->mDialogToolBar = mDialogToolBar;
-        setButtonLayoutDirection(*button);
-        mToolButtons.insert(index, button);
-        if (action->isVisible()){
-            int visibleIndex = 0;
-            for (int i = 0; i < index; i++) {
-                if (mToolButtons.at(i)->action()->isVisible())
-                    visibleIndex++;
-            }
-            mVisibleToolButtons.insert(visibleIndex, button);
-            if (update){
-                if (emitVisibilityChangeSignal) {
-                    delayedStartEffects = !mSuppressNextAppearEffect;
-                    QMetaObject::invokeMethod(&core, "visibilityChanged");
-                    emitVisibilityChangeSignal = false;
-                }
-                actionAdded(visibleIndex);
-            }
-        }
+        button->setAction(hbAction);
     }
     else {
-        qWarning() << "Use HbAction instead of QAction!";
+        // The new action's type is QAction.
+        HbToolButtonPrivate::d_ptr(button)->action = newAction;
+        QObject::connect(newAction, SIGNAL(triggered()), button, SLOT(_q_actionTriggered()));
+        QObject::connect(newAction, SIGNAL(changed()), button, SLOT(_q_actionChanged()));
     }
+
+    HbToolButtonPrivate::d_ptr(button)->mDialogToolBar = mDialogToolBar;
+    setButtonLayoutDirection(*button);
+    mToolButtons.insert(index, button);
+    if (newAction->isVisible()){
+        int visibleIndex = 0;
+        for (int i = 0; i < index; i++) {
+            QAction *action = HbToolButtonPrivate::d_ptr(mToolButtons.at(i))->action;
+            if (action->isVisible())
+                visibleIndex++;
+        }
+        mVisibleToolButtons.insert(visibleIndex, button);
+        if (update){
+            if (emitVisibilityChangeSignal) {
+                delayedStartEffects = !mSuppressNextAppearEffect;
+                QMetaObject::invokeMethod(&core, "visibilityChanged");
+                emitVisibilityChangeSignal = false;
+            }
+            actionAdded(visibleIndex);
+        }
+    }
+
 }
 
 //called from doLayout.We update the more button and extension as needed
@@ -416,7 +434,7 @@ void HbToolBarPrivate::updateExtension(bool moreButtonNeeded)
     if (moreExtension) {
         HbToolBarExtensionPrivate::d_ptr(moreExtension)->mToolButtons.clear();
         HbToolBarExtensionPrivate::d_ptr(moreExtension)->contentWidget->setLayout(0);
-        moreExtensionButton->action()->setVisible(moreButtonNeeded);
+        HbToolButtonPrivate::d_ptr(moreExtensionButton)->action->setVisible(moreButtonNeeded);
         moreExtensionButton->setVisible(moreButtonNeeded);
     }
     else if (moreButtonNeeded && !moreExtension)  {
@@ -540,7 +558,8 @@ void HbToolBarPrivate::doLayout()
     bool moreButtonNeeded = visibleItemsCount > maxToolBarButtons;
 
     if (moreButtonNeeded ||
-        (moreExtensionButton && moreExtensionButton->action()->isVisible() != moreButtonNeeded)) {
+        (moreExtensionButton &&
+         HbToolButtonPrivate::d_ptr(moreExtensionButton)->action->isVisible() != moreButtonNeeded)) {
         updateExtension(moreButtonNeeded);
     }
 
@@ -620,7 +639,7 @@ void HbToolBarPrivate::actionRemoved( QActionEvent *event )
     HbToolButton *button = 0;
     for (int i = 0; i < mToolButtons.count(); i++) {
         button = mToolButtons.at(i);
-        if (button->action() == event->action()) {         
+        if (button && HbToolButtonPrivate::d_ptr(button)->action == event->action()) {
             mToolButtons.removeAt(i);            
             // Emit signal when the only action is removed
             if (mToolButtons.count() == 0) {
@@ -636,20 +655,21 @@ void HbToolBarPrivate::actionRemoved( QActionEvent *event )
                     QMetaObject::invokeMethod(&core, "visibilityChanged", Qt::QueuedConnection);
                 return;
             }
+            int index = mVisibleToolButtons.indexOf(button);
+            if (index != -1){
+                mVisibleToolButtons.removeAt(index);
+                if (mVisibleToolButtons.isEmpty()){
+                    q->setLayout(0);
+                    mLayout = 0;
+                }
+                else
+                    actionRemoved(index,button);
+            }
+            delete button;
+
             break;
         }
     }
-    int index = mVisibleToolButtons.indexOf(button);
-    if (index != -1){
-        mVisibleToolButtons.removeAt(index);
-        if (mVisibleToolButtons.isEmpty()){
-            q->setLayout(0);
-            mLayout = 0;
-        }
-        else
-            actionRemoved(index,button);
-    }
-    delete button;
 }
 
 void HbToolBarPrivate::updateButtonStyle(HbToolButton *button,bool notInExtension)
@@ -664,11 +684,14 @@ void HbToolBarPrivate::updateButtonStyle(HbToolButton *button,bool notInExtensio
     Qt::Orientation buttonOrientation = q->orientation() == Qt::Vertical ?
                                         Qt::Horizontal : Qt::Vertical;
     HbToolButtonPrivate::d_ptr(button)->setOrientation( buttonOrientation );
-    if (!button->action()->icon().isNull()) {
+    QAction *qAction = HbToolButtonPrivate::d_ptr(button)->action;
+    HbAction *hbAction = qobject_cast<HbAction *>(qAction);
+
+    if ((hbAction && !hbAction->icon().isNull()) || !qAction->icon().isNull()) {
         if ((notInExtension) &&
             q->orientation() == Qt::Vertical) {
             button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
-        } else if (!button->action()->text().isEmpty()) {
+        } else if (!HbToolButtonPrivate::d_ptr(button)->action->text().isEmpty()) {
             button->setToolButtonStyle(HbToolButton::ToolButtonTextAndIcon);
         } else {
             button->setToolButtonStyle(HbToolButton::ToolButtonIcon);

@@ -124,3 +124,5 @@ void HbDateTimeEditPrivate::_q_textChanged()
     }
     HbLineEditPrivate::_q_textChanged();
 }
+
+#include <moc_hbdatetimeedit.cpp>

@@ -8,8 +8,8 @@ HbColorGridViewItem::cg-border-icon
     top:    -var(hb-param-margin-gene-popup);
     bottom:  var(hb-param-margin-gene-popup);
     right:   var(hb-param-margin-gene-popup);
-/*    fixed-width: var(hb-param-graphic-size-primary-small);
-    fixed-height: var(hb-param-graphic-size-primary-small); */
+    fixed-width: var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small); 
 }
 
 HbColorGridViewItem::cg-color-icon
@@ -18,11 +18,12 @@ HbColorGridViewItem::cg-color-icon
     top:    -var(hb-param-margin-gene-popup);
     bottom:  var(hb-param-margin-gene-popup);
     right:   var(hb-param-margin-gene-popup);
-/*    fixed-width:   var(hb-param-graphic-size-primary-small);
-    fixed-height: var(hb-param-graphic-size-primary-small); */
+    fixed-width:   var(hb-param-graphic-size-primary-small);
+    fixed-height: var(hb-param-graphic-size-primary-small); 
 }
 
 HbColorGridViewItem::cg-selection-icon
 {
     fixed-width:   var(hb-param-graphic-size-secondary);
+	fixed-height:   var(hb-param-graphic-size-secondary);
 }

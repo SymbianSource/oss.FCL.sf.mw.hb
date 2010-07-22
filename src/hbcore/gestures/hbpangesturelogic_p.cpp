@@ -27,12 +27,14 @@
 #include <QGestureRecognizer>
 #include <QGraphicsView>
 #include <QMouseEvent>
+#include <QGraphicsScene>
+
+#include <hbdeviceprofile.h>
 
 #include "hbpangesture.h"
 #include "hbpangesture_p.h"
 #include "hbpangesturelogic_p.h"
-
-const int KPanThreshold = 20;
+#include "hbnamespace_p.h"
 
 /*!
    @hbcore
@@ -123,11 +125,17 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
     gesture->d_ptr->mSceneOffset         = HbGestureUtils::mapToScene(watched, QPointF(0,0));
     gesture->d_ptr->mSceneLastOffset     = HbGestureUtils::mapToScene(watched, QPointF(0,0));
     gesture->d_ptr->mLastTimeStamp = mCurrentTime;
-        
-    gesture->d_ptr->mAxisX.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mAxisY.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mSceneAxisX.resetRecorder(HbDefaultPanThreshold);
-    gesture->d_ptr->mSceneAxisY.resetRecorder(HbDefaultPanThreshold);
+          
+
+    gesture->d_ptr->mThresholdSquare = HbDefaultPanThreshold * HbDeviceProfile::current().ppmValue();
+    gesture->d_ptr->mThresholdSquare = gesture->d_ptr->mThresholdSquare * gesture->d_ptr->mThresholdSquare;
+
+    qreal velocityThreshold = HbPanVelocityUpdateThreshold * HbDeviceProfile::current().ppmValue();
+
+    gesture->d_ptr->mAxisX.resetRecorder(velocityThreshold);
+    gesture->d_ptr->mAxisY.resetRecorder(velocityThreshold);
+    gesture->d_ptr->mSceneAxisX.resetRecorder(velocityThreshold);
+    gesture->d_ptr->mSceneAxisY.resetRecorder(velocityThreshold);
     gesture->d_ptr->mAxisX.record( me->globalPos().x(), mCurrentTime );
     gesture->d_ptr->mAxisY.record( me->globalPos().y(), mCurrentTime );
     gesture->d_ptr->mSceneAxisX.record( scenePos.x(), mCurrentTime );
@@ -155,8 +163,16 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
 
     QPointF offset = me->globalPos() - gesture->startPos().toPoint();
 
-    if (gestureState == Qt::NoGesture && offset.manhattanLength() <= KPanThreshold )
-    {
+    QGraphicsView* view = qobject_cast<QGraphicsView*>(watched->parent());
+    if (view) {
+        QGraphicsScene* scene = view->scene();
+        if (scene && scene->property(HbPrivate::OverridingGesture.latin1()).isValid() &&
+            scene->property(HbPrivate::OverridingGesture.latin1()).toInt() != Qt::PanGesture) {
+            return QGestureRecognizer::MayBeGesture;
+        }
+    }
+
+    if (gestureState == Qt::NoGesture && (offset.x() * offset.x() + offset.y() * offset.y()) <= gesture->d_ptr->mThresholdSquare) {
         return QGestureRecognizer::MayBeGesture;
     }
 

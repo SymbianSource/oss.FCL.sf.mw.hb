@@ -33,6 +33,9 @@ class HbSignalIndicator;
 class HbBatteryIndicator;
 class HbIndicatorGroup;
 class HbIndicatorPrivate;
+#if defined(Q_OS_SYMBIAN)
+class CEnvironmentChangeNotifier;       // Receive system event notifications
+#endif
 
 class HbStatusBarPrivate : public HbWidgetPrivate
 {
@@ -43,10 +46,15 @@ public:
     virtual ~HbStatusBarPrivate();
 
     void delayedConstruction();
-	void init();
+    void init();
     void updateTime();
-
-	int mClockTimerId;
+    
+#if defined(Q_OS_SYMBIAN)
+    static TInt EnvChangeCallback(TAny *aObject);
+    TInt DoEnvChange();
+#endif    
+    
+    int mClockTimerId;
     QString mTimeText;
     QGraphicsItem *mTimeTextItem;
 
@@ -59,6 +67,15 @@ public:
     int mPreviousProperties;
 
     HbIndicatorPrivate *mIndicatorPrivate;
+
+#if defined(Q_OS_SYMBIAN)    
+    // Notifications about locale and time changes
+    CEnvironmentChangeNotifier *mEnvChangeNotifier;
+#endif    
+
+    void _q_signalLevelChanged();
+    void _q_batteryLevelChanged();
+    void _q_indicatorsChanged();
 };
 
 

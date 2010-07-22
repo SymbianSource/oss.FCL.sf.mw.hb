@@ -1,0 +1,9 @@
+HbInputDialog::content {
+    left:0 un;
+    right:0 un;
+    top:0 un;
+    bottom:0 un;
+}
+HbInputDialog::controls {	
+    top:0 un;
+}

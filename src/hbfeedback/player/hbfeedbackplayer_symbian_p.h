@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBFEEDBACKBASEPLAYER_H
-#define HBFEEDBACKBASEPLAYER_H
+#ifndef HBFEEDBACKPLAYER_SYMBIAN_H
+#define HBFEEDBACKPLAYER_SYMBIAN_H
 
 #include <hbfeedbacknamespace.h>
 
@@ -54,4 +54,4 @@ public:
     HbFeedbackBasePlayerPrivate* const d;
 };
 
-#endif // HBFEEDBACKBASEPLAYER_H
+#endif // HBFEEDBACKPLAYER_SYMBIAN_H

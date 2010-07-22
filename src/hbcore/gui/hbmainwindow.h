@@ -43,11 +43,13 @@ class HB_CORE_EXPORT HbMainWindow : public QGraphicsView
 {
     Q_OBJECT
 
-    Q_PROPERTY(Qt::Orientation orientation 
+    Q_PROPERTY(Qt::Orientation orientation
                READ orientation
                WRITE setOrientation
                RESET unsetOrientation
                NOTIFY orientationChanged)
+
+    Q_PROPERTY(bool obscuredState READ isObscured)
 
 public:
     explicit HbMainWindow(QWidget *parent = 0, Hb::WindowFlags windowFlags = Hb::WindowFlagNone);
@@ -72,11 +74,16 @@ public:
     void setBackgroundImageName(Qt::Orientation orientation, const QString &name);
     QString backgroundImageName(Qt::Orientation orientation) const;
 
+    void setBackgroundImageMode(Hb::BackgroundImageMode mode);
+    Hb::BackgroundImageMode backgroundImageMode() const;
+
     void setAutomaticOrientationEffectEnabled(bool enabled = true);
     bool automaticOrientationEffectEnabled() const;
 
+    bool isObscured() const;
+
 public slots:
-    void broadcastEvent( int eventType );
+    void broadcastEvent(int eventType);
 
 signals:
     void viewReady();
@@ -85,6 +92,8 @@ signals:
     void aboutToChangeOrientation();
     void aboutToChangeOrientation(Qt::Orientation newOrientation, bool animated);
     void orientationChanged(Qt::Orientation orientation);
+    void obscured();
+    void revealed();
 
 protected:
     void changeEvent(QEvent *event);
@@ -95,15 +104,17 @@ protected:
     void customEvent(QEvent *event);
     void scrollContentsBy(int dx, int dy);
     void paintEvent(QPaintEvent *event);
+    void showEvent(QShowEvent *event);
+    bool event(QEvent *event);
 
     HbMainWindowPrivate *const d_ptr;
 
 private:
     Q_DISABLE_COPY(HbMainWindow)
     Q_DECLARE_PRIVATE_D(d_ptr, HbMainWindow)
-    Q_PRIVATE_SLOT(d_func(), void rootItemFirstPhaseDone(const HbEffect::EffectStatus& status))
-    Q_PRIVATE_SLOT(d_func(), void rootItemFinalPhaseDone(const HbEffect::EffectStatus& status))
-    Q_PRIVATE_SLOT(d_func(), void orientationEffectFinished(const HbEffect::EffectStatus& status))
+    Q_PRIVATE_SLOT(d_func(), void rootItemFirstPhaseDone(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void rootItemFinalPhaseDone(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void orientationEffectFinished(const HbEffect::EffectStatus &status))
     Q_PRIVATE_SLOT(d_func(), void _q_viewChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_viewRemoved(QGraphicsWidget *))
     Q_PRIVATE_SLOT(d_func(), void _q_viewTitleChanged(const QString &))

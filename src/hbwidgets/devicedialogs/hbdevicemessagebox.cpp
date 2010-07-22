@@ -24,7 +24,6 @@
 ****************************************************************************/
 
 #include <hbdevicedialog.h>
-#include <hbaction.h>
 #include <hbdevicedialogtrace_p.h>
 #include "hbdevicemessagebox.h"
 #include "hbdevicemessagebox_p.h"
@@ -42,6 +41,7 @@ HbDeviceMessageBoxPrivate::HbDeviceMessageBoxPrivate() : QObject(),
     TRACE_ENTRY
     for(int i = 0; i < NumActions; i++) {
         mDefaultActions[i] = 0;
+        mActions[i].mAction = 0;
     }
     TRACE_EXIT
 }
@@ -80,12 +80,25 @@ void HbDeviceMessageBoxPrivate::init()
     TRACE_EXIT
 }
 
+void HbDeviceMessageBoxPrivate::initAction(int index)
+{
+    if (!mActions[index].mAction) {
+        if (!mDefaultActions[index]) {
+            mDefaultActions[index] = new QAction(0);
+        }
+        mActions[index].mAction = mDefaultActions[index];
+        connect(mActions[index].mAction, SIGNAL(changed()), SLOT(actionChanged()));
+    }
+}
+
 void HbDeviceMessageBoxPrivate::initProperties()
 {
     for(int i = 0; i < NumProperties; i++) {
         mProperties[i].mFlags = NoFlags;
     }
-    clearActions();
+    for(int i = 0; i < NumActions; i++) {
+        clearAction(mActions[i]);
+    }
 
     QString text;
     q_ptr->setText(text);
@@ -93,30 +106,40 @@ void HbDeviceMessageBoxPrivate::initProperties()
     q_ptr->setIconVisible(true);
     q_ptr->setAnimationDefinition(text);
 
+    bool useActions[NumActions];
+    for(int i = 0; i < NumActions; i++) {
+        useActions[i] = false;
+    }
+
     switch(mProperties[Type].mValue.toInt()) {
+    case HbMessageBox::MessageTypeNone:
+        q_ptr->setIconVisible(false);
+        // Fall trough
     case HbMessageBox::MessageTypeInformation:
     case HbMessageBox::MessageTypeWarning:
         q_ptr->setDismissPolicy(HbPopup::TapAnywhere);
         q_ptr->setTimeout(timeoutValue(HbPopup::StandardTimeout));
-        // Use default primary button, secondary button is empty
-        if (!mDefaultActions[AcceptButton]) {
-            mDefaultActions[AcceptButton] = new HbAction(0);
-        }
-        mActions[AcceptButton].mAction = mDefaultActions[AcceptButton];
+        // HbMessageBox sets by default accept button to "Ok", reject button is empty
+        mProperties[StandardButtons].mValue.setValue(static_cast<int>(HbMessageBox::Ok));
+        useActions[AcceptButton] = true;
         break;
     case HbMessageBox::MessageTypeQuestion:
         q_ptr->setTimeout(HbPopup::NoTimeout);
         q_ptr->setDismissPolicy(HbPopup::NoDismiss);
-        // Use default primary and secondary buttons
-        for(int i = 0; i < NumActions; i++) {
-            if (!mDefaultActions[i]) {
-                mDefaultActions[i] = new HbAction(0);
-            }
-            mActions[i].mAction = mDefaultActions[i];
-        }
+        // HbMessageBox sets by default accept button to "Ok", reject button is empty.
+        // Set default buttons to yes/no
+        setProperty(StandardButtons, HbMessageBox::Yes|HbMessageBox::No);
+        useActions[AcceptButton] = true;
+        useActions[RejectButton] = true;
         break;
     default:
         Q_ASSERT(false);
+    }
+
+    for(int i = 0; i < NumActions; i++) {
+        if (useActions[i]) {
+            initAction(i);
+        }
     }
 }
 
@@ -124,9 +147,30 @@ void HbDeviceMessageBoxPrivate::setAction(ActionSelector select, QAction *action
 {
     TRACE_ENTRY
     Action &dialogAction = mActions[select];
+    bool saveTriggered = dialogAction.mTriggered;
+    clearAction(dialogAction);
+    dialogAction.mTriggered = saveTriggered;
     dialogAction.mFlags = Modified;
     dialogAction.mAction = action;
+    if (dialogAction.mAction) {
+        connect(dialogAction.mAction, SIGNAL(changed()), SLOT(actionChanged()));
+    }
     TRACE_EXIT
+}
+
+void HbDeviceMessageBoxPrivate::setStandardButtons(HbMessageBox::StandardButtons buttons)
+{
+    // Create actions for buttons. These will be signaled on button press.
+    int buttonCount = qMin(static_cast<int>(NumActions), countBits(buttons));
+    int i = 0;
+    for(; i < buttonCount; i++) {
+        initAction(i);
+    }
+    // Clear extra actions
+    for(; i < NumActions; i++) {
+      clearAction(mActions[i]);
+    }
+    setProperty(StandardButtons, buttons);
 }
 
 // Send properties to server
@@ -152,6 +196,7 @@ void HbDeviceMessageBoxPrivate::sendToServer(bool show)
 
     static const char * const propertyNames[] = {
         "type",
+        "standardButtons",
         "text",
         "iconName",
         "iconVisible",
@@ -216,14 +261,16 @@ bool HbDeviceMessageBoxPrivate::propertiesModified() const
     return false;
 }
 
-// Clear actions
-void HbDeviceMessageBoxPrivate::clearActions()
+// Clear action
+void HbDeviceMessageBoxPrivate::clearAction(Action &action)
 {
-    for(int i = 0; i < NumActions; i++) {
-        mActions[i].mAction = 0;
-        mActions[i].mFlags = NoFlags;
-        mActions[i].mTriggered = false;
+    if (action.mAction) {
+        disconnect(action.mAction, SIGNAL(changed()), this, SLOT(actionChanged()));
     }
+    action.mAction = 0;
+    action.mFlags = NoFlags;
+    action.mTriggered = false;
+
 }
 
 void HbDeviceMessageBoxPrivate::close()
@@ -262,6 +309,18 @@ void HbDeviceMessageBoxPrivate::triggerAction(QVariantMap data)
         }
     }
     TRACE_EXIT
+}
+
+void HbDeviceMessageBoxPrivate::actionChanged()
+{
+    QObject *action = sender();
+    for(int i = 0; i < NumActions; i++) {
+        if (mActions[i].mAction == action) {
+            mActions[i].mFlags = Modified;
+            scheduleUpdateEvent();
+            break;
+        }
+    }
 }
 
 void HbDeviceMessageBoxPrivate::setProperty(PropertySelector propertySelector, int value)
@@ -317,6 +376,16 @@ int HbDeviceMessageBoxPrivate::timeoutValue(HbPopup::DefaultTimeout timeout)
     return timeoutValues[timeout].value;
 }
 
+int HbDeviceMessageBoxPrivate::countBits(unsigned int value)
+{
+    int count = 0;
+    while(value) {
+        count += value & 1;
+        value >>= 1;
+    }
+    return count;
+}
+
 HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelector(
     HbDeviceMessageBox::ActionRole role)
 {
@@ -338,27 +407,53 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     @stable
     @hbwidgets
     \class HbDeviceMessageBox
-    \brief HbDeviceMessageBox displays a message to the user, on top of any running applications, which the user must acknowledge to dismiss.
+    \brief HbDeviceMessageBox displays a message box on top of any running applications.
 
-    HbDeviceMessageBox is a device dialog version of HbMessageBox. It displays a message box with text, icon or animation and optional reply button(s).
-    It differs from HbMessageBox by excluding functions which handle concrete UI-component related information.
+    HbDeviceMessageBox is a device dialog version of HbMessageBox. It displays a message box
+    with text, icon or animation and optional accept and reject buttons. It is not a widget.
+    The message box is displayed by a device dialog service which HbDeviceMessageBox is a
+    client of.
 
     Device dialogs are shown on top of any running applications and are always modal by nature.
 
-    A device message box is launched when exec() is called for an synchronous dialog or show() is called for an asynchronous
-    dialog. The launched dialog can be updated by the setter metods. Because updating a dialog
-    requires interprocess communication, it is advisable to fully construct the device message box before
-    calling show(). The device message box is closed when the user dismisses it by pressing a button, when
-    the client calls close(), or when the dialog timeout expires. If the system must close the device message
-    box while it is executing, it will have the same effect as having the message box's secondary action    
+    A device message box is lauched by a show(). A new message box is lauched every time show()
+    is called. aboutToClose() signal is emitted when the box has closed. There is also syncronous
+    exec() function which launches a message box and waits for it close. exec() is not compatible
+    with gestures and cannot be used from applications that have an user interface.
 
-    Static convenience functions are provided for launching message boxes.
-    Dialogs created by them contain default property values appropriate for
-    the message box type and their contents cannot be updated. Information and
-    warning convenience methods return immediately. Question waits for a message box
-    to close.
+    After message box has been launched, updating it's properties causes interprocess
+    communication. Therefore it's best to construct the message box fully before
+    calling show(). Changing a property while a message box is displayed, causes the property
+    to be updated to the displayed widget automatically next time event loop is entered
+    or updated values can be sent immediately by calling update().
 
-    Supported icon animation formats are following:
+    Message box buttons are represented by two actions. Left button corrensponds to accept
+    action and the right one to reject action. triggered() signal of action is emitted when
+    corresponding button is pressed. Changing action text changes corresponding button text.
+    Icons on buttons are not suppported.
+
+    Device message box is closed when user dismisses it, when HbDeviceMessageBox::close() is
+    called, timeout expires and message box closes itself or system closes the message box for
+    some reason. aboutToClose() signal is always emitted after the box has closed.
+
+    Static convenience functions are provided for launching message boxes. They launch message boxes
+    containing default properties appropriate for the message box type and their contents cannot
+    be updated. Information and warning convenience methods return immediately. Question waits for
+    a message box to close and is not compatible with gestures.
+
+    Four types of message boxes are predefined. The type determines a set of default properties that
+    are set on construction. Below is a table listing types and their default properties.
+
+    <table border="1">
+        <caption><b>HbDeviceMessageBox types and default properties</b></caption>
+        <tr><th>Type</th><th>Icon</th><th>Buttons</th><th>Timeout</th><th>Dismiss policy</th><th>Sound</th></tr>
+        <tr><td>None</td><td>No icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>No sound</td></tr>
+        <tr><td>Information</td><td>Info icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>Info sound</td></tr>
+        <tr><td>Warning</td><td>Warning icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>Warn sound</td></tr>
+        <tr><td>Question</td><td>Question icon</td><td>"Yes" and "No" buttons</td><td>No timeout</td><td>Button press</td><td>Question sound</td></tr>
+    </table>
+
+    In place of an icon, message box may conatain an animation. Supported icon animation formats are:
     - GIF (.gif)
     - MNG (.mng)
     - Frame animations (.axml)
@@ -375,7 +470,7 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     }
     \endcode
 
-    Alter the appearance of the message box with the methods provided by the class.
+    Modify appearance of a message box with the methods provided by the class.
 
     \code
     // Code below modifies the default properties of the message box.
@@ -385,10 +480,18 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     QString fileName("note_warning");
     messageBox.setIconName(fileName);
 
+    // Change button text
+    messageBox.action(HbDeviceMessageBox::AcceptButtonRole)->setText("Ok");
+    messageBox.action(HbDeviceMessageBox::RejectButtonRole)->setText("Cancel");
+
+    // Set new actions (buttons)
     QAction acceptAction("Ok", 0);
     messageBox.setAction(&acceptAction, HbDeviceMessageBox::AcceptButtonRole);
     QAction rejectAction("Cancel", 0);
     messageBox.setAction(&rejectAction, HbDeviceMessageBox::RejectButtonRole);
+
+    // Set standard buttons
+    messageBox.setStandardButtons(HbMessageBox::Ok|HbMessageBox::Cancel);
 
     // Beware, application may exit during exec().
     // Beware, exec() is not compatible with gestures.
@@ -430,8 +533,8 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
 /*!
     \fn void HbDeviceMessageBox::aboutToClose();
 
-    This signal is emitted when the device message box is about to be closed i.e.
-    when the question type of message is replied to by the user.
+    This signal is emitted when the message box has closed. If a button was pressed,
+    corresponding action's triggered() signal is emitted before this signal.
  */
 
 /*!
@@ -440,7 +543,7 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
 */
 /*!
     \var HbDeviceMessageBox::ActionRole HbDeviceMessageBox::InvalidRole
-    No action.
+    No role.
 */
 /*!
     \var HbDeviceMessageBox::ActionRole HbDeviceMessageBox::AcceptButtonRole
@@ -468,7 +571,7 @@ HbDeviceMessageBox::HbDeviceMessageBox(HbMessageBox::MessageBoxType type, QObjec
 
 /*!
     Constructor.
-    \param text Text can be set in the constructor.
+    \param text Message box text.
     \param type Type of the message box.
     \param parent An optional parameter.
 */
@@ -494,7 +597,12 @@ HbDeviceMessageBox::~HbDeviceMessageBox()
 }
 
 /*!
-    Executes the dialog asynchronously.
+    Shows a message box and returns immediately without waiting for it to close. Closing of the
+    message box is indicated by aboutToClose() signal. Button presses are indicated by
+    QAction::triggered() signals. The message box can be updated while showing by property
+    setters.
+
+    \sa update(), aboutToClose()
 */
 void HbDeviceMessageBox::show()
 {
@@ -504,10 +612,10 @@ void HbDeviceMessageBox::show()
 }
 
 /*!
-    Updates changed properties of a launched message box to device dialog service using
-    interprocess communication. Has no effect if show() has not been called or dialog has
-    closed already. Calling show() is optional as updating any property schedules an event
-    and the dialog is updated next time Qt event loop executes.
+    Updates changed properties to a showing message box via interprocess communication.
+    Has no effect if show() has not been called or the message box has closed already.
+    Calling update() is optional as setting any property schedules an event and the
+    showing message box is updated next time Qt event loop executes.
 
     \sa show()
 */
@@ -517,7 +625,7 @@ void HbDeviceMessageBox::update()
 }
 
 /*!
-    Closes the dialog if the dialog is shown asynchronously.
+    Closes a message box shown asynchronously.
 */
 void HbDeviceMessageBox::close()
 {
@@ -529,10 +637,10 @@ void HbDeviceMessageBox::close()
 /*!
     Executes the dialog synchronously.
 
-    Returns a pointer to the action that was activated by the user, i.e. dialog's
-    accept or reject action. Return 0 if object was deleted during a call.
+    Returns a pointer to an action corresponding to a button pressed. Returns 0 if no button
+    was pressed (the dialog closed for other reason).
 
-    This functions starts a new event loop. Consider following caveats before using it
+    This functions starts a new event loop. Consider following caveats before using it.
     Stack usage increases. Depending on application program flow, several event
     loops may get instantiated on top of each other. Application event processing continues while
     exec() executes. When it returns application state may have changed. For example some
@@ -589,7 +697,8 @@ bool HbDeviceMessageBox::isAcceptAction(const QAction *action) const
 
 /*!
     Sets message box type. All message box properties are reset to a default values for the type.
-    A show() must be called to launch a message box after setMessageBoxType() has been called.
+    Type of a showing message box cannot be changed on the fly. show() must be called to launch
+    a new message box after setMessageBoxType() has been called.
 
     \param type Message box type.
 
@@ -618,9 +727,39 @@ HbMessageBox::MessageBoxType HbDeviceMessageBox::messageBoxType() const
 }
 
 /*!
+    Sets message box buttons to standard buttons.
+
+    \param buttons Message box buttons. A combination of flags,
+    eg. HbMessageBox::Yes | HbMessageBox::No. Button flags are scanned starting from lsb.
+    First button found goes to accept position and so forth.
+
+    \sa standardButtons()
+*/
+void HbDeviceMessageBox::setStandardButtons(HbMessageBox::StandardButtons buttons)
+{
+    TRACE_ENTRY
+    d_ptr->setStandardButtons(buttons);
+    d_ptr->scheduleUpdateEvent();
+    TRACE_EXIT
+}
+
+/*!
+    Returns standard buttons set to a message box. A default value for question message box is
+    HbMessageBox::Yes|HbMessageBox::No. For all other message box types the default is
+    HbMessageBox::Ok.
+
+    \sa setStandardButtons()
+*/
+HbMessageBox::StandardButtons HbDeviceMessageBox::standardButtons() const
+{
+    return static_cast<HbMessageBox::StandardButtons>
+        (d_ptr->mProperties[HbDeviceMessageBoxPrivate::StandardButtons].mValue.toInt());
+}
+
+/*!
     Convenience method for showing question message box and waiting for it to close.
 
-    This functions starts a new event loop. Consider following caveats before using it
+    This functions starts a new event loop. Consider following caveats before using it.
     Stack usage increases. Depending on application program flow, several event
     loops may get instantiated on top of each other. Application event processing continues while
     question() executes. When it returns application state may have changed. For example some
@@ -630,11 +769,11 @@ HbMessageBox::MessageBoxType HbDeviceMessageBox::messageBoxType() const
     has an user interface, please don't use this function. Instead connect to signals and use
     asynchronous show().
 
-    \param text - text shown in message box.
-    \param acceptButtonText Accept button text. If string is null, a default button is used.
-    \param rejectButtonText Reject button text. If string is null, a default button is used.
+    \param text Message box text.
+    \param acceptButtonText Accept button text. If string is null, a default (Yes) button is used.
+    \param rejectButtonText Reject button text. If string is null, a default (No) button is used.
 
-    Returns true if user triggered accept action, otherwise false.
+    Returns true if user pressed accept button, otherwise false.
 
     \sa show()
 */
@@ -646,13 +785,45 @@ bool HbDeviceMessageBox::question(
     TRACE_STATIC_ENTRY
     HbDeviceMessageBox messageBox(HbMessageBox::MessageTypeQuestion);
     messageBox.setText(text);
-
+    messageBox.setStandardButtons(HbMessageBox::Yes|HbMessageBox::No);
     if (!acceptButtonText.isNull()) {
-        messageBox.setAction(new QAction(acceptButtonText, &messageBox), AcceptButtonRole);
+        messageBox.action(AcceptButtonRole)->setText(acceptButtonText);
     }
     if (!rejectButtonText.isNull()) {
-        messageBox.setAction(new QAction(rejectButtonText, &messageBox), RejectButtonRole);
+        messageBox.action(RejectButtonRole)->setText(rejectButtonText);
     }
+    messageBox.exec();
+    TRACE_EXIT
+    // Return true if accept action was triggered
+    return messageBox.isAcceptAction(messageBox.triggeredAction());
+}
+
+/*!
+    Convenience method for showing question message box and waiting for it to close.
+
+    This functions starts a new event loop. Consider following caveats before using it.
+    Stack usage increases. Depending on application program flow, several event
+    loops may get instantiated on top of each other. Application event processing continues while
+    question() executes. When it returns application state may have changed. For example some
+    objects may have been deleted or application may have exited.
+
+    <b>Note that starting an event loop isn't compatible with gestures.</b> Therefore if an application
+    has an user interface, please don't use this function. Instead connect to signals and use
+    asynchronous show().
+
+    \param text Message box text.
+    \param buttons Specifies message box buttons. See setStandardButtons() for format.
+
+    Returns true if user pressed accept button, otherwise false.
+
+    \sa show()
+*/
+bool HbDeviceMessageBox::question(const QString &text, HbMessageBox::StandardButtons buttons)
+{
+    TRACE_STATIC_ENTRY
+    HbDeviceMessageBox messageBox(HbMessageBox::MessageTypeQuestion);
+    messageBox.setText(text);
+    messageBox.setStandardButtons(buttons);
     messageBox.exec();
     TRACE_EXIT
     // Return true if accept action was triggered
@@ -663,7 +834,7 @@ bool HbDeviceMessageBox::question(
     Convenience method for showing information message box. Launches a message box and
     returns immediately.
 
-    \param text - text shown in message box.
+    \param text Message box text.
 */
 void HbDeviceMessageBox::information(const QString &text)
 {
@@ -676,7 +847,7 @@ void HbDeviceMessageBox::information(const QString &text)
     Convenience method for showing warning message box. Launches a message box and returns
     immediately.
 
-    \param text - text shown in message box.
+    \param text Message box text.
 */
 void HbDeviceMessageBox::warning(const QString &text)
 {
@@ -702,7 +873,7 @@ QAction *HbDeviceMessageBox::action(ActionRole role) const
 }
 
 /*!
-    Sets an action into the device message box. Action role is either an
+    Sets an action into device message box. Action role is either an
     accept (left button in left-to-right layout) or reject (right button).
     Action can be null which removes corresponding button from the message
     box. Only text of the action is shown in the message box button. Icon
@@ -710,11 +881,11 @@ QAction *HbDeviceMessageBox::action(ActionRole role) const
     the action.
 
     HbDeviceMessageBox constructor sets a default accept and reject actions into
-    question message box. Information and warning message boxes have only accept
-    action by default. Default actions are owned and deleted by the message box.
+    question message box. Other message boxes have only accept action by default.
+    Default actions are owned and deleted by the message box.
 
     \param action Action or null. Ownership does not transfer.
-    \param role Selects an action to set.
+    \param role Selects an action.
 
     \sa action()
 */
@@ -731,11 +902,11 @@ void HbDeviceMessageBox::setAction(QAction *action, ActionRole role)
 }
 
 /*!
-    Sets text of the message dialog.
+    Sets message box text. Supported text formats are the same as HbMessageBox::setText().
 
-    \param text Message text.
+    \param text Message box text.
 
-    \sa text()
+    \sa text(), HbMessageBox::setText()
 */
 void HbDeviceMessageBox::setText(const QString &text)
 {
@@ -745,7 +916,7 @@ void HbDeviceMessageBox::setText(const QString &text)
 }
 
 /*!
-    Returns text of the dialog.
+    Returns message box text.
 
     \sa setText()
 */
@@ -804,10 +975,9 @@ bool HbDeviceMessageBox::iconVisible() const
 }
 
 /*!
-    Sets the timeout property in milliseconds.
-    If timeout <= 0 then the note is permanent and not closed automatically.
+    Sets message box timeout.
 
-    \param timeout Timeout in milliseconds.
+    \param timeout Timeout in milliseconds. 0 denotes no timeout (infinite).
 
     \sa timeout() setTimeout(HbPopup::DefaultTimeout)
 */
@@ -819,8 +989,8 @@ void HbDeviceMessageBox::setTimeout(int timeout)
 }
 
 /*!
-    This is a convenience overload of \a timeout() for setting HbPopup::DefaultTimeout values
-    to achive common look & feel.
+    Sets timeout to one of HbPopup::DefaultTimeout values. Helps achieving
+    common look and feel of message boxes.
 
     \param timeout Timeout as an enumerated constant.
 
@@ -834,9 +1004,9 @@ void HbDeviceMessageBox::setTimeout(HbPopup::DefaultTimeout timeout)
 }
 
 /*!
-    Returns the timeout property in milliseconds.
-    If this property is not set the default is HbPopup::StandardTimeout except for
-    HbMessageBox::MessageTypeQuestion type of message box for which default is HbPopup::NoTimeout.
+    Returns message box timeout in milliseconds. Default value depends on message box type.
+    Question message box has a default of HbPopup::NoTimeout. All other boxes, the default is
+    HbPopup::StandardTimeout.
 
     \sa setTimeout()
 */
@@ -846,9 +1016,9 @@ int HbDeviceMessageBox::timeout() const
 }
 
 /*!
-    Sets the dismiss policy for the dialog.
+    Sets message box dismiss policy.
 
-    \param dismissPolicy Dismiss policy of the message box.
+    \param dismissPolicy Dismiss policy.
 
     \sa dismissPolicy()
 */
@@ -860,9 +1030,8 @@ void HbDeviceMessageBox::setDismissPolicy(HbPopup::DismissPolicy dismissPolicy)
 }
 
 /*!
-    Returns the dismiss policy of the dialog.
-    Default is HbPopup::TapAnywhere except for HbMessageBox::MessageTypeQuestion type of
-    message box for which default is HbPopup::NoDismiss.
+    Returns dismiss policy of a message box. Default depends on message box type.
+    Question box has default HbPopup::NoDismiss and all other boxes HbPopup::TapAnywhere.
 
     \sa setDismissPolicy()
 */
@@ -873,7 +1042,7 @@ HbPopup::DismissPolicy HbDeviceMessageBox::dismissPolicy() const
 }
 
 /*!
-    Sets animation definition to a dialog. Animation's logical name has to be set
+    Sets animation a message box. Animation's logical name has to be set
     using setIcon(). Animation definition files must be stored to a place where they
     can be accessed by device dialog service.
 

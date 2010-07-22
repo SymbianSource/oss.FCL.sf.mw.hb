@@ -32,6 +32,11 @@ const int HbEvent::DeviceProfileChanged = registerEventType();
 const int HbEvent::SleepModeEnter = registerEventType();
 const int HbEvent::SleepModeExit = registerEventType();
 const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
+const int HbEvent::InputMethodFocusIn = registerEventType();
+const int HbEvent::InputMethodFocusOut = registerEventType();
+const int HbEvent::WindowObscuredChanged = registerEventType();
+
+
 
 /*!
     @stable
@@ -42,25 +47,25 @@ const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
     This class supports following extra types of events besides those supported by QEvent
 
 
-    ChildFocusIn - This event is sent from child widget to parent widget to notify that the child 
-                   has got the focus. Normally the parent may show some visualization 
+    ChildFocusIn - This event is sent from child widget to parent widget to notify that the child
+                   has got the focus. Normally the parent may show some visualization
                    change when its child gets focus.
 
-    ChildFocusOut - This event is sent from child widget to parent widget to notify that the child 
-                   has lost the focus. Normally the parent may show some visualization 
+    ChildFocusOut - This event is sent from child widget to parent widget to notify that the child
+                   has lost the focus. Normally the parent may show some visualization
                    change when its child gets focus.
 
-    ThemeChanged - This event is sent to all QGraphicsWidget. The widget can handle this event by 
+    ThemeChanged - This event is sent to all QGraphicsWidget. The widget can handle this event by
                    implementing changeEvent() virtual function.
 
-    DeviceProfileChanged - This event is sent by the system when device's device profile 
-                  (screen resolution) changes. The event causes automatic polish call and 
-                  the event can be catched in event(QEvent *event) method.
+    DeviceProfileChanged - This event is sent by the system when device's device profile
+                  (screen resolution) changes. The event causes automatic polish call and
+                  the event can be caught in event(QEvent *event) method.
 
-    SleepModeEnter - This event is sent by the system when the phone enters to the sleep mode. 
+    SleepModeEnter - This event is sent by the system when the phone enters to the sleep mode.
                      If your application/component needs to take some action when entering the
                      sleep mode then you can do it in event(QEvent *event) method.
-    
+
     SleepModeExit - This event is sent by the system when the phone exist from the sleep mode.
                     If your application/component needs to take some action when exiting the
                     sleep mode then you can do it in event(QEvent *event) method.
@@ -69,9 +74,23 @@ const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
                            window changes. If your application/component needs to take some
                            action upon this event you can do it in event(QEvent *event) method.
 
+    InputMethodFocusIn - This event is sent by the input framework to an editor when input method
+                         is connected to the given editor.
+                         The event can be caught in event(QEvent *event) method.
+
+    InputMethodFocusOut - This event is sent by the input framework to an editor
+                          when input method is disconnected from the given editor.
+                         The event can be caught in event(QEvent *event) method.
+
+    WindowObscuredChanged - This event is sent by the system when an HbMainWindow is
+                            either obscured from or revealed to the user.  If your
+                            application or component needs to take some action upon this
+                            event you can do it in the event(QEvent *event) method.
+
+
     Example of how to send HbEvent
     \snippet{gui/hbwidget.cpp,1}
-    
+
     Example of how to receive HbEvent
     \snippet{gui/hbwidget.cpp,2}
 */
@@ -81,7 +100,7 @@ const int HbEvent::WindowLayoutDirectionChanged = registerEventType();
     \a eventType - type of event
 */
 HbEvent::HbEvent(int eventType)
-: QEvent((QEvent::Type)eventType)
+    : QEvent((QEvent::Type)eventType)
 {
 }
 
@@ -124,4 +143,25 @@ HbDeviceProfileChangedEvent::~HbDeviceProfileChangedEvent()
     Returns the old device profile.
 */
 
+/*!
+    Constructs a window obscured changed event with a pointer to the HbMainWindow
+    whose obscured state has changed and the obscured state, respectively.
+*/
+HbWindowObscuredChangedEvent::HbWindowObscuredChangedEvent(bool obscuredState)
+    : HbEvent(WindowObscuredChanged), mObscuredState(obscuredState)
+{
+}
+
+/*!
+  \internal
+*/
+HbWindowObscuredChangedEvent::~HbWindowObscuredChangedEvent()
+{
+}
+
+/*!
+    \fn bool HbWindowObscuredChangedEvent::obscuredState() const
+
+    returns the new obscured state for the window.
+*/
 

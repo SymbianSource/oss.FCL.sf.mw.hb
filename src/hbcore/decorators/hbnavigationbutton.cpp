@@ -33,7 +33,7 @@
 #include "hbstyleoptionnavigationbutton_p.h"
 #include "hbmainwindow_p.h"
 
-HbNavigationButtonPrivate::HbNavigationButtonPrivate()
+HbNavigationButtonPrivate::HbNavigationButtonPrivate() : mTouchArea(0)
 {
     
 }
@@ -70,20 +70,21 @@ void HbNavigationButton::delayedConstruction()
 
 void HbNavigationButton::createPrimitives()
 {
-    setBackgroundItem(HbStyle::P_NavigationButton_background); // calls updatePrimitives()
+    Q_D(HbNavigationButton);
+    d->mTouchArea = style()->createPrimitive(HbStyle::P_NavigationButton_toucharea, this);
+    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(d->mTouchArea);
+    touchArea->grabGesture(Qt::TapGesture);
+    ungrabGesture(Qt::TapGesture);
+    d->setBackgroundItem(HbStyle::P_NavigationButton_background);
 }
 
 void HbNavigationButton::updatePrimitives()
 {
+    Q_D(HbNavigationButton);
     HbStyleOptionNavigationButton option;
     initStyleOption(&option);
-    if (HbDeviceProfile::profile(this).touch()) {
-        style()->updatePrimitive(backgroundItem(), HbStyle::P_NavigationButton_background, &option);
-    } else {
-        // Hide icon & background & show text
-        setEnabled(true);
-        setToolButtonStyle(HbToolButton::ToolButtonText);
-    }
+    style()->updatePrimitive(backgroundItem(), HbStyle::P_NavigationButton_background, &option);
+    style()->updatePrimitive(d->mTouchArea, HbStyle::P_NavigationButton_toucharea, &option);
     HbToolButton::updatePrimitives();
 }
 
@@ -107,6 +108,17 @@ void HbNavigationButton::changeEvent(QEvent* event)
         updatePrimitives();
     }
     HbToolButton::changeEvent(event);
+}
+
+/*
+  Overloaded hit detection to include touch area
+ */
+bool HbNavigationButton::hitButton(const QPointF &pos) const
+{
+    Q_D(const HbNavigationButton);
+    QRectF compRect = d->mTouchArea->boundingRect();
+    compRect.translate(d->mTouchArea->pos());
+    return compRect.contains(pos);
 }
 
 void HbNavigationButton::handlePress()

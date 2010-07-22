@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 43363)  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="31px" height="31px" viewBox="0 0 31 31" enable-background="new 0 0 31 31" xml:space="preserve">
-<path d="M15.87,7.11c1.071,1.078,2.212,2.219,2.839,2.845c-0.524,0.52-1.54,1.536-2.521,2.519l1.735,1.73
-	c1.587-1.591,4.252-4.249,4.252-4.249L13.348,1.12v8.52l2.522,2.516V7.11z"/>
-<path d="M15.862,22.891v-4.349l-2.874-2.867c-1.762,1.756-5.163,5.162-5.163,5.162l1.732,1.731l3.79-3.781V28.88l6.427-6.434
-	l-1.735-1.731C17.417,21.337,16.628,22.127,15.862,22.891z"/>
-<rect x="-2.414" y="14.566" transform="matrix(-0.7079 -0.7063 0.7063 -0.7079 15.5243 37.4201)" width="35.827" height="1.867"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
+</g>
+<polygon fill-rule="evenodd" points="16.004,11.854 16.004,7.336 18.477,9.809 16.219,12.068 17.829,13.679   22,10 14,2 14,9.85 "/>
+<polygon fill-rule="evenodd" points="17.178,21.324 16.004,22.498 16.004,20.15 14,18.146 14,28 18.927,23.074   "/>
+<polygon fill-rule="evenodd" points="12.123,16.269 8,20.286 9.563,21.848 13.699,17.846 "/>
+<path d="M27.693,26.372c0.389,0.389,0.41,1.005,0.049,1.368c-0.363,0.363-0.979,0.343-1.367-0.046L2.307,3.625  C1.918,3.236,1.896,2.621,2.26,2.258c0.363-0.363,0.979-0.341,1.367,0.048L27.693,26.372z"/>
 </svg>

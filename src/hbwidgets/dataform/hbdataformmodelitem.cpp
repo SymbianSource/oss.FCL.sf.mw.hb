@@ -23,14 +23,13 @@
 **
 ****************************************************************************/
 
-#include <QAbstractItemModel>
-
 #include "hbdataformmodelitem_p.h"
-#include "hbdataformmodelitem.h"
-#include "hbdataformmodel.h"
 #include "hbdataformmodel_p.h"
 
-class QAbstractItemModel;
+#include <hbdataformmodelitem.h>
+#include <hbdataformmodel.h>
+
+#include <QAbstractItemModel>
 
 
 HbDataFormModelItemPrivate::HbDataFormModelItemPrivate():
@@ -63,7 +62,12 @@ void HbDataFormModelItemPrivate::setModel(const QAbstractItemModel *model)
     }
      
 }
-
+void HbDataFormModelItemPrivate::setContentWidgetData(
+    const QString& propertyName ,const QVariant &value)
+{
+    mProperties.remove(propertyName);
+    mProperties.insert(propertyName,value);
+}
 QAbstractItemModel* HbDataFormModelItemPrivate::model() const
 {   
     return mModel;
@@ -82,7 +86,7 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
         - ringtone_general
             - unknowncaller_ringtone_general,
 
-    Then sample code to create above model and data it to dataForm  would be,
+    Then sample code to create above model and data it to data form would be,
     
     \code
     HbDataForm* form = new HbDataForm();
@@ -104,33 +108,26 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
 /*!
     \enum HbDataFormModelItem::Roles
 
-    This enum defines the Roles supported by dataForm.Any data from application 
+    This enum defines the Roles supported by dataForm. Any data from application 
     can be added through these Roles.
  */
 
 /*!
     \var HbDataFormModelItem::LabelRole
-    LabelRole: This Role is used for data label of the DataFormViewItem
+    LabelRole: This Role is used for data item label/heading of HbDataFormViewItem.
     
  */
 
 
 /*!
     \var HbDataFormModelItem::ItemTypeRole
-    ItemTypeRole: This Role is used for data itemType of the HbDataFormModelItem
+    ItemTypeRole: This Role is used for data item type of the HbDataFormModelItem
     
  */
 
 /*!
     \var HbDataFormModelItem::PropertyRole
     PropertyRole: This Role is used for data properties of the contentwidget in data item.
-    
- */
-
-/*!
-    \var HbDataFormModelItem::DescriptionRole
-    DescriptionRole: This Role will add a description text in model item visualization. This role
-    is valid only for GroupItem and data items ( > GroupPageItem ).
     
  */
 
@@ -157,7 +154,7 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
 
 /*!
     \var HbDataFormModelItem::GroupItem
-    GroupItem is used for grouping diffrent group pages or grouping data items under one group
+    GroupItem is used for grouping different group pages or grouping data items under one group
     heading.
  */
 
@@ -176,13 +173,6 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
  */
 
 /*!
-
-    \var HbDataFormModelItem::VolumeSliderItem
-    VolumeSliderItem:  This itemType is for volume slider type of data item
-    
- */
-
-/*!
     \var HbDataFormModelItem::CheckBoxItem
     CheckBoxItem:  This itemType is for check box type of data item
     
@@ -192,8 +182,8 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
     \var HbDataFormModelItem::TextItem
     TextItem:  This itemType is for text type of data item
                The TextItem by default has maximum 4 rows. 
-               Application can configure thisvalue using HbLineEdit Property maxRows. 
-               This Property Value has to be set using SetContentWidgetData API.                
+               Application can configure this value using HbLineEdit Property maxRows. 
+               This Property Value has to be set using setContentWidgetData() API.                
     
  */
 
@@ -249,14 +239,14 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
     
     RadioButtonListItem will appear in three display modes
 
-    automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
+    - Automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
     if more than three items then selected items are displayed as text on a PushButton and when pushbutton 
     clicked it lunches popup. Automatic mode is set as the default mode.
     
-    embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
+    - Embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
     with value of property as "embedded"
     
-    popup : Application can set these items as always popup by setting the property "displayMode" 
+    - Popup : Application can set these items as always popup by setting the property "displayMode" 
     with value of property as "popup"
     HbDataFormModelItem *radioItem = model->appendDataItem(HbDataFormModelItem::RadioButtonListItem, 
         QString("Caller Tone"));
@@ -272,14 +262,14 @@ QAbstractItemModel* HbDataFormModelItemPrivate::model() const
     
     MultiSelectionListItem will appear in three display modes
 
-    automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
+    - Automatic : radioButtonList item appear as embedded( inline) if it contains less than four items and 
     if more than three items then selected items are displayed as text on a PushButton and when pushbutton 
     clicked it lunches popup. Automatic mode is set as the default mode.
     
-    embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
+    - Embedded : Application can set these items as always embedded(inline) by setting the property "displayMode" 
     with value of property as "embedded"
     
-    popup : Application can set these items as always popup by setting the property "displayMode" 
+    - Popup : Application can set these items as always popup by setting the property "displayMode" 
     with value of property as "popup"
     HbDataFormModelItem *radioItem = model->appendDataItem(HbDataFormModelItem::MultiSelectionListItem, 
         QString("Caller Tone"));
@@ -331,8 +321,11 @@ HbDataFormModelItem::HbDataFormModelItem(
     d_ptr(new HbDataFormModelItemPrivate())
 {
     Q_D(HbDataFormModelItem);
-    d->q_ptr = this ;
-    d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+    d->q_ptr = this ;  
+    if( parent ) {
+          d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+          d->mParentItem->appendChild(this);         
+    }
     setData(ItemTypeRole, type);
     setData(LabelRole, label);
 }
@@ -345,7 +338,10 @@ HbDataFormModelItem::HbDataFormModelItem(const HbDataFormModelItem* parent):
 {
     Q_D(HbDataFormModelItem);
     d->q_ptr = this ;
-    d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+    if( parent ){
+        d->mParentItem = const_cast<HbDataFormModelItem*>(parent);
+        d->mParentItem->appendChild(this);  
+    }
 }
 
 /*!
@@ -367,6 +363,7 @@ HbDataFormModelItem::~HbDataFormModelItem()
 
 /*!
     @beta
+
     Adds the given \a child to the children list of current item.
 
     \sa insertChild, insertChildren
@@ -386,7 +383,8 @@ void HbDataFormModelItem::appendChild(HbDataFormModelItem *child)
         }
         else {
             d->mChildItems.append(child);
-        }
+        }        
+
     }
 }
 
@@ -416,6 +414,7 @@ void HbDataFormModelItem::insertChild(int index, HbDataFormModelItem *child)
 
 /*!
     @beta
+
     Inserts the given list of \a items starting from the given \a row.
 
     \sa insertChild, appendChild
@@ -443,6 +442,7 @@ void HbDataFormModelItem::insertChildren(int row , int count ,
 
 /*!
     @beta
+
     Removes the child item at the given \a index. The item at \a index is
     deleted.
 
@@ -450,30 +450,33 @@ void HbDataFormModelItem::insertChildren(int row , int count ,
 */
 void HbDataFormModelItem::removeChild(int index)
 {
+    if( ( index < 0 ) || ( index >= childCount() ) ) {
+        return;
+    }
     Q_D(HbDataFormModelItem);
-
     HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
-    if(model) {
-        model->d_func()->rowsAboutToBeRemoved(this, index, index);
-        HbDataFormModelItem *item = d->mChildItems.takeAt(index);
-        if ( item ) {
-            delete item;
-            item = 0;
+
+    HbDataFormModelItem *item = d->mChildItems.at(index);
+    if( item ) {
+        int childCount = item->childCount();
+        for ( int childIndex = 0; childIndex < childCount ;childIndex++) {
+            item->removeChild(0); 
         }
-        model->d_func()->rowsRemoved();
-    }
-    else {
+        if( model ) {
+            model->d_func()->rowsAboutToBeRemoved(this, index, index);
+        }
         HbDataFormModelItem *item = d->mChildItems.takeAt(index);
-        if ( item ) {
-            delete item;
-            item = 0;
+        delete item;
+        item = 0;
+        if( model ) {
+            model->d_func()->rowsRemoved();
         }
     }
-   
 }
 
 /*!
     @beta
+
     Removes the given no of \a count of childitems from the given \a startindex. The
     items are deleted.
 
@@ -481,22 +484,22 @@ void HbDataFormModelItem::removeChild(int index)
 */
 void HbDataFormModelItem::removeChildren(int startIndex, int count)
 {
-     Q_D(HbDataFormModelItem);
+    if( ( startIndex < 0 ) || ( startIndex > childCount() ) || ( count <= 0 )) {
+        return;
+    }
+    
+    if( startIndex + count > childCount() ) {
+        return;
+    }   
 
-     HbDataFormModel* model = static_cast<HbDataFormModel*>(d->mModel);
-     model->d_func()->rowsAboutToBeRemoved(this, startIndex, startIndex + count -1); 
-     for(int index = 0; index < count ;index++) {
-        HbDataFormModelItem *item = d->mChildItems.takeAt(0);
-        if ( item ) {
-            delete item;
-            item = 0;
-        }
-     }
-     model->d_func()->rowsRemoved();
+    for(int index = 0; index < count ;index++) {
+        removeChild(startIndex);
+    }   
 }
 
 /*!
     @beta
+
     Returns the child item at the given \a index. 
     Returns 0 if \a index passed in greater than count or less than 0.
 
@@ -513,6 +516,7 @@ HbDataFormModelItem* HbDataFormModelItem::childAt(int index) const
 
 /*!
     @beta
+
     Returns index of the given \a child.
 
     \sa childAt
@@ -536,6 +540,7 @@ int HbDataFormModelItem::childCount() const
 
 /*!
     @beta
+
     Returns the data for the given \a role. Returns empty string if DescriptionRole is queried for
     items other then GroupItem and data item.
 */
@@ -565,6 +570,7 @@ QVariant HbDataFormModelItem::data(int role ) const
 
 /*!
     @beta
+
     Sets the given \a value of variant to the given \a role.
 */
  void HbDataFormModelItem::setData(int role ,const QVariant &value)
@@ -613,17 +619,16 @@ QVariant HbDataFormModelItem::data(int role ) const
     - TextItem: HbLineEdit property should be used
     - ToggleValueItem: HbPushButton(text and additionalText) property should be used
     - RadioButtonListItem: HbRadioButtonList property should be used
-    - MultiselectionItem: HbListDialog property should be used
+    - MultiselectionItem: HbListWidget property should be used
     - ComboBoxItem: HbComboBox property should be used
 */
 void HbDataFormModelItem::setContentWidgetData(
     const QString& propertyName ,const QVariant &value)
 {
     Q_D(HbDataFormModelItem);
-    d->mProperties.remove(propertyName);
-    d->mProperties.insert(propertyName,value);
-    d->mDirtyProperty = propertyName;
+    d->setContentWidgetData(propertyName, value);
 
+    d->mDirtyProperty = propertyName;
     HbDataFormModel *data_model = static_cast<HbDataFormModel*>(d->mModel);
     if(data_model) {
         QModelIndex index = data_model->indexFromItem(this);
@@ -633,6 +638,7 @@ void HbDataFormModelItem::setContentWidgetData(
 
 /*!
    @beta
+
    Returns the property  \a value for the given \a propertyName.
 */
 QVariant HbDataFormModelItem::contentWidgetData(const QString& propertyName ) const
@@ -640,8 +646,10 @@ QVariant HbDataFormModelItem::contentWidgetData(const QString& propertyName ) co
     Q_D(const HbDataFormModelItem);
     return d->mProperties.value(propertyName);
 }
+
 /*!
    @beta
+
    Returns all properties with values which was set in HbDataFormModelItem.
 */
 QHash<QString, QVariant> HbDataFormModelItem::contentWidgetData() const
@@ -649,10 +657,12 @@ QHash<QString, QVariant> HbDataFormModelItem::contentWidgetData() const
     Q_D(const HbDataFormModelItem);
     return d->mProperties;
 }
+
 /*!
    @beta
+
    Sets \a parent as a parent to this item.
-   It only sets the parent pointer. It doesnt put the item in the 
+   It only sets the parent pointer. It does not put the item in the 
    hierarchy.
 */
 void HbDataFormModelItem::setParent(HbDataFormModelItem* parent)
@@ -663,6 +673,7 @@ void HbDataFormModelItem::setParent(HbDataFormModelItem* parent)
 
 /*!
    @beta
+
    Returns the parent of the this data item.
 */
 HbDataFormModelItem* HbDataFormModelItem::parent() const
@@ -673,6 +684,7 @@ HbDataFormModelItem* HbDataFormModelItem::parent() const
 
 /*!
     @beta
+
     Sets \a type as a DataItemType for this data item.
 */
 void HbDataFormModelItem::setType(HbDataFormModelItem::DataItemType type)
@@ -682,6 +694,7 @@ void HbDataFormModelItem::setType(HbDataFormModelItem::DataItemType type)
 
 /*!
     @beta
+
     Returns the DataItemType of the this item.
 */
 HbDataFormModelItem::DataItemType HbDataFormModelItem::type() const
@@ -691,6 +704,7 @@ HbDataFormModelItem::DataItemType HbDataFormModelItem::type() const
 
 /*!
     @beta
+
     Sets the \a label to the item. This is valid only if the type is other than FormPageItem,
     GroupItem and GroupPageItem.
 */
@@ -701,6 +715,7 @@ void HbDataFormModelItem::setLabel(const QString& label)
 
 /*!
     @beta
+
     Returns the label of the item.
 */
 QString HbDataFormModelItem::label() const
@@ -710,6 +725,7 @@ QString HbDataFormModelItem::label() const
 
 /*!
     @beta
+
     Sets the \a icon to the item. This is valid only if the type is other than FormPageItem,
     GroupItem and GroupPageItem.
 */
@@ -720,6 +736,7 @@ void HbDataFormModelItem::setIcon(const QString& icon)
 
 /*!
     @beta
+
     Returns the icon of the item.
 */
 QString HbDataFormModelItem::icon() const
@@ -727,14 +744,9 @@ QString HbDataFormModelItem::icon() const
     return data(Qt::DecorationRole).toString();
 }
 
-/*
-QHash<QString, QVariant> HbDataFormModelItem::getContentWidgetValues()
-{
-    Q_D(const HbDataFormModelItem);
-    return d->mProperties;
-}*/
-
 /*!
+    @beta
+
     Sets whether the item is enabled. 
     
     If enabled is true, the item is \a enabled, meaning that the user can interact with the item
@@ -759,7 +771,8 @@ void HbDataFormModelItem::setEnabled(bool enabled)
 }
 
 /*!
-    Returns true if the item is enabled; otherwise returns false.
+    @beta
+    Returns true if the item is enabled otherwise returns false.
 */
 bool HbDataFormModelItem::isEnabled() const
 {
@@ -768,6 +781,7 @@ bool HbDataFormModelItem::isEnabled() const
 }
 
 /*!
+    @beta
     Returns item flags for this item.
 */
 Qt::ItemFlags HbDataFormModelItem::flags() const
@@ -777,7 +791,7 @@ Qt::ItemFlags HbDataFormModelItem::flags() const
 }
 
 /*!
-    @proto
+    @beta
     Sets the \a description to the item. This is valid only if the type is GroupItem or 
         DataItem. Its not valid for GroupPageItem and FormPageItem.
 */
@@ -787,7 +801,7 @@ void HbDataFormModelItem::setDescription(const QString& description)
 }
 
 /*!
-    @proto
+    @beta
     Returns the description of the item.
 */
 QString HbDataFormModelItem::description() const

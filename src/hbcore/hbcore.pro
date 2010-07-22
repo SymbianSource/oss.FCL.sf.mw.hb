@@ -73,7 +73,7 @@ include(activity/activity.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbcore/hbcore.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbcore/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$RESTRICTED_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # installation
 !local {
@@ -83,12 +83,13 @@ HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
     pubheaders.files = $$PUBLIC_HEADERS
     pubheaders.path = $${HB_INCLUDE_DIR}/hbcore
 
-    privheaders.files = $$PRIVATE_HEADERS
-    privheaders.path = $${HB_INCLUDE_DIR}/hbcore/private
+    restheaders.files = $$RESTRICTED_HEADERS
+    restheaders.path = $${HB_INCLUDE_DIR}/hbcore/restricted
+
     convheaders.files = $$CONVENIENCE_HEADERS
     convheaders.path = $${HB_INCLUDE_DIR}/hbcore
 
-    INSTALLS += target pubheaders privheaders convheaders
+    INSTALLS += target pubheaders restheaders convheaders
     win32:INSTALLS += dlltarget
 }
 
@@ -103,6 +104,9 @@ contains(DEFINES, HB_HAVE_QT_MOBILITY) {
 TRANSLATIONS += i18n/translations/directorylocalizer_en_GB.ts
 TRANSLATIONS += i18n/translations/directorylocalizer_de_DE.ts
 TRANSLATIONS += i18n/translations/languages.ts
+TRANSLATIONS += i18n/translations/collations.ts
+TRANSLATIONS += i18n/translations/regions.ts
+TRANSLATIONS += i18n/translations/languages_OLD.ts
 
 symbian {
     defFilePath = defs
@@ -159,11 +163,11 @@ symbian {
     }
     # i18n's other files export
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/language_list.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/language_list.txt"
+    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/locale_mappings.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/locale_mappings.txt"
 
     LIBS += -lapparc
     LIBS += -lavkon
     LIBS += -lbafl
-    LIBS += -lalfdecoderserverclient
     LIBS += -lSensrvClient
     LIBS += -lsensrvutil
     LIBS += -lcentralrepository
@@ -173,6 +177,7 @@ symbian {
     LIBS += -lws32
     LIBS += -lapgrfx
     LIBS += -lcone
+    LIBS += -lsystemtoneservice
 
     # central repository
     BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C304.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C304.txt"

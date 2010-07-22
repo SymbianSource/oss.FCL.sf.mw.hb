@@ -41,7 +41,10 @@ public:
         HbRockerDirectionLeft,
         HbRockerDirectionRight,
         HbRockerDirectionUp,
-        HbRockerDirectionDown
+        HbRockerDirectionDown,
+        HbRockerDirectionPress,
+        HbRockerDirectionDoubleClick,
+        HbRockerDirectionRelease,
     };
 
     enum RockerSelectionMode {
@@ -56,22 +59,24 @@ public:
     RockerSelectionMode selectionMode() const;
 
     enum { Type = Hb::ItemType_VirtualTrackPoint };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
 protected: // From QGraphicsItem
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent ( QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     virtual void gestureEvent(QGestureEvent *event);
 
 signals:
     void rockerDirection(int aDirection, HbInputVirtualRocker::RockerSelectionMode aSelectionMode);
 
 protected:
-    HbInputVirtualRocker(HbInputVirtualRockerPrivate &dd, QGraphicsWidget* parent = 0);
-    HbInputVirtualRockerPrivate* const d_ptr;
+    HbInputVirtualRocker(HbInputVirtualRockerPrivate &dd, QGraphicsWidget *parent = 0);
+    HbInputVirtualRockerPrivate *const d_ptr;
 
 private:
     Q_DISABLE_COPY(HbInputVirtualRocker)

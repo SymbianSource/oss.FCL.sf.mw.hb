@@ -41,8 +41,8 @@ class HbFadeItemPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbFadeItem)
 
-    public:
-    HbFadeItemPrivate( );
+public:
+    HbFadeItemPrivate();
     virtual ~HbFadeItemPrivate();
     void init();
 
@@ -67,7 +67,7 @@ void HbFadeItemPrivate::init()
 {
     Q_Q(HbFadeItem);
 
-    q->setBackgroundItem(HbStyle::P_Fade_background);
+    setBackgroundItem(HbStyle::P_Fade_background);
 
     q->setAcceptHoverEvents(true);
     // This is needed to be able to block moving the focus to items behind background item by
@@ -75,7 +75,7 @@ void HbFadeItemPrivate::init()
     q->setFlag(QGraphicsItem::ItemIsFocusable);
 }
 
-HbFadeItem::HbFadeItem( QGraphicsItem *parent ) : HbWidget(*new HbFadeItemPrivate, parent)
+HbFadeItem::HbFadeItem(QGraphicsItem *parent) : HbWidget(*new HbFadeItemPrivate, parent)
 {
     Q_D(HbFadeItem);
     d->q_ptr = this;
@@ -92,12 +92,12 @@ HbFadeItem::HbFadeItem(HbFadeItemPrivate &dd, QGraphicsItem *parent) : HbWidget(
 QRectF HbFadeItem::boundingRect() const
 {
     Q_D(const HbFadeItem);
-    if(!d->mRect.isValid()){
+    if (!d->mRect.isValid()) {
         // set size so that it is big enough
         // to cover the screen both landscape and portrait mode
         const QSizeF screenSize = HbDeviceProfile::profile(this).logicalSize();
         qreal dim = qMax(screenSize.width(), screenSize.height());
-        d->mRect.adjust(0,0,dim,dim);
+        d->mRect.adjust(0, 0, dim, dim);
     }
     return d->mRect;
 }

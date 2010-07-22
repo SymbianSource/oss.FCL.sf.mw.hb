@@ -28,10 +28,11 @@
 #include <hbapplication.h>
 #include "hbsplashgenerator_p.h"
 #include "hbsplashdefs_p.h"
+#include "hbsplashindicompositor_p.h"
+#include "hbwidgetenabler_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbsplashgen_server_symbian_p.h"
-#include "hbsplashdefs_p.h"
 #include <e32std.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
@@ -56,6 +57,9 @@ int runMain(int argc, char **argv, void *mutexToSignal)
         wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
         RThread::RenameMe(hbsplash_server_name);
+        RProcess process;
+        process.SetPriority(EPriorityForeground);
+        process.Close();
     }
 #else
     Q_UNUSED(mutexToSignal);
@@ -80,16 +84,19 @@ int runMain(int argc, char **argv, void *mutexToSignal)
     QMainWindow mw;
     QPushButton *btnRegen = new QPushButton("Regenerate");
     gen.connect(btnRegen, SIGNAL(clicked()), SLOT(uncachedRegenerate()));
+    btnRegen->setEnabled(false); // will be enabled only when the generator is really ready
+    WidgetEnabler widgetEnabler(btnRegen);
+    QObject::connect(&gen, SIGNAL(outputDirContentsUpdated(QString, QStringList)),
+                     &widgetEnabler, SLOT(enable()), Qt::QueuedConnection);
     mw.setCentralWidget(btnRegen);
     mw.show();
 #endif
 
     // The server must be initialized before calling HbSplashGenerator::start().
-#ifdef Q_OS_SYMBIAN
+#if defined(Q_OS_SYMBIAN)
     qDebug("[hbsplashgenerator] starting server");
     HbSplashGenServer server(&gen);
-    // If there was an error (or an instance is already running (it is
-    // possible in certain race conditions)) then exit right away.
+    // If there was an error then exit right away.
     if (!server.startupSuccess()) {
         qDebug("[hbsplashgenerator] exiting due to failed server startup");
         return 0;
@@ -99,7 +106,10 @@ int runMain(int argc, char **argv, void *mutexToSignal)
     qDebug("[hbsplashgenerator] starting generator");
     gen.start(forceRegen);
 
+    HbSplashIndicatorCompositor indiCompositor(&gen);
+
 #if defined(Q_OS_SYMBIAN)
+    server.addCompositor(&indiCompositor);
     if (mutexToSignal) {
         qDebug("[hbsplashgenerator] signaling mutex");
         static_cast<RMutex *>(mutexToSignal)->Signal();

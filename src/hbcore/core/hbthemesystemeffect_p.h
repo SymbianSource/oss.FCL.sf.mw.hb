@@ -26,11 +26,11 @@
 #ifndef HBTHEMESYSTEMEFFECT_P_H
 #define HBTHEMESYSTEMEFFECT_P_H
 
-#include <hbglobal.h>
-#include <QMap>
 #include <QObject>
 #include <QXmlStreamReader>
+#include <hbglobal.h>
 
+class HbThemeSystemEffectMap;
 #ifdef Q_OS_SYMBIAN
 class RWsSession;
 #endif //Q_OS_SYMBIAN
@@ -40,72 +40,33 @@ class HB_CORE_PRIVATE_EXPORT HbThemeSystemEffect : public QObject
     Q_OBJECT
 
 public:
-    enum SystemEffectId {
-        Invalid = 0,
-        AppStart,
-        AppExit,
-        AppSwitch
-    };
-
     ~HbThemeSystemEffect();
     static void handleThemeChange(const QString &themeName);
 
 private:
-    static HbThemeSystemEffect *instance();
     HbThemeSystemEffect(QObject *parent);
     void setCurrentTheme(const QString &themeName);
-    void registerEffects();
-    bool parseConfigurationFile(const QString& filePath);
-    void parseEffects(QXmlStreamReader &xml);
-    bool checkStartElement(QXmlStreamReader &xml, const QLatin1String &startElement) const;
-    int idFromEffectIdString(const QString &effectIdString) const;
-    bool validEffectFile(const QString &effectFile) const;
-    uint validApplicationUid(const QString &appUid) const;
-    bool booleanFromString(const QString &boolAttribute) const;
-    bool getThemeEffectFolder(QString &path, const QString &themeName) const;
-    void addEntryToEffectMap(uint appUid,
-                             SystemEffectId id,
-                             const QString &incomingFile,
-                             const QString &outgoingFile,
-                             bool incomingHasPriority);
+    bool getThemeEffectFolder(QString &path);
+    void verifyAllEffectsFound(HbThemeSystemEffectMap &effects);
+    void registerEffects(const HbThemeSystemEffectMap *effects);
+    HbThemeSystemEffectMap *parseBaseThemeEffects();
+    HbThemeSystemEffectMap *baseThemeEffects();
 
-#ifdef Q_OS_SYMBIAN
-    TInt tfxTransitionAction(const SystemEffectId id) const;
-#endif //Q_OS_SYMBIAN
+    static HbThemeSystemEffect *instance();
+    static HbThemeSystemEffectMap *parseConfigurationFile(const QString &effectsFolder);
+    static void parseEffects(QXmlStreamReader &xml, HbThemeSystemEffectMap *effects);
+    static bool checkStartElement(QXmlStreamReader &xml, const QLatin1String &startElement);
+    static int idFromEffectIdString(const QString &effectIdString);
+    static bool validEffectFile(const QString &effectFile,
+                                HbThemeSystemEffectMap *effects,
+                                bool &fromBaseTheme);
+    static uint validApplicationUid(const QString &appUid);
+    static bool booleanFromString(const QString &boolAttribute);
 
 private:
-    class SystemEffectKey {
-    public:
-        inline SystemEffectKey(SystemEffectId effectId, uint appUid)
-            : mEffectId(effectId), mAppUid(appUid){}
-
-        inline bool operator<(const SystemEffectKey &other) const {
-            return other.mAppUid == mAppUid ? other.mEffectId > mEffectId : other.mAppUid > mAppUid;
-        }
-
-    public:
-        SystemEffectId mEffectId;
-        uint mAppUid;
-    };
-
-    class SystemEffectValue {
-    public:
-        inline SystemEffectValue(const QString &incomingFile,
-                                 const QString &outgoingFile,
-                                 bool incomingHasPriority)
-            : mIncomingFile(incomingFile),
-            mOutgoingFile(outgoingFile),
-            mIncomingHasPriority(incomingHasPriority) {}
-
-    public:
-        QString mIncomingFile;
-        QString mOutgoingFile;
-        bool mIncomingHasPriority;
-    };
-
-    typedef QMap<SystemEffectKey, SystemEffectValue> SystemEffectMap;
-    SystemEffectMap mSystemEffects;
-    QString mThemeEffectFolder;
+    HbThemeSystemEffectMap *mBaseEffects;
+    QString mBaseEffectsFolder;
+    bool mBaseEffectsRegistered;
 #ifdef Q_OS_SYMBIAN
     RWsSession &mWsSession;
 #endif //Q_OS_SYMBIAN

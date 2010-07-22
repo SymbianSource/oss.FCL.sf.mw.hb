@@ -63,8 +63,9 @@ QPointF HbVgOutlineEffect::outline() const
 void HbVgOutlineEffect::setOutline(const QPointF &outline)
 {
     Q_D(HbVgOutlineEffect);
-    if (d->outline == outline)
+    if (d->outline == outline) {
         return;
+    }
     d->outline = outline;
     updateEffectBoundingRect();
     emit outlineChanged(outline);
@@ -79,8 +80,9 @@ QColor HbVgOutlineEffect::color() const
 void HbVgOutlineEffect::setColor(const QColor &color)
 {
     Q_D(HbVgOutlineEffect);
-    if (d->color == color)
+    if (d->color == color) {
         return;
+    }
     d->color = color;
     updateEffect();
     emit colorChanged(color);
@@ -95,8 +97,9 @@ qreal HbVgOutlineEffect::steepness() const
 void HbVgOutlineEffect::setSteepness(qreal steepness)
 {
     Q_D(HbVgOutlineEffect);
-    if (d->steepness == steepness)
+    if (d->steepness == steepness) {
         return;
+    }
     d->steepness = steepness;
     updateEffect();
     emit steepnessChanged(steepness);
@@ -111,8 +114,9 @@ QPointF HbVgOutlineEffect::offset() const
 void HbVgOutlineEffect::setOffset(const QPointF &offset)
 {
     Q_D(HbVgOutlineEffect);
-    if (d->offset == offset)
+    if (d->offset == offset) {
         return;
+    }
     d->offset = offset;
     updateEffectBoundingRect();
     emit offsetChanged(offset);
@@ -141,23 +145,24 @@ QPixmap HbVgOutlineEffect::makeOutline(const QVariant &vgImage, const QSize &vgI
 {
 #ifdef HB_EFFECTS_OPENVG
     QPixmap cachedPm = cached(vgImageSize);
-    if (!cachedPm.isNull())
+    if (!cachedPm.isNull()) {
         return cachedPm;
+    }
 
     Q_D(HbVgOutlineEffect);
     VGImage srcImage = vgImage.value<VGImage>();
     VGImage dstImage = d->ensurePixmap(&d->dstPixmap, vgImageSize);
 
     if (d->paramsChanged) {
-        VGubyte stpc = (VGubyte) clamp(d->steepness, 0.0f, 32.0f);
-        VGubyte unnormalisedOpacity = (VGubyte) (clamp(d->opacity, 0.0f, 1.0f) * 255.0f);
+        VGubyte stpc = (VGubyte) clamp(d->steepness, 0.0f, 255.0f);
+        VGubyte unnormalisedOpacity = (VGubyte)(clamp(d->opacity, 0.0f, 1.0f) * 255.0f);
         for (int i = 0; i < 256; ++i) {
-            VGubyte alpha = (i*stpc > unnormalisedOpacity) ? unnormalisedOpacity : i*stpc;
+            VGubyte alpha = (i * stpc > unnormalisedOpacity) ? unnormalisedOpacity : i * stpc;
             d->lut[i] = 0x00000000
-                | (d->color.red() << 24)
-                | (d->color.green() << 16)
-                | (d->color.blue() << 8)
-                | alpha;
+                        | (d->color.red() << 24)
+                        | (d->color.green() << 16)
+                        | (d->color.blue() << 8)
+                        | alpha;
         }
     }
 

@@ -1,16 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
-	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
-]>
-<svg version="1.1"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
-	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
-<defs>
-</defs>
-<rect fill="none" width="30" height="30"/>
-<polygon points="29,14 25,11 29,8 "/>
-<path d="M6.027,7.025v14.949H26V7.025H6.027z M24.026,20H8V9h16.026V20z"/>
-<polygon points="5,9 2,7 2,20 5,18 "/>
-<rect x="10" y="12" width="11.999" height="1"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<rect fill="none" height="30" width="30"/>
+</g>
+<path d="M30,8l-3,2V8c0-1.104-0.896-2-2-2H8C6.896,6,6,6.896,6,8v14c0,1.104,0.896,2,2,2h17c1.104,0,2-0.896,2-2v-8l3,2V8z M17.5,21  c-0.828,0-1.5-0.672-1.5-1.5s0.672-1.5,1.5-1.5s1.5,0.672,1.5,1.5S18.328,21,17.5,21z M22.5,21c-0.828,0-1.5-0.672-1.5-1.5  s0.672-1.5,1.5-1.5s1.5,0.672,1.5,1.5S23.328,21,22.5,21z"/>
+<polygon points="0,19 5,17 5,9 0,7 "/>
 </svg>

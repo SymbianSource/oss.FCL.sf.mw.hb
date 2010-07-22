@@ -68,6 +68,7 @@ private:
         } mData;
 
         int stringSize;
+        int stringListCount;
         QAtomicInt mRef;
     private:
         Type mDataType;
@@ -80,6 +81,7 @@ public:
     HbVariant(double val, HbMemoryManager::MemoryType type);
     HbVariant(const QString &str, HbMemoryManager::MemoryType type);
     HbVariant(const char *val, HbMemoryManager::MemoryType type);
+    HbVariant(const QStringList &val, HbMemoryManager::MemoryType type);
     HbVariant(const QColor &col, HbMemoryManager::MemoryType type);
     ~HbVariant();
 
@@ -95,14 +97,13 @@ public:
     }
 
 #ifdef CSS_PARSER_TRACES
-    bool supportsPrinting() const;
     void print() const;
 #endif
 
     int toInt() const;
     QString toString() const;
     QColor toColor() const;
-    QStringList toStringList () const;
+    QStringList toStringList() const;
     double toDouble() const;
 
     HbVariant & operator=( int val );
@@ -110,7 +111,7 @@ public:
     HbVariant & operator=( const QString& val );
     HbVariant & operator=( const HbString& val );
     HbVariant & operator=( const QColor& col );
-    HbVariant & operator=( const QStringList& /*strList*/ );
+    HbVariant & operator=( const QStringList& strList );
     HbVariant & operator=( const HbVariant& other );
     
     bool canConvert ( HbVariant::Type t ) const;
@@ -122,6 +123,7 @@ public:
 private:
     HbVariantData * initializeData();
     void fillStringData(const QChar *str, int size);
+    void fillStringListData(const QStringList &stringList);
     void fillColorData(const QColor &col);
     QString getString() const;
     QColor getColor() const;
@@ -144,7 +146,8 @@ private:
     static bool reservesMemory(const HbVariantData *data)
     {
         return data->dataType() == HbVariant::String
-               || data->dataType() == HbVariant::Color;
+               || data->dataType() == HbVariant::Color
+               || data->dataType() == HbVariant::StringList;
     }
     void freeMemory(HbVariantData *data)
     {

@@ -43,7 +43,7 @@ public:
     bool parseDefinitionFile(const QString &fileName, AnimHash &animations, const QString &realFileName);
 
 private:
-    bool doParseFile(const QString &fileName, AnimHash &animations);    
+    bool doParseFile(const QString &fileName, AnimHash &animations);
     bool readAnimations(const QString &fileName, AnimHash &animations);
     QString readIconData(HbIconAnimationData &data);
     void readUnknownElement();

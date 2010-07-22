@@ -61,23 +61,25 @@ bool HbInputBasic12KeyHandlerPrivate::handleAlphaEvent(int buttonId, HbKeyboardT
 
     int index = mNumChr;
     do {
+        int currCharIndex = 0;
+        mCurrentChar = 0;
 	    //This condition is to avoid get the characters mapped to Asterisk
 	    //Especially for Thai language we have mapped character to Asterisk
         if (buttonId != HbInputButton::ButtonKeyCodeAsterisk ||
             mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
+            currCharIndex = mNumChr ;
             mCurrentChar = q->getNthCharacterInKey(mNumChr, buttonId, type);
 	    }
 
         if (mCurrentChar != 0) {
             if (focusObject->characterAllowedInEditor(mCurrentChar)) {
-                QString str;
-                str += mCurrentChar;
-                
-                //If the keypad is SCT, we can commit the character immidiately
-                if (mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
-                    focusObject->filterAndCommitCharacter(mCurrentChar);
-                    mCurrentChar = 0;
+                //If the keypad is SCT or button has only one character that is allowed to editor,
+                //we can commit the character immidiately
+                if (mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait || currCharIndex == mNumChr) {
+                    _q_timeout();
                 } else {
+                    QString str;
+                    str += mCurrentChar;
                     QList<QInputMethodEvent::Attribute> list;
                     QInputMethodEvent event(str, list);
                     focusObject->sendEvent(event);
@@ -106,11 +108,16 @@ bool HbInputBasic12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
         if (mDownKey == HbInputButton::ButtonKeyCodeShift) {
             mLongPressHappened = true;
             mInputMethod->switchMode(HbInputButton::ButtonKeyCodeShift);                
-        } else if (mDownKey == HbInputButton::ButtonKeyCodeSymbol ||
-            (mDownKey == HbInputButton::ButtonKeyCodeAsterisk &&
-            mInputMethod->currentKeyboardType() != HbKeyboardSctPortrait)) {
+        } else if (mDownKey == HbInputButton::ButtonKeyCodeSymbol) {
+            // launch the smiley popup when long press of Sym key is received
             mLongPressHappened = true;
             mInputMethod->selectSpecialCharacterTableMode();
+        } else if (mDownKey == HbInputButton::ButtonKeyCodeAsterisk &&
+            // launch the SCT keypad when long press of Asterisk key is 
+			// received in non-SCT mode
+            !mInputMethod->isSctModeActive()) {
+            mLongPressHappened = true;
+            mInputMethod->switchMode(mDownKey);
         } else if (mDownKey != HbInputButton::ButtonKeyCodeDelete &&
                    mInputMethod->currentKeyboardType() != HbKeyboardSctPortrait) {
             mLongPressHappened = true;
@@ -161,8 +168,7 @@ asterisk.
 */
 bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
 {
-    HbInputVkbWidget::HbFlickDirection flickDir = static_cast<HbVirtual12Key*>(mInputMethod)->flickDirection();
-    if (mInputMethod && flickDir!=HbInputVkbWidget::HbFlickDirectionDown) {
+    if (mInputMethod) {
         Q_Q(HbInputBasic12KeyHandler);
         int buttonId = keyEvent->key();
         HbInputFocusObject *focusObject = mInputMethod->focusObject();
@@ -170,12 +176,12 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             return false;
         }
         mDownKey = 0;
-        if (mLongPressHappened){
+        if ( mLongPressHappened ){
             mLongPressHappened = false;
             return false;
         }
 
-        if (mTimer->isActive() && mLastKey != buttonId) {
+        if(mTimer->isActive() && mLastKey != buttonId) {
             mNumChr = 0;
 
             // For QLineEdit it works fine. For HbLineEdit, need to set the state 
@@ -192,13 +198,9 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             refreshAutoCompleter();
         }
 
-        if (buttonId == HbInputButton::ButtonKeyCodeEnter) {
-            mInputMethod->closeKeypad();
-            mLastKey = buttonId;
-            return true;
-        } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
+        if (buttonId == HbInputButton::ButtonKeyCodeShift) {
             // single tap of shift key toggles prediction status in case insensitive languages
-			// The Editor should not be Web or URL which allows only Latin Alphabet
+            // The Editor should not be Web or URL which allows only Latin Alphabet
             if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage() &&
                                 ((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)!=focusObject->editorInterface().inputConstraints()) &&
                 // when the language does not support prediction in that case we should not update the state and prediction
@@ -218,7 +220,8 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
                         // (the case was changed on the single tap)
                         updateTextCase();
                         // when the language does not support prediction in that case we should not update the state and prediction
-                        if(HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language())) {
+                        if(HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language()) &&
+                            mInputMethod->focusObject()->editorInterface().isPredictionAllowed()) {
                             q->togglePrediction();
                         }
                     } else {
@@ -254,10 +257,11 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
         if (!mTimer->isActive() && buttonId == HbInputButton::ButtonKeyCodeSymbol) {
             return true;
         }
-        if (buttonId == HbInputButton::ButtonKeyCodeAsterisk || buttonId == HbInputButton::ButtonKeyCodeSymbol ||
+        // switch the keypad mode when the short key press of Asterisk key in non-SCT mode
+        // or SYM button or Alphabet button is received		
+        if ((buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
+            !mInputMethod->isSctModeActive()) || buttonId == HbInputButton::ButtonKeyCodeSymbol ||
             buttonId == HbInputButton::ButtonKeyCodeAlphabet) {
-            //Same asterisk key is used for launching candidate list (long key press)
-            //and also for SCT. So, do not launch SCT if candidate list is already launched.            
             mInputMethod->switchMode(buttonId);
             return true;
         }

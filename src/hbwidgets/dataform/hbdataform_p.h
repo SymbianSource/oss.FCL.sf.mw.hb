@@ -44,7 +44,7 @@ class HbDataFormModelItem;
 
 struct ItemSignal
 {
-    QObject *reciever;
+    QObject *receiver;
     QString signal;
     QString slot;
 };
@@ -62,17 +62,20 @@ public:
     void addFormPage(const QString& page);
     void removeFormPage(const QString& page);
     void _q_page_changed(int index);
-    void _q_item_displayed(const QModelIndex &index);
-    void makeConnection(QModelIndex index);
+
+    //void _q_item_displayed(const QModelIndex &index);
+    QModelIndex pageModelIndex(int index) const;
+    void makeConnection(QModelIndex index, HbWidget* widget);
     void connectNow(HbDataFormModelItem * modelItem, QString signal, 
-                    QObject *reciever, QString slot);
+                    QObject *receiver, QString slot);
     void removeConnection(HbDataFormModelItem * item, 
                                   QString signal, 
-                                  QObject *reciever, 
+                                  QObject *receiver, 
                                   QString slot);
     void removeAllConnection();
     void removeAllConnection(HbDataFormModelItem *item);
     inline HbTreeModelIterator *treeModelIterator() const;
+    void emitActivated(const QModelIndex &modelIndex);
 
 public:
     HbDataFormHeadingWidget* mHeadingWidget;

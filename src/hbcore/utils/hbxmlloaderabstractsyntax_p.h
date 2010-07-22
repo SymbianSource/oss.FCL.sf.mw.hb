@@ -61,7 +61,6 @@ namespace HbXml {
         ActionPushDocument,
         ActionPushObject,
         ActionPushWidget,
-        ActionPushSpacerItem,
         ActionPushConnect,
         ActionPushProperty,
         ActionPushRef,
@@ -72,9 +71,8 @@ namespace HbXml {
         ActionSetSizeHint,
         ActionSetToolTip,
         ActionCreateAnchorLayout,
-        ActionAddAnchorLayoutEdge,
-        ActionCreateMeshLayout,
-        ActionAddMeshLayoutEdge,
+        ActionAddAnchorLayoutItem,
+        ActionSetAnchorLayoutMapping,
         ActionCreateGridLayout,
         ActionAddGridLayoutCell,
         ActionSetGridLayoutRowProperties,
@@ -95,7 +93,7 @@ namespace HbXml {
         ElementType type;
         void *data;
     };
-};
+}
 
 
 class HbXmlLoaderAbstractActions;
@@ -200,11 +198,14 @@ public:
         // Deprecated.
         ATTR_TEXTPANEHEIGHT,
         ATTR_LOCID,
+        ATTR_ACTION,
         
         TYPE_DOCUMENT,
         TYPE_HBWIDGET,
         TYPE_OBJECT,
         TYPE_WIDGET,
+
+        // Deprecated.
         TYPE_SPACERITEM,
         TYPE_CONNECT,
         TYPE_LAYOUT,
@@ -233,19 +234,15 @@ public:
         
         LAYOUT_ANCHOR,
         LAYOUT_MESH,
-        LAYOUT_MESH_TARGET,
-        LAYOUT_MESH_ALIEN,
         LAYOUT_GRID,
         LAYOUT_LINEAR,
         LAYOUT_STACK,
         LAYOUT_NULL,
+        LAYOUT_ALIEN,
         
         CONTAINER_STRINGLIST,
         CONTAINER_NULL,
         
-        VALUE_BOOL_TRUE,
-        VALUE_BOOL_FALSE,
-
         UNIT_UNIT,
         UNIT_PIXEL,
         UNIT_MILLIMETER,
@@ -258,19 +255,25 @@ public:
 
         AL_ANCHOR,
         AL_SRC_NAME,
+        AL_SRC_ID,
         AL_SRC_EDGE,
         AL_DST_NAME,
+        AL_DST_ID,
         AL_DST_EDGE,
+        AL_MIN_LENGTH,
+        AL_PREF_LENGTH,
+        AL_MAX_LENGTH,
+        AL_SIZEPOLICY,
+        AL_DIRECTION,
+        AL_ANCHOR_ID,
         AL_SPACING,
         AL_SPACER,
+
+        AL_MAPPING,
+        AL_MAPPING_ITEM,
+        AL_MAPPING_ID,
         
         ML_MESHITEM, 
-        ML_SRC_NAME, 
-        ML_SRC_EDGE,
-        ML_DST_NAME,
-        ML_DST_EDGE,
-        ML_SPACING,
-        ML_SPACER,
         
         GL_GRIDCELL, 
         GL_ITEMNAME, 

@@ -32,7 +32,7 @@
 #include <hbstyleoptionabstractviewitem_p.h>
 #include <hbicon.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionGridViewItem : public HbStyleOptionAbstractViewItem
 {
 public:

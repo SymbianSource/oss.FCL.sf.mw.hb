@@ -43,12 +43,12 @@
 #endif // Q_OS_SYMBIAN
 
 #include "hblanguageutil.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 #if defined(Q_OS_SYMBIAN)
 #define LANGUAGE_LIST_FILE "/resource/hbi18n/translations/language_list.txt"
 #define LANGUAGE_ID_PREFIX "language_"
-#define TRANSLATOR_PATH "/resource/hbi18n/translations/languages"
+#define TRANSLATOR_PATH "/resource/hbi18n/translations/languages_OLD"
 #endif // Q_OS_SYMBIAN
 
 /*!
@@ -56,6 +56,9 @@
     @hbcore
     \class HbLanguageUtil
     \brief HbLanguageUtil provides functions for quering supported languages and switching the system language.
+
+    \deprecated HbLanguageUtil class
+        is deprecated. Please use HbLocaleUtil class instead.
 */
 
 #if defined(Q_OS_SYMBIAN)
@@ -112,6 +115,7 @@ QHash<int, QString> readLanguageList()
 bool setLocale( int language )
 {
     TExtendedLocale dummy;
+    dummy.LoadSystemSettings();
     QString no;
     no = QString( "%1" ).arg( language, 2, 10, QLatin1Char( '0' ) );
     QString name = QString( "elocl." ).append( no );
@@ -134,8 +138,14 @@ bool setLocale( int language )
     Language names are localized according the language's native presentation.
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
+    
+    \attention Symbian specific API
+    
+    \deprecated HbLanguageUtil::supportedLanguages()
+        is deprecated. Please use HbLocaleUtil::supportedLanguages() instead.
      
-    \return localized names and integer identifiers of languages supported in a device  
+    \return Symbian - localized names and integer identifiers of languages supported in a device  
+    \return other platforms - empty QHash    
 */
 QHash<int, QString> HbLanguageUtil::supportedLanguages()
 {
@@ -143,9 +153,16 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
     QHash<int, QString> languages; 
     
     QTranslator translator;
-    if (!translator.load(TRANSLATOR_PATH)) {
-        return languages;
+    QString path = "c:";
+    path += QString(TRANSLATOR_PATH);
+    if (!translator.load(path)) {
+        path = "z:";
+        path += QString(TRANSLATOR_PATH);
+        if (!translator.load(path)) {
+            return languages;
+        } 
     } 
+
     QCoreApplication::installTranslator(&translator);
     QHash<int, QString> hashLanguageNames = readLanguageList();
  
@@ -182,7 +199,13 @@ QHash<int, QString> HbLanguageUtil::supportedLanguages()
     Language ID's returned by this functions may be used as language parameter for changeLanguage(int language) function.
     Language IDs and names are OS specific and may vary across the platforms and releases.
      
-    \return localized names and integer identifiers of known languages 
+    \attention Symbian specific API
+     
+    \deprecated HbLanguageUtil::allLanguages()
+        is deprecated.
+
+    \return Symbian - localized names and integer identifiers of known languages 
+    \return other platforms - empty QHash    
 */
 QHash<int, QString> HbLanguageUtil::allLanguages()
 {
@@ -190,9 +213,16 @@ QHash<int, QString> HbLanguageUtil::allLanguages()
     QHash<int, QString> langs; 
     
     QTranslator translator;
-    if (!translator.load(TRANSLATOR_PATH)) {
-        return langs;
+    QString path = "c:";
+    path += QString(TRANSLATOR_PATH);
+    if (!translator.load(path)) {
+        path = "z:";
+        path += QString(TRANSLATOR_PATH);
+        if (!translator.load(path)) {
+            return langs;
+        } 
     } 
+
     QCoreApplication::installTranslator(&translator);
     
     QHash<int, QString> languageNameList = readLanguageList();
@@ -217,9 +247,14 @@ QHash<int, QString> HbLanguageUtil::allLanguages()
 
 /*!
     \brief Changes the device system language.  
-  
-    \param identifier of language to set active
-    \return true if language change was successful
+     
+    \attention Symbian specific API
+     
+    \deprecated HbLanguageUtil::changeLanguage( int language )
+        is deprecated. Please use HbLocaleUtil::changeLanguage( const QString &language ) instead.
+
+    \param language identifier of language to set active
+    \return true for Symbian if succesfull and false for other platforms
 */ 
 bool HbLanguageUtil::changeLanguage( int language )
 {
@@ -262,7 +297,12 @@ bool HbLanguageUtil::changeLanguage( int language )
 /*!
     \brief Returns ID of current language. 
   
-    \return identifier of current system language
+    \attention Symbian specific API
+     
+    \deprecated HbLanguageUtil::currentLanguage()
+        is deprecated. Please use HbLocaleUtil::currentLanguage() instead.
+
+    \return identifier of current system language for Symbian and '0' for other platforms
 */ 
 int HbLanguageUtil::currentLanguage()
 {

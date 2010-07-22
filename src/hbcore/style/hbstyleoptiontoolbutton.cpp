@@ -25,17 +25,12 @@
 
 #include <hbstyleoptiontoolbutton_p.h>
 
-/*!
+/*
     \class HbStyleOptionToolButton
     \brief HbStyleOptionToolButton has the style component for tool button primitives
 */
 
-/*!
 
-    \deprecated HbStyleOptionToolButton::HbStyleOptionToolButton()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionToolButton::HbStyleOptionToolButton() : HbStyleOption(HbSO_ToolButton),
     icon(),
     customBackground(),
@@ -50,12 +45,7 @@ HbStyleOptionToolButton::HbStyleOptionToolButton() : HbStyleOption(HbSO_ToolButt
     version = Version;
 }
 
-/*!
 
-    \deprecated HbStyleOptionToolButton::HbStyleOptionToolButton(const HbStyleOptionToolButton&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionToolButton::HbStyleOptionToolButton(const HbStyleOptionToolButton &other) :
     HbStyleOption(other),
     icon(other.icon),

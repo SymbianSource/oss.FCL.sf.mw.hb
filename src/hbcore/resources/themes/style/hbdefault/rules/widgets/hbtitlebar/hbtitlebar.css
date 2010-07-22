@@ -1,7 +1,7 @@
 HbTitleBar
 {
     layout:default;
-    mirroring: disabled;
+    layout-direction: left-to-right;
 }
 
 HbTitleBar::status{
@@ -26,6 +26,7 @@ HbTitleBar::handle
 
 HbTitleBar::toucharea
 {   
+    top: expr((1/3)*var(hb-param-widget-chrome-height));
     fixed-width: expr(2/3*var(hb-param-widget-chrome-height));
     fixed-height: var(hb-param-widget-chrome-height);
 }

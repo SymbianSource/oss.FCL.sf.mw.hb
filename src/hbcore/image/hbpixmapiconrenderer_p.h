@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBPIXMAPICONRENDERER_P_H_
-#define HBPIXMAPICONRENDERER_P_H_
+#ifndef HBPIXMAPICONRENDERER_P_H
+#define HBPIXMAPICONRENDERER_P_H
 
 #include <hbglobal.h>
 #include <QIcon>
@@ -36,35 +36,31 @@ class HbMaskableIconImpl;
 class HB_CORE_PRIVATE_EXPORT HbPixmapIconRenderer
 {
 public:
-    
-    HbPixmapIconRenderer(const QPixmap & pixmap, HbIconImpl *impl);
-    
+
+    HbPixmapIconRenderer(const QPixmap &pixmap, HbIconImpl *impl);
+
     ~HbPixmapIconRenderer();
-    
-    void setColor(const QColor & color)
-    {
+
+    void setColor(const QColor &color) {
         this->iconColor = color;
     }
-    
-    void setMode(QIcon::Mode mode)
-    {
+
+    void setMode(QIcon::Mode mode) {
         this->iconMode = mode;
     }
-    
-    QColor color()
-    {
+
+    QColor color() {
         return iconColor;
     }
-    
-    QIcon::Mode mode() 
-    {
+
+    QIcon::Mode mode() {
         return iconMode;
     }
 
-    void draw(QPainter* painter,
+    void draw(QPainter *painter,
               const QPointF &topLeft,
               const QPainterPath &clipPath,
-              HbMaskableIconImpl * maskIconData);
+              HbMaskableIconImpl *maskIconData);
 
     void destroyMaskedData(HbIconMaskedData *data);
 
@@ -72,19 +68,18 @@ private:
 
     void applyIconProperties();
 
-    QPixmap getMaskedPixmap(HbMaskableIconImpl * maskIconData);
+    QPixmap getMaskedPixmap(HbMaskableIconImpl *maskIconData);
 
-    void doDraw(QPainter * painter,
-                const QPointF & topLeft,
-                const QPixmap & finalPixmap,
-                const QPainterPath & clipPath);
+    void doDraw(QPainter *painter,
+                const QPointF &topLeft,
+                const QPixmap &finalPixmap,
+                const QPainterPath &clipPath);
 
     QColor                  iconColor;
     QIcon::Mode             iconMode;
     bool                    iconPropertiesApplied;
     QPixmap                 pixmapData;
-    HbIconImpl *            iconImpl;
+    HbIconImpl             *iconImpl;
 };
 
 #endif
-

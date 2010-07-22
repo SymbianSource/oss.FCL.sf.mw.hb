@@ -22,6 +22,7 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputsmileypicker.h"
 
 #include <hbgridview.h>
 #include <hbview.h>
@@ -35,8 +36,12 @@
 #include <HbFrameItem>
 #include <HbFrameDrawer>
 #include <hbdialog_p.h>
+#include <hbinputregioncollector_p.h>
 
-#include "hbinputsmileypicker.h"
+const int HbLandscapeRows = 3;
+const int HbLandscapeColumns = 7;
+const int HbPortraitRows = 4;
+const int HbPortraitColumns = 5;
 
 /// @cond
 
@@ -48,8 +53,8 @@ public:
     HbInputSmileyPickerPrivate(int rows, int columns);
     ~HbInputSmileyPickerPrivate();
 
-    void getSmilies(const QStringList& smileys);
-    void _q_activated(const QModelIndex& index);
+    void getSmilies(const QStringList &smileys);
+    void _q_activated(const QModelIndex &index);
 
     // member variables.
     HbGridView *mView;
@@ -57,16 +62,16 @@ public:
 };
 
 HbInputSmileyPickerPrivate::HbInputSmileyPickerPrivate(int rows, int columns)
-:mView(0), mModel(0)
+    : mView(0), mModel(0)
 {
+    Q_UNUSED(rows);
+    Q_UNUSED(columns);
     Q_Q(HbInputSmileyPicker);
     // we should make sure that it comes above vkb
     setPriority(HbPopupPrivate::VirtualKeyboard + 1);
 
     // create a view and set the rows and columns.
     mView = new HbGridView(q);
-    mView->setRowCount(rows);
-    mView->setColumnCount(columns);
     mView->setScrollDirections(Qt::Horizontal);
     mView->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
     mModel = new QStandardItemModel(q);
@@ -77,24 +82,24 @@ HbInputSmileyPickerPrivate::~HbInputSmileyPickerPrivate()
 {
 }
 
-void HbInputSmileyPickerPrivate::getSmilies(const QStringList& smileys)
+void HbInputSmileyPickerPrivate::getSmilies(const QStringList &smileys)
 {
     mModel->clear();
-    QStandardItem* item = 0;
-    foreach (QString smiley, smileys) {
+    QStandardItem *item = 0;
+    foreach(const QString &smiley, smileys) {
         item = new QStandardItem();
         item->setData(HbIcon(smiley), Qt::DecorationRole);
         mModel->appendRow(item);
     }
 }
 
-void HbInputSmileyPickerPrivate::_q_activated(const QModelIndex& index)
+void HbInputSmileyPickerPrivate::_q_activated(const QModelIndex &index)
 {
     Q_Q(HbInputSmileyPicker);
     if (!hidingInProgress) {
         HbIcon smileyIcon = index.model()->data(index, Qt::DecorationRole).value<HbIcon>();
         emit q->selected(smileyIcon.iconName());
-        q->hide();
+        q->close();
     }
 }
 
@@ -116,12 +121,23 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     : HbDialog(*new HbInputSmileyPickerPrivate(rows, columns), parent)
 {
     Q_D(HbInputSmileyPicker);
+    HbInputRegionCollector::instance()->attach(this);
 
-#if QT_VERSION >= 0x040600
     // Make sure the smiley picker never steals focus.
     setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
-#endif
+
+    if (!rows || !columns) {
+        if (mainWindow()->orientation() == Qt::Horizontal) {
+            rows = HbLandscapeRows;
+            columns = HbLandscapeColumns;
+        } else {
+            rows = HbPortraitRows;
+            columns = HbPortraitColumns;
+        }
+    }
+    d->mView->setRowCount(rows);
+    d->mView->setColumnCount(columns);
 
     // set dialog properties
     setFocusPolicy(Qt::ClickFocus);
@@ -129,12 +145,13 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     setBackgroundFaded(false);
     setTimeout(NoTimeout);
     setContentWidget(d->mView);
+    d->mView->setLongPressEnabled(false);
 
     // extract smilies.
     d->getSmilies(smileys);
 
     // connect signals
-    connect(d->mView, SIGNAL(activated(QModelIndex )), this, SLOT(_q_activated(QModelIndex )));
+    connect(d->mView, SIGNAL(activated(QModelIndex)), this, SLOT(_q_activated(QModelIndex)));
 }
 
 /*!
@@ -145,11 +162,11 @@ HbInputSmileyPicker::~HbInputSmileyPicker()
 }
 
 /*!
-This a virtual functions in QGraphicsWidget. It is called whenever the smiley picker widgets is shown. 
-Here in this function we are are scrolling to a position where we can see 
+This a virtual functions in QGraphicsWidget. It is called whenever the smiley picker widgets is shown.
+Here in this function we are are scrolling to a position where we can see
 first row and column
 */
-void HbInputSmileyPicker::showEvent( QShowEvent * event )
+void HbInputSmileyPicker::showEvent(QShowEvent *event)
 {
     Q_D(HbInputSmileyPicker);
     QStandardItem *item = d->mModel->item(0);

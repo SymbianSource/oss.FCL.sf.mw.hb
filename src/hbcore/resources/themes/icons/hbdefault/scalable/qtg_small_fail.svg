@@ -1,22 +1,20 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
-<defs>
-</defs>
 <rect fill="none" height="30" width="30"/>
 <path d="M15,29C7.279,29,1,22.72,1,15S7.279,1,15,1c7.719,0,14,6.28,14,14S22.719,29,15,29L15,29z" fill-opacity="0.6"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9985" x2="14.9985" y1="4.7378" y2="61.75">
-	<stop offset="0" style="stop-color:#FFFFFF"/>
-	<stop offset="1" style="stop-color:#4F4F4F"/>
+<stop offset="0" style="stop-color:#FFFFFF"/>
+<stop offset="1" style="stop-color:#4F4F4F"/>
 </linearGradient>
 <circle cx="14.999" cy="15" fill="url(#SVGID_1_)" r="10"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="2" y2="27.9507">
-	<stop offset="0" style="stop-color:#FF4D00"/>
-	<stop offset="1" style="stop-color:#800000"/>
+<stop offset="0" style="stop-color:#B36B4D"/>
+<stop offset="1" style="stop-color:#5A2633"/>
 </linearGradient>
 <path d="M15,2C7.82,2,2,7.82,2,15s5.82,13,13,13s13-5.82,13-13S22.18,2,15,2z M15.001,6  c1.788,0,3.45,0.527,4.851,1.427L7.428,19.852C6.528,18.451,6,16.788,6,15C6,10.028,10.03,6,15.001,6z M15.001,24  c-1.929,0-3.711-0.611-5.176-1.645l12.53-12.531C23.389,11.289,24,13.071,24,15C24,19.971,19.971,24,15.001,24z" fill="url(#SVGID_2_)"/>
-<path d="M15,3c7.011,0,12.71,5.555,12.975,12.5C27.981,15.332,28,15.169,28,15c0-7.18-5.82-13-13-13  S2,7.82,2,15c0,0.169,0.019,0.332,0.025,0.5C2.29,8.555,7.989,3,15,3z" fill="#FFFFFF" opacity="0.4"/>
+<path d="M15,3c7.011,0,12.71,5.555,12.975,12.5C27.981,15.332,28,15.169,28,15c0-7.18-5.82-13-13-13  S2,7.82,2,15c0,0.169,0.019,0.332,0.025,0.5C2.29,8.555,7.989,3,15,3z" fill="#FFFFFF" fill-opacity="0.4" stroke-opacity="0.4"/>
 <rect fill="none" height="30" width="30"/>
 </g>
 </svg>

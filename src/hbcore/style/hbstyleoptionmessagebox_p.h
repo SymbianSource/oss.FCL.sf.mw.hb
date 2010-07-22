@@ -30,7 +30,7 @@
 #include <hbstyleoptionpopup_p.h>
 #include <hbicon.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionMessageBox : public HbStyleOptionPopup
 {
 public:
@@ -47,6 +47,7 @@ public:
     Qt::Alignment iconAlignment;    //deprecated
     bool textWrapping;    //deprecated
     enum MessageBoxType {
+        MessageTypeNone,
         MessageTypeInformation,
         MessageTypeQuestion,
         MessageTypeWarning

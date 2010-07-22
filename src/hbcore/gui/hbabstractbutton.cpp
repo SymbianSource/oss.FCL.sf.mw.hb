@@ -29,6 +29,7 @@
 #include "hbstyleoption_p.h"
 #include "hbtooltip.h"
 #include "hbinstance.h"
+#include "hbnamespace_p.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
 #include <QPointer>
@@ -210,11 +211,11 @@ void HbAbstractButtonPrivate::moveFocus(int key)
             //In that case, the distance in the direction will be used as significant score,
             //take also in account orthogonal distance in case two widget are in the same distance.
             int score;
-            if ((buttonRect.x() < target.right() && target.x() < buttonRect.right())
+            if ( keyNavigation() && (buttonRect.x() < target.right() && target.x() < buttonRect.right())
                   && (key == Qt::Key_Up || key == Qt::Key_Down)) {
                 //one item's is at the vertical of the other
                 score = (qAbs(p.y() - goal.y()) << 16) + qAbs(p.x() - goal.x());
-            } else if ((buttonRect.y() < target.bottom() && target.y() < buttonRect.bottom())
+            } else if ( keyNavigation() && (buttonRect.y() < target.bottom() && target.y() < buttonRect.bottom())
                         && (key == Qt::Key_Left || key == Qt::Key_Right) ) {
                 //one item's is at the horizontal of the other
                 score = (qAbs(p.x() - goal.x()) << 16) + qAbs(p.y() - goal.y());
@@ -224,46 +225,45 @@ void HbAbstractButtonPrivate::moveFocus(int key)
 
             if (score > bestScore && candidate)
                 continue;
-
-            switch(key) {
-            case Qt::Key_Up:
-                if (p.y() < goal.y()) {
-                    candidate = button;
-                    bestScore = score;
+            if ( keyNavigation()) {
+                switch(key) {
+                case Qt::Key_Up:
+                    if (p.y() < goal.y()) {
+                        candidate = button;
+                        bestScore = score;
+                    }
+                    break;
+                case Qt::Key_Down:
+                    if (p.y() > goal.y()) {
+                        candidate = button;
+                        bestScore = score;
+                    }
+                    break;
+                case Qt::Key_Left:
+                    if (p.x() < goal.x()) {
+                        candidate = button;
+                        bestScore = score;
+                    }
+                    break;
+                case Qt::Key_Right:
+                    if (p.x() > goal.x()) {
+                        candidate = button;
+                        bestScore = score;
+                    }
+                    break;
                 }
-                break;
-            case Qt::Key_Down:
-                if (p.y() > goal.y()) {
-                    candidate = button;
-                    bestScore = score;
-                }
-                break;
-            case Qt::Key_Left:
-                if (p.x() < goal.x()) {
-                    candidate = button;
-                    bestScore = score;
-                }
-                break;
-            case Qt::Key_Right:
-                if (p.x() > goal.x()) {
-                    candidate = button;
-                    bestScore = score;
-                }
-                break;
             }
         }
     }
 
     if (exclusive
-#ifdef QT_KEYPAD_NAVIGATION
-        && !QApplication::keypadNavigationEnabled()
-#endif
+        && !keyNavigation()
         && candidate
         && focusButton->isChecked()
         && candidate->isCheckable())
         candidate->click();
 
-    if (candidate) {
+    if ( keyNavigation() && candidate) {
         if (key == Qt::Key_Up || key == Qt::Key_Left)
             candidate->setFocus(Qt::BacktabFocusReason);
         else
@@ -953,42 +953,47 @@ void HbAbstractButton::gestureEvent(QGestureEvent *event)
     Q_D(HbAbstractButton);
     
     if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
-        bool hit = hitButton(mapFromScene(event->mapToGraphicsScene(tap->position())));
-
         switch(tap->state()) {
-        case Qt::GestureStarted:
-            setDown(true);
-            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-            updatePrimitives();
-            d->emitPressed();
-            break;
-        case Qt::GestureCanceled:
-            if(d->down) {
-                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-                setDown(false);
-                d->longPress = false;
-                d->emitReleased(); 
-            }
-            break;
-        case Qt::GestureFinished:
-            if (!d->down) {
-                return;
-            }
-            if ( hit  && !d->longPress) {
+	        case Qt::GestureStarted:
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+                }                
+                setDown(true);
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                updatePrimitives();
+                d->emitPressed();
+
+                break;
+            case Qt::GestureCanceled:
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
+                if(d->down) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                    setDown(false);
+                    d->longPress = false;
+                    d->emitReleased();
+                }
+                break;
+            case Qt::GestureFinished:
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
+                if (!d->down){
+                    return;
+                }
+
                 HbWidgetFeedback::triggered(this, Hb::InstantClicked);
-            }
-            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-            if ( hit ) {
+
+
                 d->repeatTimer.stop();
                 d->click();
-            } else {
-                setDown(false);
+
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                d->longPress = false;
+                break;
+            default:
+                break;
             }
-            d->longPress = false;
-            break;
-        default:
-            break;
-        }
     }
 }
 #endif
@@ -1014,26 +1019,28 @@ void HbAbstractButton::keyPressEvent(QKeyEvent *event)
         break;
     case Qt::Key_Up:
     case Qt::Key_Left:
-        next = false;
+        if ( d->keyNavigation() ) {
+            next = false;
+        }
         // fall through
     case Qt::Key_Right:
     case Qt::Key_Down:
-#ifdef QT_KEYPAD_NAVIGATION
-        if (QApplication::keypadNavigationEnabled() && (event->key() == Qt::Key_Left || event->key() == Qt::Key_Right)) {
-            event->ignore();
-            return;
-        }
-#endif
-        if (d->autoExclusive) {
-            // ### Using qobject_cast to check if the parent is a viewport of
-            // QAbstractItemView is a crude hack, and should be revisited and
-            // cleaned up when fixing task 194373. It's here to ensure that we
-            // keep compatibility outside QAbstractItemView.
-            d->moveFocus(event->key());
-            if (hasFocus()) // nothing happend, propagate
+        if ( d->keyNavigation() ) {
+            if ( d->keyNavigation() && (event->key() == Qt::Key_Left || event->key() == Qt::Key_Right)) {
                 event->ignore();
-        } else {
-            focusNextPrevChild(next);
+                return;
+            }
+            if (d->autoExclusive) {
+                // ### Using qobject_cast to check if the parent is a viewport of
+                // QAbstractItemView is a crude hack, and should be revisited and
+                // cleaned up when fixing task 194373. It's here to ensure that we
+                // keep compatibility outside QAbstractItemView.
+                d->moveFocus(event->key());
+                if (hasFocus()) // nothing happend, propagate
+                    event->ignore();
+            } else {
+                focusNextPrevChild(next);
+            }
         }
         break;
     case Qt::Key_Escape:

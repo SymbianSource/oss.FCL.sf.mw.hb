@@ -30,6 +30,7 @@
 #include <QWindowsStyle>
 #include <QLibrary>
 #include <QDebug>
+#include <QDir>
 
 #if defined (Q_OS_SYMBIAN)
 #include "hbthemecommon_symbian_p.h"
@@ -48,7 +49,7 @@ bool HbThemeServerApplication::Options::help = false;
 bool HbThemeServerApplication::Options::start = false;
 bool HbThemeServerApplication::Options::stop = false;
 bool HbThemeServerApplication::Options::persistent = false;
-QString HbThemeServerApplication::Options::error = QString();
+QString HbThemeServerApplication::Options::error;
 
 HbThemeServerApplication::HbThemeServerApplication(int &argc, char *argv[]) :
     QtSingleApplication(argc, argv), server(0)
@@ -59,10 +60,6 @@ HbThemeServerApplication::HbThemeServerApplication(int &argc, char *argv[]) :
     //temporary solution until Hb specific style is ready
     setStyle(new QWindowsStyle);
 #endif // QT_DEBUG
-
-#if QT_VERSION >= 0x040601
-    setAttribute(Qt::AA_S60DontConstructApplicationPanes);
-#endif // QT_VERSION
 
     // ignore command line arguments on Symbian
 #ifdef Q_OS_SYMBIAN
@@ -76,7 +73,8 @@ HbThemeServerApplication::HbThemeServerApplication(int &argc, char *argv[]) :
     Options::start = args.removeAll(QLatin1String("-start")) || restart;
     Options::stop = args.removeAll(QLatin1String("-stop")) || restart;
     Options::persistent = args.removeAll(QLatin1String("-persistent"));
-    Options::help = args.removeAll(QLatin1String("-help")) || args.removeAll(QLatin1String("-h")) || !args.isEmpty() || wasEmpty;
+    Options::help = args.removeAll(QLatin1String("-help"))
+                    || args.removeAll(QLatin1String("-h")) || !args.isEmpty() || wasEmpty;
     if (!args.isEmpty()) {
         Options::error = tr("Unknown option(s): '%1'").arg(args.join(QLatin1String(" ")));
     }
@@ -93,20 +91,22 @@ bool HbThemeServerApplication::initialize()
 #if defined (Q_OS_SYMBIAN)
     CEikonEnv * env = CEikonEnv::Static();
     if ( env ) {
-        CApaWindowGroupName* wgName = CApaWindowGroupName::NewLC(env->WsSession());
+        _LIT(KHbThemeServer, "HbThemeServer");
+        CApaWindowGroupName *wgName = CApaWindowGroupName::NewLC(env->WsSession());
         env->RootWin().SetOrdinalPosition(0, ECoeWinPriorityNeverAtFront); // avoid coming to foreground
+        env->WsSession().ComputeMode(RWsSession::EPriorityControlDisabled);
+        setPriority();
         wgName->SetHidden(ETrue); // hides us from FSW and protects us from OOM FW etc.
         wgName->SetSystem(ETrue); // Allow only application with PowerManagement cap to shut us down    
-        wgName->SetCaptionL(_L("HbThemeServer")); // TODO: use QCoreApplication::applicationName()
+        wgName->SetCaptionL(KHbThemeServer);
         wgName->SetAppUid(KNullUid);
         wgName->SetWindowGroupName(env->RootWin());
         CleanupStack::PopAndDestroy();
-        RThread::RenameMe(_L("HbThemeServer")); // TODO: use QCoreApplication::applicationName()
+        RThread::RenameMe(KHbThemeServer);
+        User::SetProcessCritical(User::ESystemCritical);
+        User::SetCritical(User::ESystemCritical);
     }
 #endif
-
-    // as for theme initialization, an instance needs to be created before starting the server
-    HbTheme::instance();
 
     // load resource libraries in order to make binary resources accessible
     bool result = loadLibrary(RESOURCE_LIB_NAME);
@@ -139,12 +139,34 @@ void HbThemeServerApplication::stop()
 #endif // Q_OS_SYMBIAN
 }
 
+static bool hb_loadLibraryHelper(const QString &name)
+{
+    QLibrary library(name);
+    // rely on dynamic loader (LD_LIBRARY_PATH)
+    bool result = library.load();
+    if (!result) {
+        // try from prefix/lib dir
+        library.setFileName(QDir(HB_LIB_DIR).filePath(name));
+        result = library.load();
+        if (!result) {
+            // try from build/lib dir
+            QString path = QLatin1String(HB_BUILD_DIR) + QDir::separator() + QLatin1String("lib");
+            library.setFileName(QDir(path).filePath(name));
+            result = library.load();
+        }
+    }
+#ifdef THEME_SERVER_TRACES
+    if (!result) {
+        qDebug() << "hb_loadLibraryHelper():" << library.errorString();
+    }
+#endif
+    return result;
+}
+
 bool HbThemeServerApplication::loadLibrary(const QString &name)
 {
     // To load resources embedded in hb library
-    QLibrary library(name);
-    bool result = library.load();
-
+    bool result = hb_loadLibraryHelper(name);
     if (!result) {
         // Library may not be loaded, if it was built in debug mode and the name in debug mode is
         // different, change the name to debug version in that scenario
@@ -156,8 +178,9 @@ bool HbThemeServerApplication::loadLibrary(const QString &name)
 #endif
         // On symbian library name in debug mode is same as that in release mode,
         // so no need to do anything for that
-        library.setFileName(alternateName);
-        result = library.load();
+        if (alternateName != name) {
+            result = hb_loadLibraryHelper(alternateName);
+        }
     }
 #ifdef THEME_SERVER_TRACES
     if (result) {
@@ -173,8 +196,9 @@ bool HbThemeServerApplication::loadLibrary(const QString &name)
 
 void HbThemeServerApplication::receiveMessage(const QString &message)
 {
-    if (!server)
+    if (!server) {
         return;
+    }
 
     if (message == STOP_MESSAGE) {
         server->stopServer();
@@ -182,20 +206,18 @@ void HbThemeServerApplication::receiveMessage(const QString &message)
     }
 }
 
-bool HbThemeServerApplication::acquireLock() {
+bool HbThemeServerLocker::lock()
+{
 #ifdef Q_OS_SYMBIAN
-    // Guard against starting multiple copies of the server
-    Lock lock;
     Lock::State lockState;
-    for(;;) {
-        lockState = lock.acquire();
-        if (lockState == Lock::Acquired) {
-            break;
-        } else if (lockState == Lock::Reserved) {
+    
+    Q_FOREVER {
+        lockState = mLock.acquire();
+        if (lockState == Lock::Reserved) {
             // Process may be starting, wait for server object to be created
-            if (Lock::serverExists()) {
+            if (serverExists()) {
 #ifdef THEME_SERVER_TRACES
-        qDebug() << "HbThemeServer::main: serverExists!!!";
+                qDebug() << "HbThemeServerLocker::lock: serverExists";
 #endif
                 break;
             } else {
@@ -219,12 +241,17 @@ bool HbThemeServerApplication::acquireLock() {
 #else
     return true;
 #endif
-
-
+}
+void HbThemeServerApplication::setPriority()
+{
+#ifdef Q_OS_SYMBIAN
+    RProcess().SetPriority(EPriorityHigh);
+#endif
 }
 
-
 #ifdef Q_OS_SYMBIAN
+_LIT(KLockFileName, "lockFile");
+
 Lock::Lock()
 {
     // Using a file for interprocess lock
@@ -232,11 +259,9 @@ Lock::Lock()
     if (mFs.Connect(NumMessageSlots) == KErrNone) {
         mFs.CreatePrivatePath(EDriveC);
         if (mFs.SetSessionToPrivate(EDriveC) == KErrNone) {
-            _LIT(KFileName, "lockFile");
-            const TUint mode = EFileShareReadersOrWriters;
-            if (mFile.Create(mFs, KFileName, mode) == KErrAlreadyExists) {
-                mFile.Open(mFs, KFileName, mode);
-            }
+            RFile file;
+            file.Create(mFs, KLockFileName, EFileShareReadersOrWriters);
+            file.Close();
         }
     }
 }
@@ -245,20 +270,17 @@ Lock::Lock()
 Lock::State Lock::acquire()
 {
     State state = Error;
-    // If process holding the lock crashes, file server releases the lock
-    if (mFile.SubSessionHandle()) {
-        TInt error = mFile.Lock(0, 1);
-        if (error == KErrNone) {
-            state = Acquired;
-        } else if (error == KErrLocked) {
-            state = Reserved;
-        }
+    TInt status = mFile.Open(mFs, KLockFileName, EFileShareExclusive);
+    if (status == KErrNone) {
+        state = Acquired;
+    } else if (status == KErrInUse) {
+        state = Reserved;
     }
     return state;
 }
 
 // Check if Symbian server exists
-bool Lock::serverExists()
+bool HbThemeServerLocker::serverExists()
 {
     TFindServer findHbServer(KThemeServerName);
     TFullName name;

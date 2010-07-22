@@ -39,9 +39,13 @@ public:
     
 private:
     static QString styleRuleToString(const HbCss::StyleRule &rule, int specificity=-1);
-    static QString styleRuleToHtml(const HbCss::StyleRule &rule, QVector<const HbCss::Declaration*> usedDecls, int specificity=-1);
+    static QString styleRuleToHtml(
+        const HbCss::StyleRule &rule, 
+        QVector<const HbCss::Declaration*> usedDecls, 
+        int specificity=-1);
     static QString declarationToString(const HbCss::Declaration &decl, bool html=false);
-    static QString selectorsToString(const HbVector<HbCss::Selector> &selectors, int specificity=-1, bool html=false);
+    static QString selectorsToString(
+        const HbVector<HbCss::Selector> &selectors, int specificity=-1, bool html=false);
     static QString selectorToString(const HbCss::Selector &sel, bool html=false);
     
 };

@@ -9,15 +9,13 @@
 
 
   <layout name="list_with_markall" type="mesh">
-    <meshitem src="checkbox" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="checkbox" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="markwidget" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="markwidget" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="markwidget" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
 
-    <meshitem src="counter" srcEdge="CENTERV" dst="checkbox" dstEdge="CENTERV" />
-    <meshitem src="counter" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-
+    <meshitem src="list" srcEdge="TOP" dst="markwidget" dstEdge="BOTTOM" />
     <meshitem src="list" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="list" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="list" srcEdge="TOP" dst="checkbox" dstEdge="BOTTOM" />
     <meshitem src="list" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
   </layout>
 

@@ -22,15 +22,14 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
-
-#include <hbratingslider.h>
 #include "hbratingslider_p.h"
+#include <hbratingslider.h>
 #include <hbtooltip.h>
 #include <hbstyleoptionratingslider_p.h>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <hbtoucharea.h>
+#include <hbwidgetfeedback.h>
 
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
@@ -140,49 +139,64 @@ int HbRatingSliderPrivate::calculateProgressValue(qreal pos)
 
 /*!
     \class HbRatingSlider
-    \brief A control for user to do rating.
+    \brief This is a widget that enables a user to rate contents like videos , music etc.
+    \image html ratingslider.png  "A Rating Slider with rating done"
 
-    This is a general rating widget where user will be able to do different 
-    ratings for things like Music ,Video etc. 
+    The default version of Rating Slider contains 5 repeated icons drawn side by side, using a single themed graphics.
+    The application can replace the themed graphic with a custom graphic.
+    The custom graphics should contain only one icon (eg one star)  which will be multipled by the API \a setNumberOfIcons().
+    By default it is 5 and maximum number of icons are 10.
 
-    By default there are 5 ratings ( 5 stars ). This can be configured also.
-    The interval , number of icons etc can be configured.
+    Along with the rating Rating Slider can be used to show the cumulative rating also.
 
-    Apart from rating the this can used for showing cumulative rating also.
-
-    example code example:
+    To use HbRatingSlider with default settings it just needs to be created.
+    example code:
     \code
     HbRatingSlider *object = new HbRatingSlider(parent);
     \endcode
 
-    The below  code can be used to show some rating e.g. 2.5/5
-    by default the  stepcount =5
+    HbRatingSlider emits below signals 
+
+    void ratingDone(int ratingValue);
+    void ratingChanged(int ratingValue);
     
+    ratingDone is emitted when the user does the rating and releases the finger. 
+    ratingChanged is emitted when the user presses and drags the finger on Rating Slider.
+
+    To use HbRatingSlider with default settings it just needs to be created. 
+    example code: 
+    \code 
+    HbMainWindow window;
+    HbRatingSlider *rs = new HbRatingSlider();
+    window.addView(rs);
+    \endcode 
+
+    HbRatingSlider supports integer ratings.But using the API \a setStepCount() fraction ratings can also be 
+    shown on Rating Slider
+
+    The below  code can be used to show some rating e.g. 2.5/5       
     \code
+    //2.5/5 can be set as  25/50
     HbRatingSlider *slider = new HbRatingSlider();
-    slider->setStepCount(100); //5 *20//
-    slider->setCurrentRating(50); //2.5*20 it shows 50 / 100 which is same as 2.5/5
+    slider->setStepCount(50); //5 *10//
+    slider->setCurrentRating(25); //2.5*10 it shows 25/50 which is same as 2.5/5
     \endcode
     
-    This will show as 2.5/5. Now if one the same ratingslider 
-    if the Application wants to configure a rating slider with range 1-5
-    on emitting the signal rating changed it can set to 
-    slider->setStepCount(5);
-    slider->setCurrentRating(0)
-    
-    When the rating is done it emits a signal called ratingDone and when rating is 
-    changed by the user by draging the pointer ratingChanged signal is emitted.   
-    
+    This will show as 2.5/5. Now if on the same ratingslider 
+    the Application wants to configure a Rating Slider with range 1-5
+    on emitting the signal rating changed it can set to 5.
  */
-
 
 
 /*!
     @beta
-    Constructor of  RatingSlider.
-    \param parent. Parent widget
+     Constructs a Rating Slider bar with the given parent.
+    \param parent Parent Item.
 
 */
+
+
+
 
 HbRatingSlider::HbRatingSlider(QGraphicsItem *parent) :
 HbWidget(*new HbRatingSliderPrivate,parent)
@@ -195,8 +209,7 @@ HbWidget(*new HbRatingSliderPrivate,parent)
 
 /*!
     @beta
-    Constructor of  RatingSlider.
-    \param parent. Parent widget
+    Protected constructor
 */
 HbRatingSlider::HbRatingSlider(HbRatingSliderPrivate &dd,QGraphicsItem *parent) : 
     HbWidget( dd,parent)
@@ -232,9 +245,8 @@ void HbRatingSlider::setReadOnly(bool value)
 /*!    
     
     @beta  
-    Sets the number of icons. In a Rating scenario you may have number of repeated icons. This API can be used to set 
-    the number of icons required. For Example the default image is "*" and you have 5 stars. You can set the number of 
-    stars  using this. By default this value is 5.
+    Sets the number of icons. There can be n number of repeated icons. This method can be used to set 
+    the number of icons required.The default image is "*" and has 5 stars.
 
     \param number. A value between 1 and 10 
 
@@ -268,9 +280,8 @@ int HbRatingSlider::numberOfIcons() const
 
 /*!
     @beta
-    Sets the step count for the rating slider. If the number of icons is 5 and step count is 10 then it is possible to have 10 ratings.
-    one rating will be half star (by default). If the number of icons is 5 and step count is 5 then 5 ratings are possible. In this 
-    case one rating will be one complete star. By default this value is 5.
+    Sets the step count for the Rating Slider.This indicates the interval of the rating. Eg. If step count is 10
+    then 10 rating is possible.
     
     \param count. A value between 1 and 100. This can be considerd as the maximum rating possible. 
 
@@ -354,8 +365,8 @@ int HbRatingSlider::currentRating() const
 /*!
     @beta
     
-    It sets the unrated graphics name.This is the graphics shown when rating slider is displayed.
-    the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+    It sets the unrated graphics name.This is the graphics shown when Rating Slider is displayed.
+    the graphicscan be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
     setting number of stars.
     
     \param name. The graphics name along with the path. 
@@ -389,7 +400,7 @@ QString HbRatingSlider::unRatedIconName() const
     @beta
     
     It sets the rated graphics name.This is the graphics shown when rating is on going.
-    the grpahics can be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
+    the graphicscan be a single star kind of or multi star image. If it is single star then use setNumberOfIcons for 
     setting number of stars.
     
     \param name. The graphics name along with the path. 
@@ -432,6 +443,7 @@ void HbRatingSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
         }
         d->mMousePressed = true;
         event->accept();
+        updatePrimitives();
 
     }
 
@@ -465,7 +477,7 @@ void HbRatingSlider::mouseMoveEvent ( QGraphicsSceneMouseEvent * event )
         int rating=0;
         if(rect.contains(xVal,0 )) {
             rating = d->calculateProgressValue(xVal);
-            if(toolTip() != QString()) {
+            if(!toolTip().isNull()) {
                 HbToolTip::showText(toolTip(),this);
             }    
             setCurrentRating(rating);
@@ -507,7 +519,7 @@ void HbRatingSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         int rating=0;
         if(rect.contains(xVal,0 )) {
             rating = d->calculateProgressValue(xVal);
-            if(toolTip() != QString()) {
+            if(!toolTip().isNull()) {
                 HbToolTip::showText(toolTip(),this);
             }    
             setCurrentRating(rating);
@@ -517,10 +529,14 @@ void HbRatingSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
             event->accept();
             d->mMousePressed = false;
         }
+        updatePrimitives();
     
     }        
 }
 #else
+/*!
+    \reimp
+ */
 void HbRatingSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     Q_UNUSED(event)
@@ -528,6 +544,9 @@ void HbRatingSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
 #endif
 
 #ifdef HB_GESTURE_FW
+/*!
+    \reimp
+ */
 void HbRatingSlider::gestureEvent(QGestureEvent *event)
 {
     Q_D (HbRatingSlider);
@@ -545,9 +564,19 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                     event->ignore();
                     return;
                 }
-
-                d->mMousePressed = true;
-                event->accept();
+                QRectF rect = d->mTouchArea->boundingRect();
+                if(rect.contains(xVal,0 )) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                    d->mMousePressed = true;
+                    updatePrimitives();
+                    rating = d->calculateProgressValue(xVal);
+                    setCurrentRating(rating);
+                    event->accept();
+                }
+                else {
+                    event->ignore();
+                }
+                
                 }
                 break;
  
@@ -574,16 +603,35 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
 
                rating = d->calculateProgressValue(xVal);
         
-               if(toolTip() != QString()) {
+               if(!toolTip().isNull()) {
                     HbToolTip::showText(toolTip(),this);
                 }    
                 setCurrentRating(rating);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
                 if(d->mCurrentValue) {
                     emit ratingDone (d->mCurrentValue);
                 }
+
                 event->accept();
                 d->mMousePressed = false;
+                updatePrimitives();
+            }            
+            else {
+
+                d->mMousePressed = false;
+                updatePrimitives();
+
+                if(xVal <rect.x() )  {
+
+                    setCurrentRating(0);
+                    emit ratingDone (d->mCurrentValue);
                 }
+            
+            }
+            
+
+
+
             }
             break;
             default: break;
@@ -612,10 +660,11 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
 
                                 rating = d->calculateProgressValue(xVal);
                                 
-                                if(toolTip() != QString()) {
+                                if(!toolTip().isNull()) {
                                     HbToolTip::showText(toolTip(),this);
                                 }    
                                 setCurrentRating(rating);
+                                HbWidgetFeedback::continuousTriggered(this, Hb::ContinuousDragged);
                                 emit ratingChanged (d->mCurrentValue);
                                 event->accept();
                             }
@@ -628,34 +677,35 @@ void HbRatingSlider::gestureEvent(QGestureEvent *event)
                     {                          
                          qreal xVal = mapFromScene(event->mapToGraphicsScene( pan->startPos()+pan->offset())).x();
                          QRectF rect = d->mTouchArea->boundingRect();
+                         d->mMousePressed = false;
+                         updatePrimitives();
                          int rating=0;
                          if(rect.contains(xVal,0 )) {
                             if(d->mReadOnly) {
                                event->ignore();
                                return;
                              }
-                        }
+                         }
 
-                        if(!d->mMousePressed) {
-                             return;
-                        }
+                         if(xVal <0) {    
+                            setCurrentRating(0);
+                            emit ratingDone (d->mCurrentValue);
+                            return;
+                          }
 
-                       if(xVal <0) {    
-                          setCurrentRating(0);
-                          emit ratingDone (d->mCurrentValue);
-                          return;
-                        }
-
-                        rating = d->calculateProgressValue(xVal);
-                        setCurrentRating(rating);
-                        if(d->mCurrentValue) {
-                           emit ratingDone (d->mCurrentValue);
-                        }
-                        d->mMousePressed = false;
-                        event->accept();
-                     }
-                     default:
-                     break;
+                          rating = d->calculateProgressValue(xVal);
+                          setCurrentRating(rating);
+                          HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                          if(d->mCurrentValue) {
+                             emit ratingDone (d->mCurrentValue);
+                           }                       
+                           event->accept();
+                        
+                      }
+                     
+					
+					default:
+                      break;
                 }
     }
 }
@@ -671,7 +721,9 @@ void HbRatingSlider::setGeometry(const QRectF & rect)
     updatePrimitives();
     d->createLookupTable();
 }
-
+/*!
+    \reimp
+ */
 void HbRatingSlider::initStyleOption(HbStyleOption *hboption) const
 {
     Q_D( const HbRatingSlider );
@@ -683,6 +735,8 @@ void HbRatingSlider::initStyleOption(HbStyleOption *hboption) const
         option->unRatedGraphicsName = d->mUnratedIconName;
         option->ratedGraphicsName = d->mRatedIconName;
         option->progressValue = d->mCurrentValue;
+        option->disableState = !isEnabled();
+        option->pressedState = d->mMousePressed;
     }
 }
 
@@ -710,7 +764,9 @@ QGraphicsItem* HbRatingSlider::primitive(HbStyle::Primitive primitive) const
             return 0;
     }
 }
-
+/*!
+    \reimp
+ */
 void HbRatingSlider::changeEvent(QEvent *event)
 {
     HbWidget::changeEvent(event);
@@ -718,10 +774,16 @@ void HbRatingSlider::changeEvent(QEvent *event)
     case QEvent::LayoutDirectionChange:
         updatePrimitives();
         break;
+    case QEvent::EnabledChange:
+         updatePrimitives();
+          break;
     default:
         break;
     }
 }
+/*!
+    \reimp
+ */
 void HbRatingSlider::updatePrimitives()
 {
     Q_D(HbRatingSlider);
@@ -740,7 +802,9 @@ void HbRatingSlider::updatePrimitives()
     }
     
 }
-
+/*!
+    \reimp
+ */
 QVariant HbRatingSlider::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if(change == ItemVisibleHasChanged && value.toBool()){

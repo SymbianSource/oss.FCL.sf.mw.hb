@@ -54,9 +54,7 @@ HEADERS += hbinputnumeric12keyhandler.h
 HEADERS += ..\common\hbinputabstractbase.h
 HEADERS += hbinputprediction12keyhandler_p.h
 HEADERS += hbinputbasic12keyhandler_p.h
-HEADERS += hbinputbasic12keythaihandler.h
-HEADERS += hbinputprediction12keythaihandler.h
-HEADERS += hbinputthaispecialpopup.h
+HEADERS += ..\common\hbinputspellquerydialog.h
 HEADERS += hbinput12keytouchkeyboard.h
 HEADERS += hbinput12keytouchkeyboard_p.h
 HEADERS += hbinputqwerty10x4touchkeyboard.h
@@ -65,7 +63,6 @@ HEADERS += hbinputqwerty11x4touchkeyboard.h
 HEADERS += hbinputqwerty11x4touchkeyboard_p.h
 HEADERS += hbinputqwertynumerictouchkeyboard.h
 HEADERS += hbinputqwertynumerictouchkeyboard_p.h
-HEADERS += hbinputtouchkeypadbutton.h
 
 SOURCES = virtual12key.cpp
 SOURCES += virtualqwerty.cpp
@@ -81,14 +78,11 @@ SOURCES += ..\common\hbinputnumerichandler.cpp
 SOURCES += hbinputnumericqwertyhandler.cpp
 SOURCES += hbinputnumeric12keyhandler.cpp
 SOURCES += ..\common\hbinputabstractbase.cpp
-SOURCES += hbinputbasic12keythaihandler.cpp
-SOURCES += hbinputprediction12keythaihandler.cpp
-SOURCES += hbinputthaispecialpopup.cpp
 SOURCES += hbinput12keytouchkeyboard.cpp
 SOURCES += hbinputqwerty10x4touchkeyboard.cpp
 SOURCES += hbinputqwerty11x4touchkeyboard.cpp
 SOURCES += hbinputqwertynumerictouchkeyboard.cpp
-SOURCES += hbinputtouchkeypadbutton.cpp
+SOURCES += ..\common\hbinputspellquerydialog.cpp
 
 symbian {
     TARGET.EPOCALLOWDLLDATA = 1

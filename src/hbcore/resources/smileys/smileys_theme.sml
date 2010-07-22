@@ -15,7 +15,7 @@ qtg_small_smiley_surprised                            :-O :O :-o :o
 qtg_small_smiley_kissing                              :-* :*
 qtg_small_smiley_irritated                            :-X :X :-x :x
 qtg_small_smiley_sarcastic                            :-> :>
-qtg_small_smiley_verycool                             B-) B)
+qtg_small_smiley_very_cool                            B-) B)
 qtg_small_smiley_eyebrows                             %-) %)
 qtg_small_smiley_angry                                :-@ :@
 qtg_small_smiley_sarcastic_mad                        ;-> ;>

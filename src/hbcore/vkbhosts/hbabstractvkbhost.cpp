@@ -32,6 +32,8 @@
 #include "hbmainwindow.h"
 #include "hbpopup.h"
 #include "hbview.h"
+#include "hbwidgetfeedback.h"
+#include "hbinstance.h"
 
 #include <QTextEdit>
 
@@ -41,6 +43,120 @@ const qreal HbCursorLineMargin = 15.0;
 const qreal HbContainerBorderMargin = 20.0;
 const qreal HbHeightVerticalFactor = 0.5;
 const qreal HbHeightHorizFactor = 0.7;
+const QString KHandWritingName("Handwriting");
+// see hbpopup.cpp for this
+extern const char* KPositionManagedByVKB;
+
+/// @cond
+
+HbVkbHostContainerWidget::HbVkbHostContainerWidget(QObject *containterWidget)
+    : mContainerWidget(containterWidget)
+{
+}
+
+// sets container widgets position to new position.
+void HbVkbHostContainerWidget::setPos(QPointF newPosition)
+{
+    if (mContainerWidget) {
+        QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(mContainerWidget);
+        if (graphicsObject) {
+            graphicsObject->setPos(newPosition);
+            return;
+        }
+
+        QWidget *qWidget = qobject_cast<QWidget *>(mContainerWidget);
+        if (qWidget) {
+#ifdef Q_WS_WIN
+            QPoint finalPosition = newPosition.toPoint();
+            finalPosition -= qWidget->geometry().topLeft() - qWidget->frameGeometry().topLeft();
+            qWidget->move(finalPosition);
+#else
+            qWidget->move(newPosition.toPoint());
+#endif
+            return;
+        }
+    }
+}
+
+// returns the global position, if container widget is a QGraphicsObject, it returns
+// scene position. In case the widget is QWidget it returns global co-ordinates
+QPointF HbVkbHostContainerWidget::pos()
+{
+    if (mContainerWidget) {
+        QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(mContainerWidget);
+        if (graphicsObject) {
+            return graphicsObject->pos();;
+        }
+
+        QWidget *qWidget = qobject_cast<QWidget *>(mContainerWidget);
+        if (qWidget) {
+            return qWidget->mapToGlobal(QPoint(0, 0));
+        }
+    }
+
+    return QPointF(0, 0);
+}
+
+// returns the bounding rect in global co-ordinate, if container widget is a QGraphicsObject
+// it returns in scene co-ordinate, incase widget is QWidget it returns in global co-ordinate
+QRectF HbVkbHostContainerWidget::sceneBoundingRect()
+{
+    if (mContainerWidget) {
+        QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject *>(mContainerWidget);
+        if (graphicsObject) {
+            return graphicsObject->sceneBoundingRect();;
+        }
+
+        QWidget *qWidget = qobject_cast<QWidget *>(mContainerWidget);
+        if (qWidget) {
+            return QRectF(qWidget->mapToGlobal(QPoint(0, 0)), qWidget->size());
+        }
+    }
+
+    return QRectF(0, 0, 0, 0);
+}
+
+// connect container specific signals here.
+void HbVkbHostContainerWidget::connectSignals(QObject *receiver)
+{
+    if (qobject_cast<QGraphicsObject *> (mContainerWidget)) {
+        QObject::connect(mContainerWidget, SIGNAL(yChanged()),
+                         receiver, SLOT(ensureCursorVisibility()));
+    }
+
+    HbPopup *popup = qobject_cast<HbPopup *>(mContainerWidget);
+    if (popup) {
+        QObject::connect(popup, SIGNAL(aboutToHide()), receiver, SLOT(containerAboutToClose()));
+    }
+
+    HbView *view = qobject_cast<HbView *>(mContainerWidget);
+    if (view) {
+        QObject::connect(view->mainWindow(), SIGNAL(currentViewChanged(HbView *)),
+                         receiver, SLOT(currentViewChanged(HbView *)));
+    }
+}
+
+// disconnect container specific signals here.
+void HbVkbHostContainerWidget::disconnectSignals(QObject *receiver)
+{
+    if (qobject_cast<QGraphicsObject *> (mContainerWidget)) {
+        QObject::disconnect(mContainerWidget, SIGNAL(yChanged()),
+                            receiver, SLOT(ensureCursorVisibility()));
+    }
+
+    HbPopup *popup = qobject_cast<HbPopup *>(mContainerWidget);
+    if (popup) {
+        QObject::disconnect(popup, SIGNAL(aboutToHide()), receiver, SLOT(containerAboutToClose()));
+    }
+
+    HbPopup *view = qobject_cast<HbPopup *>(mContainerWidget);
+    if (view) {
+        QObject::disconnect(view->mainWindow(), SIGNAL(currentViewChanged(HbView *)),
+                            receiver, SLOT(currentViewChanged(HbView *)));
+    }
+}
+
+/// @endcond
 
 /*!
 \proto
@@ -52,28 +168,33 @@ This class contains common code for HbCore's virtual keyboard hosts.
 
 /// @cond
 
-HbAbstractVkbHostPrivate::HbAbstractVkbHostPrivate(HbAbstractVkbHost *myHost, QGraphicsWidget *containerWidget)
-: q_ptr(myHost),
-mCallback(0),
-mKeypad(0),
-mContainerWidget(containerWidget),
-mTimeLine(HbAnimationTime),
-mKeypadStatus(HbVkbHost::HbVkbStatusClosed),
-mKeypadOperationOngoing(false),
-mOriginalContainerPosition(QPointF(0,0)),
-mContainerMovementStartingPoint(QPointF(0, 0)),
-mContainerMovementVector(QPointF(0, 0)),
-mKeypadMovementStartingPoint(QPointF(0, 0)),
-mKeypadMovementVector(QPointF(0, 0)),
-mInputMethod(0),
-mKeypadStatusBeforeOrientationChange(HbVkbHost::HbVkbStatusClosed)
+HbAbstractVkbHostPrivate::HbAbstractVkbHostPrivate(HbAbstractVkbHost *myHost, QObject *containerWidget)
+    : q_ptr(myHost),
+      mCallback(0),
+      mKeypad(0),
+      mContainerWidget(new HbVkbHostContainerWidget(containerWidget)),
+      mTimeLine(HbAnimationTime),
+      mKeypadStatus(HbVkbHost::HbVkbStatusClosed),
+      mKeypadOperationOngoing(false),
+      mOriginalContainerPosition(QPointF(0, 0)),
+      mContainerMovementStartingPoint(QPointF(0, 0)),
+      mContainerMovementVector(QPointF(0, 0)),
+      mKeypadMovementStartingPoint(QPointF(0, 0)),
+      mKeypadMovementVector(QPointF(0, 0)),
+      mInputMethod(0),
+      mKeypadStatusBeforeOrientationChange(HbVkbHost::HbVkbStatusClosed)
 {
     mTimeLine.setUpdateInterval(16);
 }
 
+HbAbstractVkbHostPrivate::~HbAbstractVkbHostPrivate()
+{
+    delete mContainerWidget;
+}
+
 void HbAbstractVkbHostPrivate::prepareAnimationsCommon()
 {
-    if (mContainerWidget && mKeypad) {
+    if (mContainerWidget->widgetObject() && mKeypad) {
         // If the keyboard is not already open, remember the original position.
         // That is where the container will eventually be returned to.
         if (mKeypadStatus == HbVkbHost::HbVkbStatusClosed) {
@@ -93,7 +214,7 @@ void HbAbstractVkbHostPrivate::prepareAnimationsCommon()
 
 bool HbAbstractVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus status)
 {
-    if (!mKeypad || !mContainerWidget || !mInputMethod || !mInputMethod->focusObject()) {
+    if (!mKeypad || !mContainerWidget->widgetObject() || !mInputMethod || !mInputMethod->focusObject()) {
         return false;
     }
 
@@ -190,20 +311,21 @@ bool HbAbstractVkbHostPrivate::prepareKeypadAnimation(HbVkbHost::HbVkbStatus sta
 {
     if (status == HbVkbHost::HbVkbStatusOpened) {
         if (mKeypadStatus == HbVkbHost::HbVkbStatusClosed) {
-             // Set up keyboard open animation.
-             mKeypadMovementStartingPoint.setY(mScreenSize.height());
-             mKeypadMovementVector.setY(-mKeypad->size().height());
-             if (!disableCursorShift()) {
-                 // Initialize keypad position
-                 mKeypad->setPos(mKeypadMovementStartingPoint);
-             }
-             return true;
-         } else if (mKeypadStatus == HbVkbHost::HbVkbStatusMinimized && mCallback) {
-             mKeypadMovementVector.setY(-(mKeypad->size().height() - mCallback->minimizedKeyboardSize().height()));
-             return true;
-         }
+            // Set up keyboard open animation.
+            mKeypadMovementStartingPoint.setY(mScreenSize.height());
+            mKeypadMovementVector.setY(-mKeypad->size().height());
+            if (!disableCursorShift()) {
+                // Initialize keypad position
+                mKeypad->setPos(mKeypadMovementStartingPoint);
+            }
+            return true;
+        } else if (mKeypadStatus == HbVkbHost::HbVkbStatusMinimized && mCallback) {
+            mKeypadMovementVector.setY(-(mKeypad->size().height() - mCallback->minimizedKeyboardSize().height()));
+            return true;
+        }
     } else if (status == HbVkbHost::HbVkbStatusMinimized && mCallback) {
         mKeypadMovementVector = QPointF(0, mKeypad->size().height() - mCallback->minimizedKeyboardSize().height());
+        return true;
     } else {
         // It is going to be closed.
         mKeypadMovementVector = QPointF(0, mKeypad->size().height());
@@ -233,50 +355,34 @@ bool HbAbstractVkbHostPrivate::prepareAnimations(HbVkbHost::HbVkbStatus status)
 
 void HbAbstractVkbHostPrivate::connectSignals()
 {
-    if (mContainerWidget) {
-        q_ptr->connect(mContainerWidget, SIGNAL(yChanged()), q_ptr, SLOT(ensureCursorVisibility()));
-    }
+    mContainerWidget->connectSignals(q_ptr);
 
-    HbWidget *hbWidget = qobject_cast<HbWidget*>(mContainerWidget);
-    if (hbWidget) {
-        HbMainWindow* mainWindow = hbWidget->mainWindow();
-        if (mainWindow) {
-            q_ptr->connect(mainWindow, SIGNAL(aboutToChangeOrientation()), q_ptr, SLOT(orientationAboutToChange()));
-            q_ptr->connect(mainWindow, SIGNAL(orientationChanged(Qt::Orientation)), q_ptr, SLOT(orientationChanged(Qt::Orientation)));
-        }
-    }
-
-    HbPopup *popup = qobject_cast<HbPopup*>(mContainerWidget);
-    if (popup) {
-        q_ptr->connect(popup, SIGNAL(aboutToHide()), q_ptr, SLOT(containerAboutToClose()));
+    // global signal not specific to any containter widget, can be connected now.
+    HbMainWindow *mainWindow = this->mainWindow();
+    if (mainWindow) {
+        q_ptr->connect(mainWindow, SIGNAL(aboutToChangeOrientation()), q_ptr, SLOT(orientationAboutToChange()));
+        q_ptr->connect(mainWindow, SIGNAL(orientationChanged(Qt::Orientation)), q_ptr, SLOT(orientationChanged(Qt::Orientation)));
+        q_ptr->connect(mainWindow, SIGNAL(currentViewChanged(HbView *)), q_ptr, SLOT(currentViewChanged(HbView *)));
     }
 }
 
 void HbAbstractVkbHostPrivate::disconnectSignals()
 {
-    if (mContainerWidget) {
-        q_ptr->disconnect(mContainerWidget, SIGNAL(yChanged()), q_ptr, SLOT(ensureCursorVisibility()));
-    }
+    mContainerWidget->disconnectSignals(q_ptr);
 
-    HbWidget *hbWidget = qobject_cast<HbWidget*>(mContainerWidget);
-    if (hbWidget) {
-        HbMainWindow* mainWindow = hbWidget->mainWindow();
-        if (mainWindow) {
-            q_ptr->disconnect(mainWindow, SIGNAL(aboutToChangeOrientation()), q_ptr, SLOT(orientationAboutToChange()));
-            q_ptr->disconnect(mainWindow, SIGNAL(orientationChanged(Qt::Orientation)), q_ptr, SLOT(orientationChanged(Qt::Orientation)));
-        }
-    }
-
-    HbPopup *popup = qobject_cast<HbPopup*>(mContainerWidget);
-    if (popup) {
-        q_ptr->disconnect(popup, SIGNAL(aboutToHide()), q_ptr, SLOT(containerAboutToClose()));
+    // global signal not specific to any containter widget, can be connected now.
+    HbMainWindow *mainWindow = this->mainWindow();
+    if (mainWindow) {
+        q_ptr->disconnect(mainWindow, SIGNAL(aboutToChangeOrientation()), q_ptr, SLOT(orientationAboutToChange()));
+        q_ptr->disconnect(mainWindow, SIGNAL(orientationChanged(Qt::Orientation)), q_ptr, SLOT(orientationChanged(Qt::Orientation)));
+        q_ptr->disconnect(mainWindow, SIGNAL(currentViewChanged(HbView *)), q_ptr, SLOT(currentViewChanged(HbView *)));
     }
 }
 
 void HbAbstractVkbHostPrivate::openKeypad()
-{    
-    if (mContainerWidget) {
-        HbMainWindow* mainWin = mainWindow();
+{
+    if (mContainerWidget->widgetObject()) {
+        HbMainWindow *mainWin = mainWindow();
         if (mainWin && mKeypad) {
             if (mKeypad->scene() != mainWin->scene()) {
                 // Add keypad to scene if it is not already in there.
@@ -318,7 +424,7 @@ void HbAbstractVkbHostPrivate::minimizeKeypad()
 {
     if (mCallback && mKeypadStatus != HbVkbHost::HbVkbStatusMinimized) {
         mCallback->aboutToClose(q_ptr);
-        if (mContainerWidget) {
+        if (mContainerWidget->widgetObject()) {
             if (prepareAnimations(HbVkbHost::HbVkbStatusMinimized)) {
                 mKeypadStatus = HbVkbHost::HbVkbStatusMinimized;
                 mTimeLine.start();
@@ -330,7 +436,7 @@ void HbAbstractVkbHostPrivate::minimizeKeypad()
 void HbAbstractVkbHostPrivate::openKeypadWithoutAnimation()
 {
     HbMainWindow *mainWin = mainWindow();
-    if (mKeypadStatus!= HbVkbHost::HbVkbStatusOpened && mKeypad && mContainerWidget && mainWin) {
+    if (mKeypadStatus != HbVkbHost::HbVkbStatusOpened && mKeypad && mContainerWidget->widgetObject() && mainWin) {
         if (mKeypad->scene() != mainWin->scene()) {
             // Add item to scene if it is not already in there.
             mainWin->scene()->addItem(mKeypad);
@@ -344,7 +450,7 @@ void HbAbstractVkbHostPrivate::openKeypadWithoutAnimation()
             if (!disableCursorShift()) {
                 // Move the container widget to keep the focused line visible.
                 mContainerWidget->setPos(mContainerWidget->pos() + mContainerMovementVector);
-                
+
                 // Move the keypad
                 mKeypad->setPos(mKeypadMovementStartingPoint + mKeypadMovementVector);
             }
@@ -360,18 +466,18 @@ void HbAbstractVkbHostPrivate::openMinimizedKeypad()
     // No need of any animation as this minimized keypad is very small to be a candidate for an
     // animation.
     HbMainWindow *mainWin = mainWindow();
-    if (mainWin && mKeypad && mContainerWidget) {
+    if (mainWin && mKeypad && mContainerWidget->widgetObject()) {
         if (mKeypad->scene() != mainWin->scene()) {
             // Add item to scene if it is not already in there.
             mainWin->scene()->addItem(mKeypad);
         }
 
         if (mKeypadStatus != HbVkbHost::HbVkbStatusMinimized) {
-            mCallback->aboutToOpen(q_ptr);           
+            mCallback->aboutToOpen(q_ptr);
             q_ptr->resizeKeyboard(); // Make sure that the keyboard doesn't exceed given boundaries.
         }
 
-        if (prepareAnimations(HbVkbHost::HbVkbStatusMinimized)) {             
+        if (prepareAnimations(HbVkbHost::HbVkbStatusMinimized)) {
             if (!disableCursorShift()) {
                 mKeypad->setPos(0.0, mScreenSize.height() - mCallback->minimizedKeyboardSize().height());
             }
@@ -391,6 +497,7 @@ void HbAbstractVkbHostPrivate::closeKeypadWithoutAnimation()
         if (!disableCursorShift()) {
             // Return the container widget to original position.
             mContainerWidget->setPos(mOriginalContainerPosition);
+            mContainerWidget->widgetObject()->setProperty(KPositionManagedByVKB, false );
         }
 
         // Hide the keypad
@@ -404,7 +511,7 @@ void HbAbstractVkbHostPrivate::minimizeKeypadWithoutAnimation()
 {
     HbMainWindow *mainWin = mainWindow();
     if (mKeypadStatus != HbVkbHost::HbVkbStatusMinimized && mKeypad && mainWin) {
-        mCallback->aboutToClose(q_ptr);                
+        mCallback->aboutToClose(q_ptr);
         if (mKeypad->scene() != mainWin->scene()) {
             // Add item to scene if it is not already in there.
             mainWin->scene()->addItem(mKeypad);
@@ -428,6 +535,7 @@ void HbAbstractVkbHostPrivate::cancelAnimationAndHideVkbWidget()
 
         if (!disableCursorShift()) {
             mContainerWidget->setPos(mOriginalContainerPosition);
+            mContainerWidget->widgetObject()->setProperty(KPositionManagedByVKB, false );
         }
 
         if (mKeypad) {
@@ -445,12 +553,19 @@ void HbAbstractVkbHostPrivate::cancelAnimationAndHideVkbWidget()
 
 HbMainWindow *HbAbstractVkbHostPrivate::mainWindow() const
 {
-    HbWidget *hbWidget = qobject_cast<HbWidget*>(mContainerWidget);
+    HbWidget *hbWidget = qobject_cast<HbWidget *>(mContainerWidget->widgetObject());
     if (hbWidget) {
         return hbWidget->mainWindow();
     }
 
-    return qobject_cast<HbMainWindow*>(qApp->activeWindow());
+    // below is the case when we have a pure vanilla application.
+    // there should be one hbmainwindow to show all the widgets.
+    if (hbInstance->allMainWindows().size()) {
+        return hbInstance->allMainWindows().at(0);
+    }
+
+    // no mainwindow.
+    return 0;
 }
 
 QSizeF HbAbstractVkbHostPrivate::screenSize() const
@@ -459,7 +574,7 @@ QSizeF HbAbstractVkbHostPrivate::screenSize() const
     QSizeF result = static_cast<QSizeF>(HbDeviceProfile::profile(mainWin).logicalSize());
 
     // do some sanity checking for the size got from device profile
-    if( result.isNull() || result.width() < 200 || result.height() < 200 ) {
+    if (result.isNull() || result.width() < 200 || result.height() < 200) {
         qWarning("VkbHost error: size from device profile is faulty, using fallback!");
         if (mainWin) {
             if (mainWin->orientation() == Qt::Horizontal) {
@@ -475,16 +590,18 @@ QSizeF HbAbstractVkbHostPrivate::screenSize() const
     return result;
 }
 
-bool HbAbstractVkbHostPrivate::disableCursorShift() {
+bool HbAbstractVkbHostPrivate::disableCursorShift()
+{
 
     if (!mInputMethod
         || mainWindow()) {
         return false;
     }
 
-    if ( (mainWindow()->orientation() == Qt::Horizontal)
-        && (mInputMethod->inputState().inputMode() == HbInputModeHwrChinese
-        || mInputMethod->inputState().inputMode() == HbInputModeHwrChineseFull) ) {
+    QByteArray baModes = HbInputSettingProxy::instance()->preferredInputMethodCustomData(Qt::Horizontal);
+    QString imName(baModes);
+
+    if (mainWindow() && mainWindow()->orientation() == Qt::Horizontal && imName == KHandWritingName) {
         return true;
     }
     return false;
@@ -495,6 +612,17 @@ bool HbAbstractVkbHostPrivate::disableCursorShift() {
 
 
 HbAbstractVkbHost::HbAbstractVkbHost(HbWidget *containerWidget) : d_ptr(new HbAbstractVkbHostPrivate(this, containerWidget))
+{
+    Q_D(HbAbstractVkbHost);
+
+    setParent(containerWidget);
+    HbVkbHost::attachHost(this, containerWidget);
+
+    connect(&d->mTimeLine, SIGNAL(finished()), this, SLOT(animationFinished()));
+    connect(&d->mTimeLine, SIGNAL(valueChanged(qreal)), this, SLOT(animValueChanged(qreal)));
+}
+
+HbAbstractVkbHost::HbAbstractVkbHost(QWidget *containerWidget) : d_ptr(new HbAbstractVkbHostPrivate(this, containerWidget))
 {
     Q_D(HbAbstractVkbHost);
 
@@ -516,19 +644,40 @@ HbAbstractVkbHost::HbAbstractVkbHost(QGraphicsWidget *containerWidget) : d_ptr(n
     connect(&d->mTimeLine, SIGNAL(valueChanged(qreal)), this, SLOT(animValueChanged(qreal)));
 }
 
-HbAbstractVkbHost::HbAbstractVkbHost(HbAbstractVkbHostPrivate *dd) : d_ptr(dd)
+HbAbstractVkbHost::HbAbstractVkbHost(QGraphicsObject *containerWidget) : d_ptr(new HbAbstractVkbHostPrivate(this, containerWidget))
 {
     Q_D(HbAbstractVkbHost);
 
-    setParent(d->mContainerWidget);
-    HbVkbHost::attachHost(this, d->mContainerWidget);
+    setParent(containerWidget);
+    HbVkbHost::attachHost(this, containerWidget);
 
     connect(&d->mTimeLine, SIGNAL(finished()), this, SLOT(animationFinished()));
     connect(&d->mTimeLine, SIGNAL(valueChanged(qreal)), this, SLOT(animValueChanged(qreal)));
 }
 
+HbAbstractVkbHost::HbAbstractVkbHost(HbAbstractVkbHostPrivate *dd) : d_ptr(dd)
+{
+    Q_D(HbAbstractVkbHost);
+
+    setParent(d->mContainerWidget->widgetObject());
+    HbVkbHost::attachHost(this, d->mContainerWidget->widgetObject());
+
+    connect(&d->mTimeLine, SIGNAL(finished()), this, SLOT(animationFinished()));
+    connect(&d->mTimeLine, SIGNAL(valueChanged(qreal)), this, SLOT(animValueChanged(qreal)));
+}
+
+
 HbAbstractVkbHost::~HbAbstractVkbHost()
 {
+    if (d_ptr->mKeypad) {
+        d_ptr->mKeypad->hide();
+
+        if (d_ptr->mCallback) {
+            d_ptr->mCallback->keyboardClosed(this);
+            d_ptr->mCallback = 0;
+        }
+    }
+    emit keypadClosed();
     delete d_ptr;
 }
 
@@ -544,8 +693,7 @@ HbVkbHost::HbVkbStatus HbAbstractVkbHost::keypadStatus() const
 /*!
 \reimp
 */
-
-void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner, bool animationAllowed)
+void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, bool animationAllowed)
 {
     Q_D(HbAbstractVkbHost);
 
@@ -561,6 +709,7 @@ void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner,
     }
 
     if (!HbVkbHostBridge::instance()->connectHost(this)) {
+        // Do not set open call pending if orientation change is ongoing
         connect(HbVkbHostBridge::instance(), SIGNAL(stateTransitionCompleted()), this, SLOT(stateTransitionCompleted()));
         // The previous keyboard is still closing. Set the call pending and return.
         d->mPendingCall.vkb = vkb;
@@ -586,12 +735,17 @@ void HbAbstractVkbHost::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner,
 
         emit aboutToOpen();
 
+        if (d->mContainerWidget && d->mContainerWidget->widgetObject()) {
+            d->mContainerWidget->widgetObject()->setProperty(KPositionManagedByVKB, true );
+        }
+
         if (animationAllowed) {
             d->openKeypad();
         } else {
             d->openKeypadWithoutAnimation();
             emit keypadOpened();
         }
+        HbWidgetFeedback::triggered(qobject_cast<const HbWidget *>(d->mKeypad), Hb::InstantPopupOpened);
 
         d->connectSignals();
         d->mKeypadOperationOngoing = false;
@@ -632,7 +786,7 @@ void HbAbstractVkbHost::animValueChanged(qreal value)
 
     if (!d->disableCursorShift()) {
         // Move the container.
-        if (d->mContainerWidget) {
+        if (d->mContainerWidget->widgetObject()) {
             d->mContainerWidget->setPos(d->mContainerMovementStartingPoint + (d->mContainerMovementVector * value));
         }
 
@@ -654,7 +808,7 @@ void HbAbstractVkbHost::animationFinished()
 {
     Q_D(HbAbstractVkbHost);
 
-    if (d->mContainerWidget && d->mKeypad && d->mCallback && d->mInputMethod) {
+    if (d->mContainerWidget->widgetObject() && d->mKeypad && d->mCallback && d->mInputMethod) {
         if (!d->disableCursorShift()) {
             // Make sure the container reached target position.
             d->mContainerWidget->setPos(d->mContainerMovementStartingPoint + d->mContainerMovementVector);
@@ -668,7 +822,7 @@ void HbAbstractVkbHost::animationFinished()
 
             if (d->mInputMethod->focusObject()) {
                 // This is hopefully temporary...
-                QTextEdit *textEdit = qobject_cast<QTextEdit*>(d->mInputMethod->focusObject()->object());
+                QTextEdit *textEdit = qobject_cast<QTextEdit *>(d->mInputMethod->focusObject()->object());
                 if (textEdit) {
                     textEdit->ensureCursorVisible();
                 }
@@ -686,6 +840,7 @@ void HbAbstractVkbHost::animationFinished()
             d->mKeypad->hide();
             // Return the container where it was.
             d->mContainerWidget->setPos(d->mOriginalContainerPosition);
+            d->mContainerWidget->widgetObject()->setProperty(KPositionManagedByVKB, false );
             d->mCallback->keyboardClosed(this);
             emit keypadClosed();
             HbVkbHostBridge::instance()->connectHost(0);
@@ -701,7 +856,7 @@ QSizeF HbAbstractVkbHost::keyboardArea() const
     Q_D(const HbAbstractVkbHost);
 
     HbMainWindow *mainWindow = d->mainWindow();
-    if (d->mContainerWidget && mainWindow) {
+    if (d->mContainerWidget->widgetObject() && mainWindow) {
         QSizeF screenSize = d->screenSize();
 
         if (mainWindow->orientation() == Qt::Horizontal) {
@@ -723,7 +878,6 @@ void HbAbstractVkbHost::orientationAboutToChange()
 {
     Q_D(HbAbstractVkbHost);
     d->mKeypadStatusBeforeOrientationChange = d->mKeypadStatus;
-    HbInputSettingProxy::instance()->notifyScreenOrientationChange();
 }
 
 /*!
@@ -733,13 +887,13 @@ by the setting proxy.
 */
 void HbAbstractVkbHost::orientationChanged(Qt::Orientation orientation)
 {
-    HbInputSettingProxy::instance()->setScreenOrientation(orientation);
+    Q_UNUSED(orientation);
 }
 
 /*!
 \reimp
 */
-HbVirtualKeyboard* HbAbstractVkbHost::activeKeypad() const
+HbVirtualKeyboard *HbAbstractVkbHost::activeKeypad() const
 {
     Q_D(const HbAbstractVkbHost);
     return d->mCallback;
@@ -755,8 +909,8 @@ void HbAbstractVkbHost::ensureCursorVisibility()
     if ((d->mTimeLine.state() == QTimeLine::Running) ||
         (d->mKeypadStatus == HbVkbStatusClosed) ||
         (d->mKeypadStatus == HbVkbStatusMinimized) ||
-        !d->mContainerWidget) {
-            return;
+        !d->mContainerWidget->widgetObject()) {
+        return;
     }
 
     // This will refresh the situation if needed.
@@ -772,11 +926,15 @@ QRectF HbAbstractVkbHost::activeViewRect() const
     Q_D(const HbAbstractVkbHost);
 
     HbMainWindow *mainWindow = d->mainWindow();
-    if (d->mContainerWidget && mainWindow) {
+    if (d->mContainerWidget->widgetObject() && mainWindow && d->mCallback) {
         QSizeF vpSize = d->screenSize();
         QRectF viewport = QRectF(QPointF(0.0, 0.0), QPointF(vpSize.width(), vpSize.height()));
 
-        viewport.setHeight(viewport.height() - confirmedKeyboardSize().height());
+        if (d->mKeypadStatus == HbVkbStatusMinimized) {
+            viewport.setHeight(viewport.height() - d->mCallback->minimizedKeyboardSize().height());
+        } else {
+            viewport.setHeight(viewport.height() - confirmedKeyboardSize().height());
+        }
         return viewport;
     }
 
@@ -832,7 +990,8 @@ QRectF HbAbstractVkbHost::applicationArea() const
 {
     Q_D(const HbAbstractVkbHost);
 
-    if (d->mKeypadStatus == HbVkbStatusOpened) {
+    if (d->mKeypadStatus == HbVkbStatusOpened ||
+        d->mKeypadStatus == HbVkbStatusMinimized) {
         return activeViewRect();
     }
 
@@ -861,7 +1020,7 @@ void HbAbstractVkbHost::minimizeKeypad(bool animationAllowed)
 /*!
 \reimp
 */
-void HbAbstractVkbHost::openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner)
+void HbAbstractVkbHost::openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner)
 {
     Q_D(HbAbstractVkbHost);
     d->mInputMethod = owner;
@@ -904,14 +1063,15 @@ void HbAbstractVkbHost::currentViewChanged(HbView *view)
 {
     Q_D(HbAbstractVkbHost);
 
-    if (view != d->mContainerWidget) {
-        if (d->mTimeLine.state() == QTimeLine::Running) {               
+    if (view != d->mContainerWidget->widgetObject()) {
+        if (d->mTimeLine.state() == QTimeLine::Running) {
             d->cancelAnimationAndHideVkbWidget();
             if (d->mCallback) {
                 d->mCallback->keyboardClosed(this);
-            }          
+            }
         } else if (d->mKeypadStatus != HbVkbStatusClosed) {
             d->closeKeypadWithoutAnimation();
+            emit keypadClosed();
         }
     }
 }
@@ -921,16 +1081,16 @@ void HbAbstractVkbHost::currentViewChanged(HbView *view)
 */
 void HbAbstractVkbHost::refresh()
 {
-     Q_D(HbAbstractVkbHost);
+    Q_D(HbAbstractVkbHost);
 
-     if (d->mKeypadStatus == HbVkbHost::HbVkbStatusOpened &&
-         d->mTimeLine.state() != QTimeLine::Running) {
-         d->prepareAnimationsCommon();
-         if (d->prepareContainerAnimation(HbVkbHost::HbVkbStatusOpened)) {
-             // Container status needs to be updated. Run the animation.
-             d->mTimeLine.start();
-         }
-     }
+    if (d->mKeypadStatus == HbVkbHost::HbVkbStatusOpened &&
+        d->mTimeLine.state() != QTimeLine::Running) {
+        d->prepareAnimationsCommon();
+        if (d->prepareContainerAnimation(HbVkbHost::HbVkbStatusOpened)) {
+            // Container status needs to be updated. Run the animation.
+            d->mTimeLine.start();
+        }
+    }
 }
 
 /*!
@@ -938,8 +1098,8 @@ void HbAbstractVkbHost::refresh()
 */
 bool HbAbstractVkbHost::stateTransitionOngoing() const
 {
-     Q_D(const HbAbstractVkbHost);
-     return (d->mTimeLine.state() == QTimeLine::Running);
+    Q_D(const HbAbstractVkbHost);
+    return (d->mTimeLine.state() == QTimeLine::Running);
 }
 
 /*!

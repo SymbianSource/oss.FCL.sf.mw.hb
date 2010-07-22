@@ -43,12 +43,10 @@
 #include <e32base.h>
 #endif
 
+class QFileSystemWatcher;
 class CHbThemeListenerPrivate;
 class QSizeF;
 class HbEffectFxmlData;
-#ifndef Q_OS_SYMBIAN
-class QLocalSocket;
-#endif
 
 class HB_AUTOTEST_EXPORT HbThemeClientPrivate :
 #ifdef Q_OS_SYMBIAN
@@ -62,11 +60,11 @@ public QObject
     Q_OBJECT
 #endif
 
-    public:
+public:
     HbThemeClientPrivate();
-    bool connectToServer();
 
-    QSizeF getSharedIconDefaultSize(const QString& iconPath);
+#ifdef Q_OS_SYMBIAN
+    bool connectToServer();
 
     HbSharedIconInfo getSharedIconInfo(const QString& iconPath ,
                                        const QSizeF &size,
@@ -75,11 +73,14 @@ public QObject
                                        bool mirrored,
                                        HbIconLoader::IconLoaderOptions options,
                                        const QColor &color,
-                                       HbRenderingMode renderMode);						
+                                       HbRenderingMode renderMode);
 
-    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName, const QString &layout, const QString &section);
+    HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,
+                                                          const QString &layout,
+                                                          const QString &section);
 
-    HbCss::StyleSheet *getSharedStyleSheet(const QString &filepath, HbLayeredStyleLoader::LayerPriority priority);
+    HbCss::StyleSheet *getSharedStyleSheet(const QString &filePath,
+                                           HbLayeredStyleLoader::LayerPriority priority);
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
 
@@ -122,38 +123,33 @@ public QObject
                                         HbIconLoader::IconLoaderOptions options,
                                         const QColor &color,
                                         HbRenderingMode renderMode);
+
     void notifyForegroundLostToServer();
     bool switchRenderingMode(HbRenderingMode renderMode);
     int freeSharedMemory();
     int allocatedSharedMemory();
     int allocatedHeapMemory();
-
-    ~HbThemeClientPrivate();
-    bool event(QEvent *e);
-
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     void createMemoryReport() const;
 #endif
 
-#ifndef Q_OS_SYMBIAN
-public slots:
-    void changeTheme();
-#endif
-
-public:
-    bool clientConnected;
 private:
     void handleThemeChange(const QString &themeName);
+
+#endif // Q_OS_SYMBIAN
+
+public:
+    void setTheme(const QString &theme);
+
+    ~HbThemeClientPrivate();
+
 #ifdef Q_OS_SYMBIAN
+private:
     TVersion Version() const;
     TInt StartServer();
     TInt CreateServerProcess();
-#else
-    void readIconInfo(QDataStream &dataStream, HbSharedIconInfo &iconInfo);
-#endif
 
 private:
-#ifdef Q_OS_SYMBIAN
     CHbThemeListenerPrivate *themelistener;
     friend class CHbThemeListenerPrivate;
 #ifdef HB_SGIMAGE_ICON
@@ -162,8 +158,16 @@ private:
 #endif
 
 #else
-    QLocalSocket* localSocket;
-#endif
+
+public slots:
+    void iniFileChanged(QString iniFile);
+
+private:
+    QFileSystemWatcher *iniFileWatcher;
+#endif  // Q_OS_SYMBIAN
+
+public:
+    bool clientConnected;
 };
 
 #endif // HBTHEMECLIENT_P_P_H

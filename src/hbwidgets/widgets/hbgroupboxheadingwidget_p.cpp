@@ -35,7 +35,9 @@
 #endif
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
+#include <hbnamespace_p.h>
 #include <QGesture>
+#include <QGraphicsScene>
 #endif 
 
 #include <QGraphicsSceneMouseEvent>
@@ -55,8 +57,6 @@ HbGroupBoxHeadingWidget::HbGroupBoxHeadingWidget( QGraphicsItem *parent ) :
     mIconItem( 0 ),
     mTextItem( 0 ),
     mBackgroundItem( 0 ),
-    collapsable( true ),
-    collapsed( false),
     marqueeEnabled( false ),
     headingPressed(false),
     groupBoxType( GroupBoxTypeUnknown )
@@ -80,11 +80,7 @@ HbGroupBoxHeadingWidget::~HbGroupBoxHeadingWidget( )
 */
 void HbGroupBoxHeadingWidget::init( )
 {
-
     createPrimitives( );
-    if ( groupBoxType == GroupBoxCollapsingContainer ){
-        createConnection( );    
-    }
 #ifdef HB_GESTURE_FW
     grabGesture( Qt::TapGesture );
 #endif 
@@ -95,7 +91,7 @@ void HbGroupBoxHeadingWidget::init( )
 */
 void HbGroupBoxHeadingWidget::createPrimitives()
 {
-    if( groupBoxType == GroupBoxCollapsingContainer && collapsable ){
+    if( groupBoxType == GroupBoxCollapsingContainer && groupBox->isCollapsable() ){
         if ( !mIconItem ) {
             mIconItem = style( )->createPrimitive( HbStyle::P_GroupBoxHeading_icon , this );
         }
@@ -181,7 +177,7 @@ void HbGroupBoxHeadingWidget::setType(GroupBoxType type)
         if( groupBoxType == GroupBoxCollapsingContainer ){
             createConnection(); 
             // collapsed is false by default for CollapsingContainer
-            collapsed = false; 
+            //collapsed = false; 
             // marquee is disabled by default for CollapsingContainer
             marqueeEnabled = false;
         }
@@ -200,18 +196,17 @@ void HbGroupBoxHeadingWidget::setType(GroupBoxType type)
 */
 void HbGroupBoxHeadingWidget::setHeading( const QString &text )
 {
-    if( headingText == text ) 
-        return;
+    if( headingText != text ){
+        headingText = text;
 
-    headingText = text;
-
-    HbStyleOptionGroupBox groupBoxOption;
-    initStyleOption( &groupBoxOption );
-    if ( groupBoxType == GroupBoxCollapsingContainer ) {
-        style( )->updatePrimitive( mTextItem , HbStyle::P_GroupBoxHeading_text , &groupBoxOption );
-    }
-    else {
-       style( )->updatePrimitive( mTextItem , HbStyle::P_GroupBoxMarquee_text , &groupBoxOption );
+        HbStyleOptionGroupBox groupBoxOption;
+        initStyleOption( &groupBoxOption );
+        if ( groupBoxType == GroupBoxCollapsingContainer ) {
+            style( )->updatePrimitive( mTextItem , HbStyle::P_GroupBoxHeading_text , &groupBoxOption );
+        }
+        else {
+           style( )->updatePrimitive( mTextItem , HbStyle::P_GroupBoxMarquee_text , &groupBoxOption );
+        }
     }
 }
 
@@ -221,14 +216,13 @@ void HbGroupBoxHeadingWidget::setHeading( const QString &text )
 */
 void HbGroupBoxHeadingWidget::setMarqueeHeading( bool marquee )
 {
-    if( marqueeEnabled == marquee )
-        return;
+    if( marqueeEnabled != marquee ){
+        marqueeEnabled  = marquee;
 
-    marqueeEnabled  = marquee;
-
-    HbStyleOptionGroupBox groupBoxOption;
-    initStyleOption( &groupBoxOption );
-    style()->updatePrimitive( mTextItem, HbStyle::P_GroupBoxMarquee_text, &groupBoxOption);
+        HbStyleOptionGroupBox groupBoxOption;
+        initStyleOption( &groupBoxOption );
+        style()->updatePrimitive( mTextItem, HbStyle::P_GroupBoxMarquee_text, &groupBoxOption);
+    }
 }
 
 /*!
@@ -263,7 +257,8 @@ QGraphicsItem *HbGroupBoxHeadingWidget::primitive( HbStyle::Primitive primitive 
 void HbGroupBoxHeadingWidget::initStyleOption( HbStyleOptionGroupBox *option ) const
 {
     HbWidget::initStyleOption( option );
-    option->collapsed = collapsed;
+    //option->collapsed = collapsed; 
+    option->collapsed = groupBox->isCollapsed();
     option->heading = headingText;
     option->marqueeEnabled = marqueeEnabled;
     // state & type info reqd fo background primitve updation
@@ -284,25 +279,10 @@ void HbGroupBoxHeadingWidget::initStyleOption( HbStyleOptionGroupBox *option ) c
 QVariant HbGroupBoxHeadingWidget::itemChange( GraphicsItemChange change, const QVariant &value )
 {
     switch ( change ) {
-        case ItemVisibleHasChanged: {
-            /*if (value.toBool() == true){
-                if (mTextItem) {
-                    HbStyleOptionGroupBox groupBoxOption;
-                    initStyleOption(&groupBoxOption);
-                    style()->updatePrimitive( mTextItem, HbStyle::P_GroupBoxHeading_text, &groupBoxOption);
-                }
-            }*/
-            }
-            break;
-
-        case ItemSceneHasChanged: {
-            if(!value.isNull())
-
-
+        case ItemVisibleChange: 
+        case ItemSceneHasChanged: 
             updatePrimitives();
-            }
             break;
-
         case ItemChildAddedChange:
         case ItemChildRemovedChange:
             repolish();
@@ -322,7 +302,7 @@ void HbGroupBoxHeadingWidget::mousePressEvent( QGraphicsSceneMouseEvent *event )
     Q_UNUSED( event )
 #else 
     HbWidget::mousePressEvent( event );
-    if ( !collapsable ){
+    if ( !( groupBox->isCollapsable( ) ) ){
         event->ignore();
         return;
     }
@@ -389,11 +369,16 @@ void HbGroupBoxHeadingWidget::gestureEvent(QGestureEvent *event)
         switch( tap->state() ) {
         case Qt::GestureStarted:  //
             {
-                if ( !collapsable ){
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+                if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+                }
+
+                if ( !(groupBox->isCollapsable( )) ){
                     event->ignore( tap );
                     return;
                 }
-                if ( collapsable ) {
+                if ( groupBox->isCollapsable( ) ) {
                     HbWidgetFeedback::triggered( this, Hb::InstantPressed, Hb::ModifierCollapsedItem );
                 }
                 else {
@@ -413,6 +398,8 @@ void HbGroupBoxHeadingWidget::gestureEvent(QGestureEvent *event)
             break;
         case Qt::GestureCanceled: // Reset state
             {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
                 headingPressed = false;
 
                 HbStyleOptionGroupBox groupBoxOption;
@@ -424,7 +411,9 @@ void HbGroupBoxHeadingWidget::gestureEvent(QGestureEvent *event)
             }
         case Qt::GestureFinished: // emit clicked
             {
-                if ( collapsable ) {
+                scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
+                if ( groupBox->isCollapsable( ) ) {
                     HbWidgetFeedback::triggered( this, Hb::InstantReleased, Hb::ModifierCollapsedItem );
                 } else {
                     HbWidgetFeedback::triggered( this, Hb::InstantReleased );
@@ -436,7 +425,7 @@ void HbGroupBoxHeadingWidget::gestureEvent(QGestureEvent *event)
                         HbEffect::start( mIconItem, HB_GROUPBOX_HEADING_TYPE, "iconclick" );
 #endif
                     }
-                    emit clicked( !collapsed );
+                    emit clicked( !(groupBox->isCollapsed()) );
                 }
                 // background primitive updation, upon mouse release
                 headingPressed = false;

@@ -34,6 +34,7 @@
 #include "hbtooltip.h"
 #include "hbglobal_p.h"
 #include "hbvgmaskeffect_p.h"
+#include "hbvgchainedeffect_p.h"
 #include <QTimer>
 #include <QGraphicsSceneMouseEvent>
 #include <QShowEvent>
@@ -42,6 +43,7 @@
 #include <QPointer>
 #include <QDebug>
 #include <QBitmap>
+#include <hbinstance_p.h>
 #include <QApplication> // krazy:exclude=qclasses
 
 #include <hbwidgetfeedback.h>
@@ -180,6 +182,18 @@ bool HbPopupPrivate::popupEffectsLoaded = false;
     dismissed by the user or timeout.
  */
 
+/*!
+    \enum HbPopup::Placement
+
+    Placement is the corner or edge to which position of the popup refers to.
+  */
+
+/*!
+    \primitives
+    \primitive{background} HbFrameItem representing the popup background. The background can be weak or strong (different graphical styles) depending on popup type.
+    \primitive{P_Popup_heading_frame} HbFrameItem representing the popup heading text background
+  */
+
 static const struct { HbPopup::DefaultTimeout timeout; int value; } timeoutValues[] =
 {
     {HbPopup::NoTimeout,0},
@@ -281,13 +295,18 @@ HbPopupPrivate::HbPopupPrivate( ) :
     preferredPosSet(false),
     mStartEffect(false),
     mScreenMargin(0.0),
+    mAutoLayouting(true),
+    mOriginalAutoLayouting(mAutoLayouting),
     mVgMaskEffect(0),
+    mOrientationEffectHide(false),
     timeoutTimerInstance(0)
 {
 }
 
 HbPopupPrivate::~HbPopupPrivate()
 {
+    stopTimeout();
+    delete timeoutTimerInstance;
 }
 
 void HbPopupPrivate::init()
@@ -298,7 +317,9 @@ void HbPopupPrivate::init()
 
     // By default popups are focusable
     q->setFocusPolicy(Qt::StrongFocus);    
-    q->setBackgroundItem(HbStyle::P_Popup_background);
+    setBackgroundItem(HbStyle::P_Popup_background);
+    q->updatePrimitives();
+
 
     // Only for popup without parent
     if (!q->parentItem()) {
@@ -308,21 +329,23 @@ void HbPopupPrivate::init()
         // Popup is invisible by default (explicit show or open call is required)
         q->setVisible(false);
     }
-    hidingInProgress = false;   
-
-    q->setFlag(QGraphicsItem::ItemClipsToShape);
-    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
-
-#if QT_VERSION > 0x040602
-    q->grabGesture(Qt::TapGesture);
-    q->grabGesture(Qt::TapAndHoldGesture);
-    q->grabGesture(Qt::PanGesture);
-    q->grabGesture(Qt::SwipeGesture);
-    q->grabGesture(Qt::PinchGesture);
-#endif
-
+    hidingInProgress = false; 
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+    itemFlags |= QGraphicsItem::ItemClipsToShape;
+    itemFlags |= QGraphicsItem::ItemClipsChildrenToShape;
+    itemFlags |= QGraphicsItem::ItemSendsGeometryChanges;
+    //itemFlags |= QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);  
+}
+void HbPopupPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
+{
+	Q_UNUSED(status);
 }
 
+CSystemToneService* HbPopupPrivate::systemToneService()
+{
+	return HbInstancePrivate::d_ptr()->systemTone();
+}
 /*
  Sets the priority for a popup.
  A popup with higher priority is always shown on top of a popup with lower priority.
@@ -358,16 +381,33 @@ void HbPopupPrivate::_q_delayedHide(HbEffect::EffectStatus status)
     hidingInProgress = false;
 }
 
-void HbPopupPrivate::_q_orientationChange(Qt::Orientation orient, bool animate)
+void HbPopupPrivate::_q_orientationAboutToChange(Qt::Orientation orient, bool animate)
 {
-    Q_UNUSED(orient);
-    if (animate) {
+    Q_UNUSED(orient);    
     Q_Q(HbPopup);
-    HbEffect::start(q, "HB_POPUP", "orientationswitch");
+    if (animate && q->isVisible()) {
+        HbEffect::start(q, "HB_POPUP", "orient_disappear");
+        mOrientationEffectHide = true;
     }
-
 }
+
 #endif // HB_EFFECTS
+
+void HbPopupPrivate::_q_orientationChanged()
+{
+    Q_Q(HbPopup);
+    if (q->isVisible()) {
+        QEvent userEvent(QEvent::ContextMenu);
+        QCoreApplication::sendEvent(q, &userEvent);
+    }
+#ifdef HB_EFFECTS
+    if (mOrientationEffectHide) {
+        HbEffect::cancel(q);
+        HbEffect::start(q, "HB_POPUP", "orient_appear");
+        mOrientationEffectHide = false;
+    }
+#endif
+}
 
 void HbPopupPrivate::_q_timeoutFinished()
 {
@@ -410,7 +450,7 @@ QTimer *HbPopupPrivate::timeoutTimer()
 {
     Q_Q(HbPopup);
     if (!timeoutTimerInstance) {
-        timeoutTimerInstance = new QTimer(q);
+        timeoutTimerInstance = new QTimer();
         timeoutTimerInstance->setSingleShot(true);
         q->connect(timeoutTimerInstance, SIGNAL(timeout()), q, SLOT(_q_timeoutFinished()));
     }
@@ -514,9 +554,15 @@ void HbPopupPrivate::addPopupEffects()
     }
     if (hasEffects ) {
         hasEffects = HbEffectInternal::add("HB_POPUP",
-                                           "dialog_rotate",
-                                           "orientationswitch");
+                                           "popup_orient_disappear",
+                                           "orient_disappear");
     }
+    if (hasEffects ) {
+        hasEffects = HbEffectInternal::add("HB_POPUP",
+                                           "popup_orient_appear",
+                                           "orient_appear");
+    }
+    hasEffects = true; //Workaround until orient appear effects are in place
 #endif
 }
 
@@ -540,23 +586,38 @@ void HbPopupPrivate::calculateShape()
 {
 #if 0
     Q_Q(HbPopup);
+    // Contrary to the name, HbVgMaskEffect has a software
+    // implementation too, and we will actually force the usage of
+    // that here, ignoring the pure OpenVG version.
     if (!mVgMaskEffect) {
-        mVgMaskEffect = new HbVgMaskEffect();
-        mVgMaskEffect->install(q);
+        mVgMaskEffect = new HbVgMaskEffect;
+        // Masking does not work reliably on HW.
+        mVgMaskEffect->setForceSwMode(true);
+        // There may be children (like the scroll area in menus) that
+        // would mess up the masking so exclude those.
+        mVgMaskEffect->setIncludeSourceItemOnly(true);
+        if (!q->graphicsEffect()) {
+            // Attach the effect. Ownership is transferred to q.
+            mVgMaskEffect->install(q);
+        } else {
+            // Avoid replacing already set effects. Do not mask if
+            // this is not possible, otherwise we would unexpectedly
+            // delete the previously set graphics effect.
+            HbVgChainedEffect *c = qobject_cast<HbVgChainedEffect *>(q->graphicsEffect());
+            if (c) {
+                c->add(mVgMaskEffect);
+            } else {
+                delete mVgMaskEffect;
+            }
+        }
     }
-
     QPixmap image(QSize(static_cast<int>(q->backgroundItem()->boundingRect().width()),
-                            static_cast<int>(q->backgroundItem()->boundingRect().height())));
+                        static_cast<int>(q->backgroundItem()->boundingRect().height())));
     image.fill(Qt::transparent);
-
     QPainter imagePainter(&image);
-
     q->backgroundItem()->paint(&imagePainter, 0, 0);
-
     imagePainter.end();
-
     mVgMaskEffect->setMask(image);
-
 #endif
 }
 
@@ -751,11 +812,11 @@ void HbPopup::setFrameType(HbPopup::FrameType frameType)
     if ( d->frameType != frameType ) {
         switch( frameType ) {
         case HbPopup::Weak:
-            setBackgroundItem(HbStyle::P_Popup_background_weak);
+            d->setBackgroundItem(HbStyle::P_Popup_background_weak);
             break;
         case HbPopup::Strong:
         default:
-            setBackgroundItem(HbStyle::P_Popup_background);
+            d->setBackgroundItem(HbStyle::P_Popup_background);
             break;
         }
         d->frameType = frameType;
@@ -792,7 +853,10 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
 {
     Q_D(HbPopup);
 
-    /*if (change == QGraphicsItem::ItemVisibleHasChanged) {
+    if (change == QGraphicsItem::ItemPositionChange) {
+        d->mAutoLayouting = false;
+    }
+    if (change == QGraphicsItem::ItemVisibleHasChanged) {
         if (value.toBool()) {
             if(d->hasEffects && boundingRect().isValid()) {
 
@@ -801,14 +865,16 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                -boundingRect().height(),
                                boundingRect().width(),
                                0);
-                HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);
-#endif//HB_EFFECTS
+                d->mStartEffect = true;
+                HbEffect::cancel(this);
                 d->mStartEffect = false;
+                HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);
+#endif//HB_EFFECTS
             } else {
                 d->mStartEffect = true;
             }
         }
-    }*/
+    }
 
     if (change == QGraphicsItem::ItemVisibleChange) {
         if (value.toBool()) {
@@ -830,6 +896,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
 
             if (d->delayedHide &&  // about to hide and we wanna delay hiding
                 d->hasEffects && !parentItem()) { // only for popup without parent
+                bool hideDelayed = d->delayedHide;
                 if (!d->hidingInProgress) { // Prevent reentrance
                     d->hidingInProgress = true;
 #ifdef HB_EFFECTS
@@ -837,14 +904,16 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                    -boundingRect().height(),
                                    boundingRect().width(),
                                    0);
+                    HbEffect::cancel(this);
                     if (!HbEffect::start(this, d->effectType, "disappear",
                                          this, "_q_delayedHide",
                                          QVariant(), extRect)) {
                         d->delayedHide = false;
+                        return HbWidget::itemChange(change, value);
                     }
 #endif
                 }
-                if (d->delayedHide) {
+                if (hideDelayed) {
                     return true;
                 } else {
                     d->delayedHide = d->hasEffects;
@@ -856,21 +925,28 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
     } else if (change == QGraphicsItem::ItemSceneHasChanged) {
         HbMainWindow* w(mainWindow());
         if ( w ){
-            disconnect(this, SLOT(handlePopupPos()));
+            disconnect(this, SLOT(_q_orientationAboutToChange(Qt::Orientation, bool)));
+            connect( w, SIGNAL(aboutToChangeOrientation(Qt::Orientation, bool)),
+                     this, SLOT(_q_orientationAboutToChange(Qt::Orientation, bool)) );
+            disconnect(this, SLOT(_q_orientationChanged()));
             connect( w, SIGNAL(orientationChanged(Qt::Orientation)),
-                     this, SLOT(handlePopupPos()) );
+                     this, SLOT(_q_orientationChanged()) );
         }
+
     }
     return HbWidget::itemChange(change, value);
 }
 
 /*!
+ \deprecated HbPopup::handlePopupPos()
+         is deprecated. This function should not be used from the application side.
  Handles the popup position when Orientation changes
 */
 void HbPopup::handlePopupPos()
 {
+    HB_DEPRECATED("HbPopup::handlePopupPos() is deprecated.");
     QEvent userEvent(QEvent::ContextMenu);
-    QCoreApplication::sendEvent(this, &userEvent);
+    QCoreApplication::sendEvent(this, &userEvent);    
 }
 
 /*!
@@ -935,6 +1011,7 @@ void HbPopup::showEvent(QShowEvent *event)
         if(d->addPopupToScene()) {
               d->duplicateShowEvent = true;
         }
+        //setActive(true);
         // Popup clears closed state
         d->closed = false;
         if (d->backgroundItem) {
@@ -998,12 +1075,10 @@ void HbPopup::resizeEvent( QGraphicsSceneResizeEvent * event )
 {    
     HbWidget::resizeEvent(event);
     updatePrimitives();
-#if 1
     Q_D(HbPopup);
     if (d->polished) {
         d->calculateShape();
     }
-#endif
 }
 
 /*!
@@ -1036,13 +1111,47 @@ void HbPopup::closeEvent ( QCloseEvent * event )
     HbWidget::closeEvent(event);
 }
 
+
+/* Currently, virtual keyboard must be able to position a popup
+   containing a editor to an arbitrary place. VKB does it's best to
+   reposition popup back to original position when needed. At least in
+   orientation switch the old position naturally is wrong, hence popup
+   must be relayouted.
+
+   It would be unreasonable to make special checks for popup in vkb
+   side. It also would be unreasonable to do special checks for vkb in
+   popup side. Hence this semi-hidden dynamic property for
+   communicating this special case.
+
+   WARNING: Do not count on this special behaviour, we might remove it
+   without prior notice. If you do require such a behavior, please
+   raise a feature request and we might make this a proper API.
+ */
+const char* KPositionManagedByVKB("PositionManagedByVKB");
+
 /*!
     \reimp
  */
 bool HbPopup::event(QEvent *event)
 {
-/*    Q_D(HbPopup);
-    if (event->type() == QEvent::LayoutRequest) {
+    Q_D(HbPopup);
+    if ( event->type() == QEvent::DynamicPropertyChange ) {
+        QVariant v(property(KPositionManagedByVKB));
+        if (v.isValid() ){
+            if (v.toBool()) {
+                // position is now managed by vkb
+                d->mOriginalAutoLayouting = d->mAutoLayouting;
+                d->mAutoLayouting = false;
+            } else {
+                d->mAutoLayouting = d->mOriginalAutoLayouting;
+
+                // vkb has finished, and we might be on totally wrong
+                // place.
+                QEvent layoutRequest = QEvent::LayoutRequest;
+                QApplication::sendEvent(this, &layoutRequest);
+            }
+        }
+    } else if (event->type() == QEvent::LayoutRequest) {
         //Workaround when showing first time                           
 #ifdef HB_EFFECTS
         if(d->mStartEffect && boundingRect().isValid()) {
@@ -1052,17 +1161,14 @@ bool HbPopup::event(QEvent *event)
                            -boundingRect().height(),
                            boundingRect().width(),
                            0);
-            HbEffect::start(this, d->effectType, "appear", 0, 0, QVariant(), extRect);            
-            qDebug() << "effect start";
+            d->mStartEffect = true;
+            HbEffect::cancel(this);
+            d->mStartEffect = false;
+            HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);            
         }
 #endif//HB_EFFECTS
         //workaround ends
     }
-    qDebug() << "event: " << event;*/
-    /*Q_D(HbPopup);
-    if (event->type() == QEvent::LayoutDirectionChange) {
-        d->calculateShape();
-    }*/
     return HbWidget::event(event);
 }
 
@@ -1070,19 +1176,20 @@ bool HbPopup::event(QEvent *event)
   Sets preferred position\a position for popup with \a placement
   as origin.
 
+  By default popup is placed in the middle of the screen. If other positions are needed please
+  ensure that the preferred position is working properly with different screen sizes.
+
   \param position is the position at which the popup is shown.
   \param placement is the corner or edge which \a position refers to
 
   Example usage:
   \code
-  HbDialog popup;
+  HbPopup *popup = new HbPopup();
   ...
-  popup.setPreferredPosition( QPointF(x,y), HbPopupBase::BottomEdgeCenter );
-  popup.show();
+  popup->setPreferredPosition( QPointF(x,y), HbPopupBase::BottomEdgeCenter );
+  popup->show();
   \endcode
-
  */
-
 void HbPopup::setPreferredPos( const QPointF& preferredPos,
                                HbPopup::Placement placement )
 {
@@ -1099,10 +1206,15 @@ void HbPopup::setPreferredPos( const QPointF& preferredPos,
     d->preferredPosSet = true;
     //If position updated, informing layoutproxy with layoutrequest
     if (layoutFlag) {
-        QApplication::sendEvent(this, new QEvent(QEvent::LayoutRequest));
+        QEvent layoutRequest = QEvent::LayoutRequest;
+        QApplication::sendEvent(this, &layoutRequest);
     }
 }
 
+/*!
+  \reimp
+  Returns the shape of this item as a QPainterPath.
+  */
 QPainterPath HbPopup::shape() const
 {    
 #if 0

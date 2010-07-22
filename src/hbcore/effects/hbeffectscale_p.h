@@ -77,15 +77,15 @@ protected:
     QString mStartWidthRef;
     QString mStartHeight;
     QString mStartHeightRef;
-	QString mEndWidth;
+    QString mEndWidth;
     QString mEndWidthRef;
     QString mEndHeight;
     QString mEndHeightRef;
 
     // These are resolved from strings in init()
-    qreal mStartXValue; 
+    qreal mStartXValue;
     qreal mStartYValue;
-    qreal mEndXValue; 
+    qreal mEndXValue;
     qreal mEndYValue;
     qreal mCenterXValue;
     qreal mCenterYValue;

@@ -22,22 +22,34 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputmethod_p.h"
+#include "hbinputmethod.h"
+
 #include <QInputMethodEvent>
 #include <QGraphicsView>
+#include <QGraphicsScene>
 #include <QGraphicsProxyWidget>
 #include <QLocale>
 #include <QClipboard>
+#include <QPointer>
 
-#include "hbinputmethod.h"
-#include "hbinputmethod_p.h"
 #include "hbinputmodecache_p.h"
 #include "hbinputsettingproxy.h"
-#include "hbinputcontextproxy_p.h" 
+#include "hbinputcontextproxy_p.h"
 #include "hbinputfilter.h"
 #include "hbinputmethodnull_p.h"
 #include "hbinpututils.h"
 #include "hbinputstandardfilters.h"
+#include "hbinputmainwindow_p.h"
+#include "hbgraphicsscene.h"
+#include <hbcssinspector_p.h>
+#include <hbsettingswindow_p.h>
 
+#if defined(Q_OS_SYMBIAN)
+#include <coemain.h>
+#include <coecntrl.h>
+#include <e32cmn.h>
+#endif
 /// @cond
 
 /*!
@@ -80,26 +92,26 @@ int HbInputMethodPrivate::editorConstraints() const
 Reads input state information from focused editor using editor interface and creates a local copy of it.
 Finds out correct values for those fields that have not been initialized by the client application.
 */
-void HbInputMethodPrivate::inputStateFromEditor(HbInputState& result)
-{   
+void HbInputMethodPrivate::inputStateFromEditor(HbInputState &result)
+{
     if (mFocusObject) {
-        HbEditorInterface& editorInterface = mFocusObject->editorInterface();
+        HbEditorInterface &editorInterface = mFocusObject->editorInterface();
         editorInterface.lastFocusedState(result);
 
-        if (result != HbInputState()) {    
+        if (result != HbInputState()) {
             // The editor has been focused before. Let's see if the input language has changed since the editor
-            // was last focused. 
+            // was last focused.
             HbInputLanguage language = findStateLanguage();
             if (language != result.language()) {
-                // Reconstruct the state since we don't know if the last one is valid for the new language. 
-                editorRootState(result);  
+                // Reconstruct the state since we don't know if the last one is valid for the new language.
+                editorRootState(result);
                 return;
             }
 
             // Keyboard may have changed since the last focus. Re-initialize it.
-           result.setKeyboard(activeKeyboard());
-           return;
-        } 
+            result.setKeyboard(activeKeyboard());
+            return;
+        }
 
         // this editor has not been focused before, return the root state.
         editorRootState(result);
@@ -118,7 +130,7 @@ void HbInputMethodPrivate::inputStateFromEditor(HbInputState& result)
 \internal
 Transfers local copy of the input state back to the editor using editor interface.
 */
-void HbInputMethodPrivate::inputStateToEditor(const HbInputState& source)
+void HbInputMethodPrivate::inputStateToEditor(const HbInputState &source)
 {
     if (mFocusObject) {
         mFocusObject->editorInterface().setLastFocusedState(source);
@@ -143,8 +155,8 @@ HbInputLanguage HbInputMethodPrivate::activeLanguage() const
                 !ret.isLatinAlphabetLanguage()) {
                 // This is latin alphabet flagged editor, but the language isn't
                 // latin alphabet language. Switch to english locally.
-               ret = QLocale::English;
-           }
+                ret = QLocale::English;
+            }
         }
     }
 
@@ -166,7 +178,7 @@ bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
         return false;
     }
 
-    if (constraints & HbEditorConstraintFixedInputMode){
+    if (constraints & HbEditorConstraintFixedInputMode) {
         if (!mFocusObject || mFocusObject->editorInterface().mode() != mode) {
             // This is fixed mode editor but proposed mode is something else.
             // Reject.
@@ -177,7 +189,7 @@ bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
     if ((constraints & HbEditorConstraintLatinAlphabetOnly) && (mode & HbChineseModeMask)) {
         // Editor is flagged to be latin-alphabet only but
         // the input mode indicates non-latin mode. Reject.
-        return false; 
+        return false;
     }
     return true;
 }
@@ -186,7 +198,7 @@ bool HbInputMethodPrivate::modeAllowedInEditor(HbInputModeType mode) const
 \internal
 Returns true if given state is valid in focused editor.
 */
-bool HbInputMethodPrivate::stateAllowedInEditor(const HbInputState& state)
+bool HbInputMethodPrivate::stateAllowedInEditor(const HbInputState &state)
 {
     if (!modeAllowedInEditor(state.inputMode())) {
         return false;
@@ -213,16 +225,42 @@ bool HbInputMethodPrivate::stateAllowedInEditor(const HbInputState& state)
 \internal
 Finds state handler for given input state.
 */
-HbInputMethod* HbInputMethodPrivate::findStateHandler(HbInputState& state)
-{  
+HbInputMethod *HbInputMethodPrivate::findStateHandler(HbInputState &state)
+{
+    HbInputMethod *stateHandler = 0;
+
+    if (mFocusObject &&
+        (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintIgnoreFocus)) {
+        return HbInputMethodNull::Instance();
+    }
+
     if (stateAllowedInEditor(state)) {
-        HbInputMethod* stateHandler = HbInputModeCache::instance()->findStateHandler(state);
-        if (stateHandler) {
-            return stateHandler;
+        HbInputMethodDescriptor preferredMethod = HbInputSettingProxy::instance()->preferredInputMethod();
+        if (!preferredMethod.isEmpty()) {
+            stateHandler = HbInputModeCache::instance()->loadInputMethod(preferredMethod);
+            if (stateHandler && !HbInputModeCache::instance()->acceptsState(stateHandler, state)) {
+                stateHandler = 0;
+            }
+        }
+
+        if (!stateHandler) {
+            stateHandler = HbInputModeCache::instance()->findStateHandler(state);
+        }
+
+        if (!stateHandler &&
+            state.inputMode() == HbInputModeNumeric &&
+            state.language() != QLocale::English &&
+            mFocusObject &&
+            (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintFixedInputMode)) {
+            // This is number only editor but there was no numeric handler
+            // for specified language. Use default numeric hanlder
+            // as a fallback.
+            state.setLanguage(QLocale::English);
+            stateHandler = HbInputModeCache::instance()->findStateHandler(state);
         }
     }
 
-    return 0;
+    return stateHandler;
 }
 
 /*!
@@ -238,8 +276,8 @@ HbInputLanguage HbInputMethodPrivate::findStateLanguage() const
         // This is latin alphabet flagged editor, but the language isn't
         // latin alphabet language. Switch to english locally.
         lang = QLocale::English;
-    }   
-    
+    }
+
     return lang;
 }
 
@@ -257,7 +295,8 @@ bool HbInputMethodPrivate::automaticTextCaseNeeded() const
     }
 
     if (mFocusObject) {
-        if (mFocusObject->inputMethodHints() & (Qt::ImhNoAutoUppercase | Qt::ImhPreferLowercase | Qt::ImhPreferUppercase)) {
+        if (mFocusObject->inputMethodHints() & (Qt::ImhNoAutoUppercase | Qt::ImhPreferLowercase |
+                                                Qt::ImhPreferUppercase | Qt::ImhDialableCharactersOnly | Qt::ImhEmailCharactersOnly | Qt::ImhUrlCharactersOnly)) {
             // Input method hint forbids auto-capitalisation or prefers either case.
             return false;
         }
@@ -275,22 +314,22 @@ bool HbInputMethodPrivate::automaticTextCaseNeeded() const
 
         QString sText = mFocusObject->editorSurroundingText();
         int cursorPosition = mFocusObject->editorCursorPosition();
-        if(cursorPosition >= 2) {
-            QString previousChar = sText.mid(cursorPosition-1, 1);
-            QString previousToPreviousChar = sText.mid(cursorPosition-2, 1);
+        if (cursorPosition >= 2) {
+            QString previousChar = sText.mid(cursorPosition - 1, 1);
+            QString previousToPreviousChar = sText.mid(cursorPosition - 2, 1);
 
-            if (QString::compare( previousChar, " " ) == 0) {
-                if (QString::compare( previousToPreviousChar, "." ) == 0) {
+            if (QString::compare(previousChar, " ") == 0) {
+                if (QString::compare(previousToPreviousChar, ".") == 0) {
                     return true;
                 }
-                if (QString::compare( previousToPreviousChar, "!" ) == 0) {
+                if (QString::compare(previousToPreviousChar, "!") == 0) {
                     return true;
                 }
-                if (QString::compare( previousToPreviousChar, "?" ) == 0) {
+                if (QString::compare(previousToPreviousChar, "?") == 0) {
                     return true;
                 }
             }
-        } else if(cursorPosition == 0) {
+        } else if (cursorPosition == 0) {
             // when the cursor is at the beginning of the editor, auto-capitalisation is needed
             return true;
         }
@@ -342,7 +381,8 @@ void HbInputMethodPrivate::setFocusCommon()
 {
     Q_Q(HbInputMethod);
 
-    if (mFocusObject) {
+    if (mFocusObject &&
+        !(mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintIgnoreFocus)) {
         Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
         if (hints & Qt::ImhDialableCharactersOnly) {
             setUpFocusedObjectAsPhoneNumberEditor();
@@ -354,7 +394,7 @@ void HbInputMethodPrivate::setFocusCommon()
             setUpFocusedObjectAsUrlEditor();
         } else if (hints & Qt::ImhEmailCharactersOnly) {
             setUpFocusedObjectAsEmailEditor();
-        } 
+        }
 
         if (mFocusObject->editorInterface().editorClass() != HbInputEditorClassUnknown &&
             mFocusObject->editorInterface().extraDictionaryId() == 0) {
@@ -363,33 +403,18 @@ void HbInputMethodPrivate::setFocusCommon()
         }
     }
 
-    // Create input state.  
+    // Create input state.
     inputStateFromEditor(mInputState);
 
     // Find state handler
-    HbInputMethod* stateHandler = 0;
-    HbInputMethodDescriptor activeMethod = HbInputSettingProxy::instance()->activeCustomInputMethod();
-    if (!activeMethod.isEmpty() && !activeMethod.isDefault()) {
-        // A custom method is active. Don't resolve, just try to load it.
-        stateHandler = HbInputModeCache::instance()->loadInputMethod(activeMethod);
-    }
-
-    if (!stateHandler) {
-        // It either wasn't a custom method or we were not able to load the custom method.
-        // Resolve normally.
-         stateHandler = findStateHandler(mInputState);
-    }
-
-    if (editorConstraints() & HbEditorConstraintIgnoreFocus) {
-        // The editor requests us to ignore the focus.
-        stateHandler = 0;
-    }
-
+    HbInputMethod *stateHandler = findStateHandler(mInputState);
     if (stateHandler == 0) {
         // No state handler found (this should never happen under normal circumstances).
         // Fall back to null method.
         stateHandler = HbInputMethodNull::Instance();
     }
+
+    checkAndShowMainWindow();
 
     if (stateHandler != q_ptr) {
         // This method cannot handle requested input state. Switch to another one.
@@ -420,14 +445,14 @@ void HbInputMethodPrivate::refreshState()
 \internal
 Returns true if given focus object is same as currently focused or points to same editor instance.
 */
-bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject* focusObject) const
+bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject *focusObject) const
 {
     // both null pointer
-    if ( !mFocusObject ) {
+    if (!mFocusObject) {
         return false;
     }
 
-    if ( !focusObject ) {
+    if (!focusObject) {
         return false;
     }
 
@@ -442,18 +467,21 @@ bool HbInputMethodPrivate::compareWithCurrentFocusObject(HbInputFocusObject* foc
 \internal
 Creates and returns new input context proxy.
 */
-QInputContext* HbInputMethodPrivate::newProxy()
+QInputContext *HbInputMethodPrivate::proxy()
 {
-    return new HbInputContextProxy(q_ptr);
+    if (!mProxy) {
+        mProxy = new HbInputContextProxy(q_ptr);
+    }
+    return mProxy;
 }
 
 /*!
 \internal
-Returns true if currently focused editor is fixed text case editor. 
+Returns true if currently focused editor is fixed text case editor.
 */
 bool HbInputMethodPrivate::isFixedCaseEditor() const
 {
-  if (mFocusObject) {
+    if (mFocusObject) {
         return (mFocusObject->inputMethodHints() & (Qt::ImhLowercaseOnly | Qt::ImhUppercaseOnly));
     }
 
@@ -467,7 +495,7 @@ Returns true if focused editor is lower case -only editor.
 bool HbInputMethodPrivate::isLowerCaseOnlyEditor() const
 {
     if (mFocusObject) {
-       return (mFocusObject->inputMethodHints() & Qt::ImhLowercaseOnly);    
+        return (mFocusObject->inputMethodHints() & Qt::ImhLowercaseOnly);
     }
 
     return false;
@@ -480,7 +508,7 @@ Returns true if focused editor is upper case -only editor.
 bool HbInputMethodPrivate::isUpperCaseOnlyEditor() const
 {
     if (mFocusObject) {
-       return (mFocusObject->inputMethodHints() & Qt::ImhUppercaseOnly);
+        return (mFocusObject->inputMethodHints() & Qt::ImhUppercaseOnly);
     }
 
     return false;
@@ -491,7 +519,7 @@ bool HbInputMethodPrivate::isUpperCaseOnlyEditor() const
 This method is needed during context switch operation. It transfers relevant parts of input
 method's internal state to the input method that is about to assume control.
 */
-void HbInputMethodPrivate::transfer(HbInputMethod* source)
+void HbInputMethodPrivate::transfer(HbInputMethod *source)
 {
     Q_Q(HbInputMethod);
 
@@ -504,8 +532,8 @@ void HbInputMethodPrivate::transfer(HbInputMethod* source)
         mFocusObject = source->d_ptr->mFocusObject;
         source->d_ptr->mFocusObject = 0;
         if (mFocusObject) {
-            q->disconnect(mFocusObject->object(), SIGNAL(destroyed(QObject*)), source, SLOT(editorDeleted(QObject*)));
-            q->connect(mFocusObject->object(), SIGNAL(destroyed(QObject*)), q, SLOT(editorDeleted(QObject*)));
+            q->disconnect(mFocusObject->object(), SIGNAL(destroyed(QObject *)), source, SLOT(editorDeleted(QObject *)));
+            q->connect(mFocusObject->object(), SIGNAL(destroyed(QObject *)), q, SLOT(editorDeleted(QObject *)));
         }
 
         // Makes sure there isn't focus lock.
@@ -513,6 +541,15 @@ void HbInputMethodPrivate::transfer(HbInputMethod* source)
 
         // Transfer state.
         mInputState = source->d_ptr->mInputState;
+
+        // we need to transfer focuswidget from current proxy to the next proxy.
+        // Qt may clear the flag in case the focus widget is scene scene with an editor and
+        // the editor is unfocused. Hb input framework does not lose focus in this way, so
+        // we reset the flag if it is unset.
+        if (source->d_ptr->proxy()->focusWidget() && !source->d_ptr->proxy()->focusWidget()->testAttribute(Qt::WA_InputMethodEnabled)) {
+            source->d_ptr->proxy()->focusWidget()->setAttribute(Qt::WA_InputMethodEnabled);
+        }
+        proxy()->QInputContext::setFocusWidget(source->d_ptr->proxy()->focusWidget());
 
         // Set this one active.
         mIsActive = true;
@@ -528,18 +565,20 @@ is not able to handle new input state. Framework then finds a new state handler 
 calls this method to switch active input method. After successful call, the given input method will
 be application's active input context.
 */
-void HbInputMethodPrivate::contextSwitch(HbInputMethod* toBeActive)
+void HbInputMethodPrivate::contextSwitch(HbInputMethod *toBeActive)
 {
     Q_Q(HbInputMethod);
 
     if (q == toBeActive) {
+        // Already same input context, just notify focus received
+        q->focusReceived();
         return;
     }
 
     // Deactivate before focus event. That way input method is able to
     // recognize in focus handler that the focus lost event was a result of
     // context switch and close all its open UI-elements. This needs to be done
-    // even there is no active focus object (to make sure that virtual keyboard & 
+    // even there is no active focus object (to make sure that virtual keyboard &
     // other potential UI elements will be removed).
     mIsActive = false;
     q->focusLost(false);
@@ -551,8 +590,10 @@ void HbInputMethodPrivate::contextSwitch(HbInputMethod* toBeActive)
     toBeActive->d_ptr->transfer(q);
 
     // Active new context.
-    QInputContext* proxy = toBeActive->d_ptr->newProxy();
-    qApp->setInputContext(proxy);
+    QInputContext *proxy = toBeActive->d_ptr->proxy();
+    if (proxy != qApp->inputContext()) {
+        qApp->setInputContext(proxy);
+    }
 
     if (toBeActive->focusObject()) {
         // Notify focus change.
@@ -568,15 +609,15 @@ void HbInputMethodPrivate::contextSwitch(HbInputMethod* toBeActive)
 Constructs the first input state for an editor that hasn't been focused before.
 */
 void HbInputMethodPrivate::editorRootState(HbInputState &result) const
-{ 
+{
 
-   if (mFocusObject) {
+    if (mFocusObject) {
         HbInputLanguage language = findStateLanguage();
-        HbInputModeType inputMode = initialInputMode(language);     
+        HbInputModeType inputMode = initialInputMode(language);
         result = HbInputState(inputMode,
                               initialTextCase(inputMode),
                               activeKeyboard(),
-                              language);     
+                              language);
     } else {
         result = HbInputState();
     }
@@ -625,28 +666,28 @@ HbTextCase HbInputMethodPrivate::initialTextCase(HbInputModeType inputMode) cons
     }
 
     return ret;
-} 
+}
 
 /*!
 \internal
 Finds the first input mode for an editor that hasn't been focus before.
 */
 HbInputModeType HbInputMethodPrivate::initialInputMode(const HbInputLanguage &language) const
-{ 
+{
     HbInputModeType ret = HbInputModeNone;
 
-    if (mFocusObject) {        
+    if (mFocusObject) {
         if (mFocusObject->editorInterface().inputConstraints() & HbEditorConstraintFixedInputMode) {
             // This is fixed mode editor, always trust what editor interface gives us.
             ret = (HbInputModeType)mFocusObject->editorInterface().mode();
         } else {
-            // Editor doesn't have mode asigned. Propose default mode.                  
+            // Editor doesn't have mode asigned. Propose default mode.
             Qt::InputMethodHints hints = mFocusObject->inputMethodHints();
             if (mFocusObject->editorInterface().isNumericEditor()) {
                 // It is fixed numeric editor.
                 ret = HbInputModeNumeric;
             } else {
-                ret = defaultInputMode(language);        
+                ret = defaultInputMode(language);
             }
         }
     }
@@ -661,10 +702,10 @@ can use this input state as a parameter for activateState() method.
 */
 void HbInputMethodPrivate::constructLatinState(HbInputState &result) const
 {
-     result.setLanguage(HbInputLanguage(QLocale::English));
-     result.setInputMode(HbInputModeDefault);
-     result.setKeyboard(activeKeyboard()); 
-     result.setTextCase(initialTextCase(HbInputModeDefault));     
+    result.setLanguage(HbInputLanguage(QLocale::English));
+    result.setInputMode(HbInputModeDefault);
+    result.setKeyboard(activeKeyboard());
+    result.setTextCase(initialTextCase(HbInputModeDefault));
 }
 
 /*!
@@ -673,15 +714,7 @@ Returns the default input mode for given language.
 */
 HbInputModeType HbInputMethodPrivate::defaultInputMode(const HbInputLanguage &inputLanguage) const
 {
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::China)) {
-        return HbInputModePinyin; 
-        }
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::HongKong)) {
-        return HbInputModeStroke; 
-        }
-    if (inputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::Taiwan)) {
-        return HbInputModeZhuyin; 
-        }
+    Q_UNUSED(inputLanguage);
 
     return HbInputModeDefault;
 }
@@ -692,10 +725,10 @@ A convenience method for setting up the editor as digits only editor.
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsDigitsOnlyEditor()
 {
-    if(mFocusObject) {
+    if (mFocusObject) {
         mFocusObject->editorInterface().setMode(HbInputModeNumeric);
         mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
-        if(!mFocusObject->editorInterface().filter()) {
+        if (!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbDigitsOnlyFilter::instance());
         }
         mFocusObject->setInputMethodHints(Qt::ImhDigitsOnly | Qt::ImhNoPredictiveText);
@@ -708,10 +741,10 @@ A convenience method for setting up the editor as formatted only editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsFormattedNumberEditor()
 {
-    if(mFocusObject) {
+    if (mFocusObject) {
         mFocusObject->editorInterface().setMode(HbInputModeNumeric);
         mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
-        if(!mFocusObject->editorInterface().filter()) {
+        if (!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbFormattedNumbersFilter::instance());
         }
         mFocusObject->setInputMethodHints(Qt::ImhFormattedNumbersOnly | Qt::ImhNoPredictiveText);
@@ -724,10 +757,10 @@ A convenience method for setting up the editor as phone number editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsPhoneNumberEditor()
 {
-    if(mFocusObject) {
+    if (mFocusObject) {
         mFocusObject->editorInterface().setMode(HbInputModeNumeric);
         mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintFixedInputMode);
-        if(!mFocusObject->editorInterface().filter()) {
+        if (!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbPhoneNumberFilter::instance());
         }
         mFocusObject->setInputMethodHints(Qt::ImhDialableCharactersOnly | Qt::ImhNoPredictiveText);
@@ -740,14 +773,14 @@ A convenience method for setting up the editor as email editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsEmailEditor()
 {
-    if(mFocusObject) {
+    if (mFocusObject) {
         mFocusObject->editorInterface().setMode(HbInputModeNone);
         mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintLatinAlphabetOnly);
-        if(!mFocusObject->editorInterface().filter()) {
+        if (!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbEmailAddressFilter::instance());
         }
-        mFocusObject->setInputMethodHints(Qt::ImhEmailCharactersOnly | Qt::ImhNoPredictiveText 
-            | Qt::ImhPreferLowercase);
+        mFocusObject->setInputMethodHints(Qt::ImhEmailCharactersOnly | Qt::ImhNoPredictiveText
+                                          | Qt::ImhPreferLowercase);
     }
 }
 /*!
@@ -756,19 +789,115 @@ A convenience method for setting up the editor as url editor
 */
 void HbInputMethodPrivate::setUpFocusedObjectAsUrlEditor()
 {
-    if(mFocusObject) {
+    if (mFocusObject) {
         mFocusObject->editorInterface().setMode(HbInputModeNone);
         mFocusObject->editorInterface().setInputConstraints(HbEditorConstraintLatinAlphabetOnly);
-        if(!mFocusObject->editorInterface().filter()) {
+        if (!mFocusObject->editorInterface().filter()) {
             mFocusObject->editorInterface().setFilter(HbUrlFilter::instance());
         }
-        mFocusObject->setInputMethodHints(Qt::ImhUrlCharactersOnly | Qt::ImhNoPredictiveText 
-            | Qt::ImhPreferLowercase);
+        mFocusObject->setInputMethodHints(Qt::ImhUrlCharactersOnly | Qt::ImhNoPredictiveText
+                                          | Qt::ImhPreferLowercase);
     }
+}
+
+/*!
+\internal
+Create an instance of HbInputMainWindow which is a transparent window.
+*/
+void HbInputMethodPrivate::showMainWindow()
+{
+    // QGraphicsWidget is inside a graphics view which is not inside a HbMainWindow.
+    HbInputMainWindow *mainWindow = HbInputMainWindow::instance();
+    mainWindow->showInputWindow();
+    mInsideVanillaWindow = true;
+}
+
+/*!
+\internal
+ This function checks if focused object is inside a hbmainwindow, if it is inside a HbMainWindow
+ then it doesn't do anything. And if it finds that focused object is inside a vanilla window (windw != HbMainWindow)
+ then it creates a transparent window.
+*/
+void HbInputMethodPrivate::checkAndShowMainWindow()
+{
+    // check if focused object is inside HbMainWindow.
+    mInsideVanillaWindow = false;
+    QWidget *focusedWidget = proxy()->focusWidget();
+    if (focusedWidget) {
+        if (focusedWidget->inherits("HbMainWindow")) {
+            return;
+        }
+
+#if defined(HB_CSS_INSPECTOR) || defined(HB_SETTINGS_WINDOW)
+        QWidget *owningWindow = focusedWidget->window();
+        // combo box lists spawn a new window for the popup
+        if (owningWindow->parentWidget()) {
+            owningWindow = owningWindow->parentWidget()->window();
+        }
+#ifdef HB_CSS_INSPECTOR
+        if (owningWindow == HbCssInspectorWindow::instance()->window()){
+            return;
+        }
+#endif
+#ifdef HB_SETTINGS_WINDOW
+        if (owningWindow == HbSettingsWindow::instance()->window()){
+            return;
+        }
+#endif
+#endif
+
+        // in symbian while launching a window on top of another
+        // there is a CCoeControl::FocusChange call on the vanilla window.
+        // causing it to lots of wiered problem.
+#if defined(Q_OS_SYMBIAN)
+        mFocusLocked = true;
+#endif
+        showMainWindow();
+#if defined(Q_OS_SYMBIAN)
+        // activating this at this time..
+        // will not require creation of new focus object
+        // as we already have one ..as we ignored the focus switch due to
+        // main window show.
+        focusedWidget->activateWindow();
+        mFocusLocked = false;
+#endif
+    }
+}
+
+/*!
+\internal
+hides HbInputMainWindow.
+*/
+void HbInputMethodPrivate::hideMainWindow()
+{
+    // QGraphicsWidget is inside a graphics view which is not inside a HbMainWindow.
+    if (mInsideVanillaWindow) {
+        HbInputMainWindow *mainWindow = HbInputMainWindow::instance();
+        mainWindow->hideInputWindow();
+    }
+}
+
+/*!
+\internal
+Returns true if given object lives inside HbGraphicsScene. In that case,
+Qt-level setFocusWidget(0) calls should be ignored because input focusing rules inside
+that scene variant are different.
+*/
+bool HbInputMethodPrivate::ignoreFrameworkFocusRelease(QObject *object) const
+{
+    QGraphicsObject *graphicsObject = qobject_cast<QGraphicsObject*>(object);
+    if (graphicsObject) {
+        return (qobject_cast<HbGraphicsScene*>(graphicsObject->scene()) != 0);
+    }
+
+    QWidget *widget = qobject_cast<QWidget*>(object);
+    if (widget && widget->graphicsProxyWidget()) {
+        return (qobject_cast<HbGraphicsScene*>(widget->graphicsProxyWidget()->scene()) != 0);
+    }
+
+    return false;
 }
 
 /// @endcond
 
 // End of file
-
-

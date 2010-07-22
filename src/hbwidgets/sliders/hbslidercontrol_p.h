@@ -98,6 +98,7 @@ public:
 
     void setTrackFilled(bool trackVisible );
     bool isTrackFilled() const;
+    QSizeF getHandleSize() ;
 
 public slots:
     void updateTheme();

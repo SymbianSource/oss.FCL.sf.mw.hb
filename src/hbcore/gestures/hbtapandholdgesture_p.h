@@ -34,10 +34,6 @@
 #include <QLine>
 #include <QVariant>
 
-const qreal DELTA_TOLERANCE = 1.0;
-const int HOLDTAP_ACTIVATION_USECS = 150; // usecs
-const int HOLDTAP_DURATION_USECS = 500-HOLDTAP_ACTIVATION_USECS; // usecs
-
 class HB_CORE_PRIVATE_EXPORT HbTapAndHoldGesturePrivate
 {
 public:

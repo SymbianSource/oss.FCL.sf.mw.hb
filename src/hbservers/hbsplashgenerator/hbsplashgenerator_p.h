@@ -33,7 +33,6 @@
 #include <QTime>
 #include <QColor>
 #include <QHash>
-#include <QSettings>
 #include <QDebug>
 #include <QXmlStreamReader>
 #include <QFileSystemWatcher>
@@ -41,6 +40,7 @@
 
 QT_BEGIN_NAMESPACE
 class QTranslator;
+class QSettings;
 QT_END_NAMESPACE
 
 class HbMainWindow;
@@ -56,14 +56,20 @@ public:
 
     void start(bool forceRegen);
 
+    HbMainWindow *ensureMainWindow();
+    bool lockMainWindow();
+    void unlockMainWindow();
+    static void setStatusBarElementsVisible(HbMainWindow *mw, bool visible);
+
 signals:
+    void regenerateStarted();
     void outputDirContentsUpdated(const QString &dir, const QStringList &entries);
     void finished();
 
 public slots:
     void regenerate();
     void uncachedRegenerate();
-    void regenerateOne(const QString &splashmlFileName);
+    void regenerateOne(const QString &splashmlFileName, const QString &customTrDir = QString());
 
 private slots:
     void doStart();
@@ -100,7 +106,8 @@ public:
             QString mOrientation;
         };
         QList<ItemBgGraphicsRequest> mItemBgGraphics;
-        QString mWorkDirForSingleFileRegen;
+        QStringList mCustomTrDirs;
+        quint32 mFlagsToStore;
     };
 
 private:
@@ -108,7 +115,7 @@ private:
     void cleanup();
     QImage renderView();
     QString splashFileName();
-    bool saveSpl(const QString &nameWithoutExt, const QImage &image);
+    bool saveSpl(const QString &nameWithoutExt, const QImage &image, quint32 extra);
     void addSplashmlItemToQueue(const QueueItem &item);
     void queueAppSpecificItems(const QString &themeName, Qt::Orientation orientation);
     bool parseSplashml(const QString &fullFileName, QueueItem &item);
@@ -119,8 +126,10 @@ private:
     void addTranslator(const QString &name);
     void clearTranslators();
     int updateOutputDirContents(const QString &outDir);
+    void unlockMainWindowInternal();
 
-    bool mBusy;
+    bool mMainWindowLocked;
+    bool mProcessQueuePending;
     bool mForceRegen;
     HbMainWindow *mMainWindow;
     QQueue<QueueItem> mQueue;
@@ -129,10 +138,10 @@ private:
     QTime mItemTime;
     bool mFirstRegenerate;
     QHash<QString, QueueItem> mParsedSplashmls;
-    QSettings mSettings;
+    QSettings *mSettings;
     QFileSystemWatcher mFsWatcher;
 };
 
-QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem& item);
+QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem &item);
 
 #endif // HBSPLASHGENERATOR_P_H

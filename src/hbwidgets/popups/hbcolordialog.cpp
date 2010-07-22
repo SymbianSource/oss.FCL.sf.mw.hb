@@ -56,6 +56,7 @@ public:
     HbGridView* createColorGrid(QObject *receiver, const char *method)
     {
         mGridView = new HbGridView(this); 
+        mGridView->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded); 
         HbStyle::setItemName(mGridView, "color_grid_view");
        
         mGridView->setColumnCount(4);
@@ -216,7 +217,6 @@ void HbColorDialogPrivate::addDatatoModel(const QList<QColor> &colorList)
 
 */
 
-
 /*!
   @beta
   Constructs a new HbColorDialog with \a parent
@@ -343,7 +343,7 @@ void HbColorDialog::setNoneBlockVisible(bool visible)
     }
 }
 
-/*
+/*!
   @beta
   Returns visibility of NoneBlock.
   Default value is false.
@@ -458,7 +458,7 @@ void HbColorDialog::polish(HbStyleParameters &params)
 
         if ( d->mDefaultColors ) {
             d->addDatatoModel( d->mNoneBlockVisible ?
-                               d->mDefaultColorList.mid(0, d->mDefaultColorList.count() -1 ) :
+                               d->mDefaultColorList.mid(0, (unsigned int)d->mDefaultColorList.count() -1 ) :
                                d->mDefaultColorList );
         }
     }    

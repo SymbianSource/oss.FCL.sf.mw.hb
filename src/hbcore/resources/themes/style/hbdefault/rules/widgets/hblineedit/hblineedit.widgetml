@@ -5,6 +5,17 @@
     <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="autoCompletePopup" srcEdge="BOTTOM" dst="" dstEdge="TOP" />
+    <meshitem src="autoCompletePopup" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+  </layout>
+
+  <layout name="bottomCenterPopup" type="mesh">
+    <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="autoCompletePopup" srcEdge="TOP" dst="" dstEdge="BOTTOM" />
+    <meshitem src="autoCompletePopup" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
   </layout>
 
 </hbwidget>

@@ -88,5 +88,5 @@ HbTitleBar > HbIndicatorButton::icon {
 }
 
 HbTitleBar > HbNavigationButton::icon {
-    color:(qtc_title_pane_normal);
+    color:var(qtc_title_pane_normal);
 }

@@ -32,18 +32,13 @@ PUBLIC_HEADERS += $$PWD/hbcolorscheme.h
 
 SOURCES += $$PWD/hbtheme.cpp
 SOURCES += $$PWD/hbthemeutils_p.cpp
-SOURCES += $$PWD/hbcolortheme_p.cpp
 SOURCES += $$PWD/hbcolorscheme.cpp
-SOURCES += $$PWD/hbcssthemeinterface_p.cpp
 SOURCES += $$PWD/hbthemeclient_p.cpp
 SOURCES += $$PWD/hbeffecttheme_p.cpp
 
 PRIVATE_HEADERS += $$PWD/hbthemecommon_p.h
 PRIVATE_HEADERS += $$PWD/hbtheme_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeutils_p.h
-PRIVATE_HEADERS += $$PWD/hbcolortheme_p.h
-PRIVATE_HEADERS += $$PWD/hbcolortheme_p_p.h
-PRIVATE_HEADERS += $$PWD/hbcssthemeinterface_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeclient_p.h
 PRIVATE_HEADERS += $$PWD/hbeffecttheme_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeclient_p_p.h

@@ -42,7 +42,7 @@ public:
     void setBackgroundStyle();
 
     bool isTouchActivating;
-    Hb::TextWrapping titleWrapping;
+    Hb::TextWrapping titleTextWrapping;
     bool integrationWithIndicatorArea;
     QPointF pointerDownPoint;
     HbNotificationDialogContent* content;

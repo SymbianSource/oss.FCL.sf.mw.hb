@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbindexfeedback.h"
 #include "hbindexfeedback_p.h"
+#include "hbindexfeedback.h"
 
 #include <hbscrollbar.h>
 #include <hbabstractitemview.h>
@@ -133,6 +133,10 @@ void HbIndexFeedbackPrivate::init()
         q, SLOT(_q_hideIndexFeedback()));
 
     createPrimitives();
+
+    // ensure that the index feedback is shown on top of the itemView in
+    // all cases. 
+    q->setZValue(1);
 }
 
 /*
@@ -189,7 +193,7 @@ void HbIndexFeedbackPrivate::showIndexFeedback()
 */
 QString HbIndexFeedbackPrivate::displayText(const QVariant &data) const
 {
-    QString retVal = QString();
+    QString retVal;
 
     switch (mIndexFeedbackPolicy) {
         case HbIndexFeedback::IndexFeedbackSingleCharacter:
@@ -418,7 +422,7 @@ void HbIndexFeedbackPrivate::calculatePopupRects()
         return;
     }
 
-    QRectF contentRect = mItemView->rect();
+    QRectF contentRect = mItemView->mapToItem(q, mItemView->rect()).boundingRect();
     
     HbScrollBar *verticalScrollBar = mItemView->verticalScrollBar();
     HbScrollBar *horizontalScrollBar = mItemView->horizontalScrollBar();
@@ -502,7 +506,7 @@ qreal HbIndexFeedbackPrivate::textHeight() const
 {
     Q_Q( const HbIndexFeedback );
 
-    qreal retVal;
+    qreal retVal = 0.0;
 
     switch (mIndexFeedbackPolicy) {
         case HbIndexFeedback::IndexFeedbackNone:

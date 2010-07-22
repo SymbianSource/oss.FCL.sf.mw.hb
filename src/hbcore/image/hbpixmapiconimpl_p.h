@@ -34,21 +34,21 @@ class HbPixmapIconRenderer;
 class HB_AUTOTEST_EXPORT HbPixmapIconImpl : public HbIconImpl
 {
 public :
-    HbPixmapIconImpl(HbSharedIconInfo iconData, QString& name,
-                     const QSizeF& keySize,
+    HbPixmapIconImpl(HbSharedIconInfo iconData, QString &name,
+                     const QSizeF &keySize,
                      Qt::AspectRatioMode aspectRatioMode,
                      QIcon::Mode mode,
                      bool mirrored,
                      HbRenderingMode renderMode);
-    HbPixmapIconImpl(const QPixmap& pixmap, const QString& name = QString());
+    explicit HbPixmapIconImpl(const QPixmap &pixmap, const QString &name = QString());
     ~HbPixmapIconImpl();
 
     QPixmap pixmap();
-    void paint(QPainter* painter,
+    void paint(QPainter *painter,
                const QRectF &rect,
                Qt::Alignment alignment,
                const QPainterPath &clipPath = QPainterPath(),
-               HbMaskableIconImpl * maskIconData = 0);
+               HbMaskableIconImpl *maskIconData = 0);
     QSize defaultSize() const;
     QSize size();
     void destroyMaskedData(HbIconMaskedData *data);

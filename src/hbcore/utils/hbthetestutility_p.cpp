@@ -50,7 +50,7 @@ const QString KDriveFPath("F:\\data\\log\\");
 const QString KDriveEPath("E:\\data\\log\\");
 const QString KDriveCPath("C:\\data\\log\\");
 const QString KTheConfigureFile("TheTestUtility.txt"); // todo: proper name for configuration file
-
+const QString KUnixPath("HbTestUtility");
 
 class HbTheTestUtilityPrivate
 {
@@ -103,7 +103,11 @@ bool HbTheTestUtilityPrivate::checkConfigFile()
 #elif defined (Q_OS_WIN32)
     return doCheckConfigFile(KDriveCPath);
 #else
-    return false; // only Symbian and Windows are supported
+    QString path(QDir::homePath());
+    path.append(QDir::separator());
+    path.append(KUnixPath);
+    path.append(QDir::separator());
+    return doCheckConfigFile(path);
 #endif
 }
 
@@ -171,7 +175,7 @@ bool HbTheTestUtilityPrivate::doCheckConfigFile(const QString &path)
 
 QObject *HbTheTestUtilityPrivate::receiver(const QString& name)
 {
-    QGraphicsScene* scene = mMainWindow->scene();
+    QGraphicsScene* scene = mMainWindow->scene(); //krazy:exclude=qclasses
     QList<QGraphicsItem*> sceneItems = scene->items();
     foreach (QGraphicsItem* sceneItem, sceneItems ) {
         if (sceneItem->isWidget()) {
@@ -261,9 +265,7 @@ void HbTheTestUtility::button4clicked()
 */
 void HbTheTestUtility::invokeSlots(const int button)
 {
-#if defined (Q_OS_LINUX) || defined(Q_OS_MAC)
-    QString filePath(QDir::tempPath());
-#else
+#if defined (Q_OS_SYMBIAN)
     QString filePath;
     if (d->useF) {
         filePath = "F:\\data\\log\\";
@@ -272,6 +274,13 @@ void HbTheTestUtility::invokeSlots(const int button)
     } else {
         filePath = "C:\\data\\log\\";
     }
+#elif defined (Q_OS_WIN)
+    QString filePath("C:\\data\\log\\");
+#else
+    QString filePath(QDir::homePath());
+    filePath.append(QDir::separator());
+    filePath.append(KUnixPath);
+    filePath.append(QDir::separator());
 #endif
 
     filePath = QDir::toNativeSeparators(filePath);

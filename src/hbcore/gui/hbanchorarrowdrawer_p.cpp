@@ -25,13 +25,12 @@
 
 
 
-#include <hbanchor_p.h>
+#include <hbanchor.h>
 #include <hbanchorarrowdrawer_p.h>
 #include <hbcolorscheme.h>
 #include <hbevent.h>
 #include <hblayoututils_p.h>
-#include <hbmeshlayout_p.h>
-#include <hbmeshlayoutdebug_p.h>
+#include <hbanchorlayout.h>
 #include <QBrush>
 #include <QPainter>
 #include <QPen>
@@ -42,8 +41,9 @@ const QString BOX_COLOR = "qtc_view_separator_normal";
 const QString VALID_COLOR = "qtc_default_main_pane_normal";
 const QString INVALID_COLOR = "qtc_view_visited_normal";
 
-HbAnchorArrowDrawer::HbAnchorArrowDrawer(HbMeshLayout* mesh, QGraphicsItem *parent)
-    : HbWidgetBase(parent), mLayout(mesh), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
+HbAnchorArrowDrawer::HbAnchorArrowDrawer(HbAnchorLayout *layout, QGraphicsItem *parent)
+    : HbWidgetBase(parent),
+      mLayout(layout), mDrawOutlines(true), mDrawArrows(true), mDrawSpacers(true)
 {
 #if defined(HB_DEVELOPER) || defined(CSS_INSPECTOR)
     updateColors();
@@ -81,9 +81,9 @@ void HbAnchorArrowDrawer::updateFocusItem(const QGraphicsItem *item)
         setGeometry(item->sceneBoundingRect());
         QGraphicsLayout *layout = widget->layout();
         if (layout) {
-            HbMeshLayout *mesh = dynamic_cast<HbMeshLayout *>(layout);
-            if (mesh) {
-                mLayout = mesh;
+            HbAnchorLayout *anchorlayout = dynamic_cast<HbAnchorLayout *>(layout);
+            if (anchorlayout) {
+                mLayout = anchorlayout;
             }
         }
     }
@@ -92,7 +92,8 @@ void HbAnchorArrowDrawer::updateFocusItem(const QGraphicsItem *item)
 #endif
 }
 
-void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void HbAnchorArrowDrawer::paint(
+    QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option);
     Q_UNUSED(widget);
@@ -103,18 +104,14 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
     }
     painter->save();
 
-    QList<HbAnchor*> anchors = HbMeshLayoutDebug::getAnchors(mLayout);
+    QList<HbAnchor*> anchors = mLayout->effectiveAnchors();
 
     // Draw boxes round anchored child items
     if (mDrawOutlines) {
-        QList<QGraphicsLayoutItem*> anchoredChildren;
+        QSet<QGraphicsLayoutItem*> anchoredChildren;
         foreach (const HbAnchor *anchor, anchors) {
-            if (!anchoredChildren.contains(anchor->mStartItem)) {
-                anchoredChildren.append(anchor->mStartItem);
-            }
-            if (!anchoredChildren.contains(anchor->mEndItem)) {
-                anchoredChildren.append(anchor->mEndItem);
-            }
+            anchoredChildren << anchor->startItem();
+            anchoredChildren << anchor->endItem();
         }
         painter->setPen(QPen(QBrush(mBoxColor), LINE_WIDTH));
         painter->setBrush(Qt::NoBrush);
@@ -125,180 +122,170 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
 
     if (mDrawSpacers) {
         painter->save();
-        for (int li=0 ; li<mLayout->count(); li++) {
-            QGraphicsLayoutItem *layoutItem = mLayout->itemAt(li);
-            //if (!layoutItem->graphicsItem()) {
-            QRectF rectArea = layoutItem->geometry();
-            if (rectArea.width() == 0 || rectArea.height() == 0) {
-                if (rectArea.height() == 0 && rectArea.width() > 0) {
-                    rectArea.setHeight(contentsRect().height());
-                    bool overridden = false;
-                    // find all the horizontal anchors
-                    foreach(HbAnchor *anchor, anchors) {
-                        if (anchor->mStartEdge == Hb::LeftEdge || anchor->mStartEdge == Hb::RightEdge ||anchor->mStartEdge == Hb::CenterHEdge) {
-                            QGraphicsLayoutItem *other = 0;
-                            if (anchor->mStartItem == layoutItem && anchor->mEndItem != mLayout) {
-                                other = anchor->mEndItem;
-                            } else if (anchor->mEndItem == layoutItem && anchor->mStartItem != mLayout) {
-                                other = anchor->mStartItem;
-                            }
-                            if (other) {
-                                if (overridden) {
-                                    rectArea.setTop(qMin(rectArea.top(), other->geometry().top()));
-                                    rectArea.setBottom(qMax(rectArea.bottom(), other->geometry().bottom()));
-                                    break;
-                                } else {
-                                    rectArea.setTop(other->geometry().top());
-                                    rectArea.setHeight(other->geometry().height());
-                                    overridden = true;
-                                }
-                            }
-                        }
-                    }
-
-                }
-
-                if (rectArea.width() == 0 && rectArea.height() > 0) {
-                    rectArea.setWidth(contentsRect().width());
-                    bool overridden = false;
-                    // find all the vertical anchors
-                    foreach(HbAnchor *anchor, anchors) {
-                        if (anchor->mStartEdge == Hb::TopEdge || anchor->mStartEdge == Hb::BottomEdge ||anchor->mStartEdge == Hb::CenterVEdge) {
-                            QGraphicsLayoutItem *other = 0;
-                            if (anchor->mStartItem == layoutItem && anchor->mEndItem != mLayout) {
-                                other = anchor->mEndItem;
-                            } else if (anchor->mEndItem == layoutItem && anchor->mStartItem != mLayout) {
-                                other = anchor->mStartItem;
-                            }
-                            if (other) {
-                                if (overridden) {
-                                    rectArea.setLeft(qMin(rectArea.left(), other->geometry().left()));
-                                    rectArea.setRight(qMax(rectArea.right(), other->geometry().right()));
-                                    break;
-                                } else {
-                                    rectArea.setLeft(other->geometry().left());
-                                    rectArea.setWidth(other->geometry().width());
-                                    overridden = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                painter->setOpacity(0.2); // so that we can see overlapping spacers
-                painter->fillRect(rectArea, QBrush(mInvalidColor, Qt::SolidPattern));
+        foreach (const HbAnchor *anchor, anchors) {
+            if (anchor->anchorId().isEmpty()) {
+                // No anchor name set - not a spacer
+                continue;
             }
+            QRectF drawArea;
+
+            QGraphicsLayoutItem *srcToLayout = 0;
+            if (anchor->startItem() == mLayout) {
+                srcToLayout = anchor->endItem();
+            } else if (anchor->endItem() == mLayout) {
+                srcToLayout = anchor->startItem();
+            }
+
+            if (srcToLayout) {
+                // Attached to layout
+                QRectF srcRect = srcToLayout->geometry();
+                QRectF layoutRect = mLayout->geometry();
+                drawArea = srcRect;
+                switch (anchor->endEdge()) {
+                    case Hb::TopEdge:
+                        drawArea.setTop(0);
+                        drawArea.setBottom(srcRect.top() - ARROW_HEAD_SIZE*2);
+                        break;
+                    case Hb::BottomEdge:
+                        drawArea.setTop(srcRect.bottom() + ARROW_HEAD_SIZE*2);
+                        drawArea.setBottom(layoutRect.height());
+                        break;
+                    case Hb::LeftEdge:
+                        drawArea.setLeft(0);
+                        drawArea.setRight(srcRect.left() - ARROW_HEAD_SIZE*2);
+                        break;
+                    case Hb::RightEdge:
+                        drawArea.setLeft(srcRect.right() + ARROW_HEAD_SIZE*2);
+                        drawArea.setRight(layoutRect.width());
+                        break;
+                    case Hb::CenterVEdge:
+                        drawArea.setTop(qMin(srcRect.top(), layoutRect.center().y()));
+                        drawArea.setBottom(qMax(srcRect.bottom(), layoutRect.center().y()));
+                        break;
+                    case Hb::CenterHEdge:
+                        drawArea.setLeft(qMin(srcRect.left(), layoutRect.center().x()));
+                        drawArea.setRight(qMax(srcRect.right(), layoutRect.center().x()));
+                        break;
+                };
+            } else {
+                // Spacer between two items
+                QRectF startItemRect = anchor->startItem()->geometry();
+                QRectF endItemRect = anchor->endItem()->geometry();
+                drawArea.setLeft(qMin(startItemRect.left(), endItemRect.left()));
+                drawArea.setRight(qMax(startItemRect.right(), endItemRect.right()));
+                drawArea.setTop(qMin(startItemRect.top(), endItemRect.top()));
+                drawArea.setBottom(qMax(startItemRect.bottom(), endItemRect.bottom()));
+            }
+            painter->setOpacity(0.2); // so that we can see overlapping spacers
+            painter->fillRect(drawArea, QBrush(mInvalidColor, Qt::SolidPattern));
         }
         painter->restore();
     } // End spacers
 
-
     // Draw anchor lines
     if (mDrawArrows) {
-        Qt::LayoutDirection dir = HbLayoutUtils::visualDirection(mLayout);
-        for (int i=0; i<anchors.count(); i++) {
-            Hb::Edge arrowType = Hb::RightEdge;
-            QPointF start, start2, end, end2;
-            HbAnchor *anchor = anchors.at(i);
+        bool layoutMirrored = HbLayoutUtils::visualDirection(mLayout) == Qt::RightToLeft;
+        foreach (HbAnchor *anchor, anchors) {
 
-            // Ignore some primitives
-            if (anchor->mStartItem) {
-                if (QGraphicsItem *asGraphicsItem = anchor->mStartItem->graphicsItem()) {
-                    if (asGraphicsItem->isWidget()) {
-                        const QGraphicsWidget *widget = static_cast<const QGraphicsWidget *>(asGraphicsItem);
+            // Ignore frame and toucharea primitives
+            if (anchor->startItem()) {
+                if (QGraphicsItem *gItem = anchor->startItem()->graphicsItem()) {
+                    if (gItem->isWidget()) {
+                        const QGraphicsWidget *widget = static_cast<const QGraphicsWidget *>(gItem);
                         QString itemText(widget->metaObject()->className());
-                        if (itemText == "HbFrameItem"
-                            || itemText == "HbTouchArea") {
+                        if (itemText == "HbFrameItem" || itemText == "HbTouchArea") {
                             continue;
                         }
                     }
                 }
             }
-            // if edge is connected to parent on same edge, and if the gap is zero, then don't show an arrow head
-            if(anchor->mEndItem->isLayout()
-                && anchor->mStartEdge == anchor->mEndEdge
-                && anchor->mValue == 0) {
-                    continue;
+
+            // Vars from anchor
+            bool positiveDirection = anchor->direction() == HbAnchor::Positive;
+            Hb::Edge startEdge = anchor->startEdge();
+            Hb::Edge endEdge = anchor->endEdge();
+            qreal anchorLength = anchor->preferredLength();
+            bool spacerAnchor = false;
+
+            // Handle new anchor-based spacers
+            if (anchorLength == 0 && !anchor->anchorId().isEmpty()) {
+                anchorLength = (ARROW_HEAD_SIZE*2)+1;
+                spacerAnchor = true;
             }
+
+            // if edge is connected to parent on same edge, and if the gap is zero,
+            // then don't show an arrow head
+            if(anchor->endItem()->isLayout() && startEdge == endEdge && anchorLength == 0) {
+                continue;
+            }
+
             // Mirroring
-            if (dir == Qt::RightToLeft) {
-                if (anchor->mStartEdge == Hb::LeftEdge) {
-                    anchor->mStartEdge = Hb::RightEdge;
-                    anchor->mValue = -(anchor->mValue);
-                } else if (anchor->mStartEdge == Hb::RightEdge) {
-                    anchor->mStartEdge = Hb::LeftEdge;
-                    anchor->mValue = -(anchor->mValue);
-                } else if (anchor->mStartEdge == Hb::CenterHEdge) {
-                    anchor->mValue = -(anchor->mValue);
+            if (layoutMirrored) {
+                if (startEdge == Hb::LeftEdge) {
+                    startEdge = Hb::RightEdge;
+                } else if (startEdge == Hb::RightEdge) {
+                    startEdge = Hb::LeftEdge;
                 }
 
-                if (anchor->mEndEdge == Hb::LeftEdge) {
-                    anchor->mEndEdge = Hb::RightEdge;
-                } else if (anchor->mEndEdge == Hb::RightEdge) {
-                    anchor->mEndEdge = Hb::LeftEdge;
+                if (endEdge == Hb::LeftEdge) {
+                    endEdge = Hb::RightEdge;
+                } else if (endEdge == Hb::RightEdge) {
+                    endEdge = Hb::LeftEdge;
                 }
             }
 
-            QRectF startRect = anchor->mStartItem->geometry();
-            QRectF endRect = anchor->mEndItem->geometry();
-
-            // Fix non-pinned spacers issue
-            if (startRect.left() == 0 && startRect.width() == 0) {
-                startRect.adjust(endRect.left(), 0, endRect.left() + endRect.width(), 0);
-            } else if (startRect.top() == 0 && startRect.height() == 0) {
-                startRect.adjust(0, endRect.top(), 0, endRect.top() + endRect.height());
-            }
-            if (endRect.left() == 0 && endRect.width() == 0) {
-                endRect.adjust(startRect.left(), 0, startRect.left() + startRect.width(), 0);
-            } else if (endRect.top() == 0 && endRect.height() == 0) {
-                endRect.adjust(0, startRect.top(), 0, startRect.top() + startRect.height());
-            }
+            QRectF startRect = anchor->startItem()->geometry();
+            QRectF endRect = anchor->endItem()->geometry();
+            Hb::Edge arrowType;
+            QPointF startPt, start2Pt, endPt, end2Pt;
 
             // Work out the arrow line start point
-            switch (anchor->mStartEdge) {
-                case Hb::LeftEdge: start.rx() = startRect.left(); break;
-                case Hb::RightEdge: start.rx() = startRect.right(); break;
-                case Hb::CenterHEdge: start.rx() = startRect.center().x(); break;
-                case Hb::TopEdge: start.ry() = startRect.top(); break;
-                case Hb::BottomEdge: start.ry() = startRect.bottom(); break;
-                case Hb::CenterVEdge: start.ry() = startRect.center().y(); break;
+            switch (startEdge) {
+                case Hb::LeftEdge: startPt.rx() = startRect.left(); break;
+                case Hb::RightEdge: startPt.rx() = startRect.right(); break;
+                case Hb::CenterHEdge: startPt.rx() = startRect.center().x(); break;
+                case Hb::TopEdge: startPt.ry() = startRect.top(); break;
+                case Hb::BottomEdge: startPt.ry() = startRect.bottom(); break;
+                case Hb::CenterVEdge: startPt.ry() = startRect.center().y(); break;
             }
-            start2 = start;
+            start2Pt = startPt;
 
-            switch (anchor->mStartEdge) {
+            switch (startEdge) {
                 case Hb::LeftEdge:
                 case Hb::RightEdge:
                 case Hb::CenterHEdge:
                 {
-                    // Set arrow end point
-                    end.rx() = start.x() + anchor->mValue;
-
-                    // Set arrow direction
-                    arrowType = anchor->mValue < 0
-                        ? Hb::LeftEdge
-                        : Hb::RightEdge;
+                    // Set arrow end point and arrow direction
+                    positiveDirection ^= layoutMirrored; // XOR with layout direction
+                    if (positiveDirection) {
+                        arrowType = Hb::RightEdge;
+                        endPt.rx() = startPt.x() + anchorLength;
+                    } else {
+                        arrowType = Hb::LeftEdge;
+                        endPt.rx() = startPt.x() - anchorLength;
+                    }
 
                     // Set vertical centering and staggered line point
                     qreal maxTop = qMax(startRect.top(), endRect.top());
                     qreal minBottom = qMin(startRect.bottom(), endRect.bottom());
                     if (maxTop < minBottom) {
-                        start.ry() = (maxTop + minBottom) / 2;
-                        start2.ry() = start.y();
+                        startPt.ry() = (maxTop + minBottom) / 2;
+                        start2Pt.ry() = startPt.y();
                     } else {
                         const bool startAboveEnd = startRect.top() > endRect.top();
-                        start.ry() = startAboveEnd ? endRect.bottom() : endRect.top();
-                        start2.ry() = startAboveEnd ? startRect.top() : startRect.bottom();
+                        startPt.ry() = startAboveEnd ? endRect.bottom() : endRect.top();
+                        start2Pt.ry() = startAboveEnd ? startRect.top() : startRect.bottom();
                     }
-                    end.ry() = start.y();
-                    end2.ry() = start.y();
+                    endPt.ry() = startPt.y();
+                    end2Pt.ry() = startPt.y();
 
                     // Set end staggered point
-                    if (anchor->mEndEdge == Hb::LeftEdge) {
-                        end2.rx() = endRect.left();
-                    } else if (anchor->mEndEdge == Hb::RightEdge) {
-                        end2.rx() = endRect.right();
+                    if (endEdge == Hb::LeftEdge) {
+                        end2Pt.rx() = endRect.left();
+                    } else if (endEdge == Hb::RightEdge) {
+                        end2Pt.rx() = endRect.right();
                     } else {
-                        end2.rx() = endRect.center().x();
+                        end2Pt.rx() = endRect.center().x();
                     }
                 }
                 break;
@@ -307,69 +294,64 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
                 case Hb::BottomEdge:
                 case Hb::CenterVEdge:
                 {
-                    // Set arrow end point
-                    end.ry() = start.y() + anchor->mValue;
-
-                    // Set arrow direction
-                    arrowType = anchor->mValue < 0
-                        ? Hb::TopEdge
-                        : Hb::BottomEdge;
+                    // Set arrow end point and arrow direction
+                    if (positiveDirection) {
+                        endPt.ry() = startPt.y() + anchorLength;
+                        arrowType = Hb::BottomEdge;
+                    } else {
+                        endPt.ry() = startPt.y() - anchorLength;
+                        arrowType = Hb::TopEdge;
+                    }
 
                     // Set horizontal centering and staggered line point
                     qreal maxLeft = qMax(startRect.left(), endRect.left());
                     qreal minRight = qMin(startRect.right(), endRect.right());
                     if (maxLeft < minRight) {
-                        start.rx() = (maxLeft + minRight) / 2;
-                        start2.rx() = start.x();
+                        startPt.rx() = (maxLeft + minRight) / 2;
+                        start2Pt.rx() = startPt.x();
                     } else {
                         bool startLeftOfEnd = startRect.left() > endRect.left();
-                        start.rx() = startLeftOfEnd ? endRect.right() : endRect.left();
-                        start2.rx() = startLeftOfEnd ? startRect.left() : startRect.right();
+                        startPt.rx() = startLeftOfEnd ? endRect.right() : endRect.left();
+                        start2Pt.rx() = startLeftOfEnd ? startRect.left() : startRect.right();
                     }
-                    end.rx() = start.x();
-                    end2.rx() = start.x();
+                    endPt.rx() = startPt.x();
+                    end2Pt.rx() = startPt.x();
 
                     // Set end staggered point
-                    if (anchor->mEndEdge == Hb::TopEdge) {
-                        end2.ry() = endRect.top();
-                    } else if (anchor->mEndEdge == Hb::BottomEdge) {
-                        end2.ry() = endRect.bottom();
+                    if (endEdge == Hb::TopEdge) {
+                        end2Pt.ry() = endRect.top();
+                    } else if (endEdge == Hb::BottomEdge) {
+                        end2Pt.ry() = endRect.bottom();
                     } else {
-                        end2.ry() = endRect.center().y();
+                        end2Pt.ry() = endRect.center().y();
                     }
                 }
                 break;
-            }
+            } // end switch(startEdge)
 
             // Start painting block
-            QPen myPen;
-            QColor arrowColor = mLayout->isValid()
-                ? mValidColor
-                : mInvalidColor;
-            QColor centerColor = Qt::yellow;
+            QColor arrowColor = mLayout->isValid() ? mValidColor : mInvalidColor;
+            QColor centerColor = Qt::yellow; //krazy:exclude=qenums
 
-            myPen.setWidth(LINE_WIDTH);
-            myPen.setColor(arrowColor);
-            myPen.setStyle(Qt::DashLine);
-            painter->setPen(myPen);
-            painter->setBrush(arrowColor);
-            painter->drawLine(start2, start);
+            painter->setPen(QPen(arrowColor, LINE_WIDTH, Qt::DashLine));
+            //painter->drawLine(start2Pt, startPt);
 
-            myPen.setStyle(Qt::SolidLine);
-            painter->setPen(myPen);
-            painter->drawLine(start, end);
+            painter->setPen(QPen(arrowColor, LINE_WIDTH, Qt::SolidLine));
+            painter->drawLine(startPt, endPt);
 
-            if (anchor->mStartEdge == Hb::CenterHEdge || anchor->mStartEdge == Hb::CenterVEdge) {
+            if (startEdge == Hb::CenterHEdge || startEdge == Hb::CenterVEdge) {
                 painter->setBrush(centerColor);
+            } else {
+                painter->setBrush(arrowColor);
             }
 
             // Only draw the start box if the anchor is long enough to show 3 times the head size
             // (head, stalk, and tail) otherwise it turns into a mush,
             // so the best thing is to show the triangle which at least shows the direction
-            if (qAbs(anchor->mValue) > ARROW_HEAD_SIZE*3) {
+            if (anchorLength > ARROW_HEAD_SIZE*3) {
                 painter->drawRect(QRectF(
-                    start2.x() - ARROW_HEAD_SIZE,
-                    start2.y() - ARROW_HEAD_SIZE,
+                    start2Pt.x() - ARROW_HEAD_SIZE,
+                    start2Pt.y() - ARROW_HEAD_SIZE,
                     ARROW_HEAD_SIZE*2,
                     ARROW_HEAD_SIZE*2));
             }
@@ -378,32 +360,30 @@ void HbAnchorArrowDrawer::paint(QPainter *painter, const QStyleOptionGraphicsIte
             QPointF points[3] = {
                 QPointF(0.0, 0.0),
                 QPointF(0.0, 0.0),
-                QPointF(end.x(), end.y())
+                QPointF(endPt.x(), endPt.y())
             };
             if (arrowType == Hb::RightEdge) {
-                points[0] = QPointF(end.x()-ARROW_HEAD_SIZE*2, end.y()-ARROW_HEAD_SIZE);
-                points[1] = QPointF(end.x()-ARROW_HEAD_SIZE*2, end.y()+ARROW_HEAD_SIZE);
+                points[0] = QPointF(endPt.x()-ARROW_HEAD_SIZE*2, endPt.y()-ARROW_HEAD_SIZE);
+                points[1] = QPointF(endPt.x()-ARROW_HEAD_SIZE*2, endPt.y()+ARROW_HEAD_SIZE);
             } else if (arrowType == Hb::LeftEdge) {
-                points[0] = QPointF(end.x()+ARROW_HEAD_SIZE*2, end.y()-ARROW_HEAD_SIZE);
-                points[1] = QPointF(end.x()+ARROW_HEAD_SIZE*2, end.y()+ARROW_HEAD_SIZE);
+                points[0] = QPointF(endPt.x()+ARROW_HEAD_SIZE*2, endPt.y()-ARROW_HEAD_SIZE);
+                points[1] = QPointF(endPt.x()+ARROW_HEAD_SIZE*2, endPt.y()+ARROW_HEAD_SIZE);
             } else if (arrowType == Hb::TopEdge) {
-                points[0] = QPointF(end.x()-ARROW_HEAD_SIZE, end.y()+ARROW_HEAD_SIZE*2);
-                points[1] = QPointF(end.x()+ARROW_HEAD_SIZE, end.y()+ARROW_HEAD_SIZE*2);
-            } else {
-                points[0] = QPointF(end.x()-ARROW_HEAD_SIZE, end.y()-ARROW_HEAD_SIZE*2);
-                points[1] = QPointF(end.x()+ARROW_HEAD_SIZE, end.y()-ARROW_HEAD_SIZE*2);
+                points[0] = QPointF(endPt.x()-ARROW_HEAD_SIZE, endPt.y()+ARROW_HEAD_SIZE*2);
+                points[1] = QPointF(endPt.x()+ARROW_HEAD_SIZE, endPt.y()+ARROW_HEAD_SIZE*2);
+            } else { // arrowType == Hb::BottomEdge
+                points[0] = QPointF(endPt.x()-ARROW_HEAD_SIZE, endPt.y()-ARROW_HEAD_SIZE*2);
+                points[1] = QPointF(endPt.x()+ARROW_HEAD_SIZE, endPt.y()-ARROW_HEAD_SIZE*2);
             }
             painter->drawPolygon(points, 3);
 
             // Draw invalid difference
-            if (end != end2) {
-                myPen.setColor(mInvalidColor);
-                myPen.setStyle(Qt::DashLine);
-                painter->setPen(myPen);
-                painter->drawLine(end, end2);
+            if (endPt != end2Pt && !spacerAnchor) {
+                painter->setPen(QPen(mInvalidColor, LINE_WIDTH, Qt::DashLine));
+                painter->drawLine(endPt, end2Pt);
             }
 
-        } // End anchors for loop
+        } // End anchors foreach loop
     }
     painter->restore();
 #else

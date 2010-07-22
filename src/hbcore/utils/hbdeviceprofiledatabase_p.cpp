@@ -48,19 +48,17 @@
 /*
     \class HbDeviceProfileDatabase
     \brief HbDeviceProfileDatabase provides access to supported profile information.
-	This uses HbDeviceProfileReader and HbWsiniParser to parse the display definition 
-	xml and the device mode ini files respectively. After parsing the files HbDeviceProfileDataBase 
-	will store the List of profiles i.e HbDeviceProfileList in to the sharedmemory and maintains 
-	the offset of it. This class is used by client/server. 	
+    This uses HbDeviceProfileReader and HbWsiniParser to parse the display definition
+    xml and the device mode ini files respectively. After parsing the files HbDeviceProfileDataBase
+    will store the List of profiles i.e HbDeviceProfileList in to the sharedmemory and maintains
+    the offset of it. This class is used by client/server.
     Themeserver will use this class when it starts up.
     Client uses this class when it is unable to get the deviceprofile information
     from the themeserver.
-	
-	This class is not supposed to use directly. Instead, use \c HbDeviceProfile
-    and \c HbExtendedDeviceProfile.
+
+    This class is not supposed to use directly. Instead, use \c HbDeviceProfile
     
     \sa HbDeviceProfile
-    \sa HbExtendedDeviceProfile
     \internal
     \proto
 */
@@ -75,15 +73,15 @@ HbDeviceProfileDatabase *HbDeviceProfileDatabase::instance(HbMemoryManager::Memo
     Constructor.
 */
 HbDeviceProfileDatabase::HbDeviceProfileDatabase(HbMemoryManager::MemoryType type)
-    : mDeviceProfiles(0),mDeviceModes(0),mDeviceProfilesOffset(-1),mType(type)
+    : mDeviceProfiles(0), mDeviceModes(0), mDeviceProfilesOffset(-1), mType(type)
 {
     GET_MEMORY_MANAGER(mType);
     try {
         mDeviceProfilesOffset = manager->alloc(sizeof(HbDeviceProfileList));
-        mDeviceProfiles = new((char*)manager->base() + mDeviceProfilesOffset)
-                HbDeviceProfileList(mType);
+        mDeviceProfiles = new((char *)manager->base() + mDeviceProfilesOffset)
+        HbDeviceProfileList(mType);
         init();
-    } catch(std::exception &) {
+    } catch (std::exception &) {
         if (mDeviceProfilesOffset != -1) {
             if (mDeviceProfiles) {
                 mDeviceProfiles->~HbDeviceProfileList();
@@ -91,7 +89,7 @@ HbDeviceProfileDatabase::HbDeviceProfileDatabase(HbMemoryManager::MemoryType typ
             }
             manager->free(mDeviceProfilesOffset);
             mDeviceProfilesOffset = -1;
-        }        
+        }
     }
 }
 
@@ -106,19 +104,20 @@ int HbDeviceProfileDatabase::deviceProfilesOffset()
 */
 void HbDeviceProfileDatabase::init()
 {
-    HbDeviceProfileReader reader(mDeviceProfiles,mType);
-	
+    HbDeviceProfileReader reader(mDeviceProfiles, mType);
+
     // resolve correct displaydefinition.xml path for emulator and HW (z:/resource)
     // or desktop (Qt resource)
-    
+
     // from HW and emulator
     QFile file("z:/resource/displaydefinition.xml");
-    
-    if (!file.exists())
+
+    if (!file.exists()) {
         file.setFileName(":displaydefinition.xml");
+    }
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning()
-            << "HbDeviceProfileDatabase::init : opening file failed:";
+                << "HbDeviceProfileDatabase::init : opening file failed:";
     } else {
         reader.read(&file);
     }
@@ -126,29 +125,29 @@ void HbDeviceProfileDatabase::init()
 #ifndef SKIP_WSINI
     // Get the device modes from the device itself
     mDeviceModes = new HbDeviceModeInfo();
- 
+
 
 
 
 #if defined(Q_WS_S60)
     const QRectF screenGeometry(qApp->desktop()->screenGeometry());
     QSizeF screenSize(screenGeometry.size());
-    
+
     int i = 0;
     bool done = false;
     while (i < mDeviceProfiles->size() && !done) {
         DeviceProfile profile = mDeviceProfiles->at(i);
-        if (profile.mLogicalSize.width() == screenSize.width() && 
-        	profile.mLogicalSize.height() == screenSize.height()) {
+        if (profile.mLogicalSize.width() == screenSize.width() &&
+                profile.mLogicalSize.height() == screenSize.height()) {
             mDeviceProfiles->remove(i);
-            mDeviceProfiles->insert(0,profile);
+            mDeviceProfiles->insert(0, profile);
             done = true;
         }
         i++;
     }
 #endif
 
-    completeProfileData();   
+    completeProfileData();
 #endif
 #ifdef Q_OS_SYMBIAN
     initOrientationStatus();
@@ -159,32 +158,32 @@ void HbDeviceProfileDatabase::completeProfileData()
 {
     // Mark the device profiles as valid or not depending whether they match the device modes
     // If there are no device modes read in, then no removal is done at all
-    if (mDeviceProfiles && mDeviceModes && mDeviceModes->modeNumbers().count() > 0){
-        for (int i = mDeviceProfiles->size()-1; i >= 0 ; --i) {
+    if (mDeviceProfiles && mDeviceModes && mDeviceModes->modeNumbers().count() > 0) {
+        for (int i = mDeviceProfiles->size() - 1; i >= 0 ; --i) {
             QSize size(mDeviceProfiles->at(i).mLogicalSize);
             bool found(false);
             QList<int> l = mDeviceModes->modeNumbers();
             for (int j = 0; j < l.count(); j++) {
                 HbScreenMode *mode = mDeviceModes->mode(l[j]);
-                if (mode->pixelSize() == size){
+                if (mode->pixelSize() == size) {
                     found = true;
                 }
             }
-            if (!found && mDeviceProfiles->size()>1) {
+            if (!found && mDeviceProfiles->size() > 1) {
                 // Do not remove the 0-th display mode if is the only one left!
                 mDeviceProfiles->remove(i);
             }
-        }        
-    }    
-    
-    if(mDeviceProfiles) {
+        }
+    }
+
+    if (mDeviceProfiles) {
         const int numberOfProfiles = mDeviceProfiles->size();
         for (int i = 0; i < numberOfProfiles; ++i) {
-            if ( mDeviceProfiles->at(i).mAltName == "" ) {
+            if (mDeviceProfiles->at(i).mAltName.isEmpty()) {
                 QSize size(mDeviceProfiles->at(i).mLogicalSize);
                 QSize altLogicalSize(size.height(), size.width());
-                for (int j = 0; j < numberOfProfiles; ++j ) {
-                    if ( i != j && altLogicalSize == mDeviceProfiles->at(j).mLogicalSize) {
+                for (int j = 0; j < numberOfProfiles; ++j) {
+                    if (i != j && altLogicalSize == mDeviceProfiles->at(j).mLogicalSize) {
                         mDeviceProfiles->at(i).mAltName = mDeviceProfiles->at(j).mName;
                         break;
                     }
@@ -196,8 +195,9 @@ void HbDeviceProfileDatabase::completeProfileData()
 
 
 #ifdef Q_OS_SYMBIAN
-void HbDeviceProfileDatabase::initOrientationStatus() {
-    if(HbMemoryManager::SharedMemory == mType) {
+void HbDeviceProfileDatabase::initOrientationStatus()
+{
+    if (HbMemoryManager::SharedMemory == mType) {
         Qt::Orientation defaultOrientation = Qt::Vertical;
         if (mDeviceProfiles && mDeviceProfiles->count()) {
             QSize s = mDeviceProfiles->at(0).mLogicalSize;

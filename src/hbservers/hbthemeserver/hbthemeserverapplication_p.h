@@ -25,7 +25,7 @@
 #ifndef HBTHEMESERVERAPPLICATION_P_H
 #define HBTHEMESERVERAPPLICATION_P_H
 
-#include <QtSingleApplication>
+#include <qtsingleapplication.h>
 
 class HbThemeServer;
 
@@ -47,8 +47,7 @@ public:
 
     bool initialize();
     int exec();
-    
-    static bool acquireLock();
+    static void setPriority();
 
 public slots:
     void stop();
@@ -73,15 +72,34 @@ public:
         Error
     };
     Lock();
-    ~Lock(){close();}
-    void close(){mFile.Close(); mFs.Close();}
+    ~Lock(){
+        close();
+    }
+    void close()
+    {
+        mFile.Close();
+        mFs.Close();
+    }
     State acquire();
-    static bool serverExists();
 
 private:
     RFs mFs;
     RFile mFile;
 };
 #endif
+
+// Guard against starting multiple copies of the server
+class HbThemeServerLocker
+{
+public:
+    HbThemeServerLocker() {}
+    bool lock();
+private:
+    static bool serverExists();
+private:
+#ifdef Q_OS_SYMBIAN
+    Lock mLock;
+#endif
+};
 
 #endif // HBTHEMESERVERAPPLICATION_P_H

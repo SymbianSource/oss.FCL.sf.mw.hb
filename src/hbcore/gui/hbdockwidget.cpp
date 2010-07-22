@@ -78,6 +78,7 @@ HbDockWidget::HbDockWidget( HbDockWidgetPrivate &dd, QGraphicsItem *parent )
     Q_D(HbDockWidget);
     d->q_ptr = this;
     setFlag( QGraphicsItem::ItemClipsChildrenToShape, true );
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 /*!

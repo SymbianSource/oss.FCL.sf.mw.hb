@@ -39,7 +39,8 @@ _LIT(hbsplash_server_exe, "hbsplashgenerator.exe");
 const TUid hbsplash_server_uid3 = { 0x2002E68B };
 
 enum HbSplashServerFuncs {
-    HbSplashSrvGetSplash = 1
+    HbSplashSrvGetSplashFile = 1,
+    HbSplashSrvGetSplashData
 };
 
 enum HbSplashServerPanics {
@@ -48,5 +49,9 @@ enum HbSplashServerPanics {
 };
 
 #endif // Q_OS_SYMBIAN
+
+enum HbSplashStoredExtraFlags {
+    HbSplashNonStandardStatusBar = 1
+};
 
 #endif // HBSPLASHDEFS_P_H

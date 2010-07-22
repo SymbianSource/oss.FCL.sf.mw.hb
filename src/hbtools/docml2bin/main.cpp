@@ -23,11 +23,12 @@
 **
 ****************************************************************************/
 
+#include <QCoreApplication>
+#include <QStringList>
+#include <QFile>
 #include <hbdocumentloader.h>
-#include <QtGui>
 #include <assert.h>
 #include <iostream>
-
 
 void showHelp() {
     std::cout << "docml2bin.exe usage:\n\n";
@@ -50,7 +51,7 @@ void showHelp() {
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv, false); // GUIenabled=false
+    QCoreApplication app(argc, argv);
 
     if (argc <= 2) {
         showHelp();
@@ -126,7 +127,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-
     return 0;
 }
 

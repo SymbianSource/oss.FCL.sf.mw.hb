@@ -30,13 +30,13 @@
 #include <QTextDocument>
 #include <QGraphicsSceneResizeEvent>
 
-#include "hblabel.h"
 #include "hbiconitem.h"
 #include "hbinstance.h"
 #include "hbcolorscheme.h"
 #include "hbwidget_p.h"
 #include "hbstyleoptionlabel_p.h"
 #include "hbwidgetbase.h"
+#include "hblabel.h"
 
 /*!
     @alpha
@@ -125,7 +125,7 @@ HbLabelPrivate::HbLabelPrivate() :
         mElideMode(Qt::ElideRight),
         mTextWrapping(Hb::TextNoWrap),
         mAspectRatioMode(Qt::KeepAspectRatio),
-        mPrimitiveItem(NULL),
+        mPrimitiveItem(0),
         mActivePrimitive(HbStyle::P_None)
 {
 }
@@ -134,7 +134,7 @@ void HbLabelPrivate::clearAll()
 {
     if (mPrimitiveItem) {
         delete mPrimitiveItem;
-        mPrimitiveItem = NULL;
+        mPrimitiveItem = 0;
         mActivePrimitive = HbStyle::P_None;
     }
 
@@ -160,7 +160,7 @@ void HbLabelPrivate::setText(const QString &text, HbStyle::Primitive primitiveId
         if (mActivePrimitive != primitiveId) {
             mActivePrimitive = primitiveId;
             createPrimitives();
-            q->repolish(); // reconecting new primitive to HbMeshLayout so it is really needed!
+            q->repolish(); // reconecting new primitive to HbAnchorLayout so it is really needed!
         }
         q->updatePrimitives();
     }
@@ -185,7 +185,7 @@ void HbLabelPrivate::setIcon(const HbIcon &icon)
         if (mActivePrimitive != HbStyle::P_Label_icon) {
             mActivePrimitive = HbStyle::P_Label_icon;
             createPrimitives();
-            q->repolish(); // reconecting new primitive to HbMeshLayout so it is really needed!
+            q->repolish(); // reconecting new primitive to HbAnchorLayout so it is really needed!
         }
         q->updatePrimitives();
     }
@@ -199,7 +199,7 @@ void HbLabelPrivate::createPrimitives()
 {
     Q_Q(HbLabel);
 
-    Q_ASSERT(mPrimitiveItem==NULL);
+    Q_ASSERT(mPrimitiveItem==0);
 
     if (mActivePrimitive != HbStyle::P_None) {
         mPrimitiveItem = q->style()->createPrimitive(mActivePrimitive, q);
@@ -542,6 +542,14 @@ void HbLabel::initStyleOption(HbStyleOptionLabel *option) const
         option->icon = d->mIcon;
         option->aspectRatioMode = d->mAspectRatioMode;
     }
+}
+
+QSizeF HbLabel::sizeHint ( Qt::SizeHint which, const QSizeF & constraint ) const
+{
+    if (isEmpty()) {
+        return QSizeF(0,0);
+    }
+    return HbWidget::sizeHint(which,constraint);
 }
 
 /*!

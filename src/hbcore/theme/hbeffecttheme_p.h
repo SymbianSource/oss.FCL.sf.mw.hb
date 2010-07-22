@@ -45,7 +45,7 @@ public:
     QString currentTheme() const;
 
 private:
-    HbEffectThemePrivate* d_ptr;
+    HbEffectThemePrivate *d_ptr;
     static HbEffectTheme *self;
     Q_DISABLE_COPY(HbEffectTheme)
     friend class TestHbEffectTheme;

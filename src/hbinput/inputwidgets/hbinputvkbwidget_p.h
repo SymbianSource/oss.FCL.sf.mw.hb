@@ -52,7 +52,6 @@ class QTimeLine;
 class QBitmap;
 class QPixmap;
 class QGraphicsGridLayout;
-class HbInputVirtualRocker;
 class HbPushButton;
 class HbFrameDrawer;
 class QAction;
@@ -67,6 +66,8 @@ class QGraphicsLinearLayout;
 class HbInputScreenshotWidget;
 class HbInputFocusObject;
 class HbInputSettingList;
+class HbInputMethodDescriptor;
+class HbInputSettingWidget;
 
 const qreal VerticalSpacing = 0.0, HorizontalSpacing = 0.0; //vertical and horizontal spacing for buttons in layout
 
@@ -75,11 +76,10 @@ class HB_INPUT_PRIVATE_EXPORT HbInputVkbWidgetPrivate : public HbWidgetPrivate
     Q_DECLARE_PUBLIC(HbInputVkbWidget)
 
 public:
-     enum HbQwertyKeyboardSize
-     {
-         HbQwerty4x10,
-         HbQwerty4x11
-     };
+    enum HbQwertyKeyboardSize {
+        HbQwerty4x10,
+        HbQwerty4x11
+    };
     HbInputVkbWidgetPrivate();
     virtual ~HbInputVkbWidgetPrivate();
 
@@ -92,8 +92,8 @@ public:
     virtual void handleStandardButtonPress(int aButtonId);
     virtual void handleStandardButtonRelease(int aButtonId);
 
-    virtual void addCustomButtonToLayout( HbTouchKeypadButton* button,
-                                          int index);
+    virtual void addCustomButtonToLayout(HbTouchKeypadButton *button,
+                                         int index);
 
     void redirectMousePressEvent(QGraphicsSceneMouseEvent *aEvent);
     void redirectMouseReleaseEvent(QGraphicsSceneMouseEvent *aEvent);
@@ -103,8 +103,6 @@ public:
     virtual void updateButtons();
     virtual void settingListPosition(QPointF &position, HbPopup::Placement &placement);
 
-    virtual void setRockerPosition();
-
     void captureScreenshot();
     void updateMouseHitItem(HbTouchKeypadButton *button, QPointF position);
     void normalizeProbabilities(QList<HbKeyPressProbability> &allProbableKeys);
@@ -112,6 +110,12 @@ public:
     bool isSmileysEnabled();
     bool isKeyboardDimmed();
 
+    void showInputMethodSelectionDialog();
+    void _q_activateInputMethod(const HbInputMethodDescriptor &descriptor, const QByteArray &customData);
+    void _q_settingsClosed(HbAction *action);
+    void _q_smileyPickerClosed();
+
+    virtual QChar numberCharacterBoundToKey(int key);
     friend class HbTouchKeypadButton;
     friend class HbInputUsedSymbolPane;
 
@@ -132,19 +136,16 @@ public:
     QPointer<HbTouchKeypadButton> mSettingsButton;
     QPointer<HbInputSettingList> mSettingList;
 
-    QGraphicsGridLayout* mButtonLayout;
+    QGraphicsGridLayout *mButtonLayout;
 
     QSignalMapper *mPressMapper;
     QSignalMapper *mReleaseMapper;
     QSignalMapper *mActionMapper;
 
-    HbInputVirtualRocker *mRocker;
-
     HbFrameDrawer *mBackgroundDrawer;
     HbFrameDrawer *mIconDrawer;
 
     bool mMainWinConnected;
-    bool mShowRocker;
     QGraphicsLinearLayout *mLayout;
     QPointer<HbVkbHost> mCurrentHost;
     bool mDrawbackground;
@@ -153,11 +154,12 @@ public:
     HbInputVkbWidget::HbFlickDirection mFlickDirection;
     HbInputSmileyPicker *mSmileyPicker;
 
-    HbInputScreenshotWidget* mScreenshotWidget;
+    HbInputScreenshotWidget *mScreenshotWidget;
     QTimeLine mScreenshotTimeLine;
     HbTouchKeypadButton *mMostRecentlyAccessedButton;
     QPointF mMostRecentlyClickedLocation;
     HbInputFocusObject  *mFocusedObject;
+    QObject *mCurrentFocusedObject;
     bool mFlickAnimation;
     bool mSettingsListOpen;
     bool mAnimateWhenDialogCloses;
@@ -168,6 +170,7 @@ public:
     HbView *mSettingView;
     HbView *mCurrentView;
     bool mKeyboardDimmed;
+    HbInputSettingWidget *mSettingWidget;
 };
 
 #endif //HB_INPUT_VKB_WIDGET_PRIVATE_H

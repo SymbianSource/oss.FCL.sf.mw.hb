@@ -22,10 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputvkbhostbridge.h"
+
 #include <QVariant>
 #include <QPointer>
-
-#include "hbinputvkbhostbridge.h"
 
 /*!
 \proto
@@ -42,7 +42,7 @@ in the system changes state. It also forwards HbVkbHost API function calls to ac
 Note that there is active host only when editor widget is focused.
 
 The bridge virtual keyboard host also has has an important internal role in synchronising state transitions between several
-active virtual keyboard hosts.  
+active virtual keyboard hosts.
 
 \sa HbVkbHost
 */
@@ -75,7 +75,7 @@ HbVkbHostBridge::~HbVkbHostBridge()
 /*!
 \reimp
 */
-void HbVkbHostBridge::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner, bool animationAllowed)
+void HbVkbHostBridge::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, bool animationAllowed)
 {
     Q_D(HbVkbHostBridge);
     if (d->mActiveHost) {
@@ -86,7 +86,7 @@ void HbVkbHostBridge::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner, b
 /*!
 \reimp
 */
-void HbVkbHostBridge::openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner)
+void HbVkbHostBridge::openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner)
 {
     Q_D(HbVkbHostBridge);
     if (d->mActiveHost) {
@@ -132,7 +132,7 @@ HbVkbHost::HbVkbStatus HbVkbHostBridge::keypadStatus() const
 
 /*!
 \reimp
-*/ 
+*/
 QSizeF HbVkbHostBridge::keyboardArea() const
 {
     Q_D(const HbVkbHostBridge);
@@ -146,7 +146,7 @@ QSizeF HbVkbHostBridge::keyboardArea() const
 /*!
 \reimp
 */
-HbVirtualKeyboard* HbVkbHostBridge::activeKeypad() const
+HbVirtualKeyboard *HbVkbHostBridge::activeKeypad() const
 {
     Q_D(const HbVkbHostBridge);
     if (d->mActiveHost) {
@@ -203,19 +203,21 @@ bool HbVkbHostBridge::connectHost(HbVkbHost *host)
 {
     Q_D(HbVkbHostBridge);
 
-    if (d->mActiveHost && d->mActiveHost->stateTransitionOngoing()) {     
+    if (d->mActiveHost && d->mActiveHost->stateTransitionOngoing()) {
         return false;
     }
 
     if (d->mActiveHost != host) {
         if (d->mActiveHost) {
+            // Closing the previous vkb hosts keypad so that if necessary can be launched again for that same vkb host.
+            d->mActiveHost->closeKeypad(false);
             disconnect(d->mActiveHost, SIGNAL(aboutToOpen()), this, SIGNAL(aboutToOpen()));
             disconnect(d->mActiveHost, SIGNAL(aboutToClose()), this, SIGNAL(aboutToClose()));
             disconnect(d->mActiveHost, SIGNAL(keypadOpened()), this, SIGNAL(keypadOpened()));
             disconnect(d->mActiveHost, SIGNAL(keypadClosed()), this, SIGNAL(keypadClosed()));
             disconnect(d->mActiveHost, SIGNAL(keypadOpened()), this, SIGNAL(stateTransitionCompleted()));
             disconnect(d->mActiveHost, SIGNAL(keypadClosed()), this, SIGNAL(stateTransitionCompleted()));
-        }  
+        }
 
         d->mActiveHost = host;
         if (d->mActiveHost) {

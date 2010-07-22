@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffectplanarreflection_p.h"
+#include "hbeffectplanarreflection_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbvgchainedeffect_p.h"
@@ -42,13 +42,13 @@ HbEffectPlanarReflection::HbEffectPlanarReflection(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationC(0),
-        mAnimationX(0),
-        mAnimationY(0),
-        mAnimationF(0),
-        mVgReflection(0)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationC(0),
+    mAnimationX(0),
+    mAnimationY(0),
+    mAnimationF(0),
+    mVgReflection(0)
 {
     // Default values of if something is not passed in FXML
     qreal opacity_start = 1;
@@ -69,20 +69,16 @@ HbEffectPlanarReflection::HbEffectPlanarReflection(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_COLOR) {
+        } else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_COLOR) {
             mAnimationC = createAnimation(param, color_start, color_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_OFFSET_X) {
+        } else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_OFFSET_X) {
             mAnimationX = createAnimation(param, offset_x_start, offset_x_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_OFFSET_Y) {
+        } else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_OFFSET_Y) {
             mAnimationY = createAnimation(param, offset_y_start, offset_y_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_FADE) {
+        } else if (param.name() == FXML_KEYWORD_PLANAR_REFLECTION_FADE) {
             mAnimationF = createAnimation(param, fade_start, fade_end, group);
         }
     }
@@ -91,10 +87,10 @@ HbEffectPlanarReflection::HbEffectPlanarReflection(
     if (mEffectDefined) {
         // Add the effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         mVgReflection = new HbVgReflectionEffect();
         mVgReflection->setCaching(true);
-        
+
         chain->add(mVgReflection);
 
         // Set initial values for the effect
@@ -124,7 +120,7 @@ void HbEffectPlanarReflection::updateFilterEffect()
             mVgReflection->setOpacity(qVariantValue<qreal>(mAnimationO->currentValue()));
         }
         if (mAnimationC) {
-            mVgReflection->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));            
+            mVgReflection->setColor(qVariantValue<QColor>(mAnimationC->currentValue()));
         }
 
         QPointF offset = mVgReflection->offset();
@@ -139,7 +135,7 @@ void HbEffectPlanarReflection::updateFilterEffect()
         mVgReflection->setOffset(offset);
 
         if (mAnimationF) {
-            mVgReflection->setFade(qVariantValue<qreal>(mAnimationF->currentValue()));            
+            mVgReflection->setFade(qVariantValue<qreal>(mAnimationF->currentValue()));
         }
     }
 }

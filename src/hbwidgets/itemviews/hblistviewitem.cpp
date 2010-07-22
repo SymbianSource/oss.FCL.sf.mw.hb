@@ -100,6 +100,14 @@
     Below is an example how the layout properties can be configured.
 
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,45}
+
+    \primitives
+    \primitive{icon-1} HbIconItem representing the icon-1 as described in the table above. 
+    \primitive{icon-2} HbIconItem representing the icon-2 as described in the table above. 
+    \primitive{text-1} HbTextItem or HbRichTextItem representing the text-1 as described in the table above. The type of the return value depends on the textFormat() of the item.
+    \primitive{text-2} HbTextItem or HbRichTextItem representing the text-2 as described in the table above.
+    \primitive{text-3} HbTextItem or HbRichTextItem representing the text-3 as described in the table above.
+
 */
 
 /*!
@@ -419,7 +427,7 @@ void HbListViewItem::updatePrimitives()
             styleOption.multilineSecondaryTextSupported = d->isMultilineSupported();
 
             if (i == 1) {
-                // criteria of secondary text in middle column is fullfilled
+                // criteria of secondary text in middle column is fulfilled
                 styleOption.minimumLines = sd->mMinimumSecondaryTextRowCount;
                 styleOption.maximumLines = sd->mMaximumSecondaryTextRowCount;
             } 

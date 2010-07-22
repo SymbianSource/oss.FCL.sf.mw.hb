@@ -23,16 +23,16 @@
 **
 ****************************************************************************/
 
-
-#include <hbdataformviewitem.h>
-#include <hbstyleoptiondataformviewitem_p.h>
+#include "hbdataformviewitem.h"
+#include "hbdataformviewitem_p.h"
+#include "hbabstractitemcontainer_p_p.h"
 
 #include "hbdataformmodelitem_p.h"
-#include "hbdataformviewitem_p.h"
 #include "hbdataform_p.h"
 #include "hbdatagroup_p.h"
+#include "hbstyleoptiondataformviewitem_p.h"
 
-#include "hbtapgesture.h"
+#include <hbtapgesture.h>
 
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
@@ -43,8 +43,9 @@
 /*!
     @beta
     @hbwidgets
-    \class HbDataFormViewItem represents an item/view in HbDataForm. Each HbDataFormModelItem
-    added inside a model is represented using HbDataFormViewItem instance.
+    \class HbDataFormViewItem
+    \brief HbDataFormViewItem represents an item view in HbDataForm corresponding to model item.
+    Each HbDataFormModelItem added inside model is represented using HbDataFormViewItem instance.
   
     HbDataFormViewItem have different visualization based upon the 
     HbDataFormModelItem::DataItemType:
@@ -60,16 +61,17 @@
         creating HbDataFormModelItem, is added in a group combo box. User can switch between 
         different group page using this combo.
     - DataItems: Any type other then FormPageItem, GroupItem and GroupPageItem is treated as
-        a data item. Data item contains label and the content widget. Data item content
-        widget can be set using HbDataFormModelItem::ItemTypeRole and label of data items
-        can be set using HbDataFormModelItem::LabelRole. Data items can not have any 
-        children. They are always placed at the leaf.
+        a data item. Data item can contain label, description, icon and content widget. Data items
+        can not have any children. They are always placed at the leaf. Data item content widget 
+        can be set using HbDataFormModelItem::ItemTypeRole, label of data items can be set using 
+        HbDataFormModelItem::LabelRole, description of data item can be set using 
+        HbDataFormModelItem::DescriptionRole.
     
     If HbDataFormViewItem represents a GroupItem then it can be expanded and collapsed. 
     If group is expanded then all the child items are shown.
 
     If user wants to create a custom data item then he has to derive from this class and set that
-    as a protoype for HbDataForm using HbAbstractItemView::setItemPrototype API. While creating
+    as a prototype for HbDataForm using HbAbstractItemView::setItemPrototype API. While creating
     data for custom data items user should pass value greater than or equal to 
     DataItemType::CustomItemBase. When visualization is created and if data item type is
     custom item then createCustomWidget() is called. User has to override this API and pass the
@@ -159,7 +161,7 @@ HbDataFormViewItem::~HbDataFormViewItem()
 
 /*!
     \reimp
-    Creates HbDataFormViewItem. This function is called form HbAbstractItemContainer 
+    Creates HbDataFormViewItem. This function is called from HbAbstractItemContainer 
     when model is getting parsed for creating items. 
 
  */
@@ -169,13 +171,12 @@ HbAbstractViewItem* HbDataFormViewItem::createItem()
 }
 /*!
     \reimp
-    Returns true if \a model index is supported by HbDataFormViewItem, otherwise returns false.
-    This function is called for every item on the prototype list (, if several prototypes exist)
-    until item is found, which can create item for \a index. The prototype list is gone 
-    through from end to the beginning. 
-    \sa HbAbstractItemView::setItemPrototype(HbAbstractViewItem *prototype), HbAbstractItemView::setItemPrototype(const QList<HbAbstractViewItem *> &prototypes)
+    Returns true if \a model index is supported by HbDataFormViewItem prototype, otherwise returns false.
+    This function is called for every item on the prototype list (if several prototypes exist)
+    until item is found, which can create view item for \a index.
 
-
+    \sa HbAbstractItemView::setItemPrototype(HbAbstractViewItem *prototype)
+    \sa HbAbstractItemView::setItemPrototype(const QList<HbAbstractViewItem *> &prototypes)
  */
 bool HbDataFormViewItem::canSetModelIndex(const QModelIndex &index) const
 {
@@ -194,7 +195,7 @@ bool HbDataFormViewItem::canSetModelIndex(const QModelIndex &index) const
 
 /*!
     \reimp
-    Updates child graphics items to represent current state and content. In case when 
+    Updates child graphics items to represent current state and content stored in model. In case when 
     HbDataFormViewItem represents data item and DataItemType is set to custom item, then 
     createCustomWidget is called. User can override createCustomWidget and can pass his own
     custom widget.
@@ -239,7 +240,15 @@ void HbDataFormViewItem::updateChildItems()
     // Establish Signal Connections set in HbDataFormModel to th contentWidget of this item
     HbDataFormPrivate::d_ptr(
         static_cast<HbDataForm*>(d->mSharedData->mItemView))->makeConnection(
-        d->mIndex.operator const QModelIndex & ());
+        d->mIndex.operator const QModelIndex & (),d->mContentWidget);
+    //update only the background primitive
+    HbStyleOptionDataFormViewItem options;
+    initStyleOption(&options);
+    if( d->mBackgroundItem ) {
+        style()->updatePrimitive(
+            d->mBackgroundItem, HbStyle::P_DataItem_background, &options );
+    }
+
 }
 
 /*!
@@ -276,10 +285,12 @@ HbDataFormViewItem& HbDataFormViewItem::operator=(const HbDataFormViewItem &sour
 }
 
 /*!
-    @alpha
+    @beta
+
     Restores the data from the model and assign to the widget.
-    The property for restoring and saving the data need to be initialized when the 
-    data item is created.
+    The content widget property for restoring and saving the data need to be initialized when the 
+    data item is created. If model item type is custom, then application developer has to override
+    this API in order to get notification when data is changed in model.
 
     \sa save
 */
@@ -330,10 +341,12 @@ void HbDataFormViewItem::restore()
 }
 
 /*!
-    @alpha
-    Saves the current data of the content widget in data item to the model .
+    @beta
+
+    Saves the current data of the content widget in data item to the model.
     The property for restoring and saving the data need to be initialized when the 
-    data item is created.
+    data item is created. If model item type is custom, then application developer has to override
+    this API in order to save the content widget value in model.
 
     \sa restore
 */
@@ -356,11 +369,15 @@ void HbDataFormViewItem::save()
 }
 
 /*!
-    @alpha
+    @beta
 
     This is a virtual function which by default returns NULL. This function must be overridden
     in case user wants to create a data item of type custom item. The user is supposed to pass
-    the widget which is wants to display in data item.
+    the widget which he wants to display in data item.
+    If content widget grabs pan gesture and user wants data form to be scrollable even panning
+    is done on disabled content widget then user is supposed to ungrab pan gesture when content 
+    widget is disabled. And again grab pan gesture when state of content widget is changed to 
+    enabled.
 */
 HbWidget* HbDataFormViewItem::createCustomWidget()
 {
@@ -369,9 +386,10 @@ HbWidget* HbDataFormViewItem::createCustomWidget()
 
 /*!
     \reimp 
-    Sets the item to either collapse or expanded, depending on the value of \a expanded.
+    Sets the item to either collapse or expanded state, depending on the value of \a expanded.
     The function calls setModelIndexes which inturn will make the child items visible/invisible 
-    accordingly. This API is valid if HbDataFormViewItem represents a GroupItem.
+    accordingly. This API is valid only if HbDataFormViewItem represents a FormPageItem, GroupItem
+    or GroupPageItem.
 
     \sa isExpanded
 */
@@ -381,7 +399,11 @@ void HbDataFormViewItem::setExpanded(bool expanded)
     // Expansion is valid only for group ,form page and group page
     if( d->mType < HbDataFormModelItem::SliderItem ) {
         static_cast<HbDataGroup*>(this)->setExpanded(expanded);
-    } 
+    }  else {
+        HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+        static_cast<QGraphicsWidget *>( d->mSharedData->mItemView->contentWidget( ) ) );
+        container->setItemTransientStateValue(d->mIndex, "expanded", expanded);
+    }
 }
 
 /*!
@@ -395,48 +417,53 @@ bool HbDataFormViewItem::isExpanded() const
     Q_D( const HbDataFormViewItem);
     // Expansion is valid only for group ,form page and group page
     if( d->mType < HbDataFormModelItem::SliderItem ) {
-        HbDataGroup *group = qobject_cast<HbDataGroup *>(const_cast<HbDataFormViewItem*>(this));
+        HbDataGroup *group = qobject_cast< HbDataGroup *>(const_cast<HbDataFormViewItem*>(this));
         if( group ) {
             return group->isExpanded();
-        } else {
-            return false;
         }
     } 
+    if(d->mSharedData->mItemView) {
+        HbAbstractItemContainer *container = qobject_cast<HbAbstractItemContainer *>(
+            static_cast<QGraphicsWidget *>( d->mSharedData->mItemView->contentWidget( ) ) );
+        if(container) {
+            return container->itemTransientState(d->mIndex).value("expanded").toBool();
+        }
+    }
     return false;
 }
 
 /*!
-    This API is valid only if HbDataFormViewItem represents a data item. Returns the 
-    content widget of data item. For example if data item is of type SliderItem then
-    this API will return the instance of HbSlider. 
-    If user wants to connect to some signals of content widget in data item then this 
-    API can be used to fetch the instance of the widget. It will return the instance only
-    if data item is visible. User can connect to HbDataForm::activated() signal 
-    and when this item is visible then he can query the content widget using this API.
+    @beta
+
+    Returns the content widget of data item. For example if data item is of type SliderItem 
+    then this API will return the instance of HbSlider. If user wants to connect to some 
+    signals of content widget in data item then this API can be used to fetch the instance
+    of the widget. It will return the instance only if data item is visible. User can connect
+    to HbDataForm::itemShown() signal and when this item is visible then he can query the 
+    content widget using this API.
 */
 HbWidget* HbDataFormViewItem::dataItemContentWidget()const
 {
     Q_D(const HbDataFormViewItem);
-    HbWidget *widget = d->mContentWidget;;
+    HbWidget *widget = d->mContentWidget;
 
-    switch( d->mType ) {
-        case HbDataFormModelItem::RadioButtonListItem:
-            {
+    if(d->mContentWidget) {
+        switch( d->mType ) {
+            case HbDataFormModelItem::RadioButtonListItem:{
                 widget = static_cast<HbRadioItem*>(d->mContentWidget)->createRadioButton();
             }
             break;
-        case HbDataFormModelItem::MultiselectionItem:
-            {
+            case HbDataFormModelItem::MultiselectionItem:{
                 widget = NULL;
             }
             break;
-        case HbDataFormModelItem::ToggleValueItem:
-            {
+            case HbDataFormModelItem::ToggleValueItem:{
                 widget = static_cast<HbToggleItem*>(d->mContentWidget)->contentWidget();
             }
             break;
-        default:
+            default:
             break;
+        }
     }
     return widget;
 }
@@ -453,6 +480,9 @@ void HbDataFormViewItem::pressStateChanged(bool value, bool animate)
     Q_UNUSED(animate);
 }
 
+/*!
+    \reimp
+*/
 void HbDataFormViewItem::initStyleOption(HbStyleOptionDataFormViewItem *option) const
 {
     Q_D( const HbDataFormViewItem );
@@ -463,6 +493,9 @@ void HbDataFormViewItem::initStyleOption(HbStyleOptionDataFormViewItem *option) 
     option->description = d->mDescription;
 }
 
+/*!
+    \reimp
+*/
 void HbDataFormViewItem::showEvent(QShowEvent * event)
 {
     Q_D( const HbDataFormViewItem );
@@ -471,6 +504,30 @@ void HbDataFormViewItem::showEvent(QShowEvent * event)
     if( d->mIndex.isValid( ) ) {
         emit itemShown( d->mIndex.operator const QModelIndex & ( ) );
     }
+}
+
+/*!
+    \reimp
+ */
+QVariant HbDataFormViewItem::itemChange( GraphicsItemChange change, const QVariant &value )
+{
+    Q_D( HbDataFormViewItem );
+    switch ( static_cast<HbPrivate::HbItemChangeValues>( change ) ) {
+    case QGraphicsItem::ItemEnabledHasChanged: {
+            HbStyleOptionDataFormViewItem options;
+            initStyleOption(&options);
+            if( d->mBackgroundItem ) {
+                style()->updatePrimitive(
+                d->mBackgroundItem, HbStyle::P_DataItem_background, &options );
+            }
+            //We are skipping call to abstractviewitem::itemChange here because updateChildItems is 
+            //called in that function which will again create data view item primitives.
+            return HbWidget::itemChange( change, value );
+        }
+        default:
+            break;
+  }
+    return HbAbstractViewItem::itemChange( change, value );
 }
 
 #include "moc_hbdataformviewitem.cpp"

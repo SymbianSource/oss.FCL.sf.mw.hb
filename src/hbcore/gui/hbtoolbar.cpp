@@ -57,20 +57,30 @@
     \class HbToolBar
     \brief HbToolBar is a toolbar decorator.
 
-    The HbToolBar class represents an HbView toolbar. It provides the interface for adding actions
-    to the toolbar.
-    Toolbar actions are added using one of the addAction() methods.
-    Calling addAction() adds an HbToolButton to the toolbar and triggers the action when the button
-    is pressed. The image and text specified with the action are applied to the toolbar button.
+    The HbToolBar class represents an HbView toolbar. It provides the
+    interface for adding actions to the toolbar.
 
-    HbToolBar also provides methods for adding pop-up toolbar extensions, represented by
-    HbToolBarExtension objects.
+    Toolbar actions are added using one of the addAction() methods.
+    Calling addAction() adds an HbToolButton to the toolbar and
+    triggers the action when the button is pressed. The image and text
+    specified with the action are applied to the toolbar button.
+
+    HbToolBar also provides methods for adding pop-up toolbar
+    extensions, represented by HbToolBarExtension objects.
 
     Example usage:
     \dontinclude ultimatecodesnippet/ultimatecodesnippet.cpp
     \skip Start of snippet 1
     \until End of snippet 1
 
+    Note: calling hide() or setVisible(bool) on toolbar is not
+    recommended.  Instead, use \a HbView::setItemVisible(), as in 
+    this example:
+    \dontinclude ultimatecodesnippet/ultimatecodesnippet.cpp
+    \skip Start of snippet 59
+    \until End of snippet 59
+
+   
 */
 
 /*!
@@ -271,27 +281,38 @@ QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value
                 d->delayedHide = d->hasEffects;
             }
         } else {
-            if (d->mVisibleToolButtons.count()){
-                d->emitVisibilityChangeSignal = true;
-                QMetaObject::invokeMethod(&d->core, "visibilityChanged", Qt::QueuedConnection);
-             }
             if(d->moreExtension && d->moreExtension->isVisible()){
                d->moreExtension->setVisible(false);
             }
+            bool hideDelayed = d->delayedHide;
             if (d->delayedHide && d->hasEffects) { // about to hide and we wanna delay hiding
-                if (!d->hidingInProgress) { // Prevent reentrance
-                    d->hidingInProgress = true;
-                    d->startDisappearEffect();
+                // This check solves the situation where toolbar is hidden by its parent.
+                // Delayed hide changes explicit bit in qgraphicsitem which makes
+                // toolbar to stay hidden when parent becomes visible again.
+                // There is a small misbehaviour when parentItem is hidden and hide was explicitely
+                // called for toolbar. In this case toolbar hides without the effect.
+                if ((!parentItem() || (parentItem() && parentItem()->isVisible()))) {
+                    if (!d->hidingInProgress) { // Prevent reentrance
+                        d->hidingInProgress = true;
+                        d->startDisappearEffect();
+                        d->delayedHide = false;
+                    }
+                } else {
+                    d->delayedHide = false;
                 }
             }
-            if (d->delayedHide) {
+            if (hideDelayed) {
                 return true;
             } else {
                 d->delayedHide = d->hasEffects;
                 d->hidingInProgress = false;
 #ifdef HB_EFFECTS
-                        HbEffect::cancel(this, QString(), true);
+                HbEffect::cancel(this, QString(), true);
 #endif
+            }
+            if (d->mVisibleToolButtons.count()){
+                d->emitVisibilityChangeSignal = true;
+                QMetaObject::invokeMethod(&d->core, "visibilityChanged", Qt::QueuedConnection);
             }
         }
     break;
@@ -332,15 +353,12 @@ void HbToolBar::resizeEvent(QGraphicsSceneResizeEvent *event)
  */
 void HbToolBar::hideEvent(QHideEvent *event)
 {
-    Q_D(HbToolBar);
-    if (d->mPressedDownButton && d->mPressedDownButton->isDown()) {
-        d->mPressedDownButton->setDown(false);
-        d->mPressedDownButton = 0;
-        d->mPreviouslyPressedDownButton = d->mPressedDownButton;
-    }
     HbWidget::hideEvent(event);
 }
 
+/*!
+  \reimp
+  */
 /*!
     \reimp
  */
@@ -384,6 +402,18 @@ void HbToolBar::updatePrimitives()
     }
     if (d->moreExtensionButton) {
         d->moreExtensionButton->updatePrimitives();
+    }
+}
+
+/*!
+  \reimp
+  */
+void HbToolBar::polish(HbStyleParameters &params)
+{
+    Q_D(HbToolBar);
+    HbWidget::polish(params);
+    if (d->mDoLayoutPending) {
+        d->doLayout();
     }
 }
 

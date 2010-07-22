@@ -30,6 +30,8 @@ TARGET = hbconftest_sgimagelite
 DEPENDPATH += .
 INCLUDEPATH += .
 CONFIG -= qt
+CONFIG += no_icon
+QMAKE_LIBS = -llibc -llibm -leuser -llibdl
 #INCLUDEPATH += $${EPOCROOT}epoc32/include
 
 # Input

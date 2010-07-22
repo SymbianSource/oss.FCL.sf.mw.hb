@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="15px" version="1.1" viewBox="0 1.524 30 15" width="30px" x="0px" y="0px">
-<path d="M24.5,15.524c-0.825,0-1.5-0.675-1.5-1.5v-10c0-0.825,0.675-1.5,1.5-1.5l0,0c0.825,0,1.5,0.675,1.5,1.5v10  C26,14.85,25.325,15.524,24.5,15.524L24.5,15.524z" fill="#BEBEBE"/>
-<path d="M19.5,15.024c-0.825,0-1.5-0.675-1.5-1.5v-9c0-0.825,0.675-1.5,1.5-1.5l0,0c0.825,0,1.5,0.675,1.5,1.5v9  C21,14.35,20.325,15.024,19.5,15.024L19.5,15.024z" fill="#BEBEBE"/>
-<path d="M14.5,14.524c-0.825,0-1.5-0.675-1.5-1.5v-8c0-0.825,0.675-1.5,1.5-1.5l0,0c0.825,0,1.5,0.675,1.5,1.5v8  C16,13.85,15.325,14.524,14.5,14.524L14.5,14.524z" fill="#BEBEBE"/>
-<path d="M9.5,14.024c-0.825,0-1.5-0.675-1.5-1.5v-7c0-0.825,0.675-1.5,1.5-1.5l0,0c0.825,0,1.5,0.675,1.5,1.5v7  C11,13.35,10.325,14.024,9.5,14.024L9.5,14.024z" fill="#BEBEBE"/>
-<path d="M4.5,13.524c-0.825,0-1.5-0.675-1.5-1.5v-6c0-0.825,0.675-1.5,1.5-1.5l0,0c0.825,0,1.5,0.675,1.5,1.5v6  C6,12.85,5.325,13.524,4.5,13.524L4.5,13.524z" fill="#BEBEBE"/>
-<rect fill="none" height="15" width="30" y="1.524"/>
+<svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 30 15" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="#BEBEBE" height="3" width="4" x="1" y="6"/>
+<rect fill="#BEBEBE" height="6" width="4" x="7" y="4.5"/>
+<rect fill="#BEBEBE" height="9" width="4" x="13" y="3"/>
+<rect fill="#BEBEBE" height="12" width="4" x="19" y="1.5"/>
+<rect fill="#BEBEBE" height="15" width="4" x="25"/>
+<rect fill="none" height="15" width="30"/>
 </svg>

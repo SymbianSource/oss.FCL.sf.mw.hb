@@ -29,12 +29,8 @@ DEPENDPATH += $$PWD
 
 PRIVATE_HEADERS += $$PWD/hbnvg_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgicon_p.h
-
 PRIVATE_HEADERS += $$PWD/hbnvgfittoviewbox_p.h
-PRIVATE_HEADERS += $$PWD/hbnvgimagebinder_p.h 
-
-PRIVATE_HEADERS += $$PWD/hbnvgicondata_p.h
-
+PRIVATE_HEADERS += $$PWD/hbdereferencer_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgcsicon_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgiconfactory_p.h 
 PRIVATE_HEADERS += $$PWD/hbnvg_p_p.h
@@ -42,8 +38,6 @@ PRIVATE_HEADERS += $$PWD/hbnvgexception_p.h
 PRIVATE_HEADERS += $$PWD/hbnvgenginepool_p.h
 
 SOURCES += $$PWD/hbnvgfittoviewbox.cpp
-SOURCES += $$PWD/hbnvgicondata.cpp
-
 SOURCES += $$PWD/hbnvgcsicon.cpp
 SOURCES += $$PWD/hbnvgiconfactory.cpp
 SOURCES += $$PWD/hbnvg.cpp

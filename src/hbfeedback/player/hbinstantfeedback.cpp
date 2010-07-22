@@ -55,7 +55,10 @@ public:
 /*!
     \fn void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
 
-    Sets the instant effect to be be played when calling HbFeedbackPlayer::playInstantFeedback().
+    Sets the instant effect of the feedback object. This effect will be played when calling
+    the play() function.
+
+    \sa instantEffect()
 */
 
 void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
@@ -66,8 +69,9 @@ void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
 /*!
     \fn void HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
 
-    Returns the instant effect of the instant feedback object. Instant effect represents the feedback 
-    effect to be played when calling HbFeedbackPlayer::playInstantFeedback().
+    Returns the instant effect of the instant feedback object.
+
+    \sa setInstantEffect()
 */
 
 HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
@@ -78,7 +82,7 @@ HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
 /*!
     \fn bool HbInstantFeedback::isValid() const
 
-    Instant feedback is valid if a proper instant effect (not HbFeedback::None) has beed
+    Instant feedback is valid if a proper instant effect (not HbFeedback::None) has been
     defined for the feedback.
 */
 
@@ -108,7 +112,8 @@ HbInstantFeedback::HbInstantFeedback() : d(new HbInstantFeedbackPrivate)
 /*!
     Constructor.
 
-    \param effect instant feedback to be played
+    \param effect the instant feedback effect of the feedback object. This effect will
+           be played when calling the play() function.
 */
 HbInstantFeedback::HbInstantFeedback(HbFeedback::InstantEffect effect) : d(new HbInstantFeedbackPrivate)
 {
@@ -124,7 +129,7 @@ HbInstantFeedback::~HbInstantFeedback()
 }
 
 /*!
-    Plays the instant feedback effect.
+    Plays the feedback object's instant feedback effect.
 */
 void HbInstantFeedback::play()
 {

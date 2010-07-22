@@ -66,7 +66,7 @@ HbStackedLayoutPrivate::HbStackedLayoutPrivate()
     Constructor.
     \param parent parent layout item.
  */
-HbStackedLayout::HbStackedLayout(QGraphicsLayoutItem * parent)
+HbStackedLayout::HbStackedLayout(QGraphicsLayoutItem *parent)
     : QGraphicsLayout(parent), d(new HbStackedLayoutPrivate())
 {
 }
@@ -83,7 +83,7 @@ HbStackedLayout::~HbStackedLayout()
         for (int i = count() - 1; i >= 0; --i) {
             QGraphicsLayoutItem *item = itemAt(i);
             // The following lines can be removed, but this removes the item
-            // from the layout more efficiently than the implementation of 
+            // from the layout more efficiently than the implementation of
             // ~QGraphicsLayoutItem.
             removeAt(i);
             if (item) {
@@ -94,7 +94,7 @@ HbStackedLayout::~HbStackedLayout()
             }
         }
     }
-    
+
     delete d;
 }
 
@@ -128,7 +128,7 @@ int HbStackedLayout::addItem(QGraphicsLayoutItem *item)
  */
 int HbStackedLayout::insertItem(int index, QGraphicsLayoutItem *item)
 {
-    if( !item ) {
+    if (!item) {
         qWarning("HbStackedLayout::insertItem: item is NULL");
         return -1;
     }
@@ -160,7 +160,7 @@ int HbStackedLayout::insertItem(int index, QGraphicsLayoutItem *item)
  */
 void HbStackedLayout::removeItem(QGraphicsLayoutItem *item)
 {
-    removeAt( indexOf( item ) );
+    removeAt(indexOf(item));
 }
 
 /*!
@@ -170,8 +170,8 @@ void HbStackedLayout::removeItem(QGraphicsLayoutItem *item)
 int HbStackedLayout::indexOf(QGraphicsLayoutItem *item) const
 {
     int c = d->mList.count();
-    for ( int i = 0; i < c; i++ ) {
-        if ( d->mList.at(i) == item ) {
+    for (int i = 0; i < c; i++) {
+        if (d->mList.at(i) == item) {
             return i;
         }
     }
@@ -200,7 +200,7 @@ QGraphicsLayoutItem *HbStackedLayout::itemAt(int index) const
  */
 void HbStackedLayout::removeAt(int index)
 {
-    if (index <0 || index >= d->mList.size()) {
+    if (index < 0 || index >= d->mList.size()) {
         return;
     }
     itemAt(index)->setParentLayoutItem(0);
@@ -232,12 +232,12 @@ QSizeF HbStackedLayout::sizeHint(Qt::SizeHint which, const QSizeF &constraint) c
 {
     if (which == Qt::MaximumSize) {
         // Sub items do not affect the maximum size hint.
-        return QSizeF( QWIDGETSIZE_MAX, QWIDGETSIZE_MAX );
+        return QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     }
     QSizeF sizeHint(0, 0);
     int c = d->mList.count();
-    for ( int i=0; i < c; ++i ) {
-        QGraphicsLayoutItem* item = d->mList.at(i);
+    for (int i = 0; i < c; ++i) {
+        QGraphicsLayoutItem *item = d->mList.at(i);
         QSizeF itemSize(item->effectiveSizeHint(which, constraint));
         if (item->sizePolicy().horizontalPolicy() == QSizePolicy::Ignored) {
             itemSize.setWidth(0);
@@ -245,7 +245,7 @@ QSizeF HbStackedLayout::sizeHint(Qt::SizeHint which, const QSizeF &constraint) c
         if (item->sizePolicy().verticalPolicy() == QSizePolicy::Ignored) {
             itemSize.setHeight(0);
         }
-        if ( itemSize.isValid() ) {
+        if (itemSize.isValid()) {
             sizeHint = sizeHint.expandedTo(itemSize);
         }
     }
@@ -265,24 +265,24 @@ void HbStackedLayout::setGeometry(const QRectF &rect)
     QGraphicsLayout::setGeometry(rect);
 
     int c = d->mList.count();
-    for ( int i=0; i < c; ++i ) {
-        QGraphicsLayoutItem* item = d->mList.at(i);
+    for (int i = 0; i < c; ++i) {
+        QGraphicsLayoutItem *item = d->mList.at(i);
         QSizeF itemMax = item->effectiveSizeHint(Qt::MaximumSize);
         QSizeF itemMin = item->effectiveSizeHint(Qt::MinimumSize);
         QRectF itemRect(rect);
         // Have to check min and max "manually" in order
         // to make mirroring work.
-        if ( itemMax.width() < itemRect.width() ) {
-            itemRect.setWidth( itemMax.width() );
+        if (itemMax.width() < itemRect.width()) {
+            itemRect.setWidth(itemMax.width());
         }
-        if ( itemMax.height() < itemRect.height() ) {
-            itemRect.setHeight( itemMax.height() );
+        if (itemMax.height() < itemRect.height()) {
+            itemRect.setHeight(itemMax.height());
         }
-        if ( itemMin.width() > itemRect.width() ) {
-            itemRect.setWidth( itemMin.width() );
+        if (itemMin.width() > itemRect.width()) {
+            itemRect.setWidth(itemMin.width());
         }
-        if ( itemMin.height() > itemRect.height() ) {
-            itemRect.setHeight( itemMin.height() );
+        if (itemMin.height() > itemRect.height()) {
+            itemRect.setHeight(itemMin.height());
         }
         alignRect(itemRect, rect);
         item->setGeometry(itemRect);
@@ -292,9 +292,9 @@ void HbStackedLayout::setGeometry(const QRectF &rect)
 /*!
     \internal
  */
-void HbStackedLayout::alignRect( QRectF &rect, const QRectF &boundingRect )
+void HbStackedLayout::alignRect(QRectF &rect, const QRectF &boundingRect)
 {
     if (HbApplication::layoutDirection() == Qt::RightToLeft) {
-        rect.moveLeft( 2 * boundingRect.x() + boundingRect.width() - rect.x() - rect.width() );
+        rect.moveLeft(2 * boundingRect.x() + boundingRect.width() - rect.x() - rect.width());
     }
 }

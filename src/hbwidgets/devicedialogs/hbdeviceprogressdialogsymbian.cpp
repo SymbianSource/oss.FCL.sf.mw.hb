@@ -156,8 +156,10 @@ void CHbDeviceProgressDialogSymbianPrivate::ShowL()
         CleanupStack::PopAndDestroy(); // actionData
         }
     iButton.iFlags.iPressed = false;
-    User::LeaveIfError(iDeviceDialog->Show(KPluginIdentifier, *iVariantMap, this));
-
+    TInt error = iDeviceDialog->Show(KPluginIdentifier, *iVariantMap, this);
+    if (error != KErrNone) {
+        User::Leave(error); // error can be positive or negative
+    }
     iVisible = ETrue;
     }
 
@@ -235,9 +237,11 @@ void CHbDeviceProgressDialogSymbianPrivate::UpdateL()
         CleanupStack::PopAndDestroy(); // actionData
         }
 
-    User::LeaveIfError(iDeviceDialog->Update(*map));
-    delete map;
-    map = 0;
+    TInt error = iDeviceDialog->Update(*map);
+    delete map; map = 0;
+    if (error != KErrNone) {
+        User::Leave(error); // error can be positive or negative
+    }
     }
 
 void CHbDeviceProgressDialogSymbianPrivate::DataReceived(CHbSymbianVariantMap& aData)

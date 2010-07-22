@@ -32,13 +32,13 @@ HbDeviceView::HbDeviceView()
 }
 
 HbDeviceView::HbDeviceView(HbMainWindow *window, QWidget *parent) :
-QGraphicsView(parent), mMainWindow(window), mAngle(0), mLastPos(0,0), 
-mMouseMove(false)
+    QGraphicsView(parent), mMainWindow(window), mAngle(0), mLastPos(0, 0),
+    mMouseMove(false)
 {
     Q_UNUSED(parent);
 
     //Set background
-    setBackgroundBrush(QBrush(QColor(0,0,0),Qt::SolidPattern/*Qt::VerPattern*/));
+    setBackgroundBrush(QBrush(QColor(0, 0, 0), Qt::SolidPattern/*Qt::VerPattern*/));
     //Take scene from window
     setScene(mMainWindow->scene());
 
@@ -48,12 +48,12 @@ mMouseMove(false)
     qreal y = mMainWindow->rect().y();
     int h = profile.logicalSize().height();
     int w = profile.logicalSize().width();
-    
+
     //Centralize
     setSceneRect(x, y, w, h);
 
     setDragMode(QGraphicsView::NoDrag/*QGraphicsView::ScrollHandDrag*/);
-    connect(mMainWindow, SIGNAL(orientationChanged(Qt::Orientation)), this, SLOT(orientationChanged(Qt::Orientation)));    
+    connect(mMainWindow, SIGNAL(orientationChanged(Qt::Orientation)), this, SLOT(orientationChanged(Qt::Orientation)));
 }
 
 HbDeviceView::~HbDeviceView()
@@ -63,22 +63,22 @@ HbDeviceView::~HbDeviceView()
 void HbDeviceView::rotateDevice(int angle)
 {
     //Store angle and block turning more than 90 or -90 degrees
-    mAngle = mAngle+angle;
- if ( mAngle < -90 || mAngle > 90 ){
+    mAngle = mAngle + angle;
+    if (mAngle < -90 || mAngle > 90) {
         if (mAngle < -90) {
             mAngle = -90;
         } else {
- mAngle = 90;
+            mAngle = 90;
         }
         return;
     }
 
     rotate(angle);
 
- // For special purpose, if needed..
-        if (mAngle == 0) {
-        }else if (mAngle == 90) {
-        }else if (mAngle == -90) {
+// For special purpose, if needed..
+    if (mAngle == 0) {
+    } else if (mAngle == 90) {
+    } else if (mAngle == -90) {
     }
 }
 
@@ -92,8 +92,8 @@ void HbDeviceView::orientationChanged(Qt::Orientation orientation)
 
     //This is needed to centralize mMainWindow
     setSceneRect(0, 0, w, h);
-    if(!mMouseMove) {
-        resize(w+5, h+5);
+    if (!mMouseMove) {
+        resize(w + 5, h + 5);
     }
 
 }
@@ -101,12 +101,12 @@ void HbDeviceView::orientationChanged(Qt::Orientation orientation)
 //Remove black "frames"
 void HbDeviceView::compressDevice()
 {
-    if(mAngle <0 ) {
-        rotate(+(-mAngle)); 
+    if (mAngle < 0) {
+        rotate(+(-mAngle));
         mAngle = 0;
     } else {
- rotate(-(+mAngle));
- mAngle = 0;
+        rotate(-(+mAngle));
+        mAngle = 0;
     }
 
     HbDeviceProfile profile = HbDeviceProfile::profile(mMainWindow);
@@ -114,31 +114,30 @@ void HbDeviceView::compressDevice()
     int w = profile.logicalSize().width();
 
     setSceneRect(0, 0, w, h);
-    resize(w+5, h+5);
+    resize(w + 5, h + 5);
 }
 
 //Catch mouse move event and rotate this view
 void HbDeviceView::mouseMoveEvent(QMouseEvent *event)
-{	
+{
     if (!mMouseMove || itemAt(event->pos())) {
         return;
-     }
-     if ((event->buttons() & Qt::LeftButton)) {
+    }
+    if ((event->buttons() & Qt::LeftButton)) {
         if (event->pos().x() < mLastPos.x()) {
             rotateDevice(-10);
-        }else if (event->pos().x() > mLastPos.x()) {
+        } else if (event->pos().x() > mLastPos.x()) {
             rotateDevice(10);
         }
-    mLastPos = event->pos();
+        mLastPos = event->pos();
     }
 }
 
 void HbDeviceView::keyPressEvent(QKeyEvent *event)
 {
     //If "Ctrl+D" is pressed, enable or disable rotate
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_D )
-    {
-        if(!mMouseMove) {
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_D) {
+        if (!mMouseMove) {
             mMouseMove = true;
             enableDevice(true);
         } else {
@@ -150,7 +149,7 @@ void HbDeviceView::keyPressEvent(QKeyEvent *event)
 
 void HbDeviceView::enableDevice(bool enable)
 {
-    if(enable) {
+    if (enable) {
         resize(900, 900);
     } else {
         compressDevice();

@@ -36,14 +36,14 @@
 #include "hbgraphicsscene_p.h"
 #include "hbeffectinternal_p.h"
 
-#include <QPointer>
-#include <QComboBox>
-#include <QFormLayout>
-#include <QVBoxLayout>
-#include <QGroupBox>
-#include <QApplication>
-#include <QSettings>
-#include <QPushButton>
+#include <QPointer> //krazy:exclude=qclasses
+#include <QComboBox> //krazy:exclude=qclasses
+#include <QFormLayout> //krazy:exclude=qclasses
+#include <QVBoxLayout> //krazy:exclude=qclasses
+#include <QGroupBox> //krazy:exclude=qclasses
+#include <QApplication> //krazy:exclude=qclasses
+#include <QSettings> //krazy:exclude=qclasses
+#include <QPushButton> //krazy:exclude=qclasses
 #include <hbevent.h>
 
 #ifdef HB_CSS_INSPECTOR
@@ -86,6 +86,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
 {
     mLights = true;
     mAnimation = true;
+    mCustomViewPortSize = false;
 
     windowComboBox = new QComboBox(this);
     windowComboBox->hide();
@@ -93,14 +94,17 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     directionComboBox = new QComboBox(this);
     dragToResizeComboBox = new QComboBox(this);
     mSensorComboBox = new QComboBox(this);
-    mGeneralSettingsForSensorsComboBox = new QComboBox(this);
-    mUnsetOrientationButton = new QPushButton(tr("&Unset orientation"), this);
+    mGeneralSettingsForSensorsComboBox = new QComboBox(this); //krazy:exclude=qclasses
+    mUnsetOrientationButton = new QPushButton(tr("&Unset orientation"), this); //krazy:exclude=qclasses
 
     mLights = true;
     HbIcon icon("qtg_mono_light");
-    mLightsButton = new QPushButton(icon.pixmap(), "", this);
+    mLightsButton = new QPushButton(icon.pixmap(), "", this); //krazy:exclude=qclasses
+    mAnimationButton = new QPushButton(tr("&Animation on"), this); //krazy:exclude=qclasses
+    mViewPortSizeButton = new QPushButton(tr("&Set custom ViewPortSize"), this); //krazy:exclude=qclasses
 
-    mAnimationButton = new QPushButton(tr("&Animation on"), this);
+    mWindowObscured = false;
+    mWindowObscuredButton = new QPushButton(tr("Obscure"), this);
 
     resolutionComboBox->addItems(HbDeviceProfile::profileNames());
     directionComboBox->addItems(QStringList() << tr("Left to right") << tr("Right to left"));
@@ -118,21 +122,24 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     connect(mUnsetOrientationButton, SIGNAL(pressed()), SLOT(unsetOrientation()));
     connect(mLightsButton, SIGNAL(pressed()), SLOT(toggleLights()));
     connect(mAnimationButton, SIGNAL(pressed()), SLOT(toggleAnimation()));
+    connect(mViewPortSizeButton, SIGNAL(pressed()), SLOT(resizeViewPort()));
+    connect(mWindowObscuredButton, SIGNAL(pressed()), SLOT(toggleWindowObscured()));
+    QVBoxLayout *boxLayout = new QVBoxLayout(this); //krazy:exclude=qclasses
 
-    QVBoxLayout *boxLayout = new QVBoxLayout(this);
-    
-    QGroupBox *mainGroup = new QGroupBox(this);
-    QFormLayout *layout = new QFormLayout(mainGroup);
+    QGroupBox *mainGroup = new QGroupBox(this); //krazy:exclude=qclasses
+    QFormLayout *layout = new QFormLayout(mainGroup); //krazy:exclude=qclasses
     layout->addRow(tr("&Window"), windowComboBox);
     layout->addRow(tr("&Resolution"), resolutionComboBox);
     layout->addRow(tr("&Direction"), directionComboBox);
     layout->addRow(tr("&Drag to resize"), dragToResizeComboBox);
+    layout->addRow(mViewPortSizeButton);
+    layout->addRow(mWindowObscuredButton);
 
     mainGroup->setLayout(layout);
     boxLayout->addWidget(mainGroup);
-	
-    QGroupBox *sensorGroup = new QGroupBox(tr("Sensor handling"), this);
-    QFormLayout *sensorLayout = new QFormLayout(sensorGroup);
+
+    QGroupBox *sensorGroup = new QGroupBox(tr("Sensor handling"), this); //krazy:exclude=qclasses
+    QFormLayout *sensorLayout = new QFormLayout(sensorGroup); //krazy:exclude=qclasses
 
     sensorLayout->addRow(tr("&Sensors"), mSensorComboBox);
     sensorLayout->addRow(tr("&GS sensors"), mGeneralSettingsForSensorsComboBox);
@@ -143,28 +150,28 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     mainGroup->setLayout(sensorLayout);
     boxLayout->addWidget(sensorGroup);
 
-    QGroupBox *globalGroup = new QGroupBox(tr("Global debug drawing"), this);
-    QFormLayout *globalLayout = new QFormLayout(globalGroup);
-    
+    QGroupBox *globalGroup = new QGroupBox(tr("Global debug drawing"), this); //krazy:exclude=qclasses
+    QFormLayout *globalLayout = new QFormLayout(globalGroup); //krazy:exclude=qclasses
+
     touchAreaComboBox = new QComboBox(this);
     touchAreaComboBox->addItems(QStringList() << tr("Invisible") << tr("Visible"));
     connect(touchAreaComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeTouchArea(int)));
-	globalLayout->addRow(tr("&Touch areas"), touchAreaComboBox);
-    
+    globalLayout->addRow(tr("&Touch areas"), touchAreaComboBox);
+
     textBoxesComboBox = new QComboBox(this);
     textBoxesComboBox->addItems(QStringList() << tr("Invisible") << tr("Visible"));
     connect(textBoxesComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeTextBoxes(int)));
-	globalLayout->addRow(tr("&Text items"), textBoxesComboBox);
-    
+    globalLayout->addRow(tr("&Text items"), textBoxesComboBox);
+
     iconBoxesComboBox = new QComboBox(this);
     iconBoxesComboBox->addItems(QStringList() << tr("Invisible") << tr("Visible"));
     connect(iconBoxesComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeIconBoxes(int)));
-	globalLayout->addRow(tr("&Icon items"), iconBoxesComboBox);
-    
+    globalLayout->addRow(tr("&Icon items"), iconBoxesComboBox);
+
     fpsCounterComboBox = new QComboBox(this);
     fpsCounterComboBox->addItems(QStringList() << tr("Invisible") << tr("Visible"));
     connect(fpsCounterComboBox, SIGNAL(currentIndexChanged(int)), SLOT(changeFpsCounter(int)));
-	globalLayout->addRow(tr("&Fps counter"), fpsCounterComboBox);
+    globalLayout->addRow(tr("&Fps counter"), fpsCounterComboBox);
 
     globalGroup->setLayout(globalLayout);
     boxLayout->addWidget(globalGroup);
@@ -173,14 +180,14 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     QGroupBox *cssGroup = new QGroupBox(tr("CSS Debugging"), this);
     QHBoxLayout *cssLayout = new QHBoxLayout(cssGroup);
 
-    cssWindowButton = new QPushButton(tr("Show CSS inspector"), this);
+    cssWindowButton = new QPushButton(tr("Show CSS inspector"), this); //krazy:exclude=qclasses
     connect(cssWindowButton, SIGNAL(pressed()), HbCssInspectorWindow::instance(), SLOT(show()));
     cssLayout->addWidget(cssWindowButton);
 
     cssGroup->setLayout(cssLayout);
     boxLayout->addWidget(cssGroup);
 #endif
-	initStartUpValues();
+    initStartUpValues();
 }
 
 HbSettingsWindow::~HbSettingsWindow()
@@ -193,7 +200,7 @@ void HbSettingsWindow::refresh()
 
     QStringList windows;
     windows << tr("Global");
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         windows << windowName(window);
     }
 
@@ -224,15 +231,15 @@ void HbSettingsWindow::changeResolution(int index)
     HbMainWindow *window = getWindow(windowComboBox->currentIndex());
     if (!window) {
         // global
-        
+
         // resize all windows
-        QListIterator<HbMainWindow*> iterator(hbInstance->allMainWindows());
+        QListIterator<HbMainWindow *> iterator(hbInstance->allMainWindows());
         while (iterator.hasNext()) {
             HbMainWindow *window = iterator.next();
             window->resize(profile.logicalSize());
             HbDeviceProfileManager::select(*window, profile);
         }
- 
+
     } else {
         // window specific
         window->resize(profile.logicalSize());
@@ -244,14 +251,14 @@ void HbSettingsWindow::changeResolution(int index)
 void HbSettingsWindow::changeDirection(int index)
 {
     HbMainWindow *window = getWindow(windowComboBox->currentIndex());
-    if(!window){
+    if (!window) {
         Qt::LayoutDirection dir = HbApplication::layoutDirection();
         HbApplication::setLayoutDirection(dir == Qt::LeftToRight ? Qt::RightToLeft : Qt::LeftToRight);
-    }else{
+    } else {
         Qt::LayoutDirection dir = index == 0 ? Qt::LeftToRight : Qt::RightToLeft;
-        if(dir != HbApplication::layoutDirection()){
+        if (dir != HbApplication::layoutDirection()) {
             window->setLayoutDirection(dir);
-        }else{
+        } else {
             window->unsetLayoutDirection();
         }
     }
@@ -260,47 +267,47 @@ void HbSettingsWindow::changeDirection(int index)
 void HbSettingsWindow::changeTouchArea(int index)
 {
     HbTouchAreaPrivate::setOutlineDrawing(index > 0);
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         // Force window to redraw
         QEvent event(QEvent::WindowActivate);
-        QApplication::sendEvent(window, &event);
+        QApplication::sendEvent(window, &event); //krazy:exclude=qclasses
     }
 }
 
 void HbSettingsWindow::changeTextBoxes(int index)
 {
     HbTextItemPrivate::outlinesEnabled = index > 0;
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         // Force window to redraw
         QEvent event(QEvent::WindowActivate);
-        QApplication::sendEvent(window, &event);
-	}
+        QApplication::sendEvent(window, &event); //krazy:exclude=qclasses
+    }
 }
 
 void HbSettingsWindow::changeIconBoxes(int index)
 {
     HbIconItemPrivate::outlinesEnabled = index > 0;
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         // Force window to redraw
         QEvent event(QEvent::WindowActivate);
-        QApplication::sendEvent(window, &event);
-	}
+        QApplication::sendEvent(window, &event); //krazy:exclude=qclasses
+    }
 }
 
 void HbSettingsWindow::changeFpsCounter(int index)
 {
     HbGraphicsScenePrivate::fpsCounterEnabled = index > 0;
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         // Force window to redraw
         QEvent event(QEvent::WindowActivate);
-        QApplication::sendEvent(window, &event);
-	}
+        QApplication::sendEvent(window, &event); //krazy:exclude=qclasses
+    }
 }
 
 void HbSettingsWindow::changeDragToResize(int index)
 {
     resolutionComboBox->setEnabled(index == 0);
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         HbDeviceProfile profile = HbDeviceProfile::profile(window);
         window->resize(profile.logicalSize());
     }
@@ -309,38 +316,40 @@ void HbSettingsWindow::changeDragToResize(int index)
 
 void HbSettingsWindow::changeSensorValue(int index)
 {
-    if (mSensorComboBox->count() == 3 && (index == 0 || index == 1))
+    if (mSensorComboBox->count() == 3 && (index == 0 || index == 1)) {
         mSensorComboBox->removeItem(2);
+    }
 
-    QSettings mSettings( "Nokia", "HbStartUpDeskTopSensors");
-    switch(index) {
-        case 0:	
-            HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Horizontal);
-            mSettings.setValue("Orientation", 1);
+    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
+    switch (index) {
+    case 0:
+        HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Horizontal);
+        mSettings.setValue("Orientation", 1);
         break;
-        case 1:
-            HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Vertical);
-            mSettings.setValue("Orientation", 2);
+    case 1:
+        HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Vertical);
+        mSettings.setValue("Orientation", 2);
         break;
-		case 2: //Empty
+    case 2: //Empty
         break;
-        case 3: //Initialize
-            if (mSettings.value("Orientation").toInt() == 1)
-                mSensorComboBox->setCurrentIndex(0);
-            else
-                mSensorComboBox->setCurrentIndex(1);
-            break;
-        default: 
-            break; 
+    case 3: //Initialize
+        if (mSettings.value("Orientation").toInt() == 1) {
+            mSensorComboBox->setCurrentIndex(0);
+        } else {
+            mSensorComboBox->setCurrentIndex(1);
+        }
+        break;
+    default:
+        break;
     }
 }
 
 void HbSettingsWindow::changeGSettingsForSensors(int index)
 {
     QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
-    if (index == 3){ //Initialize
+    if (index == 3) { //Initialize
         mGeneralSettingsForSensorsComboBox->setCurrentIndex(mSettings.value("SensorsEnabled").toBool());
-    } else { 
+    } else {
         mSettings.setValue("SensorsEnabled", (bool)index);
         HbMainWindowOrientation::instance()->mSensorListener->enableSensors(index, true);
     }
@@ -348,7 +357,7 @@ void HbSettingsWindow::changeGSettingsForSensors(int index)
 
 void HbSettingsWindow::unsetOrientation()
 {
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
+    foreach(HbMainWindow * window, hbInstance->allMainWindows()) {
         if (!HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) {
             window->unsetOrientation();
         }
@@ -362,13 +371,13 @@ void HbSettingsWindow::toggleLights()
     for (int i = 0; i < mainWindowList.count(); ++i) {
         if (mLights) {
             icon.setIconName("qtg_mono_light_off");
-			mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
-			mLights = false;
+            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
+            mLights = false;
             mainWindowList[i]->setForegroundBrush(QBrush(Qt::black, Qt::Dense1Pattern));
         } else {
             icon.setIconName("qtg_mono_light");
             mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
-			mLights = true;
+            mLights = true;
             mainWindowList[i]->setForegroundBrush(Qt::NoBrush);
         }
         mLightsButton->setIcon(icon.pixmap());
@@ -388,3 +397,39 @@ void HbSettingsWindow::toggleAnimation()
     }
 
 }
+
+void HbSettingsWindow::resizeViewPort()
+{
+    HbMainWindow *window = hbInstance->allMainWindows().at(0);
+    if (!mCustomViewPortSize) {
+        mViewPortOriginalSize = window->size();
+        QSizeF newSize = mViewPortOriginalSize;
+        newSize.scale(mViewPortOriginalSize.width(), mViewPortOriginalSize.height() - 150, Qt::IgnoreAspectRatio);
+        HbMainWindowPrivate::d_ptr(window)->setViewportSize(newSize);
+        mCustomViewPortSize = true;
+        mViewPortSizeButton->setText(tr("&Set original ViewPortSize"));
+    } else {
+        HbMainWindowPrivate::d_ptr(window)->setViewportSize(mViewPortOriginalSize);
+        mCustomViewPortSize = false;
+        mViewPortSizeButton->setText(tr("&Set custom ViewPortSize"));
+    }
+
+}
+
+void HbSettingsWindow::toggleWindowObscured()
+{
+    if (!mWindowObscured) {
+        mWindowObscured = true;
+        mWindowObscuredButton->setText(tr("Reveal"));
+    } else {
+        mWindowObscured = false;
+        mWindowObscuredButton->setText(tr("Obscure"));
+    }
+
+    QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
+    for (int i = 0; i < mainWindowList.count(); ++i) {
+        HbEvent *obscureChangedEvent = new HbWindowObscuredChangedEvent(mWindowObscured);
+        QCoreApplication::postEvent(mainWindowList[i], obscureChangedEvent);
+    }
+}
+

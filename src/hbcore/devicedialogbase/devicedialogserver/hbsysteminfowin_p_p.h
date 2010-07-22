@@ -37,6 +37,7 @@ public:
     virtual ~HbSystemInfoPrivate();
     void init(bool writer);
     
+    QSystemNetworkInfo::NetworkStatus networkStatus() const;
     int networkSignalStrength() const;
     QSystemNetworkInfo::NetworkMode networkMode() const;
     int batteryLevel() const;
@@ -44,6 +45,7 @@ public:
 
 public slots:
     void setNetworkMode(QSystemNetworkInfo::NetworkMode);
+    void setNetworkStatus(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus);
 
     void lostForeground();
     void gainedForeground();
@@ -51,6 +53,7 @@ public:
     QSystemNetworkInfo *mSystemNetworkInfo;
     QSystemDeviceInfo *mSystemDeviceInfo;
     QSystemNetworkInfo::NetworkMode mNetworkMode;
+    QSystemNetworkInfo::NetworkStatus mNetworkStatus;
     
     Q_DECLARE_PUBLIC(HbSystemInfo)
     HbSystemInfo *q_ptr;

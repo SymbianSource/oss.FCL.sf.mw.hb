@@ -25,11 +25,12 @@
 #include "hbframedrawer.h"
 #include "hbframedrawer_p.h"
 #include "hbimagetraces_p.h"
+#include "hbmaskableiconimpl_p.h"
 
 #include <hbinstance.h>
 #include <hbiconimpl_p.h>
 #include <hbiconloader_p.h>
-#include "hbmaskableiconimpl_p.h"
+#include <hbthemeutils_p.h>
 
 #include <QPainter>
 #include <QIcon>
@@ -38,7 +39,7 @@
 #include <QBitmap>
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbFrameDrawer
     \brief HbFrameDrawer draws frames graphics.
@@ -47,11 +48,11 @@
 
     Frame graphics mean graphics that consist of either 3 or 9 parts that are positioned
     and scaled followingly.
-    
+
     A 9-piece frame consists of a 3x3 grid, where the corner parts have a fixed size and
     the other parts are scaled.
-    
-    A 3-piece frame consists of 3 parts tiled either horizontally of vertically. The side
+
+    A 3-piece frame consists of 3 parts tiled either horizontally or vertically. The side
     parts preserve their aspect ratio and the center part is scaled to fill the remaining space.
 
     For convenience, frame drawer can also draw the frame with a single graphic.
@@ -60,7 +61,7 @@
     takes care that there are no visible gaps between the frame parts when the whole frame
     is painted to the display even if the frame bounding rectangle uses floating point accuracy.
 
-    Filenames for 9-piece frame graphics are defined according to the following.
+    Filenames for 9-piece frame graphics are defined according to the following convention.
 
     - top left        <name>_tl.<ext>
     - top             <name>_t.<ext>
@@ -72,13 +73,13 @@
     - bottom          <name>_b.<ext>
     - bottom right    <name>_br.<ext>
 
-    Filenames for 3-piece horizontal frame graphics are defined according to the following.
+    Filenames for 3-piece horizontal frame graphics are defined according to the following convention.
 
     - left            <name>_l.<ext>
     - center          <name>_c.<ext>
     - right           <name>_r.<ext>
 
-    Filenames for 3-piece vertical frame graphics are defined according to the following.
+    Filenames for 3-piece vertical frame graphics are defined according to the following convention.
 
     - top             <name>_t.<ext>
     - center          <name>_c.<ext>
@@ -93,7 +94,7 @@
 
     See class HbIcon for information of supported icon formats and file locations.
 
-    The frame drawer stores the whole generated frame graphics in a pixmap for
+    The frame drawer stores the entire generated frame graphics in a pixmap for
     improving the speed of the paint operations. Therefore, the frame drawer instance should not
     be re-created each time the frame needs to be rendered.
 
@@ -114,7 +115,7 @@
   \b OnePiece The frame consist of a single graphic piece, which is scaled to the frame's bounding rectangle.
 
   \b ThreePiecesHorizontal The frame consists of three graphic pieces that are tiled horizontally.
-            As default, the side parts preserve their aspect ratio and the center part is scaled to fill the remaining space.
+            By default, the side parts preserve their aspect ratio and the center part is scaled to fill the remaining space.
             Filenames for 3-piece horizontal frame graphics are defined according to the following.
 
             - left            <name>_l.<ext>
@@ -122,14 +123,14 @@
             - right           <name>_r.<ext>
 
   \b ThreePiecesVertical The frame consists of three graphic pieces that are tiled vertically.
-            As default, the side parts preserve their aspect ratio and the center part is scaled to fill the remaining space.
+            By default, the side parts preserve their aspect ratio and the center part is scaled to fill the remaining space.
             Filenames for 3-piece vertical frame graphics are defined according to the following.
 
             - top             <name>_t.<ext>
             - center          <name>_c.<ext>
             - bottom          <name>_b.<ext>
 
-  \b NinePieces The frame consists of a 3x3 grid of graphic pieces, where as default the corner
+  \b NinePieces The frame consists of a 3x3 grid of graphic pieces, where by default the corner
             parts have a fixed size and the other parts are scaled.
             Filenames for 9-piece frame graphics are defined according to the following.
 
@@ -168,10 +169,10 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate() :
     maskChanged(false),
     clipPath(QPainterPath())
 {
-    borderWidths[0]=0.0;
-    borderWidths[1]=0.0;
-    borderWidths[2]=0.0;
-    borderWidths[3]=0.0;
+    borderWidths[0] = 0.0;
+    borderWidths[1] = 0.0;
+    borderWidths[2] = 0.0;
+    borderWidths[3] = 0.0;
     //Register the HbFrameDrawerPrivate Instance to HbIconLoader
     HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
@@ -187,7 +188,7 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const QString &frameGraphicsName, HbF
     frameParts(0),
     mirroring(HbIcon::Default),
     defaultMirroring(Unknown),
-    flags( 0 ),
+    flags(0),
     layoutDirection(Qt::LeftToRight),
     graphicsItem(0),
     color(),
@@ -195,16 +196,19 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const QString &frameGraphicsName, HbF
     maskChanged(false),
     clipPath(QPainterPath())
 {
-    borderWidths[0]=0.0;
-    borderWidths[1]=0.0;
-    borderWidths[2]=0.0;
-    borderWidths[3]=0.0;
+    borderWidths[0] = 0.0;
+    borderWidths[1] = 0.0;
+    borderWidths[2] = 0.0;
+    borderWidths[3] = 0.0;
 
-    // Remove possible file extension
-    int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
-    if (index>0) {
-        this->frameGraphicsName.resize(index);
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Remove possible file extension
+        int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index>0) {
+            this->frameGraphicsName.resize(index);
+        }
     }
+
     //Register the HbFrameDrawerPrivate Instance to HbIconLoader
     HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
@@ -221,18 +225,18 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const HbFrameDrawerPrivate &other) :
     frameParts(other.frameParts),
     mirroring(other.mirroring),
     defaultMirroring(other.defaultMirroring),
-    flags( other.flags ),
-    layoutDirection( other.layoutDirection ),
-    graphicsItem( other.graphicsItem ),
+    flags(other.flags),
+    layoutDirection(other.layoutDirection),
+    graphicsItem(other.graphicsItem),
     color(other.color),
     icon(0),
     maskChanged(false),
     clipPath(QPainterPath())
 {
-    borderWidths[0]=other.borderWidths[0];
-    borderWidths[1]=other.borderWidths[1];
-    borderWidths[2]=other.borderWidths[2];
-    borderWidths[3]=other.borderWidths[3];
+    borderWidths[0] = other.borderWidths[0];
+    borderWidths[1] = other.borderWidths[1];
+    borderWidths[2] = other.borderWidths[2];
+    borderWidths[3] = other.borderWidths[3];
     //Register the HbFrameDrawerPrivate Instance to HbIconLoader
     HbIconLoader::global()->storeFrameDrawerInfo(this);
 }
@@ -255,7 +259,7 @@ void HbFrameDrawerPrivate::prepareFrameIcon()
     if (!frameParts) {
         checkFrameParts();
     }
-    if ((!icon ) && (!fallbackMaskableIconList.count()) ) {
+    if ((!icon) && (!fallbackMaskableIconList.count())) {
         createFrameIcon();
     }
 }
@@ -267,7 +271,7 @@ void HbFrameDrawerPrivate::prepareFrameIcon()
 */
 bool HbFrameDrawerPrivate::testBorderApiProtectionFlag() const
 {
-	return flags & HbFrameDrawerPrivate::BorderWidthSetByApi;
+    return flags & HbFrameDrawerPrivate::BorderWidthSetByApi;
 }
 
 /*!
@@ -278,11 +282,11 @@ bool HbFrameDrawerPrivate::testBorderApiProtectionFlag() const
 */
 void HbFrameDrawerPrivate::setBorderApiProtectionFlag(bool on)
 {
-	if(on){
-		flags |= HbFrameDrawerPrivate::BorderWidthSetByApi;
-	}else{
-		flags &= ~HbFrameDrawerPrivate::BorderWidthSetByApi;
-	}
+    if (on) {
+        flags |= HbFrameDrawerPrivate::BorderWidthSetByApi;
+    } else {
+        flags &= ~HbFrameDrawerPrivate::BorderWidthSetByApi;
+    }
 }
 
 /*!
@@ -314,46 +318,46 @@ QStringList HbFrameDrawerPrivate::fileNameSuffixList() const
     // If the suffix list has been set explicitly, return that if it contains enough suffixes.
     if (!suffixList.isEmpty()) {
         switch (type) {
-            case HbFrameDrawer::ThreePiecesHorizontal: // fall through
-            case HbFrameDrawer::ThreePiecesVertical:
-                if (suffixList.count() >= 3) {
-                    return suffixList;
-                }
-                break;
-
-            case HbFrameDrawer::NinePieces:
-                if (suffixList.count() >= 9) {
-                    return suffixList;
-                }
-                break;
-            
-            default:
+        case HbFrameDrawer::ThreePiecesHorizontal: // fall through
+        case HbFrameDrawer::ThreePiecesVertical:
+            if (suffixList.count() >= 3) {
                 return suffixList;
+            }
+            break;
+
+        case HbFrameDrawer::NinePieces:
+            if (suffixList.count() >= 9) {
+                return suffixList;
+            }
+            break;
+
+        default:
+            return suffixList;
         }
-    } 
+    }
 
     // Otherwise, return default suffix list.
     QStringList list;
 
     switch (type) {
-        case HbFrameDrawer::ThreePiecesHorizontal:
-            list << "_l" << "_c" << "_r";
-            break;
-        case HbFrameDrawer::ThreePiecesVertical:
-            list << "_t" << "_c" << "_b";
-            break;
-        case HbFrameDrawer::NinePieces:
-            list << "_tl" << "_t" << "_tr" << "_l" << "_c" << "_r" << "_bl" << "_b" << "_br";
-            break;
-        default:
-            break;
+    case HbFrameDrawer::ThreePiecesHorizontal:
+        list << "_l" << "_c" << "_r";
+        break;
+    case HbFrameDrawer::ThreePiecesVertical:
+        list << "_t" << "_c" << "_b";
+        break;
+    case HbFrameDrawer::NinePieces:
+        list << "_tl" << "_t" << "_tr" << "_l" << "_c" << "_r" << "_bl" << "_b" << "_br";
+        break;
+    default:
+        break;
     }
 
     return list;
 }
 
 /*!
-* Creates a consolidated HbIconImpl (Icon) with the available piece information 
+* Creates a consolidated HbIconImpl (Icon) with the available piece information
 * If failed to create the same, then creates HbIconImpls for the pieces.
 * \internal
 */
@@ -367,39 +371,37 @@ void HbFrameDrawerPrivate::createFrameIcon()
 
     // Create the frame icon and add it in the icon cache
     HbIconLoader *loader = HbIconLoader::global();
-    
+
     //If it's one-piece frame-item, it's loaded using HbIconLoader::loadIcon()
     if (frameParts == 1) {
-        HbIconImpl * iconImpl =  loader->loadIcon(frameGraphicsName, HbIconLoader::AnyType,
-                                 HbIconLoader::AnyPurpose,
-                                 frameIconSize,
-                                 Qt::IgnoreAspectRatio,
-                                 QIcon::Normal,
-                                 iconLoaderOptions());
+        HbIconImpl *iconImpl =  loader->loadIcon(frameGraphicsName, HbIconLoader::AnyType,
+                                HbIconLoader::AnyPurpose,
+                                frameIconSize,
+                                Qt::IgnoreAspectRatio,
+                                QIcon::Normal,
+                                iconLoaderOptions());
         if (iconImpl) {
             icon = new HbMaskableIconImpl(iconImpl);
         }
 
     } else {
-        QStringList multiPieceFileNames;
-        QStringList list = fileNameSuffixList();
-        int nameListCount = list.count();
-        for (int i = 0; i < nameListCount; i++) {
-            multiPieceFileNames.append(frameGraphicsName + list[i]);
+        QStringList multiPieceFileNames = resolveMultiPieceFileNames();
+        
+        for (int i = 0; i < frameParts; i++) {
             if (data.pixmapSizes[i].isEmpty()) {
-                data.pixmapSizes[i] = QSize(0,0);
+                data.pixmapSizes[i] = QSize(0, 0);
             }
         }
 
         QVector<HbIconImpl *> listOfIcons;
-        
+
         //For multi-piece frame-items, HbIocnLoader::loadMultipieceIcon is used
         //This function returns the consolidate (stitched) icon created on the themeserver.
         //If the consolidated icon-creation on themeserver fails, then server returns a list
         //of individual frame-items.
-        HbIconImpl * iconImpl = loader->loadMultiPieceIcon(multiPieceFileNames, data, frameIconSize,
-                                          Qt::IgnoreAspectRatio, QIcon::Normal, iconLoaderOptions(),
-                                          listOfIcons, color);
+        HbIconImpl *iconImpl = loader->loadMultiPieceIcon(multiPieceFileNames, data, frameIconSize,
+                               Qt::IgnoreAspectRatio, QIcon::Normal, iconLoaderOptions(),
+                               listOfIcons, color);
 
         if (iconImpl) {
             icon = new HbMaskableIconImpl(iconImpl);
@@ -409,8 +411,34 @@ void HbFrameDrawerPrivate::createFrameIcon()
                 fallbackMaskableIconList.append(new HbMaskableIconImpl(listOfIcons[i]));
             }
         }
- 
+
     }
+}
+
+QStringList HbFrameDrawerPrivate::resolveMultiPieceFileNames()
+{
+    QStringList multiPieceFileNames;
+
+    bool logicalName = HbThemeUtils::isLogicalName(frameGraphicsName);
+
+    int suffixIndex = frameGraphicsName.length();
+    if (!logicalName) {
+        // If it is an absolute icon path, the suffix is inserted before the file extension
+        int index = frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index > 0) {
+            suffixIndex = index;
+        }
+    }
+
+    QStringList list = fileNameSuffixList();
+    int count = list.count();
+    for (int i = 0; i < count; i++) {
+        QString nameWithSuffix = frameGraphicsName;
+        nameWithSuffix.insert(suffixIndex, list.at(i));
+        multiPieceFileNames.append(nameWithSuffix);
+    }
+
+    return multiPieceFileNames;
 }
 
 /*!
@@ -436,18 +464,18 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
 
         if (!mask.isNull() && maskChanged) {
             icon->setMask(mask);
-        } 
+        }
         //paint the stitched icon
         icon->paint(painter, centeredRect, Qt::AlignHCenter, clipPath);
-        if ( icon->isCreatedOnServer() ) {
+        if (icon->isCreatedOnServer()) {
             iconType = icon->iconImpl()->iconData().type;
         }
 
-        #ifdef HB_FRAME_DRAWER_TRACES
+#ifdef HB_FRAME_DRAWER_TRACES
         qDebug() << "FRAMENAME: " << frameGraphicsName << "Drawn at: "
-        << centeredRect.topLeft().x() << "," << centeredRect.topLeft().y() << " | "
-        << centeredRect.bottomRight().x() << "," << centeredRect.bottomRight().y();
-        #endif
+                 << centeredRect.topLeft().x() << "," << centeredRect.topLeft().y() << " | "
+                 << centeredRect.bottomRight().x() << "," << centeredRect.bottomRight().y();
+#endif
     } else {
         for (int i = 0; i < fileNameSuffixList().count(); i++) {
             if (i < fallbackMaskableIconList.count() && fallbackMaskableIconList[i]) {
@@ -469,12 +497,12 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
                 }
                 if (!multiPartSizeData.targets[i].isEmpty()) {
                     fallbackMaskableIconList[i]->paint(painter,
-                            QRect(position, multiPartSizeData.pixmapSizes[i]),
-                            Qt::AlignHCenter, clipPath);
+                                                       QRect(position, multiPartSizeData.pixmapSizes[i]),
+                                                       Qt::AlignHCenter, clipPath);
                 }
             }
         }
-        if ( fallbackMaskableIconList[0]->iconImpl()
+        if ( fallbackMaskableIconList.count() && fallbackMaskableIconList[0]->iconImpl()
              && fallbackMaskableIconList[0]->iconImpl()->isCreatedOnServer() ) {
             if ( fallbackMaskableIconList[0]->iconImpl()->iconData().type != INVALID_FORMAT ) {
                 // store the icon type
@@ -488,7 +516,7 @@ void HbFrameDrawerPrivate::paint(QPainter *painter)
 /*!
 \internal
 */
-bool HbFrameDrawerPrivate::fillWholeRect() const 
+bool HbFrameDrawerPrivate::fillWholeRect() const
 {
     return flags & HbFrameDrawerPrivate::FillWholeRect;
 }
@@ -498,7 +526,7 @@ bool HbFrameDrawerPrivate::fillWholeRect() const
 * - frame bounding rectangle
 * - frame inner rectangle (optional)
 * - default sizes of the frame corner (9-piece) or side (3-piece) graphics.
-* 
+*
 * Note! Integer pixel sizes are used in this function to avoid one pixel gaps between the frame parts.
 * \internal
 */
@@ -537,7 +565,7 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
         if (borderWidths[0] == 0 && borderWidths[2] == 0) {
             QSizeF leftSize = defaultSize(suffixList.at(0)); // index 0 is leftmost frame part
             QSizeF rightSize = defaultSize(suffixList.at(2)); // index 2 is rightmost frame part
-            
+
             if (fillWholeRect()) {
                 leftSize.scale(rect.size(), Qt::KeepAspectRatio);
                 rightSize.scale(rect.size(), Qt::KeepAspectRatio);
@@ -573,15 +601,15 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
         if (fullWidth >= leftWidth + rightWidth) {
             data.targets[0] = QRect(0, 0, leftWidth, fullHeight);
             data.targets[1] = QRect(leftWidth, 0, centerWidth, fullHeight);
-            data.targets[2] = QRect(fullWidth-rightWidth, 0, rightWidth, fullHeight);
+            data.targets[2] = QRect(fullWidth - rightWidth, 0, rightWidth, fullHeight);
 
             data.pixmapSizes[0] = QSize(leftWidth, fullHeight);
             data.pixmapSizes[1] = QSize(centerWidth, fullHeight);
             data.pixmapSizes[2] = QSize(rightWidth, fullHeight);
 
-            data.sources[0] = QRect(QPoint(0,0), data.pixmapSizes[0]);
-            data.sources[1] = QRect(QPoint(0,0), data.pixmapSizes[1]);
-            data.sources[2] = QRect(QPoint(0,0), data.pixmapSizes[2]);
+            data.sources[0] = QRect(QPoint(0, 0), data.pixmapSizes[0]);
+            data.sources[1] = QRect(QPoint(0, 0), data.pixmapSizes[1]);
+            data.sources[2] = QRect(QPoint(0, 0), data.pixmapSizes[2]);
         } else {
             // Only sides fit
             int totalSideWidth = leftWidth + rightWidth;
@@ -606,7 +634,7 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
         if (borderWidths[1] == 0 && borderWidths[3] == 0) {
             QSizeF topSize = defaultSize(suffixList.at(0)); // index 0 is top frame part
             QSizeF bottomSize = defaultSize(suffixList.at(2)); // index 2 is bottom frame part
-            
+
             if (fillWholeRect()) {
                 topSize.scale(rect.size(), Qt::KeepAspectRatio);
                 bottomSize.scale(rect.size(), Qt::KeepAspectRatio);
@@ -647,9 +675,9 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
             data.pixmapSizes[1] = QSize(fullWidth, centerHeight);
             data.pixmapSizes[2] = QSize(fullWidth, bottomHeight);
 
-            data.sources[0] = QRect(QPoint(0,0), data.pixmapSizes[0]);
-            data.sources[1] = QRect(QPoint(0,0), data.pixmapSizes[1]);
-            data.sources[2] = QRect(QPoint(0,0), data.pixmapSizes[2]);
+            data.sources[0] = QRect(QPoint(0, 0), data.pixmapSizes[0]);
+            data.sources[1] = QRect(QPoint(0, 0), data.pixmapSizes[1]);
+            data.sources[2] = QRect(QPoint(0, 0), data.pixmapSizes[2]);
         } else {
             // Only sides fit
             int totalSideHeight = topHeight + bottomHeight;
@@ -657,9 +685,9 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
             data.targets[1] = QRect();
             data.targets[2] = QRect(0, data.targets[0].height(), fullWidth, fullHeight - data.targets[0].height());
 
-            data.pixmapSizes[0] = QSize(fullWidth,data.targets[0].height());
+            data.pixmapSizes[0] = QSize(fullWidth, data.targets[0].height());
             data.pixmapSizes[1] = QSize();
-            data.pixmapSizes[2] = QSize(fullWidth,data.targets[2].height());
+            data.pixmapSizes[2] = QSize(fullWidth, data.targets[2].height());
 
             data.sources[0] = data.targets[0];
             data.sources[1] = QRect();
@@ -681,7 +709,7 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
 
         // Do all 9 pieces fit?
         if (fullWidth >= tlSize.width() + brSize.width() &&
-            fullHeight >= tlSize.height() + brSize.height()) {
+                fullHeight >= tlSize.height() + brSize.height()) {
 
             int centerWidth = fullWidth - tlSize.width() - brSize.width();
             int centerHeight = fullHeight - tlSize.height() - brSize.height();
@@ -706,15 +734,15 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
             data.pixmapSizes[7] = data.targets[7].size();
             data.pixmapSizes[8] = data.targets[8].size();
 
-            data.sources[0] = QRect(QPoint(0,0), data.pixmapSizes[0]);
-            data.sources[1] = QRect(QPoint(0,0), data.pixmapSizes[1]);
-            data.sources[2] = QRect(QPoint(0,0), data.pixmapSizes[2]);
-            data.sources[3] = QRect(QPoint(0,0), data.pixmapSizes[3]);
-            data.sources[4] = QRect(QPoint(0,0), data.pixmapSizes[4]);
-            data.sources[5] = QRect(QPoint(0,0), data.pixmapSizes[5]);
-            data.sources[6] = QRect(QPoint(0,0), data.pixmapSizes[6]);
-            data.sources[7] = QRect(QPoint(0,0), data.pixmapSizes[7]);
-            data.sources[8] = QRect(QPoint(0,0), data.pixmapSizes[8]);
+            data.sources[0] = QRect(QPoint(0, 0), data.pixmapSizes[0]);
+            data.sources[1] = QRect(QPoint(0, 0), data.pixmapSizes[1]);
+            data.sources[2] = QRect(QPoint(0, 0), data.pixmapSizes[2]);
+            data.sources[3] = QRect(QPoint(0, 0), data.pixmapSizes[3]);
+            data.sources[4] = QRect(QPoint(0, 0), data.pixmapSizes[4]);
+            data.sources[5] = QRect(QPoint(0, 0), data.pixmapSizes[5]);
+            data.sources[6] = QRect(QPoint(0, 0), data.pixmapSizes[6]);
+            data.sources[7] = QRect(QPoint(0, 0), data.pixmapSizes[7]);
+            data.sources[8] = QRect(QPoint(0, 0), data.pixmapSizes[8]);
 
         } else {
             // All 9 pieces do not fit.
@@ -735,8 +763,8 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
             }
 
             calculateShrinkedNinePieceCorners(
-                    data, tlSize, brSize,
-                    QSize(fullWidth, fullHeight), QPoint(splitPointX, splitPointY));
+                data, tlSize, brSize,
+                QSize(fullWidth, fullHeight), QPoint(splitPointX, splitPointY));
 
             // Left and right get drawn if corners height does not cover the total height
             if (!splitPointY) {
@@ -770,16 +798,16 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
             data.pixmapSizes[8] = data.targets[8].size();
 
             data.sources[0] = data.targets[0];
-            data.sources[1] = QRect(QPoint(0,0), data.pixmapSizes[1]);
-            data.sources[2] = QRect(QPoint(0,0), data.pixmapSizes[2]);
+            data.sources[1] = QRect(QPoint(0, 0), data.pixmapSizes[1]);
+            data.sources[2] = QRect(QPoint(0, 0), data.pixmapSizes[2]);
             data.sources[2].setBottomLeft(QPoint(data.pixmapSizes[2].width() - data.targets[2].width(), data.targets[2].height() - 1));
-            data.sources[3] = QRect(QPoint(0,0), data.pixmapSizes[3]);
+            data.sources[3] = QRect(QPoint(0, 0), data.pixmapSizes[3]);
             data.sources[4] = QRect(); // center is always empty
-            data.sources[5] = QRect(QPoint(0,0), data.pixmapSizes[5]);
-            data.sources[6] = QRect(QPoint(0,0), data.pixmapSizes[6]);
+            data.sources[5] = QRect(QPoint(0, 0), data.pixmapSizes[5]);
+            data.sources[6] = QRect(QPoint(0, 0), data.pixmapSizes[6]);
             data.sources[6].setTopRight(QPoint(data.targets[6].width() - 1, data.pixmapSizes[6].height() - data.targets[6].height()));
-            data.sources[7] = QRect(QPoint(0,0), data.pixmapSizes[7]);
-            data.sources[8] = QRect(QPoint(0,0), data.pixmapSizes[8]);
+            data.sources[7] = QRect(QPoint(0, 0), data.pixmapSizes[7]);
+            data.sources[8] = QRect(QPoint(0, 0), data.pixmapSizes[8]);
             data.sources[8].setTopLeft(QPoint(data.pixmapSizes[8].width() - data.targets[8].width(), data.pixmapSizes[8].height() - data.targets[8].height()));
         }
     }
@@ -796,9 +824,9 @@ QSize HbFrameDrawerPrivate::divideSpace(HbMultiPartSizeData &data)
 \internal
 */
 void HbFrameDrawerPrivate::calculateShrinkedNinePieceCorners(
-        HbMultiPartSizeData &data,
-        const QSize& tlSize, const QSize& brSize,
-        const QSize& fullSize, const QPoint& splitPoint)
+    HbMultiPartSizeData &data,
+    const QSize &tlSize, const QSize &brSize,
+    const QSize &fullSize, const QPoint &splitPoint)
 {
     // Make sure that corner sizes don't exceed frames full size
 
@@ -806,10 +834,10 @@ void HbFrameDrawerPrivate::calculateShrinkedNinePieceCorners(
     int topLeftWidth = splitPoint.x() ? splitPoint.x() : tlSize.width();
     int topLeftHeight = splitPoint.y() ? splitPoint.y() : tlSize.height();
     data.targets[0] = QRect(
-        0,
-        0,
-        topLeftWidth < fullSize.width() ? topLeftWidth : fullSize.width(),
-        topLeftHeight < fullSize.height() ? topLeftHeight : fullSize.height());
+                          0,
+                          0,
+                          topLeftWidth < fullSize.width() ? topLeftWidth : fullSize.width(),
+                          topLeftHeight < fullSize.height() ? topLeftHeight : fullSize.height());
 
     // Top-right corner
     int topRightX = splitPoint.x() ? splitPoint.x() : fullSize.width() - brSize.width();
@@ -850,7 +878,7 @@ void HbFrameDrawerPrivate::calculateShrinkedNinePieceCorners(
         bottomRightHeight = fullSize.height();
         bottomRightY = 0;
     }
-    data.targets[8] = QRect( bottomRightX, bottomRightY, bottomRightWidth, bottomRightHeight);
+    data.targets[8] = QRect(bottomRightX, bottomRightY, bottomRightWidth, bottomRightHeight);
 }
 
 /*!
@@ -859,7 +887,20 @@ void HbFrameDrawerPrivate::calculateShrinkedNinePieceCorners(
 QSizeF HbFrameDrawerPrivate::defaultSize(const QString &framePartSuffix)
 {
     HbIconLoader *loader = HbIconLoader::global();
-    return loader->defaultSize(frameGraphicsName + framePartSuffix).toSize();
+    
+    QString nameWithSuffix = frameGraphicsName;
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Logical icon name, append suffix in the end
+        nameWithSuffix.append(framePartSuffix);
+    } else {
+        // Absolute icon path, insert suffix before file extension
+        int index = this->frameGraphicsName.lastIndexOf(QChar('.'));
+        if (index > 0) {
+            nameWithSuffix.insert(index, framePartSuffix);
+        }
+    }
+
+    return loader->defaultSize(nameWithSuffix).toSize();
 }
 
 bool HbFrameDrawerPrivate::isMirrored()
@@ -880,23 +921,23 @@ bool HbFrameDrawerPrivate::isMirrored()
         } else if (defaultMirroring == Disabled) {
             return false;
         }
-    // Forced
+        // Forced
     } else if (mirroring == HbIcon::Forced) {
         return true;
-    // Prevented
+        // Prevented
     } else if (mirroring == HbIcon::Prevented) {
         return false;
-    // LayoutDirection
+        // LayoutDirection
     } else if (mirroring == HbIcon::LayoutDirection) {
         basedOnLayoutDir = true;
     }
 
     if (basedOnLayoutDir) {
         Qt::LayoutDirection usedDirection = Qt::LeftToRight; // default;
-        if ( flags&HbFrameDrawerPrivate::LayoutDirectionSet ) {
+        if (flags & HbFrameDrawerPrivate::LayoutDirectionSet) {
             usedDirection = layoutDirection;
         } else {
-			usedDirection = QApplication::layoutDirection();
+            usedDirection = QApplication::layoutDirection();
         }
 
         return usedDirection == Qt::LeftToRight ? false : true;
@@ -914,9 +955,9 @@ bool HbFrameDrawerPrivate::isMirrored()
 bool HbFrameDrawerPrivate::hasBorderWidths() const
 {
     return borderWidths[1] > 0
-        || borderWidths[2] > 0
-        || borderWidths[2] > 0
-        || borderWidths[3] > 0;
+           || borderWidths[2] > 0
+           || borderWidths[2] > 0
+           || borderWidths[3] > 0;
 }
 
 /*!
@@ -925,40 +966,40 @@ bool HbFrameDrawerPrivate::hasBorderWidths() const
 void HbFrameDrawerPrivate::reset(bool resetFrameCount, bool unloadedByServer)
 {
     unLoadIcon(unloadedByServer);
-    if ( resetFrameCount ) {
+    if (resetFrameCount) {
         frameParts = 0;
     }
 }
 
 /*!
-*	Resets the MaskableIcon 
+*   Resets the MaskableIcon
 */
 void HbFrameDrawerPrivate::resetMaskableIcon()
 {
-#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
     HbIconLoader *loader = HbIconLoader::global();
-    if ( icon ) {  
-      //consolidated icon case 
-      icon->decrementRefCount();    
-      if ( icon->refCount() == 0 && icon->isCreatedOnServer() ) {
-          // remove the item from cache and delete the icon
-          loader->removeItemInCache( icon->iconImpl() );
-          icon->dispose();
-      }
-      icon = 0;              
-    } else {            
+    if (icon) {
+        //consolidated icon case
+        icon->decrementRefCount();
+        if (icon->refCount() == 0 && icon->isCreatedOnServer()) {
+            // remove the item from cache and delete the icon
+            loader->removeItemInCache(icon->iconImpl());
+            icon->dispose();
+        }
+        icon = 0;
+    } else {
         int count = fallbackMaskableIconList.count();
-        if ( count ) {
+        if (count) {
             // for each item in fallbackMaskableIconList - decrement the reference count and
             // remove the item in cache, dispose if needed.
-            foreach ( HbMaskableIconImpl* impl, fallbackMaskableIconList ) {
-                   impl->decrementRefCount();
-                   if ( impl->refCount() == 0 && impl->isCreatedOnServer() ) {
-                       loader->removeItemInCache( impl->iconImpl() );     
-                       impl->dispose();
-                   } 
-            }                                   
-            fallbackMaskableIconList.clear(); 
+            foreach(HbMaskableIconImpl * impl, fallbackMaskableIconList) {
+                impl->decrementRefCount();
+                if (impl->refCount() == 0 && impl->isCreatedOnServer()) {
+                    loader->removeItemInCache(impl->iconImpl());
+                    impl->dispose();
+                }
+            }
+            fallbackMaskableIconList.clear();
         }
     }
     frameParts = 0;
@@ -1006,7 +1047,7 @@ QString HbFrameDrawerPrivate::multiPartIconId() const
             id.append("_0");
         }
 
-        for (int i = 0;i < 4; i++) { 
+        for (int i = 0; i < 4; i++) {
             QString boundary;
             id.append("_");
             id.append(boundary.setNum(borderWidths[i]));
@@ -1014,7 +1055,7 @@ QString HbFrameDrawerPrivate::multiPartIconId() const
     }
 
     for (int i = 0; i < suffixList.count(); i++) {
-        id.append( suffixList[i] );
+        id.append(suffixList[i]);
     }
 
     return id;
@@ -1026,7 +1067,7 @@ void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
     if (icon) {
         //If a consolidated (stitched) icon was created on the themeserver, then
         //HbIconLoader::unloadIcon() is used to unload it.
-        loader->unLoadIcon(icon->iconImpl(),unloadedByServer);
+        loader->unLoadIcon(icon->iconImpl(), unloadedByServer);
         icon->dispose();
         icon = 0;
     }
@@ -1035,7 +1076,7 @@ void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
     QVector<HbIconImpl *> fallbackIconList;
     int count = fallbackMaskableIconList.count();
     for (int i = 0; i < count ; i++) {
-        if ( fallbackMaskableIconList.at(i) ) {
+        if (fallbackMaskableIconList.at(i)) {
             fallbackIconList.append(fallbackMaskableIconList.at(i)->iconImpl());
         }
     }
@@ -1044,24 +1085,24 @@ void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
         //If a consolidated (stitched) icon-creation on themeserver fails, unload-request for all individual
         //frame-items are batched together in a single IPC, which is initiated in HbIconLoader::unLoadMultiIcon().
         loader->unLoadMultiIcon(fallbackIconList);
-        for (int i=0; i < count ; i++) {
-            if ( fallbackMaskableIconList.at(i) ) {
+        for (int i = 0; i < count ; i++) {
+            if (fallbackMaskableIconList.at(i)) {
                 fallbackMaskableIconList.at(i)->dispose();
             }
         }
-     }
+    }
     fallbackIconList.clear();  // vector of HbIconImpl*
     fallbackMaskableIconList.clear(); // vector of HbMaskableIconImpl*
 }
 
-void HbFrameDrawerPrivate::themeChange( const QStringList &updatedFiles)
+void HbFrameDrawerPrivate::themeChange(const QStringList &updatedFiles)
 {
     bool unloadIcons = false;
     if (updatedFiles.count() == 0 || (icon && updatedFiles.contains(icon->iconFileName()))) {
         unloadIcons = true;
     } else {
         HbMaskableIconImpl *fallbackIcon;
-        foreach (fallbackIcon, fallbackMaskableIconList) {
+        foreach(fallbackIcon, fallbackMaskableIconList) {
             if (fallbackIcon && updatedFiles.contains(fallbackIcon->iconFileName())) {
                 unloadIcons = true;
                 break;
@@ -1079,8 +1120,8 @@ void HbFrameDrawerPrivate::themeChange( const QStringList &updatedFiles)
 HbFrameDrawer::HbFrameDrawer(bool cacheFlag)
 {
     d = new HbFrameDrawerPrivate();
-    if ( !cacheFlag ) {
-        d->flags &= HbFrameDrawerPrivate::DoNotCache;  
+    if (!cacheFlag) {
+        d->flags &= HbFrameDrawerPrivate::DoNotCache;
     }
 }
 
@@ -1089,15 +1130,15 @@ HbFrameDrawer::HbFrameDrawer(bool cacheFlag)
 HbFrameDrawer::HbFrameDrawer(const QString &frameGraphicsName, FrameType type, bool cacheFlag)
 {
     d = new HbFrameDrawerPrivate(frameGraphicsName, type);
-    if ( !cacheFlag ) {
+    if (!cacheFlag) {
         d->flags &= HbFrameDrawerPrivate::DoNotCache;
-    }  
+    }
 }
 
 /*!
 * Copy constructs a new frame drawer using the \a other frame drawer.
 * This is very fast.
-* Copy-on-write semantics is used, so this only does a shallow copy. 
+* Copy-on-write semantics is used, so this only does a shallow copy.
 */
 HbFrameDrawer::HbFrameDrawer(const HbFrameDrawer &other) :
     d(other.d)
@@ -1106,7 +1147,7 @@ HbFrameDrawer::HbFrameDrawer(const HbFrameDrawer &other) :
 
 /*!
 * Assigns the \a other frame drawer to this frame drawer and returns a reference to
-* this frame drawer. Copy-on-write semantics is used, so this only does a shallow copy. 
+* this frame drawer. Copy-on-write semantics is used, so this only does a shallow copy.
 */
 HbFrameDrawer &HbFrameDrawer::operator=(const HbFrameDrawer &other)
 {
@@ -1146,14 +1187,19 @@ QString HbFrameDrawer::frameGraphicsName() const
 /*!
 * Sets the frame graphics name. See the class description for the file name convention for different frame parts.
 * \sa HbFrameDrawer::frameGraphicsName()
+* \note Logical frame names that define a themable frame should not include filename extension, whereas absolute filenames
+* must include full path and filename extension.
 */
 void HbFrameDrawer::setFrameGraphicsName(const QString &frameGraphicsName)
 {
-    // Remove possible file extension
     QString nameWithoutExt = frameGraphicsName;
-    int index = nameWithoutExt.lastIndexOf(QChar('.'));
-    if (index>0) {
-        nameWithoutExt.resize(index);
+
+    if (HbThemeUtils::isLogicalName(frameGraphicsName)) {
+        // Remove possible file extension
+        int index = nameWithoutExt.lastIndexOf(QChar('.'));
+        if (index>0) {
+            nameWithoutExt.resize(index);
+        }
     }
 
     if (d->frameGraphicsName != nameWithoutExt) {
@@ -1164,7 +1210,7 @@ void HbFrameDrawer::setFrameGraphicsName(const QString &frameGraphicsName)
         d->defaultMirroring = HbFrameDrawerPrivate::Unknown;
 
         // if graphicsItem is set, request redraw
-        if ( d->graphicsItem ) {
+        if (d->graphicsItem) {
             d->graphicsItem->update();
         }
     }
@@ -1216,7 +1262,7 @@ void HbFrameDrawer::borderWidths(qreal &left, qreal &top, qreal &right, qreal &b
 * - Left part width = (default size of the left part graphics scaled to the bounding rectangle).width
 * - Right part width = (default size of the right part graphics scaled to the bounding rectangle).width
 * - Center part width = remaining width
-* 
+*
 * Frame type \b ThreePiecesVertical:
 *
 * - Top part height = (default size of the top part graphics scaled to the bounding rectangle).height
@@ -1232,16 +1278,16 @@ void HbFrameDrawer::borderWidths(qreal &left, qreal &top, qreal &right, qreal &b
 */
 void HbFrameDrawer::setBorderWidths(const qreal left, const qreal top, const qreal right, const qreal bottom)
 {
-	d->setBorderApiProtectionFlag(true);
-    if ( left != d->borderWidths[0] || top != d->borderWidths[1] ||
-         right != d->borderWidths[2] || bottom != d->borderWidths[3] ) {
+    d->setBorderApiProtectionFlag(true);
+    if (left != d->borderWidths[0] || top != d->borderWidths[1] ||
+            right != d->borderWidths[2] || bottom != d->borderWidths[3]) {
         // Negative values are converted to zero.
         d->borderWidths[0] = qMax((qreal)0.0, left);
         d->borderWidths[1] = qMax((qreal)0.0, top);
         d->borderWidths[2] = qMax((qreal)0.0, right);
         d->borderWidths[3] = qMax((qreal)0.0, bottom);
         // borderWidths changed, clear frame icon
-        d->reset( false );
+        d->reset(false);
     }
 }
 
@@ -1254,7 +1300,7 @@ void HbFrameDrawer::setBorderWidths(const qreal left, const qreal top, const qre
 */
 void HbFrameDrawer::setBorderWidths(const qreal horizontal, const qreal vertical)
 {
-    setBorderWidths( horizontal, vertical, horizontal, vertical );
+    setBorderWidths(horizontal, vertical, horizontal, vertical);
 }
 
 /*!
@@ -1266,7 +1312,7 @@ void HbFrameDrawer::setBorderWidths(const qreal horizontal, const qreal vertical
 */
 void HbFrameDrawer::setBorderWidth(const qreal width)
 {
-    setBorderWidths( width, width, width, width );
+    setBorderWidths(width, width, width, width);
 }
 
 
@@ -1288,7 +1334,7 @@ void HbFrameDrawer::setRect(const QRectF &rect)
     if (rect != d->rect) {
         d->rect = rect;
         // Rect changed, clear frame icon
-        d->reset( false );
+        d->reset(false);
     }
 }
 
@@ -1297,7 +1343,7 @@ void HbFrameDrawer::setRect(const QRectF &rect)
 */
 void HbFrameDrawer::paint(QPainter *painter, const QRectF &rect) const
 {
-    const_cast<HbFrameDrawer*>(this)->setRect( rect );
+    const_cast<HbFrameDrawer *>(this)->setRect(rect);
 
     if (d->frameGraphicsName.isEmpty() || d->type == HbFrameDrawer::Undefined || d->rect.isEmpty()) {
         return;
@@ -1306,11 +1352,14 @@ void HbFrameDrawer::paint(QPainter *painter, const QRectF &rect) const
     // Lazy graphics rasterizing is used.
     // Rasterize the frame parts now if that has not been done yet.
     if (d->icon && (rect.toRect().size() !=  d->prevRect.size())) {
-        d->reset(); 
-    }    
-    
+        d->reset();
+    }
+
     // update the rendering mode
-    HbIconLoader::global()->updateRenderingMode(painter->paintEngine()->type());    
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (paintEngine) {
+        HbIconLoader::global()->updateRenderingMode(paintEngine->type());
+    }
     d->prepareFrameIcon();
     d->prevRect = rect.toRect();
     // Paint the frame
@@ -1346,15 +1395,15 @@ bool HbFrameDrawer::fillWholeRect() const
 */
 void HbFrameDrawer::setFillWholeRect(bool fill)
 {
-    if ( (fill && !d->fillWholeRect()) || (!fill && d->fillWholeRect()) ) {
-        if ( fill ) {
+    if ((fill && !d->fillWholeRect()) || (!fill && d->fillWholeRect())) {
+        if (fill) {
             d->flags |= HbFrameDrawerPrivate::FillWholeRect;
         } else {
             d->flags &= ~HbFrameDrawerPrivate::FillWholeRect;
         }
 
         // Fill mode changed, clear frame Icon
-        d->reset( false );
+        d->reset(false);
     }
 }
 
@@ -1374,7 +1423,7 @@ void HbFrameDrawer::setMirroringMode(HbIcon::MirroringMode mode)
     if (mode != d->mirroring) {
         d->mirroring = mode;
         // Mirroring changed, clear frame Icon
-        d->reset( false );
+        d->reset(false);
     }
 }
 
@@ -1444,13 +1493,13 @@ void HbFrameDrawer::setFileNameSuffixList(const QStringList &list)
     }
 }
 
-/*! 
-* Sets the mask to be applied with the the entire frame icon.
+/*!
+* Sets the mask to be applied with the entire frame icon.
 * If the mask is also a frame item, use another frame drawer to draw it.
 * Mask should be of the same size as returned by frameSize().
 * To unset the mask, set it to a null pixmap.
-* 
-* \warning Currently this method makes use of pixmap() routine in case of NVG icons. 
+*
+* \warning Currently this method makes use of pixmap() routine in case of NVG icons.
 * pixmap() slows down the hardware accelerated rendering.
 * \sa frameSize(), mask()
 */
@@ -1460,9 +1509,9 @@ void HbFrameDrawer::setMask(const QPixmap &mask)
     d->maskChanged = true;
 }
 
-/*! 
+/*!
 * Sets the \a clipPath to be applied with the entire frame icon.
-* 
+*
 */
 void HbFrameDrawer::setClipPath(const QPainterPath &clipPath)
 {
@@ -1471,7 +1520,7 @@ void HbFrameDrawer::setClipPath(const QPainterPath &clipPath)
 
 /*!
 * Returns the clippath set on the frame drawer.
-* As default, returns a empty QPainterPath.
+* By default, returns a empty QPainterPath.
 * \sa setClipPath()
 */
 
@@ -1480,13 +1529,13 @@ QPainterPath HbFrameDrawer::clipPath() const
     return d->clipPath;
 }
 
-/*! 
-* Sets the mask to be applied with the the entire frame icon.
+/*!
+* Sets the mask to be applied with the entire frame icon.
 * If the mask is also a frame item, use another frame drawer to draw it.
 * Mask should be of the same size as returned by frameSize().
 * To unset the mask, set it to a null bitmap.
 *
- \warning Currently this method makes use of pixmap() routine in case of NVG icons. 
+ \warning Currently this method makes use of pixmap() routine in case of NVG icons.
 * pixmap() slows down the hardware accelerated rendering.
 *
 *\sa frameSize(), mask()
@@ -1499,7 +1548,7 @@ void HbFrameDrawer::setMask(const QBitmap &mask)
 
 /*!
 * Returns the mask set on the frame drawer.
-* As default, returns a null pixmap.
+* By default, returns a null pixmap.
 * \sa setMask()
 */
 
@@ -1511,7 +1560,7 @@ QPixmap HbFrameDrawer::mask() const
 
 /*!
 * Returns the mask set on the frame drawer.
-* As default, returns a null bitmap.
+* By default, returns a null bitmap.
 * \sa setMask()
 */
 QBitmap HbFrameDrawer::maskBitmap() const
@@ -1519,7 +1568,7 @@ QBitmap HbFrameDrawer::maskBitmap() const
     return d->mask;
 }
 /*!
- * Returns the size of the entire frame icon. 
+ * Returns the size of the entire frame icon.
  * Use this method to retrieve the correct size for a mask pixmap that can be set with method setMask().
  * If the frame graphics name, bounding rectangle or frame type have not been set, this method returns
  * an empty size.
@@ -1564,27 +1613,27 @@ void HbFrameDrawer::themeChanged()
 *
 * Valid only when the mirroring mode is HbIcon::LayoutDirection.
 */
-void HbFrameDrawer::setLayoutDirection( Qt::LayoutDirection direction )
+void HbFrameDrawer::setLayoutDirection(Qt::LayoutDirection direction)
 {
     d->flags |= HbFrameDrawerPrivate::LayoutDirectionSet;
 
-    if ( d->layoutDirection != direction ) {
+    if (d->layoutDirection != direction) {
         d->layoutDirection = direction;
-        
-        if ( ( d->mirroring == HbIcon::Default 
-               && d->defaultMirroring == HbFrameDrawerPrivate::Enabled ) ||
-            d->mirroring == HbIcon::LayoutDirection) {
 
-            d->reset( false );
+        if ((d->mirroring == HbIcon::Default
+                && d->defaultMirroring == HbFrameDrawerPrivate::Enabled) ||
+                d->mirroring == HbIcon::LayoutDirection) {
+
+            d->reset(false);
         }
     }
 }
 
 /*!
 * Sets the \a item which is needs to be redrawn when the frame drawer
-* needs re-paint. 
+* needs re-paint.
 */
-void HbFrameDrawer::setGraphicsItem( QGraphicsItem *item )
+void HbFrameDrawer::setGraphicsItem(QGraphicsItem *item)
 {
     d->graphicsItem = item;
 }

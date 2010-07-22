@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="60px" version="1.1" viewBox="0 0 20 60" width="20px" x="0px" y="0px">
+<svg baseProfile="tiny" height="60px" version="1.1" viewBox="0 0 20 60" width="20px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path d="M20,60H4c-2.209,0-4-1.791-4-4V4c0-2.209,1.791-4,4-4h16V60z" fill="url(#SVGID_1_)"/>
-<path d="M4,1C2.346,1,1,2.346,1,4v52c0,1.654,1.346,3,3,3h15V1H4z M18,58H4c-1.103,0-2-0.898-2-2V4  c0-1.104,0.897-2,2-2h14V58z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M4,0C1.791,0,0,1.791,0,4v52c0,2.209,1.791,4,4,4h16V0H4z M19,59H4c-1.652,0-2.998-1.346-2.998-3.002V4  c0-1.654,1.346-3,2.998-3h15V59z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M4,1C2.346,1,1,2.346,1,4v52c0,1.654,1.346,3,3,3h15V1H4z M18,58H4c-1.104,0-2-0.897-2-2V4  c0-1.103,0.896-2,2-2h14V58z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M4,0C1.791,0,0,1.791,0,4v52c0,2.209,1.791,4,4,4h16V0H4z M19,59H4c-1.652,0-2.998-1.346-2.998-3.001V4  c0-1.654,1.346-3,2.998-3h15V59z" fill-opacity="0.2" stroke-opacity="0.2"/>
 <rect fill="#FFFFFF" fill-opacity="0.4" fill-rule="evenodd" height="1" stroke-opacity="0.4" width="8" x="6" y="21"/>
 <rect fill-opacity="0.2" fill-rule="evenodd" height="1" stroke-opacity="0.2" width="8" x="6" y="20"/>
 <rect fill="#FFFFFF" fill-opacity="0.4" fill-rule="evenodd" height="1" stroke-opacity="0.4" width="8" x="6" y="31"/>
@@ -11,9 +11,9 @@
 <rect fill="#FFFFFF" fill-opacity="0.4" fill-rule="evenodd" height="1" stroke-opacity="0.4" width="8" x="6" y="41"/>
 <rect fill-opacity="0.2" fill-rule="evenodd" height="1" stroke-opacity="0.2" width="8" x="6" y="40"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="10.0005" x2="10.0005" y1="60" y2="0.6675">
-<stop offset="0" style="stop-color:#009DD9"/>
-<stop offset="1" style="stop-color:#004F80"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="10.0005" x2="10.0005" y1="60" y2="0.3326">
+<stop offset="0" style="stop-color:#65B8CC"/>
+<stop offset="1" style="stop-color:#306D8C"/>
 </linearGradient>
 </defs>
 </svg>

@@ -54,8 +54,8 @@ public: // From QInputContext
     void reset();
     void sendEvent(const QInputMethodEvent &event);
     void update();
-    void widgetDestroyed(QWidget* widget);
-    void setFocusWidget(QWidget* widget);
+    void widgetDestroyed(QWidget *widget);
+    void setFocusWidget(QWidget *widget);
 
 private:
     inline bool hasAlreadyInputFrameworkFocus(HbInputMethod *activeMethod, QObject *editorWidget) const;

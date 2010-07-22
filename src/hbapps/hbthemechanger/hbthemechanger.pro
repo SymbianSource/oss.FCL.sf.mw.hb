@@ -30,26 +30,33 @@ TARGET.EPOCHEAPSIZE = 0x20000 0x1000000
 QT += network
 DEFINES += HB_RESOURCES_DIR=\"\\\"$${HB_RESOURCES_DIR}\\\"\"
 
+CONFIG += hb
+
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
 hbAddLibrary(hbwidgets/HbWidgets)
+hbAddLibrary(hbutils/HbUtils)
 
 # Input
 HEADERS += themechangerdefs.h
 HEADERS += themeselectionlist.h
+HEADERS += settingsview.h
+HEADERS += resourceview.h
 SOURCES += themeselectionlist.cpp
 SOURCES += themechangermain.cpp
+SOURCES += settingsview.cpp
+SOURCES += resourceview.cpp
 
 symbian {
     TARGET.CAPABILITY += WriteDeviceData
-    HEADERS += themeclientsymbian.h
-    SOURCES += themeclientsymbian.cpp
-} else {
-    HEADERS += themeclientqt.h
-    SOURCES += themeclientqt.cpp
+    SKINICON = qtg_large_personalization
+    
+    myrssrules = \
+    "hidden = KAppIsHidden;"
+    RSS_RULES += myrssrules
 }
 
 # installation

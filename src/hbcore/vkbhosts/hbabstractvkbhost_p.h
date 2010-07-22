@@ -44,11 +44,30 @@ public:
     bool animationAllowed;
 };
 
+
+// This class is to handle all the specific widget actions in an,
+// abstract way, put all such widget specific code in below class.
+class HbVkbHostContainerWidget
+{
+public:
+    HbVkbHostContainerWidget(QObject *containterWidget);
+    void setPos(QPointF newPosition);
+    QPointF pos();
+    QRectF sceneBoundingRect();
+    QObject *widgetObject() {
+        return mContainerWidget;
+    }
+    void connectSignals(QObject *receiver);
+    void disconnectSignals(QObject *receiver);
+private:
+    QPointer<QObject> mContainerWidget;
+};
+
 class HbAbstractVkbHostPrivate
 {
 public:
-    HbAbstractVkbHostPrivate(HbAbstractVkbHost *myVkbHost, QGraphicsWidget *containerWidget);
-    virtual ~HbAbstractVkbHostPrivate() {}
+    HbAbstractVkbHostPrivate(HbAbstractVkbHost *myVkbHost, QObject *containerWidget);
+    virtual ~HbAbstractVkbHostPrivate();
 
     virtual void openKeypad();
     virtual void closeKeypad();
@@ -73,9 +92,9 @@ public:
 
 public:
     HbAbstractVkbHost *q_ptr;
-    HbVirtualKeyboard *mCallback; 
+    HbVirtualKeyboard *mCallback;
     QPointer<QGraphicsWidget> mKeypad;
-    QPointer<QGraphicsWidget> mContainerWidget;
+    HbVkbHostContainerWidget *mContainerWidget;
     QSizeF mScreenSize;
     QTimeLine mTimeLine;
     HbVkbHost::HbVkbStatus mKeypadStatus;

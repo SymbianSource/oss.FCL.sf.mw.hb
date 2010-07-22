@@ -6,23 +6,34 @@ HbMessageBoxContentWidget[hasIcon="true"]{
 HbMessageBoxContentWidget[hasIcon="false"]{
     layout: text_layout;
 }
+
+
 HbMessageBoxContentWidget::text {
-	top: -var(hb-param-margin-gene-popup);
-	bottom: var(hb-param-margin-gene-popup);
-	left: -var(hb-param-margin-gene-popup);
-	right: 0 un;/*var(hb-param-margin-gene-popup);*/
-	font-variant:primary;
-    text-height:var(hb-param-text-height-primary);
-    text-line-count-max: 5;
-    text-line-count-min: 3;
-	text-align: left;
+	
+      top: -var(hb-param-margin-gene-popup);
+      bottom: var(hb-param-margin-gene-popup);
+      left: -var(hb-param-margin-gene-popup);
+      right: 0 un;/*var(hb-param-margin-gene-popup);*/
+      font-variant:primary;
+      text-height:var(hb-param-text-height-primary);
+      text-line-count-max: 5;
+      text-line-count-min: 3;
+      text-align: left;	
 }
 
+HbMessageBoxContentWidget::text[hasIcon="true"]
+{
+      min-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen)-2*var(hb-param-margin-gene-popup)-var(hb-param-graphic-size-primary-large));
+}
+HbMessageBoxContentWidget::text[hasIcon="false"]
+{
+      min-width: expr(var(hb-param-screen-short-edge)-*2var(hb-param-margin-gene-screen)-var(hb-param-margin-gene-popup));
+}
 HbMessageBoxContentWidget::icon
 {
-	top: -var(hb-param-margin-gene-popup);
-	left: -var(hb-param-margin-gene-popup);
-    fixed-width: var(hb-param-graphic-size-primary-large);
-    fixed-height: var(hb-param-graphic-size-primary-large);
+      top: -var(hb-param-margin-gene-popup);
+      left: -var(hb-param-margin-gene-popup);
+      fixed-width: var(hb-param-graphic-size-primary-large);
+      fixed-height: var(hb-param-graphic-size-primary-large);
 }
 

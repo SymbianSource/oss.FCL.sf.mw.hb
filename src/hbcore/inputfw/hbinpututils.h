@@ -36,9 +36,9 @@ class HbLanguageDatabaseInterface;
 class QInputContextPlugin;
 class QWidget;
 class QGraphicsWidget;
+class QGraphicsProxyWidget;
 
-struct HbInputMethodList
-{
+struct HbInputMethodList {
     QStringList dllName;
     QStringList key;
 };
@@ -50,18 +50,19 @@ public:
     static inline bool isQwertyKeyboard(HbKeyboardType keyboardType);
     static inline bool isTouchKeyboard(HbKeyboardType keyboardType);
     static bool isCaseSensitiveMode(HbInputModeType inputMode);
-    static QChar findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
-                                                    const HbInputLanguage language,
-                                                    const HbInputDigitType digitType = HbDigitTypeLatin);
+    static QChar findFirstNumberCharacterBoundToKey(const HbMappedKey *key,
+            const HbInputLanguage language,
+            const HbInputDigitType digitType = HbDigitTypeLatin);
 
-    static void listAvailableLanguageDatabasePlugins(QStringList& result, const QString& subfolder);
-    static HbLanguageDatabaseInterface* languageDatabasePluginInstance(const QString& pluginFileName, const QString& subfolder);
+    static void listAvailableLanguageDatabasePlugins(QStringList &result, const QString &subfolder);
+    static HbLanguageDatabaseInterface *languageDatabasePluginInstance(const QString &pluginFileName, const QString &subfolder);
 
     static void listSupportedInputLanguages(QList<HbInputLanguage>& results);
 
-    static QWidget* createWrapperWidget(QGraphicsWidget* graphicsWidget);
-    static QGraphicsWidget* createGraphicsProxyWidget(QWidget* widget);
-    static HbInputDigitType inputDigitType(HbInputLanguage language);	
+    static QWidget *createWrapperWidget(QGraphicsWidget *graphicsWidget);
+    static QGraphicsWidget *createGraphicsProxyWidget(QWidget *widget);
+    static HbInputDigitType inputDigitType(HbInputLanguage language);
+    static QGraphicsProxyWidget *graphicsProxyWidget(const QWidget *w);
 };
 
 /*!
@@ -85,7 +86,7 @@ Returns true if given keyboard type is virtual keyboard.
 */
 inline bool HbInputUtils::isTouchKeyboard(HbKeyboardType keyboardType)
 {
-   return (keyboardType & HbTouchInputMask) != 0;
+    return (keyboardType & HbTouchInputMask) != 0;
 }
 
 #endif // HB_INPUT_UTILS_H

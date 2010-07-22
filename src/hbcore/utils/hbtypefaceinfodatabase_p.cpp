@@ -50,11 +50,12 @@
 #define TITLE_STRING "title"
 #define DIGITAL_STRING "digital"
 #define UNDEFINED_STRING "undefined"
+#define ALIAS_STRING "alias"
 
 #define TYPEFACE_METRICS_FILE_STEM "typeface_metrics_"
-#define LARGEST_SIZE 100
+static const int LARGEST_SIZE = 100;
 // Following must be greater than 0
-#define SMALLEST_SIZE 1
+static const int SMALLEST_SIZE = 1;
 
 
 
@@ -91,6 +92,15 @@ static bool encodeRole(const QString& roleName, HbFontSpec::Role &role)
     return encoded;
 }
 
+static bool isAliasRole(const QString &roleName)
+{
+	bool alias(false); // return value
+    QString name = roleName.toLower();
+    if (name == ALIAS_STRING) {
+        alias = true;
+    }
+	return alias;
+}
 /*!
 Returns path to a writable location that should be used as a base storage folder for
 dynamic metric creation.
@@ -165,19 +175,25 @@ void HbTypefaceInfoDatabase::init()
     }
     else {
         QString role;
-        QString family;
+        QString family, aliasFamily;
         bool isBold;
-        while (parser->readMapping( role, family, isBold)) {
+        while (parser->readMapping( role, family, aliasFamily, isBold)) {
             HbTypefaceInfoItem item( mType );
             HbFontSpec::Role roleEnum;
             if (encodeRole(role, roleEnum)){
                 item.mRoleEnum = roleEnum;
                 item.mFamily = family;
                 item.mIsBold = isBold;
+				item.mIsAlias = false;
                 mTypefaceInfoVector->append( item );
             }
-            else {
-                // role might be an alias.  Not required functionality. Ignore
+            else if (isAliasRole(role)) {
+				item.mRoleEnum = HbFontSpec::Undefined;
+				item.mFamily = aliasFamily;
+				item.mAliasedFamily = family;
+				item.mIsBold = isBold;
+				item.mIsAlias = true;
+				mTypefaceInfoVector->append( item );
             }
         }
 
@@ -189,7 +205,7 @@ void HbTypefaceInfoDatabase::init()
             if( item->mRoleEnum == HbFontSpec::Secondary ) {
                 secondaryFontspec = item;
             }
-            if( item->mRoleEnum == HbFontSpec::Undefined ) {
+            if (item->mRoleEnum == HbFontSpec::Undefined && item->mIsAlias == false) {
                 undefinedFontspec = item;
             }
         }
@@ -226,7 +242,8 @@ void HbTypefaceInfoDatabase::init()
 
 
 
-bool HbTypefaceInfoDatabase::readTypefaceMetricsFile( HbTypefaceXmlParser *parser, HbTypefaceInfoItem *typeFaceInfoItem )
+bool HbTypefaceInfoDatabase::readTypefaceMetricsFile( HbTypefaceXmlParser *parser, 
+													 HbTypefaceInfoItem *typeFaceInfoItem )
 {
     int numPoints(0);
 
@@ -254,7 +271,8 @@ bool HbTypefaceInfoDatabase::readTypefaceMetricsFile( HbTypefaceXmlParser *parse
 	delete file;
 
 #ifdef HBTYPEFACEINFO_DEBUG_ENABLE
-    qDebug("HbDownsizeInfo::readTypefaceMetricsFile: typeface metric filename: %s", typefaceMetricsFileName.toAscii().constData());
+    qDebug("HbDownsizeInfo::readTypefaceMetricsFile: typeface metric filename: %s", 
+		typefaceMetricsFileName.toAscii().constData());
 #endif
     parser->setFilePath(typefaceMetricsFileName);
 

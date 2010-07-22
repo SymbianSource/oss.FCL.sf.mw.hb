@@ -30,6 +30,7 @@
 #include "hbabstractitemcontainer_p.h"
 #include "hbabstractitemview.h"
 #include "hblistviewitem.h"
+#include "hblistview.h"
 #include "hbmodeliterator.h"
 
 #include <qmath.h>
@@ -129,7 +130,7 @@ HbAbstractViewItem *HbListItemContainerPrivate::shiftUpItem(QPointF& delta)
 bool HbListItemContainerPrivate::intoContainerBuffer(const QModelIndex &index) const
 {   
     if (!mItems.isEmpty() 
-        && mItems.first()->modelIndex().row() <= index.row()   
+        && mItems.first()->modelIndex().row() <= index.row()
         && mItems.last()->modelIndex().row() >= index.row()){
         return true;
     } else {
@@ -168,7 +169,7 @@ qreal HbListItemContainerPrivate::getSmallestItemHeight() const
     if (minHeight == 0.0) {
         QModelIndex index;
         while (mItems.isEmpty()) {
-            // in practise following conditions must apply: itemview is empty and scrollTo() has been called.
+            // in practize following conditions must apply: itemview is empty and scrollTo() has been called.
             // Starts populating items from given mFirstItemIndex
             if ( mFirstItemIndex.isValid()) {
                 index = mFirstItemIndex;
@@ -237,22 +238,31 @@ void HbListItemContainer::removeItem(const QModelIndex &index, bool animate)
     if (animate) {
         Q_D(HbListItemContainer);
 
-        int itemCount = d->mItems.count();
-        HbAbstractViewItem *item = 0;
-        for (int i = 0; i < itemCount; ++i) {
-            item = d->mItems.at(i);
-            if (item->modelIndex() == index) {
-                QPair<HbAbstractViewItem *, int> pair(item, i);
+        HbAbstractViewItem *viewItem = d->item(index);
+        if (viewItem) {
+            if (HbEffect::effectRunning(viewItem)) {
+                QPair<HbAbstractViewItem *, int> pair(viewItem, d->mapToLayoutIndex(d->mItems.indexOf(viewItem)));
                 d->mAnimatedItems.append(pair);
             }
-        }
-
-        if (!item) {
+        } else {
             return;
         }
     }
 
     HbAbstractItemContainer::removeItem(index, animate);
+}
+
+/*!
+    Sets the modelIndexes of \a count container items starting from item at \a containerStartRow row of the container
+	to model's indexes starting from \a modelStartRow
+*/
+void HbListItemContainer::setItemModelIndexes(int containerStartRow, int modelStartRow, int count)
+{
+    Q_D(HbListItemContainer);
+
+    for (int i = 0; i <= count; ++i) {
+        setItemModelIndex(d->mItems.at(containerStartRow + i), d->mItemView->modelIterator()->index(modelStartRow + i));
+    }
 }
 
 /*!
@@ -385,7 +395,7 @@ QPointF HbListItemContainer::recycleItems(const QPointF &delta)
                 // because only then container can go out of bounds
                 qreal viewSize = itemView()->boundingRect().size().height();
                 if (layoutPreferredHeight + pos().y() < viewSize) {
-                    // position is allways negative
+                    // position is always negative
                     // view out of bounds
                     if (diff > 0.0) {
                         QPointF posDiff(pos().x(), 0.0);
@@ -506,6 +516,8 @@ void HbListItemContainer::animationFinished(const HbEffect::EffectStatus &status
             newPos.setY(newPos.y() - item->preferredHeight());
             setPos(newPos);
         }
+
+        d->adjustContent();
     } else {
         item->deleteLater();
     }

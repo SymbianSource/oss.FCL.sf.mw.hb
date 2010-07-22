@@ -80,26 +80,30 @@ HbVgFrameEffectPrivate::HbVgFrameEffectPrivate()
  * \internal
  */
 QRectF HbVgFrameEffectPrivate::deviceRectForSource(DeviceRectType type,
-                                                   QPaintDevice *pdev)
+        QPaintDevice *pdev)
 {
     Q_Q(HbVgFrameEffect);
     QRectF br = type == IncludeChildren
-        ? q->sourceBoundingRectForRoot()
-        : q->sourceItemForRoot()->boundingRect();
+                ? q->sourceBoundingRectForRoot()
+                : q->sourceItemForRoot()->boundingRect();
     QRect result = worldTransform.mapRect(br).toAlignedRect();
     if (pdev) {
         int left, top, right, bottom;
         result.getCoords(&left, &top, &right, &bottom);
-        if (left < 0)
+        if (left < 0) {
             result.setX(0);
-        if (top < 0)
+        }
+        if (top < 0) {
             result.setY(0);
+        }
         int deviceWidth = pdev->width();
         int deviceHeight = pdev->height();
-        if (right > deviceWidth - 1)
+        if (right > deviceWidth - 1) {
             result.setRight(deviceWidth - 1);
-        if (bottom > deviceHeight - 1)
+        }
+        if (bottom > deviceHeight - 1) {
             result.setBottom(deviceHeight - 1);
+        }
     }
     return result;
 }
@@ -127,8 +131,9 @@ QColor HbVgFrameEffect::color() const
 void HbVgFrameEffect::setColor(const QColor &color)
 {
     Q_D(HbVgFrameEffect);
-    if (d->color == color)
+    if (d->color == color) {
         return;
+    }
     d->color = color;
     updateEffect();
     emit colorChanged(color);
@@ -159,8 +164,9 @@ void HbVgFrameEffect::performEffect(QPainter *painter,
     Q_UNUSED(vgImageSize);
 
     Q_D(HbVgFrameEffect);
-    if (d->hints & DrawSourceHint)
+    if (d->hints & DrawSourceHint) {
         painter->drawPixmap(offset, d->srcPixmap);
+    }
     painter->setOpacity(d->opacity);
     painter->setPen(d->color);
     painter->drawRect(d->deviceRectForSource(

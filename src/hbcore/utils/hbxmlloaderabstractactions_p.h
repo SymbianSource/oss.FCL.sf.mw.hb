@@ -31,6 +31,7 @@
 
 #include <hbglobal.h>
 #include <hbnamespace.h>
+#include <hbanchor.h>
 
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
@@ -67,7 +68,6 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractActions
             const QString &name,
             const QString &role,
             const QString &plugin );
-        virtual bool pushSpacerItem( const QString &name, const QString &widget );
         virtual bool pushConnect(
             const QString &srcName,
             const QString &signalName,
@@ -99,25 +99,26 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractActions
             bool fixed);
         virtual bool setToolTip( const HbXmlVariable &tooltip );
 
-        virtual bool createAnchorLayout( const QString &widget );
-        virtual bool addAnchorLayoutEdge(
+        virtual bool createAnchorLayout( const QString &widget, bool modify );
+        virtual bool addAnchorLayoutItem(
             const QString &src,
+            const QString &srcId,
             Hb::Edge srcEdge, 
             const QString &dst,
+            const QString &dstId,
             Hb::Edge dstEdge,
-            const HbXmlLengthValue &spacing,
-            const QString &spacer = QString() );
-        
-        virtual bool createMeshLayout( const QString &widget );
-        virtual bool addMeshLayoutEdge(
-            const QString &src,
-            Hb::Edge srcEdge, 
-            const QString &dst,
-            Hb::Edge dstEdge,
-            const HbXmlLengthValue &spacing,
-            const QString &spacer = QString() );
+            const HbXmlLengthValue &minLength,
+            const HbXmlLengthValue &prefLength,
+            const HbXmlLengthValue &maxLength,
+            QSizePolicy::Policy *policy, 
+            HbAnchor::Direction *dir,
+            const QString &anchorId );
+        virtual bool setAnchorLayoutMapping( const QString &item, const QString &id, bool remove);
 
-        virtual bool createGridLayout( const QString &widget, const HbXmlLengthValue &spacing );
+        virtual bool createGridLayout(
+            const QString &widget,
+            const HbXmlLengthValue &spacing,
+            bool modify );
         virtual bool addGridLayoutCell(
             const QString &src,
             int row, 
@@ -151,7 +152,8 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractActions
         virtual bool createLinearLayout(
             const QString &widget,
             Qt::Orientation *orientation, 
-            const HbXmlLengthValue &spacing );
+            const HbXmlLengthValue &spacing,
+            bool modify );
         virtual bool addLinearLayoutItem(
             const QString &itemname,
             int *index,
@@ -168,7 +170,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractActions
             const HbXmlLengthValue &right,
             const HbXmlLengthValue &bottom );
 
-        virtual bool createStackedLayout( const QString &widget );
+        virtual bool createStackedLayout( const QString &widget, bool modify );
         virtual bool addStackedLayoutItem( const QString &itemname, int *index );
                                 
         virtual bool createNullLayout( const QString &widget );

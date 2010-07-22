@@ -25,7 +25,9 @@
 
 #include "hbdataform_p.h"
 #include <hbdataformviewitem.h>
+#include "hbdataformviewitem_p.h"
 #include "hbdataitemcontainer_p.h"
+#include "hbdatagroup_p_p.h"
 #include <hbcombobox.h>
 #include <hbapplication.h>
 #include <hbdataformmodel.h>
@@ -81,32 +83,83 @@ void HbDataFormPrivate::init()
 void  HbDataFormPrivate::_q_page_changed(int index)
 {
     Q_Q(const HbDataForm);
-    QStringListModel *model = static_cast<QStringListModel*>(
+
+    QModelIndex childIndex = pageModelIndex(index);
+    //QModelIndex childIndex = q->model()->index(index,0);
+    HbDataFormModelItem::DataItemType itemType =
+        static_cast<HbDataFormModelItem::DataItemType>(
+        (childIndex.data(HbDataFormModelItem::ItemTypeRole)).toInt());
+
+    if(mHeadingWidget->mPageCombo) {
+        if(mHeadingWidget->mPageCombo->currentIndex() != index) {
+            QObject::disconnect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+                q,SLOT(_q_page_changed(int)));
+            mHeadingWidget->mPageCombo->setCurrentIndex(index);
+            QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+                q,SLOT(_q_page_changed(int)));
+        }
+    }
+
+   /* QStringListModel *model = static_cast<QStringListModel*>(
         mHeadingWidget->mPageCombo->model());
-    QModelIndex changedIndex = model->index(index, 0);
-    if(changedIndex.isValid()) {
-        if(changedIndex.row() != mHeadingWidget->mActivePage) {
-            QModelIndex prevPageIndex = q->model()->index(mHeadingWidget->mActivePage,0);
-            QModelIndex newPageIndex = q->model()->index(changedIndex.row(),0);
+    QModelIndex changedIndex = model->index(index, 0);*/
+    if(itemType == HbDataFormModelItem::FormPageItem) {
+        if(index != mHeadingWidget->mActivePage) {
+            QModelIndex prevPageIndex = pageModelIndex( mHeadingWidget->mActivePage );
+            QModelIndex newPageIndex = pageModelIndex( index );
             if(prevPageIndex.isValid()) {
                 HbDataGroup *prevPage = static_cast<HbDataGroup *>(
                                                q->itemByIndex(prevPageIndex));
                 if(prevPage) {
-                    prevPage->setExpanded(false);
+                    HbDataGroupPrivate::d_ptr(prevPage)->setExpanded(false);
+                } else {
+                    mContainer->setItemTransientStateValue(prevPageIndex, "expanded", false);
+
                 }
             }
             if(newPageIndex.isValid()) {
                 HbDataGroup *newPage = static_cast<HbDataGroup *>(
                                                q->itemByIndex(newPageIndex));
                 if(newPage) {
-                    newPage->setExpanded(true);
+                    HbDataGroupPrivate::d_ptr(newPage)->setExpanded(true);
+                } else {
+                    mContainer->setItemTransientStateValue(newPageIndex, "expanded", true);
                 }
             }
-            mHeadingWidget->mActivePage = changedIndex.row();
+            mHeadingWidget->mActivePage = index;
         }
     }
 }
 
+/*
+    Function to return valid modelIndex for corresponding formpage combo index.
+*/
+QModelIndex HbDataFormPrivate::pageModelIndex(int index) const 
+{
+    const Q_Q(HbDataForm);
+    int pageIndex = -1;
+    QModelIndex modelIndex;
+    
+    // Make sure that the child is groupPage type and current item is group.
+    if( index >= 0) {
+
+        HbDataFormModelItem *groupModelItem = static_cast<HbDataFormModel*>(q->model())->invisibleRootItem();
+        int childCount = groupModelItem->childCount();
+
+        for( int i = 0; i < childCount; i++) {
+            HbDataFormModelItem *child = groupModelItem->childAt(i);
+            if( child->type() == HbDataFormModelItem::FormPageItem ) {
+                pageIndex ++;
+                // get the index of groupPage
+                if(pageIndex == index) {
+                    modelIndex = static_cast<HbDataFormModel*>(q->model())->indexFromItem(child);
+                    break;                  
+                }
+            }        
+        }
+    }
+    return modelIndex;
+}
 
 /*!
     Creates a DataForm Page \a page in DataForm .
@@ -128,7 +181,7 @@ void HbDataFormPrivate::addFormPage(const QString& page)
     if(!mHeadingWidget->mPageCombo) {
         mHeadingWidget->createPrimitives();
         mHeadingWidget->mPageCombo = new HbComboBox(mHeadingWidget);
-		HbStyle::setItemName(mHeadingWidget->mPageCombo,"dataForm_Combo");
+        HbStyle::setItemName(mHeadingWidget->mPageCombo,"dataForm_Combo");
         QEvent polishEvent(QEvent::Polish);
         QCoreApplication::sendEvent(mHeadingWidget->mPageCombo, &polishEvent);
         // setFormHeading to the layout
@@ -164,37 +217,39 @@ void HbDataFormPrivate::removeFormPage(const QString& page)
     Q_Q(HbDataForm);    
 
     if(mHeadingWidget && mHeadingWidget->mPageCombo) {
+        // if we are emoving the current page
         if(mHeadingWidget->mPageCombo->currentText() == page){
-            if(mHeadingWidget->mActivePage != 0) {
+        // if we are removing the last page then set the current page as 0th
+            if( mHeadingWidget->mPageCombo->findText(page) + 1 == mHeadingWidget->mPageCombo->count()) {
                 mHeadingWidget->mPageCombo->setCurrentIndex(0);
-            }
-            else {
-                mHeadingWidget->mPageCombo->setCurrentIndex(mHeadingWidget->mActivePage+1);
+            } else {// set next page as the curent page
+                mHeadingWidget->mPageCombo->setCurrentIndex(mHeadingWidget->mPageCombo->findText(page) + 1);
             }
         }
     }
-        QObject::disconnect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+    QObject::disconnect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
 
-        mHeadingWidget->mPageCombo->removeItem(mHeadingWidget->mPageCombo->findText(page));
-        mHeadingWidget->mActivePage = mHeadingWidget->mPageCombo->currentIndex();
+    mHeadingWidget->mPageCombo->removeItem(mHeadingWidget->mPageCombo->findText(page));
+    mHeadingWidget->mActivePage = mHeadingWidget->mPageCombo->currentIndex();
         
-         QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
+    QObject::connect(mHeadingWidget->mPageCombo,SIGNAL(currentIndexChanged(int)),
             q,SLOT(_q_page_changed(int)));
+
 
    mHeadingWidget->callPolish();    
 }
 
-void HbDataFormPrivate::_q_item_displayed(const QModelIndex &index)
+/*void HbDataFormPrivate::_q_item_displayed(const QModelIndex &index)
 {
     Q_Q( HbDataForm);
     emit q->itemShown(index);
     emit q->activated(index);
     qWarning("activated signal will not be emitted when items are created ," 
         "instead itemShown SIGNAL should be used");
-}
+}*/
 
-void HbDataFormPrivate::makeConnection(QModelIndex index)
+void HbDataFormPrivate::makeConnection(QModelIndex index, HbWidget* widget)
 {
     Q_Q( HbDataForm);
     if(!index.isValid()){
@@ -205,21 +260,17 @@ void HbDataFormPrivate::makeConnection(QModelIndex index)
         if(modelItem){
             QList<ItemSignal> signalList = mConnectionList.values(modelItem);
             if(signalList.count() > 0){
-                HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*>(q->itemByIndex(index));
-                if(viewItem){
-                    HbWidget *contentWidget = viewItem->dataItemContentWidget();
-                    if(contentWidget){
-                        foreach(ItemSignal signal, signalList) {
-                            QObject *objct = signal.reciever;
-                            QString signalName = signal.signal;
-                            QString slot = signal.slot;
-                            // Make connection
-                            if(objct) { 
-                                QObject::connect(contentWidget, signalName.toAscii().data(), 
-                                    objct,slot.toAscii().data());
-                            }
-                            
+                if(widget){
+                    foreach(const ItemSignal& signal, signalList) {
+                        QObject *objct = signal.receiver;
+                        QString signalName = signal.signal;
+                        QString slot = signal.slot;
+                        // Make connection
+                        if(objct) { 
+                            QObject::connect(widget, signalName.toAscii().data(), 
+                                objct,slot.toAscii().data());
                         }
+                        
                     }
                 }
             }
@@ -227,9 +278,10 @@ void HbDataFormPrivate::makeConnection(QModelIndex index)
     }
 }
 
+
 void HbDataFormPrivate::removeConnection(HbDataFormModelItem * modelItem, 
                                   QString signal, 
-                                  QObject *reciever, 
+                                  QObject *receiver, 
                                   QString slot)
 {
     Q_Q( HbDataForm);
@@ -242,17 +294,17 @@ void HbDataFormPrivate::removeConnection(HbDataFormModelItem * modelItem,
                 static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
                 HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*>(q->itemByIndex(index));
                 if(viewItem){
-                    HbWidget *contentWidget = viewItem->dataItemContentWidget();
+                    HbWidget *contentWidget = HbDataFormViewItemPrivate::d_ptr(viewItem)->mContentWidget;
                     if(contentWidget){
                         //foreach(ItemSignal signalItem, signalList) {
                         for(int i = 0; i < signalList.count() ;i++){
                             ItemSignal signalItem = signalList.at(i);
-                            if(reciever == signalItem.reciever &&
+                            if(receiver == signalItem.receiver &&
                             signal == signalItem.signal &&
                             slot == signalItem.slot){
                             // disconnect
                                 QObject::disconnect(contentWidget, signal.toAscii().data(), 
-                                    reciever,slot.toAscii().data());
+                                    receiver,slot.toAscii().data());
                                 signalList.removeAt(i);
                                 for(int j = 0; j < signalList.count(); j++){
                                     mConnectionList.insertMulti(modelItem, signalList.at(j));
@@ -269,7 +321,7 @@ void HbDataFormPrivate::removeConnection(HbDataFormModelItem * modelItem,
 
 void HbDataFormPrivate::connectNow(HbDataFormModelItem * modelItem, 
                                    QString signal, 
-                                   QObject *reciever, 
+                                   QObject *receiver, 
                                    QString slot)
 {
     Q_Q( HbDataForm);    
@@ -277,14 +329,13 @@ void HbDataFormPrivate::connectNow(HbDataFormModelItem * modelItem,
     if(q->model()) {
         QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
         if(modelItem){
-                HbDataFormViewItem *viewItem =static_cast<HbDataFormViewItem*>( q->itemByIndex(index) );
-                if(viewItem){
-                    HbWidget *contentWidget = viewItem->dataItemContentWidget();
-                        // Make connection
-                    if(contentWidget){
-                        QObject::connect(contentWidget, signal.toAscii().data(), 
-                            reciever,slot.toAscii().data());
-                    }
+            HbDataFormViewItem *viewItem =static_cast<HbDataFormViewItem*>( q->itemByIndex(index) );
+            if(viewItem){
+                if(HbDataFormViewItemPrivate::d_ptr(viewItem)->mContentWidget) {
+                    // Make connection
+                        QObject::connect(HbDataFormViewItemPrivate::d_ptr(viewItem)->mContentWidget, signal.toAscii().data(), 
+                            receiver,slot.toAscii().data());
+                }
             }
         }
     }
@@ -303,13 +354,13 @@ void HbDataFormPrivate::removeAllConnection()
                 QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(item);
                 HbDataFormViewItem *viewItem = static_cast<HbDataFormViewItem*> (q->itemByIndex(index));
                 if(viewItem){
-                    HbWidget *contentWidget = viewItem->dataItemContentWidget();
+                    HbWidget *contentWidget = HbDataFormViewItemPrivate::d_ptr(viewItem)->mContentWidget;
                     // disconnect signal and remove signal from list
                     for(int i = 0;i<signalList.count();) {
                         ItemSignal signalItem = signalList.takeAt(i);
                             // Make connection
                         QObject::disconnect(contentWidget, signalItem.signal.toAscii().data(), 
-                                signalItem.reciever,signalItem.slot.toAscii().data());
+                                signalItem.receiver,signalItem.slot.toAscii().data());
                             
                         
                     }
@@ -330,17 +381,23 @@ void HbDataFormPrivate::removeAllConnection(HbDataFormModelItem *modelItem)
                 QModelIndex index = static_cast<HbDataFormModel*>(q->model())->indexFromItem(modelItem);
                 HbDataFormViewItem *viewItem =static_cast<HbDataFormViewItem*>( q->itemByIndex(index));
                 if(viewItem){
-                    HbWidget *contentWidget = viewItem->dataItemContentWidget();
+                    HbWidget *contentWidget = HbDataFormViewItemPrivate::d_ptr(viewItem)->mContentWidget;
                     // disconnect signal and remove signal from list
                     for(int i = 0;i<signalList.count(); ) {
                         ItemSignal signalItem = signalList.takeAt(i);
                             // Make connection
                         QObject::disconnect(contentWidget, signalItem.signal.toAscii().data(), 
-                                signalItem.reciever,signalItem.slot.toAscii().data());
+                                signalItem.receiver,signalItem.slot.toAscii().data());
                     }
                 }
             }
         }
     }
+}
+
+void HbDataFormPrivate::emitActivated(const QModelIndex &modelIndex)
+{
+    Q_Q( HbDataForm);
+    emit q->activated(modelIndex);
 }
 

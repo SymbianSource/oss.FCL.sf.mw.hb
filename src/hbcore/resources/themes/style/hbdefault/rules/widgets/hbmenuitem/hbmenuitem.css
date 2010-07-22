@@ -20,7 +20,8 @@ HbMenuItem[!separator_exists]::text
 	bottom: var(hb-param-margin-gene-bottom);
 	font-variant: primary;
 	text-height: var(hb-param-text-height-primary);	
-	text-line-count-max: 1;
+	text-line-count-min:1;
+	text-line-count-max:1;
 }
 
 HbMenuItem[separator_exists]::text

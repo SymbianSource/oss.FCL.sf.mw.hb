@@ -47,30 +47,30 @@
 
 #define EGL_DESTROY_CONTEXT(display, context) \
     if (context != EGL_NO_CONTEXT) { eglDestroyContext(display, context); }
-            
+
 // Constants
 static const int HB_BITS_PER_COLOR =    8;
 
 HbNvgIconImpl::HbNvgIconImpl(const HbSharedIconInfo &iconData,
-                             const QString& name,
-                             const QSizeF& keySize,
+                             const QString &name,
+                             const QSizeF &keySize,
                              Qt::AspectRatioMode aspectRatioMode,
                              QIcon::Mode mode,
                              bool mirrored,
                              HbRenderingMode renderMode):
-        HbIconImpl(iconData,
-                   name,
-                   keySize,
-                   aspectRatioMode,
-                   mode,
-                   mirrored,
-                   renderMode),
-        readyToRender(false),
-        specialCaseApplied(false),
-        nvgEngine(NULL),
-        eglStates(HbEglStates::global()),
-        vgImageRenderer(0),
-        pixmapIconRenderer(0)
+    HbIconImpl(iconData,
+               name,
+               keySize,
+               aspectRatioMode,
+               mode,
+               mirrored,
+               renderMode),
+    readyToRender(false),
+    specialCaseApplied(false),
+    nvgEngine(0),
+    eglStates(HbEglStates::global()),
+    vgImageRenderer(0),
+    pixmapIconRenderer(0)
 {
     eglStates->ref();
     retrieveNvgData();
@@ -97,7 +97,7 @@ VGImage HbNvgIconImpl::createVGImageFromNVG(EGLDisplay display,
         int width,
         int height,
         bool useGivenContext,
-        HbNvgEngine * nvgEngine)
+        HbNvgEngine *nvgEngine)
 {
     EGLConfig config;
 
@@ -259,7 +259,7 @@ QPixmap HbNvgIconImpl::pixmap()
     }
 
     if (currentReadSurface == EGL_NO_SURFACE) {
-         //pixmap is called without EGL being initialized
+        //pixmap is called without EGL being initialized
 
         const EGLint attribList2[] = {
             EGL_WIDTH, width,
@@ -280,20 +280,20 @@ QPixmap HbNvgIconImpl::pixmap()
     EGLContext newContext = EGL_NO_CONTEXT;
     if (eglContext == EGL_NO_CONTEXT) {
         newContext = eglCreateContext(display, config, EGL_NO_CONTEXT, 0);
-        if (newContext == EGL_NO_CONTEXT) {            
+        if (newContext == EGL_NO_CONTEXT) {
             EGL_DESTROY_SURFACE(display, dummySurface);
             return currentPixmap;
         }
     }
-    
+
     if (dummySurface) {
         if (eglMakeCurrent(display, dummySurface, dummySurface,
                            newContext) == EGL_FALSE) {
-            EGL_DESTROY_SURFACE(display, dummySurface);     
+            EGL_DESTROY_SURFACE(display, dummySurface);
             EGL_DESTROY_CONTEXT(display, newContext);
             return currentPixmap;
         }
-        
+
         surfaceImage = createVGImageFromNVG(display,
                                             dummySurface,
                                             dummySurface,
@@ -314,7 +314,7 @@ QPixmap HbNvgIconImpl::pixmap()
     }
 
     if (surfaceImage == VG_INVALID_HANDLE) {
-        EGL_DESTROY_SURFACE(display, dummySurface);     
+        EGL_DESTROY_SURFACE(display, dummySurface);
         EGL_DESTROY_CONTEXT(display, newContext);
         return currentPixmap;
     }
@@ -326,23 +326,37 @@ QPixmap HbNvgIconImpl::pixmap()
                           VG_sARGB_8888_PRE, 0, 0, width, height);
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     } else {
-        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);    
-        prevEGLState.restore();    
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        prevEGLState.restore();
         image = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
         vgGetImageSubData(surfaceImage, image.bits(), image.bytesPerLine(),
                           VG_sARGB_8888_PRE, 0, 0, width, height);
-    }    
-    
+    }
+
     vgDestroyImage(surfaceImage);
 
     EGL_DESTROY_SURFACE(display, dummySurface);
     EGL_DESTROY_CONTEXT(display, newContext);
 
     currentPixmap = QPixmap::fromImage(image);
+
+    // Apply mode
+    if (this->mode != QIcon::Normal) {
+        QStyleOption opt(0);
+        opt.palette = QApplication::palette();
+        currentPixmap = QApplication::style()->generatedIconPixmap(this->mode, currentPixmap, &opt);
+    }
+
+    // Apply color
+    if (this->color().isValid() && (this->mode != QIcon::Disabled)) {
+        QPixmap mask = currentPixmap.alphaChannel();
+        currentPixmap.fill(this->color());
+        currentPixmap.setAlphaChannel(mask);
+    }
     return currentPixmap;
 }
 
-HbNvgEngine::HbNvgErrorType HbNvgIconImpl::drawNVGIcon(const QSize & size, HbNvgEngine & nvgEngine)
+HbNvgEngine::HbNvgErrorType HbNvgIconImpl::drawNVGIcon(const QSize &size, HbNvgEngine &nvgEngine)
 {
 
     VGint                   mMatrixMode;
@@ -422,7 +436,7 @@ QSize HbNvgIconImpl::defaultSize() const
 void HbNvgIconImpl::retrieveNvgData()
 {
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-    nvgData  = QByteArray::fromRawData((char*)manager->base() + sharedIconData.nvgData.offset,
+    nvgData  = QByteArray::fromRawData((char *)manager->base() + sharedIconData.nvgData.offset,
                                        sharedIconData.nvgData.dataSize);
     defaultIconSize =
         QSize(sharedIconData.nvgData.defaultWidth, sharedIconData.nvgData.defaultHeight);
@@ -430,9 +444,9 @@ void HbNvgIconImpl::retrieveNvgData()
 
 }
 
-VGImage HbNvgIconImpl::getVgImage(HbIconImpl * impl, QPainter * painter)
+VGImage HbNvgIconImpl::getVgImage(HbIconImpl *impl, QPainter *painter)
 {
-    HbNvgIconImpl * nvgImpl = (HbNvgIconImpl*)impl;
+    HbNvgIconImpl *nvgImpl = (HbNvgIconImpl *)impl;
 
     painter->beginNativePainting();
 
@@ -449,14 +463,14 @@ VGImage HbNvgIconImpl::getVgImage(HbIconImpl * impl, QPainter * painter)
 
     return vgimage;
 }
-void HbNvgIconImpl::paint(QPainter* painter,
-                          const QRectF& rect,
+void HbNvgIconImpl::paint(QPainter *painter,
+                          const QRectF &rect,
                           Qt::Alignment alignment,
                           const QPainterPath &clipPath,
-                          HbMaskableIconImpl * maskIconData)
+                          HbMaskableIconImpl *maskIconData)
 {
 #ifdef HB_ICON_CACHE_DEBUG
-    qDebug() << "HbNvgIconImpl::paint()-->"<<this->fileName;
+    qDebug() << "HbNvgIconImpl::paint()-->" << this->fileName;
 #endif
     QSizeF renderSize = contentSize;
 
@@ -472,7 +486,8 @@ void HbNvgIconImpl::paint(QPainter* painter,
         maskApplied = true;
     }
 
-    if ((painter->paintEngine()->type() != QPaintEngine::OpenVG) || maskApplied) {
+    QPaintEngine *paintEngine = painter->paintEngine();
+    if (!paintEngine || paintEngine->type() != QPaintEngine::OpenVG || maskApplied) {
 
         painter->beginNativePainting();
         pixmap();
@@ -494,18 +509,18 @@ void HbNvgIconImpl::paint(QPainter* painter,
             return;
         }
     }
-    
+
     vgSeti(VG_RENDERING_QUALITY, VG_RENDERING_QUALITY_FASTER);
     drawNVGIcon(painter, topLeft, renderSize, settings);
 }
 
-void HbNvgIconImpl::drawNVGIcon(QPainter * painter,
-                                const QPointF & topLeft,
-                                const QSizeF & renderSize,
+void HbNvgIconImpl::drawNVGIcon(QPainter *painter,
+                                const QPointF &topLeft,
+                                const QSizeF &renderSize,
                                 NvgAspectRatioSettings settings)
 {
     nvgEngine->engine()->setPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio,
-        settings.type);
+            settings.type);
     nvgEngine->engine()->enableMirroring(mirrored);
 
     painter->beginNativePainting();
@@ -581,9 +596,9 @@ void HbNvgIconImpl::drawNVGIcon(QPainter * painter,
     painter->endNativePainting();
 }
 
-bool HbNvgIconImpl::drawRasterizedIcon(QPainter * painter,
-                                       const QPointF & topLeft,
-                                       const QSizeF & renderSize,
+bool HbNvgIconImpl::drawRasterizedIcon(QPainter *painter,
+                                       const QPointF &topLeft,
+                                       const QSizeF &renderSize,
                                        const QPainterPath &clipPath)
 {
     bool ret = false;
@@ -622,8 +637,8 @@ bool HbNvgIconImpl::drawRasterizedIcon(QPainter * painter,
     return ret;
 }
 
-QPointF HbNvgIconImpl::setAlignment(const QRectF& rect,
-                                    QSizeF& renderSize,
+QPointF HbNvgIconImpl::setAlignment(const QRectF &rect,
+                                    QSizeF &renderSize,
                                     Qt::Alignment alignment)
 {
     QPointF topLeft = rect.topLeft();

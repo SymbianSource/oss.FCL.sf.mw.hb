@@ -26,6 +26,7 @@
 #include "hbthemeserverapplication_p.h"
 #include <QTextStream>
 #include <cstdlib>
+#include <QDebug>
 
 void showHelp(const QString &argv0, const QString &error = QString())
 {
@@ -46,7 +47,16 @@ void showHelp(const QString &argv0, const QString &error = QString())
 
 int main(int argc, char *argv[])
 {
-    if(!HbThemeServerApplication::acquireLock()) {
+    // Hiding theme server from the start up in first phase
+#if QT_VERSION >= 0x040601
+    QApplication::setAttribute(Qt::AA_S60DontConstructApplicationPanes);
+#endif // QT_VERSION
+
+    // We need to be up and running fast
+    HbThemeServerApplication::setPriority();
+
+    HbThemeServerLocker locker;
+    if(!locker.lock()) {
         return 0;
     }
     

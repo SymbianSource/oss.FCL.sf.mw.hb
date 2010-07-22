@@ -42,50 +42,11 @@
 #include "hbcssscanner_p.cpp"
 #include "hbmemoryutils_p.h"
 #include "hblayeredstyleloader_p.h"
+#include "hbthemeindex_p.h"
 
 using namespace HbCss;
 
 const QString GLOBAL_CSS_SELECTOR = "*";
-
-const char *Scanner::tokenName(HbCss::TokenType t)
-{
-    switch (t) {
-        case NONE: return "NONE";
-        case S: return "S";
-        case CDO: return "CDO";
-        case CDC: return "CDC";
-        case INCLUDES: return "INCLUDES";
-        case DASHMATCH: return "DASHMATCH";
-        case LBRACE: return "LBRACE";
-        case PLUS: return "PLUS";
-        case GREATER: return "GREATER";
-        case COMMA: return "COMMA";
-        case STRING: return "STRING";
-        case INVALID: return "INVALID";
-        case IDENT: return "IDENT";
-        case HASH: return "HASH";
-        case ATKEYWORD_SYM: return "ATKEYWORD_SYM";
-        case EXCLAMATION_SYM: return "EXCLAMATION_SYM";
-        case LENGTH: return "LENGTH";
-        case PERCENTAGE: return "PERCENTAGE";
-        case NUMBER: return "NUMBER";
-        case FUNCTION: return "FUNCTION";
-        case COLON: return "COLON";
-        case SEMICOLON: return "SEMICOLON";
-        case RBRACE: return "RBRACE";
-        case SLASH: return "SLASH";
-        case MINUS: return "MINUS";
-        case DOT: return "DOT";
-        case STAR: return "STAR";
-        case LBRACKET: return "LBRACKET";
-        case RBRACKET: return "RBRACKET";
-        case EQUAL: return "EQUAL";
-        case LPAREN: return "LPAREN";
-        case RPAREN: return "RPAREN";
-        case OR: return "OR";
-    }
-    return "";
-}
 
 struct HbCssKnownValue
 {
@@ -94,320 +55,107 @@ struct HbCssKnownValue
 };
 
 static const HbCssKnownValue properties[NumProperties - 1] = {
-    { "-qt-background-role", QtBackgroundRole },
-    { "-qt-block-indent", QtBlockIndent },
-    { "-qt-list-indent", QtListIndent },
-    { "-qt-paragraph-type", QtParagraphType },
-    { "-qt-style-features", QtStyleFeatures },
-    { "-qt-table-type", QtTableType },
-    { "-qt-user-state", QtUserState },
-    { "alternate-background-color", QtAlternateBackground },
-    { "aspect-ratio", HbAspectRatio },
-    { "background", Background },
-    { "background-attachment", BackgroundAttachment },
-    { "background-clip", BackgroundClip },
-    { "background-color", BackgroundColor },
-    { "background-image", BackgroundImage },
-    { "background-origin", BackgroundOrigin },
-    { "background-position", BackgroundPosition },
-    { "background-repeat", BackgroundRepeat },
-    { "border", Border },
-    { "border-bottom", BorderBottom },
-    { "border-bottom-color", BorderBottomColor },
-    { "border-bottom-left-radius", BorderBottomLeftRadius },
-    { "border-bottom-right-radius", BorderBottomRightRadius },
-    { "border-bottom-style", BorderBottomStyle },
-    { "border-bottom-width", BorderBottomWidth },
-    { "border-color", BorderColor },
-    { "border-image", BorderImage },
-    { "border-left", BorderLeft },
-    { "border-left-color", BorderLeftColor },
-    { "border-left-style", BorderLeftStyle },
-    { "border-left-width", BorderLeftWidth },
-    { "border-radius", BorderRadius },
-    { "border-right", BorderRight },
-    { "border-right-color", BorderRightColor },
-    { "border-right-style", BorderRightStyle },
-    { "border-right-width", BorderRightWidth },
-    { "border-style", BorderStyles },
-    { "border-top", BorderTop },
-    { "border-top-color", BorderTopColor },
-    { "border-top-left-radius", BorderTopLeftRadius },
-    { "border-top-right-radius", BorderTopRightRadius },
-    { "border-top-style", BorderTopStyle },
-    { "border-top-width", BorderTopWidth },
-    { "border-width", BorderWidth },
-    { "bottom", Bottom },
-    { "center-horizontal", HbCenterHorizontal },
-    { "center-vertical", HbCenterVertical },
-    { "color", Color },
-    { "column-narrow-width", HbColumnNarrowWidth },
-    { "column-wide-width", HbColumnWideWidth },
-    { "fixed-height", HbFixedHeight },
-    { "fixed-size", HbFixedSize },
-    { "fixed-width", HbFixedWidth },
-    { "float", Float },
-    { "font", Font },
-    { "font-family", FontFamily },
-    { "font-size", FontSize },
-    { "font-style", FontStyle },
-    { "font-variant", FontVariant },
-    { "font-weight", FontWeight },
-    { "height", Height },
-    { "icon-left-alignment-weight", HbIconLeftAlignmentWeight },
-    { "image", QtImage },
-    { "image-position", QtImageAlignment },
-    { "indent", HbIndent },
-    { "large-icon-size", HbLargeIconSize },
-    { "layout", HbLayout },
-    { "layout-direction", HbLayoutDirection },
-    { "left", Left },
-    { "list-style", ListStyle },
-    { "list-style-type", ListStyleType },
-    { "margin" , Margin },
-    { "margin-bottom", MarginBottom },
-    { "margin-left", MarginLeft },
-    { "margin-right", MarginRight },
-    { "margin-top", MarginTop },
-    { "margin-top-weight", HbTopMarginWeight },
-    { "max-height", MaximumHeight },
-    { "max-size", HbMaximumSize },
-    { "max-width", MaximumWidth },
-    { "min-height", MinimumHeight },
-    { "min-size", HbMinimumSize },
-    { "min-width", MinimumWidth },
-    { "mirroring", Mirroring }, // deprecated
-    { "outline", Outline },
-    { "outline-bottom-left-radius", OutlineBottomLeftRadius },
-    { "outline-bottom-right-radius", OutlineBottomRightRadius },
-    { "outline-color", OutlineColor },
-    { "outline-offset", OutlineOffset },
-    { "outline-radius", OutlineRadius },
-    { "outline-style", OutlineStyle },
-    { "outline-top-left-radius", OutlineTopLeftRadius },
-    { "outline-top-right-radius", OutlineTopRightRadius },
-    { "outline-width", OutlineWidth },
-    { "padding", Padding },
-    { "padding-bottom", PaddingBottom },
-    { "padding-left", PaddingLeft },
-    { "padding-right", PaddingRight },
-    { "padding-top", PaddingTop },
-    { "page-break-after", PageBreakAfter },
-    { "page-break-before", PageBreakBefore },
-    { "position", Position },
-    { "pref-height", HbPreferredHeight },
-    { "pref-size", HbPreferredSize },
-    { "pref-width", HbPreferredWidth },
-    { "right", Right },
-    { "section", HbSection },
-    { "selection-background-color", QtSelectionBackground },
-    { "selection-color", QtSelectionForeground },
-    { "size-policy", HbSizePolicy },
-    { "size-policy-horizontal", HbSizePolicyHorizontal },
-    { "size-policy-vertical", HbSizePolicyVertical },
-    { "small-icon-size", HbSmallIconSize },
-    { "spacing", QtSpacing },
-    { "spacing-horizontal", HbSpacingHorizontal },
-    { "spacing-vertical", HbSpacingVertical },
-    { "stretchable", HbStretchable },
-    { "subcontrol-origin", QtOrigin },
-    { "subcontrol-position", QtPosition },
-    { "text-align", TextAlignment },
-    { "text-decoration", TextDecoration },
-    { "text-height", HbTextHeight },
-    { "text-indent", TextIndent },
-    { "text-line-count-max", HbTextLineCountMax },
-    { "text-line-count-min", HbTextLineCountMin },
-    { "text-transform", TextTransform },
-    { "text-underline-style", TextUnderlineStyle },
-    { "text-wrap-mode", HbTextWrapMode },
-    { "top", Top },
-    { "vertical-align", VerticalAlignment },
-    { "white-space", Whitespace },
-    { "width", Width },
-    { "zvalue", ZValue }
+    { "alignment", Property_Alignment },
+    { "anchor-direction", Property_AnchorDirection },
+    { "aspect-ratio", Property_AspectRatio },
+    { "border-width", Property_BorderWidth },
+    { "border-width-bottom", Property_BorderWidthBottom },
+    { "border-width-left", Property_BorderWidthLeft },
+    { "border-width-right", Property_BorderWidthRight },
+    { "border-width-top", Property_BorderWidthTop },
+    { "bottom", Property_Bottom },
+    { "center-horizontal", Property_CenterHorizontal },
+    { "center-vertical", Property_CenterVertical },
+    { "color", Property_Color },
+    { "fixed-height", Property_FixedHeight },
+    { "fixed-length", Property_FixedLength },
+    { "fixed-size", Property_FixedSize },
+    { "fixed-width", Property_FixedWidth },
+    { "font", Property_Font },
+    { "font-family", Property_FontFamily },
+    { "font-size", Property_FontSize },
+    { "font-style", Property_FontStyle },
+    { "font-variant", Property_FontVariant },
+    { "font-weight", Property_FontWeight },
+    { "layout", Property_Layout },
+    { "layout-direction", Property_LayoutDirection },
+    { "left", Property_Left },
+    { "max-height", Property_MaximumHeight },
+    { "max-length", Property_MaximumLength },
+    { "max-size", Property_MaximumSize },
+    { "max-width", Property_MaximumWidth },
+    { "min-height", Property_MinimumHeight },
+    { "min-length", Property_MinimumLength },
+    { "min-size", Property_MinimumSize },
+    { "min-width", Property_MinimumWidth },
+    { "pref-height", Property_PreferredHeight },
+    { "pref-length", Property_PreferredLength },
+    { "pref-size", Property_PreferredSize },
+    { "pref-width", Property_PreferredWidth },
+    { "right", Property_Right },
+    { "section", Property_Section },
+    { "size-policy", Property_SizePolicy },
+    { "size-policy-horizontal", Property_SizePolicyHorizontal },
+    { "size-policy-vertical", Property_SizePolicyVertical },
+    { "text-align", Property_TextAlignment },
+    { "text-decoration", Property_TextDecoration },
+    { "text-height", Property_TextHeight },
+    { "text-line-count-max", Property_TextLineCountMax },
+    { "text-line-count-min", Property_TextLineCountMin },
+    { "text-transform", Property_TextTransform },
+    { "text-wrap-mode", Property_TextWrapMode },
+    { "top", Property_Top },
+    { "zvalue", Property_ZValue }
 };
 
 static const HbCssKnownValue values[NumKnownValues - 1] = {
-    { "active", Value_Active },
-    { "alternate-base", Value_AlternateBase },
-    { "always", Value_Always },
-    { "auto", Value_Auto },
-    { "base", Value_Base },
     { "bold", Value_Bold },
     { "bottom", Value_Bottom },
-    { "bright-text", Value_BrightText },
-    { "button", Value_Button },
-    { "button-text", Value_ButtonText },
     { "center", Value_Center },
-    { "circle", Value_Circle },
-    { "dark", Value_Dark },
-    { "dashed", Value_Dashed },
-    { "decimal", Value_Decimal },
     { "digital", Value_Digital },
-    { "disabled", Value_Disabled },
-    { "disc", Value_Disc },
-    { "dot-dash", Value_DotDash },
-    { "dot-dot-dash", Value_DotDotDash },
-    { "dotted", Value_Dotted },
-    { "double", Value_Double },
     { "expanding", Value_Expanding },
     { "fixed", Value_Fixed },
-    { "groove", Value_Groove },
-    { "highlight", Value_Highlight },
-    { "highlighted-text", Value_HighlightedText },
     { "ignore", Value_Ignore },
     { "ignored", Value_Ignored },
-    { "inset", Value_Inset },
     { "italic", Value_Italic },
     { "keep", Value_Keep },
     { "keep-expand", Value_KeepExpand },
-    { "large", Value_Large },
     { "left", Value_Left },
     { "left-to-right", Value_LeftToRight },
-    { "light", Value_Light },
     { "line-through", Value_LineThrough },
-    { "link", Value_Link },
-    { "link-visited", Value_LinkVisited },
-    { "lower-alpha", Value_LowerAlpha },
     { "lowercase", Value_Lowercase },
     { "maximum", Value_Maximum },
-    { "medium", Value_Medium },
-    { "mid", Value_Mid },
-    { "middle", Value_Middle },
-    { "midlight", Value_Midlight },
     { "minimum", Value_Minimum },
     { "minimum-expanding", Value_MinimumExpanding },
-    { "mirrored", Value_Mirrored },  // deprecated
-    { "native", Value_Native },
+    { "negative", Value_Negative },
     { "no-wrap", Value_NoWrap },
     { "none", Value_None },
     { "normal", Value_Normal },
     { "oblique", Value_Oblique },
-    { "off", Value_Off },
-    { "on", Value_On },
-    { "outset", Value_Outset },
     { "overline", Value_Overline },
     { "parent", Value_Parent },
-    { "pre", Value_Pre },
+    { "positive", Value_Positive },
     { "preferred", Value_Preferred },
     { "primary", Value_Primary },
     { "primary-small", Value_PrimarySmall },
-    { "ridge", Value_Ridge },
     { "right", Value_Right },
     { "right-to-left", Value_RightToLeft },
     { "secondary", Value_Secondary },
-    { "selected", Value_Selected },
-    { "shadow", Value_Shadow },
-    { "small" , Value_Small },
     { "small-caps", Value_SmallCaps },
-    { "solid", Value_Solid },
-    { "square", Value_Square },
-    { "sub", Value_Sub },
-    { "super", Value_Super },
-    { "text", Value_Text },
     { "title", Value_Title },
     { "top", Value_Top },
     { "transparent", Value_Transparent },
     { "underline", Value_Underline },
-    { "upper-alpha", Value_UpperAlpha },
     { "uppercase", Value_Uppercase },
-    { "wave", Value_Wave },
-    { "window", Value_Window },
-    { "window-text", Value_WindowText },
     { "word-wrap", Value_WordWrap },
-    { "wrap-anywhere", Value_WrapAnywhere },
-    { "x-large", Value_XLarge },
-    { "xx-large", Value_XXLarge }
+    { "wrap-anywhere", Value_WrapAnywhere }
 };
 
 static const HbCssKnownValue pseudos[NumPseudos - 1] = {
-    { "active", PseudoClass_Active },
-    { "adjoins-item", PseudoClass_Item },
-    { "alternate", PseudoClass_Alternate },
-    { "bottom", PseudoClass_Bottom },
-    { "checked", PseudoClass_Checked },
-    { "closable", PseudoClass_Closable },
-    { "closed", PseudoClass_Closed },
-    { "default", PseudoClass_Default },
-    { "disabled", PseudoClass_Disabled },
-    { "edit-focus", PseudoClass_EditFocus },
-    { "editable", PseudoClass_Editable },
-    { "enabled", PseudoClass_Enabled },
-    { "exclusive", PseudoClass_Exclusive },
-    { "first", PseudoClass_First },
-    { "flat", PseudoClass_Flat },
-    { "floatable", PseudoClass_Floatable },
-    { "focus", PseudoClass_Focus },
-    { "has-children", PseudoClass_Children },
-    { "has-siblings", PseudoClass_Sibling },
-    { "horizontal", PseudoClass_Horizontal },
-    { "hover", PseudoClass_Hover },
-    { "indeterminate" , PseudoClass_Indeterminate },
     { "landscape", PseudoClass_Landscape },
-    { "last", PseudoClass_Last },
-    { "left", PseudoClass_Left },
     { "left-to-right", PseudoClass_LeftToRight },
-    { "maximized", PseudoClass_Maximized },
-    { "middle", PseudoClass_Middle },
-    { "minimized", PseudoClass_Minimized },
-    { "movable", PseudoClass_Movable },
-    { "next-selected", PseudoClass_NextSelected },
-    { "no-frame", PseudoClass_Frameless },
-    { "non-exclusive", PseudoClass_NonExclusive },
-    { "off", PseudoClass_Unchecked },
-    { "on", PseudoClass_Checked },
-    { "only-one", PseudoClass_OnlyOne },
-    { "open", PseudoClass_Open },
     { "portrait", PseudoClass_Portrait },
-    { "pressed", PseudoClass_Pressed },
-    { "previous-selected", PseudoClass_PreviousSelected },
-    { "read-only", PseudoClass_ReadOnly },
-    { "right", PseudoClass_Right },
-    { "right-to-left", PseudoClass_RightToLeft },
-    { "selected", PseudoClass_Selected },
-    { "top", PseudoClass_Top },
-    { "unchecked" , PseudoClass_Unchecked },
-    { "vertical", PseudoClass_Vertical },
-    { "window", PseudoClass_Window }
-};
-
-static const HbCssKnownValue origins[NumKnownOrigins - 1] = {
-    { "border", Origin_Border },
-    { "content", Origin_Content },
-    { "margin", Origin_Margin }, // not in css
-    { "padding", Origin_Padding }
-};
-
-static const HbCssKnownValue repeats[NumKnownRepeats - 1] = {
-    { "no-repeat", Repeat_None },
-    { "repeat-x", Repeat_X },
-    { "repeat-xy", Repeat_XY },
-    { "repeat-y", Repeat_Y }
-};
-
-static const HbCssKnownValue tileModes[NumKnownTileModes - 1] = {
-    { "repeat", TileMode_Repeat },
-    { "round", TileMode_Round },
-    { "stretch", TileMode_Stretch },
-};
-
-static const HbCssKnownValue positions[NumKnownPositionModes - 1] = {
-    { "absolute", PositionMode_Absolute },
-    { "fixed", PositionMode_Fixed },
-    { "relative", PositionMode_Relative },
-    { "static", PositionMode_Static }
-};
-
-static const HbCssKnownValue attachments[NumKnownAttachments - 1] = {
-    { "fixed", Attachment_Fixed },
-    { "scroll", Attachment_Scroll }
-};
-
-static const HbCssKnownValue styleFeatures[NumKnownStyleFeatures - 1] = {
-    { "background-color", StyleFeature_BackgroundColor },
-    { "background-gradient", StyleFeature_BackgroundGradient },
-    { "none", StyleFeature_None }
+    { "right-to-left", PseudoClass_RightToLeft }
 };
 
 inline bool operator<(const QString &name, const HbCssKnownValue &prop)
@@ -432,19 +180,24 @@ static quint64 findKnownValue(const QString &name, const HbCssKnownValue *start,
 #ifndef HB_BIN_CSS
 ///////////////////////////////////////////////////////////////////////////////
 // Value Extractor
-ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbDeviceProfile &profile, const QPalette &pal)
-: declarations(decls), adjustment(0), fontExtracted(false), pal(pal), currentProfile(profile)
+ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbDeviceProfile &profile)
+: declarations(decls), currentProfile(profile)
 {
 }
-ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const QHash<QString, HbCss::Declaration> &varDeclarations,
-                               const HbDeviceProfile &profile, const QPalette &pal)
-: declarations(decls), variableDeclarationsHash(varDeclarations), adjustment(0), 
-  fontExtracted(false), pal(pal), currentProfile(profile)
+ValueExtractor::ValueExtractor(
+    const HbVector<Declaration> &decls, 
+    const QHash<QString, 
+    HbCss::Declaration> &varDeclarations,
+    const HbDeviceProfile &profile)
+: declarations(decls), variableDeclarationsHash(varDeclarations), currentProfile(profile)
 {
 }
 
-ValueExtractor::ValueExtractor(const HbVector<Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile)
-: variableDeclarations(varDecls), adjustment(0), fontExtracted(false), currentProfile(profile)
+ValueExtractor::ValueExtractor(
+    const HbVector<Declaration> &varDecls, 
+    bool isVariable, 
+    const HbDeviceProfile &profile)
+: variableDeclarations(varDecls), currentProfile(profile)
 {
     Q_UNUSED(isVariable)
     // Initialize to some profile.
@@ -453,8 +206,12 @@ ValueExtractor::ValueExtractor(const HbVector<Declaration> &varDecls, bool isVar
     }
 }
 
-ValueExtractor::ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile)
-: variableDeclarationsHash(varDecls), adjustment(0), fontExtracted(false), currentProfile(profile)
+ValueExtractor::ValueExtractor(
+    const QHash<QString, 
+    HbCss::Declaration> &varDecls, 
+    bool isVariable, 
+    const HbDeviceProfile &profile)
+: variableDeclarationsHash(varDecls), currentProfile(profile)
 {
     Q_UNUSED(isVariable)
     // Initialize to some profile.
@@ -463,12 +220,7 @@ ValueExtractor::ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecl
     }
 }
 
-int ValueExtractor::lengthValue(const Value& v)
-{
-    return qRound(asReal(v));
-}
-
-qreal ValueExtractor::asReal(const Value& v)
+qreal ValueExtractor::asReal(const Value& v, bool *ok)
 {
     QString s = v.variant.toString();
     s.reserve(s.length());
@@ -479,19 +231,32 @@ qreal ValueExtractor::asReal(const Value& v)
         extractExpressionValue(s, value);
         return factor * value;
     }
-
-    return asReal(s, v.type);
+    return asReal(s, v.type, ok);
 }
 
-qreal ValueExtractor::asReal(QString &s, Value::Type type)
+qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok)
 {
+    if (ok) {
+        *ok = true;
+    }
+
     if (type == Value::Variable || type == Value::VariableNegative) {
         qreal factor = (type == Value::Variable) ? 1.0 : -1.0;
         HbVector<HbCss::Value> values;
-        if (extractValue(s, values))
-            return factor * asReal(values.first());
+        if (extractVariableValue(s, values))
+            return factor * asReal(values.first(), ok);
         else
+            if (ok) {
+                *ok = false;
+            }
             return 0;
+    } else if (type == Value::Percentage) {
+        qreal result = s.toDouble(ok) /100.0;
+        if (ok && !(*ok)) {
+            return 0;
+        } else {
+            return result;
+        }
     }
 
     enum { None, Px, Un, Mm } unit = None;
@@ -508,9 +273,8 @@ qreal ValueExtractor::asReal(QString &s, Value::Type type)
         s.chop(2);
     }
 
-    bool ok;
-    qreal result = s.toDouble(&ok);
-    if (!ok) {
+    qreal result = s.toDouble(ok);
+    if (ok && !(*ok)) {
         return 0;
     }
 
@@ -522,76 +286,37 @@ qreal ValueExtractor::asReal(QString &s, Value::Type type)
     return result;
 }
 
-bool ValueExtractor::asReal(QString &s, qreal &value)
+qreal ValueExtractor::asReal(const Declaration &decl, bool *ok)
 {
-    enum { None, Px, Un, Mm } unit = None;
-    if (s.endsWith(QLatin1String("un"), Qt::CaseInsensitive)) {
-        unit = Un;
-    } else if (s.endsWith(QLatin1String("px"), Qt::CaseInsensitive)) {
-        unit = Px;
-    } else if (s.endsWith(QLatin1String("mm"), Qt::CaseInsensitive)) {
-        unit = Mm;
-    }
-
-    if (unit != None) {
-        // Assuming all unit identifiers have two characters
-        s.chop(2);
-    }
-
-    bool ok;
-    value = s.toDouble(&ok);
-    if (!ok) {
-        return false;
-    }
-
-    if (unit == Un) {
-        value = currentProfile.unitValue() * value;
-    } else if (unit == Mm) {
-        value = currentProfile.ppmValue() * value;
-    } // else -> already in pixels
-    return true;
-}
-
-qreal ValueExtractor::asReal(const Declaration &decl)
-{
-    if (decl.values.count() < 1)
+    if (decl.values.count() < 1) {
+        if (ok) {
+            *ok = false;
+        }
         return 0;
-    return asReal(decl.values.first());
+    }
+    return asReal(decl.values.first(), ok);
 }
 
-
-void ValueExtractor::asReals(const Declaration &decl, qreal *m)
+bool ValueExtractor::asReals(const Declaration &decl, qreal *m)
 {
+    bool ok = true;
     int i;
-    for (i = 0; i < qMin(decl.values.count(), 4); i++)
-        m[i] = asReal(decl.values[i]);
+    for (i = 0; i < qMin(decl.values.count(), 4); i++) {
+        m[i] = asReal(decl.values[i], &ok);
+        if (!ok) {
+            return false;
+        }
+    }
 
     if (i == 0) m[0] = m[1] = m[2] = m[3] = 0;
     else if (i == 1) m[3] = m[2] = m[1] = m[0];
     else if (i == 2) m[2] = m[0], m[3] = m[1];
     else if (i == 3) m[3] = m[1];
+
+    return true;
 }
 
-bool ValueExtractor::asBool(const Declaration &decl)
-{
-    if (decl.values.size()) {
-        bool result = (decl.values.at(0).variant.toString() == QString("true"));
-        return result;
-    }
-    return false;
-}
-
-QSizePolicy ValueExtractor::asSizePolicy(const Declaration &decl)
-{
-    QSizePolicy pol;
-    if (decl.values.count() > 0)
-        pol.setHorizontalPolicy(asPolicy(decl.values.at(0)));
-    if (decl.values.count() > 1)
-        pol.setHorizontalPolicy(asPolicy(decl.values.at(1)));
-    return pol;
-}
-
-QSizePolicy::Policy ValueExtractor::asPolicy(const Value& v)
+static QSizePolicy::Policy parseSizePolicy(const Value& v)
 {
     QSizePolicy::Policy pol(QSizePolicy::Preferred);
     switch (v.variant.toInt())
@@ -608,101 +333,6 @@ QSizePolicy::Policy ValueExtractor::asPolicy(const Value& v)
     return pol;
 }
 
-int ValueExtractor::lengthValue(const Declaration &decl)
-{
-    if (decl.values.count() < 1)
-        return 0;
-    return lengthValue(decl.values.first());
-}
-
-void ValueExtractor::lengthValues(const Declaration &decl, int *m)
-{
-    int i;
-    for (i = 0; i < qMin(decl.values.count(), 4); i++)
-        m[i] = lengthValue(decl.values[i]);
-
-    if (i == 0) m[0] = m[1] = m[2] = m[3] = 0;
-    else if (i == 1) m[3] = m[2] = m[1] = m[0];
-    else if (i == 2) m[2] = m[0], m[3] = m[1];
-    else if (i == 3) m[3] = m[1];
-}
-
-bool ValueExtractor::extractGeometry(GeometryValues &geomValues)
-{
-    GeometryValueFlags flags(0);
-    extractFont();
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case MinimumWidth: geomValues.mMinW = asReal(decl); flags|=ExtractedMinW; break;
-        case MinimumHeight: geomValues.mMinH = asReal(decl); flags|=ExtractedMinH; break;
-        case MaximumWidth: geomValues.mMaxW = asReal(decl); flags|=ExtractedMaxW; break;
-        case MaximumHeight: geomValues.mMaxH = asReal(decl); flags|=ExtractedMaxH; break;
-        case HbPreferredWidth: geomValues.mPrefW = asReal(decl); flags|=ExtractedPrefW; break;
-        case HbPreferredHeight: geomValues.mPrefH = asReal(decl); flags|=ExtractedPrefH; break;
-        case HbFixedWidth:
-            geomValues.mPrefW = asReal(decl); flags|=ExtractedPrefW;
-            geomValues.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolHor;
-            break;
-        case HbFixedHeight:
-            geomValues.mPrefH = asReal(decl); flags|=ExtractedPrefH;
-            geomValues.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolVer;
-            break;
-        case HbSizePolicy:
-            geomValues.mSizePolicy.setHorizontalPolicy(asPolicy(decl.values.at(0)));
-            if (decl.values.count() > 1) {
-                geomValues.mSizePolicy.setVerticalPolicy(asPolicy(decl.values.at(1)));
-            } else {
-                geomValues.mSizePolicy.setVerticalPolicy(asPolicy(decl.values.at(0)));
-            }
-            flags|=ExtractedPolHor;
-            flags|=ExtractedPolVer;
-            break;
-        case HbSizePolicyHorizontal:
-            geomValues.mSizePolicy.setHorizontalPolicy(asPolicy(decl.values.at(0)));
-            flags|=ExtractedPolHor;
-            break;
-        case HbSizePolicyVertical:
-            geomValues.mSizePolicy.setVerticalPolicy(asPolicy(decl.values.at(0)));
-            flags|=ExtractedPolVer;
-            break;
-        case HbMinimumSize:
-            geomValues.mMinW = asReal(decl.values.at(0));
-            geomValues.mMinH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mMinW;
-            flags|=ExtractedMinW;
-            flags|=ExtractedMinH;
-            break;
-        case HbMaximumSize:
-            geomValues.mMaxW = asReal(decl.values.at(0));
-            geomValues.mMaxH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mMaxW;
-            flags|=ExtractedMaxW;
-            flags|=ExtractedMaxH;
-            break;
-        case HbPreferredSize:
-            geomValues.mPrefW = asReal(decl.values.at(0));
-            geomValues.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mPrefW;
-            flags|=ExtractedPrefW;
-            flags|=ExtractedPrefH;
-            break;
-        case HbFixedSize:
-            geomValues.mPrefW = asReal(decl.values.at(0));
-            geomValues.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : geomValues.mPrefW;
-            geomValues.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed);
-            geomValues.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed);
-            flags|=ExtractedPrefW;
-            flags|=ExtractedPrefH;
-            flags|=ExtractedPolHor;
-            flags|=ExtractedPolVer;
-            break;
-        default: continue;
-        }
-        hit = true;
-    }
-    geomValues.mFlags = flags;
-    return hit;
-}
-
 static HbCss::LayoutDirection parseLayoutDirectionValue(const Value v)
 {
     HbCss::LayoutDirection retVal(HbCss::LayoutDirection_Parent); // Parent as default
@@ -712,11 +342,9 @@ static HbCss::LayoutDirection parseLayoutDirectionValue(const Value v)
             retVal = HbCss::LayoutDirection_RightToLeft;
             break;
         case Value_LeftToRight:
-        case Value_Disabled: // legacy support
             retVal = HbCss::LayoutDirection_LeftToRight;
             break;
         case Value_Parent:
-        case Value_Mirrored: // legacy support
         default:
             break;
         }
@@ -724,213 +352,47 @@ static HbCss::LayoutDirection parseLayoutDirectionValue(const Value v)
     return retVal;
 }
 
-bool ValueExtractor::extractPosition(PositionValues &posValues)
+static Qt::AspectRatioMode parseAspectRatioMode(const Value& v)
 {
-    PositionValueFlags flags(0);
-    extractFont();
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case Left: posValues.mLeft = asReal(decl); flags|=ExtractedLeft; break;
-        case Top: posValues.mTop = asReal(decl); flags|=ExtractedTop; break;
-        case Right: posValues.mRight = asReal(decl); flags|=ExtractedRight; break;
-        case Bottom: posValues.mBottom = asReal(decl); flags|=ExtractedBottom; break;
-        case HbCenterHorizontal: posValues.mCenterH = asReal(decl); flags|=ExtractedCenterH; break;
-        case HbCenterVertical: posValues.mCenterV = asReal(decl); flags|=ExtractedCenterV; break;
-        case QtOrigin: posValues.mOrigin = decl.originValue(); flags|=ExtractedOrigin; break;
-        case QtPosition: posValues.mPosition = decl.alignmentValue(); flags|=ExtractedAlign; break;
-        case TextAlignment: posValues.mTextAlignment = decl.alignmentValue(); flags|=ExtractedTextAlign; break;
-        case Position: posValues.mPositionMode = decl.positionValue(); flags|=ExtractedMode; break;
-        case HbLayoutDirection:
-        case Mirroring: 
-            posValues.mLayoutDirection = parseLayoutDirectionValue(decl.values.at(0)); 
-            flags|=ExtractedLayoutDirection;
-            break;
-        case ZValue: posValues.mZ = asReal(decl); flags|=ExtractedZValue; break;
-        case HbTextWrapMode: posValues.mTextWrapMode = decl.wrapModeValue(); flags|=ExtractedWrapMode; break;
-        default: continue;
-        }
-        hit = true;
+    Qt::AspectRatioMode mode = Qt::KeepAspectRatio;
+    switch (v.variant.toInt()) {
+    case Value_Ignore:
+        mode = Qt::IgnoreAspectRatio;
+        break;
+    case Value_KeepExpand:
+        mode = Qt::KeepAspectRatioByExpanding;
+        break;
+    case Value_Keep:
+    default:
+        break;
     }
-    posValues.mFlags = flags;
-    return hit;
+    return mode;
 }
 
-bool ValueExtractor::extractTextValues( TextValues &textValues )
+static HbAnchor::Direction parseAnchorDirection(const Value& v)
 {
-    textValues.mFlags = 0;
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case HbTextLineCountMin: textValues.mLineCountMin = decl.values.first().variant.toInt(); textValues.mFlags|=ExtractedLineCountMin; break;
-        case HbTextLineCountMax: textValues.mLineCountMax = decl.values.first().variant.toInt(); textValues.mFlags|=ExtractedLineCountMax; break;
-        default: continue;
-        }
-        hit = true;
+    HbAnchor::Direction dir = HbAnchor::Positive;
+    switch (v.variant.toInt()) {
+    case Value_Negative:
+        dir = HbAnchor::Negative;
+        break;
+    case Value_Positive:
+    default:
+        break;
     }
-    return hit;
+    return dir;
 }
 
-bool ValueExtractor::extractBox(qreal *margins, qreal *paddings, qreal *spacing)
+static Qt::Alignment parseAlignment(const Declaration &decl)
 {
-    extractFont();
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case PaddingLeft: paddings[LeftEdge] = asReal(decl); break;
-        case PaddingRight: paddings[RightEdge] = asReal(decl); break;
-        case PaddingTop: paddings[TopEdge] = asReal(decl); break;
-        case PaddingBottom: paddings[BottomEdge] = asReal(decl); break;
-        case Padding: asReals(decl, paddings); break;
+    if (decl.values.isEmpty() || decl.values.count() > 2)
+        return Qt::AlignLeft | Qt::AlignTop;
 
-        case MarginLeft: margins[LeftEdge] = asReal(decl); break;
-        case MarginRight: margins[RightEdge] = asReal(decl); break;
-        case MarginTop: margins[TopEdge] = asReal(decl); break;
-        case MarginBottom: margins[BottomEdge] = asReal(decl); break;
-        case Margin: asReals(decl, margins); break;
-        case QtSpacing: if (spacing) *spacing = asReal(decl); break;
-
-        default: continue;
-        }
-        hit = true;
-    }
-
-    return hit;
-}
-
-int ValueExtractor::extractStyleFeatures()
-{
-    int features = StyleFeature_None;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        if (decl.propertyId == QtStyleFeatures)
-            features = decl.styleFeaturesValue();
-    }
-    return features;
-}
-
-QSize ValueExtractor::sizeValue(const Declaration &decl)
-{
-    int x[2] = { 0, 0 };
-    if (decl.values.count() > 0)
-        x[0] = lengthValue(decl.values.at(0));
-    if (decl.values.count() > 1)
-        x[1] = lengthValue(decl.values.at(1));
-    else
-        x[1] = x[0];
-    return QSize(x[0], x[1]);
-}
-
-void ValueExtractor::sizeValues(const Declaration &decl, QSize *radii)
-{
-    radii[0] = sizeValue(decl);
-    for (int i = 1; i < 4; i++)
-        radii[i] = radii[0];
-}
-
-bool ValueExtractor::extractBorder(qreal *borders, QBrush *colors, BorderStyle *styles,
-                                   QSize *radii)
-{
-    extractFont();
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case BorderLeftWidth: borders[LeftEdge] = asReal(decl); break;
-        case BorderRightWidth: borders[RightEdge] = asReal(decl); break;
-        case BorderTopWidth: borders[TopEdge] = asReal(decl); break;
-        case BorderBottomWidth: borders[BottomEdge] = asReal(decl); break;
-        case BorderWidth: asReals(decl, borders); break;
-
-        case BorderLeftColor: colors[LeftEdge] = decl.brushValue(pal); break;
-        case BorderRightColor: colors[RightEdge] = decl.brushValue(pal); break;
-        case BorderTopColor: colors[TopEdge] = decl.brushValue(pal); break;
-        case BorderBottomColor: colors[BottomEdge] = decl.brushValue(pal); break;
-        case BorderColor: decl.brushValues(colors, pal); break;
-
-        case BorderTopStyle: styles[TopEdge] = decl.styleValue(); break;
-        case BorderBottomStyle: styles[BottomEdge] = decl.styleValue(); break;
-        case BorderLeftStyle: styles[LeftEdge] = decl.styleValue(); break;
-        case BorderRightStyle: styles[RightEdge] = decl.styleValue(); break;
-        case BorderStyles:  decl.styleValues(styles); break;
-
-        case BorderTopLeftRadius: radii[0] = sizeValue(decl); break;
-        case BorderTopRightRadius: radii[1] = sizeValue(decl); break;
-        case BorderBottomLeftRadius: radii[2] = sizeValue(decl); break;
-        case BorderBottomRightRadius: radii[3] = sizeValue(decl); break;
-        case BorderRadius: sizeValues(decl, radii); break;
-
-        case BorderLeft:
-            borderValue(decl, &borders[LeftEdge], &styles[LeftEdge], &colors[LeftEdge]);
-            break;
-        case BorderTop:
-            borderValue(decl, &borders[TopEdge], &styles[TopEdge], &colors[TopEdge]);
-            break;
-        case BorderRight:
-            borderValue(decl, &borders[RightEdge], &styles[RightEdge], &colors[RightEdge]);
-            break;
-        case BorderBottom:
-            borderValue(decl, &borders[BottomEdge], &styles[BottomEdge], &colors[BottomEdge]);
-            break;
-        case Border:
-            borderValue(decl, &borders[LeftEdge], &styles[LeftEdge], &colors[LeftEdge]);
-            borders[TopEdge] = borders[RightEdge] = borders[BottomEdge] = borders[LeftEdge];
-            styles[TopEdge] = styles[RightEdge] = styles[BottomEdge] = styles[LeftEdge];
-            colors[TopEdge] = colors[RightEdge] = colors[BottomEdge] = colors[LeftEdge];
-            break;
-
-        default: continue;
-        }
-        hit = true;
-    }
-
-    return hit;
-}
-
-bool ValueExtractor::extractOutline(qreal *borders, QBrush *colors, BorderStyle *styles,
-                                   QSize *radii, qreal *offsets)
-{
-    extractFont();
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); i++) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case OutlineWidth: asReals(decl, borders); break;
-        case OutlineColor: decl.brushValues(colors, pal); break;
-        case OutlineStyle:  decl.styleValues(styles); break;
-
-        case OutlineTopLeftRadius: radii[0] = sizeValue(decl); break;
-        case OutlineTopRightRadius: radii[1] = sizeValue(decl); break;
-        case OutlineBottomLeftRadius: radii[2] = sizeValue(decl); break;
-        case OutlineBottomRightRadius: radii[3] = sizeValue(decl); break;
-        case OutlineRadius: sizeValues(decl, radii); break;
-        case OutlineOffset: asReals(decl, offsets); break;
-
-        case Outline:
-            borderValue(decl, &borders[LeftEdge], &styles[LeftEdge], &colors[LeftEdge]);
-            borders[TopEdge] = borders[RightEdge] = borders[BottomEdge] = borders[LeftEdge];
-            styles[TopEdge] = styles[RightEdge] = styles[BottomEdge] = styles[LeftEdge];
-            colors[TopEdge] = colors[RightEdge] = colors[BottomEdge] = colors[LeftEdge];
-            break;
-
-        default: continue;
-        }
-        hit = true;
-    }
-
-    return hit;
-}
-#endif
-static Qt::Alignment parseAlignment(const Value *values, int count)
-{
     Qt::Alignment a[2] = { 0, 0 };
-    for (int i = 0; i < qMin(2, count); i++) {
-        if (values[i].type != Value::KnownIdentifier)
+    for (int i = 0; i < qMin(2, decl.values.count()); i++) {
+        if (decl.values.at(i).type != Value::KnownIdentifier)
             break;
-        switch (values[i].variant.toInt()) {
+        switch (decl.values.at(i).variant.toInt()) {
         case Value_Left: a[i] = Qt::AlignLeft; break;
         case Value_Right: a[i] = Qt::AlignRight; break;
         case Value_Top: a[i] = Qt::AlignTop; break;
@@ -941,9 +403,11 @@ static Qt::Alignment parseAlignment(const Value *values, int count)
     }
 
     if (a[0] == Qt::AlignCenter && a[1] != 0 && a[1] != Qt::AlignCenter)
-        a[0] = (a[1] == Qt::AlignLeft || a[1] == Qt::AlignRight) ? Qt::AlignVCenter : Qt::AlignHCenter;
+        a[0] = (a[1] == Qt::AlignLeft || 
+            a[1] == Qt::AlignRight) ? Qt::AlignVCenter : Qt::AlignHCenter;
     if ((a[1] == 0 || a[1] == Qt::AlignCenter) && a[0] != Qt::AlignCenter)
-        a[1] = (a[0] == Qt::AlignLeft || a[0] == Qt::AlignRight) ? Qt::AlignVCenter : Qt::AlignHCenter;
+        a[1] = (a[0] == Qt::AlignLeft || 
+            a[0] == Qt::AlignRight) ? Qt::AlignVCenter : Qt::AlignHCenter;
     return a[0] | a[1];
 }
 
@@ -961,7 +425,322 @@ static Hb::TextWrapping parseWrapMode(const Value v)
     return mode;
 }
 
-static QColor parseColorValue(Value v, const QPalette &pal)
+static bool setFontSizeFromValue(Value value, QFont &font)
+{
+    if (value.type != Value::Length)
+        return false;
+
+    bool valid = false;
+    QString s = value.variant.toString();
+    if (s.endsWith(QLatin1String("pt"), Qt::CaseInsensitive)) {
+        s.chop(2);
+        value.variant = s;
+        if (value.variant.convert(HbVariant::Double)) {
+            font.setPointSizeF(value.variant.toDouble());
+            valid = true;
+        }
+    } else if (s.endsWith(QLatin1String("px"), Qt::CaseInsensitive)) {
+        s.chop(2);
+        value.variant = s;
+        if (value.variant.convert(HbVariant::Int)) {
+            font.setPixelSize(value.variant.toInt());
+            valid = true;
+        }
+    }
+    return valid;
+}
+
+static bool setFontStyleFromValue(const Value &value, QFont &font)
+{
+    if (value.type != Value::KnownIdentifier)
+        return false ;
+    switch (value.variant.toInt()) {
+        case Value_Normal: font.setStyle(QFont::StyleNormal); return true;
+        case Value_Italic: font.setStyle(QFont::StyleItalic); return true;
+        case Value_Oblique: font.setStyle(QFont::StyleOblique); return true;
+        default: break;
+    }
+    return false;
+}
+
+static bool setFontWeightFromValue(const Value &value, QFont &font)
+{
+    if (value.type == Value::KnownIdentifier) {
+        switch (value.variant.toInt()) {
+            case Value_Normal: font.setWeight(QFont::Normal); return true;
+            case Value_Bold: font.setWeight(QFont::Bold); return true;
+            default: break;
+        }
+        return false;
+    }
+    if (value.type != Value::Number)
+        return false;
+    font.setWeight(qMin(value.variant.toInt() / 8, 99));
+    return true;
+}
+
+static bool setFontFamilyFromValues(const Declaration &decl, QFont &font)
+{
+    QString family;
+    for (int i = 0; i < decl.values.count(); ++i) {
+        const Value &v = decl.values.at(i);
+        if (v.type == Value::TermOperatorComma)
+            break;
+        const QString str = v.variant.toString();
+        if (str.isEmpty())
+            break;
+        family += str;
+        family += QLatin1Char(' ');
+    }
+    family = family.simplified();
+    if (family.isEmpty())
+        return false;
+    font.setFamily(family);
+    return true;
+}
+
+static void setTextDecorationFromValues(const Declaration &decl, QFont &font)
+{
+    for (int i = 0; i < decl.values.count(); ++i) {
+        if (decl.values.at(i).type != Value::KnownIdentifier)
+            continue;
+        switch (decl.values.at(i).variant.toInt()) {
+            case Value_Underline: font.setUnderline(true); break;
+            case Value_Overline: font.setOverline(true); break;
+            case Value_LineThrough: font.setStrikeOut(true); break;
+            case Value_None:
+                font.setUnderline(false);
+                font.setOverline(false);
+                font.setStrikeOut(false);
+                break;
+            default: break;
+        }
+    }
+}
+
+static void parseShorthandFontProperty(const Declaration &decl, QFont &font)
+{
+    font.setStyle(QFont::StyleNormal);
+    font.setWeight(QFont::Normal);
+
+    int i = 0;
+    while (i < decl.values.count()) {
+        if (setFontStyleFromValue(decl.values.at(i), font)
+            || setFontWeightFromValue(decl.values.at(i), font))
+            ++i;
+        else
+            break;
+    }
+
+    if (i < decl.values.count()) {
+        setFontSizeFromValue(decl.values.at(i), font);
+        ++i;
+    }
+
+    if (i < decl.values.count()) {
+        QString fam = decl.values.at(i).variant.toString();
+        if (!fam.isEmpty())
+            font.setFamily(fam);
+    }
+}
+
+static void setFontVariantFromValue(const Value &value, HbFontSpec &fontSpec, QFont &font )
+{
+    // Sets font variants. Some set the fontspec and some the HbFontSpec
+    HbFontSpec::Role role( HbFontSpec::Undefined );
+    if (value.type == Value::KnownIdentifier) {
+        switch (value.variant.toInt()) {
+            case Value_Normal: font.setCapitalization(QFont::MixedCase); break;
+            case Value_SmallCaps: font.setCapitalization(QFont::SmallCaps); break;
+            case Value_Primary: role = HbFontSpec::Primary; break;
+            case Value_Secondary: role = HbFontSpec::Secondary; break;
+            case Value_Title: role = HbFontSpec::Title; break;
+            case Value_PrimarySmall: role = HbFontSpec::PrimarySmall; break;
+            case Value_Digital: role = HbFontSpec::Digital; break;
+            default: break;
+        }
+    }
+    if (role != HbFontSpec::Undefined) {
+        fontSpec.setRole( role );
+    }
+}
+
+static void setTextTransformFromValue(const Value &value, QFont &font)
+{
+    if (value.type == Value::KnownIdentifier) {
+        switch (value.variant.toInt()) {
+            case Value_None: font.setCapitalization(QFont::MixedCase); break;
+            case Value_Uppercase: font.setCapitalization(QFont::AllUppercase); break;
+            case Value_Lowercase: font.setCapitalization(QFont::AllLowercase); break;
+            default: break;
+        }
+    }
+}
+
+bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
+{
+    KnownPropertyFlags flags(0);
+    bool hit = false;
+    bool tphSet = false;
+
+    // Initialize border prop to zero
+    prop.mBorderWidths[TopEdge] = 0.0;
+    prop.mBorderWidths[RightEdge] = 0.0;
+    prop.mBorderWidths[BottomEdge] = 0.0;
+    prop.mBorderWidths[LeftEdge] = 0.0;
+
+    // Initialize font prop
+    prop.mFont = QFont();
+    prop.mFontSpec = HbFontSpec();
+
+    for (int i = 0; i < declarations.count(); i++) {
+        const Declaration &decl = declarations.at(i);
+        switch (decl.propertyId) {
+        case Property_MinimumWidth: prop.mMinW = asReal(decl); flags|=ExtractedMinW; break;
+        case Property_MinimumLength: // fall-through
+        case Property_MinimumHeight: prop.mMinH = asReal(decl); flags|=ExtractedMinH; break;
+        case Property_MaximumWidth: prop.mMaxW = asReal(decl); flags|=ExtractedMaxW; break;
+        case Property_MaximumLength: // fall-through
+        case Property_MaximumHeight: prop.mMaxH = asReal(decl); flags|=ExtractedMaxH; break;
+        case Property_PreferredWidth: prop.mPrefW = asReal(decl); flags|=ExtractedPrefW; break;
+        case Property_PreferredLength: // fall-through
+        case Property_PreferredHeight: prop.mPrefH = asReal(decl); flags|=ExtractedPrefH; break;
+        case Property_FixedWidth:
+            prop.mPrefW = asReal(decl); flags|=ExtractedPrefW;
+            prop.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolHor;
+            break;
+        case Property_FixedLength: // fall-through
+        case Property_FixedHeight:
+            prop.mPrefH = asReal(decl); flags|=ExtractedPrefH;
+            prop.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed); flags|=ExtractedPolVer;
+            if (!tphSet) { 
+                // legacy support. deprecated.
+                prop.mFontSpec.setTextHeight(asReal(decl));
+            }
+            break;
+        case Property_SizePolicy:
+            prop.mSizePolicy.setHorizontalPolicy(parseSizePolicy(decl.values.at(0)));
+            if (decl.values.count() > 1) {
+                prop.mSizePolicy.setVerticalPolicy(parseSizePolicy(decl.values.at(1)));
+            } else {
+                prop.mSizePolicy.setVerticalPolicy(prop.mSizePolicy.horizontalPolicy());
+            }
+            flags|=ExtractedPolHor;
+            flags|=ExtractedPolVer;
+            break;
+        case Property_SizePolicyHorizontal:
+            prop.mSizePolicy.setHorizontalPolicy(parseSizePolicy(decl.values.at(0)));
+            flags|=ExtractedPolHor;
+            break;
+        case Property_SizePolicyVertical:
+            prop.mSizePolicy.setVerticalPolicy(parseSizePolicy(decl.values.at(0)));
+            flags|=ExtractedPolVer;
+            break;
+        case Property_MinimumSize:
+            prop.mMinW = asReal(decl.values.at(0));
+            prop.mMinH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : prop.mMinW;
+            flags|=ExtractedMinW;
+            flags|=ExtractedMinH;
+            break;
+        case Property_MaximumSize:
+            prop.mMaxW = asReal(decl.values.at(0));
+            prop.mMaxH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : prop.mMaxW;
+            flags|=ExtractedMaxW;
+            flags|=ExtractedMaxH;
+            break;
+        case Property_PreferredSize:
+            prop.mPrefW = asReal(decl.values.at(0));
+            prop.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : prop.mPrefW;
+            flags|=ExtractedPrefW;
+            flags|=ExtractedPrefH;
+            break;
+        case Property_FixedSize:
+            prop.mPrefW = asReal(decl.values.at(0));
+            prop.mPrefH = (decl.values.count() > 1) ? asReal(decl.values.at(1)) : prop.mPrefW;
+            prop.mSizePolicy.setHorizontalPolicy(QSizePolicy::Fixed);
+            prop.mSizePolicy.setVerticalPolicy(QSizePolicy::Fixed);
+            flags|=ExtractedPrefW;
+            flags|=ExtractedPrefH;
+            flags|=ExtractedPolHor;
+            flags|=ExtractedPolVer;
+            break;
+
+        case Property_Left: prop.mLeft = asReal(decl); flags|=ExtractedLeft; break;
+        case Property_Top: prop.mTop = asReal(decl); flags|=ExtractedTop; break;
+        case Property_Right: prop.mRight = asReal(decl); flags|=ExtractedRight; break;
+        case Property_Bottom: prop.mBottom = asReal(decl); flags|=ExtractedBottom; break;
+        case Property_CenterHorizontal: 
+            prop.mCenterH = asReal(decl); flags|=ExtractedCenterH; break;
+        case Property_CenterVertical: 
+            prop.mCenterV = asReal(decl); flags|=ExtractedCenterV; break;
+
+        case Property_LayoutDirection: // fall-through
+            prop.mLayoutDir = parseLayoutDirectionValue(decl.values.at(0));
+            flags|=ExtractedLayoutDir;
+            break;
+
+        case Property_Alignment: 
+        case Property_TextAlignment: 
+            prop.mAlignment = parseAlignment(decl); flags|=ExtractedAlignment; break;
+        case Property_TextLineCountMin: 
+            prop.mMinLines = decl.values.first().variant.toInt(); flags|=ExtractedMinLines; break;
+        case Property_TextLineCountMax: 
+            prop.mMaxLines = decl.values.first().variant.toInt(); flags|=ExtractedMaxLines; break;
+        case Property_TextWrapMode: 
+            prop.mTextWrapMode = parseWrapMode(decl.values.at(0)); flags|=ExtractedWrapMode; break;
+        case Property_ZValue: prop.mZ = 
+            asReal(decl); flags|=ExtractedZValue; break;
+
+        case Property_BorderWidthBottom: 
+            prop.mBorderWidths[BottomEdge] = asReal(decl); flags|=ExtractedBorderWidths; break;
+        case Property_BorderWidthLeft: 
+            prop.mBorderWidths[LeftEdge] = asReal(decl); flags|=ExtractedBorderWidths; break;
+        case Property_BorderWidthRight: 
+            prop.mBorderWidths[RightEdge] = asReal(decl); flags|=ExtractedBorderWidths; break;
+        case Property_BorderWidthTop: 
+            prop.mBorderWidths[TopEdge] = asReal(decl); flags|=ExtractedBorderWidths; break;
+        case Property_BorderWidth: 
+            asReals(decl, prop.mBorderWidths); flags|=ExtractedBorderWidths; break;
+
+        case Property_AspectRatio:
+            prop.mAspectRatioMode = parseAspectRatioMode(decl.values.at(0));
+            flags|=ExtractedAspectRatioMode;
+            break;
+
+        case Property_FontSize: setFontSizeFromValue(decl.values.at(0), prop.mFont); break;
+        case Property_FontStyle: setFontStyleFromValue(decl.values.at(0), prop.mFont); break;
+        case Property_FontWeight: setFontWeightFromValue(decl.values.at(0), prop.mFont); break;
+        case Property_FontFamily: setFontFamilyFromValues(decl, prop.mFont); break;
+        case Property_TextDecoration: setTextDecorationFromValues(decl, prop.mFont); break;
+        case Property_Font: parseShorthandFontProperty(decl, prop.mFont); break;
+        case Property_FontVariant: 
+            setFontVariantFromValue(decl.values.at(0), prop.mFontSpec, prop.mFont); break;
+        case Property_TextTransform: 
+            setTextTransformFromValue(decl.values.at(0), prop.mFont); break;
+        case Property_TextHeight: 
+            tphSet = true; prop.mFontSpec.setTextHeight(asReal(decl)); break;
+
+        case Property_AnchorDirection:
+            prop.mAnchorDir = parseAnchorDirection(decl.values.at(0));
+            flags|=ExtractedAnchorDir;
+            break;
+        default: continue;
+        }
+        hit = true;
+    }
+
+    if (prop.mFont != QFont()) {
+        flags |= ExtractedFont;
+    }
+    if (!prop.mFontSpec.isNull()) {
+        flags |= ExtractedFontSpec;
+    }
+
+    prop.mFlags = flags;
+    return hit;
+}
+
+static QColor parseColorValue(Value v)
 {
     if (v.type == Value::Identifier || v.type == Value::String || v.type == Value::Color)
         return v.variant.toColor();
@@ -975,14 +754,6 @@ static QColor parseColorValue(Value v, const QPalette &pal)
     QStringList lst = v.variant.toStringList();
     if (lst.count() != 2)
         return QColor();
-
-    if ((lst.at(0).compare(QLatin1String("palette"), Qt::CaseInsensitive)) == 0) {
-        int role = findKnownValue(lst.at(1), values, NumKnownValues);
-        if (role >= Value_FirstColorRole && role <= Value_LastColorRole)
-            return pal.color((QPalette::ColorRole)(role-Value_FirstColorRole));
-
-        return QColor();
-    }
 
     bool rgb = lst.at(0).startsWith(QLatin1String("rgb"));
 
@@ -1012,419 +783,9 @@ static QColor parseColorValue(Value v, const QPalette &pal)
                : QColor::fromHsv(v1, v2, v3, alpha);
 }
 
-static QBrush parseBrushValue(Value v, const QPalette &pal)
-{
-    QColor c = parseColorValue(v, pal);
-    if (c.isValid())
-        return QBrush(c);
-
-    if (v.type != Value::Function)
-        return QBrush();
-
-    QStringList lst = v.variant.toStringList();
-    if (lst.count() != 2)
-        return QBrush();
-
-    QStringList gradFuncs;
-    gradFuncs << QLatin1String("qlineargradient") << QLatin1String("qradialgradient") << QLatin1String("qconicalgradient") << QLatin1String("qgradient");
-    int gradType = -1;
-
-    if ((gradType = gradFuncs.indexOf(lst.at(0).toLower())) == -1)
-        return QBrush();
-
-    QHash<QString, qreal> vars;
-    QVector<QGradientStop> stops;
-
-    int spread = -1;
-    QStringList spreads;
-    spreads << QLatin1String("pad") << QLatin1String("reflect") << QLatin1String("repeat");
-
-    Parser parser(lst.at(1));
-    while (parser.hasNext()) {
-        parser.skipSpace();
-        if (!parser.test(IDENT))
-            return QBrush();
-        QString attr = parser.lexem();
-        parser.skipSpace();
-        if (!parser.test(COLON))
-            return QBrush();
-        parser.skipSpace();
-        if (attr.compare(QLatin1String("stop"), Qt::CaseInsensitive) == 0) {
-            Value stop, color;
-            parser.next();
-            if (!parser.parseTerm(&stop)) return QBrush();
-            parser.skipSpace();
-            parser.next();
-            if (!parser.parseTerm(&color)) return QBrush();
-            stops.append(QGradientStop(stop.variant.toDouble(), parseColorValue(color, pal)));
-        } else {
-            parser.next();
-            Value value;
-            parser.parseTerm(&value);
-            if (attr.compare(QLatin1String("spread"), Qt::CaseInsensitive) == 0) {
-                spread = spreads.indexOf(value.variant.toString());
-            } else {
-                vars[attr] = value.variant.toString().toDouble();
-            }
-        }
-        parser.skipSpace();
-        parser.test(COMMA);
-    }
-
-    if (gradType == 0) {
-        QLinearGradient lg(vars.value(QLatin1String("x1")), vars.value(QLatin1String("y1")),
-                           vars.value(QLatin1String("x2")), vars.value(QLatin1String("y2")));
-        lg.setCoordinateMode(QGradient::ObjectBoundingMode);
-        lg.setStops(stops);
-        if (spread != -1)
-            lg.setSpread(QGradient::Spread(spread));
-        return QBrush(lg);
-    }
-
-    if (gradType == 1) {
-        QRadialGradient rg(vars.value(QLatin1String("cx")), vars.value(QLatin1String("cy")),
-                           vars.value(QLatin1String("radius")), vars.value(QLatin1String("fx")),
-                           vars.value(QLatin1String("fy")));
-        rg.setCoordinateMode(QGradient::ObjectBoundingMode);
-        rg.setStops(stops);
-        if (spread != -1)
-            rg.setSpread(QGradient::Spread(spread));
-        return QBrush(rg);
-    }
-
-    if (gradType == 2) {
-        QConicalGradient cg(vars.value(QLatin1String("cx")), vars.value(QLatin1String("cy")),
-                            vars.value(QLatin1String("angle")));
-        cg.setCoordinateMode(QGradient::ObjectBoundingMode);
-        cg.setStops(stops);
-        if (spread != -1)
-            cg.setSpread(QGradient::Spread(spread));
-        return QBrush(cg);
-    }
-
-    return QBrush();
-}
-
-static BorderStyle parseStyleValue(Value v)
-{
-    if (v.type == Value::KnownIdentifier) {
-        switch (v.variant.toInt()) {
-        case Value_None:
-            return BorderStyle_None;
-        case Value_Dotted:
-            return BorderStyle_Dotted;
-        case Value_Dashed:
-            return BorderStyle_Dashed;
-        case Value_Solid:
-            return BorderStyle_Solid;
-        case Value_Double:
-            return BorderStyle_Double;
-        case Value_DotDash:
-            return BorderStyle_DotDash;
-        case Value_DotDotDash:
-            return BorderStyle_DotDotDash;
-        case Value_Groove:
-            return BorderStyle_Groove;
-        case Value_Ridge:
-            return BorderStyle_Ridge;
-        case Value_Inset:
-            return BorderStyle_Inset;
-        case Value_Outset:
-            return BorderStyle_Outset;
-        case Value_Native:
-            return BorderStyle_Native;
-        default:
-            break;
-        }
-    }
-
-    return BorderStyle_Unknown;
-}
-#ifndef HB_BIN_CSS
-void ValueExtractor::borderValue(const Declaration &decl, qreal *width, HbCss::BorderStyle *style, QBrush *color)
-{
-    *width = 0;
-    *style = BorderStyle_None;
-    *color = QColor();
-
-    if (decl.values.isEmpty())
-        return;
-
-    int i = 0;
-    if (decl.values.at(i).type == Value::Length || decl.values.at(i).type == Value::Number) {
-        *width = asReal(decl.values.at(i));
-        if (++i >= decl.values.count())
-            return;
-    }
-
-    *style = parseStyleValue(decl.values.at(i));
-    if (*style != BorderStyle_Unknown) {
-        if (++i >= decl.values.count())
-            return;
-    } else {
-        *style = BorderStyle_None;
-    }
-
-    *color = parseBrushValue(decl.values.at(i), pal);
-}
-
-static void parseShorthandBackgroundProperty(const HbVector<Value> &values, QBrush *brush, QString *image, Repeat *repeat, Qt::Alignment *alignment, const QPalette &pal)
-{
-    *brush = QBrush();
-    image->clear();
-    *repeat = Repeat_XY;
-    *alignment = Qt::AlignTop | Qt::AlignLeft;
-
-    for (int i = 0; i < values.count(); ++i) {
-        const Value v = values.at(i);
-        if (v.type == Value::Uri) {
-            *image = v.variant.toString();
-            continue;
-        } else if (v.type == Value::KnownIdentifier && v.variant.toInt() == Value_None) {
-            image->clear();
-            continue;
-        } else if (v.type == Value::KnownIdentifier && v.variant.toInt() == Value_Transparent) {
-            *brush = QBrush(Qt::transparent);
-        }
-
-        Repeat repeatAttempt = static_cast<Repeat>(findKnownValue(v.variant.toString(),
-                                                   repeats, NumKnownRepeats));
-        if (repeatAttempt != Repeat_Unknown) {
-            *repeat = repeatAttempt;
-            continue;
-        }
-
-        if (v.type == Value::KnownIdentifier) {
-            const int start = i;
-            int count = 1;
-            if (i < values.count() - 1
-                && values.at(i + 1).type == Value::KnownIdentifier) {
-                ++i;
-                ++count;
-            }
-            Qt::Alignment a = parseAlignment(values.constData() + start, count);
-            if (int(a) != 0) {
-                *alignment = a;
-                continue;
-            }
-            i -= count - 1;
-        }
-
-        *brush = parseBrushValue(v, pal);
-    }
-}
-
-bool ValueExtractor::extractBackground(QBrush *brush, QString *image, Repeat *repeat,
-                                       Qt::Alignment *alignment, Origin *origin, Attachment *attachment,
-                                       Origin *clip)
-{
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); ++i) {
-        const Declaration &decl = declarations.at(i);
-        if (decl.values.isEmpty())
-            continue;
-        const Value val = decl.values.first();
-        switch (decl.propertyId) {
-            case BackgroundColor:
-                *brush = parseBrushValue(val, pal);
-                break;
-            case BackgroundImage:
-                if (val.type == Value::Uri)
-                    *image = val.variant.toString();
-                break;
-            case BackgroundRepeat:
-                *repeat = static_cast<Repeat>(findKnownValue(val.variant.toString(),
-                                              repeats, NumKnownRepeats));
-                break;
-            case BackgroundPosition:
-                *alignment = decl.alignmentValue();
-                break;
-            case BackgroundOrigin:
-                *origin = decl.originValue();
-                break;
-            case BackgroundClip:
-                *clip = decl.originValue();
-                break;
-            case Background:
-                parseShorthandBackgroundProperty(decl.values, brush, image, repeat, alignment, pal);
-                break;
-            case BackgroundAttachment:
-                *attachment = decl.attachmentValue();
-                break;
-            default: continue;
-        }
-        hit = true;
-    }
-    return hit;
-}
-
-static bool setFontSizeFromValue(Value value, QFont *font, int *fontSizeAdjustment)
-{
-    if (value.type == Value::KnownIdentifier) {
-        bool valid = true;
-        switch (value.variant.toInt()) {
-            case Value_Small: *fontSizeAdjustment = -1; break;
-            case Value_Medium: *fontSizeAdjustment = 0; break;
-            case Value_Large: *fontSizeAdjustment = 1; break;
-            case Value_XLarge: *fontSizeAdjustment = 2; break;
-            case Value_XXLarge: *fontSizeAdjustment = 3; break;
-            default: valid = false; break;
-        }
-        return valid;
-    }
-    if (value.type != Value::Length)
-        return false;
-
-    bool valid = false;
-    QString s = value.variant.toString();
-    if (s.endsWith(QLatin1String("pt"), Qt::CaseInsensitive)) {
-        s.chop(2);
-        value.variant = s;
-        if (value.variant.convert(HbVariant::Double)) {
-            font->setPointSizeF(value.variant.toDouble());
-            valid = true;
-        }
-    } else if (s.endsWith(QLatin1String("px"), Qt::CaseInsensitive)) {
-        s.chop(2);
-        value.variant = s;
-        if (value.variant.convert(HbVariant::Int)) {
-            font->setPixelSize(value.variant.toInt());
-            valid = true;
-        }
-    }
-    return valid;
-}
-
-static bool setFontStyleFromValue(const Value &value, QFont *font)
-{
-    if (value.type != Value::KnownIdentifier)
-        return false ;
-    switch (value.variant.toInt()) {
-        case Value_Normal: font->setStyle(QFont::StyleNormal); return true;
-        case Value_Italic: font->setStyle(QFont::StyleItalic); return true;
-        case Value_Oblique: font->setStyle(QFont::StyleOblique); return true;
-        default: break;
-    }
-    return false;
-}
-
-static bool setFontWeightFromValue(const Value &value, QFont *font)
-{
-    if (value.type == Value::KnownIdentifier) {
-        switch (value.variant.toInt()) {
-            case Value_Normal: font->setWeight(QFont::Normal); return true;
-            case Value_Bold: font->setWeight(QFont::Bold); return true;
-            default: break;
-        }
-        return false;
-    }
-    if (value.type != Value::Number)
-        return false;
-    font->setWeight(qMin(value.variant.toInt() / 8, 99));
-    return true;
-}
-
-static bool setFontFamilyFromValues(const HbVector<Value> &values, QFont *font)
-{
-    QString family;
-    for (int i = 0; i < values.count(); ++i) {
-        const Value &v = values.at(i);
-        if (v.type == Value::TermOperatorComma)
-            break;
-        const QString str = v.variant.toString();
-        if (str.isEmpty())
-            break;
-        family += str;
-        family += QLatin1Char(' ');
-    }
-    family = family.simplified();
-    if (family.isEmpty())
-        return false;
-    font->setFamily(family);
-    return true;
-}
-
-static void setTextDecorationFromValues(const HbVector<Value> &values, QFont *font)
-{
-    for (int i = 0; i < values.count(); ++i) {
-        if (values.at(i).type != Value::KnownIdentifier)
-            continue;
-        switch (values.at(i).variant.toInt()) {
-            case Value_Underline: font->setUnderline(true); break;
-            case Value_Overline: font->setOverline(true); break;
-            case Value_LineThrough: font->setStrikeOut(true); break;
-            case Value_None:
-                font->setUnderline(false);
-                font->setOverline(false);
-                font->setStrikeOut(false);
-                break;
-            default: break;
-        }
-    }
-}
-
-static void parseShorthandFontProperty(const HbVector<Value> &values, QFont *font, int *fontSizeAdjustment)
-{
-    font->setStyle(QFont::StyleNormal);
-    font->setWeight(QFont::Normal);
-    *fontSizeAdjustment = 0;
-
-    int i = 0;
-    while (i < values.count()) {
-        if (setFontStyleFromValue(values.at(i), font)
-            || setFontWeightFromValue(values.at(i), font))
-            ++i;
-        else
-            break;
-    }
-
-    if (i < values.count()) {
-        setFontSizeFromValue(values.at(i), font, fontSizeAdjustment);
-        ++i;
-    }
-
-    if (i < values.count()) {
-        QString fam = values.at(i).variant.toString();
-        if (!fam.isEmpty())
-            font->setFamily(fam);
-    }
-}
-
-static void setFontVariantFromValue(const Value &value, HbFontSpec *fontSpec, QFont *font )
-{
-    // Sets font variants. Some set the fontspec and some the HbFontSpec
-    HbFontSpec::Role role( HbFontSpec::Undefined );
-    if (value.type == Value::KnownIdentifier) {
-        switch (value.variant.toInt()) {
-            case Value_Normal: font->setCapitalization(QFont::MixedCase); break;
-            case Value_SmallCaps: font->setCapitalization(QFont::SmallCaps); break;
-            case Value_Primary: role = HbFontSpec::Primary; break;
-            case Value_Secondary: role = HbFontSpec::Secondary; break;
-            case Value_Title: role = HbFontSpec::Title; break;
-            case Value_PrimarySmall: role = HbFontSpec::PrimarySmall; break;
-            case Value_Digital: role = HbFontSpec::Digital; break;
-            default: break;
-        }
-    }
-    if (role != HbFontSpec::Undefined) {
-        fontSpec->setRole( role );
-    }
-}
-
-static void setTextTransformFromValue(const Value &value, QFont *font)
-{
-    if (value.type == Value::KnownIdentifier) {
-        switch (value.variant.toInt()) {
-            case Value_None: font->setCapitalization(QFont::MixedCase); break;
-            case Value_Uppercase: font->setCapitalization(QFont::AllUppercase); break;
-            case Value_Lowercase: font->setCapitalization(QFont::AllLowercase); break;
-            default: break;
-        }
-    }
-}
-
-
-bool ValueExtractor::extractValue(const QString& variableName, HbVector<HbCss::Value>& values) const
+bool ValueExtractor::extractVariableValue(
+    const QString& variableName, 
+    HbVector<HbCss::Value>& values) const
 {
     bool variableFound = false;
     if ( !variableDeclarationsHash.isEmpty() ) {
@@ -1445,30 +806,31 @@ bool ValueExtractor::extractValue(const QString& variableName, HbVector<HbCss::V
     return variableFound;
 }
 
-bool ValueExtractor::extractValue(const QString& variableName, qreal& value)
+bool ValueExtractor::extractVariableValue(const QString& variableName, qreal& value)
 {
     bool variableFound = false;
     HbVector<HbCss::Value> values;
-    if (extractValue(variableName, values)) {
+    if (extractVariableValue(variableName, values)) {
         value = asReal(values.first());
         variableFound = true;
     }
     return variableFound;    
 }
 
-bool ValueExtractor::extractValue( const QString& variableName, HbCss::Value &val ) const
+bool ValueExtractor::extractVariableValue( const QString& variableName, HbCss::Value &val ) const
 {
     HbVector<HbCss::Value> values;
-    bool variableFound = extractValue( variableName, values );
+    bool variableFound = extractVariableValue( variableName, values );
 
     //for variable cascading support
     if ( variableFound ) {
         val = values.first();
         if ( val.type == Value::Variable ){
-            variableFound = extractValue ( val.variant.toString (), val );
+            variableFound = extractVariableValue ( val.variant.toString (), val );
         }
-    }else {
-        HbLayeredStyleLoader *styleLoader = HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
+    } else {
+        HbLayeredStyleLoader *styleLoader = 
+            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
         if (styleLoader) {
             variableFound = styleLoader->findInDefaultVariables(variableName, val);
         }
@@ -1495,7 +857,7 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
     int precedenceLevel = 0; 
     bool parseVariable = false;
     bool endMark = false;
-    int operatorCount = 1; // there can only be 2 sequental operators if the latter one is unary '-'
+    int operatorCount = 1;//there can only be 2 sequental operators if the latter one is unary '-'
     while (position < expression.size()) {
         endMark = false;
         if (expression.at(position) == SPACE) {
@@ -1531,12 +893,14 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
                 if (valueString.startsWith("var(") && valueString.endsWith(")")) {
                     // remove var( and last )
                     QString variableString = valueString.mid(4, valueString.size()-5);
-                    if (!extractValue(variableString, val)) {
+                    if (!extractVariableValue(variableString, val)) {
                         expressionValues.clear();
                         return false;
                     }
                 } else {
-                    if (!asReal(valueString, val)) {
+                    bool real_ok = true;
+                    val = asReal(valueString, Value::String, &real_ok);
+                    if (!real_ok) {
                         expressionValues.clear();
                         return false;
                     }
@@ -1547,12 +911,14 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
             begin = -1;
             if (expression.at(position) == MINUS) {
                 if (operatorCount == 1) {
-                    expressionValues.append(ExpressionValue(ExpressionValue::UnaryMinus,precedenceLevel+2,0));
+                    expressionValues.append(
+                        ExpressionValue(ExpressionValue::UnaryMinus,precedenceLevel+2,0));
                 } else if (operatorCount > 1) {
                     expressionValues.clear();
                     return false;
                 } else {
-                    expressionValues.append(ExpressionValue(ExpressionValue::Minus,precedenceLevel,0));
+                    expressionValues.append(
+                        ExpressionValue(ExpressionValue::Minus,precedenceLevel,0));
                 }
                 operatorCount++;
             } else if (expression.at(position) == PLUS) {
@@ -1560,21 +926,24 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
                     expressionValues.clear();
                     return false;
                 }
-                expressionValues.append(ExpressionValue(ExpressionValue::Plus,precedenceLevel,0));
+                expressionValues.append(
+                    ExpressionValue(ExpressionValue::Plus,precedenceLevel,0));
                 operatorCount++;
             } else if (expression.at(position) == STAR) {
                 if (operatorCount > 0) {
                     expressionValues.clear();
                     return false;
                 }
-                expressionValues.append(ExpressionValue(ExpressionValue::Star,precedenceLevel+1,0));
+                expressionValues.append(
+                    ExpressionValue(ExpressionValue::Star,precedenceLevel+1,0));
                 operatorCount++;
             } else if (expression.at(position) == SLASH) {
                 if (operatorCount > 0) {
                     expressionValues.clear();
                     return false;
                 }
-                expressionValues.append(ExpressionValue(ExpressionValue::Slash,precedenceLevel+1,0));
+                expressionValues.append(
+                    ExpressionValue(ExpressionValue::Slash,precedenceLevel+1,0));
                 operatorCount++;
             }
             position++;
@@ -1607,12 +976,14 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
         if (valueString.startsWith("var(") && valueString.endsWith(")")) {
             // remove var( and last )
             QString variableString = valueString.mid(4, valueString.size()-5);
-            if (!extractValue(variableString, val)) {
+            if (!extractVariableValue(variableString, val)) {
                 expressionValues.clear();
                 return false;
             }
         } else {
-            if (!asReal(valueString, val)) {
+            bool real_ok = true;
+            val = asReal(valueString, Value::String, &real_ok);
+            if (!real_ok) {
                 expressionValues.clear();
                 return false;
             }
@@ -1673,7 +1044,8 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
                 break;
         }
         if (expressionValues[calculateIndex].mToken == ExpressionValue::UnaryMinus) {
-            expressionValues[calculateIndex+1].mValue = -expressionValues[calculateIndex+1].mValue;
+            expressionValues[calculateIndex+1].mValue = 
+                -expressionValues[calculateIndex+1].mValue;
             expressionValues.removeAt(calculateIndex);
         } else {
             expressionValues[calculateIndex-1].mValue = answer;
@@ -1689,14 +1061,14 @@ bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
 }
 
 
-bool ValueExtractor::extractParameters( const QList<QString> &params, QList<QVariant> &values )
+bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<QVariant> &values )
 {
-    if ( params.count() != values.count() ) {
+    if ( keys.count() != values.count() ) {
         return false;
     }
     for ( int i = 0; i < declarations.count(); i++ ) {
-        for( int j = 0; j < params.count(); j++ ) {
-            if (declarations[i].property == params[j] ) {
+        for( int j = 0; j < keys.count(); j++ ) {
+            if (declarations[i].property == keys[j] ) {
                 Value val = declarations[i].values.last();
                 switch (val.type) {
                     case Value::Length:
@@ -1704,10 +1076,8 @@ bool ValueExtractor::extractParameters( const QList<QString> &params, QList<QVar
                     case Value::VariableNegative:
                     case Value::Expression:
                     case Value::ExpressionNegative:
-                        values[j] = asReal(val);
-                        break;
                     case Value::Percentage:
-                        values[j] = val.variant.toDouble() / 100;
+                        values[j] = asReal(val);
                         break;
                     case Value::KnownIdentifier:
                         values[j] = (QString)val.original;
@@ -1723,114 +1093,19 @@ bool ValueExtractor::extractParameters( const QList<QString> &params, QList<QVar
     return true;
 }
 
-bool ValueExtractor::extractFont(QFont *font, HbFontSpec *fontSpec, int *fontSizeAdjustment)
-{
-    if (fontExtracted) {
-        *font = f;
-        *fontSizeAdjustment = adjustment;
-        *fontSpec = fSpec;
-        return fontExtracted == 1;
-    }
-
-    bool hit = false;
-    bool tphSet = false;
-    for (int i = 0; i < declarations.count(); ++i) {
-        const Declaration &decl = declarations.at(i);
-        if (decl.values.isEmpty())
-            continue;
-        const Value val = decl.values.first();
-        switch (decl.propertyId) {
-            case FontSize: setFontSizeFromValue(val, font, fontSizeAdjustment); break;
-            case FontStyle: setFontStyleFromValue(val, font); break;
-            case FontWeight: setFontWeightFromValue(val, font); break;
-            case FontFamily: setFontFamilyFromValues(decl.values, font); break;
-            case TextDecoration: setTextDecorationFromValues(decl.values, font); break;
-            case Font: parseShorthandFontProperty(decl.values, font, fontSizeAdjustment); break;
-            case FontVariant: setFontVariantFromValue(val, fontSpec, font); break;
-            case TextTransform: setTextTransformFromValue(val, font); break;
-            // Text-height alone is not enough to make 'hit' true.
-            case HbFixedHeight: if (!tphSet) fontSpec->setTextHeight(asReal(decl)); continue;
-            case HbTextHeight: tphSet = true; fontSpec->setTextHeight(asReal(decl)); continue;
-            default: continue;
-        }
-        hit = true;
-    }
-
-    f = *font;
-    fSpec = *fontSpec;
-    adjustment = *fontSizeAdjustment;
-    fontExtracted = hit ? 1 : 2;
-    return hit;
-}
-
-bool ValueExtractor::extractPalette(QBrush *fg, QBrush *sfg, QBrush *sbg, QBrush *abg)
-{
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); ++i) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case Color: *fg = decl.brushValue(pal); break;
-        case QtSelectionForeground: *sfg = decl.brushValue(pal); break;
-        case QtSelectionBackground: *sbg = decl.brushValue(pal); break;
-        case QtAlternateBackground: *abg = decl.brushValue(pal); break;
-        default: continue;
-        }
-        hit = true;
-    }
-    return hit;
-}
-
-void ValueExtractor::extractFont()
-{
-    if (fontExtracted)
-        return;
-    int dummy = -255;
-    // Values extracted into the object's own member variables.
-    extractFont(&f, &fSpec, &dummy);
-}
-
-bool ValueExtractor::extractImage(QIcon *icon, Qt::Alignment *a, QSize *size)
-{
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); ++i) {
-        const Declaration &decl = declarations.at(i);
-        switch (decl.propertyId) {
-        case QtImage:
-            *icon = decl.iconValue();
-            if (decl.values.count() > 0 && decl.values.at(0).type == Value::Uri) {
-                // try to pull just the size from the image...
-                QImageReader imageReader(decl.values.at(0).variant.toString());
-                if ((*size = imageReader.size()).isNull()) {
-                    // but we'll have to load the whole image if the
-                    // format doesn't support just reading the size
-                    *size = imageReader.read().size();
-                }
-            }
-            break;
-        case QtImageAlignment: *a = decl.alignmentValue();  break;
-        default: continue;
-        }
-        hit = true;
-    }
-    return hit;
-}
-
-bool ValueExtractor::extractLayout(QString *layoutName, QString *sectionName)
+bool ValueExtractor::extractLayout(QString &layoutName, QString &sectionName)
 {
     QString tempSectionName;
-    if ( !layoutName || !sectionName ) {
-        return false;
-    }
     bool hit = false;
     for (int i = 0; i < declarations.count(); ++i) {
         const Declaration &decl = declarations.at(i);
-        if ( decl.propertyId == HbLayout ) {
+        if ( decl.propertyId == Property_Layout ) {
             if( decl.values.count() == 1 ) {
-                *layoutName = decl.values.at(0).variant.toString();
+                layoutName = decl.values.at(0).variant.toString();
                 hit = true; 
             }
         }
-        else if ( decl.propertyId == HbSection ) {
+        else if ( decl.propertyId == Property_Section ) {
             if (decl.values.count() == 1 ) {
                 tempSectionName = decl.values.at(0).variant.toString();
                 //  a section without a layout doesn't count as a hit
@@ -1838,335 +1113,46 @@ bool ValueExtractor::extractLayout(QString *layoutName, QString *sectionName)
         }
     }
     if(hit)
-        *sectionName = tempSectionName;
+        sectionName = tempSectionName;
     return hit;
 }
 
-
-bool ValueExtractor::extractAspectRatioMode(Qt::AspectRatioMode *mode)
-{
-    bool hit = false;
-    for (int i = 0; i < declarations.count(); ++i) {
-        const Declaration &decl = declarations.at(i);
-        if ( decl.propertyId == HbAspectRatio && decl.values.count() == 1 ) {
-            switch (decl.values.at(0).variant.toInt())
-            {
-            case Value_Ignore:
-                *mode = Qt::IgnoreAspectRatio;
-                break;
-            case Value_Keep:
-                *mode = Qt::KeepAspectRatio;
-                break;
-            case Value_KeepExpand:
-                *mode = Qt::KeepAspectRatioByExpanding;
-                break;
-            default:
-                continue;
-            }
-            hit = true;
-        }
-    }
-    return hit;
-}
-
-bool ValueExtractor::extractColor( QColor *col ) const
+bool ValueExtractor::extractColor( QColor &color ) const
 {
     bool hit = false;
     const int declarationsCount = declarations.count();
     for ( int i = 0; i < declarationsCount; ++i ) {
         const Declaration &decl = declarations.at(i);
         switch(decl.propertyId) {
-        case Color: 
-            if( decl.values.at(0).type == Value::Variable ) {
-                HbCss::Value value;
-                hit = extractValue( decl.values.at(0).variant.toString (), value );
-                if (hit) {
-                    *col = value.variant.toColor();
+        case Property_Color:
+            {
+            HbCss::Value value;
+            if ( decl.values.at(0).type == Value::Variable ) {
+                const QString variableName = decl.values.at(0).variant.toString();
+                HbThemeIndexResource resource(variableName);
+                if (resource.isValid()) {
+                    // Color value coming from index
+                    color = resource.colorValue();
+                } else {
+                    // Color value coming from custom css
+                    extractVariableValue( variableName, value );
+                    color = parseColorValue(value);
                 }
+            } else {
+                value = decl.values.at(0);
+                color = parseColorValue(value);
             }
-            else {
-                *col = decl.values.at(0).variant.toColor();
-                hit = true;
+            hit = true;
+            break;
             }
         default:
-            break;           
+            break;
         }
     }
     return hit;
 }
 #endif
 
-QColor Declaration::colorValue(const QPalette &pal) const
-{
-    if (values.count() != 1)
-        return QColor();
-
-    return parseColorValue(values.first(), pal);
-}
-
-QBrush Declaration::brushValue(const QPalette &pal) const
-{
-    if (values.count() != 1)
-        return QBrush();
-
-    return parseBrushValue(values.first(), pal);
-}
-
-void Declaration::brushValues(QBrush *c, const QPalette &pal) const
-{
-    int i;
-    for (i = 0; i < qMin(values.count(), 4); i++)
-        c[i] = parseBrushValue(values.at(i), pal);
-    if (i == 0) c[0] = c[1] = c[2] = c[3] = QBrush();
-    else if (i == 1) c[3] = c[2] = c[1] = c[0];
-    else if (i == 2) c[2] = c[0], c[3] = c[1];
-    else if (i == 3) c[3] = c[1];
-}
-
-bool Declaration::realValue(qreal *real, const char *unit) const
-{
-    if (values.count() != 1)
-        return false;
-    const Value &v = values.first();
-    if (unit && v.type != Value::Length)
-        return false;
-    QString s = v.variant.toString();
-    if (unit) {
-        if (!s.endsWith(QLatin1String(unit), Qt::CaseInsensitive))
-            return false;
-        s.chop(qstrlen(unit));
-    }
-    bool ok = false;
-    qreal val = s.toDouble(&ok);
-    if (ok)
-        *real = val;
-    return ok;
-}
-
-static bool intValueHelper(const Value &v, int *i, const char *unit)
-{
-    if (unit && v.type != Value::Length)
-        return false;
-    QString s = v.variant.toString();
-    if (unit) {
-        if (!s.endsWith(QLatin1String(unit), Qt::CaseInsensitive))
-            return false;
-        s.chop(qstrlen(unit));
-    }
-    bool ok = false;
-    int val = s.toInt(&ok);
-    if (ok)
-        *i = val;
-    return ok;
-}
-
-bool Declaration::intValue(int *i, const char *unit) const
-{
-    if (values.count() != 1)
-        return false;
-    return intValueHelper(values.first(), i, unit);
-}
-
-QSize Declaration::sizeValue() const
-{
-    int x[2] = { 0, 0 };
-    if (values.count() > 0)
-        intValueHelper(values.at(0), &x[0], "px");
-    if (values.count() > 1)
-        intValueHelper(values.at(1), &x[1], "px");
-    else
-        x[1] = x[0];
-    return QSize(x[0], x[1]);
-}
-
-QRect Declaration::rectValue() const
-{
-    if (values.count() != 1)
-        return QRect();
-    const Value &v = values.first();
-    if (v.type != Value::Function)
-        return QRect();
-    QStringList func = v.variant.toStringList();
-    if (func.count() != 2 || func.first().compare(QLatin1String("rect")) != 0)
-        return QRect();
-    QStringList args = func[1].split(QLatin1String(" "), QString::SkipEmptyParts);
-    if (args.count() != 4)
-        return QRect();
-    return QRect(args[0].toInt(), args[1].toInt(), args[2].toInt(), args[3].toInt());
-}
-
-void Declaration::colorValues(QColor *c, const QPalette &pal) const
-{
-    int i;
-    for (i = 0; i < qMin(values.count(), 4); i++)
-        c[i] = parseColorValue(values.at(i), pal);
-    if (i == 0) c[0] = c[1] = c[2] = c[3] = QColor();
-    else if (i == 1) c[3] = c[2] = c[1] = c[0];
-    else if (i == 2) c[2] = c[0], c[3] = c[1];
-    else if (i == 3) c[3] = c[1];
-}
-
-BorderStyle Declaration::styleValue() const
-{
-    if (values.count() != 1)
-        return BorderStyle_None;
-    return parseStyleValue(values.first());
-}
-
-void Declaration::styleValues(BorderStyle *s) const
-{
-    int i;
-    for (i = 0; i < qMin(values.count(), 4); i++)
-        s[i] = parseStyleValue(values.at(i));
-    if (i == 0) s[0] = s[1] = s[2] = s[3] = BorderStyle_None;
-    else if (i == 1) s[3] = s[2] = s[1] = s[0];
-    else if (i == 2) s[2] = s[0], s[3] = s[1];
-    else if (i == 3) s[3] = s[1];
-}
-
-Repeat Declaration::repeatValue() const
-{
-    if (values.count() != 1)
-        return Repeat_Unknown;
-    return static_cast<Repeat>(findKnownValue(values.first().variant.toString(),
-                                repeats, NumKnownRepeats));
-}
-
-Origin Declaration::originValue() const
-{
-    if (values.count() != 1)
-        return Origin_Unknown;
-    return static_cast<Origin>(findKnownValue(values.first().variant.toString(),
-                               origins, NumKnownOrigins));
-}
-
-PositionMode Declaration::positionValue() const
-{
-    if (values.count() != 1)
-        return PositionMode_Unknown;
-    return static_cast<PositionMode>(findKnownValue(values.first().variant.toString(),
-                                     positions, NumKnownPositionModes));
-}
-
-Attachment Declaration::attachmentValue() const
-{
-    if (values.count() != 1)
-        return Attachment_Unknown;
-    return static_cast<Attachment>(findKnownValue(values.first().variant.toString(),
-                                   attachments, NumKnownAttachments));
-}
-
-int Declaration::styleFeaturesValue() const
-{
-    int features = StyleFeature_None;
-    for (int i = 0; i < values.count(); i++) {
-        features |= static_cast<int>(findKnownValue(values.value(i).variant.toString(),
-                                     styleFeatures, NumKnownStyleFeatures));
-    }
-    return features;
-}
-
-QString Declaration::uriValue() const
-{
-    if (values.isEmpty() || values.first().type != Value::Uri)
-        return QString();
-    return values.first().variant.toString();
-}
-
-Qt::Alignment Declaration::alignmentValue() const
-{
-    if (values.isEmpty() || values.count() > 2)
-        return Qt::AlignLeft | Qt::AlignTop;
-
-    return parseAlignment(values.constData(), values.count());
-}
-
-Hb::TextWrapping Declaration::wrapModeValue() const
-{
-    if (values.isEmpty() || values.count() > 1)
-        return Hb::TextNoWrap;
-
-    return parseWrapMode(values.at(0));
-}
-
-void Declaration::borderImageValue(QString *image, int *cuts,
-                                   TileMode *h, TileMode *v) const
-{
-    *image = uriValue();
-    for (int i = 0; i < 4; i++)
-        cuts[i] = -1;
-    *h = *v = TileMode_Stretch;
-
-    if (values.count() < 2)
-        return;
-
-    if (values.at(1).type == Value::Number) { // cuts!
-        int i;
-        for (i = 0; i < qMin(values.count()-1, 4); i++) {
-            const Value& v = values.at(i+1);
-            if (v.type != Value::Number)
-                break;
-            cuts[i] = v.variant.toString().toInt();
-        }
-        if (i == 0) cuts[0] = cuts[1] = cuts[2] = cuts[3] = 0;
-        else if (i == 1) cuts[3] = cuts[2] = cuts[1] = cuts[0];
-        else if (i == 2) cuts[2] = cuts[0], cuts[3] = cuts[1];
-        else if (i == 3) cuts[3] = cuts[1];
-    }
-
-    if (values.last().type == Value::Identifier) {
-        *v = static_cast<TileMode>(findKnownValue(values.last().variant.toString(),
-                                      tileModes, NumKnownTileModes));
-    }
-    if (values[values.count() - 2].type == Value::Identifier) {
-        *h = static_cast<TileMode>
-                        (findKnownValue(values[values.count()-2].variant.toString(),
-                                        tileModes, NumKnownTileModes));
-    } else
-        *h = *v;
-}
-
-QIcon Declaration::iconValue() const
-{
-    QIcon icon;
-    for (int i = 0; i < values.count();) {
-        Value value = values.at(i++);
-        if (value.type != Value::Uri)
-            break;
-        QString uri = value.variant.toString();
-        QIcon::Mode mode = QIcon::Normal;
-        QIcon::State state = QIcon::Off;
-        for (int j = 0; j < 2; j++) {
-            if (i != values.count() && values.at(i).type == Value::KnownIdentifier) {
-                switch (values.at(i).variant.toInt()) {
-                case Value_Disabled: mode = QIcon::Disabled; break;
-                case Value_Active: mode = QIcon::Active; break;
-                case Value_Selected: mode = QIcon::Selected; break;
-                case Value_Normal: mode = QIcon::Normal; break;
-                case Value_On: state = QIcon::On; break;
-                case Value_Off: state = QIcon::Off; break;
-                default: break;
-                }
-                ++i;
-            } else {
-                break;
-            }
-        }
-
-        // QIcon is soo broken
-        if (icon.isNull())
-            icon = QIcon(uri);
-        else
-            icon.addPixmap(uri, mode, state);
-
-        if (i == values.count())
-            break;
-
-        if (values.at(i).type == Value::TermOperatorComma)
-            i++;
-    }
-    return icon;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Selector
@@ -2236,7 +1222,8 @@ StyleSelector::~StyleSelector()
     widgetSheets.clear();
 }
 
-int StyleSelector::selectorMatches(const Selector &selector, NodePtr node, bool nameCheckNeeded) const
+int StyleSelector::selectorMatches(
+    const Selector &selector, NodePtr node, bool nameCheckNeeded) const
 {
     if (selector.basicSelectors.isEmpty()) {
         return -1;
@@ -2290,7 +1277,8 @@ int StyleSelector::selectorMatches(const Selector &selector, NodePtr node, bool 
             break;
         }
         firstLoop = false;
-   } while (i >= 0 && (matchLevel >= 0 || sel.relationToNext == BasicSelector::MatchNextSelectorIfAncestor));
+   } while (i >= 0 && (matchLevel >= 0 || 
+       sel.relationToNext == BasicSelector::MatchNextSelectorIfAncestor));
 
     return (matchLevel < 0) ? -1 : firstMatchLevel;
 }
@@ -2311,7 +1299,10 @@ int StyleSelector::inheritanceDepth(NodePtr node, HbString &elementName) const
     }
 }
 
-int StyleSelector::basicSelectorMatches(const BasicSelector &sel, NodePtr node, bool nameCheckNeeded) const
+const uint CLASS_HASH = qHash(QString("class"));
+
+int StyleSelector::basicSelectorMatches(
+    const BasicSelector &sel, NodePtr node, bool nameCheckNeeded) const
 {
     int matchLevel = 0;
     HbString elementName(HbMemoryManager::HeapMemory);
@@ -2322,7 +1313,7 @@ int StyleSelector::basicSelectorMatches(const BasicSelector &sel, NodePtr node, 
 
         for (int i = 0; i < sel.attributeSelectors.count(); ++i) {
             const AttributeSelector &a = sel.attributeSelectors.at(i);
-            if (a.name == QLatin1String("class")) {
+            if (a.nameHash == CLASS_HASH) {
                 elementName = a.value;
             }
             if (!attributeMatches(node, a)) {
@@ -2350,18 +1341,21 @@ int StyleSelector::basicSelectorMatches(const BasicSelector &sel, NodePtr node, 
     return matchLevel;
 }
 
-static inline bool qcss_selectorStyleRuleLessThan(const QPair<int, HbCss::StyleRule> &lhs, const QPair<int, HbCss::StyleRule> &rhs)
+static inline bool qcss_selectorStyleRuleLessThan(
+    const QPair<int, HbCss::StyleRule> &lhs, const QPair<int, HbCss::StyleRule> &rhs)
 {
     return lhs.first < rhs.first;
 }
 
-static inline bool qcss_selectorDeclarationLessThan(const QPair<int, HbCss::Declaration> &lhs, const QPair<int, HbCss::Declaration> &rhs)
+static inline bool qcss_selectorDeclarationLessThan(
+    const QPair<int, HbCss::Declaration> &lhs, const QPair<int, HbCss::Declaration> &rhs)
 {
     return lhs.first < rhs.first;
 }
 
-void StyleSelector::matchRules(NodePtr node, const HbVector<StyleRule> &rules, StyleSheetOrigin origin,
-                               int depth, QVector<WeightedRule> *weightedRules, bool nameCheckNeeded) const
+void StyleSelector::matchRules(
+    NodePtr node, const HbVector<StyleRule> &rules, StyleSheetOrigin origin,
+    int depth, QVector<WeightedRule> *weightedRules, bool nameCheckNeeded) const
 {
     for (int i = 0; i < rules.count(); ++i) {
         const StyleRule &rule = rules.at(i);
@@ -2386,7 +1380,8 @@ void StyleSelector::matchRules(NodePtr node, const HbVector<StyleRule> &rules, S
 
 // Returns style rules that are in ascending order of specificity
 // Each of the StyleRule returned will contain exactly one Selector
-HbVector<StyleRule> StyleSelector::styleRulesForNode(NodePtr node, const Qt::Orientation orientation) const
+HbVector<StyleRule> StyleSelector::styleRulesForNode(
+    NodePtr node, const Qt::Orientation orientation) const
 {
     HbVector<StyleRule> rules;
     if (styleSheets.isEmpty())
@@ -2404,7 +1399,8 @@ HbVector<StyleRule> StyleSelector::styleRulesForNode(NodePtr node, const Qt::Ori
 
 
 // Returns style rules and specificity values (unordered)
-QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(NodePtr node, const Qt::Orientation orientation) const
+QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(
+    NodePtr node, const Qt::Orientation orientation) const
 {
     initNode(node);
     QVector<WeightedRule> weightedRules; // (spec, rule) that will be sorted below
@@ -2432,12 +1428,15 @@ QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(NodePtr node, con
             if(styleSheet) {
                 WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
                 if (widgetStack) {
-                    matchRules(node, widgetStack->styleRules, styleSheet->origin, styleSheet->depth, &weightedRules, false);
+                    matchRules(node, widgetStack->styleRules, styleSheet->origin, 
+                                styleSheet->depth, &weightedRules, false);
                     // Append orientation-specific rules
                     if (orientation == Qt::Vertical) {
-                        matchRules(node, widgetStack->portraitRules, styleSheet->origin, styleSheet->depth, &weightedRules, false);
+                        matchRules(node, widgetStack->portraitRules, styleSheet->origin, 
+                                    styleSheet->depth, &weightedRules, false);
                     }else if (orientation == Qt::Horizontal) {
-                        matchRules(node, widgetStack->landscapeRules, styleSheet->origin, styleSheet->depth, &weightedRules, false);
+                        matchRules(node, widgetStack->landscapeRules, styleSheet->origin, 
+                                    styleSheet->depth, &weightedRules, false);
                     }
                 }
                 if (firstLoop && !medium.isEmpty()) { // Media rules are only added to global widget stack
@@ -2446,8 +1445,8 @@ QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(NodePtr node, con
                         if (styleSheet->mediaRules.at(i).media.contains(
                                 HbString(medium, HbMemoryManager::HeapMemory),
                                 Qt::CaseInsensitive)) {
-                            matchRules(node, styleSheet->mediaRules.at(i).styleRules, styleSheet->origin,
-                                    styleSheet->depth, &weightedRules);
+                            matchRules(node, styleSheet->mediaRules.at(i).styleRules, 
+                                styleSheet->origin, styleSheet->depth, &weightedRules);
                         }
                     }
                 }// End medium.isEmpty loop
@@ -2496,8 +1495,10 @@ bool StyleSelector::hasOrientationSpecificStyleRules(NodePtr node) const
 
 
 // Returns declarations and specificity values (unordered)
-QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(NodePtr node, const Qt::Orientation orientation,
-        const char *extraPseudo) const
+QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(
+    NodePtr node, 
+    const Qt::Orientation orientation,
+    const char *extraPseudo) const
 {
     QVector<WeightedDeclaration> decls;
     QVector<WeightedRule> rules = weightedStyleRulesForNode(node, orientation);
@@ -2513,8 +1514,7 @@ QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(NodePtr 
 
         quint64 pseudoClass = selector.pseudoClass();
         bool pseudoClassIsValid = 
-            pseudoClass == PseudoClass_Enabled 
-            || pseudoClass == PseudoClass_Unspecified
+            pseudoClass == PseudoClass_Unspecified
             || pseudoClass == PseudoClass_Landscape 
             || pseudoClass == PseudoClass_Portrait;
 
@@ -2533,14 +1533,17 @@ QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(NodePtr 
 
 // for qtexthtmlparser which requires just the declarations with Enabled state
 // and without pseudo elements
-HbVector<Declaration> StyleSelector::declarationsForNode(NodePtr node, const Qt::Orientation orientation,
+HbVector<Declaration> StyleSelector::declarationsForNode(
+    NodePtr node, 
+    const Qt::Orientation orientation,
     const char *extraPseudo) const
 {
     HbVector<Declaration> decls;
     if (styleSheets.isEmpty())
         return decls;
 
-    QVector<WeightedDeclaration> weightedDecls = weightedDeclarationsForNode(node, orientation, extraPseudo);
+    QVector<WeightedDeclaration> weightedDecls = 
+        weightedDeclarationsForNode(node, orientation, extraPseudo);
 
     qStableSort(weightedDecls.begin(), weightedDecls.end(), qcss_selectorDeclarationLessThan);
 
@@ -2642,22 +1645,9 @@ QString Scanner::preprocess(const QString &input, bool *hasEscapeSequences)
     return output;
 }
 
-int HbQCss::QCssScanner_Generated::handleCommentStart()
-{
-    while (pos < input.size() - 1) {
-        if (input.at(pos) == QLatin1Char('*')
-            && input.at(pos + 1) == QLatin1Char('/')) {
-            pos += 2;
-            break;
-        }
-        ++pos;
-    }
-    return S;
-}
-
 void Scanner::scan(const QString &preprocessedInput, QVector<Symbol> *symbols)
 {
-    HbQCss::QCssScanner_Generated scanner(preprocessedInput);
+    HbCssScanner_Generated scanner(preprocessedInput);
     Symbol sym;
     int tok = scanner.lex();
     while (tok != -1) {
@@ -2833,7 +1823,8 @@ void Parser::addRuleToWidgetStack(StyleSheet *sheet, const QString &stackName, S
     if (((pseudo & HbCss::PseudoClass_Portrait) && ((negated & HbCss::PseudoClass_Portrait) == 0))
             || (negated & HbCss::PseudoClass_Landscape)) {
         widgetStack->portraitRules.append(rule);
-    } else if (((pseudo & HbCss::PseudoClass_Landscape) && ((negated & HbCss::PseudoClass_Landscape) == 0))
+    } else if (((pseudo & HbCss::PseudoClass_Landscape) && 
+            ((negated & HbCss::PseudoClass_Landscape) == 0))
             || (negated & HbCss::PseudoClass_Portrait)) {
         widgetStack->landscapeRules.append(rule);
     } else {
@@ -2977,7 +1968,8 @@ bool Parser::parseCombinator(BasicSelector::Relation *relation)
 bool Parser::parseProperty(Declaration *decl)
 {
     decl->property = lexem();
-    decl->propertyId = static_cast<Property>(findKnownValue(decl->property, properties, NumProperties));
+    decl->propertyId = static_cast<Property>(findKnownValue(
+        decl->property, properties, NumProperties));
     skipSpace();
     return true;
 }
@@ -2985,7 +1977,6 @@ bool Parser::parseProperty(Declaration *decl)
 
 
 
-//new function added for varibale support
 bool Parser::parseVariableset(VariableRule *variableRule)
 {
 //no selector needs to be identified
@@ -3133,6 +2124,7 @@ bool Parser::parseSimpleSelector(BasicSelector *basicSel)
             onceMore = true;
             AttributeSelector a(basicSel->memoryType);
             a.name = QLatin1String("class");
+            a.nameHash = qHash(a.name);
             a.valueMatchCriterium = AttributeSelector::MatchContains;
             if (!parseClass(&a.value)) return false;
 #ifdef CSS_PARSER_TRACES
@@ -3188,6 +2180,7 @@ bool Parser::parseAttrib(AttributeSelector *attr)
 
     if (!next(IDENT)) return false;
     attr->name = lexem();
+    attr->nameHash = qHash(attr->name);
     skipSpace();
 
     if (test(EXCLAMATION_SYM)) {
@@ -3546,5 +2539,197 @@ bool Parser::testTokenAndEndsWith(HbCss::TokenType t, const QLatin1String &str)
     }
     return true;
 }
+
+
+#ifdef CSS_PARSER_TRACES
+static const QString what(Value::Type t)
+{
+    QString returnString;
+    switch(t) {
+    case Value::Unknown: 
+        returnString = QString("Unknown");
+        break;
+    case Value::Number:
+        returnString = QString("Number");
+        break;
+    case Value::Percentage:
+        returnString = QString("Percentage");
+        break;
+    case Value::Length:
+        returnString = QString("Length");
+        break;
+    case Value::String:
+        returnString = QString("String");
+        break;
+    case Value::Identifier:
+        returnString = QString("Identifier");
+        break;
+    case Value::KnownIdentifier:
+        returnString = QString("KnownIdentifier");
+        break;
+    case Value::Uri:
+        returnString = QString("Uri");
+        break;
+    case Value::Color:
+        returnString = QString("Color");
+        break;
+    case Value::Function:
+        returnString = QString("Function");
+        break;
+    case Value::TermOperatorSlash:
+        returnString = QString("TermOperatorSlash");
+        break;
+    case Value::TermOperatorComma:
+        returnString = QString("TermOperatorComma");
+        break;
+    case Value::Variable:
+        returnString = QString("Variable");
+        break;
+    default:
+        break;
+    }
+    return returnString;
+}
+
+void Value::print() const
+{
+    qDebug() <<"\t \t \t"<<"==============Value::Print():Begin==================";
+    qDebug() <<"\t \t \t"<< "Value::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() <<"\t \t \t"<< "Value::Type type = " << what(type);
+    qDebug() <<"\t \t \t"<< "Value::HbString original = " << original;
+    qDebug() <<"\t \t \t"<< "Value::HbVariant variant = " << variant.toString();
+    qDebug() <<"\t \t \t"<<"==============Value::Print():End====================";
+}
+
+void Declaration::print() const
+{
+    qDebug() <<"\t"<<"==============Declaration::Print():Begin==================";
+    qDebug() <<"\t"<<"Declaration::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "\t"<< "Declaration::HbString property = " << property;
+    qDebug() << "\t"<< "Declaration::Property propertyId = " << propertyId;
+    qDebug() << "\t"<< "Declaration::HbVector<Value> values = " ;
+    values.print();
+    qDebug() <<"\t"<<"==============Declaration::Print():End====================";
+}
+
+void Pseudo::print() const
+{
+    qDebug() <<"==============Pseudo::Print():Begin==================";
+    qDebug() << "Pseudo::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "Pseudo::HbString name= " << name;
+    qDebug() << "Pseudo::HbString function = " << function;
+    qDebug() <<"==============Pseudo::Print():End==================";    
+}
+
+void AttributeSelector::print() const
+{
+    qDebug() <<"==============AttributeSelector::Print():Begin==================";
+    qDebug() << "AttributeSelector::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "AttributeSelector::HbString name= " << name;
+    qDebug() << "AttributeSelector::HbString value = " << value;
+    qDebug() <<"==============AttributeSelector::Print():End==================";
+}
+
+void BasicSelector::print() const
+{
+    qDebug() <<"\t \t"<<"==============BasicSelector::Print():Begin==================";
+    qDebug() <<"\t \t"<<"BasicSelector::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() <<"\t \t"<<"BasicSelector::HbString elementName= " << elementName;
+    //qDebug() <<"\t \t"<<"BasicSelector::QStringList ids = " << ids;
+    qDebug() <<"\t \t"<<"BasicSelector::PseudoVector pseudos = ";
+    pseudos.print();
+    qDebug() <<"\t \t"<< "BasicSelector::AttributeSelectorVector attributeSelectors = ";
+    attributeSelectors.print();
+    qDebug() <<"\t \t"<<"==============BasicSelector::Print():End====================";
+}
+
+void Selector::print() const
+{
+    qDebug() <<"\t "<<"==============Selector::Print():Begin==================";
+    qDebug() <<"\t "<<"Selector::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() <<"\t "<<"Selector::BasicSelectorVector basicSelectors= ";
+    basicSelectors.print();    
+    qDebug() <<"\t "<<"==============Selector::Print():End==================";
+}
+
+void StyleRule::print() const
+{
+    qDebug() <<"==============StyleRule::Print():Begin==================";
+    qDebug() << "StyleRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "StyleRule::SelectorVector selectors = ";
+    selectors.print();
+    qDebug() << "StyleRule::DeclarationVector declarations = ";
+    declarations.print();
+    qDebug() <<"==============StyleRule::Print():End==================";
+}
+
+void VariableRule::print() const
+{
+    qDebug() <<"==============VariableRule::Print():Begin==================";
+    qDebug() << "VariableRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "VariableRule::DeclarationVector declarations = ";
+    declarations.print();
+    qDebug() <<"==============VariableRule::Print():End==================";
+}
+
+void MediaRule::print() const
+{
+    qDebug() <<"==============MediaRule::Print():Begin==================";
+    qDebug() << "MediaRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    //qDebug() << "MediaRule::QStringList media = " << media;
+    qDebug() << "MediaRule::StyleRuleVector styleRules = ";
+    styleRules.print();
+    qDebug() <<"==============MediaRule::Print():End==================";
+}
+
+void PageRule::print() const
+{
+    qDebug() <<"==============PageRule::Print():Begin==================";
+    qDebug() << "PageRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "PageRule::HbString selector = " << selector;
+    qDebug() << "PageRule::DeclarationVector declarations = ";
+    declarations.print();
+    qDebug() <<"==============PageRule::Print():End==================";
+}
+
+void ImportRule::print() const
+{
+    qDebug() <<"==============ImportRule::Print():Begin==================";
+    qDebug() << "ImportRule::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "ImportRule::HbString href = " << href;
+    //qDebug() << "ImportRule::QStringList media = " << media;
+    qDebug() <<"==============ImportRule::Print():End==================";
+}
+
+void WidgetStyleRules::print() const
+{
+    qDebug() <<"==============WidgetStyleRules::Print():Begin==================";
+    qDebug() << "Generic rules:";
+    styleRules.print();
+    qDebug() << "Portrait rules:";
+    portraitRules.print();
+    qDebug() << "Landscape rules:";
+    landscapeRules.print();
+    qDebug() <<"==============WidgetStyleRules::Print():End==================";
+}
+
+void StyleSheet::print() const
+{
+    qDebug() <<"==============StyleSheet::Print():Begin==================";
+    qDebug() << "StyleSheet::HbMemoryManager::MemoryType memoryType = " << memoryType;
+    qDebug() << "StyleSheet::VariableRuleVector variableRules = ";
+    variableRules.print();
+    qDebug() << "StyleSheet::WidgetStyleRuleVector widgetRules = ";
+    widgetRules.print();
+    qDebug() << "StyleSheet::MediaRuleVector mediaRules = ";
+    mediaRules.print();
+    qDebug() << "StyleSheet::PageRulesVector pageRules = ";
+    pageRules.print();
+    qDebug() << "StyleSheet::ImportRuleVector importRules = ";
+    importRules.print();
+    qDebug() <<"==============StyleSheet::Print():End==================";
+}
+
+#endif // CSS_PARSER_TRACES
 
 //QT_END_NAMESPACE

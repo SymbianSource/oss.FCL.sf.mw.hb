@@ -40,17 +40,13 @@ public:
     explicit HbSliderTickmarks( QGraphicsItem *parent = 0 );
     ~HbSliderTickmarks();
 
-   /* virtual void paint( QPainter *painter, const QStyleOptionGraphicsItem *option, 
-        QWidget *widget );*/
-    virtual void resizeEvent(QGraphicsSceneResizeEvent *event);
-
     enum {Type = HbPrivate::ItemType_SliderTickmarks };
     int type() const {return Type;}
-
-    void createIcons(bool create);
+    virtual void resizeEvent(QGraphicsSceneResizeEvent *event);
     void updateTicks( );
     void setTickPosition(Hb::SliderTickPositions position);
-    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);    
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);  
+    void createTicks( );
 
 
 protected:

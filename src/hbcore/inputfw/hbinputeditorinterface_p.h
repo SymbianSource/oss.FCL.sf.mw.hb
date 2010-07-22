@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_EDITOR_INTERFACE_PRIVATE_H
-#define HB_EDITOR_INTERFACE_PRIVATE_H
+#ifndef HB_INPUT_EDITOR_INTERFACE_P_H
+#define HB_INPUT_EDITOR_INTERFACE_P_H
 
 #include <QObject>
 #include <QVector>
@@ -50,13 +50,12 @@ class HbEditorInterfacePrivate : public QObject
 public:
     HbEditorInterfacePrivate()
         : mInputMode(0),
-        mTextCase(HbTextCaseNone),
-        mConstraints(0),
-        mLocalDigitType(HbDigitTypeNone),
-        mExtraDictionaryId(0),
-        mClass(0),
-        mHostEditor(0)
-    {
+          mTextCase(HbTextCaseNone),
+          mConstraints(0),
+          mLocalDigitType(HbDigitTypeNone),
+          mExtraDictionaryId(0),
+          mClass(0),
+          mHostEditor(0) {
     }
 
     void lock();
@@ -75,10 +74,10 @@ public:
     int mExtraDictionaryId;
     int mClass;
     HbSmileyTheme mSmileyTheme;
-    QObject* mHostEditor;
-    QList<HbEditorInterface*> mAttachedInterfaces;
+    QObject *mHostEditor;
+    QList<HbEditorInterface *> mAttachedInterfaces;
     HbInputState mLastFocusedState;
-    QList<HbAction*> mActions;
+    QList<HbAction *> mActions;
 
 public slots:
     void cursorPositionChanged();
@@ -96,28 +95,29 @@ class HbEditorInterfacePrivateCache : public QObject
     Q_OBJECT
 
 public:
-    static HbEditorInterfacePrivateCache* instance();
+    static HbEditorInterfacePrivateCache *instance();
 
 private:
     HbEditorInterfacePrivateCache();
     ~HbEditorInterfacePrivateCache();
 
 public:
-    HbEditorInterfacePrivate* attachEditor(QObject* editor, HbEditorInterface* interface);
-    bool isConnected(QObject* object);
+    HbEditorInterfacePrivate *attachEditor(QObject *editor, HbEditorInterface *interface);
+    bool isConnected(QObject *object);
     void notifyValueChanged(QObject *editor);
 
 public slots:
-    void destroyed(QObject* object);
-    void interfaceDestroyed(QObject* object);
+    void destroyed(QObject *object);
+    void interfaceDestroyed(QObject *object);
+    void actionDestroyed(QObject *object);
 
 private:
-    QVector<HbEditorInterfacePrivate*> mObjectCache;
+    QVector<HbEditorInterfacePrivate *> mObjectCache;
 };
 
 /// @endcond
 
-#endif // HB_EDITOR_INTERFACE_PRIVATE_H
+#endif // HB_INPUT_EDITOR_INTERFACE_P_H
 
 // End of file
 

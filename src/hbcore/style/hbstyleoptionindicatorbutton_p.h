@@ -28,7 +28,7 @@
 
 #include <hbstyleoption_p.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionIndicatorButton : public HbStyleOption
 {
 public:
@@ -41,6 +41,7 @@ public:
 
     QIcon::Mode mode;
     bool transparent;
+    bool twoIcons;
 };
 
 #endif // HBSTYLEOPTIONINDICATORBUTTON_H

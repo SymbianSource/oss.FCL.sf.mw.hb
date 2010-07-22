@@ -33,7 +33,7 @@
 class HB_CORE_PRIVATE_EXPORT HbSmartOffset
 {
 public:
-    HbSmartOffset(int offset = -1, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+    explicit HbSmartOffset(int offset = -1, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         :mOffset(offset),
          mType(type)
     {

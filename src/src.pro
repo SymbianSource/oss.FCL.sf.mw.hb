@@ -83,3 +83,4 @@ TEMPLATE = subdirs
 }
 
 include(hbcommon.pri)
+include(symbian_installs/symbian_installs.pri)

@@ -65,7 +65,6 @@ void HbSearchPanelPrivate::init( )
     constructUi();
 
     //set default values
-    q->setAttribute(Hb::InputMethodNeutral);
     q->setFlag(QGraphicsItem::ItemIsFocusable);
 
     // connect initial state signals
@@ -163,6 +162,7 @@ void HbSearchPanelPrivate::constructUi()
     if(mCancelEnabled) {
         addCancelButton();
     }
+    q->setFocusProxy(mLineEdit);
 }
 
 void HbSearchPanelPrivate::_q_hideClicked()

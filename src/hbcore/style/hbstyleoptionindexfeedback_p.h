@@ -30,7 +30,7 @@
 #include <hbfontspec.h>
 #include <hbglobal.h>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionIndexFeedback : public HbStyleOption
 {
 public:

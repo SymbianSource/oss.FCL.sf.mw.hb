@@ -36,10 +36,11 @@
 #include "hbcssconverterutils_p.h"
 #endif
 
-HbVariant::HbVariantData::HbVariantData()
-    :stringSize(0),
-      mRef(1),
-      mDataType(Invalid)
+HbVariant::HbVariantData::HbVariantData() :
+    stringSize(0),
+    stringListCount(0),
+    mRef(1),
+    mDataType(Invalid)
 {
 }
 
@@ -85,7 +86,7 @@ void HbVariant::detach()
         newData->setDataType(data->dataType());
 
         if ( data->dataType() == String ) {
-            HbSmartOffset dataOffset(manager->alloc( data->stringSize*sizeof(QChar)));
+            HbSmartOffset dataOffset(manager->alloc(data->stringSize * sizeof(QChar)));
 #ifdef HB_BIN_CSS
                 HbCssConverterUtils::registerOffsetHolder(&(newData->mData.offset));
 #endif
@@ -107,7 +108,6 @@ void HbVariant::detach()
         mShared = false;
     }
 }
-
 
 /*
 * C'tor
@@ -185,6 +185,19 @@ HbVariant::HbVariant( const char *val, HbMemoryManager::MemoryType type )
 #endif
 }
 
+/*
+* C'tor taking stringlist
+*/
+HbVariant::HbVariant(const QStringList &val, HbMemoryManager::MemoryType type)
+    : mMemoryType( type ), mShared( false )
+{
+    initializeData();
+    fillStringListData(val);
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
+}
 
 /*
 * C'tor taking QColor
@@ -203,14 +216,13 @@ HbVariant::HbVariant( const QColor &col, HbMemoryManager::MemoryType type )
 /*
 * copy C'tor
 */
-
 HbVariant::HbVariant( const HbVariant &other )
 {
-
     mMemoryType = other.mMemoryType;
     GET_MEMORY_MANAGER(other.mMemoryType)
 
-    HbVariantData* data = HbMemoryUtils::getAddress<HbVariantData>( mMemoryType, other.mDataOffset );
+    HbVariantData *data = HbMemoryUtils::getAddress<HbVariantData>(mMemoryType,
+                                                                   other.mDataOffset);
     mDataOffset = other.mDataOffset;
 
     if ( !manager->isWritable() || other.mShared == true ) {
@@ -235,13 +247,14 @@ HbVariant::~HbVariant()
 {
     GET_MEMORY_MANAGER(mMemoryType);
     // if the memory where the variant is not writable it means it's client process, so do nothing
-    if( !manager->isWritable() ) 
+    if(!manager->isWritable() ) {
         return;
-    HbVariantData *data= getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
-    if( mShared != true && !data->mRef.deref() ) {
+    }
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    if(!mShared&& !data->mRef.deref()) {
         clear();
         data->~HbVariantData();
-        HbMemoryUtils::freeMemory( mMemoryType, mDataOffset );
+        HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
     }
 
 #ifdef HB_BIN_CSS
@@ -288,6 +301,12 @@ QString HbVariant::toString() const
     case HbVariant::Color:
         return getColor().name();
     case HbVariant::StringList:
+        if (data->stringListCount == 1) {
+            const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+            int length = *((int*)address);
+            return QString((const QChar *)(address + sizeof(int)), length);
+        }
+        
         return QString();
     default:
         return QString();
@@ -299,11 +318,11 @@ QString HbVariant::toString() const
 */
 QString HbVariant::getString() const
 {
-    HbVariantData *data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared );
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
    
     if (data->mData.offset != -1) { 
-        QChar* dataPtr = getAddress<QChar>( mMemoryType, data->mData.offset, mShared );
-        return QString::fromRawData( dataPtr, data->stringSize );
+        QChar *dataPtr = getAddress<QChar>(mMemoryType, data->mData.offset, mShared);
+        return QString::fromRawData(dataPtr, data->stringSize);
     } else { // data->mData.offset == -1 is empty String Variant.
         return QString("");
     }
@@ -346,10 +365,31 @@ QColor HbVariant::getColor() const
 /*
 * to get stringlist
 */
-QStringList HbVariant::toStringList () const
+QStringList HbVariant::toStringList() const
 {
-    // ToDo: Implement it
-    return QStringList();
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    QStringList list;
+
+    if (data) {
+        if (data->dataType() == HbVariant::StringList) {
+            const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+            const char *end = address + data->stringSize;
+
+            // Append strings to stringlist
+            while (address < end) {
+                int length = *(int *)address;
+                address += sizeof(int);
+
+                QString string((const QChar *)address, length);
+                list.append(string);
+                address += sizeof(QChar) * length;
+            }
+        } else {
+            list.append(toString());
+        }
+    }
+
+    return list;
 }
 
 /*
@@ -413,6 +453,52 @@ void HbVariant::fillStringData(const QChar *str, int size)
 }
 
 /*
+* fillStringListData
+*/
+void HbVariant::fillStringListData(const QStringList &stringList)
+{
+    GET_MEMORY_MANAGER(mMemoryType);
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
+    int allocBytes = 0;
+
+    if (stringList.isEmpty()) {
+        data->mData.offset = -1;
+    } else {
+        // allocate memory and copy data.
+        for (int i=0; i<stringList.count(); ++i) {
+            allocBytes += sizeof(int); // Length information
+            allocBytes += stringList.at(i).length() * sizeof(QChar); // String data
+        }
+        
+        data->mData.offset = manager->alloc(allocBytes);
+        char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+
+        for (int j=0; j<stringList.count(); ++j) {
+            QString string = stringList.at(j);
+            // Put string length first
+            int length = string.length();
+            *((int*)address) = length;
+            address += sizeof(int);
+            // String data after length information
+            memcpy((QChar *)address, string.constData(), length * sizeof(QChar));
+            address += sizeof(QChar) * length;
+        }        
+    }
+
+    // In stringlist case, set stringSize to indicate size allocated for the whole stringlist buffer
+    data->stringSize = allocBytes;
+    data->stringListCount = stringList.count();
+
+    data->setDataType(StringList);
+    if (oldOffset != -1) {
+        // Free old memory block
+        HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
+    }
+}
+
+
+/*
 * fillColorData 
 */
 void HbVariant::fillColorData( const QColor &col )
@@ -436,7 +522,7 @@ void HbVariant::fillColorData( const QColor &col )
 /*
 * = operator taking int 
 */
-HbVariant& HbVariant::operator=(int val)
+HbVariant & HbVariant::operator=(int val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
@@ -450,7 +536,7 @@ HbVariant& HbVariant::operator=(int val)
 /*
 * = operator taking double 
 */
-HbVariant& HbVariant::operator=(double val)
+HbVariant & HbVariant::operator=(double val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
 
@@ -464,7 +550,7 @@ HbVariant& HbVariant::operator=(double val)
 /*
 * = operator taking QString 
 */
-HbVariant& HbVariant::operator=(const QString& val)
+HbVariant & HbVariant::operator=(const QString &val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillStringData(val.constData(), val.length());
@@ -474,7 +560,7 @@ HbVariant& HbVariant::operator=(const QString& val)
 /*
 * = operator taking HbString 
 */
-HbVariant& HbVariant::operator=(const HbString& val)
+HbVariant & HbVariant::operator=(const HbString &val)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillStringData(val.constData(), val.length());
@@ -484,7 +570,7 @@ HbVariant& HbVariant::operator=(const HbString& val)
 /*
 * = operator taking QColor 
 */
-HbVariant& HbVariant::operator=(const QColor& col)
+HbVariant &HbVariant::operator=(const QColor &col)
 {
     detach(); // This will update the mDataOffset to new location if ref > 1.
     fillColorData(col);
@@ -492,42 +578,39 @@ HbVariant& HbVariant::operator=(const QColor& col)
 }
 
 /*
-* = operator taking QStringList 
+* = operator taking QStringList
 */
-HbVariant& HbVariant::operator=(const QStringList& /*strList*/)
+HbVariant& HbVariant::operator=(const QStringList& strList)
 {
-    // ToDo: Implement it
+    fillStringListData(strList);
     return *this;
 }
 
 /*
 * = operator taking HbVariant 
 */
-HbVariant& HbVariant::operator=(const HbVariant &other)
+HbVariant &HbVariant::operator=(const HbVariant &other)
 {
     GET_MEMORY_MANAGER(mMemoryType)
     if(!manager->isWritable()) {
         Q_ASSERT(false);
     }
 
-    HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset, other.mShared);
+    HbVariantData *otherData = getAddress<HbVariantData>(other.mMemoryType, other.mDataOffset,
+                                                         other.mShared);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
     if(other.mMemoryType != mMemoryType || other.mShared == true) {
-        if(mShared != true) {
-            if(data->mRef == 1) {
-                clear();
-                data->~HbVariantData();
-                HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
-            }else {
-                data->mRef.deref();
-            }
+        if(!mShared && !data->mRef.deref()) {
+            clear();
+            data->~HbVariantData();
+            HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
         }
         mShared = true;
         mMemoryType = HbMemoryManager::HeapMemory;
     } else {
         otherData->mRef.ref();
-        if(mShared != true && !data->mRef.deref() ) {
+        if(!mShared&& !data->mRef.deref()) {
             clear();
             data->~HbVariantData();
             HbMemoryUtils::freeMemory(mMemoryType, mDataOffset);
@@ -536,7 +619,8 @@ HbVariant& HbVariant::operator=(const HbVariant &other)
         mMemoryType = other.mMemoryType;
     }
     mDataOffset = other.mDataOffset;
-    Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory || mMemoryType == HbMemoryManager::HeapMemory);
+    Q_ASSERT(mMemoryType == HbMemoryManager::SharedMemory
+             || mMemoryType == HbMemoryManager::HeapMemory);
     return *this;
 }
 
@@ -558,10 +642,13 @@ bool HbVariant::canConvert (HbVariant::Type t) const
         return data->dataType() == HbVariant::Int
             || data->dataType() == HbVariant::String;
     case HbVariant::String:
-        return data->dataType() == HbVariant::Int
-            || data->dataType() == HbVariant::StringList
-            || data->dataType() == HbVariant::Double
-            || data->dataType() == HbVariant::Color;
+        if (data->dataType() == HbVariant::StringList) {
+            return data->stringListCount <= 1;
+        } else {
+            return data->dataType() == HbVariant::Int
+                || data->dataType() == HbVariant::Double
+                || data->dataType() == HbVariant::Color;
+        }
     case HbVariant::StringList:
     case HbVariant::Color:
         return data->dataType() == HbVariant::String;
@@ -582,6 +669,8 @@ bool HbVariant::convert (HbVariant::Type t)
     int tempOffset = -1;
     QColor col;
     QString str;
+    QStringList strList;
+
     if(data->dataType() == t) {
         return true;
     }
@@ -638,8 +727,14 @@ bool HbVariant::convert (HbVariant::Type t)
             return true;
         }
         case HbVariant::StringList:
-            // ToDo: Handle it
-            return false;
+            // canConvert checks that there is max 1 string in the stringlist
+            if (data->stringListCount == 0) {
+                fillStringData(0, 0);
+            } else {
+                QString string = toString();
+                fillStringData(string.constData(), string.length());
+            }
+            return true;
         case HbVariant::Color: {
             QString colName = getColor().name();
             fillStringData(colName.constData(), colName.length());
@@ -663,7 +758,14 @@ bool HbVariant::convert (HbVariant::Type t)
         }
 
     case HbVariant::StringList:
-        return false;
+        switch(data->dataType()) {
+        case HbVariant::String: 
+            strList.append(getString());
+            fillStringListData(strList);
+            return true;
+        default:
+            return false;
+        }
 
     default:
         return false;
@@ -685,7 +787,7 @@ HbVariant::operator QVariant() const
     case HbVariant::String : 
         return QVariant(getString());
     case HbVariant::StringList :
-        return QVariant(QVariant::StringList);
+        return QVariant(toStringList());
     case HbVariant::Color : {
         QVariant var = getColor();
         return var;
@@ -695,9 +797,8 @@ HbVariant::operator QVariant() const
     }
 }
 
-
 /*
-* clears the variant, frees any alocated memory
+* clears the variant, frees any allocated memory
 */
 void HbVariant::clear()
 {
@@ -713,11 +814,9 @@ void HbVariant::clear()
         break;
     case HbVariant::String :
     case HbVariant::Color :
-        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
-        break;
     case HbVariant::StringList : 
-        // ToDo: Handle it
-        break;
+        HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
+        break;    
     default: 
         break;
     }
@@ -727,13 +826,8 @@ void HbVariant::clear()
 
 #ifdef CSS_PARSER_TRACES
 /*
-* These routines are there to support debugging
+* Debugging support
 */
-bool HbVariant::supportsPrinting() const 
-{
-    return true;
-}
-    
 void HbVariant::print() const
 {
     HbVariantData * data = getAddress<HbVariantData>( mMemoryType, mDataOffset, mShared);
@@ -752,9 +846,9 @@ void HbVariant::print() const
         qDebug() << getColor();
         break;
     case HbVariant::StringList:
+        qDebug() << toStringList();
     default:
         qDebug() << "Invalid Type";
     }
 }
-
-#endif
+#endif // CSS_PARSER_TRACES

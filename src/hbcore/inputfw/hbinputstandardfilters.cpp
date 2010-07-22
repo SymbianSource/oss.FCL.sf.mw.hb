@@ -25,6 +25,12 @@
 #include "hbinputstandardfilters.h"
 
 #include "hbinputsettingproxy.h"
+
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE   0x0660
+#define HB_DIGIT_ARABIC_INDIC_END_VALUE     0x0669
+#define HB_DIGIT_EASTERN_ARABIC_START_VALUE 0x06F0
+#define HB_DIGIT_EASTERN_ARABIC_END_VALUE   0x06F9
+
 /*!
 @alpha
 @hbcore
@@ -40,28 +46,37 @@ Can be used with editors that have Qt::ImhDialableCharactersOnly set.
 
 /* Returns true if the character is a valid number in the current input language
 */
- 
+
 static bool isValidNumber(QChar aChar)
 {
     bool ret = false;
 
     QLocale::Language language = HbInputSettingProxy::instance()->globalInputLanguage().language();
-	QLocale::Language systemLanguage = QLocale::system().language();
+    QLocale::Language systemLanguage = QLocale::system().language();
 
-	if (language != systemLanguage) {
-        if (aChar >= '0' && aChar <= '9') {
+    // If both phone language and writing language are same, then language specific
+    // digits should be allowed in phone number and digits only editors. If the current
+    // language is Arabic, then Arabic-indic digits are supported. Eastern-Arabic digits
+    // are supported in Persian and Urdu languages.
+    if (language == systemLanguage) {
+        if (language == QLocale::Arabic &&
+            (aChar >= HB_DIGIT_ARABIC_INDIC_START_VALUE &&
+             aChar <= HB_DIGIT_ARABIC_INDIC_END_VALUE)) {
             ret = true;
-        }	
-	} else if (language == QLocale::Arabic) {
-        if (aChar >= 0x0660 && aChar <= 0x0669) {
+        } else if ((language == QLocale::Persian ||
+                    language == QLocale::Urdu) &&
+                   (aChar >= HB_DIGIT_EASTERN_ARABIC_START_VALUE &&
+                    aChar <= HB_DIGIT_EASTERN_ARABIC_END_VALUE)) {
+            ret = true;
+        } else if (aChar >= '0' && aChar <= '9') {
             ret = true;
         }
     } else if (aChar >= '0' && aChar <= '9') {
         ret = true;
-    }         
-    return ret;	
+    }
+    return ret;
 }
-HbPhoneNumberFilter* HbPhoneNumberFilter::instance()
+HbPhoneNumberFilter *HbPhoneNumberFilter::instance()
 {
     static HbPhoneNumberFilter myInstance;
     return &myInstance;
@@ -86,7 +101,7 @@ bool HbPhoneNumberFilter::filter(QChar character)
         return true;
     }  else if (isValidNumber(character)) {
         return true;
-    }	
+    }
     return false;
 }
 
@@ -103,7 +118,7 @@ Can be used with editors that have Qt::ImhFormattedNumbersOnly hint set.
 \sa HbEditorInterface
 */
 
-HbFormattedNumbersFilter* HbFormattedNumbersFilter::instance()
+HbFormattedNumbersFilter *HbFormattedNumbersFilter::instance()
 {
     static HbFormattedNumbersFilter myInstance;
     return &myInstance;
@@ -142,7 +157,7 @@ Can be used with editors that have Qt::ImhDigitsOnly hint set.
 
 \sa HbEditorInterface
 */
-HbDigitsOnlyFilter* HbDigitsOnlyFilter::instance()
+HbDigitsOnlyFilter *HbDigitsOnlyFilter::instance()
 {
     static HbDigitsOnlyFilter myInstance;
     return &myInstance;
@@ -179,7 +194,7 @@ characters as defined in rfc1738.
 \sa HbEditorInterface
 */
 
-HbUrlFilter* HbUrlFilter::instance()
+HbUrlFilter *HbUrlFilter::instance()
 {
     static HbUrlFilter myInstance;
     return &myInstance;
@@ -218,7 +233,7 @@ Can be used with editors that have Qt::ImhEmailCharactersOnly set.
 \sa HbEditorInterface
 */
 
-HbEmailAddressFilter* HbEmailAddressFilter::instance()
+HbEmailAddressFilter *HbEmailAddressFilter::instance()
 {
     static HbEmailAddressFilter myInstance;
     return &myInstance;
@@ -240,10 +255,10 @@ bool HbEmailAddressFilter::filter(QChar character)
     if ((character >= 'a' && character <= 'z') ||
         (character >= 'A' && character <= 'Z') ||
         (character >= '0' && character <= '9')) {
-    return true;
+        return true;
     }
 
-    const QString others(".@,;?'-_&/~*+="); 
+    const QString others(".@,;?'-_&/~*+=");
     for (int i = 0; i < others.size(); i++) {
         if (others[i] == character) {
             return true;
@@ -268,7 +283,7 @@ This filter passes only lower case characters and those characters that cannot b
 /*!
 Returns the singleton instance.
 */
-HbInputLowerCaseFilter* HbInputLowerCaseFilter::instance()
+HbInputLowerCaseFilter *HbInputLowerCaseFilter::instance()
 {
     static HbInputLowerCaseFilter theInstance;
     return &theInstance;
@@ -302,7 +317,7 @@ This filter passes only upper case characters and those characters that cannot b
 /*!
 Returns the singleton instance.
 */
-HbInputUpperCaseFilter* HbInputUpperCaseFilter::instance()
+HbInputUpperCaseFilter *HbInputUpperCaseFilter::instance()
 {
     static HbInputUpperCaseFilter theInstance;
     return &theInstance;

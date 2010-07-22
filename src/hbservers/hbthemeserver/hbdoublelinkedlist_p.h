@@ -45,9 +45,9 @@ public:
 
     inline HbDLink();
 
-    inline ElemType* next() const;
+    inline ElemType *next() const;
 
-    inline ElemType* prev() const;
+    inline ElemType *prev() const;
 
     inline void setNext(ElemType *element);
 
@@ -55,8 +55,8 @@ public:
 
 private:
 
-    ElemType* mNext;
-    ElemType* mPrev;
+    ElemType *mNext;
+    ElemType *mPrev;
 
 };
 
@@ -85,7 +85,6 @@ template<class ElemType>
 class HbDLinkList
 {
 public:
-
     inline explicit HbDLinkList(HbDLink<ElemType> ElemType:: *dLink);
     inline ~HbDLinkList();
     inline void insertBack(ElemType *item);
@@ -101,11 +100,9 @@ private:
     inline void insertAfter(ElemType *newItem, ElemType *lastItem);
 
 private:
-
     ElemType *listFront;
     ElemType *listBack;
-    HbDLink<ElemType>  ElemType:: *mDLink;
-
+    HbDLink<ElemType> ElemType:: *mDLink;
 };
 
 #include "hbdoublelinkedlistinline_p.h"

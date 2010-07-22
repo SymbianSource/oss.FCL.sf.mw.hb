@@ -26,20 +26,12 @@
 #include <hbstyleoptiondataform_p.h>
 
 
-/*!
-    \deprecated HbStyleOptionDataForm::HbStyleOptionDataForm()
-    is deprecated. Styleoptions will not be public.
-*/
 HbStyleOptionDataForm::HbStyleOptionDataForm() : HbStyleOption(HbSO_DataForm)
 {
     type = Type;
     version = Version;
 }
-/*!
 
-    \deprecated HbStyleOptionDataForm::HbStyleOptionDataForm(const HbStyleOptionDataForm&)
-    is deprecated. Styleoptions will not be public.
-*/
 HbStyleOptionDataForm::HbStyleOptionDataForm(const HbStyleOptionDataForm &other) :
     HbStyleOption(other),
     heading(other.heading),

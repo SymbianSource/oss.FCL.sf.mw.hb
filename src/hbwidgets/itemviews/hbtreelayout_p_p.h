@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBTREELAYOUTPRIVATE_P_P_H
-#define HBTREELAYOUTPRIVATE_P_P_H
+#ifndef HBTREELAYOUT_P_P_H
+#define HBTREELAYOUT_P_P_H
 
 #include <QList>
 
@@ -65,4 +65,4 @@ public:
     static const qreal INVALID_ITEM_HEIGHT;
 };
 
-#endif // HBTREELAYOUTPRIVATE_P_P_H
+#endif // HBTREELAYOUT_P_P_H

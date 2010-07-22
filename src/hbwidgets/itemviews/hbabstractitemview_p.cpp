@@ -60,10 +60,10 @@ HbAbstractItemViewPrivate::HbAbstractItemViewPrivate() :
     mPostponedScrollHint(HbAbstractItemView::PositionAtTop),
     mPreviousSelectedCommand(QItemSelectionModel::NoUpdate),
     mAnimationTimer(0),
-	mModelIterator(0),
+    mModelIterator(0),
     mEnabledAnimations(HbAbstractItemView::All),
     mLongPressEnabled(true),
-	mDoingContiguousSelection(false)
+    mDoingContiguousSelection(false)
 {
 }
 
@@ -349,7 +349,7 @@ void HbAbstractItemViewPrivate::setContentPosition(qreal value, Qt::Orientation 
 bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
 {
     Q_Q(HbAbstractItemView);
-
+    int retVal = false;
     HbPanGesture *gesture = static_cast<HbPanGesture *>(event->gesture(Qt::PanGesture));
 
     switch (gesture->state()) {
@@ -359,7 +359,6 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
         case Qt::GestureUpdated: {
             QPointF scenePos = event->mapToGraphicsScene(gesture->hotSpot());
             if (mDoingContiguousSelection) {
-                int retVal = false;
 
                 // loop through the items in the scene
                 qreal scenePosY = scenePos.y();
@@ -380,7 +379,7 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                         mouseMoveEvent.setPos(position);
                         QItemSelectionModel::SelectionFlags command = q->selectionCommand(item, &mouseMoveEvent);
 
-						// in contiguousselectionarea there shall be no panning from HbScrollArea, thus return true
+                        // in contiguousselectionarea there shall be no panning from HbScrollArea, thus return true
                         if (command != QItemSelectionModel::NoUpdate) {
                             retVal = true;
                         }
@@ -390,6 +389,7 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                             mPreviousSelectedIndex = itemIndex;
                             mPreviousSelectedCommand = command;
                             mSelectionModel->select(itemIndex, command);
+                            HbWidgetFeedback::triggered(q, Hb::InstantSelectionChanged, Hb::ModifierScrolling);
                         }
 
                         // check if we need to start or keep on scrolling
@@ -426,9 +426,8 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
                         break;
                     }
                 }
-                return retVal;
             }
-            else if (!mDoingContiguousSelection){
+            else {
                 HbWidgetFeedback::continuousTriggered(q, Hb::ContinuousScrolled);
             }
             break;
@@ -439,7 +438,7 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
             if (mDoingContiguousSelection) {
                 stopAnimating();
                 mDoingContiguousSelection = false;
-                return true;
+                retVal = true;
             }
             else {
                 HbWidgetFeedback::continuousStopped(q, Hb::ContinuousScrolled);
@@ -449,8 +448,7 @@ bool HbAbstractItemViewPrivate::panTriggered(QGestureEvent *event)
         default:
             break;
     }
-
-    return false;
+    return retVal;
 }
 
 /*!
@@ -480,7 +478,7 @@ void HbAbstractItemViewPrivate::_q_scrollingEnded()
 
     mFrictionEnabled = mOrigFriction;
 
-    QObject::disconnect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(_q_scrollingI(QPointF)));    
+    QObject::disconnect(q, SIGNAL(scrollPositionChanged(QPointF)), q, SLOT(_q_scrolling(QPointF)));    
     QObject::disconnect(q, SIGNAL(scrollingEnded()), q, SLOT(_q_scrollingEnded()));    
     QObject::disconnect(q, SIGNAL(scrollingStarted()), q, SLOT(_q_scrollingStarted()));    
 }
@@ -508,13 +506,7 @@ void HbAbstractItemViewPrivate::saveIndexMadeVisibleAfterMetricsChange()
     QModelIndex lastVisibleModelIndex;
     mContainer->firstAndLastVisibleModelIndex(firstVisibleModelIndex, lastVisibleModelIndex);
 
-    if (mModelIterator->model()) {
-        if (lastVisibleModelIndex == mModelIterator->index(mModelIterator->indexCount() - 1)) {
-            mVisibleIndex = lastVisibleModelIndex;
-        } else {
-            mVisibleIndex = firstVisibleModelIndex;
-        }
-    }
+    mVisibleIndex = firstVisibleModelIndex;
 }
 
 /*!
@@ -663,8 +655,8 @@ QItemSelectionModel::SelectionFlags HbAbstractItemViewPrivate::multiSelectionCom
         case QEvent::GraphicsSceneMouseDoubleClick: {
 
             // check if the mouse click is in the multiselectionarea
-		    if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->pos(), HbAbstractViewItem::MultiSelection)) {
-		        mSelectionSettings |= Selection;
+            if (item->selectionAreaContains(static_cast<const QGraphicsSceneMouseEvent *>(event)->pos(), HbAbstractViewItem::MultiSelection)) {
+                mSelectionSettings |= Selection;
                 if (mSelectionModel && mSelectionModel->isSelected(item->modelIndex())) {
                     mContSelectionAction = QItemSelectionModel::Deselect;
                 } else {

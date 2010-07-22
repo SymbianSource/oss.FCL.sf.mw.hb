@@ -48,6 +48,9 @@ HbInputMethodDescriptor::HbInputMethodDescriptor(const HbInputMethodDescriptor &
     mPluginNameAndPath = desc.mPluginNameAndPath;
     mKey = desc.mKey;
     mDisplayName = desc.mDisplayName;
+    mDisplayNames = desc.mDisplayNames;
+    mIcon = desc.mIcon;
+    mIcons = desc.mIcons;
 }
 
 /*!
@@ -100,6 +103,54 @@ void HbInputMethodDescriptor::setDisplayName(const QString &name)
 }
 
 /*!
+Returns the display names of the input method.
+*/
+QStringList HbInputMethodDescriptor::displayNames() const
+{
+    return mDisplayNames;
+}
+
+/*!
+Sets the display names of the input method.
+*/
+void HbInputMethodDescriptor::setDisplayNames(const QStringList &names)
+{
+    mDisplayNames = names;
+}
+
+/*!
+Returns the icon of the input method.
+*/
+HbIcon HbInputMethodDescriptor::icon() const
+{
+    return mIcon;
+}
+
+/*!
+Sets the icon of the input method.
+*/
+void HbInputMethodDescriptor::setIcon(const HbIcon &icon)
+{
+    mIcon = icon;
+}
+
+/*!
+Returns the icons of the input method.
+*/
+QList<HbIcon> HbInputMethodDescriptor::icons() const
+{
+    return mIcons;
+}
+
+/*!
+Sets the icons of the input method.
+*/
+void HbInputMethodDescriptor::setIcons(const QList<HbIcon> &icons)
+{
+    mIcons = icons;
+}
+
+/*!
 Returns true if the descriptor is empty and doesn't point to an input plugin.
 */
 bool HbInputMethodDescriptor::isEmpty() const
@@ -108,13 +159,16 @@ bool HbInputMethodDescriptor::isEmpty() const
 }
 
 /*!
-Asign operator.
+Assign operator.
 */
 void HbInputMethodDescriptor::operator=(const HbInputMethodDescriptor &descriptor)
 {
     mPluginNameAndPath = descriptor.mPluginNameAndPath;
     mKey = descriptor.mKey;
     mDisplayName = descriptor.mDisplayName;
+    mDisplayNames = descriptor.mDisplayNames;
+    mIcon = descriptor.mIcon;
+    mIcons = descriptor.mIcons;
 }
 
 /*!
@@ -128,7 +182,7 @@ input method selection dialogs.
 void HbInputMethodDescriptor::setDefault()
 {
     mPluginNameAndPath = HbInputDefaultMethodString;
-    mKey = QString();
+    mKey.clear();
     mDisplayName = QString("Default");
 }
 

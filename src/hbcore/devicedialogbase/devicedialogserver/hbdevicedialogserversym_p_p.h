@@ -56,6 +56,7 @@ public:
     int showDeviceDialog(HbDeviceDialogServer::DialogParameters &parameters);
     int updateDeviceDialog(int id, QVariantMap &data);
     int closeDeviceDialog(int id);
+    int publishOrientation(int orientation);
     void deviceDialogClientClosing(quintptr sessionTag);
     int activateIndicator(HbDeviceDialogServer::IndicatorParameters &parameters);
     int deactivateIndicator(HbDeviceDialogServer::IndicatorParameters &parameters);

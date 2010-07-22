@@ -39,19 +39,20 @@ class HbTimerAnim : public QAbstractAnimation
 {
 public:
     HbTimerAnim(HbTimerEntry *entry) : mEntry(entry), mDuration(entry->interval()) { }
-    int duration() const { return mDuration; }
+    int duration() const {
+        return mDuration;
+    }
     void updateCurrentTime(int) { }
-    void updateState(QAbstractAnimation::State newState, QAbstractAnimation::State oldState)
-        {
-            if (oldState != QAbstractAnimation::Stopped && newState == QAbstractAnimation::Stopped && mEntry) {
-                mEntry->timerFired();
-                mEntry->mAnim = 0; // to prevent confusing unregisterEntry() and double deletion
-                HbTimer::instance()->unregisterEntry(mEntry);
-                if (mEntry->mDeleteWhenFinishedNormally) {
-                    delete mEntry;
-                }
+    void updateState(QAbstractAnimation::State newState, QAbstractAnimation::State oldState) {
+        if (oldState != QAbstractAnimation::Stopped && newState == QAbstractAnimation::Stopped && mEntry) {
+            mEntry->timerFired();
+            mEntry->mAnim = 0; // to prevent confusing unregisterEntry() and double deletion
+            HbTimer::instance()->unregisterEntry(mEntry);
+            if (mEntry->mDeleteWhenFinishedNormally) {
+                delete mEntry;
             }
         }
+    }
     HbTimerEntry *mEntry;
     int mDuration;
 };

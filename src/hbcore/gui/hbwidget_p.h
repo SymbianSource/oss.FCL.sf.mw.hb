@@ -75,10 +75,7 @@ public:
 
     void updateBackgroundItemSize();
 
-    bool isInputMethodNeutral();
-
-    QGraphicsLayoutItem *createSpacerItem( const QString &name );
-    
+    void setBackgroundItem(HbStyle::Primitive type, int zValue = -1);
     HbWidget *q_ptr;
     HbStyle *style;
 
@@ -91,13 +88,13 @@ public:
     bool polishPending; 
     bool themingPending;
     bool repolishOutstanding;
+    bool mHandlingRepolishSynchronously;
     bool notifyScene;
     int pluginBaseId;
     HbFocusGroup *focusGroup;
     HbStyle::Primitive focusActiveType;
     HbStyle::Primitive focusResidualType;
     bool highlightExpired;
-    QHash<QString,QGraphicsLayoutItem *> mSpacers;
 private:
     mutable QGraphicsItem *backgroundItem;
     mutable QGraphicsItem *focusActiveItem;

@@ -51,7 +51,6 @@ public:
 
     void init();
     int keyCode(int buttonId);
-    void setRockerPosition();
 };
 
 #endif // HB_INPUT_QWERTY_11x4_TOUCH_KEYBOARD_PRIVATE_H

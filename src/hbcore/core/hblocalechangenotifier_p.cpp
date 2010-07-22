@@ -33,7 +33,7 @@
 #endif // Q_OS_SYMBIAN
 
 #include "hblocalechangenotifier_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 
 #ifdef Q_OS_SYMBIAN

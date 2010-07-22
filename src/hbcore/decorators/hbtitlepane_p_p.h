@@ -48,6 +48,7 @@ public:
     QGraphicsItem *mIcon;
 
     QIcon::Mode mMode;
+    QGraphicsItem *mTouchArea;
 };
 
 

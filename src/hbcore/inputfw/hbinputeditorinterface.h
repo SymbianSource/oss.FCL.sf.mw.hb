@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_EDITOR_INTERFACE_H
-#define HB_EDITOR_INTERFACE_H
+#ifndef HB_INPUT_EDITOR_INTERFACE_H
+#define HB_INPUT_EDITOR_INTERFACE_H
 
 #include <QObject>
 
@@ -44,13 +44,13 @@ class HB_CORE_EXPORT HbEditorInterface : public QObject
     Q_OBJECT
 
 public:
-    HbEditorInterface(QObject* editor);
+    HbEditorInterface(QObject *editor);
     ~HbEditorInterface();
 
     HbTextCase textCase() const;
     void setTextCase(HbTextCase textCase);
-     HbInputModeType mode() const;
-     void setMode(HbInputModeType inputMode);    
+    HbInputModeType mode() const;
+    void setMode(HbInputModeType inputMode);
     HbEditorConstraints inputConstraints() const;
     void setInputConstraints(HbEditorConstraints constraints);
     HbInputFilter *filter() const;
@@ -60,7 +60,7 @@ public:
     void addAction(HbAction *action);
     void insertAction(HbAction *before, HbAction *action);
     void removeAction(HbAction *action);
-    QList<HbAction*> actions() const;
+    QList<HbAction *> actions() const;
     int extraDictionaryId() const;
     void setExtraDictionaryId(int id);
     HbInputEditorClass editorClass() const;
@@ -70,12 +70,12 @@ public:
     void lastFocusedState(HbInputState &result) const;
     void setLastFocusedState(const HbInputState &state);
 
-    bool operator==(const HbEditorInterface& interface) const;
-    bool operator!=(const HbEditorInterface& interface) const;
-    QObject* editor() const;
+    bool operator==(const HbEditorInterface &editorInterface) const;
+    bool operator!=(const HbEditorInterface &editorInterface) const;
+    QObject *editor() const;
     HbVkbHost *vkbHost() const;
 
-public:  // Convinience methods for setting up standard editor types.   
+public:  // Convenience methods for setting up standard editor types.
     void setUpAsCompletingEmailField();
     void setUpAsCompletingUrlField();
     void setUpAsLatinAlphabetOnlyEditor();
@@ -103,7 +103,7 @@ protected:
     Q_DISABLE_COPY(HbEditorInterface)
 };
 
-#endif // HB_EDITOR_INTERFACE_H
+#endif // HB_INPUT_EDITOR_INTERFACE_H
 
 // End of file
 

@@ -33,11 +33,6 @@
 #include <hbview.h>
 #include <hblistwidget.h>
 
-#ifdef Q_OS_SYMBIAN
-#include "themeclientsymbian.h"
-#else
-#include "themeclientqt.h"
-#endif
 #include "themechangerdefs.h"
 
 class HbIcon;
@@ -47,42 +42,43 @@ class ThemeSelectionList:public HbView
 Q_OBJECT
 public:
 
-#ifdef Q_OS_SYMBIAN
-    ThemeSelectionList(ThemeClientSymbian* client);
-#else
-    ThemeSelectionList(ThemeClientQt* client);
-#endif
-
+    ThemeSelectionList(HbMainWindow *mainWindow);
     ~ThemeSelectionList();
 signals:
     void newThemeSelected(const QString &newthemepath);
 public slots:
     void displayThemes();
     void setChosen(HbListWidgetItem *item);
-    void applySelection();
+    void onLongPressed(HbListWidgetItem* listViewItem, const QPointF& coords);
     void updateThemeList(const QString &path);
     void sendThemeName(const QString& name);
+    void cancel();
+    void applyTheme();
+    void showSettingsView();
+    void showResourceView();
+    void themeChanged();
 #ifdef THEME_CHANGER_TIMER_LOG
     void processWhenIdle();
-    void themeChanged();
 #endif
 
 protected:
-    bool event(QEvent *e);
     void resizeEvent(QResizeEvent* event);
 private:
     static QStringList rootPaths();
+    QStringList rootThemes;
     QDir dir; 
-    int oldItemIndex;
     HbListWidget *themelist;
     HbIcon* rightMark;
     HbIcon* noMark;
     HbAction *action;
-#ifdef Q_OS_SYMBIAN
-    ThemeClientSymbian* client;
-#else
-    ThemeClientQt* client;
-#endif
+    QList<HbIcon*> thumbnails;
+    HbAction* mOkAction;
+    HbAction* mCancelAction;
+    HbMainWindow *mMainWindow;
+    HbListWidgetItem* previewItem;
+    HbView *previewView;
+    HbView *settingsView;
+    HbView *resourceView;
 
     QFileSystemWatcher *watcher;
     QString iCurrentTheme;

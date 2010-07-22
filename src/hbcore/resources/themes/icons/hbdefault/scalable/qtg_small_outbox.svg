@@ -1,32 +1,30 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
-<svg height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
-<defs>
-</defs>
 <rect fill="none" height="30" width="30"/>
-<polygon opacity="0.6" points="11,19 11,12 7,12 15,1.333 23,12 19,12 19,19 "/>
+<polygon fill-opacity="0.6" points="11,19 11,12 7,12 15,1.333 23,12 19,12 19,19 " stroke-opacity="0.6"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="14.9995" x2="14.9995" y1="2.7603" y2="18.0948">
-	<stop offset="0" style="stop-color:#A0F800"/>
-	<stop offset="1" style="stop-color:#319E00"/>
+<stop offset="0" style="stop-color:#85AE4A"/>
+<stop offset="1" style="stop-color:#2F6F44"/>
 </linearGradient>
 <polygon fill="url(#SVGID_1_)" points="15,3 9,11 12,11 12,18 18,18 18,11 21,11 "/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="14.9995" x2="14.9995" y1="2.7603" y2="18.0948">
-	<stop offset="0" style="stop-color:#A0F800"/>
-	<stop offset="0.7576" style="stop-color:#4CB400"/>
-	<stop offset="1" style="stop-color:#89CC6A"/>
+<stop offset="0" style="stop-color:#85AE4A"/>
+<stop offset="0.7576" style="stop-color:#367E3C"/>
+<stop offset="1" style="stop-color:#97AF87"/>
 </linearGradient>
 <path d="M15,3l-6,8h3v7h6v-7h3L15,3z M17,10v7h-4v-7h-2l4-5.333L19,10H17z" fill="url(#SVGID_2_)"/>
-<polygon opacity="0.6" points="1,28 1,19 5,19 5,22 25,22 25,19 29,19 29,28 "/>
+<polygon fill-opacity="0.6" points="1,28 1,19 5,19 5,22 25,22 25,19 29,19 29,28 " stroke-opacity="0.6"/>
 <linearGradient gradientUnits="userSpaceOnUse" id="SVGID_3_" x1="14.9995" x2="14.9995" y1="19.8877" y2="27.0436">
-	<stop offset="0" style="stop-color:#4EDEFF"/>
-	<stop offset="1" style="stop-color:#048CC6"/>
+<stop offset="0" style="stop-color:#83CABF"/>
+<stop offset="1" style="stop-color:#3E678C"/>
 </linearGradient>
 <polygon fill="url(#SVGID_3_)" points="26,20 26,23 4,23 4,20 2,20 2,23 2,26 2,27 28,27 28,26 28,23 28,20 "/>
-<rect height="1" opacity="0.2" width="26" x="2" y="26"/>
-<rect fill="#FFFFFF" height="1" opacity="0.2" width="2" x="2" y="20"/>
-<rect fill="#FFFFFF" height="1" opacity="0.2" width="2" x="26" y="20"/>
-<rect fill="#FFFFFF" height="1" opacity="0.2" width="22" x="4" y="23"/>
+<rect fill-opacity="0.2" height="1" stroke-opacity="0.2" width="26" x="2" y="26"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="2" x="2" y="20"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="2" x="26" y="20"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" height="1" stroke-opacity="0.2" width="22" x="4" y="23"/>
 <rect fill="none" height="30" width="30"/>
 </g>
 </svg>

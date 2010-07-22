@@ -145,19 +145,8 @@ HBufC* HbTextResolverSymbianPrivate::LoadLC(const TDesC& aMessageId, const MDesC
         if (tmp.isEmpty() == 0)
             {
             tmp = QString::fromUtf16(ptr.Ptr(), ptr.Length());
-            }
-        
-        bool ok(false);
-        int conv = tmp.toInt(&ok); 
-
-        if (ok) 
-            {   
-            string = string.arg(conv);	
-            } 
-        else
-            {
-            string = string.arg(tmp);
-            }
+            }      
+        string = string.arg(tmp);
         }            
     TPtrC descriptor(static_cast<const TUint16*>(string.utf16()),
                     string.length());

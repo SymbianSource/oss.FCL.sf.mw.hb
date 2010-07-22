@@ -38,6 +38,7 @@ class HbDeviceMessageBoxPrivate : public QObject
 
     enum PropertySelector {
         Type,
+        StandardButtons,
         Text,
         IconName,
         IconVisible,
@@ -77,15 +78,18 @@ public:
     void exec();
 
     void init();
+    void initAction(int index);
     void initProperties();
     void setAction(ActionSelector select, QAction *action);
+    void setStandardButtons(HbMessageBox::StandardButtons buttons);
     void sendToServer(bool show = false);
     bool propertiesModified() const;
-    void clearActions();
+    void clearAction(Action &action);
     void setProperty(PropertySelector propertySelector, int value);
     void setProperty(PropertySelector propertySelector, const QString &value);
 
     static int timeoutValue(HbPopup::DefaultTimeout timeout);
+    static int countBits(unsigned int value);
     static ActionSelector actionSelector(HbDeviceMessageBox::ActionRole role);
 
     void scheduleUpdateEvent();
@@ -93,6 +97,7 @@ public:
 
 public slots:
     void triggerAction(QVariantMap data);
+    void actionChanged();
 
 public: // data
     HbDeviceMessageBox *q_ptr;

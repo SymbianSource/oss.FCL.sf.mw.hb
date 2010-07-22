@@ -29,7 +29,6 @@
 #include "hblistlayout_p.h"
 #include "hblistviewitem.h"
 #include "hblistitemcontainer_p.h"
-#include "hblistitemcontainer_p.h"
 #include "hbscrollbar.h"
 #include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
@@ -202,7 +201,7 @@ int HbListView::type() const
 
 /*!
     Returns true if view is in arrange mode. False otherwise.
- */
+*/
 bool HbListView::arrangeMode() const
 {
     Q_D(const HbListView);
@@ -210,8 +209,8 @@ bool HbListView::arrangeMode() const
 }
 
 /*!
- * Returns the view item being dragged. This is NULL if no item is being dragged.
- */
+    Returns the view item being dragged. This is NULL if no item is being dragged.
+*/
 HbAbstractViewItem *HbListView::draggedItem() const
 {
     Q_D( const HbListView );
@@ -233,25 +232,12 @@ bool HbListView::setArrangeMode(const bool arrangeMode)
 {
     Q_D(HbListView);
     if (arrangeMode != d->mArrangeMode) {
-        if (arrangeMode == true) {
-            if (d->mSelectionMode != HbAbstractItemView::NoSelection
-                || !d->mModelIterator->model()
-                || !(d->mModelIterator->model()->supportedDropActions().testFlag(Qt::MoveAction))) {
-                return false;
+        if (d->mSelectionMode != HbAbstractItemView::NoSelection
+            || !d->mModelIterator->model()
+            || !(d->mModelIterator->model()->supportedDropActions().testFlag(Qt::MoveAction))) {
+            return false;
             }
-            verticalScrollBar()->setInteractive(true);
-        } else {
-            verticalScrollBar()->setInteractive(false);
-        }
-        d->mArrangeMode = arrangeMode;
-        d->mAnimateItems = !d->mArrangeMode;
-
-        if (d->mArrangeMode == true) {
-            d->mOriginalFriction = d->mFrictionEnabled;
-            setFrictionEnabled(false);
-        } else {
-            setFrictionEnabled(d->mOriginalFriction);
-        }
+        d->arrangeModeSetup(arrangeMode);
     }
     return true;
 }
@@ -317,14 +303,20 @@ void HbListView::scrolling(QPointF newPosition)
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsInserted(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
 
+    if (d->mMoveOngoing)
+        return;
+
     if (parent == d->mModelIterator->rootIndex()) {
         HbAbstractItemView::rowsInserted(parent, start, end);
-        if (!d->mArrangeMode && d->animationEnabled(true)) {
+        if (d->animationEnabled(true)) {
             d->startAppearEffect("viewitem", "appear", parent, start, end);
         }
     }
@@ -332,10 +324,16 @@ void HbListView::rowsInserted(const QModelIndex &parent, int start, int end)
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
+
+    if (d->mMoveOngoing)
+        return;
 
     if (parent == d->mModelIterator->rootIndex()) {
         for (int i = start; i <= end; i++) {
@@ -345,7 +343,7 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
                    d->mDraggedItem = 0;
                 }
 
-                if (!d->mArrangeMode && d->animationEnabled(false)) {
+                if (d->animationEnabled(false)) {
                     d->mItemsAboutToBeDeleted.append(item);
                 }
             }
@@ -355,10 +353,17 @@ void HbListView::rowsAboutToBeRemoved(const QModelIndex &parent, int start, int 
 
 /*!
     \reimp
+    
+    Derived implementations must respect the d->mMoveOngoing flag and not perform
+    any view actions when the flag is set.
 */
 void HbListView::rowsRemoved(const QModelIndex &parent, int start, int end)
 {
     Q_D(HbListView);
+
+    if (d->mMoveOngoing)
+        return;
+
     if (parent == d->mModelIterator->rootIndex()) {
         if (d->animationEnabled(false)) {
             for (int i = 0; i < d->mItemsAboutToBeDeleted.count(); i++) {

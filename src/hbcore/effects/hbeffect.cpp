@@ -74,7 +74,7 @@ bool operator <(const EffectMapKey &key1, const EffectMapKey &key2)
     if (!result) {
         result = key1.mEffectEvent.compare(key2.mEffectEvent);
     }
-    return result<0;
+    return result < 0;
 }
 
 static void fixEffectGroupOrder(QList<HbEffectGroup *> *groupList)
@@ -95,7 +95,7 @@ static void fixEffectGroupOrder(QList<HbEffectGroup *> *groupList)
             }
         }
 
-        if (last - movedCount > 0 ) {
+        if (last - movedCount > 0) {
             for (int i = last - movedCount; i >= 0; --i) {
                 HbEffectGroup *group = groupList->at(i);
                 // If the group has a scale effect, move it second last before groups that had translate effects
@@ -124,7 +124,7 @@ HbEffectPrivate::HbEffectPrivate() :
 }
 
 HbEffectPrivate::~HbEffectPrivate()
-{   
+{
     privateDestroyed = true;
     mDisabledItems.clear();
 }
@@ -135,61 +135,60 @@ void HbEffectPrivate::connectViewChanges()
     if (!mViewChangeConnected) {
         mViewChangeConnected = true;
         QList<HbMainWindow *> windowList = hbInstance->allMainWindows();
-        foreach (const HbMainWindow *window, windowList) {
-            connect(window, SIGNAL(currentViewChanged(HbView*)), SLOT(handleViewChanged(HbView*)));
+        foreach(const HbMainWindow * window, windowList) {
+            connect(window, SIGNAL(currentViewChanged(HbView *)), SLOT(handleViewChanged(HbView *)));
         }
         // Need a notification when a mainwindow is added in the future.
-        connect(HbInstancePrivate::d_ptr(), SIGNAL(windowAdded(HbMainWindow*)), SLOT(handleWindowAdded(HbMainWindow*)));
+        connect(HbInstancePrivate::d_ptr(), SIGNAL(windowAdded(HbMainWindow *)), SLOT(handleWindowAdded(HbMainWindow *)));
     }
 }
 
 void HbEffectPrivate::handleWindowAdded(HbMainWindow *window)
 {
-    connect(window, SIGNAL(currentViewChanged(HbView*)), SLOT(handleViewChanged(HbView*)));
+    connect(window, SIGNAL(currentViewChanged(HbView *)), SLOT(handleViewChanged(HbView *)));
 }
 
 void HbEffectPrivate::handleViewChanged(HbView *view)
 {
-     // Observers may be notified during cancellations which may result in starting a new
+    // Observers may be notified during cancellations which may result in starting a new
     // effect during which groups may be deleted and removed from
     // mEventEffectList. Therefore we cannot directly iterate on mEventEffectList.
     QList<HbEffectGroup *> groupsToBeHandled;
-    foreach (HbEffectGroup *group, d.mEventEffectList) {
+    foreach(HbEffectGroup * group, d.mEventEffectList) {
         groupsToBeHandled.append(group);
     }
 
-    foreach (HbEffectGroup *group, groupsToBeHandled) {
-    // Check if the real list still contains the group. If not then it may have been
-    // deleted and removed meanwhile so do nothing.
-    if (d.mEventEffectList.values().contains(group)) {
-        if (group->isRunning()) {
-            // Looping effect
-            if (group->isLooping()) {
-                if (group->view() == view) {    
-                    group->resume(); // Effect's view activated, resume effect
-                } else {
-                    group->pause(); // Effect's view deactivated, pause effect
-                }
-            } else { // Non-looping effect
-                if (group->view() != view) { // Effect's view deactivated, cancel the effect
-                    group->cancelAll(true);
-              
-                    // remove group from eventEffectsList
-                    QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.begin();
-                     while (e != d.mEventEffectList.end()) {
-                         if (e.value() == group) { // found, erase from event effect list
-                             d.mEventEffectList.erase(e);
-							 delete group; // once removed from list, delete group
-                             e = d.mEventEffectList.end();
-                         }
-                         else
-                            e++;  // try next one
-                     }
+    foreach(HbEffectGroup * group, groupsToBeHandled) {
+        // Check if the real list still contains the group. If not then it may have been
+        // deleted and removed meanwhile so do nothing.
+        if (d.mEventEffectList.values().contains(group)) {
+            if (group->isRunning()) {
+                // Looping effect
+                if (group->isLooping()) {
+                    if (group->view() == view) {
+                        group->resume(); // Effect's view activated, resume effect
+                    } else {
+                        group->pause(); // Effect's view deactivated, pause effect
+                    }
+                } else { // Non-looping effect
+                    if (group->view() != view) { // Effect's view deactivated, cancel the effect
+                        group->cancelAll(true);
+                        // remove group from eventEffectsList
+                        QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.begin();
+                        while (e != d.mEventEffectList.end()) {
+                            if (e.value() == group) { // found, erase from event effect list
+                                d.mEventEffectList.erase(e);
+                                delete group; // once removed from list, delete group
+                                e = d.mEventEffectList.end();
+                            } else {
+                                e++;  // try next one
+                            }
+                        }
+                    }
                 }
             }
         }
-    }    
-}
+    }
 }
 
 
@@ -208,7 +207,7 @@ HbAnimatedItemGroup::HbAnimatedItemGroup(
     // Need information of receiver destroyed because this class gets
     // the notifications asynchronously so it must not invoke the
     // receiver if it has been destroyed meanwhile.
-    connect(mReceiver, SIGNAL(destroyed()), this, SLOT(receiverDestroyed())); 
+    connect(mReceiver, SIGNAL(destroyed()), this, SLOT(receiverDestroyed()));
 }
 
 void HbAnimatedItemGroup::finished(const HbEffect::EffectStatus &status)
@@ -345,8 +344,7 @@ bool HbEffect::add(
 #else
     // This API cannot be used to add HB library's effect definitions.
     // There is internal API in class HbEffectInternal for that.
-    if (itemType.startsWith(HB_EFFECT_ITEM_PREFIX)) 
-    {
+    if (itemType.startsWith(HB_EFFECT_ITEM_PREFIX)) {
         return false;
     }
     return HbEffectInternal::add(itemType, filePath, effectEvent);
@@ -383,9 +381,10 @@ bool HbEffect::add(
     Q_UNUSED(effectEvent);
     return false;
 #else
-    foreach (const QString &type, itemType) {
-        if (type.startsWith(HB_EFFECT_ITEM_PREFIX))
+    foreach(const QString & type, itemType) {
+        if (type.startsWith(HB_EFFECT_ITEM_PREFIX)) {
             return false;
+        }
     }
     return HbEffectInternal::add(itemType, filePath, effectEvent);
 #endif // HB_EFFECT_API_OFF
@@ -467,8 +466,7 @@ bool HbEffect::remove(
 #else
     // This API cannot be used to remove HB library's effect definitions.
     // There is internal API in class HbEffectInternal for that.
-    if (itemType.startsWith(HB_EFFECT_ITEM_PREFIX)) 
-    {
+    if (itemType.startsWith(HB_EFFECT_ITEM_PREFIX)) {
         return false;
     }
     HbEffectInternal::remove(itemType, filePath, effectEvent);
@@ -522,7 +520,7 @@ bool HbEffect::remove(QGraphicsItem *item)
 #endif //HB_EFFECT_API_OFF
 }
 
-/*! \brief This function is used to start an effect on a graphics item. 
+/*! \brief This function is used to start an effect on a graphics item.
 
   The effect definition is taken from the FXML file registered for the graphics
   item with matching itemType and effectEvent.
@@ -570,17 +568,17 @@ bool HbEffect::remove(QGraphicsItem *item)
 
   Example to get notification of effect completion.
   \code
-  // Create a public slot in a the widget class if you want to get effect-finished 
-  // notification. In normal scenario, the widget itself can be receiver. But it is possible 
+  // Create a public slot in a the widget class if you want to get effect-finished
+  // notification. In normal scenario, the widget itself can be receiver. But it is possible
   // to use any QObject as receiver.
   class MyHbWidget : public HbWidget
   {
   Q_OBJECT
   public slots:
   void effectFinished(const HbEffect::EffectStatus &status);
-  // Other stuffs 
+  // Other stuffs
   };
-    
+
   void MyObserver::effectFinished(const HbEffect::EffectStatus &status)
   {
   // Effect is finished. Do something.
@@ -591,19 +589,19 @@ bool HbEffect::remove(QGraphicsItem *item)
   {
   // myFunction related other stuff
   // calling startefect
-  HbEffect::start(myGraphicsItem, 
+  HbEffect::start(myGraphicsItem,
   "myItemType",
   "myEvent",
   this,
   "effectFinished");
-        
+
   // myFunction related other stuff
   }
   \endcode
   \sa cancel()
 */
-bool HbEffect::start(QGraphicsItem *item, 
-                     const QString &itemType, 
+bool HbEffect::start(QGraphicsItem *item,
+                     const QString &itemType,
                      const QString &effectEvent,
                      QObject *receiver,
                      const char *member,
@@ -656,7 +654,7 @@ bool HbEffect::start(QGraphicsItem *item,
   The function returns \c false if some invalid parameter is passed, or if the
   effect was disabled using disable().
 */
-bool HbEffect::start(QGraphicsItem *item, 
+bool HbEffect::start(QGraphicsItem *item,
                      const QString &effectEvent,
                      QObject *receiver,
                      const char *member,
@@ -673,7 +671,7 @@ bool HbEffect::start(QGraphicsItem *item,
     return false;
 #else
     return HbEffect::start(
-        item, HB_EFFECT_INTERNAL_ITEM, effectEvent, receiver, member, userData, extRect);
+               item, HB_EFFECT_INTERNAL_ITEM, effectEvent, receiver, member, userData, extRect);
 #endif //HB_EFFECT_API_OFF
 }
 
@@ -719,8 +717,8 @@ bool HbEffect::start(QGraphicsItem *item,
   effect was disabled using disable().
 */
 bool HbEffect::start(
-    const QList<QGraphicsItem *> &items, 
-    const QString &itemType, 
+    const QList<QGraphicsItem *> &items,
+    const QString &itemType,
     const QString &effectEvent,
     QObject *receiver,
     const char *member,
@@ -728,7 +726,7 @@ bool HbEffect::start(
 {
 #ifdef HB_EFFECT_API_OFF
     Q_UNUSED(items);
-    Q_UNUSED(itemType); 
+    Q_UNUSED(itemType);
     Q_UNUSED(effectEvent);
     Q_UNUSED(receiver);
     Q_UNUSED(member);
@@ -759,7 +757,7 @@ bool HbEffect::start(
         groupMember = "finished";
     }
 
-    foreach (QGraphicsItem *item, items) {
+    foreach(QGraphicsItem * item, items) {
         if (HbEffect::start(item, itemType, effectEvent, groupReceiver, groupMember, userData)) {
             // If at least one item succeeded to start, set return value to true
             ret = true;
@@ -791,8 +789,8 @@ bool HbEffect::effectRunning(QGraphicsItem *item, const QString &effectEvent)
     // Return true if the given item is running any effect
     if (effectEvent.isEmpty()) {
         for (QMap<EffectMapKey, HbEffectGroup *>::const_iterator e = d.mEventEffectList.constBegin();
-             e != d.mEventEffectList.constEnd();
-             ++e ) {
+                e != d.mEventEffectList.constEnd();
+                ++e) {
             HbEffectGroup *group = *e;
             if (group->registrationItem() == item && group->isRunning()) {
                 ret = true;
@@ -803,10 +801,10 @@ bool HbEffect::effectRunning(QGraphicsItem *item, const QString &effectEvent)
         // effectEvent was specified, check if effect matching that is running
         EffectMapKey key(item, effectEvent);
         QMap<EffectMapKey, HbEffectGroup *>::const_iterator e = d.mEventEffectList.find(key);
-    
+
         // Effect found in the list?
-        if(e != d.mEventEffectList.constEnd()) {
-            HbEffectGroup* group = *e;
+        if (e != d.mEventEffectList.constEnd()) {
+            HbEffectGroup *group = *e;
             ret = group->isRunning();
         }
     }
@@ -858,7 +856,7 @@ bool HbEffect::cancel(
     Q_UNUSED(sendCallback);
     Q_UNUSED(itemIsValid);
     return false;
-#else 
+#else
     if (privateDestroyed) {
         return false;
     }
@@ -869,9 +867,10 @@ bool HbEffect::cancel(
         // Stop all the effects running on item at that point of time.
         // (iterator way had some problem and caused crash so using foreach)
         QList<HbEffectGroup *> groupsToBeCanceled;
-        foreach (const EffectMapKey &key, d.mEventEffectList.keys()) {
+        QList<EffectMapKey> keys = d.mEventEffectList.keys();
+        foreach(const EffectMapKey & key, keys) {
             if (key.mItem == item) {
-                HbEffectGroup* group = d.mEventEffectList.take(key);
+                HbEffectGroup *group = d.mEventEffectList.take(key);
                 groupsToBeCanceled.append(group);
             }
         }
@@ -883,7 +882,7 @@ bool HbEffect::cancel(
         fixEffectGroupOrder(&groupsToBeCanceled);
 
         bool first = true;
-        foreach (HbEffectGroup *group, groupsToBeCanceled) {
+        foreach(HbEffectGroup * group, groupsToBeCanceled) {
             // If clearEffect is false then it is important to pass a default transform
             // first so the matrix multiplication in cancelAll ends up correct.
             group->cancelAll(sendCallback, itemIsValid, clearEffect, first || !itemIsValid ? QTransform() : item->transform());
@@ -897,7 +896,7 @@ bool HbEffect::cancel(
         return ret;
     } else {
         EffectMapKey key(item, effectEvent);
-        HbEffectGroup* group = d.mEventEffectList.take(key);
+        HbEffectGroup *group = d.mEventEffectList.take(key);
         if (group) {
             group->cancelAll(sendCallback, itemIsValid, clearEffect);
             delete group;
@@ -915,7 +914,7 @@ bool HbEffect::cancel(
 
   The function takes following parameters:
   \param item pointer to QGraphicsItem for which the effect will be enabled.
-    
+
   \sa disable()
 */
 void HbEffect::enable(QGraphicsItem *item)
@@ -930,19 +929,19 @@ void HbEffect::enable(QGraphicsItem *item)
 /*! This function can be used to disable an effect for a graphicsitem. This is
   useful in cases where you have a component which usually shows an effect but
   you want to skip the effect for your object.
-    
+
   You can enable the effect using enable(), and you should always call enable()
   once you do not need the object to be disabled, at latest when you're deleting
   your animated graphicsitem. This should be done to clean up the list of
   disabled items. Note that if the animated item is an HbWidget, then the
   enable() call happens automatically at the HbWidget destructor.
-    
+
   Unlike remove()-methods, this won't touch the effect definition at all. The
   effect is just skipped when trying to start the effect.  Note also that
   start()-method returns false if the effect is disabled.
 
   \param item pointer to QGraphicsItem for which the effect will be disabled
-    
+
   \sa enable()
   \sa start()
 */
@@ -960,11 +959,11 @@ void HbEffect::disable(QGraphicsItem *item)
 /*!
   \internal
 */
-HbGVWrapperItem::HbGVWrapperItem():mMainWindow(0)
+HbGVWrapperItem::HbGVWrapperItem(): mMainWindow(0)
 {
 }
 
-void HbGVWrapperItem::setMainWindow(HbMainWindow& mainWindow)
+void HbGVWrapperItem::setMainWindow(HbMainWindow &mainWindow)
 {
     mMainWindow = &mainWindow;
 }
@@ -978,12 +977,12 @@ QRectF HbGVWrapperItem::boundingRect() const
 {
     QRectF bRect;
     // viewportitem is used as a boundingrect since viewport item gets resized when changing orientation
-    if( mMainWindow ) {
+    if (mMainWindow) {
         bRect = mMainWindow->layoutRect();
     }
     return bRect;
 }
-void HbGVWrapperItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
+void HbGVWrapperItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(painter);
     Q_UNUSED(option);
@@ -1007,10 +1006,9 @@ bool HbEffectInternal::add(const QString &itemType, const QString &filePath, con
         // Mark all effects using the given item type dirty,
         // so that they get re-created when the effect is shown next time
         for (QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.begin();
-             e != d.mEventEffectList.end();
-             ++e ) {
+                e != d.mEventEffectList.end();
+                ++e) {
             HbEffectGroup *group = *e;
-
             if (group->itemType() == itemType) {
                 group->setDirty(true);
             }
@@ -1075,10 +1073,9 @@ bool HbEffectInternal::add(QGraphicsItem *item, const QString &filePath, const Q
         // Mark all effects using the given item type dirty,
         // so that they get re-created when the effect is shown next time
         for (QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.begin();
-             e != d.mEventEffectList.end();
-             ++e ) {
+                e != d.mEventEffectList.end();
+                ++e) {
             HbEffectGroup *group = *e;
-
             if (group->registrationItem() == item) {
                 group->setDirty(true);
             }
@@ -1134,12 +1131,13 @@ void HbEffectInternal::remove(const QString &itemType, const QString &filePath, 
 #else
     // FXML
     // If extension is not given then try both with and without .fxml
-    if (!filePath.endsWith(".fxml")) {
-        d.mController.removeFXML(itemType, filePath + ".fxml", effectEvent);       
+    if (!filePath.endsWith(QLatin1String(".fxml"))) {
+        d.mController.removeFXML(itemType, filePath + QLatin1String(".fxml"), effectEvent);
     }
     d.mController.removeFXML(itemType, filePath, effectEvent);
     // Clean up mEventEffectList.
-    foreach (const EffectMapKey &key, d.mEventEffectList.keys()) {
+    QList<EffectMapKey> keys = d.mEventEffectList.keys();
+    foreach(const EffectMapKey & key, keys) {
         if (key.mEffectEvent == effectEvent) {
             HbEffectGroup *group = d.mEventEffectList.value(key);
             group->setDirty(true); // so the next start() will try to recreate the effect instead of re-using it
@@ -1160,12 +1158,13 @@ void HbEffectInternal::remove(QGraphicsItem *item, const QString &filePath, cons
 #else
     // FXML
     // If extension is not given then try both with and without .fxml
-    if (!filePath.endsWith(".fxml")) {
-        d.mController.removeFXML(item, filePath + ".fxml", effectEvent);       
+    if (!filePath.endsWith(QLatin1String(".fxml"))) {
+        d.mController.removeFXML(item, filePath + QLatin1String(".fxml"), effectEvent);
     }
     d.mController.removeFXML(item, filePath, effectEvent);
     // Clean up mEventEffectList.
-    foreach (const EffectMapKey &key, d.mEventEffectList.keys()) {
+    QList<EffectMapKey> keys = d.mEventEffectList.keys();
+    foreach(const EffectMapKey & key, keys) {
         if (key.mItem == item && key.mEffectEvent == effectEvent) {
             HbEffectGroup *group = d.mEventEffectList.value(key);
             group->setDirty(true);
@@ -1186,7 +1185,8 @@ void HbEffectInternal::remove(QGraphicsItem *item)
         d.mDisabledItems.removeOne(item); // clean the disabled list as well
         d.mController.removeFXML(item);
         // Clean up mEventEffectList.
-        foreach (const EffectMapKey &key, d.mEventEffectList.keys()) {
+        QList<EffectMapKey> keys = d.mEventEffectList.keys();
+        foreach(const EffectMapKey & key, keys) {
             if (key.mItem == item) {
                 HbEffectGroup *group = d.mEventEffectList.value(key);
                 group->setDirty(true);
@@ -1204,22 +1204,21 @@ void HbEffectInternal::reloadFxmlFiles()
     //     data.
     //parsedDataList.clear();
     QList<HbEffectInfo> newDataList;
-    for (int i=0; i < parsedDataList.count(); i++) {
+    for (int i = 0; i < parsedDataList.count(); i++) {
         if (parsedDataList[i].fromTheme()) {
             newDataList.append(parsedDataList[i]);
             parsedDataList.removeAt(i);
             i--;
         }
     }
-    for (int i=0; i < newDataList.count(); i++) {
-        HbEffectInfo effectData = newDataList.at(i);            
+    for (int i = 0; i < newDataList.count(); i++) {
+        HbEffectInfo effectData = newDataList.at(i);
         bool ret = false;
         QString relativename = QFileInfo(effectData.xmlFileFullPath()).baseName();
         if (effectData.item() != 0) {
             ret = d.mController.addFXML(effectData.item(), relativename,
                                         effectData.effectEvent(), true);
-        }
-        else if (!effectData.componentType().isEmpty()) {
+        } else if (!effectData.componentType().isEmpty()) {
             ret = d.mController.addFXML(effectData.componentType(), relativename,
                                         effectData.effectEvent(), true);
         }
@@ -1227,8 +1226,8 @@ void HbEffectInternal::reloadFxmlFiles()
             // Mark all effects using the given item type dirty,
             // so that they get re-created when the effect is shown next time
             for (QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.begin();
-                 e != d.mEventEffectList.end();
-                 ++e ) {
+                    e != d.mEventEffectList.end();
+                    ++e) {
                 HbEffectGroup *group = *e;
                 if (group->registrationItem() == effectData.item()) {
                     group->setDirty(true);
@@ -1244,16 +1243,16 @@ void HbEffectInternal::reloadFxmlFiles()
   This is used for example when changing orientation; all but the orientation change effects
   are cancelled.
 */
-void HbEffectInternal::cancelAll(const QList<QGraphicsItem*> *exceptionList, bool ignoreLooping)
+void HbEffectInternal::cancelAll(const QList<QGraphicsItem *> *exceptionList, bool ignoreLooping)
 {
     // Observers may be notified during cancelations which may result in starting a new
     // effect during which groups may be deleted and removed from
     // mEventEffectList. Therefore we cannot directly iterate on mEventEffectList.
     QList<HbEffectGroup *> groupsToBeCanceled;
-    foreach (HbEffectGroup *group, d.mEventEffectList) {
+    foreach(HbEffectGroup * group, d.mEventEffectList) {
         groupsToBeCanceled.append(group);
     }
-    foreach (HbEffectGroup *group, groupsToBeCanceled) {
+    foreach(HbEffectGroup * group, groupsToBeCanceled) {
         // Check if the real list still contains the group. If not then it may have been
         // deleted and removed meanwhile so do nothing.
         if (d.mEventEffectList.values().contains(group)) {
@@ -1276,10 +1275,10 @@ void HbEffectInternal::cancelAll(const QList<QGraphicsItem*> *exceptionList, boo
 void HbEffectInternal::safeCancelAll(bool clear)
 {
     QList<HbEffectGroup *> groupsToBeCanceled;
-    foreach (HbEffectGroup *group, d.mEventEffectList) {
+    foreach(HbEffectGroup * group, d.mEventEffectList) {
         groupsToBeCanceled.append(group);
     }
-    foreach (HbEffectGroup *group, groupsToBeCanceled) {
+    foreach(HbEffectGroup * group, groupsToBeCanceled) {
         if (d.mEventEffectList.values().contains(group)) {
             group->cancelAll(false, false, clear);
         }
@@ -1297,13 +1296,21 @@ void HbEffectInternal::safeCancelAll(bool clear)
 */
 void HbEffectInternal::stopEffects()
 {
-    // Pause looping effects and stop others
-    foreach (HbEffectGroup *group, d.mEventEffectList) {
-        if (group->isRunning()) {
-            if (group->isLooping()) {
-                group->pause();
-            } else {
-                group->cancelAll(true);
+    // Pause looping effects and stop others. As usual, we cannot just
+    // simply iterate through the list as cancelAll() may change the
+    // elements in mEventEffectList.
+    QList<HbEffectGroup *> groupsToBeChecked;
+    foreach(HbEffectGroup * group, d.mEventEffectList) {
+        groupsToBeChecked.append(group);
+    }
+    foreach(HbEffectGroup * group, groupsToBeChecked) {
+        if (d.mEventEffectList.values().contains(group)) {
+            if (group->isRunning()) {
+                if (group->isLooping()) {
+                    group->pause();
+                } else {
+                    group->cancelAll(true);
+                }
             }
         }
     }
@@ -1321,7 +1328,7 @@ void HbEffectInternal::stopEffects()
 void HbEffectInternal::resumeEffects()
 {
     // Resume any looping effects that were paused with stopEffects call.
-    foreach (HbEffectGroup *group, d.mEventEffectList) {
+    foreach(HbEffectGroup * group, d.mEventEffectList) {
         if (group->isRunning() && group->isLooping()) {
             group->resume();
         }
@@ -1373,7 +1380,7 @@ inline void updateGroup(HbEffectGroup *group,
 bool HbEffectInternal::start(QGraphicsItem *registrationItem,
                              QGraphicsItem *targetItem,
                              EffectFlags flags,
-                             const QString &itemType, 
+                             const QString &itemType,
                              const QString &effectEvent,
                              QObject *receiver,
                              const char *member,
@@ -1462,13 +1469,13 @@ bool HbEffectInternal::start(QGraphicsItem *registrationItem,
     QMap<EffectMapKey, HbEffectGroup *>::iterator e = d.mEventEffectList.find(key);
 
     // Same effect found in the list?
-    if(e != d.mEventEffectList.end()) {
+    if (e != d.mEventEffectList.end()) {
         HbEffectGroup *group = e.value();
         if (!group->dirty()) {
             // if the effect group is not dirty, restart it. Cancel possible earlier
             // effect first so that end position gets correct.
             group->cancelAll(true);
-            
+
             // Update with given notification parameters
             updateGroup(group, receiver, member, userData, extRect, flags);
 

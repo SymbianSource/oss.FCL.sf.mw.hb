@@ -85,7 +85,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mIsScrolling(false),
         mIsAnimating(false),
         mScrollSpeed (QPointF (0,0)),
-        mScrollTimer(0),
+        mScrollTimerId(0),
         mScrollElapsedTime(),
         mLastElapsedTime(0.0),
         mTargetAnimationInProgress(false),
@@ -94,7 +94,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mTargetDelta(QPointF(0,0)),
         mAnimationInitialPosition (QPointF(0,0)),
         mAnimationShape (0),
-        mScrollBarHideTimer(0),
+        mScrollBarHideTimerId(0),
         mFrictionEnabled(true),
         mResetAlignment(true),
         mClampingStyle(HbScrollArea::BounceBackClamping),
@@ -105,6 +105,7 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
         mLayoutDirection(Qt::LeftToRight),
         mAlignment(Qt::AlignLeft | Qt::AlignTop),
         mContinuationIndicators(false),
+        mEmitPositionChangedSignal(false),
         continuationIndicatorTopItem(0),
         continuationIndicatorBottomItem(0),
         continuationIndicatorLeftItem(0),
@@ -123,15 +124,12 @@ HbScrollAreaPrivate::HbScrollAreaPrivate() :
 
 HbScrollAreaPrivate::~HbScrollAreaPrivate()
 {    
+    delete mAnimationShape;
 }
 
 void HbScrollAreaPrivate::init()
 {
     Q_Q( HbScrollArea );
-
-    mScrollTimer.setParent(q);
-    mScrollBarHideTimer.setParent(q);
-    mScrollBarHideTimer.setSingleShot(true);
 
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     q->setFlag( QGraphicsItem::ItemClipsChildrenToShape, true );
@@ -151,6 +149,13 @@ void HbScrollAreaPrivate::init()
     // make sure the scrollbar is on top
     mHorizontalScrollBar->setZValue(q->zValue() + 1);
 
+#if QT_VERSION >= 0x040700
+    q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures | Qt::IgnoredGesturesPropagateToParent);
+#else
+    q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures);
+#endif
+    q->grabGesture(Qt::TapGesture);
+
 }
 
 void HbScrollAreaPrivate::doLazyInit()
@@ -165,11 +170,7 @@ void HbScrollAreaPrivate::doLazyInit()
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChanged(qreal, Qt::Orientation)), q, SLOT(_q_thumbPositionChanged(qreal, Qt::Orientation)));
     QObject::connect(mHorizontalScrollBar, SIGNAL(valueChangeRequested(qreal, Qt::Orientation)), q, SLOT(_q_groovePressed(qreal, Qt::Orientation)));
 
-    QObject::connect(&(mScrollTimer), SIGNAL(timeout()), q, SLOT(_q_animateScrollTimeout()));
-    QObject::connect(&(mScrollBarHideTimer), SIGNAL(timeout()), q, SLOT(_q_hideScrollBars()));
 
-    q->grabGesture(Qt::PanGesture, Qt::ReceivePartialGestures);
-    q->grabGesture(Qt::TapGesture);
 }
 
 void HbScrollAreaPrivate::replaceScrollBar(Qt::Orientation orientation, HbScrollBar *scrollBar)
@@ -212,8 +213,7 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
 {
     Q_Q( HbScrollArea );
 
-    if ( mContents == 0 ||
-         ( qIsNull(qAbs( delta.x() )) && qIsNull(qAbs( delta.y() ) ) ) )
+    if ( qIsNull(qAbs( delta.y() )) && qIsNull(qAbs( delta.x() ) ) )
         return false;
 
     QPointF currentPosition = -mContents->pos();
@@ -276,11 +276,14 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
         mBoundaryReached = false;
     }
 
-
+    setContentPosition(-newPosition);
+    //Its important to setcontents position first as thats used in updateScrollbar.displayScrollbar calls
+    //updateScrollbar internally.Other wise we need to update scrollbars twice with different positions.
     if (!mIsScrolling) {
-        mIsScrolling = true;
-        emit q->scrollingStarted();
-
+        if (mAbleToScrollX || mAbleToScrollY) {
+            mIsScrolling = true;
+            emit q->scrollingStarted();
+        }
         if (mAbleToScrollX && mHorizontalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
             displayScrollBar(Qt::Horizontal);
         }
@@ -288,24 +291,21 @@ bool HbScrollAreaPrivate::scrollByAmount(const QPointF& delta)
         if (mAbleToScrollY && mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
             displayScrollBar(Qt::Vertical);
         }
-    }  
+        stopScrollbarHideTimer();
 
-    setContentPosition(-newPosition);
+    } else {
 
-    if (mAbleToScrollX && mHorizontalScrollBar->isVisible()) {
-        updateScrollBar(Qt::Horizontal);
+        if (mAbleToScrollX && mHorizontalScrollBar->isVisible()) {
+            updateScrollBar(Qt::Horizontal);
+        }
+
+        if (mAbleToScrollY && mVerticalScrollBar->isVisible()) {
+            updateScrollBar(Qt::Vertical);
+        }
     }
-
-    if (mAbleToScrollY && mVerticalScrollBar->isVisible()) {
-        updateScrollBar(Qt::Vertical);
-    }
-
-    bool positionChanged = currentPosition != newPosition;
-    if (positionChanged && mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.stop();
-    }
-
-    return (positionChanged);
+    //if we are here than content position has changed.i.e delta is not zero or
+    //we havent reached the boundaries.
+    return true;
 }
 
 void HbScrollAreaPrivate::animateScroll(QPointF speed)
@@ -352,11 +352,18 @@ void HbScrollAreaPrivate::animateScroll(QPointF speed)
 void HbScrollAreaPrivate::startAnimating()
 {
     // Launch the animation timer
-    if (!mScrollTimer.isActive()) {
-        mScrollElapsedTime.restart();
-        mLastElapsedTime = 0.0;
-        mScrollTimer.start(ANIMATION_INTERVAL);
-        mIsAnimating = true;
+    if (!mContents)
+        return;
+    if (mScrollTimerId == 0) {
+        Q_Q( HbScrollArea );
+        mScrollTimerId = q->startTimer(ANIMATION_INTERVAL);
+
+        //make sure we where able to start the timer
+        if (mScrollTimerId != 0) {
+            mScrollElapsedTime.restart();
+            mLastElapsedTime = 0.0;
+            mIsAnimating = true;
+        }
     }
 }
 
@@ -365,7 +372,7 @@ void HbScrollAreaPrivate::stopScrolling()
     Q_Q( HbScrollArea );
     if (mHorizontalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide ||
         mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
-        mScrollBarHideTimer.start(SCROLLBAR_HIDE_TIMEOUT);
+        startScrollbarHideTimer();
     }
     if (mIsScrolling) {
         if (mScrollFeedbackOngoing) {
@@ -380,11 +387,37 @@ void HbScrollAreaPrivate::stopScrolling()
 
 void HbScrollAreaPrivate::stopAnimating()
 {
-    mScrollTimer.stop();
+    if (mIsAnimating) {
+        Q_Q( HbScrollArea );
+        q->killTimer(mScrollTimerId);
+        mScrollTimerId = 0;
+        mIsAnimating = false;
+        stopScrolling();
+    }
+}
 
-    mIsAnimating = false;
+void HbScrollAreaPrivate::startScrollbarHideTimer()
+{
+    if (mScrollBarHideTimerId == 0){
+        Q_Q( HbScrollArea );
+        mScrollBarHideTimerId = q->startTimer(INITIAL_SCROLLBAR_HIDE_TIMEOUT);
+    }
 
-    stopScrolling();
+}
+
+void HbScrollAreaPrivate::stopScrollbarHideTimer()
+{
+    if (mScrollBarHideTimerId != 0) {
+        Q_Q( HbScrollArea );
+        q->killTimer(mScrollBarHideTimerId);
+        mScrollBarHideTimerId = 0;
+    }
+}
+
+void HbScrollAreaPrivate::reStartScrollbarHideTimer()
+{
+  stopScrollbarHideTimer();
+  startScrollbarHideTimer();
 }
 
 /*
@@ -394,9 +427,9 @@ void HbScrollAreaPrivate::stopAnimating()
 void HbScrollAreaPrivate::_q_animateScrollTimeout()
 {
     Q_Q( HbScrollArea );
-    qreal elapsedTime = qreal(mScrollElapsedTime.elapsed());
+    qreal elapsedTime(qreal(mScrollElapsedTime.elapsed()));
 
-    qreal timeDifference = elapsedTime - mLastElapsedTime;
+    qreal timeDifference(elapsedTime - mLastElapsedTime);
 
     // if no time has elapsed, just return
     // this sometimes happens if the timer accuracy is not that great
@@ -417,38 +450,40 @@ void HbScrollAreaPrivate::_q_animateScrollTimeout()
             mTargetAnimationInProgress = false;
         }
     } else {
-
+        qreal simulationStepInTime;
+        QPointF overAllDist(0,0);
+        QPointF currentPosition(-mContents->pos());
+        bool stopVerticalAnimation(false);
+        bool stopHorizontalAnimation(false);
         // calculations are split so that the same amount of simulation steps
         // are made in varying framerates.
         do {
-            qreal simulationStepInTime = qMin ( MAX_TIMEDIF_FOR_SIMULATION, timeDifference);
+            simulationStepInTime = qMin ( MAX_TIMEDIF_FOR_SIMULATION, timeDifference);
+            currentPosition = -mContents->pos();
+            if (mAbleToScrollX) {
+                // Calculate new velocity to horizontal movement
+                mScrollSpeed.setX( calculateVelocity ( simulationStepInTime,
+                                                       mScrollSpeed.x(),
+                                                       currentPosition.x(),
+                                                       leftBoundary(),
+                                                       rightBoundary() ) );
 
-            // Calculate new velocity to horizontal movement
-            mScrollSpeed.setX( calculateVelocity ( simulationStepInTime,
-                                                   mScrollSpeed.x(),
-                                                   -mContents->pos().x(),
-                                                   leftBoundary(),
-                                                   rightBoundary() ) );
-
-            // Calculate new velocity to vertical movement
-            mScrollSpeed.setY( calculateVelocity ( simulationStepInTime,
-                                                   mScrollSpeed.y(),
-                                                   -mContents->pos().y(),
-                                                   topBoundary(),
-                                                   bottomBoundary() ) );
-
-            QPointF overAllDist = mScrollSpeed * simulationStepInTime;
-
-            bool stopVerticalAnimation = false;
-            if ( qAbs( mScrollSpeed.y() ) < MIN_SPEED_PER_MILLISECOND ) {
-                stopVerticalAnimation = clampToBoundaries ( overAllDist.ry(), -mContents->pos().y(), topBoundary(), bottomBoundary() );
+                if ( qAbs( mScrollSpeed.x() ) < MIN_SPEED_PER_MILLISECOND ) {
+                    stopHorizontalAnimation = clampToBoundaries ( overAllDist.rx(), currentPosition.x(), leftBoundary(), rightBoundary() );
+                }                
             }
-
-            bool stopHorizontalAnimation = false;
-            if ( qAbs( mScrollSpeed.x() ) < MIN_SPEED_PER_MILLISECOND ) {
-                stopHorizontalAnimation = clampToBoundaries ( overAllDist.rx(), -mContents->pos().x(), leftBoundary(), rightBoundary() );
+            if (mAbleToScrollY) {
+                // Calculate new velocity to vertical movement
+                mScrollSpeed.setY( calculateVelocity ( simulationStepInTime,
+                                                       mScrollSpeed.y(),
+                                                       currentPosition.y(),
+                                                       topBoundary(),
+                                                       bottomBoundary() ) );
+                if ( qAbs( mScrollSpeed.y() ) < MIN_SPEED_PER_MILLISECOND ) {
+                    stopVerticalAnimation = clampToBoundaries ( overAllDist.ry(), currentPosition.y(), topBoundary(),bottomBoundary() );
+                }
             }
-
+            overAllDist = mScrollSpeed * simulationStepInTime;
             q->scrollByAmount ( -overAllDist );
 
             if ( ( !mAbleToScrollY || stopVerticalAnimation ) &&
@@ -551,6 +586,7 @@ void HbScrollAreaPrivate::setContentPosition(const QPointF &newPosition)
         Q_Q(HbScrollArea);
 
         mContents->setPos(newPosition);
+     if (mEmitPositionChangedSignal)
         emit q->scrollPositionChanged(-newPosition);
     }
 }
@@ -578,6 +614,8 @@ bool HbScrollAreaPrivate::positionOutOfBounds () {
  */
 bool HbScrollAreaPrivate::pan(QPanGesture* panGesture)
 {
+    if (!mContents)
+        return false;
     Q_Q ( HbScrollArea );
 
     HbPanGesture *hbPanGesture = qobject_cast<HbPanGesture *>(panGesture);
@@ -684,6 +722,10 @@ void HbScrollAreaPrivate::ensureVisible(QPointF position, qreal xMargin, qreal y
 {
     if(mContents) {
         Q_Q(HbScrollArea);
+        // if contentwidget size has changed, xxxBoundary() functions
+        // won't work without this
+        QCoreApplication::sendPostedEvents(q, QEvent::LayoutRequest);
+
         QPointF currentPosition = -mContents->pos();
         QPointF newPosition = currentPosition;
 
@@ -763,20 +805,14 @@ void HbScrollAreaPrivate::setScrollBarMetrics(Qt::Orientation orientation)
 
     if (orientation == Qt::Horizontal) {
         // Set handle size
-        mHorizontalScrollBar->setPageSize( qBound ( qreal(0.0),
-                                             qreal (q->boundingRect().width())
-                                                / qreal (mContents->boundingRect().width()),
-                                              qreal(1.0)));
-
+        mHorizontalScrollBar->setPageSize(q->boundingRect().width()
+                                          / mContents->boundingRect().width());
         updateScrollBar(orientation);
     }
     else {
         // Set handle size
-        mVerticalScrollBar->setPageSize(qBound ( qreal(0.0),
-                                             qreal (q->boundingRect().height())
-                                                / qreal (mContents->boundingRect().height()),
-                                              qreal(1.0)));
-
+        mVerticalScrollBar->setPageSize(q->boundingRect().height()
+                                        / mContents->boundingRect().height());
         updateScrollBar(orientation);
     }
 }
@@ -786,49 +822,33 @@ void HbScrollAreaPrivate::updateScrollBar(Qt::Orientation orientation)
     Q_Q( HbScrollArea );
 
     qreal thumbPosition(0);
-
+    qreal normalizingValue(0);
+    // The scrollbar "thumb" position is the current position of the contents widget divided
+    // by the difference between the width of the contents widget and the width of the scroll area.
+    // This formula assumes that the "thumb" of the the scroll bar is sized proportionately to
+    // the width of the contents widget.
     if ((orientation == Qt::Horizontal) && mHorizontalScrollBar) {
-        // The scrollbar "thumb" position is the current position of the contents widget divided
-        // by the difference between the width of the contents widget and the width of the scroll area.
-        // This formula assumes that the "thumb" of the the scroll bar is sized proportionately to
-        // the width of the contents widget.
-
-        //if (mLayoutDirection == Qt::LeftToRight)
-        //{
-        if (!qIsNull(mContents->boundingRect().width()
-            - q->boundingRect().width())) {
-            thumbPosition = qAbs( leftBoundary() + qMin ( -leftBoundary(), mContents->pos().x() ) )
-                            / (mContents->boundingRect().width()
-                               - q->boundingRect().width());
+        if (mAbleToScrollX) {
+            normalizingValue = mContents->boundingRect().width()
+                               - q->boundingRect().width();
+            qreal lBoundary(leftBoundary());
+            if (!qIsNull(normalizingValue)) {
+                thumbPosition = qAbs( lBoundary + qMin ( -lBoundary, mContents->pos().x() ) )
+                                / (normalizingValue);
+            }
         }
-        /* }
-        else
-            thumbPosition = (mContents->boundingRect().width()
-                    + mContents->pos().x())
-                    / (mContents->boundingRect().width()
-                            - q->boundingRect().width());*/
-
-        if (thumbPosition < 0.0)
-            thumbPosition = 0.0;
-        else if (thumbPosition > 1.0)
-            thumbPosition = 1.0;
         mHorizontalScrollBar->setValue(thumbPosition);
     }
     else if (mVerticalScrollBar) {
-        // The scrollbar "thumb" position is the current position of the contents widget divided
-        // by the difference between the height of the contents widget and the height of the scroll area.
-        // This formula assumes that the "thumb" of the the scroll bar is sized proportionately to
-        // the height of the contents widget.
-        if (!qIsNull(mContents->boundingRect().height()
-            - q->boundingRect().height())) {
-            thumbPosition = qAbs( topBoundary() + qMin ( -topBoundary(), mContents->pos().y() ) )
-                            / (mContents->boundingRect().height()
-                               - q->boundingRect().height());
+        if (mAbleToScrollY) {
+            normalizingValue = mContents->boundingRect().height()
+                               - q->boundingRect().height();
+            qreal tBoundary(topBoundary());
+            if (!qIsNull(normalizingValue)) {
+                thumbPosition = qAbs( tBoundary + qMin ( -tBoundary, mContents->pos().y() ) )
+                                / (normalizingValue);
+            } 
         }
-        if (thumbPosition < 0.0)
-            thumbPosition = 0.0;
-        else if (thumbPosition > 1.0)
-            thumbPosition = 1.0;
         mVerticalScrollBar->setValue(thumbPosition);
     }
 }
@@ -858,8 +878,8 @@ void HbScrollAreaPrivate::prepareScrollBars()
             mVerticalScrollBar->setVisible(false);
     }
 
-    if (scrollBarsVisible && !mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.start(INITIAL_SCROLLBAR_HIDE_TIMEOUT);
+    if (scrollBarsVisible) {
+        startScrollbarHideTimer();
     }
 }
 
@@ -914,9 +934,10 @@ void HbScrollAreaPrivate::_q_hideScrollBars()
     if (mHorizontalScrollBar && mHorizontalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
         if (HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->isPressed() ||
             (mVerticalScrollBar && HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->isPressed())) {
-            mScrollBarHideTimer.start();
+            startScrollbarHideTimer();
         } else if(mHorizontalScrollBarPolicy != HbScrollArea::ScrollBarAlwaysOn
                   && mHorizontalScrollBar->isVisible()){
+            stopScrollbarHideTimer();
             mHorizontalScrollBar->setVisible(false);
 
         }
@@ -924,9 +945,10 @@ void HbScrollAreaPrivate::_q_hideScrollBars()
     if (mVerticalScrollBar && mVerticalScrollBarPolicy == HbScrollArea::ScrollBarAutoHide) {
         if (HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->isPressed() ||
             (mHorizontalScrollBar && HbScrollBarPrivate::d_ptr(mHorizontalScrollBar)->isPressed())) {
-            mScrollBarHideTimer.start();
+            startScrollbarHideTimer();
         } else if(mVerticalScrollBarPolicy != HbScrollArea::ScrollBarAlwaysOn
                   && mVerticalScrollBar->isVisible()){
+            stopScrollbarHideTimer();
             mVerticalScrollBar->setVisible(false);
         }
     }
@@ -955,10 +977,7 @@ void HbScrollAreaPrivate::_q_thumbPositionChanged(qreal value, Qt::Orientation o
 
     setContentPosition(value, orientation, false);
 
-    if (mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.stop();
-        mScrollBarHideTimer.start();
-    }
+    reStartScrollbarHideTimer();
     if (mContinuationIndicators) {
         updateIndicators(-mContents->pos());
     }
@@ -984,10 +1003,7 @@ void HbScrollAreaPrivate::_q_groovePressed(qreal value, Qt::Orientation orientat
 
     setContentPosition(value, orientation, true);
 
-    if (mScrollBarHideTimer.isActive()) {
-        mScrollBarHideTimer.stop();
-        mScrollBarHideTimer.start();
-    }
+    reStartScrollbarHideTimer();
     if (mContinuationIndicators) {
         updateIndicators(-mContents->pos());
     }

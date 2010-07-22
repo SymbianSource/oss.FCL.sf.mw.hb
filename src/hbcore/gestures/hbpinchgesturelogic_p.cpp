@@ -122,6 +122,10 @@ QGestureRecognizer::Result HbPinchGestureLogic::recognize(Qt::GestureState gestu
 {
     HbPinchGesturePrivate *d = gesture->d_func();
 
+    if (!watched->isWidgetType()) {
+        return QGestureRecognizer::Ignore;
+    }
+
     const QTouchEvent *ev = static_cast<const QTouchEvent *>(event);
 
     QGestureRecognizer::Result result;
@@ -155,17 +159,7 @@ QGestureRecognizer::Result HbPinchGestureLogic::recognize(Qt::GestureState gestu
                 if (d->mIsNewSequence) {
                     gesture->setStartCenterPoint(centerPoint);
                     d->mSceneStartCenterPoint = mapToScene(watched, centerPoint);
-
                 }
-                else {
-                    QLineF line1(p1.screenPos(), p1.lastScreenPos());
-                    QLineF line2(p2.screenPos(), p2.lastScreenPos());
-                    if (line1.length() < 3 && line2.length() < 3) {
-                        result = QGestureRecognizer::Ignore;
-                        break;
-                    }
-                }
-
                 gesture->setLastCenterPoint(gesture->centerPoint());
                 d->mSceneLastCenterPoint = mapToScene(watched, gesture->centerPoint());
                 gesture->setCenterPoint(centerPoint);

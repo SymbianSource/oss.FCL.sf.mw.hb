@@ -32,6 +32,9 @@
 #define DirectoryLocalizerFile ":/i18n/hbdirectorylocalizer.xml"
 #define DirectoryLocalizerTranslationsFile "/resource/hbi18n/translations/directorylocalizer_"
 
+/*!
+    Constructor of class.  
+*/ 
 HbDNTXmlReader::HbDNTXmlReader()
 {
 	fullPaths = NULL;
@@ -81,6 +84,9 @@ HbDNTXmlReader::HbDNTXmlReader()
 	
 }
 
+/*!
+    Destructor of class. 
+*/ 
 HbDNTXmlReader::~HbDNTXmlReader()
 {
     delete fullPaths;
@@ -89,59 +95,75 @@ HbDNTXmlReader::~HbDNTXmlReader()
 	delete trans;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \return true 
+*/ 
 bool HbDNTXmlReader::startDocument()
 {
     return true;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param qName element which will be readed
+    \return true 
+*/ 
 bool HbDNTXmlReader::startElement( const QString & ,
 				   const QString & ,
 				   const QString & qName,
 				   const QXmlAttributes & )
 {
-	if( qName == DirectoryLocalizerPathStringsStr ) {
-		parsePathStrings = true;  // set to parse Path 
-		parseDirectoryPaths = false;
-		elements.clear();
-		elementNumber = 0;  // Set current path element number as undefined
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerFullDirectoryPathsStr ) {
-		parsePathStrings = false;
-		parseDirectoryPaths = true;  // set to parse localized path
-		elements.clear();
-		elementNumber = 0;  // set current path element as undefined
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerNameStr ) {
-		elementNumber = 1;  // 
-		validElement = true;
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerPathStr ){
-		elementNumber = 2;
-		validElement = true;
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerTranslationStr){
-		elementNumber = 3;
-		validElement = true;	
-	} else if( qName == DirectoryLocalizerRootPathStr ){
-		elementNumber = 1;
-		validElement = true;
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerLocalizedPathStr ){
-		elementNumber = 2;
-		validElement = true;
-		twoDone = false;
-	} else if( qName == DirectoryLocalizerLocalizedNameStr ){
-		elementNumber = 3;
-		validElement = true;
-		twoDone = false;
-	} else
-    {
+    if( qName == DirectoryLocalizerPathStringsStr ) {
+    	parsePathStrings = true;  // set to parse Path 
+    	parseDirectoryPaths = false;
+    	elements.clear();
+    	elementNumber = 0;  // Set current path element number as undefined
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerFullDirectoryPathsStr ) {
+    	parsePathStrings = false;
+    	parseDirectoryPaths = true;  // set to parse localized path
+    	elements.clear();
+    	elementNumber = 0;  // set current path element as undefined
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerNameStr ) {
+    	elementNumber = 1;  // 
+    	validElement = true;
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerPathStr ){
+    	elementNumber = 2;
+    	validElement = true;
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerTranslationStr){
+    	elementNumber = 3;
+    	validElement = true;	
+    } else if( qName == DirectoryLocalizerRootPathStr ){
+    	elementNumber = 1;
+    	validElement = true;
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerLocalizedPathStr ){
+    	elementNumber = 2;
+    	validElement = true;
+    	twoDone = false;
+    } else if( qName == DirectoryLocalizerLocalizedNameStr ){
+    	elementNumber = 3;
+    	validElement = true;
+    	twoDone = false;
+    } else {
         elementNumber++;
     }
 	
     return true;	
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param text readed element
+    \return true 
+*/ 
 bool HbDNTXmlReader::characters(const QString& text)
 {
     QString t = text;
@@ -177,6 +199,7 @@ bool HbDNTXmlReader::characters(const QString& text)
                 
                 localizedStr = QCoreApplication::translate(0,charPtr);
                 delete ba;
+                ba = 0;
                 
                 if( localizedStr == t ){
 					localizedStr = "";                
@@ -213,9 +236,18 @@ bool HbDNTXmlReader::characters(const QString& text)
 			validElement = false;    				
 		}
 	}
+    if (ba) {
+        delete ba;
+    }
     return true;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \param qName element which was readed
+    \return true 
+*/ 
 bool HbDNTXmlReader::endElement( const QString &,
         const QString &,
         const QString & qName )
@@ -253,11 +285,19 @@ bool HbDNTXmlReader::endElement( const QString &,
 	return true;
 }
 
+/*!
+    This function is needed by XML reader.  
+     
+    \return true 
+*/ 
 bool HbDNTXmlReader::endDocument()
 {
     return true;
 }
 
+/*!
+    \return pointer to list of full paths 
+*/ 
 QMap<QString,QString> HbDNTXmlReader::getFullPaths()
 {
 	return *fullPaths;

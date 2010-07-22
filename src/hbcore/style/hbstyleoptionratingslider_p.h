@@ -28,7 +28,7 @@
 
 #include <hbstyleoption_p.h>
 
-//Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionRatingSlider : public  HbStyleOption
 {
 public:
@@ -45,6 +45,8 @@ public:
 	int noOfStars;
 	QString unRatedGraphicsName;
 	QString ratedGraphicsName;
+    bool disableState;
+	bool pressedState;
 };
 
 #endif 

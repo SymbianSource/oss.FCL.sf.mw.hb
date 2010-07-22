@@ -27,7 +27,7 @@
 #include "hbwidgetbase.h"
 #include "hbfontspec.h"
 #include "hbinstance.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 
 #include <QGraphicsWidget>
 #include <QTextStream>
@@ -292,9 +292,9 @@ void HbTextMeasurementUtility::measureItems(int after)
         QTimer::singleShot(after, this, SLOT(doMeasureItems()));
     } else {
         // Synchronous
-        QCoreApplication::processEvents();
-        QCoreApplication::processEvents();
-        QCoreApplication::processEvents();
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::sendPostedEvents();
         doMeasureItems();
     }
 }
@@ -309,7 +309,7 @@ void HbTextMeasurementUtility::doMeasureItems()
 #else
     QList<HbMainWindow*> mainWindows = hbInstance->allMainWindows();
     foreach (HbMainWindow* mainWindow, mainWindows ) {
-        QGraphicsScene* scene = mainWindow->scene();
+        QGraphicsScene* scene = mainWindow->scene(); //krazy:exclude=qclasses
         QList<QGraphicsItem*> sceneItems = scene->items();
         foreach (QGraphicsItem* sceneItem, sceneItems ) {
             if ( sceneItem->isWidget() ) {
@@ -383,7 +383,14 @@ bool HbTextMeasurementUtility::writeReport(HbDeviceProfile &profile, const QStri
         dir.mkpath(filePath);
     }
 
-    filePath.append(domainName);
+    // Make sure there are no illegal characters in "domainName"
+    QString tempName = domainName;
+    tempName.remove(QRegExp("[^a-zA-Z0-9]"));
+    if (tempName.isEmpty()) {
+        tempName = "unknown";
+    }
+
+    filePath.append(tempName);
     filePath.append('_');
     filePath.append(profile.name());
     filePath.append('_');

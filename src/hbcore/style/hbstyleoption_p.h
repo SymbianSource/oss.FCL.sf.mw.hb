@@ -29,7 +29,7 @@
 #include <hbglobal.h>
 #include <QStyleOptionGraphicsItem>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOption : public QStyleOptionGraphicsItem
 {
 public:
@@ -89,7 +89,7 @@ public:
     enum StyleOptionType { Type = HbSO_Widget };
     enum StyleOptionVersion { Version = 1 };
 
-    QFont font;   // DEPRECATED
+    QFont font;
     QRectF boundingRect;
 };
 

@@ -29,18 +29,18 @@
 
 #include <QDebug>
 
-/*!
+/*
     \class HbStyleOptionAbstractViewItem
     \brief HbStyleOptionAbstractViewItem has the style component for abstract view item primitives
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::checkState
 
     This variable holds what is the checkstate of the item.
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::background
 
     This variable holds content (if any) that is set as item's background.
@@ -48,10 +48,8 @@
     Default value is NULL variant.
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::itemName
-    \deprecated HbStyleOptionAbstractViewItem::itemName
-       is deprecated. This variable will cease to exist in near future. HbStyleOptionListViewItem::itemNameIndex replaces this variable.
 
     This variable holds content item name of the primitive item required by css/xml layouting.
     
@@ -59,7 +57,7 @@
 */
 
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::modelItemType
 
     This variable holds what is the type of the model item that view item is representing.
@@ -67,7 +65,7 @@
     Default value is Hb::StandardItem.
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::viewItemType
 
     This variable holds what is the type of the view item. This is value returned by QGraphicsItem::type().
@@ -75,13 +73,13 @@
     Default is Hb::ItemType_Last+1
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::index
 
     The model index that the view item represents.
 */
 
-/*!
+/*
     \var HbStyleOptionAbstractViewItem::singleSelectionMode
 
     This variable holds information whether HbAbstractItemView::SelectionMode mode is used. If it is used, set this variable On.
@@ -90,16 +88,10 @@
     mode is in use.
 */
 
-/*! \var HbStyleOptionAbstractViewItem::insidePopup
+/* \var HbStyleOptionAbstractViewItem::insidePopup
     Indicates whether widget and its children (classes derived from HbWidgetBase) are inside popup.
 */
 
-
-/*!
-	\deprecated HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem()
-	is deprecated. Styleoptions will not be public.
-	
-*/
 
 HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem() :
     HbStyleOption(),
@@ -111,13 +103,6 @@ HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem() :
     type = Type;
     version = Version;
 }
-
-/*!
-	\deprecated HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem(const HbStyleOptionAbstractViewItem&)
-	is deprecated. Styleoptions will not be public.
-	
-*/
-
 HbStyleOptionAbstractViewItem::HbStyleOptionAbstractViewItem(const HbStyleOptionAbstractViewItem &other) :
     HbStyleOption(other),
     checkState(other.checkState),

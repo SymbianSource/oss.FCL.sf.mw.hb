@@ -54,7 +54,7 @@ public:
     virtual QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
 
 private:
-    void alignRect( QRectF &rect, const QRectF &boundingRect );
+    void alignRect(QRectF &rect, const QRectF &boundingRect);
 
 private:
     // Disable copy constructor and assignment operator

@@ -59,35 +59,27 @@ public:
 
     Continuous feedbacks are feedback effects that last as long as the user is touching the screen,
     for example when dragging a slider handle. Continuous feedback effects need to be started, updated 
-    and stopped using methods HbFeedbackPlayer::startContinuousFeedback(), HbFeedbackPlayer::updateContinuousFeedback()
-    and HbFeedbackPlayer::cancelContinuousFeedback(). The effect intensity can be varied during the feedback.
+    and stopped using methods play() and stop().
 */
-
-#define UPDATE_IF_ONGOING \
-HbFeedbackPlayer *player = HbFeedbackPlayer::instance(); \
-if(player && player->continuousFeedbackOngoing(d->cFeedbackId)) { \
-    player->updateContinuousFeedback(d->cFeedbackId,*this); \
-}
-
 
 /*!
     \fn void HbContinuousFeedback::setContinuousEffect(HbFeedback::ContinuousEffect effect)
 
-    Sets the continuous feedback effect that determines what kind of continuous effects will
-    be played when calling HbFeedbackPlayer::startContinuousFeedback().
+    Sets the continuous feedback effect that will be played by the feedback object.
+    \sa continuousEffect()
 */
 
 void HbContinuousFeedback::setContinuousEffect(HbFeedback::ContinuousEffect effect)
 {
     d->cEffect = effect;
-    UPDATE_IF_ONGOING;
 }
 
 /*!
     \fn void HbFeedback::ContinuousEffect HbContinuousFeedback::continuousEffect() const
 
-    Returns the continuous effect of the continuous feedback object. Continuous effect represents the continuous
-    feedback effect that will be played when calling HbFeedbackPlayer::startContinuousFeedback().
+    Returns the continuous effect of the continuous feedback object.
+
+    \sa setContinuousEffect()
 */
 
 HbFeedback::ContinuousEffect HbContinuousFeedback::continuousEffect() const
@@ -98,9 +90,11 @@ HbFeedback::ContinuousEffect HbContinuousFeedback::continuousEffect() const
 /*!
     \fn int HbContinuousFeedback::timeout() const
 
-    The timeout value of the feedback in milliseconds. Continuous feedback is
-    automatically stopped if previously started continuous feedback has not been
-    updated within the timeout.
+    Returns the timeout value (in milliseconds) of the feedback object. Continuous feedback is
+    automatically stopped if it is not updated within the timeout (by subsequent calls to
+    play()).
+
+    \sa setTimeout(), play()
 */
 
 int HbContinuousFeedback::timeout() const {
@@ -110,8 +104,10 @@ int HbContinuousFeedback::timeout() const {
 /*!
     \fn int HbContinuousFeedback::intensity() const
 
-    The intensity of the continuous feedback effect. Intensity can be varied between 
+    Returns the intensity of the continuous feedback effect. Intensity can be varied between
     values HbFeedback::IntensityZero and HbFeedback::IntensityFull.
+
+    \sa setIntensity()
 */
 
 int HbContinuousFeedback::intensity() const {
@@ -134,7 +130,7 @@ HbContinuousFeedback::HbContinuousFeedback() :d(new HbContinuousFeedbackPrivate)
 /*!
     Constructor.
 
-    \param effect continuous feedback to be played
+    \param effect continuous feedback effect to be played
     \param widget used to determine the window where continuous feedback is active.
            There can only be one ongoing continuous feedback per application window.
 */
@@ -153,43 +149,53 @@ HbContinuousFeedback::~HbContinuousFeedback()
 }
 
 /*!
-    Sets the timeout value in milliseconds. Continuous feedback is automatically stopped
-    if the continuous feedback has not been updated within the timeout.
+    Sets the timeout value (in milliseconds) of the feedback object. Continuous feedback is
+    automatically stopped if it is not updated within the timeout (by subsequent calls to
+    play()). This is a safety mechanism to prevent situations in which the  client fails to
+    explicitly stop() a continuous feedback effect. The default timeout value is
+    HbFeedback::StandardFeedbackTimeout.
+
+    \sa timeout()
 */
 void HbContinuousFeedback::setTimeout(int msecTimeout)
 {
     if (msecTimeout > 0) {
         d->cTimeout = msecTimeout;
-        UPDATE_IF_ONGOING;
     }
 }
 
 /*!
     Sets the intensity of the continuous feedback effect. The intensity can be varied between 
     HbFeedback::IntensityZero and HbFeedback::IntensityFull.
+
+    \sa intensity()
 */
 void HbContinuousFeedback::setIntensity(int intensity)
 {
     if (intensity >= 0 && intensity <= HbFeedback::IntensityFull) {
         d->cIntensity = intensity;
-        UPDATE_IF_ONGOING;
     }
 }
 
 /*!
-    Plays the continuous feedback.
+    Starts/updates the continuous feedback.
+    The feedback effect will be played untill the timeout is reached or a call to stop() is made.
+    \sa stop()
 */
 void HbContinuousFeedback::play()
 {
-    HbFeedbackPlayer* feedbackPlayer = HbFeedbackPlayer::instance();
-
-    if (feedbackPlayer) {
-        d->cFeedbackId = feedbackPlayer->startContinuousFeedback(*this);
+    HbFeedbackPlayer *feedbackPlayer = HbFeedbackPlayer::instance();
+    if(feedbackPlayer) {
+        if( feedbackPlayer->continuousFeedbackOngoing(d->cFeedbackId)) {
+            feedbackPlayer->updateContinuousFeedback(d->cFeedbackId,*this);
+        } else {
+            d->cFeedbackId = feedbackPlayer->startContinuousFeedback(*this);
+        }
     }
 }
 
 /*!
-    Stops the continous feedback.
+    Stops the continuous feedback.
 */
 void HbContinuousFeedback::stop()
 {

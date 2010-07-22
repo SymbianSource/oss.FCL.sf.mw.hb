@@ -41,6 +41,7 @@
 #if !defined(HB_BOOTSTRAPPED) || defined(HB_BIN_CSS)
 
 class QSharedMemory;
+class HbSharedMemoryWrapper;
 class HbSharedMemoryAllocator;
 class HbSharedCache;
 
@@ -77,12 +78,17 @@ protected:
 private:
     bool initialize();
     int loadMemoryFile(const QString &filePath);
+    template<typename T>
+    inline T *address(int offset)
+    {
+        return reinterpret_cast<T *>(static_cast<char *>(base()) + offset);
+    }
 
 protected:
     bool writable;
     HbSharedMemoryAllocator *mainAllocator;
     HbSharedMemoryAllocator *subAllocator;
-	QSharedMemory *chunk;
+    HbSharedMemoryWrapper *chunk;
 
 private:
     static HbSharedMemoryManager *memManager;

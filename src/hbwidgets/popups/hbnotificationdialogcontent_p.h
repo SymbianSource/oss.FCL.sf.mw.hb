@@ -62,7 +62,7 @@ protected:
     void initStyleOption(HbStyleOptionNotificationDialog *option) const;
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF & constraint = QSizeF()) const;
 private:    
-    Hb::TextWrapping mTitleWrapping;
+    Hb::TextWrapping mTitleTextWrapping;
     QString mText;
     QString mTitle;
     HbIcon mIcon;

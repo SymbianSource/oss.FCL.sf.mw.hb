@@ -45,7 +45,7 @@ class HbIconSource;
 
 class HB_CORE_PRIVATE_EXPORT HbIconLoader : public QObject
 {
- Q_OBJECT
+    Q_OBJECT
 
 public:
     enum Purpose {
@@ -74,9 +74,9 @@ public:
         NoAutoStartAnimation    = 0x40
     };
 
-    Q_DECLARE_FLAGS (IconLoaderOptions, 
+    Q_DECLARE_FLAGS(IconLoaderOptions,
                     IconLoaderOption)
- 
+
     explicit HbIconLoader(const QString &appName = QString(), QObject *parent = 0);
 
     ~HbIconLoader();
@@ -94,7 +94,7 @@ public:
         HbIconAnimator *animator = 0,
         const QColor &color = QColor());
 
-    HbIconImpl* loadIcon(
+    HbIconImpl *loadIcon(
         const QString &iconName,
         HbIconLoader::IconDataType type,
         HbIconLoader::Purpose = AnyPurpose,
@@ -105,22 +105,22 @@ public:
         HbIconAnimator *animator = 0,
         const QColor &color = QColor());
 
-    void unLoadIcon(HbIconImpl * icon, bool unloadedByServer = false);
+    void unLoadIcon(HbIconImpl *icon, bool unloadedByServer = false);
     void unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls);
-        
-    HbIconImpl* loadMultiPieceIcon(const QStringList &listOfIcons,
-                    HbMultiPartSizeData &multiPartIconData,
-                    const QSizeF &size,
-                    Qt::AspectRatioMode aspectRatioMode,
-                    QIcon::Mode mode,
-                    IconLoaderOptions options,
-                    QVector<HbIconImpl *> &multiPieceImpls,
-                    const QColor &color);
+
+    HbIconImpl *loadMultiPieceIcon(const QStringList &listOfIcons,
+                                   HbMultiPartSizeData &multiPartIconData,
+                                   const QSizeF &size,
+                                   Qt::AspectRatioMode aspectRatioMode,
+                                   QIcon::Mode mode,
+                                   IconLoaderOptions options,
+                                   QVector<HbIconImpl *> &multiPieceImpls,
+                                   const QColor &color);
 
     QSizeF defaultSize(
         const QString &iconName,
         const QString &appName = QString(),
-        IconLoaderOptions options = IconLoaderOptions(ReturnUnknownIcon | BitmapIcons | VectorIcons ));
+        IconLoaderOptions options = IconLoaderOptions(ReturnUnknownIcon | BitmapIcons | VectorIcons));
 
     QSizeF size(HbIconLoader::Purpose) const;
 
@@ -128,10 +128,10 @@ public:
     HbIconSource *getIconSource(const QString &filename, const QString &format);
     bool isAutomaticallyMirrored(const QString &iconName);
 
-    void setSourceResolution( int resolution );
+    void setSourceResolution(int resolution);
     int sourceResolution() const;
 
-    void setResolution( int resolution );
+    void setResolution(int resolution);
     int resolution() const;
 
     void applyResolutionCorrection(QSizeF &size);
@@ -140,22 +140,24 @@ public:
                                Hb::ResourceType resType = Hb::IconResource);
     void switchRenderingMode(HbRenderingMode newRenderMode);
     void updateRenderingMode(QPaintEngine::Type type);
-    void storeIconEngineInfo( HbIconEngine *iconEngine );
-    void removeIconEngineInfo( HbIconEngine *iconEngine );
-    
-    void storeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer );
-    void removeFrameDrawerInfo( HbFrameDrawerPrivate *frameDrawer );
+    void storeIconEngineInfo(HbIconEngine *iconEngine);
+    void removeIconEngineInfo(HbIconEngine *iconEngine);
+
+    void storeFrameDrawerInfo(HbFrameDrawerPrivate *frameDrawer);
+    void removeFrameDrawerInfo(HbFrameDrawerPrivate *frameDrawer);
 
     void freeGpuIconData();
-    void removeItemInCache( HbIconImpl *iconImpl );
+    void removeItemInCache(HbIconImpl *iconImpl);
 
     void handleForegroundLost();
+
+    static bool isInPrivateDirectory(const QString &filename);
 
 signals:
     void defaultSizeAdjustmentChanged();
 
 private slots:
-    void themeChange( const QStringList &updatedFiles );
+    void themeChange(const QStringList &updatedFiles);
     void destroy();
     void updateLayoutDirection();
 
@@ -165,7 +167,7 @@ private:
     void loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingParams &params);
     QString resolveIconFileName(HbIconLoadingParams &params);
     HbIconImpl *getIconFromServer(HbIconLoadingParams &params);
-    void getMultiIconImplFromServer(QStringList &multiPartIconList,                                                             
+    void getMultiIconImplFromServer(QStringList &multiPartIconList,
                                     QVector<QSizeF>  &sizeList,
                                     Qt::AspectRatioMode aspectRatioMode,
                                     QIcon::Mode mode,
@@ -177,19 +179,19 @@ private:
                                     HbIconLoader::Purpose,
                                     QVector<HbIconImpl *> & iconImplList,
                                     HbRenderingMode renderMode);
-   
+
     void loadSvgIcon(HbIconLoadingParams &params);
     void loadPictureIcon(HbIconLoadingParams &params);
     void loadAnimatedIcon(HbIconLoadingParams &params, const QString &format);
     void loadPixmapIcon(HbIconLoadingParams &params, const QString &format);
 
-    QList< HbFrameDrawerPrivate *> frameDrawerInstanceList;    
+    QList< HbFrameDrawerPrivate *> frameDrawerInstanceList;
     QList< HbIconEngine *> iconEngineList;
     friend class HbApplication;
     friend class HbIconLoaderPrivate;
 
 private:
-    Q_DISABLE_COPY (HbIconLoader)
+    Q_DISABLE_COPY(HbIconLoader)
     HbIconLoaderPrivate *d;
     HbRenderingMode renderMode;
 };

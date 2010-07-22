@@ -44,16 +44,25 @@ public:
     void removeIndicators(const QList<IndicatorClientInfo> &clientInfo);
     int findIndicator(const IndicatorClientInfo &indicator) const;
     void updateIcon();
+    void setStyle();
 
 private:
 
-    QGraphicsItem *handleIcon;
-    HbAction *defaultAction;
-    HbAction *newEventAction;
+    QGraphicsItem *mHandleIcon;
+    HbAction *mDefaultAction;
+    HbAction *mNewEventAction;
+    HbAction *mProgressAction;
 
-    HbDeviceDialog *deviceDialog;
+    HbDeviceDialog *mDeviceDialog;
 
     QList<IndicatorClientInfo> mIndicators;
+
+    bool mProgressAnimationFound;
+    QGraphicsItem *mNewEventIcon;
+    bool mNewEvent;
+    int mStyle;
+    bool mIndicatorMenuOpen;
+    QGraphicsItem *mTouchArea;
 };
 
 #endif // HBINDICATORBUTTON_P_P_H

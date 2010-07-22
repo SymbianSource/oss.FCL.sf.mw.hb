@@ -152,6 +152,19 @@ int HbIndicatorMenuContent::indicatorCount() const
      return indicatorModel.rowCount();
 }
 
+void HbIndicatorMenuContent::handleAboutToShow()
+{
+    for (int i = 0; i < mIndicatorList->model()->rowCount(); ++i) {
+        HbIndicatorInterface *indicator =
+            indicatorFromIndex(indicatorModel.item(i)->index());
+        if (indicator) {
+            if (indicator->refreshData()) {
+                setData(indicator, indicatorModel.item(i)->index());
+            }
+        }
+    }
+}
+
 void HbIndicatorMenuContent::updatePrimitives()
 {
     repolish();
@@ -233,12 +246,12 @@ void HbIndicatorMenuContent::indicatorRemoved(HbIndicatorInterface *indicatorRem
     int index = listIndexFromIndicator(indicatorRemoved);
     if (index >= 0) {
         indicatorModel.removeRow(index);
+        //update indices.
+        for(int i = indicatorRemoved->category()+1; i < IndicatorTypes;++i){
+            mGroupTypeIndeces[i]--;
+        }
+        repolish();
     }
-    //update indices.
-    for(int i = indicatorRemoved->category()+1; i < IndicatorTypes;++i){
-        mGroupTypeIndeces[i]--;
-    }
-    repolish();
 }
 
 //data changed inside indicator.

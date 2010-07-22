@@ -24,11 +24,11 @@
 ****************************************************************************/
 
 #include "hbsysteminfosym_p_p.h"
-#include "hbsysteminfo_p.h"
 #include <qapplication.h>
 #include <qcoreevent.h>
 
 const TUint32 secureId = 0x20022FC5;
+const TUint32 splashGenServerSecureId = 0x2002E68B;
 
 // publish & subscribe 
 const TUid PropertyCategoryUid = {secureId};
@@ -46,6 +46,7 @@ HbSystemInfoPrivate::HbSystemInfoPrivate()
 
 HbSystemInfoPrivate::~HbSystemInfoPrivate()
 {
+    Cancel();
     if (!mWriter) {
         lostForeground();
     }
@@ -61,12 +62,19 @@ void HbSystemInfoPrivate::init(bool writer)
     if (writer) {
         RProcess me;
         if ((me.SecureId().iId != secureId )) {
+            me.Close();
             return;
         }
+        me.Close();
     }
     
     if (writer) {
         mSystemNetworkInfo = new QtMobility::QSystemNetworkInfo();
+        mDeviceSystemInfo.networkMode = mSystemNetworkInfo->currentMode();
+        mDeviceSystemInfo.networkStatus = mSystemNetworkInfo->networkStatus(mDeviceSystemInfo.networkMode);
+        mDeviceSystemInfo.signalStrength = QSystemNetworkInfo::networkSignalStrength(mDeviceSystemInfo.networkMode);
+        connect(mSystemNetworkInfo, SIGNAL(networkStatusChanged(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)),
+                this, SLOT(setNetworkStatus(QSystemNetworkInfo::NetworkMode, QSystemNetworkInfo::NetworkStatus)));
         connect(mSystemNetworkInfo, SIGNAL(networkSignalStrengthChanged(QSystemNetworkInfo::NetworkMode, int)), 
                 this, SLOT(setNetworkSignalStrength(QSystemNetworkInfo::NetworkMode, int)));
         connect(mSystemNetworkInfo, SIGNAL(networkModeChanged(QSystemNetworkInfo::NetworkMode)), 
@@ -97,7 +105,15 @@ void HbSystemInfoPrivate::init(bool writer)
             mPtr.Set(mDataBuffer->Des());
             mInfoProperty.Attach(PropertyCategoryUid, InfoKey);
         }
-        
+
+        // hbsplashgenerator will not have any Qt widget shown (and
+        // thus created) so we cannot rely on foreground-background
+        // notifications. Instead, invoke gainedForeground manually.
+        RProcess me;
+        if (me.SecureId().iId == splashGenServerSecureId) {
+            QMetaObject::invokeMethod(this, "gainedForeground", Qt::QueuedConnection);
+        }
+        me.Close();
     }
 }
 
@@ -141,15 +157,21 @@ void HbSystemInfoPrivate::dataReceived(const DeviceSystemInfo& info)
 {
     Q_Q(HbSystemInfo);
     bool modeChanged = info.networkMode != mDeviceSystemInfo.networkMode;
-    bool signalLevelChanged = info.signalStrength != mDeviceSystemInfo.signalStrength;
+    bool statusChanged = info.networkStatus != mDeviceSystemInfo.networkStatus;
     
     if (modeChanged) {
         mDeviceSystemInfo.networkMode = info.networkMode;
     }
 
-    if (modeChanged && !signalLevelChanged) {        
-        emit q->networkModeChanged((QSystemNetworkInfo::NetworkMode)mDeviceSystemInfo.networkMode);
-    } else {
+    if (statusChanged) {
+        mDeviceSystemInfo.networkStatus = info.networkStatus;  
+    }
+    if (modeChanged || statusChanged) {        
+        emit q->networkModeChanged((QSystemNetworkInfo::NetworkMode)mDeviceSystemInfo.networkMode, 
+                                   (QSystemNetworkInfo::NetworkStatus)mDeviceSystemInfo.networkStatus);
+    } 
+    
+    if (info.signalStrength != mDeviceSystemInfo.signalStrength) {
         mDeviceSystemInfo.signalStrength = info.signalStrength;
         emit q->networkSignalStrengthChanged((QSystemNetworkInfo::NetworkMode)mDeviceSystemInfo.networkMode, 
                                           mDeviceSystemInfo.signalStrength);
@@ -168,6 +190,10 @@ void HbSystemInfoPrivate::dataReceived(const DeviceSystemInfo& info)
 
 void HbSystemInfoPrivate::DoCancel()
 {
+    if (mListening) {
+        mInfoProperty.Cancel();
+        mListening = false;
+    }
 }
 
 void HbSystemInfoPrivate::RunL()
@@ -179,6 +205,27 @@ void HbSystemInfoPrivate::RunL()
     if (result == KErrNone) {
         readDeviceInfo();
     }
+}
+
+void HbSystemInfoPrivate::setNetworkStatus(
+    QSystemNetworkInfo::NetworkMode networkMode, 
+    QSystemNetworkInfo::NetworkStatus networkStatus)
+{
+    bool changed(false);
+    if (networkMode != mDeviceSystemInfo.networkMode) {
+        mDeviceSystemInfo.networkMode = networkMode;
+        changed = true;
+    }
+    
+    if (networkStatus != mDeviceSystemInfo.networkStatus) {
+        mDeviceSystemInfo.networkStatus = networkStatus;
+        changed = true;
+    }
+    
+    if (changed) {
+        writeDeviceInfo();    
+    }
+    
 }
 
 void HbSystemInfoPrivate::setNetworkSignalStrength(
@@ -228,11 +275,15 @@ void HbSystemInfoPrivate::setPowerState(QSystemDeviceInfo::PowerState state)
 
 void HbSystemInfoPrivate::lostForeground()
 {
-    if (mListening) {
+    // Statusbars are rendered in the background by hbsplashgenerator
+    // so cannot stop listening in that case.
+    RProcess me;
+    if (mListening && me.SecureId().iId != splashGenServerSecureId) {
         mInfoProperty.Cancel();
         Cancel();
         mListening = false;
     }
+    me.Close();
 }
 
 void HbSystemInfoPrivate::gainedForeground()
@@ -242,6 +293,11 @@ void HbSystemInfoPrivate::gainedForeground()
         readDeviceInfo();
         mListening = true;
     }
+}
+
+QSystemNetworkInfo::NetworkStatus HbSystemInfoPrivate::networkStatus() const
+{
+    return mDeviceSystemInfo.networkStatus;
 }
 
 int HbSystemInfoPrivate::networkSignalStrength() const

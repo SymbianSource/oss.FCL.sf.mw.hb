@@ -131,34 +131,34 @@ TTouchLogicalFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::
         instantFeedbackSymbian = ETouchFeedbackSensitiveButton;
         break;
     case HbFeedback::BasicItem:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackBasicItem;
         break;
     case HbFeedback::SensitiveItem:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackSensitiveItem;
         break;
     case HbFeedback::BounceEffect:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackBounceEffect;
         break;
     case HbFeedback::PopupOpen:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackPopupOpen;
         break;
     case HbFeedback::PopupClose:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackPopupClose;
         break;
     case HbFeedback::BasicSlider:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackBasicSlider;
         break;
     case HbFeedback::SensitiveSlider:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackSensitiveSlider;
         break;
     case HbFeedback::StopFlick:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackStopFlick;
         break;
     case HbFeedback::Flick:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackFlick;
         break;
     case HbFeedback::Editor:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackEditor;
         break;
     case HbFeedback::TextSelection:
         instantFeedbackSymbian = ETouchFeedbackTextSelection;
@@ -176,37 +176,41 @@ TTouchLogicalFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::
         instantFeedbackSymbian = ETouchFeedbackCheckbox;
         break;
     case HbFeedback::MultipleCheckbox:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackMultipleCheckbox;
         break;
     case HbFeedback::SensitiveKeypad:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackSensitiveKeypad;
         break;
     case HbFeedback::BasicKeypad:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackBasicKeypad;
         break;
     case HbFeedback::MultitouchActivate:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackMultitouchActivate;
         break;
     case HbFeedback::RotateStep:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
-        break;
-    case HbFeedback::ItemDrop:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
-        break;
-    case HbFeedback::ItemMoveOver:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
-        break;
-    case HbFeedback::ItemPick:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackRotateStep;
         break;
     case HbFeedback::ItemScroll:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+        instantFeedbackSymbian = ETouchFeedbackItemScroll;
         break;
     case HbFeedback::PopUp:
         instantFeedbackSymbian = ETouchFeedbackPopUp;
         break;
+    case HbFeedback::ItemDrop:
+        instantFeedbackSymbian = ETouchFeedbackItemDrop;
+        break;
+    case HbFeedback::ItemMoveOver:
+        instantFeedbackSymbian = ETouchFeedbackItemMoveOver;
+        break;
+    case HbFeedback::ItemPick:
+        instantFeedbackSymbian = ETouchFeedbackItemPick;
+        break;
     case HbFeedback::LongPress:
-        instantFeedbackSymbian = ETouchFeedbackBasic; // Effects changing in 10.1 are mapped to basic.
+#ifdef HB_TOUCHFEEDBACK_TYPE_IS_LONGPRESS
+        instantFeedbackSymbian = ETouchFeedbackLongPress;
+#else
+        instantFeedbackSymbian = ETouchFeedbackLongTap;
+#endif
         break;
     default:
         break;
@@ -247,15 +251,14 @@ TTouchContinuousFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedbac
     case HbFeedback::ContinuousSlider:
         continuousFeedbackSymbian = ETouchContinuousSlider;
         break;
+    case HbFeedback::ContinuousPinch:
+        continuousFeedbackSymbian = ETouchContinuousPinch;
+        break;
     case HbFeedback::ContinuousInput:
         continuousFeedbackSymbian = ETouchContinuousInput;
         break;
-    // Effects coming in 10.1 are mapped to smooth temporarily.
     case HbFeedback::ContinuousPopup:
-        continuousFeedbackSymbian = ETouchContinuousSmooth;
-        break;
-    case HbFeedback::ContinuousPinch:
-        continuousFeedbackSymbian = ETouchContinuousSmooth;
+        continuousFeedbackSymbian = ETouchContinuousPopup;
         break;
     default:
         break;

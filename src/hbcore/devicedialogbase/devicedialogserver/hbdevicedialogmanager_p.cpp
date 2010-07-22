@@ -39,7 +39,7 @@
 #include <hbinstance.h>
 #include <hbpopup.h>
 #include <hbgraphicsscene.h>
-
+#include <hbcorepskeys_r.h>
 #if defined(Q_OS_SYMBIAN)
 #include <coemain.h>
 #include <coecntrl.h>
@@ -48,7 +48,7 @@
 #include "hbindicatorwin32_p.h"
 #endif // Q_OS_SYMBIAN
 
-const char* indicatorMenu = "com.nokia.hb.indicatormenu/1.0"; 
+const char* indicatorMenu = "com.nokia.hb.indicatormenu/1.0";
 
 //local symbian helper functions
 #if defined(Q_OS_SYMBIAN)
@@ -84,17 +84,17 @@ bool RegionUpdateFilter::eventFilter(QObject* obj, QEvent *event)
 	{
 	if (event->type() ==  QEvent::QEvent::GraphicsSceneResize) {
 		HbPopup *popup = qobject_cast<HbPopup*>(obj);
-		if (popup) {			
+		if (popup) {
 			QRectF rect = popup->rect();
 			rect.moveTo(popup->pos());
 			HbDeviceDialogsContainer::Dialog & dialog = mDeviceDialogManger->mDialogs.find(popup);
 			mDeviceDialogManger->addRegionRect(dialog.id(), rect);
 		}
-	}	
+	}
 	return false;
 	}
 #endif
-	
+
 /*!
     \internal
     Constructor.
@@ -123,13 +123,22 @@ HbDeviceDialogManagerPrivate::HbDeviceDialogManagerPrivate(HbDeviceDialogManager
             this, SLOT(indicatorRemoved(const IndicatorClientInfo)));
     connect(mIndicatorPluginManager, SIGNAL( indicatorUpdated(const IndicatorClientInfo) ),
             this, SLOT(indicatorUpdated(const IndicatorClientInfo)));
-    connect(mIndicatorPluginManager, SIGNAL(indicatorUserActivated(QVariantMap)), 
+    connect(mIndicatorPluginManager, SIGNAL(indicatorUserActivated(QVariantMap)),
     		q, SIGNAL(indicatorUserActivated(QVariantMap)));
     // Server publishes it's status. Applications use it to delay showing of notification
     // dialogs when server is showing.
     mServerStatus.setStatus(HbDeviceDialogServerStatus::NoFlags);
     qApp->installEventFilter(this);
     init();
+#if defined(Q_OS_SYMBIAN)	
+    _LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
+    _LIT_SECURITY_POLICY_S0(KWrPolicy, KHbPsForegroundAppOrientationCategoryUid.iUid); // pass device dialog server    
+    
+    int error = mProperty.Define(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey,
+            RProperty::EInt, KRdPolicy, KWrPolicy);
+    if(error == KErrNone)
+        mProperty.Attach(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey);
+#endif        
     TRACE_EXIT
 }
 
@@ -144,6 +153,7 @@ HbDeviceDialogManagerPrivate::~HbDeviceDialogManagerPrivate()
 #if defined(Q_OS_SYMBIAN)
     mScene->removeItem(&mMousePressCatcher);
     mWindowRegion.Close();
+    mProperty.Close();
 #endif
     delete mIndicatorPluginManager;
     TRACE_EXIT
@@ -152,19 +162,22 @@ HbDeviceDialogManagerPrivate::~HbDeviceDialogManagerPrivate()
 void HbDeviceDialogManagerPrivate::init()
 {
     TRACE_ENTRY
-    // Performance optimization for indicator menu.  
+    // Performance optimization for indicator menu.
     bool recycled(true);
     int error(0);
 
-    HbDeviceDialogInterface *deviceDialogIf =
-        mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), recycled, error);
-    if (deviceDialogIf) {
-        HbPopup *popup = deviceDialogIf->deviceDialogWidget();
 #if defined(Q_OS_SYMBIAN)
-        mIndicatorPluginManager->connectTo(popup);
-#else
-        HbIndicatorPrivate::pluginManager()->connectTo(popup);
-#endif
+    // Speed-up search by specifying a file name
+    QString pluginBaseFileName("HbIndicatorMenuPlugin");
+#else // Q_OS_SYMBIAN
+    QString pluginBaseFileName;
+#endif // Q_OS_SYMBIAN
+
+    HbDeviceDialogInterface *deviceDialogIf =
+        mPluginManager.createWidget(QString(indicatorMenu), QVariantMap(), pluginBaseFileName,
+            QString(), recycled, error);
+    if (deviceDialogIf) {
+        connectIndicatorStatus(deviceDialogIf);
         mPluginManager.freeWidget(deviceDialogIf);
     }
     TRACE_EXIT
@@ -196,6 +209,7 @@ int HbDeviceDialogManagerPrivate::showDeviceDialog(
     int id = 0;
 
     HbDeviceDialogPlugin::DeviceDialogInfo info;
+    memset(&info, 0, sizeof(info));
     HbPopup *popup = 0;
     HbDeviceDialogInterface *deviceDialogIf = createDeviceDialog(
         parameters, info, popup);
@@ -210,6 +224,10 @@ int HbDeviceDialogManagerPrivate::showDeviceDialog(
 
     HbDeviceDialogsContainer::Dialog &dialog = mDialogs.add(deviceDialogIf, info);
     dialog.setVariable(HbDeviceDialogsContainer::Dialog::ClientTag, parameters.mClientTag);
+    if (info.flags & HbDeviceDialogPlugin::SingleInstance) {
+        // Only single instance of the dialog should be shown, save dialog type for later comparison
+        dialog.setVariable(HbDeviceDialogsContainer::Dialog::DialogType, parameters.mType);
+    }
     id = dialog.id();
 
     if (info.group == HbDeviceDialogPlugin::DeviceNotificationDialogGroup) {
@@ -266,13 +284,24 @@ int HbDeviceDialogManagerPrivate::closeDeviceDialog(int id, bool byClient)
     return ret;
 }
 
+// Publish current orientation to PS-key
+int HbDeviceDialogManagerPrivate::publishOrientation(int orientation)
+{
+#if defined(Q_OS_SYMBIAN)
+   	int ret = mProperty.Set(orientation); 
+    return ret;
+#else
+    Q_UNUSED(orientation)
+    return 0;    
+#endif    
+}
+
 // Client (session) is closing
 void HbDeviceDialogManagerPrivate::deviceDialogClientClosing(quintptr clientTag)
 {
     // Mark device dialogs launched by the client as having client (session) closed.
     // Housekeeper closes these after a timeout. Dialogs without a client are allowed but
     // they need to close within a timeout.
-
     markNoClient(clientTag);
 }
 
@@ -320,8 +349,9 @@ QList<IndicatorClientInfo> HbDeviceDialogManagerPrivate::indicatorClientInfoList
 void HbDeviceDialogManagerPrivate::moveToForeground(bool foreground)
 {
     TRACE_ENTRY_ARGS(foreground)
+    
     if (foreground) {
-        if(!mMainWindow->isVisible()) {
+        if(!mMainWindow->isVisible() || !mMainWindow->isActiveWindow()) {
             mMainWindow->showFullScreen();
             doMoveToForeground(foreground, ECoeWinPriorityAlwaysAtFront);
         }
@@ -398,7 +428,7 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
     const HbDeviceDialogsContainer::Dialog::Flags closeCalled(
         HbDeviceDialogsContainer::Dialog::CloseCalled);
     const HbDeviceDialogsContainer::Dialog::Flags noFlags(0);
-
+    
     // Check if any notification dialogs are showing
     const HbDeviceDialogsContainer::Dialog start;
     bool showingNotification = mDialogs.next(start, notificationGroup|showing,
@@ -409,6 +439,18 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
         securityGroup|showing).isValid();
     HbDeviceDialogsContainer::Dialog::Flags newDialogs(0);
 
+#if defined(Q_OS_SYMBIAN)
+    int val = 0;
+    int error = mProperty.Get(KHbPsForegroundAppOrientationCategoryUid, KHbPsForegroundAppOrientationKey, val);
+    
+    if (val & KHbFixedOrientationMask) {
+        Qt::Orientation currentOrientation = (Qt::Orientation) (val & KHbOrientationMask);
+        if (currentOrientation == Qt::Vertical || currentOrientation == Qt::Horizontal) {
+            mMainWindow->setOrientation(currentOrientation, false);
+        }
+    }
+#endif
+    
     // Loop over not showing dialogs
     HbDeviceDialogsContainer::Dialog *current = &mDialogs.next(start, noFlags,
         showing | closeCalled);
@@ -422,7 +464,7 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
                 newDialogs |= current->flags();
 #if defined(Q_OS_SYMBIAN)
                 popup->installSceneEventFilter(&mMousePressCatcher);
-                popup->installEventFilter(&mRegionUpdateFilter);               
+                popup->installEventFilter(&mRegionUpdateFilter);
 #endif //Q_OS_SYMBIAN
             }
         } else { // generic dialog
@@ -449,11 +491,11 @@ bool HbDeviceDialogManagerPrivate::showDialogs()
     if (newDialogs & lightsMask) {
         refreshDisplayLightsTime();
     }
-    
+
     const HbDeviceDialogsContainer::Dialog &nonNotificationDialog =
         mDialogs.next(start, showing, notificationGroup|showing);
     bool dialogsShowing = showingNotification || nonNotificationDialog.isValid();
-    
+
     return dialogsShowing;
 }
 
@@ -466,7 +508,7 @@ void HbDeviceDialogManagerPrivate::setupWindowRegion()
         HbDeviceDialogsContainer::Dialog::NotificationGroup);
     const HbDeviceDialogsContainer::Dialog::Flags showing(
         HbDeviceDialogsContainer::Dialog::Showing);
-    
+
     const HbDeviceDialogsContainer::Dialog start;
     bool showingNotification = mDialogs.next(start, notificationGroup|showing,
         notificationGroup|showing).isValid();
@@ -501,22 +543,23 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
 {
     parameters.mError = HbDeviceDialogNoError;
 
-    if (!mPluginManager.loadPlugin(parameters.mType)) {
+    QString pluginFilePath;
+    if (!mPluginManager.loadPlugin(parameters.mType, QString(), &pluginFilePath)) {
         parameters.mError = HbDeviceDialogNotFoundError;
         return 0;
     }
 
-    const HbDeviceDialogPlugin &plugin = mPluginManager.plugin(parameters.mType);
+    const HbDeviceDialogPlugin &plugin = mPluginManager.plugin(pluginFilePath);
     if (!plugin.deviceDialogInfo(parameters.mType, parameters.mData, &deviceDialogInfo)) {
         // Ensure plugin returns valid error code
         parameters.mError = checkpluginerror(plugin.error());
-        mPluginManager.unloadPlugin(parameters.mType);
+        mPluginManager.unloadPlugin(pluginFilePath);
         return 0;
     }
 
     if (!checkDialogInfo(deviceDialogInfo)) {
         parameters.mError = HbDeviceDialogGeneralError;
-        mPluginManager.unloadPlugin(parameters.mType);
+        mPluginManager.unloadPlugin(pluginFilePath);
         return 0;
     }
 
@@ -526,6 +569,16 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
         addSecurityCredentials(parameters, credentials);
         if (!plugin.accessAllowed(parameters.mType, parameters.mData, credentials)) {
             parameters.mError = HbDeviceDialogAccessDeniedError;
+            mPluginManager.unloadPlugin(pluginFilePath);
+            return 0;
+        }
+    }
+
+    // If dialog is single instance, launch it only if it's not shown already
+    if (deviceDialogInfo.flags & HbDeviceDialogPlugin::SingleInstance) {
+        if (isShowing(parameters.mType)) {
+            parameters.mError = HbDeviceDialogAlreadyExists;
+            mPluginManager.unloadPlugin(pluginFilePath);
             return 0;
         }
     }
@@ -534,11 +587,13 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
     // first time it's shown.
     bool recycled = (deviceDialogInfo.group == HbDeviceDialogPlugin::IndicatorGroup);
     HbDeviceDialogInterface *deviceDialogIf =
-        mPluginManager.createWidget(parameters.mType, parameters.mData, recycled,
-            parameters.mError);
+        mPluginManager.createWidget(parameters.mType, parameters.mData, QString(), pluginFilePath,
+        recycled, parameters.mError);
+
     // Decrease plugin reference count increased by loadPlugin() above. Unload takes place when
     // device dialog widget is deleted.
-    mPluginManager.unloadPlugin(parameters.mType);
+    mPluginManager.unloadPlugin(pluginFilePath);
+
     if (!deviceDialogIf){
         parameters.mError = checkpluginerror(parameters.mError);
         return deviceDialogIf;
@@ -570,15 +625,11 @@ HbDeviceDialogInterface *HbDeviceDialogManagerPrivate::createDeviceDialog(
     connect(sender, SIGNAL(deviceDialogData(QVariantMap)),
         SLOT(deviceDialogUpdate(const QVariantMap)));
 
-    if (!recycled && deviceDialogInfo.group == HbDeviceDialogPlugin::IndicatorGroup) {
+    if (!recycled && (deviceDialogInfo.flags & HbDeviceDialogPlugin::ReceiveIndicatorStatus)) {
         // Connect plugin manager signals to indicator menu slots, so that
         // it will get indicator updates. If the widget is reused, signals
         // are already connected.
-#if defined(Q_OS_SYMBIAN)
-        mIndicatorPluginManager->connectTo(popup);
-#else
-        HbIndicatorPrivate::pluginManager()->connectTo(popup);
-#endif
+        connectIndicatorStatus(deviceDialogIf);
     }
 
     // Set popup priority
@@ -702,18 +753,23 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
             }
         }
         emit q->deviceDialogClosed(id, closeReason);
+        disconnectDialogSignals(current.widget());
         mDialogs.remove(current);
         removeRegionRect(id);
     }
-
     showDialogs();
     setupWindowRegion();
     updateStatus();
+    
+    //make sure there is no fixed orientation
+    if (mDialogs.isEmpty()) {       
+        mMainWindow->unsetOrientation(false);
+    }
 
     if (!securityDialog) {
         return;
     }
-
+    
     // security or critical level active
     const HbDeviceDialogsContainer::Dialog begin;
     const HbDeviceDialogsContainer::Dialog::Flags securityGroup(
@@ -743,13 +799,12 @@ void HbDeviceDialogManagerPrivate::deleteDeviceDialog(int id)
         moreDialogs = mDialogs.next(dialog, criticalGroup|showing,
             criticalGroup|showing).isValid();
     }
-
+    
     if (showingSecurity && !moreDialogs) {
 #if defined(Q_OS_SYMBIAN)
-        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront-1);
-        mMainWindow->hide();        
-#endif        
-    }
+        doMoveToForeground(false, ECoeWinPriorityAlwaysAtFront);        
+#endif
+    }    
     TRACE_EXIT
 }
 
@@ -762,7 +817,7 @@ bool HbDeviceDialogManagerPrivate::eventFilter(QObject *obj, QEvent *event)
     if (event->type() == QEvent::ApplicationActivate) {
 #if defined(Q_OS_SYMBIAN)    
         RWindowGroup &rootWindowGroup = CCoeEnv::Static()->RootWin();
-        if (rootWindowGroup.OrdinalPriority() == ECoeWinPriorityAlwaysAtFront-1) {
+        if (rootWindowGroup.OrdinalPriority() == ECoeWinPriorityAlwaysAtFront) {
             moveToForeground(true);
         }
 #endif // Q_OS_SYMBIAN         
@@ -884,19 +939,21 @@ bool HbDeviceDialogManagerPrivate::doHousekeeping()
 
     // Loop over dialogs having their client (session) closed and increase their housekeeping counters
     HbDeviceDialogsContainer::Dialog *current = &mDialogs.next(start, noClient, noClient);
+    const HbDeviceDialogsContainer::Dialog::Variable noClientCount =
+        HbDeviceDialogsContainer::Dialog::NoClientHousekeeping;
     while(current->isValid() && (current->flags() & showing)) {
-        current->setVariable(HbDeviceDialogsContainer::Dialog::NoClientHousekeeping,
-            current->variable(HbDeviceDialogsContainer::Dialog::NoClientHousekeeping) + 1);
+        current->setVariable(noClientCount, current->intVariable(noClientCount) + 1);
         // Find next one
         current = &mDialogs.next(*current, noClient, noClient);
     }
 
     // Loop over dialogs that have been closed and increase their housekeeping counters
     current = &mDialogs.next(start, closeCalled, closeCalled);
+    const HbDeviceDialogsContainer::Dialog::Variable closedCount =
+        HbDeviceDialogsContainer::Dialog::CloseHousekeeping;
     while(current->isValid()) {
-        current->setVariable(HbDeviceDialogsContainer::Dialog::CloseHousekeeping,
-            current->variable(HbDeviceDialogsContainer::Dialog::CloseHousekeeping) + 1);
-        current->setVariable(HbDeviceDialogsContainer::Dialog::NoClientHousekeeping, 0);
+        current->setVariable(closedCount, current->intVariable(closedCount) + 1);
+        current->setVariable(noClientCount, 0);
         // Find next one
         current = &mDialogs.next(*current, closeCalled, closeCalled);
     }
@@ -904,9 +961,9 @@ bool HbDeviceDialogManagerPrivate::doHousekeeping()
     // Close dialogs without a client that have passed time limit
     for(;;) {
         HbDeviceDialogsContainer::Dialog &dialog = mDialogs.next(start,
-            HbDeviceDialogsContainer::Dialog::NoClientHousekeeping, MaxSessionlessDialogLife);
+            noClientCount, MaxSessionlessDialogLife);
         if (dialog.isValid()) {
-            dialog.setVariable(HbDeviceDialogsContainer::Dialog::NoClientHousekeeping, 0);
+            dialog.setVariable(noClientCount, 0);
             closeDeviceDialog(dialog.id(), false);
         } else {
             break;
@@ -916,17 +973,40 @@ bool HbDeviceDialogManagerPrivate::doHousekeeping()
     // Delete closed dialogs that haven't given deviceDialogClosed() signal within a time limit
     for(;;) {
         HbDeviceDialogsContainer::Dialog &dialog = mDialogs.next(start,
-            HbDeviceDialogsContainer::Dialog::CloseHousekeeping, MaxDialogClosingPeriod);
+            closedCount, MaxDialogClosingPeriod);
         if (dialog.isValid()) {
             deleteDeviceDialog(dialog.id());
         } else {
             break;
         }
     }
-
+    
     // Return true if housekeeping needs to continue
     return mDialogs.next(start, closeCalled, closeCalled).isValid() ||
         mDialogs.next(start, noClient, noClient).isValid();
+}
+
+// Check if dialog with a type is showing (not closed yet)
+bool HbDeviceDialogManagerPrivate::isShowing(const QString &type)
+{
+    const HbDeviceDialogsContainer::Dialog start;
+
+    const HbDeviceDialogsContainer::Dialog::Flags closeCalled(
+            HbDeviceDialogsContainer::Dialog::CloseCalled);
+    const HbDeviceDialogsContainer::Dialog::Flags showing(
+            HbDeviceDialogsContainer::Dialog::Showing);
+
+    const HbDeviceDialogsContainer::Dialog::Variable dialogType =
+        HbDeviceDialogsContainer::Dialog::DialogType;
+    HbDeviceDialogsContainer::Dialog *current = &mDialogs.next(start, dialogType, type);
+    while(current->isValid()){
+        if ((current->flags() & (closeCalled|showing)) == showing) {
+            return true;
+        }
+        // Find next one
+        current = &mDialogs.next(*current, dialogType, type);
+    }
+    return false;
 }
 
 // Handle timer event
@@ -955,4 +1035,46 @@ void HbDeviceDialogManagerPrivate::markNoClient(quintptr clientTag)
         current = &mDialogs.next(*current, HbDeviceDialogsContainer::Dialog::ClientTag,
             clientTag);
     }
+}
+
+// Connect indicators status (activate/deactivate) signals to device dialog (indicator menu
+// and screen saver)
+void HbDeviceDialogManagerPrivate::connectIndicatorStatus(HbDeviceDialogInterface *dialogInterface)
+{
+    HbIndicatorPluginManager *indicatorPluginManager;
+#if defined(Q_OS_SYMBIAN)
+    indicatorPluginManager = mIndicatorPluginManager;
+#else
+    indicatorPluginManager = HbIndicatorPrivate::pluginManager();
+#endif
+
+    QObject *receiver = dialogSignaler(dialogInterface);
+    indicatorPluginManager->disconnect(receiver);
+
+    // Connect indicator plugin manager signals to device dialog slots for it to get
+    // indicator updates
+    receiver->connect(indicatorPluginManager, SIGNAL(indicatorActivated(HbIndicatorInterface*)),
+        SLOT(indicatorActivated(HbIndicatorInterface*)));
+    receiver->connect(indicatorPluginManager, SIGNAL(indicatorRemoved(HbIndicatorInterface*)),
+        SLOT(indicatorDeactivated(HbIndicatorInterface*)));
+
+    indicatorPluginManager->signalActiveIndicators(receiver);
+}
+
+// Disconnect device dialog signals
+void HbDeviceDialogManagerPrivate::disconnectDialogSignals(HbDeviceDialogInterface *dialogInterface)
+{
+    dialogSignaler(dialogInterface)->disconnect(this); // disconnect signals
+}
+
+// Return device dialog signals source/target
+QObject *HbDeviceDialogManagerPrivate::dialogSignaler(HbDeviceDialogInterface *dialogInterface)
+{
+    // Plugin can specify signal source/target by signalSender() or allow default which is device
+    // dialog widget
+    QObject *signalSourceAndTarget = dialogInterface->signalSender();
+    if (!signalSourceAndTarget) {
+        signalSourceAndTarget = dialogInterface->deviceDialogWidget();
+    }
+    return signalSourceAndTarget;
 }

@@ -1,15 +1,9 @@
-<?xml version="1.0" ?>
-<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1 Tiny//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-
+<path d="M13,26c-0.561,0-1.108-0.236-1.496-0.672l-8-9c-0.673-0.758-0.673-1.898,0-2.656l8-9C11.893,4.236,12.44,4,13,4  c0.238,0,0.479,0.043,0.71,0.131C14.487,4.426,15,5.17,15,6v18c0,0.83-0.513,1.574-1.289,1.869C13.479,25.957,13.239,26,13,26L13,26  z"/>
+<path d="M25,26c-0.561,0-1.107-0.236-1.495-0.672l-8-9c-0.673-0.758-0.673-1.898,0-2.656l8-9C23.893,4.236,24.439,4,25,4  c0.238,0,0.479,0.043,0.711,0.131C26.486,4.426,27,5.17,27,6v18c0,0.83-0.514,1.574-1.289,1.869C25.479,25.957,25.238,26,25,26  L25,26z"/>
 <g fill-opacity="0.5" stroke-opacity="0.5">
-
 <rect fill="none" height="30" width="30"/>
-
 </g>
-
-<polygon points="14,15,25,26,25,4"/>
-
-<polygon points="3,15,14,26,14,15,14,4"/>
-
 </svg>

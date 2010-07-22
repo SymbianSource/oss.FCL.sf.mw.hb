@@ -37,12 +37,17 @@ class HbInputDialogContentWidget : public HbWidget
 {
     Q_OBJECT
 public:
-    HbInputDialogContentWidget(HbInputDialogPrivate* priv,QGraphicsItem* parent =0);
+    explicit HbInputDialogContentWidget(HbInputDialogPrivate* priv,QGraphicsItem* parent =0);
 
     enum { Type = HbPrivate::ItemType_HbInputDialogContentWidget };
     int type() const { return Type; }
 
     void setAdditionalRowVisible(bool visible);
+public slots:
+    void emitTextChange(const QString &text);
+    
+signals:
+    void textChanged(const QString &text);
 
 public:
     HbInputDialogPrivate* d;

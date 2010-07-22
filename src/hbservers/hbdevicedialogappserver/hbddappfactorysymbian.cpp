@@ -23,11 +23,13 @@
 **
 ****************************************************************************/
 
-#include "hbddappfactorysymbian.h"
+#include "hbddappfactorysymbian_p.h"
 
+#include <QApplication>
 #include <qs60mainapplication.h>
 #include <qs60maindocument.h>
 #include <qs60mainappui.h>
+#include <QSymbianEvent>
 
 // In order to override CCoeAppUi::FrameworkCallsRendezvous() Application/Document/AppUi needs to be
 // derived from.
@@ -50,10 +52,33 @@ class DeviceDialogMainApplication : public QS60MainApplication
 {
 protected:
     CApaDocument *CreateDocumentL()
-      {return new (ELeave) DeviceDialogMainDocument(*this);}
+        {return new (ELeave) DeviceDialogMainDocument(*this);}
 };
 
 CApaApplication *deviceDialogAppFactory()
 {
     return new DeviceDialogMainApplication;
+}
+
+HbDeviceDialogServerApp::HbDeviceDialogServerApp(QApplication::QS60MainApplicationFactory factory,
+    int &argc, char *argv[], Hb::ApplicationFlags flags) :
+    HbApplication(factory, argc, argv, flags)
+{
+}
+
+// Event filter to block exit
+bool HbDeviceDialogServerApp::symbianEventFilter(const QSymbianEvent *event)
+{
+    if (event->type() == QSymbianEvent::CommandEvent) {
+        int command = event->command();
+        if (command == EAknSoftkeyExit || command == EEikCmdExit) {
+            return true; // block exit commands
+        }
+    }
+    return false;
+}
+
+// Block application quit() slot
+void HbDeviceDialogServerApp::quit()
+{
 }

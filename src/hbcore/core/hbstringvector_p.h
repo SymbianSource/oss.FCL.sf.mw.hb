@@ -34,7 +34,7 @@
 class HB_CORE_PRIVATE_EXPORT HbStringVector : public HbVector<HbString>
 {
 public:
-    HbStringVector( HbMemoryManager::MemoryType memoryType ): HbVector<HbString>( memoryType )
+    HbStringVector( HbMemoryManager::MemoryType memoryType ): HbVector<HbString>(memoryType)
     {
     }
 
@@ -46,6 +46,7 @@ public:
             if ( QString(*iter).compare(str, cs) == 0 ) {
                 return true;
             }
+            iter++;
         }
         return false;
     }
@@ -64,8 +65,7 @@ public:
                 }
                 ++index;
             }
-        }
-        else{
+        } else {
             return true;
         }
         return ( index != this->size() );

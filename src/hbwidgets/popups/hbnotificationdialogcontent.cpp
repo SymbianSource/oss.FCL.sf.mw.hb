@@ -29,14 +29,17 @@
 #include "hbnotificationdialogcontent_p.h"
 
 HbNotificationDialogContent::HbNotificationDialogContent(QGraphicsWidget *parent) :
-        HbWidget(parent), mTitleWrapping(Hb::TextNoWrap),
+    HbWidget(parent), mTitleTextWrapping(Hb::TextNoWrap),
     mIsTouchActivating(false), mTextItem(0), mTitleItem(0), mIconItem(0)
 {
 }
 
 void HbNotificationDialogContent::setIcon(const HbIcon &icon)
 {
-    if(!mIconItem) {
+    delete mIconItem;
+    mIconItem = 0;
+
+    if (!icon.isNull()) {    
         mIconItem = style()->createPrimitive(
                 HbStyle::P_NotificationDialog_icon, this);
         Q_CHECK_PTR(mIconItem);
@@ -50,7 +53,7 @@ void HbNotificationDialogContent::setIcon(const HbIcon &icon)
 
 void HbNotificationDialogContent::setText(const QString &text)
 {
-    if(!mTextItem) {
+    if (!mTextItem) {
         mTextItem = style()->createPrimitive(
                 HbStyle::P_NotificationDialog_text, this);
         Q_CHECK_PTR(mTextItem);
@@ -64,7 +67,7 @@ void HbNotificationDialogContent::setText(const QString &text)
 
 void HbNotificationDialogContent::setTitle(const QString &title)
 {
-    if(!mTitleItem) {
+    if (!mTitleItem) {
         mTitleItem = style()->createPrimitive(
                 HbStyle::P_NotificationDialog_title, this);
         Q_CHECK_PTR(mTitleItem);
@@ -79,8 +82,8 @@ void HbNotificationDialogContent::setTitle(const QString &title)
 
 void HbNotificationDialogContent::setTitleTextWrapping(Hb::TextWrapping wrapping)
 {
-    if (mTitleWrapping != wrapping) {
-        mTitleWrapping = wrapping;
+    if (mTitleTextWrapping != wrapping) {
+        mTitleTextWrapping = wrapping;
         updatePrimitives();
         if (isVisible()) {
             polishEvent();
@@ -90,7 +93,7 @@ void HbNotificationDialogContent::setTitleTextWrapping(Hb::TextWrapping wrapping
 
 Hb::TextWrapping HbNotificationDialogContent::titleTextWrapping() const
 {
-    return mTitleWrapping;
+    return mTitleTextWrapping;
 }
 
 void HbNotificationDialogContent::enableTouchActivation(bool enabled)
@@ -133,7 +136,7 @@ void HbNotificationDialogContent::polish( HbStyleParameters& params )
     setProperty("icon", iconSet);
     setProperty("textFields", textFields);
     setProperty("link", option.isLink);
-    setProperty("titleWrapping", option.titleWrapping);
+    setProperty("titleWrapping", (option.titleTextWrapping != Hb::TextNoWrap));
     HbWidget::polish(params);
 }
 
@@ -143,17 +146,14 @@ void HbNotificationDialogContent::initStyleOption(HbStyleOptionNotificationDialo
     option->title = mTitle;
     option->text = mText;
     option->icon = mIcon;
-    option->textWrapping = Hb::TextNoWrap;
-    option->titleWrapping = mTitleWrapping;
-    option->wrappingText = Hb::TextNoWrap;
-    option->wrappingTitle = mTitleWrapping;
+    option->textTextWrapping = Hb::TextNoWrap;
+    option->titleTextWrapping = mTitleTextWrapping;
     option->isLink = mIsTouchActivating;
 }
 
-QSizeF HbNotificationDialogContent::sizeHint(
-        Qt::SizeHint which, const QSizeF & constraint) const
+QSizeF HbNotificationDialogContent::sizeHint(Qt::SizeHint which, const QSizeF & constraint) const
 {
-    switch(which) {
+    switch (which) {
     case Qt::PreferredSize: {
         QSizeF preferred = HbWidget::sizeHint(which, constraint);
         HbDeviceProfile dp(HbDeviceProfile::profile(this));
@@ -176,11 +176,11 @@ void HbNotificationDialogContent::updatePrimitives()
     HbStyleOptionNotificationDialog option;
     initStyleOption(&option);
 
-    if(mTextItem) {
+    if (mTextItem) {
         style()->updatePrimitive(mTextItem,
             HbStyle::P_NotificationDialog_text, &option);
     }
-    if(mTitleItem) {
+    if (mTitleItem) {
         style()->updatePrimitive(mTitleItem,
             HbStyle::P_NotificationDialog_title, &option);
     }
@@ -200,11 +200,9 @@ QGraphicsItem *HbNotificationDialogContent::primitive(const QString &itemName) c
     } else {
         if (itemName == "text") {
             return mTextItem;
-        }
-        else if (itemName == "title") {
+        } else if (itemName == "title") {
             return mTitleItem;
-        }
-        else if (itemName == "icon") {
+        } else if (itemName == "icon") {
             return mIconItem;
         } else {
             return 0;

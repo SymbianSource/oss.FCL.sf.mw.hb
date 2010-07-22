@@ -37,57 +37,57 @@ HbIniParser::HbIniParser()
 HbIniParser::~HbIniParser()
 {
 }
-    
+
 /*
     The main function that populates the map data.
     currently the data is case sensitive and all api behave that way.
 */
 bool HbIniParser::read(QIODevice *file)
 {
-    if(!file->isOpen())
+    if (!file->isOpen()) {
         return false;
-    
+    }
+
     QByteArray line;
-    
+
     HbIniGroup groupData;
     QString groupName;
-    
-    while(!file->atEnd()) {        
-        line=file->readLine().trimmed();
-         if (line.isEmpty() || line.at(0) == '#') {
-            continue; 
+
+    while (!file->atEnd()) {
+        line = file->readLine().trimmed();
+        if (line.isEmpty() || line.at(0) == '#') {
+            continue;
         }
-        
+
         if (line.at(0) == '[') { // found a group
             //add old group data
-            if(!groupName.isEmpty()) {
-                mData.insert(groupName,groupData);
+            if (!groupName.isEmpty()) {
+                mData.insert(groupName, groupData);
                 groupData.clear();
             }
-                
-            groupName = line.mid (1, line.indexOf(']') - 1);
+
+            groupName = line.mid(1, line.indexOf(']') - 1);
             if (groupName.isEmpty()) {
                 return false; //error in file
-            }         
-        }
-        else {
-            QByteArray key,value;
+            }
+        } else {
+            QByteArray key, value;
             int equalPosition = line.indexOf('=');
             if (equalPosition > 0) {
-                key = line.left (equalPosition).trimmed();
-                line.remove(0,equalPosition+1);
+                key = line.left(equalPosition).trimmed();
+                line.remove(0, equalPosition + 1);
                 value = line.trimmed();
-                groupData.insert(key,value);
+                groupData.insert(key, value);
             }
-        }                
+        }
     }
-    if(!groupName.isEmpty()) {
-        mData.insert(groupName,groupData);
+    if (!groupName.isEmpty()) {
+        mData.insert(groupName, groupData);
         groupData.clear();
     }
     return true;
 }
-    
+
 bool HbIniParser::setCurrentGroup(const QString &name)
 {
     if (mData.contains(name)) {
@@ -101,10 +101,10 @@ QString HbIniParser::currentGroup()
 {
     return mCurrentGroup;
 }
-    
-const QString HbIniParser::value(const QString &groupName,const QString &key) const
+
+const QString HbIniParser::value(const QString &groupName, const QString &key) const
 {
-    if(!mData.contains(groupName)){
+    if (!mData.contains(groupName)) {
         return QString();
     }
     return mData.value(groupName).value(key);
@@ -112,11 +112,11 @@ const QString HbIniParser::value(const QString &groupName,const QString &key) co
 
 const QString HbIniParser::value(const QString &key) const
 {
-    if(mCurrentGroup.isEmpty()) {
+    if (mCurrentGroup.isEmpty()) {
         return QString();
     }
     return mData.value(mCurrentGroup).value(key);
-}   
+}
 
 QStringList HbIniParser::groups() const
 {

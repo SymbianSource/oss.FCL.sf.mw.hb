@@ -37,7 +37,6 @@
 //in 4.6.
 #define HB_CHECK_PTR(ptr) if(!ptr) throw std::bad_alloc();
 
-
 class HB_CORE_PRIVATE_EXPORT HbMemoryManager
 {
 public:

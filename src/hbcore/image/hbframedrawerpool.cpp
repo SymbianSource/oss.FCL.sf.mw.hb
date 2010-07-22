@@ -44,8 +44,7 @@
 
   \internal
  */
-struct HbFrameDrawerPoolKey
-{
+struct HbFrameDrawerPoolKey {
 public:
     HbFrameDrawerPoolKey(const QString &name,
                          HbFrameDrawer::FrameType type,
@@ -56,8 +55,8 @@ public:
     QSizeF frameSize;
     bool operator==(const HbFrameDrawerPoolKey &other) const {
         return other.frameGraphicsName == frameGraphicsName
-            && other.frameGraphicsType == frameGraphicsType
-            && other.frameSize == frameSize;
+               && other.frameGraphicsType == frameGraphicsType
+               && other.frameSize == frameSize;
     }
 };
 
@@ -66,8 +65,7 @@ public:
 
   \internal
  */
-struct HbFrameDrawerPoolValue
-{
+struct HbFrameDrawerPoolValue {
     HbFrameDrawerPoolValue()
         : frameDrawer(0), refCount(0) { }
     HbFrameDrawerPoolValue(HbFrameDrawer *drawer)
@@ -85,7 +83,7 @@ typedef QHash<HbFrameDrawerPoolKey, HbFrameDrawerPoolValue> HbFrameDrawerPoolDat
 Q_GLOBAL_STATIC(HbFrameDrawerPoolData, poolData)
 
 /*!  Returns a new or an existing HbFrameDrawer instance. Ownership of the
-    pointer is NOT transfered to the caller. The returned pointer must never be
+    pointer is NOT transferred to the caller. The returned pointer must never be
     destroyed with delete, use release() instead.
 
     \a frameSize is optional, if the default constructed QSizeF is
@@ -127,7 +125,8 @@ void HbFrameDrawerPool::release(HbFrameDrawer *frameDrawer)
 {
     bool inPool = false;
     HbFrameDrawerPoolData *pool = poolData();
-    foreach (const HbFrameDrawerPoolKey &key, pool->keys()) {
+    QList<HbFrameDrawerPoolKey> keys = pool->keys();
+    foreach(const HbFrameDrawerPoolKey & key, keys) {
         HbFrameDrawerPoolValue value = pool->value(key);
         if (value.frameDrawer == frameDrawer) {
             if (!--value.refCount) {

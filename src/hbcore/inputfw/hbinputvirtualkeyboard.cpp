@@ -36,7 +36,7 @@ class needs when interacting with the keyboard. The actual Qt widget inheriting 
 class will fill and layout the keyboard contents.
 
 The virtual keyboard host calls aboutToOpen() method when it is about to open the keyboard
-and aboutToClose() when it is about to close it. Similarily, it calls keyboardOpened()
+and aboutToClose() when it is about to close it. Similarly, it calls keyboardOpened()
 and keyboardClosed() methods when open and close operations have been completed.
 
 Every time the host runs keyboard related animations, it calls keyboardAnimationFrame()

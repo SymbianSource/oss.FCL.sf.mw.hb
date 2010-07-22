@@ -27,21 +27,44 @@
 
 #include <QSharedMemory>
 #include <QString>
+#include <QVector>
 
+#include "hbinputmethoddescriptor.h"
 #include "hbinputlanguage.h"
 
-const int HbProxyDataRequiredVersion = 13;
+const int HbProxyDataRequiredVersion = 18;
 const QString KInputSettingProxyKey("HbInputSettingProxy");
-const int HbActiveMethodNameMax = 255;
-const int HbActiveMethodKeyMax = 64;
+const unsigned int HbActiveMethodNameMax = 255;
+const unsigned int HbActiveMethodKeyMax = 64;
 
 class HbScClassifier;
 class HbInputSettingProxy;
 
+class HbSettingProxyInputMethodDescriptor
+{
+public:
+    HbSettingProxyInputMethodDescriptor();
+    HbSettingProxyInputMethodDescriptor(const HbInputMethodDescriptor &descriptor);
+    void operator=(const HbInputMethodDescriptor &descriptor);
+    HbInputMethodDescriptor descriptor() const;
+    QByteArray data() const;
+    void setData(const QByteArray &data);
+
+public:
+    unsigned int pluginNameAndPathSize;
+    QChar pluginNameAndPath[HbActiveMethodNameMax];
+    unsigned int keySize;
+    QChar key[HbActiveMethodKeyMax];
+    unsigned int displayNameSize;
+    QChar displayName[HbActiveMethodKeyMax];
+    unsigned int customDataSize;
+    char customData[HbActiveMethodKeyMax * 2];
+};
+
+
 // REMEMBER to increase HbProxyDataRequiredVersion every time you add fields
 // to this class or change related constants!
-struct HbSettingProxyInternalData
-{
+struct HbSettingProxyInternalData {
     int iVersion;
     int iReferences;
     HbInputLanguage iGlobalPrimaryInputLanguage;
@@ -53,8 +76,6 @@ struct HbSettingProxyInternalData
     HbInputDigitType iDigitType;
     bool iQwertyTextCasing;
     bool iQwertyCharacterPreview;
-    QChar iActiveCustomMethodName[HbActiveMethodNameMax];
-    QChar iActiveCustomMethodKey[HbActiveMethodKeyMax];
     Qt::Orientation iScreenOrientation;
     bool iOrientationChangeCompleted;
     bool iFlipStatus;
@@ -63,6 +84,8 @@ struct HbSettingProxyInternalData
     HbKeyboardSettingFlags iAutocompletion;
     HbTypingCorrectionLevel iTypingCorrectionLevel;
     HbPrimaryCandidateMode iPrimaryCandidateMode;
+    HbSettingProxyInputMethodDescriptor iPreferredMethodHorizontal;
+    HbSettingProxyInputMethodDescriptor iPreferredMethodVertical;
 };
 
 class HB_CORE_PRIVATE_EXPORT HbInputSettingProxyPrivate
@@ -78,12 +101,12 @@ public:
     bool load();
     void save();
     void shutdownDataArea();
-    HbSettingProxyInternalData* proxyData() const;
+    HbSettingProxyInternalData *proxyData() const;
 
     void flipToggle();
     bool flipStatus();
     void setFlipStatus(bool flipStatus);
-    
+
     void handleDeviceSpecificOriantationAndFlipChange();
 
     void lock() const {

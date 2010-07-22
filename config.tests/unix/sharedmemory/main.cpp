@@ -33,9 +33,13 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QSharedMemory sharedMemory("hbconftest_sharedmemory");
-    if (!sharedMemory.create(CACHE_SIZE, QSharedMemory::ReadWrite)) {
-        qWarning() << sharedMemory.errorString();
-        return EXIT_FAILURE;
+    if (sharedMemory.create(CACHE_SIZE)) {
+        bool attach = sharedMemory.attach();
+        Q_UNUSED(attach);
+        if (sharedMemory.isAttached()) {
+            return EXIT_SUCCESS;
+        }
     }
-    return EXIT_SUCCESS;
+    qWarning() << sharedMemory.error() << sharedMemory.errorString();
+    return EXIT_FAILURE;
 }

@@ -27,17 +27,20 @@
 #define HBCSSINSPECTOR_P_H
 
 #ifdef HB_CSS_INSPECTOR
+#include <QAbstractItemModel>
+#include <QStyledItemDelegate>
 #include <QWidget>
 #include <hbanchorlayout.h>
 #include <hbwidgetbase.h>
-QT_FORWARD_DECLARE_CLASS(QTextEdit)
-QT_FORWARD_DECLARE_CLASS(QGraphicsScene)
-QT_FORWARD_DECLARE_CLASS(QGraphicsItem)
-QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QCheckBox)
+QT_FORWARD_DECLARE_CLASS(QGraphicsItem)
+QT_FORWARD_DECLARE_CLASS(QGraphicsScene)
+QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QRadioButton)
+QT_FORWARD_DECLARE_CLASS(QTreeView)
+QT_FORWARD_DECLARE_CLASS(QTextEdit)
 QT_FORWARD_DECLARE_CLASS(HbAnchorArrowDrawer)
-QT_FORWARD_DECLARE_CLASS(HbMeshLayout)
+QT_FORWARD_DECLARE_CLASS(HbMainWindow)
 
 
 class HbCssInfoDrawer : public HbWidgetBase
@@ -49,12 +52,17 @@ public:
     virtual ~HbCssInfoDrawer();
 
 public slots:
-    void setItemTextVisible(bool visible) { mShowItemText = visible; };
-    void setHintTextVisible(bool visible) { mShowHintText = visible; };
-    void setBoxVisible(bool visible) { mShowBox = visible; };
-	void setHintBoxVisible(bool visible) { mShowHintBox = visible; };
-    void setGuideLinesVisible(bool visible) { mDrawGuideLines = visible; };
     void updateFocusItem(const QGraphicsItem* item);
+
+    void setBoxVisible(bool visible) { mShowBox = visible; };
+    void setItemTextVisible(bool visible) { mShowItemText = visible; };
+    void setGuideLinesVisible(bool visible) { mDrawGuideLines = visible; };
+
+    void setHintTextVisible(bool visible) { mShowHintText = visible; };
+    void setMinHintBoxVisible(bool visible) { mShowMinHintBox = visible; };
+    void setPrefHintBoxVisible(bool visible) { mShowPrefHintBox = visible; };
+    void setMaxHintBoxVisible(bool visible) { mShowMaxHintBox = visible; };
+    void setSizePrefsVisible(bool visible) { mShowSizePrefs = visible; };
 
 protected:
     void changeEvent(QEvent *event);
@@ -63,17 +71,25 @@ protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 private:
-    bool mShowItemText;
-    bool mShowHintText;
-    bool mShowBox;
-	bool mShowHintBox;
-    bool mDrawGuideLines;
     QColor mTextColor;
     QColor mBoxColor;
     QString mItemText;
     QString mHintText;
     QRectF mItemRect;
-    QRectF mHintRect;
+    QSizePolicy mItemPolicy;
+    QRectF mMinHintRect;
+    QRectF mPrefHintRect;
+    QRectF mMaxHintRect;
+    
+    bool mShowBox;
+    bool mShowItemText;
+    bool mDrawGuideLines;
+
+    bool mShowHintText;
+    bool mShowMinHintBox;
+    bool mShowPrefHintBox;
+    bool mShowMaxHintBox;
+    bool mShowSizePrefs;
 };
 
 
@@ -89,7 +105,7 @@ signals:
     void newItemHovered(const QGraphicsItem* item);
 
 public slots:
-    void setLiveMode(bool enabled) { mLiveMode = enabled; };
+    void setHoverMode(bool enabled) { mHoverMode = enabled; };
     void setBlockingMode(bool enabled) { mBlockingMode = enabled; };
 
 protected:
@@ -100,10 +116,78 @@ private:
     QGraphicsItem *mCurrentItem;
     HbAnchorArrowDrawer *mArrowDrawer;
     HbCssInfoDrawer *mCssInfoDrawer;
-    bool mLiveMode;
+    bool mHoverMode;
     bool mBlockingMode;
 
 friend class HbCssInspectorWindow;
+};
+
+
+class CodeWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit CodeWidget(const QString &title, QWidget *parent=0);
+    virtual ~CodeWidget();
+public slots:
+    void setText(const QString &text);
+    void setHtml(const QString &html);
+    void setLayoutDirection(Qt::LayoutDirection dir);
+private:
+    QLabel *mLabel;
+    QTextEdit *mTextBox;
+};
+
+
+class CssInspectorModelItem
+{
+public:
+    CssInspectorModelItem(QGraphicsItem *item, int row,
+        CssInspectorModelItem *parent=0);
+    ~CssInspectorModelItem();
+    CssInspectorModelItem *child(int i);
+    CssInspectorModelItem *parent();
+    QGraphicsItem *data();
+    int row();
+private:
+    QGraphicsItem *mItem;
+    QHash<int, CssInspectorModelItem*> mChildren;
+    CssInspectorModelItem *mParent;
+    int mRow;
+};
+
+
+class CssInspectorModel : public QAbstractItemModel
+{
+    Q_OBJECT
+public:
+    CssInspectorModel(HbMainWindow *win=0, QObject *parent=0);
+    ~CssInspectorModel();
+
+    QVariant data(const QModelIndex &index, int role) const;
+    QVariant headerData(int section, Qt::Orientation orientation,
+                        int role = Qt::DisplayRole) const;
+    QModelIndex index(int row, int column,
+                      const QModelIndex &parent = QModelIndex()) const;
+    QModelIndex parent(const QModelIndex &child) const;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const;
+
+private:
+    HbMainWindow *mWin;
+    CssInspectorModelItem *mRootItem;
+};
+
+
+class ItemColorDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    ItemColorDelegate(QObject *parent=0);
+    ~ItemColorDelegate();
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, 
+        const QModelIndex &index) const;
 };
 
 
@@ -123,26 +207,41 @@ public slots:
 private:
     void removeFilters();
     void addFilters();
-    static QString meshItemsToHtmlInfo(HbMeshLayout *mesh, const QString itemName, const QString layoutName);
+    static QString anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, const QString itemName, const QString layoutName);
+    static QString anchorItemName(QGraphicsLayoutItem* item, QGraphicsLayout* layout, bool& isIdBased);
+
+private slots:
+    void updateFromTreeView(const QModelIndex &index);
+    void updateColumnSizes(const QModelIndex &index);
 
 private:
     explicit HbCssInspectorWindow(QWidget *parent = 0);
-    QTextEdit *mLayoutWidgetMLBox;
-    QTextEdit *mLayoutCssBox;
-    QTextEdit *mColorsCssBox;
+    QVector<HoveredWidgetFilter*> mInstalledFilters;
+
+    CodeWidget *mWidgetMLBox;
+    CodeWidget *mLayoutCssBox;
+    CodeWidget *mColorsCssBox;
+    QTreeView *mTreeView;
     QLabel *mPathLabel;
     QLabel *mSizeHintLabel;
-    QCheckBox *mArrowsCheck;
-    QCheckBox *mOutlinesCheck;
-	QCheckBox *mHintOutlinesCheck;
+    QLabel *mSizePolicyHoriz;
+    QLabel *mSizePolicyVert;
+
+    QCheckBox *mObjectNameCheck;
+    QCheckBox *mAnchorArrowsCheck;
+    QCheckBox *mSubitemOutlinesCheck;
     QCheckBox *mSpacersCheck;
-    QCheckBox *mNameCheck;
-    QCheckBox *mSizeHintCheck;
     QCheckBox *mGuideLinesCheck;
-    QRadioButton *mLiveRadio;
+
+    QCheckBox *mSizeHintTextCheck;
+    QCheckBox *mMinSizeHintCheck;
+    QCheckBox *mPrefSizeHintCheck;
+    QCheckBox *mMaxSizeHintCheck;
+    QCheckBox *mSizePrefCheck;
+
+    QRadioButton *mHoverRadio;
     QRadioButton *mClickRadio;
     QRadioButton *mBlockRadio;
-    QVector<HoveredWidgetFilter*> mInstalledFilters;
 };
 
 #endif

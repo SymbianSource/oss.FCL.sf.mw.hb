@@ -38,13 +38,16 @@
 #include "hbthemecommon_symbian_p.h"
 #include "hbicondatacache_p.h"
 #include "hbcache_p.h"
+#include "hbthemewatcher_symbian_p.h"
 #include <e32property.h>
 #include <e32base.h>
+#include <f32file.h>
 
 class HbThemeServerSession;
 struct HbIconKey;
 class HbIconSource;
 class CHbThemeChangeNotificationListener;
+class CHbThemeWatcher;
 
 // reasons for server panic
 enum TPixmapServPanic {
@@ -78,34 +81,28 @@ public:
     ~HbThemeServerPrivate();
     CSession2 * NewSessionL(const TVersion& aVersion, const RMessage2& aMessage) const;
 
-    static HbThemeServerPrivate *Instance();
-
 public :
     // Function to panic the server
     static void PanicServer(TPixmapServPanic aPanic);
-    bool insertIconCacheItem(const HbIconKey &key,  HbIconCacheItem * item);
+    bool insertIconCacheItem(const HbIconKey &key,  HbIconCacheItem *item);
     HbIconCacheItem * iconCacheItem(const HbIconKey &key, bool isMultiPiece = false);
     void setMaxGpuCacheSize(int size);
     void setMaxCpuCacheSize(int size);
     void CleanupSessionIconItem(HbIconKey key);
     void clearIconCache();
 
-    bool insertCssCacheItem(const QString& key,  HbCacheItem * item);
+    bool insertCssCacheItem(const QString &key,  HbCacheItem *item);
     HbCacheItem * cssCacheItem(const QString &key);
     void CleanupSessionCssItem(QString key);
     void clearCssCache();
     void MemoryGood();
-    void FreeGpuRam(int bytes);
+    void FreeGpuRam(int bytes, bool useSwRendering);
     void freeUnusedGpuResources();
     
-    void insertIconDefaultSizeCacheItem(const QString &key, const QSizeF &item);
-    QSizeF iconDefaultSizeCacheItem(const QString &key);
-
     void doCleanup();
     static bool gpuMemoryState();
 
-    void openCurrentIndexFile();
-    bool resolveThemePath(const QString &themeName, QString &themePath);
+    bool openCurrentIndexFile();
     HbRenderingMode currentRenderingMode() const;
     void setCurrentRenderingMode(HbRenderingMode currentMode);
     void HandleThemeSelection( const QString& themeName);
@@ -113,7 +110,7 @@ public :
     int freeSharedMemory();
     int allocatedSharedMemory();
     int allocatedHeapMemory();
-
+    int gpuLRUSize() const;
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     int cacheIconCount() const;
@@ -132,7 +129,6 @@ public :
     void cleanVectorLRUList();
     int rasterLruCount();
     int vectorLruCount();
-    int gpuLRUSize() const;
     unsigned long freeGPUMemory();
     unsigned long totalGPUMemory();
 #if defined(Q_OS_SYMBIAN)
@@ -141,24 +137,21 @@ public :
 
 #endif
 
-private:
-    void createThemeIndex(const QString &themePath, const HbThemeType &themetype);
-
 public:
     RProperty iThemeProperty;
     QString iCurrentThemeName;
     QString iCurrentThemePath;
-    QFile currentIndexfile;
+
 private:
     void ConstructL();
+    void UpdateThemeIndexes(bool updateBase = true);
     HbIconDataCache * cache;
     HbCache* cssCache;
-    QHash<QString, QSizeF> iconDefaultSizes;
 
     static bool gpuGoodMemoryState;
     HbRenderingMode renderMode;
-    QStringList romThemeNames;
     CHbThemeChangeNotificationListener * iListener;
+    CHbThemeWatcher *iWatcher;
 };
 
 //**********************************
@@ -176,13 +169,10 @@ public:
     void ServiceL(const RMessage2 & aMessage);
     void DispatchMessageL(const RMessage2 & aMessage);
     void GetSharedIconInfoL(const RMessage2 & aMessage);
-    void GetSharedIconDefaultSizeInfoL(const RMessage2 &aMessage);
-    QSizeF RetrieveIconDefaultSize(const QString &filename);
     void HandleStyleSheetLookupL(const RMessage2 & aMessage);
     void HandleWidgetMLLookupL(const RMessage2& aMessage);
     void HandleDeviceProfilesReqL(const RMessage2& aMessage);
     void HandleEffectAddAndFileLookupL(const RMessage2 &aMessage);
-    void HandleThemeSelectionL(const RMessage2 & aMessage);
     QColor GetColorFromRgba(TUint32 aRgba, bool aColorFlag);
     void GetSharedMultiIconInfoL(const RMessage2& aMessage);
     void GetMultiIconInfoL(const RMessage2& aMessage);
@@ -190,7 +180,8 @@ public:
     void GetDataFromCacheItem(HbIconCacheItem* cacheItem, HbSharedIconInfo &data) const;
     void FreeDataFromCacheItem(HbIconCacheItem* cacheItem);
     bool IconInfoFromSingleIcon(HbIconKey key, HbSharedIconInfo &stitchedData);
-    bool CreateCacheItemData(HbIconKey key, int options, HbSharedIconInfo &data, bool isMultiPiece = false);
+    bool CreateCacheItemData(HbIconKey key, int options, HbSharedIconInfo &data,
+                             bool isMultiPiece = false);
     bool CreateStichedIconInfoOfParts(QVector<HbSharedIconInfo> dataForParts,
                                       HbMultiIconParams params,
                                       HbIconKey &finalIconKey,
@@ -220,36 +211,4 @@ private:
     QList<QString> sessionCssData;
 };
 
-//**********************************
-//CHbThemeChangeNotificationListener
-//**********************************
-/**
-This class represents a listener for Pub/Sub events sent from the clients.
-Functions are provided to parse clients messages.
-*/
-class CHbThemeChangeNotificationListener : public CActive
-{
-public:
-    static CHbThemeChangeNotificationListener* NewL(HbThemeServerPrivate& aObserver);
-    virtual ~CHbThemeChangeNotificationListener();
-    void startListening();
-    void stopListening();
-
-protected: // From CActive
-    void RunL();
-    void DoCancel();
-
-private:
-    CHbThemeChangeNotificationListener(HbThemeServerPrivate& aObserver);
-    void ConstructL();
-    bool parseData( TDesC& requestData, HbThemeServerRequest& etype, TDes& data);
-
-
-private: // data
-    RProperty themeRequestProp;
-    HbThemeServerPrivate& iObserver;
-};
-
-
 #endif // HBTHEMESERVER_SYMBIAN_P_H
-

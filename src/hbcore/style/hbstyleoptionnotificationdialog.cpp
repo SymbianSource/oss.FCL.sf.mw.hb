@@ -25,52 +25,25 @@
 
 #include "hbstyleoptionnotificationdialog_p.h"
 
-/*!
+/*
     \class HbStyleOptionNotificationDialog
     \brief HbStyleOptionNotificationDialog has the style component for notification dialog.
 */
 
-/*!
-    \deprecated HbStyleOptionNotificationDialog::titleWrapping
-        is deprecated. Use wrappingTitle instead.
-*/
-
-/*!
-    \deprecated HbStyleOptionNotificationDialog::textWrapping
-        is deprecated. Use wrappingText instead.
-*/
-
-
-
-/*!
-
-    \deprecated HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog() :
-        titleAlignment(Qt::AlignLeft|Qt::AlignVCenter),
-        textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
-        iconAlignment(Qt::AlignCenter),
-        titleWrapping(false),
-        textWrapping(false),
-        isLink(false),
-        wrappingTitle(Hb::TextNoWrap),
-        wrappingText(Hb::TextNoWrap)
+    titleAlignment(Qt::AlignLeft|Qt::AlignVCenter),
+    textAlignment(Qt::AlignLeft|Qt::AlignVCenter),
+    iconAlignment(Qt::AlignCenter),
+    isLink(false),
+    titleTextWrapping(Hb::TextNoWrap),
+    textTextWrapping(Hb::TextNoWrap)
 {
     type = Type;
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(const HbStyleOptionNotificationDialog&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(
-        const HbStyleOptionNotificationDialog &other) :
+    const HbStyleOptionNotificationDialog &other) :
     HbStyleOptionPopup(other),
     title(other.title),
     text(other.text),
@@ -78,11 +51,9 @@ HbStyleOptionNotificationDialog::HbStyleOptionNotificationDialog(
     titleAlignment(other.titleAlignment),
     textAlignment(other.textAlignment),
     iconAlignment(other.iconAlignment),
-    titleWrapping(other.titleWrapping),
-    textWrapping(other.textWrapping),
     isLink(other.isLink),
-    wrappingTitle(other.wrappingTitle),
-    wrappingText(other.wrappingText)
+    titleTextWrapping(other.titleTextWrapping),
+    textTextWrapping(other.textTextWrapping)
 {
     type = Type;
     version = Version;

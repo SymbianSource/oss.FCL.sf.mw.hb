@@ -1,23 +1,19 @@
 <hbwidget version="0.1" type="HbColorGridViewItem">
   
   <layout name="colorgriditem_layout" type="mesh">
-    <meshitem src="cg-border-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="cg-border-icon" srcEdge="TOP" dst="" dstEdge="TOP" />	
-    <meshitem src="cg-border-icon"  srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="cg-border-icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-
-    <meshitem src="cg-color-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
-    <meshitem src="cg-color-icon" srcEdge="TOP" dst="" dstEdge="TOP" />	
-    <meshitem src="cg-color-icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-    <meshitem src="cg-color-icon" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-
-    <meshitem src="cg-selection-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
-    <meshitem src="cg-selection-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />	
-
     <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
     <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  
+    <meshitem src="cg-border-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="cg-border-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />	
+
+    <meshitem src="cg-color-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />
+    <meshitem src="cg-color-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />	
+
+    <meshitem src="cg-selection-icon" srcEdge="CENTERV" dst="" dstEdge="CENTERV" />
+    <meshitem src="cg-selection-icon" srcEdge="CENTERH" dst="" dstEdge="CENTERH" />	
     
   </layout>
   

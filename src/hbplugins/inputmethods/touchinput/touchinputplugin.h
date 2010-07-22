@@ -26,9 +26,9 @@
 #ifndef TouchInputPlugin_IMPL_H
 #define TouchInputPlugin_IMPL_H
 
-#include <QInputContextPlugin>
+#include <hbinputcontextplugin.h>
 
-class HbTouchInputPlugin : public QInputContextPlugin
+class HbTouchInputPlugin : public HbInputContextPlugin
 {
     Q_OBJECT
 
@@ -42,6 +42,9 @@ public: // From QInputContextPlugin
     QString displayName(const QString& key);
     QStringList keys() const;
     QStringList languages(const QString& key);
+    QStringList displayNames(const QString &key);
+    HbIcon icon(const QString &key);
+    QList<HbIcon> icons(const QString &key);
 };
 
 #endif // TouchInputPlugin_IMPL_H

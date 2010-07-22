@@ -40,17 +40,17 @@ public:
     HbApplicationPrivate(HbApplication *parent = 0);
     ~HbApplicationPrivate();
 
-    QVariant activateData(); 
+    QVariant activateData();
 
     HbApplication *q_ptr;
     Hb::ActivationReason mActivateReason;
     QVariantHash mActivateParams;
     QString mActivateId;
     HbActivityManager *mActivityManager;
-    
+
 private slots:
     void prepareActivityData(const QString &name);
-    
+
 private:
     QVariant mActivateData;
 };

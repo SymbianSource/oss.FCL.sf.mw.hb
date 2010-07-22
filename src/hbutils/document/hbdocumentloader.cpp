@@ -48,6 +48,9 @@
     able to create your own custom widgets, you have to derive from this class and override 
     \c createObject method.
 
+    See \c HbDocumentLoader::createBinary for information about DocML binary conversion
+    in build time.
+
     Use the \c HbDocumentLoaderPlugin to add tool support for custom widgets.
     
     Example code:
@@ -106,7 +109,7 @@ QObjectList HbDocumentLoader::load( const QString &fileName, const QString &sect
 {
     QFile file( fileName );
     
-    if( !file.open( QFile::ReadOnly | QFile::Text ) ) {
+    if( !file.open( QFile::ReadOnly ) ) {
         qWarning( "Unable to open file" );
         if( ok ) {
             *ok = false;
@@ -162,6 +165,16 @@ QObjectList HbDocumentLoader::load( QIODevice *device, bool *ok )
 
 /*!
     Converts DocML document to binary document. 
+
+    You can also convert DocML files to binary format in build time by listing the files in "DOCML"
+    variable in the .pro file. This will create a binary docml file called <file_name>.bin that
+    can be included to the resources (.qrc). 
+    
+    Known issues: Currently the resource compiler gives warnings about missing binary files during
+    qmake. It's ok to ignore these warnings. 
+
+    For more information about DocML binary format, please refer to S60QtProgrammersGuide.
+
     \param srcDevice source IO device to be processed.
     \param dstDevice destination IO device where to write to.
     \return true if conversion was ok.
@@ -197,8 +210,11 @@ QObject *HbDocumentLoader::findObject(const QString &name) const
 
 
 /*!
-    Inserts object tree to documentloader. You can pass as an input parameter 
+    Inserts object tree to document loader. You can pass as an input parameter 
     output of "load" mothod. 
+
+    Document loader does not take ownership of the objects.
+
     \param roots root objects list.
     \return true if success, false otherwise.
 */

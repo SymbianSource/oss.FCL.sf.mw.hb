@@ -27,6 +27,7 @@
 #define HBTHEME_H
 
 #include <QObject>
+#include <QColor>
 #include <QString>
 #include <hbglobal.h>
 
@@ -38,12 +39,14 @@ class HbIconTheme;
 
 class HB_CORE_EXPORT HbTheme : public QObject
 {
-Q_OBJECT
+    Q_OBJECT
 
 public:
     static HbTheme *instance();
     QString name() const;
     QString description() const;
+    QColor color(const QString &colorRole) const;
+
 signals:
     void changed();
     void changeFinished();
@@ -61,7 +64,6 @@ private:
     friend class HbWidgetLoader;
     friend class HbEffectController;
     friend class HbDeviceProfile;
-    friend class HbEffectTheme;
     friend class HbThemeIndexResource;
     Q_DECLARE_PRIVATE_D( d_ptr, HbTheme )
     Q_DISABLE_COPY(HbTheme)

@@ -24,7 +24,7 @@
 ****************************************************************************/
 
 #ifndef HB_INPUT_VIRTUAL_KEYBOARD_H
-#define HB_INPUT_VIRTUAL_KEYBAORD_H
+#define HB_INPUT_VIRTUAL_KEYBOARD_H
 
 #include <QSizeF>
 
@@ -39,7 +39,7 @@ class HB_CORE_EXPORT HbVirtualKeyboard
 public:
     /*!
     Specifies known virtual keyboard animation types.
-    */ 
+    */
     enum HbVkbAnimationType {
         HbVkbAnimOpen,
         HbVkbAnimClose
@@ -47,9 +47,11 @@ public:
 
 public:
     virtual ~HbVirtualKeyboard() {}
-    virtual HbKeyboardType keyboardType() const { return HbKeyboardNone; }
-    virtual QWidget* asWidget() = 0;
-    virtual QGraphicsWidget* asGraphicsWidget() = 0;
+    virtual HbKeyboardType keyboardType() const {
+        return HbKeyboardNone;
+    }
+    virtual QWidget *asWidget() = 0;
+    virtual QGraphicsWidget *asGraphicsWidget() = 0;
     virtual QSizeF preferredKeyboardSize() = 0;
     virtual QSizeF minimizedKeyboardSize() = 0;
 

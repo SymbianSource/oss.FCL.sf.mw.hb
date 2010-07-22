@@ -22,9 +22,10 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbselectiondialog_p.h"
 #include "hbselectiondialog.h"
 #include "hbwidget_p.h"
-#include "hbselectiondialog_p.h"
+
 #include "hblabel.h"
 #include "hbaction.h"
 #include "hbabstractviewitem.h"
@@ -41,26 +42,36 @@
     @beta
     @hbwidgets
     \class HbSelectionDialog
-    \brief HbSelectionDialog class allows user create a list of options out of which one or more can be selected.  
+    \brief HbSelectionDialog class allows user to create a list of options out of which one or more can be selected.  
     
-    HbSelectionDialog is a modal dialog which means once it is displayed, user can not perform any action
-    untill dialog is closed.
+    SelectionDialog is a modal dialog, for which user has to use default or custom action buttons to dismiss the dialog.
 
-    There can be 2 modes of selection. SingleSelection or MultiSelection. If it is SingleSelection, dialog is closed
-    as soon as user clicks one of the options.In case of MultiSelection, user has to explicitly press "OK" button to
-    close it after selecting the item(s). User can anytime press "Cancel" button to close the dialog without selecting 
-    anything.
+    There are 2 modes of selection for SelectionDialog. SingleSelection or MultiSelection.<br>
+
+    <b>SingleSelection</b>: User can select one item from the list at a time and the SelectionDialog will be dismissed 
+    as soon as the user selects the item.<br>
+
+    <b>MultiSelection</b>: User can select multiple items from the list. To dismiss the dialog user has to explicitly press "OK/Cancel" button.
+    User can anytime press "Cancel" button to close the dialog without any selection.
 
     User can provide the data for options in different forms. It can be simple list of strings, list of custom 
     items or a model itself.
+
+    Below is a snippet of code which shows SelectionDialog in a single selection mode.
+
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,55}
+
+    slot implementation:
+
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,56}
+
 */
 
 
 /*!
-    @beta
     Constructor of HbSelectionDialog
 
-    \param parent. Parent widget
+    \param parent Parent item to SelectionDialog.
 */
 HbSelectionDialog::HbSelectionDialog(QGraphicsItem* parent): 
                                 HbDialog(*new HbSelectionDialogPrivate, parent)
@@ -71,7 +82,6 @@ HbSelectionDialog::HbSelectionDialog(QGraphicsItem* parent):
 }
 
 /*!
-    @beta
     Destructor 
  */
 HbSelectionDialog::~HbSelectionDialog()
@@ -79,8 +89,6 @@ HbSelectionDialog::~HbSelectionDialog()
 }
 
 /*!
-   @beta
-
    \reimp
  */
 void HbSelectionDialog::showEvent(QShowEvent *event)
@@ -89,10 +97,9 @@ void HbSelectionDialog::showEvent(QShowEvent *event)
 }
 
 /*!
-    @beta
     Sets the \a SelectionMode of the list.
     
-    \param mode. It can be SingleSelection or MultiSelection .Default value is \a NoSelection.
+    \param mode It can be SingleSelection or MultiSelection.
 
     \sa selectionMode()
 */
@@ -104,7 +111,6 @@ void HbSelectionDialog::setSelectionMode(HbAbstractItemView::SelectionMode mode)
 }
 
 /*!
-    @beta
     Returns current SelectionMode of the list.Default value is \a NoSelection.
 
     \sa setSelectionMode()
@@ -116,11 +122,10 @@ HbAbstractItemView::SelectionMode HbSelectionDialog::selectionMode() const
 }
 
 /*!
-    @beta
     Sets the string list items to be displayed.
 
-    \param items. A items is the list of strings
-    \param currentIndex. A currentIndex is the index of default selection
+    \param items list of string items as input to SelectionDialog in QStringList format.
+    \param currentIndex index of item to be selected in the SelectionDialog by default.
 
     \sa stringItems()
 */    
@@ -131,7 +136,6 @@ void HbSelectionDialog::setStringItems(const QStringList &items,int currentIndex
 }
 
 /*!
-    @beta
     Returns list of string list items earlier set by setStringItems().
 
     \sa setStringItems()
@@ -143,7 +147,6 @@ QStringList HbSelectionDialog::stringItems() const
 }
 
 /*!
-    @beta
     Returns list of selected indexes. List contains only one item if
     \a SelectionMode is \a NoSelection or \a SingleSelection. It may 
     contain more items if \a SelectionMode is \a MultiSelection.
@@ -158,12 +161,11 @@ QList<QVariant> HbSelectionDialog::selectedItems() const
 }
 
 /*!
-    @beta
     set the item selected.
     It can select one item if \a Selection mode is \a SingleSelection
     it can select more item if \a SelectionMode is \a MultiSelection.
 
-    \param items.
+    \param items indices of the items to be selected in SelectionDialog.
 
     \sa selectedItems
 */
@@ -174,7 +176,6 @@ void HbSelectionDialog::setSelectedItems(const QList<QVariant> items)
 }
 
 /*!
-    @beta
     Returns list of selected model indexes. List contains only one item if
     \a SelectionMode is \a NoSelection or \a SingleSelection. It may 
     contain more items if \a SelectionMode is \a MultiSelection.
@@ -189,16 +190,15 @@ QModelIndexList HbSelectionDialog::selectedModelIndexes() const
 }
 
 /*!
-    @beta
     Sets the list of custom list items to be displayed.\a items is the
     list of custom items.\a bTransferOwnership is a flag defining the owner
     of the items. If \a true, items will be deleted when dialog is deleted else
     user is responsible for deleting the items.Default value is \a false.
     \a current is the index of default selection.
 
-    \param items. items is the list of custom items
-    \param transferOwnership. true or false
-    \param currentIndex
+    \param items list of custom items to be set as input to SelectionDialog.
+    \param transferOwnership Transfer the ownership of items to SelectionDialog by passing true else false.
+    \param currentIndex index of the item to be selected in SelectionDialog.
 
     \sa widgetItems();
 */    
@@ -209,7 +209,6 @@ void HbSelectionDialog::setWidgetItems(const QList<HbListWidgetItem*> &items,boo
 }
 
 /*!
-    @beta
     Returns list of custom list items earlier set by setWidgetItems().
     
     \sa setWidgetItems().
@@ -221,10 +220,9 @@ QList<HbListWidgetItem*> HbSelectionDialog::widgetItems() const
 }
 
 /*!
-    @beta
     Sets the Model containing data for the list items.
 
-    \param model. 
+    \param model which has data for items to be set as input to SelectionDialog. 
 
     \sa model()
 */    
@@ -235,7 +233,6 @@ void HbSelectionDialog::setModel(QAbstractItemModel* model)
 }
 
 /*!
-    @beta
     Returns model eariler set by setModel().
 
     \sa setModel()
@@ -245,6 +242,5 @@ QAbstractItemModel* HbSelectionDialog::model() const
     Q_D(const HbSelectionDialog);
     return d->model();
 }
-
 
 #include "moc_hbselectiondialog.cpp"

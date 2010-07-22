@@ -54,7 +54,6 @@ PRIVATE_HEADERS += $$PWD/hbgraphicsscene_p.h
 PRIVATE_HEADERS += $$PWD/hbglobal_p.h
 PRIVATE_HEADERS += $$PWD/hbinstance_p.h
 PRIVATE_HEADERS += $$PWD/hbnamespace_p.h
-PRIVATE_HEADERS += $$PWD/hbstandarddirs_p.h
 PRIVATE_HEADERS += $$PWD/hbtestabilityinterface_p.h
 PRIVATE_HEADERS += $$PWD/hbthemeperf_p.h
 PRIVATE_HEADERS += $$PWD/hbstringdata_p.h
@@ -66,10 +65,11 @@ PRIVATE_HEADERS += $$PWD/hbsensorlistener_p.h
 PRIVATE_HEADERS += $$PWD/hblocalechangenotifier_p.h
 PRIVATE_HEADERS += $$PWD/hbapplication_p.h
 PRIVATE_HEADERS += $$PWD/hbthemesystemeffect_p.h
+PRIVATE_HEADERS += $$PWD/hbthemesystemeffectmap_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p.h
 PRIVATE_HEADERS += $$PWD/hbpluginloader_p_p.h
 symbian {
-    PRIVATE_HEADERS += $$PWD/hbcorepskeys_p.h
+    RESTRICTED_HEADERS += $$PWD/hbcorepskeys_r.h
     PRIVATE_HEADERS += $$PWD/hbsensornotifyhandler_p.h
 }
 
@@ -80,7 +80,6 @@ SOURCES += $$PWD/hbglobal.cpp
 SOURCES += $$PWD/hbgraphicsscene.cpp
 SOURCES += $$PWD/hbinstance.cpp
 SOURCES += $$PWD/hbnamespace.cpp
-SOURCES += $$PWD/hbstandarddirs.cpp
 SOURCES += $$PWD/hbmemorymanager_p.cpp
 SOURCES += $$PWD/hbsharedmemorymanager_p.cpp
 SOURCES += $$PWD/hbsharedmemorymanagerut_p.cpp
@@ -96,6 +95,7 @@ SOURCES += $$PWD/hborientationstatus.cpp
 SOURCES += $$PWD/hbsensorlistener.cpp
 SOURCES += $$PWD/hblocalechangenotifier_p.cpp
 SOURCES += $$PWD/hbthemesystemeffect.cpp
+SOURCES += $$PWD/hbthemesystemeffectmap.cpp
 SOURCES += $$PWD/hbpluginloader.cpp
 symbian {
     SOURCES += $$PWD/hbsensornotifyhandler_p.cpp

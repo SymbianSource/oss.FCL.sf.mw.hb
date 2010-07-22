@@ -35,12 +35,15 @@
 #include <hbabstractitemview_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbtapgesture.h>
+#include <hbnamespace_p.h>
 
 #include <QPersistentModelIndex>
 #include <QGraphicsLayout>
 #include <QVariant>
 #include <QCoreApplication>
 #include <QEvent>
+#include <QTimer>
+#include <QGraphicsScene>
 #include <QDebug>
 
 #include <QGesture>
@@ -48,6 +51,7 @@
 
 const QString KDefaultLayoutOption = "default";
 const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::registerEventType();
+const int HbViewItemPressDelay = 50;
 
 /*!
     @alpha
@@ -72,7 +76,53 @@ const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::regist
     If derived abstract view item has transient state information that is not meaningful to store within model index (child item cursor 
     position selection areas etc.) this information can be supplied to transient state model. Transient state model is maintained 
     internally by abstract item view. 
+
+
+    \primitives
+    \primitive{background} HbIconItem representing the item background. This primitive exists in cases the model's Qt::BackgroundRole returns HbIcon or QBrush for this item.
+    \primitive{frame} HbFrameItem representing the background frame of the item. This primitive exists if background primitive does not exist and the model's Qt::BackgroundRole returns HbFrameBackground or there is a default frame set with the setDefaultFrame(). An item can have either the frame or the background primitive, but not the both at the same time.
+    \primitive{selection-icon} HbIconItem representing the checkbox in the multi selection mode.
+    \primitive{multiselection-toucharea} HbTouchArea used in extending the touch area of the selection-icon. 
 */
+
+/*!
+    \enum HbAbstractViewItem::SelectionAreaType
+
+    Enumeration specifies selection area types. 
+    
+    Multiselection selection mode may operate in contiguous selection mode, in which items are selected 
+    or deselected by panning over items. Normal multiselection functionality is available also in this mode.
+    Location of touch down gesture determines whether contiguous selection mode is activated.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+/*!
+    \var HbAbstractViewItem::SingleSelection
+
+    Selection area for single selection mode.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+
+/*!
+    \var HbAbstractViewItem::MultiSelection
+
+    Selection area for multiple selection mode.
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
+
+/*!
+    \var HbAbstractViewItem::ContiguousSelection
+
+    Selection area for contiguous selection mode. 
+
+    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
+*/
+
 
 /*!
     \fn void HbAbstractViewItem::pressed(const QPointF &position)
@@ -127,6 +177,12 @@ const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::regist
     \snippet{ultimatecodesnippet/customlistviewitem.cpp,1}
 */
 
+void HbAbstractViewItemShared::pressStateChangeTimerTriggered()
+{
+    HbWidgetFeedback::triggered(mPressedItem, Hb::InstantPressed, 0);
+    mPressedItem->pressStateChanged(true, mAnimatePress);
+}
+
 void HbAbstractViewItemPrivate::init()
 {
     Q_Q(HbAbstractViewItem);
@@ -147,6 +203,11 @@ void HbAbstractViewItemPrivate::init()
     }
 }
 
+/*!
+    Returns Hb::ModelItemType of this view item.
+
+    \sa Hb::ModelItemType
+*/
 int HbAbstractViewItemPrivate::modelItemType() const
 {
     return mIndex.data(Hb::ItemTypeRole).toInt();
@@ -204,7 +265,11 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
 
     switch (gesture->state()) {
         case Qt::GestureStarted: {
-            HbWidgetFeedback::triggered(q, Hb::InstantPressed, 0);
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            if (!gesture->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                gesture->setProperty(HbPrivate::ThresholdRect.latin1(), q->mapRectToScene(q->boundingRect()).toRect());
+            }
+
             setPressed(true, true);
             emit q->pressed(position);
             break;
@@ -223,13 +288,14 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
             break;
         }
         case Qt::GestureFinished: {
-            HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
 
             if (gesture->tapStyleHint() == HbTapGesture::Tap 
                 || (mSharedData->mItemView
                 && !mSharedData->mItemView->longPressEnabled())) {
                 setPressed(false, true);
 
+                HbWidgetFeedback::triggered(q, Hb::InstantReleased, 0);
                 HbWidgetFeedback::triggered(q, Hb::InstantClicked);
                 QPointer<HbAbstractViewItem> item = q;
                 emit item->activated(position);
@@ -242,13 +308,14 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
                     }
                 }
             } else {
+                HbWidgetFeedback::triggered(q, Hb::InstantReleased,0);
                 emit q->released(position);
             }
 
             break;
         }
         case Qt::GestureCanceled: {
-
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             // hides focus immediately
             setPressed(false, false);
 
@@ -277,10 +344,31 @@ void HbAbstractViewItemPrivate::setPressed(bool pressed, bool animate)
 
     if (pressed != mPressed) {
         mPressed = pressed;
-        q->pressStateChanged(mPressed, animate);
+
+        if (mSharedData->mPressStateChangeTimer) {
+            if(!pressed && animate && mSharedData->mPressStateChangeTimer->isActive()) {
+                // Release happened while press still delayed
+                mSharedData->mPressStateChangeTimer->stop();
+                mSharedData->pressStateChangeTimerTriggered();
+            } else {
+                mSharedData->mPressStateChangeTimer->stop();
+            }
+        }
+
         if (mPressed) {
+            if (!mSharedData->mPressStateChangeTimer) {
+                mSharedData->mPressStateChangeTimer = new QTimer(mSharedData.data());
+                mSharedData->mPressStateChangeTimer->setSingleShot(true);
+                QObject::connect(mSharedData->mPressStateChangeTimer, SIGNAL(timeout()), mSharedData.data(), SLOT(pressStateChangeTimerTriggered()));
+            }
+            mSharedData->mPressedItem = q;
+            mSharedData->mAnimatePress = animate;
+            mSharedData->mPressStateChangeTimer->start(HbViewItemPressDelay);
+
             q->setProperty("state", "pressed");
         } else {
+            q->pressStateChanged(mPressed, animate);
+
             q->setProperty("state", "normal");
         }
     }
@@ -490,11 +578,11 @@ void HbAbstractViewItem::initStyleOption(HbStyleOptionAbstractViewItem *option) 
     Default selection areas are for
     \li HbAbstractViewItem::SingleSelection mode: whole item
     \li HbAbstractViewItem::MultiSelection mode: whole item.
-    \li HbAbstractItemView::NoSelection mode: none
+    \li HbAbstractViewItem::ContiguousSelection mode: area of HbStyle::P_ItemViewItem_touchmultiselection icon.
 
     The \a selectionAreaType tells what kind of selection area is requested.  The parameter value ContiguousSelection returns 
-	the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
-	the HbStyle::P_ItemViewItem_touchmultiselection.
+    the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
+    the HbStyle::P_ItemViewItem_touchmultiselection.
     
 */
 bool HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
@@ -586,6 +674,10 @@ QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVarian
             }
             break;
         }
+        case ItemEnabledHasChanged: {
+            updateChildItems();
+            break;
+        }
         default:
             break;
     }
@@ -596,7 +688,7 @@ QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVarian
 /*!
     \reimp
 
-    To optimise loading css/xml definitions to take place only once, this function should be
+    To optimize loading css/xml definitions to take place only once, this function should be
     called only after other primitives (child items) has been created.
 
 */
@@ -749,7 +841,7 @@ void HbAbstractViewItem::updateChildItems()
     GraphicsItemFlags itemFlags = flags();
     Qt::ItemFlags indexFlags = d->mIndex.flags();
 
-    if (indexFlags & Qt::ItemIsEnabled) {
+    if ((indexFlags & Qt::ItemIsEnabled) && sd->mItemView && sd->mItemView->isEnabled()) {
         if (!(itemFlags & QGraphicsItem::ItemIsFocusable)) {
             itemFlags |= QGraphicsItem::ItemIsFocusable;
             setFocusPolicy(sd->mPrototype->focusPolicy());
@@ -812,13 +904,18 @@ void HbAbstractViewItem::updateChildItems()
     }
 
     // items visibility or items content has really changed
-    d->mSizeHintPolish = false;
     updatePrimitives();
     if (!d->mContentChangedSupported
         || d->mItemsChanged) {
         updateGeometry();   // ensures that sizehint is calculated again in case items have been created or deleted
         d->mRepolishRequested = true;
+        // handle QEvent::Polish & QEvent::LayoutRequest event itself in ::sizeHint() as our performance is slightly better
+        // (saving a layoutrequest and going event loop through twice)
+        if (sd->mItemView && sd->mItemView->isScrolling()) {
+            d->mHandlingRepolishSynchronously = true;
+        }
         repolish();
+        d->mHandlingRepolishSynchronously = false;
     }
     d->mItemsChanged = false;
 }
@@ -872,7 +969,7 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
         if (!d->mFocusItem) {
             d->mFocusItem = style()->createPrimitive(HbStyle::P_ItemViewItem_focus, this);
         }
-            
+
         HbStyleOptionAbstractViewItem styleOption;
         initStyleOption(&styleOption);
 
@@ -896,10 +993,10 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
             HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
         } else {
             HbEffect::cancel(this, "pressed");
-            HbEffect::start(this, sd->mItemType, "released");
+            HbEffect::cancel(this, "released");
             if (d->mFocusItem) {
                 HbEffect::cancel(d->mFocusItem, "pressed");
-                HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
+                HbEffect::cancel(d->mFocusItem, "released");
                 QCoreApplication::postEvent(this, new QEvent((QEvent::Type)HbAbstractViewItemShared::ViewItemDeferredDeleteEvent));
             }
         }
@@ -922,13 +1019,8 @@ void HbAbstractViewItem::polish(HbStyleParameters& params)
 {
     HB_SDD(HbAbstractViewItem);
 
-	if (!d->polished && layout()) {
-		return;
-	}
-	
-    if (d->mSizeHintPolish) {
-        d->mSizeHintPolish = false;
-        return;
+    if (!d->polished && layout()) {
+    return;
     }
 
     if (sd->mItemView) {
@@ -958,16 +1050,17 @@ QSizeF HbAbstractViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 {
     Q_D(const HbAbstractViewItem);
     if (d->mRepolishRequested) {
-        // force the polish event in order to get the real size
-        const_cast<HbAbstractViewItemPrivate *>(d)->mRepolishRequested = false;
-        QEvent polishEvent(QEvent::Polish);
-        QCoreApplication::sendEvent(const_cast<HbAbstractViewItem *>(this), &polishEvent);
-        // HbAbstractItemView::scrollByAmount() [recycleItems()]
-        // causes updateChildItems() to be called, which posts Polish to be posted via repolish().
-        // Next statement in the scrollByAmount() [refreshContainerGeometry()]
-        // causes synchronous call of this method. This is a quick way to disable another
-        // ::polish() to be called.
-        d->mSizeHintPolish = true;
+        if (d->repolishOutstanding) {
+            // force the polish event in order to get the real size
+            // updateGeometry() in ::updateChildItems() causes this function to be called
+            // before QEvent::Polish of repolish() is handled from the event loop
+            QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem*>(this), QEvent::Polish);
+        } else {
+            // needed for pure widget or at startup phase, if first polish has not yet been done
+            QEvent polishEvent(QEvent::Polish);
+            QCoreApplication::sendEvent(const_cast<HbAbstractViewItem *>(this), &polishEvent);
+        }
+        QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem *>(this), QEvent::LayoutRequest);
     }
     return HbWidget::sizeHint(which, constraint);
 }

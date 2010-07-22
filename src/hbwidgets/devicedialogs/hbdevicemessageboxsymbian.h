@@ -37,6 +37,7 @@ class CHbDeviceMessageBoxSymbian : public CBase
 {
 public:
     enum TType {
+        ENone,
         EInformation,
         EQuestion,
         EWarning
@@ -50,12 +51,13 @@ public:
 
 public:
 
-    IMPORT_C static CHbDeviceMessageBoxSymbian* NewL(TType aType = EInformation,
+    IMPORT_C static CHbDeviceMessageBoxSymbian* NewL(TType aType = ENone,
         MHbDeviceMessageBoxObserver *aObserver = 0);
     IMPORT_C ~CHbDeviceMessageBoxSymbian();
 
     IMPORT_C static TButtonId QuestionL(const TDesC& aText,
         const TDesC& aAcceptButtonText, const TDesC& aRejectButtonText);
+    IMPORT_C static TButtonId QuestionL(const TDesC& aText, TUint aStandardButtons = 0);
     IMPORT_C static void InformationL(const TDesC& aText);
     IMPORT_C static void WarningL(const TDesC& aText);
 
@@ -76,8 +78,8 @@ public:
     IMPORT_C void SetAnimationDefinitionL(const TDesC& aAnimationDefinition);
     IMPORT_C TPtrC AnimationDefinition() const;
 
-    void SetIconVisible(TBool aVisible);
-    TBool IconVisible() const;
+    IMPORT_C void SetIconVisible(TBool aVisible);
+    IMPORT_C TBool IconVisible() const;
 
     IMPORT_C void SetTimeout(TInt aTimeout);
     IMPORT_C TInt Timeout() const;
@@ -90,6 +92,9 @@ public:
 
     IMPORT_C void SetButton(TButtonId aButton, TBool aEnable);
     IMPORT_C TBool HasButton(TButtonId aButton) const;
+
+    IMPORT_C void SetStandardButtons(TUint aButtons);
+    IMPORT_C TUint StandardButtons() const;
 
     IMPORT_C void SetObserver(MHbDeviceMessageBoxObserver *aObserver);
 

@@ -30,7 +30,7 @@ QT *= core gui svg network
 symbian:CONFIG += symbian_i18n skin_icon
 
 include(hb_install.prf)
-#include(docml2bin.prf)
+include(docml2bin.prf)
 
 CONFIG(debug, debug|release) {
     win32:SUFFIX = d
@@ -74,5 +74,4 @@ for(COLLECTION, $$list($$COLLECTIONS)) {
 
 !isEmpty(LINKAGE) {
     LIBS += -L$${HB_LIB_DIR} $${LINKAGE}
-    QMAKE_RPATHDIR *= $${HB_LIB_DIR}
 }

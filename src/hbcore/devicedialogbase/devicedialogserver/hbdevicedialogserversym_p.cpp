@@ -200,6 +200,15 @@ int HbDeviceDialogServerPrivate::updateDeviceDialog( int id, QVariantMap &data )
 
 /*!
     \internal
+    Publish current orientation to PS-key
+*/
+int HbDeviceDialogServerPrivate::publishOrientation( int orientation )
+{
+    return q_func()->publishOrientation( orientation );
+}
+
+/*!
+    \internal
     Forward client initiated close event.
 */
 int HbDeviceDialogServerPrivate::closeDeviceDialog( int id )

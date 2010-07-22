@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="28px" version="1.1" viewBox="0 0 28 28" width="28px" x="0px" y="0px">
-<path d="M14,28C6.28,28,0,21.719,0,14C0,6.28,6.28,0,14,0c7.719,0,14,6.28,14,14  C28,21.719,21.719,28,14,28L14,28z" fill-opacity="0.1" stroke-opacity="0.1"/>
-<rect fill="none" height="28" width="28"/>
-<circle cx="14" cy="14" fill="#969696" fill-opacity="0.8" r="12.923" stroke-opacity="0.8"/>
-<path d="M14,1.077C6.863,1.077,1.077,6.862,1.077,14S6.863,26.924,14,26.924  S26.924,21.138,26.924,14S21.137,1.077,14,1.077z M14,25.846C7.468,25.846,2.154,20.531,2.154,14C2.154,7.468,7.468,2.154,14,2.154  c6.531,0,11.846,5.314,11.846,11.846C25.846,20.531,20.531,25.846,14,25.846z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<svg baseProfile="tiny" height="40px" version="1.1" viewBox="0 0 40 40" width="40px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="40" width="40"/>
+<circle cx="20" cy="20" fill="#969696" fill-opacity="0.8" r="19.999" stroke-opacity="0.8"/>
+<path d="M20,0.999C9.522,0.999,0.999,9.522,0.999,20  c0,10.477,8.522,18.999,19.001,18.999c10.479,0,18.999-8.522,18.999-18.999C38.999,9.522,30.479,0.999,20,0.999z M20,37.273  c-9.523,0-17.274-7.75-17.274-17.273c0-9.524,7.751-17.274,17.274-17.274c9.523,0,17.273,7.75,17.273,17.274  C37.273,29.523,29.523,37.273,20,37.273z" fill="#FFFFFF" fill-opacity="0.5" stroke-opacity="0.5"/>
+<path d="M20,0C8.954,0,0,8.953,0,20s8.954,20,20,20c11.043,0,20-8.953,20-20  S31.043,0,20,0z M20,38.999C9.522,38.999,0.999,30.477,0.999,20C0.999,9.522,9.521,0.999,20,0.999  c10.479,0,18.999,8.522,18.999,19.001C38.999,30.477,30.479,38.999,20,38.999z" fill-opacity="0.2" stroke-opacity="0.2"/>
 </svg>

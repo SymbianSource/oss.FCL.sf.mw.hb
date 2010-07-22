@@ -34,7 +34,7 @@
 class HbGraphicsScenePrivate;
 class HbPopup;
 
-class HB_CORE_EXPORT HbGraphicsScene : public QGraphicsScene
+class HB_CORE_EXPORT HbGraphicsScene : public QGraphicsScene //krazy:exclude=qclasses
 {
     Q_OBJECT
 
@@ -42,19 +42,21 @@ public:
     HbGraphicsScene(QObject *parent = 0);
     ~HbGraphicsScene();
 
+    QVariant inputMethodQuery ( Qt::InputMethodQuery query ) const;
+
 protected:
-    void focusInEvent(QFocusEvent *focusEvent); 
+    void focusInEvent(QFocusEvent *focusEvent);
     void focusOutEvent(QFocusEvent *focusEvent);
-    void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent); 
+    void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent);
 
     void drawItems(QPainter *painter, int numItems,
-                           QGraphicsItem *items[],
-                           const QStyleOptionGraphicsItem options[],
-                           QWidget *widget = 0);
+                   QGraphicsItem *items[],
+                   const QStyleOptionGraphicsItem options[],
+                   QWidget *widget = 0);
     void drawBackground(QPainter *painter, const QRectF &rect);
     void drawForeground(QPainter *painter, const QRectF &rect);
-    void helpEvent ( QGraphicsSceneHelpEvent * helpEvent );
-    bool event ( QEvent * event );
+    void helpEvent(QGraphicsSceneHelpEvent *helpEvent);
+    bool event(QEvent *event);
 
 private:
     HbGraphicsScenePrivate *const d_ptr;

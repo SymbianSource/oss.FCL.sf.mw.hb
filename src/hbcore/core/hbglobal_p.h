@@ -26,6 +26,8 @@
 #ifndef HBGLOBAL_P_H
 #define HBGLOBAL_P_H
 
+#include <hbglobal.h>
+
 #ifdef Q_OS_SYMBIAN
 #define __HB_UHEAP_MARK __UHEAP_MARK
 #else
@@ -40,10 +42,11 @@
 
 
 // Macros for aiding deprecation
-struct HbRecallFlag
-{
-    HbRecallFlag():oldValue(flag){}
-    ~HbRecallFlag(){flag = oldValue;}
+struct HbRecallFlag {
+    HbRecallFlag(): oldValue(flag) {}
+    ~HbRecallFlag() {
+        flag = oldValue;
+    }
     bool oldValue;
     HB_CORE_EXPORT static bool flag;
 };
@@ -52,15 +55,15 @@ struct HbRecallFlag
 // This macro ensures that if a deprecated method calls another deprecated
 // method only one warning msg is shown.
 #define HB_DEPRECATED(msg)\
-HbRecallFlag recallFlag;\
-if (HbRecallFlag::flag){\
-     HbRecallFlag::flag = false;\
-     static bool localFlag = true;\
-     if(localFlag) {\
-         qWarning(msg);\
-         localFlag = false;\
-     }\
-}
+    HbRecallFlag recallFlag;\
+    if (HbRecallFlag::flag){\
+        HbRecallFlag::flag = false;\
+        static bool localFlag = true;\
+        if(localFlag) {\
+            qWarning(msg);\
+            localFlag = false;\
+        }\
+    }
 
 // Turns off the deprecation msg
 #define HB_DEPRECATED_MSG_OFF HbRecallFlag recallFlag; HbRecallFlag::flag = false;

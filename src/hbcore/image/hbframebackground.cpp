@@ -28,16 +28,16 @@
 #include <QVariant>
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbFrameBackground
     \brief HbFrameBackground stores the frame data.
 
-    This class is a data container for frame related data. It stores data that defines the 
+    This class is a data container for frame related data. It stores data that defines the
     frame background into single object that can be stored into QVariant.
 */
 
-// Must be initialized dynamically because QIcon cannot be constructed 
+// Must be initialized dynamically because QIcon cannot be constructed
 // when static variables are constructed.
 static HbFrameBackgroundPrivate *shared_null = 0;
 
@@ -62,7 +62,7 @@ HbFrameBackgroundPrivate::HbFrameBackgroundPrivate(const QString &frameGraphicsN
 HbFrameBackground::HbFrameBackground()
 {
     // Construct shared_null if not done yet.
-    if ( !shared_null ) {
+    if (!shared_null) {
         shared_null = new HbFrameBackgroundPrivate;
     }
     d = shared_null;
@@ -78,7 +78,7 @@ HbFrameBackground::HbFrameBackground(const QString &frameGraphicsName, HbFrameDr
 /*!
 * Copy constructs a new frame background using the \a other frame background.
 */
-HbFrameBackground::HbFrameBackground( const HbFrameBackground &other ) :
+HbFrameBackground::HbFrameBackground(const HbFrameBackground &other) :
     d(other.d)
 {
 }
@@ -92,9 +92,9 @@ HbFrameBackground::~HbFrameBackground()
 
 /*!
 * Assigns the \a other frame background to this frame background and returns a reference to
-* this frame background. Copy-on-write semantics is used, so this only does a shallow copy. 
+* this frame background. Copy-on-write semantics is used, so this only does a shallow copy.
 */
-HbFrameBackground &HbFrameBackground::operator=( const HbFrameBackground &other )
+HbFrameBackground &HbFrameBackground::operator=(const HbFrameBackground &other)
 {
     if (&other != this) {
         d = other.d;
@@ -103,20 +103,20 @@ HbFrameBackground &HbFrameBackground::operator=( const HbFrameBackground &other 
 }
 
 /*!
-* Equality operator. 
+* Equality operator.
 */
-bool HbFrameBackground::operator==( const HbFrameBackground &other ) const
+bool HbFrameBackground::operator==(const HbFrameBackground &other) const
 {
-    return !( *this != other );
+    return !(*this != other);
 }
 
 /*!
-* Inequality operator. 
+* Inequality operator.
 */
-bool HbFrameBackground::operator!=( const HbFrameBackground &other ) const
+bool HbFrameBackground::operator!=(const HbFrameBackground &other) const
 {
     if (d->frameGraphicsName != other.d->frameGraphicsName
-        || d->frameGraphicsName.isNull() != other.d->frameGraphicsName.isNull()) {
+            || d->frameGraphicsName.isNull() != other.d->frameGraphicsName.isNull()) {
         return true;
     }
 
@@ -154,12 +154,12 @@ void HbFrameBackground::setFrameGraphicsName(const QString &frameGraphicsName)
     // Remove possible file extension
     QString nameWithoutExt = frameGraphicsName;
     int index = nameWithoutExt.lastIndexOf(QChar('.'));
-    if (index>0) {
+    if (index > 0) {
         nameWithoutExt.resize(index);
     }
 
     if (d->frameGraphicsName != nameWithoutExt
-        || d->frameGraphicsName.isNull() != nameWithoutExt.isNull()) {
+            || d->frameGraphicsName.isNull() != nameWithoutExt.isNull()) {
         d.detach();
         d->frameGraphicsName = nameWithoutExt;
     }

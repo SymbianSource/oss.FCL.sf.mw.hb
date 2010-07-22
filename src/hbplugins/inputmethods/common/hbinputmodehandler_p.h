@@ -39,7 +39,7 @@ public:
     void init();
 
     virtual void _q_timeout();
-    void getAndFilterCharactersBoundToKey(QStringList &spellList, Qt::Key key);
+    void getAndFilterCharactersBoundToKey(QString &allowedChars, HbKeyboardType type, int key, HbModifiers modifiers);
     void updateTextCase();
 
     // HbPredictionCallback

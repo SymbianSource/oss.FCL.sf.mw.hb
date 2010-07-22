@@ -30,14 +30,13 @@
 #include "hbmemorymanager_p.h"
 
 template<typename T>
+inline
 T * getAddress(HbMemoryManager::MemoryType type, int offset, bool shared)
 {
-    T * data = 0;
-    if( shared == true )
-        data = HbMemoryUtils::getAddress<T>( HbMemoryManager::SharedMemory, offset );
-    else
-        data = HbMemoryUtils::getAddress<T>( type, offset );
-    return data;
+    if(shared) {
+        type = HbMemoryManager::SharedMemory;
+    }
+    return HbMemoryUtils::getAddress<T>(type, offset);
 }
 
 class HB_AUTOTEST_EXPORT HbStringData
@@ -51,5 +50,11 @@ public:
     int mCapacity;
     QAtomicInt mRef;
 };
+
+inline
+HbStringData *getStringData(HbMemoryManager::MemoryType type, int offset, bool shared = false)
+{
+    return getAddress<HbStringData>(type, offset, shared);
+}
 
 #endif // HBSTRINGDATA_P_H

@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBVGIMAGEICONRENDERER_P_H_
-#define HBVGIMAGEICONRENDERER_P_H_
+#ifndef HBVGIMAGEICONRENDERER_P_H
+#define HBVGIMAGEICONRENDERER_P_H
 
 #include <hbglobal.h>
 #include <VG/openvg.h>
@@ -40,55 +40,49 @@ class HB_CORE_PRIVATE_EXPORT HbVgImageIconRenderer
 {
 public:
 
-    typedef VGImage(*VgImageCreator)(HbIconImpl * impl, QPainter * painter);
+    typedef VGImage(*VgImageCreator)(HbIconImpl *impl, QPainter *painter);
 
-    HbVgImageIconRenderer(VGImage img, const QSize & size, HbIconImpl *impl);
+    HbVgImageIconRenderer(VGImage img, const QSize &size, HbIconImpl *impl);
 
     ~HbVgImageIconRenderer();
-    
-    void setColor(const QColor & color)
-    {
+
+    void setColor(const QColor &color) {
         this->iconColor = color;
     }
-    
-    void setMode(QIcon::Mode mode)
-    {
+
+    void setMode(QIcon::Mode mode) {
         this->iconMode = mode;
     }
-    
-    QColor color()
-    {
+
+    QColor color() {
         return iconColor;
     }
-    
-    QIcon::Mode mode() 
-    {
+
+    QIcon::Mode mode() {
         return iconMode;
     }
-    
-    void setVgImageCreator(VgImageCreator vgCreator)
-    {
+
+    void setVgImageCreator(VgImageCreator vgCreator) {
         vgImageCreator =  vgCreator;
     }
-    
-    bool draw(QPainter * painter, const QPointF & topLeft, const QPainterPath & clipPath);
+
+    bool draw(QPainter *painter, const QPointF &topLeft, const QPainterPath &clipPath);
 
 private:
     void applyIconProperties();
-    void updatePainterTransformation(QPainter * painter, const QPointF & pos);
+    void updatePainterTransformation(QPainter *painter, const QPointF &pos);
 
     VGImage vgImage;
     QColor iconColor;
     QIcon::Mode iconMode;
     bool specialCaseApplied;
     QSize   rendersize;
-    HbEglStates * eglStates;
+    HbEglStates *eglStates;
     bool    addedToStates;
     VGPaint opacityPaint;
     qreal   lastOpacity;
-    HbIconImpl * iconImpl;
+    HbIconImpl *iconImpl;
     VgImageCreator vgImageCreator;
 };
 
 #endif
-

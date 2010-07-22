@@ -37,7 +37,7 @@
 
 class HbLabel;
 class HbListWidgetItem;
-class HbListWidget;
+class HbListView;
 class HbCheckBox;
 
 class HbSelectionDialogPrivate : public HbDialogPrivate
@@ -64,10 +64,30 @@ private:
 	QAbstractItemModel* model() const;
     QItemSelectionModel* selectionModel() const;
     QModelIndexList selectedModelIndexes() const;
+	void clearItems(bool keepItems);
+	void showActions(HbAbstractItemView::SelectionMode selectionMode);
 public:
     bool bOwnItems;
 	HbAbstractItemView::SelectionMode mSelectionMode;
     void close();
+private:
+	HbAction *action1;
+	HbAction *action2;
+};
+
+class HbSelectionDialogMarkWidget : public HbWidget
+{
+	Q_OBJECT
+public:
+    QGraphicsItem *mBackgroundItem;
+    HbCheckBox* chkMark;
+	HbTextItem* lbCounter;
+	HbSelectionDialogMarkWidget(QGraphicsItem *parent = 0);
+	~HbSelectionDialogMarkWidget();
+	void createPrimitives();
+	void updatePrimitives();
+	QVariant itemChange( GraphicsItemChange change, const QVariant &value );
+	QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 };
 
 class HB_AUTOTEST_EXPORT HbSelectionDialogContentWidget :public HbWidget
@@ -78,7 +98,10 @@ private:
 	int selectedItemCount() const;
 	int totalItemCount() const;
 public:
-    HbListWidget* mListWidget;
+	void createListWidget();
+	void createListView();
+	void connectSlots();
+	HbListView* mListView;
     HbSelectionDialogPrivate* d;
     HbSelectionDialogContentWidget(HbSelectionDialogPrivate *priv);
     enum { Type = Hb::ItemType_SelectionDialogContentWidget };
@@ -89,8 +112,7 @@ public:
 	bool bMultiSelection;
 	void updateCounter();
 private:
-    HbCheckBox* chkMark;
-	HbTextItem* lbCounter;
+	HbSelectionDialogMarkWidget* markWidget;
 private slots:    
 	void _q_listWidgetItemSelected(HbListWidgetItem *item);
 	void _q_listItemSelected(QModelIndex index);

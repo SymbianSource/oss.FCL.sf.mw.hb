@@ -116,7 +116,7 @@ void HbZoomSliderPrivate::init( )
 {
     Q_Q( HbZoomSlider );
     mDefaultSet = false;
-
+    sliderControl->setToolTipVisible(false);
     QList<HbSlider::SliderElement> elements;
     elements << HbSlider::IncreaseElement 
         << HbSlider::TrackElement 

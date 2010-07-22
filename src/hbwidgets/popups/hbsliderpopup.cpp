@@ -98,7 +98,7 @@ void HbSliderPopupPrivate::init()
     Q_Q( HbSliderPopup);
     mSliderPopupContentWidget = new HbSliderPopupContentWidget( this );
     q->setContentWidget( mSliderPopupContentWidget );
-    q->setBackgroundItem(HbStyle::P_SliderPopup_background);
+    setBackgroundItem(HbStyle::P_SliderPopup_background);
     HbStyle::setItemName(q->backgroundItem(),QLatin1String("sliderpopup_background"));
 
     q->connect(mSliderPopupContentWidget->slider,SIGNAL(valueChanged(int)),q,SLOT(_q_valueChanged(int)));
@@ -115,7 +115,6 @@ void HbSliderPopupPrivate::init()
     q->setDismissPolicy(HbDialog::TapOutside);
     q->setBackgroundFaded(false);
     q->setModal(false);
-    mainLayout->setContentsMargins(0,0,0,0);
     mSliderPopupContentWidget->slider->setFlags(QGraphicsItem::ItemIsFocusable);
 }
 
@@ -290,6 +289,7 @@ HbSliderPopup::HbSliderPopup(QGraphicsItem *parent) :
 }
 
 /*!
+@beta
 Constructs a sliderPopup with a \a orientation and \a parent.
 
 The slider contains only track element by default.
@@ -325,6 +325,7 @@ HbSliderPopup::~HbSliderPopup()
 }
 
 /*!
+    @beta
     Returns the slider text.
 
     returns empty text if text element does not exist
@@ -338,6 +339,7 @@ QString HbSliderPopup::text() const
 }
 
 /*!
+    @beta
     Sets the slider \a text for text element 
 
     Slider will not take care of localization.
@@ -353,6 +355,7 @@ void HbSliderPopup::setText(const QString &text)
 }
 
 /*!
+    @beta
     Sets whether the tooltip is visible .
 
     \sa isToolTipVisible()
@@ -364,6 +367,7 @@ void HbSliderPopup::setToolTipVisible(bool value)
 }
 
 /*!
+    @beta
     Returns \c true if tooltip is visible.
 
     The default value is \c false.
@@ -377,6 +381,7 @@ bool HbSliderPopup::isToolTipVisible()
 }
 
 /*!
+    @beta
    sets the toolTip Alignment with respect to the thumb.
 
     \sa toolTipAlignment()
@@ -388,6 +393,7 @@ void HbSliderPopup::setToolTipAlignment(Qt::Alignment alignment)
 }
 
 /*!
+    @beta
     returns the tooltip Alignment with respect to the thumb
 
     \sa setToolTipAlignment()
@@ -400,6 +406,7 @@ Qt::Alignment HbSliderPopup::toolTipAlignment() const
 
 
 /*!
+    @beta
     Returns the major ticklabels of the slider popup.
   
     \sa setMajorTickLabels()
@@ -411,6 +418,7 @@ QStringList HbSliderPopup::majorTickLabels() const
 }
 
 /*!
+    @beta
     Sets the major ticklabels of the slider popup.
 
     Detailed description:
@@ -441,6 +449,7 @@ void HbSliderPopup::setMajorTickLabels(const QStringList &majorTickLabels)
 }
 
 /*!
+    @beta
     Returns the minor ticklabels of the slider popup.
   
     \sa setMajorTickLabels()
@@ -452,6 +461,7 @@ QStringList HbSliderPopup::minorTickLabels() const
 }
 
 /*!
+    @beta
     Sets the minor ticklabels of the slider popup.
     see setMajorTickLabels for detailed description
 
@@ -499,7 +509,7 @@ void HbSliderPopup::setElementIcon(HbSlider::SliderElement element, const HbIcon
 
 
 /*!
-    @proto
+    @beta
     Returns the map , which consist of element name as key and icon name  as value
 
     returns NULL map if none of the element has icon
@@ -514,7 +524,7 @@ QMap<QString,QVariant> HbSliderPopup::elementIcons( )const
 
 
 /*!
-    @proto
+    @beta
     Sets the icons for elements
 
     key of \a elements is element name  QString)  and value is icon
@@ -544,6 +554,7 @@ void HbSliderPopup::setElementIcons(const QMap<QString,QVariant> &elements)
 
 
 /*!
+    @beta
     Returns \c true whether the slider track is inverted.
 
     The default value is \c false.
@@ -561,6 +572,7 @@ bool HbSliderPopup::invertedAppearance() const
 }
 
 /*!
+    @beta
     Sets whether the slider track is \a inverted.
 
     \sa invertedAppearance()
@@ -572,6 +584,7 @@ void HbSliderPopup::setInvertedAppearance(bool inverted)
  }
 
 /*!
+    @beta
     Returns the list of slider elements as QVariant ( can be type-casted to HbSlider::SliderElement ).   
 
     The slider contains only track element by default.
@@ -585,6 +598,7 @@ QList<QVariant> HbSliderPopup::sliderElements() const
 }
 
 /*!
+    @beta
     Sets the elements of the slider.
 
     \note Duplicate elements will be ignored.
@@ -614,6 +628,7 @@ void HbSliderPopup::setSliderElements(const QList<QVariant>&elements)
 
 
 /*!
+    @beta
     Returns the maximum value of the slider.
 
     The default value is \c 100.
@@ -627,6 +642,7 @@ int HbSliderPopup::maximum() const
 }
 
 /*!
+    @beta
     Sets the maximum value of the slider.
 
     \note When setting this property, the minimum is adjusted if
@@ -644,6 +660,7 @@ void HbSliderPopup::setMaximum(int max)
 }
 
 /*!
+    @beta
     Returns the minimum value of the slider.
 
     The default value is \c 0.
@@ -657,6 +674,7 @@ int HbSliderPopup::minimum() const
 }
 
 /*!
+    @beta
     Sets the minimum value of the slider.
 
     \note When setting this property, the maximum is adjusted if
@@ -672,6 +690,7 @@ void HbSliderPopup::setMinimum(int min)
 }
 
 /*!
+    @beta
     This function is provided for convenience.
 
     Sets the slider's minimum to \a min and its maximum to \a max.
@@ -687,6 +706,7 @@ void HbSliderPopup::setRange(int min, int max)
 }
 
 /*!
+    @beta
     Returns the page step of the slider.
 
     The default value is \c 10.
@@ -703,6 +723,7 @@ int HbSliderPopup::pageStep() const
 }
 
 /*!
+    @beta
     Sets the page \a step of the slider.
 
     \sa pageStep()
@@ -714,6 +735,7 @@ void HbSliderPopup::setPageStep(int step)
 }
 
 /*!
+    @beta
     Returns the single step of the slider.
 
     The default value is \c 1.
@@ -731,6 +753,7 @@ int HbSliderPopup::singleStep() const
 }
 
 /*!
+    @beta
     Sets the single \a step of the slider.
 
     \sa singleStep()
@@ -742,6 +765,7 @@ void HbSliderPopup::setSingleStep(int step)
 }
 
 /*!
+    @beta
     Returns the current slider position.
 
     If tracking is enabled (the default), this is identical to the value.
@@ -755,6 +779,7 @@ int HbSliderPopup::sliderPosition() const
 }
 
 /*!
+    @beta
     Sets the current slider position.
 
     \sa sliderPosition()
@@ -766,6 +791,7 @@ void HbSliderPopup::setSliderPosition(int pos)
 }
 
 /*!
+    @beta
     Returns \c true whether slider tracking is enabled.
 
     The default value is \c true.
@@ -784,6 +810,7 @@ bool HbSliderPopup::hasTracking() const
 }
 
 /*!
+    @beta
     Sets whether the slider tracking is enabled.
 
     \sa hasTracking()
@@ -795,6 +822,7 @@ void HbSliderPopup::setTracking(bool enable)
 }
 
 /*!
+    @beta
     Returns the current value of the slider.
 
     The default value is \c 0.
@@ -806,6 +834,7 @@ int HbSliderPopup::value() const
 }
 
 /*!
+    @beta
     Sets the current value of the slider.
 
     The slider forces the value to be within the legal range: \b
@@ -822,6 +851,7 @@ void HbSliderPopup::setValue(int value)
 }
 
 /*!
+    @beta
     Returns the tickmark position of the slider.
 
     The default value is \c HbSlider::NoTicks.
@@ -835,6 +865,7 @@ Hb::SliderTickPositions HbSliderPopup::tickPosition() const
 }
 
 /*!
+    @beta
     Sets the tickmark position of the slider.
 
     \sa tickPosition()
@@ -846,6 +877,7 @@ void HbSliderPopup::setTickPosition(Hb::SliderTickPositions  position)
 }
 
 /*!
+    @beta
     Returns the SnappingMode of the slider.
 
     The default value is \c HbSlider::MinorTickSnapping.
@@ -860,6 +892,7 @@ HbSlider::SnappingMode HbSliderPopup::snappingMode() const
 }
 
 /*!
+    @beta
     Sets the snappingMode of the slider.
 
     \sa snappingMode()
@@ -871,6 +904,7 @@ void HbSliderPopup::setSnappingMode(HbSlider::SnappingMode mode)
 }
 
 /*!
+    @beta
     Sets the \a orientation of the sliderpopup.
 
     \sa orientation()
@@ -882,6 +916,7 @@ void HbSliderPopup::setOrientation(Qt::Orientation orientation)
 }
 
 /*!
+    @beta
     Returns the orientation of the sliderpopup.
 
     The default value is \c Qt::Vertical.
@@ -895,6 +930,7 @@ Qt::Orientation HbSliderPopup::orientation() const
 }
 
 /*!
+    @beta
     Returns the interval between major tickmarks.
 
     The default value is \c 0.
@@ -908,6 +944,7 @@ int HbSliderPopup::majorTickInterval() const
 }
 
 /*!
+    @beta
     Sets the interval between major tickmarks.
 
     Special values:
@@ -923,6 +960,7 @@ void HbSliderPopup::setMajorTickInterval(int interval)
 }
 
 /*!
+    @beta
     Returns the interval between minor tickmarks.
 
     The default value is \c 0.
@@ -936,6 +974,7 @@ int HbSliderPopup::minorTickInterval() const
 }
 
 /*!
+    @beta
     Sets the interval between minor tickmarks.
 
     Special values:
@@ -961,7 +1000,7 @@ void HbSliderPopup::updatePrimitives()
 }
 
 /*!
-    @proto
+    @beta
     Sets whether to display progress track or not
 
     \default value is true
@@ -977,7 +1016,7 @@ void HbSliderPopup::setTrackFilled(bool trackVisible )
 }
 
 /*!
-    @proto
+    @beta
     returns whether progress track is visible or not
 
     \sa setTrackFilled( )

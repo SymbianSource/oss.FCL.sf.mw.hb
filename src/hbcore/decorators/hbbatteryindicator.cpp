@@ -28,6 +28,7 @@
 #include "hbstyleoptionbatteryindicator_p.h"
 
 #include <hbinstance.h>
+#include <hbevent.h>
 
 /*
     \class HbBatteryIndicator
@@ -73,10 +74,12 @@ void HbBatteryIndicatorPrivate::_q_setPowerState(QSystemDeviceInfo::PowerState p
             mChargingTimer.stop();
         }
         mChargingTimer.start(250, q);
+        emit q->levelChanged(); // to make sure the charging status is communicated
     } else {
         mChargingOn = false;
         mChargingTimer.stop();
         q->setLevel(mSystemDeviceInfo->batteryLevel());
+        emit q->levelChanged(); // to make sure the non-charging status is communicated
     }
 }
 #endif // HB_HAVE_QT_MOBILITY
@@ -155,6 +158,7 @@ void HbBatteryIndicator::setLevel(int levelPercent)
     if (d->mLevelPercent != levelPercent) {
         d->mLevelPercent = levelPercent;
         updatePrimitives();
+        emit levelChanged(); // must be emitted whenever the visualization changes (i.e. also while charging)
     }
 }
 
@@ -206,4 +210,30 @@ void HbBatteryIndicator::initStyleOption(HbStyleOptionBatteryIndicator *option) 
     option->batteryValue = d->mLevelPercent;
 }
 
+bool HbBatteryIndicator::isCharging() const
+{
+    Q_D(const HbBatteryIndicator);
+    // Cannot use mChargingOn only because this function must work
+    // reliably even when called while being in setLevel(). On the
+    // other hand the timer is stopped while being in sleep mode. So
+    // check both.
+    return d->mChargingTimer.isActive() || d->mChargingOn;
+}
+
+/*!
+    \reimp
+*/
+bool HbBatteryIndicator::event(QEvent *e)
+{
+    Q_D(HbBatteryIndicator);
+    if (e->type() == HbEvent::SleepModeEnter) {
+        d->mChargingTimer.stop();
+    } else if (e->type() == HbEvent::SleepModeExit) {
+        if (d->mChargingOn) {
+            d->mChargingTimer.start(250, this);
+        }
+    }
+    return HbWidget::event(e);
+}
+    
 #include "moc_hbbatteryindicator_p.cpp"

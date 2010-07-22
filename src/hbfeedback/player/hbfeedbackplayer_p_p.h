@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBFEEDBACKPLAYERPRIVATE_H
-#define HBFEEDBACKPLAYERPRIVATE_H
+#ifndef HBFEEDBACKPLAYER_P_P_H
+#define HBFEEDBACKPLAYER_P_P_H
 
 #include "hbfeedbackplayer_p.h"
 
@@ -50,4 +50,4 @@ public:
     HbFeedbackSettings* feedbackSettings;
 };
 
-#endif // HBFEEDBACKPLAYERPRIVATE_H
+#endif // HBFEEDBACKPLAYER_P_P_H

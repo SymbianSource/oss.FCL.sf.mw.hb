@@ -28,7 +28,6 @@
 
 #include <hbnamespace.h>
 #include <hbwidgetbase.h>
-#include <hbcssinspector_p.h>
 
 #include <QGraphicsItem>
 //
@@ -42,6 +41,7 @@
 // We mean it.
 //
 
+class HbCssInspectorWindow;
 
 class HB_CORE_PRIVATE_EXPORT HbWidgetBasePrivate
 {
@@ -63,9 +63,10 @@ public:
 		AC_TextAlign = 0x02,
 		AC_IconBrush = 0x04,
 		AC_IconAspectRatioMode = 0x08,
-        AC_TextWrapMode = 0x10,
-        AC_TextLinesMin = 0x20,
-        AC_TextLinesMax = 0x40
+        AC_IconAlign = 0x10,
+        AC_TextWrapMode = 0x20,
+        AC_TextLinesMin = 0x40,
+        AC_TextLinesMax = 0x80
 	};
 
 	inline void setApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att, bool value)
@@ -89,13 +90,14 @@ public:
             case Hb::InteractionDisabled: bit = 1; break;
         case Hb::InsidePopup: bit = 2; break;
         case Hb::InputMethodNeutral: bit = 3; break;
+        case Hb::Widget: bit = 4; break;
         default: break;
         }
         return bit;
     }
 
     quint32 mApiProtectionFlags;
-    quint32 attributes : 4;
+    quint32 attributes : 5;
     HbFontSpec fontSpec;
     HbWidgetBase *q_ptr;
 
@@ -108,6 +110,7 @@ private:
     friend class HbStylePrivate;
     friend class HbDocumentLoaderActions;
     friend class HbWidgetLoaderActions;
+    friend class HbInputCheckBoxList; // for accessing setBackgroundItem
 #ifdef HB_CSS_INSPECTOR
     friend class HbCssInspectorWindow;
 #endif

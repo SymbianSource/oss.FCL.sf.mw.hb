@@ -64,12 +64,12 @@ class HbIconCacheItemCreator
 {
 public:
 
-    static HbIconCacheItem* createCacheItem(const HbIconKey &key,
+    static HbIconCacheItem *createCacheItem(const HbIconKey &key,
                                             HbIconLoader::IconLoaderOptions options,
                                             const QString &format,
                                             HbRenderingMode currentRenderingMode,
                                             bool isMultiPiece = false);
-    static void createCacheItem(HbIconCacheItem& iconCacheItem,
+    static void createCacheItem(HbIconCacheItem &iconCacheItem,
                                 const HbIconKey &key,
                                 HbRenderingMode currentRenderingMode);
 
@@ -80,8 +80,6 @@ public:
             HbMultiIconParams &multiPieceIconParams,
             bool allNvg,
             HbRenderingMode currentRenderingMode);
-
-
 
     static QString KSvg ;
     static QString KNvg ;

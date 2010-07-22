@@ -36,6 +36,8 @@ struct HbTypefaceInfoItem {
     HbFontSpec::Role mRoleEnum;
     HbString mFamily;
     bool mIsBold;
+	bool mIsAlias;
+	HbString mAliasedFamily;
 
     struct HbTypefaceMeasureInfoStruct
     {
@@ -48,8 +50,9 @@ struct HbTypefaceInfoItem {
     int mLowestExtent;
     int mHighestExtent;
 
+    // Initialize lowest extent to something big enough and highest extent to zero.
     HbTypefaceInfoItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-        : mFamily(type), mDownSizeTable(type)
+        : mFamily(type), mAliasedFamily(type), mDownSizeTable(type), mLowestExtent(10000), mHighestExtent(0)
     {
     }
 

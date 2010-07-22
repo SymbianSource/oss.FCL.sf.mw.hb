@@ -44,7 +44,6 @@ public:
     ~HbTapAndHoldGestureLogic();
 
     bool outsideThreshold(HbTapAndHoldGesture *gesture);
-    int startTimer(HbTapAndHoldGesture *gesture, int msecs);
 
     void resetGesture(HbTapAndHoldGesture *gesture);
     QGestureRecognizer::Result handleMousePress(
@@ -54,7 +53,7 @@ public:
     QGestureRecognizer::Result handleMouseRelease(
         Qt::GestureState gestureState, HbTapAndHoldGesture *gesture, QObject *watched, QMouseEvent *me );
     QGestureRecognizer::Result handleTimer(
-        HbTapAndHoldGesture *gesture, QTimerEvent* te);
+        Qt::GestureState gestureState, HbTapAndHoldGesture *gesture, QObject *watched, QTimerEvent* te);
     QGestureRecognizer::Result recognize(
         Qt::GestureState gestureState, HbTapAndHoldGesture *gesture, QObject *watched, QEvent* event );
 

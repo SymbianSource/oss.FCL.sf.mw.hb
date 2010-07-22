@@ -64,4 +64,4 @@ public:
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbStringUtil::Options)
 
-#endif
+#endif // HBSTRINGUTIL_H

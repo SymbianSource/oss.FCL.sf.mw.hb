@@ -170,6 +170,7 @@ HbListViewItem::text-3{
 	text-line-count-min:1;
 	text-line-count-max:1;
 	text-wrap-mode:no-wrap;
+	size-policy-horizontal: ignored;
 }
 
 HbListViewItem::frame{

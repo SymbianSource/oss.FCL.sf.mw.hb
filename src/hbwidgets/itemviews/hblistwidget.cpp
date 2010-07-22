@@ -43,67 +43,66 @@
     @beta
     @hbwidgets
     \class HbListWidget
-    \brief HbListWidget represents a list
+    \brief The HbListWidget class is for simple lists consisting of single row items of an icon and some text, and together with HbListWidgetItem consisting of icon and at most two-row text items.
 
-    This class has been provided with the class HbListWidgetItem as a convenience
-    API. It provides an item-based interface for adding and removing items. 
-
-    SetModel() function of the base class HbListView cannot be used. If the user wants to start 
-    using a list view with e.g. a directory model (QDirModel) this convenience API cannot be used.
     
-    HbListWidget can be used without HbListWidgetItem to populate 
-    simple list with single row items consisting of a text and an icon. 
+    HbListWidget provides a convenience API for adding, modifying, and removing single row items in simple lists. Single row items consist of some text and an icon in one line. If you want list items with two texts or two icons, that is, with multirow items, then you can create HbListWidgetItem objects and add them to an HbListWidget. See HbListWidgetItem for the detailed description of the multirow item. 
 
-    If multirow items are needed the HbListWidgetItem must be used.
-
+     HbListWidget model supports arranging items with drag and drop.
+     
+     \link HbAbstractItemView::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype=0) SetModel()\endlink method of the base class HbAbstractItemView cannot be used. HbListWidget cannot be used for list views with a directory model (QDirModel), for example.
+    
+    \section _usecases_hblistwidget Using the HbListWidget class
+    
+    \subsection _uc_hblistwidget_001 Creating a list and adding one single row item into it.
+    
+    The following code snippet first creates a list and then adds one item which contains some text and an icon to the list.
+   
     \snippet{unittest_hblistwidget.cpp,1}
 
-    See HbListWidgetItem for more usage examples.
-
-    \sa HbListWidgetItem, HbListView 
+    \sa HbListWidgetItem, HbListView for more use cases.
 */
 
 /*!
     \fn void HbListWidget::pressed(HbListWidgetItem *item)
 
-    This signal is emitted when a list item is pressed.
-    The pressed item is specified by \a item.
+    This signal is emitted when the user presses an item in the list. \a item indicates the pressed item.
 
-    See also released(), longPressed() and activated().
+    \sa released(), longPressed(), activated()
 */
 
 /*!
   \fn void HbListWidget::released(HbListWidgetItem *item)
 
-    This signal is emitted when a list item is no more pressed.
-    The released item is specified by \a item.
+    This signal is emitted when when release event occurs for \a item.
 
-    See also pressed(), longPressed() and activated().
+    \sa pressed(), longPressed(), activated()
+    \sa HbAbstractViewItem::released(const QPointF &position)
 */
 
 /*!
     \fn void HbListWidget::activated(HbListWidgetItem *item)
-
-    This signal is emitted when the item specified by \a item is activated by the user.
-    How to activate items depends on the input method; e.g., with mouse by clicking the item,
-    or with touch input by tapping the item, or with hardware keys by pressing the Return
-    or Enter key when the item is current, or with soft keys by pressing choosing "Select"
-    when the item is current.
-
-    See also pressed(), released() and longPressed().
+    
+    This signal is emitted when the user activates an item in the list. \a item indicates the activated item. The activation of the item depends on the input method. An item can be activated in the following ways:
+    - by clicking the item with a mouse
+    - by tapping the item on a touch screen
+    - by pressing Return or Enter hardware keys when the item has focus
+    - by pressing Select soft key when the item has focus
+    
+    \sa pressed(), released(), longPressed()
 */
 
 /*!
     \fn void HbListWidget::longPressed(HbListWidgetItem *item, const QPointF &coords)
 
-    This signal is emitted when a list item is long pressed.
-    The pressed item is specified by \a item and \a coords.
-    See also pressed(), released() and activated().
+    This signal is emitted when the user presses an item in the list for a long time. \a item indicates the activated item and \a coords the screen position where the long press happened.
+
+    \sa pressed(), released(), activated()
 */
 
 /*!
     Constructs a list widget with \a parent.
- */
+*/
 HbListWidget::HbListWidget(QGraphicsItem *parent)
     : HbListView( *new HbListWidgetPrivate, new HbListItemContainer, parent )
 {
@@ -119,14 +118,14 @@ HbListWidget::HbListWidget(QGraphicsItem *parent)
 }
 
 /*!
-    Destructs the list view.
- */ 
+    Destructor.
+*/ 
 HbListWidget::~HbListWidget()
 {
 }
 
 /*!
-    Returns the total number of rows.
+    Returns the total number of rows in the list.
 */
 int HbListWidget::count() const
 {
@@ -134,17 +133,18 @@ int HbListWidget::count() const
 }
 
 /*!
-    Returns the current row number
- */
+    Returns the current row number in the list. A current row is a row having focus.
+*/
 int HbListWidget::currentRow() const
 {
     return modelIterator()->indexPosition(currentIndex());
 }
 
 /*!
-   Sets current \a row. This function sets current index into selection model. 
-   Selection is never changed.
- */
+    Sets the current row to \a row. A current row is a row having focus.
+    
+    \sa currentRow()
+*/
 void HbListWidget::setCurrentRow(int row)
 {
     Q_D(HbListWidget);
@@ -152,10 +152,11 @@ void HbListWidget::setCurrentRow(int row)
 }
 
 /*!
-    Returns a pointer to the current HbListWidgetItem. 
-    Ownership not transferred to the caller.
-    Should not be deleted by the caller.
- */
+    Returns a pointer to the current list item.  A current list item is a list item having focus.
+    Ownership is not transferred so the item should not be deleted by the caller.
+    
+    \sa currentRow()
+*/
 HbListWidgetItem *HbListWidget::currentItem() const 
 {
     Q_D( const HbListWidget );
@@ -163,18 +164,17 @@ HbListWidgetItem *HbListWidget::currentItem() const
 }
 
 /*!
-    Sets the current item to item.
- */
+    Sets the current item to \a item. A current item is an item having focus.
+*/
 void HbListWidget::setCurrentItem (HbListWidgetItem *item)
 {
     setCurrentRow(row(item));
 }
 
 /*!
-    Returns a pointer to an item specified by \a row.
-    Ownership not transferred to the caller.
-    Should not be deleted by the caller.
- */
+    Returns a pointer to the list item specified by \a row.
+    Ownership is not transferred to the caller so the item should not be deleted by the caller.
+*/
 HbListWidgetItem *HbListWidget::item (int row) const
 {
     Q_D( const HbListWidget );
@@ -182,8 +182,8 @@ HbListWidgetItem *HbListWidget::item (int row) const
 }
 
 /*!
-    Creates new one row item based on a string and an icon and append it to the end of the list.
- */
+    Creates a single row item specified by \a icon and \a text and appends it to the end of the list.
+*/
 void HbListWidget::addItem (const HbIcon &icon, const QString &text)
 {
     Q_D( HbListWidget );
@@ -195,8 +195,8 @@ void HbListWidget::addItem (const HbIcon &icon, const QString &text)
 }
 
 /*!
-    Creates new one row item based on a string and append it to the end of the list.
- */ 
+    Creates a new single row item spcified by \a text and appends it to the end of the list.
+*/ 
 void HbListWidget::addItem (const QString &text)
 {
     Q_D( HbListWidget );
@@ -207,8 +207,8 @@ void HbListWidget::addItem (const QString &text)
 }
 
 /*!
-   Appends an item created by the user to the end of the list.
- */
+   Appends \a item to the end of the list.
+*/
 void HbListWidget::addItem (HbListWidgetItem *item)
 {
     Q_D( HbListWidget );
@@ -219,8 +219,10 @@ void HbListWidget::addItem (HbListWidgetItem *item)
 }
 
 /*!
-    Creates a new item based on the string and an icon into a specified location in the list            
- */
+    Creates a list widget item with \a icon and \a text and inserts it into the list at the \a row location. Regarding \a row the following rules apply:
+    - if \a row is negative the item is inserted into the first row
+    - if \a row is greater than the number of list's items the item is added at the last item
+*/
 void HbListWidget::insertItem (int row, const HbIcon &icon, const QString &text)
 {
     Q_D( HbListWidget );
@@ -233,8 +235,10 @@ void HbListWidget::insertItem (int row, const HbIcon &icon, const QString &text)
 }
 
 /*!
-    Creates a new item based on the string into a specified location in the list.
- */
+    Creates a list widget item with \a text and inserts it into the list at the \a row location. Regarding \a row the following rules apply:
+    - if \a row is negative the item is inserted into the first row
+    - if \a row is greater than the number of list's items the item is added at the last item
+*/
 void HbListWidget::insertItem (int row, const QString &text)
 {
     Q_D( HbListWidget );
@@ -246,8 +250,10 @@ void HbListWidget::insertItem (int row, const QString &text)
 }
 
 /*!
-   Inserts an item created by the user to the specified place on the list.
- */
+    Creates a list widget item with \a item and inserts it into the list at the \a row location. Regarding \a row the following rules apply:
+    - if \a row is negative the item is inserted into the first row
+    - if \a row is greater than the number of list's items the item is added at the last item
+*/
 void HbListWidget::insertItem (int row, HbListWidgetItem *item)
 {
     Q_D( HbListWidget );
@@ -258,8 +264,8 @@ void HbListWidget::insertItem (int row, HbListWidgetItem *item)
 }
 
 /*!
-    Deletes every item in the list     
- */
+    Deletes all the items in the list.     
+*/
 void HbListWidget::clear() 
 {
     Q_D( HbListWidget );
@@ -270,8 +276,8 @@ void HbListWidget::clear()
 }
 
 /*!
-    Returns the row containing the given item.
- */
+    Returns the row number of given \a item.
+*/
 int HbListWidget::row(const HbListWidgetItem *item) const
 {
     Q_D( const HbListWidget );
@@ -280,9 +286,7 @@ int HbListWidget::row(const HbListWidgetItem *item) const
 }
 
 /*!
-    \reimp
-
-    Setting own model to HbListWidget is not allowed.
+    This method cannot be used. If you call it in debug builds you will get an ASSERT failure i.e. Q_ASSERT_X(). In release builds nothing will happen.
 */
 void HbListWidget::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype)
 {
@@ -293,9 +297,11 @@ void HbListWidget::setModel(QAbstractItemModel *model, HbAbstractViewItem *proto
 
 
 /*!
-    Set the text for a simple one row item or the first text row for a 
-    multi row item. Only the text is replaced, no icon removed. 
-    Use HbListWidgetItem to modify multirow items.
+    Replaces the text on the given \a row with the given \a text. Only the text is replaced, the icon stays unchanged. In case of a multi-row only the first text row is replaced. Use HbListWidgetItem to modify multirow items.
+    
+    \param text - Text to be shown in the list widget item.
+    \param row - Row of the list widget item.
+    
 */
 void HbListWidget::setText(int row, const QString &text)
 {
@@ -306,9 +312,10 @@ void HbListWidget::setText(int row, const QString &text)
 }
 
 /*!
-    Set the icon for a simple one row item or the first icon for a 
-    multi row item. Only the icon is replaced, no text removed.
-    Use HbListWidgetItem to modify multirow items.
+    Replaces the icon on the given \a row with the given \a icon. Only the icon is replaced, the text stays unchanged. The item can be a single row or a multirow item. Use HbListWidgetItem to modify multirow items.
+    
+    \param icon - Icon to be shown in the list widget item.
+    \param row - Row of the list widget item.
 */
 void HbListWidget::setIcon(int row, const HbIcon& icon)
 {
@@ -319,9 +326,13 @@ void HbListWidget::setIcon(int row, const HbIcon& icon)
 }
 
 /*!
-    Removes and returns the item from the given row in the list widget; otherwise returns 0.
-    Items removed from a list widget will not be managed, and will need to be deleted manually.   
-    Use this function to remove items form the list.    
+    Returns the list widget item of given row and then removes the item from the list. Items removed from a list must be deleted manually.
+    
+    \param row - Row to be removed. 
+
+    \return
+    - The list widget item of \a row if it exists in the list.
+    - 0, if \a row doesn't exist in the list.
 */
 HbListWidgetItem *HbListWidget::takeItem(int row)
 {
@@ -333,37 +344,34 @@ HbListWidgetItem *HbListWidget::takeItem(int row)
 }
 
 /*!
-    HbListWidget model supports arranging items with drag and drop, so 
-    this method returns true unless the widget is in some selection mode. 
+    HbListWidget supports arranging items with drag and drop. If \a arrangeMode is \c true and the list is not in the selection mode, the list is put into the arrange list mode which allows the user to rearrange the list by dragging and dropping items. If \a arrangeMode is \c false, then the arrange list mode is cancelled. 
+    
+    The list can be in either arrange or selection mode but not in both modes at any given time.
+    
+    \return
+    - \c True if the arrange list mode is successfully set according to \a arrangeMode. This includes the case where the requested \a arrangeMode is the same as what was already set for the list.
+    - \c False if the requested \a arrangeMode cannot be set.   
 */
 bool HbListWidget::setArrangeMode(const bool arrangeMode)
 {
     Q_D( HbListWidget );
 
     if (arrangeMode != d->mArrangeMode) {
-        if (arrangeMode == true) {
-            if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
-                return false;
-            }
-            verticalScrollBar()->setInteractive(true);
-        } else {
-            verticalScrollBar()->setInteractive(false);
+        if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
+            return false;
         }
-
-        d->mArrangeMode = arrangeMode;
-        d->mAnimateItems = !d->mArrangeMode;
-
-        if (d->mArrangeMode == true) {
-            d->mOriginalFriction = d->mFrictionEnabled;
-            setFrictionEnabled(false);
-        } else {
-            setFrictionEnabled(d->mOriginalFriction);
-        }
+        d->arrangeModeSetup(arrangeMode);
     }
     return true;
 }
 
 /*!
+    Moves an item from given source row to given target row. The operation is cancelled in the following cases:
+    - Source and target rows are the same.
+    - Either or both given rows do not exist in the list.
+    
+    \param from - Source row that is the row from where the item is moved.
+    \param to - Target row that is the row to where the item is moved.
 */
  void HbListWidget::move(const QModelIndex &from, const QModelIndex &to)
 {
@@ -384,7 +392,7 @@ bool HbListWidget::setArrangeMode(const bool arrangeMode)
 
 /*!
     Constructs a list widget with private view widget \a dd and \a parent.
- */
+*/
 HbListWidget::HbListWidget( HbListWidgetPrivate& dd, HbAbstractItemContainer *container, QGraphicsItem* parent ):
         HbListView( dd, container, parent )
 {

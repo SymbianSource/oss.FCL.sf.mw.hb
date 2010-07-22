@@ -49,7 +49,6 @@ public:
         mViewBoxDefined = true;
     }
 
-
     void setAllignment(HbNvgEngine::HbNvgAlignType alignStatus)
     {
         mAlign = alignStatus;
@@ -60,45 +59,10 @@ public:
         mMeetSlice = meetSlice;
     }
 
-    void setTransform(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12)
-    {
-        mM00 = m00;
-        mM01 = m01;
-        mM02 = m02;
-        mM10 = m10;
-        mM11 = m11;
-        mM12 = m12;
-    }
-
-    void translate(qreal tx, qreal ty)
-    {
-        qreal lTranslateMatrix[6] =  { 1, 0, tx, 0, 1, ty};
-        concatenate(lTranslateMatrix);
-    }
-
-    void scale(qreal sx, qreal sy)
-    {
-        qreal lScaleMatrix[6] = { sx, 0, 0, 0, sy, 0};
-        concatenate(lScaleMatrix);
-    }
-
-    void concatenate(qreal *matrix)
-    {
-        concatenate(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-    }
 
     void setWindowViewportTrans(const QRect &viewPort, const QSize &size);
 
-    void concatenate(qreal m00, qreal m01, qreal m02, qreal m10, qreal m11, qreal m12);
-
 private:
-
-    qreal mM00;
-    qreal mM01;
-    qreal mM02;
-    qreal mM10;
-    qreal mM11;
-    qreal mM12;
 
     qreal   mVbX;
     qreal   mVbY;

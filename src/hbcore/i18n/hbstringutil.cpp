@@ -42,16 +42,11 @@
 #endif
 
 /*!
-    @beta
+    @stable
     @hbcore
     \class HbStringUtil
     \brief The HbStringUtil class can be used to execute operations on strings,
     such as comparisons and finding data sequences.
-
-    \ingroup i18n
-
-    \warning This class is only useful in Symbian platforms since it uses Symbian
-    methods in order to implement different functionalities.
 
     \sa HbStringUtil
 */
@@ -85,6 +80,8 @@
 /*!
     Searches source string's collated data for a
     match with collated data supplied in pattern string
+      
+    \attention Cross-Platform API
     
     \param strFrom Source string.
     \param strToMatch Pattern string.
@@ -97,10 +94,11 @@
     \param wildChar Wild card character.
     \param wildSequenceChar Wild card sequence character.
     \param escapeChar The escape character, for example,  '?', '*'.
+    
     \return If a match is found the offset within source string's
     data where the match first occurs. -1 if match is not found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,3}
  */
 int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
@@ -144,6 +142,8 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
     Compares source string's data with the other string's
     data using the specified collation method.
     
+    \attention Cross-Platform API
+    
     \param string1 Source string.
     \param string2 String whose data is to be compared with the source string.
     \param maxLevel Maximum level to use for comparing.
@@ -152,10 +152,11 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
     Level 2 - Character identity, accents and case; 
     Level 3 - Character identity, accents, case and Unicode value; 
     \param flags The flags that will be used. Default value is Default.
+    
     \return Positive if source string is greater, negative if it is less and 
     zero	if the content of both strings match.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,1}
  */
 int HbStringUtil::compareC( const QString &string1, const QString &string2,
@@ -184,9 +185,11 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
 }
 
 /*!
-    Searches for the first occurence of the specified collated 
+    Searches for the first occurrence of the specified collated 
     data sequence in the aStrFrom to the specified maximum
     collation level.
+    
+    \attention Cross-Platform API
     
     \param strFrom Source string.
     \param strToFind String whose data is to be compared with the source string.
@@ -195,10 +198,11 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
     Level 1 - Character identity and accents; 
     Level 2 - Character identity, accents and case; 
     Level 3 - Character identity, accents, case and Unicode value; 
+    
     \return Offset of the data sequence from the beginning of the
     aStrFrom. -1 if the data sequence cannot be found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,5}
  */
 int HbStringUtil::findC( const QString &strFrom,
@@ -225,12 +229,15 @@ int HbStringUtil::findC( const QString &strFrom,
     Searches source string's folded data for a
     match with folded data supplied in pattern string
     
+    \attention Cross-Platform API
+    
     \param strFrom Source string.
     \param strToMatch Pattern string.
+    
     \return If a match is found the offset within source string's
     data where the match first occurs. -1 if match is not found.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,4}
  */
 int HbStringUtil::matchF( const QString &strFrom,
@@ -254,16 +261,19 @@ int HbStringUtil::matchF( const QString &strFrom,
 }
 
 /*!
-    Searches for the first occurence of the specified folded 
+    Searches for the first occurrence of the specified folded 
     data sequence in the strFrom.
+    
+    \attention Cross-Platform API
     
     \param strFrom Source string.
     \param strToFind String whose data is to be compared with the source string.
+    
     \return Offset of the data sequence from the beginning of the
     strFrom. -1 if the data sequence cannot be found. Zero,
     if the length of search data sequence is zero.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,6}
  */
 int HbStringUtil::findF( const QString &strFrom,
@@ -283,12 +293,15 @@ int HbStringUtil::findF( const QString &strFrom,
     Compares source string's folded data with the other string's
     folded data.
     
+    \attention Cross-Platform API
+    
     \param string1 Source string.
     \param string2 String whose data is to be compared with the source string.
+    
     \return Positive if source string is greater, negative if it is less and 
     zero if the content of both strings match.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,2}
  */
 int HbStringUtil::compareF( const QString &string1,
@@ -311,7 +324,7 @@ int HbStringUtil::compareF( const QString &string1,
  */
 static QChar nativeDigitBase(QChar ch)
 {
-	DigitType d[] = { WesternDigit, ArabicIndicDigit, EasternArabicIndicDigit, DevanagariDigit, ThaiDigit };
+    DigitType d[] = { WesternDigit, ArabicIndicDigit, EasternArabicIndicDigit, DevanagariDigit, ThaiDigit };
     int i = 0;
     int num = sizeof(d)/sizeof(d[0]);
     while(i<num) {
@@ -323,6 +336,9 @@ static QChar nativeDigitBase(QChar ch)
 
 /*!
     Converts digits to native digits based on current UI language.
+    
+    \attention Cross-Platform API
+    
     \param str digits to be converted.
  */
 QString HbStringUtil::convertDigits( const QString str ) 
@@ -331,11 +347,7 @@ QString HbStringUtil::convertDigits( const QString str )
 	DigitType digitType = WesternDigit;
 	if (locale.language() == HbExtendedLocale::Arabic) {
 		digitType = ArabicIndicDigit;
-	}
-	if (locale.language() == HbExtendedLocale::Persian) {
-		digitType = EasternArabicIndicDigit;
-	}
-	if (locale.language() == HbExtendedLocale::Urdu) {
+	} else if (locale.language() == HbExtendedLocale::Persian || locale.language() == HbExtendedLocale::Urdu) {
 		digitType = EasternArabicIndicDigit;
 	}
 	QString converted = HbStringUtil::convertDigitsTo(str, digitType);
@@ -344,13 +356,16 @@ QString HbStringUtil::convertDigits( const QString str )
 
 /*!
     Converts the digit from Latin to native or native to latin or native to native
+    
+    \attention Cross-Platform API
+    
     \param str digits to be converted.
     \param digitType type of the digit to be converted to
  */
 QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitType ) 
 {
     QString convDigit;
-	int length = str.length();
+    int length = str.length();
     for(int i=0; i<length; i++) 
        {
        ushort digit = str[i].unicode();
@@ -377,9 +392,11 @@ QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitT
 /*!
     Sorts QStrings into alphabetically order (overwrites the strList's original content)
     
+    \attention Cross-Platform API
+    
     \param strList List of QStrings which need to be sorted.
     
-    Example
+    Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,7}
  */
 void HbStringUtil::sort( QStringList &strList )

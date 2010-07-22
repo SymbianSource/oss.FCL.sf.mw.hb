@@ -36,12 +36,14 @@ class HbFadeItem : public HbWidget
     Q_OBJECT
 
 public:
-    HbFadeItem( QGraphicsItem *parent = 0 );
+    HbFadeItem(QGraphicsItem *parent = 0);
 
     QRectF boundingRect() const;
 
     enum { Type = HbPrivate::ItemType_FadeItem };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
 protected:
     HbFadeItem(HbFadeItemPrivate &dd, QGraphicsItem *parent = 0);

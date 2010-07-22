@@ -31,30 +31,110 @@
 #include <hbaction.h>
 #include <hbicon.h>
 #include <hblistwidgetitem.h>
+#include <restricted/hbthemeservices_r.h>
+#include <hblabel.h>
+#include <hbiconitem.h>
+#include <hbtoolbar.h>
 #include <QDebug>
 #include <QTime>
 #include <QThread>
+#include <QGesture>
+#include <QGraphicsLinearLayout>
 
 #include "themeselectionlist.h"
 #include "themechangerdefs.h"
+#include "settingsview.h"
+#include "resourceview.h"
+
+class PreviewView : public HbView
+{
+public:
+
+    PreviewView(const QString &name, const QString &theme, QGraphicsItem* parent=0):
+       HbView(parent), preview(0), themePath(theme)
+    {
+        QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(Qt::Vertical);
+        HbLabel *label = new HbLabel(tr("Apply theme %1?").arg(name));
+        label->setFontSpec(HbFontSpec(HbFontSpec::Primary));
+        label->setElideMode(Qt::ElideNone);
+        layout->addItem(label);
+        QString previewPath("");
+        if (HbDeviceProfile::profile(this).orientation() == Qt::Horizontal) {
+            previewPath = themePath + "/scalable/qtg_graf_theme_preview_lsc.";
+        } else {
+            previewPath = themePath + "/scalable/qtg_graf_theme_preview_prt.";
+        }
+        QString nvgPreview(previewPath + "nvg");
+        QString svgPreview(previewPath + "svg");
+        
+        if (QFile::exists(nvgPreview)) {
+            previewPath = nvgPreview;
+        } else if (QFile::exists(svgPreview)) {
+            previewPath = svgPreview;
+        } else {
+            previewPath = "qtg_large_corrupted";
+        }
+        preview = new HbIconItem(previewPath);
+        preview->setAspectRatioMode(Qt::KeepAspectRatio);
+        QSize s = HbDeviceProfile::profile(this).logicalSize();
+        preview->setPreferredSize(s);
+        layout->addItem(preview);
+        this->setLayout(layout);
+    }
+
+    ~PreviewView()
+    {
+        delete preview;
+    }
+
+    void resizeEvent(QGraphicsSceneResizeEvent *event)
+    {
+        Q_UNUSED(event);
+        if (preview) {
+            QString previewPath("");
+            if (HbDeviceProfile::profile(this).orientation() == Qt::Horizontal) {
+                previewPath = themePath + "/scalable/qtg_graf_theme_preview_lsc.";
+            } else {
+                previewPath = themePath + "/scalable/qtg_graf_theme_preview_prt.";
+            }
+            QString nvgPreview(previewPath + "nvg");
+            QString svgPreview(previewPath + "svg");
+            
+            if (QFile::exists(nvgPreview)) {
+                previewPath = nvgPreview;
+            } else if (QFile::exists(svgPreview)) {
+                previewPath = svgPreview;
+            } else {
+                previewPath = "qtg_large_corrupted";
+            }
+
+            preview->setIconName(previewPath);
+            preview->setAspectRatioMode(Qt::KeepAspectRatio);
+            QSize s = HbDeviceProfile::profile(this).logicalSize();
+            preview->setPreferredSize(s);
+        }
+    }
+private:
+    HbIconItem *preview;
+    QString themePath;
+};
 
 /**
  * Constructor
  */
-ThemeSelectionList::ThemeSelectionList(
-#ifdef Q_OS_SYMBIAN
-    ThemeClientSymbian* client
-#else
-    ThemeClientQt* client
-#endif
-                        ): 
-                        oldItemIndex(-1),
+ThemeSelectionList::ThemeSelectionList(HbMainWindow *mainWindow):
                         themelist(new HbListWidget(this)),
                         rightMark(new HbIcon(QString("qtg_small_tick"))),
                         noMark(new HbIcon(QString(""))),
-                        client(client)
+                        previewView(0),
+                        settingsView(0),
+                        resourceView(0)
 {
+    mMainWindow = mainWindow;
     connect(themelist, SIGNAL(activated(HbListWidgetItem *)),this, SLOT(setChosen(HbListWidgetItem *)));
+    connect(themelist, SIGNAL(longPressed(HbListWidgetItem*, QPointF)),
+            this, SLOT(onLongPressed(HbListWidgetItem*, QPointF)));
+
     setWidget(themelist);
 
     // Automatic updation of the themelist when some theme is installed or uninstalled
@@ -66,11 +146,20 @@ ThemeSelectionList::ThemeSelectionList(
         }
     }
     connect(watcher,SIGNAL(directoryChanged(const QString &)),this,SLOT(updateThemeList(const QString &)));
-    QObject::connect(this,SIGNAL(newThemeSelected(QString)),this,SLOT(sendThemeName(QString)));    
+    QObject::connect(this,SIGNAL(newThemeSelected(QString)),this,SLOT(sendThemeName(QString)));
+    grabGesture(Qt::TapAndHoldGesture);
+
+    HbAction *a = this->toolBar()->addAction(HbIcon("qtg_mono_settings"),tr("Settings"));
+    connect(a, SIGNAL(triggered()), this, SLOT(showSettingsView()));
+
+    a = this->toolBar()->addAction(HbIcon("qtg_mono_search"),tr("Resources"));
+    connect(a, SIGNAL(triggered()), this, SLOT(showResourceView()));
+
+    connect(hbInstance->theme(),SIGNAL(changeFinished()), this, SLOT(themeChanged()));
+
 #ifdef THEME_CHANGER_TIMER_LOG
     idleTimer = new QTimer(this);
     connect(idleTimer, SIGNAL(timeout()), this, SLOT(processWhenIdle()));
-    connect(hbInstance->theme(),SIGNAL(changeFinished()), this, SLOT(themeChanged()));
     idleTimer->start(0); // to make a connection to server
 #endif
 }
@@ -81,9 +170,7 @@ ThemeSelectionList::ThemeSelectionList(
 ThemeSelectionList::~ThemeSelectionList()
 {
     // Set the theme to the applied theme before exiting.
-    setChosen(themelist->item(oldItemIndex));
     delete noMark;
-
     noMark=NULL;
     delete rightMark;
     rightMark=NULL;
@@ -92,6 +179,10 @@ ThemeSelectionList::~ThemeSelectionList()
     themelist->reset();
     delete themelist;
     themelist=NULL;
+    
+    // Delete preview thubnails
+    qDeleteAll(thumbnails);
+    thumbnails.clear();
 }
 
 
@@ -100,6 +191,7 @@ ThemeSelectionList::~ThemeSelectionList()
  */
 void ThemeSelectionList::displayThemes()
 {
+    rootThemes.clear();
     bool entryAdded = false;
     bool themePresent = false;
     foreach(const QString &KThemeRootPath, rootPaths()){
@@ -112,15 +204,23 @@ void ThemeSelectionList::displayThemes()
             QStringList iconthemeslist=dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
             foreach(QString themefolder, iconthemeslist) {
                 QDir iconThemePath(root.path()+"/themes/icons/"+themefolder);
-                if(iconThemePath.exists("index.theme")) {
+                QFile themeIndexFile(root.path()+"/themes/"+themefolder+".themeindex");
+                if(themeIndexFile.exists() && iconThemePath.exists("index.theme")) {
                     QSettings iniSetting(iconThemePath.path()+"/index.theme",QSettings::IniFormat);
                     iniSetting.beginGroup("Icon Theme");
                     QString hidden = iniSetting.value("Hidden").toString();
-                    QString name = iniSetting.value("Name").toString();
                     iniSetting.endGroup();
-                    if((hidden == "true") ||( hidden == "")||(name!=themefolder) ) {
+                    if((hidden == "true") ||( hidden == "")) {
                         iconthemeslist.removeOne(themefolder);
                     }
+#ifdef Q_OS_SYMBIAN
+                    if (KThemeRootPath[0] == 'z') {
+#endif
+                    rootThemes.append(iconThemePath.absolutePath());
+#ifdef Q_OS_SYMBIAN
+                }
+#endif
+
                 }
                 else {
                      iconthemeslist.removeOne(themefolder);
@@ -128,42 +228,89 @@ void ThemeSelectionList::displayThemes()
             
             }
             if(!entryAdded){
-                iconthemeslist.insert(0,"hbdefault"); //adding one default entry
+                rootThemes.append(":/themes/icons/hbdefault");
+                //adding one default entry
+                HbListWidgetItem *item = new HbListWidgetItem();
+                item->setText("hbdefault");
+                item->setSecondaryText(":/themes/icons/hbdefault");
+                QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
+                if (!QFile::exists(thumbPath)) {
+                    thumbPath = "qtg_large_corrupted";
+                }
+                HbIcon *icon = new HbIcon(thumbPath);
+                thumbnails.append(icon);
+                item->setIcon(*icon);                                
+                if (HbInstance::instance()->theme()->name() == "hbdefault") {
+                    item->setSecondaryIcon(*rightMark);
+                    themelist->addItem(item);                
+                    themelist->setCurrentRow(themelist->count()-1);
+                } else {
+                    item->setSecondaryIcon(*noMark);
+                    themelist->addItem(item);                
+                }
                 entryAdded = true;
             }
             list=iconthemeslist;
             for (int i=0; i <list.count();i++) {
                 // populate theme list with existing themes
-                if((HbInstance::instance()->theme()->name())==(list.at(i))) { 
-                    themelist->addItem(*rightMark,list.at(i));
-                    oldItemIndex=themelist->count()-1;
-                    themelist->setCurrentRow(oldItemIndex);
+                HbListWidgetItem *item = new HbListWidgetItem();
+
+                QSettings iniSetting(root.path()+"/themes/icons/"+list.at(i)+"/index.theme",QSettings::IniFormat);
+                iniSetting.beginGroup("Icon Theme");
+                QString name = iniSetting.value("Name").toString();
+                iniSetting.endGroup();
+                item->setText(name);
+
+                item->setSecondaryText(root.path()+"/themes/icons/"+list.at(i));
+                QString thumbPath(root.path()+"/themes/icons/"+list.at(i)+"/scalable/qtg_graf_theme_preview_thumbnail.");
+                QString nvgPath(thumbPath + "nvg");
+                QString svgPath(thumbPath + "svg");
+                if (QFile::exists(nvgPath)) {
+                    thumbPath = nvgPath;
+                } else if (QFile::exists(svgPath)) {
+                    thumbPath = svgPath;
                 }
                 else {
-                    themelist->addItem(*noMark,list.at(i));
+                    thumbPath = "qtg_large_corrupted";
+                }
+                HbIcon *icon = new HbIcon(thumbPath);
+                thumbnails.append(icon);
+                item->setIcon(*icon);
+                
+                
+                if (QFileInfo(HbThemeServices::themePath()) == QFileInfo(item->secondaryText())) {
+                    item->setSecondaryIcon(*rightMark);
+                    themelist->addItem(item);
+                    themelist->setCurrentRow(themelist->count()-1);
+                }
+                else {
+                    item->setSecondaryIcon(*noMark);
+                    themelist->addItem(item);
                 }
             }
         }
     }
     //    else{//add a case for no theme ,make hbdefault entry
     if(!themePresent) {
-            QStringList defaultList;
-            defaultList.insert(0,"hbdefault"); //adding one default entry
-            themelist->addItem(*rightMark,defaultList.at(0));
+            rootThemes.append(":/themes/icons/hbdefault");
+            //adding one default entry
+            HbListWidgetItem *item = new HbListWidgetItem();
+            item->setText("hbdefault");
+            item->setSecondaryText(":/themes/icons/hbdefault");
+            QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
+            if (!QFile::exists(thumbPath)) {
+                thumbPath = "qtg_large_corrupted";
+            }
+            HbIcon *icon = new HbIcon(thumbPath);
+            thumbnails.append(icon);
+            item->setIcon(*icon);            
+            item->setSecondaryIcon(*rightMark);
+            themelist->addItem(item);
             QString themeName=HbInstance::instance()->theme()->name();
             if (themeName != "hbdefault")
             {
-                if (!client->isConnected()) {
-                    bool success = client->connectToServer();
-                    if (success) {
-                        emit newThemeSelected("hbdefault");
-                    }
-                }
-                else {
-                    emit newThemeSelected("hbdefault");
-                }
+                emit newThemeSelected(":/themes/icons/hbdefault");
             }
-
         }
 }
 
@@ -172,64 +319,18 @@ void ThemeSelectionList::displayThemes()
  */
 void ThemeSelectionList::setChosen(HbListWidgetItem *item)
 {
-    QString str=item->text();
-
 #ifdef THEME_CHANGER_TRACES
-    qDebug() << "ThemeSelectionList::Setchosen with ThemeName: "<<str;
+    qDebug() << "ThemeSelectionList::Setchosen with ThemeName: "<<item->secondaryText();
 #endif
-    if(iCurrentTheme != str ) {
+    if(iCurrentTheme != item->secondaryText()) {
 #ifdef THEME_CHANGER_TIMER_LOG
         timer.start();
-        qDebug() << "Selected theme: " << str;
+        qDebug() << "Selected theme: " << item->secondaryText();
 #endif
-        iCurrentTheme = str;
-        if (!client->isConnected()) {
-            bool success = client->connectToServer();
-            if (success) {
-                QThread::currentThread()->setPriority(QThread::HighPriority);
-                emit newThemeSelected(str);
-            }
-        }
-        else {
-            QThread::currentThread()->setPriority(QThread::HighPriority);
-            emit newThemeSelected(str); 
-        }
+        iCurrentTheme = item->secondaryText();
+        QThread::currentThread()->setPriority(QThread::HighPriority);
+        emit newThemeSelected(item->secondaryText());
     }
-    else
-    {
-        applySelection(); //double tap //put a tick
-    }
-}
-
-
-/**
- * applySelection
- */
-void ThemeSelectionList::applySelection()
-{
-    if(oldItemIndex!=themelist->currentRow()) {
-        themelist->setIcon(themelist->currentRow(),*rightMark);
-        if(oldItemIndex >= 0) {
-            themelist->setIcon(oldItemIndex,*noMark);
-        }
-        oldItemIndex = themelist->currentRow();
-    }
-}
-
-
-/**
- * event
- */
-bool ThemeSelectionList::event(QEvent *e)
-{
-    if((e->type()==QEvent::ShortcutOverride)||(e->type()==QEvent::WindowDeactivate)) {        
-        // save old applied theme
-        themelist->setCurrentRow(oldItemIndex);
-        themelist->setFocus();
-        setChosen(themelist->item(oldItemIndex));
-        return true;
-    }
-    return (HbView::event(e));
 }
 
 /**
@@ -248,7 +349,7 @@ void ThemeSelectionList::updateThemeList(const QString &path)
  */
 void ThemeSelectionList::sendThemeName(const QString& name)
 {
-    client->changeTheme(name);
+    HbThemeServices::setTheme(name);
 }
 
 /**
@@ -258,8 +359,8 @@ QStringList ThemeSelectionList::rootPaths()
 {
     QStringList rootDirs;
 #if defined(Q_OS_SYMBIAN)
-    rootDirs << "c:/resource/hb"
-             << "z:/resource/hb"
+    rootDirs << "z:/resource/hb"
+             << "c:/resource/hb"
              << "e:/resource/hb"
              << "f:/resource/hb";
 #else
@@ -275,19 +376,85 @@ QStringList ThemeSelectionList::rootPaths()
     return rootDirs;
 }
 
+void ThemeSelectionList::onLongPressed(HbListWidgetItem* listViewItem, const QPointF& coords)
+{
+    Q_UNUSED(coords);
+    if (previewView) {
+        delete previewView;
+        previewView = 0;
+    }
+    previewItem = listViewItem;
+    QString theme = listViewItem->secondaryText();
+    previewView = new PreviewView(listViewItem->text(), theme, this);
+    mMainWindow->addView(previewView);
+
+    HbAction *act = new HbAction(tr("Ok"));
+    connect(act, SIGNAL(triggered()), this, SLOT(applyTheme()));
+    previewView->toolBar()->addAction(act);
+    act = new HbAction(tr("Cancel"));
+    connect(act, SIGNAL(triggered()), this, SLOT(cancel()));
+    previewView->toolBar()->addAction(act);
+    act = new HbAction(Hb::BackNaviAction);
+    connect(act, SIGNAL(triggered()), this, SLOT(cancel()));
+    previewView->setNavigationAction(act);
+
+    mMainWindow->setCurrentView(previewView);
+}
+
+void ThemeSelectionList::cancel()
+{
+    mMainWindow->setCurrentView(this);
+    mMainWindow->removeView(previewView);
+}
+
+void ThemeSelectionList::applyTheme()
+{
+    if (previewItem) {
+        setChosen(previewItem);
+    }
+    mMainWindow->setCurrentView(this);
+    mMainWindow->removeView(previewView);
+}
+
+void ThemeSelectionList::showSettingsView()
+{
+    if (!settingsView) {
+        settingsView = new SettingsView(rootThemes, mMainWindow, this);
+    }
+    mMainWindow->setCurrentView(settingsView);
+}
+
+void ThemeSelectionList::showResourceView()
+{
+    if (!resourceView) {
+        resourceView = new ResourceView(mMainWindow, this);
+    }
+    mMainWindow->setCurrentView(resourceView);
+}
+
+
+void ThemeSelectionList::themeChanged()
+{
+    QString currentTheme = HbThemeServices::themePath();
+    for (int i=0;i<themelist->count();i++) {
+        HbListWidgetItem *item = themelist->item(i);
+        if (item->secondaryText() == currentTheme) {
+            item->setSecondaryIcon(*rightMark);
+        } else {
+            item->setSecondaryIcon(*noMark);
+        }
+    }
+
+#ifdef THEME_CHANGER_TIMER_LOG
+    idleTimer->start(0);
+#endif //THEME_CHANGER_TIMER_LOG
+}
+
 #ifdef THEME_CHANGER_TIMER_LOG
 void ThemeSelectionList::processWhenIdle()
 {    
     qDebug() << "Theme changed applied in " << timer.elapsed() << " msec";
     idleTimer->stop();
     QThread::currentThread()->setPriority(QThread::NormalPriority);    
-    if (!client->isConnected()) {
-        client->connectToServer();
-    }
-}
-
-void ThemeSelectionList::themeChanged()
-{
-    idleTimer->start(0);
 }
 #endif //THEME_CHANGER_TIMER_LOG

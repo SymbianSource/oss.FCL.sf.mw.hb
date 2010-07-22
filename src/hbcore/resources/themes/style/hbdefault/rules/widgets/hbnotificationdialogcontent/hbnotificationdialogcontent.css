@@ -1,11 +1,11 @@
 HbNotificationDialogContent[icon="true"][textFields="2"]
 {
-	layout:dialog_notification_window_title_text_icon;
+	  layout:dialog_notification_window_title_text_icon;
 }
 
 HbNotificationDialogContent[icon="false"][textFields="2"]
 {
-        layout:dialog_notification_window_title_text
+    layout:dialog_notification_window_title_text
 }
 
 HbNotificationDialogContent[icon="false"][textFields="1"]
@@ -15,7 +15,7 @@ HbNotificationDialogContent[icon="false"][textFields="1"]
 
 HbNotificationDialogContent[icon="true"][textFields="1"]
 {
-	layout:dialog_notification_window_title_icon;
+	  layout:dialog_notification_window_title_icon;
 }
 
 HbNotificationDialogContent[textFields="1"]::icon
@@ -45,6 +45,8 @@ HbNotificationDialogContent[titleWrapping="false"][icon="false"][textFields="1"]
     font-variant:primary;
     pref-height: var(hb-param-text-height-primary);
     text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
 }
 
 HbNotificationDialogContent[titleWrapping="false"][icon="true"][textFields="1"]::title
@@ -54,6 +56,8 @@ HbNotificationDialogContent[titleWrapping="false"][icon="true"][textFields="1"]:
     font-variant:primary;
     pref-height: var(hb-param-text-height-primary);
     text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
 }
 
 HbNotificationDialogContent[titleWrapping="true"][icon="false"][textFields="1"]::title
@@ -90,6 +94,8 @@ HbNotificationDialogContent[icon="false"][textFields="2"]::title
     font-variant:primary;
     pref-height: var(hb-param-text-height-primary);
     text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
 }
 
 HbNotificationDialogContent[icon="true"][textFields="2"]::title
@@ -100,6 +106,8 @@ HbNotificationDialogContent[icon="true"][textFields="2"]::title
     font-variant:primary;
     pref-height: var(hb-param-text-height-primary);
     text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
 }
 
 HbNotificationDialogContent::text
@@ -109,5 +117,7 @@ HbNotificationDialogContent::text
     font-variant:secondary;
     pref-height: var(hb-param-text-height-secondary);
     text-align: left;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
 }
 

@@ -29,6 +29,8 @@
 #include "hbpointrecorder_p.h"
 #include "hbvelocitycalculator_p.h"
 
+#include <hbdeviceprofile.h>
+
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QGraphicsView>
@@ -147,6 +149,7 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseMove(
     \return
 
 */
+#include <QDebug>
 QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseRelease(
         Qt::GestureState gestureState,
         HbSwipeGesture *gesture,
@@ -161,16 +164,15 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseRelease(
         return QGestureRecognizer::Ignore;
     }
 
-    QPointF totalOffset = me->globalPos() - gesture->d_func()->mStartPos.toPoint();
+    QPoint totalOffset = me->globalPos() - gesture->d_func()->mStartPos.toPoint();
 
     int deltaTime = gesture->d_func()->mStartTime.msecsTo(mCurrentTime);
     QPointF velocity = deltaTime != 0 ? totalOffset / deltaTime : QPointF(0,0);
 
     gesture->setSwipeAngle(QLineF(gesture->d_func()->mStartPos, me->globalPos()).angle());
-    gesture->setSceneSwipeAngle(QLineF(gesture->d_func()->mSceneStartPos, HbGestureUtils::mapToScene(watched, me->globalPos())).angle());
-
-    bool movedEnough = totalOffset.manhattanLength() >= HbSwipeMinOffset;
-    bool fastEnough = velocity.manhattanLength() >= HbSwipeMinSpeed;
+    gesture->setSceneSwipeAngle(QLineF(gesture->d_func()->mSceneStartPos, HbGestureUtils::mapToScene(watched, me->globalPos())).angle());    
+    bool movedEnough = totalOffset.manhattanLength() >= (int)(HbSwipeMinOffset * HbDeviceProfile::current().ppmValue());
+    bool fastEnough = velocity.manhattanLength() >= HbSwipeMinSpeed * HbDeviceProfile::current().ppmValue();
     bool notStoppedAtEnd = HbVelocityCalculator(gesture->d_ptr->mAxisX, gesture->d_ptr->mAxisY).velocity(mCurrentTime) != QPointF(0,0);
 
     if (movedEnough && fastEnough && notStoppedAtEnd) {

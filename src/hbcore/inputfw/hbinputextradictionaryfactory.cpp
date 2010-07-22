@@ -22,11 +22,12 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputextradictionaryfactory.h"
+
 #include <QDir>
 
 #include "hbinputsettingproxy.h"
 #include "hbinputextrauserdictionary.h"
-#include "hbinputextradictionaryfactory.h"
 
 /*!
 @proto
@@ -48,14 +49,14 @@ public:
     void shutdown();
 
 public:
-    HbExtraDictionaryFactory* q_ptr;
-    QList<HbExtraUserDictionary*> instances;
+    HbExtraDictionaryFactory *q_ptr;
+    QList<HbExtraUserDictionary *> instances;
 };
 
 
 void HbExtraDictionaryFactoryPrivate::shutdown()
 {
-    Q_FOREACH(const HbExtraUserDictionary* instance, instances) {
+    Q_FOREACH(const HbExtraUserDictionary *instance, instances) {
         delete instance;
     }
 
@@ -65,11 +66,11 @@ void HbExtraDictionaryFactoryPrivate::shutdown()
 /// @endcond
 
 /*!
-Returns pointer to the singleton instance. 
+Returns pointer to the singleton instance.
 */
 HbExtraDictionaryFactory *HbExtraDictionaryFactory::instance()
 {
-    static HbExtraDictionaryFactory singletonInstance; 
+    static HbExtraDictionaryFactory singletonInstance;
     return &singletonInstance;
 }
 
@@ -103,7 +104,7 @@ HbExtraUserDictionary *HbExtraDictionaryFactory::existingDictionary(int dictiona
 {
     Q_D(HbExtraDictionaryFactory);
 
-    foreach (HbExtraUserDictionary* dictPtr, d->instances) {
+    foreach(HbExtraUserDictionary *dictPtr, d->instances) {
         if (dictPtr->id() == dictionaryId) {
             return dictPtr;
         }
@@ -119,12 +120,12 @@ HbExtraUserDictionary *HbExtraDictionaryFactory::existingDictionary(int dictiona
     if (newDb->isAlreadyInMemory()) {
         newDb->attach();
         d->instances.append(newDb);
-        return newDb;        
+        return newDb;
     }
 
     if (newDb->attach()) {
         // Not available in memory, try to load from permanent memory.
-        if (newDb->load(newDb->fileName())) {        
+        if (newDb->load(newDb->fileName())) {
             d->instances.append(newDb);
             return newDb;
         }
@@ -137,16 +138,16 @@ HbExtraUserDictionary *HbExtraDictionaryFactory::existingDictionary(int dictiona
 /*!
 Creates dictionary if it doesn't already exists. If initialContent is given, new dictionary will
 be filled with it. If a dictionary for given id already exists, it is returned and initialContent
-is discarded. 
+is discarded.
 */
-HbExtraUserDictionary *HbExtraDictionaryFactory::createDictionary(int dictionaryId, const QStringList& initialContent)
-{   
+HbExtraUserDictionary *HbExtraDictionaryFactory::createDictionary(int dictionaryId, const QStringList &initialContent)
+{
     Q_D(HbExtraDictionaryFactory);
 
     HbExtraUserDictionary *newDb = existingDictionary(dictionaryId);
     if (newDb == 0) {
         newDb = new HbExtraUserDictionary;
-        newDb->setId(dictionaryId);    
+        newDb->setId(dictionaryId);
         if (!newDb->attach()) {
             delete newDb;
             return 0;

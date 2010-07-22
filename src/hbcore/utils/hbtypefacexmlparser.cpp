@@ -44,6 +44,7 @@
 #define TYPEFACE_BASELINE_ATT "baseline"
 #define TYPEFACE_LANGUAGE_ATT "language"
 #define TYPEFACE_COUNTRY_ATT "country"
+#define TYPEFACE_ALIASFAMILY_ATT "aliasfamily"
 
 
 #define TYPEFACE_ATT_VAL_BOLD "bold"
@@ -205,7 +206,7 @@ bool HbTypefaceXmlParser::matchLanguageAndCountry() const
 	// Construct the locale with the typeface locale info
 	if (!language.isEmpty()) {
 		if (!country.isEmpty()) {
-			typefaceLocaleName = language + "_" + country;
+			typefaceLocaleName = language + '_' + country;
 			systemLocaleName = systemLocale.name();
 		}
 		else {
@@ -285,7 +286,7 @@ HbTypefaceXmlParser::StartElement HbTypefaceXmlParser::readToStartElement()
     \param bold true if typeface is to be used bold by default
     \return false iff there was an error. Output parameters not defined
 */
-bool HbTypefaceXmlParser::readMapping(QString& role, QString& family, bool& bold)
+bool HbTypefaceXmlParser::readMapping(QString &role, QString &family, QString &aliasFamily, bool &bold)
 {
 	bool atEnd(false);
 	bool success(false);
@@ -302,7 +303,7 @@ bool HbTypefaceXmlParser::readMapping(QString& role, QString& family, bool& bold
 		}
 		else if (isStartElement()) {
 			if (name() == TYPEFACE_MAPPING) {
-				success = readMapItem(role, family, bold);
+				success = readMapItem(role, family, aliasFamily, bold);
 			}
 		}
 
@@ -317,7 +318,7 @@ bool HbTypefaceXmlParser::readMapping(QString& role, QString& family, bool& bold
 /*
  * Parses information inside one <typeface_mapping> field.
  */
-bool HbTypefaceXmlParser::readMapItem(QString& role, QString& family, bool& isBold)
+bool HbTypefaceXmlParser::readMapItem(QString &role, QString &family, QString &aliasFamily, bool &isBold)
 {
     Q_ASSERT(isStartElement() && name() == TYPEFACE_MAPPING);
     isBold = false;
@@ -345,6 +346,9 @@ bool HbTypefaceXmlParser::readMapItem(QString& role, QString& family, bool& isBo
 		else if (attrName == TYPEFACE_WEIGHT_ATT) {
 			if (attr.value().toString() == TYPEFACE_ATT_VAL_BOLD)
 				isBold = true;
+		}
+		else if (attrName == TYPEFACE_ALIASFAMILY_ATT) {
+			aliasFamily = attr.value().toString();
 		}
 		else {
 			qDebug("Unrecognized attribute");

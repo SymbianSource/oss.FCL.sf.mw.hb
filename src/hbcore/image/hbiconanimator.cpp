@@ -44,9 +44,9 @@
   \brief HbIconAnimator is the animation interface for animated icons. Class HbIconItem
   uses it for built-in animation support. For more specific use cases, clients can also
   create their own HbIconAnimator instance and use it for driving an icon animation.
-  
+
   If the icon is not animated, the animator does not do anything.
-  
+
   The animator provides signals for observing the start, stop and finish of the animation and the
   animation progress.
 */
@@ -70,23 +70,23 @@
 
 /*!
   \fn void HbIconAnimator::animationStopped()
-  
+
   This signal is emitted whenever the icon animation is stopped (by calling
   stopAnimation()) before the animation has finished.
-  
+
   \sa stopAnimation()
 */
 
 /*!
   \fn void HbIconAnimator::animationProgressed()
-  
+
   This signal is emitted whenever the icon animation has progressed and the
   icon should be repainted to the screen.
 */
 
 /*!
   \fn void HbIconAnimator::animationFinished()
-  
+
   This signal is emitted whenever the icon animation is finished (and there was
   no stopAnimation() call). This can be used e.g. to synchronize subsequent icon
   animations. If looping is enabled then this signal is never emitted.
@@ -162,10 +162,9 @@ void HbIconAnimator::setIcon(const HbIcon &icon)
                 // Update current mirroring in the animation
                 d->animation->setMirrored(icon.d->engine->isMirrored());
             }
-        }
-        else if ((static_cast<int>(icon.flags()) & HbIcon::ResolutionCorrected) !=
-                 (static_cast<int>(d->icon.flags()) & HbIcon::ResolutionCorrected) ||
-                  icon.isNull()) {
+        } else if ((static_cast<int>(icon.flags()) & HbIcon::ResolutionCorrected) !=
+                   (static_cast<int>(d->icon.flags()) & HbIcon::ResolutionCorrected) ||
+                   icon.isNull()) {
             needToRecreateAnimation = true;
         }
     }

@@ -54,8 +54,8 @@ public:
 signals:
     void launchPopup(const QPointF &pos);
     void visibilityChanged();
-    void panLeft();
-    void panRight();
+    void swipeLeft();
+    void swipeRight();
 
 public slots:
     void setText(const QString &text);

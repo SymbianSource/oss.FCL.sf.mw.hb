@@ -25,6 +25,7 @@
 
 #include "hbxmlloaderbasesyntax_p.h"
 
+#include <QMetaEnum>
 #include <QDebug>
 
 /*
@@ -40,6 +41,7 @@ HbXmlLoaderBaseSyntax::HbXmlLoaderBaseSyntax( HbXmlLoaderAbstractActions *action
 
 HbXmlLoaderBaseSyntax::~HbXmlLoaderBaseSyntax()
 {
+    qDeleteAll(mCurrentContainer);
 }
 
 bool HbXmlLoaderBaseSyntax::load( QIODevice *device, const QString &section )
@@ -309,8 +311,9 @@ bool HbXmlLoaderBaseSyntax::loadDevice(QIODevice *device, const QString &section
             {
                 HB_DOCUMENTLOADER_PRINT( "TOP_STATE ERROR" );
                 result = false;
-                mTopState = TS_EXIT;
+                mActions->cleanUp();
                 mActions->deleteAll();
+                exit = true;
                 break;
             }
             case TS_EXIT:
@@ -478,6 +481,127 @@ bool HbXmlLoaderBaseSyntax::readLayoutStartItem()
 {
 	qWarning() << "Internal error, wrong layout type, line " << mReader.lineNumber();
     return false;
+}
+
+bool HbXmlLoaderBaseSyntax::readAnchorLayoutStartItem(bool idBased)
+{
+    bool result = true;
+
+    HbXmlLengthValue minVal, prefVal, maxVal;
+    QSizePolicy::Policy sizepolicyVal;
+    QSizePolicy::Policy *sizepolicyValP = 0;
+    HbAnchor::Direction directionVal;
+    HbAnchor::Direction *directionValP = 0;
+    QString anchorId;
+
+    const QString src = attribute( AL_SRC_NAME );
+    QString srcId = attribute( AL_SRC_ID );
+    if ( src.isNull() && srcId.isNull() ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO SRC NOR SRCID SPECIFIED" ) );
+        result = false;
+    } else if ( !src.isNull() && !srcId.isNull() ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: BOTH SRC AND SRCID SPECIFIED" ) );
+        result = false;
+    } else if ( idBased && srcId.isNull() ) {
+        srcId = src;
+    }
+
+    const QString dst = attribute( AL_DST_NAME );
+    QString dstId = attribute( AL_DST_ID );
+    if ( dst.isNull() && dstId.isNull() ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: NO DST NOR DSTID SPECIFIED" ) );
+        result = false;
+    } else if ( !dst.isNull() && !dstId.isNull() ) {
+        HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: BOTH DST AND DSTID SPECIFIED" ) );
+        result = false;
+    } else if ( idBased && dstId.isNull() ) {
+        dstId = dst;
+    }
+
+    const QString srcEdgeStr = attribute( AL_SRC_EDGE );
+    const QString dstEdgeStr = attribute( AL_DST_EDGE );
+
+    Hb::Edge srcEdge, dstEdge;
+    result &= toAnchorEdge( srcEdgeStr, srcEdge );
+    result &= toAnchorEdge( dstEdgeStr, dstEdge );
+
+    // Check the convenience notation first. 
+    QString spacing = attribute( AL_SPACING );
+    if ( result && !spacing.isEmpty() ) {
+        directionVal = HbAnchor::Positive;
+        directionValP = &directionVal;
+        if (spacing.at(0) == '-') {
+            directionVal = HbAnchor::Negative;
+            spacing = spacing.mid(1);
+        }
+        sizepolicyVal = QSizePolicy::Fixed;
+        sizepolicyValP = &sizepolicyVal;
+        result = toLengthValue( spacing, prefVal );
+    }
+
+    const QString direction = attribute( AL_DIRECTION );
+    if ( result && !direction.isNull() ) {
+        // intentionally overriding possible previously set value
+        directionValP = &directionVal;
+        result = toAnchorDir( direction, directionVal );
+    }
+
+    const QString spacer = attribute( AL_SPACER );
+    if ( result && !spacer.isEmpty() ) {
+        // intentionally overriding possible previously set value
+        sizepolicyVal = QSizePolicy::Preferred;
+        sizepolicyValP = &sizepolicyVal;
+        anchorId = spacer;
+        if (prefVal.mType != HbXmlLengthValue::None) {
+            // previously set by "spacing"
+            minVal = prefVal;
+        } else {
+            prefVal.mType = HbXmlLengthValue::PlainNumber;
+            prefVal.mValue = 0;
+        }
+        if ( !directionValP ) {
+            // direction not yet set, use heuristics
+            bool srcIsLayout = src.isEmpty() && srcId.isEmpty();
+            bool negativeEdge = srcEdge == Hb::LeftEdge || srcEdge == Hb::TopEdge;
+            directionVal = ( (!srcIsLayout && negativeEdge) || (srcIsLayout && !negativeEdge) )
+                ? HbAnchor::Negative
+                : HbAnchor::Positive;
+            directionValP = &directionVal;
+            HB_DOCUMENTLOADER_PRINT( QString( "ANCHORLAYOUT: ANCHOR DIRECTION SET BY HEURISTICS" ) );
+        }
+    }
+
+    const QString minLength = attribute( AL_MIN_LENGTH );
+    const QString prefLength = attribute( AL_PREF_LENGTH );
+    const QString maxLength = attribute( AL_MAX_LENGTH );
+    const QString sizepolicy = attribute( AL_SIZEPOLICY );
+    
+    const QString anchorIdTemp = attribute( AL_ANCHOR_ID );
+    if ( !anchorIdTemp.isNull() ) {
+        // intentionally overriding possible previously set value
+        anchorId = anchorIdTemp;
+    }
+
+    if ( result && !minLength.isNull() ) {
+        // intentionally overriding possible previously set value
+        result = toLengthValue( minLength, minVal );
+    }
+    if ( result && !prefLength.isNull() ) {
+        // intentionally overriding possible previously set value
+        result = toLengthValue( prefLength, prefVal );
+    }
+    if ( result && !maxLength.isNull() ) {
+        result = toLengthValue( maxLength, maxVal );
+    }
+    if ( result && !sizepolicy.isNull() ) {
+        // intentionally overriding possible previously set value
+        sizepolicyValP = &sizepolicyVal;
+        result = toSizePolicy( sizepolicy, sizepolicyVal );
+    }
+    if ( result ) {
+        result = mActions->addAnchorLayoutItem( src, srcId, srcEdge, dst, dstId, dstEdge, minVal, prefVal, maxVal, sizepolicyValP, directionValP, anchorId );
+    }
+    return result;
 }
 
 bool HbXmlLoaderBaseSyntax::readLayoutEndItem()
@@ -671,23 +795,72 @@ QString HbXmlLoaderBaseSyntax::attribute( DocumentLexems lexem ) const
     return mReader.attributes().value( lexemValue(lexem) ).toString();
 }
 
-bool HbXmlLoaderBaseSyntax::getAnchorEdge( const QString &edgeString, Hb::Edge &edge ) const
+bool HbXmlLoaderBaseSyntax::toBool( const QString &boolString, bool &value ) const
 {
     bool retVal(true);
-    if( edgeString=="TOP" ) {
+    if (!boolString.compare("TRUE", Qt::CaseInsensitive)) {
+        value = true;
+    } else if (!boolString.compare("FALSE", Qt::CaseInsensitive)) {
+        value = false;
+    } else {
+        retVal = false;
+    }
+    return retVal;
+}
+
+bool HbXmlLoaderBaseSyntax::toAnchorEdge( const QString &edgeString, Hb::Edge &edge ) const
+{
+    bool retVal(true);
+    if( !edgeString.compare("TOP", Qt::CaseInsensitive) ) {
         edge = Hb::TopEdge;
-    } else if( edgeString=="BOTTOM" ) {
+    } else if( !edgeString.compare("BOTTOM", Qt::CaseInsensitive) ) {
         edge = Hb::BottomEdge;
-    } else if( edgeString=="LEFT" ) {
+    } else if( !edgeString.compare("LEFT", Qt::CaseInsensitive) ) {
         edge = Hb::LeftEdge;
-    } else if( edgeString=="RIGHT" ) {
+    } else if( !edgeString.compare("RIGHT", Qt::CaseInsensitive) ) {
         edge = Hb::RightEdge;
-    } else if( edgeString=="CENTERH" ) {
+    } else if( !edgeString.compare("CENTERH", Qt::CaseInsensitive) ) {
         edge = Hb::CenterHEdge;
-    } else if( edgeString=="CENTERV" ) {
+    } else if( !edgeString.compare("CENTERV", Qt::CaseInsensitive) ) {
         edge = Hb::CenterVEdge;
     } else {
         retVal = false;
     }
     return retVal;
 }
+
+bool HbXmlLoaderBaseSyntax::toAnchorDir( const QString &dirString, HbAnchor::Direction &dir ) const
+{
+    bool retVal(true);
+    if( !dirString.compare("NEGATIVE", Qt::CaseInsensitive) ) {
+        dir = HbAnchor::Negative;
+    } else if( !dirString.compare("POSITIVE", Qt::CaseInsensitive) ) {
+        dir = HbAnchor::Positive;
+    } else {
+        retVal = false;
+    }
+    return retVal;
+}
+
+bool HbXmlLoaderBaseSyntax::toSizePolicy( const QString& policyS, QSizePolicy::Policy &policy ) const
+{
+    if ( policyS.isEmpty() ) {
+        return false;
+    }
+
+    const QMetaObject *meta = &QSizePolicy::staticMetaObject;
+    const int enumIndex = meta->indexOfEnumerator("Policy");
+    Q_ASSERT( enumIndex != -1 );
+    QMetaEnum metaEnum = meta->enumerator(enumIndex);
+    const QByteArray byteArray = policyS.toUtf8();
+    const int policyI = metaEnum.keyToValue(byteArray.data());
+
+    if ( policyI == -1 ) {
+        return false;
+    }
+
+    policy = (QSizePolicy::Policy)policyI;
+
+    return true;
+}
+

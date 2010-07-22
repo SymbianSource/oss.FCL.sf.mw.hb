@@ -1,4 +1,4 @@
-HbSliderControl[orientation="Horizontal"] > HbSliderTickmarks
+HbSlider[orientation="Horizontal"] > HbSliderTickmarks
 {
     fixed-width-major: 0.5un;
     fixed-height-major: 1un;
@@ -8,7 +8,7 @@ HbSliderControl[orientation="Horizontal"] > HbSliderTickmarks
 
 
 
-HbSliderControl[orientation="Vertical"] > HbSliderTickmarks
+HbSlider[orientation="Vertical"] > HbSliderTickmarks
 {
     fixed-height-major: 0.5un;
     fixed-width-major: 1un;

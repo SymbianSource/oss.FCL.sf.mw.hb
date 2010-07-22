@@ -29,7 +29,6 @@ DEPENDPATH += $$PWD
 
 PUBLIC_HEADERS += $$PWD/hbstyle.h
 PUBLIC_HEADERS += $$PWD/hbstyleparameters.h  
-
 PRIVATE_HEADERS += $$PWD/hbstyleoption_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptionabstractviewitem_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptioncheckbox_p.h
@@ -61,7 +60,6 @@ PRIVATE_HEADERS += $$PWD/hbstyleoptiongroupbox_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptionratingslider_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptioncombobox_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptioninputdialog_p.h
-PRIVATE_HEADERS += $$PWD/hbstyleinterface_p.h
 PRIVATE_HEADERS += $$PWD/hbstyle_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptionsliderelement_p.h
 PRIVATE_HEADERS += $$PWD/hbstyleoptionprogresssliderhandle_p.h
@@ -102,7 +100,6 @@ SOURCES += $$PWD/hbstyleoptiontoolbutton.cpp
 SOURCES += $$PWD/hbstyleoptiontooltip.cpp
 SOURCES += $$PWD/hbstyleoptiontreeviewitem.cpp
 SOURCES += $$PWD/hbstyleparameters.cpp
-SOURCES += $$PWD/hbstyleinterface.cpp
 SOURCES += $$PWD/hbstyleoptiondataform.cpp
 SOURCES += $$PWD/hbstyleoptiondatagroup.cpp
 SOURCES += $$PWD/hbstyleoptiondatagroupheadingwidget.cpp

@@ -50,8 +50,6 @@
     match each loadPlugin() with a corresponding unloadPlugin(). Each widget created
     createWidget() should be freed by freeWidget();
 
-    HbDeviceDialogPluginManager can preload plugins into memory by a preloadPlugins() function.
-    Plugins in file system are scanned and those returning preload flag are loaded into memory.
     Plugins may also specify a keep loaded flag. These are kept loaded in memory after they
     have been loaded first time.
 */
@@ -73,8 +71,9 @@ HbDeviceDialogPluginManager::HbDeviceDialogPluginManager(Flags flags, QObject *p
     int readOnlyPaths;
     mPluginPathList = pluginPathList("/devicedialogs/", readOnlyPaths);
 
-    // Scan only read-only drives at startup to ensure installed plugins cannot affect device boot
-    for(int i = 0; i < readOnlyPaths; i++) {
+    // Scan only read-only drives + allow eclipsing at startup to ensure installed plugins cannot
+    // affect device boot
+    for(int i = 0; i < mPluginPathList.count(); i++) {
         updateCachePath(mPluginPathList.at(i), true);
     }
     TRACE_EXIT
@@ -90,36 +89,30 @@ HbDeviceDialogPluginManager::~HbDeviceDialogPluginManager()
 }
 
 /*
-    Preloads plugins into memory.
-*/
-void HbDeviceDialogPluginManager::preloadPlugins()
-{
-    TRACE_ENTRY
-    // Check if preloading is disabled
-    if (mFlags & HbDeviceDialogPluginManager::NoPreloadFlag) {
-        return;
-    }
-
-    QString unused;
-    // Scan plugins and load those that request preloading
-    scanPlugins(&HbDeviceDialogPluginManager::preloadPluginCallback, unused, false);
-    TRACE_EXIT
-}
-
-/*
     Creates a device dialog widget. Plugin is loaded into memory if it's not already loaded.
     \a deviceDialogType contains device dialog type. \a parameters contains widget parameters.
-    \a error receives an error code if widget couldn't be created. Returns pointer to widget
-    or null on error.
+    \a baseFileName limits search for certain file name. \a pluginFilePath contains a plugin
+    file path, if empty a search is performed. \a error receives an error code if
+    widget couldn't be created. Returns pointer to widget or null on error.
 */
 HbDeviceDialogInterface *HbDeviceDialogPluginManager::createWidget(const QString &deviceDialogType,
-    const QVariantMap &parameters, bool &recycled, int &error)
+    const QVariantMap &parameters, const QString &baseFileName, const QString &pluginFilePath,
+    bool &recycled, int &error)
 {
     TRACE_ENTRY
     error = HbDeviceDialogNoError;
     HbDeviceDialogInterface *widgetIf = 0;
-    if (loadPlugin(deviceDialogType)) {
-        PluginInfo &pluginInfo = mPlugins[findPlugin(deviceDialogType)];
+    QString filePath;
+    bool loaded;
+    if (!pluginFilePath.isEmpty()) {
+        incPluginRefCount(pluginFilePath);
+        filePath = pluginFilePath;
+        loaded = true;
+    } else {
+        loaded = loadPlugin(deviceDialogType, baseFileName, &filePath);
+    }
+    if (loaded) {
+        PluginInfo &pluginInfo = mPlugins[findPlugin(filePath)];
         // Check if widget reuse is requested
         if (recycled) {
             pluginInfo.mFlags |= PluginInfo::RecycleWidget; // freeWidget() will keep the widget
@@ -141,9 +134,7 @@ HbDeviceDialogInterface *HbDeviceDialogPluginManager::createWidget(const QString
                 qobject_cast<HbDeviceDialogPluginInterface*>(pluginInstance);
             widgetIf = pluginIf->createDeviceDialog(deviceDialogType, parameters);
             if (widgetIf) {
-                // Add a dynamic property to be able to find plugin from a widget
-                widgetIf->deviceDialogWidget()->setProperty(deviceDialogTypePropertyName,
-                    QVariant(deviceDialogType));
+                pluginInfo.mWidgets.append(widgetIf);
                 pluginInfo.mRefCount++;
             } else {
                 error = static_cast<HbDeviceDialogPlugin *>(pluginInstance)->error();
@@ -174,30 +165,18 @@ void HbDeviceDialogPluginManager::freeWidget(HbDeviceDialogInterface *widget)
     TRACE_ENTRY
     if (widget) {
         // Check if widget should be reused
-        QObject *obj = widget->deviceDialogWidget();
-        QString deviceDialogType = obj->property(deviceDialogTypePropertyName).toString();
-        int index = findPlugin(deviceDialogType);
+        int index = findPlugin(widget);
         Q_ASSERT(index >= 0);
         PluginInfo &pluginInfo = mPlugins[index];
-        // Get signal sender for the widget
-        QObject *sender = widget->signalSender();
-        if (!sender) {
-            sender = obj;
-        }
         if (pluginInfo.mFlags & PluginInfo::RecycleWidget &&
             pluginInfo.mRecycledWidget == 0) {
             pluginInfo.mRecycledWidget = widget;
-            sender->disconnect(); // disconnect all signals from receivers
         } else {
-            // Delete widget from a timer as deviceDialogClosed() signal may
-            // come before device dialog is fully closed.
-            sender->disconnect(); // disconnect all signals
+            // Delete widget from a timer
             mDeleteWidgets.append(widget);
-#if defined(Q_OS_SYMBIAN)
-            const int deleteDelay = 2000; // 2s
-#else
-            const int deleteDelay = 500; // 0.5s
-#endif
+            // Delete immediately as widget should be ready to be deleted (close effect ended) when
+            // devicedialogClosed() signal was emitted
+            const int deleteDelay = 0;
             mDeleteTimer.start(deleteDelay);
         }
     }
@@ -206,57 +185,78 @@ void HbDeviceDialogPluginManager::freeWidget(HbDeviceDialogInterface *widget)
 
 /*
     Loads a plugin into memory. \a deviceDialogType contains device dialog type of the plugin.
-    If plugin is already loaded, only reference count is increased. Returns true on success
-    and false on failure.
+    \a baseFileName limits the search to a certain file name. \a pluginFilePath contains plugin
+    file path on return. If plugin is already loaded, only reference count is increased.
+    Returns true on success and false on failure.
 */
-bool HbDeviceDialogPluginManager::loadPlugin(const QString &deviceDialogType)
+bool HbDeviceDialogPluginManager::loadPlugin(const QString &deviceDialogType, const QString &baseFileName,
+    QString *pluginFilePath)
 {
     TRACE_ENTRY_ARGS(deviceDialogType)
-    // If plugin is not loaded, try to load it
-    int index = findPlugin(deviceDialogType);
-    if (index < 0) {
-        // Check if plugin file name is in cache
-        bool loaded = false;
-        const QString filePath = mNameCache.find(deviceDialogType);
-        if (!filePath.isEmpty()) {
-            TRACE("cache hit")
+    QString baseNameWithExt(baseFileName);
+    if (!baseNameWithExt.isEmpty()) {
+        // Add extension to file name
+        baseNameWithExt.append(fileNameExtension());
+    }
+    // Search name cache
+    bool loaded = false;
+    QString filePath = mNameCache.find(deviceDialogType, baseNameWithExt);
+    if (!filePath.isEmpty()) {
+        TRACE("cache hit")
+        int index = findPlugin(filePath);
+        if (index >= 0) {
+            loaded = true;
+            // Plugin is already loaded, increase reference count
+            mPlugins[index].mRefCount++;
+        } else {
             loaded = scanPlugin(&HbDeviceDialogPluginManager::loadPluginCallback, deviceDialogType,
                 filePath);
-            // If plugin wasn't loaded, the cache has stale information. Rescan the directory.
-            if (!loaded) {
-                TRACE("cache stale")
-                updateCachePath(filePath);
-            }
         }
+        // If plugin wasn't loaded, the cache has stale information. Rescan the directory.
         if (!loaded) {
-            TRACE("cache miss")
-            // Plugin name wasn't in cache, try to find it
-            scanPlugins(&HbDeviceDialogPluginManager::loadPluginCallback, deviceDialogType);
-            int i = findPlugin(deviceDialogType);
-            if (i >= 0) {
-                // Plugin was found, update plugin name cache by scanning the directory
-                updateCachePath(mPlugins[i].mLoader->fileName());
+            TRACE("cache stale")
+            updateCachePath(filePath);
+        }
+    }
+    if (!loaded) {
+        TRACE("cache miss")
+        // Plugin name wasn't in cache, try to find it
+        filePath = scanPlugins(deviceDialogType, baseNameWithExt);
+        if (!filePath.isEmpty()) {
+            int index = findPlugin(filePath);
+            if (index >= 0) {
+                loaded = true;
+                // Plugin is already loaded, increase reference count
+                mPlugins[index].mRefCount++;
+            } else {
+                loaded = scanPlugin(&HbDeviceDialogPluginManager::loadPluginCallback, deviceDialogType,
+                    filePath);
             }
         }
-    } else {
-        // Plugin is already loaded, increase reference count
-        mPlugins[index].mRefCount++;
+        if (loaded) {
+            // Plugin was found, update plugin name cache by scanning the directory
+            updateCachePath(filePath);
+        }
+    }
+    TRACE("loaded" << loaded)
+
+    if (loaded) {
+        *pluginFilePath = filePath;
     }
     TRACE_EXIT
-    // Return true if plugin is loaded
-    return findPlugin(deviceDialogType) >= 0;
+    return loaded;
 }
 
 /*
     Unloads plugin from memory. Each loadPlugin() should be matched by unloadPlugin(). Plugin is
-    unloaded from memory if reference count becomes 0. \a deviceDialogType contains device dialog
-    type of the plugin. Returns true on success and false on failure.
+    unloaded from memory if reference count becomes 0. \a pluginFilePath contains plugin file name
+    and path. Returns true on success and false on failure.
 */
-bool HbDeviceDialogPluginManager::unloadPlugin(const QString &deviceDialogType)
+bool HbDeviceDialogPluginManager::unloadPlugin(const QString &pluginFilePath)
 {
-    TRACE_ENTRY_ARGS(deviceDialogType)
+    TRACE_ENTRY_ARGS(pluginFilePath)
     bool removed = false;
-    int index = findPlugin(deviceDialogType);
+    int index = findPlugin(pluginFilePath);
     if (index >= 0) {
         PluginInfo &pluginInfo = mPlugins[index];
         if (--pluginInfo.mRefCount == 0) {
@@ -273,11 +273,11 @@ bool HbDeviceDialogPluginManager::unloadPlugin(const QString &deviceDialogType)
     deviceDialog type of the plugin.
 */
 const HbDeviceDialogPlugin &HbDeviceDialogPluginManager::plugin(
-    const QString &deviceDialogType)
+    const QString &pluginFilePath)
 {
     TRACE_ENTRY
     // Plugin has to be loaded when this function is called
-    int index = findPlugin(deviceDialogType);
+    int index = findPlugin(pluginFilePath);
     Q_ASSERT(index >= 0);
 
     const PluginInfo &pluginInfo = mPlugins[index];
@@ -286,22 +286,36 @@ const HbDeviceDialogPlugin &HbDeviceDialogPluginManager::plugin(
     return *qobject_cast<HbDeviceDialogPlugin*>(pluginInstance);
 }
 
-// Scan plugins in file system
-void HbDeviceDialogPluginManager::scanPlugins(PluginScanCallback func, const QString &deviceDialogType, bool stopIfFound)
+// Scan plugins in file system. Returns plugin file path.
+QString HbDeviceDialogPluginManager::scanPlugins(const QString &deviceDialogType,
+    const QString &baseFileName)
 {
     TRACE_ENTRY
     const QString fileNameFilter = pluginFileNameFilter();
+    QString pluginFileName(baseFileName);
+    if (!pluginFileName.isEmpty()) {
+        // Add extension to file name
+        pluginFileName.append(fileNameExtension());
+    }
 
+    QString result;
     foreach(const QString &path, mPluginPathList) {
         QDir pluginDir(path, fileNameFilter, QDir::NoSort, QDir::Files | QDir::Readable);
         foreach(const QString &fileName, pluginDir.entryList()) {
-            if (scanPlugin(func, deviceDialogType, pluginDir.absoluteFilePath(fileName)) &&
-                stopIfFound) {
-                break;
+            if (pluginFileName.isEmpty() || HbPluginNameCache::compare(pluginFileName, fileName) == 0) {
+                const QString current(pluginDir.absoluteFilePath(fileName));
+                if (scanPlugin(&HbDeviceDialogPluginManager::scanPluginCallback, deviceDialogType,
+                    current)) {
+                    result = current;
+                    if (pluginFileName.isEmpty()) {
+                        pluginFileName = fileName;
+                    }
+                }
             }
         }
     }
     TRACE_EXIT
+    return result;
 }
 
 // Scan a plugin. Return true if plugin was loaded.
@@ -329,32 +343,6 @@ bool HbDeviceDialogPluginManager::scanPlugin(PluginScanCallback func,
     return loaded;
 }
 
-// Callback for scanPlugins(). Load plugin if it has a preload flag.
-HbLockedPluginLoader *HbDeviceDialogPluginManager::preloadPluginCallback(HbLockedPluginLoader *loader,
-    const QString &unused)
-{
-    TRACE_ENTRY
-    Q_UNUSED(unused);
-
-    QObject *pluginInstance = loader->instance();
-    HbDeviceDialogPlugin *plugin = qobject_cast<HbDeviceDialogPlugin*>(pluginInstance);
-
-    HbDeviceDialogPlugin::PluginFlags flags = plugin->pluginFlags();
-    if (flags & HbDeviceDialogPlugin::PreloadPlugin) {
-        // Save preloaded plugin into a list
-        PluginInfo pluginInfo;
-        pluginInfo.mTypes = plugin->deviceDialogTypes();
-        pluginInfo.mPluginFlags = flags;
-        pluginInfo.mLoader = loader;
-        loader = 0;
-        pluginInfo.mRefCount++; // this keeps plugin loaded in memory
-        mPlugins.append(pluginInfo);
-        pluginInfo.mLoader = 0; // ownership was transferred to the list
-    }
-    TRACE_EXIT
-    return loader;
-}
-
 // Callback for scanPlugins(). Load plugin for device dialog type.
 HbLockedPluginLoader *HbDeviceDialogPluginManager::loadPluginCallback(HbLockedPluginLoader *loader,
     const QString &deviceDialogType)
@@ -367,7 +355,6 @@ HbLockedPluginLoader *HbDeviceDialogPluginManager::loadPluginCallback(HbLockedPl
     if (types.contains(deviceDialogType)) {
         // Save plugin into a list
         PluginInfo pluginInfo;
-        pluginInfo.mTypes = types;
         pluginInfo.mPluginFlags = plugin->pluginFlags();
         pluginInfo.mLoader = loader;
         loader = 0;
@@ -385,19 +372,60 @@ HbLockedPluginLoader *HbDeviceDialogPluginManager::loadPluginCallback(HbLockedPl
     return loader;
 }
 
+// Callback for scanPlugins(). Check whether plugin implements device dialog type.
+HbLockedPluginLoader *HbDeviceDialogPluginManager::scanPluginCallback(HbLockedPluginLoader *loader,
+    const QString &deviceDialogType)
+{
+    TRACE_ENTRY
+    QObject *pluginInstance = loader->instance();
+    HbDeviceDialogPlugin *plugin = qobject_cast<HbDeviceDialogPlugin*>(pluginInstance);
+
+    QStringList types = plugin->deviceDialogTypes();
+    if (types.contains(deviceDialogType)) {
+        loader->unload();
+        delete loader;
+        loader = 0;
+    }
+    TRACE_EXIT
+    return loader;
+}
+
 // Find index of a plugin
-int HbDeviceDialogPluginManager::findPlugin(const QString &deviceDialogType) const
+int HbDeviceDialogPluginManager::findPlugin(const QString &pluginFilePath) const
 {
     TRACE_ENTRY
     int count = mPlugins.count();
     for(int i = 0; i < count; i++) {
-        if (mPlugins.at(i).mTypes.contains(deviceDialogType)) {
+        if (HbPluginNameCache::compare(mPlugins.at(i).mLoader->fileName(), pluginFilePath) == 0) {
             TRACE_EXIT_ARGS(i);
             return i;
         }
     }
     TRACE_EXIT_ARGS(-1);
     return -1;
+}
+
+// Find index of a plugin
+int HbDeviceDialogPluginManager::findPlugin(HbDeviceDialogInterface* widget) const
+{
+    TRACE_ENTRY
+    int count = mPlugins.count();
+    for(int i = 0; i < count; i++) {
+        if (mPlugins.at(i).mWidgets.contains(widget)) {
+            TRACE_EXIT_ARGS(i);
+            return i;
+        }
+    }
+    TRACE_EXIT_ARGS(-1);
+    return -1;
+}
+
+// Increase plugin reference count
+void HbDeviceDialogPluginManager::incPluginRefCount(const QString &pluginFilePath)
+{
+    int index = findPlugin(pluginFilePath);
+    Q_ASSERT(index >= 0);
+    mPlugins[index].mRefCount++;
 }
 
 // Free widgets that are kept for re-use. Widget reuse is a performance optimization
@@ -416,17 +444,26 @@ void HbDeviceDialogPluginManager::freeRecycleWidgets()
 }
 
 // Update plugin name cache watch/scan list
-void HbDeviceDialogPluginManager::updateCachePath(const QString &path, bool updateReadOnly)
+void HbDeviceDialogPluginManager::updateCachePath(const QString &path, bool firstScan)
 {
     QString dirPath = HbPluginNameCache::directoryPath(path);
     QFileInfo fileInfo(dirPath);
     if (fileInfo.exists()) {
         // If directory is writable, watch it. Otherwise scan it only once.
         if (fileInfo.isWritable()) {
-            mNameCache.addWatchPath(dirPath);
+            HbPluginNameCache::ScanParameters::Options scanOptions =
+                HbPluginNameCache::ScanParameters::NoOptions;
+            Q_UNUSED(firstScan)
+#if defined(Q_OS_SYMBIAN)
+            if (firstScan) {
+                scanOptions = HbPluginNameCache::ScanParameters::LimitToSet;
+            }
+#endif // defined(Q_OS_SYMBIAN)
+            mNameCache.addWatchPath(HbPluginNameCache::ScanParameters(dirPath, scanOptions));
         } else {
-            if (updateReadOnly) {
-                mNameCache.scanDirectory(dirPath);
+            if (firstScan) {
+                HbPluginNameCache::ScanParameters parameters(path, HbPluginNameCache::ScanParameters::AddToLimitSet);
+                mNameCache.scanDirectory(parameters);
             }
         }
     } else {
@@ -451,7 +488,7 @@ QStringList HbDeviceDialogPluginManager::pluginPathList(const QString &subDir, i
         pluginPathList << path;
     }
 #elif defined(Q_OS_WIN32) || defined(Q_OS_UNIX)
-    pluginPathList << qApp->applicationDirPath() + '/' << HB_PLUGINS_DIR + subDir;
+    pluginPathList <<  HB_PLUGINS_DIR + subDir << qApp->applicationDirPath() + '/';
 #endif
     readOnlyPaths = trimPluginPathList(pluginPathList);
     // Plugin name caching differentiates directory and file names by trailing slash in a name
@@ -466,14 +503,22 @@ QStringList HbDeviceDialogPluginManager::pluginPathList(const QString &subDir, i
 // Generate plugin file name filter
 QString HbDeviceDialogPluginManager::pluginFileNameFilter()
 {
-#if defined(Q_OS_LINUX)
-    return QString("*.so");
+    QString filter("*");
+    filter.append(fileNameExtension());
+    return filter;
+}
+
+// Generate file name extension
+QString HbDeviceDialogPluginManager::fileNameExtension()
+{
+#if defined(Q_OS_SYMBIAN)
+    return QString(".qtplugin");
 #elif defined(Q_OS_MAC)
-    return QString("*.dylib");
+    return QString(".dylib");
 #elif defined(Q_OS_WIN32)
-    return QString("*.dll");
+    return QString(".dll");
 #else
-    return QString("*.qtplugin");
+    return QString(".so");
 #endif
 }
 
@@ -492,17 +537,16 @@ void HbDeviceDialogPluginManager::deleteWidgets()
     QList<HbDeviceDialogInterface*>::iterator i = mDeleteWidgets.begin();
     while (i != mDeleteWidgets.end()) {
         HbDeviceDialogInterface *&widgetIf = *i;
-        QString deviceDialogType = widgetIf->deviceDialogWidget()->
-            property(deviceDialogTypePropertyName).toString();
+        int index = findPlugin(widgetIf);
         // IN Windows/Linux scene may get deleted before plugin manager and deletes all widgets
         if (!mAllWidgetsDeleted) {
             delete widgetIf;
         }
-        int index = findPlugin(deviceDialogType);
         Q_ASSERT(index >= 0);
         PluginInfo &pluginInfo = mPlugins[index];
         pluginInfo.mRefCount--;
-        unloadPlugin(deviceDialogType);
+        pluginInfo.mWidgets.removeAt(pluginInfo.mWidgets.indexOf(widgetIf));
+        unloadPlugin(pluginInfo.mLoader->fileName());
         ++i;
     }
     mDeleteWidgets.clear();

@@ -45,7 +45,7 @@ class HB_CORE_EXPORT HbInstance
 {
 public:
     static HbInstance *instance();
-    
+
     QList<HbMainWindow *> allMainWindows() const;
 
     HbStyle *style() const;
@@ -62,7 +62,7 @@ private:
     ~HbInstance();
 
     friend class HbInstancePrivate;
-    HbInstancePrivate * const d;
+    HbInstancePrivate *const d;
 };
 
 #endif // HBINSTANCE_H

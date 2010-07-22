@@ -73,6 +73,11 @@ public:
     int linesToBeVisible() const;
     void onResizeFontChange();
     void setVisibleRows(int rowCount);
+    void editingFinished();
+
+    void createCustomAutoCompPopup();
+    void showCustomAutoCompPopup();
+    void hideCustomAutoCompPopup();
 
     int maxLength;
     int minimumRows;
@@ -85,6 +90,8 @@ public:
 
     bool adjustFontSizeToFitHeight;
     int stretchedToLineCount;
+    QGraphicsLayoutItem *mCustomAutoCompContent;
+    HbPopup *mCustomAutoCompPopup;
 };
 
 #endif // HBLINEEDIT_P_H

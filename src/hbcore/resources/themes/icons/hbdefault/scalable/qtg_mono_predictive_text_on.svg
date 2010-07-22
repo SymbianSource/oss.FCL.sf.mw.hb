@@ -1,22 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
-	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
-]>
-<svg version="1.1"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
-	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">
-<defs>
-</defs>
-<g opacity="0.5">
-	<rect fill="none" width="30" height="30"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 30 30" width="30px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<path d="M28.85,8.575l-7.072-7.071c-0.78-0.78-2.047-0.78-2.828,0L6.222,14.232l9.899,9.899L28.85,11.403  C29.631,10.623,29.631,9.356,28.85,8.575z"/>
+<path d="M4.986,15.825c-0.014,0.043-0.04,0.079-0.051,0.123l-1.824,7.902l3.393,3.391l7.902-1.823  c0.044-0.011,0.08-0.037,0.123-0.05L4.986,15.825z"/>
+<polygon points="2.686,24.839 0.564,26.96 4.101,29.082 5.516,27.667 "/>
+<g>
+<rect fill="none" height="30" width="30"/>
 </g>
-<path d="M25.502,4.497c-3.124-3.124-6.923-4.391-8.485-2.828c-0.001,0.001-0.002,0.002-0.003,0.003L2.871,15.814l-0.008,0.07l0,0
-	l-0.019,0.173L1.489,28.445l-0.032,0.097l0.098-0.032l12.595-1.415l0.542-0.539c0,0,0,0,0-0.001l13.635-13.569
-	c0.001-0.001,0.002-0.002,0.004-0.003C29.893,11.42,28.626,7.621,25.502,4.497z M7.257,25.857l-3.13-3.131l0.656-5.995l0.082-0.082
-	c1.639,0.432,3.549,1.566,5.266,3.282c1.665,1.665,2.781,3.512,3.24,5.117l-0.137,0.137L7.257,25.857z M26.916,11.568l-12.15,12.093
-	c-0.459-1.606-1.574-3.456-3.241-5.123c-1.708-1.709-3.617-2.856-5.253-3.295L18.428,3.086c0.355-0.355,2.922,0.087,5.66,2.825
-	S27.269,11.216,26.916,11.568z"/>
-<rect x="16.014" y="28.005" width="11.986" height="1.995"/>
-<rect x="20" y="24.005" width="8" height="1.995"/>
+<rect height="2" width="9" x="20" y="24"/>
+<rect height="2" width="13" x="16" y="28"/>
 </svg>

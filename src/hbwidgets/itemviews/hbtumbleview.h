@@ -81,6 +81,8 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
     QVariant itemChange(GraphicsItemChange change,const QVariant &value);
+    void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void gestureEvent(QGestureEvent *event);
 
     bool event(QEvent *e);
 
@@ -89,7 +91,6 @@ private:
     Q_DISABLE_COPY(HbTumbleView)
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingStarted())
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingEnded())
-    Q_PRIVATE_SLOT(d_func(), void _q_delayedSelectCurrent())
 };
 
 #endif

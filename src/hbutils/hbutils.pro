@@ -33,7 +33,7 @@ contains(QT_CONFIG, webkit) {
     DEFINES += HBUTILS_WEBKIT
 }
 
-DEFINES += BUILD_HB_TOOLS HB_PLUGINS_DIR=\"\\\"$${HB_PLUGINS_DIR}\\\"\"
+DEFINES += BUILD_HB_UTILS HB_PLUGINS_DIR=\"\\\"$${HB_PLUGINS_DIR}\\\"\"
 
 INCLUDEPATH += .
 DEPENDPATH += .
@@ -44,10 +44,11 @@ win32:DLLDESTDIR = $${HB_BUILD_DIR}/bin
 
 # components
 include(document/document.pri)
+include(theme/theme.pri)
 
 CONVENIENCE_HEADERS += $${HB_BUILD_DIR}/include/hbutils/hbutils.h
 CONVENIENCE_HEADERS += $$files($${HB_BUILD_DIR}/include/hbutils/Hb*)
-HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
+HEADERS += $$PUBLIC_HEADERS $$RESTRICTED_HEADERS $$PRIVATE_HEADERS $$CONVENIENCE_HEADERS
 
 # dependencies
 hbAddLibrary(hbcore/HbCore)
@@ -61,10 +62,13 @@ hbAddLibrary(hbwidgets/HbWidgets)
     pubheaders.files = $$PUBLIC_HEADERS
     pubheaders.path = $${HB_INCLUDE_DIR}/hbutils
 
+    restheaders.files = $$RESTRICTED_HEADERS
+    restheaders.path = $${HB_INCLUDE_DIR}/hbutils/restricted
+
     convheaders.files = $$CONVENIENCE_HEADERS
     convheaders.path = $${HB_INCLUDE_DIR}/hbutils
 
-    INSTALLS += target pubheaders convheaders
+    INSTALLS += target pubheaders restheaders convheaders
     win32:INSTALLS += dlltarget
 }
 

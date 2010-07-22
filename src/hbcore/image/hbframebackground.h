@@ -44,11 +44,11 @@ public:
     HbFrameBackground(const QString &frameGraphicsName, HbFrameDrawer::FrameType type);
     ~HbFrameBackground();
 
-    HbFrameBackground( const HbFrameBackground &other );
-    HbFrameBackground &operator=( const HbFrameBackground &other );
+    HbFrameBackground(const HbFrameBackground &other);
+    HbFrameBackground &operator=(const HbFrameBackground &other);
 
-    bool operator==( const HbFrameBackground &other ) const;
-    bool operator!=( const HbFrameBackground &other ) const;
+    bool operator==(const HbFrameBackground &other) const;
+    bool operator!=(const HbFrameBackground &other) const;
 
     bool isNull() const;
 
@@ -65,6 +65,6 @@ private:
     QExplicitlySharedDataPointer<HbFrameBackgroundPrivate> d;
 };
 
-Q_DECLARE_METATYPE( HbFrameBackground )
+Q_DECLARE_METATYPE(HbFrameBackground)
 
 #endif // HBFRAMEBACKGROUND_H

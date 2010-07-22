@@ -34,24 +34,6 @@
 class HbNvgIcon;
 class HbVgImageBinder;
 
-class HbNvgIconList
-{
-public:
-    HbNvgIconList() 
-	{
-        icons[HbNvgIconFactory::NvgCs] = 0;        
-    }
-
-    void addNvgIcon(HbNvgIconFactory::HbNvgIconType type, HbNvgIcon * nvgIcon);
-
-    HbNvgIcon * getIcon(HbNvgIconFactory::HbNvgIconType type);
-
-    ~HbNvgIconList();
-
-private:
-    HbNvgIcon * icons[HbNvgIconFactory::NvgCs + 1];
-};
-
 class HbNvgEnginePrivate
 {
 public :
@@ -68,12 +50,6 @@ public :
 
     HbNvgEngine::HbNvgErrorType drawNvg(const QByteArray &buffer, const QSize &size);
 
-    HbNvgIcon * createNvgIcon(const QByteArray &buffer, const QSize &size);
-
-    void setVgImageBinder(HbVgImageBinder *imageBinder) {
-        mVgImageBinder = imageBinder;
-    }
-
     HbNvgEngine::HbNvgErrorType error()const {
         return mLastError;
     }
@@ -81,10 +57,6 @@ public :
     void enableMirroring(bool mirroringMode) {
         mMirrored = mirroringMode;
     }
-
-    void setBackgroundColor(const QColor &rgba8888Color);
-
-    void clearBackground();
 
 private :
     void doDrawNvg(const QByteArray &buffer, const QSize &size);    
@@ -98,7 +70,7 @@ private :
 private :
 
     QSize mCurrentBufferSize;
-
+    
     VGfloat mRotateAngle;
     float   mCentreX;
     float   mCentreY;
@@ -106,19 +78,13 @@ private :
     HbNvgEngine::HbNvgAlignType  mPreserveAspectSetting;
     HbNvgEngine::HbNvgMeetType  mSmilFitSetting;
 
-    QColor              mBackgroundColor;
-    HbVgImageBinder *   mVgImageBinder;
-
-    bool         mCreatingNvgIcon;
     HbNvgIcon * mCurrentNvgIcon;
-
     HbNvgEngine::HbNvgErrorType mLastError;
 
     bool        mMirrored;
     VGint       mMatrixMode;
     VGfloat     mImageMatrix[9];
     VGfloat     mPathMatrix[9];
-    HbNvgIconList mIconList;
 };
 
 #endif

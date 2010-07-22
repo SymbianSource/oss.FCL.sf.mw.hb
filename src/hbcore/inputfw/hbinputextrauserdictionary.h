@@ -63,28 +63,28 @@ public:
 
 public: // from HbUserDictionary
     int id() const;
-    bool addWord(const QString& newWord, HbPredictionCallback* callback = 0);
-    bool addWords(const QStringList& wordList);
-    bool removeWord(const QString& toBeRemoved);
+    bool addWord(const QString &newWord, HbPredictionCallback *callback = 0);
+    bool addWords(const QStringList &wordList);
+    bool removeWord(const QString &toBeRemoved);
     int numberOfWords() const;
     QStringList listWords();
     void clear();
-    HbPredictionBase* hostEngine() const;
+    HbPredictionBase *hostEngine() const;
 
 public:
     QString wordAt(int index) const;
-    QStringList findMatches(const QString& searchString, bool sortByFrequency = false, Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive);
-    bool hasWord(const QString& word, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
+    QStringList findMatches(const QString &searchString, bool sortByFrequency = false, Qt::CaseSensitivity caseSensitivity = Qt::CaseInsensitive);
+    bool hasWord(const QString &word, Qt::CaseSensitivity caseSensitivity = Qt::CaseSensitive) const;
 
-    void setHostEngine(HbPredictionBase* host);
-    bool load(const QString& nameOfTheFile = QString());
-    bool save(const QString& nameOfTheFile = QString());
+    void setHostEngine(HbPredictionBase *host);
+    bool load(const QString &nameOfTheFile = QString());
+    bool save(const QString &nameOfTheFile = QString());
     void setId(int dbId);
     bool isAlreadyInMemory() const;
     bool attach();
     QString name();
     QString fileName();
-    void incrementUseCount(const QString& word); 
+    void incrementUseCount(const QString &word);
 
 public:
     QChar *rawDataArea() const;
@@ -92,7 +92,7 @@ public:
     HbExtraUDDirectoryEntry *directory() const;
 
 protected:
-    HbExtraUserDictionaryPrivate* const d_ptr;
+    HbExtraUserDictionaryPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbExtraUserDictionary)

@@ -32,14 +32,14 @@
     @hbcore
     \class HbStackedWidget
     \brief HbStackedWidget manages geometries of stacked layout contents.
-    
+
     HbStackedLayout is a simple container that allows client add several widgets
-    and then select one widget to be shown. This widget will manage visibility 
-    and focus in addition to size and position. 
+    and then select one widget to be shown. This widget will manage visibility
+    and focus in addition to size and position.
 
     Example code:
     \snippet{stackedwidgetsample.cpp,1}
-    
+
     \sa HbStackedLayout
  */
 
@@ -52,7 +52,7 @@ public:
     HbStackedWidgetPrivate() : mCurrentIndex(-1), mLayout(0) {}
 
     void setCurrentIndex(int index, QGraphicsWidget *prev, bool hideOld = true, bool showNew = true);
-    
+
     int mCurrentIndex;
     HbStackedLayout *mLayout;
 };
@@ -71,10 +71,11 @@ void HbStackedWidgetPrivate::setCurrentIndex(int index, QGraphicsWidget *prev, b
     }
 
     QGraphicsWidget *next = q->widgetAt(index);
-    if (next == prev)
+    if (next == prev) {
         return;
+    }
 
-    QGraphicsWidget* focused = 0;
+    QGraphicsWidget *focused = 0;
     if (prev) {
         focused = prev->focusWidget();
         // Set previous widget invisible. Focus will be reset after this statement.
@@ -105,7 +106,7 @@ HbStackedWidget::HbStackedWidget(QGraphicsItem *parent)
     d->q_ptr = this;
 
     HbStackedLayout *layout = new HbStackedLayout;
-    setLayout( layout );
+    setLayout(layout);
     d->mLayout = layout;
 }
 
@@ -163,13 +164,13 @@ int HbStackedWidget::insertWidget(int index, QGraphicsWidget *widget)
 {
     Q_D(HbStackedWidget);
     int addedIndex = d->mLayout->insertItem(index, widget); // this will usually reparent 'widget'
-    if ( addedIndex != -1 ) {
+    if (addedIndex != -1) {
         // Need to store current index, since it might change
         // during "widgetAdded" signal (someone might call back
         // e.g. "setCurrentIndex".
         int currentIndex = d->mCurrentIndex;
         emit widgetAdded(addedIndex);
-        if ( currentIndex == d->mCurrentIndex ) {
+        if (currentIndex == d->mCurrentIndex) {
             // Current index not touched from outside.
             if (d->mCurrentIndex < 0) {
                 setCurrentIndex(addedIndex);
@@ -203,23 +204,23 @@ void HbStackedWidget::removeWidget(QGraphicsWidget *widget)
 {
     Q_D(HbStackedWidget);
     int index = indexOf(widget);
-    if ( index == -1 ) {
+    if (index == -1) {
         return;
     }
     d->mLayout->removeAt(index);
 
-    if ( index == d->mCurrentIndex ) {
+    if (index == d->mCurrentIndex) {
         d->mCurrentIndex = -1;
         int c = count();
-        if ( c > 0 ) {
-            int newIndex = (index == c) ? index-1 : index;
+        if (c > 0) {
+            int newIndex = (index == c) ? index - 1 : index;
             d->setCurrentIndex(newIndex, widget);
         } else {
             // The last widget was removed.
             widget->setVisible(false);
-            emit currentChanged( -1 );
+            emit currentChanged(-1);
         }
-    } else if ( index <= d->mCurrentIndex ) {
+    } else if (index <= d->mCurrentIndex) {
         d->mCurrentIndex--;
         emit currentChanged(d->mCurrentIndex);
     }
@@ -241,7 +242,7 @@ void HbStackedWidget::removeWidget(QGraphicsWidget *widget)
 QGraphicsWidget *HbStackedWidget::removeAt(int index)
 {
     QGraphicsWidget *widget = widgetAt(index);
-    if ( widget ) {
+    if (widget) {
         removeWidget(widget);
     }
     return widget;
@@ -275,7 +276,7 @@ int HbStackedWidget::currentIndex() const
 QGraphicsWidget *HbStackedWidget::widgetAt(int index) const
 {
     Q_D(const HbStackedWidget);
-    return static_cast<QGraphicsWidget*>(d->mLayout->itemAt(index));
+    return static_cast<QGraphicsWidget *>(d->mLayout->itemAt(index));
 }
 
 /*!
@@ -315,14 +316,14 @@ QGraphicsWidget *HbStackedWidget::currentWidget() const
     \param index position of the new current widget.
  */
 
- /*!
-    \brief Sets current widget from specified index.
+/*!
+   \brief Sets current widget from specified index.
 
-    This method will set the widget at given \a index visible and 
-    the previous widget invisible.
+   This method will set the widget at given \a index visible and
+   the previous widget invisible.
 
-    \param index position of desired widget.
- */
+   \param index position of desired widget.
+*/
 void HbStackedWidget::setCurrentIndex(int index)
 {
     Q_D(HbStackedWidget);

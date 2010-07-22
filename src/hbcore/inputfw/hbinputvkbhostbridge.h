@@ -38,13 +38,13 @@ public:
     static HbVkbHostBridge *instance();
 
     ~HbVkbHostBridge();
-    void openKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner, bool animationAllowed);
-    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner);
+    void openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, bool animationAllowed);
+    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner);
     void closeKeypad(bool animationAllowed);
     void minimizeKeypad(bool animationAllowed);
     HbVkbStatus keypadStatus() const;
-    QSizeF keyboardArea() const;  
-    HbVirtualKeyboard* activeKeypad() const;
+    QSizeF keyboardArea() const;
+    HbVirtualKeyboard *activeKeypad() const;
     QRectF applicationArea() const;
     HbVkbStatus keypadStatusBeforeOrientationChange() const;
 

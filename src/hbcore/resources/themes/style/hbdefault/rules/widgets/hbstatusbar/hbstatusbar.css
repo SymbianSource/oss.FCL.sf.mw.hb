@@ -1,13 +1,17 @@
 HbStatusBar
 {
     layout:default;
-    mirroring: disabled;
+    layout-direction: left-to-right;
 }
 
 HbStatusBar::timetext
 {
     font-variant: secondary;
-    fixed-width: 11un;
+    text-align: center;
+    size-policy-horizontal: ignored;
+    text-line-count-min: 1;
+    text-line-count-max: 1;
+    text-wrap-mode: no-wrap;
     fixed-height: 2.5un;
 }
 

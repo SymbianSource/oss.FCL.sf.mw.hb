@@ -36,13 +36,13 @@
 #include "hbmenu.h"
 #include "hbaction.h"
 #include "hbselectioncontrol_p.h"
-#include "hbmeshlayout_p.h"
 #include "hbsmileyengine_p.h"
 #include "hbinputeditorinterface.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hbtextmeasurementutility_p.h"
 #include "hbtapgesture.h"
 #include "hbpangesture.h"
+#include "hbnamespace_p.h"
 
 #include <QApplication>
 #include "hbpopup.h"
@@ -54,6 +54,7 @@
 #include <QAbstractTextDocumentLayout>
 #include <QClipboard>
 #include <QInputContext>
+#include <QGraphicsScene>
 
 /*!
     \class HbAbstractEdit
@@ -136,6 +137,13 @@
 */
 
 /*!
+  \fn void anchorTapped(const QString &anchor)
+
+  This signal is emitted when a tap gesture happens on a word which has anchor attached.
+
+*/
+
+/*!
     \fn QString HbAbstractEdit::toPlainText() const
 
     Returns the contents as plain text.
@@ -176,7 +184,7 @@ HbAbstractEdit::~HbAbstractEdit()
 {
     Q_D(HbAbstractEdit);
     if (d->selectionControl) {
-        d->selectionControl->detachEditor();
+        d->selectionControl->detachEditorFromDestructor();
     }
 }
 
@@ -194,6 +202,8 @@ void HbAbstractEdit::resizeEvent(QGraphicsSceneResizeEvent *event)
 */
 bool HbAbstractEdit::event(QEvent* event)
 {
+    Q_D(HbAbstractEdit);
+
     if(event->type() ==  QEvent::DynamicPropertyChange) {
         const QString p = static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName();
         if(p == "SmileyIcon") {
@@ -216,7 +226,15 @@ bool HbAbstractEdit::event(QEvent* event)
 
             d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
         }
+    } else { //HbEvent handler
+        if (event->type() == HbEvent::InputMethodFocusIn) {
+            d->setInputFocusEnabled(true);
+            
+        } else if (event->type() == HbEvent::InputMethodFocusOut) {
+            d->setInputFocusEnabled(false);
+        }
     }
+
     return HbWidget::event(event);
 }
 
@@ -236,6 +254,10 @@ QVariant HbAbstractEdit::inputMethodQuery (Qt::InputMethodQuery query) const
         return QVariant(block.text());
     case Qt::ImCurrentSelection:
         return QVariant(d->cursor.selectedText());
+    case Qt::ImMaximumTextLength:
+        return QVariant(); // No limit.
+    case Qt::ImAnchorPosition:
+        return QVariant(qBound(0, d->cursor.anchor() - block.position(), block.length()));
     default:
         return QVariant();
     }
@@ -323,7 +345,7 @@ void HbAbstractEdit::inputMethodEvent (QInputMethodEvent *e)
         d->_q_contentsChanged();
     }
 
-    if(hasFocus()) {
+    if(d->hasInputFocus()) {
         d->cursorOn = true;
     }
     d->ensureCursorVisible();
@@ -364,9 +386,7 @@ void HbAbstractEdit::keyPressEvent(QKeyEvent *event)
         d->acceptKeyPressEvent(event);
 
     if (!(d->interactionFlags & Qt::TextEditable)) {
-        d->repaintOldAndNewSelection(d->selectionCursor);
         d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
-        //ensureCursorVisible();
         event->ignore();
         return;
     }
@@ -473,15 +493,9 @@ void HbAbstractEdit::focusInEvent(QFocusEvent *event)
     if (d->interactionFlags & Qt::NoTextInteraction)
         return;
 
-    update(d->selectionRect());
-
-    if (d->interactionFlags & Qt::TextEditable) {
-        d->setBlinkingCursorEnabled(true);
-    } else {
-        d->cursorOn = (d->interactionFlags & Qt::TextSelectableByKeyboard);
-    }
-
-    d->openInputPanel();        
+    // It sets the cursor the focus item's depending on if
+    // the input panel is connceted or not
+    d->setInputFocusEnabled(d->hasInputFocus());
 
     event->accept();
 }
@@ -498,8 +512,9 @@ void HbAbstractEdit::focusOutEvent(QFocusEvent *event)
     if (d->interactionFlags & Qt::NoTextInteraction)
         return;
 
-    d->setBlinkingCursorEnabled(false);
-    d->repaintOldAndNewSelection(d->selectionCursor);
+    // It sets the cursor the focus item's depending on if
+    // the input panel is connceted or not
+    d->setInputFocusEnabled(d->hasInputFocus());
 
     event->accept();
 }
@@ -551,7 +566,7 @@ void HbAbstractEdit::hideEvent(QHideEvent *event)
 
     deselect();
 
-    if(hasFocus() && !isReadOnly() && !panel()) {
+    if(d->hasInputFocus() && !isReadOnly() && !panel()) {
         d->closeInputPanel();
     }
 }
@@ -652,6 +667,10 @@ void HbAbstractEdit::setReadOnly (bool value)
     d->setTextInteractionFlags(f);
 
     setFlag(QGraphicsItem::ItemAcceptsInputMethod, !value);
+
+    if (value && d->hasInputFocus()) {
+        d->closeInputPanel();
+    }
 }
 
 /*!
@@ -683,26 +702,35 @@ QGraphicsItem *HbAbstractEdit::primitive (HbStyle::Primitive primitive) const
 void HbAbstractEdit::updatePrimitives()
 {
     Q_D(HbAbstractEdit);
-    HbWidget::updatePrimitives();
 
-    if (d->scrollArea) {
-        d->doc->setTextWidth(d->scrollArea->size().width());
-        if(d->placeholderDoc) {
-            d->placeholderDoc->setTextWidth(d->scrollArea->size().width());
+    if (d->polished && !d->updatePrimitivesInProgress) {
+
+        d->updatePrimitivesInProgress = true;
+
+        HbWidget::updatePrimitives();
+
+        if (d->scrollArea) {
+            if(!qFuzzyCompare(d->doc->textWidth(), d->scrollArea->size().width())){
+                d->doc->setTextWidth(d->scrollArea->size().width());
+                if(d->placeholderDoc) {
+                    d->placeholderDoc->setTextWidth(d->scrollArea->size().width());
+                }
+            }
         }
-    }
-    QRectF canvasGeom(QRectF(QPointF(0,0),d->doc->size()));
-    if(d->scrollArea) {
-        canvasGeom.setHeight(qMax(d->scrollArea->size().height(), d->doc->size().height()));
-    }
-    //Changed from setGeometry() to setPreferredSize() because it causes
-    //weird input behavior otherwise.
-    d->canvas->setPreferredSize(canvasGeom.size());
-    d->ensureCursorVisible();
-    if (d->selectionControl) {
-        d->selectionControl->updatePrimitives();
-    }
+        QRectF canvasGeom(QRectF(QPointF(0,0),d->doc->size()));
+        if(d->scrollArea) {
+            canvasGeom.setHeight(qMax(d->scrollArea->size().height(), d->doc->size().height()));
+        }
 
+        d->canvas->setGeometry(canvasGeom);
+
+        d->ensureCursorVisible();
+        if (d->selectionControl) {
+            d->selectionControl->updatePrimitives();
+        }
+
+        d->updatePrimitivesInProgress=false;
+    }
 }
 
 /*!
@@ -787,6 +815,7 @@ void HbAbstractEdit::documentLayoutChanged()
 void HbAbstractEdit::documentSizeChanged(const QSizeF &size)
 {
     Q_UNUSED(size)
+
     updateGeometry();
     updatePrimitives();
 }
@@ -823,13 +852,11 @@ void HbAbstractEdit::setTextCursor(const QTextCursor &cursor)
     // QTextCursor operator!= compares only position
     if (    cursor.position() != d->cursor.position()
         ||  cursor.anchor() != d->cursor.anchor() ) {
-        const QTextCursor oldCursor = d->cursor;
         d->cursor = cursor;
 
         d->updateCurrentCharFormat();
 
         d->ensureCursorVisible();
-        d->repaintOldAndNewSelection(oldCursor);
         d->cursorChanged(HbValidator::CursorChangeFromContentSet);
     }
 }
@@ -919,13 +946,8 @@ void HbAbstractEdit::selectClickedWord()
         return;
 
     setCursorPosition(cursorPos);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.select(QTextCursor::WordUnderCursor);
-    emit selectionChanged(oldSelection, d->cursor);
-    d->repaintOldAndNewSelection(oldSelection);
     d->cursorChanged(HbValidator::CursorChangeFromMouse);
-    //TODO: focus is in VKB so needs to re-focus to editor
-//    setFocus();
 }
 
 /*!
@@ -935,10 +957,7 @@ void HbAbstractEdit::selectClickedWord()
 void HbAbstractEdit::selectAll()
 {
     Q_D(HbAbstractEdit);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.select(QTextCursor::Document);
-    emit selectionChanged(oldSelection, d->cursor);
-    d->repaintOldAndNewSelection(oldSelection);
     d->cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
@@ -949,9 +968,8 @@ void HbAbstractEdit::selectAll()
 void HbAbstractEdit::deselect()
 {
     Q_D(HbAbstractEdit);
-    const QTextCursor oldSelection = d->cursor;
     d->cursor.clearSelection();
-    emit selectionChanged(oldSelection, d->cursor);
+    d->cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
 /*!
@@ -1013,10 +1031,10 @@ void HbAbstractEdit::insertFromMimeData(const QMimeData *source)
     if (source->hasFormat(QLatin1String("application/x-qrichtext"))) {
         QString richtext = QString::fromUtf8(source->data(QLatin1String("application/x-qrichtext")));
         richtext.prepend(QLatin1String("<meta name=\"qrichtext\" content=\"1\" />"));        
-        fragment = QTextDocumentFragment::fromHtml(filterInputText(richtext), d->doc);
+        fragment = QTextDocumentFragment::fromHtml(richtext, d->doc);
         hasData = true;
     } else if (source->hasHtml()) {
-        fragment = QTextDocumentFragment::fromHtml(filterInputText(source->html()), d->doc);
+        fragment = QTextDocumentFragment::fromHtml(source->html(), d->doc);
         hasData = true;
     } else
 #endif //QT_NO_TEXTHTMLPARSER
@@ -1092,15 +1110,8 @@ void HbAbstractEdit::setValidator(HbValidator* validator)
 {
     Q_D(HbAbstractEdit);
 
-    if(d->validator) {
-        delete d->validator;
-        d->validator = 0;
-    }
-
-    if(validator) {
-        d->validator = validator;
-        d->initValidator();
-    }
+    d->validator = validator;
+    d->initValidator();
 }
 
 /*!
@@ -1124,7 +1135,6 @@ bool HbAbstractEdit::hasAcceptableInput() const
 void HbAbstractEdit::moveCursor(QTextCursor::MoveOperation op, QTextCursor::MoveMode mode)
 {
     Q_D(HbAbstractEdit);
-    //const QTextCursor oldCursor = d->cursor;
     d->cursor.movePosition(op, mode);
 
     d->updateCurrentCharFormat();
@@ -1133,7 +1143,6 @@ void HbAbstractEdit::moveCursor(QTextCursor::MoveOperation op, QTextCursor::Move
     QTextCursor previousCursor(d->cursor);
     previousCursor.setPosition(d->previousCursorAnchor);
     previousCursor.setPosition(d->previousCursorPosition, QTextCursor::KeepAnchor);
-    d->repaintOldAndNewSelection(previousCursor);
     d->cursorChanged(HbValidator::CursorChangeFromOperation);
 }
 
@@ -1285,50 +1294,58 @@ void HbAbstractEdit::showContextMenu(QPointF position)
     Q_D(HbAbstractEdit);
     HbMenu *menu = createContextMenu();
 
+    QTextBlock block = d->cursor.block();
+    QTextLayout *layout = block.layout();
+    if(layout && !layout->preeditAreaText().isEmpty())
+    {
+        // there's pre-edit text present, it needs to be commited 1st
+        if(qApp->inputContext()) {
+            qApp->inputContext()->reset();
+        }
+    }
+
     if (!menu) {
         menu = new HbMenu();
     }
 
-    menu->setAttribute(Hb::InputMethodNeutral);
-
     if (d->cursor.hasSelection() && d->canCut()) {
         connect(
-            menu->addAction("Cut"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_cut")), SIGNAL(triggered()),
             this, SLOT(cut()));       
     }
     if (d->cursor.hasSelection() && d->canCopy()) {
         connect(
-            menu->addAction("Copy"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_copy")), SIGNAL(triggered()),
             this, SLOT(copy()));
     }
     if (!d->cursor.hasSelection() && !d->doc->isEmpty() && d->canCopy()){
         connect(
-            menu->addAction("Select"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_select")), SIGNAL(triggered()),
             this, SLOT(selectClickedWord()));
         connect(
-            menu->addAction("Select all"), SIGNAL(triggered()),
+            menu->addAction(hbTrId("txt_common_menu_select_all_contents")), SIGNAL(triggered()),
             this, SLOT(selectAll()));
     }
     if (d->canPaste()) {
         connect(
-            menu->addAction("Paste"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_paste")), SIGNAL(triggered()),
             this, SLOT(paste()));
     }
     if (d->cursor.hasSelection()) {
         connect(
-            menu->addAction("Deselect"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_deselect")), SIGNAL(triggered()),
             this, SLOT(deselect()));
     }
     if (d->canFormat()) {
         connect(
-            menu->addAction("Format"), SIGNAL(triggered()), 
+            menu->addAction(hbTrId("txt_common_menu_format")), SIGNAL(triggered()),
             this, SLOT(format()));
     }
 
     emit aboutToShowContextMenu(menu, d->tapPosition);
 
     if(menu->actions().count() > 0){
-        d->minimizeInputPanel();
+//        d->minimizeInputPanel();
         menu->setPreferredPos(position);
         menu->show();
     }
@@ -1681,15 +1698,23 @@ void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
         QPointF pos = mapFromScene(event->mapToGraphicsScene(tap->position()));
         switch(tap->state()) {
         case Qt::GestureStarted:
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
+                tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
+            }
+
             d->tapPosition = pos;
             HbWidgetFeedback::triggered(this, Hb::InstantPressed);
             break;
         case Qt::GestureUpdated:
             if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
-                d->longTapGesture(pos);
+                d->openInputPanel();
+                d->longTapGesture(pos);                
             }
             break;
       case Qt::GestureFinished:
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
             if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
             } else {
                 d->tapGesture(pos);
@@ -1701,6 +1726,8 @@ void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
             
             break;
       case Qt::GestureCanceled:
+            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+
             break;
       default:
             break;
@@ -1716,16 +1743,8 @@ void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
 */
 QString HbAbstractEdit::filterInputText(const QString &text)
 {
-    HbEditorInterface editorInterface(this);
-    HbInputFilter *inputFilter = editorInterface.filter();
-    if (!text.isEmpty() && inputFilter) {
-        QString filteredText;
-        foreach(QChar c, text) {
-            if (inputFilter->filter(c)) {
-                filteredText.append(c);
-            }
-        }
-        return filteredText;
-    }
-    return text;
+    Q_D(HbAbstractEdit);
+    QString filteredText(text);
+    d->filterInputText(filteredText);
+    return filteredText;
 }

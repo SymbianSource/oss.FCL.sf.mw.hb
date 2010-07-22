@@ -38,7 +38,8 @@ const QString KDefaultLayoutOption = "default";
 
 HbGridViewPrivate::HbGridViewPrivate() : 
     mIconVisible(true), 
-    mTextVisible(true)
+    mTextVisible(true),
+    mSwapDimensionsOnOrientationChange(true)
 {
 }
 

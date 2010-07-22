@@ -37,11 +37,14 @@ class TestabilityInterface;
 
 #ifdef Q_OS_SYMBIAN
 #include <centralrepository.h>
+#include <systemtoneservice.h>
+
 const TUid HBTESTABILITY_CREPO_ID  = {0x2002C3AE};
-const TUint32 HbTestabilityKey  = 0x1;  
+const TUint32 HbTestabilityKey  = 0x1;
 #endif
 
 class HbLocaleChangeNotifier;
+class CSystemToneService;
 
 class HbInstancePrivate : public QObject
 {
@@ -54,7 +57,7 @@ public:
     bool removeWindow(HbMainWindow *window);
     void select(const HbDeviceProfile &display);
     HbDeviceProfile profile();
-
+	  CSystemToneService *systemTone();
     void initLibraryPaths();
 
 public slots:
@@ -85,14 +88,15 @@ signals:
 private:
 #ifdef HB_TESTABILITY
     TestabilityInterface *testabilityInterface;
-#ifdef Q_OS_SYMBIAN  
-     CRepository *mRepo;
-     bool testabilityEnabled;
+#ifdef Q_OS_SYMBIAN
+    CRepository *mRepo;
+    bool testabilityEnabled;
+	CSystemToneService *mSts;
 #endif //Q_OS_SYMBIAN
 #endif //HB_TESTABILITY
 
-     HbLocaleChangeNotifier* mLocaleChangeNotifier;
-     
+    HbLocaleChangeNotifier *mLocaleChangeNotifier;
+
     // Provided for HbMainWindow & friends who have to access
     // HbInstancePrivate in order to add/remove windows.
     // NOTE: Still kept as private to track dependencies...
@@ -108,6 +112,7 @@ private:
     friend class HbEffectPrivate;
     friend class HbMainWindowOrientation;
     friend class HbWidgetStyleLoader;
+    friend class HbPopupPrivate;
 };
 
 #endif // HBINSTANCE_P_H

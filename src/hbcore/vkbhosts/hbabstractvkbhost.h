@@ -34,24 +34,27 @@
 class HbView;
 class HbAbstractVkbHostPrivate;
 class HbWidget;
+class QGraphicsObject;
 
 class HB_CORE_EXPORT HbAbstractVkbHost : public HbVkbHost
 {
     Q_OBJECT
 
 public:
-    HbAbstractVkbHost(HbWidget* containerWidget);
-    HbAbstractVkbHost(QGraphicsWidget* containerWidget);
+    HbAbstractVkbHost(HbWidget *containerWidget);
+    HbAbstractVkbHost(QWidget *containerWidget);
+    HbAbstractVkbHost(QGraphicsWidget *containerWidget);
+    HbAbstractVkbHost(QGraphicsObject *containerWidget);
     ~HbAbstractVkbHost();
 
 public: // From HbVkbHost
-    void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod* owner = 0, bool animationAllowed = true);
-    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod* owner);
+    void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod *owner = 0, bool animationAllowed = true);
+    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner);
     void closeKeypad(bool animationAllowed = true);
     void minimizeKeypad(bool animationAllowed = true);
-    HbVkbStatus keypadStatus() const;  
+    HbVkbStatus keypadStatus() const;
     HbVirtualKeyboard *activeKeypad() const;
-    QRectF applicationArea() const;  
+    QRectF applicationArea() const;
     QSizeF keyboardArea() const;
     HbVkbStatus keypadStatusBeforeOrientationChange() const;
 
@@ -69,8 +72,8 @@ public slots:
     virtual void orientationAboutToChange();
     virtual void orientationChanged(Qt::Orientation orientation);
     virtual void animValueChanged(qreal aValue);
-    virtual void animationFinished(); 
-    virtual void currentViewChanged(HbView*);
+    virtual void animationFinished();
+    virtual void currentViewChanged(HbView *);
     virtual void stateTransitionCompleted();
 
 protected:
@@ -78,7 +81,7 @@ protected:
     HbAbstractVkbHost(HbAbstractVkbHostPrivate *dd);
 
 protected:
-    HbAbstractVkbHostPrivate* const d_ptr;
+    HbAbstractVkbHostPrivate *const d_ptr;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbAbstractVkbHost)

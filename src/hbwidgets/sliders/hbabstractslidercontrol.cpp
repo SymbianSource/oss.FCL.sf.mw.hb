@@ -100,7 +100,7 @@
 /*!
     \var HbAbstractSliderControl::SliderSingleStepSub
 
-    Substract a single step.
+    Subtract a single step.
  */
 
 /*!
@@ -112,7 +112,7 @@
 /*!
     \var HbAbstractSliderControl::SliderPageStepSub
 
-    Substract a page step.
+    Subtract a page step.
  */
 
 /*!
@@ -858,7 +858,7 @@ void HbAbstractSliderControl::keyPressEvent(QKeyEvent *event)
 
         // It seems we need to use invertedAppearance for Left and right, otherwise, things look weird.
         case Qt::Key_Left:
-            if(orientation()==Qt::Horizontal){
+            if( d->keyNavigation() && orientation()==Qt::Horizontal){
                 if (layoutDirection() == Qt::RightToLeft)
                     action = d->invertedAppearance ? SliderSingleStepSub : SliderSingleStepAdd;
                 else
@@ -871,7 +871,7 @@ void HbAbstractSliderControl::keyPressEvent(QKeyEvent *event)
             }
             break;
         case Qt::Key_Right:
-            if(orientation()==Qt::Horizontal){
+            if( d->keyNavigation() && orientation()==Qt::Horizontal){
                 if (layoutDirection() == Qt::RightToLeft)
                     action = d->invertedAppearance ? SliderSingleStepAdd : SliderSingleStepSub;
                 else
@@ -883,7 +883,7 @@ void HbAbstractSliderControl::keyPressEvent(QKeyEvent *event)
             }
             break;
         case Qt::Key_Up:
-            if(orientation()==Qt::Vertical){
+            if( d->keyNavigation() && orientation()==Qt::Vertical){
                 action = d->invertedControls ? SliderSingleStepSub : SliderSingleStepAdd;
                 event->accept();
             }
@@ -892,7 +892,7 @@ void HbAbstractSliderControl::keyPressEvent(QKeyEvent *event)
             }
             break;
         case Qt::Key_Down:
-            if(orientation()==Qt::Vertical){
+            if( d->keyNavigation() && orientation()==Qt::Vertical){
                 action = d->invertedControls ? SliderSingleStepAdd : SliderSingleStepSub;
                 event->accept();
             }

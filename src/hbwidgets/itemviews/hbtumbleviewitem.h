@@ -30,6 +30,10 @@
 
 class HbListViewItemPrivate;
 
+QT_BEGIN_NAMESPACE
+class QGestureEvent;
+QT_END_NAMESPACE
+
 class HB_WIDGETS_EXPORT HbTumbleViewItem: public HbListViewItem 
 {
     Q_OBJECT
@@ -45,6 +49,10 @@ public:
     virtual HbAbstractViewItem *createItem();
 
     void updateChildItems();
+
+protected:
+    void gestureEvent(QGestureEvent *event);
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbListViewItem)

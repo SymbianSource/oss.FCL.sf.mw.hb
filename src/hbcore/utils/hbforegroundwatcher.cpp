@@ -30,6 +30,7 @@
 #include <hbinstance.h>
 #include <hbsensorlistener_p.h>
 #include "hbsleepmodelistener_p.h"
+#include "hbmainwindow_p.h"
 #ifdef HB_EFFECTS_OPENVG
 #include <hbvgeffect_p.h>
 #endif
@@ -39,14 +40,17 @@
 #include "hbthemecommon_p.h"
 
 /*!
-  @proto
-  @hbcore
   \class HbForegroundWatcher
 
   \brief Listens for Symbian foreground-background notifications via CCoeEnv.
 
-  \internal
+  Note that this class cannot be used to safely determine if the application is
+  in foreground or not. For example there may not be a foreground-gained
+  notification when the application is starting and we always assume that the
+  application is started to foreground. Therefore use this class only to get
+  notifications about loosing/gaining foreground after app startup.
 
+  \internal
 */
 
 /*!
@@ -73,7 +77,6 @@
   This signal is emitted when lights are switched off and the app is in foreground.
 */
 
-
 HbForegroundWatcher *HbForegroundWatcher::instance()
 {
     static HbForegroundWatcher *watcher = new HbForegroundWatcher(qApp);
@@ -84,16 +87,9 @@ HbForegroundWatcher::HbForegroundWatcher(QObject *parent)
     : QObject(parent), mForeground(true), mLights(true), mSensorListener(0)
 {
     connect(QApplication::instance(), SIGNAL(aboutToQuit()), SLOT(handleAboutToQuit()));
-#ifdef Q_OS_SYMBIAN
-    mStaticEnv = CCoeEnv::Static();
-    if (mStaticEnv) {
-        TRAP_IGNORE(mStaticEnv->AddForegroundObserverL(*this));
-    } else {
-        qWarning("HbForegroundWatcher: CoeEnv not available");
-    }
-#endif
     QApplication::instance()->installEventFilter(this);
     HbSleepModeListener::instance(); // make sure the instance is created
+    mSleepModeTimer.setSingleShot(true);
     connect(&mSleepModeTimer, SIGNAL(timeout()), this, SLOT(handleSensors()));
 }
 
@@ -112,7 +108,7 @@ void HbForegroundWatcher::HandleGainingForeground()
     if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
         return;
     }
-    
+
     if (!mForeground) {
         emit foregroundGained();
         if (!hbInstance->allMainWindows().isEmpty()) {
@@ -120,6 +116,12 @@ void HbForegroundWatcher::HandleGainingForeground()
             if (!signalsBlocked()) {
                 HbEffectInternal::resumeEffects();
             }
+#ifdef Q_OS_SYMBIAN
+            HbMainWindow *mWindow = HbInstance::instance()->allMainWindows().first();
+            if (mWindow) {
+                HbMainWindowPrivate::d_ptr(mWindow)->updateForegroundOrientationPSKey();
+            }
+#endif //Q_OS_SYMBIAN
         }
         mForeground = true;
     }
@@ -135,7 +137,7 @@ void HbForegroundWatcher::HandleLosingForeground()
     if (THEME_SERVER_NAME == HbMemoryUtils::getCleanAppName()) {
         return;
     }
-    
+
     if (mForeground) {
         emit foregroundLost();
         if (!hbInstance->allMainWindows().isEmpty()) {
@@ -204,13 +206,9 @@ bool HbForegroundWatcher::eventFilter(QObject *obj, QEvent *event)
         mLights = true;
         handleSensors();
     } else if (event->type() == QEvent::ApplicationActivate && !mForeground) {
-#ifndef Q_OS_SYMBIAN
         HandleGainingForeground();
-#endif
     } else if (event->type() == QEvent::ApplicationDeactivate && mForeground) {
-#ifndef Q_OS_SYMBIAN
         HandleLosingForeground();
-#endif
     }
     return QObject::eventFilter(obj, event);
 }

@@ -30,12 +30,13 @@
 #include "hbpopup.h"
 #include "hbwidget_p.h"
 #include "hbnamespace_p.h"
-#include "hbvgmaskeffect_p.h"
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
 #endif // HB_EFFECTS
 
+class HbVgMaskEffect;
 class HbPopupBackGround;
+class CSystemToneService;
 
 QT_FORWARD_DECLARE_CLASS(QEventLoop)
 QT_FORWARD_DECLARE_CLASS(QTimer)
@@ -61,6 +62,8 @@ public:
         VirtualKeyboard = 127,
         AlwaysOnTop = 255
     };
+
+	CSystemToneService *systemToneService();
 
 // Private features
 public:
@@ -109,13 +112,17 @@ public:
     QPointer<QObject> receiverToDisconnectOnClose;
     QByteArray memberToDisconnectOnClose;
     qreal mScreenMargin;
+    bool mAutoLayouting;
+    bool mOriginalAutoLayouting;
 
 public:
 #ifdef HB_EFFECTS
     void _q_delayedHide(HbEffect::EffectStatus status);
-    void _q_orientationChange(Qt::Orientation orient, bool animate);
+	virtual void _q_appearEffectEnded(HbEffect::EffectStatus status);
+    void _q_orientationAboutToChange(Qt::Orientation orient, bool animate);
 #endif // HB_EFFECTS
     void _q_timeoutFinished();
+    void _q_orientationChanged();
 
     bool addPopupToScene();
     void handleBackgroundMousePressEvent();
@@ -134,6 +141,7 @@ public:
     void doSetModal( bool modal );
     QString effectType;
     HbVgMaskEffect *mVgMaskEffect;
+    bool mOrientationEffectHide;
 private:
     static bool popupEffectsLoaded;
     static HbPopupPrivate *d_ptr(HbPopup *popup) {
@@ -144,7 +152,6 @@ private:
     friend class HbPopupManagerPrivate;
     friend class HbPopupLayoutProxy;
     friend class HbDeviceDialogManagerPrivate;
-
     // To be able to unit test private features
     friend class TestHbPopup;
 

@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HB_PREDICTION_ENGINE_H
-#define HB_PREDICTION_ENGINE_H
+#ifndef HB_INPUT_PREDICTION_ENGINE_H
+#define HB_INPUT_PREDICTION_ENGINE_H
 
 #include <QStringList>
 #include <QKeyEvent>
@@ -74,20 +74,20 @@ protected:
 
 public:
     virtual QList<HbInputLanguage> languages() const = 0;
-    virtual void setWord(const QString& word, HbPredictionCallback* callback = 0) = 0;
-    virtual void updateCandidates(int& bestGuessLocation, bool& noMoreCandidates) = 0;
-    virtual bool updateCandidates(int& bestGuessLocation) = 0;
-    virtual void appendKeyPress(const int keycode, const Qt::KeyboardModifiers modifiers, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0) = 0;
-    virtual void deleteKeyPress(HbPredictionCallback* callback = 0) = 0;
+    virtual void setWord(const QString &word, HbPredictionCallback *callback = 0) = 0;
+    virtual void updateCandidates(int &bestGuessLocation, bool &noMoreCandidates) = 0;
+    virtual bool updateCandidates(int &bestGuessLocation) = 0;
+    virtual void appendKeyPress(const int keycode, const Qt::KeyboardModifiers modifiers, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback *callback = 0) = 0;
+    virtual void deleteKeyPress(HbPredictionCallback *callback = 0) = 0;
     virtual void commit(const QString &word = QString()) = 0;
     virtual void clear() = 0;
-    virtual void addUsedWord(const QString& word) = 0;
+    virtual void addUsedWord(const QString &word) = 0;
     virtual HbInputPredictionFeature features() const = 0;
     virtual QString vendorIdString() const = 0;
     virtual QString engineVersion() const = 0;
-    virtual bool supportsKeyboardType(const HbInputLanguage& language, HbKeyboardType keyboard) const = 0;
+    virtual bool supportsKeyboardType(const HbInputLanguage &language, HbKeyboardType keyboard) const = 0;
 
-    virtual HbUserDictionary* userDictionary() const;
+    virtual HbUserDictionary *userDictionary() const;
     virtual void setExtraUserDictionary(int id);
     virtual void setExtraUserDictionaries(const QList<int>& idList);
     virtual bool setLanguage(const HbInputLanguage &language, HbInputModeType inputMode = HbInputModeNone);
@@ -111,16 +111,16 @@ public:
     };
 
 public:
-    virtual void setCandidateList(QStringList* candidateList) = 0;
+    virtual void setCandidateList(QStringList *candidateList) = 0;
     virtual QStringList candidateList() = 0;
     virtual QStringList candidates() = 0;
     virtual int inputLength() = 0;
-    virtual void appendCharacter(const QChar character, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback* callback = 0) = 0;
+    virtual void appendCharacter(const QChar character, const HbTextCase textCase = HbTextCaseNone, HbPredictionCallback *callback = 0) = 0;
 
-    virtual QStringList nextWordCandidateList(HbPredictionCallback* callback = 0);
+    virtual QStringList nextWordCandidateList(HbPredictionCallback *callback = 0);
     virtual bool setErrorCorrectionLevel(HbErrorCorrectionLevel level);
     virtual HbErrorCorrectionLevel errorCorrectionLevel() const;
-    virtual bool setSecondaryLanguage(const HbInputLanguage& language);
+    virtual bool setSecondaryLanguage(const HbInputLanguage &language);
     virtual HbInputLanguage secondaryLanguage() const;
     virtual QString currentWord() const;
     virtual bool enableFeature(HbInputPredictionFeature feature);
@@ -132,8 +132,14 @@ public:
 class HB_CORE_EXPORT HbPredictionEngineChinese : public HbPredictionEngine
 {
 public:
+    virtual void updateCnInputMode() = 0;
+    // HbInputModeType deprecated, int are used currently
     virtual void setInputMode(HbInputModeType imMode) = 0;
+    virtual bool setCnInputMode(int imMode) = 0;
+
+    // HbInputModeType deprecated, int are used currently
     virtual HbInputModeType inputMode() const = 0;
+    virtual int cnInputMode() = 0;
 
     virtual bool spelling(int index, QString &out) = 0;
     virtual bool selectSpelling(int index) = 0;
@@ -142,16 +148,23 @@ public:
 
     virtual QStringList getCandidates(int startIndex, int count) = 0;
     virtual bool selectCandidate(int index) = 0;
-    virtual bool selectCandidate(const QString& candidate) = 0;
+    virtual bool selectCandidate(const QString &candidate) = 0;
     virtual bool candidateExist(int index) = 0;
 
     virtual bool pressKey(const int keycode, const Qt::KeyboardModifiers modifiers, const int textCase = 0) = 0;
+
+    // HbInputModeType deprecated, int are used currently
     virtual bool isInputModeSupported(HbInputModeType imMode) = 0;
+    virtual bool isCnInputModeSupported(int imMode) = 0;
+
     // used for hwr engine
     virtual bool addStroke(const QList<QPointF>& traceData) = 0;
     virtual bool inlineSpelling(int idx, QString &out) = 0;
+    virtual QByteArray itutZhuyinKeySequences() = 0;
+    virtual int setInputAreaSize(QSize &size) = 0;
+    virtual int setScreenSize(QSize &size) = 0;
 };
 
-#endif // HB_PREDICTION_ENGINE
+#endif // HB_INPUT_PREDICTION_ENGINE_H
 
 // End of file

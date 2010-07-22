@@ -137,7 +137,8 @@ public:
     void sendInputPanelEvent(QEvent::Type type);
     void openInputPanel();
     void closeInputPanel();
-    void minimizeInputPanel();
+    bool hasInputFocus() const;
+    void setInputFocusEnabled(bool enable);
 
     int contentLength() const;
     bool hasAcceptableInput() const;
@@ -150,6 +151,7 @@ public:
                                        const QStyleOptionGraphicsItem &option) const;
 
     void updatePlaceholderDocProperties();
+    void filterInputText(QString &text) const;
 
     void _q_updateRequest(QRectF rect);
     void _q_updateBlock(QTextBlock block);
@@ -170,7 +172,7 @@ public:
     QTextCursor cursor;
     QTextCursor selectionCursor;
 
-    HbValidator* validator;
+    QPointer<HbValidator> validator;
     bool imEditInProgress;
     int imPosition;
     int imAdded;
@@ -209,13 +211,13 @@ public:
     HbFormatDialogPointer formatDialog;
     QTextCursor nextCharCursor;
 
+    bool updatePrimitivesInProgress;
 
 private:
     static HbAbstractEditPrivate *d_ptr(HbAbstractEdit *edit) {
         Q_ASSERT(edit);
         return edit->d_func();
     }
-    friend class HbEditScrollArea;
     friend class HbFormatDialog;
     friend class HbFormatDialogPrivate;
     // To be able to unit test private features

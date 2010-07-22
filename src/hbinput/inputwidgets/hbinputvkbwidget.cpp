@@ -22,6 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinputvkbwidget.h"
+#include "hbinputvkbwidget_p.h"
+
 #include <QPixmap>
 #include <QBitmap>
 #include <QPainter>
@@ -43,12 +46,15 @@
 #include <hbframedrawer.h>
 #include <hbevent.h>
 #include <hbdataform.h>
+#include <hbinputregioncollector_p.h>
+#include <hbfeedbackmanager.h>
 
 #include <hbinputmethod.h>
 #include <hbinputsettingproxy.h>
 #include <hbinpututils.h>
 #include <hbinputdef.h>
 #include <hbinputvkbhost.h>
+#include <hbinputvkbhostbridge.h>
 #include <hbinputsettingwidget.h>
 #include <hbinputcommondialogs.h>
 #include <hbinputkeymap.h>
@@ -59,16 +65,24 @@
 #include <hbinputbutton.h>
 #include <HbSwipeGesture>
 #include <HbTapGesture>
-#include "hbinputvirtualrocker.h"
-#include "hbinputvkbwidget.h"
-#include "hbinputvkbwidget_p.h"
+#include <HbSelectionDialog>
+#include <HbListWidgetItem>
+
 #include "hbinputsettinglist.h"
 #include "hbinputmodeindicator.h"
-#include <hbfeedbackmanager.h>
 #include "hbinputsmileypicker.h"
 #include "hbinputscreenshotwidget.h"
 
-const qreal HbRockerWidth = 50.0;
+const int HB_DIGIT_LATIN_START_VALUE          = 0x0030;
+const int HB_DIGIT_ARABIC_INDIC_START_VALUE   = 0x0660;
+const int HB_DIGIT_EASTERN_ARABIC_START_VALUE = 0x06F0;
+const int HB_DIGIT_DEVANAGARI_START_VALUE     = 0x0966;
+
+const qreal HbPortraitSmileyPickerHeightInUnits = 43.7;
+const qreal HbPortraitSmileyPickerWidthInUnits = 47.8;
+const qreal HbLandscapeSmileyPickerHeightInUnits = 31.9;
+const qreal HbLandscapeSmileyPickerWidthInUnits = 83.4;
+const qreal HbSmileyPickerMarginInUnits = 0.9;
 
 
 /*!
@@ -86,47 +100,47 @@ with a finger. This class also implements background drawing for touch keypads.
 
 /// @cond
 
-inline HbWidget* hbwidget_cast(QGraphicsItem *item)
+inline HbWidget *hbwidget_cast(QGraphicsItem *item)
 {
-    if( item->isWidget() && static_cast<QGraphicsWidget*>(item)->inherits("HbWidget") ) {
-        return static_cast<HbWidget*>(item);
+    if (item->isWidget() && static_cast<QGraphicsWidget *>(item)->inherits("HbWidget")) {
+        return static_cast<HbWidget *>(item);
     }
     return 0;
 }
 
 HbInputVkbWidgetPrivate::HbInputVkbWidgetPrivate()
-: mOwner(0),
-mMode(EModeAbc),
-mKeymap(0),
-mModifiers(0),
-mInputModeIndicator(0),
-mSettingList(0),
-mButtonLayout(0),
-mRocker(0),
-mBackgroundDrawer(0),
-mIconDrawer(0),
-mMainWinConnected(false),
-mShowRocker(false),
-mLayout(0),
-mCurrentHost(0),
-mDrawbackground(true),
-mMouseButtonPressedDown(false),
-mFlickDirection(HbInputVkbWidget::HbFlickDirectionNone),
-mSmileyPicker(0),
-mScreenshotWidget(0),
-mScreenshotTimeLine(250),
-mMostRecentlyAccessedButton(0),
-mMostRecentlyClickedLocation(0.0,0.0),
-mFocusedObject(0),
-mFlickAnimation(false),
-mSettingsListOpen(false),
-mAnimateWhenDialogCloses(false),
-mKeyboardSize(HbQwerty4x10),
-mCloseHandleHeight(0),
-mCloseHandle(0),
-mSettingView(0),
-mCurrentView(0),
-mKeyboardDimmed(false)
+    : mOwner(0),
+      mMode(EModeAbc),
+      mKeymap(0),
+      mModifiers(0),
+      mInputModeIndicator(0),
+      mSettingList(0),
+      mButtonLayout(0),
+      mBackgroundDrawer(0),
+      mIconDrawer(0),
+      mMainWinConnected(false),
+      mLayout(0),
+      mCurrentHost(0),
+      mDrawbackground(true),
+      mMouseButtonPressedDown(false),
+      mFlickDirection(HbInputVkbWidget::HbFlickDirectionNone),
+      mSmileyPicker(0),
+      mScreenshotWidget(0),
+      mScreenshotTimeLine(250),
+      mMostRecentlyAccessedButton(0),
+      mMostRecentlyClickedLocation(0.0, 0.0),
+      mFocusedObject(0),
+      mCurrentFocusedObject(0),
+      mFlickAnimation(false),
+      mSettingsListOpen(false),
+      mAnimateWhenDialogCloses(false),
+      mKeyboardSize(HbQwerty4x10),
+      mCloseHandleHeight(0),
+      mCloseHandle(0),
+      mSettingView(0),
+      mCurrentView(0),
+      mKeyboardDimmed(false),
+	  mSettingWidget(0)
 {
     mScreenshotTimeLine.setUpdateInterval(16);
 }
@@ -150,8 +164,8 @@ void HbInputVkbWidgetPrivate::initLayout()
     mLayout->setSpacing(0.0);
 
     qreal unitValue = HbDeviceProfile::profile(q->mainWindow()).unitValue();
-    mCloseHandleHeight = HbCloseHandleHeightInUnits * unitValue;
-    mCloseHandleWidth = HbCloseHandleWidthInUnits * unitValue;
+    mCloseHandleHeight = (int)(HbCloseHandleHeightInUnits * unitValue);
+    mCloseHandleWidth = (int)(HbCloseHandleWidthInUnits * unitValue);
 
     mCloseHandle = new QGraphicsWidget();
     mCloseHandle->setObjectName("vkbHandle");
@@ -166,18 +180,17 @@ void HbInputVkbWidgetPrivate::initLayout()
 void HbInputVkbWidgetPrivate::init()
 {
     Q_Q(HbInputVkbWidget);
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+#if QT_VERSION >= 0x040600
+    itemFlags |= QGraphicsItem::ItemSendsGeometryChanges;
+#endif
+    // Make sure the keypad never steals focus.
+    itemFlags |= QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);
 
-    mRocker = new HbInputVirtualRocker(q);
-    mRocker->setObjectName("VirtualRocker");
-    QSizeF rockerSize(HbRockerWidth, HbRockerWidth);
-    mRocker->resize(rockerSize);
-    mRocker->setMinimumSize(HbRockerWidth, HbRockerWidth);
-    mRocker->setMaximumSize(HbRockerWidth*20, HbRockerWidth*20);
-
-    QObject::connect(mRocker, SIGNAL(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)),
-        q, SIGNAL(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)));
-
-    mRocker->setVisible(false);
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
+    QObject::connect(buttonGroup, SIGNAL(aboutToActivateCustomAction(HbAction *)),
+                     q, SIGNAL(aboutToActivateCustomAction(HbAction *)));
 
     mBackgroundDrawer = new HbFrameDrawer();
     mBackgroundDrawer->setFrameGraphicsName(backgroundGraphics);
@@ -198,6 +211,8 @@ void HbInputVkbWidgetPrivate::init()
     // eating gestures below the panel (remove when panel starts to do this)
     q->grabGesture(Qt::TapGesture);
     q->grabGesture(Qt::PanGesture);
+
+    HbInputRegionCollector::instance()->attach(q);
 }
 
 // re-implemented by inherited keyboards
@@ -240,8 +255,8 @@ void HbInputVkbWidgetPrivate::handleStandardButtonRelease(int buttonid)
     }
 }
 
-void HbInputVkbWidgetPrivate::addCustomButtonToLayout( HbTouchKeypadButton* button,
-                                                       int index)
+void HbInputVkbWidgetPrivate::addCustomButtonToLayout(HbTouchKeypadButton *button,
+        int index)
 {
     Q_UNUSED(button);
     Q_UNUSED(index);
@@ -266,10 +281,10 @@ void HbInputVkbWidgetPrivate::updateKeyCodes()
 {
     Q_Q(HbInputVkbWidget);
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         int key = 0;
-        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
@@ -290,16 +305,16 @@ void HbInputVkbWidgetPrivate::updateButtons()
 {
     Q_Q(HbInputVkbWidget);
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         int key = 0;
-        QList<HbInputButton*> buttons = buttonGroup->buttons();
+        QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
 
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
-                if (keyboardMap && key < keyboardMap->keys.count()) {
+                if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(mModifiers) != QString("")) {
                     QString keydata = keyboardMap->keys.at(key)->characters(mModifiers);
                     item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
 
@@ -327,7 +342,7 @@ void HbInputVkbWidgetPrivate::settingListPosition(QPointF &position, HbPopup::Pl
 {
     Q_Q(HbInputVkbWidget);
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
         if (item) {
@@ -338,31 +353,19 @@ void HbInputVkbWidgetPrivate::settingListPosition(QPointF &position, HbPopup::Pl
     }
 }
 
-void HbInputVkbWidgetPrivate::setRockerPosition()
-{
-    Q_Q(HbInputVkbWidget);
-
-    // Set rocker position.
-    QSizeF padArea = q->keypadButtonAreaSize();
-    QPointF point((padArea.width() * 0.5) - (mRocker->size().width() * 0.5),
-        (padArea.height() * 0.5) - (mRocker->size().height() * 0.5));
-    point.setY(point.y() + mCloseHandleHeight);
-
-    mRocker->setPos(point);
-}
-
 void HbInputVkbWidgetPrivate::captureScreenshot()
 {
     Q_Q(HbInputVkbWidget);
 
     if (!mScreenshotWidget) {
         mScreenshotWidget = new HbInputScreenshotWidget();
+        mScreenshotWidget->setZValue(q->zValue());
         mScreenshotWidget->setGeometry(q->geometry());
         q->mainWindow()->scene()->addItem(mScreenshotWidget);
     }
 
     QPointF position = q->pos();
-    QRectF rect = QRectF(position.x(), position.y()+ mCloseHandleHeight, q->boundingRect().width(), q->boundingRect().height()- mCloseHandleHeight);
+    QRectF rect = QRectF(position.x(), position.y() + mCloseHandleHeight, q->boundingRect().width(), q->boundingRect().height() - mCloseHandleHeight);
     QTransform rotateTrans;
     rotateTrans = q->mainWindow()->viewportTransform();
     QRectF transRect = rotateTrans.mapRect(rect);
@@ -382,11 +385,11 @@ void HbInputVkbWidgetPrivate::updateMouseHitItem(HbTouchKeypadButton *button, QP
 void HbInputVkbWidgetPrivate::normalizeProbabilities(QList<HbKeyPressProbability> &allProbableKeys)
 {
     qreal sum = 0.0;
-    foreach (HbKeyPressProbability key, allProbableKeys) {
+    foreach(const HbKeyPressProbability &key, allProbableKeys) {
         sum += key.probability;
     }
 
-    for (int count=0;count<allProbableKeys.size();count++) {
+    for (int count = 0; count < allProbableKeys.size(); count++) {
         allProbableKeys[count].probability = allProbableKeys[count].probability / sum;
     }
 }
@@ -410,12 +413,92 @@ bool HbInputVkbWidgetPrivate::isSmileysEnabled()
 
     return ret;
 }
+
+void HbInputVkbWidgetPrivate::_q_activateInputMethod(const HbInputMethodDescriptor &descriptor, const QByteArray &customData)
+{
+    Q_Q(HbInputVkbWidget);
+
+    if (!descriptor.isEmpty() && mOwner) {
+        // Set as active input method.
+        HbInputSettingProxy::instance()->setPreferredInputMethod(q->mainWindow()->orientation(), descriptor, customData);
+        // Activate immediately.
+        mOwner->activateInputMethod(descriptor);
+    }
+}
+
+void HbInputVkbWidgetPrivate::_q_smileyPickerClosed()
+{
+    Q_Q(HbInputVkbWidget);
+
+    q->setKeyboardDimmed(false);
+}
+
+QChar HbInputVkbWidgetPrivate::numberCharacterBoundToKey(int key)
+{
+    QChar numChr;
+    if (!mKeymap || !mOwner) {
+        return numChr;
+    }
+
+    HbInputFocusObject *focusObject = mOwner->focusObject();
+    if (!focusObject) {
+        return numChr;
+    }
+    HbInputLanguage language = mKeymap->language();
+    if (language.language()  != (QLocale::Language)0) {
+        HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
+
+        // In number editors, show the native digits only when both device and writing languages are same,
+        // else show latin digits
+        if (focusObject->editorInterface().isNumericEditor()) {
+            QLocale::Language systemLanguage = QLocale::system().language();
+            if (language.language() != systemLanguage) {
+                digitType = HbDigitTypeLatin;
+            }
+        }
+
+        HbKeyboardType keyboardType = mOwner->inputState().keyboard();
+
+        if (keyboardType == HbKeyboardVirtual12Key) {
+            numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(
+                         mKeymap->keyboard(keyboardType)->keys.at(key),
+                         language, digitType);
+        } else if (keyboardType == HbKeyboardVirtualQwerty) {
+            switch (digitType) {
+            case HbDigitTypeLatin:
+                numChr = HB_DIGIT_LATIN_START_VALUE + key;
+                break;
+            case HbDigitTypeArabicIndic:
+                numChr = HB_DIGIT_ARABIC_INDIC_START_VALUE + key;
+                break;
+            case HbDigitTypeEasternArabic:
+                numChr = HB_DIGIT_EASTERN_ARABIC_START_VALUE + key;
+                break;
+            case HbDigitTypeDevanagari:
+                numChr = HB_DIGIT_DEVANAGARI_START_VALUE + key;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return numChr;
+}
+
+void HbInputVkbWidgetPrivate::_q_settingsClosed(HbAction* action)
+{
+    Q_UNUSED(action);
+    Q_Q(HbInputVkbWidget);
+
+    q->settingsClosed();
+}
+
 /// @endcond
 
 /*!
 Costructs the object.
 */
-HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem* parent)
+HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem *parent)
     : HbWidget(*new HbInputVkbWidgetPrivate, parent)
 {
     Q_D(HbInputVkbWidget);
@@ -424,22 +507,24 @@ HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem* parent)
     d->init();
 
     setFocusPolicy(Qt::ClickFocus);
-    setPos(QPointF(0,0));
+    setPos(QPointF(0, 0));
 
 #ifdef HB_EFFECTS
     HbEffect::disable(this);
 #endif // HB_EFFECTS
 
-    // Make sure the keypad never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
+
+    if (!d->mOwner) {
+        d->mOwner = HbInputMethod::activeInputMethod();
+    }
 }
 
 /*!
 Constructs the object.
 */
-HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate& dd, QGraphicsItem* parent)
-  : HbWidget(dd, parent)
+HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem *parent)
+    : HbWidget(dd, parent)
 {
     Q_D(HbInputVkbWidget);
     d->q_ptr = this;
@@ -447,14 +532,12 @@ HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate& dd, QGraphicsItem* p
     d->init();
 
     setFocusPolicy(Qt::ClickFocus);
-    setPos(QPointF(0,0));
+    setPos(QPointF(0, 0));
 
 #ifdef HB_EFFECTS
     HbEffect::disable(this);
 #endif // HB_EFFECTS
 
-    // Make sure the keypad never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
     setActive(false);
 }
 
@@ -473,8 +556,6 @@ void HbInputVkbWidget::keyboardOpened(HbVkbHost *host)
     Q_D(HbInputVkbWidget);
 
     d->mCurrentHost = host;
-    d->mRocker->setVisible(d->mShowRocker);
-    d->setRockerPosition();
     d->mFlickDirection = HbFlickDirectionNone;
 }
 
@@ -488,7 +569,6 @@ void HbInputVkbWidget::keyboardClosed(HbVkbHost *host)
     Q_UNUSED(host);
     Q_D(HbInputVkbWidget);
 
-    d->mRocker->setVisible(false);
     d->mFlickDirection = HbFlickDirectionNone;
 }
 
@@ -507,7 +587,7 @@ void HbInputVkbWidget::keyboardMinimized(HbVkbHost *host)
 /*!
 The paint method. Draws the widget.
 */
-void HbInputVkbWidget::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void HbInputVkbWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(option);
     Q_UNUSED(widget);
@@ -567,25 +647,25 @@ QGraphicsLayoutItem *HbInputVkbWidget::contentItem() const
 }
 
 /*!
+\deprecated HbInputVkbWidget::setRockerVisible(bool)
+    is deprecated.
+
 Sets virtual rocker visibility.
 */
 void HbInputVkbWidget::setRockerVisible(bool visible)
 {
-    Q_D(HbInputVkbWidget);
-    d->mShowRocker = visible;
+    Q_UNUSED(visible);
 }
 
 /*!
+\deprecated HbInputVkbWidget::isRockerVisible() const
+    is deprecated.
+
 Returns true if virtual rocker is allowed to be visible.
 */
 bool HbInputVkbWidget::isRockerVisible() const
 {
-    Q_D(const HbInputVkbWidget);
-    if (d->mShowRocker) {
-        return d->mRocker->isVisible();
-    } else {
-        return false;
-    }
+    return false;
 }
 
 /*!
@@ -616,9 +696,10 @@ void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
     d->mModifiers = modifiers;
 
     d->updateButtons();
+    d->updateKeyCodes();
     d->applyEditorConstraints();
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup && d->mOwner->focusObject()) {
         buttonGroup->setCustomButtonActions(d->mOwner->focusObject()->editorInterface().actions());
     }
@@ -632,7 +713,7 @@ void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
 Sets key map data object. Given key map data will be used as a source for button titles.
 Usually the key map data for active input language is used.
 */
-void HbInputVkbWidget::setKeymap(const HbKeymap* keymap)
+void HbInputVkbWidget::setKeymap(const HbKeymap *keymap)
 {
     Q_D(HbInputVkbWidget);
     if (keymap) {
@@ -660,7 +741,6 @@ void HbInputVkbWidget::aboutToOpen(HbVkbHost *host)
     if (d->mOwner && d->mOwner->focusObject()) {
         qreal vkbZValue = d->mOwner->focusObject()->findVkbZValue();
         setZValue(vkbZValue);
-        d->mRocker->setZValue(vkbZValue + 0.5);
     }
 
     show();
@@ -675,18 +755,20 @@ void HbInputVkbWidget::aboutToClose(HbVkbHost *host)
 
     d->mCurrentHost = host;
 
-    d->mRocker->setVisible(false);
+    if (d->mSmileyPicker && d->mSmileyPicker->isVisible()) {
+        d->mSmileyPicker->hide();
+    }
     if (d->mSettingList) {
         d->mSettingList->close();
     }
 }
 
 /*!
-Enables or disabled all buttons in the keyboard that have not been disabled directly.
+Enables or disables all buttons in the keyboard that have not been disabled directly.
 */
 void HbInputVkbWidget::setKeyboardDimmed(bool dimmed)
 {
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
         buttonGroup->setEnabled(!dimmed);
     }
@@ -706,19 +788,27 @@ void HbInputVkbWidget::showSettingList()
     if (!d->mSettingList) {
         d->mSettingList = new HbInputSettingList();
         connect(d->mSettingList, SIGNAL(inputSettingsButtonClicked()), this, SLOT(showSettingsView()));
-        connect(d->mSettingList, SIGNAL(inputMethodsButtonClicked()), this, SLOT(executeMethodDialog()));
+        connect(d->mSettingList, SIGNAL(inputMethodSelected(const HbInputMethodDescriptor &, const QByteArray &)),
+                this, SLOT(_q_activateInputMethod(const HbInputMethodDescriptor &, const QByteArray &)));
     }
 
     HbInputFocusObject *focusObject = d->mOwner->focusObject();
-    if (focusObject &&
-        focusObject->editorInterface().isPredictionAllowed() &&
-        predFactory->predictionEngineForLanguage(HbInputSettingProxy::instance()->globalInputLanguage())) {
-        d->mSettingList->setPredictionSelectionEnabled(true);
-    } else {
-        d->mSettingList->setPredictionSelectionEnabled(false);
+    if (focusObject) {
+        if (focusObject->editorInterface().inputConstraints() & HbEditorConstraintLatinAlphabetOnly) {
+            d->mSettingList->setLanguageSelectionEnabled(false);
+        } else {
+            d->mSettingList->setLanguageSelectionEnabled(true);
+        }
+
+        if (focusObject->editorInterface().isPredictionAllowed() &&
+            predFactory->predictionEngineForLanguage(HbInputSettingProxy::instance()->globalInputLanguage())) {
+            d->mSettingList->setPredictionSelectionEnabled(true);
+        } else {
+            d->mSettingList->setPredictionSelectionEnabled(false);
+        }
     }
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
         HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
         if (item) {
@@ -732,7 +822,7 @@ void HbInputVkbWidget::showSettingList()
     d->settingListPosition(position, placement);
     d->mSettingList->setPreferredPos(position, placement);
     d->mSettingList->updateSettingList();
-    d->mSettingList->open(this, SLOT(settingsClosed()));
+    d->mSettingList->open(this, SLOT(_q_settingsClosed(HbAction*)));
 }
 
 /*!
@@ -742,7 +832,7 @@ void HbInputVkbWidget::settingsClosed()
 {
     Q_D(HbInputVkbWidget);
 
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
         HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
         if (item) {
@@ -752,10 +842,10 @@ void HbInputVkbWidget::settingsClosed()
     }
 
     d->mSettingsListOpen = false;
-    if ( d->mAnimateWhenDialogCloses ) {
+    if (d->mAnimateWhenDialogCloses) {
         animKeyboardChange();
         d->mAnimateWhenDialogCloses = false;
-    } else if(d->mScreenshotTimeLine.state() != QTimeLine::Running) {
+    } else if (d->mScreenshotTimeLine.state() != QTimeLine::Running) {
         keypadLanguageChangeFinished();
     }
 }
@@ -776,22 +866,35 @@ void HbInputVkbWidget::showSettingsView()
 {
     Q_D(HbInputVkbWidget);
 
-    closeSettingList();
+    /*
+    Added for vanilla input
+    When settings dialog is launched, keypad is not closed.
+    */
+    HbInputFocusObject *focusObject = 0;
+    if (!d->mOwner || !(focusObject = d->mOwner->focusObject())) {
+        return;
+    }
+    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
+    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
+        vkbHost->closeKeypad();
+    }
+    d->mCurrentFocusedObject = focusObject->object();
 
-    d->mSettingView = new HbView(this);
+    closeSettingList();
+    if(!d->mSettingView) {
+        d->mSettingView = new HbView(this);
+        HbAction *backAction = new HbAction(Hb::BackNaviAction, d->mSettingView);
+        backAction->setText(tr("Back"));
+        connect(backAction, SIGNAL(triggered(bool)), this, SLOT(closeSettingsView()));
+        d->mSettingView->setNavigationAction(backAction);
+        HbDataForm *dataForm = new HbDataForm();
+        d->mSettingView->setWidget(dataForm);
+        d->mSettingWidget = new HbInputSettingWidget(dataForm, d->mSettingView);        
+    }    
+    d->mSettingWidget->initializeWidget();
+    HbInputRegionCollector::instance()->attach(d->mSettingView);
     d->mSettingView->setTitle(tr("Input Settings"));
     mainWindow()->addView(d->mSettingView);
-
-    HbAction *backAction = new HbAction(Hb::BackNaviAction, d->mSettingView);
-    backAction->setText(tr("Back"));
-    connect(backAction, SIGNAL(triggered(bool)), this, SLOT(closeSettingsView()));
-    d->mSettingView->setNavigationAction(backAction);
-
-    HbDataForm *dataForm = new HbDataForm();
-    d->mSettingView->setWidget(dataForm);
-    HbInputSettingWidget *settingWidget = new HbInputSettingWidget(dataForm, d->mSettingView);
-    settingWidget->initializeWidget();
-
     d->mCurrentView = mainWindow()->currentView();
     mainWindow()->setCurrentView(d->mSettingView);
 }
@@ -805,29 +908,32 @@ void HbInputVkbWidget::closeSettingsView()
 
     mainWindow()->setCurrentView(d->mCurrentView);
     mainWindow()->removeView(d->mSettingView);
-    delete d->mSettingView;
-    d->mSettingView = 0;
+    if (d->mSettingView->scene()) {
+        d->mSettingView->scene()->removeItem(d->mSettingView);
+    }
+    HbInputRegionCollector::instance()->detach(d->mSettingView);
+    d->mSettingWidget->resetWidget();
+
+    if (d->mCurrentFocusedObject) {
+        HbInputFocusObject *focusObject = new HbInputFocusObject(d->mCurrentFocusedObject);
+        d->mOwner->setFocusObject(focusObject);
+        d->mCurrentFocusedObject = 0;
+    }
 }
 
 /*!
+\deprecated HbInputVkbWidget::executeMethodDialog()
+    is deprecated.
 Executes input method selection dialog
 */
 void HbInputVkbWidget::executeMethodDialog()
 {
-    Q_D(HbInputVkbWidget);
-
-    closeSettingList();
-    HbInputMethodDescriptor method
-        = HbInputCommonDialogs::showCustomInputMethodSelectionDialog(HbInputSettingProxy::instance()->globalInputLanguage());
-    if (!method.isEmpty() && d->mOwner) {
-        d->mOwner->activateInputMethod(method);
-    }
 }
 
 /*!
 \reimp
 */
-QWidget* HbInputVkbWidget::asWidget()
+QWidget *HbInputVkbWidget::asWidget()
 {
     return HbInputUtils::createWrapperWidget(this);
 }
@@ -835,7 +941,7 @@ QWidget* HbInputVkbWidget::asWidget()
 /*!
 \reimp
 */
-QGraphicsWidget* HbInputVkbWidget::asGraphicsWidget()
+QGraphicsWidget *HbInputVkbWidget::asGraphicsWidget()
 {
     return this;
 }
@@ -863,9 +969,6 @@ void HbInputVkbWidget::keyboardAnimationFrame(HbVkbAnimationType type, qreal x)
 {
     Q_UNUSED(type);
     Q_UNUSED(x);
-
-    Q_D(HbInputVkbWidget);
-    d->setRockerPosition();
 }
 
 /*!
@@ -883,6 +986,18 @@ QSizeF HbInputVkbWidget::keypadButtonAreaSize()
 }
 
 /*!
+\deprecated HbInputVkbWidget::rockerPosition()
+    is deprecated.
+
+Returns the virtual rocker position. The default position is in the middle
+of keypad button area.
+*/
+QPointF HbInputVkbWidget::rockerPosition()
+{
+    return QPointF();
+}
+
+/*!
 Sets the status of the background drawing. This method can be used to
 optimize vkb widget drawing. If it is known that the widget will cover whole
 vkb area and there are no places where the background shows through, then the background
@@ -896,15 +1011,15 @@ void HbInputVkbWidget::setBackgroundDrawing(bool backgroundEnabled)
 
 
 /*!
-Returns all possible keys those the user could have intended to press
+Returns all possible keys that the user could have intended to press
 for the last registered touch along with their corresponding probability.
 */
 QList<HbKeyPressProbability> HbInputVkbWidget::probableKeypresses()
 {
     QList<HbKeyPressProbability> probabilities;
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
-        probabilities = buttonGroup->buttonProbabilities(); 
+        probabilities = buttonGroup->buttonProbabilities();
     }
     return probabilities;
 }
@@ -961,11 +1076,23 @@ void HbInputVkbWidget::showSmileyPicker(int rows, int columns)
     }
 
     if (d->mSmileyPicker) {
-        d->mSmileyPicker->setGeometry(QRectF(0, pos().y(), geometry().width(),
-            geometry().height()));
-        d->mSmileyPicker->show();
+        qreal unitValue = HbDeviceProfile::profile(mainWindow()).unitValue();
+        QSizeF screenSize = HbDeviceProfile::profile(mainWindow()).logicalSize();
 
-        HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(contentItem());
+        qreal width = HbPortraitSmileyPickerWidthInUnits * unitValue;
+        qreal height = HbPortraitSmileyPickerHeightInUnits * unitValue;
+        if (mainWindow()->orientation() == Qt::Horizontal) {
+            width = HbLandscapeSmileyPickerWidthInUnits * unitValue;
+            height = HbLandscapeSmileyPickerHeightInUnits * unitValue;
+        }
+
+        d->mSmileyPicker->setPreferredSize(QSizeF(width, height));
+        d->mSmileyPicker->setPos((screenSize.width() - width) * 0.5,
+                                 screenSize.height() - height - HbSmileyPickerMarginInUnits * unitValue);
+        d->mSmileyPicker->open(this, SLOT(_q_smileyPickerClosed()));
+        setKeyboardDimmed(true);
+
+        HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
         if (buttonGroup) {
             buttonGroup->cancelButtonPress();
         }
@@ -1009,12 +1136,12 @@ void HbInputVkbWidget::sendKeyReleaseEvent(const QKeyEvent &event)
 {
     Q_D(HbInputVkbWidget);
 
+    if (d->mOwner && event.key() > 0) {
+        d->mOwner->filterEvent(&event);
+    }
+
     if (event.key() == HbInputButton::ButtonKeyCodeSettings) {
         showSettingList();
-    } else {
-        if (d->mOwner) {
-            d->mOwner->filterEvent(&event);
-        }
     }
 }
 
@@ -1055,10 +1182,10 @@ void HbInputVkbWidget::keypadLanguageChangeAnimationUpdate(qreal value)
 
     QRectF rect = boundingRect();
     QPointF position = pos();
-    position.setX(direction * (-rect.width() + rect.width() * value));
+    position.setX(direction *(-rect.width() + rect.width() * value));
     if (d->mScreenshotWidget) {
-       d->mScreenshotWidget->setPos(position.x() + direction * rect.width(), position.y());
-       setPos(position);
+        d->mScreenshotWidget->setPos(position.x() + direction * rect.width(), position.y());
+        setPos(position);
     }
 }
 
@@ -1074,7 +1201,7 @@ void HbInputVkbWidget::animKeyboardChange()
 {
     Q_D(HbInputVkbWidget);
     if (mainWindow()) {
-        if (d->mSettingsListOpen){
+        if (d->mSettingsListOpen) {
             d->mAnimateWhenDialogCloses = true;
         } else {
             if (!d->mAnimateWhenDialogCloses) {
@@ -1097,20 +1224,20 @@ QSizeF HbInputVkbWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) 
 
     QSizeF sh;
     switch (which) {
-        case Qt::MinimumSize:
-            sh = QSizeF(0, 0);
-            break;
-        case Qt::PreferredSize:
-            if (d->mCurrentHost) {
-                sh = d->mCurrentHost->keyboardArea();
-            }
-            break;
-        case Qt::MaximumSize:
-            sh = QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-            break;
-        default:
-            qWarning("HbInputVkbWidget::sizeHint(): Don't know how to handle the value of 'which'");
-            break;
+    case Qt::MinimumSize:
+        sh = QSizeF(0, 0);
+        break;
+    case Qt::PreferredSize:
+        if (d->mCurrentHost) {
+            sh = d->mCurrentHost->keyboardArea();
+        }
+        break;
+    case Qt::MaximumSize:
+        sh = QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+        break;
+    default:
+        qWarning("HbInputVkbWidget::sizeHint(): Don't know how to handle the value of 'which'");
+        break;
     }
     return sh;
 }
@@ -1135,7 +1262,7 @@ void HbInputVkbWidget::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbInputVkbWidget);
 
-    if(HbSwipeGesture *gesture = qobject_cast<HbSwipeGesture *>(event->gesture(Qt::SwipeGesture))) {
+    if (HbSwipeGesture *gesture = qobject_cast<HbSwipeGesture *>(event->gesture(Qt::SwipeGesture))) {
         if (gesture->state() == Qt::GestureFinished) {
             HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
             // vertical swipes
@@ -1150,20 +1277,22 @@ void HbInputVkbWidget::gestureEvent(QGestureEvent *event)
             } else {
                 d->mFlickDirection = (HbInputVkbWidget::HbFlickDirection)gesture->sceneHorizontalDirection();
                 // horizontal swipes
-                if (d->mFlickAnimation){
+                if (d->mFlickAnimation) {
                     animKeyboardChange();
                 }
                 emit flickEvent(d->mFlickDirection);
             }
         }
-    } else if(HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
-        if (gesture->state() == Qt::GestureFinished) {        
-            // if keypad is minimized, open it 
-            if ( d->mCurrentHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized ) {
+    } else if (HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        if (gesture->state() == Qt::GestureFinished) {
+            // if keypad is minimized, open it
+            if (d->mCurrentHost && d->mCurrentHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized) {
                 d->mCurrentHost->openKeypad(this, d->mOwner);
             }
         }
     }
 }
+
+#include "moc_hbinputvkbwidget.cpp"
 
 // End of file

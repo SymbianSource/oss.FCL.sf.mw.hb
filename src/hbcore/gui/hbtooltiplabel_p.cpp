@@ -57,7 +57,7 @@ HbToolTipLabelPrivate::HbToolTipLabelPrivate():
 void HbToolTipLabelPrivate::init()
 {
     Q_Q(HbToolTipLabel);
-    q->setBackgroundItem(HbStyle::P_ToolTip_background);
+    setBackgroundItem(HbStyle::P_ToolTip_background);
 
     q->setFocusPolicy(Qt::NoFocus);
     q->setTimeout(HbPopup::NoTimeout);
@@ -78,7 +78,7 @@ void HbToolTipLabelPrivate::addPopupEffects()
 #endif
 }
 
-/*
+/*!
   Checks if there is an item under scenePos that has tooltip. If it finds an item it sends an
   QGraphicsSceneHelpEvent event to it. If the event is not handled by the item it uses default implementation
   to display tooltip.
@@ -198,7 +198,7 @@ void HbToolTipLabelPrivate::showText(QGraphicsItem *item, Qt::Alignment preferre
     q->show();
 }
 
-/*
+/*!
   Returns true if item is a tooltip blocking item.
   For example HbPopup background item is tooltip blocking for modal popups.
 */
@@ -212,7 +212,7 @@ bool HbToolTipLabelPrivate::toolTipBlockItem(QGraphicsItem *item)
     return false;
 }
 
-/*
+/*!
     \class HbToolTipLabel
     \brief HbToolTipLabel is a convenience widget that displays a small message box.
     Compared to traditional popup, a tooltip does not dim the background.
@@ -230,11 +230,15 @@ HbToolTipLabel::~HbToolTipLabel()
 {
 }
 
-/*
+/*!
+  \primitives
+  \primitive{background} HbFrameItem representing the tooltip background frame.
+  */
+
+/*!
   This method can be used to eventHook tool tip triggering and dismissal logic to a scene event
   flow.
  */
-
 void HbToolTipLabel::eventHook(QEvent *event)
 {
     Q_D(HbToolTipLabel);
@@ -268,12 +272,11 @@ void HbToolTipLabel::eventHook(QEvent *event)
 }
 
 
-/*
+/*!
     Returns the text of the tooltip.
 
     \sa setText()
 */
-
 QString HbToolTipLabel::text() const
 {
     Q_D(const HbToolTipLabel);
@@ -284,7 +287,7 @@ QString HbToolTipLabel::text() const
     }
 }
 
-/*
+/*!
     Sets the text of the tooltip.
 
     \sa text()
@@ -300,7 +303,7 @@ void HbToolTipLabel::setText(const QString &newText)
     d->label->setText(newText);
 }
 
-/*
+/*!
     If you specify a non-empty rect the tip will be hidden as soon
     as you move your cursor out of this area.
 
@@ -313,7 +316,7 @@ void HbToolTipLabel::setRect(const QRectF& rect)
 }
 
 
-/*
+/*!
     Displays tooltip using preferredAlignment regarding item.
 
     \sa hideText()
@@ -330,8 +333,8 @@ void HbToolTipLabel::showText(QGraphicsItem *item, Qt::Alignment preferredAlignm
     d->mItem = item;
 }
 
-/*
-    Hides tooltip
+/*!
+    Hides tooltip.
 
     \sa hideText()
 */
@@ -352,8 +355,8 @@ void HbToolTipLabel::hideTextImmediately()
     close();
 }
 
-/*
-    Timer event to show tooltip or hide the tool tip immediately
+/*!
+    Timer event to show tooltip or hide the tool tip immediately.
 */
 void HbToolTipLabel::timerEvent(QTimerEvent *event)
 {
@@ -366,10 +369,9 @@ void HbToolTipLabel::timerEvent(QTimerEvent *event)
     }
 }
 
-/*
-    reimp
+/*!
+    \reimp
 */
-#include <QDebug>
 bool HbToolTipLabel::event(QEvent *event)
 {
     Q_D(HbToolTipLabel);
@@ -386,8 +388,8 @@ bool HbToolTipLabel::event(QEvent *event)
     return HbPopup::event(event);
 }
 
-/*
-    reimp
+/*!
+    \reimp
 */
 void HbToolTipLabel::polish(HbStyleParameters &params)
 {

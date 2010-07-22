@@ -87,7 +87,7 @@ bool HbIconAnimationParser::parseDefinitionFile(
 #endif
         return false;
     }
-    
+
     setDevice(&file);
     bool ret = doParseFile(fileName, animations);
     file.close();
@@ -107,7 +107,7 @@ bool HbIconAnimationParser::doParseFile(
             if (name() == "animations") {
                 ret = readAnimations(fileName, animations);
             }
-        }        
+        }
     }
 
 #ifdef HB_ICON_TRACES
@@ -165,7 +165,7 @@ bool HbIconAnimationParser::readAnimations(
 QString HbIconAnimationParser::readIconData(HbIconAnimationData &data)
 {
     Q_ASSERT(isStartElement() && name() == "icon");
-    
+
     QString iconName;
     int defaultDuration = 0;
     QStack< QPair<int, int> > repStk;
@@ -176,7 +176,7 @@ QString HbIconAnimationParser::readIconData(HbIconAnimationData &data)
     QList<HbIconAnimationDefinition::AnimationFrame> frames = data.def.frameList();
 
     // Read icon attributes
-    foreach (const QXmlStreamAttribute &attr, attrs) {
+    foreach(const QXmlStreamAttribute & attr, attrs) {
         // "name" = ...
         if (attr.name().toString() == "name") {
             iconName = attr.value().toString();
@@ -226,7 +226,7 @@ QString HbIconAnimationParser::readIconData(HbIconAnimationData &data)
 
                 QXmlStreamAttributes attrs = attributes();
                 // Read attributes
-                foreach (const QXmlStreamAttribute &attr, attrs) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
                     // duration attribute
                     if (attr.name().toString() == "duration") {
                         frame.duration = attr.value().toString().toInt();
@@ -246,7 +246,7 @@ QString HbIconAnimationParser::readIconData(HbIconAnimationData &data)
                 // </loop>
                 int repeatCount = 0;
                 QXmlStreamAttributes attrs = attributes();
-                foreach (const QXmlStreamAttribute &attr, attrs) {
+                foreach(const QXmlStreamAttribute & attr, attrs) {
                     if (attr.name().toString() == "count") {
                         repeatCount = attr.value().toString().toInt();
                     }
@@ -255,7 +255,7 @@ QString HbIconAnimationParser::readIconData(HbIconAnimationData &data)
                 if (repeatCount > 0) {
                     // Target frame index for this loop's last frame will be the index of
                     // the frame that comes next.
-                    repStk.push(QPair<int, int>(frames.count(), repeatCount)); 
+                    repStk.push(QPair<int, int>(frames.count(), repeatCount));
                 }
 
             } else {

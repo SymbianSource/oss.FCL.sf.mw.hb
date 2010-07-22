@@ -36,23 +36,28 @@
     @hbserver
     \class HbIconDataCache
     \brief HbIconDataCache provides an implementation for the theme server's icon cache.
-    It acts as a central repository for storing the various details of all the icons cached in the server.
-    It provides various methods to insert new items, remove items as well as find existing cached items in the cache.
+    It acts as a central repository for storing the various details
+    of all the icons cached in the server. It provides various methods to insert new items,
+    remove items as well as find existing cached items in the cache.
     It also has methods to limit the cache size both on Gpu as well as Cpu shared memory.
 
-    Reference count based caching - On performing an Icon look up in the server, if the icon is not already cached,
-    the cache item is created and inserted into cache and its reference count is incremented.
-    If the same icon is requested by another application, the cached instance is returned and only the reference
-    count is incremented. Similarly, the refrence count is decremented whenever an icon is destroyed.
+    Reference count based caching - On performing an Icon look up in the server,
+    if the icon is not already cached, the cache item is created and inserted into cache
+    and its reference count is incremented.
+    If the same icon is requested by another application, the cached instance is returned
+    and only the reference count is incremented.
+    Similarly, the refrence count is decremented whenever an icon is destroyed.
 
     LRU policy is used for removal of icons from cache.
-    The cache maintains two separate doubly link lists to maintain the order of the least recently used icons created
-    in GPU memory as well as those created in the shared memory. Whenever, the reference count for a cached item becomes 0,
+    The cache maintains two separate doubly link lists to maintain the order
+    of the least recently used icons created in GPU memory as well as those created
+    in the shared memory. Whenever, the reference count for a cached item becomes 0,
     it is not deleted from the cache rather; the cached icon instance is appended to the LRU list.
-    Consider now that a scenario arrives when the cache has reached its max limit and there are some unused icons
-    (i.e. icons with reference count = 0) in the LRU list. Suppose at this point there is a new icon caching request.
-    In such a scenario, the unused icons, starting with those at the beginning of the LRU lists are removed from the cache,
-    one after the other, till the new icon can be accommodated.
+    Consider now that a scenario arrives when the cache has reached its max limit
+    and there are some unused icons (i.e. icons with reference count = 0) in the LRU list.
+    Suppose at this point there is a new icon caching request.
+    In such a scenario, the unused icons, starting with those at the beginning of the LRU lists
+    are removed from the cache one after the other, till the new icon can be accommodated.
 
     Description of data members
     // A list that maintains an ordered collection of least recently used icons in GPU
@@ -115,7 +120,6 @@ HbIconDataCache::HbIconDataCache()
 HbIconDataCache::~HbIconDataCache()
 {
     clear();
-
     delete cache;
 }
 
@@ -137,11 +141,11 @@ void HbIconDataCache::clear()
 
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
     QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
-    for (QHash < HbIconKey,
-            HbIconCacheItem* >::const_iterator iter = cache->constBegin();
+    for (QHash<HbIconKey,
+            HbIconCacheItem *>::const_iterator iter = cache->constBegin();
             iter != itEnd;
             ++iter) {
-        HbIconCacheItem* temp = iter.value();
+        HbIconCacheItem *temp = iter.value();
         if (temp->rasterIconData.type != INVALID_FORMAT) {
             switch (temp->rasterIconData.type) {
             case PIC :
@@ -206,11 +210,11 @@ void HbIconDataCache::clear()
     \a key denotes the unique identifier for the cache item that is to be searched in the cache.
 
  */
-HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
+HbIconCacheItem *HbIconDataCache::getCacheItem(const HbIconKey &key,
         HbRenderingMode currentRenderingMode,
         bool isMultiIconPiece)
 {
-    HbIconCacheItem* item = 0;
+    HbIconCacheItem *item = 0;
 
     if (!cache->contains(key)) {
         return 0;
@@ -248,19 +252,16 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
     if ((item->rasterIconData.type == INVALID_FORMAT) &&
             (goodMemory && !isMultiIconPiece)) {
         if (item->vectorIconData.type == NVG) {
-
             HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
             if (item->rasterIconData.type != INVALID_FORMAT) {
                 currentGpuCacheSize += item->rasterIconDataCost;
             }
         }
-
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
         addedItemMem = item->rasterIconDataCost;
 #endif
     }
-
     // If the Icon is present in CPU LRU list, then remove it from the list
     if (((item->cpuLink.next() != 0) || (item->cpuLink.prev() != 0)) ||
             ((item == cpuLruList.front()) && (item == cpuLruList.back()))) {
@@ -284,7 +285,6 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
         }
 #endif
     }
-
     // If the Icon does not have CPU data and there is enough space to create
     // the icon in CPU cache now, we go ahead and create CPU shared data
     if ((item->vectorIconData.type == INVALID_FORMAT) &&
@@ -302,7 +302,8 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
     //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     addedItemRefCount = item->refCount;
-    qDebug() << "HbIconDataCache::getCacheItem: " << "Cache hit in Server-Cache for" << key.filename;
+    qDebug() << "HbIconDataCache::getCacheItem: "
+             << "Cache hit in Server-Cache for" << key.filename;
     qDebug() << "HbIconDataCache::getCacheItem: Server RefCount now = " << item->refCount;
 #endif
 
@@ -314,16 +315,19 @@ HbIconCacheItem* HbIconDataCache::getCacheItem(const HbIconKey &key ,
     Provides a mechanism for inserting items into the cache.
     Checks are first done to see whether item can be accomodated in the GPU memory.
     If so the Gpu limits are updated. Next it tries to cache the item in the Cpu.
-    If possible, the Cpu limits are updated. If niether is possible, a failure to insert is returned.
-    In case of success, the item is inserted into the cache and the reference count for the item is incremented by 1.
+    If possible, the Cpu limits are updated. If neither is possible,
+    a failure to insert is returned.
+    In case of success, the item is inserted into the cache and
+    the reference count for the item is incremented by 1.
     \a key denotes the unique identifier for the cache item that is to be inserted into the cache.
     \a item the cache item that is to be inserted into the cache.
 
  */
-bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
+bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem *item)
 {
-    if (!item)
+    if (!item) {
         return false;
+    }
 
     // Check if Item can be accomdated in GPU cache
     bool gpuCaching = isItemCachableInGpu(item);
@@ -334,7 +338,6 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
     if ((!gpuCaching) && (!cpuCaching)) {
         return false;
     }
-
     // Item can be accomdated in GPU cache
     if (gpuCaching) {
         // Increment the GPU cache size
@@ -359,17 +362,18 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
                 currentCpuCacheSize += item->vectorIconDataCost;
             } else {
                 // New item's icon data cost is more than available free CPU cahe size
-                // Check if some items, whose ref count is 0, can be removed to make way for new item
+                // Check if some items, whose ref count is 0,
+                // can be removed to make way for new item
                 createCpuCacheSpace(item->vectorIconDataCost);
                 currentCpuCacheSize += item->vectorIconDataCost;
             }
         }
-
         if (currentCpuCacheSize > maxCpuCacheLimit) {
             currentCpuCacheSize = maxCpuCacheLimit;
         }
     }
-    QHash<HbIconKey, HbIconCacheItem*>::iterator iter = cache->insert(key, const_cast<HbIconCacheItem*>(item));
+    QHash<HbIconKey, HbIconCacheItem*>::iterator iter =
+            cache->insert(key, const_cast<HbIconCacheItem*>(item));
     if (iter == cache->end()) {
         return false;
     }
@@ -385,7 +389,8 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
     } else if (cpuCaching) {
         addedItemMem = item->vectorIconDataCost;
     }
-    qDebug() << "HbIconDataCache::insert: " << "Item " << key.filename<<" inserted in Server-Cache";
+    qDebug() << "HbIconDataCache::insert: " << "Item " << key.filename
+             << " inserted in Server-Cache";
     qDebug() << "HbIconDataCache::insert: Server RefCount now = " << item->refCount;
 #endif
 
@@ -395,18 +400,20 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem* item)
 /*!
     \fn HbIconDataCache::remove()
     Remove provides a mechanism for decrementing the reference count of a cached item.
-    In case the reference count becomes 0, the cache item instance is appended to the corresponding LRU list.
-    Actual removal of the cache item from the cache only occurs when the cache has reached a max limit and a new request for
-    insert comes.
-    \a key denotes the unique identifier for the cache item whose ref count is to be decremented in the cache.
+    In case the reference count becomes 0,
+    the cache item instance is appended to the corresponding LRU list.
+    Actual removal of the cache item from the cache only occurs
+    when the cache has reached a max limit and a new request for insert comes.
+    \a key denotes the unique identifier for the cache item whose
+       ref count is to be decremented in the cache.
 
  */
-bool HbIconDataCache::remove(const HbIconKey& key, bool keepInCache)
+bool HbIconDataCache::remove(const HbIconKey &key, bool keepInCache)
 {
     if (key.filename.isEmpty() || !cache->contains(key)) {
         return false;
     }
-    HbIconCacheItem* item = (*cache)[(key)];
+    HbIconCacheItem *item = (*cache)[(key)];
     item->refCount--;
 
     //Debug Code for Test Purpose
@@ -425,7 +432,6 @@ bool HbIconDataCache::remove(const HbIconKey& key, bool keepInCache)
                 return true;
             }
         }
-
         if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
             if (keepInCache) {
                 cpuLruList.insertBack(item);
@@ -436,8 +442,6 @@ bool HbIconDataCache::remove(const HbIconKey& key, bool keepInCache)
                 return true;
             }
         }
-
-
         //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
         if (! enableCaching) {
@@ -454,14 +458,11 @@ bool HbIconDataCache::remove(const HbIconKey& key, bool keepInCache)
             }
         } else {
 #endif
-
-
             //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
             rasterLruListCount++;
         }
 #endif
-
 
         if ((item->vectorIconData.type != INVALID_FORMAT) &&  item->refCount == 0) {
 
@@ -525,7 +526,6 @@ void HbIconDataCache::setMaxGpuCacheSize(int size)
 #else
     maxGpuCacheLimit = size;
 #endif
-
 }
 
 /*!
@@ -559,12 +559,13 @@ void HbIconDataCache::setMaxCpuCacheSize(int size)
 /*!
     \fn HbIconDataCache::contains()
     Provides a mecahnism for finding whether an item exists in cache.
-    Is different from the find function in that, this function simply checks whether an item is presentin cache, whereas find
+    Is different from the find function in that,
+    this function simply checks whether an item is presentin cache, whereas find
     also performs additional operations such as incrementing the reference count.
     \a key denotes the unique identifier for the cache item that is to be found into the cache.
 
  */
-bool HbIconDataCache::contains(const HbIconKey &key)const
+bool HbIconDataCache::contains(const HbIconKey &key) const
 {
     return (cache->contains(key));
 }
@@ -575,7 +576,7 @@ bool HbIconDataCache::contains(const HbIconKey &key)const
     \a key denotes the unique identifier for the cache item whose value is to be returned
 
  */
-HbIconCacheItem* HbIconDataCache::value(const HbIconKey &key)const
+HbIconCacheItem *HbIconDataCache::value(const HbIconKey &key) const
 {
     if (cache->contains(key)) {
         return cache->value(key);
@@ -584,23 +585,22 @@ HbIconCacheItem* HbIconDataCache::value(const HbIconKey &key)const
     }
 }
 
-
 /*!
     \fn HbIconDataCache::isItemCachableInGpu()
     Checks if the new item can be accomdated in the Gpu memory.
     \a item is the new item to be cached
   BLOB is always cached in cpu so this function always returns false for such items.
  */
-bool HbIconDataCache::isItemCachableInGpu(const HbIconCacheItem* item)const
+bool HbIconDataCache::isItemCachableInGpu(const HbIconCacheItem *item) const
 {
-    if (maxGpuCacheLimit <= 0 || item->rasterIconDataCost <= 0 || item->blobIconData.type != INVALID_FORMAT ||
-            item->rasterIconData.type != SGIMAGE) {
+    if (maxGpuCacheLimit <= 0 || item->rasterIconDataCost <= 0
+        || item->blobIconData.type != INVALID_FORMAT || item->rasterIconData.type != SGIMAGE) {
         return false;
     }
     // Item's GPU Icon's cost is greater than the max GPU Limit
-    if (item->rasterIconDataCost  > maxGpuCacheLimit)
+    if (item->rasterIconDataCost  > maxGpuCacheLimit) {
         return false;
-
+    }
     return true;
 }
 
@@ -610,7 +610,7 @@ bool HbIconDataCache::isItemCachableInGpu(const HbIconCacheItem* item)const
     \a item is the new item to be cached
   BLOB is always cached in cpu, never in gpu.
  */
-bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem* item)const
+bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem *item) const
 {
     if (maxCpuCacheLimit <= 0) {
         return false;
@@ -622,10 +622,10 @@ bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem* item)const
         if (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
             return true;
         } else {
-            return (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize) + cpuLruListSize);
+            return (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)
+                                                 + cpuLruListSize);
         }
     }
-
     if (item->vectorIconData.type != INVALID_FORMAT) {
         if (item->vectorIconDataCost <= 0 || item->vectorIconDataCost > maxCpuCacheLimit) {
             return false;
@@ -633,7 +633,8 @@ bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem* item)const
         if (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
             return true;
         } else {
-            return (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize) + cpuLruListSize);
+            return (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)
+                                                 + cpuLruListSize);
         }
     }
     return false;
@@ -642,7 +643,8 @@ bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem* item)const
 /*!
     \fn HbIconDataCache::createGpuCacheSpace()
     This method provides a way to remove the unused icons( icons with ref count =0.
-    It starts removing the icons from the cache, starting with those that are at the front of the Gpu LRU list.
+    It starts removing the icons from the cache,
+    starting with those that are at the front of the Gpu LRU list.
     It continues removal of items till there is enough space created to cache the new item in Gpu
     \a itemCost - cost of the new item to be cached in the Gpu memory
 
@@ -653,16 +655,18 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
         // Keep removing  items from the cache till there is
         // enough space to accomdate the new item
         int freedMemory = 0;
-        while (itemCost > (freedMemory)) {
-            HbIconCacheItem* itemToRemove = gpuLruList.removeFront();
+        while (itemCost > freedMemory) {
+            HbIconCacheItem *itemToRemove = gpuLruList.removeFront();
+            if ( itemToRemove == 0 ){
+                return ;
+            }    
             // Decrement the Size by the cost of the removed icon's data cost
-            //GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
-            //qDebug() << "HbIconDataCache : Calling SgImage Close. Cost = %d  "<< itemToRemove->rasterIconDataCost;
 #ifdef HB_SGIMAGE_ICON
 #ifdef HB_ICON_CACHE_DEBUG
-            qDebug() << "HbIconDataCache : Calling SgImage Close. Cost = %d  "<< itemToRemove->rasterIconDataCost;
+            qDebug() << "HbIconDataCache : Calling SgImage Close. Cost = %d  "
+                     << itemToRemove->rasterIconDataCost;
 #endif
-            HbSgImageRenderer::removeSgImageFromHash(itemToRemove->rasterIconData.sgImageData.id);  
+            HbSgImageRenderer::removeSgImageFromHash(itemToRemove->rasterIconData.sgImageData.id);
 #endif
             itemToRemove->rasterIconData.type = INVALID_FORMAT;
             itemToRemove->gpuLink.setNext(0);
@@ -674,7 +678,6 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
             if (currentGpuCacheSize < 0) {
                 currentGpuCacheSize = 0;
             }
-
             if (gpuLruListSize < 0) {
                 gpuLruListSize = 0;
             }
@@ -686,7 +689,6 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
                 rasterLruListCount = 0;
             }
 #endif
-
             // This is the case where Icon has no CPU data and
             // the GPU cached data has also  been deleted to make way for new Icon
             // In such a case the Item can be removed from the Hash
@@ -703,7 +705,8 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
 /*!
     \fn HbIconDataCache::createCpuCacheSpace()
     This method provides a way to remove the unused icons( icons with ref count =0).
-    It starts removing the icons from the cache, starting with those that are at the front of the CPU LRU list.
+    It starts removing the icons from the cache,
+    starting with those that are at the front of the CPU LRU list.
     It continues removal of items till there is enough space created to cache the new item in Cpu
     \a itemCost - cost of the new item to be cached in the Cpu memory
 
@@ -715,7 +718,7 @@ void HbIconDataCache::createCpuCacheSpace(int itemCost)
         // enough space to accomdate the new item
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
         while (itemCost > (maxCpuCacheLimit - currentCpuCacheSize)) {
-            HbIconCacheItem* itemToRemove = cpuLruList.removeFront();
+            HbIconCacheItem *itemToRemove = cpuLruList.removeFront();
             if (itemToRemove->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
                 manager->free(itemToRemove->rasterIconData.pixmapData.offset);
                 itemToRemove->rasterIconData.type = INVALID_FORMAT;
@@ -736,14 +739,12 @@ void HbIconDataCache::createCpuCacheSpace(int itemCost)
                 updateCpuLruSize(-itemToRemove->vectorIconDataCost);
             }
 
-
             itemToRemove->cpuLink.setNext(0);
             itemToRemove->cpuLink.setPrev(0);
 
             if (currentCpuCacheSize < 0) {
                 currentCpuCacheSize = 0;
             }
-
             if (cpuLruListSize < 0) {
                 cpuLruListSize = 0;
             }
@@ -756,11 +757,9 @@ void HbIconDataCache::createCpuCacheSpace(int itemCost)
                 vectorLruListCount = 0;
             }
 #endif
-
             // This is the case where Icon has no CPU data and
             // the GPU cached data has also  been deleted to make way for new Icon
             // In such a case the Item can be removed from the Hash
-
             if ((itemToRemove->vectorIconData.type == INVALID_FORMAT) &&
                     (itemToRemove->rasterIconData.type == INVALID_FORMAT)) {
                 cache->remove(cache->key(itemToRemove));
@@ -785,7 +784,7 @@ void HbIconDataCache::memoryGood()
     goodMemory = true;
 }
 
-void HbIconDataCache::freeGpuRam(int bytes)
+void HbIconDataCache::freeGpuRam(int bytes, bool useSwRendering)
 {
     goodMemory = false;
     if (bytes  <= gpuLruListSize) {
@@ -794,25 +793,26 @@ void HbIconDataCache::freeGpuRam(int bytes)
         createGpuCacheSpace(gpuLruListSize);
     }
     
+    if (useSwRendering) {
     // Iterate through the cache and remove any active SgImages, before the context
     // is destroyed.
     QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
-        for (QHash < HbIconKey,
-                HbIconCacheItem* >::const_iterator iter = cache->constBegin();
-                iter != itEnd;
-                ++iter) {
-            HbIconCacheItem* temp = iter.value();
-            if( temp->rasterIconData.type == SGIMAGE ){
+    for (QHash<HbIconKey,
+            HbIconCacheItem *>::const_iterator iter = cache->constBegin();
+            iter != itEnd;
+            ++iter) {
+        HbIconCacheItem *temp = iter.value();
+        if( temp->rasterIconData.type == SGIMAGE ){
 #ifdef HB_SGIMAGE_ICON
-                HbSgImageRenderer::removeSgImageFromHash(temp->rasterIconData.sgImageData.id);
+            HbSgImageRenderer::removeSgImageFromHash(temp->rasterIconData.sgImageData.id);
 #endif
-                temp->rasterIconData.type = INVALID_FORMAT;
-                temp->gpuLink.setNext(0);
-                temp->gpuLink.setPrev(0);
-                currentGpuCacheSize -= temp->rasterIconDataCost;
-            }
+            temp->rasterIconData.type = INVALID_FORMAT;
+            currentGpuCacheSize -= temp->rasterIconDataCost;
         }
-    
+    }
+    gpuLruList.removeAll();
+    gpuLruListSize = 0;
+    }    	    
 }
 
 /*!
@@ -829,8 +829,8 @@ QVector<const HbIconKey *> HbIconDataCache::getKeys(const QString &filename) con
 {
     QVector<const HbIconKey *> keys;
     QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
-    for (QHash < HbIconKey,
-            HbIconCacheItem* >::const_iterator iter = cache->constBegin();
+    for (QHash<HbIconKey,
+            HbIconCacheItem *>::const_iterator iter = cache->constBegin();
             iter != itEnd;
             ++iter) {
         const HbIconKey *key = &iter.key();
@@ -845,10 +845,9 @@ QVector<const HbIconKey *> HbIconDataCache::getKeys(const QString &filename) con
 #ifdef HB_ICON_CACHE_DEBUG
 void HbIconDataCache::cleanVectorLRUList()
 {
-
     // remove all the items in cpu LRU list.
     while (cpuLruList.front()) {
-        HbIconCacheItem* itemToRemove = cpuLruList.removeFront();
+        HbIconCacheItem *itemToRemove = cpuLruList.removeFront();
 
         // update the member
         currentCpuCacheSize -= itemToRemove->vectorIconDataCost;
@@ -868,7 +867,6 @@ void HbIconDataCache::cleanVectorLRUList()
             vectorLruListCount = 0;
         }
 #endif
-
         // remove the shared memory allocatedfor this item.
         releaseVectorItem(itemToRemove);
 
@@ -878,7 +876,7 @@ void HbIconDataCache::cleanVectorLRUList()
 }
 #endif // HB_ICON_CACHE_DEBUG
 
-void HbIconDataCache::releaseVectorItem(HbIconCacheItem* releaseItem)
+void HbIconDataCache::releaseVectorItem(HbIconCacheItem *releaseItem)
 {
     if (!releaseItem) {
         return;
@@ -903,10 +901,9 @@ void HbIconDataCache::releaseVectorItem(HbIconCacheItem* releaseItem)
 #ifdef HB_ICON_CACHE_DEBUG
 void HbIconDataCache::cleanRasterLRUList()
 {
-
     // remove all the items from the gpu LRU list
     while (gpuLruList.front()) {
-        HbIconCacheItem* itemToRemove = gpuLruList.removeFront();
+        HbIconCacheItem *itemToRemove = gpuLruList.removeFront();
 
         // update the member
         currentGpuCacheSize -= itemToRemove->rasterIconDataCost;
@@ -915,7 +912,6 @@ void HbIconDataCache::cleanRasterLRUList()
         if (currentGpuCacheSize < 0) {
             currentGpuCacheSize = 0;
         }
-
         if (gpuLruListSize < 0) {
             gpuLruListSize = 0;
         }
@@ -926,7 +922,6 @@ void HbIconDataCache::cleanRasterLRUList()
             rasterLruListCount = 0;
         }
 #endif
-
         // release the shared memory (later raster memory)of this item.
         releaseRasterItem(itemToRemove);
 
@@ -936,7 +931,7 @@ void HbIconDataCache::cleanRasterLRUList()
 }
 #endif // HB_ICON_CACHE_DEBUG
 
-void HbIconDataCache::releaseRasterItem(HbIconCacheItem* releaseItem)
+void HbIconDataCache::releaseRasterItem(HbIconCacheItem *releaseItem)
 {
     if (!releaseItem) {
         return;
@@ -947,28 +942,27 @@ void HbIconDataCache::releaseRasterItem(HbIconCacheItem* releaseItem)
     releaseItem->rasterIconData.type = INVALID_FORMAT;
 }
 
-void HbIconDataCache::removeFromCache(const HbIconKey &key, const HbIconCacheItem* releaseItem)
+void HbIconDataCache::removeFromCache(const HbIconKey &key, const HbIconCacheItem *releaseItem)
 {
     if (!releaseItem) {
         return;
     }
 
-    if ((releaseItem->vectorIconData.type == INVALID_FORMAT) &&
-            (releaseItem->rasterIconData.type == INVALID_FORMAT)) {
+    if (releaseItem->vectorIconData.type == INVALID_FORMAT
+        && releaseItem->rasterIconData.type == INVALID_FORMAT) {
         cache->remove(key);
         delete releaseItem;
     }
 }
 
+int HbIconDataCache::gpuLRUSize() const
+{
+    return gpuLruListSize;
+}
 #ifdef HB_ICON_CACHE_DEBUG
 int HbIconDataCache::count() const
 {
     return cache->count();
-}
-
-int HbIconDataCache::gpuLRUSize() const
-{
-    return gpuLruListSize;
 }
 
 int HbIconDataCache::freeVectorMemory()

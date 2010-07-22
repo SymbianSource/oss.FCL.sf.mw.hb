@@ -1,9 +1,9 @@
-HbIndicatorGroup[layout="0"]
+HbIndicatorGroup[alignment="0"]
 {
     layout:notificationlayout;
 }
 
-HbIndicatorGroup[layout="1"]
+HbIndicatorGroup[alignment="1"]
 {
     layout:settinglayout;
 }

@@ -33,7 +33,7 @@
 
 #include <QIcon>
 
-// Deprecated
+
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionLabel : public HbStyleOption
 {
 public:

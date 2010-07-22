@@ -52,10 +52,14 @@ HbInputDialogContentWidget::HbInputDialogContentWidget(HbInputDialogPrivate* pri
     mEdit1 = new HbLineEdit(this);
     HbStyle::setItemName(mEdit1, "text-1");
 
+    connect(mEdit1,SIGNAL(textChanged(const QString)),this,SLOT(emitTextChange(const QString)));
     this->setProperty("additionalRowVisible",QVariant(false));
 }
 
-
+void HbInputDialogContentWidget::emitTextChange(const QString & data)
+{
+    emit textChanged(data);
+}
 void HbInputDialogContentWidget::setAdditionalRowVisible(bool visible)
 {
     mAdditionalRowVisible = visible;
@@ -103,7 +107,6 @@ HbInputDialogPrivate::~HbInputDialogPrivate()
 {
 }
 
-
 void HbInputDialogPrivate::init()
 {
 #ifdef HBINPUTDIALOG_DEBUG
@@ -116,10 +119,17 @@ void HbInputDialogPrivate::init()
     //Populate the widget
     mContentWidget = new HbInputDialogContentWidget(this);
 
+    q->connect(mContentWidget,SIGNAL(textChanged(const QString)),q,SLOT(textChange(const QString)));
     q->setContentWidget(mContentWidget);
-    q->addAction(new HbAction(q->tr("Ok"), q));
 
-    q->addAction(new HbAction(q->tr("Cancel"), q));
+    action1=new HbAction(hbTrId("txt_common_button_ok"),q);
+    action1->setEnabled(false);
+    q->addAction(action1);
+    q->connect(action1,SIGNAL(triggered()),q,SLOT(accept()));
+
+    HbAction *action2=new HbAction(hbTrId("txt_common_button_cancel"),q);
+    q->addAction(action2);
+    q->connect(action2,SIGNAL(triggered()),q,SLOT(reject()));
 
     q->setTimeout(HbPopup::NoTimeout); 
     q->setModal(true); // Dialog is modal  
@@ -131,6 +141,22 @@ void HbInputDialogPrivate::init()
                     SLOT( _q_notesOrientationChanged(Qt::Orientation) ) );
 }
 
+void HbInputDialogPrivate::textChange(const QString data)
+{
+    Q_UNUSED(data);
+    Q_Q(HbInputDialog);
+
+    if(q->actions().count() == 0) {
+        return;
+    }
+
+    if(mContentWidget->mEdit1->hasAcceptableInput()) {
+        q->actions().at(0)->setEnabled(true);
+    } else {
+        q->actions().at(0)->setEnabled(false);
+    }
+
+}
 
 void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputMode mode)
 {
@@ -144,12 +170,10 @@ void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputM
         {
             //set the validator
             if(mValid) {
-                // NOTE:This validation is for readability. mValid is being deleted 
-                // when setValidator is called on editor.
-                mValid = 0;
+                delete mValid;
             }
-            mValid = new HbValidator();
-            QValidator *intValidator = new QIntValidator(q);
+            mValid = new HbValidator(q);
+            QValidator *intValidator = new QIntValidator;
             mValid->addField(intValidator, "0");
             pEdit->setValidator(mValid);
 
@@ -161,11 +185,11 @@ void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputM
         {
             //set the validator
             if(mValid) {
-                mValid = 0;
+                delete mValid;
             }
 
-            mValid = new HbValidator();
-            QValidator *doubleValidator = new QDoubleValidator(q);
+            mValid = new HbValidator(q);
+            QValidator *doubleValidator = new QDoubleValidator(mValid);
             mValid->addField(doubleValidator, "0");
             pEdit->setValidator(mValid);
 
@@ -176,9 +200,12 @@ void HbInputDialogPrivate::setInputMode(HbLineEdit *pEdit, HbInputDialog::InputM
     case HbInputDialog::IpInput:
         {
             QString text = pEdit->text();
-            mValid = new HbValidator;
+            if(mValid){
+                delete mValid;
+            }
+            mValid = new HbValidator(q);
             mValid->setDefaultSeparator(".");
-            QStringList list = text.split(".");
+            QStringList list = text.split('.');
             if (list.count() != 4 ) {
                     mValid->setDefaultSeparator(".");
                     mValid->addField(new QIntValidator(0, 255, 0), "127");

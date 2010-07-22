@@ -52,6 +52,172 @@ static const int reallocIdentifier = 0xC0000000;
 
 HbSharedMemoryManager *HbSharedMemoryManager::memManager = 0;
 
+#ifdef HB_HAVE_PROTECTED_CHUNK // Symbian, protected chunk
+HbSharedMemoryWrapper::HbSharedMemoryWrapper(const QString &key, QObject *parent) :
+    wrapperError(QSharedMemory::NoError),        
+    key(key),
+    memorySize(0),
+    memory(0)
+{
+    Q_UNUSED(parent);
+}
+
+HbSharedMemoryWrapper::~HbSharedMemoryWrapper()
+{
+    chunk.Close();
+
+    memory = 0;
+    memorySize = 0;
+
+}
+
+void HbSharedMemoryWrapper::setErrorString(const QString &function, TInt errorCode)
+{
+    if (errorCode == KErrNone)
+        return;
+    switch (errorCode) {
+    case KErrAlreadyExists:
+        wrapperError = QSharedMemory::AlreadyExists;
+        errorString = QSharedMemory::tr("%1: already exists").arg(function);
+    break;
+    case KErrNotFound:
+        wrapperError = QSharedMemory::NotFound;
+        errorString = QSharedMemory::tr("%1: doesn't exists").arg(function);
+        break;
+    case KErrArgument:
+        wrapperError = QSharedMemory::InvalidSize;
+        errorString = QSharedMemory::tr("%1: invalid size").arg(function);
+        break;
+    case KErrNoMemory:
+        wrapperError = QSharedMemory::OutOfResources;
+        errorString = QSharedMemory::tr("%1: out of resources").arg(function);
+        break;
+    case KErrPermissionDenied:
+        wrapperError = QSharedMemory::PermissionDenied;
+        errorString = QSharedMemory::tr("%1: permission denied").arg(function);
+        break;
+    default:
+        errorString = QSharedMemory::tr("%1: unknown error %2").arg(function).arg(errorCode);
+        wrapperError = QSharedMemory::UnknownError;
+    }
+}
+
+bool HbSharedMemoryWrapper::create(int size, QSharedMemory::AccessMode mode)
+{
+    Q_UNUSED(mode);
+    TPtrC ptr(TPtrC16(static_cast<const TUint16*>(key.utf16()), key.length()));
+
+    TChunkCreateInfo info;
+    info.SetReadOnly();
+    info.SetGlobal(ptr);
+    info.SetNormal(size, size);
+    
+    //TInt err = chunk.CreateGlobal(ptr, size, size); // Original Qt version
+    TInt err = chunk.Create(info);
+
+    QString function = QLatin1String("HbSharedMemoryWrapper::create");    
+    setErrorString(function, err);
+
+    if (err != KErrNone)
+        return false;
+
+    // Zero out the created chunk
+    Mem::FillZ(chunk.Base(), chunk.Size());
+
+    memorySize = chunk.Size();
+    memory = chunk.Base();
+    
+    return true;
+}
+
+QSharedMemory::SharedMemoryError HbSharedMemoryWrapper::error() const
+{
+    return wrapperError;
+}
+
+bool HbSharedMemoryWrapper::attach(QSharedMemory::AccessMode mode)
+{
+    Q_UNUSED(mode);    
+    // Grab a pointer to the memory block
+    if (!chunk.Handle()) {
+        TPtrC ptr(TPtrC16(static_cast<const TUint16*>(key.utf16()), key.length()));        
+
+        TInt err = KErrNoMemory;
+
+        err = chunk.OpenGlobal(ptr, false);
+
+        if (err != KErrNone) {
+            QString function = QLatin1String("HbSharedMemoryWrapper::attach");        
+            setErrorString(function, err);
+            return false;
+        }
+    }
+
+    memorySize = chunk.Size();
+    memory = chunk.Base();
+
+    return true;
+}
+
+void *HbSharedMemoryWrapper::data()
+{
+    return memory;
+}
+
+int HbSharedMemoryWrapper::size() const
+{
+    return memorySize;
+}
+#else // use QSharedMemory
+HbSharedMemoryWrapper::HbSharedMemoryWrapper(const QString &key, QObject *parent)
+{
+    chunk = new QSharedMemory(key, parent);
+}
+
+HbSharedMemoryWrapper::~HbSharedMemoryWrapper()
+{
+    delete chunk;
+    chunk = 0;
+}
+
+bool HbSharedMemoryWrapper::create(int size, QSharedMemory::AccessMode mode)
+{
+    if (chunk) {
+        return chunk->create(size, mode);
+    }
+    return false;
+}
+
+QSharedMemory::SharedMemoryError HbSharedMemoryWrapper::error() const
+{
+    return chunk->error();
+}
+
+bool HbSharedMemoryWrapper::attach(QSharedMemory::AccessMode mode)
+{
+    if (chunk) {
+        return chunk->attach(mode);
+    }
+    return false;
+}
+
+void *HbSharedMemoryWrapper::data()
+{
+    if (chunk) {
+        return chunk->data();
+    }
+    return 0;
+}
+
+int HbSharedMemoryWrapper::size() const
+{
+    if (chunk) {
+        return chunk->size();
+    }
+    return 0;
+}
+#endif
+
 /* Functions implementation of HbSharedMemoryManager class */
 
 /**
@@ -66,14 +232,15 @@ bool HbSharedMemoryManager::initialize()
         return true;
     }
     bool success = false;
-    chunk = new QSharedMemory(HB_THEME_SHARED_PIXMAP_CHUNK);
+    chunk = new HbSharedMemoryWrapper(HB_THEME_SHARED_PIXMAP_CHUNK);
     // check if app filename is same as server filename ..
     // ToDo: improve server identification logic.. UID on symbian?
     const QString &appName = HbMemoryUtils::getCleanAppName();
     bool binCSSConverterApp = (appName == BIN_CSS_APP || appName == BIN_CSS_APP_SYMBIAN);
-    if (appName == THEME_SERVER_NAME || binCSSConverterApp) {
+    // Testability support: allowing unit test to write to shared chunk also
+    if (appName == THEME_SERVER_NAME || appName == SHARED_MEMORY_MANAGER_UNIT_TEST || binCSSConverterApp) {
         // This is server, create shared memory chunk
-        success = chunk->create( CACHE_SIZE, QSharedMemory::ReadWrite );
+        success = chunk->create(CACHE_SIZE, QSharedMemory::ReadWrite);
         // If sharedMemory already exists.
         // (This can happpen if ThemeServer crashed without releasing QSharedMemory)
         if (!success && QSharedMemory::AlreadyExists == chunk->error()) {
@@ -82,7 +249,7 @@ bool HbSharedMemoryManager::initialize()
         writable = true;
     } else {
         // this is not server so just attach to shared memory chunk in ReadOnly mode
-        success = chunk->attach( QSharedMemory::ReadOnly );
+        success = chunk->attach(QSharedMemory::ReadOnly);
         writable = false;
     }
     if ( !success ) {
@@ -92,51 +259,56 @@ bool HbSharedMemoryManager::initialize()
         delete chunk; 
         chunk = 0;
     }
-    
     if (success && isWritable()) {
         // if we are recovering from theme server crash, shared chunk may
         // already be ready
-        bool enableRecovery = true;
+        bool enableRecovery = false;
         if (binCSSConverterApp) {
             enableRecovery = false;
         }
         HbSharedChunkHeader *chunkHeader = static_cast<HbSharedChunkHeader*>(chunk->data());
+        HbSharedCache *cachePtr = 0;
         if (enableRecovery && chunkHeader->identifier == INITIALIZED_CHUNK_IDENTIFIER) {
             // just reconnect allocators to the shared chunk
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
         } else {
+            memset(chunkHeader, 0, sizeof(HbSharedChunkHeader));
             // Load memory file in the beginning of the chunk first.
-            HbSharedCache *cachePtr = 0;
             int memoryFileSize = 0;
-            chunkHeader->sharedCacheOffset = 0;
 
-            if (!binCSSConverterApp) {
 #ifdef Q_OS_SYMBIAN
-                QString memoryFile("z:/resource/hb/themes/css.bin");
+            if (!binCSSConverterApp) {
+                QString memoryFile("z:/resource/hb/themes/hbdefault.cssbin");
                 memoryFileSize = loadMemoryFile(memoryFile);
-#endif      
             }
-
+#endif
             // Put main allocator after the memory file or if memory file was not loaded, after chunk header.
-            chunkHeader->mainAllocatorOffset = memoryFileSize ? ALIGN(memoryFileSize) : sizeof(HbSharedChunkHeader);
+            chunkHeader->mainAllocatorOffset = memoryFileSize ? ALIGN(memoryFileSize)
+                                                              : sizeof(HbSharedChunkHeader);
+            // Clear also allocator identifier so that they will not try to re-connect
+            int *mainAllocatorIdentifier = address<int>(chunkHeader->mainAllocatorOffset);
+            *mainAllocatorIdentifier = 0;
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
+            int *subAllocatorIdentifier = address<int>(chunkHeader->subAllocatorOffset);
+            *subAllocatorIdentifier = 0;
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
             
             if (!binCSSConverterApp) {
-                if (memoryFileSize > 0) {
-                    cachePtr = cache();
-                } else {
+                if (memoryFileSize == 0) {
                     cachePtr = createSharedCache(0, 0, 0);
-                }
-
-                if (cachePtr) {
-                    cachePtr->initServer();
                 }
             }
         }
+        if (!cachePtr) {
+            cachePtr = cache();
+        }
+        if (cachePtr && !binCSSConverterApp) {
+            cachePtr->initServer();
+        }
+
         success = true;
     } else {
         HbSharedCache *cachePtr = cache();
@@ -199,7 +371,7 @@ int HbSharedMemoryManager::alloc(int size)
     if (allocations.contains(size)) {
         allocations[size].first++;
     } else {
-        allocations.insert(size, QPair<quint32,quint32>(1,0));
+        allocations.insert(size, QPair<quint32, quint32>(1,0));
     }
 
 #else // normal alloc without reporting
@@ -221,11 +393,11 @@ int HbSharedMemoryManager::alloc(int size)
 #endif // HB_THEME_SERVER_MEMORY_REPORT
 
 #ifdef HB_THEME_SERVER_FULL_MEMORY_REPORT
-    fullAllocationHistory.append(QPair<quint32,quint32>(size | allocIdentifier, offset));
+        fullAllocationHistory.append(QPair<quint32,quint32>(size | allocIdentifier, offset));
 #endif
 
 #ifdef HB_BIN_CSS
-    HbCssConverterUtils::cellAllocated(offset, size);
+        HbCssConverterUtils::cellAllocated(offset, size);
 #endif
         return offset;
     } else {
@@ -241,7 +413,7 @@ void HbSharedMemoryManager::free(int offset)
 {
     // don't do anything when freeing NULL (pointer)offset
     if (isWritable() && (offset > 0)) {
-        int metaData = *(int*)((unsigned char*)(base())+offset-sizeof(int));
+        int metaData = *address<int>(offset - sizeof(int));
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
         int size = 0;
         if (metaData & MAIN_ALLOCATOR_IDENTIFIER) {
@@ -257,13 +429,12 @@ void HbSharedMemoryManager::free(int offset)
         fullAllocationHistory.append(QPair<quint32,quint32>(size | freeIdentifier, offset));
 #endif
 
-#endif
+#endif //HB_THEME_SERVER_MEMORY_REPORT
         if (metaData & MAIN_ALLOCATOR_IDENTIFIER) {
             mainAllocator->free(offset);
         } else {
             subAllocator->free(offset);
         }
-
 #ifdef HB_BIN_CSS
         HbCssConverterUtils::cellFreed(offset);
 #endif
@@ -281,7 +452,7 @@ int HbSharedMemoryManager::realloc(int offset, int newSize)
     if (isWritable()) {
 #ifdef HB_THEME_SERVER_FULL_MEMORY_REPORT
         if (offset > 0) { // if offset == -1, just do normal alloc and not report realloc
-            fullAllocationHistory.append(QPair<quint32,quint32>(newSize | reallocIdentifier, offset));
+            fullAllocationHistory.append(QPair<quint32, quint32>(newSize | reallocIdentifier, offset));
         }
 #endif
 	    newOffset = alloc(newSize);
@@ -290,11 +461,11 @@ int HbSharedMemoryManager::realloc(int offset, int newSize)
 #ifdef HB_BIN_CSS
             HbCssConverterUtils::cellMoved(offset, newOffset);
 #endif
-            unsigned char *scrPtr = (unsigned char*)(base())+offset;
-            int metaData = *(int*)((unsigned char*)(base())+offset-sizeof(int));
+            unsigned char *scrPtr = address<unsigned char>(offset);
+            int metaData = *address<int>(offset - sizeof(int));
             if (metaData & MAIN_ALLOCATOR_IDENTIFIER) {
                 int oldSize = mainAllocator->allocatedSize(offset);
-                memcpy((unsigned char*)(base())+newOffset, scrPtr, qMin(oldSize, allocatedSize));
+                memcpy(address<unsigned char>(newOffset), scrPtr, qMin(oldSize, allocatedSize));
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
                 free(offset);
 #else
@@ -302,14 +473,13 @@ int HbSharedMemoryManager::realloc(int offset, int newSize)
 #endif
             } else {
                 int oldSize = subAllocator->allocatedSize(offset);
-                memcpy((unsigned char*)(base())+newOffset, scrPtr, qMin(oldSize, allocatedSize));
+                memcpy(address<unsigned char>(newOffset), scrPtr, qMin(oldSize, allocatedSize));
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
                 free(offset);
 #else
                 subAllocator->free(offset);
 #endif
             }
-
 #if HB_BIN_CSS
             // Does not matter if already called when calling free() above.
             HbCssConverterUtils::cellFreed(offset);
@@ -328,7 +498,7 @@ int HbSharedMemoryManager::realloc(int offset, int newSize)
  */
 void *HbSharedMemoryManager::base()
 {
-	return chunk->data();
+    return chunk->data();
 }
 
 /**
@@ -368,7 +538,7 @@ HbSharedCache *HbSharedMemoryManager::createSharedCache(
     }
 
     if (sharedCacheOffset >= 0) {
-        cache = new (static_cast<char*>(base()) + sharedCacheOffset) HbSharedCache();
+        cache = new (address<char>(sharedCacheOffset)) HbSharedCache();
         cache->addOffsetMap(offsetMapData, size, offsetItemCount);
         chunkHeader->sharedCacheOffset = sharedCacheOffset;
     }
@@ -378,15 +548,20 @@ HbSharedCache *HbSharedMemoryManager::createSharedCache(
 int HbSharedMemoryManager::size()
 {
     if(mainAllocator) {
-        return (dynamic_cast<HbSplayTreeAllocator*>(mainAllocator))->size();
+        return (static_cast<HbSplayTreeAllocator*>(mainAllocator))->size();
     }
     return -1;
 }
 
 HbSharedCache *HbSharedMemoryManager::cache()
 {
-    const HbSharedChunkHeader *chunkHeader = static_cast<const HbSharedChunkHeader*>(chunk->data());
-    return reinterpret_cast<HbSharedCache*>((char*)base() + chunkHeader->sharedCacheOffset);
+    HbSharedCache *cachePtr = 0;
+    if (chunk) {
+        const HbSharedChunkHeader *chunkHeader =
+                static_cast<const HbSharedChunkHeader*>(chunk->data());
+        cachePtr = address<HbSharedCache>(chunkHeader->sharedCacheOffset);
+    }
+    return cachePtr;
 }
 
 /**
@@ -397,6 +572,14 @@ HbSharedMemoryManager::~HbSharedMemoryManager()
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     allocations.clear();
 #endif
+    if (chunk) {
+        const HbSharedChunkHeader *chunkHeader =
+                static_cast<const HbSharedChunkHeader*>(chunk->data());
+        if (chunkHeader->sharedCacheOffset > 0) {
+            HbSharedCache *cachePtr = address<HbSharedCache>(chunkHeader->sharedCacheOffset);
+            cachePtr->freeResources();
+        }
+    }
     delete subAllocator;
     delete mainAllocator;
     delete chunk;
@@ -410,7 +593,9 @@ HbMemoryManager *HbSharedMemoryManager::instance()
     if (!memManager) {
         memManager = new HbSharedMemoryManager();
         if (!memManager->initialize()) {
+#ifdef THEME_SERVER_TRACES
             qWarning( "HbSharedMemoryManager:Could not initialize shared memory" );
+#endif
             delete memManager;
             memManager = 0;
         }
@@ -426,7 +611,6 @@ void HbSharedMemoryManager::releaseInstance()
     delete memManager;
     memManager = 0;
 }
-
 
 /**
  * gets the free memory reported by main allocator
@@ -461,13 +645,14 @@ int HbSharedMemoryManager::loadMemoryFile(const QString &filePath)
         loadedSize = (int)fileSize;
     }
 #ifdef CSSBIN_TRACES
-    qDebug() << "Loading memory file status: " << (ok ? "no error" : file.errorString());
+    qDebug() << "Loading memory file status: " << (loadedSize > 0 ? "no error" : file.errorString());
 #endif
     return loadedSize;
 }
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
-bool pairGreaterThan(const QPair<quint32, QPair<quint32,quint32> > &p1, const QPair<quint32, QPair<quint32,quint32> > &p2)
+bool pairGreaterThan(const QPair<quint32, QPair<quint32, quint32> > &p1,
+                     const QPair<quint32, QPair<quint32, quint32> > &p2)
 {
      return p1.first > p2.first;
 }
@@ -511,10 +696,11 @@ void HbSharedMemoryManager::createReport()
     reportWriter << "********************************************************************************\n\n";
 
     // list for sorting allocations and frees
-    QList<QPair<quint32, QPair<quint32,quint32> > > valueList;
-    QMap<quint32, QPair<quint32,quint32> >::const_iterator i; // size, <allocated, freed>
+    QList<QPair<quint32, QPair<quint32, quint32> > > valueList;
+    QMap<quint32, QPair<quint32, quint32> >::const_iterator i; // size, <allocated, freed>
     for (i = allocations.constBegin(); i != allocations.constEnd(); ++i) {
-        valueList.append(QPair<quint32,QPair<quint32,quint32> >(i.value().first, QPair<quint32,quint32>(i.key(), i.value().second)));
+        valueList.append(QPair<quint32, QPair<quint32, quint32> >
+                         (i.value().first, QPair<quint32, quint32>(i.key(), i.value().second)));
     }
     qSort(valueList.begin(), valueList.end(), pairGreaterThan);
 
@@ -523,28 +709,34 @@ void HbSharedMemoryManager::createReport()
     reportWriter << "times allocated - times released - size\n";
     int count = 0;
     for (int i = 0; i < valueList.size(); i++) {
-        if (count > 30) break; // only report top 30 sizes
-        reportWriter << valueList.at(i).first << " - "  << valueList.at(i).second.second << " - "  << valueList.at(i).second.first << "\n";
+        if (count > 30) {
+            break; // only report top 30 sizes
+        }
+        reportWriter << valueList.at(i).first << " - "
+                     << valueList.at(i).second.second << " - "
+                     << valueList.at(i).second.first << "\n";
         count++;
     }
     reportWriter << "\n";
 
     valueList.clear();
     for (i = allocations.constBegin(); i != allocations.constEnd(); ++i) {
-        valueList.append(QPair<quint32,QPair<quint32,quint32> >(i.key(), QPair<quint32,quint32>(i.value().first, i.value().second)));
+        valueList.append(QPair<quint32, QPair<quint32, quint32> >
+                         (i.key(), QPair<quint32, quint32>(i.value().first, i.value().second)));
     }
     qSort(valueList.begin(), valueList.end(), pairGreaterThan);
     reportWriter << "Top 30 allocated sizes:\n";
     reportWriter << "size - times allocated - times released\n";
     count = 0;
     for (int i = 0; i < valueList.size(); i++) {
-        if (count > 30) break; // only report top 30 sizes
-        reportWriter << valueList.at(i).first << " - "  << valueList.at(i).second.first << " - "  << valueList.at(i).second.second << "\n";
+        if (count > 30) {
+            break; // only report top 30 sizes
+        }
+        reportWriter << valueList.at(i).first << " - "  << valueList.at(i).second.first << " - "
+                     << valueList.at(i).second.second << "\n";
         count++;
     }
     reportWriter << "\n";
-
-
 
     mainAllocator->writeReport(reportWriter);
 #ifdef USE_SUBALLOCATOR
@@ -565,14 +757,16 @@ void HbSharedMemoryManager::createReport()
                 reportWriter << "freed " << size << " bytes from offset " << offset << "\n";
                 break;
             case reallocIdentifier:
-                reportWriter << "reallocation from offset " << offset << " with " << size << " bytes" << "\n";
+                reportWriter << "reallocation from offset " << offset << " with "
+                             << size << " bytes" << "\n";
                 i++;
                 if (i <= fullAllocationHistory.size()) {
                     size = fullAllocationHistory.at(i).first & 0x3FFFFFFF;
                     identifier = fullAllocationHistory.at(i).first & 0xC0000000;
                     offset = fullAllocationHistory.at(i).second;
                     if (identifier == allocIdentifier) { // should come right after realloc
-                        reportWriter << "    from realloc: allocated " << size << " bytes from offset " << offset << "\n";
+                        reportWriter << "    from realloc: allocated " << size
+                                     << " bytes from offset " << offset << "\n";
                     } else {
                         reportWriter << "ERROR: no alloc after realloc! How is this possible?\n";
                     }
@@ -583,7 +777,8 @@ void HbSharedMemoryManager::createReport()
                     identifier = fullAllocationHistory.at(i).first & 0xC0000000;
                     offset = fullAllocationHistory.at(i).second;
                     if (identifier == freeIdentifier) { // should come right after realloc and alloc
-                        reportWriter << "    from realloc: freed " << size << " bytes from offset " << offset << "\n";
+                        reportWriter << "    from realloc: freed " << size
+                                     << " bytes from offset " << offset << "\n";
                     } else {
                         reportWriter << "ERROR: no free after realloc and alloc! How is this possible?\n";
                     }
@@ -592,7 +787,6 @@ void HbSharedMemoryManager::createReport()
             default:
                 break;
         }
-
     }
 #endif
     file.close();

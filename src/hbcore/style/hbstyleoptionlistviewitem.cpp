@@ -25,13 +25,13 @@
 
 #include "hbstyleoptionlistviewitem_p.h"
 
-/*!
+/*
     \class HbStyleOptionListViewItem
     \brief HbStyleOptionListViewItem has the style component for list view item primitives
 */
 
 
-/*!
+/*
     \var HbStyleOptionListViewItem::content
 
     This variable holds content (if any) that is set as item's data. 
@@ -43,7 +43,7 @@
     \sa HbStyleOptionListViewItem::primaryText
 */
 
-/*!
+/*
     \var HbStyleOptionListViewItem::role
 
     Defines role of an model item, from which content is read.
@@ -52,7 +52,7 @@
     \sa HbStyleOptionListViewItem::content
 */
 
-/*!
+/*
     \var HbStyleOptionListViewItem::index
 
     This variable holds index of the primitive item required by css/xml layouting, when
@@ -66,7 +66,7 @@
     Default value is 0.
 */
 
-/*!
+/*
     \var HbStyleOptionListViewItem::minimumLines
 
     This variable holds minimum count of lines reserved for secondary text (i.e. when index is 1).
@@ -84,7 +84,7 @@
     \sa HbListViewItem::setSecondaryTextRowCount()
 */
 
-/*!
+/*
     \var HbStyleOptionListViewItem::maximumLines
 
     This variable holds minimum count of lines reserved for secondary text (i.e. when index is 1).
@@ -102,7 +102,7 @@
     \sa HbListViewItem::setSecondaryTextRowCount()
 */
 
-/*!
+/*
     \var HbStyleOptionListViewItem::multilineSecondaryTextSupported
 
     This variable holds whether multine line secondary text is supported. 
@@ -114,14 +114,6 @@
     \sa HbListViewItem::setSecondaryTextRowCount()
 */
 
-
-
-/*!
-
-    \deprecated HbStyleOptionListViewItem::HbStyleOptionListViewItem()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionListViewItem::HbStyleOptionListViewItem() :
     HbStyleOptionAbstractViewItem(),
     role(Qt::DisplayRole),
@@ -134,13 +126,6 @@ HbStyleOptionListViewItem::HbStyleOptionListViewItem() :
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionListViewItem::HbStyleOptionListViewItem(const HbStyleOptionListViewItem&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionListViewItem::HbStyleOptionListViewItem(const HbStyleOptionListViewItem &other) :
     HbStyleOptionAbstractViewItem(other),
     content(other.content),

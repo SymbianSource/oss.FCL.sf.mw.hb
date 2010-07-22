@@ -37,8 +37,17 @@ class HbFrameDrawer;
 class HB_INPUT_EXPORT HbInputButtonGroup : public HbWidget
 {
     Q_OBJECT
+    Q_PROPERTY(bool enabled READ isEnabled WRITE setEnabled)
 
 public:
+    enum HbInputButtonTextType {
+        ButtonTextTypeSingle,
+        ButtonTextTypePrimary,
+        ButtonTextTypeSecondaryFirstRow,
+        ButtonTextTypeSecondarySecondRow,
+        ButtonTextTypeLabel
+    };
+
     explicit HbInputButtonGroup(QGraphicsItem *parent = 0);
     explicit HbInputButtonGroup(const QSize &size, QGraphicsItem *parent = 0);
     ~HbInputButtonGroup();
@@ -46,17 +55,17 @@ public:
     void setGridSize(const QSize &size);
     QSize gridSize() const;
 
-    void setButtons(const QList<HbInputButton*> &data);
+    void setButtons(const QList<HbInputButton *> &data);
     void setButton(HbInputButton *data, int index);
     void setButton(HbInputButton *data, int column, int row);
     void setButton(HbInputButton *data, HbInputButton::HbInputButtonKeyCode keyCode);
-    QList<HbInputButton*> buttons() const;
+    QList<HbInputButton *> buttons() const;
     HbInputButton *button(int index) const;
     HbInputButton *button(int column, int row) const;
     HbInputButton *button(HbInputButton::HbInputButtonKeyCode keyCode) const;
 
-    void setCustomButtonActions(const QList<HbAction*> &actions);
-    QList<HbAction*> customButtonActions() const;
+    void setCustomButtonActions(const QList<HbAction *> &actions);
+    QList<HbAction *> customButtonActions() const;
 
     void setButtonBorderSize(qreal borderSize);
     qreal buttonBorderSize() const;
@@ -71,22 +80,26 @@ public:
 
     void setBackground(HbFrameDrawer *background);
 
+    qreal fontSize(HbInputButtonTextType textType);
+
     QList<HbKeyPressProbability> buttonProbabilities() const;
-    
+
 public: // From QGraphicsItem
     void setEnabled(bool enabled);
     bool isEnabled() const;
-    
+
 public: // From QGraphicsLayoutItem
     void setGeometry(const QRectF &rect);
 
 protected: // From QGraphicsItem
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     bool sceneEvent(QEvent *event);
     void changeEvent(QEvent *event);
     void showEvent(QShowEvent *event);
     void hideEvent(QHideEvent *event);
-    int type() const { return Hb::ItemType_InputButtonGroup; }
+    int type() const {
+        return Hb::ItemType_InputButtonGroup;
+    }
 
 protected:
     HbInputButtonGroup(HbInputButtonGroupPrivate &dd, QGraphicsItem *parent = 0);
@@ -108,6 +121,7 @@ signals:
     void buttonReleased(const QKeyEvent &event);
     void buttonLongPressed(const QKeyEvent &event);
     void pressedButtonChanged(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent);
+    void aboutToActivateCustomAction(HbAction *custAction);
 
 private slots:
     void longPressEvent();
@@ -116,6 +130,7 @@ private slots:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputButtonGroup)
     Q_DISABLE_COPY(HbInputButtonGroup)
+    Q_PRIVATE_SLOT(d_func(), void _q_customActionDestroyed(QObject *))
 };
 
 #endif // HB_INPUT_BUTTON_GROUP_H

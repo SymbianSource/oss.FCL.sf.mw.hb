@@ -26,6 +26,7 @@
 TEMPLATE = app
 TARGET = hbthemeserver
 CONFIG -= app_bundle
+DEFINES += HB_LIB_DIR=\"\\\"$${HB_LIB_DIR}\\\"\"
 DEFINES += HB_BUILD_DIR=\"\\\"$${HB_BUILD_DIR}\\\"\"
 
 # directories
@@ -61,7 +62,9 @@ symbian:CONFIG += nvg
 
 symbian {
     SOURCES  += $$PWD/hbthemeserver_symbian.cpp
+    SOURCES  += $$PWD/hbthemewatcher_symbian.cpp
     HEADERS += $$PWD/hbthemeserver_symbian_p_p.h
+    HEADERS += $$PWD/hbthemewatcher_symbian_p.h
     LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli -lefsrv
 
     nvg {
@@ -95,12 +98,8 @@ symbian {
 
     # AllFiles is needed to be able to access icon and effect files in
     # an application's private folder for example.
-    TARGET.CAPABILITY = CAP_SERVER AllFiles
-    # TARGET.CAPABILITY += ProtServ TrustedUI
-
-} else {
-    SOURCES  += $$PWD/hbthemeserver_generic.cpp
-    HEADERS += $$PWD/hbthemeserver_generic_p_p.h
+    TARGET.CAPABILITY = CAP_SERVER ProtServ
+    
 }
 
 QT = core gui svg network

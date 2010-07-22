@@ -1,0 +1,12 @@
+<animations>
+<icon name="qtg_anim_mono_loading" frame_duration="50" playmode="loop">
+<frame>qtg_anim_mono_loading_1</frame>
+<frame>qtg_anim_mono_loading_2</frame>
+<frame>qtg_anim_mono_loading_3</frame>
+<frame>qtg_anim_mono_loading_4</frame>
+<frame>qtg_anim_mono_loading_5</frame>
+<frame>qtg_anim_mono_loading_6</frame>
+<frame>qtg_anim_mono_loading_7</frame>
+<frame>qtg_anim_mono_loading_8</frame>
+</icon>
+</animations>

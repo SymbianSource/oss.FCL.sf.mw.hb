@@ -268,6 +268,12 @@
 */
 
 /*!
+    \var HbDeviceDialog::DeviceDialogError HbDeviceDialog::InstanceExistsError
+    A device dialog widget is a single instance and already exists (has been launched).
+    See HbDeviceDialogPlugin::SingleInstance.
+*/
+
+/*!
     \var HbDeviceDialog::DeviceDialogFlags HbDeviceDialog::NoFlags
     No flags specified.
 */

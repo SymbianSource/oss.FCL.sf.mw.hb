@@ -23,10 +23,10 @@
 **
 ****************************************************************************/
 
+#include "hbmainwindoworientation_p.h"
 #include "hbmainwindow_p.h"
 #include "hbinstance_p.h"
 #include "hbforegroundwatcher_p.h"
-#include "hbmainwindoworientation_p.h"
 #include <QSettings>
 
 HbMainWindowOrientation *HbMainWindowOrientation::instance()
@@ -65,26 +65,25 @@ bool HbMainWindowOrientation::isEnabled() const
 #ifndef Q_OS_SYMBIAN
 void HbMainWindowOrientation::forceSensorOrientationValue(Qt::Orientation orientation)
 {
-	QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
+    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
     mSensorListener->setSensorOrientation(orientation);
 
-	switch(orientation) {
-		case Qt::Vertical:
-			mSettings.setValue("Orientation", 2);
-			break;
-		case Qt::Horizontal:
-			mSettings.setValue("Orientation", 1);
-			break;
-		default:
-			break;
+    switch (orientation) {
+    case Qt::Vertical:
+        mSettings.setValue("Orientation", 2);
+        break;
+    case Qt::Horizontal:
+        mSettings.setValue("Orientation", 1);
+        break;
+    default:
+        break;
     }
 }
-#endif 
+#endif
 
 void HbMainWindowOrientation::handleForegroundGained()
 {
     mForeground = true;
-    notifyOrientationChange(false, true);
 }
 
 void HbMainWindowOrientation::handleForegroundLost()
@@ -92,27 +91,28 @@ void HbMainWindowOrientation::handleForegroundLost()
     mForeground = false;
 }
 
-void HbMainWindowOrientation::handleWindowAdded(HbMainWindow *window) 
+void HbMainWindowOrientation::handleWindowAdded(HbMainWindow *window)
 {
     mWindowList.append(window);
-    if (isEnabled())
+    if (isEnabled()) {
         mDefaultOrientation = HbMainWindowPrivate::d_ptr(window)->mDefaultOrientation;
+    }
 }
 
-void HbMainWindowOrientation::handleWindowRemoved(HbMainWindow *window) 
+void HbMainWindowOrientation::handleWindowRemoved(HbMainWindow *window)
 {
-        mWindowList.removeOne(window);
+    mWindowList.removeOne(window);
 }
 
 HbMainWindowOrientation::HbMainWindowOrientation(QObject *parent)
     : QObject(parent),
-    mSensorListener(0),
-    mFixedOrientation(false)
+      mSensorListener(0),
+      mFixedOrientation(false)
 {
     //Get mainwindows from instance. Can't use mainWindow() method from HbWidget,
     //because this class is not inherited from it
     mWindowList = hbInstance->allMainWindows();
-    
+
     mForeground = true;
 
     //Get a current device profile
@@ -121,10 +121,11 @@ HbMainWindowOrientation::HbMainWindowOrientation(QObject *parent)
     QSize pSize(profile.logicalSize());
 
     //Determine the default orientation width < height -> portrait
-    if (pSize.width() < pSize.height())
+    if (pSize.width() < pSize.height()) {
         mDefaultOrientation = Qt::Vertical;
-    else 
+    } else {
         mDefaultOrientation = Qt::Horizontal;
+    }
     mOrientation = mDefaultOrientation;
 
     mSensorListener = new HbSensorListener(*this, mDefaultOrientation);
@@ -136,8 +137,8 @@ HbMainWindowOrientation::HbMainWindowOrientation(QObject *parent)
     connect(mForegroundWatcher, SIGNAL(foregroundLost()), SLOT(handleForegroundLost()));
 
     // Need a notification when a mainwindow is added or removed in the future.
-    connect(HbInstancePrivate::d_ptr(), SIGNAL(windowAdded(HbMainWindow*)), SLOT(handleWindowAdded(HbMainWindow*)));
-    connect(HbInstancePrivate::d_ptr(), SIGNAL(windowRemoved(HbMainWindow*)), SLOT(handleWindowRemoved(HbMainWindow*)));
+    connect(HbInstancePrivate::d_ptr(), SIGNAL(windowAdded(HbMainWindow *)), SLOT(handleWindowAdded(HbMainWindow *)));
+    connect(HbInstancePrivate::d_ptr(), SIGNAL(windowRemoved(HbMainWindow *)), SLOT(handleWindowRemoved(HbMainWindow *)));
 
     // Update current orientation if sensors are enabled
     if (isEnabled()) {
@@ -154,7 +155,7 @@ void HbMainWindowOrientation::sensorOrientationChanged(Qt::Orientation newOrient
 void HbMainWindowOrientation::sensorStatusChanged(bool status, bool notify)
 {
     if (status) {
-        foreach(HbMainWindow *window, mWindowList) {
+        foreach(HbMainWindow * window, mWindowList) {
             if (!mFixedOrientation && !HbMainWindowPrivate::d_ptr(window)->mUserOrientationSwitch) {
                 HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch = true;
             }
@@ -165,9 +166,7 @@ void HbMainWindowOrientation::sensorStatusChanged(bool status, bool notify)
 
 // Notifies orientation change only if
 // 1) automatic orientation change is enabled
-// 2) application is in foreground
-// 3) application has not set fixed orientation for the main window
-// 4) mainwindow's windowSurface exists
+// 2) application has not set fixed orientation for the main window
 void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyWhenDisabled)
 {
     Qt::Orientation newOrientation = mOrientation;
@@ -175,16 +174,17 @@ void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyW
     if (!isEnabled() && notifyWhenDisabled) {
         newOrientation = mDefaultOrientation;
     }
-    foreach(HbMainWindow *window, mWindowList) {
-        void *surface(0);
-        if (window)
-            surface = (void*)window->windowSurface();
-        if (!HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationChangeAnimation)
+    foreach(HbMainWindow * window, mWindowList) {
+        if (!HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationChangeAnimation) {
             animate = false;
-        
-        if ((isEnabled() || notifyWhenDisabled) && (mForeground || surface)
-            && HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) { 
+        }
+        if ((isEnabled() || notifyWhenDisabled)
+                && HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) {
+            if (mForeground){
                 HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
+            } else {
+                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, false);
+            }
         }
     }
 }

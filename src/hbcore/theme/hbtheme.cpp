@@ -25,17 +25,14 @@
 #include "hbtheme.h"
 #include "hbtheme_p.h"
 #include "hbthemeclient_p.h"
-#include <qglobal.h>
-#include <QSettings>
-#include "hbstandarddirs_p.h"
 #include "hbicontheme_p.h"
-#include "hbcolortheme_p.h"
 #include "hbthemeutils_p.h"
 #include "hbiconloader_p.h"
-#include "hbcolortheme_p_p.h"
-#include "hbcolortheme_p.h"
 #include "hbeffecttheme_p.h"
 #include "hbeffectinternal_p.h"
+#include "hbthemeindex_p.h"
+#include <QSettings>
+
 /*!
     @stable
     @hbcore
@@ -74,7 +71,7 @@
 /*!
     Returns static instance
  */
-HbTheme* HbTheme::instance()
+HbTheme *HbTheme::instance()
 {
     static HbTheme theInstance;
     return &theInstance;
@@ -86,7 +83,7 @@ HbTheme* HbTheme::instance()
 */
 QString HbTheme::name() const
 {
-    return d_ptr->currentTheme;
+    return d_ptr->iconTheme.name();
 }
 
 /*!
@@ -98,13 +95,23 @@ QString HbTheme::description() const
 }
 
 /*!
+    Returns the color for definition \a colorRole
+ */
+QColor HbTheme::color(const QString &colorRole) const
+{
+    HbThemeIndexResource resource(colorRole);
+    if (resource.isValid()) {
+        return resource.colorValue();
+    }
+    return QColor();
+}
+
+/*!
     Constructor
 */
 HbTheme::HbTheme() : d_ptr(new HbThemePrivate) 
 {
     d_ptr->q_ptr = this;
-    d_ptr->fetchCurrentThemeFromSettings();
-    HbThemeUtils::initSettings();
     d_ptr->handleThemeChange();
 }
 
@@ -121,12 +128,14 @@ HbTheme::~HbTheme()
 */
 HbThemePrivate::HbThemePrivate()
 {
+#ifdef Q_OS_SYMBIAN
     // Condition added to check if the client itself is server.
     if(THEME_SERVER_NAME != HbMemoryUtils::getCleanAppName()) {
         if(!HbThemeClient::global()->connectToServer()) {
-	    	qWarning()<<"ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
+            qWarning() << "ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
         }
     }
+#endif
 }
 
 /*!
@@ -134,23 +143,13 @@ HbThemePrivate::HbThemePrivate()
 */
 HbThemePrivate::~HbThemePrivate()
 {
+#ifdef Q_OS_SYMBIAN
     HbThemeClient::releaseInstance();
     GET_MEMORY_MANAGER( HbMemoryManager::HeapMemory )
     if (manager) {
         manager->releaseInstance(HbMemoryManager::HeapMemory);
     }
-}
-
-/*!
-    Retrieves the current theme from setting
-*/
-void HbThemePrivate::fetchCurrentThemeFromSettings()
-{
-    currentTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
-    if (currentTheme.trimmed().isEmpty()){
-        currentTheme = HbThemeUtils::defaultTheme().name;
-        HbThemeUtils::setThemeSetting(HbThemeUtils::CurrentThemeSetting, currentTheme);
-    }
+#endif
 }
 
 /*!
@@ -161,39 +160,35 @@ void HbThemePrivate::handleThemeChange(const QString &str)
     Q_Q(HbTheme);
     QString newTheme;
     if (str.isEmpty()) {
-        newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+        HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+        if (info.address) {
+            newTheme = info.name;
+        } else {
+            newTheme = HbThemeUtils::getThemeSetting(HbThemeUtils::CurrentThemeSetting);
+        }
     } else {
         newTheme = str;
-        // Update the new currentTheme setting in HbThemeUtils.
+        // Update the new currentTheme to local settings in HbThemeUtils.
         HbThemeUtils::updateThemeSetting(HbThemeUtils::CurrentThemeSetting, newTheme);
     }
 
     iconTheme.setCurrentTheme(newTheme);
-    HbColorTheme::instance()->setCurrentTheme(newTheme);
     HbEffectTheme::instance()->setCurrentTheme(newTheme);
     
-    // The server sends the signal only if the theme is changed from the previous theme
-    // Hence here, we need not check whether the theme differs from currentTheme or not.
-    if(currentTheme != newTheme) {
-        currentTheme = newTheme;
-        // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
-        // In application side this is needed only when icon size can be different in different theme.
-        iconTheme.emitUpdateIcons();
+    // This should be used to replace pixmaps from the old theme with the pixmaps from the new theme
+    // In application side this is needed only when icon size can be different in different theme.
+    iconTheme.emitUpdateIcons();
 
-        emit q->changed();
-        // This signal should be used to update the screen after the theme change - it's handled by HbInstance.
-        emit q->changeFinished();
-    }
+    emit q->changed();
+    // This signal should be used to update the screen after the theme change - it's handled by HbInstance.
+    emit q->changeFinished();
 }
 
 /*!
-    Clears the contents to reload new css files
+    Clears the contents to reload new files
 */
 void HbThemePrivate::updateTheme(const QStringList &updatedFiles)
 {
-    // Reload the CSS
-    HbColorTheme::instance()->reloadCss();
-    
     // Reload effects
     HbEffectInternal::reloadFxmlFiles();
 

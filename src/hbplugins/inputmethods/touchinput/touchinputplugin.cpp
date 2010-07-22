@@ -31,31 +31,22 @@
 #include "virtualqwerty.h"
 #include "hbinputmodeproperties.h"
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::HbTouchInputPlugin
-// 
-// Constructs HbTouchInputPlugin
-// ---------------------------------------------------------------------------
-//
+const QString HbTouchInput12KeyIcon("qtg_small_itut");
+const QString HbTouchInputQwertyIcon("qtg_small_keyboard");
+
 HbTouchInputPlugin::HbTouchInputPlugin(QObject *parent)
-    : QInputContextPlugin(parent)
+    : HbInputContextPlugin(parent)
 {
 }
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::~HbTouchInputPlugin
-// 
-// ---------------------------------------------------------------------------
-//
+
 HbTouchInputPlugin::~HbTouchInputPlugin()
 {
 }
 
-// ---------------------------------------------------------------------------
-// Virtual12KeyImpl::create
-// 
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+*/
 QInputContext* HbTouchInputPlugin::create(const QString& key)
 {
     if (key == QString("HbVirtual12Key")) {
@@ -67,11 +58,9 @@ QInputContext* HbTouchInputPlugin::create(const QString& key)
     }
 }
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::description
-// 
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+*/
 QString HbTouchInputPlugin::description(const QString& key)
 {
     if (key == QString("HbVirtual12Key")) {
@@ -83,11 +72,9 @@ QString HbTouchInputPlugin::description(const QString& key)
     }
 }
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::displayName
-// 
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+*/
 QString HbTouchInputPlugin::displayName(const QString& key)
 {
     if (key == QString("HbVirtual12Key")) {
@@ -99,11 +86,9 @@ QString HbTouchInputPlugin::displayName(const QString& key)
     }
 }
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::keys
-// 
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+*/
 QStringList HbTouchInputPlugin::keys() const
 {
     QStringList keys;
@@ -112,11 +97,9 @@ QStringList HbTouchInputPlugin::keys() const
     return keys;
 }
 
-// ---------------------------------------------------------------------------
-// HbTouchInputPlugin::languages
-// 
-// ---------------------------------------------------------------------------
-//
+/*!
+\reimp
+*/
 QStringList HbTouchInputPlugin::languages(const QString& key)
 {
     QStringList result;
@@ -132,14 +115,43 @@ QStringList HbTouchInputPlugin::languages(const QString& key)
         HbInputModeProperties properties(HbInputModeDefault, HbInputLanguage(), HbKeyboardVirtualQwerty);
         result.append(properties.asString());
 
-        QList<HbInputLanguage> languages = HbKeymapFactory::availableLanguages();
-        foreach (HbInputLanguage language, languages) {
-            properties = HbInputModeProperties(HbInputModeNumeric, language, HbKeyboardVirtualQwerty);
-            result.append(properties.asString());
-        }
+        properties = HbInputModeProperties(HbInputModeNumeric, HbInputLanguage(), HbKeyboardVirtualQwerty);
+        result.append(properties.asString());
     }
 
     return QStringList(result);
+}
+
+/*!
+\reimp
+*/
+QStringList HbTouchInputPlugin::displayNames(const QString &key)
+{
+    Q_UNUSED(key);
+    return QStringList();
+}
+
+/*!
+\reimp
+*/
+HbIcon HbTouchInputPlugin::icon(const QString &key)
+{
+    if (key == "HbVirtual12Key") {
+        return HbIcon(HbTouchInput12KeyIcon);
+    } else if (key == "HbVirtualQwerty") {
+        return HbIcon(HbTouchInputQwertyIcon);
+    }
+
+    return HbIcon();
+}
+
+/*!
+\reimp
+*/
+QList<HbIcon> HbTouchInputPlugin::icons(const QString &key)
+{
+    Q_UNUSED(key);
+    return QList<HbIcon>();
 }
 
 //

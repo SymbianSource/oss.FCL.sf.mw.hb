@@ -29,9 +29,14 @@
 #include "hbiconprocessor_p.h"
 #include <QPixmap>
 
-#if defined (Q_OS_SYMBIAN)
+#if defined (HB_NVG_CS_ICON) 
 #include <nvg.h>
-#endif //Q_OS_SYMBIAN
+
+// Note: Cases of the following two directory names intentionally differ to
+//       match the cases of the corresponding directories in Symbian 4.
+#include <VG/openvg.h>
+#include <vg/vgcontext_symbian.h>
+#endif //HB_NVG_CS_ICON
 
 QT_BEGIN_NAMESPACE
 class QSvgRenderer;
@@ -41,13 +46,13 @@ QT_END_NAMESPACE
 
 class HbThemeServerSymbian;
 
-#if defined (Q_OS_SYMBIAN)
+#if defined (HB_NVG_CS_ICON)
 struct HbNvgAspectRatioSettings
 {
     TNvgAlignStatusType nvgAlignStatusAndAspectRatio;
     TNvgMeetOrSliceType type;
 };
-#endif //Q_OS_SYMBIAN
+#endif //HB_NVG_CS_ICON
 
 class HbPixmapIconProcessor : public HbIconProcessor
 {
@@ -71,11 +76,12 @@ private :
     bool renderPicToPixmap(const QString& iconPath);
     bool renderOtherFormatsToPixmap(const QString& iconPath);
 
-#if defined (Q_OS_SYMBIAN)
+#if defined (HB_NVG_CS_ICON)
+    VGIColorBufferFormat mapToVgiDisplayFormat(QImage::Format imageFormat) const;
     bool renderNvgToPixmap(const QString& iconPath);
     HbNvgAspectRatioSettings mapKeyAspectRatioToNvgAspectRatio(
 	                                                Qt::AspectRatioMode aspectRatio) const;
-#endif //Q_OS_SYMBIAN
+#endif //HB_NVG_CS_ICON
 private:
     QPixmap pixmap;
 };

@@ -162,6 +162,14 @@
     \sa HbIndicatorInterface::processClientRequest
 */
 
+/*!
+    \fn void HbIndicatorInterface::userActivated(const QVariantMap &data)
+
+    The class should emit this signal, when client needs to be notified of the
+    user interaction.
+    @param data Data sent by indicator.
+*/
+
 class HbIndicatorInterfacePrivate
 {
 public:
@@ -257,6 +265,21 @@ void HbIndicatorInterface::processClientRequest(RequestType type,
 bool HbIndicatorInterface::handleInteraction(InteractionType /*type*/)
 {
     return false; //not handled
+}
+
+/*!
+    Called by the framework, when the indicator menu is about to show. 
+    Indicators data can be refreshed here. 
+   
+    Should return true, if the indicator data is refreshed, false otherwise. 
+    If true is returned then the indicator menu calls indicatorData to get refreshed data.
+    Default implementation returns false. 
+
+    \sa HbIndicatorInterface::indicatorData(int role)
+*/
+bool HbIndicatorInterface::refreshData()
+{
+    return false;
 }
 
 /*!

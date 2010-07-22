@@ -1,19 +1,19 @@
-HbSlider[orientation="Horizontal"][TickLabelPresent]
-{
-    layout:slider_horizontal_withticklabel;
-}
 
-HbSlider[orientation="Horizontal"][!TickLabelPresent]
+HbSlider[orientation="Horizontal"]
 {
-    layout:slider_horizontal_withoutticklabel;
+    layout:slider_horizontal;
     min-height:expr(2*var(hb-param-widget-slider-thumb-width));    
 }
-/*HbVolumeSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
+HbVolumeSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
 {
     min-height:25un;
     min-width:0.0un;
     size-policy-horizontal:fixed;
     size-policy-vertical:minimum-expanding;
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);   
 }
 
 HbZoomSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"]::control:portrait
@@ -22,7 +22,11 @@ HbZoomSliderPopup > HbSliderPopupContentWidget > HbSlider[orientation="Vertical"
     min-width:0.0un;
     size-policy-horizontal:fixed;
     size-policy-vertical:minimum-expanding;
-}*/
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);   
+}
 
 HbSlider[orientation="Vertical"]::control
 {   
@@ -30,6 +34,10 @@ HbSlider[orientation="Vertical"]::control
     min-width:0.0un;
     size-policy-horizontal:fixed;
     size-policy-vertical:minimum-expanding;
+    top:-var(hb-param-margin-gene-top);
+    bottom:var(hb-param-margin-gene-bottom);
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    right:var(hb-param-margin-gene-middle-horizontal);    
 }
 
 
@@ -41,14 +49,9 @@ HbSlider[orientation="Horizontal"]::control
     size-policy-horizontal:minimum-expanding;
 }
 
-HbSlider[orientation="Vertical"][TickLabelPresent]
+HbSlider[orientation="Vertical"]
 {
-    layout:slider_vertical_withticklabel;
-}
-
-HbSlider[orientation="Vertical"][!TickLabelPresent]
-{
-    layout:slider_vertical_withoutticklabel;
+    layout:slider_vertical;
     min-width:expr(2*var(hb-param-widget-slider-thumb-width));
 }
 
@@ -121,15 +124,13 @@ HbSlider[orientation="Horizontal"]::increment-icon
 {
     right:var(hb-param-margin-gene-right);
 }
-HbSlider[orientation="Vertical"]::control
-{
-    top:-var(hb-param-margin-gene-top);
-    bottom:var(hb-param-margin-gene-bottom);
-}
+
 HbSlider[orientation="Horizontal"]::control
 {
     left:-var(hb-param-margin-gene-left);
     right:var(hb-param-margin-gene-right);
+    top:-var(hb-param-margin-gene-middle-horizontal);
+    bottom:var(hb-param-margin-gene-middle-horizontal);
 }
 HbSlider[orientation="Vertical"]::decrement-icon
 {
@@ -182,9 +183,86 @@ HbSlider::spacerRight{
 HbSlider::spacerLeft{ 
   size-policy-horizontal: expanding; 
 } 
+
+HbSlider::spacerTextRight{ 
+  size-policy-horizontal: expanding; 
+} 
+HbSlider::spacerTextLeft{ 
+  size-policy-horizontal: expanding; 
+}
 HbSlider::spacerTop{ 
   size-policy-vertical: expanding; 
 } 
 HbSlider::spacerBottom{ 
   size-policy-vertical: expanding; 
 } 
+
+
+/*Ticks left vertical*/
+HbSlider::tick-marksleft
+{
+    left:-var(hb-param-margin-gene-middle-horizontal);
+    top:0.0un;
+    bottom:0.0un;
+    fixed-width:1.0un;
+    size-policy-vertical:preferred;
+
+}
+
+HbSlider::tick-textsleft
+{
+    top:0.0un;
+    bottom:0.0un;
+    left:-var(hb-param-margin-gene-popup);
+    fixed-width:7.5un;
+    size-policy-vertical:preferred;
+    
+}
+/*Ticks right vertical*/
+HbSlider::tick-marksright
+{
+
+   right:var(hb-param-margin-gene-middle-horizontal);
+    fixed-width:1.0un;
+    size-policy-vertical:preferred;
+
+}
+
+HbSlider::tick-textsright
+{
+    fixed-width:7.5un;
+    size-policy-vertical:preferred;
+    right:var(hb-param-margin-gene-popup);
+}
+/*Ticks above horizontal*/
+HbSlider::tick-marksabove
+{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+    fixed-height:1.0un;
+    size-policy-horizontal:preferred;
+
+}
+
+HbSlider::tick-textsabove
+{
+    fixed-height:var(hb-param-text-height-tiny);
+    size-policy-horizontal:preferred;
+	
+}
+/*Ticks below horizontal*/
+HbSlider::tick-marksbelow
+{
+    top:-var(hb-param-margin-gene-middle-vertical);
+    bottom:var(hb-param-margin-gene-middle-vertical);
+    fixed-height:1.0un;
+    size-policy-horizontal:preferred;
+    
+}
+
+HbSlider::tick-textsbelow
+{
+    fixed-height:var(hb-param-text-height-tiny);
+    size-policy-horizontal:preferred;
+}
+

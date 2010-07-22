@@ -37,6 +37,7 @@ class QModelIndex;
 QT_END_NAMESPACE
 
 class HbAbstractViewItemPrivate;
+class HbAbstractViewItemShared;
 class HbAbstractItemView;
 class HbStyleOptionAbstractViewItem;
 class HbStyleParameters;
@@ -116,6 +117,8 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbAbstractViewItem )
     Q_PRIVATE_SLOT(d_func(), void _q_animationFinished(const HbEffect::EffectStatus &status))
+
+    friend class HbAbstractViewItemShared;
 };
 
 #endif /*HBABSTRACTVIEWITEM_H*/

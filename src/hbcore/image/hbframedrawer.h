@@ -43,8 +43,7 @@ class HB_CORE_EXPORT HbFrameDrawer
 {
 public:
 
-    enum FrameType
-    {
+    enum FrameType {
         Undefined = 0,
         OnePiece,
         ThreePiecesHorizontal,
@@ -79,10 +78,10 @@ public:
     QStringList fileNameSuffixList() const;
     void setFileNameSuffixList(const QStringList &list);
 
-    void setMask(const QPixmap &mask); 
+    void setMask(const QPixmap &mask);
     void setMask(const QBitmap &mask);
-    QPixmap mask() const; 
-    QBitmap maskBitmap() const; 
+    QPixmap mask() const;
+    QBitmap maskBitmap() const;
 
     void setClipPath(const QPainterPath &clipPath);
     QPainterPath clipPath() const;
@@ -92,10 +91,10 @@ public:
     void themeChanged();
     void setLayoutDirection(Qt::LayoutDirection direction);
 
-    void setGraphicsItem( QGraphicsItem *item );
-    
+    void setGraphicsItem(QGraphicsItem *item);
+
     void paint(QPainter *painter, const QRectF &rect) const;
-    
+
 protected:
     QRectF rect() const;
     void setRect(const QRectF &rect);
@@ -105,7 +104,7 @@ private:
     HbFrameDrawerPrivate *d;
 
     friend class HbStylePrivate;
+    friend class HbFrameDrawerPrivate;
 };
 
 #endif // HBFRAMEDRAWER_H
-

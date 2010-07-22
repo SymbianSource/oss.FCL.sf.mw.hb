@@ -114,6 +114,7 @@ public:
         P_TitlePane_background,
         P_TitlePane_text,
         P_TitlePane_icon,
+        P_TitlePane_toucharea,
         P_TitleBar_toucharea,
         P_SignalIndicator_icon,
         P_SignalLevel_background,
@@ -131,8 +132,11 @@ public:
         P_ProgressBar_mintext,
         P_ProgressBar_maxtext,
         P_NavigationButton_background,
+        P_NavigationButton_toucharea,
         P_IndicatorButton_background,
         P_IndicatorButton_handleindication,
+        P_IndicatorButton_eventindication,
+        P_IndicatorButton_toucharea,
         P_ItemViewItem_frame,   
         P_SelectionControl_selectionstart,
         P_SelectionControl_selectionend,
@@ -223,14 +227,13 @@ public:
     virtual QGraphicsItem *createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent = 0 ) const;
     virtual void updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive, const QStyleOption *option ) const;
 
-    int registerPlugin(const QString &pluginName);
-    void unregisterPlugin(const QString &pluginName);
-
     static void setItemName( QGraphicsItem *item, const QString &name );
     static QString itemName( const QGraphicsItem *item );
 
-    bool parameter(const QString &parameter, qreal &value, const HbDeviceProfile &profile = HbDeviceProfile()) const;
-    void parameters(HbStyleParameters &parameters, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+    bool parameter(const QString &param, qreal &value, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+    void parameters(HbStyleParameters &params, const HbDeviceProfile &profile = HbDeviceProfile()) const;
+
+    void widgetParameters(HbStyleParameters &params, HbWidget* widget) const;
 
 protected:
     friend class HbWidget;
@@ -249,8 +252,6 @@ private slots:
 private:
     Q_DISABLE_COPY( HbStyle )
     Q_DECLARE_PRIVATE_D( d_ptr, HbStyle )
-
-    Q_PRIVATE_SLOT(d_func(), void _q_onThemeChanged())
 };
 
 

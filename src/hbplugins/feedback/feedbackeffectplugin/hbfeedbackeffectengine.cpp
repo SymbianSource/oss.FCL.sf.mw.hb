@@ -320,12 +320,11 @@ void HbFeedbackEffectEngine::released(const HbWidget *widget)
         }
         else if (HbFeedbackEffectUtils::widgetFamily(widget) == HbFeedbackEffectUtils::Editor) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers());
-        } else if (widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget || widget->type() == Hb::ItemType_ComboBox) {
+        } else if (widget->type() == Hb::ItemType_ComboBox) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers()) ;
         }
-        else if (widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget
-                 || widget->type() == HbPrivate::ItemType_GroupBoxContentWidget
-                 || widget->type() == HbPrivate::ItemType_DataGroupHeadingWidget
+        else if (widget->type() == HbPrivate::ItemType_GroupBoxContentWidget
+                 || widget->type() == HbPrivate::ItemType_GroupBoxHeadingWidget
                  || widget->type() == Hb::ItemType_ComboBox) {
             effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers());
         }
@@ -355,7 +354,10 @@ void HbFeedbackEffectEngine::longPressed(const HbWidget *widget)
         effect = overrider.newInstantEffect;
     } else {
         effect = HbFeedback::None;
-        if (widget->type() == Hb::ItemType_InputButtonGroup) {
+        if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers() & Hb::ModifierInputFunctionButton) {
+            effect = HbFeedback::BasicKeypad;
+        }
+        else if(widget->type() == Hb::ItemType_InputButtonGroup) {
             effect = HbFeedback::SensitiveKeypad;
         }
         else {
@@ -413,7 +415,7 @@ void HbFeedbackEffectEngine::keyRepeated(const HbWidget *widget)
     if(widgetOverridesEffect( widget, interaction)) {
         effect = overrider.newInstantEffect;
     } else {
-        effect = HbFeedbackEffectUtils::instantOnKeyRepeat(widget);
+        effect = HbFeedbackEffectUtils::instantOnKeyRepeat(widget, modifiers());
     }
 
     if(widgetOverridesModalities(widget,interaction)) {
@@ -450,13 +452,26 @@ void HbFeedbackEffectEngine::draggedOver(const HbWidget *widget)
 
                 QGraphicsItem* graphicsItem = trackPoint->mainWindow()->scene()->focusItem();
 
-                if (graphicsItem->isWidget() &&
-                    static_cast<QGraphicsWidget*>(graphicsItem)->inherits("HbAbstractEdit")) {
-
-                    if (HbAbstractEdit* edit = static_cast<HbAbstractEdit*>(graphicsItem)) {
-                        if (edit->cursorPosition() != previousCursorPosition) {
-                            effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition);
-                            previousCursorPosition = edit->cursorPosition();
+                if (graphicsItem->isWidget()) {
+                    if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("HbAbstractEdit")) {
+                        if (HbAbstractEdit* edit = static_cast<HbAbstractEdit*>(graphicsItem)) {
+                            if (edit->cursorPosition() != previousCursorPosition) {
+                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition);
+                                previousCursorPosition = edit->cursorPosition();
+                            }
+                        }
+                    }
+                    else if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("QGraphicsWebView") )
+                    {
+                        // This takes care of the case when the track point is used on a QGraphicsWebView (for e.g. cWRT)
+                        QVariant v;
+                        v = graphicsItem->scene()->inputMethodQuery( Qt::ImCursorPosition );
+                        if ( v.isValid() && v.canConvert<int>()) {
+                            int currentCursorPosition = v.toInt();
+                            if (currentCursorPosition != previousCursorPosition) {
+                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(trackPoint, previousCursorPosition);
+                                previousCursorPosition = currentCursorPosition;
+                            }
                         }
                     }
                 }
@@ -512,18 +527,17 @@ void HbFeedbackEffectEngine::boundaryReached(const HbWidget *widget)
 */
 void HbFeedbackEffectEngine::rotated90Degrees(const HbWidget *widget)
 {
-    HbFeedback::InstantEffect effect = HbFeedback::None ;
-    HbFeedback::Modalities modalities = 0 ;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
+    HbFeedback::Modalities modalities = 0;
     Hb::InstantInteraction interaction = Hb::InstantRotated90Degrees;
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if(widgetOverridesEffect(widget, interaction)) {
         effect = overrider.newInstantEffect;
     } else {
         effect = HbFeedback::RotateStep;
-
     }
 
-    if(widgetOverridesModalities(widget,interaction)) {
+    if (widgetOverridesModalities(widget,interaction)) {
         modalities = overrider.newModalities ;
     } else  {
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
@@ -539,18 +553,20 @@ void HbFeedbackEffectEngine::popupOpened(const HbWidget *widget)
 {
     HbFeedback::Modalities modalities = 0 ;
     Hb::InstantInteraction interaction = Hb::InstantPopupOpened;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
 
     if(widgetOverridesModalities(widget,interaction)) {
-        modalities = overrider.newModalities ;
-    } else  {
+        modalities = overrider.newModalities;
+    } else {
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
     }
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if (widgetOverridesEffect(widget, interaction)) {
         playInstantFeedback(widget, overrider.newInstantEffect, modalities);
     } else {
-        if(HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
-            playInstantFeedback(widget, HbFeedback::PopupOpen, modalities);
+        if (HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
+            effect = HbFeedbackEffectUtils::instantOnPopupOpened(widget);
+            playInstantFeedback(widget, effect, modalities);
         }
     }
 }
@@ -562,6 +578,7 @@ void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
 {
     HbFeedback::Modalities modalities = 0 ;
     Hb::InstantInteraction interaction = Hb::InstantPopupClosed;
+    HbFeedback::InstantEffect effect = HbFeedback::None;
 
     if(widgetOverridesModalities(widget,interaction)) {
         modalities = overrider.newModalities ;
@@ -569,11 +586,12 @@ void HbFeedbackEffectEngine::popupClosed(const HbWidget *widget)
         modalities = HbFeedbackEffectUtils::modalities(widget, interaction, modifiers());
     }
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if(widgetOverridesEffect(widget, interaction)) {
         playInstantFeedback(widget, overrider.newInstantEffect, modalities);
     } else {
-        if(HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
-            playInstantFeedback(widget, HbFeedback::PopupClose, modalities);
+        if (HbFeedbackEffectUtils::isFeedbackAllowedForPopup(widget)) {
+            effect = HbFeedbackEffectUtils::instantOnPopupClosed(widget);
+            playInstantFeedback(widget, effect, modalities);
         }
     }
 }
@@ -682,51 +700,6 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
                 }
                 break;
             }
-        case HbFeedbackEffectUtils::List:
-        case HbFeedbackEffectUtils::Grid:
-            {
-                if (interaction == Hb::ContinuousScrolled) {
-                    if (const HbAbstractItemView * itemView = qobject_cast<const HbAbstractItemView *>(widget)) {
-                        feedbackPlayed = true;
-                        QList<HbAbstractViewItem *> visibleItems = itemView->visibleItems();
-                        bool newItemFound(false);
-                        int index(-1);
-                        QList<int> visibleIndexes;
-                        if (widget == activelyScrollingItemView) {
-                            foreach (HbAbstractViewItem * item, visibleItems) {
-                                index = item->modelIndex().row();
-                                if (!oldVisibleIndexes.contains(index)) {
-                                    newItemFound = true;
-                                }
-                                visibleIndexes.append(index);
-                            }
-                        }
-                        if (widget != activelyScrollingItemView){
-                            activelyScrollingItemView = widget;
-                            newItemFound = false;
-                        }
-                        // To prevent the uninitialized list to cause false new item detections
-                        if (oldVisibleIndexes.empty()) {
-                            newItemFound = false;
-                        }
-                        oldVisibleIndexes.clear();
-                        oldVisibleIndexes = visibleIndexes;
-                        
-                        if (newItemFound) {
-                            const HbListView* listView = qobject_cast<const HbListView*>(widget);
-                            if (!(  listView &&
-                                    listView->arrangeMode() &&
-                                    listView->draggedItem())){
-                                if(!widgetOverridesModalities(widget,interaction)) {
-                                    modalities = HbFeedback::Audio | HbFeedback::Tactile;
-                                }
-                                playInstantFeedback(widget, HbFeedback::ItemScroll, modalities);
-                            }
-                        }
-                    }
-                }
-                break;
-            }
         default:
             {
                 break;
@@ -738,6 +711,45 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
             if (widget->type() == HbPrivate::ItemType_MenuListView) {
                 feedbackPlayed = true;
             }
+            if(widget->type() == Hb::ItemType_TumbleView)
+            {
+                if (const HbAbstractItemView * itemView = qobject_cast<const HbAbstractItemView *>(widget)) {
+                    feedbackPlayed = true;
+                    QList<HbAbstractViewItem *> visibleItems = itemView->visibleItems();
+                    bool newItemFound(false);
+                    int index(-1);
+                    QList<int> visibleIndexes;
+                    if (widget == activelyScrollingItemView) {
+                        foreach (HbAbstractViewItem * item, visibleItems) {
+                            index = item->modelIndex().row();
+                            if (!oldVisibleIndexes.contains(index)) {
+                                newItemFound = true;
+                            }
+                            visibleIndexes.append(index);
+                        }
+                    }
+                    if (widget != activelyScrollingItemView){
+                        activelyScrollingItemView = widget;
+                        newItemFound = false;
+                    }
+                    // To prevent the uninitialized list to cause false new item detections
+                    if (oldVisibleIndexes.empty()) {
+                        newItemFound = false;
+                    }
+                    oldVisibleIndexes.clear();
+                    oldVisibleIndexes = visibleIndexes;
+
+                    if (newItemFound) {
+                        if(!widgetOverridesModalities(widget,interaction)) {
+                            modalities = HbFeedback::Audio | HbFeedback::Tactile;
+                        }
+                        playInstantFeedback(widget, HbFeedback::ItemScroll, modalities);
+
+                    }
+                }
+            }
+
+
             
             // generic scroll areas don't emit continuous feedback
             if (const HbScrollArea* scrollArea = qobject_cast<const HbScrollArea *>(widget)) {
@@ -815,35 +827,22 @@ void HbFeedbackEffectEngine::playInstantFeedback(const HbWidget* widget, HbFeedb
 void HbFeedbackEffectEngine::playContinuousFeedback(const HbWidget* widget, HbFeedback::ContinuousEffect effect, int intensity, HbFeedback::Modalities modalities)
 {
     const QGraphicsView* view = widget->mainWindow();
+    HbContinuousFeedback* feedback;
 
-    // if feedback can be played
     if (view && HbFeedbackEffectUtils::isFeedbackAllowed(widget)) {
 
-        // if this widget has been playing
         if (continuousFeedbacks.contains(widget)) {
-            HbContinuousFeedback* feedback = continuousFeedbacks.value(widget);
-
-            // if this feedback is already playing then only its effect and intensity are updated
-            feedback->setModalities(modalities);
-            feedback->setOwningWindow(view);
-            feedback->setRect(widget, view);
-            feedback->setContinuousEffect(effect);
-            feedback->setIntensity(intensity);
-            // if this feedback is not being played, play it
-            if (!feedback->isPlaying()) {
-                feedback->play();
-            }
+            feedback = continuousFeedbacks.value(widget);
         } else {
-            // this widget has not played anything before
-            HbContinuousFeedback *feedback = new HbContinuousFeedback();
-            feedback->setModalities(modalities);
-            feedback->setOwningWindow(view);
-            feedback->setRect(widget, view);
-            feedback->setContinuousEffect(effect);
-            feedback->setIntensity(intensity);
+            feedback = new HbContinuousFeedback();
             continuousFeedbacks.insert(widget, feedback);
-            feedback->play();
         }
+        feedback->setModalities(modalities);
+        feedback->setOwningWindow(view);
+        feedback->setRect(widget, view);
+        feedback->setContinuousEffect(effect);
+        feedback->setIntensity(intensity);
+        feedback->play();
     }
 }
 

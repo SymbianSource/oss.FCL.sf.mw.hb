@@ -25,7 +25,7 @@
 #include <hbglobal.h>
 #ifdef HB_FILTER_EFFECTS
 
-#include "hbeffectblur_p.h"
+#include "hbeffectblur_p.h" //krazy:exclude=includes
 #include "hbeffectgroup_p.h"
 #include "hbeffectdef_p.h"
 #include "hbvgchainedeffect_p.h"
@@ -43,12 +43,12 @@ HbEffectBlur::HbEffectBlur(
     const HbEffectFxmlFilterData &data,
     QGraphicsItem *item,
     HbEffectGroup *group) :
-        HbEffectFilter(0, item, group),
-        mAnimationO(0),
-        mAnimationX(0),
-        mAnimationY(0),
-        mVgBlur(0),
-        mType(Blur)
+    HbEffectFilter(0, item, group),
+    mAnimationO(0),
+    mAnimationX(0),
+    mAnimationY(0),
+    mVgBlur(0),
+    mType(Blur)
 {
     // If it is a glow filter, change effect type
     if (data.type() == HB_EFFECT_NAME_GLOW) {
@@ -66,14 +66,12 @@ HbEffectBlur::HbEffectBlur(
     QList<HbEffectFxmlParamData> params = data.paramData();
 
     // Handle FXML parameters
-    Q_FOREACH(const HbEffectFxmlParamData &param, params) {
+    Q_FOREACH(const HbEffectFxmlParamData & param, params) {
         if (param.name() == FXML_KEYWORD_BLUR_OPACITY) {
             mAnimationO = createAnimation(param, opacity_start, opacity_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_BLUR_ORIGIN_X) {
+        } else if (param.name() == FXML_KEYWORD_BLUR_ORIGIN_X) {
             mAnimationX = createAnimation(param, blur_x_start, blur_x_end, group);
-        }
-        else if (param.name() == FXML_KEYWORD_BLUR_ORIGIN_Y) {
+        } else if (param.name() == FXML_KEYWORD_BLUR_ORIGIN_Y) {
             mAnimationY = createAnimation(param, blur_y_start, blur_y_end, group);
         }
     }
@@ -87,11 +85,10 @@ HbEffectBlur::HbEffectBlur(
     if (mEffectDefined) {
         // Add blur effect to the filter effect chain in the effect group
         HbVgChainedEffect *chain = HbEffectAbstract::group()->vgEffect();
-        
+
         if (mType == Blur) {
             mVgBlur = new HbVgBlurEffect();
-        }
-        else {
+        } else {
             mVgBlur = new HbVgGlowEffect();
         }
         mVgBlur->setCaching(true);

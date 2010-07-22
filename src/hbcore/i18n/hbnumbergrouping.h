@@ -40,4 +40,4 @@ public:
                                                 QLocale::Country country = QLocale::AnyCountry );
 };
 
-#endif
+#endif // HBNUMBERGROUPING_H

@@ -23,6 +23,9 @@
 **
 ****************************************************************************/
 
+#include "hbmainwindow.h"
+#include "hbmainwindow_p.h"
+
 #include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QGraphicsItem>
@@ -35,8 +38,6 @@
 #include "hbinstance.h"
 #include "hbinstance_p.h"
 #include "hbgraphicsscene.h"
-#include "hbmainwindow.h"
-#include "hbmainwindow_p.h"
 #include "hbnamespace.h"
 #include "hbnamespace_p.h"
 #include "hbtitlebar_p.h"
@@ -58,11 +59,14 @@
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbmainwindoworientation_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hboogmwatcher_p.h"
+#include "hbwindowobscured_p.h"
+#include "hbsleepmodelistener_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <coecntrl.h>
+#include <w32std.h>
 #include "hbnativewindow_sym_p.h"
 #endif
 
@@ -92,14 +96,13 @@
     really visible.
 
     HbMainWindow has a signalling mechanism for helping control the
-    application's view construction. viewReady()-signal is emitted
-    when view's internal construction is completed and basic parts of
-    view are already drawn. Same signal is also emitted when current
-    view is switched. This helps applications to split the view
-    construction to reasonable tasks.  For example the lower priority
-    tasks like opening network connection or preparing other currently
-    hidden application views can happen on background when first view
-    is already drawn.
+    application's view construction. The viewReady() signal is emitted when a
+    view's internal construction is completed and basic parts of view are
+    already drawn. Same signal is also emitted when current view has
+    changed. This helps applications to split the view construction to
+    reasonable tasks.  For example the lower priority tasks like opening network
+    connection or preparing other currently hidden application views can happen
+    on background when first view is already drawn.
 
     Example of simple Hb application constructing HbMainWindow:
 
@@ -172,6 +175,21 @@
     This signal is emitted first time when window content is drawn on screen.
     It will only be emitted again when current view is changed and drawn on screen.
 
+    This means that this signal is emitted in the following cases:
+
+    - When the mainwindow is fully constructed, this happens shortly after
+      painting it for the first time.
+
+    - When a new view is added using addView() or insertView() after the
+      mainwindow is fully constructed and the newly added view becomes the
+      current view. It will not be emitted when calling addView() or
+      insertView() before showing the mainwindow or entering the event loop
+      because in that case the signal will anyway be emitted later, when the
+      mainwindow becomes ready. It is also not emitted when the newly added view
+      does not become the current view.
+
+    - When the current view is changed using setCurrentView().
+
     If the view switch is animated, the signal is emitted only after the effect has
     completed.
 
@@ -179,6 +197,61 @@
     tasks. Note however that when thinking about the tasks, it is important to keep the UI
     responsive all the time.
  */
+
+/*!
+    \fn void HbMainWindow::obscured()
+
+    This signal is emited whenever the window is completely overlaped by another
+    window.
+
+    Application developers can use this signal to pause or stop painting when
+    the window is not visible to the user at all.
+
+    This signal has real implementation only for Symbian and X11 platforms. On
+    desktop platforms it is simulated via a settings window option.
+
+    The typical use case is to use the obscured() and revealed() signals in
+    connection with device dialogs (global pop-ups): When such a dialog is
+    shown, the application loses foreground (focus), but it may still be
+    partially visible because the dialogs will not fill the entire screen. To
+    get notified about such cases, combine your application's
+    foreground-background handling with handling also these signals.
+
+    Consider this as a best-effort solution only, the exact behavior depends on
+    the platform and may have limitations. For example on Symbian transparent
+    windows will never obscure another window, regardless of the content.
+
+    These signals are not a replacement to the focus-based ApplicationActivate
+    and ApplicationDeactivate events. An application may lose the focus
+    completely (i.e. lose foreground) even when it is still partially visible to
+    the user.
+
+    \sa revealed()
+    \sa isObscured()
+*/
+
+/*!
+    \fn void HbMainWindow::revealed()
+
+    This signal is emited whenever the window is visible to the user partially
+    or completely.
+
+    This signal has real implementation only for Symbian and X11 platforms. On
+    desktop platforms it is simulated via the settings option.
+
+    Consider this as a best-effort solution only, the exact behavior depends on
+    the platform and may have limitations. For example on Symbian transparent
+    windows may cause the revealed signal to be emitted even when the content is
+    not really visible.
+
+    These signals are not a replacement to the focus-based ApplicationActivate
+    and ApplicationDeactivate events. An application may lose the focus
+    completely (i.e. lose foreground) even when it is still partially visible to
+    the user.
+
+    \sa obscured()
+    \sa isObscured()
+*/
 
 /*!
   \class HbRootItem
@@ -193,7 +266,7 @@
 class HbRootItem : public HbWidget
 {
 public:
-    explicit  HbRootItem( QGraphicsItem *parent = 0 );
+    explicit  HbRootItem(QGraphicsItem *parent = 0);
     ~HbRootItem() {}
 private:
     bool event(QEvent *event);
@@ -201,21 +274,20 @@ private:
 
 /*!
     Constructs an HbMainWindow object with \a parent.
-    
+
     \a windowFlags can be used for specifying special functionality to HbMainWindow.
-    
+
     \sa Hb::WindowFlag
 */
 HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
-        QGraphicsView(parent), d_ptr(new HbMainWindowPrivate)
+    QGraphicsView(parent), d_ptr(new HbMainWindowPrivate)
 {
     Q_D(HbMainWindow);
     d->q_ptr = this;
 
     // No need for any default (e.g. blank white) background for this window.
-    // Setting this attribute is mandatory in order to have a flicker-less
-    // startup (both with and without splash screen).
     setAttribute(Qt::WA_NoSystemBackground);
+    setOptimizationFlag(QGraphicsView::DontSavePainterState);
 
     // Continue with basic initialization. Note: Prefer doing everything that is
     // not absolutely compulsory in _q_delayedConstruction instead.
@@ -251,7 +323,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
         d->mAutomaticOrientationSwitch = true;
     } else {
         d->mOrientation = d->mDefaultOrientation;
-        d->mAutomaticOrientationSwitch = false; 
+        d->mAutomaticOrientationSwitch = false;
     }
 
 #if defined(Q_WS_S60) || defined(HB_Q_WS_MAEMO)
@@ -260,7 +332,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
+    setFrameStyle(QFrame::NoFrame);
 
     // create scene and style
     d->mScene = new HbGraphicsScene(this);
@@ -268,7 +340,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // workaround for problems with BSP tree implementation in Qt
     d->mScene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
-    d->mScene->setSceneRect(0, 0, pSize.width(), pSize.height()); 
+    d->mScene->setSceneRect(0, 0, pSize.width(), pSize.height());
     setScene(d->mScene);
 
     // add root item
@@ -292,10 +364,10 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     d->mClippingItem->setStackWidget(d->mViewStackWidget);
     connect(d->mViewStackWidget, SIGNAL(currentChanged(int)),
             this, SLOT(_q_viewChanged()));
-    connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget*)),
-            this, SLOT(_q_viewRemoved(QGraphicsWidget*)));
+    connect(d->mViewStackWidget, SIGNAL(widgetRemoved(QGraphicsWidget *)),
+            this, SLOT(_q_viewRemoved(QGraphicsWidget *)));
 
-    // create Titlebar (container for indicators, titlepane and secondary softkey
+    // create Titlebar (container for indicator button, titlepane and navigation button
     d->mTitleBar = new HbTitleBar(this, d->mClippingItem);
     d->mTitleBar->setZValue(HbPrivate::TitleBarZValue);
 
@@ -306,9 +378,9 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // At this point the mainwindow is considered more or less fully constructed.
     HbInstancePrivate::d_ptr()->addWindow(this);
 
-    QRectF rect(0,0,pSize.width(),pSize.height());
+    QRectF rect(0, 0, pSize.width(), pSize.height());
     resize(pSize);
-	d->mLayoutRect = rect;
+    d->mLayoutRect = rect;
     d->mRootItem->setGeometry(rect);
     d->mClippingItem->setGeometry(rect);
     setSceneRect(0, 0, pSize.width(), pSize.height());
@@ -322,6 +394,11 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // Make sure the oogm watcher is initialized (so that wserv events
     // are routed to it properly).
     HbOogmWatcher::instance();
+
+    // Make sure the sleep mode listener instance is created.
+    HbSleepModeListener::instance();
+
+    HbWindowObscured::installWindowEventFilter();
 
 #ifdef HB_GESTURE_FW
     // @todo remove after view auto-subscribes to gestures
@@ -361,9 +438,9 @@ HbMainWindow::~HbMainWindow()
     delete d_ptr;
 
     // to workaround problem when creating/destroying multiple hbmainwindow's in unit tests (win env)
-    #ifdef Q_OS_WIN
-        destroy();
-    #endif
+#ifdef Q_OS_WIN
+    destroy();
+#endif
 }
 
 /*!
@@ -371,20 +448,43 @@ HbMainWindow::~HbMainWindow()
     \a widget creates an empty HbView.
 
     The \a widget can be either a HbView or QGraphicsWidget. If it is
-    the QGraphicsWidget then HbMainWindow will create a HbView and set
-    \a widget as the new HbView's content widget.
+    a QGraphicsWidget (or any subclass that is not HbView) then
+    HbMainWindow will create a HbView and set \a widget as the new
+    HbView's content widget.
 
-    A HbMainWindow should only have one of each view and adding a view
-    it already has will not cause the same view to be in the
-    HbMainWindow twice.
+    When \a widget is a HbView, use HbView::setWidget() to set the content
+    widget for the view. Note that you should never attach child items or set a layout
+    directly to the HbView instance, even though HbView is also a HbWidget.
+    Instead, create a content widget, set it to the view via HbView::setWidget(),
+    and attach children or set a layout to that.
+
+    Use setCurrentView() to switch between the added views. (only one of them is visible at a time)
+    The view-specific decorators (toolbar, Options menu, title in the titlebar) and of course
+    the visibility of the view's content widgets will be updated and managed automatically by the framework
+    when switching views.
+
+    For a detailed description of views see the HbView class.
+
+    Note that using view switching (i.e. several HbView instances, setCurrentView(), etc.) in
+    Hb applications is not mandatory, it is purely optional. For applications that are not really
+    view based (e.g. because they only have one screen of content or because they have more "fluid" UI where
+    the traditional view separation does not make that much sense) it may sometimes be better (and may provide more freedom)
+    to have just one view and manage the content entirely via the content widget of that one view.
+    (one can still use HbStackedLayout and manual visibility management of child widgets to achieve a traditional view-like look,
+    even when the Hb view management is not used)
 
     After calling addView() the caller does not need to care about
     destroying \a widget, the framework will take care of that by
     reparenting \a widget if needed.
 
+    A HbMainWindow should only have one of each view and adding a view
+    it already has will not cause the same view to be in the
+    HbMainWindow twice.
+
     \return the new view
 
-    \sa insertView removeView
+    \sa insertView() removeView() setCurrentView()
+    \sa HbView HbStackedLayout
 */
 HbView *HbMainWindow::addView(QGraphicsWidget *widget)
 {
@@ -408,6 +508,12 @@ HbView *HbMainWindow::addView(QGraphicsWidget *widget)
 
     d->mViewStackWidget->insertWidget(-1, view);
 
+    // If the newly added view becomes the current one then emit the viewReady
+    // signal (unless the delayed construction is still pending).
+    if (d->mDelayedConstructionHandled && currentView() == view) {
+        QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+    }
+
     return view;
 }
 
@@ -424,7 +530,7 @@ HbView *HbMainWindow::addView(QGraphicsWidget *widget)
     \sa addView removeView
 */
 HbView *HbMainWindow::insertView(int index, QGraphicsWidget *widget)
-{    
+{
     Q_D(HbMainWindow);
     HbView *view = 0;
     if (!widget) {
@@ -436,7 +542,14 @@ HbView *HbMainWindow::insertView(int index, QGraphicsWidget *widget)
             view->setWidget(widget);
         }
     }
+
     d->mViewStackWidget->insertWidget(index, view);
+
+    // If the newly inserted view becomes the current one then emit the
+    // viewReady signal (unless the delayed construction is still pending).
+    if (d->mDelayedConstructionHandled && currentView() == view) {
+        QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+    }
 
     return view;
 }
@@ -466,8 +579,8 @@ void HbMainWindow::removeView(QGraphicsWidget *widget)
         d->mViewStackWidget->removeWidget(view);
     } else {
         // Check if it is a widget inside a view and delete that view
-        for (int n=0; n<d->mViewStackWidget->count(); n++) {
-            HbView *tempView = qobject_cast<HbView*>(d->mViewStackWidget->widgetAt(n));
+        for (int n = 0; n < d->mViewStackWidget->count(); n++) {
+            HbView *tempView = qobject_cast<HbView *>(d->mViewStackWidget->widgetAt(n));
             if (tempView->widget() == widget) {
                 d->mViewStackWidget->removeWidget(tempView);
                 // Take a widget out from the view, before deleting it.
@@ -534,8 +647,9 @@ void HbMainWindow::setCurrentView(HbView *view, bool animate, Hb::ViewSwitchFlag
             // If animation is disabled or there is no view set currently then change
             // without animation.
             d->mViewStackWidget->setCurrentWidget(view);
-            if (d->mDelayedConstructionHandled)
+            if (d->mDelayedConstructionHandled) {
                 QMetaObject::invokeMethod(this, "_q_viewReady", Qt::QueuedConnection);
+            }
         }
     }
 }
@@ -548,15 +662,15 @@ QList<HbView *> HbMainWindow::views() const
 {
     Q_D(const HbMainWindow);
     HbContentWidget *stackWidget = d->mViewStackWidget;
-    
+
     const int n = stackWidget->count();
     QList<HbView *> result;
-    for ( int i=0; i<n; ++i ) {
+    for (int i = 0; i < n; ++i) {
         HbView *view = qobject_cast<HbView *>(stackWidget->widgetAt(i));
         Q_ASSERT_X(view, "HbMainWindow::views()", "HbView was expected");
         result.append(view);
     }
-    
+
     return result;
 }
 
@@ -603,8 +717,9 @@ void HbMainWindow::unsetOrientation(bool animate)
     if (!d->mAutomaticOrientationSwitch) {
         d->mAutomaticOrientationSwitch = true;
         d->mUserOrientationSwitch = false;
-        if(HbMainWindowOrientation::instance()->isEnabled())
+        if (HbMainWindowOrientation::instance()->isEnabled()) {
             d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), animate);
+        }
     }
 }
 
@@ -661,14 +776,14 @@ void HbMainWindow::resetNativeBackgroundWindow()
 
 /*!
     Returns the rectangle which is used for layouting HbMainWindow contents. Updates on orientation change and is up to date
-    after HbMainWindow orientationChanged() signal. Note that this is not the same thing as QGraphicsView (HbMainWindow) geometry. 
+    after HbMainWindow orientationChanged() signal. Note that this is not the same thing as QGraphicsView (HbMainWindow) geometry.
     HbMainWindow geometry does not update on orientation change since the contents are only transformed with a rotate transform.
-    
+
 */
 QRectF HbMainWindow::layoutRect() const
 {
     Q_D(const HbMainWindow);
-	return d->mLayoutRect;
+    return d->mLayoutRect;
 }
 
 /*!
@@ -699,9 +814,38 @@ QString HbMainWindow::backgroundImageName(Qt::Orientation orientation) const
 }
 
 /*!
+  Sets the background image drawing mode. This setting controls how
+  the background image is displayed.
+
+  By default the mode is set to Hb::ScaleBackgroundToFit.
+
+  \sa backgroundImageMode()
+  \sa Hb::BackgroundImageMode
+ */
+void HbMainWindow::setBackgroundImageMode(Hb::BackgroundImageMode mode)
+{
+    Q_D(HbMainWindow);
+    if (d->mBgItem) {
+        d->mBgItem->setImageMode(mode);
+    }
+}
+
+/*!
+  Returns the currently set background image drawing mode.
+
+  \sa setBackgroundImageMode()
+  \sa Hb::BackgroundImageMode
+ */
+Hb::BackgroundImageMode HbMainWindow::backgroundImageMode() const
+{
+    Q_D(const HbMainWindow);
+    return d->mBgItem ? d->mBgItem->imageMode() : Hb::ScaleBackgroundToFit;
+}
+
+/*!
   Sets the animations enabled when the orientation is changed automatically.
   By default animations are enabled.
-  
+
   \sa automaticOrientationEffectEnabled()
  */
 
@@ -712,7 +856,7 @@ void HbMainWindow::setAutomaticOrientationEffectEnabled(bool enabled)
 }
 
 /*!
-  Returns boolean value to signify whether animations enabled/disabled during 
+  Returns boolean value to signify whether animations enabled/disabled during
   automatic orientation change. By default animations are enabled.
 
   \sa setAutomaticOrientationEffectEnabled()
@@ -733,12 +877,12 @@ void HbMainWindow::changeEvent(QEvent *event)
         // Notify layout direction change to the icon framework
         HbLayoutDirectionNotifier::instance()->notifyLayoutDirectionChange();
 
-        broadcastEvent( HbEvent::WindowLayoutDirectionChanged );
+        broadcastEvent(HbEvent::WindowLayoutDirectionChanged);
 
-        foreach (QGraphicsItem *item, items()) {
-            if (item->isWidget() && !item->parentItem() ) {
+        foreach(QGraphicsItem * item, items()) {
+            if (item->isWidget() && !item->parentItem()) {
                 QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(item);
-                if (!widget->testAttribute(Qt::WA_SetLayoutDirection)){
+                if (!widget->testAttribute(Qt::WA_SetLayoutDirection)) {
                     widget->setLayoutDirection(layoutDirection());
                     widget->setAttribute(Qt::WA_SetLayoutDirection, false);
                 }
@@ -764,7 +908,7 @@ void HbMainWindow::keyPressEvent(QKeyEvent *event)
     // pass the soft key press into the soft key decorator class
     HbAction *action = 0;
 
-    switch(event->key()) {
+    switch (event->key()) {
 
 #ifdef Q_OS_SYMBIAN
     case Qt::Key_Context1:
@@ -820,19 +964,20 @@ void HbMainWindow::resizeEvent(QResizeEvent *event)
 {
     Q_D(HbMainWindow);
 
-    if ( !HbMainWindowPrivate::dragToResizeEnabled ) {
+    if (!HbMainWindowPrivate::dragToResizeEnabled) {
         // determine the default orientation width < height -> portrait
-        if (event->size().width() < event->size().height())
+        if (event->size().width() < event->size().height()) {
             d->mDefaultOrientation = Qt::Vertical;
-        else
+        } else {
             d->mDefaultOrientation = Qt::Horizontal;
+        }
         d->mForceSetOrientation = true;
         d->setTransformedOrientation(d->mOrientation, false);
         d->mForceSetOrientation = false;
     } else {
         // RnD feature for resizing the window by dragging
         QSize newSize(event->size());
-        setSceneRect(0,0,newSize.width(),newSize.height());
+        setSceneRect(0, 0, newSize.width(), newSize.height());
         d->mClippingItem->resize(newSize);
         if (d->mBgItem) {
             d->mBgItem->resize(newSize);
@@ -843,41 +988,55 @@ void HbMainWindow::resizeEvent(QResizeEvent *event)
 /*!
     Reimplemented from QObject::customEvent().
 */
-void HbMainWindow::customEvent( QEvent *event )
+void HbMainWindow::customEvent(QEvent *event)
 {
     Q_D(HbMainWindow);
     if (event->type() == HbMainWindowPrivate::IdleEvent) { // called asyncronously after the application start-up
         if (!d->mIdleEventHandled) {
             d->mIdleEventHandled = true;
-            if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TheTestUtility ) ) {
+            if (HbFeatureManager::instance()->featureStatus(HbFeatureManager::TheTestUtility)) {
                 // create the test utility
-                if ( !d->mTheTestUtility ) {
+                if (!d->mTheTestUtility) {
                     d->mTheTestUtility = new HbTheTestUtility(this);
                 }
             }
-            // get rid of the splash screen widget (it is not visible to the user anyway at this point)
+#ifdef Q_OS_SYMBIAN
+            // Disable surface transparency unless we were really asked to be transparent.
+            // Must be done before destroying the splash screen widget.
+            if (!testAttribute(Qt::WA_TranslucentBackground)) {
+                RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
+                window->SetSurfaceTransparency(false);
+            }
+#endif
+            // Get rid of the splash screen widget. (it is not visible to the user anyway at this point)
             HbSplashScreen::destroy();
         }
         // Notify that mainwindow is (most probably) ready.
         // The signal must be emitted always, even when there was no need to do anything.
         emit d->idleEventDispatched();
-    } else if(event->type() == HbMainWindowPrivate::IdleOrientationEvent) { // complete the orientation change effect chain
-        if (d->mEffectItem && d->mOrientationChangeOngoing) {
+    } else if (event->type() == HbMainWindowPrivate::IdleOrientationEvent) { // complete the orientation change effect chain
+        if (d->mEffectItem && d->mOrientationChangeOngoing && d->mOrientationEffectFinished) {
             HbEffect::start(d->mEffectItem, "rootItemFinalPhase", this, "rootItemFinalPhaseDone");
         }
     } else if (event->type() == HbMainWindowPrivate::IdleOrientationFinalEvent) {
         if (d->mAnimateOrientationSwitch) {
             HbEffect::start(d->mTitleBar, "titlebar", "appear_orient");
             HbEffect::start(d->mStatusBar, "statusbar", "appear_orient");
-            if (d->mCurrentToolbar) {         
+            if (d->mCurrentToolbar) {
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(d->mCurrentToolbar);
                 toolBarD->startAppearOrientEffect();
+            } else {
+                foreach(HbView * view, views()) {
+                    view->toolBar()->resetTransform();
+                    view->toolBar()->setOpacity(1);
+                    view->toolBar()->show();
+                    HbToolBarPrivate::d_ptr(view->toolBar())->mOrientationEffectsRunning = false;
+                }
             }
-            d->mOrientationChangeOngoing = false;
+            d->updateOrientationChangeStatus();
             if (d->mAutomaticOrientationSwitch && HbMainWindowOrientation::instance()->isEnabled()) {
                 d->setTransformedOrientation(HbMainWindowOrientation::instance()->sensorOrientation(), d->mAnimateOrientationSwitch);
-            }
-            else if (d->mRequestedOrientation != d->mOrientation) {
+            } else if (d->mRequestedOrientation != d->mOrientation) {
                 d->setTransformedOrientation(d->mRequestedOrientation, d->mAnimateOrientationSwitch);
             }
         } else {
@@ -915,6 +1074,27 @@ void HbMainWindow::paintEvent(QPaintEvent *event)
     QGraphicsView::paintEvent(event);
 }
 
+void HbMainWindow::showEvent(QShowEvent *event)
+{
+#ifdef Q_OS_SYMBIAN
+    // Enable surface transparency if QWidget did not do it already. This is a
+    // workaround for having non-transparent surfaces filled automatically with
+    // black color. The showEvent is a suitable place because the native control
+    // is already created at this point, but it is not too late either.
+    if (!testAttribute(Qt::WA_TranslucentBackground)) {
+        RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
+        window->SetSurfaceTransparency(true);
+    }
+#endif
+
+#if defined(Q_WS_X11)
+    Q_D(HbMainWindow);
+    d->x11HandleShowEvent(event);
+#endif // defined(Q_WS_X11)
+
+    QGraphicsView::showEvent(event);
+}
+
 /*!
     Reimplemented from QAbstractScrollArea::scrollContentsBy().
 */
@@ -932,12 +1112,35 @@ void HbMainWindow::scrollContentsBy(int dx, int dy)
     asynchronously.
 
     If the receiving widget has abstract items as child items, these will be informed
-    after the widget has received the event. 
+    after the widget has received the event.
 */
-void HbMainWindow::broadcastEvent( int eventType )
+void HbMainWindow::broadcastEvent(int eventType)
 {
     Q_D(HbMainWindow);
-    d->broadcastEvent( eventType );
+    d->broadcastEvent(eventType);
+}
+
+/*!
+    True if the window is not visible to the user.  False if one or more pixels are visible.
+*/
+bool HbMainWindow::isObscured() const
+{
+    Q_D(const HbMainWindow);
+
+    return d->mObscuredState;
+}
+
+/*
+    // reimplemented from QWidget
+*/
+bool HbMainWindow::event(QEvent *event)
+{
+    Q_D(HbMainWindow);
+    if (event->type() == HbEvent::WindowObscuredChanged) {
+        HbWindowObscuredChangedEvent *wosEvent = static_cast<HbWindowObscuredChangedEvent *>(event);
+        d->setObscuredState(wosEvent->obscuredState());
+    }
+    return QGraphicsView::event(event);
 }
 
 HbRootItem::HbRootItem(QGraphicsItem *parent)

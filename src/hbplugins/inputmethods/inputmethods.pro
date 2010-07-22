@@ -27,6 +27,7 @@
 
 TEMPLATE = subdirs
 SUBDIRS += touchinput
+SUBDIRS += hbim
 # SUBDIRS += hardwareinput
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)

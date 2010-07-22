@@ -23,14 +23,16 @@
 **
 ****************************************************************************/
 
-#ifndef HBTHEMELISTENER_P_H
-#define HBTHEMELISTENER_P_H
+#ifndef HBTHEMELISTENER_SYMBIAN_P_H
+#define HBTHEMELISTENER_SYMBIAN_P_H
 
 #include <e32base.h>
 #include <e32property.h> 
 #include <centralrepository.h>
 
-class CHbThemeListenerPrivate:public CActive
+class HbThemeClientPrivate;
+
+class CHbThemeListenerPrivate : public CActive
 {
 public:
     //themeClient is notified, when the theme changes.
@@ -44,6 +46,4 @@ private:
     CRepository *mRepository;
 };
 
-#endif /*HBTHEMELISTENER_P_H_ */
-
-
+#endif /*HBTHEMELISTENER_SYMBIAN_P_H */

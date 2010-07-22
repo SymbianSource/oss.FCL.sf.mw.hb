@@ -31,8 +31,8 @@
 #include <QObject>
 
 class HbSmileyEnginePrivate;
-QT_FORWARD_DECLARE_CLASS(QTextDocument);
-QT_FORWARD_DECLARE_CLASS(QTextCursor);
+QT_FORWARD_DECLARE_CLASS(QTextDocument)
+QT_FORWARD_DECLARE_CLASS(QTextCursor)
 
 class HB_AUTOTEST_EXPORT HbSmileyEngine : public QObject
 {

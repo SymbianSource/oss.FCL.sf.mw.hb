@@ -47,20 +47,21 @@ class HB_CORE_EXPORT HbView : public HbWidget
     Q_PROPERTY(QString title READ title WRITE setTitle)
     Q_PROPERTY(HbIcon icon READ icon WRITE setIcon)
     Q_PROPERTY(bool contentFullScreen READ isContentFullScreen WRITE setContentFullScreen)
+    Q_PROPERTY(HbViewFlags viewFlags READ viewFlags WRITE setViewFlags)
 
 public:
 
-    enum HbViewFlag
-    {
+    enum HbViewFlag {
         ViewFlagNone                = 0,
-        ViewTitleBarMinimizable     = 0x01, 
-        ViewTitleBarMinimized       = 0x02, 
-        ViewTitleBarHidden          = 0x04, 
+        ViewTitleBarMinimizable     = 0x01,
+        ViewTitleBarMinimized       = 0x02,
+        ViewTitleBarHidden          = 0x04,
         ViewTitleBarTransparent     = 0x08,
         ViewTitleBarFloating        = 0x10,
         ViewStatusBarHidden         = 0x20,
         ViewStatusBarTransparent    = 0x40,
-        ViewStatusBarFloating       = 0x80
+        ViewStatusBarFloating       = 0x80,
+        ViewDisableRelayout         = 0x100
     };
     Q_DECLARE_FLAGS(HbViewFlags, HbViewFlag)
 
@@ -74,11 +75,11 @@ public:
 
     HbMenu *menu() const;
     void setMenu(HbMenu *menu);
-    HbMenu* takeMenu();
+    HbMenu *takeMenu();
 
     HbToolBar *toolBar() const;
     void setToolBar(HbToolBar *toolBar);
-    HbToolBar* takeToolBar();
+    HbToolBar *takeToolBar();
 
     HbDockWidget *dockWidget() const;
     void setDockWidget(HbDockWidget *dockWidget);
@@ -99,9 +100,11 @@ public:
     void setStatusBarVisible(bool visible);
 
     enum { Type = Hb::ItemType_View };
-    int type() const { return Type; }
+    int type() const {
+        return Type;
+    }
 
-    enum ActionContainer{ 
+    enum ActionContainer {
         NotSpecified,
         OptionsMenu,
         ToolBar
@@ -126,9 +129,10 @@ signals:
     void dockWidgetChanged();
 
 protected:
-    HbView( HbViewPrivate &dd, QGraphicsItem *parent );
+    HbView(HbViewPrivate &dd, QGraphicsItem *parent);
 
     bool event(QEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
 #ifdef HB_EFFECTS

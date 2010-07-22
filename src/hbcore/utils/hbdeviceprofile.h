@@ -49,7 +49,7 @@ public:
     explicit HbDeviceProfile(const QString &name);
     ~HbDeviceProfile();
 
-    HbDeviceProfile &operator=(const HbDeviceProfile &other);   
+    HbDeviceProfile &operator=(const HbDeviceProfile &other);
 
     bool isNull() const;
 
@@ -58,17 +58,17 @@ public:
     QSizeF physicalSize() const;
     QString alternateProfileName() const;
     bool touch() const;
-    
+
     Qt::Orientation orientation() const;
     qreal orientationAngle() const;
     qreal unitValue() const;
     qreal ppmValue() const;
-    
+
     static HbDeviceProfile current();
     static HbDeviceProfile profile(const HbMainWindow *window);
     static HbDeviceProfile profile(const QGraphicsItem *item);
-    
-	static QStringList profileNames();
+
+    static QStringList profileNames();
 protected:
     QSharedDataPointer<HbDeviceProfilePrivate> d_ptr;
 };

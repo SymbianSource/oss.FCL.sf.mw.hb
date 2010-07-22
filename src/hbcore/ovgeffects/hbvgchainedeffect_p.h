@@ -58,6 +58,7 @@ protected:
     HbVgChainedEffect(HbVgChainedEffectPrivate &dd, QObject *parent = 0);
     void performEffect(QPainter *painter, const QPointF &offset,
                        const QVariant &vgImage, const QSize &vgImageSize);
+    void performEffectSw(QPainter *painter);
 
 private:
     Q_DECLARE_PRIVATE(HbVgChainedEffect)

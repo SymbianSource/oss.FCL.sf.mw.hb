@@ -32,6 +32,8 @@
 #include "hbview.h"
 #include "hbcontentwidget_p.h"
 #include "hbmainwindow.h"
+#include "hbtooltip.h"
+#include "hbgraphicsscene.h"
 #include "hbevent.h"
 #include "hbmainwindow_p.h"
 #include <QGraphicsLayout>
@@ -46,8 +48,8 @@
   \internal
 */
 
-HbScreen::HbScreen() : 
-    HbWidget(), 
+HbScreen::HbScreen() :
+    HbWidget(),
     mStack(0),
     mTb(0),
     mDock(0),
@@ -57,14 +59,14 @@ HbScreen::HbScreen() :
 {
 }
 
-void HbScreen::setStackWidget(HbContentWidget *stack) 
+void HbScreen::setStackWidget(HbContentWidget *stack)
 {
     if (mStack != stack) {
         if (mStack) {
             HbStyle::setItemName(mTb, QString());
             HbStyle::setItemName(mDock, QString());
         }
-        mStack = stack; 
+        mStack = stack;
     }
 }
 
@@ -75,10 +77,10 @@ void HbScreen::setToolBar(HbToolBar *tb)
             disconnect(&HbToolBarPrivate::d_ptr(mTb)->core, 0, this, 0);
             HbStyle::setItemName(mTb, QString());
         }
-        mTb = tb; 
+        mTb = tb;
         if (mTb) {
-            setToolBarOrientation(mTb->orientation()); 
-            if (mDelayedConstructionHandled){
+            setToolBarOrientation(mTb->orientation());
+            if (mDelayedConstructionHandled) {
                 connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(orientationChanged()), this, SLOT(toolBarOrientationChanged()));
                 connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
             }
@@ -95,7 +97,7 @@ void HbScreen::setDockWidget(HbDockWidget *dock)
             disconnect(&HbDockWidgetPrivate::d_ptr(mDock)->core, 0, this, 0);
             HbStyle::setItemName(mDock, QString());
         }
-        mDock = dock; 
+        mDock = dock;
         if (mDock && mDelayedConstructionHandled) {
             connect(&HbDockWidgetPrivate::d_ptr(mDock)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
         }
@@ -117,13 +119,12 @@ void HbScreen::setToolBarName(bool forced)
     //avoid unnecessary complications in setName function.
     if ((mTb->isVisible() || forced) && mTb->actions().count()) {
         HbStyle::setItemName(mTb, "toolbar");
-    }
-    else {
+    } else {
         HbStyle::setItemName(mTb, QString());
     }
 }
 
-void HbScreen::polish(HbStyleParameters& params)
+void HbScreen::polish(HbStyleParameters &params)
 {
     if (!mScreenPolished) {
         mScreenOrientation = mainWindow()->orientation();
@@ -131,10 +132,10 @@ void HbScreen::polish(HbStyleParameters& params)
     }
 
     if (mStack) {
-        HbView *currentView = qobject_cast<HbView*>(mStack->currentWidget());
+        HbView *currentView = qobject_cast<HbView *>(mStack->currentWidget());
         if (currentView && currentView->isContentFullScreen()) {
             setName(mStack, "mainfull");
-        } else { 
+        } else {
             setName(mStack, "main");
         }
     }
@@ -145,7 +146,7 @@ void HbScreen::polish(HbStyleParameters& params)
     }
 
     if (mDock) {
-        setName(mDock,"dock");
+        setName(mDock, "dock");
     }
 
     mScreenPolished = true;
@@ -158,30 +159,24 @@ void HbScreen::polish(HbStyleParameters& params)
         layout()->activate();
     }
     HbMainWindow *w = mainWindow();
-    HbMainWindowPrivate::d_ptr(w)->postIdleEvent(HbMainWindowPrivate::IdleOrientationEvent);   
+    HbMainWindowPrivate::d_ptr(w)->postIdleEvent(HbMainWindowPrivate::IdleOrientationEvent);
 }
 
 void HbScreen::delayedConstruction()
 {
-    if (mDelayedConstructionHandled)
+    if (mDelayedConstructionHandled) {
         return;
+    }
     mDelayedConstructionHandled = true;
     if (mTb) {
-        connect( &HbToolBarPrivate::d_ptr ( mTb )->core, SIGNAL(orientationChanged()), this, SLOT(toolBarOrientationChanged()));
-        connect( &HbToolBarPrivate::d_ptr ( mTb )->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
+        connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(orientationChanged()), this, SLOT(toolBarOrientationChanged()));
+        connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
         HbToolBarPrivate::d_ptr(mTb)->delayedConstruction();
     }
     if (mDock) {
         connect(&HbDockWidgetPrivate::d_ptr(mDock)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
     }
 }
-
-void HbScreen::setGeometry (const QRectF & rect)
-{
-    prepareGeometryChange();
-    HbWidget::setGeometry(rect);
-}
-
 
 Qt::Orientation HbScreen::toolBarOrientation() const
 {
@@ -197,11 +192,12 @@ bool HbScreen::contentUnderTitleBar() const
 {
     bool contentUnderTitleBar = false;
     if (mStack) {
-        HbView *currentView = qobject_cast<HbView*>(mStack->currentWidget());
-        if (currentView && (currentView->viewFlags() 
-                            & (HbView::ViewTitleBarMinimized | HbView::ViewTitleBarFloating 
-                            | HbView::ViewTitleBarHidden))) {
-            contentUnderTitleBar = true;
+        HbView *currentView = qobject_cast<HbView *>(mStack->currentWidget());
+        if (currentView && !(currentView->viewFlags() & HbView::ViewDisableRelayout)) {
+            if (currentView->viewFlags() & (HbView::ViewTitleBarMinimized
+                                            | HbView::ViewTitleBarFloating | HbView::ViewTitleBarHidden)) {
+                contentUnderTitleBar = true;
+            }
         }
     }
     return contentUnderTitleBar;
@@ -211,10 +207,12 @@ bool HbScreen::contentUnderStatusBar() const
 {
     bool contentUnderStatusBar = false;
     if (mStack) {
-        HbView *currentView = qobject_cast<HbView*>(mStack->currentWidget());
-        if (currentView && (currentView->viewFlags() 
-                            & (HbView::ViewStatusBarFloating | HbView::ViewStatusBarHidden))) {
-            contentUnderStatusBar = true;
+        HbView *currentView = qobject_cast<HbView *>(mStack->currentWidget());
+        if (currentView && !(currentView->viewFlags() & HbView::ViewDisableRelayout)) {
+            if (currentView->viewFlags() & (HbView::ViewStatusBarFloating
+                                            | HbView::ViewStatusBarHidden)) {
+                contentUnderStatusBar = true;
+            }
         }
     }
     return contentUnderStatusBar;
@@ -224,7 +222,7 @@ bool HbScreen::titleBarMinimizable() const
 {
     bool titleBarMinimizable = false;
     if (mStack) {
-        HbView *currentView = qobject_cast<HbView*>(mStack->currentWidget());
+        HbView *currentView = qobject_cast<HbView *>(mStack->currentWidget());
         if (currentView && (currentView->viewFlags() & (HbView::ViewTitleBarMinimizable))) {
             titleBarMinimizable = true;
         }
@@ -249,7 +247,7 @@ void HbScreen::toolBarOrientationChanged()
 void HbScreen::setToolBarOrientation(Qt::Orientation orientation)
 {
     if (orientation != mToolBarOrientation) {
-        if (mTb){
+        if (mTb) {
             HbToolBarPrivate::d_ptr(mTb)->mDoLayout = false;
             repolish();
         }
@@ -259,6 +257,12 @@ void HbScreen::setToolBarOrientation(Qt::Orientation orientation)
 
 void HbScreen::decoratorVisibilityChanged()
 {
+    HbMainWindow *window = mainWindow();
+    // Do not repolish if orientation is about to change
+    if (window && HbMainWindowPrivate::d_ptr(window)->mOrientationChangeOngoing
+            && mScreenOrientation != HbMainWindowPrivate::d_ptr(window)->mOrientation) {
+        return;
+    }
     if (mTb) {
         HbToolBarPrivate::d_ptr(mTb)->mDoLayout = false;
     }
@@ -266,16 +270,17 @@ void HbScreen::decoratorVisibilityChanged()
     QCoreApplication::sendPostedEvents(this, QEvent::Polish);
 }
 
-void HbScreen::currentViewChanged(HbView* view)
+void HbScreen::currentViewChanged(HbView *view)
 {
     Q_UNUSED(view);
+    HbToolTip::hideText(qobject_cast<HbGraphicsScene *>(scene()));
     repolish();
 }
 
 bool HbScreen::event(QEvent *e)
 {
     if (e->type() == HbEvent::DeviceProfileChanged) {
-        // supress polishEvent() [which is called in HbWidget::event()] into repolish()
+        // suppress polishEvent() [which is called in HbWidget::event()] into repolish()
         repolish();
         return QGraphicsWidget::event(e);
     } else {

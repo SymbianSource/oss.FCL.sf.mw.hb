@@ -37,6 +37,7 @@ class HB_WIDGETS_EXPORT HbGridView: public HbAbstractItemView
     Q_PROPERTY(int rowCount READ rowCount WRITE setRowCount)
     Q_PROPERTY(bool iconVisible READ iconVisible WRITE setIconVisible)
     Q_PROPERTY(bool textVisible READ textVisible WRITE setTextVisible)
+    Q_PROPERTY(bool swapDimensionsOnOrientationChange READ swapDimensionsOnOrientationChange WRITE setSwapDimensionsOnOrientationChange)
 
 public:
     explicit HbGridView(QGraphicsItem *parent = 0);
@@ -54,6 +55,9 @@ public:
     void setIconVisible(bool visible);
     bool textVisible() const;
     void setTextVisible(bool visible);
+
+    bool swapDimensionsOnOrientationChange() const;
+    void setSwapDimensionsOnOrientationChange(bool swap);
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);

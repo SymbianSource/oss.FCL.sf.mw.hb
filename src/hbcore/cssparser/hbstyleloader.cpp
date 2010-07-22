@@ -48,6 +48,10 @@
     are at least equally specific and define the same properties will override those equivalent
     platform property definitions.
 
+    For any stylesheet registered that correspond to properties that are not defined by the
+    platform, the set values will not be reset when the corresponding stylesheet is
+    unregister.
+
     In order to remove stylesheets or layout definitions that were previously registered,
     the same filename should be provided to the corresponding unregister method. Again,
     a repolish is needed in order to detect the changes.

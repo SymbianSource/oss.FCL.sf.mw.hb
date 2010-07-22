@@ -22,6 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
+#include "hbinpututils.h"
+
 #include <QObject>
 #include <QLocale>
 #include <QDir>
@@ -40,40 +42,16 @@
 #include "hbinputlanguagedatabase.h"
 #include "hbinputmodecache_p.h"
 #include "hbinputlanguage.h"
-#include "hbinpututils.h"
 
-#define HB_DIGIT_ARABIC_INDIC_START_VALUE 0x0660
+#define HB_DIGIT_ARABIC_INDIC_START_VALUE   0x0660
+#define HB_DIGIT_EASTERN_ARABIC_START_VALUE 0x06F0
 
-
-/// @cond
-
-static bool usesLatinDigits(QLocale::Language language, HbInputDigitType digitType)
-{
-    if (digitType == HbDigitTypeDevanagari) {
-        return false;
-    }
-    if (language == QLocale::Urdu || language == QLocale::Persian) {
-        // Latin digits are used in Persian and Urdu ITU-T keypads
-        if (HbInputSettingProxy::instance()->activeKeyboard() == HbKeyboardVirtual12Key) {
-            return true;
-        } else {
-            return false;
-        }	 
-    }
-    if (language == QLocale::Arabic && digitType == HbDigitTypeArabicIndic) {
-        return false;
-    }
-
-    return true;
-}
-
-/// @endcond
 
 /*!
 \class HbInputUtils
 \brief A collection input related utility methods.
 
-This class contains a collection of static input related utility methods that do not 
+This class contains a collection of static input related utility methods that do not
 naturally belong to any other scope. There are convenience methods for testing
 attributes of keyboard and input mode types, instantiating plugins etc.
 
@@ -83,18 +61,16 @@ attributes of keyboard and input mode types, instantiating plugins etc.
 
 /*!
 Finds the fist number character bound to key using given mapping data.
-@param keyboardType Type of the keyboard
-@param key Key code where to look for number character
-@param keymapData Pointer to keymap data where to look
-@param digitType Type of digit if not latin
 */
-QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
-                                                       const HbInputLanguage language,
-                                                       const HbInputDigitType digitType)
+QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey *key,
+        const HbInputLanguage language,
+        const HbInputDigitType digitType)
 {
+    Q_UNUSED(language);
+
     if (key) {
         QString chars = key->characters(HbModifierNone);
-        if (usesLatinDigits(language.language(), digitType)) {
+        if (digitType == HbDigitTypeLatin) {
             for (int i = 0; i < chars.length(); i++) {
                 if (chars.at(i) >= '0' && chars.at(i) <= '9') {
                     return chars.at(i);
@@ -110,13 +86,14 @@ QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey* key,
             for (int i = 0; i < chars.length(); i++) {
                 if (chars.at(i) >= '0' && chars.at(i) <= '9') {
                     return HB_DIGIT_ARABIC_INDIC_START_VALUE +
-						(chars.at(i).toAscii() - '0');
+                           (chars.at(i).unicode() - '0');
                 }
             }
         } else if (digitType == HbDigitTypeEasternArabic) {
             for (int i = 0; i < chars.length(); i++) {
-                if (chars.at(i) >= 0x06F0 && chars.at(i) <= 0x06F9) {
-                    return chars.at(i);
+                if (chars.at(i) >= '0' && chars.at(i) <= '9') {
+                    return HB_DIGIT_EASTERN_ARABIC_START_VALUE +
+                           (chars.at(i).unicode() - '0');
                 }
             }
         }
@@ -130,7 +107,7 @@ Returns true if the concept of "text case" can be applied to given input mode.
 For example Chinese and Japanese modes do not have text case.
 */
 bool HbInputUtils::isCaseSensitiveMode(HbInputModeType inputMode)
-{     
+{
     if (isChineseInputMode(inputMode)) {
         return false;
     }
@@ -145,7 +122,7 @@ checks the validity of plugin files provided by this function.
 
 \sa languageDatabasePluginInstance
 */
-void HbInputUtils::listAvailableLanguageDatabasePlugins(QStringList& result, const QString& subfolder)
+void HbInputUtils::listAvailableLanguageDatabasePlugins(QStringList &result, const QString &subfolder)
 {
     QString path(HbInputSettingProxy::languageDatabasePath());
     path += QDir::separator();
@@ -163,14 +140,14 @@ void HbInputUtils::listAvailableLanguageDatabasePlugins(QStringList& result, con
 /*!
 Creates an instance of given language database plugin, if valid.
 */
-HbLanguageDatabaseInterface* HbInputUtils::languageDatabasePluginInstance(const QString& pluginFileName, const QString& subfolder)
+HbLanguageDatabaseInterface *HbInputUtils::languageDatabasePluginInstance(const QString &pluginFileName, const QString &subfolder)
 {
     if (!QLibrary::isLibrary(pluginFileName)) {
         qDebug("HbInputUtils::languageDatabasePluginInstance: Not a library!");
         return NULL;
     }
 
-    HbLanguageDatabaseInterface* res = NULL;
+    HbLanguageDatabaseInterface *res = NULL;
 
     QString fullName(HbInputSettingProxy::languageDatabasePath());
     fullName += QDir::separator();
@@ -181,10 +158,10 @@ HbLanguageDatabaseInterface* HbInputUtils::languageDatabasePluginInstance(const 
     fullName += pluginFileName;
 
     QPluginLoader loader(fullName);
-    QObject* plugin = loader.instance();
+    QObject *plugin = loader.instance();
 
     if (plugin) {
-        res = qobject_cast<HbLanguageDatabaseInterface*>(plugin);
+        res = qobject_cast<HbLanguageDatabaseInterface *>(plugin);
     } else {
         qDebug("HbInputUtils::languageDatabasePluginInstance: Unable to instantiate plugin");
     }
@@ -205,7 +182,7 @@ This method creates an instance of QWidget and wraps given graphics widget insid
 It creates QGraphicsScene, adds given widget there and creates a view to the scene
 inside returned QWidget. This is utility method is mainly for internal use.
 */
-QWidget* HbInputUtils::createWrapperWidget(QGraphicsWidget* graphicsWidget)
+QWidget *HbInputUtils::createWrapperWidget(QGraphicsWidget *graphicsWidget)
 {
     QWidget *ret = 0;
 
@@ -227,10 +204,10 @@ QWidget* HbInputUtils::createWrapperWidget(QGraphicsWidget* graphicsWidget)
 }
 
 /*!
-A convinience method that wraps given widget inside QGraphicsProxyWidget
+A convenience method that wraps given widget inside QGraphicsProxyWidget
 and returns it. This is utility method is mainly for internal use.
 */
-QGraphicsWidget* HbInputUtils::createGraphicsProxyWidget(QWidget* widget)
+QGraphicsWidget *HbInputUtils::createGraphicsProxyWidget(QWidget *widget)
 {
 
     QGraphicsProxyWidget *proxy = 0;
@@ -252,14 +229,38 @@ HbInputDigitType HbInputUtils::inputDigitType(HbInputLanguage language)
     HbInputDigitType digitType = HbDigitTypeNone;
 
     switch (language.language()) {
-        case QLocale::Arabic:
-            digitType = HbDigitTypeArabicIndic;
-            break;
-        default:
-            digitType = HbDigitTypeLatin;
-			break;		
+    case QLocale::Arabic:
+        digitType = HbDigitTypeArabicIndic;
+        break;
+    case QLocale::Persian:
+    case QLocale::Urdu:
+        digitType = HbDigitTypeEasternArabic;
+        break;
+    case QLocale::Hindi:
+        digitType = HbDigitTypeDevanagari;
+        break;
+    default:
+        digitType = HbDigitTypeLatin;
+        break;
     }
     return digitType;
 }
+
+
+/*!
+Returns the proxy widget of the embedded widget in a graphics view ;
+if widget does not have the proxy widget then it returns the proxy widget of its window.
+ otherwise returns 0.
+*/
+QGraphicsProxyWidget *HbInputUtils::graphicsProxyWidget(const QWidget *w)
+{
+    QGraphicsProxyWidget *pw = w ? w->graphicsProxyWidget() : 0;
+    if (w && !pw) {
+        pw = w->window() ? w->window()->graphicsProxyWidget() : w->graphicsProxyWidget();
+    }
+    return pw;
+}
+
+
 // End of file
 

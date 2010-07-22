@@ -36,7 +36,7 @@
 #include "hbinputbutton.h"
 #include "hbinputmodeindicator.h"
 
-const qreal HbKeyboardHeightInUnits = 34.6;
+const qreal HbKeyboardHeightInUnits = 33.7;
 const qreal HbKeyboardWidthInUnits = 95.5;
 
 const int HbVirtualQwertyNumberOfRows = 4;
@@ -148,18 +148,26 @@ void HbQwerty10x4KeyboardPrivate::applyEditorConstraints()
     if (buttonGroup) {
         QList<HbInputButton*> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
-            if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
-                HbInputButton *item = buttons.at(i);
-
-                HbInputButton::HbInputButtonState state = item->state();
+            HbInputButton *item = buttons.at(i);
+            HbInputButton::HbInputButtonState state = item->state();
+            if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {        
                 QString data = item->text(HbInputButton::ButtonTextIndexPrimary);
                 if (data.isEmpty() || !focusedObject->characterAllowedInEditor(data.at(0))) {
                     state = HbInputButton::ButtonStateDisabled;
                 } else if (item->state() == HbInputButton::ButtonStateDisabled) {
                     state = HbInputButton::ButtonStateReleased;
                 }
-                item->setState(state);
             }
+            else if (keyCode(i) == HbInputButton::ButtonKeyCodeSpace) {
+                bool allowed = focusedObject->characterAllowedInEditor(QChar(' '));
+                if (!allowed) {
+                    state = HbInputButton::ButtonStateDisabled;
+                }
+                else if (item->state() == HbInputButton::ButtonStateDisabled) {
+                    state = HbInputButton::ButtonStateReleased; 
+                }
+            }
+            item->setState(state);
         }
         buttonGroup->setButtons(buttons);
     }

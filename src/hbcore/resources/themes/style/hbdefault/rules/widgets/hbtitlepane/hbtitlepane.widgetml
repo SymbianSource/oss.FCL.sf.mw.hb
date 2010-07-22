@@ -6,6 +6,9 @@
     <meshitem dst="icon" dstEdge="LEFT" src="text" srcEdge="RIGHT"/>
     <meshitem dst="" dstEdge="RIGHT" src="icon" srcEdge="RIGHT"/>
     <meshitem dst="" dstEdge="CENTERV" src="icon" srcEdge="CENTERV"/>
+    <meshitem src="toucharea" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="toucharea" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="toucharea" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
   </layout>
  
 </hbwidget>

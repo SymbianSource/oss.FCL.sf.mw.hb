@@ -22,7 +22,9 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
+#include "hbthemelistener_symbian_p.h"
+#include "hbthemeclient_p_p.h"
+#include "hbthemecommon_symbian_p.h"
 
 #include <qglobal.h>
 #include <QDebug>
@@ -33,10 +35,6 @@
 #ifdef THEME_LISTENER_TRACES
 #include <hbmemoryutils_p.h>
 #endif
-
-#include "hbthemeclient_p_p.h"
-#include "hbthemelistener_symbian_p.h"
-#include "hbthemecommon_symbian_p.h"
 
 /**
  * Constructor
@@ -69,13 +67,18 @@ void CHbThemeListenerPrivate::RunL()
 #endif
     mRepository->NotifyRequest(HbThemeUtils::CurrentThemeSetting, iStatus);
     SetActive();    
+    HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
+    if (info.address) {
+        themeClient->handleThemeChange(info.name);
+        return;
+    }
+    // Fallback to reading cenrep
     TBuf<256> newTheme;
     if (KErrNone == mRepository->Get(HbThemeUtils::CurrentThemeSetting, newTheme)) {
-        QString qnewTheme((QChar*)newTheme.Ptr(),newTheme.Length());
+        QString qnewTheme((QChar*)newTheme.Ptr(), newTheme.Length());
         themeClient->handleThemeChange(qnewTheme);
     }
 }
-
 
 /**
  * DoCancel
@@ -84,4 +87,3 @@ void CHbThemeListenerPrivate::DoCancel()
 {
     mRepository->NotifyCancelAll();
 }
-

@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef _HBINPUT_HW_TOOL_CLUSTER_H
-#define _HBINPUT_HW_TOOL_CLUSTER_H
+#ifndef HB_INPUT_HW_TOOL_CLUSTER_H
+#define HB_INPUT_HW_TOOL_CLUSTER_H
 
 #include "hbinputvkbwidget.h"
 
@@ -37,7 +37,7 @@ class HB_INPUT_EXPORT HbHwToolCluster : public HbInputVkbWidget
     Q_OBJECT
 
 public:
-    HbHwToolCluster(HbInputMethod* owner, QGraphicsItem* parent = NULL);
+    explicit HbHwToolCluster(HbInputMethod *owner, QGraphicsItem *parent = NULL);
     ~HbHwToolCluster();
 
 public:  // From HbVirtualKeyboard
@@ -46,7 +46,7 @@ public:  // From HbVirtualKeyboard
     QSizeF preferredKeyboardSize();
     void createLayout();
     void setupToolCluster();
-    
+
 public slots:
     void showMethodDialog();
     void showLanguageDialog();

@@ -39,15 +39,17 @@
 #include "hbstyleoption_p.h"
 #include "hbscrollarea.h"
 #include "hbvalidator.h"
-#include "hbmeshlayout_p.h"
 #include "hbmenu.h"
 #include "hbselectioncontrol_p.h"
 #include "hbcolorscheme.h"
 #include "hbsmileyengine_p.h"
 #include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_p.h"
+#include "hbfeaturemanager_r.h"
 #include "hbinputeditorinterface.h"
 #include "hbinputvkbhost.h"
+#include "hbinputmethod.h"
+#include "hbinputfocusobject.h"
+
 
 #include <QValidator>
 #include <QTextLayout>
@@ -95,6 +97,7 @@ public:
 
     HbEditItem(HbAbstractEdit *parent) : HbWidget(parent), edit(parent)
     {
+    	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
     };
 
     virtual ~HbEditItem() {};
@@ -198,7 +201,8 @@ HbAbstractEditPrivate::HbAbstractEditPrivate () :
     wasGesture(false),
     smileysEnabled(false),
     smileyEngine(0),
-    formatDialog(0)
+    formatDialog(0),
+    updatePrimitivesInProgress(false)
 {
 }
 
@@ -211,6 +215,8 @@ void HbAbstractEditPrivate::init()
     Q_Q(HbAbstractEdit);
 
     canvas = new HbEditItem(q);
+    canvas->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
+
 
     setContent(Qt::RichText, QString());
 
@@ -238,6 +244,7 @@ void HbAbstractEditPrivate::init()
     q->setFlag(QGraphicsItem::ItemIsFocusable);
     q->setFlag(QGraphicsItem::ItemAcceptsInputMethod);
     q->setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
+    q->setFlag(QGraphicsItem::ItemHasNoContents, false);
     q->setFocusPolicy(Qt::StrongFocus);
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -248,28 +255,6 @@ void HbAbstractEditPrivate::init()
 
 void HbAbstractEditPrivate::updatePaletteFromTheme()
 {
-    Q_Q(HbAbstractEdit);
-
-    // TODO: remove once these color dissapear from hbcolorgroup.css
-    QColor textColor = HbColorScheme::color("qtc_editor_normal");
-    QColor selectedColor = HbColorScheme::color("qtc_editor_selected");
-    QColor selectedBackground = HbColorScheme::color("qtc_editor_marker_normal");
-    QPalette pal = q->palette();
-
-    if (textColor.isValid()) {
-        pal.setColor(QPalette::Text, textColor);
-    }
-
-    if (selectedColor.isValid()) {
-        pal.setColor(QPalette::HighlightedText, selectedColor);
-    }
-
-    if (selectedBackground.isValid()) {
-        pal.setColor(QPalette::Highlight, selectedBackground);
-    }
-    q->setPalette(pal);
-
-
     // The link color is used from application's palette
     QColor linkColor = HbColorScheme::color("qtc_view_link_normal");
     QColor linkVisitedColor = HbColorScheme::color("qtc_view_visited_normal");
@@ -390,8 +375,12 @@ bool HbAbstractEditPrivate::findNextPrevAnchor(const QTextCursor& from, bool nex
 
 void HbAbstractEditPrivate::setCursorPosition(int pos, QTextCursor::MoveMode mode)
 {
-    cursor.setPosition(pos, mode);
+    if (cursor.isNull()) {
+        cursor = QTextCursor(doc);
+    }
 
+    cursor.setPosition(pos, mode);
+    ensureCursorVisible();
     cursorChanged(HbValidator::CursorChangeFromMouse);
 }
 
@@ -510,13 +499,12 @@ bool HbAbstractEditPrivate::cursorMoveKeyEvent(QKeyEvent *e)
         return false;
     }
 
-    const QTextCursor oldCursor = cursor;
+    //const QTextCursor oldCursor = cursor;
     bool visualNavigation = cursor.visualNavigation();
     cursor.setVisualNavigation(true);
     cursor.movePosition(op, mode);
     cursor.setVisualNavigation(visualNavigation);
     cursorChanged(HbValidator::CursorChangeFromOperation);
-    repaintOldAndNewSelection(oldCursor);
 
     return true;
 }
@@ -596,13 +584,11 @@ void HbAbstractEditPrivate::ensureCursorVisible()
 
 void HbAbstractEditPrivate::setTextInteractionFlags(Qt::TextInteractionFlags flags)
 {
-    Q_Q(HbAbstractEdit);
-
     if (flags == interactionFlags)
         return;
     interactionFlags = flags;
 
-    if (q->hasFocus()) {
+    if (hasInputFocus()) {
         setBlinkingCursorEnabled(flags & Qt::TextEditable);
     }
 }
@@ -649,14 +635,15 @@ void HbAbstractEditPrivate::_q_selectionChanged()
     Q_Q(HbAbstractEdit);
 
     if (cursor.hasSelection()) {   
-        if (selectionControl) {
-            selectionControl->showHandles();
-            q->update();
-        }      
+        selectionControl = HbSelectionControl::attachEditor(q);
+        selectionControl->showHandles();
     } else if (selectionControl){
         selectionControl->hideHandles();
-        q->update();
     }
+    
+    QTextCursor oldSelection(selectionCursor);
+    selectionCursor = cursor;
+    repaintOldAndNewSelection(oldSelection);
 }
 
 void HbAbstractEditPrivate::_q_scrollStarted()
@@ -761,7 +748,6 @@ void HbAbstractEditPrivate::selectionChanged(bool forceEmitSelectionChanged /*=f
     }
 
     emit q->selectionChanged(selectionCursor, cursor);
-    selectionCursor = cursor;
 }
 
 void HbAbstractEditPrivate::acceptKeyPressEvent(QKeyEvent *event)
@@ -792,7 +778,7 @@ QAbstractTextDocumentLayout::PaintContext HbAbstractEditPrivate::getPaintContext
     if (cursor.hasSelection()) {
         QAbstractTextDocumentLayout::Selection selection;
         selection.cursor = cursor;
-        QPalette::ColorGroup cg = q->hasFocus() ? QPalette::Active : QPalette::Inactive;
+        QPalette::ColorGroup cg = hasInputFocus() ? QPalette::Active : QPalette::Inactive;
         selection.format.setBackground(ctx.palette.brush(cg, QPalette::Highlight));
         selection.format.setForeground(ctx.palette.brush(cg, QPalette::HighlightedText));
 
@@ -995,7 +981,7 @@ void HbAbstractEditPrivate::sendMouseEventToInputContext(const QPointF &tapPos) 
     QTextLayout *layout = cursor.block().layout();
     int cursorPos = hitTest(tapPos, Qt::ExactHit);
 
-    if (cursorPos == -1) {
+    if (layout && cursorPos == -1) {
             cursorPos = cursor.position() + layout->preeditAreaText().length();
     }
 
@@ -1078,7 +1064,6 @@ void HbAbstractEditPrivate::tapGesture(const QPointF &point)
     if (removeSelection && cursor.hasSelection()) {
         const QTextCursor oldCursor = cursor;
         cursor.clearSelection();
-        repaintOldAndNewSelection(oldCursor);
         emit q->selectionChanged(oldCursor, cursor);
     }
 
@@ -1094,14 +1079,27 @@ void HbAbstractEditPrivate::tapGesture(const QPointF &point)
     } else {
         // Currently focused widget to listen to InputContext before updating the cursor position
         sendMouseEventToInputContext(point);
+
+        // translate the point to have the Y ccordinate inside the viewport
+        QPointF translatedPoint(point);
+        if(translatedPoint.y() < viewPortRect().top()) {
+            translatedPoint.setY(viewPortRect().top() + 1);
+        } else if(translatedPoint.y() > viewPortRect().bottom()){
+            translatedPoint.setY(viewPortRect().bottom() - 1);
+        }
+
         // need to get the cursor position again since input context can change the document
-        newCursorPos = hitTest(point, Qt::FuzzyHit);
+        newCursorPos = hitTest(translatedPoint, Qt::FuzzyHit);
         setCursorPosition(newCursorPos);
 
         if (interactionFlags & Qt::TextEditable) {
             updateCurrentCharFormat();
         }
-        cursorChanged(HbValidator::CursorChangeFromMouse);
+
+        QString anchor(q->anchorAt(translatedPoint));
+        if(!anchor.isEmpty()) {
+            emit q->anchorTapped(anchor);
+        }
     }
 }
 
@@ -1172,6 +1170,22 @@ void HbAbstractEditPrivate::updatePlaceholderDocProperties()
     }
 }
 
+void HbAbstractEditPrivate::filterInputText(QString &text) const
+{
+    Q_Q(const HbAbstractEdit);
+    HbEditorInterface editorInterface(const_cast<HbAbstractEdit*>(q));
+    HbInputFilter *inputFilter = editorInterface.filter();
+
+    if (!text.isEmpty() && inputFilter) {
+        for(int i(text.length() - 1); i>=0; --i) {
+            if (!inputFilter->filter(text.at(i))) {
+                text.remove(i,1);
+            }
+        }
+    }
+}
+
+
 Qt::Alignment HbAbstractEditPrivate::alignmentFromString(const QString &text)
 {
     Qt::Alignment align(0);
@@ -1229,16 +1243,27 @@ void HbAbstractEditPrivate::closeInputPanel()
     sendInputPanelEvent(QEvent::CloseSoftwareInputPanel);
 }
 
-#include "hbinputeditorinterface.h"
-#include "hbinputvkbhost.h"
-
-void HbAbstractEditPrivate::minimizeInputPanel()
+bool HbAbstractEditPrivate::hasInputFocus() const
 {
-    Q_Q(HbAbstractEdit);
+    Q_Q(const HbAbstractEdit);
 
-    HbEditorInterface ei(q);
-    HbVkbHost* vkbHost = ei.vkbHost();
-    vkbHost->minimizeKeypad();
+    HbInputMethod* inputMethod = HbInputMethod::activeInputMethod();
+    if (inputMethod && inputMethod->focusObject() &&
+        qobject_cast<HbAbstractEdit*>(inputMethod->focusObject()->object()) == q) {
+        return true;
+    }
+    return false;
+}
+
+void HbAbstractEditPrivate::setInputFocusEnabled(bool enable)
+{
+    QGraphicsItem *focusItem = focusPrimitive(HbWidget::FocusHighlightActive);
+    if (focusItem) {
+        focusItem->setVisible(enable);
+    }
+
+    setBlinkingCursorEnabled(enable);
+    repaintOldAndNewSelection(selectionCursor);
 }
 
 #include "moc_hbabstractedit.cpp"

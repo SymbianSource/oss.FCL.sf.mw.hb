@@ -25,31 +25,17 @@
 
 #include "hbstyleoptionindicatorgroup_p.h"
 
-/*!
+/*
     \class HbStyleOptionIndicatorGroup
     \brief HbStyleOptionIndicatorGroup has the style component for indicator group
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup() 
 {
     type = Type;
     version = Version;
 }
 
-
-/*!
-
-    \deprecated HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup(const HbStyleOptionIndicatorGroup&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionIndicatorGroup::HbStyleOptionIndicatorGroup(const HbStyleOptionIndicatorGroup &other) :
     HbStyleOption(other), iconName(other.iconName)
 {

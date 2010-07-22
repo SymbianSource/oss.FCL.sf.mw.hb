@@ -25,19 +25,12 @@
 
 #include "hbstyleoptionmessagebox_p.h"
 
-/*!
-	\this class is deprecated.
+/*
+
     \class HbStyleOptionMessageBox
     \brief HbStyleOptionMessageBox has the style component for note primitives
 */
 
-
-/*!
-
-    \deprecated HbStyleOptionMessageBox::HbStyleOptionMessageBox()
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionMessageBox::HbStyleOptionMessageBox() :
     HbStyleOptionPopup(),
     text(),    
@@ -50,12 +43,6 @@ HbStyleOptionMessageBox::HbStyleOptionMessageBox() :
     version = Version;
 }
 
-/*!
-
-    \deprecated HbStyleOptionMessageBox::HbStyleOptionMessageBox(const HbStyleOptionMessageBox&)
-    is deprecated. Styleoptions will not be public.
-
-*/
 HbStyleOptionMessageBox::HbStyleOptionMessageBox(const HbStyleOptionMessageBox &other) :
     HbStyleOptionPopup(other),
     text(other.text),   

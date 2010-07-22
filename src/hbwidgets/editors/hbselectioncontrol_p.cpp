@@ -91,6 +91,7 @@ public:
     void panGestureFinished (HbPanGesture *gesture);
     void show();
     void _q_aboutToChangeView();
+    void detachEditor(bool updateAtthachedEditorState);
 
 public:
 
@@ -126,8 +127,13 @@ void HbSelectionControlPrivate::init()
     createPrimitives();
 
     q->setVisible(false);
-    q->setFlag(QGraphicsItem::ItemIsFocusable,false);
-    q->setFlag(QGraphicsItem::ItemIsPanel,true);
+    QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
+#if QT_VERSION >= 0x040600
+    itemFlags |=  QGraphicsItem::ItemSendsGeometryChanges;
+#endif
+    itemFlags &= ~QGraphicsItem::ItemIsFocusable;
+    itemFlags |=  QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);
     q->setFocusPolicy(Qt::NoFocus);
     q->setActive(false);
 
@@ -466,6 +472,21 @@ void HbSelectionControlPrivate::_q_aboutToChangeView()
     }
 }
 
+void HbSelectionControlPrivate::detachEditor(bool updateAtthachedEditorState)
+{
+    Q_Q(HbSelectionControl);
+    if (mEdit) {
+        q->hideHandles();
+        reparentHandles(q);
+        if (updateAtthachedEditorState) {
+            mEdit->disconnect(q);
+            mEdit->d_func()->selectionControl = 0;
+            mEdit->deselect();
+        }
+        mEdit = 0;
+        mTopLevelAncestor = 0;
+    }
+}
 
 HbSelectionControl::HbSelectionControl() : HbWidget(*new HbSelectionControlPrivate(),0)
 
@@ -510,17 +531,14 @@ HbSelectionControl* HbSelectionControl::attachEditor(HbAbstractEdit *edit)
 void HbSelectionControl::detachEditor()
 {
     Q_D(HbSelectionControl);
-    if (d->mEdit) {
-        hideHandles();
-        d->reparentHandles(this);
-        d->mEdit->disconnect(this);
-        d->mEdit->d_func()->selectionControl = 0;        
-        d->mEdit->deselect();
-        d->mEdit = 0;
-        d->mTopLevelAncestor = 0;
-    }
+    d->detachEditor(true);
 }
 
+void HbSelectionControl::detachEditorFromDestructor()
+{
+    Q_D(HbSelectionControl);
+    d->detachEditor(false);
+}
 
 void HbSelectionControl::hideHandles()
 {
@@ -597,7 +615,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
         switch(tap->state()) {
         case Qt::GestureStarted:
             if (d->mEdit) {
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantPressed);
+                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
             }
             break;
         case Qt::GestureUpdated:
@@ -605,7 +623,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
       case Qt::GestureFinished:
             if (d->mEdit) {
                 d->tapGestureFinished(pos);
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             }
             break;
       case Qt::GestureCanceled:
@@ -630,7 +648,7 @@ void HbSelectionControl::gestureEvent(QGestureEvent* event) {
         case Qt::GestureFinished:
             if (d->mEdit) {
                 d->panGestureFinished(pan);
-                HbWidgetFeedback::triggered(d->mEdit, Hb::InstantReleased);
+                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             }
             break;
       case Qt::GestureCanceled:

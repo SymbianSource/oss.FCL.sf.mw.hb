@@ -75,7 +75,7 @@ struct TIconListParams
 };
 
 // server name
-_LIT(KThemeServerName,"hbthemeserver");
+_LIT(KThemeServerName,"!hbthemeserver");
 const TUid KServerUid3={0x20022E82};
 // Common unique ID for Pub/Sub
 const TInt KNewThemeForThemeChanger = 9;
